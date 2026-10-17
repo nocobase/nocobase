@@ -25,6 +25,7 @@ import {
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import { z } from 'zod';
+import { QuotaReportSchema } from '@nocobase/agent-protocol';
 
 import {
   AGENT_CHANGE_ACTIONS,
@@ -641,6 +642,15 @@ export const AgentViewSchema: z.ZodType<AgentView> = agentObject
         description:
           'The online runners that have its tool and model: team ones, personal ones, the caller’s own, and a few names.',
       }),
+    quota: z
+      .array(
+        z.object({
+          runnerId: z.string(),
+          runnerName: z.string(),
+          resetsAt: z.string().nullable(),
+        }),
+      )
+      .optional(),
     personalOnly: z.boolean().meta({
       description: 'Only personal runners have it.',
     }),
@@ -675,6 +685,15 @@ export const AvailableAgentSchema: z.ZodType<AvailableAgent> = z
     online: z.boolean().meta({
       description: 'Whether a runner would take the caller’s work now.',
     }),
+    quota: z
+      .array(
+        z.object({
+          runnerId: z.string(),
+          runnerName: z.string(),
+          resetsAt: z.string().nullable(),
+        }),
+      )
+      .optional(),
     personalOnly: z.boolean().meta({
       description: 'Only personal runners have it.',
     }),
@@ -954,6 +973,7 @@ const RunEffortReportSchema: z.ZodType<RunEffortReport> = z
 
 export const RunExecutionSnapshotSchema: z.ZodType<RunExecutionSnapshot> = z
   .object({
+    quota: QuotaReportSchema.optional(),
     selection: z
       .object({
         reason: z.enum(['preferredQueued', 'preferredUnavailable']),
@@ -1549,6 +1569,15 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
   avatar: z.string().nullable(),
   isSystemDefault: z.boolean(),
   isMyDefault: z.boolean(),
+  quota: z
+    .array(
+      z.object({
+        runnerId: z.string(),
+        runnerName: z.string(),
+        resetsAt: z.string().nullable(),
+      }),
+    )
+    .optional(),
   availability,
   personalOnly: z.boolean().meta({
     description: 'Only personal runners have it.',
@@ -1617,6 +1646,9 @@ const RunnerWorkspaceUsageSchema = z
     }),
   })
   .meta({ ref: 'AgentsRunnerWorkspaceUsage' });
+export const RunnerWorkspaceUsageResponseSchema: z.ZodType<
+  NonNullable<Runner['workspaceUsage']>
+> = RunnerWorkspaceUsageSchema;
 
 // Runners, as people manage them.
 const runnerObject = z.object({
@@ -1661,6 +1693,36 @@ const runnerObject = z.object({
     description:
       'The names of the variables it provides to runs that take them from the runner, as it last reported them; null when it reported none. Names only.',
   }),
+  quotaRevision: z.number().int().optional(),
+  quotaUsage: z
+    .array(
+      z.object({
+        tool: AgentToolSchema,
+        window: z.string(),
+        scope: z.enum(['tool', 'provider', 'model']),
+        target: z.string(),
+        usedPercent: z.number().optional(),
+        resetsAt: z.string().nullable(),
+        observedAt: z.string(),
+      }),
+    )
+    .nullable()
+    .optional(),
+  unavailableModels: z
+    .array(
+      z.object({
+        tool: AgentToolSchema,
+        model: z.string(),
+        at: z.string(),
+        reported: z.array(z.string()),
+        reason: z.enum(['modelUnavailable', 'toolQuota']).optional(),
+        scope: z.enum(['tool', 'provider', 'model']).optional(),
+        window: z.string().optional(),
+        resetsAt: z.string().nullable().optional(),
+      }),
+    )
+    .nullable()
+    .optional(),
   workspaceUsage: RunnerWorkspaceUsageSchema.nullable().optional().meta({
     description:
       'The working directories it keeps for this application and the free space on the disk holding them, as it last reported them; null or absent before it reports.',
@@ -1695,6 +1757,7 @@ const runnerSummaryObject = runnerObject
     canManage: z.boolean(),
     canChangeTrust: z.boolean(),
     canRevoke: z.boolean(),
+    canClearQuota: z.boolean().optional(),
     updateVersion: z.string().nullable(),
     requiredProtocol: z.object({
       min: z.number().int(),
@@ -1712,6 +1775,7 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> =
 export const RunnerListItemSchema: z.ZodType<RunnerListItem> =
   runnerSummaryObject
     .extend({
+      takesCount: z.number().int().optional(),
       workspaceUsage: RunnerWorkspaceUsageSchema.omit({ workspaces: true })
         .meta({ ref: 'AgentsRunnerWorkspaceTotals' })
         .nullable()
@@ -1721,6 +1785,8 @@ export const RunnerListItemSchema: z.ZodType<RunnerListItem> =
 
 export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
   .object({
+    subjectLabel: z.string().nullable().optional(),
+    failureReason: z.string().nullable().optional(),
     id: z.string(),
     title: z.string(),
     status: RunStatusSchema,

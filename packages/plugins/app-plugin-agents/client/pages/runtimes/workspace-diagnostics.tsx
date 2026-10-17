@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { WORKSPACE_REPORT_INTERVAL_MS } from '@nocobase/agent-protocol';
 import {
   runnerLowOnDisk,
+  workspaceCategory,
   type RunnerSummary,
   type RunnerListItem,
 } from '../../../shared/runners.js';
@@ -14,10 +15,13 @@ import {
   AlertTitle,
 } from '../../components/ui/alert.js';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '../../components/ui/collapsible.js';
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+} from '../../components/ui/table.js';
 import { useFormatters } from '../../lib/format.js';
 
 function workspaceDiskState(
@@ -53,7 +57,9 @@ export function WorkspaceDiskTag({
 }
 
 function bytes(value: number): string {
-  return `${(value / 1024 ** 3).toFixed(2)} GiB`;
+  const power =
+    value >= 1024 ** 3 ? 3 : value >= 1024 ** 2 ? 2 : value >= 1024 ? 1 : 0;
+  return `${(value / 1024 ** power).toFixed(2)} ${['B', 'KiB', 'MiB', 'GiB'][power]}`;
 }
 
 export function WorkspaceDiagnostics({
@@ -66,7 +72,7 @@ export function WorkspaceDiagnostics({
   const usage = runner.workspaceUsage;
   const { low, stale } = workspaceDiskState(runner);
   const summary = (
-    <div className='flex flex-col gap-1 text-sm [overflow-wrap:anywhere]'>
+    <div className='grid gap-2 rounded-lg border p-4 text-sm sm:grid-cols-2 [overflow-wrap:anywhere]'>
       {!usage ? (
         <p>{t('runtimes.workspaces.notReported')}</p>
       ) : (
@@ -87,9 +93,20 @@ export function WorkspaceDiagnostics({
                       value: bytes(usage.disk.minFreeBytes),
                     })}
               </p>
+              <div
+                className='h-1.5 overflow-hidden rounded-full bg-muted sm:col-span-2'
+                aria-hidden='true'
+              >
+                <div
+                  className='h-full bg-primary'
+                  style={{
+                    width: `${Math.max(0, Math.min(100, (1 - usage.disk.freeBytes / Math.max(1, usage.disk.totalBytes)) * 100))}%`,
+                  }}
+                />
+              </div>
             </>
           )}
-          <p>
+          <p className='text-xs text-muted-foreground sm:col-span-2'>
             {t('runtimes.workspaces.reportedAt', {
               time: format.dateTime(usage.diskMeasuredAt ?? usage.measuredAt),
             })}
@@ -124,75 +141,92 @@ export function WorkspaceDiagnostics({
               {t('runtimes.workspaces.empty')}
             </p>
           ) : (
-            usage.workspaces.map((workspace) => (
-              <Collapsible
-                key={workspace.workDir}
-                className='min-w-0 rounded-lg border p-2'
-              >
-                <CollapsibleTrigger className='w-full text-left text-sm whitespace-normal [overflow-wrap:anywhere] focus-visible:outline-2'>
-                  {workspace.subjectKey?.split('.readonly-')[0] ??
-                    workspace.subjectId ??
-                    workspace.workDir.split('/').pop()}{' '}
-                  ·{' '}
-                  {t(
-                    workspace.settled === true
-                      ? 'runtimes.workspaces.ended'
-                      : workspace.settled === false
-                        ? 'runtimes.workspaces.active'
-                        : 'runtimes.workspaces.unknown',
-                  )}
-                </CollapsibleTrigger>
-                <CollapsibleContent className='space-y-2 pt-2 text-sm text-muted-foreground [overflow-wrap:anywhere]'>
-                  <p>{workspace.workDir}</p>
-                  <p>
-                    {t(
-                      workspace.workDir.includes('.readonly-')
-                        ? 'runtimes.workspaces.readOnly'
-                        : 'runtimes.workspaces.working',
-                    )}
-                  </p>
-                  {workspace.sizeBytes === undefined ? null : (
-                    <p>
-                      {t('runtimes.workspaces.size', {
-                        value: bytes(workspace.sizeBytes),
-                      })}
-                    </p>
-                  )}
-                  <p>
-                    {t(
-                      workspace.workDir.includes('.readonly-')
-                        ? 'runtimes.workspaces.notApplicable'
-                        : workspace.unpushed
-                          ? 'runtimes.workspaces.unpushed'
-                          : 'runtimes.workspaces.pushed',
-                    )}
-                  </p>
-                  <p>
-                    {workspace.decision
-                      ? t(
-                          `runtimes.workspaces.decision.${workspace.decision.reason}`,
-                        )
-                      : t('runtimes.workspaces.oldRunner')}
-                  </p>
-                  <p>
-                    {workspace.cleanup
-                      ? t(
-                          `runtimes.workspaces.cleanup.${workspace.cleanup.reason}`,
-                        )
-                      : t('runtimes.workspaces.noCleanup')}
-                  </p>
-                  {workspace.cleanup?.reason === 'allowed' &&
-                  workspace.cleanup.discardsUntracked ? (
-                    <p>{t('runtimes.workspaces.discardsUntracked')}</p>
-                  ) : null}
-                  <p>
-                    {t('runtimes.workspaces.reportedAt', {
-                      time: format.dateTime(usage.measuredAt),
-                    })}
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
-            ))
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {[
+                    'directory',
+                    'type',
+                    'size',
+                    'push',
+                    'status',
+                    'lastUsed',
+                  ].map((key) => (
+                    <TableHead key={key}>
+                      {t(`runtimes.quota.columns.${key}`)}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {usage.workspaces.map((workspace) => (
+                  <TableRow key={workspace.workDir}>
+                    <TableCell className='max-w-48'>
+                      <div className='truncate'>
+                        {workspace.subjectKey ??
+                          workspace.subjectId ??
+                          workspace.workDir.split('/').pop()}
+                      </div>
+                      <div
+                        title={workspace.workDir}
+                        className='truncate font-mono text-xs text-muted-foreground'
+                      >
+                        {workspace.workDir}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {t(
+                        workspace.workDir.includes('.readonly-')
+                          ? 'runtimes.quota.readOnly'
+                          : 'runtimes.quota.working',
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {workspace.sizeBytes === undefined
+                        ? '—'
+                        : bytes(workspace.sizeBytes)}
+                    </TableCell>
+                    <TableCell>
+                      <AgTag tone={workspace.unpushed ? 'amber' : 'green'}>
+                        {t(
+                          workspace.unpushed
+                            ? 'runtimes.quota.unpushed'
+                            : 'runtimes.quota.clean',
+                        )}
+                      </AgTag>
+                    </TableCell>
+                    <TableCell className='max-w-48 whitespace-normal'>
+                      {workspaceCategory(workspace) === 'retained' ? (
+                        <AgTag tone='amber'>
+                          {t('runtimes.quota.filter.retained')}
+                        </AgTag>
+                      ) : null}
+                      <span>
+                        {workspace.cleanup &&
+                        workspaceCategory(workspace) === 'retained'
+                          ? t(
+                              `runtimes.workspaces.cleanup.${workspace.cleanup.reason}`,
+                            )
+                          : workspace.decision
+                            ? t(
+                                `runtimes.workspaces.decision.${workspace.decision.reason}`,
+                              )
+                            : t(
+                                workspace.settled === false
+                                  ? 'runtimes.workspaces.active'
+                                  : workspace.settled === true
+                                    ? 'runtimes.workspaces.ended'
+                                    : 'runtimes.workspaces.unknown',
+                              )}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {format.relative(workspace.lastUsedAt)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </AgSection>
       ) : null}

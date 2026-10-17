@@ -36,6 +36,7 @@ export interface TransitionDeps {
 }
 
 export interface FinishOutcome {
+  readonly quota?: import('@nocobase/agent-protocol').QuotaReport;
   readonly status: 'completed' | 'failed' | 'cancelled';
   readonly reason?: FailureReason | null;
   readonly detail?: string;
@@ -131,6 +132,7 @@ export async function finishRun(
     now,
     outcome.reason ?? null,
     outcome.failureSource,
+    outcome.quota,
   );
   await revokeTokens(tx, run.id, now);
   const ended = (await findRunRecord(tx.conn, run.id))!;

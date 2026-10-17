@@ -228,6 +228,20 @@ export class AgentsApi {
     return this.runnersApi.runners();
   }
 
+  public clearQuota(
+    runnerId: string,
+    revision: number,
+    key: string,
+  ): Promise<void> {
+    return this.runnersApi.clearQuota(runnerId, revision, key);
+  }
+  public runnerWorkspaces(
+    runnerId: string,
+    status = 'all',
+    offset = 0,
+  ): Promise<RunnerSummary['workspaceUsage']> {
+    return this.runnersApi.runnerWorkspaces(runnerId, status, offset);
+  }
   public runner(runnerId: string): Promise<RunnerSummary> {
     return this.runnersApi.runner(runnerId);
   }

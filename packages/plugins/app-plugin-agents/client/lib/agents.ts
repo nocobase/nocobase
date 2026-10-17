@@ -40,6 +40,7 @@ export function pickerAgentOf(
     isSystemDefault,
     isMyDefault: false,
     availability: availabilityOf(agent),
+    quota: agent.quota,
     personalOnly: agent.personalOnly,
   };
 }

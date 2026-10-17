@@ -1,6 +1,50 @@
 /** The runtimes page's and the "Add runtime" dialog's words, merged into this plugin's locale (`en-US.ts`). */
 const runtimesEnUS = {
   runtimes: {
+    quota: {
+      providers: '{{blocked}} of {{total}} providers at quota',
+      runColumns: {
+        issue: 'Issue / conversation',
+        agent: 'Agent',
+        status: 'Status',
+        started: 'Started',
+        duration: 'Duration',
+      },
+      filter: {
+        all: 'All',
+        active: 'Active',
+        retained: 'Retained',
+        ended: 'Ended',
+      },
+      columns: {
+        directory: 'Directory / task',
+        type: 'Type',
+        size: 'Size',
+        push: 'Push state',
+        status: 'Status',
+        lastUsed: 'Last used',
+      },
+      previous: 'Previous',
+      next: 'Next',
+      working: 'Working',
+      readOnly: 'Read-only copy',
+      clean: 'Clean',
+      unpushed: 'Unpushed / unverified',
+      overview: 'Overview',
+      workspaces: 'Workspaces',
+      runs: 'Runs',
+      title: 'Quota',
+      reached: 'Quota reached',
+      unknown: 'Reset time unknown',
+      resets: 'Resets {{time}}',
+      near: 'Near limit',
+      clear: 'Clear',
+      clearMark: 'Clear mark',
+      confirm: 'Clear this mark? {{target}} gets work again.',
+      observed: 'Last reported {{time}}',
+      ok: 'OK',
+      hint: 'Known reset times restore eligibility automatically. For unknown resets, restore the quota and clear the mark. Only the runtime owner and administrators can clear marks.',
+    },
     workspaces: {
       paused:
         'New work is paused until disk space recovers. Existing runs continue.',
@@ -131,7 +175,7 @@ const runtimesEnUS = {
       general: 'General',
       tools: 'Tools',
       toolsDescription:
-        'The coding tools it reported. Work for a tool that is off is not sent here. Switches and limits are saved with “Save”.',
+        'The coding tools it reported. Work for a tool that is off, or whose quota is exhausted, is not sent here. Switches and limits are saved with “Save”.',
       version: 'Runner {{version}}',
       runs: 'Recent runs',
       runsEmpty: 'No runs yet.',

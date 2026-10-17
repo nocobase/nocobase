@@ -1,3 +1,4 @@
+import { QuotaReportSchema, type QuotaReport } from '@nocobase/agent-protocol';
 /**
  * What a runner reports about the runs it holds: lease renewals, the start, events, and how the run ended. Every
  * report first checks that the runner still holds the run; a runner that lost it (the sweeper took it back, or it
@@ -115,6 +116,13 @@ export interface RunnerReportsDeps extends TransitionDeps, InputGateDeps {
    * A run failed `modelUnavailable` on `runnerId` with its tool and model: the runner's mark that the model is not
    * offered there (`RunnerService.markModelUnavailable`), in the failure's transaction.
    */
+  readonly onQuota?: (
+    unit: Tx,
+    runnerId: string,
+    tool: AgentTool,
+    model: string | null,
+    quota: QuotaReport,
+  ) => Promise<void>;
   readonly onModelUnavailable?: (
     unit: Tx,
     runnerId: string,
@@ -373,6 +381,28 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
                   ]),
               });
         const stored = new Set(existing.map((event) => Number(event.seq)));
+        const quotaReports = request.events
+          .filter((event) => !stored.has(event.seq))
+          .map((event) => QuotaReportSchema.safeParse(event.meta?.quota))
+          .filter((parsed) => parsed.success);
+        if (run.tool && quotaReports.length) {
+          const latest = new Map<string, QuotaReport['windows'][number]>();
+          for (const parsed of quotaReports)
+            if (parsed.success)
+              for (const window of parsed.data.windows)
+                latest.set(
+                  JSON.stringify([window.scope, window.target, window.window]),
+                  window,
+                );
+          await deps.onQuota?.(
+            unit,
+            runner.id,
+            run.tool as AgentTool,
+            run.model ?? null,
+            { windows: [...latest.values()] },
+          );
+        }
+
         const now = clock.now().toISOString();
         const redact = redactorOf(run.id);
         let accepted = 0;
@@ -574,12 +604,20 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             ? { ...request, handledInputIds: [] }
             : request,
         );
+        if (request.quota && run.tool && request.reason === 'toolQuota')
+          await deps.onQuota?.(
+            unit,
+            runner.id,
+            run.tool as AgentTool,
+            run.model ?? null,
+            request.quota,
+          );
         if (request.reason === 'modelUnavailable' && run.tool && run.model)
           await deps.onModelUnavailable?.(
             unit,
             runner.id,
             run.tool as AgentTool,
-            run.model,
+            run.model ?? null,
           );
         await rememberSession(
           unit,
@@ -605,6 +643,9 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           };
         }
         const ended = await finishRun(unit, deps, run, {
+          ...(request.reason === 'toolQuota' && request.quota
+            ? { quota: request.quota }
+            : {}),
           status: run.cancelRequestedAt === null ? 'failed' : 'cancelled',
           reason: run.cancelRequestedAt === null ? request.reason : 'cancelled',
           ...(request.detail === undefined ? {} : { detail: request.detail }),

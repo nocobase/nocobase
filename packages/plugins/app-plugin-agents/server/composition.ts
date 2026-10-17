@@ -484,6 +484,8 @@ export function createAgents(deps: AgentsDeps): Agents {
     secrets,
     cliName: cli.name,
     appName: app.name,
+    onQuota: (unit, runnerId, tool, model, quota) =>
+      runners.reportQuota(unit, runnerId, tool, model, quota),
     onModelUnavailable: (unit, runnerId, tool, model) =>
       runners.markModelUnavailable(unit, runnerId, tool, model),
   });

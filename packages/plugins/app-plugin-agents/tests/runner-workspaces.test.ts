@@ -300,7 +300,13 @@ describe("a runner's working directories", () => {
       user: 'owner',
     });
     expect(shown.body.data.variables).toEqual(['OTHER_KEY']);
-    expect(shown.body.data.workspaceUsage).toEqual(before.workspaceUsage);
+    expect(shown.body.data.workspaceUsage?.workspaces).toEqual([]);
+    const directories = await h.request(
+      'GET',
+      `/agents/runners/${runner.runnerId}/workspaces`,
+      { user: 'owner' },
+    );
+    expect(directories.body.data).toEqual(before.workspaceUsage);
   });
 
   it('keeps the report on the runner, most recently used first, with each subject, what was decided and the disk', async () => {
@@ -316,10 +322,14 @@ describe("a runner's working directories", () => {
       ],
       disk,
     });
-    const shown = await h.request('GET', `/agents/runners/${runner.runnerId}`, {
-      user: 'owner',
-    });
-    expect(shown.body.data.workspaceUsage).toMatchObject({
+    const shown = await h.request(
+      'GET',
+      `/agents/runners/${runner.runnerId}/workspaces`,
+      {
+        user: 'owner',
+      },
+    );
+    expect(shown.body.data).toMatchObject({
       disk,
       count: 2,
       unpushedCount: 1,
@@ -369,10 +379,14 @@ describe("a runner's working directories", () => {
       workspaces: [workspace(runIds[0])],
     });
     expect(response.body.data).toEqual({ remove: [], keep: [] });
-    const shown = await h.request('GET', `/agents/runners/${runner.runnerId}`, {
-      user: 'owner',
-    });
-    expect(shown.body.data.workspaceUsage).toMatchObject({
+    const shown = await h.request(
+      'GET',
+      `/agents/runners/${runner.runnerId}/workspaces`,
+      {
+        user: 'owner',
+      },
+    );
+    expect(shown.body.data).toMatchObject({
       disk: null,
       workspaces: [{ runId: runIds[0], settled: null }],
     });

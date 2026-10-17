@@ -643,6 +643,7 @@ export interface StartConversationRequest {
 
 /** An agent the person may chat with (`GET agents`). */
 export interface ChatAgent {
+  readonly quota?: import('./agents.js').AgentView['quota'];
   readonly id: string;
   readonly name: string;
   readonly description: string | null;

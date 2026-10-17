@@ -1,3 +1,4 @@
+import { quotaForAgent } from '../../../shared/runners.js';
 /**
  * Conversations over this plugin's own tables. Everything people and other plugins do with conversations goes through
  * `ConversationService` (`ports.ts`); a later move to a shared platform conversation layer, or to the AI employee's
@@ -128,7 +129,10 @@ export interface ConversationServiceDeps {
   readonly clock: Clock;
   readonly agents: Pick<AgentService, 'mayInvoke' | 'get' | 'list'>;
   readonly runners: Pick<RunnerService, 'list'>;
-  readonly eligibility: Pick<ClaimEligibility, 'canClaim' | 'runnersFor'>;
+  readonly eligibility: Pick<
+    ClaimEligibility,
+    'canClaim' | 'runnersFor' | 'prepare'
+  >;
   readonly runs: Pick<
     RunService,
     'enqueue' | 'cancel' | 'withdrawQueued' | 'get' | 'detail'
@@ -353,6 +357,7 @@ export function createConversationService(
     agent: Agent | null,
     userId: string,
     runners?: readonly Runner[],
+    variableState?: { readonly held: boolean; readonly teamOnly: boolean },
   ): Promise<ChatAvailability> {
     if (!wakeable(agent, userId, deps.agents.mayInvoke))
       return availabilityOf(agent, userId, deps.agents.mayInvoke, 0);
@@ -364,6 +369,7 @@ export function createConversationService(
     const eligible = await deps.eligibility.runnersFor(conn, agent, {
       actorUserId: userId,
       runners: online,
+      variableState,
     });
     return availabilityOf(
       agent,
@@ -1464,6 +1470,7 @@ export function createConversationService(
         deps.settings.settings(conn),
         deps.settings.preferences(userId, conn),
       ]);
+      const variableStates = await deps.eligibility.prepare?.(conn, agents, {});
       return Promise.all(
         agents
           // People talk to the agents discovered from runners; an application's own agents do work of its own.
@@ -1484,7 +1491,14 @@ export function createConversationService(
               avatar: agent.avatar,
               isSystemDefault: agent.id === settings.defaultAgentId,
               isMyDefault: agent.id === preferences.defaultAgentId,
-              availability: await availabilityFor(conn, agent, userId, runners),
+              availability: await availabilityFor(
+                conn,
+                agent,
+                userId,
+                runners,
+                variableStates?.get(agent.id),
+              ),
+              quota: quotaForAgent(runners, agent, userId),
               personalOnly:
                 fitting.length > 0 &&
                 fitting.every((runner) => runner.trust !== 'team'),

@@ -147,6 +147,11 @@ export interface AgentRunners {
 
 /** An agent as the Agent page lists it (`GET /api/agents`), for the caller. */
 export interface AgentView extends Agent {
+  readonly quota?: readonly {
+    runnerId: string;
+    runnerName: string;
+    resetsAt: string | null;
+  }[];
   readonly discoveryKey?: string;
   readonly discoveryRevision?: number;
   readonly ignored?: boolean;
@@ -178,6 +183,11 @@ export interface AgentName {
 
 /** An agent the caller may give work to: what it is good at, and whether it can take work now. */
 export interface AvailableAgent {
+  readonly quota?: readonly {
+    runnerId: string;
+    runnerName: string;
+    resetsAt: string | null;
+  }[];
   readonly runners?: AgentRunners;
   readonly id: string;
   readonly name: string;

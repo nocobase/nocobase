@@ -29,6 +29,7 @@ import {
 } from './components/variables/variables-panel.js';
 import { useAgentsApi } from './hooks/use-agents-api.js';
 import { useAgentText } from './hooks/use-vocabulary.js';
+import { useQuotaExpiry } from './hooks/use-quota-expiry.js';
 import { pickerAgentOf } from './lib/agents.js';
 import { RunnerAgentsSection as RunnerAgents } from './pages/agents/runner-agents.js';
 import { agentsQueryClient, withAgents } from './query.js';
@@ -188,6 +189,7 @@ export function useAgentOptions(): AgentOptions {
     agentsQueryClient(),
   );
   const list = agents.data ?? [];
+  useQuotaExpiry(list);
   const offered = list.filter((agent) => agent.status === 'enabled');
   return {
     loading: agents.isPending,

@@ -8,7 +8,7 @@
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type FormEvent, type ReactElement } from 'react';
+import { Fragment, useState, type FormEvent, type ReactElement } from 'react';
 import { Link } from 'react-router';
 
 import { AGENT_TOOLS, type AgentTool } from '@nocobase/agent-protocol';
@@ -62,7 +62,7 @@ import { Spinner } from '../../components/ui/spinner.js';
 import { Switch } from '../../components/ui/switch.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useNotify } from '../../hooks/use-notify.js';
-import { useFormatters } from '../../lib/format.js';
+import { useFormatters, durationText } from '../../lib/format.js';
 import { RUN_STATUS_TONE } from '../../lib/runs.js';
 import {
   RunnerStatusCell,
@@ -78,6 +78,15 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table.js';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from '../../components/ui/tabs.js';
+import { QuotaCell } from './quota.js';
+import { quotaTargets } from './quota-targets.js';
+import { useQuotaClock, useQuotaExpiry } from '../../hooks/use-quota-expiry.js';
 import { WorkspaceDiagnostics } from './workspace-diagnostics.js';
 import { POLICY_FIELDS, policyRule } from './runner-policy.js';
 import {
@@ -96,6 +105,9 @@ export function RunnerSheet({
   readonly onClose: () => void;
 }): ReactElement {
   const { t } = useTranslation();
+  const now = useQuotaClock(
+    (runner?.unavailableModels ?? []).map((mark) => mark.resetsAt),
+  );
   return (
     <Sheet
       open={runner !== null}
@@ -104,7 +116,7 @@ export function RunnerSheet({
       }}
     >
       <SheetContent
-        className='w-full gap-0 data-[side=right]:sm:max-w-xl'
+        className='w-full gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[780px]'
         data-testid='runner-sheet'
       >
         {runner ? (
@@ -132,9 +144,20 @@ export function RunnerSheet({
               </SheetDescription>
               <div className='pt-1.5'>
                 <RunnerStatusCell runner={runner} />
+                {(runner.unavailableModels ?? []).some(
+                  (mark) =>
+                    mark.reason === 'toolQuota' &&
+                    (!mark.resetsAt || Date.parse(mark.resetsAt) > now),
+                ) ? (
+                  <AgTag tone='amber'>{t('runtimes.quota.reached')}</AgTag>
+                ) : null}
               </div>
             </SheetHeader>
-            <LoadRunnerDetail key={runner.id} runnerId={runner.id} />
+            <LoadRunnerDetail
+              key={runner.id}
+              runnerId={runner.id}
+              onClose={onClose}
+            />
           </>
         ) : (
           <SheetTitle className='sr-only'>{t('runtimes.title')}</SheetTitle>
@@ -146,8 +169,10 @@ export function RunnerSheet({
 
 function LoadRunnerDetail({
   runnerId,
+  onClose,
 }: {
   readonly runnerId: string;
+  readonly onClose: () => void;
 }): ReactElement {
   const api = useAgentsApi();
   const { t } = useTranslation();
@@ -171,18 +196,27 @@ function LoadRunnerDetail({
         />
       </div>
     );
-  return <RunnerDetail runner={detail.data} />;
+  return <RunnerDetail runner={detail.data} onClose={onClose} />;
 }
 
 function RunnerDetail({
   runner,
+  onClose,
 }: {
   readonly runner: RunnerSummary;
+  readonly onClose: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   const api = useAgentsApi();
   const notify = useNotify();
   const queryClient = useQueryClient();
+  useQuotaExpiry([
+    {
+      quota: (runner.unavailableModels ?? [])
+        .filter((mark) => mark.reason === 'toolQuota')
+        .map((mark) => ({ resetsAt: mark.resetsAt ?? null })),
+    },
+  ]);
   const editable = runner.canManage && runner.status !== 'revoked';
 
   const update = useMutation({
@@ -197,40 +231,79 @@ function RunnerDetail({
   });
 
   return (
-    <div className='min-h-0 flex-1 space-y-6 overflow-y-auto p-4'>
-      <WorkspaceDiagnostics runner={runner} />
-      {runner.status === 'upgrade_required' ? (
-        <RunnerUpgradeRequired runner={runner} />
-      ) : null}
-      {runner.canManage ? null : (
-        <p className='text-sm text-muted-foreground'>
-          {t('runtimes.detail.readOnly')}
-        </p>
-      )}
-      <SettingsForm
-        runner={runner}
-        editable={editable}
-        pending={update.isPending}
-        onSave={(patch) => update.mutate(patch)}
-      />
-      <AgSection
-        id='ag-runner-policy'
-        title={t('runtimes.policy.title')}
-        description={t('runtimes.policy.description')}
+    <Tabs defaultValue='overview' className='min-h-0 flex-1 gap-0'>
+      <div className='overflow-x-auto border-b px-4'>
+        <TabsList variant='line' className='w-max'>
+          <TabsTrigger value='overview'>
+            {t('runtimes.quota.overview')}
+          </TabsTrigger>
+          <TabsTrigger value='workspaces'>
+            {t('runtimes.quota.workspaces')}
+          </TabsTrigger>
+          <TabsTrigger value='runs'>{t('runtimes.quota.runs')}</TabsTrigger>
+        </TabsList>
+      </div>
+      <TabsContent
+        keepMounted
+        value='overview'
+        className='min-h-0 space-y-6 overflow-y-auto p-4'
       >
-        <PolicyView runner={runner} />
-      </AgSection>
-      <AgSection
-        id='ag-runner-variables'
-        title={t('runtimes.variables.title')}
-        description={t('runtimes.variables.description')}
-      >
-        <VariablesView runner={runner} />
-      </AgSection>
-      <AgSection id='ag-runner-runs' title={t('runtimes.detail.runs')}>
+        {runner.status === 'upgrade_required' ? (
+          <RunnerUpgradeRequired runner={runner} />
+        ) : null}
+        {runner.canManage ? null : (
+          <p className='text-sm text-muted-foreground'>
+            {t('runtimes.detail.readOnly')}
+          </p>
+        )}
+        <SettingsForm
+          runner={runner}
+          editable={editable}
+          onSave={(patch) => update.mutate(patch)}
+        />
+        <AgSection
+          id='ag-runner-policy'
+          title={t('runtimes.policy.title')}
+          description={t('runtimes.policy.description')}
+        >
+          <PolicyView runner={runner} />
+        </AgSection>
+        <AgSection
+          id='ag-runner-variables'
+          title={t('runtimes.variables.title')}
+          description={t('runtimes.variables.description')}
+        >
+          <VariablesView runner={runner} />
+        </AgSection>
+      </TabsContent>
+      <TabsContent value='workspaces' className='min-h-0 overflow-y-auto p-4'>
+        <LoadWorkspaces runner={runner} />
+      </TabsContent>
+      <TabsContent value='runs' className='min-h-0 overflow-y-auto p-4'>
         <RecentRuns runnerId={runner.id} />
-      </AgSection>
-    </div>
+      </TabsContent>
+      {editable ? (
+        <div className='flex shrink-0 justify-end gap-2 border-t bg-background p-4'>
+          <Button
+            type='button'
+            variant='outline'
+            className='max-sm:flex-1'
+            onClick={onClose}
+          >
+            {t('actions.cancel')}
+          </Button>
+          <Button
+            type='submit'
+            className='max-sm:flex-1'
+            form='runtime-settings'
+            disabled={update.isPending}
+          >
+            {update.isPending ? <Spinner /> : null}
+            {t('actions.save')}
+          </Button>
+        </div>
+      ) : null}
+    </Tabs>
   );
 }
 
@@ -248,12 +321,10 @@ function enabledToolsOf(
 function SettingsForm({
   runner,
   editable,
-  pending,
   onSave,
 }: {
   readonly runner: RunnerSummary;
   readonly editable: boolean;
-  readonly pending: boolean;
   readonly onSave: (patch: RunnerPatch) => void;
 }): ReactElement {
   const { t } = useTranslation();
@@ -321,9 +392,14 @@ function SettingsForm({
   }
 
   return (
-    <form onSubmit={submit} noValidate className='space-y-6'>
+    <form
+      id='runtime-settings'
+      onSubmit={submit}
+      noValidate
+      className='space-y-6'
+    >
       <AgSection id='ag-runner-general' title={t('runtimes.detail.general')}>
-        <FieldGroup>
+        <FieldGroup className='sm:grid sm:grid-cols-2'>
           <Field data-invalid={errors.name ? true : undefined}>
             <FieldLabel htmlFor='ag-runner-name'>
               {t('runtimes.edit.name')}
@@ -358,11 +434,12 @@ function SettingsForm({
               </FieldDescription>
             )}
           </Field>
-          <FieldSet>
+          <FieldSet className='sm:col-span-2'>
             <FieldLegend variant='label'>
               {t('runtimes.trust.label')}
             </FieldLegend>
             <RadioGroup
+              className='sm:grid sm:grid-cols-2'
               value={trust}
               disabled={!editable || !runner.canChangeTrust}
               onValueChange={(value) => {
@@ -444,14 +521,7 @@ function SettingsForm({
           <OverTotalHint tools={limitTools} draft={toolSlots} total={slots} />
         </div>
       </AgSection>
-      {editable ? (
-        <div className='flex justify-end'>
-          <Button type='submit' disabled={pending}>
-            {pending ? <Spinner data-icon='inline-start' /> : null}
-            {t('actions.save')}
-          </Button>
-        </div>
-      ) : null}
+
       <AlertDialog
         open={sharing !== null}
         onOpenChange={(open) => {
@@ -519,13 +589,14 @@ function ToolTable({
       : toolEnabled(runner, tool),
   );
   return (
-    <div className='rounded-lg border'>
+    <div className='rounded-lg border [&_table]:max-sm:block [&_thead]:max-sm:hidden [&_tbody]:max-sm:block [&_tr]:max-sm:grid [&_tr]:max-sm:grid-cols-2 [&_tr]:max-sm:gap-2 [&_tr]:max-sm:p-3 [&_td]:max-sm:block [&_td]:max-sm:p-0'>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>{t('runtimes.toolTable.tool')}</TableHead>
             <TableHead>{t('runtimes.toolTable.enabled')}</TableHead>
             <TableHead>{t('runtimes.toolTable.state')}</TableHead>
+            <TableHead>{t('runtimes.quota.title')}</TableHead>
             <TableHead>{t('runtimes.toolTable.limit')}</TableHead>
             <TableHead className='text-right'>
               {t('runtimes.toolTable.active')}
@@ -537,72 +608,101 @@ function ToolTable({
             const info = runner.tools.find((item) => item.kind === tool);
             const enabled = enabledTools.includes(tool);
             return (
-              <TableRow
-                key={tool}
-                data-testid={`runner-tool-${tool}`}
-                data-enabled={enabled}
-              >
-                <TableCell className='max-w-48 whitespace-normal'>
-                  <div
-                    className={
-                      enabled
-                        ? 'font-medium'
-                        : 'font-medium text-muted-foreground'
-                    }
-                  >
-                    {t(`tools.${tool}`)}
-                  </div>
-                  {info?.version ? (
-                    <div className='truncate text-xs text-muted-foreground'>
-                      {t('runtimes.tool.version', { version: info.version })}
-                    </div>
-                  ) : null}
-                  {info?.path ? (
+              <Fragment key={tool}>
+                <TableRow
+                  key={tool}
+                  data-testid={`runner-tool-${tool}`}
+                  data-enabled={enabled}
+                >
+                  <TableCell className='max-w-48 whitespace-normal'>
                     <div
-                      data-testid={`runner-tool-${tool}-path`}
-                      className='font-mono text-xs break-all text-muted-foreground'
+                      className={
+                        enabled
+                          ? 'font-medium'
+                          : 'font-medium text-muted-foreground'
+                      }
                     >
-                      {info.path}
+                      {t(`tools.${tool}`)}
                     </div>
-                  ) : null}
-                </TableCell>
-                <TableCell>
-                  <Switch
-                    checked={enabled}
-                    disabled={!editable}
-                    aria-label={t('runtimes.tool.enableLabel', {
-                      tool: t(`tools.${tool}`),
-                      name: runner.name,
-                    })}
-                    onCheckedChange={(checked) => onSwitch(tool, checked)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <ToolStateTag
-                    state={toolState(
-                      { enabledTools, tools: runner.tools },
-                      tool,
-                    )}
-                  />
-                </TableCell>
-                <TableCell>
-                  <ToolLimitInput
-                    id={`ag-runner-tool-slots-${tool}`}
-                    tool={tool}
-                    draft={limits}
-                    invalid={invalid}
-                    disabled={!editable}
-                    onChange={onLimits}
-                  />
-                </TableCell>
-                <TableCell className='text-right tabular-nums'>
-                  {runner.activeByTool ? (runner.activeByTool[tool] ?? 0) : '—'}
-                </TableCell>
-              </TableRow>
+                    {info?.version ? (
+                      <div className='truncate text-xs text-muted-foreground'>
+                        {t('runtimes.tool.version', { version: info.version })}
+                      </div>
+                    ) : null}
+                    {info?.path ? (
+                      <div
+                        data-testid={`runner-tool-${tool}-path`}
+                        className='font-mono text-xs break-all text-muted-foreground'
+                      >
+                        {info.path}
+                      </div>
+                    ) : null}
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={enabled}
+                      disabled={!editable}
+                      aria-label={t('runtimes.tool.enableLabel', {
+                        tool: t(`tools.${tool}`),
+                        name: runner.name,
+                      })}
+                      onCheckedChange={(checked) => onSwitch(tool, checked)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <ToolStateTag
+                      state={toolState(
+                        { enabledTools, tools: runner.tools },
+                        tool,
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className='max-sm:col-span-2'>
+                    <QuotaCell runner={runner} tool={tool} />
+                  </TableCell>
+                  <TableCell>
+                    <span className='mr-1 text-xs text-muted-foreground sm:hidden'>
+                      {t('runtimes.toolTable.limit')}
+                    </span>
+                    <ToolLimitInput
+                      id={`ag-runner-tool-slots-${tool}`}
+                      tool={tool}
+                      draft={limits}
+                      invalid={invalid}
+                      disabled={!editable}
+                      onChange={onLimits}
+                    />
+                  </TableCell>
+                  <TableCell className='text-right tabular-nums'>
+                    <span className='mr-1 text-xs text-muted-foreground sm:hidden'>
+                      {t('runtimes.toolTable.active')}
+                    </span>
+                    {runner.activeByTool
+                      ? (runner.activeByTool[tool] ?? 0)
+                      : '—'}
+                  </TableCell>
+                </TableRow>
+                {quotaTargets(runner, tool).map((target) => (
+                  <TableRow key={target} className='bg-muted/30'>
+                    <TableCell
+                      colSpan={3}
+                      className='pl-6 text-xs text-muted-foreground'
+                    >
+                      {target}
+                    </TableCell>
+                    <TableCell colSpan={3} className='max-sm:col-span-2'>
+                      <QuotaCell runner={runner} tool={tool} target={target} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </Fragment>
             );
           })}
         </TableBody>
       </Table>
+      <p className='p-2 text-xs text-muted-foreground'>
+        {t('runtimes.quota.hint')}
+      </p>
     </div>
   );
 }
@@ -679,6 +779,71 @@ function VariablesView({
   );
 }
 
+function LoadWorkspaces({
+  runner,
+}: {
+  readonly runner: RunnerSummary;
+}): ReactElement {
+  const api = useAgentsApi();
+  const { t } = useTranslation();
+  const [status, setStatus] = useState('all');
+  const [offset, setOffset] = useState(0);
+  const data = useQuery({
+    queryKey: [...agentsKeys.runners, 'workspaces', runner.id, status, offset],
+    queryFn: () => api.runnerWorkspaces(runner.id, status, offset),
+  });
+  return (
+    <div className='space-y-4'>
+      <div className='flex flex-wrap gap-2'>
+        {['all', 'active', 'retained', 'ended'].map((value) => (
+          <Button
+            key={value}
+            size='sm'
+            variant={value === status ? 'default' : 'outline'}
+            onClick={() => {
+              setStatus(value);
+              setOffset(0);
+            }}
+          >
+            {t(`runtimes.quota.filter.${value}`)}
+          </Button>
+        ))}
+      </div>
+      {data.isPending ? (
+        <Spinner />
+      ) : data.isError ? (
+        <AgLoadError
+          title={t('runtimes.loadFailed')}
+          error={data.error}
+          onRetry={() => void data.refetch()}
+        />
+      ) : (
+        <WorkspaceDiagnostics
+          runner={{ ...runner, workspaceUsage: data.data }}
+        />
+      )}
+      <div className='flex gap-2'>
+        <Button
+          variant='outline'
+          size='sm'
+          disabled={!offset}
+          onClick={() => setOffset(Math.max(0, offset - 50))}
+        >
+          {t('runtimes.quota.previous')}
+        </Button>
+        <Button
+          variant='outline'
+          size='sm'
+          disabled={(data.data?.workspaces.length ?? 0) < 50}
+          onClick={() => setOffset(offset + 50)}
+        >
+          {t('runtimes.quota.next')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function RecentRuns({ runnerId }: { readonly runnerId: string }): ReactElement {
   const { t } = useTranslation();
   const api = useAgentsApi();
@@ -706,29 +871,56 @@ function RecentRuns({ runnerId }: { readonly runnerId: string }): ReactElement {
       </p>
     );
   return (
-    <ul className='divide-y rounded-lg border' data-testid='runner-runs'>
-      {runs.data.map((run) => (
-        <li key={run.id} className='flex items-center gap-3 px-3 py-2'>
-          <AgTag tone={RUN_STATUS_TONE[run.status]} dot>
-            {t(`runs.status.${run.status}`)}
-          </AgTag>
-          <div className='min-w-0 flex-1 truncate'>
-            {run.path ? (
-              <Link to={run.path} className='font-medium hover:underline'>
+    <div className='rounded-lg border' data-testid='runner-runs'>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {['issue', 'agent', 'status', 'started', 'duration'].map((key) => (
+              <TableHead key={key}>
+                {t(`runtimes.quota.runColumns.${key}`)}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {runs.data.map((run) => (
+            <TableRow key={run.id}>
+              <TableCell
+                className='max-w-44 truncate'
+                title={run.subjectLabel ?? undefined}
+              >
+                {run.path ? (
+                  <Link to={run.path} className='hover:underline'>
+                    {run.subjectLabel ?? run.title}
+                  </Link>
+                ) : (
+                  (run.subjectLabel ?? '—')
+                )}
+              </TableCell>
+              <TableCell className='max-w-40 truncate' title={run.title}>
                 {run.title}
-              </Link>
-            ) : (
-              <span className='font-medium'>{run.title}</span>
-            )}
-          </div>
-          <span
-            className='shrink-0 text-xs text-muted-foreground'
-            title={format.dateTime(run.startedAt ?? run.createdAt)}
-          >
-            {format.relative(run.startedAt ?? run.createdAt)}
-          </span>
-        </li>
-      ))}
-    </ul>
+              </TableCell>
+              <TableCell>
+                <AgTag tone={RUN_STATUS_TONE[run.status]} dot>
+                  {t(`runs.status.${run.status}`)}
+                </AgTag>
+                {run.failureReason === 'toolQuota' ? (
+                  <AgTag tone='amber'>{t('runtimes.quota.reached')}</AgTag>
+                ) : null}
+              </TableCell>
+              <TableCell
+                className='text-xs text-muted-foreground'
+                title={format.dateTime(run.startedAt ?? run.createdAt)}
+              >
+                {format.relative(run.startedAt ?? run.createdAt)}
+              </TableCell>
+              <TableCell className='text-xs tabular-nums'>
+                {durationText(run.startedAt, run.finishedAt) ?? '—'}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
