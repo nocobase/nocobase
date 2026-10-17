@@ -73,13 +73,13 @@ describe('AuthenticationGuard', () => {
     },
   );
 
-  it('connects realtime again once the signed-in person changes', async () => {
+  it('does not create a realtime connection without active subscriptions', async () => {
     const reconnect = vi.fn();
     let session: unknown = null;
     const getSession = vi.fn(async () => ({ data: session }));
     useService.mockReturnValue({ getSession });
     services.has.mockReturnValue(true);
-    services.resolveIfCreated.mockReturnValue({ reconnect });
+    services.resolveIfCreated.mockReturnValue({ reconnect, active: false });
     const captured: { refresh?: () => Promise<void> } = {};
     function Capture() {
       const { refresh } = useAuthentication();
@@ -101,13 +101,13 @@ describe('AuthenticationGuard', () => {
     expect(reconnect).not.toHaveBeenCalled();
     session = { user: { id: 'user' }, session: { id: 'session' } };
     await act(async () => refresh());
-    expect(reconnect).toHaveBeenCalledOnce();
+    expect(reconnect).not.toHaveBeenCalled();
     await act(async () => refresh());
-    expect(reconnect).toHaveBeenCalledOnce();
+    expect(reconnect).not.toHaveBeenCalled();
     // Without realtime, or before anything connected, there is nothing to connect again.
     services.has.mockReturnValue(false);
     session = null;
     await act(async () => refresh());
-    expect(reconnect).toHaveBeenCalledOnce();
+    expect(reconnect).not.toHaveBeenCalled();
   });
 });

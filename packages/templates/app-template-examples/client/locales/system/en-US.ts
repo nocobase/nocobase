@@ -9,6 +9,11 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  */
 const systemEnUS = {
   settings,
+  'auth.preparingSession': 'Preparing your session…',
+  'auth.connectionFailed': 'Unable to connect',
+  'auth.connectionFailedDescription':
+    'The realtime connection could not be prepared. Retry to enter the application, or sign out.',
+
   'auth.passwordResetSuccess':
     'Your password has been reset. Sign in with your new password.',
   'auth.requestNewResetLink': 'Request a new reset link',

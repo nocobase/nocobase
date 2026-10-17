@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components, react-hooks/exhaustive-deps, @eslint-react/exhaustive-deps, react-hooks/set-state-in-effect, @eslint-react/use-state */
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -22,7 +23,12 @@ export interface AuthenticationContextValue {
   readonly session: AuthClient['$Infer']['Session'] | null;
   readonly isPending: boolean;
   readonly refresh: () => Promise<void>;
+  /** First realtime identity preparation; independent of the session query. */
+  readonly preparation: 'preparing' | 'ready' | 'failed';
+  readonly retryPreparation: () => void;
 }
+
+const PREPARATION_TIMEOUT_MS = 10_000;
 const AuthenticationContext = createContext<
   AuthenticationContextValue | undefined
 >(undefined);
@@ -33,35 +39,114 @@ export function AuthenticationProvider({
   const [session, setSession] =
     useState<AuthenticationContextValue['session']>(null);
   const [isPending, setPendingState] = useState(true);
+  const refreshAttemptRef = useRef(0);
   const refresh = async (): Promise<void> => {
+    const attempt = ++refreshAttemptRef.current;
     setPendingState(true);
     try {
-      setSession((await client.getSession()).data);
+      const result = await client.getSession();
+      if (attempt === refreshAttemptRef.current) setSession(result.data);
     } finally {
-      setPendingState(false);
+      if (attempt === refreshAttemptRef.current) setPendingState(false);
     }
   };
   useEffect(() => {
     void refresh();
+    return () => {
+      refreshAttemptRef.current += 1;
+    };
   }, [client]);
-  // A realtime connection is signed in as whoever opened it: when the person changes, an open one connects again so
-  // topics for signed-in connections reach them without a reload. An application without realtime has none.
   const services = useClientApplication().services;
-  const userId = session?.user.id ?? null;
-  const connectedAsRef = useRef<string | null | undefined>(undefined);
+  const sessionKey = JSON.stringify([
+    session?.user.id ?? null,
+    session?.session.id ?? null,
+  ]);
+  const signedIn = session !== null;
+  const [retry, setRetry] = useState(0);
+  const retryPreparation = useCallback(
+    (): void => setRetry((value) => value + 1),
+    [],
+  );
+  const [prepared, setPrepared] = useState<{
+    sessionKey: string;
+    retry: number;
+    status: AuthenticationContextValue['preparation'];
+  }>();
+  const previousSessionRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (isPending) return;
+    const realtime = services.has(realtimeClientToken)
+      ? services.resolveIfCreated(realtimeClientToken)
+      : undefined;
+    const changed = previousSessionRef.current !== sessionKey;
+    const hadSession = previousSessionRef.current !== undefined;
+    previousSessionRef.current = sessionKey;
+    if (!signedIn) {
+      // Sign-out must also remove the identity from an existing connection.
+      if (changed && hadSession) realtime?.reconnect();
+      return;
+    }
     if (
-      connectedAsRef.current !== undefined &&
-      connectedAsRef.current !== userId &&
-      services.has(realtimeClientToken)
+      !changed &&
+      prepared?.sessionKey === sessionKey &&
+      prepared.retry === retry &&
+      prepared.status === 'ready'
     )
-      services.resolveIfCreated(realtimeClientToken)?.reconnect();
-    connectedAsRef.current = userId;
-  }, [isPending, userId, services]);
+      return;
+    const publish = (
+      status: AuthenticationContextValue['preparation'],
+    ): void => {
+      // Preparation is an external connection lifecycle, independent of rendering.
+      // eslint-disable-next-line @eslint-react/set-state-in-effect
+      setPrepared({ sessionKey, retry, status });
+    };
+    if (!realtime?.active) {
+      publish('ready');
+      return;
+    }
+    let cancelled = false;
+    publish('preparing');
+    const unsubscribe = realtime.onOpen(() => {
+      // Authorization's synchronous onOpen invalidation must finish first,
+      // regardless of listener registration order.
+      queueMicrotask(() => {
+        if (cancelled) return;
+        cancelled = true;
+        clearTimeout(timer);
+        unsubscribe();
+        publish('ready');
+      });
+    });
+    const timer = setTimeout(() => {
+      cancelled = true;
+      unsubscribe();
+      publish('failed');
+    }, PREPARATION_TIMEOUT_MS);
+    // Even cookie startup reconnects: connected alone does not prove identity.
+    realtime.reconnect();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [isPending, sessionKey, signedIn, services, retry]);
+  const preparation = !signedIn
+    ? 'ready'
+    : !isPending &&
+        prepared?.sessionKey === sessionKey &&
+        prepared.retry === retry
+      ? prepared.status
+      : 'preparing';
   return (
     <AuthenticationContext.Provider
-      value={{ client, session, isPending, refresh }}
+      value={{
+        client,
+        session,
+        isPending,
+        refresh,
+        preparation,
+        retryPreparation,
+      }}
     >
       {children}
     </AuthenticationContext.Provider>
