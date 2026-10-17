@@ -341,6 +341,29 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       },
     );
 
+    routes.get(
+      '/:userId',
+      allowed('read'),
+      describeRoute({
+        tags,
+        summary: 'Get a user',
+        operationId: 'usersGetUser',
+        responses: {
+          200: dataResponse(ManagedUserSchema),
+          ...apiErrorResponses,
+          404: apiErrorResponse(
+            404,
+            'The user does not exist (`USER_NOT_FOUND`).',
+          ),
+        },
+      }),
+      apiValidator('param', UserParams),
+      async (context) =>
+        context.json({
+          data: await users.get(context.req.valid('param').userId),
+        }),
+    );
+
     routes.patch(
       '/:userId',
       allowed('update'),

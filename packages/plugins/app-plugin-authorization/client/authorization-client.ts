@@ -43,6 +43,7 @@ export interface PermissionSetProtection {
 }
 
 export interface PermissionSet {
+  readonly revision?: string;
   key: string;
   title?: string | { key: string; ns: string };
   grants: readonly PermissionGrant[];
@@ -59,6 +60,7 @@ export interface PermissionSetAssignment {
 }
 
 export interface PermissionSetInput {
+  readonly expectedRevision?: string;
   key: string;
   title?: string | { key: string; ns: string };
   grants: readonly PermissionGrant[];
