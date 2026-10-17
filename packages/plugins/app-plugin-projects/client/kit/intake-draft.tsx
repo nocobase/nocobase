@@ -17,6 +17,8 @@ export interface IntakeDraft {
     readonly key: string;
     readonly name: string;
     readonly file: IntakeFile | null;
+    readonly removed?: boolean;
+    readonly removalFailed?: boolean;
   }[];
 }
 export const emptyIntakeDraft = (): IntakeDraft => ({

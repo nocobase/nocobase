@@ -195,6 +195,8 @@ const plansEnUS = {
     removeFile: 'Remove {{name}}',
     uploading: 'Uploading…',
     uploadFailed: 'Could not upload {{name}}.',
+    removeFailed: 'Could not delete {{name}}. Retry to clean up the upload.',
+    retryRemove: 'Retry deleting {{name}}',
     tooManyFiles: 'At most {{count}} files.',
     fileTooLarge: '{{name}} is larger than {{size}} MB.',
     project: 'Default project',
