@@ -197,6 +197,95 @@ describe('an issue’s own files', () => {
   });
 });
 
+describe('a new issue’s files', () => {
+  it('attaches the creator’s uploads to the issue it creates, and records them', async () => {
+    const shot = await h.services.attachments.upload(alice(), png());
+    const output = await h.services.attachments.upload(alice(), log());
+    const issue = await h.services.issues.create(alice(), {
+      title: 'Login fails',
+      attachmentIds: [shot.id, output.id],
+    });
+    const detail = await h.services.issueQueries.detail(bob(), issue.id);
+    expect(
+      detail.attachments.map((item) => [
+        item.filename,
+        item.issueId,
+        item.commentId,
+      ]),
+    ).toEqual([
+      ['shot.png', issue.id, null],
+      ['build.log', issue.id, null],
+    ]);
+    expect(
+      detail.activities.find((item) => item.action === 'attachment_added'),
+    ).toMatchObject({
+      actorId: 'alice',
+      details: {
+        attachmentIds: [shot.id, output.id],
+        filenames: ['shot.png', 'build.log'],
+      },
+    });
+    const content = await h.services.attachments.content(bob(), output.id);
+    expect(await text(content.body)).toBe('line 1\nline 2\n');
+  });
+
+  it('creates an issue without files as before', async () => {
+    const issue = await h.services.issues.create(alice(), {
+      title: 'Plain',
+      attachmentIds: [],
+    });
+    const detail = await h.services.issueQueries.detail(alice(), issue.id);
+    expect(detail.attachments).toEqual([]);
+    expect(
+      detail.activities.some((item) => item.action === 'attachment_added'),
+    ).toBe(false);
+  });
+
+  it('refuses someone else’s upload, one already attached, or one that is gone, and creates nothing', async () => {
+    const issues = async () =>
+      h.database.connection().repository('pmIssues').count();
+    const bobs = await h.services.attachments.upload(bob(), png());
+    const own = await h.services.attachments.upload(alice(), png());
+    const attached = await h.services.attachments.upload(alice(), log());
+    await h.services.issues.create(alice(), {
+      title: 'First',
+      attachmentIds: [attached.id],
+    });
+    const before = await issues();
+    for (const ids of [[own.id, bobs.id], [attached.id], ['nope']])
+      expect(
+        await codeOf(
+          h.services.issues.create(alice(), {
+            title: 'Refused',
+            attachmentIds: ids,
+          }),
+        ),
+      ).toBe('INVALID_ATTACHMENT');
+    expect(await issues()).toBe(before);
+    // Nothing was attached on the way: the upload is still free to send.
+    const issue = await h.services.issues.create(alice(), {
+      title: 'Second',
+      attachmentIds: [own.id],
+    });
+    const detail = await h.services.issueQueries.detail(alice(), issue.id);
+    expect(detail.attachments.map((item) => item.id)).toEqual([own.id]);
+  });
+
+  it('needs the upload action to send files', async () => {
+    const own = await h.services.attachments.upload(alice(), png());
+    expect(
+      await codeOf(
+        h.services.issues.create(withoutUpload(alice()), {
+          title: 'No right',
+          attachmentIds: [own.id],
+        }),
+      ),
+    ).toBe('FORBIDDEN');
+    // Without files, the action is not needed.
+    await h.services.issues.create(withoutUpload(alice()), { title: 'Fine' });
+  });
+});
+
 describe('a comment’s files', () => {
   it('sends the commenter’s uploads with the comment, readable by whoever sees the issue', async () => {
     const issue = await anIssue();

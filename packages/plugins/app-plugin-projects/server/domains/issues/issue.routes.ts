@@ -43,6 +43,7 @@ import {
   UpdateIssueBody,
   UpdateIssueResultSchema,
 } from '../../routes/schemas.js';
+import { ATTACHMENT_SIZE_MAX } from '../../../shared/attachments.js';
 import type { IssueQueries } from './issue.queries.js';
 import type { IssueService } from './issue.service.js';
 
@@ -141,9 +142,19 @@ export function createIssueRoutes(deps: {
           labelIds: { name: 'label' },
           description: { contentFile: true },
         },
+        uploads: {
+          attach: {
+            upload: 'projectsUploadAttachment',
+            field: 'attachmentIds',
+            multiple: true,
+            maxBytes: ATTACHMENT_SIZE_MAX,
+            description: `A file to attach to the new issue (repeatable); attaching needs \`upload\` on \`pm.attachments\`.`,
+          },
+        },
         action: 'pm.issues/create',
         examples: [
           'issue create --file issue.json --status in_progress --start',
+          'issue create --file issue.json --attach screenshot.png',
         ],
       }),
       description:
@@ -151,7 +162,10 @@ export function createIssueRoutes(deps: {
       responses: {
         201: dataResponse(IssueSchema),
         ...apiErrorResponses,
-        400: apiErrorResponse(400, statusRefused),
+        400: apiErrorResponse(
+          400,
+          `${statusRefused} Also when an attachment is not an upload of the caller’s attached to nothing (INVALID_ATTACHMENT).`,
+        ),
         409: apiErrorResponse(
           409,
           'When the dependency graph changed (`DEPENDENCY_GRAPH_CHANGED`): reload and retry.',
