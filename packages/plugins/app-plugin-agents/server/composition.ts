@@ -570,6 +570,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     chatAgents: (userId) => conversations.chatAgents(userId),
     streams,
     sessions: createSessionManager({
+      contextKinds: conversations.contextKinds,
       tx,
       ids,
       attachments: chatAttachments.links,

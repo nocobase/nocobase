@@ -762,3 +762,87 @@ it('accepts Native personal and team defaults without a Runner row and preserves
     )?.isMyDefault,
   ).toBe(true);
 });
+
+it('replays only the most recent authorized page in Runner input without persisting replay or losing the last page on plain turns', async () => {
+  const f = await fixture();
+  const resolve = vi.fn(
+    async (_conn, user, ids: readonly string[]) =>
+      new Map(
+        user === 'alice'
+          ? ids.map((id) => [
+              id,
+              {
+                title: 'Current ' + id,
+                key: 'not-replayed',
+                url: '/not-replayed',
+              },
+            ])
+          : [],
+      ),
+  );
+  h.services.conversations.contextKinds.register('page', resolve);
+  const page = {
+    route: '/old?secret=OLD_ROUTE',
+    items: [
+      { kind: 'page', id: 'A', title: 'OLD_TITLE', key: null, url: null },
+    ],
+    selection: { text: 'OLD_SELECTION' },
+    dropped: 0,
+  };
+  const client = await h.database.connection().client<Knex>();
+  const turn = async (
+    workContext?: typeof page | { route: string; items: []; dropped: number },
+  ) => {
+    const queries: string[] = [];
+    const record = (query: { sql: string }) => queries.push(query.sql);
+    client.on('query', record);
+    try {
+      await f.agent.send([{ role: 'user', content: 'Follow up' }], {
+        workContext,
+      });
+    } finally {
+      client.off('query', record);
+    }
+    if (process.env.PM438_RUNNER_COST)
+      await appendFile(
+        process.env.PM438_RUNNER_COST,
+        JSON.stringify({ queries }) + '\n',
+      );
+    const [claimed] = await claim(h, f.runner);
+    expect(
+      (
+        await f.report(claimed.run.id, 'start', {
+          workDir: '/fixture',
+          adapter: { kind: 'claude' },
+          acceptsInput: true,
+        })
+      ).status,
+    ).toBe(200);
+    const detail = await h.services.runs.detail(claimed.run.id);
+    const completed = await f.report(claimed.run.id, 'complete', {
+      summary: 'Done',
+      handledInputIds: detail.inputs.map((input) => input.id),
+      sessionId: 'page-session',
+    });
+    expect(completed.status).toBe(200);
+    await vi.waitFor(async () => expect(await f.agent.status()).toBe('idle'));
+    return detail.inputs[0].text;
+  };
+  await turn(page);
+  resolve.mockClear();
+  const second = await turn();
+  expect(second).toContain('Previous page references');
+  expect(second).toContain('Current A');
+  expect(second).not.toMatch(/OLD_|not-replayed/);
+  expect(resolve).toHaveBeenLastCalledWith(expect.anything(), 'alice', ['A']);
+  expect(await turn()).toContain('Current A');
+  await turn({ route: '/empty', items: [], dropped: 0 });
+  resolve.mockClear();
+  expect(await turn()).not.toContain('Previous page references');
+  expect(resolve).not.toHaveBeenCalled();
+  const messages = await f.agent.history();
+  expect(messages.filter((m) => m.role === 'user')).toHaveLength(5);
+  expect(JSON.stringify(messages.map((m) => m.content))).not.toContain(
+    'Previous page references',
+  );
+});

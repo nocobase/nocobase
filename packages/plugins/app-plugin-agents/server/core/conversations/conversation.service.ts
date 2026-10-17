@@ -1,3 +1,4 @@
+import { historicalPageContext } from './page-context.js';
 import { nativeExecutionStatus } from '../../online-agent/execution.js';
 /**
  * Conversations over this plugin's own tables. Everything people and other plugins do with conversations goes through
@@ -584,6 +585,7 @@ export function createConversationService(
     record: ConversationRecord,
     messages: readonly MessageRecord[],
     business?: unknown,
+    previousPage?: string,
   ): Promise<SendMessageResult['run']> {
     const agent = record.agentId
       ? await findAgent(unit.conn, record.agentId)
@@ -604,7 +606,9 @@ export function createConversationService(
             input: {
               type: 'comment',
               actor: { kind: 'user', id: record.userId, name },
-              text: inputText(message, business),
+              text: [inputText(message, business), previousPage]
+                .filter(Boolean)
+                .join('\n\n'),
               payload: {
                 trigger: 'message',
                 conversationId: record.id,
@@ -1074,6 +1078,28 @@ export function createConversationService(
     const context = request.context
       ? await deps.contextKinds.resolve(tx.read(), userId, request.context)
       : null;
+    // Native execution already loads history. Runner admission only needs the latest page-bearing row.
+    const previous = realtime
+      ? await messagesRepo(tx.read()).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('conversationId').eq(id),
+              f.string('role').eq('user'),
+              f.json('workContext').ne(null),
+            ]),
+          sort: (sort) => sort.field('seq').desc(),
+          limit: 1,
+        })
+      : [];
+    const previousPage = realtime
+      ? await historicalPageContext(
+          deps.contextKinds,
+          tx.read(),
+          userId,
+          previous[0]?.workContext,
+          realtime.workContext,
+        )
+      : undefined;
     const sent = await measuredAdmission(async (unit) => {
       const record = await lockOwned(unit, userId, id, Boolean(realtime));
       const binding = runnerBinding(record.metadata);
@@ -1147,7 +1173,13 @@ export function createConversationService(
           filter: { id: message.id },
         }))!;
       }
-      const run = await wake(unit, record, [message], realtime?.business);
+      const run = await wake(
+        unit,
+        record,
+        [message],
+        realtime?.business,
+        previousPage,
+      );
       if (realtime && (!run || run.outcome !== 'created'))
         throw conflict('This conversation could not accept a new execution.');
       await conversationsRepo(unit.conn).updateMany({

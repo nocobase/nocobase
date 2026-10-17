@@ -652,7 +652,15 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
           pending.push(task);
         },
       );
-      history = await this.deps.sessions.history(context.user.id, id);
+      // The existing page resolver accepts user identity, not an entry credential scope.
+      // Do not infer additional references when that narrower scope cannot be revalidated.
+      history = context.authorization.identity.keyScope
+        ? await this.deps.sessions.history(context.user.id, id)
+        : await this.deps.sessions.executionHistory(
+            context.user.id,
+            id,
+            input?.workContext,
+          );
       execution.abort.signal.throwIfAborted();
       afterSeq = await this.deps.sessions.accept(
         context.user.id,

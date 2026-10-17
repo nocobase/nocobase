@@ -1,3 +1,8 @@
+import {
+  historicalPageContext,
+  latestPageContext,
+  type PageContextKinds,
+} from '../core/conversations/page-context.js';
 import { isDeepStrictEqual } from 'node:util';
 import type { ModelMessage } from 'ai';
 import type { DatabaseConnection } from '@nocobase/db';
@@ -95,6 +100,12 @@ export interface OnlineAgentSessionManager {
     model: ModelRef,
   ): Promise<void>;
   history(userId: string, id: string): Promise<ModelMessage[]>;
+  /** Model history plus transient, freshly authorized page references; never persisted. */
+  executionHistory(
+    userId: string,
+    id: string,
+    current?: import('../../shared/conversations.js').ResolvedPageContext,
+  ): Promise<ModelMessage[]>;
   accept(
     userId: string,
     id: string,
@@ -123,6 +134,7 @@ export interface OnlineAgentSessionManager {
 }
 
 export function createSessionManager(deps: {
+  contextKinds?: PageContextKinds;
   tx: TxRunner;
   basePath?: () => string;
   ids: IdSource;
@@ -240,6 +252,35 @@ export function createSessionManager(deps: {
     }
     return seq;
   };
+  async function history(
+    userId: string,
+    id: string,
+    current?: import('../../shared/conversations.js').ResolvedPageContext,
+    replay = false,
+  ): Promise<ModelMessage[]> {
+    await owned(deps.tx.read(), userId, id);
+    const rows = await messagesRepo(deps.tx.read()).findMany({
+      filter: { conversationId: id },
+      sort: (sort) => sort.field('seq').asc(),
+    });
+    const messages = rows.flatMap((row) => {
+      const value = restore(row.content, row.role);
+      return value ? [value] : [];
+    });
+    const page =
+      replay && deps.contextKinds
+        ? await historicalPageContext(
+            deps.contextKinds,
+            deps.tx.read(),
+            userId,
+            latestPageContext(rows),
+            current,
+          )
+        : undefined;
+    if (page) messages.push({ role: 'user', content: page });
+    return messages;
+  }
+
   return {
     async defaults(userId: string) {
       const conn = deps.tx.read();
@@ -326,15 +367,10 @@ export function createSessionManager(deps: {
       return rows.map((row) => toMessage(row, deps.basePath?.() ?? ''));
     },
     async history(userId: string, id: string): Promise<ModelMessage[]> {
-      await owned(deps.tx.read(), userId, id);
-      const rows = await messagesRepo(deps.tx.read()).findMany({
-        filter: { conversationId: id },
-        sort: (sort) => sort.field('seq').asc(),
-      });
-      return rows.flatMap((row) => {
-        const value = restore(row.content, row.role);
-        return value ? [value] : [];
-      });
+      return history(userId, id);
+    },
+    async executionHistory(userId, id, current) {
+      return history(userId, id, current, true);
     },
     accept(
       userId: string,

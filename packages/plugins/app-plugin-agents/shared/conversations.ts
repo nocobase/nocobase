@@ -154,7 +154,7 @@ export interface ResolvedPageContextItem extends PageContextRef {
   readonly url: string | null;
 }
 
-/** A page context as stored with a message (`workContext`) and handed to the agent. */
+/** A page context stored with the message. Follow-ups may reauthorize only its references, never replay its stale page parameters. */
 export interface ResolvedPageContext {
   readonly route: string;
   readonly items: readonly ResolvedPageContextItem[];
