@@ -62,6 +62,7 @@ const session: Session = {
   title: 'Improve the session start',
   titleSource: 'owner',
   state: null,
+  startup: null,
   settings: {},
   running: false,
   waiting: false,

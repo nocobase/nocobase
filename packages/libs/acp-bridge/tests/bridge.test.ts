@@ -233,6 +233,101 @@ describe('runBridge', () => {
     }
   });
 
+  it('hands the agent a discovery started for a new session to that session’s first prompt', async () => {
+    vi.spyOn(agents, 'resolveAgent').mockImplementation(async (spec) =>
+      spec.id === 'opencode'
+        ? {
+            spec: { ...spec, modes: ['full'] },
+            command: process.execPath,
+            args: [path.join(import.meta.dirname, 'fixtures/fake-agent.mjs')],
+          }
+        : undefined,
+    );
+    const original = AgentProcess.start;
+    let started = 0;
+    vi.spyOn(AgentProcess, 'start').mockImplementation(
+      async (resolved, options) => {
+        // Probes initialize on a shorter budget; sessions and discoveries do not.
+        if (options.initializeTimeoutMs !== 30_000) started += 1;
+        return original(resolved, options);
+      },
+    );
+    answer = (request) => ({
+      data: request.path.endsWith('/report')
+        ? { open: true }
+        : request.path.endsWith('/register')
+          ? { computerId: 'c1', key: 'k1' }
+          : {},
+    });
+    const prepared: string[] = [];
+    const instructed: string[] = [];
+    const { runBridge } = await import('../src/bridge.js');
+    const stop = new AbortController();
+    commands.push({
+      type: 'discoverChoices',
+      requestId: 'r1',
+      agentId: 'opencode',
+      cwd: root,
+      settings: {},
+      sessionId: 's1',
+    });
+    const done = runBridge({
+      server: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+      headers: { authorization: 'Bearer person' },
+      client: { name: 'test', version: '0.0.0' },
+      stateFile: path.join(root, 'state.json'),
+      env: { PATH: '' },
+      prepareSession: async (_agentId, sessionId) => {
+        prepared.push(sessionId);
+        return {};
+      },
+      sessionInstructions: async (agentId, sessionId) => {
+        instructed.push(`${agentId}:${sessionId}`);
+        return 'Shared CLI instructions';
+      },
+      signal: stop.signal,
+      log: () => undefined,
+    });
+    const reports = (): Record<string, unknown>[] =>
+      seen
+        .filter((request) => request.path.endsWith('/report'))
+        .map((request) => request.body);
+    try {
+      await until(() =>
+        seen.some((request) => request.body.requestId === 'r1'),
+      );
+      commands.push({
+        type: 'prompt',
+        session: {
+          id: 's1',
+          agentId: 'opencode',
+          cwd: root,
+          acpSessionId: null,
+          settings: {},
+        },
+        promptId: 'p1',
+        content: [{ type: 'text', text: 'hi' }],
+      });
+      await until(() =>
+        reports().some((body) =>
+          JSON.stringify(body.events).includes('"turnEnded"'),
+        ),
+      );
+      expect(started).toBe(1);
+      expect(prepared).toEqual(['s1']);
+      expect(instructed).toEqual(['opencode:s1']);
+      expect(
+        reports()
+          .map((body) => body.startup)
+          .filter((startup) => startup !== undefined)
+          .at(-1),
+      ).toBeNull();
+    } finally {
+      stop.abort();
+      await done;
+    }
+  });
+
   it('reprobes existing paths and changed paths, recovers failures and retries registration without overlapping', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     let command: string | undefined;
@@ -451,5 +546,67 @@ describe('runBridge', () => {
     expect(
       JSON.parse(await readFile(path.join(root, 'state.json'), 'utf8')),
     ).toEqual({ computerId: 'c1', key: 'new' });
+  });
+
+  it('installs managed adapters beside its state without waiting to connect, and runs a session on its managed adapter', async () => {
+    const calls: { id: string; options: agents.ResolveOptions | undefined }[] =
+      [];
+    const fake = path.join(import.meta.dirname, 'fixtures/fake-agent.mjs');
+    vi.spyOn(agents, 'resolveAgent').mockImplementation(
+      async (spec, _env, _platform, options) => {
+        calls.push({ id: spec.id, options });
+        if (spec.id !== 'codex') return undefined;
+        // Installed once something waits for it, which takes a while; until then Codex is found another way.
+        if (!options?.waitForInstall)
+          return { spec, command: process.execPath, args: [fake, 'fallback'] };
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return { spec, command: process.execPath, args: [fake], managed: true };
+      },
+    );
+    const original = AgentProcess.start;
+    const sessions: agents.ResolvedAgent[] = [];
+    vi.spyOn(AgentProcess, 'start').mockImplementation(
+      async (resolved, options) => {
+        if (options.initializeTimeoutMs !== 30_000) sessions.push(resolved);
+        return original(resolved, options);
+      },
+    );
+    answer = (request) => ({
+      data: request.path.endsWith('/report')
+        ? { open: true }
+        : { computerId: 'c1', key: 'k1' },
+    });
+    commands.push({
+      type: 'prompt',
+      session: {
+        id: 's1',
+        agentId: 'codex',
+        cwd: root,
+        acpSessionId: null,
+        settings: {},
+      },
+      promptId: 'p1',
+      content: [{ type: 'text', text: 'hang' }],
+    });
+    const { done, stop } = await run();
+    try {
+      await until(() => registers().length >= 2 && sessions.length > 0);
+      const first = calls.slice(0, agents.AGENTS.length);
+      expect(first.every((call) => !call.options?.waitForInstall)).toBe(true);
+      expect(
+        calls.every(
+          (call) => call.options?.adapters === path.join(root, 'adapters'),
+        ),
+      ).toBe(true);
+      expect(
+        calls
+          .slice(agents.AGENTS.length)
+          .every((call) => call.options?.waitForInstall),
+      ).toBe(true);
+      expect(sessions[0]).toMatchObject({ args: [fake], managed: true });
+    } finally {
+      stop();
+      await done;
+    }
   });
 });

@@ -82,6 +82,22 @@ describe('app client routes', () => {
       { name: 'workflowDefinition', authorizedAs: null },
       { name: 'workflowExecutions', authorizedAs: null },
       { name: 'workflowExecution', authorizedAs: null },
+      { name: 'settingsUsers', authorizedAs: 'user:*' },
+      { name: 'settingsUserCreate', authorizedAs: 'user:*' },
+      { name: 'settingsUser', authorizedAs: 'user:*' },
+      { name: 'settingsUserEdit', authorizedAs: 'user:*' },
+      {
+        name: 'settingsRoles',
+        authorizedAs: 'settings:authorization.permission-sets',
+      },
+      {
+        name: 'settingsRoleCreate',
+        authorizedAs: 'settings:authorization.permission-sets',
+      },
+      {
+        name: 'settingsRoleEdit',
+        authorizedAs: 'settings:authorization.permission-sets',
+      },
     ]);
   });
 });

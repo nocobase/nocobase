@@ -136,6 +136,11 @@ const enUS = {
     offlineBody:
       'The conversation and its tasks are kept here to read as usual. The session continues once the computer is back.',
     working: 'The agent is working…',
+    startup: {
+      starting: 'Starting the agent on your computer…',
+      opening: 'Opening the agent’s session…',
+      configuring: 'Applying settings…',
+    },
     answering: 'Answering',
     asking: 'Needs your approval',
     stop: 'Stop',
@@ -179,6 +184,8 @@ const enUS = {
     queue: 'Send after this turn',
     addImage: 'Add images',
     removeImage: 'Remove image',
+    attached: 'Goes with the message',
+    removeAttached: 'Remove {{name}}',
     commands: 'The agent’s commands',
     mentions: 'Mention a task',
     keys: {
@@ -189,6 +196,7 @@ const enUS = {
     },
   },
   choices: { more: 'More options' },
+  panel: { fullScreen: 'Open full page' },
   transcript: {
     image: {
       open: 'Open image preview',

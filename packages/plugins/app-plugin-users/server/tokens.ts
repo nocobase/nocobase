@@ -98,6 +98,8 @@ export interface ListManagedUsersInput {
   readonly search?: string;
   readonly status?: 'enabled' | 'disabled';
   readonly roleScope?: string;
+  readonly sort?: 'name';
+  readonly order?: 'asc' | 'desc';
   readonly role?: string;
 }
 
@@ -197,6 +199,7 @@ export type UserInvitationAcceptedHandler = (
 ) => Promise<void>;
 
 export interface UserManagementService {
+  get(userId: string): Promise<ManagedUser>;
   options(): Promise<UserManagementOptions>;
   list(input?: ListManagedUsersInput): Promise<ManagedUserPage>;
   create(input: CreateManagedUserInput): Promise<ManagedUser>;

@@ -94,6 +94,30 @@ const asked: BridgeEvent = {
 };
 
 describe('AgentSessionsService notices', () => {
+  test('observes committed reminder identities immediately and unregisters listeners', async ({
+    database,
+  }) => {
+    const { service, sent, started } = setup(database);
+    const observed: { sessionId: string; seq: number; reason: string }[] = [];
+    const stop = service.onCommittedEvent((event) => {
+      observed.push(event);
+    });
+    const { session, report } = await started();
+    await report([ended(), asked]);
+    await vi.waitFor(() => expect(observed).toHaveLength(2));
+    const actual = await service.listEvents(owner.userId, session.id, {
+      after: 0,
+      limit: 200,
+    });
+    for (const event of observed)
+      expect(actual.find((stored) => stored.seq === event.seq)?.kind).toBe(
+        event.reason === 'turnFailed' ? 'turnEnded' : event.reason,
+      );
+    expect(sent).toEqual([]);
+    stop();
+    await report([ended()]);
+    expect(observed).toHaveLength(2);
+  });
   test('tells the owner of a reply they did not see, a little later, once', async ({
     database,
   }) => {

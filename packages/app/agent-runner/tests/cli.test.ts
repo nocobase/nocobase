@@ -117,7 +117,7 @@ describe('nocobase-runner cli', () => {
     expect(dry.code).toBe(0);
     if (process.platform === 'darwin') {
       expect(dry.stdout).toContain('<string>com.nocobase.runner</string>');
-      expect(dry.stdout).toContain('<string>--foreground</string>');
+      expect(dry.stdout).toContain('<string>run</string>');
       expect(dry.stdout).toMatch(/\$ launchctl bootstrap gui\/\d+ /);
     }
   });
@@ -137,7 +137,7 @@ describe('nocobase-runner cli', () => {
       '/home/u/.config/systemd/user/nocobase-runner.service',
     );
     expect(plan.content).toContain(
-      'ExecStart=/usr/bin/node /opt/acme/bin/run.js runner start --foreground',
+      'ExecStart=/usr/bin/node /opt/acme/bin/run.js runner service run',
     );
     expect(plan.content).toContain(
       'Environment=NOCOBASE_RUNNER_HOME=/home/u/.nocobase-runner',

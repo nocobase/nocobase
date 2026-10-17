@@ -1,0 +1,102 @@
+---
+/**
+ * The document every page is built on: `<html lang>`, the SEO `<head>`, the site header and footer.
+ *
+ * A hand-written page only needs this layout and its own content:
+ *
+ * ```astro
+ * ---
+ * import BaseLayout from '../layouts/BaseLayout.astro';
+ * ---
+ * <BaseLayout language="en" route="/pricing" title="Pricing" description="…">
+ *   <main>…</main>
+ * </BaseLayout>
+ * ```
+ *
+ * See `.agents/rules/docs-site.md` for where such a page goes and how its translation is declared.
+ */
+import {
+  getLanguage,
+  LANGUAGES,
+  localizePath,
+} from '../../shared/languages.ts';
+import SeoHead from '../components/SeoHead.astro';
+import SiteFooter from '../components/SiteFooter/index.astro';
+import SiteHeader from '../components/SiteHeader/index.astro';
+import type { LanguageLink } from '../lib/language-menu.ts';
+import '../styles/global.css';
+
+interface Props {
+  /** Source language key: `en` or `cn`. */
+  language: string;
+  /** Language-neutral route with its exact slash shape, `/capabilities/file` or `/capabilities/auth/`. */
+  route: string;
+  /** Page title; the site name is appended unless `fullTitle` is set. */
+  title: string;
+  /** Use `title` as the whole `<title>` (the home page). */
+  fullTitle?: boolean;
+  description?: string;
+  keywords?: string;
+  /** Languages this route exists in. Defaults to every language, the case for pages written in all of them. */
+  translations?: string[];
+  noindex?: boolean;
+  /** Render the shared header and footer. Pages whose own markup includes them turn these off. */
+  header?: boolean;
+  footer?: boolean;
+  /** `data-layout` on `<body>`, read by the build's link check; see `src/integrations/html.ts`. */
+  layout?: string;
+  structuredData?: Record<string, unknown>[];
+}
+
+const {
+  language,
+  route,
+  title,
+  fullTitle = false,
+  description,
+  keywords,
+  translations = LANGUAGES.map(({ key }) => key),
+  noindex = false,
+  header = true,
+  footer = true,
+  layout,
+  structuredData,
+} = Astro.props;
+const { htmlLang, siteTitle } = getLanguage(language);
+const documentTitle =
+  fullTitle || title === siteTitle ? title : `${title} - ${siteTitle}`;
+const languageLinks: LanguageLink[] = translations.map((key) => ({
+  language: key,
+  href: localizePath(key, route),
+}));
+---
+
+<!doctype html>
+<html lang={htmlLang}>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <SeoHead
+      language={language}
+      route={route}
+      title={documentTitle}
+      description={description}
+      keywords={keywords}
+      translations={translations}
+      noindex={noindex}
+      structuredData={structuredData}
+    />
+    <link rel='preconnect' href='https://fonts.googleapis.com' />
+    <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin />
+    <link
+      rel='stylesheet'
+      href='https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600;700&display=swap'
+    />
+    <slot name='head' />
+  </head>
+  <body data-layout={layout}>
+    {header && <SiteHeader language={language} languageLinks={languageLinks} />}
+    <slot />
+    {footer && <SiteFooter language={language} />}
+  </body>
+</html>
