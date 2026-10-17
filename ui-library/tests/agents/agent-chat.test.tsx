@@ -153,7 +153,23 @@ describe('ChatPanel', () => {
     fireEvent.change(box, { target: { value: 'And the docs?' } });
     fireEvent.keyDown(box, { key: 'Enter' });
     expect(await screen.findByText('And the docs?')).toBeVisible();
-    expect(await screen.findByTestId('chat-live-steps')).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: 'Stop', exact: true }),
+    ).toBeVisible();
+    expect(screen.queryByTestId('chat-live-steps')).toBeNull();
+    const thinking = await screen.findByText('Thinking…');
+    const log = screen.getByRole('log', { name: 'Messages' });
+    expect(log).toContainElement(thinking);
+    const row = thinking.closest('li');
+    expect(row?.parentElement?.lastElementChild).toBe(row);
+    expect(row?.previousElementSibling).toHaveTextContent('And the docs?');
+    expect(
+      thinking
+        .closest('[data-chat-feedback]')
+        ?.querySelector('[data-slot="spinner"]'),
+    ).toBeVisible();
+    expect(await screen.findByText(/Here is what I would do/u)).toBeVisible();
+    expect(screen.queryByText('Thinking…')).not.toBeInTheDocument();
     expect(box).toHaveValue('');
   });
 
@@ -180,17 +196,26 @@ describe('ChatPanel', () => {
     }
   });
 
-  it('sums up a runner’s steps in one line that expands to them', async () => {
+  it('uses shared Stop controls for managed Runner execution without a legacy steps panel', async () => {
     renderPanel('flaky-test');
-    const line = await screen.findByTestId('chat-step-line');
-    expect(line).toHaveTextContent(
-      'Working on pnpm test:e2e sign-in --repeat-each 20',
-    );
-    expect(line).toHaveTextContent('4 steps');
-    fireEvent.click(line);
+    const stop = await screen.findByRole('button', {
+      name: 'Stop',
+      exact: true,
+    });
+    expect(screen.queryByTestId('chat-step-line')).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Steps' })).toBeNull();
     expect(
-      await screen.findByRole('list', { name: 'Steps' }),
-    ).toHaveTextContent('Bash');
+      screen.getByText(
+        'The sign-in test fails about once in ten runs. Can you find out why?',
+      ),
+    ).toBeVisible();
+    fireEvent.click(stop);
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Stop', exact: true }),
+      ).toBeNull(),
+    );
+    expect(screen.getByLabelText('Message to the agent')).toBeEnabled();
   });
 
   it('shows the page’s context as chips in the composer, each removable', async () => {

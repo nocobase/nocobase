@@ -10,7 +10,14 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.50"
+    "defaultTemplateVersion": "1.0.0-beta.50",
+    "cli": {
+      "bin": "nocobase-examples",
+      "displayName": "NocoBase Examples",
+      "auth": {
+        "clientId": "nocobase-cli"
+      }
+    }
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
@@ -18,6 +25,8 @@
     "@dicebear/core": "^9.4.3",
     "@gchust/agent-annotations": "0.1.9",
     "@hookform/resolvers": "^5.0.1",
+    "@nocobase/agent-runner": "workspace:^",
+    "@nocobase/app-cli-client": "workspace:^",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-template-print": "workspace:*",
     "@nocobase/app-skills": "workspace:*",
@@ -117,6 +126,7 @@
     "docker-compose.yml",
     "config.example.yml",
     "README.MD",
+    "online-agent.md",
     "AGENTS.md",
     ".agents/rules",
     "CLAUDE.md",
@@ -161,6 +171,7 @@
   },
   "dependencies": {
     "zod": "catalog:",
+    "@nocobase/app-plugin-agents": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",

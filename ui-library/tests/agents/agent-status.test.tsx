@@ -7,7 +7,7 @@ import {
   createTestI18nRuntime,
 } from '@nocobase/i18n/testing';
 import { render, screen } from '@testing-library/react';
-import { expect, it, vi } from 'vitest';
+import { expect, it } from 'vitest';
 
 import { AgentNotice } from '../../registry/agents/agent-chat/agent-status';
 import { MessageItem } from '../../registry/agents/agent-chat/message-item';
@@ -53,7 +53,7 @@ it.each([
   ['en-US', enUS, 'Model unavailable', 'Use another agent here'],
   ['zh-CN', zhCN, '模型不可用', '这条对话改用其他 Agent'],
 ] as const)(
-  'renders online fallback notices and actions in %s',
+  'keeps historical notices readable and removes Runner fallback actions in %s',
   async (locale, resources, reason, action) => {
     const runtime = await createTestI18nRuntime({
       locale,
@@ -101,15 +101,11 @@ it.each([
     ];
     render(
       <TestI18nProvider runtime={runtime}>
-        <AgentNotice
-          conversation={conversation}
-          busy={false}
-          onFallback={vi.fn()}
-          onRestore={vi.fn()}
-        />
+        <AgentNotice conversation={conversation} />
         <AgentNotice
           conversation={{
             ...conversation,
+            execution: { status: 'idle' },
             fallbackFrom: null,
             canFallback: true,
             availability: {
@@ -118,9 +114,6 @@ it.each([
               onlineRunners: 0,
             },
           }}
-          busy={false}
-          onFallback={vi.fn()}
-          onRestore={vi.fn()}
         />
         <ul>
           {messages.map((message) => (
@@ -133,12 +126,9 @@ it.each([
         </ul>
       </TestI18nProvider>,
     );
-    expect(screen.getByTestId('chat-fallback')).toHaveTextContent('Assistant');
-    expect(screen.getByTestId('chat-fallback')).toHaveTextContent('Coder');
-    expect(screen.getByTestId('chat-fallback')).not.toHaveTextContent(
-      /system default|系统默认/,
-    );
-    expect(screen.getByRole('button', { name: action })).toBeVisible();
+    expect(screen.queryByTestId('chat-fallback')).toBeNull();
+    expect(screen.queryByRole('button', { name: action })).toBeNull();
+    expect(screen.getByText(resources.chat.historicalReadOnly)).toBeVisible();
     expect(screen.getByText(new RegExp(reason))).toBeVisible();
     expect(
       screen.queryByText(/untranslated|chat\.notice\./),

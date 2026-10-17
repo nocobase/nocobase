@@ -190,6 +190,8 @@ export interface PendingItemProps {
   readonly message: PendingMessage;
   readonly onRetry: () => void;
   readonly onDiscard: () => void;
+  readonly onContinue?: () => void;
+  readonly onCheck?: () => void;
 }
 
 /** A message the server has not confirmed: "sending", or "not sent" with a retry. */
@@ -197,6 +199,8 @@ export function PendingItem({
   message,
   onRetry,
   onDiscard,
+  onContinue,
+  onCheck,
 }: PendingItemProps): ReactElement {
   const { t } = useChatTranslation();
   const failed = message.status === 'failed';
@@ -205,7 +209,7 @@ export function PendingItem({
       className='flex justify-end'
       data-chat-message='pending'
       data-status={message.status}
-      aria-busy={failed ? undefined : true}
+      aria-busy={message.status === 'sending' ? true : undefined}
     >
       <div className='flex max-w-[85%] min-w-0 flex-col items-end'>
         <p className='mb-1 text-xs text-muted-foreground'>
@@ -214,6 +218,8 @@ export function PendingItem({
               <AlertCircleIcon className='size-3.5' aria-hidden='true' />
               {t('chat.pending.failed')}
             </span>
+          ) : message.status === 'unknown' ? (
+            t('chat.connectionUnknown')
           ) : (
             t('chat.pending.sending')
           )}
@@ -237,6 +243,18 @@ export function PendingItem({
             <p className='whitespace-pre-wrap wrap-anywhere'>
               {message.content}
             </p>
+          </div>
+        ) : null}
+        {message.status === 'unknown' ? (
+          <div className='mt-1 flex flex-wrap gap-1'>
+            <Button variant='outline' size='xs' onClick={onCheck}>
+              {t('chat.refreshHistory')}
+            </Button>
+            {onContinue ? (
+              <Button variant='outline' size='xs' onClick={onContinue}>
+                {t('chat.allowAnother')}
+              </Button>
+            ) : null}
           </div>
         ) : null}
         {failed ? (

@@ -392,8 +392,11 @@ function useChat(
   return { messages, send };
 }
 
+const { ChatClientProvider } = await import('../../client/chat/controller.js');
 const wrapper = ({ children }: { readonly children: ReactNode }) => (
-  <QueryClientProvider client={chatClient()}>{children}</QueryClientProvider>
+  <QueryClientProvider client={chatClient()}>
+    <ChatClientProvider>{children}</ChatClientProvider>
+  </QueryClientProvider>
 );
 
 const CONTEXT = { route: '/issues', items: [] };
@@ -491,12 +494,18 @@ describe('conversation hooks', () => {
     );
     const { result } = renderHook(() => useChat('c1'), { wrapper });
     await waitFor(() => expect(result.current.messages.items).toHaveLength(2));
-    let sending: Promise<unknown> | undefined;
+    let sending: boolean | undefined;
     act(() => {
       sending = result.current.send({
         content: 'Also check PM-3',
         context: CONTEXT,
       });
+    });
+    expect(sending).toBe(true);
+    act(() => {
+      expect(
+        result.current.send({ content: 'Local refusal', context: CONTEXT }),
+      ).toBe(false);
     });
     expect(result.current.messages.pending).toMatchObject([
       { content: 'Also check PM-3', status: 'sending' },
@@ -516,11 +525,11 @@ describe('conversation hooks', () => {
       clientId?: string;
       context?: { route: string };
     };
-    expect(sent.clientId).toMatch(/^c-/u);
+    expect(sent.clientId).toMatch(/^[0-9a-f-]{36}$/u);
     expect(sent.context?.route).toBe('/issues');
   });
 
-  it('keeps a message that failed to send, to send again with the same id', async () => {
+  it('keeps an unknown result and refuses another send until it is reconciled', async () => {
     resetApi(
       routes({
         [`POST agents/${C}/messages`]: () => {
@@ -533,8 +542,11 @@ describe('conversation hooks', () => {
     await act(async () => {
       await result.current.send({ content: 'Hello?', context: CONTEXT });
     });
+    await waitFor(() =>
+      expect(result.current.messages.pending[0]?.status).toBe('unknown'),
+    );
     const failed = result.current.messages.pending[0];
-    expect(failed?.status).toBe('failed');
+    expect(failed?.status).toBe('unknown');
     await act(async () => {
       await result.current.send({
         content: failed?.content ?? '',
@@ -542,10 +554,7 @@ describe('conversation hooks', () => {
         clientId: failed?.clientId ?? '',
       });
     });
-    const [first, second] = callsTo('POST', `agents/${C}/messages`);
-    expect((first?.json as { clientId: string }).clientId).toBe(
-      (second?.json as { clientId: string }).clientId,
-    );
+    expect(callsTo('POST', `agents/${C}/messages`)).toHaveLength(1);
   });
 
   it('creates a new conversation with its agent on the first message', async () => {
@@ -590,14 +599,12 @@ describe('conversation hooks', () => {
     const { result } = renderHook(() => useConversationActions(), { wrapper });
     await act(async () => {
       await result.current.stop.mutateAsync('c1');
-      await result.current.fallback.mutateAsync('c1');
-      await result.current.restore.mutateAsync('c1');
       await result.current.rename.mutateAsync({
         id: 'c1',
         title: 'Release plan',
       });
     });
-    for (const route of ['stop', 'fallback', 'restore'])
+    for (const route of ['stop'])
       expect(callsTo('POST', `agents/${C}/${route}`)).toHaveLength(1);
     expect(callsTo('PATCH', `agents/${C}`).map((call) => call.json)).toEqual([
       { title: 'Release plan' },

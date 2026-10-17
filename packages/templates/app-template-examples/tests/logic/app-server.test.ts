@@ -6,6 +6,8 @@ import { articlesRoutes } from '../../server/routes/articles.ts';
 import { analyticsRoutes } from '../../server/routes/analytics.ts';
 import { externalCrmRoutes } from '../../server/routes/external-crm.ts';
 import { numericExamplesRoutes } from '../../server/routes/numeric-examples.ts';
+import { structuredExtractionRoutes } from '../../server/routes/structured-extraction.ts';
+import { aiTranslationRoutes } from '../../server/routes/ai-translation.ts';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -342,7 +344,9 @@ describe('app server', () => {
             route !== articlesRoutes &&
             route !== analyticsRoutes &&
             route !== externalCrmRoutes &&
-            route !== numericExamplesRoutes,
+            route !== numericExamplesRoutes &&
+            route !== structuredExtractionRoutes &&
+            route !== aiTranslationRoutes,
         ),
         serviceProviders: [
           ...appRuntime.serviceProviders,

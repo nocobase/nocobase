@@ -11,7 +11,7 @@
  * - for pages: `useChatPanel().openChat(…)`, and `useChatContextSource` / `useChatFilterSource` to tell the panel what
  *   the page shows (the chips above the composer);
  * - `ChatExtensionsContext`: what the application adds among a conversation's messages, and how it words its news;
- * - the data hooks (`useChatAgents`, `useConversation`, `useConversationMessages`, `useConversationList`,
+ * - the data hooks (`useChatAgents`, `useChatModels`, `useConversation`, `useConversationMessages`, `useConversationList`,
  *   `useConsultationIdentity` for current consultation labels without rewriting loaded messages, `useSendMessage`, `useConversationActions`, keyed by `chatKeys`, and `useLiveRunEvents`, `useConversationSources`),
  *   the pure models of the timeline and the context chips, the panel's state helpers, and `ChatPanelScope` /
  *   `useChatPageTracking` for a full-page view.
@@ -44,6 +44,7 @@ export {
   CHAT_POLL_MS,
   CHAT_STREAM_POLL_MS,
   useChatAgents,
+  useChatModels,
   useChatApi,
   useChatRealtime,
   useConversation,
@@ -58,7 +59,7 @@ export {
   type ConversationMessages,
   type SendInput,
 } from './chat/use-chat.js';
-export type { ChatApi } from './chat/api.js';
+export { ChatApi } from './chat/api.js';
 export {
   useConversationSources,
   useLiveRunEvents,
@@ -159,3 +160,23 @@ export {
   useConsultationIdentity,
   type ConsultationIdentity,
 } from './chat/consultation-identity.js';
+
+export {
+  ChatSubmissions,
+  type ChatSubmission,
+  type SubmissionInput,
+} from './chat/submissions.js';
+export {
+  ChatController,
+  useChatController,
+  useChatStream,
+} from './chat/controller.js';
+
+export {
+  chatFeedback,
+  chatIsRunning,
+  chatNearBottom,
+  type ChatFeedback,
+} from './chat/feedback.js';
+
+export { useChatScroll } from './chat/use-chat-scroll.js';

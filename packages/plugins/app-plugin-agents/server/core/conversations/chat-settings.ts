@@ -96,7 +96,7 @@ export function createChatSettingsService(deps: {
       tx.run(async ({ conn }) => {
         const current = await readSettings(conn);
         const next: ChatSettings = { ...current, ...patch };
-        if (next.defaultAgentId !== null) {
+        if (next.defaultAgentId !== null && next.defaultAgentId !== 'online') {
           const agent = await findAgent(conn, next.defaultAgentId);
           if (!agent || agent.status !== 'enabled')
             throw invalid('defaultAgentId names no enabled agent.', {
@@ -132,7 +132,8 @@ export function createChatSettingsService(deps: {
         const next: ChatPreferences = { ...current, ...patch };
         if (
           patch.defaultAgentId !== undefined &&
-          next.defaultAgentId !== null
+          next.defaultAgentId !== null &&
+          next.defaultAgentId !== 'online'
         ) {
           const agent = await findAgent(conn, next.defaultAgentId);
           if (!agent)

@@ -30,6 +30,7 @@ export interface ConversationRecord {
   readonly id: string;
   readonly userId: string;
   readonly agentId: string;
+  readonly metadata?: JsonColumn;
   readonly mode: ConversationMode;
   readonly fallbackFromAgentId: string | null;
   readonly modelService?: string | null;
@@ -70,6 +71,7 @@ export interface MessageRecord {
 export interface PreferencesRecord {
   readonly userId: string;
   readonly defaultAgentId: string | null;
+  readonly onlineAgent?: JsonColumn;
   readonly updatedAt: string;
 }
 
@@ -257,7 +259,8 @@ export async function updateMessageRun(
 }
 
 export function metadataOf(record: MessageRecord): MessageMetadata {
-  return jsonObject(record.metadata);
+  const { runnerContext: _private, ...metadata } = jsonObject(record.metadata);
+  return metadata;
 }
 
 function contentOf(value: unknown): MessageContent {

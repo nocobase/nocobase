@@ -1,3 +1,4 @@
+import { legacyConversationRequest } from './legacy-conversation-domain.js';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
@@ -18,18 +19,19 @@ const start = {
   acceptsInput: true,
 };
 
-describe('conversations', () => {
+describe('historical Runner conversation domain', () => {
   let h: Harness;
   afterEach(async () => {
     await h?.close();
   });
 
   const as = (user: string, can: readonly string[] = []) => ({
-    get: (path: string) => h.request('GET', path, { user, can }),
+    get: (path: string) =>
+      legacyConversationRequest(h, 'GET', path, { user, can }),
     post: (path: string, body: unknown = {}) =>
-      h.request('POST', path, { user, can, body }),
+      legacyConversationRequest(h, 'POST', path, { user, can, body }),
     patch: (path: string, body: unknown) =>
-      h.request('PATCH', path, { user, can, body }),
+      legacyConversationRequest(h, 'PATCH', path, { user, can, body }),
     put: (path: string, body: unknown) =>
       h.request('PUT', path, { user, can, body }),
   });
@@ -822,6 +824,22 @@ describe('conversations', () => {
           m.metadata.notice.code,
       );
     expect(codes).toEqual(['runCancelled', 'runCancelled']);
+    const messages = (await alice().get(`${base}/${id}/messages`)).body.data;
+    const request = messages.at(-1);
+    expect(request.content.content).toBe('Cancellation requested.');
+    expect(request.content.content).not.toMatch(/stopped/i);
+    expect((await alice().get(`${base}/${id}`)).body.data.run.id).toBe(
+      next.run.id,
+    );
+    expect(
+      (await runner(registered).post(next.run.id, 'cancelAck', {})).status,
+    ).toBe(200);
+    expect((await alice().get(`${base}/${id}`)).body.data.run).toBeNull();
+    const finalMessages = (await alice().get(`${base}/${id}/messages`)).body
+      .data;
+    expect(finalMessages.map((message: { id: string }) => message.id)).toEqual(
+      messages.map((message: { id: string }) => message.id),
+    );
   });
 
   it('tells the owner when the run failed', async () => {
@@ -938,7 +956,14 @@ describe('conversations', () => {
     const agents = (await alice().get('/agents/chatAgents')).body.data;
     expect(agents.map((agent: { name: string }) => agent.name)).toEqual([
       'Team PM',
+      'Online agent',
     ]);
+    expect(
+      agents.find((agent: { id: string }) => agent.id === 'online'),
+    ).toMatchObject({
+      isSystemDefault: false,
+      availability: { online: false, reason: 'noModel' },
+    });
     expect(agents[0]).toMatchObject({
       isSystemDefault: true,
       isMyDefault: false,

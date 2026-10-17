@@ -12,13 +12,11 @@ import type {
   ChatAvailability,
   ConversationDetail,
 } from '@nocobase/app-plugin-agents/shared/conversations';
-import { RepeatIcon, UnplugIcon } from 'lucide-react';
+import { UnplugIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
 import { AvailabilityDot as AgentAvailabilityDot } from '#components/agent-picker';
 import { Alert, AlertDescription, AlertTitle } from '#components/ui/alert';
-import { Button } from '#components/ui/button';
-import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
 import { useAgentPickerLabels, useChatTranslation } from './chat-i18n.js';
@@ -79,78 +77,42 @@ export function AgentLine({
 
 export interface AgentNoticeProps {
   readonly conversation: ConversationDetail;
-  readonly busy: boolean;
-  readonly onFallback: () => void;
-  readonly onRestore: () => void;
 }
 
-/**
- * The notice about who answers: the agent is offline (the message waits; "use another agent"), or another agent
- * answers for now ("switch back"). Nothing while the agent answers normally.
- */
+/** Chat never silently switches to a Runner or another profile. */
 export function AgentNotice({
   conversation,
-  busy,
-  onFallback,
-  onRestore,
 }: AgentNoticeProps): ReactElement | null {
   const { t } = useChatTranslation();
-  const text = useAgentText();
-  const name = text.name(conversation.agent) ?? t('chat.agentGone');
-  const { availability } = conversation;
-  if (!availability.online) {
+  const name = useAgentText().name(conversation.agent) ?? t('chat.agentGone');
+  if (!conversation.execution)
     return (
-      <Alert data-testid='chat-offline'>
+      <Alert>
         <UnplugIcon />
-        <AlertTitle>
-          {t(`chat.offline.${availability.reason ?? 'noRunner'}`, { name })}
-        </AlertTitle>
-        <AlertDescription>
-          <p>{t('chat.offline.kept')}</p>
-          {/* Under the text rather than beside it: the panel is too narrow for both on one line. */}
-          {conversation.canFallback ? (
-            <Button
-              variant='outline'
-              size='sm'
-              className='mt-1.5'
-              disabled={busy}
-              onClick={onFallback}
-            >
-              {busy ? <Spinner data-icon='inline-start' /> : null}
-              {t('chat.offline.fallback')}
-            </Button>
-          ) : null}
-        </AlertDescription>
+        <AlertTitle>{t('chat.historicalReadOnly')}</AlertTitle>
       </Alert>
     );
-  }
-  if (conversation.fallbackFrom) {
-    const own = text.name(conversation.fallbackFrom) ?? t('chat.agentGone');
+  if (
+    conversation.execution.outcome === 'failed' ||
+    conversation.execution.requiresEffectReview
+  )
     return (
-      <div
-        className='flex flex-wrap items-center gap-2 rounded-md bg-muted/60 px-2.5 py-1.5 text-xs text-muted-foreground'
-        data-testid='chat-fallback'
-      >
-        <span className='mr-auto'>
-          {t('chat.offline.usingDefault', { name, own })}
-        </span>
-        {conversation.canRestore ? (
-          <Button
-            variant='outline'
-            size='sm'
-            disabled={busy}
-            onClick={onRestore}
-          >
-            {busy ? (
-              <Spinner data-icon='inline-start' />
-            ) : (
-              <RepeatIcon data-icon='inline-start' />
-            )}
-            {t('chat.offline.restore', { own })}
-          </Button>
-        ) : null}
-      </div>
+      <Alert>
+        <UnplugIcon />
+        <AlertTitle>{t('chat.executionFailed')}</AlertTitle>
+      </Alert>
     );
-  }
-  return null;
+  if (conversation.availability.online) return null;
+  return (
+    <Alert data-testid='chat-offline'>
+      <UnplugIcon />
+      <AlertTitle>
+        {t(
+          `chat.offline.${conversation.availability.reason ?? 'modelUnavailable'}`,
+          { name },
+        )}
+      </AlertTitle>
+      <AlertDescription>{t('chat.connectionUnknown')}</AlertDescription>
+    </Alert>
+  );
 }

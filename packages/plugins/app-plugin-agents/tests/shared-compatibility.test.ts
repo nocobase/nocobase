@@ -1,5 +1,29 @@
+import type {
+  OnlineAgentToolContext as PublicToolContext,
+  OnlineAgentRealtimeSession,
+} from '@nocobase/app-plugin-agents/server/online-agent';
+import {
+  OnlineAgentConfigurer,
+  type OnlineAgentToolDefinition,
+  type OnlineAgentToolContext,
+} from '../server/online-agent/config.js';
 import { expect, expectTypeOf, it } from 'vitest';
+import {
+  OnlineAgentService as PublicOnlineAgentService,
+  OnlineAgentConfigurer as PublicOnlineAgentConfigurer,
+} from '@nocobase/app-plugin-agents/server';
 import { z } from 'zod';
+import type { JSONSchema7, ModelMessage } from 'ai';
+import type { UseQueryResult } from '@tanstack/react-query';
+import type {
+  ChatApi,
+  useChatModels,
+  useSendMessage,
+} from '@nocobase/app-plugin-agents/client/chat';
+import type {
+  ModelRef,
+  ModelService,
+} from '@nocobase/app-plugin-agents/shared/models';
 
 import { VariableSchema } from '../server/routes/schemas.js';
 import type {
@@ -11,6 +35,21 @@ import type {
 } from '../server/tokens.js';
 import type { RunRepo, RunWait } from '../shared/runs.js';
 import type { Variable } from '../shared/variables.js';
+
+it('exports typed chat model catalog and optional native selection through the public client entry', () => {
+  expectTypeOf<ReturnType<ChatApi['models']>>().toEqualTypeOf<
+    Promise<ModelService[]>
+  >();
+  expectTypeOf<Parameters<typeof useChatModels>>().toEqualTypeOf<
+    [enabled?: boolean]
+  >();
+  expectTypeOf<ReturnType<typeof useChatModels>>().toEqualTypeOf<
+    UseQueryResult<ModelService[]>
+  >();
+  expectTypeOf<
+    Parameters<typeof useSendMessage>[0]['selectedModel']
+  >().toEqualTypeOf<ModelRef | undefined>();
+});
 
 // Checked by tsconfig.type-tests.json as well as Vitest: applications may still construct the previous shapes.
 const wait: RunWait = {
@@ -133,4 +172,52 @@ it('lets applications guard a pending request and report a queued run', async ()
       },
     ),
   ).toEqual({ started: false, requestId: 'pending-request' });
+});
+
+it('preserves SDK tool input, output and execution context generics', () => {
+  const configurer = new OnlineAgentConfigurer();
+  const definition: OnlineAgentToolDefinition<
+    { value: number },
+    { doubled: number },
+    OnlineAgentToolContext
+  > = {
+    inputSchema: z.object({ value: z.number() }),
+    execute: (input, options) => {
+      expectTypeOf(input).toEqualTypeOf<{ value: number }>();
+      expectTypeOf(options.context).toEqualTypeOf<OnlineAgentToolContext>();
+      expectTypeOf(options.abortSignal).toEqualTypeOf<
+        AbortSignal | undefined
+      >();
+      expectTypeOf(options.toolCallId).toEqualTypeOf<string>();
+      return { doubled: input.value * 2 };
+    },
+  };
+  configurer.registerTool('typed', { version: '1', definition });
+  configurer.registerTool('factory', {
+    version: '1',
+    definition: () => definition,
+  });
+});
+
+const businessSession = (context: PublicToolContext): string =>
+  context.sessionId;
+void businessSession;
+
+it('exposes the shared service and configurer through the public server entry', () => {
+  expect(PublicOnlineAgentConfigurer).toBe(OnlineAgentConfigurer);
+  expectTypeOf<
+    Awaited<ReturnType<PublicOnlineAgentService['realtime']>>
+  >().toEqualTypeOf<OnlineAgentRealtimeSession>();
+});
+
+it('requires JSON Schema for background run through the public server entry', () => {
+  type Background = Awaited<ReturnType<PublicOnlineAgentService['background']>>;
+  type Run = Background['run'];
+  expectTypeOf<Parameters<Run>[0]>().toEqualTypeOf<ModelMessage[]>();
+  expectTypeOf<Parameters<Run>[1]>().toEqualTypeOf<JSONSchema7>();
+  expectTypeOf<Parameters<Run>>().toExtend<
+    [ModelMessage[], JSONSchema7, ...unknown[]]
+  >();
+  expectTypeOf<z.ZodObject>().not.toExtend<Parameters<Run>[1]>();
+  expectTypeOf<ReturnType<Run>>().toEqualTypeOf<Promise<void>>();
 });

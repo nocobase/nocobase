@@ -840,13 +840,19 @@ function query<T>(data: T | undefined): never {
 export const useChatAgents: typeof Chat.useChatAgents = () =>
   query([...AGENTS]);
 
+export const useChatModels: typeof Chat.useChatModels = () => query([]);
 export const useConversation: typeof Chat.useConversation = (
   conversationId,
 ) => {
   const { conversations } = useStore();
   return query(
     conversationId
-      ? conversations.find((item) => item.id === conversationId)
+      ? (() => {
+          const item = conversations.find((item) => item.id === conversationId);
+          return item
+            ? { ...item, execution: { status: item.run ? 'running' : 'idle' } }
+            : undefined;
+        })()
       : undefined,
   );
 };
@@ -912,7 +918,7 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
       let id = conversationId;
       const agent = AGENTS.find((candidate) => candidate.id === agentId);
       if (!id) {
-        if (!agent) return Promise.resolve(null);
+        if (!agent) return false;
         id = `new-${Date.now().toString(36)}`;
         const created = conversation(id, agent.id, input.content.slice(0, 30), {
           source,
@@ -936,7 +942,7 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
       );
       const detail = store.conversations.find((item) => item.id === target);
       if (detail) answer(target, detail.agent.id);
-      return Promise.resolve(null);
+      return true;
     },
     [conversationId, agentId, source, onCreated],
   );
@@ -996,8 +1002,6 @@ export const useConversationActions: typeof Chat.useConversationActions =
     stop: mutation<string>((id) =>
       patchConversation(id, (item) => ({ ...item, run: null })),
     ),
-    fallback: mutation<string>(noop),
-    restore: mutation<string>(noop),
     markRead: (id: string) => {
       if (store.conversations.find((item) => item.id === id)?.read === false)
         patchConversation(id, (item) => ({ ...item, read: true }));
@@ -1014,3 +1018,22 @@ const SOURCES: readonly Chat.ConversationSourceOption[] = [
 
 export const useConversationSources: typeof Chat.useConversationSources = () =>
   SOURCES;
+
+/** The preview has no network stream; production chat uses the plugin controller. */
+export const useChatStream: typeof Chat.useChatStream = () => undefined;
+export const useChatController: typeof Chat.useChatController = () =>
+  ({
+    refresh: async () => {},
+    isStopping: () => false,
+    submissions: {
+      blocked: () => false,
+      snapshot: () => [],
+      releaseUnknown: () => false,
+    },
+  }) as unknown as ReturnType<typeof Chat.useChatController>;
+
+export {
+  chatFeedback,
+  chatIsRunning,
+} from '../../../../packages/plugins/app-plugin-agents/client/chat/feedback.js';
+export { useChatScroll } from '../../../../packages/plugins/app-plugin-agents/client/chat/use-chat-scroll.js';

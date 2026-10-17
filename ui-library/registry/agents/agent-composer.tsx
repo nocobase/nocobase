@@ -596,7 +596,9 @@ export function AgentComposer({
     !sending &&
     !waiting;
   const showStop =
-    running && empty && files.length === 0 && onStop !== undefined;
+    running &&
+    (disabled || (empty && files.length === 0)) &&
+    onStop !== undefined;
 
   function submit(): void {
     if (!canSend) return;

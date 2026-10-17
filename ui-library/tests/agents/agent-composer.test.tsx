@@ -277,6 +277,33 @@ describe('AgentComposer', () => {
       expect(onSend).toHaveBeenCalledWith('See these', undefined, []);
     });
 
+    it('retains text, uploaded files and context when the client refuses acceptance', async () => {
+      const uploads = pendingUploads();
+      const onSend = vi.fn(() => false);
+      render(
+        <AgentComposer
+          onSend={onSend}
+          attachments={uploads}
+          context={{
+            chips: CHIPS,
+            onRemove: vi.fn(),
+            build: () => ({ route: '/issues' }),
+          }}
+        />,
+      );
+      pick(new File(['draft'], 'draft.txt', { type: 'text/plain' }));
+      await uploads.settle('draft.txt');
+      fireEvent.change(box(), { target: { value: 'Keep the unsent draft' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+      await waitFor(() => expect(onSend).toHaveBeenCalledOnce());
+      expect(box()).toHaveValue('Keep the unsent draft');
+      expect(files()).toHaveTextContent('draft.txt');
+      expect(
+        screen.getByRole('list', { name: 'Context the next message carries' }),
+      ).toHaveTextContent('PM-12');
+      expect(uploads.discarded).toEqual([]);
+    });
+
     it('takes at most the files a message may carry', () => {
       render(
         <AgentComposer onSend={() => true} attachments={pendingUploads()} />,
@@ -300,4 +327,25 @@ describe('AgentComposer', () => {
       expect(screen.queryByRole('button', { name: 'Attach files' })).toBeNull();
     });
   });
+});
+
+it('keeps a draft and exposes Stop while an OnlineAgent execution blocks sending', async () => {
+  const onStop = vi.fn();
+  const onSend = vi.fn(() => true);
+  render(
+    <AgentComposer
+      running
+      disabled
+      onSend={onSend}
+      onStop={onStop}
+      draft={{ nonce: 1, text: 'Keep my draft' }}
+    />,
+  );
+  await waitFor(() =>
+    expect(screen.getByRole('textbox')).toHaveValue('Keep my draft'),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+  expect(onStop).toHaveBeenCalledTimes(1);
+  expect(onSend).not.toHaveBeenCalled();
+  expect(screen.getByRole('textbox')).toHaveValue('Keep my draft');
 });

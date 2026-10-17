@@ -12,6 +12,8 @@ import type { IntakeAiJob } from '../../shared/intake-ai.js';
 import type { Plan, PlanRow } from '../../shared/plans.js';
 import { api, clientMocks, me, resetApi } from './fake-client.js';
 import { renderAt } from './render.js';
+import { IntakeAgentSlotContext } from '../../client/kit/page-context.js';
+import { useIntakeAiAvailability } from '../../client/pages/intake/use-intake-ai.js';
 
 vi.mock('@nocobase/app-client', () => clientMocks.appClient());
 vi.mock('@nocobase/i18n/client', () => clientMocks.i18n());
@@ -138,6 +140,46 @@ const renderTab = (search: string) =>
 beforeEach(() => window.localStorage.clear());
 
 describe('AI on the AI draft tab', () => {
+  it.each([false, true])(
+    'keeps Runner availability hints only for the default organizer (custom=%s)',
+    async (custom) => {
+      resetApi({
+        ...base,
+        'GET projects/intake/aiAvailability': () => ({
+          data: { available: true, reason: null, by: 'Planner', waits: true },
+        }),
+      });
+      function Organizer() {
+        const availability = useIntakeAiAvailability();
+        return (
+          <span data-testid='availability-loaded'>
+            {availability ? 'loaded' : 'loading'}
+          </span>
+        );
+      }
+      renderAt('/issues/new?tab=ai', [
+        {
+          path: '/issues/new',
+          element: (
+            <IntakeAgentSlotContext.Provider
+              value={custom ? { Organize: Organizer } : null}
+            >
+              <Organizer />
+              <NewIssuePage />
+            </IntakeAgentSlotContext.Provider>
+          ),
+        },
+      ]);
+      await waitFor(() =>
+        expect(
+          screen.getAllByTestId('availability-loaded')[0],
+        ).toHaveTextContent('loaded'),
+      );
+      if (custom) expect(screen.queryByText('intakeAi.waitsHint')).toBeNull();
+      else expect(screen.getByText('intakeAi.waitsHint')).toBeVisible();
+    },
+  );
+
   it('follows an AI request: a progress card, then the drafts as editable rows', async () => {
     let reads = 0;
     resetApi({

@@ -108,6 +108,7 @@ export interface ConversationService {
   create(
     userId: string,
     request: CreateConversationRequest,
+    runnerConfig?: import('../../online-agent/config.js').OnlineAgentConfig,
   ): Promise<ConversationDetail>;
   get(userId: string, id: string): Promise<ConversationDetail>;
   /** Rename (the title becomes the owner's) and archive or unarchive. */
@@ -126,6 +127,18 @@ export interface ConversationService {
     userId: string,
     id: string,
     request: SendMessageRequest,
+  ): Promise<SendMessageResult>;
+  /** Strict admission for a Runner-bound OnlineAgent, within the shared conversation lock. */
+  sendRealtime(
+    userId: string,
+    id: string,
+    request: SendMessageRequest,
+    input: {
+      config: import('../../online-agent/config.js').OnlineAgentConfig;
+      expectedConfig: import('../../online-agent/config.js').OnlineAgentConfig;
+      workContext?: import('../../../shared/conversations.js').ResolvedPageContext;
+      business?: import('../../online-agent/codec.js').OnlineAgentJson;
+    },
   ): Promise<SendMessageResult>;
   /** A new conversation and its first message (`StartConversationRequest`): the application pages' buttons. */
   start(
@@ -183,7 +196,7 @@ export interface ConversationService {
     provide(source: ConversationRules): () => void;
   };
   /** Turns the run's new text events into assistant messages; nothing for runs on other subjects. */
-  syncRun(runId: string): Promise<void>;
+  syncRun(runId: string): Promise<Run>;
 
   /** The enabled agents the person may chat with, with whether each can answer now. */
   chatAgents(userId: string): Promise<ChatAgent[]>;

@@ -42,6 +42,7 @@ import {
   type ChatPanelState,
   type ChatPanelView,
 } from './panel-state.js';
+import { ChatClientProvider } from './controller.js';
 import { useChatRealtime } from './use-chat.js';
 
 export const CHAT_PANEL_ID = 'agents-chat-panel';
@@ -439,7 +440,7 @@ export function ChatProvider({
             )
           }
         >
-          {children}
+          <ChatClientProvider>{children}</ChatClientProvider>
         </ChatSourcesProvider>
       </ChatPageContext.Provider>
     </ChatPanelContext.Provider>
