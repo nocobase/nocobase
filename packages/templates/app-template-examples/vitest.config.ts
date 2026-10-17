@@ -15,12 +15,9 @@ export default createReactVitestConfig({
           /@nocobase\/app-testing\/(?:dist\/)?src\/client\//u,
           // AppClientProviders includes the navigation guard and must use that same router context.
           /@nocobase\/app-client\//u,
-          // Transform clients that consume router or AppClient contexts together with their providers.
-          /@nocobase\/app-plugin-(?:authentication|api-keys|users|i18n)\/(?:dist\/)?client\//u,
-          /@nocobase\/app-plugin-authorization\/(?:dist\/)?client\//u,
-          /@nocobase\/app-plugin-(?:lifecycle-example|office-flows-example)\/(?:dist\/)?client\//u,
-          /@nocobase\/app-plugin-notification-in-app\/(?:dist\/)?client\//u,
-          /@nocobase\/app-plugin-agents\/(?:dist\/)?client\//u,
+          // Every client plugin that resolves AppClient tokens must share the transformed runtime.
+          // Keep server/shared modules external so their service identities remain unchanged.
+          /@nocobase\/app-plugin-[^/]+\/(?:dist\/)?client\//u,
         ],
       },
     },
