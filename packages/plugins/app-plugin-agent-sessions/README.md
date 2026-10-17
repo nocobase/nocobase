@@ -189,6 +189,8 @@ Removing a computer leaves its sessions readable; they take no more messages.
 
 ## Verification
 
+Applications may call `service.onCommittedEvent(listener)` to observe immediate `turnEnded`, `turnFailed` and `permissionRequested` reminder identities after the transcript transaction commits. The callback receives only owner/session/title/sequence/reason, without transcript bodies or permission input. It runs independently of delayed notices and seen settlement, adds no SQL, and returns an unsubscribe function. Schedule asynchronous work from the listener and handle its failures in the application; observer failures cannot roll back a committed transcript. No event is emitted for cancelled turns or a transaction that rolls back.
+
 ```bash
 pnpm --filter @nocobase/app-plugin-agent-sessions lint
 pnpm --filter @nocobase/app-plugin-agent-sessions typecheck
