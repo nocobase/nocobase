@@ -75,7 +75,7 @@ export function LifecycleDiagramDemo(): ReactElement {
     'Record is in review. Select a state or transition.',
   );
   return (
-    <div className='flex h-svh flex-col gap-3 bg-background p-6 text-foreground'>
+    <div className='flex min-h-svh flex-col gap-3 bg-background p-6 text-foreground'>
       <p className='text-sm' aria-live='polite'>
         {detail}
       </p>
@@ -89,7 +89,6 @@ export function LifecycleDiagramDemo(): ReactElement {
         }
         availableTransitions={['withdraw', 'reassign', 'decide']}
         ariaLabel='Expense lifecycle'
-        className='min-h-0 flex-1'
         onStateClick={(state) =>
           setDetail(
             `${state.title}: ${description.onEnter[state.name]?.join(', ') ?? '—'}`,

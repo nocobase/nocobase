@@ -50,6 +50,41 @@ const description: LifecycleDescription = {
   onEnter: {},
 };
 
+it('marks configurable states and transitions only for real parameter bindings', () => {
+  const graph = lifecycleDiagramGraph({
+    ...description,
+    parameterConfiguration: {
+      readMode: 'live',
+      groups: [
+        {
+          key: 'review',
+          title: 'Review',
+          schemaVersion: 1,
+          fields: {
+            limit: {
+              type: 'number',
+              title: 'Limit',
+              bindings: [{ state: 'review' }, { transition: 'submit' }],
+            },
+          },
+        },
+      ],
+    },
+  });
+  expect(graph.nodes.find((node) => node.id === 'review')?.configurable).toBe(
+    true,
+  );
+  expect(graph.nodes.find((node) => node.id === 'draft')?.configurable).toBe(
+    false,
+  );
+  expect(
+    graph.edges.find((edge) => edge.label === 'Submit')?.configurable,
+  ).toBe(true);
+  expect(
+    graph.edges.find((edge) => edge.label === 'Expire')?.configurable,
+  ).toBe(false);
+});
+
 describe('lifecycle diagram projection', () => {
   it('preserves all source/destination pairs, self-transitions and parallel transitions', () => {
     const graph = lifecycleDiagramGraph(description, {

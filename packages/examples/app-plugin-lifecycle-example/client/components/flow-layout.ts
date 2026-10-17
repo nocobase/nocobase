@@ -7,6 +7,9 @@ import type {
 export interface FlowDiagramNode {
   readonly id: string;
   readonly label: string;
+  readonly kind?: 'initial' | 'final' | 'state';
+  /** True only when the lifecycle definition binds configurable parameters to this state. */
+  readonly configurable?: boolean;
   /** Fixed canvas dimensions; customize these when supplying richer node content. */
   readonly width?: number;
   readonly height?: number;
@@ -22,6 +25,8 @@ export interface FlowDiagramEdge {
   readonly source: string;
   readonly target: string;
   readonly label?: string;
+  /** True when the transition binds editable business parameters. */
+  readonly configurable?: boolean;
   /** A visual annotation, not an inspectable business state or transition. */
   readonly decorative?: boolean;
   readonly visited?: boolean;
@@ -74,10 +79,10 @@ export async function layoutFlowDiagram(
     if (ids.has(node.id)) throw new Error(`Duplicate node: ${node.id}`);
     ids.add(node.id);
     if (
-      !Number.isFinite(node.width ?? 200) ||
-      (node.width ?? 200) <= 0 ||
-      !Number.isFinite(node.height ?? 64) ||
-      (node.height ?? 64) <= 0
+      !Number.isFinite(node.width ?? 232) ||
+      (node.width ?? 232) <= 0 ||
+      !Number.isFinite(node.height ?? 104) ||
+      (node.height ?? 104) <= 0
     )
       throw new Error(`Invalid dimensions: ${node.id}`);
   }
@@ -112,8 +117,8 @@ export async function layoutFlowDiagram(
     },
     children: graph.nodes.map((node) => {
       const id = nodeIds.get(node.id)!;
-      const width = node.width ?? 200;
-      const height = node.height ?? 64;
+      const width = node.width ?? 232;
+      const height = node.height ?? 104;
       const connections = graph.edges.map((edge, index) => ({ edge, index }));
       const incoming = connections.filter(
         ({ edge }) => edge.target === node.id,
@@ -182,8 +187,8 @@ export async function layoutFlowDiagram(
         ...node,
         x: placed.x ?? 0,
         y: placed.y ?? 0,
-        width: placed.width ?? node.width ?? 200,
-        height: placed.height ?? node.height ?? 64,
+        width: placed.width ?? node.width ?? 232,
+        height: placed.height ?? node.height ?? 104,
       };
     }),
     edges: graph.edges.map((edge, index) => {

@@ -1,0 +1,26 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings: MarkdownHeading[];
+}
+
+const { headings } = Astro.props;
+const top = Math.min(...headings.map(({ depth }) => depth));
+---
+
+<ul class='toc'>
+  {headings.map((heading) => (
+    <li
+      style={
+        heading.depth > top
+          ? `padding-left: ${(heading.depth - top) * 12}px`
+          : undefined
+      }
+    >
+      <a href={`#${heading.slug}`} data-toc-link={heading.slug}>
+        {heading.text}
+      </a>
+    </li>
+  ))}
+</ul>

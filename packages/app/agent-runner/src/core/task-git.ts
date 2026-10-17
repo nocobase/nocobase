@@ -21,8 +21,6 @@ export interface TaskGitContext {
 export interface TaskGitOptions extends GitInvocationOptions {
   /** Run credentials replace every host helper; rejection must not fall back to machine credentials. */
   readonly auth?: GitAuth;
-  /** Submodules may share credentials only within their parent's HTTP origin. Defaults to the repository URL. */
-  readonly authScope?: string;
 }
 
 // Keep this list narrow: new Git configuration can introduce new ways to execute code or redirect credentials.
@@ -263,7 +261,7 @@ export async function taskGit(
     context.dir,
     {
       ...env,
-      ...gitAuthEnv(options.auth, options.authScope ?? context.url),
+      ...gitAuthEnv(options.auth, context.url),
       ...helperEnv,
     },
     options,

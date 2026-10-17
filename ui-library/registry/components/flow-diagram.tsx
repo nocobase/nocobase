@@ -8,6 +8,11 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  Background,
+  MiniMap,
+  Panel,
+  useReactFlow,
+  useViewport,
   BaseEdge,
   EdgeText,
   Handle,
@@ -21,6 +26,23 @@ import {
 } from '@xyflow/react';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
+import {
+  CheckIcon,
+  CircleDotIcon,
+  FlagIcon,
+  GitBranchIcon,
+  MaximizeIcon,
+  MinusIcon,
+  PlayIcon,
+  PlusIcon,
+  Settings2Icon,
+} from 'lucide-react';
+import { Button } from '#components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '#components/ui/tooltip';
 import '@xyflow/react/dist/style.css';
 
 import {
@@ -37,15 +59,58 @@ type DiagramNode = Node<{
   item: FlowDiagramNode;
   direction: FlowDiagramDirection;
   content: ReactNode;
+  actions?: ReactNode;
+  description?: ReactNode;
 }>;
 type DiagramEdge = Edge<{
   points: readonly FlowDiagramPoint[];
   labelPosition?: FlowDiagramPoint;
 }>;
 
-function DiagramState({ data }: NodeProps<DiagramNode>): ReactElement {
+function DiagramState({ data, id }: NodeProps<DiagramNode>): ReactElement {
+  const { t } = useTranslation();
+  const flow = useReactFlow();
+  const Icon =
+    data.item.kind === 'initial'
+      ? PlayIcon
+      : data.item.kind === 'final'
+        ? FlagIcon
+        : GitBranchIcon;
+  const StatusIcon = data.item.highlighted ? CircleDotIcon : CheckIcon;
+  const state = data.item.highlighted
+    ? t('flowDiagram.current', { defaultValue: 'Current' })
+    : data.item.visited
+      ? t('flowDiagram.visited', { defaultValue: 'Visited' })
+      : data.item.kind === 'initial'
+        ? t('flowDiagram.initial', { defaultValue: 'Initial' })
+        : data.item.kind === 'final'
+          ? t('flowDiagram.final', { defaultValue: 'Final' })
+          : t('flowDiagram.state', { defaultValue: 'State' });
   return (
     <div
+      onFocusCapture={(event) => {
+        // Readable initial zoom can put controls outside the viewport. Keyboard
+        // focus brings their owning node into view without changing the zoom.
+        const bounds = event.currentTarget.getBoundingClientRect();
+        const canvas = event.currentTarget
+          .closest('.react-flow')
+          ?.getBoundingClientRect();
+        const node = flow.getNode(id);
+        if (
+          canvas &&
+          node &&
+          (bounds.left < canvas.left ||
+            bounds.right > canvas.right ||
+            bounds.top < canvas.top ||
+            bounds.bottom > canvas.bottom)
+        ) {
+          void flow.setCenter(
+            node.position.x + (node.width ?? 232) / 2,
+            node.position.y + (node.height ?? 104) / 2,
+            { zoom: flow.getZoom() },
+          );
+        }
+      }}
       data-execution-state={
         data.item.highlighted
           ? 'current'
@@ -53,27 +118,83 @@ function DiagramState({ data }: NodeProps<DiagramNode>): ReactElement {
             ? 'visited'
             : 'pending'
       }
-      style={
-        data.item.highlighted || data.item.visited
-          ? {
-              borderColor: `color-mix(in srgb, var(--primary) ${data.item.highlighted ? 100 : 50}%, var(--border))`,
-              background: `color-mix(in srgb, var(--primary) ${data.item.highlighted ? 22 : 8}%, var(--card))`,
-            }
-          : undefined
-      }
       className={cn(
-        'flex h-full w-full items-center justify-center overflow-hidden rounded-lg border border-border bg-card px-3 text-sm text-card-foreground shadow-sm',
-        data.item.highlighted && 'font-semibold ring-2 ring-primary/30',
+        'group relative flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-sm text-card-foreground shadow-md transition-[box-shadow,border-color] hover:border-primary/50 hover:shadow-lg motion-reduce:transition-none [.selected_&]:ring-2 [.selected_&]:ring-ring [.selected_&]:ring-offset-2 [.selected_&]:ring-offset-background',
+        data.item.highlighted && 'border-primary ring-4 ring-primary/10',
+        data.item.visited && !data.item.highlighted && 'border-primary/40',
         data.item.className,
       )}
     >
+      {!data.item.decorative && (
+        <div
+          aria-hidden
+          className={cn(
+            'absolute inset-x-0 top-0 h-1 bg-border',
+            data.item.kind === 'initial' && 'bg-primary/45',
+            data.item.kind === 'final' && 'bg-foreground/35',
+            (data.item.highlighted || data.item.visited) && 'bg-primary',
+          )}
+        />
+      )}
       <Handle
         id='in'
         type='target'
         position={data.direction === 'RIGHT' ? Position.Left : Position.Top}
         className='invisible'
       />
-      <div className='w-full text-center leading-snug'>{data.content}</div>
+      {data.item.decorative ? (
+        <div className='flex h-full items-center justify-center text-center'>
+          {data.content}
+        </div>
+      ) : (
+        <>
+          <div className='flex min-h-0 flex-1 items-center gap-3 px-4 pt-1'>
+            <div
+              aria-hidden
+              className={cn(
+                'flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-linear-to-br from-muted to-card text-muted-foreground shadow-xs',
+                (data.item.kind === 'initial' ||
+                  data.item.visited ||
+                  data.item.highlighted) &&
+                  'border-primary/15 from-primary/15 to-primary/5 text-primary',
+              )}
+            >
+              <Icon className='size-4' />
+            </div>
+            <div className='flex min-w-0 flex-col gap-2 leading-snug'>
+              <div className='line-clamp-2 font-semibold'>{data.content}</div>
+              {data.description && (
+                <div className='text-xs text-muted-foreground'>
+                  {data.description}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className='flex min-h-8 shrink-0 items-center justify-between gap-2 border-t border-border/60 bg-muted/35 px-4 text-xs text-muted-foreground'>
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5',
+                (data.item.highlighted || data.item.visited) &&
+                  'font-medium text-primary',
+              )}
+            >
+              {(data.item.highlighted || data.item.visited) && (
+                <StatusIcon className='size-3' aria-hidden />
+              )}
+              {state}
+            </span>
+            {data.actions ??
+              (data.item.configurable && (
+                <span className='inline-flex items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-card-foreground'>
+                  <Settings2Icon className='size-3' aria-hidden />
+                  {t('flowDiagram.configurable', {
+                    defaultValue: 'Parameters',
+                  })}
+                </span>
+              ))}
+          </div>
+        </>
+      )}
       <Handle
         id='out'
         type='source'
@@ -127,10 +248,18 @@ function DiagramConnection(props: EdgeProps<DiagramEdge>): ReactElement {
           x={label.x}
           y={label.y}
           label={props.label}
-          labelStyle={{ fill: 'var(--foreground)', fontSize: 'var(--text-sm)' }}
-          labelBgStyle={{ fill: 'var(--card)' }}
-          labelBgPadding={[6, 4]}
-          labelBgBorderRadius={4}
+          labelStyle={{
+            fill: 'var(--foreground)',
+            fontSize: 'var(--text-xs)',
+            fontWeight: 500,
+          }}
+          labelBgStyle={{
+            fill: 'var(--card)',
+            stroke: 'var(--border)',
+            strokeWidth: 1,
+          }}
+          labelBgPadding={[9, 5]}
+          labelBgBorderRadius={7}
         />
       ) : null}
     </>
@@ -147,6 +276,13 @@ export interface FlowDiagramProps extends FlowDiagramGraph {
   readonly className?: string;
   readonly style?: CSSProperties;
   readonly ariaLabel: string;
+  /** Interactive controls shown in the node footer. */
+  readonly nodeActions?: (node: FlowDiagramNode) => ReactNode;
+  /** Supporting content below the node title; provide sufficient fixed node dimensions. */
+  readonly nodeDescription?: (node: FlowDiagramNode) => ReactNode;
+  /** Initial fit prioritizes legibility; the Fit control still shows the entire graph. */
+  readonly initialMinZoom?: number;
+  readonly showMiniMap?: boolean;
   readonly renderNode?: (node: FlowDiagramNode) => ReactNode;
   readonly onNodeClick?: (node: FlowDiagramNode) => void;
   readonly onEdgeClick?: (edge: FlowDiagramEdge) => void;
@@ -163,6 +299,10 @@ export function FlowDiagram({
   style,
   ariaLabel,
   renderNode,
+  nodeActions,
+  nodeDescription,
+  initialMinZoom = 0.1,
+  showMiniMap = false,
   onNodeClick,
   onEdgeClick,
   onLayoutError,
@@ -186,11 +326,15 @@ export function FlowDiagram({
       width,
       height,
     })),
-    edges: edges.map(({ id, source, target, label }) => ({
+    edges: edges.map(({ id, source, target, label, configurable }) => ({
       id,
       source,
       target,
-      label,
+      label: configurable
+        ? [label, t('flowDiagram.configurable', { defaultValue: 'Parameters' })]
+            .filter(Boolean)
+            .join(' · ')
+        : label,
     })),
     direction,
   });
@@ -263,10 +407,12 @@ export function FlowDiagram({
             item,
             direction,
             content: renderNode ? renderNode(item) : item.label,
+            actions: nodeActions?.(item),
+            description: nodeDescription?.(item),
           },
         };
       }),
-    [layout, nodes, direction, renderNode],
+    [layout, nodes, direction, renderNode, nodeActions, nodeDescription],
   );
   const placedEdges = useMemo<DiagramEdge[]>(
     () =>
@@ -279,12 +425,14 @@ export function FlowDiagram({
             : 'color-mix(in srgb, var(--muted-foreground) 65%, transparent)';
         return {
           ...item,
+          label: placed.label,
           type: 'diagram',
+          animated: Boolean(item.highlighted && !item.visited),
           focusable: !item.decorative,
           selectable: !item.decorative,
           sourceHandle: 'out',
           targetHandle: 'in',
-          ariaLabel: item.label ?? `${item.source} → ${item.target}`,
+          ariaLabel: placed.label ?? `${item.source} → ${item.target}`,
           markerEnd: { type: MarkerType.ArrowClosed, color },
           style: {
             stroke: color,
@@ -298,9 +446,14 @@ export function FlowDiagram({
   );
   const zoom =
     layout && width
-      ? Math.max(0.1, Math.min(1, (width - 48) / Math.max(1, layout.width)))
+      ? Math.max(
+          0.1,
+          initialMinZoom,
+          Math.min(1, (width - 48) / Math.max(1, layout.width)),
+        )
       : 1;
-  const height = layout ? Math.max(240, layout.height * zoom + 48) : 240;
+  // Reserve room above and below the graph for the canvas chrome.
+  const height = layout ? Math.max(320, layout.height * zoom + 144) : 320;
   return (
     <div
       ref={containerRef}
@@ -324,7 +477,7 @@ export function FlowDiagram({
       }}
       aria-label={ariaLabel}
       className={cn(
-        'relative h-96 w-full rounded-lg border border-border bg-muted/20 text-foreground',
+        'relative isolate h-96 w-full overflow-hidden rounded-xl border border-border bg-linear-to-br from-primary/5 via-background to-muted/40 text-foreground [&_.react-flow__attribution]:bg-card/80 [&_.react-flow__attribution]:text-muted-foreground [&_.react-flow__edge.selected_path.react-flow__edge-path]:stroke-primary [&_.react-flow__edge.animated_path]:motion-reduce:animate-none',
         className,
       )}
       style={{ ...(autoHeight ? { height } : {}), ...style }}
@@ -351,7 +504,11 @@ export function FlowDiagram({
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView={!autoHeight}
-          fitViewOptions={{ padding: 0.08 }}
+          fitViewOptions={{
+            padding: 0.2,
+            minZoom: initialMinZoom,
+            maxZoom: 1,
+          }}
           defaultViewport={
             autoHeight
               ? {
@@ -361,6 +518,9 @@ export function FlowDiagram({
                 }
               : undefined
           }
+          // A full-height process is read by scrolling the page, not wheel-zooming the canvas.
+          zoomOnScroll={!autoHeight}
+          preventScrolling={!autoHeight}
           minZoom={0.1}
           maxZoom={2}
           nodesDraggable={false}
@@ -383,8 +543,125 @@ export function FlowDiagram({
               defaultValue: 'Press Enter or Space to select a transition.',
             }),
           }}
-        />
+        >
+          <Background color='var(--border)' gap={24} size={1.5} />
+          {showMiniMap && (
+            <MiniMap
+              pannable
+              zoomable
+              ariaLabel={t('flowDiagram.overview', {
+                defaultValue: 'Diagram overview',
+              })}
+              nodeColor='var(--muted-foreground)'
+              maskColor='color-mix(in srgb, var(--background) 75%, transparent)'
+              style={{
+                background: 'var(--card)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+              }}
+              className='hidden sm:block'
+            />
+          )}
+          <Panel position='top-left' className='pointer-events-none!'>
+            <div className='inline-flex items-center gap-3 rounded-lg border bg-card/95 px-3 py-2 text-xs text-muted-foreground shadow-xs'>
+              <span className='inline-flex items-center gap-1.5'>
+                <GitBranchIcon className='size-3.5' aria-hidden />
+                {t('flowDiagram.states', { defaultValue: 'States' })}
+                <span className='font-semibold text-foreground tabular-nums'>
+                  {nodes.filter((node) => !node.decorative).length}
+                </span>
+              </span>
+              <span className='h-3 w-px bg-border' aria-hidden />
+              <span>
+                {t('flowDiagram.transitions', { defaultValue: 'Transitions' })}{' '}
+                <span className='font-semibold text-foreground tabular-nums'>
+                  {edges.filter((edge) => !edge.decorative).length}
+                </span>
+              </span>
+            </div>
+          </Panel>
+          <DiagramToolbar top={autoHeight} />
+        </ReactFlow>
       )}
     </div>
+  );
+}
+
+/** View controls belong inside React Flow so they always use this canvas's viewport. */
+function DiagramToolbar({
+  top = false,
+}: {
+  readonly top?: boolean;
+}): ReactElement {
+  const { t } = useTranslation();
+  const flow = useReactFlow();
+  const { zoom } = useViewport();
+  const controls = [
+    {
+      label: t('flowDiagram.zoomOut', { defaultValue: 'Zoom out' }),
+      icon: MinusIcon,
+      disabled: zoom <= 0.1,
+      run: () => void flow.zoomOut(),
+    },
+    {
+      label: t('flowDiagram.zoomIn', { defaultValue: 'Zoom in' }),
+      icon: PlusIcon,
+      disabled: zoom >= 2,
+      run: () => void flow.zoomIn(),
+    },
+    {
+      label: t('flowDiagram.fit', { defaultValue: 'Fit to view' }),
+      icon: MaximizeIcon,
+      disabled: false,
+      run: () => void flow.fitView({ padding: 0.2, maxZoom: 1 }),
+    },
+  ];
+  return (
+    <Panel
+      position={top ? 'top-right' : 'bottom-left'}
+      className='max-sm:top-12! max-sm:bottom-auto!'
+    >
+      <div className='flex items-center gap-1 rounded-xl border bg-card/95 p-1.5 shadow-md'>
+        {controls.map(({ label, icon: Icon, disabled, run }) => (
+          <Tooltip key={label}>
+            <TooltipTrigger render={<span />}>
+              <Button
+                type='button'
+                size='sm'
+                className='size-7 p-0'
+                variant='ghost'
+                aria-label={label}
+                disabled={disabled}
+                onClick={run}
+              >
+                <Icon />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
+        ))}
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                className='min-w-12 px-2 text-xs text-muted-foreground tabular-nums'
+                aria-label={t('flowDiagram.actualSize', {
+                  defaultValue: 'Actual size',
+                })}
+                onClick={() => void flow.zoomTo(1)}
+              />
+            }
+          >
+            {Math.round(zoom * 100)}%
+          </TooltipTrigger>
+          <TooltipContent>
+            {t('flowDiagram.actualSize', { defaultValue: 'Actual size' })}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </Panel>
   );
 }

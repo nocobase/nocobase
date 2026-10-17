@@ -153,12 +153,12 @@ export function createIssueRoutes(deps: {
         },
         action: 'pm.issues/create',
         examples: [
-          'issue create --file issue.json --status in_progress',
+          'issue create --file issue.json --status in_progress --start',
           'issue create --file issue.json --attach screenshot.png',
         ],
       }),
       description:
-        'Needs `create` on `pm.issues` for the issue’s project. A session context header must identify an active session owned by the caller; its project is the default and successful creation is linked to it. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.',
+        'Needs `create` on `pm.issues` for the issue’s project. A session context header must identify an active session owned by the caller; its project is the default and successful creation is linked to it. The issue starts in `backlog` unless `statusKey` is `in_progress`; explicit `start: true` with backlog or an omitted status is refused before saving (`ISSUE_START_REQUIRES_IN_PROGRESS`). Use `--status in_progress --start` to request work. The caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.',
       responses: {
         201: dataResponse(IssueSchema),
         ...apiErrorResponses,
@@ -328,10 +328,12 @@ export function createIssueRoutes(deps: {
           description: { contentFile: true },
           needsYou: { name: 'needs-you', contentFile: true },
           next: { contentFile: true },
+          acceptance: { contentFile: true },
         },
         action: 'pm.issues/edit',
         examples: [
           'issue update PM-12 --status in_review --needs-you "Review the change and accept it or send it back."',
+          'issue update PM-12 --status in_review --needs-you "Check the export filter and accept it." --acceptance-file report.md',
           'issue update PM-12 --file change.json',
         ],
       }),

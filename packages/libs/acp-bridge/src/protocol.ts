@@ -14,6 +14,11 @@ export const BRIDGE_PROTOCOL_VERSION: number = 3;
 
 /** Includes agent initialization and opening a prompt-free session. */
 export const DISCOVERY_TIMEOUT_MS: number = 150_000;
+/**
+ * How long the agent started to discover a new session's choices waits for that session's first message, when the
+ * discovery named the session (`discoverChoices.sessionId`). Matches how long the browser shows those choices.
+ */
+export const WARM_AGENT_MS: number = 5 * 60_000;
 
 /** The bridge's routes, relative to the application's address. */
 export const BRIDGE_ROUTES: {
@@ -188,6 +193,11 @@ export type BridgeCommand =
       readonly agentId: string;
       readonly cwd: string;
       readonly settings: Readonly<Record<string, string>>;
+      /**
+       * The session a first message sent with these choices would create. The bridge starts the agent for that
+       * session and keeps it, with the ACP session it opened, for the session's first prompt (`WARM_AGENT_MS`).
+       */
+      readonly sessionId?: string | undefined;
     }
   | {
       readonly type: 'prompt';
@@ -226,6 +236,7 @@ export const BridgeCommandSchema: z.ZodType<BridgeCommand> =
       agentId: z.string().min(1).max(40),
       cwd: z.string().min(1).max(1000),
       settings: z.record(id, id),
+      sessionId: id.optional(),
     }),
     z.object({
       type: z.literal('prompt'),
@@ -460,6 +471,18 @@ export const DiscoveredChoicesSchema: z.ZodType<DiscoveredChoices> = z.object({
   choices: z.array(SessionChoiceSchema).max(20),
 });
 
+/**
+ * What the bridge is doing to open a session's agent: starting its process (`starting`), opening or continuing its ACP
+ * session (`opening`), or applying the session's choices (`configuring`).
+ */
+export type SessionStartup = 'starting' | 'opening' | 'configuring';
+
+export const SessionStartupSchema: z.ZodType<SessionStartup> = z.enum([
+  'starting',
+  'opening',
+  'configuring',
+]);
+
 /** What a session is now: the agent's own id for it, and what it offers. */
 export interface SessionState {
   readonly acpSessionId: string;
@@ -518,6 +541,8 @@ export interface ReportRequest {
   readonly bridgeStartedAt: string;
   readonly events: readonly BridgeEvent[];
   readonly state: SessionState | null;
+  /** What the bridge is doing to open the session's agent, null once it is open; bridges before it leave it out. */
+  readonly startup?: SessionStartup | null | undefined;
 }
 
 export const ReportRequestSchema: z.ZodType<ReportRequest> = z.object({
@@ -527,6 +552,7 @@ export const ReportRequestSchema: z.ZodType<ReportRequest> = z.object({
   bridgeStartedAt: isoTime,
   events: z.array(BridgeEventSchema).max(MAX_EVENTS_PER_REPORT),
   state: SessionStateSchema.nullable(),
+  startup: SessionStartupSchema.nullable().optional(),
 });
 
 export interface ReportResponse {

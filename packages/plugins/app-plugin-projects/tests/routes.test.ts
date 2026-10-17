@@ -449,6 +449,30 @@ describe('scoped keys and API key identities', () => {
 });
 
 describe('errors', () => {
+  it('maps the refused start to an HTTP error with a CLI suggestion', async () => {
+    const response = await call('/issues', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Must not be saved',
+        start: true,
+      }),
+    });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: {
+        status: 'INVALID_ARGUMENT',
+        reason: 'ISSUE_START_REQUIRES_IN_PROGRESS',
+        message: 'An issue must be In progress to start work.',
+        metadata: {
+          suggestions: [
+            { message: expect.stringContaining('--status in_progress') },
+          ],
+        },
+      },
+    });
+  });
+
   it('answers 403, 400, 404 and 409 in the standard error body', async () => {
     const forbidden = await call('/labels', {
       role: 'member',
@@ -1637,7 +1661,7 @@ describe('attachments over HTTP', () => {
     expect(h.stored.size).toBe(1);
   });
 
-  it('creates an issue with the files uploaded for it', async () => {
+  it('keeps uploads after a refused start and attaches them on retry', async () => {
     const shot = await upload(
       '/attachments',
       new File([new Uint8Array([137, 80])], 'screenshot.png', {
@@ -1645,15 +1669,34 @@ describe('attachments over HTTP', () => {
       }),
     );
     const { data: file } = (await shot.json()) as { data: { id: string } };
+    const refused = await call('/issues', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Broken',
+        start: true,
+        attachmentIds: [file.id],
+      }),
+    });
+    expect(refused.status).toBe(400);
+    expect(await refused.json()).toMatchObject({
+      error: { reason: 'ISSUE_START_REQUIRES_IN_PROGRESS' },
+    });
     const created = await call('/issues', {
       role: 'member',
       method: 'POST',
-      body: JSON.stringify({ title: 'Broken', attachmentIds: [file.id] }),
+      body: JSON.stringify({
+        title: 'Broken',
+        statusKey: 'in_progress',
+        start: true,
+        attachmentIds: [file.id],
+      }),
     });
     expect(created.status).toBe(201);
     const { data: issue } = (await created.json()) as {
       data: { identifier: string };
     };
+    expect(issue.identifier).toBe('PM-1');
     const listed = (await (
       await call(`/issues/${issue.identifier}/attachments`, { role: 'member' })
     ).json()) as { data: { id: string }[] };

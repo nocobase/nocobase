@@ -1471,7 +1471,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         const busy = await runsOfKey(conn, candidate, ACTIVE);
         if (busy.length > 0) return null;
 
-        const leaseExpiresAt = later(now, TIMINGS.leaseMs);
+        const leaseExpiresAt = later(now, TIMINGS.startTimeoutMs);
         const dispatchValues = {
           status: 'dispatched',
           failureReason: null,

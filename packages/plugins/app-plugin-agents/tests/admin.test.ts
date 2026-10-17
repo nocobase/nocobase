@@ -368,7 +368,7 @@ describe('admin API', () => {
     expect(revoked.body.data.status).toBe('revoked');
     expect(await h.services.runs.get(runId)).toMatchObject({
       status: 'queued',
-      failureReason: 'runnerOffline',
+      failureReason: 'runnerOfflineBeforeStart',
     });
     // A manager revoking someone else's runner tells its owner.
     expect(notices).toEqual([

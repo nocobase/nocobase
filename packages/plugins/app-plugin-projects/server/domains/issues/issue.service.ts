@@ -278,6 +278,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
           statusKey: values.statusKey,
           needsYou: null,
           next: null,
+          acceptance: null,
           priority: values.priority,
           ownerUserId: values.ownerUserId,
           executorType: values.executor?.type ?? null,

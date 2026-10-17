@@ -5,6 +5,7 @@
  */
 import type { RunApp } from '@nocobase/agent-protocol';
 import { runRetentionDays } from '../core/runs/run-data-purge.js';
+import { retryBaseDelayMs } from '../core/runs/policy.js';
 import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import { idGeneratorToken } from '@nocobase/app-server/id-generator';
@@ -39,8 +40,16 @@ import { agentsToken } from '../tokens.js';
 
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
-  /** Completed runs' events and prompt snapshots: 14 days by default, 0 disables cleanup. */
-  readonly runs?: { readonly retentionDays?: number };
+  /**
+   * Completed runs' events and prompt snapshots are kept `retentionDays`: 14 days by default, 0 disables cleanup. A
+   * failed attempt waits `retryBaseDelayMs` before the next, doubling up to ten minutes: 30 seconds by default.
+   */
+  readonly runs?: {
+    readonly retentionDays?: number;
+    readonly retryBaseDelayMs?: number;
+  };
+  /** How often the runners sweep runs (`sweepIntervalMs`): every 30 seconds by default. */
+  readonly runners?: { readonly sweepIntervalMs?: number };
   /**
    * The CLI agents talk to the application with, and where runners get it: `name` (the application's id from `app` when
    * left out), and `package`, the tarball this application serves (`{ kind: 'served' }`, from `dist` below) by default,
@@ -83,9 +92,13 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     runRetentionDays(
       this.app.config.get<AgentsConfig>('agents')?.runs?.retentionDays,
     );
+    retryBaseDelayMs(
+      this.app.config.get<AgentsConfig>('agents')?.runs?.retryBaseDelayMs,
+    );
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
+        retryBaseDelayMs: retryBaseDelayMs(config?.runs?.retryBaseDelayMs),
         runRetentionDays: () =>
           runRetentionDays(
             this.app.config.get<AgentsConfig>('agents')?.runs?.retentionDays,

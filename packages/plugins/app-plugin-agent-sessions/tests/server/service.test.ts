@@ -401,6 +401,94 @@ describe('AgentSessionsService', () => {
     ]);
   });
 
+  test('names the new session a discovery is for, so its bridge keeps the agent for that session', async ({
+    database,
+  }) => {
+    const { service, register, take } = setup(database);
+    const { computerId } = await register();
+    const sessionId = '0f6f4bb5-3a7c-4d22-9c55-6f6c2d1a9b10';
+    const input = { agentId: 'codex', cwd: '/home/zhou/code', settings: {} };
+    void service
+      .discoverChoices('u1', computerId, { ...input, sessionId })
+      .catch(() => undefined);
+    await vi.waitFor(async () =>
+      expect(await take(computerId)).toMatchObject([
+        { type: 'discoverChoices', sessionId },
+      ]),
+    );
+    // A message sent from those choices creates the session with that id.
+    const session = await service.createSession(owner, {
+      submissionId: sessionId,
+      computerId,
+      ...input,
+      content: text('first'),
+    });
+    expect(session.id).toBe(sessionId);
+    expect(await take(computerId)).toMatchObject([
+      { type: 'prompt', session: { id: sessionId, acpSessionId: null } },
+    ]);
+  });
+
+  test('lists only the viewer’s sessions tied to one record', async ({
+    database,
+  }) => {
+    const { service, register, started } = setup(database);
+    const { computerId, session: tied } = await started();
+    const other = await service.createSession(owner, {
+      computerId,
+      agentId: 'codex',
+      cwd: '/home/zhou/code',
+      content: text('Something else'),
+    });
+    await service.link(tied.id, 'issue', '42');
+    await service.link(other.id, 'issue', '7');
+    // Another person's session tied to the same record is not theirs to see.
+    const { computerId: theirs } = await register('u2');
+    const strangers = await service.createSession(stranger, {
+      computerId: theirs,
+      agentId: 'codex',
+      cwd: '/home/zhou/code',
+      content: text('Theirs'),
+    });
+    await service.link(strangers.id, 'issue', '42');
+    const linked = (value: string) =>
+      service
+        .listSessions(owner, { archived: false, pageSize: 20, linked: value })
+        .then((page) => page.sessions.map((session) => session.id));
+    expect(await linked('issue:42')).toEqual([tied.id]);
+    expect(await linked('issue:404')).toEqual([]);
+    expect(
+      (
+        await service.listSessions(stranger, {
+          archived: false,
+          pageSize: 20,
+          linked: 'issue:42',
+        })
+      ).sessions.map((session) => session.id),
+    ).toEqual([strangers.id]);
+    await service.updateSession(owner, tied.id, { archived: true });
+    expect(await linked('issue:42')).toEqual([]);
+  });
+
+  test('shows what the bridge is doing to open the agent until it is open', async ({
+    database,
+  }) => {
+    const { service, report, started } = setup(database);
+    const { computerId, session } = await started();
+    expect(session.startup).toBeNull();
+    await report(computerId, session.id, [], { startup: 'starting' });
+    expect((await service.getSession(owner, session.id)).startup).toBe(
+      'starting',
+    );
+    // A report that does not say, as from an older bridge, leaves it.
+    await report(computerId, session.id, []);
+    expect((await service.getSession(owner, session.id)).startup).toBe(
+      'starting',
+    );
+    await report(computerId, session.id, [], { startup: null });
+    expect((await service.getSession(owner, session.id)).startup).toBeNull();
+  });
+
   test('checks discovery ownership, installation, offline state and allowed directories before queueing', async ({
     database,
   }) => {

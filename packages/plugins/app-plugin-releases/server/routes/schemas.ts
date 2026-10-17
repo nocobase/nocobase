@@ -49,20 +49,28 @@ import type { Caller } from '../access/caller.js';
 const id = z.string().min(1);
 
 export const EnvironmentParams: z.ZodType<{ environmentId: string }> = z.object(
-  { environmentId: id },
+  { environmentId: id.describe('The environment identifier.') },
 );
 export const RegistryParams: z.ZodType<{ registryId: string }> = z.object({
-  registryId: id,
+  registryId: id.describe('The registry identifier.'),
 });
-export const AppParams: z.ZodType<{ appId: string }> = z.object({ appId: id });
+export const AppParams: z.ZodType<{ appId: string }> = z.object({
+  appId: id.describe('The application identifier.'),
+});
 export const ReleaseParams: z.ZodType<{ appId: string; releaseId: string }> =
-  z.object({ appId: id, releaseId: id });
+  z.object({
+    appId: id.describe('The application identifier.'),
+    releaseId: id.describe('The release identifier to deploy.'),
+  });
 export const DeploymentParams: z.ZodType<{
   appId: string;
   deploymentId: string;
-}> = z.object({ appId: id, deploymentId: id });
+}> = z.object({
+  appId: id.describe('The application identifier.'),
+  deploymentId: id.describe('The deployment identifier.'),
+});
 export const RequestParams: z.ZodType<{ requestId: string }> = z.object({
-  requestId: id,
+  requestId: id.describe('The request identifier.'),
 });
 
 const page = z.coerce.number().int().min(1).default(1);
@@ -84,17 +92,24 @@ const labelFilter = z
 export const ListAppsQuery: z.ZodType<
   Paging & { q?: string; environmentId?: string; label: string[] }
 > = z.object({
-  page,
-  pageSize,
-  q: z.string().trim().max(100).optional(),
-  environmentId: z.string().optional(),
-  label: labelFilter,
+  page: page.describe('The page number, starting at 1.'),
+  pageSize: pageSize.describe('The maximum number of records to return.'),
+  q: z.string().trim().max(100).optional().describe('Text to search for.'),
+  environmentId: z.string().optional().describe('The environment identifier.'),
+  label: labelFilter.describe('A label for this resource.'),
 });
 
 export const ListReleasesQuery: z.ZodType<Paging & { label: string[] }> =
-  z.object({ page, pageSize, label: labelFilter });
+  z.object({
+    page: page.describe('The page number, starting at 1.'),
+    pageSize: pageSize.describe('The maximum number of records to return.'),
+    label: labelFilter.describe('A label for this resource.'),
+  });
 
-export const PageQuery: z.ZodType<Paging> = z.object({ page, pageSize });
+export const PageQuery: z.ZodType<Paging> = z.object({
+  page: page.describe('The page number, starting at 1.'),
+  pageSize: pageSize.describe('The maximum number of records to return.'),
+});
 
 const REQUEST_STATUSES = [
   'pending',
@@ -112,11 +127,17 @@ export const ListRequestsQuery: z.ZodType<
     awaitingMe?: 'true' | 'false';
   }
 > = z.object({
-  page,
-  pageSize,
-  appId: z.string().optional(),
-  status: z.enum(REQUEST_STATUSES).optional(),
-  awaitingMe: z.enum(['true', 'false']).optional(),
+  page: page.describe('The page number, starting at 1.'),
+  pageSize: pageSize.describe('The maximum number of records to return.'),
+  appId: z.string().optional().describe('The application identifier.'),
+  status: z
+    .enum(REQUEST_STATUSES)
+    .optional()
+    .describe('The status to set or filter by.'),
+  awaitingMe: z
+    .enum(['true', 'false'])
+    .optional()
+    .describe('Only requests waiting for the caller’s approval.'),
 });
 
 export const DeleteAppQuery: z.ZodType<{ confirm?: string }> = z.object({
@@ -145,13 +166,31 @@ export const LogQuery: z.ZodType<{
   until?: string;
   fromStart?: 'true' | 'false';
 }> = z.object({
-  pageToken: z.string().optional(),
-  level: z.enum(LOG_LEVELS).optional(),
-  source: z.string().optional(),
-  q: z.string().optional(),
-  since: z.iso.datetime({ offset: true }).optional(),
-  until: z.iso.datetime({ offset: true }).optional(),
-  fromStart: z.enum(['true', 'false']).optional(),
+  pageToken: z
+    .string()
+    .optional()
+    .describe('The continuation token returned by the previous page.'),
+  level: z
+    .enum(LOG_LEVELS)
+    .optional()
+    .describe('The log severity to filter by.'),
+  source: z
+    .string()
+    .optional()
+    .describe('The source context associated with this record.'),
+  q: z.string().optional().describe('Text to search for.'),
+  since: z.iso
+    .datetime({ offset: true })
+    .optional()
+    .describe('Return logs at or after this timestamp.'),
+  until: z.iso
+    .datetime({ offset: true })
+    .optional()
+    .describe('Return logs before this timestamp.'),
+  fromStart: z
+    .enum(['true', 'false'])
+    .optional()
+    .describe('Read from the beginning rather than the latest logs.'),
 });
 
 const labels = z.record(z.string(), z.string());
@@ -160,20 +199,48 @@ const driverObject = z.record(z.string(), z.unknown());
 const nullableCount = z.number().nullable();
 
 const environmentFields = {
-  name: z.string(),
-  config: driverObject.optional(),
-  secret: driverObject.nullable().optional(),
-  secretChanges: driverObject.optional(),
-  publicUrl: z.string().nullable().optional(),
+  name: z.string().describe('The name to display.'),
+  config: driverObject
+    .optional()
+    .describe(
+      'Configuration values for the selected environment or application.',
+    ),
+  secret: driverObject
+    .nullable()
+    .optional()
+    .describe('Secret configuration values.'),
+  secretChanges: driverObject
+    .optional()
+    .describe('Secret values to set or remove.'),
+  publicUrl: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The public URL applications in this environment use.'),
   protected: z.boolean().optional().meta({
     description:
       'Every deployment goes through a deployment request an approver approves; nothing deploys directly.',
   }),
-  approvers: z.array(z.string()).optional(),
-  maxApps: nullableCount.optional(),
-  defaultIdleStopMinutes: nullableCount.optional(),
-  defaultDormantAfterHours: nullableCount.optional(),
-  registryId: z.string().nullable().optional(),
+  approvers: z
+    .array(z.string())
+    .optional()
+    .describe('Users who may approve deployments to this environment.'),
+  maxApps: nullableCount
+    .optional()
+    .describe(
+      'The maximum number of applications in this environment; null means unlimited.',
+    ),
+  defaultIdleStopMinutes: nullableCount
+    .optional()
+    .describe('Default idle stop timeout in minutes for applications.'),
+  defaultDormantAfterHours: nullableCount
+    .optional()
+    .describe('Default dormant timeout in hours for applications.'),
+  registryId: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The registry identifier.'),
   sampleDataOnFirstDeploy: z.boolean().optional().meta({
     description:
       'An App’s first deployment here loads its sample data (`APP_SAMPLE_DATA=true`).',
@@ -182,43 +249,72 @@ const environmentFields = {
 
 export const CreateEnvironmentBody: z.ZodType<
   EnvironmentInput & { id: string; driver: string; name: string }
-> = z.strictObject({ ...environmentFields, id, driver: z.string() });
+> = z.strictObject({
+  ...environmentFields,
+  id: id.describe('The record identifier.'),
+  driver: z.string().describe('The environment driver configuration.'),
+});
 
 export const UpdateEnvironmentBody: z.ZodType<EnvironmentInput> =
   z.strictObject({
     ...environmentFields,
-    name: environmentFields.name.optional(),
-    driver: z.string().optional(),
+    name: environmentFields.name.optional().describe('The name to display.'),
+    driver: z
+      .string()
+      .optional()
+      .describe('The environment driver configuration.'),
   });
 
 export const CheckEnvironmentBody: z.ZodType<EnvironmentCheckInput> =
   z.strictObject({
-    id: z.string().optional(),
-    name: z.string().optional(),
-    driver: z.string(),
-    config: driverObject.optional(),
-    secret: driverObject.nullable().optional(),
-    secretChanges: driverObject.optional(),
-    publicUrl: z.string().nullable().optional(),
+    id: z.string().optional().describe('The record identifier.'),
+    name: z.string().optional().describe('The name to display.'),
+    driver: z.string().describe('The environment driver configuration.'),
+    config: driverObject
+      .optional()
+      .describe(
+        'Configuration values for the selected environment or application.',
+      ),
+    secret: driverObject
+      .nullable()
+      .optional()
+      .describe('Secret configuration values.'),
+    secretChanges: driverObject
+      .optional()
+      .describe('Secret values to set or remove.'),
+    publicUrl: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('The public URL applications in this environment use.'),
   });
 
 const registryFields = {
-  name: z.string().optional(),
-  url: z.string().optional(),
-  namespace: z.string().nullable().optional(),
-  pullUsername: z.string().nullable().optional(),
+  name: z.string().optional().describe('The name to display.'),
+  url: z.string().optional().describe('The resource URL.'),
+  namespace: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The container registry namespace.'),
+  pullUsername: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The username used to pull container images.'),
   secretChanges: z
     .partialRecord(z.enum(REGISTRY_SECRET_KEYS), z.string().nullable())
-    .optional(),
+    .optional()
+    .describe('Secret values to set or remove.'),
 };
 
 export const CreateRegistryBody: z.ZodType<
   RegistryInput & { id: string; name: string; url: string }
 > = z.strictObject({
   ...registryFields,
-  id,
-  name: z.string(),
-  url: z.string(),
+  id: id.describe('The record identifier.'),
+  name: z.string().describe('The name to display.'),
+  url: z.string().describe('The resource URL.'),
 });
 
 export const UpdateRegistryBody: z.ZodType<RegistryInput> =
@@ -227,20 +323,31 @@ export const UpdateRegistryBody: z.ZodType<RegistryInput> =
 /** Unsaved settings to try; `id` names the stored registry whose passwords fill the gaps. */
 export const CheckRegistryBody: z.ZodType<RegistryInput> = z.strictObject({
   ...registryFields,
-  id: z.string().optional(),
+  id: z.string().optional().describe('The record identifier.'),
 });
 
 const runtimePolicy = {
-  activation: z.enum(APP_ACTIVATIONS).optional(),
-  idleStopMinutes: nullableCount.optional(),
-  dormantAfterHours: nullableCount.optional(),
+  activation: z
+    .enum(APP_ACTIVATIONS)
+    .optional()
+    .describe('The policy for starting the application.'),
+  idleStopMinutes: nullableCount
+    .optional()
+    .describe(
+      'Minutes without activity before stopping; null disables idle stopping.',
+    ),
+  dormantAfterHours: nullableCount
+    .optional()
+    .describe(
+      'Hours without activity before marking the app dormant; null disables it.',
+    ),
 };
 
 export const CreateAppBody: z.ZodType<CreateAppInput> = z.strictObject({
-  id,
-  name: z.string(),
-  environmentId: z.string(),
-  description: z.string().optional(),
+  id: id.describe('The record identifier.'),
+  name: z.string().describe('The name to display.'),
+  environmentId: z.string().describe('The environment identifier.'),
+  description: z.string().optional().describe('A description of the record.'),
   labels: labels.optional(),
   previewOf: z.string().optional().meta({
     description: 'Makes it a preview App of that App, removed with it.',
@@ -249,14 +356,18 @@ export const CreateAppBody: z.ZodType<CreateAppInput> = z.strictObject({
 });
 
 export const UpdateAppBody: z.ZodType<UpdateAppInput> = z.strictObject({
-  name: z.string().optional(),
-  description: z.string().nullable().optional(),
+  name: z.string().optional().describe('The name to display.'),
+  description: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('A description of the record.'),
   labels: labels.optional(),
   ...runtimePolicy,
 });
 
 export const UpdateConfigBody: z.ZodType<UpdateConfigInput> = z.strictObject({
-  content: z.string(),
+  content: z.string().describe('The Markdown content.'),
   secretChanges: z
     .array(
       z.strictObject({
@@ -264,7 +375,8 @@ export const UpdateConfigBody: z.ZodType<UpdateConfigInput> = z.strictObject({
         value: z.string().nullable(),
       }),
     )
-    .optional(),
+    .optional()
+    .describe('Secret values to set or remove.'),
 });
 
 export const LabelReleaseBody: z.ZodType<{ labels: Record<string, string> }> =
@@ -312,12 +424,12 @@ export const RegisterImageReleaseBody: z.ZodType<RegisterImageReleaseRequest> =
       description:
         'Deploy it once registered; the answer then names the deployment (`deploymentId`).',
     }),
-    version: z.string(),
-    ref: z.string(),
-    digest: z.string(),
-    platform: z.string().optional(),
-    sourceCommit: z.string().optional(),
-    build: z.string().optional(),
+    version: z.string().describe('The release version label.'),
+    ref: z.string().describe('The image reference or Git revision.'),
+    digest: z.string().describe('The immutable container image digest.'),
+    platform: z.string().optional().describe('The container image platform.'),
+    sourceCommit: z.string().optional().describe('The source Git commit.'),
+    build: z.string().optional().describe('Build metadata for the image.'),
     labels: labels.optional(),
     variables: variablesManifest.optional().meta({
       description:
@@ -328,7 +440,10 @@ export const RegisterImageReleaseBody: z.ZodType<RegisterImageReleaseRequest> =
 export const PromoteBody: z.ZodType<{
   toAppId: string;
   labels?: Record<string, string>;
-}> = z.strictObject({ toAppId: id, labels: labels.optional() });
+}> = z.strictObject({
+  toAppId: id.describe('The destination application identifier.'),
+  labels: labels.optional(),
+});
 
 export const CreateUploadTicketBody: z.ZodType<{
   deploy?: boolean;
@@ -346,18 +461,21 @@ export const DeployQuery: z.ZodType<{ wait?: 'true' | 'false' }> = z.object({
 });
 
 export const DeployBody: z.ZodType<DeployInput> = z.strictObject({
-  releaseId: id,
+  releaseId: id.describe('The release identifier to deploy.'),
   config: z
     .strictObject({
       mode: z.enum(['file', 'external']),
       content: z.string().optional(),
     })
-    .optional(),
+    .optional()
+    .describe(
+      'Configuration values for the selected environment or application.',
+    ),
   idempotencyKey: z.string().optional(),
 });
 
 export const RollbackBody: z.ZodType<RollbackInput> = z.strictObject({
-  deploymentId: id,
+  deploymentId: id.describe('The deployment identifier.'),
 });
 
 export const IdempotencyHeaders: z.ZodType<{ 'idempotency-key'?: string }> =
@@ -365,9 +483,15 @@ export const IdempotencyHeaders: z.ZodType<{ 'idempotency-key'?: string }> =
 
 export const CreateRequestBody: z.ZodType<CreateDeploymentRequestInput> =
   z.strictObject({
-    releaseId: z.string().optional(),
-    rollbackToDeploymentId: z.string().optional(),
-    note: z.string().optional(),
+    releaseId: z
+      .string()
+      .optional()
+      .describe('The release identifier to deploy.'),
+    rollbackToDeploymentId: z
+      .string()
+      .optional()
+      .describe('The deployment to restore.'),
+    note: z.string().optional().describe('A note explaining this change.'),
     labels: labels.optional(),
   });
 
@@ -375,12 +499,12 @@ export const ApproveRequestBody: z.ZodType<{
   note?: string;
   confirm?: string;
 }> = z.strictObject({
-  note: z.string().optional(),
+  note: z.string().optional().describe('A note explaining this change.'),
   confirm: z.string().optional(),
 });
 
 export const RejectRequestBody: z.ZodType<{ note?: string }> = z.strictObject({
-  note: z.string().optional(),
+  note: z.string().optional().describe('A note explaining this change.'),
 });
 
 export const EmptyBody: z.ZodType<Record<string, never>> = z.strictObject({});
@@ -871,16 +995,22 @@ export const ReleasesLogMeta: z.ZodType<{
 // --- Variables --------------------------------------------------------------------------------------------------
 
 export const VariableParams: z.ZodType<{ name: string }> = z.object({
-  name: z.string().min(1).max(128),
+  name: z.string().min(1).max(128).describe('The name to display.'),
 });
 
 export const EnvironmentVariableParams: z.ZodType<{
   environmentId: string;
   name: string;
-}> = z.object({ environmentId: id, name: z.string().min(1).max(128) });
+}> = z.object({
+  environmentId: id.describe('The environment identifier.'),
+  name: z.string().min(1).max(128).describe('The name to display.'),
+});
 
 export const AppVariableParams: z.ZodType<{ appId: string; name: string }> =
-  z.object({ appId: id, name: z.string().min(1).max(128) });
+  z.object({
+    appId: id.describe('The application identifier.'),
+    name: z.string().min(1).max(128).describe('The name to display.'),
+  });
 
 export const SetEnvironmentVariableBody: z.ZodType<SetEnvironmentVariableInput> =
   z.strictObject({
@@ -889,7 +1019,11 @@ export const SetEnvironmentVariableBody: z.ZodType<SetEnvironmentVariableInput> 
       description:
         'Never shown again once set. Inferred from the name when left out (`…_PASSWORD`, `…_SECRET`, `…_TOKEN`, `…_KEY`).',
     }),
-    description: z.string().nullable().optional(),
+    description: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('A description of the record.'),
   });
 
 export const SetAppVariableBody: z.ZodType<SetAppVariableInput> =
