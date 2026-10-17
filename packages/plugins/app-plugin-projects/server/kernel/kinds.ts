@@ -18,6 +18,7 @@ import {
   type NameText,
 } from '../../shared/kinds.js';
 import type { Actor } from './actor.js';
+import type { Viewer } from '../access/viewer.js';
 import { forbidden, invalid } from './errors.js';
 import type { UserDirectory } from './users.js';
 import type { IssueWorkHandler } from './work.js';
@@ -52,6 +53,14 @@ export interface ExecutorDescription {
   readonly busy?: number;
 }
 
+/** Validated issue and actual caller, when mentioning from an issue comment. */
+export interface MentionContext {
+  readonly viewer: Viewer;
+  readonly issue: Issue;
+  readonly canEditIssue: boolean;
+  readonly canCommentIssue: boolean;
+}
+
 /** What a kind that may be mentioned (`mention://<key>/<id>`) answers. */
 export interface MentionDirectory {
   /** Candidates for the `@` list, best first; `issueId` names the issue being written about, if any. */
@@ -60,18 +69,23 @@ export interface MentionDirectory {
     input: {
       readonly userId: string;
       readonly issueId: string | null;
+      readonly context?: MentionContext;
       readonly q: string;
       readonly limit: number;
     },
   ): Promise<MentionCandidate[]>;
   /**
    * Whether `userId` may mention `id` (an agent the caller may not give work to, say). Allowed when left out. A note
-   * (`/note`) starts no work, which a kind may take into account.
+   * (`/note`) starts no work, which a kind may take into account. May throw a domain error with a specific refusal reason.
    */
   mayMention?(
     conn: DatabaseConnection,
     id: string,
-    input: { readonly userId: string; readonly note: boolean },
+    input: {
+      readonly userId: string;
+      readonly note: boolean;
+      readonly context?: MentionContext;
+    },
   ): Promise<boolean>;
 }
 
@@ -148,6 +162,7 @@ export interface KindRegistry {
     input: {
       readonly userId: string;
       readonly issueId: string | null;
+      readonly context?: MentionContext;
       readonly q: string;
       readonly limit: number;
     },
@@ -156,7 +171,11 @@ export interface KindRegistry {
   requireMentions(
     conn: DatabaseConnection,
     refs: readonly MentionRef[],
-    input: { readonly userId: string; readonly note: boolean },
+    input: {
+      readonly userId: string;
+      readonly note: boolean;
+      readonly context?: MentionContext;
+    },
   ): Promise<void>;
   /**
    * The executors of other kinds `userId` may give work to, for a picker: each kind that lists its candidates, in

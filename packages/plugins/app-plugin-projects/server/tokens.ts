@@ -25,6 +25,7 @@ export type {
   ExecutorDirectory,
   KindRegistry,
   MentionDirectory,
+  MentionContext,
   PrincipalKind,
 } from './kernel/kinds.js';
 export {
