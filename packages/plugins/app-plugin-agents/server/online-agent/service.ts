@@ -1,3 +1,4 @@
+import { nativeExecutionStatus } from './execution.js';
 import {
   streamText,
   stepCountIs,
@@ -136,6 +137,11 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       );
   }
 
+  /** Read-only process occupancy; no session lookup or authorization bypass. */
+  isActive(sessionId: string): boolean {
+    return this.active.has(sessionId);
+  }
+
   async chatAgents(
     userId: string,
   ): Promise<import('../../shared/conversations.js').ChatAgent[]> {
@@ -264,11 +270,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       throw conflict('This conversation is busy.');
     const status = async () => {
       const row = await this.deps.sessions.load(userId, sessionId);
-      return this.active.has(sessionId) ||
-        row.call?.state === 'running' ||
-        row.call?.closing
-        ? ('running' as const)
-        : ('idle' as const);
+      return nativeExecutionStatus(row.call, this.isActive(sessionId));
     };
     return {
       sessionId,

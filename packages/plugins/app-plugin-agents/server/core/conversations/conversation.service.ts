@@ -1,3 +1,4 @@
+import { nativeExecutionStatus } from '../../online-agent/execution.js';
 /**
  * Conversations over this plugin's own tables. Everything people and other plugins do with conversations goes through
  * `ConversationService` (`ports.ts`); a later move to a shared platform conversation layer, or to the AI employee's
@@ -140,6 +141,8 @@ export interface ConversationServiceDeps {
   readonly people: People;
   readonly settings: ChatSettingsService;
   readonly contextKinds: PageContextKinds;
+  /** Native process occupancy, combined with the authorized persisted row. */
+  readonly nativeActive?: (sessionId: string) => boolean;
   /** The files people send with messages; without them a message that names files is refused. */
   readonly attachments?: ChatAttachmentLinks;
   /** The application's public base path (`/app`, or empty), for the files' URLs. */
@@ -255,6 +258,7 @@ function refOf(record: ConversationRecord): ConversationRef {
 function onlineExecution(
   record: ConversationRecord,
   open: readonly Run[] = [],
+  active = false,
 ): ConversationSummary['execution'] {
   const value = jsonObject(jsonObject(record.metadata).onlineAgent);
   const runner = runnerBinding(record.metadata);
@@ -269,7 +273,7 @@ function onlineExecution(
   const call = jsonObject(value.call);
   const outcome = call.outcome;
   return {
-    status: call.state === 'running' || call.closing ? 'running' : 'idle',
+    status: nativeExecutionStatus(call, active),
     ...(outcome === 'completed' ||
     outcome === 'cancelled' ||
     outcome === 'failed'
@@ -363,7 +367,7 @@ export function createConversationService(
       category: record.category,
       source: record.source,
       mode: record.mode,
-      execution: onlineExecution(record, open),
+      execution: onlineExecution(record, open, deps.nativeActive?.(record.id)),
       agent: jsonObject(record.metadata).onlineAgent
         ? {
             id: 'online',

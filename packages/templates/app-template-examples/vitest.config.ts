@@ -11,6 +11,8 @@ export default createReactVitestConfig({
       deps: {
         // Transform the public Client surfaces so vi.mock applies, without duplicating the Server packages' identity tokens.
         inline: [
+          // The published fixture mounts MemoryRouter; transform it with the page to share the router context.
+          /@nocobase\/app-testing\/(?:dist\/)?src\/client\//u,
           // The authentication guards read the location, so they share the test's react-router rather than Node's copy,
           // together with every client that resolves the authentication tokens and provider.
           /@nocobase\/app-plugin-(?:authentication|api-keys|users)\/(?:dist\/)?client\//u,

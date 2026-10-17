@@ -1,3 +1,5 @@
+import { ChatController } from '../client/chat/controller.js';
+import type { ChatApi } from '../client/chat/api.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
 import type { JSONSchema7, ModelMessage } from 'ai';
@@ -109,6 +111,9 @@ async function fixture(
     defaultModel: async () => ref,
     onError: (error) => errors.push(error),
   });
+  vi.spyOn(h.services.onlineAgent, 'isActive').mockImplementation((id) =>
+    service.isActive(id),
+  );
   return {
     service,
     sessions,
@@ -459,7 +464,31 @@ describe('OnlineAgent service slice', () => {
       'seal response lost',
     );
     expect(await agent.status()).toBe('running');
+    expect(
+      (await h.services.conversations.get('alice', agent.sessionId)).execution
+        ?.status,
+    ).toBe('running');
+    expect(
+      (await h.services.conversations.list('alice', {})).items.find(
+        (item) => item.id === agent.sessionId,
+      )?.execution?.status,
+    ).toBe('running');
+    const http = await h.request(
+      'GET',
+      '/agents/conversations/' + agent.sessionId,
+      { user: 'alice' },
+    );
+    expect(http.status).toBe(200);
+    expect(http.body.data.execution.status).toBe('running');
+    await expect(
+      agent.send([{ role: 'user', content: 'Too soon' }]),
+    ).rejects.toThrow('busy');
+    expect(model.doStreamCalls).toHaveLength(1);
     await agent.retryFinalization();
+    expect(
+      (await h.services.conversations.get('alice', agent.sessionId)).execution
+        ?.status,
+    ).toBe('idle');
     expect(clear).toHaveBeenCalledTimes(2);
     expect(await agent.status()).toBe('idle');
     expect(model.doStreamCalls).toHaveLength(1);
@@ -1478,5 +1507,108 @@ it('warns on failed shutdown finalization, drains other executions and preserves
   } finally {
     release.resolve();
     warn.mockRestore();
+  }
+});
+
+it('announces only committed new message watermarks and preserves metadata notifications', async () => {
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({ stream: streamed(text('Saved')) }),
+  });
+  const f = await fixture(model);
+  const agent = await f.service.realtime(context());
+  const events: { lastSeq?: number }[] = [];
+  h.services.events.on('conversation.changed', (event) => {
+    if (event.conversationId === agent.sessionId) events.push(event);
+  });
+  const save = vi
+    .spyOn(f.sessions, 'save')
+    .mockRejectedValueOnce(new Error('Save deferred'));
+  await agent.send([{ role: 'user', content: 'Hello' }]);
+  await vi.waitFor(() => expect(save).toHaveBeenCalledOnce());
+  expect(events.map((event) => event.lastSeq)).toEqual([1, undefined]);
+  await agent.retryFinalization();
+  expect(events.map((event) => event.lastSeq)).toEqual([1, undefined, 2, undefined, undefined]);
+  await f.sessions.finish('alice', agent.sessionId);
+  expect(events.at(-1)?.lastSeq).toBeUndefined();
+  const before = events.length;
+  await expect(
+    f.sessions.accept(
+      'alice',
+      agent.sessionId,
+      (await f.sessions.load('alice', agent.sessionId)).config,
+      ref,
+      [
+        {
+          id: 'rollback-message',
+          message: { role: 'user', content: 'Rolled back' },
+        },
+        {
+          id: 'duplicate-message',
+          message: { role: 'user', content: 'Duplicate' },
+        },
+        {
+          id: 'duplicate-message',
+          message: { role: 'user', content: 'Duplicate' },
+        },
+      ],
+    ),
+  ).rejects.toThrow();
+  expect(events).toHaveLength(before);
+  expect(
+    (await agent.history()).map((message) => message.content.content),
+  ).toEqual(['Hello', 'Saved']);
+});
+
+it('catches up two controllers from committed Native notifications and ignores duplicate watermarks', async () => {
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({ stream: streamed(text('From another tab')) }),
+  });
+  const f = await fixture(model);
+  const agent = await f.service.realtime(context());
+  const tabs = [0, 1].map(
+    () =>
+      new ChatController({
+        messages: async (id, query) => ({
+          ...(await h.services.conversations.messages('alice', id, {
+            after: query?.after,
+          })),
+          nextCursor: null,
+        }),
+      } as ChatApi),
+  );
+  try {
+    await Promise.all(tabs.map((tab) => tab.loadHistory(agent.sessionId)));
+    const pending: Promise<void>[] = [];
+    h.services.events.on('conversation.changed', (event) => {
+      if (
+        event.conversationId !== agent.sessionId ||
+        event.lastSeq === undefined
+      )
+        return;
+      for (const tab of tabs)
+        if (
+          (tab.history(agent.sessionId).state.items.at(-1)?.seq ?? 0) <
+          event.lastSeq
+        )
+          pending.push(tab.loadHistory(agent.sessionId, false, true));
+    });
+    await agent.send([{ role: 'user', content: 'Hello from tab one' }]);
+    await settle(agent);
+    await Promise.all(pending);
+    h.services.events.emit({
+      type: 'conversation.changed',
+      conversationId: agent.sessionId,
+      userId: 'alice',
+      lastSeq: 2,
+    });
+    await Promise.all(pending);
+    for (const tab of tabs)
+      expect(
+        tab
+          .history(agent.sessionId)
+          .state.items.map((message) => message.content.content),
+      ).toEqual(['Hello from tab one', 'From another tab']);
+  } finally {
+    tabs.forEach((tab) => tab.dispose());
   }
 });

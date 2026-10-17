@@ -547,6 +547,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     runs,
     people,
     settings: chat,
+    nativeActive: (id) => onlineAgent.isActive(id),
     contextKinds: createPageContextKinds(),
     attachments: chatAttachments.links,
     basePath,

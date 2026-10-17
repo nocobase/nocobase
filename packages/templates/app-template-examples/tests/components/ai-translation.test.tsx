@@ -131,8 +131,15 @@ describe('AI Translation demo', () => {
       }),
     );
     const user = userEvent.setup();
-    await user.click(screen.getByRole('combobox', { name: /Language model/ }));
-    await user.click(screen.getByRole('option', { name: 'Local / Second' }));
+    const modelSelect = screen.getByRole('combobox', {
+      name: /Language model/,
+    });
+    modelSelect.focus();
+    await user.keyboard('[ArrowDown]');
+    expect(modelSelect).toHaveAttribute('aria-expanded', 'true');
+    await user.click(
+      await screen.findByRole('option', { name: 'Local / Second' }),
+    );
     fireEvent.keyDown(
       screen.getByRole('combobox', { name: 'Target language' }),
       { key: 'ArrowDown' },

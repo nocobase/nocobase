@@ -11,6 +11,7 @@
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
+  CancelledError,
   keepPreviousData,
   useInfiniteQuery,
   useMutation,
@@ -110,11 +111,18 @@ export function useConversation(
   conversationId: string | null,
 ): UseQueryResult<ConversationDetail> {
   const api = useChatApi();
+  const controller = useChatController();
   const stream = useChatStreamState(conversationId);
   return useQuery(
     {
       queryKey: chatKeys.conversation(conversationId ?? ''),
-      queryFn: () => api.conversation(conversationId ?? ''),
+      queryFn: async () => {
+        const current = controller.detailRequest(conversationId ?? '');
+        if (!current()) throw new CancelledError({ silent: true });
+        const detail = await api.conversation(conversationId ?? '');
+        if (!current()) throw new CancelledError({ silent: true });
+        return detail;
+      },
       enabled: conversationId !== null,
       placeholderData: noPlaceholder,
       retry: notRetriedOnClientErrors,
@@ -211,8 +219,7 @@ export function useConversationMessages(
       isChatPayload(payload) &&
       payload.kind === 'conversation.messages' &&
       payload.conversationId === conversationId &&
-      (payload.lastSeq >
-        (controller.history(conversationId).state.items.at(-1)?.seq ?? 0) ||
+      (payload.lastSeq > controller.history(conversationId).loadedThrough ||
         controller
           .history(conversationId)
           .state.items.some((item) => item.metadata.streaming))
@@ -250,15 +257,14 @@ export function useConversationMessages(
   return {
     ...state,
     pending,
-    items:
-      stream && (stream.lastSeq === undefined || state.lastSeq < stream.lastSeq)
-        ? [
-            ...state.items,
-            ...stream.items.filter(
-              (item) => !state.items.some((saved) => saved.seq === item.seq),
-            ),
-          ].sort((a, b) => a.seq - b.seq)
-        : state.items,
+    items: stream
+      ? [
+          ...state.items,
+          ...stream.items.filter(
+            (item) => !state.items.some((saved) => saved.seq === item.seq),
+          ),
+        ].sort((a, b) => a.seq - b.seq)
+      : state.items,
     loadingOlder: loaded.loadingOlder,
     error: loaded.error,
     fetchNewer,
@@ -409,25 +415,32 @@ export function useConversationActions(): ConversationActions {
   const toaster = useToaster();
   const { t } = useTranslation(ACCESS_NAMESPACE);
 
-  const remember = useCallback(
-    (detail: ConversationDetail): void => {
-      queryClient.setQueryData(chatKeys.conversation(detail.id), detail);
-      void queryClient.invalidateQueries({ queryKey: chatKeys.lists });
-    },
-    [queryClient],
-  );
-  const failed = (error: unknown): void =>
+  const controller = useChatController();
+  type Scope = { active: () => boolean };
+  const scope = (): Scope => ({ active: controller.lifetime() });
+  const failed = (
+    error: unknown,
+    _input: unknown,
+    lifetime: Scope | undefined,
+  ): void => {
+    if (!lifetime?.active()) return;
     void toaster.show({
       type: 'error',
       title: errorText(t, error, t('common.requestFailed')),
     });
+  };
 
   const rename = useMutation(
     {
       mutationFn: (input: { readonly id: string; readonly title: string }) =>
-        api.updateConversation(input.id, { title: input.title }),
-      onSuccess: (detail) => {
-        remember(detail);
+        controller.command(
+          input.id,
+          () => api.updateConversation(input.id, { title: input.title }),
+          (detail) => detail,
+        ),
+      onMutate: scope,
+      onSuccess: (_detail, _input, lifetime) => {
+        if (!lifetime.active()) return;
         toaster.show({ type: 'success', title: t('chat.renamed') });
       },
       onError: failed,
@@ -440,9 +453,15 @@ export function useConversationActions(): ConversationActions {
       mutationFn: (input: {
         readonly id: string;
         readonly archived: boolean;
-      }) => api.updateConversation(input.id, { archived: input.archived }),
-      onSuccess: (detail, input) => {
-        remember(detail);
+      }) =>
+        controller.command(
+          input.id,
+          () => api.updateConversation(input.id, { archived: input.archived }),
+          (detail) => detail,
+        ),
+      onMutate: scope,
+      onSuccess: (detail, input, lifetime) => {
+        if (!lifetime.active()) return;
         if (!input.archived) {
           toaster.show({ type: 'success', title: t('chat.unarchived') });
           return;
@@ -455,6 +474,7 @@ export function useConversationActions(): ConversationActions {
           action: {
             label: t('chat.undo'),
             onClick: () => {
+              if (!lifetime.active()) return;
               toaster.close(toastId);
               archive.mutate({ id: input.id, archived: false });
             },
@@ -468,8 +488,13 @@ export function useConversationActions(): ConversationActions {
 
   const stop = useMutation(
     {
-      mutationFn: (id: string) => api.stop(id),
-      onSuccess: remember,
+      mutationFn: (id: string) =>
+        controller.command(
+          id,
+          () => api.stop(id),
+          (detail) => detail,
+        ),
+      onMutate: scope,
       onError: failed,
     },
     queryClient,
@@ -477,12 +502,15 @@ export function useConversationActions(): ConversationActions {
 
   const markRead = useCallback(
     (id: string) => {
-      void api
-        .markRead(id)
-        .then((detail) => remember(detail))
+      void controller
+        .command(
+          id,
+          () => api.markRead(id),
+          (detail) => detail,
+        )
         .catch(() => undefined);
     },
-    [api, remember],
+    [api, controller],
   );
 
   return { rename, archive, stop, markRead };

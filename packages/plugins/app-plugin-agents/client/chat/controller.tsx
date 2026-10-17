@@ -1,3 +1,4 @@
+import { CancelledError } from '@tanstack/react-query';
 /* eslint-disable react-refresh/only-export-components -- shared controller provider and hooks */
 import {
   createContext,
@@ -22,7 +23,6 @@ import {
   EMPTY_MESSAGES,
   messagesReducer,
   fetchCursor,
-  lastLoadedSeq,
   type MessagesAction,
   type MessagesState,
 } from './message-model.js';
@@ -38,7 +38,12 @@ export class ChatController {
   readonly submissions: ChatSubmissions;
   private histories = new Map<
     string,
-    { state: MessagesState; error?: unknown; loadingOlder: boolean }
+    {
+      state: MessagesState;
+      error?: unknown;
+      loadingOlder: boolean;
+      loadedThrough: number;
+    }
   >();
   private loads = new Map<string, Promise<void>>();
   private refreshAgain = new Set<string>();
@@ -46,9 +51,14 @@ export class ChatController {
     state: MessagesState;
     error?: unknown;
     loadingOlder: boolean;
+    loadedThrough: number;
   } {
     return (
-      this.histories.get(id) ?? { state: EMPTY_MESSAGES, loadingOlder: false }
+      this.histories.get(id) ?? {
+        state: EMPTY_MESSAGES,
+        loadingOlder: false,
+        loadedThrough: 0,
+      }
     );
   }
   dispatch(id: string, action: MessagesAction): void {
@@ -56,6 +66,14 @@ export class ChatController {
     this.histories.set(id, {
       ...previous,
       state: messagesReducer(previous.state, action),
+      // A confirmed single message does not cover any intervening history.
+      loadedThrough:
+        action.type === 'page' && !action.older
+          ? Math.max(
+              previous.loadedThrough,
+              ...action.page.items.map((item) => item.seq),
+            )
+          : previous.loadedThrough,
     });
     this.publish();
   }
@@ -66,34 +84,44 @@ export class ChatController {
       if (fresh) this.refreshAgain.add(id);
       return loading;
     }
+    const active = this.lifetime();
     const initial = this.history(id);
     if (older && !initial.state.olderToken) return;
     this.histories.set(id, { ...initial, loadingOlder: older });
     this.publish();
     const task = (async () => {
       try {
-        while (!this.disposed) {
+        while (active()) {
           const before = this.history(id).state;
           const page = await this.api.messages(
             id,
             older
               ? { pageToken: before.olderToken! }
               : before.loaded
-                ? { after: fetchCursor(before) }
+                ? {
+                    after: Math.min(
+                      fetchCursor(before),
+                      this.history(id).loadedThrough,
+                    ),
+                  }
                 : {},
           );
-          if (this.disposed) return;
+          if (!active()) return;
           this.dispatch(id, { type: 'page', page, older });
           this.submissions.observe(id, page.items);
-          if (!older && this.refreshAgain.delete(id)) continue;
+          if (this.refreshAgain.delete(id)) {
+            older = false;
+            continue;
+          }
           if (
             older ||
             !page.items.length ||
             !before.loaded ||
-            lastLoadedSeq(this.history(id).state) >= page.lastSeq
+            this.history(id).loadedThrough >= page.lastSeq
           )
             break;
         }
+        if (!active()) return;
         const current = this.history(id);
         this.histories.set(id, {
           ...current,
@@ -101,15 +129,17 @@ export class ChatController {
           loadingOlder: false,
         });
       } catch (error) {
-        if (!this.disposed)
+        if (active())
           this.histories.set(id, {
             ...this.history(id),
             error,
             loadingOlder: false,
           });
       } finally {
-        this.loads.delete(id);
-        if (!this.disposed) this.publish();
+        if (active()) {
+          this.loads.delete(id);
+          this.publish();
+        }
       }
     })();
     this.loads.set(id, task);
@@ -120,20 +150,68 @@ export class ChatController {
   private listeners = new Set<() => void>();
   private revision = 0;
   private disposed = false;
-  constructor(readonly api: ChatApi) {
-    this.submissions = new ChatSubmissions(api, (detail, _record, created) => {
-      agentsQueryClient().setQueryData(
-        chatKeys.conversation(detail.id),
-        detail,
-      );
-      void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
-      if (_record.message)
-        this.dispatch(detail.id, {
-          type: 'confirmed',
-          message: _record.message,
-        });
-      if (!created) this.receive(detail.id, true);
+  private generation = 0;
+  private detailVersions = new Map<string, number>();
+  private commandVersions = new Map<string, number>();
+  /** A callback belongs to this Provider lifetime, rather than to a history row. */
+  lifetime(): () => boolean {
+    const generation = this.generation;
+    return () => !this.disposed && this.generation === generation;
+  }
+  private nextDetailVersion(id: string): number {
+    const version = (this.detailVersions.get(id) ?? 0) + 1;
+    this.detailVersions.set(id, version);
+    return version;
+  }
+  detailRequest(id: string): () => boolean {
+    const active = this.lifetime();
+    const version = this.nextDetailVersion(id);
+    return () => active() && this.detailVersions.get(id) === version;
+  }
+  private remember(detail: ConversationDetail): void {
+    this.nextDetailVersion(detail.id);
+    agentsQueryClient().setQueryData(chatKeys.conversation(detail.id), detail);
+    void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
+  }
+  /** Order cache commits without blocking Stop behind an uncertain send response. */
+  async command<T>(
+    id: string,
+    request: () => Promise<T>,
+    detail: (result: T) => ConversationDetail,
+  ): Promise<T> {
+    const active = this.lifetime();
+    const version = (this.commandVersions.get(id) ?? 0) + 1;
+    this.commandVersions.set(id, version);
+    this.nextDetailVersion(id);
+    await agentsQueryClient().cancelQueries({
+      queryKey: chatKeys.conversation(id),
+      exact: true,
     });
+    if (!active()) throw new CancelledError({ silent: true });
+    const result = await request();
+    if (active() && this.commandVersions.get(id) === version)
+      this.remember(detail(result));
+    return result;
+  }
+  constructor(readonly api: ChatApi) {
+    this.submissions = new ChatSubmissions(
+      {
+        createConversation: (input) => api.createConversation(input),
+        sendMessage: (id, input) =>
+          this.command(
+            id,
+            () => api.sendMessage(id, input),
+            (result) => result.conversation,
+          ),
+        messages: (id, query) => api.messages(id, query),
+      },
+      (detail, _record, created) => {
+        if (created) this.remember(detail);
+        if (!created) this.receive(detail.id, true);
+      },
+      undefined,
+      (id, message) => this.dispatch(id, { type: 'confirmed', message }),
+    );
     this.submissions.subscribe(() => this.publish());
   }
   subscribe = (callback: () => void): (() => void) => {
@@ -280,8 +358,9 @@ export class ChatController {
       !this.disposed &&
       this.aborts.get(id) === subscription &&
       !subscription?.signal.aborted;
+    const ordered = this.detailRequest(id);
     const detail = await this.api.conversation(id);
-    if (!current()) return;
+    if (!current() || !ordered()) return;
     await this.loadHistory(id, false, true);
     const loaded = this.history(id);
     if (loaded.error)
@@ -289,7 +368,7 @@ export class ChatController {
         ? loaded.error
         : new Error('Saved history could not be loaded.');
     const page = loaded.state;
-    if (!current()) return;
+    if (!current() || !ordered()) return;
     agentsQueryClient().setQueryData(chatKeys.conversation(id), detail);
     this.submissions.observe(id, page.items);
     if (detail.execution?.status === 'idle') {
@@ -307,13 +386,18 @@ export class ChatController {
     this.disposed = false;
   }
   invalidate(): void {
+    if (this.disposed) return;
     this.disposed = true;
+    this.generation++;
+    this.loads.clear();
+    this.refreshAgain.clear();
+    this.commandVersions.clear();
     this.submissions.invalidate();
     for (const abort of this.aborts.values()) abort.abort();
     agentsQueryClient().removeQueries({ queryKey: chatKeys.all });
   }
   dispose(): void {
-    this.disposed = true;
+    this.invalidate();
     this.submissions.dispose();
     for (const abort of this.aborts.values()) abort.abort();
     this.streams.clear();

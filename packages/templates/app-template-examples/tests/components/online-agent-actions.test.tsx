@@ -1,6 +1,7 @@
 import {
   agentsQueryClient,
   chatKeys,
+  ChatProvider,
 } from '@nocobase/app-plugin-agents/client/chat';
 import {
   createTestI18nRuntime,
@@ -15,18 +16,20 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { useConversationActions } from '../../client/extensions/nocobase-agent-chat/conversation-actions.js';
-import { OnlineAgentIdentityScope } from '../../client/components/online-agent/identity-scope.js';
+import { MemoryRouter } from 'react-router';
 import enUS from '../../client/locales/en-US.js';
 
 const host = vi.hoisted(() => ({
   request: vi.fn(),
   toaster: { show: vi.fn(), close: vi.fn() },
+  realtime: { subscribe: () => () => {}, onOpen: () => () => {} },
 }));
 const api = { request: host.request };
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
   useApiClient: () => api,
   useToaster: () => host.toaster,
+  useService: () => host.realtime,
 }));
 const runtime = await createTestI18nRuntime({
   application: { namespace: 'test-app', resources: enUS },
@@ -61,9 +64,9 @@ function Actions() {
 function Tree({ identity, show = true }: { identity: string; show?: boolean }) {
   return (
     <TestI18nProvider runtime={runtime}>
-      <OnlineAgentIdentityScope key={identity}>
-        {show ? <Actions /> : null}
-      </OnlineAgentIdentityScope>
+      <MemoryRouter>
+        <ChatProvider key={identity}>{show ? <Actions /> : null}</ChatProvider>
+      </MemoryRouter>
     </TestI18nProvider>
   );
 }

@@ -147,6 +147,7 @@ export function createSessionManager(deps: {
     id: string,
     phase: string,
     change: (conn: DatabaseConnection, row: ConversationRecord) => Promise<T>,
+    messageSeq?: (result: T) => number,
   ) => {
     let start: number | undefined;
     try {
@@ -154,6 +155,16 @@ export function createSessionManager(deps: {
         start = performance.now();
         const row = await owned(conn, userId, id, true);
         const result = await change(conn, row);
+        const lastSeq = messageSeq?.(result);
+        if (lastSeq !== undefined && lastSeq > Number(row.lastSeq)) {
+          emit({
+            type: 'conversation.changed',
+            conversationId: id,
+            userId,
+            lastSeq,
+          });
+        }
+        // Preserve the detail invalidation that also announces execution and metadata changes.
         emit({ type: 'conversation.changed', conversationId: id, userId });
         return result;
       });
@@ -338,42 +349,48 @@ export function createSessionManager(deps: {
         workContext?: import('../../shared/conversations.js').ResolvedPageContext;
       }[],
     ) {
-      return write(userId, id, 'accept', async (conn, row) => {
-        const value = metadata(row);
-        if (
-          value.call?.state === 'running' ||
-          value.call?.closing ||
-          value.call?.requiresEffectReview
-        )
-          throw conflict(
-            'This conversation is busy or its previous execution needs review.',
+      return write(
+        userId,
+        id,
+        'accept',
+        async (conn, row) => {
+          const value = metadata(row);
+          if (
+            value.call?.state === 'running' ||
+            value.call?.closing ||
+            value.call?.requiresEffectReview
+          )
+            throw conflict(
+              'This conversation is busy or its previous execution needs review.',
+            );
+          if (row.archivedAt || row.syncRunId)
+            throw conflict('This conversation cannot accept input.');
+          const lastSeq = await append(conn, row, items, 'completed');
+          await saveMetadata(
+            conn,
+            row,
+            { ...value, config, call: { actorId: userId, state: 'running' } },
+            {
+              modelService: model.modelService,
+              model: model.model,
+              lastSeq,
+              ...(row.title
+                ? {}
+                : {
+                    title:
+                      items
+                        .map((item) => content(item.message).content)
+                        .join(' ')
+                        .slice(0, 30) || null,
+                  }),
+              lastMessageAt: deps.now(),
+              updatedAt: deps.now(),
+            },
           );
-        if (row.archivedAt || row.syncRunId)
-          throw conflict('This conversation cannot accept input.');
-        const lastSeq = await append(conn, row, items, 'completed');
-        await saveMetadata(
-          conn,
-          row,
-          { ...value, config, call: { actorId: userId, state: 'running' } },
-          {
-            modelService: model.modelService,
-            model: model.model,
-            lastSeq,
-            ...(row.title
-              ? {}
-              : {
-                  title:
-                    items
-                      .map((item) => content(item.message).content)
-                      .join(' ')
-                      .slice(0, 30) || null,
-                }),
-            lastMessageAt: deps.now(),
-            updatedAt: deps.now(),
-          },
-        );
-        return lastSeq;
-      });
+          return lastSeq;
+        },
+        (seq) => seq,
+      );
     },
     save(
       userId: string,
@@ -386,57 +403,63 @@ export function createSessionManager(deps: {
       }[],
       call: OnlineAgentCall,
     ) {
-      return write(userId, id, 'save', async (conn, row) => {
-        const value = metadata(row);
-        // Stable response ids allow a commit-unknown retry to verify, rather than append twice.
-        const existing = items.length
-          ? await messagesRepo(conn).findMany({
-              filter: (f) =>
-                f.and([
-                  f.string('conversationId').eq(id),
-                  f.or(items.map((item) => f.string('id').eq(item.id))),
-                ]),
+      return write(
+        userId,
+        id,
+        'save',
+        async (conn, row) => {
+          const value = metadata(row);
+          // Stable response ids allow a commit-unknown retry to verify, rather than append twice.
+          const existing = items.length
+            ? await messagesRepo(conn).findMany({
+                filter: (f) =>
+                  f.and([
+                    f.string('conversationId').eq(id),
+                    f.or(items.map((item) => f.string('id').eq(item.id))),
+                  ]),
+              })
+            : [];
+          if (existing.length && existing.length !== items.length)
+            throw conflict('Incomplete response persistence.');
+          if (
+            existing.length &&
+            items.some((item) => {
+              const saved = existing.find((row) => row.id === item.id);
+              return (
+                !saved ||
+                !isDeepStrictEqual(
+                  saved.content,
+                  content(
+                    item.message,
+                    call.outcome ?? 'failed',
+                    item.partial,
+                    item.excludedFromHistory,
+                  ),
+                )
+              );
             })
-          : [];
-        if (existing.length && existing.length !== items.length)
-          throw conflict('Incomplete response persistence.');
-        if (
-          existing.length &&
-          items.some((item) => {
-            const saved = existing.find((row) => row.id === item.id);
-            return (
-              !saved ||
-              !isDeepStrictEqual(
-                saved.content,
-                content(
-                  item.message,
-                  call.outcome ?? 'failed',
-                  item.partial,
-                  item.excludedFromHistory,
-                ),
-              )
+          )
+            throw conflict(
+              'The saved response differs from the finalization retry.',
             );
-          })
-        )
-          throw conflict(
-            'The saved response differs from the finalization retry.',
+          const lastSeq = existing.length
+            ? Number(row.lastSeq)
+            : await append(conn, row, items, call.outcome ?? 'failed');
+          await saveMetadata(
+            conn,
+            row,
+            { ...value, call: { ...call, closing: true } },
+            {
+              lastSeq,
+              read: false,
+              lastMessageAt: deps.now(),
+              updatedAt: deps.now(),
+            },
           );
-        const lastSeq = existing.length
-          ? Number(row.lastSeq)
-          : await append(conn, row, items, call.outcome ?? 'failed');
-        await saveMetadata(
-          conn,
-          row,
-          { ...value, call: { ...call, closing: true } },
-          {
-            lastSeq,
-            read: false,
-            lastMessageAt: deps.now(),
-            updatedAt: deps.now(),
-          },
-        );
-        return lastSeq;
-      });
+          return lastSeq;
+        },
+        (seq) => seq,
+      );
     },
     finish(userId: string, id: string) {
       return write(userId, id, 'finish', async (conn, row) => {

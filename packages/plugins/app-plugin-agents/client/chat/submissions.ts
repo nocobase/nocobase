@@ -93,6 +93,10 @@ export class ChatSubmissions {
       created: boolean,
     ) => void,
     private readonly timeoutMs = 30_000,
+    private readonly confirmed: (
+      id: string,
+      message: ConversationMessage,
+    ) => void = () => {},
   ) {}
   public subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -202,8 +206,7 @@ export class ChatSubmissions {
         }),
       );
       if (!this.valid(record, generation, operation)) return;
-      record.message = result.message;
-      record.status = 'confirmed';
+      this.confirm(record, result.message);
       this.notify(result.conversation, record, false);
       this.publish();
     } catch (error) {
@@ -214,6 +217,11 @@ export class ChatSubmissions {
       if (record.status === 'unknown') void this.reconcile(record.clientId);
     }
   }
+  private confirm(record: ChatSubmission, message: ConversationMessage): void {
+    record.message = message;
+    record.status = 'confirmed';
+    this.confirmed(message.conversationId, message);
+  }
   public observe(id: string, messages: readonly ConversationMessage[]): void {
     let changed = false;
     for (const record of this.records) {
@@ -223,8 +231,7 @@ export class ChatSubmissions {
         (message) => message.metadata?.clientId === record.clientId,
       );
       if (found) {
-        record.message = found;
-        record.status = 'confirmed';
+        this.confirm(record, found);
         changed = true;
       }
     }
