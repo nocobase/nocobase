@@ -204,13 +204,6 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {`,
       '        <ChatHeaderButton />\n        <ThemeSettings />',
     );
   }
-  if (file === 'vitest.config.ts') {
-    replaceOnce(
-      '          /@nocobase\\/app-plugin-notification-in-app\\/(?:dist\\/)?client\\//u,',
-      '          /@nocobase\\/app-plugin-notification-in-app\\/(?:dist\\/)?client\\//u,\n' +
-        '          /@nocobase\\/app-plugin-agents\\/(?:dist\\/)?client\\//u,',
-    );
-  }
   return source;
 }
 

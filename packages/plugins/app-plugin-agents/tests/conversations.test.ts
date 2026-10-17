@@ -940,7 +940,14 @@ describe('historical Runner conversation domain', () => {
     const agents = (await alice().get('/agents/chatAgents')).body.data;
     expect(agents.map((agent: { name: string }) => agent.name)).toEqual([
       'Team PM',
+      'Online agent',
     ]);
+    expect(
+      agents.find((agent: { id: string }) => agent.id === 'online'),
+    ).toMatchObject({
+      isSystemDefault: false,
+      availability: { online: false, reason: 'noModel' },
+    });
     expect(agents[0]).toMatchObject({
       isSystemDefault: true,
       isMyDefault: false,

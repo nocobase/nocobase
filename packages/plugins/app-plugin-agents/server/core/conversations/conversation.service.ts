@@ -141,6 +141,8 @@ export interface ConversationServiceDeps {
   readonly people: People;
   readonly settings: ChatSettingsService;
   readonly contextKinds: PageContextKinds;
+  /** Availability of the built-in model-backed chat capability. */
+  readonly nativeAvailable?: () => Promise<boolean>;
   /** Native process occupancy, combined with the authorized persisted row. */
   readonly nativeActive?: (sessionId: string) => boolean;
   /** The files people send with messages; without them a message that names files is refused. */
@@ -1664,7 +1666,7 @@ export function createConversationService(
         deps.settings.settings(conn),
         deps.settings.preferences(userId, conn),
       ]);
-      return Promise.all(
+      const catalog = await Promise.all(
         agents
           // People talk to the agents discovered from runners; an application's own agents do work of its own.
           .filter(
@@ -1691,6 +1693,27 @@ export function createConversationService(
             };
           }),
       );
+      if (deps.nativeAvailable) {
+        const online = await deps.nativeAvailable();
+        catalog.push({
+          id: 'online',
+          name: 'Online agent',
+          description: 'Chat with a configured model and registered tools.',
+          nameText: null,
+          descriptionText: null,
+          avatar: null,
+          isSystemDefault:
+            settings.defaultAgentId === 'online' || !settings.defaultAgentId,
+          isMyDefault: preferences.defaultAgentId === 'online',
+          personalOnly: false,
+          availability: {
+            online,
+            reason: online ? null : 'noModel',
+            onlineRunners: 0,
+          },
+        });
+      }
+      return catalog;
     },
   };
   return service;

@@ -547,6 +547,8 @@ export function createAgents(deps: AgentsDeps): Agents {
     runs,
     people,
     settings: chat,
+    nativeAvailable: async () =>
+      Boolean((await modelServices.catalog().catch(() => null))?.defaultModel),
     nativeActive: (id) => onlineAgent.isActive(id),
     contextKinds: createPageContextKinds(),
     attachments: chatAttachments.links,

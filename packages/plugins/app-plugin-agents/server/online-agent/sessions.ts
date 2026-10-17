@@ -373,6 +373,7 @@ export function createSessionManager(deps: {
             {
               modelService: model.modelService,
               model: model.model,
+              read: true,
               lastSeq,
               ...(row.title
                 ? {}
@@ -451,7 +452,19 @@ export function createSessionManager(deps: {
             { ...value, call: { ...call, closing: true } },
             {
               lastSeq,
-              read: false,
+              ...(!existing.length &&
+              items.some(
+                (item) =>
+                  (item.message?.role === 'assistant' ||
+                    item.message === null) &&
+                  content(
+                    item.message,
+                    call.outcome ?? 'failed',
+                    item.partial,
+                  ).content.trim().length > 0,
+              )
+                ? { read: false }
+                : {}),
               lastMessageAt: deps.now(),
               updatedAt: deps.now(),
             },

@@ -88,9 +88,10 @@ it('appends live deltas to the initial prefix and replaces the canonical answer 
     messageIndex: 0,
     item: { role: 'assistant', parts: [{ type: 'text', text: 'AB' }] },
   });
-  emit({ type: 'saved', lastSeq: 2 });
+  emit({ type: 'saved', lastSeq: 2, outcome: 'cancelled' });
   output.close();
   await vi.waitFor(() => expect(f.controller.state('c1')?.phase).toBe('saved'));
+  expect(f.controller.state('c1')?.outcome).toBe('cancelled');
   expect(
     f.controller.state('c1')?.items.map((item) => item.content.content),
   ).toEqual(['AB']);
@@ -155,5 +156,24 @@ it('does not let an old idle refresh mark the next subscription as saved', async
   await old;
   expect(f.controller.state('c1')?.phase).toBe('interrupted');
   expect(f.api.messages).not.toHaveBeenCalled();
+  f.controller.dispose();
+});
+
+it('keeps Stop requested after a successful response until actual idle, and clears across lifetimes', async () => {
+  const f = fixture([]);
+  f.controller.api.stop = vi.fn(
+    async () =>
+      ({ id: 'c1', execution: { status: 'running' } }) as ConversationDetail,
+  );
+  await f.controller.stop('c1');
+  expect(f.controller.isStopping('c1')).toBe(true);
+  f.controller.observeDetail({
+    id: 'c1',
+    execution: { status: 'idle' },
+  } as ConversationDetail);
+  expect(f.controller.isStopping('c1')).toBe(false);
+  await f.controller.stop('c1');
+  f.controller.invalidate();
+  expect(f.controller.isStopping('c1')).toBe(false);
   f.controller.dispose();
 });

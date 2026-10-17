@@ -1,6 +1,17 @@
 /** Every key the agent chat looks up, so each locale is checked against the same list. */
 export interface AgentChatLocale {
   readonly chat: {
+    readonly feedback: {
+      readonly sending: string;
+      readonly waiting: string;
+      readonly thinking: string;
+      readonly stopping: string;
+      readonly completed: string;
+      readonly cancelled: string;
+      readonly failed: string;
+      readonly unknown: string;
+      readonly effectReview: string;
+    };
     readonly connectionUnknown: string;
     readonly historicalReadOnly: string;
     readonly executionFailed: string;
@@ -210,6 +221,21 @@ export interface AgentChatLocale {
 
 const agentChatEnUS: AgentChatLocale = {
   chat: {
+    feedback: {
+      sending: 'Sending…',
+      waiting: 'Waiting for the agent…',
+      thinking: 'Thinking…',
+      stopping: 'Stop requested. Waiting for the agent to finish…',
+      completed: 'Completed.',
+      cancelled: 'Cancelled. Any partial reply is saved in history.',
+      failed:
+        'The response failed. Check history before deciding whether to send again.',
+      unknown:
+        'The result or its saved history is not confirmed. Refresh history before deciding whether to send again.',
+      effectReview:
+        'Some actions may have completed. Review their results before continuing.',
+    },
+
     executionFailed:
       'Execution failed or its effects need review. Check saved history before continuing.',
     historicalReadOnly:
@@ -379,7 +405,7 @@ const agentChatEnUS: AgentChatLocale = {
       systemDefault: 'System default',
       personal: 'Personal runners only',
       temporary: 'Temporary',
-      hint: 'Lists the enabled agents and says why one cannot answer you now. Answers run on a runner: the first reply waits for one to take it, usually a few seconds.',
+      hint: 'Lists the enabled agents and says why one cannot answer you now. Native replies use an application model; Runner replies wait for an available execution machine.',
     },
     history: {
       title: 'Conversations',

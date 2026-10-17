@@ -526,3 +526,100 @@ it.each([401, 403, 404, 500])(
     );
   },
 );
+
+it.each(['en-US', 'zh-CN'])(
+  'shows first-response and cancellation confirmation feedback in %s without hiding the reply',
+  async (locale) => {
+    let output!: ReadableStreamDefaultController<Uint8Array>;
+    let terminal = false;
+    const original = host.request.getMockImplementation()!;
+    host.catalog.mockResolvedValue(models);
+    host.stream.mockResolvedValue(
+      new ReadableStream({
+        start(controller) {
+          output = controller;
+        },
+      }),
+    );
+    host.request.mockImplementation(async (input) => {
+      if (
+        input.path === 'agents/conversations/saved' ||
+        input.path.endsWith('/stop')
+      )
+        return {
+          data: {
+            ...conversation,
+            execution: terminal
+              ? { status: 'idle', outcome: 'cancelled' }
+              : { status: 'running' },
+          },
+        };
+      if (input.path.endsWith('/messages'))
+        return {
+          data: [
+            {
+              ...message,
+              id: 'input',
+              role: 'user',
+              content: { type: 'text', content: 'Question' },
+            },
+          ],
+          meta: { lastSeq: 1 },
+        };
+      return original(input);
+    });
+    await setup(locale);
+    act(() => panel.openChat({ conversationId: 'saved' }));
+    expect(
+      await screen.findByText(
+        locale === 'zh-CN' ? '等待 Agent 响应…' : 'Waiting for the agent…',
+      ),
+    ).toBeVisible();
+    const emit = (event: object) =>
+      output.enqueue(
+        new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`),
+      );
+    act(() =>
+      emit({
+        type: 'part',
+        boundary: { afterSeq: 1 },
+        messageIndex: 0,
+        item: {
+          role: 'assistant',
+          parts: [{ type: 'text', text: 'First body' }],
+        },
+      }),
+    );
+    expect(await screen.findByText('First body')).toBeVisible();
+    expect(
+      screen.queryByText(
+        locale === 'zh-CN' ? '等待 Agent 响应…' : 'Waiting for the agent…',
+      ),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: locale === 'zh-CN' ? '停止' : 'Stop',
+      }),
+    );
+    expect(
+      await screen.findByText(
+        locale === 'zh-CN'
+          ? '已请求停止，等待 Agent 确认结束…'
+          : 'Stop requested. Waiting for the agent to finish…',
+      ),
+    ).toBeVisible();
+    terminal = true;
+    act(() => {
+      emit({ type: 'saved', lastSeq: 2 });
+      output.close();
+    });
+    expect(
+      await screen.findByText(
+        locale === 'zh-CN'
+          ? '已取消。已生成的回复保留在历史中。'
+          : 'Cancelled. Any partial reply is saved in history.',
+      ),
+    ).toBeVisible();
+    expect(screen.getByText('First body')).toBeVisible();
+  },
+);

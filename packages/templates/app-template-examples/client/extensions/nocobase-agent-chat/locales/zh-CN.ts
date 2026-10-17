@@ -2,6 +2,18 @@ import type { AgentChatLocale } from './en-US.js';
 
 const agentChatZhCN: AgentChatLocale = {
   chat: {
+    feedback: {
+      sending: '正在发送…',
+      waiting: '等待 Agent 响应…',
+      thinking: '正在思考…',
+      stopping: '已请求停止，等待 Agent 确认结束…',
+      completed: '已完成。',
+      cancelled: '已取消。已生成的回复保留在历史中。',
+      failed: '响应失败。请先查看历史，再决定是否重新发送。',
+      unknown: '结果或历史保存尚未确认。请刷新历史后再决定是否重新发送。',
+      effectReview: '部分操作可能已完成，请核对结果后再继续。',
+    },
+
     executionFailed: '执行失败或执行效果待核对，请先查看已保存历史。',
     historicalReadOnly: '历史会话仅供查看，请新建聊天以继续。',
     connectionUnknown:

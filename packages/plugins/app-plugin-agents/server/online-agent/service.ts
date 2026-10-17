@@ -74,6 +74,7 @@ export interface OnlineAgent {
   receive(): Promise<ReadableStream<
     import('./streams.js').OnlineAgentStreamEvent
   > | null>;
+  /** Processes cancellation; Runner may still be busy until terminal confirmation and history synchronization. */
   abort(): Promise<void>;
   retryFinalization(): Promise<void>;
   send(
@@ -145,7 +146,8 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
   async chatAgents(
     userId: string,
   ): Promise<import('../../shared/conversations.js').ChatAgent[]> {
-    const agents = (await this.deps.chatAgents?.(userId)) ?? [];
+    if (this.deps.chatAgents) return this.deps.chatAgents(userId);
+    const agents: import('../../shared/conversations.js').ChatAgent[] = [];
     const model = await this.deps.defaultModel().catch(() => null);
     return [
       ...agents,

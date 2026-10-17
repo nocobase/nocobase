@@ -170,3 +170,12 @@ export {
   useChatController,
   useChatStream,
 } from './chat/controller.js';
+
+export {
+  chatFeedback,
+  chatIsRunning,
+  chatNearBottom,
+  type ChatFeedback,
+} from './chat/feedback.js';
+
+export { useChatScroll } from './chat/use-chat-scroll.js';

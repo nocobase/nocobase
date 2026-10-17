@@ -1680,3 +1680,79 @@ it('retries finalization without repeating a completed business tool or model st
       .at(-1)?.content.content,
   ).toBe('Business saved');
 });
+
+it('marks accepted input read, retains read on empty or tool-only finalization, and marks only new visible output unread', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({ stream: streamed(text('unused')) }),
+    }),
+  );
+  const agent = await f.service.realtime(context());
+  const id = agent.sessionId;
+  const read = async () =>
+    (await h.services.conversations.get('alice', id)).read;
+  const session = await f.sessions.load('alice', id);
+  const accept = (messageId: string) =>
+    f.sessions.accept('alice', id, session.config, ref, [
+      { id: messageId, message: { role: 'user', content: 'input' } },
+    ]);
+  await accept('input-one');
+  expect(await read()).toBe(true);
+  await f.sessions.save('alice', id, [], {
+    state: 'idle',
+    actorId: 'alice',
+    outcome: 'cancelled',
+  });
+  expect(await read()).toBe(true);
+  await f.sessions.finish('alice', id);
+  await accept('empty-failure');
+  await f.sessions.save('alice', id, [], {
+    state: 'idle',
+    actorId: 'alice',
+    outcome: 'failed',
+  });
+  expect(await read()).toBe(true);
+  await f.sessions.finish('alice', id);
+  await accept('input-two');
+  const items = [
+    {
+      id: 'output',
+      message: { role: 'assistant' as const, content: 'visible' },
+    },
+  ];
+  const call = {
+    state: 'idle' as const,
+    actorId: 'alice',
+    outcome: 'completed' as const,
+  };
+  await f.sessions.save('alice', id, items, call);
+  expect(await read()).toBe(false);
+  await h.services.conversations.markRead('alice', id);
+  await f.sessions.save('alice', id, items, call);
+  expect(await read()).toBe(true);
+  await f.sessions.finish('alice', id);
+  await accept('input-three');
+  await f.sessions.save(
+    'alice',
+    id,
+    [
+      {
+        id: 'hidden-output',
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 't',
+              toolName: 'fixture',
+              input: {},
+            },
+          ],
+        },
+      },
+    ],
+    call,
+  );
+  expect(await read()).toBe(true);
+  await f.sessions.finish('alice', id);
+});

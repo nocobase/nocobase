@@ -1023,9 +1023,16 @@ export const useChatStream: typeof Chat.useChatStream = () => undefined;
 export const useChatController: typeof Chat.useChatController = () =>
   ({
     refresh: async () => {},
+    isStopping: () => false,
     submissions: {
       blocked: () => false,
       snapshot: () => [],
       releaseUnknown: () => false,
     },
   }) as unknown as ReturnType<typeof Chat.useChatController>;
+
+export {
+  chatFeedback,
+  chatIsRunning,
+} from '../../../../packages/plugins/app-plugin-agents/client/chat/feedback.js';
+export { useChatScroll } from '../../../../packages/plugins/app-plugin-agents/client/chat/use-chat-scroll.js';

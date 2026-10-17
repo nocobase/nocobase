@@ -121,6 +121,7 @@ export function useConversation(
         if (!current()) throw new CancelledError({ silent: true });
         const detail = await api.conversation(conversationId ?? '');
         if (!current()) throw new CancelledError({ silent: true });
+        controller.observeDetail(detail);
         return detail;
       },
       enabled: conversationId !== null,
@@ -488,12 +489,7 @@ export function useConversationActions(): ConversationActions {
 
   const stop = useMutation(
     {
-      mutationFn: (id: string) =>
-        controller.command(
-          id,
-          () => api.stop(id),
-          (detail) => detail,
-        ),
+      mutationFn: (id: string) => controller.stop(id),
       onMutate: scope,
       onError: failed,
     },

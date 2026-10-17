@@ -593,7 +593,8 @@ export function createChatRoutes(
         flags: { conversationId: { name: 'conversation' } },
       },
       summary: "Stop a conversation's agent",
-      description: 'Cancels the run answering in the conversation, if any.',
+      description:
+        'Processes a cancellation request. The returned execution may remain running until actual termination and canonical history synchronization; request success does not mean the agent has stopped.',
     },
   };
   for (const [verb, item] of Object.entries(acts))

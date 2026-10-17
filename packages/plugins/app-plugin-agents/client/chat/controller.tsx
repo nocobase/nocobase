@@ -32,6 +32,7 @@ export type StreamState = {
   phase: 'connecting' | 'streaming' | 'saved' | 'interrupted';
   items: ConversationMessage[];
   lastSeq?: number;
+  outcome?: import('../../shared/online-agent.js').OnlineAgentOutcome;
 };
 /** One application-owned sender and stream consumer, shared across all mounted chat views. */
 export class ChatController {
@@ -146,6 +147,37 @@ export class ChatController {
     return task;
   }
   private streams = new Map<string, StreamState>();
+  private stopRequests = new Set<string>();
+  observeDetail(detail: ConversationDetail): void {
+    if (
+      detail.execution?.status === 'idle' &&
+      this.stopRequests.delete(detail.id)
+    )
+      this.publish();
+  }
+  isStopping(id: string): boolean {
+    return this.stopRequests.has(id);
+  }
+  /** A processed cancellation request stays pending until execution actually becomes idle. */
+  async stop(id: string): Promise<ConversationDetail> {
+    const active = this.lifetime();
+    this.stopRequests.add(id);
+    this.publish();
+    try {
+      return await this.command(
+        id,
+        () => this.api.stop(id),
+        (detail) => detail,
+      );
+    } catch (error) {
+      if (active()) {
+        this.stopRequests.delete(id);
+        this.publish();
+      }
+      throw error;
+    }
+  }
+
   private aborts = new Map<string, AbortController>();
   private listeners = new Set<() => void>();
   private revision = 0;
@@ -170,6 +202,9 @@ export class ChatController {
   }
   private remember(detail: ConversationDetail): void {
     this.nextDetailVersion(detail.id);
+    if (detail.execution?.status === 'idle')
+      this.stopRequests.delete(detail.id);
+    this.publish();
     agentsQueryClient().setQueryData(chatKeys.conversation(detail.id), detail);
     void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
   }
@@ -287,6 +322,7 @@ export class ChatController {
                   ...state,
                   phase: 'saved',
                   lastSeq: event.lastSeq,
+                  outcome: event.outcome,
                 });
                 await this.refresh(id);
               } else if (event.type === 'message') {
@@ -372,12 +408,14 @@ export class ChatController {
     agentsQueryClient().setQueryData(chatKeys.conversation(id), detail);
     this.submissions.observe(id, page.items);
     if (detail.execution?.status === 'idle') {
+      this.stopRequests.delete(id);
       const stream = this.streams.get(id);
       if (stream)
         this.streams.set(id, {
           ...stream,
           phase: 'saved',
           lastSeq: page.lastSeq,
+          ...(stream.lastSeq !== page.lastSeq ? { outcome: undefined } : {}),
         });
     }
     this.publish();
@@ -392,6 +430,7 @@ export class ChatController {
     this.loads.clear();
     this.refreshAgain.clear();
     this.commandVersions.clear();
+    this.stopRequests.clear();
     this.submissions.invalidate();
     for (const abort of this.aborts.values()) abort.abort();
     agentsQueryClient().removeQueries({ queryKey: chatKeys.all });

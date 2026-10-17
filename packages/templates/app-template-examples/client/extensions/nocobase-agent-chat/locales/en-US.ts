@@ -1,5 +1,16 @@
 export interface AgentChatLocale {
   readonly chat: {
+    readonly feedback: {
+      readonly sending: string;
+      readonly waiting: string;
+      readonly thinking: string;
+      readonly stopping: string;
+      readonly completed: string;
+      readonly cancelled: string;
+      readonly failed: string;
+      readonly unknown: string;
+      readonly effectReview: string;
+    };
     readonly connectionUnknown: string;
     readonly historicalReadOnly: string;
     readonly executionFailed: string;
@@ -218,6 +229,21 @@ export interface AgentChatLocale {
 
 const agentChatEnUS: AgentChatLocale = {
   chat: {
+    feedback: {
+      sending: 'Sending…',
+      waiting: 'Waiting for the agent…',
+      thinking: 'Thinking…',
+      stopping: 'Stop requested. Waiting for the agent to finish…',
+      completed: 'Completed.',
+      cancelled: 'Cancelled. Any partial reply is saved in history.',
+      failed:
+        'The response failed. Check history before deciding whether to send again.',
+      unknown:
+        'The result or its saved history is not confirmed. Refresh history before deciding whether to send again.',
+      effectReview:
+        'Some actions may have completed. Review their results before continuing.',
+    },
+
     executionFailed:
       'Execution failed or its effects need review. Check saved history before continuing.',
     historicalReadOnly:

@@ -6,6 +6,8 @@
  */
 import {
   ChatExtensionsContext,
+  chatFeedback,
+  useChatScroll,
   newConversationAgent,
   timelineOrder,
   useAgentText,
@@ -28,7 +30,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -277,13 +278,36 @@ function ConversationBody({
   ]);
 
   // Follow the end of the log as messages arrive; keep the place when older ones are loaded above.
-  const listRef = useRef<HTMLDivElement>(null);
-  const lastKey = messages.items.at(-1)?.seq ?? 0;
-  const pendingCount = messages.pending.length;
-  useLayoutEffect(() => {
-    const element = listRef.current;
-    if (element) element.scrollTop = element.scrollHeight;
-  }, [lastKey, pendingCount, run?.id, timeline.length]);
+  const listRef = useChatScroll(messages.items[0]?.seq);
+  const stopping =
+    conversationId !== null &&
+    chatController.isStopping(conversationId) &&
+    running;
+  const afterUser =
+    messages.items.filter((item) => item.role === 'user').at(-1)?.seq ??
+    Infinity;
+  const feedback = chatFeedback({
+    execution: conversation?.execution,
+    lastSeq: messages.lastSeq,
+    running,
+    stopping,
+    submission: chatController.submissions
+      .snapshot()
+      .filter(
+        (record) =>
+          record.conversationId === conversationId &&
+          (conversationId !== null ||
+            record.editorKey === `registry:${source}:new`),
+      )
+      .at(-1),
+    stream,
+    hasOutput: messages.items.some(
+      (item) =>
+        item.seq > afterUser &&
+        item.role !== 'user' &&
+        item.content.content.trim().length > 0,
+    ),
+  });
 
   const empty =
     entries.length === 0 && messages.pending.length === 0 && !running;
@@ -462,6 +486,16 @@ function ConversationBody({
           </Button>
         </div>
       ) : null}
+      {feedback ? (
+        <div
+          role='status'
+          aria-live='polite'
+          className='px-3 py-2 text-sm text-muted-foreground'
+          data-chat-feedback={feedback}
+        >
+          {t(`chat.feedback.${feedback}`)}
+        </div>
+      ) : null}
       <TurnAnnouncer running={running} />
       <div className={page ? cn(PAGE_COLUMN, 'pt-2 pb-4') : undefined}>
         <Composer
@@ -480,7 +514,7 @@ function ConversationBody({
             )
           }
           running={running}
-          stopping={actions.stop.isPending}
+          stopping={stopping}
           onStop={() => {
             if (conversationId) actions.stop.mutate(conversationId);
           }}

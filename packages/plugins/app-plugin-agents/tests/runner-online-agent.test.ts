@@ -727,3 +727,38 @@ it('measures admission and proves an unchanged active read takes no write transa
       }) + '\n',
     );
 });
+
+it('accepts Native personal and team defaults without a Runner row and preserves explicit Runner choice', async () => {
+  h = await createHarness();
+  await h.services.chat.updateSettings('alice', { defaultAgentId: 'online' });
+  await h.services.chat.updatePreferences('alice', {
+    defaultAgentId: 'online',
+  });
+  expect(
+    (await h.services.onlineAgent.chatAgents('alice')).find(
+      (item) => item.id === 'online',
+    ),
+  ).toMatchObject({
+    isMyDefault: true,
+    isSystemDefault: true,
+    availability: { online: false, reason: 'noModel' },
+  });
+  const runner = await h.registerRunner();
+  expect(runner.runnerId).toBeTruthy();
+  const agentId = await h.createAgent({ source: 'runner' });
+  await h.services.chat.updatePreferences('alice', { defaultAgentId: agentId });
+  await expect(h.services.onlineAgent.realtime(context())).rejects.toThrow();
+  const agent = await h.services.onlineAgent.realtime(context(), { agentId });
+  expect(agent.sessionId).toBeTruthy();
+  await expect(
+    h.services.onlineAgent.realtime(context(), {
+      sessionId: agent.sessionId,
+      agentId: 'online',
+    }),
+  ).rejects.toThrow();
+  expect(
+    (await h.services.onlineAgent.chatAgents('alice')).find(
+      (item) => item.id === agentId,
+    )?.isMyDefault,
+  ).toBe(true);
+});

@@ -166,6 +166,7 @@ export class ChatApi {
     return this.send(chatPath('markRead', id), 'POST');
   }
 
+  /** Requests cancellation. Only execution.status=idle confirms termination and synchronized history. */
   public stop(id: string): Promise<ConversationDetail> {
     return this.send(chatPath('stop', id), 'POST');
   }
