@@ -2,7 +2,11 @@
 
 Use `@nocobase/lifecycle` when a business record moves through stages that developers define in source: an expense report, a ticket, a contract, an order, a leave request. The record keeps its state in one of its own fields, every change is a transition declared in a definition, and the work a transition owes outside the database — mail, payments, calls to other systems — runs as effects after the transaction commits. There is no separate process instance, so the state is never kept in two places.
 
-Administrators can adjust code-declared business parameters without editing workflow structure. For configurable approval departments, reviewer choices, thresholds, snapshot/live reads and optional configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
+Administrators can adjust code-declared business parameters without editing workflow structure. For configurable approval departments, reviewer choices, thresholds, snapshot/live reads and configuration forms and optional contextual editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
+
+## Deliver workflow management by default
+
+Whenever application requirements include a process to develop, include workflow management pages alongside its business operations; users do not need to request a console separately. Reuse or extend existing management pages and follow [Lifecycle UI](lifecycle-ui.md) for the default layout and organization based on the workflow example. Deliver one Workflow management sidebar entry with in-page Definitions and Executions tabs, definition details with diagrams and declared parameter settings, and execution details with history and effects. The tab views have URL-backed child routes without sidebar `navigation`. Follow the scope exceptions in [system administration](system-administration.md#default-delivery). Keep workflow structure in source; management pages do not imply a visual designer.
 
 ## Choose it or something else
 
@@ -439,7 +443,7 @@ The installed package's README lists its entries; the full guide, design notes a
 
 ## Draw an interactive lifecycle diagram
 
-For workflow management lists, definition and execution details, diagram sizing and parameter form placement, read [Lifecycle UI](lifecycle-ui.md). Prefer a visible parameter form beside the diagram on management pages; a dialog opened from a bound state or transition is an optional contextual entry. Use the same editor and save contract for both. Read [configurable lifecycle parameters](lifecycle-parameters.md#optional-user-interfaces) for authorization, CAS conflicts and current-versus-historical values.
+For workflow management lists, definition and execution details, diagram sizing and parameter form placement, read [Lifecycle UI](lifecycle-ui.md). Prefer a visible parameter form beside the diagram on management pages; a dialog opened from a bound state or transition is an optional contextual entry. Use the same editor and save contract for both. Read [configurable lifecycle parameters](lifecycle-parameters.md#management-pages-and-optional-contextual-editors) for authorization, CAS conflicts and current-versus-historical values.
 
 When a page needs a lifecycle diagram, use the UI Library's `@nocobase/lifecycle-diagram` component (React Flow + ELK) instead of building a canvas or turning Mermaid source into an interactive view. Read `pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`, then install with `yes n | pnpm exec shadcn add @nocobase/lifecycle-diagram` and format the created files. It includes `@nocobase/flow-diagram`, which is also available alone for a generic directed graph. Follow [the UI Library guidance](frontend/references/styling.md#3-use-shadcn) and its [offline catalog](frontend/references/ui-library.md) for discovery and installation.
 

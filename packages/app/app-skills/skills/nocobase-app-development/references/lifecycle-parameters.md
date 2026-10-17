@@ -72,11 +72,11 @@ Register selectors with `resolveReviewerSelections(choices, { scope, applicantId
 
 On task creation resolve the snapshot or live rule against current organization data and persist candidates on the task. Existing candidates stay fixed. A single approver field is not a multi-person approval system. To demonstrate multiple candidates, declare a separate finite “any candidate can decide” workflow and use version checks so only one concurrent decision succeeds. Real approval plugins need their own compatibility verification for action replay, settings previews, task construction and opinion reuse; fixed current-round tasks or inherited opinions cannot stand in for rule configuration.
 
-## Optional user interfaces
+## Management pages and optional contextual editors
 
-Respect the user's existing UI and scope. API-only work needs no configuration page or diagram. An existing settings page can embed a form. Offer a central page or optional bound diagram entry only when useful. Do not add a mandatory diagram or a second workflow-design system.
+When application requirements include a process to develop, deliver workflow management pages by default as [Lifecycle UI](lifecycle-ui.md) describes, reusing the existing management area when present. Include declared parameter forms in definition details using the workflow example's layout; users do not need to request these pages separately. Follow the scope exceptions in [system administration](system-administration.md#default-delivery); API-only work and explicitly excluded UI need no configuration page or diagram. Contextual diagram editing remains optional, and management pages do not introduce a second workflow-design system.
 
-For workflow management pages, prefer a visible parameter form beside the process diagram, grouped by business state or transition. Show shared fields once without changing their storage/save boundaries. Use the [Lifecycle UI reference](lifecycle-ui.md) for list, detail and administration composition. Contextual node or transition editing is an optional alternative when the user requests it or an existing interface benefits from it; keep the same editor and save contract and do not make diagram icons the only way to discover settings.
+For workflow management pages, prefer a visible parameter form beside the process diagram, grouped by business state or transition. Show shared fields once without changing their storage/save boundaries. Use the [Lifecycle UI reference](lifecycle-ui.md) for list, detail and administration composition. Contextual node or transition editing is an optional additional entry when the user requests it or an existing interface benefits from it; keep the same editor and save contract and do not make diagram icons the only way to discover settings.
 
 For save request IDs, follow the [browser request ID guidance](lifecycle.md#5-the-page): use an HTTP-compatible generator and retain the key for retries of the same save.
 
