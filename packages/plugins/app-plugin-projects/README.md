@@ -224,18 +224,14 @@ The plugin seeds no roles: the application that assembles it seeds its own (the 
 
 | Path                                  | What it shows                                               |
 | ------------------------------------- | ----------------------------------------------------------- |
-| `/my-issues/owned`, `executing`       | The viewer's issues, as owner or executor                   |
+| `/my-issues`                          | The viewer's owned or executed issues, each once            |
 | `/issues` (`?view=board` or `list`)   | Every visible issue; filters, search and order in the URL   |
 | `/issues/new` (`?tab=ai` or `manual`) | The New issue dialog: AI draft (intake) or one issue        |
 | `/issues/new?tab=ai&job=:id`          | The AI draft tab following a request to AI                  |
 | `/issues/:id`, `/issues/plans/:id`    | One issue, by id or identifier; one plan, by its id         |
 | `/projects`, `/projects/new`          | Projects; a new one (a project's page is the application's) |
 
-As the old NocoProject had it, My issues has "I own" and "I execute" only, and the New issue dialog opens on its "AI
-draft" tab (the last tab used is remembered in the browser): requirements typed or uploaded are split into a draft of
-issues, edited row by row and created together, after which the dialog closes. Its manual tab asks when the issue
-starts: "Start now" (`in_progress`) or "Later" (`backlog`), and preselects the default executor. Nothing asks "Start
-now?" any more: moving an issue to `in_progress` starts its work.
+My tasks combines owned and executed issues, and the New issue dialog opens on its "AI draft" tab (the last tab used is remembered in the browser): requirements typed or uploaded are split into a draft of issues, edited row by row and created together, after which the dialog closes. Its manual tab asks when the issue starts: "Start now" (`in_progress`) or "Later" (`backlog`), and preselects the default executor. Nothing asks "Start now?" any more: moving an issue to `in_progress` starts its work.
 
 The settings pages are exported for the application to route under its own `/config` (`client/config.ts`: the issue
 prefix and labels), and components it reuses on its member pages are exported from
@@ -280,5 +276,7 @@ Invitation emails use `notificationService.sendTransient()` so credentials never
 ## Structured issue progress
 
 `Issue` exposes nullable text `needsYou` and `next`. `PATCH /api/projects/issues/{issueId}` and `issue.update` plan rows accept them in the same transaction as `statusKey`. Both fields are optional for people, agents, plans and system events. Omitted needsYou is retained in Blocked or In review; null, empty or whitespace clears it. Applications may constrain authenticated callers at their request boundary. Leaving these states clears it. Omitted `next` is retained; nonblank text replaces it; null, an empty string or whitespace clears it. Done and Cancelled always clear it. Both fields allow at most 2,000 characters. Progress-only writes advance revision and emit the existing refresh event. System status events share the optional-field validation and clearing rules. The new reversible migration adds the two columns without backfilling comments.
+
+`Issue` also exposes nullable Markdown `acceptance`: the issue's delivery report — how it was, the agreed approach, what changed, how it was checked, open issues and details — ending with the acceptance criteria the owner checks and where. `PATCH /api/projects/issues/{issueId}` accepts it in any status, normally with the move to In review (`nb-studio issue update <issue> --status in_review --acceptance-file report.md`). It is kept across status changes, including Done, Cancelled and a move back to In progress, and the next delivery replaces it; omitted it is retained, and null, an empty string or whitespace clears it. It allows at most 20,000 characters (`ISSUE_ACCEPTANCE_MAX`). Its reversible migration adds the column without backfilling.
 
 Manual issue descriptions accept pasted images through the existing protected attachment upload. Creation accepts optional `attachmentIds` of the caller's own unattached uploads and requires `pm.attachments` `upload` in addition to issue creation permission. Files are bound in the creation transaction before work starts, so the first agent context includes them. Descriptions remain Markdown; image nodes survive detail edits. Uploading blocks submission; cancelling leaves unattached files to the existing purge.

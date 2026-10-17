@@ -103,6 +103,14 @@ When the check reports something, inspect ownership and usage: declare an ordina
 
 `pnpm plugin:create` emits a generated plugin's `AGENTS.md` carrying this rule, so a plugin created tomorrow is told where a dependency goes before anyone adds one. When the rule changes here, change `packages/tools/create-plugin/template/AGENTS.md` in the same commit — the two are kept in step by a test, but only for the files' existence, not their content.
 
+## Reading Another Package's Files
+
+A package that uses another workspace package's files declares that package, even when only a test or a configuration reads them. pnpm's dependency graph has only the edges manifests declare, so a test importing `../../../tools/create-plugin/src/…`, a Vitest configuration copying files from `../../templates/app-template-default`, or a stylesheet importing a template's CSS by path depends on that package invisibly: `pnpm --filter <package>...` misses the reader, and the Quality scope selection (`scripts/select-quality-scope.mjs`), which runs a changed package and the packages depending on it, never reruns the reader when the package it reads changes.
+
+Either declare the package (a `devDependency` is enough for a test or a configuration, and the import can then use the package name) or build the fixture the test needs in a temporary directory, as `packages/app/app-server/tests/plugins.test.ts` writes its plugin packages with `mkdtemp`. A declaration must not create a cycle: a plugin cannot declare a template, because every template depends on the plugins it installs.
+
+`pnpm deps:check` runs `scripts/check-cross-package-paths.mjs`, which resolves every relative module specifier, every string literal beginning with `./` or `../`, every `packages/<group>/<name>` literal and every relative path in a stylesheet, tsconfig or `package.json` script, and fails when one lands in another workspace package the reader does not declare. The few reads that cannot be declared are listed in its `EXEMPTIONS`, each with its reason; the check fails once an entry covers nothing. An exempted read that CI runs also needs an entry in `pathDependencies` in `scripts/select-quality-scope.mjs`, so a change to what it reads still selects the reader.
+
 ## Commercial database optional peers
 
 The runtime and testing packages retain optional peer contracts for KingbaseES, Dameng and OceanBase with ordinary semver ranges because their source belongs to Pro. The root `.pnpmfile.cjs` omits only those optional peers from OSS development resolution: pnpm otherwise installs workspace projects' optional peers automatically. The hook does not edit package manifests or published artifacts, and it is not applied when OSS is a submodule of Pro. Do not add commercial driver development dependencies to OSS. Pro validates automatic loading against the actual drivers.

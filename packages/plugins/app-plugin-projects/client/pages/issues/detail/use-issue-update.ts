@@ -1,5 +1,6 @@
 import { ApiClientError } from '@nocobase/app-client';
 import {
+  hashKey,
   type QueryKey,
   type UseMutationResult,
   useMutation,
@@ -41,7 +42,9 @@ export function useIssueUpdate(issue: Issue, detailKey: QueryKey): IssueUpdate {
   const queryClient = useQueryClient();
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: detailKey });
-    void queryClient.invalidateQueries({ queryKey: pmKeys.issue(issue.id) });
+    // Opened by its key, the page reads the issue under another key too; once is enough when they are the same.
+    if (hashKey(detailKey) !== hashKey(pmKeys.issue(issue.id)))
+      void queryClient.invalidateQueries({ queryKey: pmKeys.issue(issue.id) });
     void queryClient.invalidateQueries({ queryKey: pmKeys.issues });
   };
 

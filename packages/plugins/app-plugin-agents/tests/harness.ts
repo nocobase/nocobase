@@ -298,6 +298,7 @@ export async function createHarness(
     /** `null` for an application without secrets keys. */
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
+    readonly retryBaseDelayMs?: number;
   } = {},
 ): Promise<Harness> {
   const { database, drop } = await openDatabase();
@@ -313,6 +314,7 @@ export async function createHarness(
     },
   };
   let next = 0;
+  let runnerCount = 0;
   const idGenerator = {
     generateString: () => String((next += 1)).padStart(8, '0'),
   };
@@ -327,6 +329,9 @@ export async function createHarness(
     app: { id: 'acme', name: 'Acme' },
     skillDisk: () => disk,
     ...(options.dist ? { dist: options.dist } : {}),
+    ...(options.retryBaseDelayMs === undefined
+      ? {}
+      : { retryBaseDelayMs: options.retryBaseDelayMs }),
     ...(options.secrets === null
       ? {}
       : { secrets: options.secrets ?? testSecrets() }),
@@ -622,7 +627,9 @@ export async function createHarness(
       );
       const registration: RegisterRequest = {
         registrationToken: token.token,
-        name: options.name ?? 'runner',
+        name:
+          options.name ??
+          (++runnerCount === 1 ? 'runner' : `runner-${runnerCount}`),
         hostname: 'host',
         os: 'darwin',
         arch: 'arm64',

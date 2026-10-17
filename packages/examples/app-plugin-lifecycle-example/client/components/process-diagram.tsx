@@ -120,14 +120,6 @@ export function ProcessDiagram({
           className={className}
           stateLabel={(item) => stateLabel(item.name)}
           transitionLabel={transitionLabel}
-          renderState={(item) => (
-            <span className='flex flex-col items-center gap-0.5'>
-              <span>{stateLabel(item.name)}</span>
-              {item.name === current ? (
-                <span className='text-xs'>{t('diagramStatus.current')}</span>
-              ) : null}
-            </span>
-          )}
           onStateClick={(item) => {
             if (!onParameterBinding?.('state', item.name))
               setSelected({ kind: 'state', name: item.name });

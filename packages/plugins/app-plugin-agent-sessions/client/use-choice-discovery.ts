@@ -23,6 +23,14 @@ export const discoveryKey: readonly ['agentSessions', 'discovery'] = [
   'discovery',
 ];
 
+function discoveryQueryKey(
+  key: string,
+  settings: Readonly<Record<string, string>>,
+  sessionId: string | undefined,
+): readonly unknown[] {
+  return [...discoveryKey, key, settings, ...(sessionId ? [sessionId] : [])];
+}
+
 export interface ChoiceDiscovery {
   readonly loading: boolean;
   /** Only a fresh answer for the final selection can be used to send. */
@@ -46,6 +54,11 @@ export function useChoiceDiscovery(
     readonly enabled: boolean;
     /** Wait for new-session intent without invalidating cache or cancelling shared work. */
     readonly deferred?: boolean;
+    /**
+     * The id the new session will be created with: its computer keeps the agent it starts to discover the choices for
+     * that session's first message. Each id discovers on its own.
+     */
+    readonly sessionId?: string | undefined;
   },
 ): ChoiceDiscovery {
   const api = useApiClient();
@@ -65,18 +78,16 @@ export function useChoiceDiscovery(
     result: DiscoveredChoices;
   }>();
   const { computerId, agentId, cwd, enabled, deferred = false } = target;
+  const sessionId = target.sessionId;
+  const queryKey = discoveryQueryKey(key, settings, sessionId);
   const query = useQuery({
-    queryKey: [...discoveryKey, key, settings],
+    queryKey,
     enabled: enabled && connected && !deferred,
     staleTime: DISCOVERY_CACHE_MS,
     retry: false,
     refetchOnWindowFocus: true,
     queryFn: async () => {
-      const { controller, release } = trackChoiceDiscovery(client, [
-        ...discoveryKey,
-        key,
-        settings,
-      ]);
+      const { controller, release } = trackChoiceDiscovery(client, queryKey);
       let stopCancellation = () => {};
       const cancellation = new Promise<never>((_, reject) => {
         const cancelled = () =>
@@ -95,7 +106,12 @@ export function useChoiceDiscovery(
             .request<{ data: DiscoveredChoices }>({
               path: `agentSessions/computers/${encodeURIComponent(computerId)}/discoverChoices`,
               method: 'POST',
-              json: { agentId, cwd, settings },
+              json: {
+                agentId,
+                cwd,
+                settings,
+                ...(sessionId ? { sessionId } : {}),
+              },
               signal: controller.signal,
             })
             .then(({ data }) => data),
@@ -134,14 +150,22 @@ export function useChoiceDiscovery(
     const timer = setTimeout(
       () => {
         void client.invalidateQueries({
-          queryKey: [...discoveryKey, key, settings],
+          queryKey: discoveryQueryKey(key, settings, sessionId),
           exact: true,
         });
       },
       Math.max(1, query.dataUpdatedAt + DISCOVERY_CACHE_MS - Date.now()),
     );
     return () => clearTimeout(timer);
-  }, [client, enabled, key, settings, query.dataUpdatedAt, query.isError]);
+  }, [
+    client,
+    enabled,
+    key,
+    settings,
+    sessionId,
+    query.dataUpdatedAt,
+    query.isError,
+  ]);
 
   const fresh =
     !deferred &&
@@ -167,11 +191,7 @@ export function useChoiceDiscovery(
           ? query.error
           : undefined,
     isCurrent: () => {
-      const state = client.getQueryState<DiscoveredChoices>([
-        ...discoveryKey,
-        key,
-        settings,
-      ]);
+      const state = client.getQueryState<DiscoveredChoices>(queryKey);
       return Boolean(
         !deferred &&
         enabled &&

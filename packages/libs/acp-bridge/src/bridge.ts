@@ -25,6 +25,7 @@ import {
   DISCOVERY_TIMEOUT_MS,
   MAX_EVENTS_PER_REPORT,
   POLL_WAIT_MS,
+  WARM_AGENT_MS,
   type AgentInfo,
   type BridgeCommand,
   type BridgeEvent,
@@ -37,7 +38,11 @@ import {
   type ReportResponse,
 } from './protocol.js';
 import { listFolders } from './folders.js';
-import { BridgeSession } from './session.js';
+import {
+  BridgeSession,
+  type SessionContext,
+  type WarmAgent,
+} from './session.js';
 
 export interface BridgeOptions {
   /** The application's address as the command line knows it, with any base path: `https://host/app`. */
@@ -48,6 +53,11 @@ export interface BridgeOptions {
   readonly client: { readonly name: string; readonly version: string };
   /** Where the bridge keeps this computer's id and key for the server, readable by its owner only. */
   readonly stateFile: string;
+  /**
+   * Where the bridge installs the ACP adapters it manages (Codex's and Claude Code's), once for each version:
+   * `adapters/` beside `stateFile` by default.
+   */
+  readonly adapters?: string;
   /** The computer's name; its host name by default. */
   readonly name?: string;
   /** The directories sessions may work in; the home directory by default. */
@@ -57,6 +67,8 @@ export interface BridgeOptions {
   readonly prepareSession?:
     | ((agentId: string, sessionId: string) => Promise<NodeJS.ProcessEnv>)
     | undefined;
+  /** Local instructions included in every prompt; never sent as a separate turn or during discovery. */
+  readonly sessionInstructions?: SessionContext['sessionInstructions'];
   /**
    * Whether a computer whose key the application refuses at start, such as one removed there, connects again as the
    * person, as when they start the bridge themselves (the default); a bridge started at login stops instead.
@@ -138,9 +150,22 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
 
   const agents = new Map<string, AgentInfo>();
   const found = new Map<string, ResolvedAgent | undefined>();
-  const scan = async (): Promise<void> => {
+  const resolveOptions = {
+    adapters:
+      options.adapters ??
+      path.join(path.dirname(options.stateFile), 'adapters'),
+    log,
+  };
+  /**
+   * Resolves every agent. A managed adapter not installed yet starts installing, and the agent is found another way
+   * meanwhile, unless `waitForInstall`: the scan before the bridge connects does not wait, the later ones do.
+   */
+  const scan = async (waitForInstall: boolean): Promise<void> => {
     for (const spec of AGENTS) {
-      const resolved = await resolveAgent(spec, env);
+      const resolved = await resolveAgent(spec, env, process.platform, {
+        ...resolveOptions,
+        waitForInstall,
+      });
       if (signal.aborted) return;
       found.set(spec.id, resolved);
       agents.set(
@@ -220,7 +245,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     }
   };
 
-  await scan();
+  await scan(false);
   const computerId = await connect();
   if (computerId === undefined) return;
   log(
@@ -231,7 +256,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
   const refresh = (): void => {
     if (probing || signal.aborted) return;
     probing = (async () => {
-      await scan();
+      await scan(true);
       const infos = await probeAgents(
         AGENTS,
         found,
@@ -266,13 +291,63 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
   const sessions = new Map<string, BridgeSession>();
   const discoveryShutdown = new AbortController();
   const discoveries = new Set<Promise<void>>();
+  /**
+   * The agent the latest discovery started for a new session (`discoverChoices.sessionId`), at most one: while the
+   * discovery runs and then until that session's first prompt takes it over, another discovery replaces it, or
+   * `WARM_AGENT_MS` passes.
+   */
+  let warm:
+    | {
+        readonly sessionId: string;
+        readonly agentId: string;
+        readonly cwd: string;
+        readonly agent: Promise<WarmAgent | undefined>;
+        timer?: NodeJS.Timeout;
+      }
+    | undefined;
+  const dropWarm = (): void => {
+    const dropped = warm;
+    warm = undefined;
+    if (!dropped) return;
+    clearTimeout(dropped.timer);
+    void dropped.agent
+      .then((agent) => agent?.process.stop())
+      .catch((error: unknown) =>
+        log(`Could not stop the agent kept for a session: ${message(error)}`),
+      );
+  };
+  /** The agent kept for the new session `target`, taken over by it; undefined when none was kept for it. */
+  const takeWarm = (
+    target: Extract<BridgeCommand, { session: unknown }>['session'],
+  ): Promise<WarmAgent | undefined> | undefined => {
+    if (
+      warm?.sessionId !== target.id ||
+      warm.agentId !== target.agentId ||
+      path.resolve(warm.cwd) !== path.resolve(target.cwd) ||
+      target.acpSessionId !== null
+    )
+      return undefined;
+    const taken = warm;
+    warm = undefined;
+    clearTimeout(taken.timer);
+    return taken.agent;
+  };
   const resolve = async (agentId: string): Promise<ResolvedAgent> => {
     const spec = AGENTS.find((candidate) => candidate.id === agentId);
     if (!spec)
       throw new Error(
         `This version of ${options.client.name} cannot run the agent "${agentId}".`,
       );
-    const resolved = found.get(agentId) ?? (await resolveAgent(spec, env));
+    // An agent that has a managed adapter but was found another way is resolved again, waiting for its install.
+    const known = found.get(agentId);
+    const resolved =
+      known &&
+      (known.managed || !spec.launchers.some((launcher) => launcher.managed))
+        ? known
+        : await resolveAgent(spec, env, process.platform, {
+            ...resolveOptions,
+            waitForInstall: true,
+          });
     if (!resolved)
       throw new Error(`${spec.name} is not installed on this computer.`);
     found.set(agentId, resolved);
@@ -299,9 +374,11 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       discoveryShutdown.signal,
       AbortSignal.timeout(DISCOVERY_TIMEOUT_MS),
     ]);
+    // Started for a session, the agent runs as that session's would, so the session can take it over.
+    const forSession = command.sessionId;
     const session = new BridgeSession(
       {
-        id: command.requestId,
+        id: forSession ?? command.requestId,
         agentId: command.agentId,
         cwd: command.cwd,
         settings: command.settings,
@@ -315,8 +392,20 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         emit: () => undefined,
         stateChanged: () => undefined,
         discoverySignal,
+        ...(forSession ? { prepareSession: options.prepareSession } : {}),
       },
     );
+    let kept: ((agent: WarmAgent | undefined) => void) | undefined;
+    if (forSession && !sessions.has(forSession)) {
+      dropWarm();
+      warm = {
+        sessionId: forSession,
+        agentId: command.agentId,
+        cwd: command.cwd,
+        agent: new Promise((resolve) => (kept = resolve)),
+      };
+    }
+    const entry = warm;
     let reply: ReplyRequest;
     try {
       reply = {
@@ -337,9 +426,24 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         ).slice(0, 2000),
       };
     }
+    timing('discoveryReady');
+    if (kept) {
+      // Kept for the session while it is still wanted; a session waiting for it takes it now.
+      const agent =
+        reply.discovery && !signal.aborted ? session.release() : undefined;
+      kept(agent);
+      if (agent && warm === entry && entry) {
+        entry.timer = setTimeout(() => {
+          if (warm === entry) dropWarm();
+        }, WARM_AGENT_MS);
+        entry.timer.unref();
+      } else if (warm === entry) {
+        warm = undefined;
+      }
+      if (agent) timing('discoveryKept');
+    }
     // Start cleanup immediately, but do not hold the answer behind the process-group grace period.
     // This discovery remains tracked until both delivery and cleanup settle, including on shutdown.
-    timing('discoveryReady');
     const closing = session.close().catch((error: unknown) => {
       log(`Could not close the discovery process: ${message(error)}`);
     });
@@ -359,6 +463,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     computerId,
     startedAt,
     stateOf: (sessionId) => sessions.get(sessionId)?.state ?? null,
+    startupOf: (sessionId) => sessions.get(sessionId)?.startup ?? null,
     closed: (sessionId) => void closeSession(sessionId),
     log,
   });
@@ -416,8 +521,12 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       const timing = (phase: string): void => {
         log(JSON.stringify({ phase, at: Date.now(), sessionId, promptId }));
       };
+      const kept = takeWarm(command.session);
+      if (kept && diagnostics) timing('agentTakenOver');
       session = new BridgeSession(command.session, {
         prepareSession: options.prepareSession,
+        sessionInstructions: options.sessionInstructions,
+        warm: kept,
         client: options.client,
         env,
         roots,
@@ -482,6 +591,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     await probing;
     discoveryShutdown.abort();
     await Promise.all(discoveries);
+    dropWarm();
     await Promise.all([...sessions.keys()].map(closeSession));
     await reporter.drain();
   }
@@ -543,6 +653,7 @@ interface ReporterOptions {
   readonly computerId: string;
   readonly startedAt: string;
   readonly stateOf: (sessionId: string) => ReportRequest['state'];
+  readonly startupOf: (sessionId: string) => ReportRequest['startup'];
   readonly closed: (sessionId: string) => void;
   readonly log: (message: string) => void;
 }
@@ -623,7 +734,8 @@ class Reporter {
   async #sendAll(sessionId: string, entry: Pending): Promise<void> {
     while (entry.events.length > 0 || entry.state) {
       const events = coalesce(entry.events.splice(0, MAX_EVENTS_PER_REPORT));
-      const state = entry.state ? this.#options.stateOf(sessionId) : null;
+      const touched = entry.state;
+      const state = touched ? this.#options.stateOf(sessionId) : null;
       entry.state = false;
       entry.batch += 1;
       const request: ReportRequest = {
@@ -633,6 +745,7 @@ class Reporter {
         bridgeStartedAt: this.#options.startedAt,
         events,
         state,
+        ...(touched ? { startup: this.#options.startupOf(sessionId) } : {}),
       };
       for (let attempt = 1; ; attempt += 1) {
         try {

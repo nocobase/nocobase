@@ -163,6 +163,8 @@ function storedFreeSpace(value: unknown): FreeSpace | null | undefined {
   return undefined;
 }
 
+export type RevocationReason = 'RUNNER_REVOKED' | 'RUNNER_KEY_INVALID';
+
 export interface AppRegistration {
   /** The file name: the application's id, or its address when it sent none. */
   key: string;
@@ -176,6 +178,7 @@ export interface AppRegistration {
   /** Where an application CLI lives on this machine, by command name; wins over what a run says. */
   cli: Record<string, string>;
   registeredAt: string;
+  revoked?: { at: string; reason: RevocationReason };
 }
 
 export interface AppConnection {
@@ -291,6 +294,24 @@ export async function writeConnection(
   await writeJsonAtomic(
     registrationPath(paths, key),
     connection.registration,
+    0o600,
+  );
+}
+
+/** Persist revocation without rewriting the runner key. */
+export async function markRevoked(
+  registration: AppRegistration,
+  reason: RevocationReason,
+  paths: RunnerPaths,
+): Promise<void> {
+  const file = registrationPath(paths, registration.key);
+  const current = (await readJson<AppRegistration>(file)) ?? registration;
+  await writeJsonAtomic(
+    file,
+    {
+      ...current,
+      revoked: { at: new Date().toISOString(), reason },
+    },
     0o600,
   );
 }

@@ -19,10 +19,12 @@ import {
 import { useSearchParams } from 'react-router';
 
 import type { Session, SessionLink } from '../../shared/api.js';
-import { useLinkPanels } from '../config.js';
+import { useLinkPanels, useSessionSurface } from '../config.js';
 import { waitingFirst } from '../lib/tones.js';
 import { LinkList, Sheet } from './link-sheet.js';
 import { Button } from './ui/button.js';
+
+const NO_PANELS: ReturnType<typeof useLinkPanels> = {};
 
 function usePhone(): boolean {
   const query = '(max-width: 767px)';
@@ -85,7 +87,10 @@ export function useLinkPanel(
   onShowDetails: () => void,
 ): LinkPanelState {
   const { t } = useTranslation();
-  const linkPanels = useLinkPanels();
+  const surface = useSessionSurface();
+  // In a panel beside another page, a record opens at its own address instead.
+  const configured = useLinkPanels();
+  const linkPanels = surface.panel ? NO_PANELS : configured;
   const [params, setParams] = useSearchParams();
   const phone = usePhone();
   const wide = useWide();

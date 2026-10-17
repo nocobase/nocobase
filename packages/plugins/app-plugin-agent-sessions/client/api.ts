@@ -20,8 +20,12 @@ import {
   type UseMutationResult,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { cancelChoiceDiscoveries } from './discovery-requests.js';
+import {
+  ApplicationCacheContext,
+  agentSessionsQueryClient,
+} from './query-cache.js';
 
 import {
   AGENT_SESSIONS_TOPIC,
@@ -98,6 +102,35 @@ export function useSessions(
     refetchInterval: 30_000,
     refetchOnWindowFocus: true,
   });
+}
+
+/**
+ * The viewer's open sessions tied to one record (`kind`, `refId`), the most recently active first: those that created
+ * it or mentioned it. It reads this plugin's cache, so a page of the application calls it outside the plugin's pages.
+ */
+export function useLinkedSessions(
+  kind: string,
+  refId: string | null | undefined,
+): UseQueryResult<Session[]> {
+  const api = useApiClient();
+  const cache = useContext(ApplicationCacheContext);
+  const linked = `${kind}:${refId ?? ''}`;
+  return useQuery(
+    {
+      queryKey: ['agentSessions', 'sessions', 'linked', linked],
+      enabled: Boolean(refId),
+      queryFn: () =>
+        api
+          .request<ListAnswer<Session>>({
+            path: path('sessions'),
+            query: { archived: 'false', pageSize: 20, linked },
+          })
+          .then((answer) => answer.data),
+      staleTime: 30_000,
+      refetchOnWindowFocus: true,
+    },
+    cache ?? agentSessionsQueryClient(),
+  );
 }
 
 export function useSession(sessionId: string): UseQueryResult<Session> {
