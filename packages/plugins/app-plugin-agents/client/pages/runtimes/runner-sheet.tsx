@@ -1,3 +1,4 @@
+import { RefreshStatus } from './refresh-status.js';
 /**
  * One runtime's sheet, opened from its row on the runtimes page: every setting of it. "General" holds its name, how
  * many runs it takes at once and who it works for (sharing it with the team asks first), and whether it takes build
@@ -154,6 +155,8 @@ function LoadRunnerDetail({
   const detail = useQuery({
     queryKey: [...agentsKeys.runners, 'detail', runnerId],
     queryFn: () => api.runner(runnerId),
+    refetchInterval: (query) =>
+      query.state.data?.toolsRefreshRequestId ? 2000 : false,
   });
   if (detail.isPending)
     return (
@@ -198,6 +201,7 @@ function RunnerDetail({
 
   return (
     <div className='min-h-0 flex-1 space-y-6 overflow-y-auto p-4'>
+      <RefreshStatus runner={runner} />
       <WorkspaceDiagnostics runner={runner} />
       {runner.status === 'upgrade_required' ? (
         <RunnerUpgradeRequired runner={runner} />

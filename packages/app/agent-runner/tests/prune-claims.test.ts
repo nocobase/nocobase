@@ -106,6 +106,8 @@ describe('claiming and pruning the shared store', () => {
       prompt: { system: '', turn: 'sleep 1000\nsay done', session: 'fresh' },
     });
     const { link, received, deliver } = holdClaim(runner);
+    // Match daemon startup: report detection before holding the post-claim policy check.
+    await runner.heartbeat(link);
     const checkingPolicy = Promise.withResolvers<void>();
     const finishPolicy = Promise.withResolvers<void>();
     const policy = runner['policyOf'].bind(runner);
@@ -333,6 +335,7 @@ describe('claiming and pruning the shared store', () => {
     const prune = vi.fn(async () => true);
     const runner = await daemon(prune);
     const link = runner['links'][0]!;
+    await runner.heartbeat(link);
     const response = Promise.withResolvers<never>();
     vi.spyOn(link.client, 'request').mockReturnValue(response.promise);
     const claim = runner['claimFrom'](link, 1, false);

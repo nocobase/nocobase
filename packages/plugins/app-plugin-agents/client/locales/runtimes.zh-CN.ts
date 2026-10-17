@@ -2,6 +2,11 @@ import type { RuntimesLocale } from './runtimes.en-US.js';
 
 const runtimesZhCN: RuntimesLocale = {
   runtimes: {
+    refresh: {
+      button: '刷新状态',
+      checking: '检测中…',
+      restart: '请重启 runner 以刷新状态。',
+    },
     workspaces: {
       paused: '空间恢复前暂停领取新任务，现有运行继续。',
       working: '类型：工作目录',

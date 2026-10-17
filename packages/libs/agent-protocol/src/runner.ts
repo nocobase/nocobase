@@ -234,6 +234,8 @@ export interface RegisterRequest {
    */
   readonly product?: string;
   readonly protocolVersion: number;
+  /** Supports requested tool detection. Optional so older receivers can ignore it without parsing a new feature. */
+  readonly toolsRefreshSupported?: boolean;
   readonly features: readonly RunnerFeature[];
   readonly tools: readonly ToolInfo[];
   /** How many runs it may hold at once; absent to take its registration token's (else 1). */
@@ -267,6 +269,7 @@ export const RegisterRequestSchema: z.ZodType<RegisterRequest> = z.object({
   version: z.string().max(64),
   product: z.string().regex(DIST_PRODUCT_PATTERN).optional(),
   protocolVersion: z.number().int(),
+  toolsRefreshSupported: z.boolean().optional(),
   features: z.array(RunnerFeatureSchema),
   tools: z.array(ReportedToolInfoSchema),
   slots: z.number().int().positive().max(64).optional(),
@@ -318,11 +321,15 @@ export const ActiveRunSchema: z.ZodType<ActiveRun> = z.object({
 
 /** What a runner reports every `heartbeatIntervalMs`: what it offers now, and the runs and jobs it holds. */
 export interface HeartbeatRequest {
+  /** The refresh request whose newly detected tools this heartbeat reports. */
+  readonly toolsRefreshCompletedId?: string;
   /** Disk sampled for this heartbeat; null when measurement failed. */
   readonly disk?: WorkspaceDisk | null;
   readonly version: string;
   /** As in `RegisterRequest`: the product the runner runs as. */
   readonly product?: string;
+  /** Supports requested tool detection. Optional so older receivers can ignore it without parsing a new feature. */
+  readonly toolsRefreshSupported?: boolean;
   readonly features: readonly RunnerFeature[];
   readonly tools: readonly ToolInfo[];
   /** The runs the runner is holding. */
@@ -347,9 +354,11 @@ export interface HeartbeatRequest {
 }
 
 export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
+  toolsRefreshCompletedId: z.string().min(1).max(64).optional(),
   disk: WorkspaceDiskSchema.nullable().optional(),
   version: z.string().max(64),
   product: z.string().regex(DIST_PRODUCT_PATTERN).optional(),
+  toolsRefreshSupported: z.boolean().optional(),
   features: z.array(RunnerFeatureSchema),
   tools: z.array(ReportedToolInfoSchema),
   active: z.array(ActiveRunSchema),
@@ -421,6 +430,8 @@ export const UpgradeRequiredSchema: z.ZodType<UpgradeRequired> = z.object({
 });
 
 export interface HeartbeatResponse {
+  /** Re-detect tools and acknowledge this request in a heartbeat with the new report. */
+  readonly toolsRefreshRequestId?: string;
   readonly ok: true;
   readonly serverTime: string;
   readonly upgrade?: UpgradeNotice;
@@ -447,6 +458,7 @@ export interface HeartbeatResponse {
 }
 
 export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
+  toolsRefreshRequestId: z.string().min(1).max(64).optional(),
   ok: z.literal(true),
   serverTime: z.string(),
   upgrade: z
