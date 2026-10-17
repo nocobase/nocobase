@@ -1527,7 +1527,13 @@ it('announces only committed new message watermarks and preserves metadata notif
   await vi.waitFor(() => expect(save).toHaveBeenCalledOnce());
   expect(events.map((event) => event.lastSeq)).toEqual([1, undefined]);
   await agent.retryFinalization();
-  expect(events.map((event) => event.lastSeq)).toEqual([1, undefined, 2, undefined, undefined]);
+  expect(events.map((event) => event.lastSeq)).toEqual([
+    1,
+    undefined,
+    2,
+    undefined,
+    undefined,
+  ]);
   await f.sessions.finish('alice', agent.sessionId);
   expect(events.at(-1)?.lastSeq).toBeUndefined();
   const before = events.length;
@@ -1611,4 +1617,66 @@ it('catches up two controllers from committed Native notifications and ignores d
   } finally {
     tabs.forEach((tab) => tab.dispose());
   }
+});
+
+it('retries finalization without repeating a completed business tool or model step', async () => {
+  let step = 0;
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({
+      stream: streamed(
+        step++ === 0
+          ? [
+              {
+                type: 'tool-call',
+                toolCallId: 'once',
+                toolName: 'business',
+                input: '{}',
+              },
+              finish('tool-calls'),
+            ]
+          : text('Business saved'),
+      ),
+    }),
+  });
+  const streams = new OnlineAgentMemoryStreamManager();
+  const open = streams.open.bind(streams);
+  let fail = true;
+  vi.spyOn(streams, 'open').mockImplementation(async (...args) => {
+    const writer = await open(...args);
+    return {
+      ...writer,
+      finish: async (...result) => {
+        if (fail) throw new Error('Finalization pending');
+        await writer.finish(...result);
+      },
+    };
+  });
+  const f = await fixture(model, streams);
+  const execute = vi.fn(() => ({ done: true }));
+  f.service.configurer.registerTool('business', {
+    version: '1',
+    definition: { inputSchema: z.object({}), execute },
+  });
+  f.service.configurer.registerOnlineAgentGlobalScope({ tool: ['business'] });
+  const agent = await f.service.realtime(context());
+  await agent.send([{ role: 'user', content: 'Do business' }]);
+  await vi.waitFor(() => expect(f.errors).toHaveLength(1));
+  expect(await agent.status()).toBe('running');
+  expect(
+    (await h.services.conversations.get('alice', agent.sessionId)).execution
+      ?.status,
+  ).toBe('running');
+  await expect(
+    agent.send([{ role: 'user', content: 'Too early' }]),
+  ).rejects.toThrow('busy');
+  fail = false;
+  await agent.retryFinalization();
+  expect(await agent.status()).toBe('idle');
+  expect(model.doStreamCalls).toHaveLength(2);
+  expect(execute).toHaveBeenCalledOnce();
+  expect(
+    (await agent.history())
+      .filter((message) => message.role === 'assistant')
+      .at(-1)?.content.content,
+  ).toBe('Business saved');
 });
