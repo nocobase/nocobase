@@ -13,9 +13,10 @@ export default createReactVitestConfig({
         inline: [
           // The published fixture mounts MemoryRouter; transform it with the page to share the router context.
           /@nocobase\/app-testing\/(?:dist\/)?src\/client\//u,
-          // The authentication guards read the location, so they share the test's react-router rather than Node's copy,
-          // together with every client that resolves the authentication tokens and provider.
-          /@nocobase\/app-plugin-(?:authentication|api-keys|users)\/(?:dist\/)?client\//u,
+          // AppClientProviders includes the navigation guard and must use that same router context.
+          /@nocobase\/app-client\//u,
+          // Transform clients that consume router or AppClient contexts together with their providers.
+          /@nocobase\/app-plugin-(?:authentication|api-keys|users|i18n)\/(?:dist\/)?client\//u,
           /@nocobase\/app-plugin-authorization\/(?:dist\/)?client\//u,
           /@nocobase\/app-plugin-(?:lifecycle-example|office-flows-example)\/(?:dist\/)?client\//u,
           /@nocobase\/app-plugin-notification-in-app\/(?:dist\/)?client\//u,
