@@ -449,38 +449,27 @@ describe('scoped keys and API key identities', () => {
 });
 
 describe('errors', () => {
-  it('refuses an explicit start in Backlog before creating an issue', async () => {
-    for (const status of [{}, { statusKey: 'backlog' }]) {
-      const response = await call('/issues', {
-        role: 'member',
-        method: 'POST',
-        body: JSON.stringify({
-          title: 'Must not be saved',
-          start: true,
-          ...status,
-        }),
-      });
-      expect(response.status).toBe(400);
-      expect(await response.json()).toMatchObject({
-        error: {
-          status: 'INVALID_ARGUMENT',
-          reason: 'ISSUE_START_REQUIRES_IN_PROGRESS',
-          message: expect.stringContaining('--status in_progress'),
-        },
-      });
-    }
-    const started = await call('/issues', {
+  it('maps the refused start to an HTTP error with a CLI suggestion', async () => {
+    const response = await call('/issues', {
       role: 'member',
       method: 'POST',
       body: JSON.stringify({
-        title: 'Start now',
-        statusKey: 'in_progress',
+        title: 'Must not be saved',
         start: true,
       }),
     });
-    expect(started.status).toBe(201);
-    expect(await started.json()).toMatchObject({
-      data: { identifier: 'PM-1', statusKey: 'in_progress' },
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: {
+        status: 'INVALID_ARGUMENT',
+        reason: 'ISSUE_START_REQUIRES_IN_PROGRESS',
+        message: 'An issue must be In progress to start work.',
+        metadata: {
+          suggestions: [
+            { message: expect.stringContaining('--status in_progress') },
+          ],
+        },
+      },
     });
   });
 

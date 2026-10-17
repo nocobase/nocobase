@@ -34,34 +34,40 @@ const manifest: CliManifest = {
 };
 
 describe('CLI experience', () => {
-  it('preserves structured next steps supplied by the application in API error metadata', () => {
-    const suggestions = [
-      {
-        message: 'Move the issue to In progress.',
-        run: {
-          command: 'acme',
-          args: ['issue', 'update', 'PM-12', '--status', 'in_progress'],
-        },
+  it.each([
+    {
+      message: 'Move the issue to In progress.',
+      run: {
+        command: 'acme',
+        args: ['issue', 'update', 'PM-12', '--status', 'in_progress'],
       },
-    ];
-    expect(
-      errorJsonOf(
-        new AppApiError(400, 'CANNOT_START', 'In Backlog.', {
-          reason: 'dormant',
-          suggestions,
-        }),
-      ),
-    ).toMatchObject({
-      code: 'CANNOT_START',
-      suggestions,
-      details: { metadata: { reason: 'dormant' } },
-    });
-    expect(
-      asCliError(
-        new AppApiError(400, 'CANNOT_START', 'In Backlog.', { suggestions }),
-      ).message,
-    ).toContain('acme issue update PM-12 --status in_progress');
-  });
+    },
+    {
+      message:
+        'To start work when creating an issue, add --status in_progress with --start.',
+    },
+  ])(
+    'preserves API advice in JSON and terminal output: $message',
+    (suggestion) => {
+      const suggestions = [suggestion];
+      const error = new AppApiError(
+        400,
+        'CANNOT_START',
+        'An issue must be In progress to start work.',
+        { suggestions },
+      );
+      expect(errorJsonOf(error)).toMatchObject({
+        code: 'CANNOT_START',
+        suggestions,
+        details: { metadata: { suggestions } },
+      });
+      expect(asCliError(error).message).toContain(suggestion.message);
+      if (suggestion.run)
+        expect(asCliError(error).message).toContain(
+          'acme issue update PM-12 --status in_progress',
+        );
+    },
+  );
 
   it('keeps the existing hints when API suggestions are absent or malformed', () => {
     for (const metadata of [

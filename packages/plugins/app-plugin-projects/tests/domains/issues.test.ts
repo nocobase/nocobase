@@ -24,7 +24,6 @@ describe('creating issues', () => {
         }),
       ).rejects.toMatchObject({
         code: 'ISSUE_START_REQUIRES_IN_PROGRESS',
-        message: expect.stringContaining('--status in_progress'),
       });
     const issue = await h.services.issues.create(alice(), {
       title: 'Started',

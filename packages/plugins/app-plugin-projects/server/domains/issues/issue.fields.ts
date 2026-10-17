@@ -295,7 +295,15 @@ export async function resolveCreate(
   if (input.start === true && statusKey === BACKLOG_STATUS)
     throw invalid(
       'ISSUE_START_REQUIRES_IN_PROGRESS',
-      'Cannot start an issue in Backlog. Specify --status in_progress with --start (statusKey: in_progress in JSON). No issue was created.',
+      'An issue must be In progress to start work.',
+      {
+        suggestions: [
+          {
+            message:
+              'To start work when creating an issue, add --status in_progress with --start (statusKey: in_progress in JSON).',
+          },
+        ],
+      },
     );
   const setup = await setupOf(ctx, projectId);
   const projectSetup = input.projectSetup === true;
