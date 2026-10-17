@@ -37,7 +37,7 @@ const chatEnUS = {
       switchedBack: 'Back with {{name}}.',
       runFailed: 'The agent stopped before answering.',
       runFailedReason: 'The agent stopped before answering: {{reason}}',
-      runCancelled: 'Stopped.',
+      runCancelled: 'Cancellation requested.',
     },
     consultation: {
       unavailableTitle: 'Consulted agent unavailable',

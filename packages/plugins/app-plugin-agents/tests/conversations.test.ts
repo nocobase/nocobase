@@ -824,6 +824,22 @@ describe('historical Runner conversation domain', () => {
           m.metadata.notice.code,
       );
     expect(codes).toEqual(['runCancelled', 'runCancelled']);
+    const messages = (await alice().get(`${base}/${id}/messages`)).body.data;
+    const request = messages.at(-1);
+    expect(request.content.content).toBe('Cancellation requested.');
+    expect(request.content.content).not.toMatch(/stopped/i);
+    expect((await alice().get(`${base}/${id}`)).body.data.run.id).toBe(
+      next.run.id,
+    );
+    expect(
+      (await runner(registered).post(next.run.id, 'cancelAck', {})).status,
+    ).toBe(200);
+    expect((await alice().get(`${base}/${id}`)).body.data.run).toBeNull();
+    const finalMessages = (await alice().get(`${base}/${id}/messages`)).body
+      .data;
+    expect(finalMessages.map((message: { id: string }) => message.id)).toEqual(
+      messages.map((message: { id: string }) => message.id),
+    );
   });
 
   it('tells the owner when the run failed', async () => {

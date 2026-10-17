@@ -297,7 +297,7 @@ export type ConversationNotice =
       readonly runId: string;
       readonly reason: FailureReason | null;
     }
-  /** The owner stopped the run. */
+  /** Cancellation was requested; this notice does not confirm the run has ended. */
   | { readonly code: 'runCancelled'; readonly runId: string }
   /**
    * Something happened outside the conversation that the application tells its owner and its agent about

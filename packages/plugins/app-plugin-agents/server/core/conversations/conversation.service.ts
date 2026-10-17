@@ -239,7 +239,7 @@ function noticeText(
     case 'runFailed':
       return `The agent stopped before answering${notice.reason ? ` (${notice.reason})` : ''}.`;
     case 'runCancelled':
-      return 'You stopped the agent.';
+      return 'Cancellation requested.';
     case 'news':
       return notice.title;
     case 'consultation':

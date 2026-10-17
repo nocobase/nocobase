@@ -336,6 +336,7 @@ export function noticeText(
             reason: t(`failures.${notice.reason}`),
           })
         : t('chat.notice.runFailed');
+    // The historical code names a cancellation request, not a terminal outcome.
     case 'runCancelled':
       return t('chat.notice.runCancelled');
     case 'news':

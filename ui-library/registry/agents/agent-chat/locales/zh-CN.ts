@@ -88,7 +88,7 @@ const agentChatZhCN: AgentChatLocale = {
       switchedBack: '已切回 {{name}}。',
       runFailed: 'Agent 没有回复就停止了。',
       runFailedReason: 'Agent 没有回复就停止了：{{reason}}',
-      runCancelled: '已停止。',
+      runCancelled: '已请求取消。',
     },
     consultation: {
       title: '咨询了 {{name}}',

@@ -334,7 +334,7 @@ const agentChatEnUS: AgentChatLocale = {
       switchedBack: 'Back with {{name}}.',
       runFailed: 'The agent stopped before answering.',
       runFailedReason: 'The agent stopped before answering: {{reason}}',
-      runCancelled: 'Stopped.',
+      runCancelled: 'Cancellation requested.',
     },
     consultation: {
       title: 'Consulted {{name}}',
