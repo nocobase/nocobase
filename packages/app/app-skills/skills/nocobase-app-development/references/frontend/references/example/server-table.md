@@ -8,7 +8,7 @@ Part of the [projects worked example](../example.md).
 
 **Links to**: the same child routes as the list page.
 
-Rules: [section 1 of `table.md`](../table.md#1-choosing-a-table-component). Use it instead of `DataTable` when the endpoint paginates; the list page keeps the page in the URL and passes it down.
+Rules: [section 1 of `table.md`](../table.md#1-choosing-a-table-component). This adapter uses the standard `DataTable` in manual mode when the endpoint paginates; the list page keeps the page in the URL and passes it down.
 
 The endpoint contract this assumes is the one in [types](types.md): `GET /api/projects` takes `page` (from 1), `pageSize` (at most 100) and `orderBy` besides `q` and `status`, and returns `{ data: Project[], meta: { page, pageSize, total } }` (`ProjectList`), where `total` counts the matching records on all pages. `orderBy` names a column the endpoint sorts by, `name` (in the order of the request's language) or `updatedAt`, followed by ` desc` for descending; the page always sends it, `updatedAt desc` by default (guideline T1.8).
 
@@ -225,49 +225,27 @@ The component it renders:
 
 ```tsx
 // client/pages/projects/projects-server-table.tsx
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  type PaginationState,
-  type SortingState,
-  useReactTable,
+import type {
+  ColumnDef,
+  PaginationState,
+  SortingState,
 } from '@tanstack/react-table';
 import type { ReactElement, ReactNode } from 'react';
-
-import { DataTablePagination } from '#components/data-table/pagination';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '#components/ui/table';
-
+import { DataTable } from '#components/data-table';
 import type { Project } from './types.js';
 
 export interface ProjectsServerTableProps {
   readonly columns: ColumnDef<Project>[];
-  /** The rows of the current page, as the endpoint returned them. */
   readonly rows: Project[];
-  /** The number of matching records on all pages, from the endpoint. */
   readonly total: number;
-  /** The page read from the URL; pageIndex starts at 0. */
   readonly pagination: PaginationState;
-  /** Writes the new page to the URL; the list request follows the URL. */
   readonly onPaginationChange: (pagination: PaginationState) => void;
-  /** The sort read from the URL, which the endpoint applied. */
   readonly sorting: SortingState;
-  /** Writes the new sort to the URL; the list request follows the URL. */
   readonly onSortingChange: (sorting: SortingState) => void;
-  /** Shown when the page has no rows, as DataTable's emptyMessage. */
   readonly emptyMessage: ReactNode;
-  /** The rows-per-page choices; the list page accepts only these from the URL. */
   readonly pageSizeOptions: readonly number[];
 }
 
-/** The markup of DataTable, paginated and sorted by the server instead of the browser. */
 export function ProjectsServerTable({
   columns,
   rows,
@@ -279,86 +257,26 @@ export function ProjectsServerTable({
   emptyMessage,
   pageSizeOptions,
 }: ProjectsServerTableProps): ReactElement {
-  // TanStack Table returns a mutable instance the React Compiler cannot memoize, as in `data-table/index.tsx`.
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
-    data: rows,
-    columns,
-    getRowId: (row) => row.id,
-    getCoreRowModel: getCoreRowModel(),
-    // The server already paginated and sorted: no pagination or sorted row model, and the page count comes from
-    // rowCount. Sorting one page in the browser would mislead, so the header only shows and changes the URL's sort.
-    manualPagination: true,
-    manualSorting: true,
-    rowCount: total,
-    state: { pagination, sorting },
-    onPaginationChange: (updater) => {
-      onPaginationChange(
-        typeof updater === 'function' ? updater(pagination) : updater,
-      );
-    },
-    onSortingChange: (updater) => {
-      onSortingChange(
-        typeof updater === 'function' ? updater(sorting) : updater,
-      );
-    },
-  });
-  const pageRows = table.getRowModel().rows;
-
   return (
-    <div className='flex flex-col gap-4'>
-      <div className='overflow-hidden rounded-lg border'>
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} colSpan={header.colSpan}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {pageRows.length > 0 ? (
-              pageRows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className='h-24 text-center text-muted-foreground'
-                >
-                  {emptyMessage}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      {/* Reads the page index and page count from the table instance. */}
-      <DataTablePagination
-        table={table}
-        pageSizeOptions={pageSizeOptions}
-        showSelectedCount={false}
-      />
-    </div>
+    <DataTable
+      columns={columns}
+      data={rows}
+      getRowId={(row) => String(row.id)}
+      manualPagination
+      rowCount={total}
+      paginationState={pagination}
+      onPaginationChange={(next) =>
+        onPaginationChange(typeof next === 'function' ? next(pagination) : next)
+      }
+      manualSorting
+      sortingState={sorting}
+      onSortingChange={(next) =>
+        onSortingChange(typeof next === 'function' ? next(sorting) : next)
+      }
+      emptyMessage={emptyMessage}
+      pageSizeOptions={pageSizeOptions}
+      showSelectedCount={false}
+    />
   );
 }
 ```

@@ -1,3 +1,4 @@
+import systemSettingsRoutes from './pages/settings/routes.js';
 import {
   FileText,
   Home,
@@ -241,6 +242,9 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-const routes: readonly AppClientRouteContribution[] = [appRoutes];
+const routes: readonly AppClientRouteContribution[] = [
+  appRoutes,
+  systemSettingsRoutes,
+];
 
 export default routes;

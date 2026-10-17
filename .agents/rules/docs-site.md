@@ -1,6 +1,6 @@
 # Documentation Site
 
-Read this before changing anything under `docs/`.
+Read this before changing anything under `docs/`. It explains how the site is built. The step-by-step guide for writing and adding pages is `docs/README.md`, and `docs/AGENTS.md` holds the short rules for editing documentation content.
 
 ## What the site is
 
@@ -12,7 +12,7 @@ Astro and its integrations are pinned to exact versions that had been published 
 
 Markdown pages live in `docs/docs/<lang>/`, with `_meta.json` (sidebar) and `_nav.json` (top navigation entries used to group `llms.txt`) beside them. Only `en` and `cn` exist. `shared/languages.ts` lists the built languages: `en` is served from `/`, `cn` from `/zh-CN/`. Keep source directories and translation keys as `cn`. A language is built only when it is listed there and has a directory. `cn` is the baseline the structural checks in `check.sh` compare every other language against, so a page added to another language without its `cn` counterpart fails the tree and meta alignment checks. There are no `/cn/*` redirect pages; Chinese lives only under `/zh-CN/`.
 
-The public site contains the homepage, the `nocobase-2-vs-3` comparison and the `capabilities/` documentation in each language. Application development, plugin development and deployment instructions belong in the relevant Skills and application guidance. `docs/docs/<lang>/public/` holds downloads the capability pages refer to; the build copies it to that language's base (`/downloads/…`, `/zh-CN/downloads/…`).
+The public site contains the homepage, the `nocobase-2-vs-3` comparison and the `capabilities/` documentation in each language. Application development, plugin development and deployment instructions belong in the relevant Skills and application guidance. `docs/docs/<lang>/public/` holds downloads the capability pages refer to; the build copies it to that language's base (`/downloads/…`, `/zh-CN/downloads/…`). Screenshots live in `docs/docs/<lang>/capabilities/assets/` (the same files in both languages), are referenced from Markdown with a relative path and are published under `/_astro/` with a hashed name; the capability overviews read the `cn` copy of that directory.
 
 ### URLs
 
@@ -36,6 +36,8 @@ A page's URL follows its source path and never changes shape, because every publ
 - Frontmatter: `title` (else the `# Heading`), `description` (else the text before the first `##` section is used, which is what search results and `llms.txt` show — write one when that text is a poor summary) and `keywords`.
 - A page keeps a single `# Heading`; the layout renders it with the page actions under it.
 
+Downloads in `public/` and hand-written `.astro` pages have no Markdown source to link to, so Markdown links to them use the public path in the page's language (`/downloads/x.docx`, `/zh-CN/pricing`).
+
 The build fails on a link to a page, file or heading that does not exist. It checks every `<a href>` in the emitted HTML — Markdown links, sidebar links, hand-built markup — and fragments on Markdown pages. `src/integrations/html.ts` is the check.
 
 ## Code layout
@@ -58,6 +60,12 @@ The build fails on a link to a page, file or heading that does not exist. It che
 
 Each kind of page has its own route file because Astro bundles the styles of every component a route file imports into every page that route builds.
 
+### Hand-built page copy
+
+The home page, the comparison and the capability overviews render HTML stored as JSON strings. In `FullHome/markup*.json`, `FullHome/data*.json`, `ArchitecturePitch/markup*.json` and `CapabilityOverview/pages*.json`, the file without a suffix is Chinese and `.en.json` is English; the header names both, `SiteHeader/header.cn.json` and `header.en.json`. The header JSON is used on every page except the home page, whose top bar is part of its markup; `SiteFooter/index.astro` is the footer of Markdown pages, the comparison and hand-written pages, while the home page and the overviews carry their footer in their markup. `FullHome/data*.json` also holds the prompt library the overviews' scenario pickers use.
+
+Each of these pages keeps a Markdown twin (`docs/<lang>/index.md`, `nocobase-2-vs-3.mdx`, `capabilities/<module>/index.md(x)` or `capabilities/<module>.md`). Its body is never rendered: the twin's frontmatter supplies the page's title, description and keywords, and its body supplies the `.md` copy and `llms.txt`. A change to the visible copy goes into the JSON, and the twin is updated to match.
+
 ## Adding a page
 
 - **A Markdown page**: add the file under `docs/<lang>/` in every language and list it in the directory's `_meta.json`. Nothing else.
@@ -74,6 +82,8 @@ Each kind of page has its own route file because Astro bundles the styles of eve
   ```
 
   `route` is the language-neutral URL in its exact slash shape. The layout adds the header, footer, `<title>` (`Pricing - NocoBase Documentation`), description, canonical, `hreflang` alternates (pass `translations={['en']}` if the page has no Chinese version), Open Graph tags and robots meta; the sitemap picks the page up from the emitted HTML. Set `header={false}` or `footer={false}` only when the page's own markup carries them. Such a page has no `.md` copy and is not in `llms.txt`.
+
+  Keep the page's markup, styles, scripts and assets in a component of its own (`src/components/<Name>/index.astro` with an `assets/` directory) imported only by its route files, so they ship with that page alone; mark its content `data-pagefind-body` to include it in the search index. Link to it from the header JSON and, in Markdown, by public path. The sidebar is for Markdown pages: `scripts/normalize-doc-links.mjs` reports a `_meta.json` link to a hand-written page as dead.
 
 - **A hand-built page with a Markdown twin** (like the home page and capability overviews): keep a Markdown source under `docs/<lang>/` for `llms.txt` and the `.md` copy, give it a `PageKind` in `src/lib/pages.ts`, and add a route file that renders the markup for that kind.
 
@@ -98,7 +108,7 @@ Prettier uses `@nocobase/dev-config/prettier` plus `prettier-plugin-astro` (`doc
 
 ## Checking a change
 
-- `pnpm --filter @nocobase/docs lint`, `typecheck`, `test`, `build` and `./check.sh` in `docs/`. The build itself fails on broken links.
+- `pnpm --filter @nocobase/docs lint`, `typecheck`, `test`, `build` and `./check.sh` in `docs/`. The build itself fails on broken links. Without a terminal on stdin, `check.sh` reads a changed-file list from stdin for its i18n coverage check and waits for it; run it as `./check.sh < /dev/null` from a script or an agent.
 - For a change to layout, styles or output paths, build before and after and compare the `dist/` trees and, visually, the pages you touched at 1440 and 390 px wide.
 
 ## Deployment

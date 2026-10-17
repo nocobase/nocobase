@@ -25,6 +25,7 @@ import {
 import {
   readConnections,
   readSettings,
+  writeSettings,
   runnerClient,
 } from '../src/lib/config.ts';
 import { runnerPaths } from '../src/lib/home.ts';
@@ -43,6 +44,7 @@ import { PROTOCOL_VERSION, RUNNER_ROUTES } from '../src/protocol/index.ts';
 import { FakeServer, waitFor } from './fake-server.ts';
 import {
   cliEnv,
+  cli,
   registerRunner,
   removeDir,
   tempDir,
@@ -592,6 +594,7 @@ describe('served tarballs', () => {
     await daemon.start();
     await daemon.wait();
     expect(daemon.updatedTo).toBe(next);
+    expect(daemon.exitCode).toBe(75);
     expect(readlinkSync(path.join(prefix, 'current'))).toBe(`versions/${next}`);
     expect(
       readFileSync(
@@ -607,6 +610,65 @@ describe('served tarballs', () => {
     // none.
     expect(readlinkSync(path.join(prefix, 'node'))).toBe(process.execPath);
     expect(logs.join('\n')).toContain(`updated to nocobase-runner ${next}`);
+  });
+
+  it('explicitly restarts an installed service after a manual update, even when its daemon is stopped', async () => {
+    const prefix = path.join(scratch, 'manual-service-update');
+    installation(prefix, runnerVersion());
+    const next = '99.0.8';
+    const bytes = tarball('nocobase-runner', next);
+    server.distFiles.set(`nocobase-runner/${next}/runner.tar.gz`, bytes);
+    server.resolution.artifact = {
+      product: 'nocobase-runner',
+      version: next,
+      target: 'linux-x64',
+      url: `/api/agents/dist/products/nocobase-runner/versions/${next}/files/runner.tar.gz`,
+      sha256: sha256(bytes),
+      size: bytes.length,
+      channel: 'stable',
+    };
+    const paths = runnerPaths(home, `${home}-work`);
+    await writeSettings(
+      {
+        ...(await readSettings(paths)),
+        serviceLabel: 'com.example.manual-update',
+      },
+      paths,
+    );
+    const bin = path.join(home, 'fake-service-bin');
+    mkdirSync(bin);
+    const calls = path.join(home, 'service-calls.json');
+    for (const name of ['systemctl', 'launchctl']) {
+      const executable = path.join(bin, name);
+      writeFileSync(
+        executable,
+        `#!${process.execPath}\nimport { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(calls)}, JSON.stringify(process.argv.slice(2)));\n`,
+      );
+      chmodSync(executable, 0o755);
+    }
+    const result = await cli(
+      ['update'],
+      cliEnv(home, {
+        PATH: `${bin}${path.delimiter}${process.env.PATH}`,
+        NOCOBASE_RUNNER_INSTALLATION: path.join(
+          prefix,
+          'versions',
+          runnerVersion(),
+        ),
+      }),
+    );
+    expect(result.stderr).toBe('');
+    expect(result.code).toBe(0);
+    expect(readlinkSync(path.join(prefix, 'current'))).toBe(`versions/${next}`);
+    expect(JSON.parse(readFileSync(calls, 'utf8'))).toEqual(
+      process.platform === 'darwin'
+        ? [
+            'kickstart',
+            '-k',
+            `gui/${process.getuid?.() ?? 501}/com.example.manual-update`,
+          ]
+        : ['--user', 'restart', 'com.example.manual-update.service'],
+    );
   });
 
   it('only logs an update when it is not an installation its service supervises', async () => {

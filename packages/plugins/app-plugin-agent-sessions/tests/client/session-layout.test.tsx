@@ -350,12 +350,36 @@ describe('session mobile layout', () => {
     expect(
       screen.getByRole('heading', { name: session.title }).className,
     ).toContain('truncate');
-    expect(screen.getByRole('button', { name: /Tasks 4/ })).toBeTruthy();
+    const compact = screen.getByRole('button', {
+      name: 'Tasks 4',
+      exact: true,
+    });
+    expect(compact).toHaveTextContent('4');
+    fireEvent.click(compact);
+    expect(
+      screen.getByRole('complementary', { name: 'Session details' }),
+    ).toBeTruthy();
     client.setQueryData(['agentSessions', 'session', 'session'], {
       ...session,
       links: [link('1', 'Done', 'done')],
     });
     await screen.findByRole('button', { name: /Tasks 1.*Done 1/ });
+    expect(
+      screen.getByRole('button', { name: 'Tasks 1', exact: true }),
+    ).toHaveTextContent('1');
+    client.setQueryData(['agentSessions', 'session', 'session'], {
+      ...session,
+      links: [],
+    });
+    await screen.findByRole('button', { name: 'Tasks 0', exact: true });
+    (scroller as HTMLDivElement).scrollTop = 0;
+    fireEvent.wheel(scroller!, { deltaY: -100 });
+    expect(
+      screen.queryByRole('button', { name: 'Tasks 0', exact: true }),
+    ).toBeNull();
+    expect(
+      screen.getByRole('button', { name: /Tasks 0.*No tasks/ }),
+    ).toBeTruthy();
   });
 
   it('expands the reply without losing multiline text and keeps the draft on a failed send', async () => {
@@ -383,10 +407,16 @@ describe('session mobile layout', () => {
     expect(requests.mock.calls.some(([call]) => call.method === 'POST')).toBe(
       false,
     );
-    requests.mockImplementation(({ method }) =>
-      method === 'POST' ? new Response(null, { status: 500 }) : { data: [] },
+    const read = requests.getMockImplementation()!;
+    requests.mockImplementation((call) =>
+      call.method === 'POST' ? new Response(null, { status: 500 }) : read(call),
     );
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await screen.findByRole('button', { name: 'Retry original submission' });
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Edit as new message' }),
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', { name: 'Send' }).hasAttribute('disabled'),

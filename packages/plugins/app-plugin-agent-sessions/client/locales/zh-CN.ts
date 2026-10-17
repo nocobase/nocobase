@@ -169,6 +169,8 @@ const zhCN: AgentSessionsResource = {
     queue: '这一轮结束后发送',
     addImage: '添加图片',
     removeImage: '移除图片',
+    attached: '随消息一起发送',
+    removeAttached: '移除 {{name}}',
     commands: 'Agent 的命令',
     mentions: '引用任务',
     keys: {
@@ -179,6 +181,7 @@ const zhCN: AgentSessionsResource = {
     },
   },
   choices: { more: '更多选项' },
+  panel: { fullScreen: '全屏打开' },
   transcript: {
     image: {
       open: '打开图片预览',

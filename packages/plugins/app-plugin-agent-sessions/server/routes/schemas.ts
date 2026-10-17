@@ -245,10 +245,19 @@ export const ListSessionsQuery: z.ZodType<{
   archived?: 'true' | 'false' | undefined;
   pageSize: number;
   pageToken?: string | undefined;
+  linked?: string | undefined;
 }> = z.object({
   archived: z.enum(['true', 'false']).optional(),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
   pageToken: z.string().optional(),
+  linked: z
+    .string()
+    .regex(/^[a-zA-Z][\w-]{0,63}:[^:\s][^\s]{0,199}$/u)
+    .optional()
+    .meta({
+      description:
+        'Only the sessions tied to one record, as `<kind>:<refId>`, such as `issue:42`: those that created or mentioned it.',
+    }),
 });
 
 export const ListEventsQuery: z.ZodType<{ after: number; pageSize: number }> =

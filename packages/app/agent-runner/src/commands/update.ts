@@ -21,6 +21,8 @@ import {
   updateTargetOf,
 } from '../core/update.ts';
 
+import { restartService } from '../core/service.ts';
+
 const run = promisify(execFile);
 
 interface UpdateResult {
@@ -119,12 +121,15 @@ export default class Update extends RunnerCommand {
       log: (message) => this.log(message),
     });
     result.updated = true;
-    // Restart on the new version: the service starts it again by itself once the daemon stops; a background daemon
-    // started by hand is started again here.
-    if ((await readDaemonPid(this.paths)) !== undefined) {
+    // Normal exit no longer asks the service manager to restart; request it explicitly.
+    if (settings.serviceLabel !== undefined) {
+      await run(launcherOf(installation), ['stop']);
+      await restartService(settings.serviceLabel);
+      this.log(`Restarted the runner service on ${latest.version}.`);
+    } else if ((await readDaemonPid(this.paths)) !== undefined) {
       const launcher = launcherOf(installation);
       await run(launcher, ['stop']);
-      if (settings.serviceLabel === undefined) await run(launcher, ['start']);
+      await run(launcher, ['start']);
       this.log(`Restarted the runner on ${latest.version}.`);
     }
     this.log(
