@@ -64,7 +64,7 @@ export const INSTALL_FLAGS = {
   }),
   app: Flags.string({
     description:
-      'Published application to build and deploy, e.g. studio, @nocobase/studio or studio@beta. Requires pnpm 11+.',
+      'Published application to build and deploy, as an npm package name, optionally followed by @<version or tag>, e.g. @acme/crm or @acme/crm@beta. Requires pnpm 11+.',
   }),
   archive: Flags.string({
     description:

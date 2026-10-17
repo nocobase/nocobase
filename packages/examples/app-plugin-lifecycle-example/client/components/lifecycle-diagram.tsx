@@ -67,6 +67,8 @@ export function LifecycleDiagram({
   );
   return (
     <FlowDiagram
+      direction='DOWN'
+      autoHeight
       {...props}
       {...graph}
       renderNode={(node) => {

@@ -26,17 +26,13 @@
 // agent's git gets it through a credential helper (env.ts). It is never written to disk. Without one, the host's own
 // git credentials are used.
 //
-// A repository with a `.gitmodules` has its submodules initialized here, before the agent starts and outside any
-// sandbox of its tool. New checkouts keep their Git metadata (including submodule `modules/`) in their own `.git`;
-// legacy worktrees keep it under `<cache>/worktrees/<name>/`. They are fetched with the repository's credential, sent
-// only to the repository's own host. A new checkout initializes every submodule, recursively; an existing one only those not
-// initialized yet, so a submodule the agent moved keeps its state. A failure fails the preparation, and what it was
-// initializing is recorded in the protected cache, keyed by the checkout's Git directory, until an update succeeds: a
-// later preparation of the same checkout finishes it, nested submodules included, even though the top-level ones
-// already look initialized. The agent never ran in between, so there is no state of its to keep.
+// The runner never initializes submodules: a repository's `.gitmodules` is left as checked out, and a project whose
+// agents need its submodules tells them how (for example `git submodule update --init --reference <local copy>`).
+// New checkouts keep their Git metadata, a submodule's `modules/` included, in their own `.git`. What an agent
+// initialized is still inspected: unpushed submodule commits count as unpushed work (`hasUnpushedWork`).
 //
-// Cloning, fetching and the submodules' update are retried where they fail for a passing cause, and abort a stalled
-// transfer instead of hanging (git-retry.ts). One that outlasts every retry fails with a `GitNetworkError`.
+// Cloning and fetching are retried where they fail for a passing cause, and abort a stalled transfer instead of
+// hanging (git-retry.ts). One that outlasts every retry fails with a `GitNetworkError`.
 import {
   addRunWorktree,
   clearContinuations,
@@ -75,19 +71,13 @@ import type {
 import { isInside } from '../lib/paths.ts';
 import {
   GIT_LOW_SPEED_CONFIG,
-  GitNetworkError,
   retryGit,
   type GitRetryOptions,
 } from './git-retry.ts';
 import { installGitHooks } from './git-hooks.ts';
 import { isAlive } from './supervisor.ts';
 import { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
-import {
-  taskGit,
-  taskGitDir,
-  taskGitOk,
-  type TaskGitContext,
-} from './task-git.ts';
+import { taskGit, taskGitDir, taskGitOk } from './task-git.ts';
 
 export { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
 
@@ -870,156 +860,6 @@ async function ensureCheckout(
   return true;
 }
 
-/** The host part of an HTTP(S) URL (`https://github.com/`), the only place a submodule fetch sends the credential. */
-function httpOrigin(url: string): string | undefined {
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
-      ? `${parsed.origin}/`
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/** The filename of a pending submodule preparation record. */
-export const SUBMODULES_PENDING = 'nocobase-runner-submodules.json';
-
-interface PendingSubmodules {
-  /** Every submodule, recursively. */
-  readonly all: boolean;
-  /** Otherwise these top-level ones, with theirs. */
-  readonly paths: readonly string[];
-}
-
-async function readPending(
-  file: string,
-): Promise<PendingSubmodules | undefined> {
-  try {
-    const value = JSON.parse(
-      await readFile(file, 'utf8'),
-    ) as Partial<PendingSubmodules>;
-    return {
-      all: value.all === true,
-      paths: Array.isArray(value.paths)
-        ? value.paths.filter(
-            (entry): entry is string => typeof entry === 'string',
-          )
-        : [],
-    };
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * Initializes the worktree's submodules as its `.gitmodules` lists them: every one, recursively, when `all`; otherwise
- * only the top-level ones not initialized yet (with theirs), and those an earlier update left unfinished
- * (`SUBMODULES_PENDING`). Returns the paths it initialized. The update is retried as `retry` says; one that keeps
- * failing on the network is a `GitNetworkError`.
- */
-export async function initSubmodules(
-  dir: string,
-  options: {
-    all: boolean;
-    url: string;
-    cache: string;
-    auth?: GitAuth;
-    retry?: GitRetryOptions;
-  },
-): Promise<string[]> {
-  const context: TaskGitContext = {
-    dir,
-    cache: options.cache,
-    url: options.url,
-  };
-  if (!existsSync(path.join(dir, '.gitmodules'))) return [];
-  if (
-    (await taskGit(context, [
-      'config',
-      '--local',
-      '--get',
-      'remote.origin.url',
-    ])) !== options.url
-  )
-    throw new CheckoutError(
-      `${options.url}: submodules require the original origin URL; restore it before resuming`,
-    );
-  const failed = (step: string, error: unknown): CheckoutError =>
-    new CheckoutError(
-      `${options.url}: ${step} its submodules failed: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  let status: string;
-  let pendingFile: string;
-  try {
-    status = await taskGit(context, ['submodule', 'status']);
-    const gitDir = await taskGitDir(context);
-    const pendingDir = path.join(options.cache, 'submodule-preparations');
-    await mkdir(pendingDir, { recursive: true, mode: 0o700 });
-    pendingFile = path.join(
-      pendingDir,
-      `${createHash('sha256').update(gitDir).digest('hex')}-${SUBMODULES_PENDING}`,
-    );
-    // Task Git metadata is writable; never read or overwrite a pending record supplied by an agent there.
-  } catch (error) {
-    throw failed('reading', error);
-  }
-  const pending = await readPending(pendingFile);
-  const all = options.all || pending?.all === true;
-  // `-<sha> <path>` is a submodule not initialized; ` `, `+` and `U` are initialized ones.
-  const listed = status
-    .split('\n')
-    .filter((line) => line !== '')
-    .map((line) => ({
-      missing: line.startsWith('-'),
-      path: line.slice(1).trim().split(/\s+/)[1] ?? '',
-    }))
-    .filter((entry) => entry.path !== '');
-  const unfinished = new Set(pending?.paths ?? []);
-  const selected = listed
-    .filter((entry) => all || entry.missing || unfinished.has(entry.path))
-    .map((entry) => entry.path);
-  if (selected.length === 0) {
-    await rm(pendingFile, { force: true });
-    return [];
-  }
-  await writeFile(
-    pendingFile,
-    JSON.stringify({ all, paths: selected } satisfies PendingSubmodules),
-  );
-  const origin = httpOrigin(options.url);
-  try {
-    // `-c` reaches the clones and fetches the update runs (GIT_CONFIG_PARAMETERS), so a stalled one gives up too.
-    await retryGit(
-      `git submodule update in ${options.url}`,
-      () =>
-        taskGit(
-          context,
-          [
-            'submodule',
-            'update',
-            '--init',
-            '--recursive',
-            '--checkout',
-            ...(all ? [] : ['--', ...selected]),
-          ],
-          {},
-          {
-            ...options.retry,
-            ...(options.auth === undefined ? {} : { auth: options.auth }),
-            ...(origin === undefined ? {} : { authScope: origin }),
-          },
-        ),
-      options.retry,
-    );
-  } catch (error) {
-    if (error instanceof GitNetworkError) throw error;
-    throw failed('initializing', error);
-  }
-  await rm(pendingFile, { force: true });
-  return selected;
-}
-
 /** The submodules initialized in the worktree `dir`, nested ones included, as absolute paths. */
 export async function listSubmodules(dir: string): Promise<string[]> {
   if (!existsSync(path.join(dir, '.gitmodules'))) return [];
@@ -1113,7 +953,7 @@ export interface PrepareDirsOptions {
   auth?: RepoAuthSource;
   lockTimeoutMs?: number;
   log?: (message: string) => void;
-  /** How cloning, fetching and the submodules' update are retried. */
+  /** How cloning and fetching are retried. */
   retry?: GitRetryOptions;
   /** The run preparing them, recorded as the last run that worked here. */
   runId?: string;
@@ -1299,17 +1139,6 @@ export async function prepareDirs(
       // Refresh hooks on resumed clones too, so none keeps the push guard an earlier runner installed.
       if (isInside(dir, gitDir))
         await installGitHooks(path.join(gitDir, 'hooks'));
-      const submodules = await withRepoAuth(options.auth, entry.url, (auth) =>
-        initSubmodules(dir, {
-          all: created,
-          url: entry.url,
-          cache,
-          ...(auth === undefined ? {} : { auth }),
-          ...retry,
-        }),
-      );
-      if (submodules.length > 0)
-        options.log?.(`submodules: ${entry.path}: ${submodules.join(', ')}`);
       const repo: CheckedOutRepo = {
         url: entry.url,
         branch: entry.branch,

@@ -1,3 +1,4 @@
+import revisionMigration from '../../database/migrations/202610150001_authorization_permission_set_revision.js';
 import { createAuthorization } from '../helpers/authorization-fixture.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import permissionSetMigration from '../../database/migrations/202608210001_create_permission_set_tables.js';
@@ -24,12 +25,43 @@ describe('authorization plugin database stores', () => {
     testDatabase = await createTestDatabase();
     database = testDatabase.database;
     await permissionSetMigration.up(migrationContext(database.connection()));
+    await revisionMigration.up(migrationContext(database.connection()));
   });
 
   afterAll(async () => {
     await testDatabase.destroy();
   });
 
+  it('rejects a stale role revision atomically without losing a saved grant', async () => {
+    const store = new DatabasePermissionSetStore(() => database.connection());
+    const original = await store.create({ key: 'revision-check', grants: [] });
+    const changed = await store.update(
+      original.key,
+      {
+        key: original.key,
+        grants: [
+          {
+            resource: { type: 'page', id: 'orders' },
+            actions: [{ action: 'access' }],
+          },
+        ],
+      },
+      original.revision,
+    );
+    expect(changed.revision).not.toBe(original.revision);
+    await expect(
+      store.update(
+        original.key,
+        { key: original.key, grants: [] },
+        original.revision,
+      ),
+    ).rejects.toThrow('changed');
+    expect((await store.get(original.key))?.grants).toEqual(changed.grants);
+    // Existing API clients can continue to write without a precondition.
+    await expect(
+      store.update(original.key, { key: original.key, grants: [] }),
+    ).resolves.toMatchObject({ grants: [] });
+  });
   it.each(['revoke', 'replace', 'mixed'] as const)(
     'retains the last administrator during concurrent %s operations',
     async (operation) => {

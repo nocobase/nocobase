@@ -495,6 +495,7 @@ function deriveOne(
       ...(flag.description ? { description: flag.description } : {}),
       ...(flag.alias ? { alias: flag.alias } : {}),
       ...(flag.contentFile ? { contentFile: true } : {}),
+      ...(flag.contentFileNonEmpty ? { contentFileNonEmpty: true } : {}),
       ...(flag.prompt ? { prompt: true } : {}),
       ...(flag.fromEnv ? { fromEnv: flag.fromEnv } : {}),
       ...(flag.env?.length ? { env: flag.env } : {}),
@@ -679,6 +680,9 @@ export function cliManifestOf(
   caller: CliCaller,
 ): CliManifest {
   const identity = {
+    ...(caller.settings === undefined
+      ? {}
+      : { settings: [...caller.settings].sort() }),
     kind: caller.kind,
     userId: caller.userId,
     displayName: caller.displayName,

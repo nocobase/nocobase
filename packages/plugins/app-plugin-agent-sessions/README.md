@@ -86,6 +86,32 @@ agentSessionsRoute({ cli: 'acme', linkPanels: { issue: IssuePanel } }),
 
 The open record is in the address as `?<kind>=<refId>`; J and K move among the session's records of that kind and Esc closes it. Below 1600 pixels wide the session list folds to a rail while a record is open.
 
+### In a panel beside other pages
+
+`@nocobase/app-plugin-agent-sessions/client/panel` puts the sessions in a panel the application draws itself, beside whatever page is open. `AgentSessionsPanel` takes the options `agentSessionsRoute` takes, `view` (`{ kind: 'session', sessionId }`, `{ kind: 'new' }` or `{ kind: 'list' }`) with `onViewChange`, the application's own buttons in `actions`, and `onFullScreen`, which opens `/agent-sessions` at the same view and navigates there when left out. The session, the new session and the list are laid out by the panel's width rather than the screen's: below 448 pixels they look as they do on a phone. In the panel a new session starts in place, a session picked in the list opens in place, a session's details open over the conversation, and a record tied to a session opens at its own `href`.
+
+```tsx
+<AgentSessionsPanel
+  cli='acme'
+  view={view}
+  onViewChange={setView}
+  attach={{
+    id: `issue:${issue.id}`,
+    attachments: [
+      {
+        id: issue.id,
+        label: `${issue.key} ${issue.title}`,
+        reference: { kind: 'issue', refId: issue.id },
+      },
+    ],
+    projectId: issue.projectId,
+  }}
+  actions={<CloseButton />}
+/>
+```
+
+`attach` puts what the panel was opened beside in the shown draft, once for each `id`: it shows above the message, where the person can remove it, and goes with the next message sent. An attachment with a `reference` is sent as a `#` mention of that record; one with `text` adds that text to the message, for what cannot be mentioned. `projectId` is the project a new session starts with. `useLinkedSessions(kind, refId)` lists the viewer's sessions tied to a record, the latest activity first (`GET /api/agentSessions/sessions?linked=<kind>:<refId>`), so the application can open the latest one from that record.
+
 ### What the agent knows of the session's work
 
 The records tied to a session, created in it or mentioned in its messages, are what the person means by "the tasks", and the agent is told so. A message carries the list beneath it whenever it changed since the agent was last told, each record with its standing in the person's language and what is new or changed marked, so that an agent coming back to a session a day later learns what happened meanwhile; a message after which nothing changed carries nothing. The `session work` CLI command lists that work with progress from the kind's existing batch resolver. `agentSessions.toldWork` keeps what the agent was last told, and `locale` the interface language supplied with the owner's latest message. Application instructions can be a string or a `(viewer) => string` resolver and are resent when their generated content changes.
@@ -112,8 +138,8 @@ The bridge offers the agents installed on the computer, each run as its own prog
 
 | Agent          | Started as                                                                                        | Full access                                                         |
 | -------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Codex          | `codex-acp`, else `npx @agentclientprotocol/codex-acp` beside an installed `codex`                | Mode `agent-full-access`                                            |
-| Claude Code    | `claude-agent-acp`, else `npx @agentclientprotocol/claude-agent-acp` beside an installed `claude` | Mode `bypassPermissions`                                            |
+| Codex          | `codex-acp`, installed once by the bridge, else on PATH, else `npx`, next to an installed `codex` | Mode `agent-full-access`                                            |
+| Claude Code    | `claude-agent-acp`, installed once by the bridge, else on PATH, else `npx`, beside `claude`       | Mode `bypassPermissions`                                            |
 | Gemini CLI     | `gemini --acp`                                                                                    | Mode `yolo`                                                         |
 | GitHub Copilot | `copilot --acp`                                                                                   | The bridge allows what it asks                                      |
 | Cursor         | `cursor-agent acp`                                                                                | The bridge allows what it asks                                      |
@@ -130,15 +156,17 @@ The bridge offers the agents installed on the computer, each run as its own prog
 | Amp            | `amp-acp`                                                                                         | The bridge allows what it asks                                      |
 | Mistral Vibe   | `vibe-acp`                                                                                        | The bridge allows what it asks                                      |
 
-On Windows the bridge finds each program with one of PATHEXT's extensions, runs npm's `.cmd` launchers through `cmd.exe` without a window, and stops an agent with its whole process tree; the application reads each computer's paths with its own system's rules. Each session opens with full access so that a person's first message is simply carried out, as it would be in their terminal: in the agent's full-access mode when it offers one, the person still free to choose another, or else with every permission it asks for allowed by the bridge. New sessions discover the installed agent's actual choices for the selected computer and directory before sending. The existing composer shows model, reasoning level and other settings, including labeled fixed values; slash commands still come from the last session. A person can change settings before the first message and during the conversation, and the session keeps them when it reopens. An agent that asks permission anyway waits for the owner up to 30 minutes and is then declined. A session continues the agent's own conversation (`session/resume`, else `session/load`) whenever its agent process starts again. A person signs the agent in on their computer with its own command line (`codex login`, `claude`, `opencode auth login` and so on); a session whose agent is not signed in says what to run.
+On Windows the bridge finds each program with one of PATHEXT's extensions, runs npm's `.cmd` launchers through `cmd.exe` without a window, and stops an agent with its whole process tree; the application reads each computer's paths with its own system's rules. Each session opens with full access so that a person's first message is simply carried out, as it would be in their terminal: in the agent's full-access mode when it offers one, the person still free to choose another, or else with every permission it asks for allowed by the bridge. New sessions discover the installed agent's actual choices for the selected computer and directory; the first message does not wait for them. The existing composer shows model, reasoning level and other settings, including labeled fixed values; slash commands still come from the last session. A person can change settings before the first message and during the conversation, and the session keeps them when it reopens. An agent that asks permission anyway waits for the owner up to 30 minutes and is then declined. A session continues the agent's own conversation (`session/resume`, else `session/load`) whenever its agent process starts again. A person signs the agent in on their computer with its own command line (`codex login`, `claude`, `opencode auth login` and so on); a session whose agent is not signed in says what to run.
 
 ### Settings before the first message
 
-`POST /api/agentSessions/computers/{computerId}/discoverChoices` accepts `agentId`, an absolute `cwd` within the owner's allowed folders, and `settings` overrides. It uses the existing correlated command/reply transport and waits up to 160 seconds, including agent initialization. The disposable ACP session receives no prompt or MCP servers, grants no requested tool permissions, creates no Studio session or work, and always stops its agent process. The agent may retain an empty session in its own history. Choices come from ACP configuration options, or session modes when configuration options are absent; no model list is hardcoded.
+`POST /api/agentSessions/computers/{computerId}/discoverChoices` accepts `agentId`, an absolute `cwd` within the owner's allowed folders, `settings` overrides and, from the new-session page, `sessionId`: the `submissionId` the session its first message creates will have. It uses the existing correlated command/reply transport and waits up to 160 seconds, including agent initialization. The ACP session receives no prompt or MCP servers, grants no requested tool permissions and creates no Studio session or work. Without `sessionId` the bridge stops its agent process; with it, the bridge keeps the agent and its open ACP session for up to five minutes, and the session created with that id takes it over for its first message instead of starting another, as `@nocobase/acp-bridge` describes. The new-session page chooses that id with the draft and replaces it once a message was sent with it, so each draft discovers for its own session. The agent may retain an empty session in its own history. Choices come from ACP configuration options, or session modes when configuration options are absent; no model list is hardcoded.
 
-Discovery is local to the effective computer, agent and directory. Changing these selections or observed online/agent availability clears settings; late responses, including A → B → A, are ignored. Changing a setting repeats discovery to refresh dependent choices; a model change resets dependent overrides. Loading and failure prevent sending, with Retry for failure; offline keeps the selected computer visible and asks to reconnect. An empty configurable surface and an unsupported surface each explain that agent defaults will be used. Send captures the target and discovered settings together and locks selectors while creating the session.
+Discovery is local to the effective computer, agent and directory. Changing these selections or observed online/agent availability clears settings; late responses, including A → B → A, are ignored. Changing a setting repeats discovery to refresh dependent choices; a model change resets dependent overrides. Loading and failure do not prevent sending: a message sent before fresh choices arrive, or after discovery failed, carries only the settings the person chose and leaves the rest to the agent's defaults, and Retry refreshes failed choices; offline keeps the selected computer visible and asks to reconnect. An empty configurable surface and an unsupported surface each explain that agent defaults will be used. Send captures the target and settings together and locks selectors while creating the session.
 
-The newly opened ACP session validates and applies explicit settings before its first prompt. Unknown, removed or rejected choices fail visibly without sending a prompt, including on retry; server creation does not trust historical computer choices. Existing-session choice changes, resume and streamed configuration updates continue through the existing path. Bridge protocol version 2 uses the existing upgrade-required response; there is no fallback to old bridges, persistent discovery cache, preparation lease, migration or retained probe process.
+The newly opened ACP session validates and applies explicit settings before its first prompt. Unknown, removed or rejected choices fail visibly without sending a prompt, including on retry; server creation does not trust historical computer choices. Existing-session choice changes, resume and streamed configuration updates continue through the existing path. Bridge protocol version 2 uses the existing upgrade-required response; there is no fallback to old bridges or persistent discovery cache.
+
+While its agent opens, a session shows what the bridge is doing in place of "The agent is working…": starting the agent, opening its session or applying settings (`Session.startup`, from the bridge's reports and stored as `agentSessions.startup`; bridges that do not report it leave it null).
 
 ## Transcripts
 
@@ -161,6 +189,8 @@ Removing a computer leaves its sessions readable; they take no more messages.
 
 ## Verification
 
+Applications may call `service.onCommittedEvent(listener)` to observe immediate `turnEnded`, `turnFailed` and `permissionRequested` reminder identities after the transcript transaction commits. The callback receives only owner/session/title/sequence/reason, without transcript bodies or permission input. It runs independently of delayed notices and seen settlement, adds no SQL, and returns an unsubscribe function. Schedule asynchronous work from the listener and handle its failures in the application; observer failures cannot roll back a committed transcript. No event is emitted for cancelled turns or a transaction that rolls back.
+
 ```bash
 pnpm --filter @nocobase/app-plugin-agent-sessions lint
 pnpm --filter @nocobase/app-plugin-agent-sessions typecheck
@@ -172,7 +202,7 @@ pnpm --filter @nocobase/app-plugin-agent-sessions build
 
 An application can mount `AgentSessionsProvider` from `@nocobase/app-plugin-agent-sessions/client` inside its authentication provider and above its routes, with `owner` set to the authenticated user ID (or `null` when signed out). The routed pages then use that owner’s cache and a single live subscription across navigation. Changing owner destroys the previous cache; do not reuse an owner identifier across users. Studio supplies its owner-aware component through `agentSessions({ routes: false, cacheProvider: { name: 'owner-cache', after: ['@nocobase/app-plugin-authentication:authentication'], component: OwnerCache } })`. The plugin registers it in the extension layer after authentication; application-owned provider definitions cannot use that layer.
 
-Discovery results remain valid for at most five minutes for the computer, agent metadata, directory, exposed roots/home/host and selected settings. Computer notifications and realtime reconnect invalidate discovery without clearing the selection or draft; expired or refreshing results cannot authorize sending. External agent configuration changes without an observable notification are bounded by that lifetime and can be refreshed with Retry. Same-key in-flight requests survive navigation, share one result and retain their thirty-second timeout; abandoning client waiting does not cancel queued bridge work. New-session drafts, attachments and selections live only in the owner’s memory cache, with a thirty-minute inactive eviction period, and disappear on reload, sign-out or account changes.
+Discovery results remain valid for at most five minutes for the computer, agent metadata, directory, exposed roots/home/host and selected settings. Computer notifications and realtime reconnect invalidate discovery without clearing the selection or draft; expired or refreshing results are not sent as the session's settings. External agent configuration changes without an observable notification are bounded by that lifetime and can be refreshed with Retry. Same-key in-flight requests survive navigation, share one result and retain their thirty-second timeout; abandoning client waiting does not cancel queued bridge work. New-session drafts, attachments and selections live only in the owner’s memory cache, with a thirty-minute inactive eviction period, and disappear on reload, sign-out or account changes.
 
 Both session creation and prompt submission accept an optional UUID `submissionId`. The browser always supplies it and retains the exact input with that ID until confirmation. After an uncertain result, **Retry original submission** sends the captured input with the same ID; **Edit as new message** explicitly releases it for a new submission, warning that the original may have arrived. Retry can recover confirmation while the computer is offline or the session is archived. No automatic retry or page-persistent recovery is performed; reload and account changes discard pending input. Legacy requests without an ID keep their previous behavior and have no duplicate protection.
 

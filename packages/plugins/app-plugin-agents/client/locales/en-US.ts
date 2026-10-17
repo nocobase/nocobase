@@ -485,6 +485,8 @@ const pages = {
     runnerUpgrade:
       'Interrupted for an execution machine update; the run will continue.',
     runnerDiskFull: 'The execution machine ran out of disk space.',
+    runnerOfflineBeforeStart:
+      'The runtime went offline before starting the run.',
     runnerOffline: 'The runtime went offline.',
     leaseExpired: 'The runtime stopped reporting.',
     startTimeout: 'The runtime did not start the run in time.',

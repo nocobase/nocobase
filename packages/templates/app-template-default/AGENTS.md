@@ -4,11 +4,9 @@ This is a NocoBase 3 application. Do not apply globally installed NocoBase 2 Ski
 
 Do not create a plugin to add a feature. Plugins are separately published packages for capabilities shared across several applications; building one for this application's own feature adds a package boundary, a version, and a release process to work that belongs in `client/` and `server/`. Create one only when the user explicitly asks for a reusable published package.
 
-When users refer to annotations, marks, or selections in the current application, first run `pnpm exec agent-annotations list --json` from the application root to find Agent Annotations records, ask for clarification only if none match or the target remains unclear, and do not implement annotation requests when the user only asks where they are.
-
 ## Default template scope
 
-Default is the clean application starting point. It registers product capabilities but no `app-plugin-*-example` plugins, example pages, application sample services, or sample APIs. Keep runnable demonstrations in `app-template-examples`. Application-owned server routes start empty; the only built-in application provider exposes Authorization Permission Sets as direct roles in the Users page. The only application page is a localized homepage.
+Default is the clean application starting point. It registers product capabilities but no `app-plugin-*-example` plugins, example pages, application sample services, or sample APIs. Keep runnable demonstrations in `app-template-examples`. Application-owned business server routes start empty; Users supplies the standard Permission Set role scope. Application-owned pages include the localized homepage and inbox; prepared user/role administration modules are unregistered in the bare template and enabled as business capabilities are developed.
 
 `database/main/` contains required permission initialization only; application-owned business migrations and seeds start empty. Do not add article history, demo seeds, or compatibility copies from Examples to this template. Existing installations retain their own executed migration sources when upgrading; see the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations).
 
@@ -52,6 +50,10 @@ tests/                    Tests; never beside the source
 ```
 
 A feature with a page and an API touches five places: a migration for the table, a route in `server/routes/`, a page in `client/pages/` declared in `client/routes.ts`, navigation on the page route, and strings in `client/locales/`. A page with children or page-local helpers uses a folder with `index.tsx`; child folders mirror route paths. [Application structure](.agents/skills/nocobase-app-development/references/app-structure.md) explains how the runtime composes these pieces, where configuration and its environment variables are declared, and the runtime paths.
+
+## System settings are part of feature delivery
+
+A bare create-app stays Home-only with no settings routes or menu. As the application develops business capabilities, inspect its current state on every iteration and automatically register the prepared Users and Roles and permissions contribution from `client/pages/settings/routes.ts` once in `client/routes.ts`; preserve it and reconcile missing management surfaces on every iteration, without a first-build flag or one-time setup stage. Whenever an application adds lifecycles, workflows, approvals, notifications, files or other configurable capabilities, automatically include their real administration surfaces without requiring a second user request. Follow [system settings delivery](.agents/skills/nocobase-app-development/references/system-settings.md); in particular, every used process includes a definitions directory, standard diagram, supported parameters and authorized execution history. Do not add demo plugins or empty settings for unused capabilities.
 
 ## Rules that apply everywhere
 

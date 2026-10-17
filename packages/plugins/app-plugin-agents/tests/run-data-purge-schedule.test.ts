@@ -9,7 +9,7 @@ import { ACCESS_NAMESPACE } from '../shared/access.js';
 describe('run process data maintenance scheduling', () => {
   afterEach(() => vi.useRealTimers());
 
-  function fixture(withJobs: boolean) {
+  function fixture(withJobs: boolean, agents?: unknown) {
     const services = {
       events: { on: () => () => undefined },
       signal: { notify: vi.fn() },
@@ -27,6 +27,7 @@ describe('run process data maintenance scheduling', () => {
     };
     const getScheduleExecutor = vi.fn(() => executor);
     const app = {
+      config: { get: (key: string) => (key === 'agents' ? agents : undefined) },
       container: {
         has: (token: unknown) => withJobs && token === jobExecutorServiceToken,
         resolve: (token: unknown) =>
@@ -71,5 +72,24 @@ describe('run process data maintenance scheduling', () => {
     await f.provider.shutdown();
     await vi.advanceTimersByTimeAsync(3600000);
     expect(f.services.purgeRunData).toHaveBeenCalledOnce();
+  });
+
+  it('sweeps at the configured interval', async () => {
+    const f = fixture(true, { runners: { sweepIntervalMs: 1_000 } });
+    await f.provider.boot();
+    expect(f.jobs[0]).toMatchObject({
+      name: 'RunnersSweep',
+      options: { every: 1_000 },
+    });
+    await f.provider.shutdown();
+  });
+
+  it('sweeps on a timer at the configured interval without jobs', async () => {
+    vi.useFakeTimers();
+    const f = fixture(false, { runners: { sweepIntervalMs: 1_000 } });
+    await f.provider.boot();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(f.services.sweeper.sweep).toHaveBeenCalledOnce();
+    await f.provider.shutdown();
   });
 });

@@ -54,12 +54,15 @@ export function bindCliSurface(options: CliSurfaceOptions): CliSurface {
   const { cli } = options;
 
   async function callerOf(identity: CallerIdentity): Promise<CliCaller> {
+    const snapshot = options.gate.manifestPermissions
+      ? await options.gate.manifestPermissions(identity)
+      : { actions: await options.gate.allowed(identity) };
     const caller: CliCaller = {
       kind: IDENTITY_OF[identity.kind],
       userId: identity.userId,
       displayName: identity.displayName,
       ...(identity.run ? { runId: identity.run.run.id } : {}),
-      actions: await options.gate.allowed(identity),
+      ...snapshot,
     };
     return caller;
   }

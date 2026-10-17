@@ -1,21 +1,31 @@
 // `acp start` refused for its bridge protocol: it updates the CLI as `update` does, then exits non-zero so the service
 // manager starts it again on the new version; when no update helps it still exits non-zero, never 0.
 import path from 'node:path';
+import { mkdir, writeFile } from 'node:fs/promises';
 
 import { Config } from '@oclif/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { BridgeUpgradeRequired } from '@nocobase/acp-bridge';
+import {
+  BridgeUpgradeRequired,
+  type BridgeOptions,
+} from '@nocobase/acp-bridge';
 import { BRIDGE_PROTOCOL_VERSION } from '@nocobase/acp-bridge/protocol';
 
 import type { CliUpdateResult } from '../src/update.ts';
 import { removeDir, tempDir, TEST_CLI } from './helpers.ts';
 
 const bridge = vi.hoisted(() => ({
-  runBridge: vi.fn<() => Promise<void>>(),
+  runBridge: vi.fn<(options: BridgeOptions) => Promise<void>>(),
 }));
 const updates = vi.hoisted(() => ({
   updateCli: vi.fn<() => Promise<CliUpdateResult>>(),
+}));
+const profiles = vi.hoisted(() => ({ read: vi.fn() }));
+
+vi.mock('../src/lib/credentials.ts', async (original) => ({
+  ...(await original<typeof import('../src/lib/credentials.ts')>()),
+  readUserConfig: profiles.read,
 }));
 
 vi.mock('@nocobase/acp-bridge', async (original) => ({
@@ -142,6 +152,36 @@ describe('acp start refused for its protocol', () => {
     const exit = await start(['--service']);
     expect(updates.updateCli).toHaveBeenCalledOnce();
     expect(exit).toBeGreaterThan(0);
+  });
+
+  it('wires fallback instructions and preserves profile validation and session identity', async () => {
+    const packageRoot = path.join(home, 'package');
+    await mkdir(path.join(packageRoot, 'skills/nb-studio-cli'), {
+      recursive: true,
+    });
+    await writeFile(
+      path.join(packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+      'Use acme --help and honor refusals.',
+    );
+    const app = { ...TEST_CLI, envPrefix: 'ACME', selfUpdate: { packageRoot } };
+    configureAppCli(app);
+    profiles.read.mockResolvedValue({ server: 'https://acme.example.com' });
+    bridge.runBridge.mockImplementation(async (options) => {
+      expect(await options.prepareSession!('opencode', 's1')).toEqual({
+        ACME_PROFILE: 'default',
+        ACME_AGENT_SESSION: 's1',
+      });
+      expect(await options.sessionInstructions!('opencode', 's1')).toContain(
+        'Use acme --help and honor refusals.',
+      );
+      expect(await options.sessionInstructions!('codex', 's1')).toBeUndefined();
+      profiles.read.mockResolvedValue(undefined);
+      await expect(options.prepareSession!('opencode', 's2')).rejects.toThrow(
+        'bridge-selected profile',
+      );
+    });
+    await acpCommands(app)['acp:start']!.run([], config);
+    expect(bridge.runBridge).toHaveBeenCalledOnce();
   });
 
   it('exits non-zero when the update fails or does not help', async () => {

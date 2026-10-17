@@ -63,6 +63,32 @@ export function useLinkOpen():
   return useContext(LinkOpenContext);
 }
 
+/**
+ * Where the plugin's views are drawn. `page` is the plugin's own page; `panel` is beside another page of the
+ * application (`AgentSessionsPanel`), which draws them narrow, without a way back, with the application's buttons in
+ * their header, opening records at their own address and telling the application which session to show.
+ */
+export interface SessionSurface {
+  readonly panel: boolean;
+  /** At the end of a view's header, such as the panel's own buttons. */
+  readonly actions?: ReactNode;
+  /** A new session was created: show it. Left out, the page opens its address. */
+  readonly onCreated?: ((sessionId: string) => void) | undefined;
+  /** A session was picked in the list: show it. Left out, the list links to its address. */
+  readonly onOpenSession?: ((sessionId: string) => void) | undefined;
+  /** The project a new session starts with, over the one last used. */
+  readonly projectId?: string | null | undefined;
+}
+
+const PAGE: SessionSurface = { panel: false };
+
+export const SessionSurfaceContext: React.Context<SessionSurface> =
+  createContext<SessionSurface>(PAGE);
+
+export function useSessionSurface(): SessionSurface {
+  return useContext(SessionSurfaceContext);
+}
+
 export const AgentSessionsConfigContext: React.Context<AgentSessionsSettings | null> =
   createContext<AgentSessionsSettings | null>(null);
 

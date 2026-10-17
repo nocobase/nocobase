@@ -28,7 +28,6 @@ import {
   type ConversationPatch,
   type CreateConversationRequest,
   type MessageAttachment,
-  type SendMessageRequest,
   type StartConversationRequest,
 } from '../../shared/conversations.js';
 import type { Agents } from '../composition.js';
@@ -75,23 +74,37 @@ const conversationConflict = (when: string) =>
 const MessagePosition = z.object({ before: z.number().int().min(1) });
 
 const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
-  agentId: z.string().min(1).max(64).optional(),
+  agentId: z
+    .string()
+    .min(1)
+    .max(64)
+    .optional()
+    .describe('The agent to start the conversation with.'),
   title: z
     .string()
     .max(CONVERSATION_TITLE_MAX * 2)
-    .optional(),
-  source: z.string().regex(CONVERSATION_SOURCE_PATTERN).optional(),
+    .optional()
+    .describe('The conversation title.'),
+  source: z
+    .string()
+    .regex(CONVERSATION_SOURCE_PATTERN)
+    .optional()
+    .describe('The source context associated with this conversation.'),
 });
 
 const PatchSchema: z.ZodType<ConversationPatch> = z.strictObject({
   title: z
     .string()
     .max(CONVERSATION_TITLE_MAX * 2)
-    .optional(),
-  archived: z.boolean().optional(),
+    .optional()
+    .describe('The conversation title.'),
+  archived: z
+    .boolean()
+    .optional()
+    .describe('Whether to archive the conversation.'),
 });
 
-const SendSchema: z.ZodType<SendMessageRequest> = z.strictObject({
+const SendSchema = z.strictObject({
   content: z
     .string()
     .max(MESSAGE_CONTENT_MAX * 2)
@@ -117,7 +130,13 @@ const singleFileBody: OpenAPIV3_1.RequestBodyObject = {
       schema: {
         type: 'object',
         required: ['file'],
-        properties: { file: { type: 'string', format: 'binary' } },
+        properties: {
+          file: {
+            type: 'string',
+            format: 'binary',
+            description: 'The file to upload for the conversation.',
+          },
+        },
       },
     },
   },
@@ -167,6 +186,7 @@ const noAttachment = apiErrorResponse(
 );
 
 const StartSchema: z.ZodType<StartConversationRequest> = z.strictObject({
+  attachmentIds: SendSchema.shape.attachmentIds,
   source: z.string().regex(CONVERSATION_SOURCE_PATTERN),
   text: z
     .string()

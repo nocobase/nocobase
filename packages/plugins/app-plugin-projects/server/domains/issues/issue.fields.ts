@@ -7,6 +7,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 import { PRIORITIES, type Priority } from '../../../shared/common.js';
 import {
   ISSUE_DESCRIPTION_MAX,
+  ISSUE_ACCEPTANCE_MAX,
   ISSUE_PROGRESS_MAX,
   ISSUE_TITLE_MAX,
   type CreateIssueRequest,
@@ -40,6 +41,7 @@ import type { KindRegistry } from '../../kernel/kinds.js';
 import type { IssueValues } from './issue.store.js';
 import { findIssue, parentOf } from './issue.store.js';
 import {
+  BACKLOG_STATUS,
   DEFAULT_START_STATUS,
   START_STATUSES,
 } from '../../../shared/statuses.js';
@@ -50,11 +52,18 @@ const MAX_PARENT_DEPTH = 50;
 /** Status writes and progress-only writes share these rules, including system events. */
 export function progressValues(
   before: Issue,
-  patch: Pick<UpdateIssueRequest, 'statusKey' | 'needsYou' | 'next'>,
+  patch: Pick<
+    UpdateIssueRequest,
+    'statusKey' | 'needsYou' | 'next' | 'acceptance'
+  >,
 ): IssueValues {
   const target = patch.statusKey ?? before.statusKey;
   const needsOwner = target === 'blocked' || target === 'in_review';
-  const values: { needsYou?: string | null; next?: string | null } = {};
+  const values: {
+    needsYou?: string | null;
+    next?: string | null;
+    acceptance?: string | null;
+  } = {};
   const text =
     patch.needsYou === undefined
       ? undefined
@@ -66,6 +75,15 @@ export function progressValues(
       ? patch.next
       : null;
   if (target === 'done' || target === 'cancelled') values.next = null;
+  // The delivery report outlives the review; only the next one replaces it.
+  if (patch.acceptance !== undefined)
+    values.acceptance = optionalText(
+      patch.acceptance,
+      'acceptance',
+      ISSUE_ACCEPTANCE_MAX,
+    )?.trim()
+      ? patch.acceptance
+      : null;
   return values;
 }
 
@@ -274,6 +292,19 @@ export async function resolveCreate(
       'INVALID_STATUS',
       `A new issue starts in ${START_STATUSES.join(' or ')}.`,
     );
+  if (input.start === true && statusKey === BACKLOG_STATUS)
+    throw invalid(
+      'ISSUE_START_REQUIRES_IN_PROGRESS',
+      'An issue must be In progress to start work.',
+      {
+        suggestions: [
+          {
+            message:
+              'To start work when creating an issue, add --status in_progress with --start (statusKey: in_progress in JSON).',
+          },
+        ],
+      },
+    );
   const setup = await setupOf(ctx, projectId);
   const projectSetup = input.projectSetup === true;
   if (projectSetup) {
@@ -409,7 +440,7 @@ export async function resolveUpdate(
   const catalog = ctx.statuses.catalog();
   let statusChange: Changes['status'];
   const progress = progressValues(before, patch);
-  for (const field of ['needsYou', 'next'] as const)
+  for (const field of ['needsYou', 'next', 'acceptance'] as const)
     if (progress[field] !== undefined && progress[field] !== before[field])
       values[field] = progress[field];
   if (patch.statusKey !== undefined) {

@@ -58,6 +58,7 @@
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-notification-in-app": "workspace:^",
     "@nocobase/app-plugin-projects": "workspace:^",
+    "@nocobase/app-template-default": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/lifecycle": "workspace:^",
     "@tailwindcss/vite": "catalog:",
@@ -195,6 +196,7 @@
     "#components/flow-layout": "./registry/components/flow-layout.ts",
     "#components/lifecycle-diagram": "./registry/lifecycle/lifecycle-diagram.tsx",
     "#components/lifecycle-diagram-model": "./registry/lifecycle/lifecycle-diagram-model.ts",
-    "#components/*": "./website/components/*.tsx"
+    "#components/*": "./website/components/*.tsx",
+    "#components/permission-filter": "./registry/authorization/permission-filter.tsx"
   }
 }

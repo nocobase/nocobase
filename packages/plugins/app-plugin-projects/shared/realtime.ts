@@ -12,7 +12,8 @@ export interface PmChangeEvent {
   readonly domain: PmChangeDomain;
   /**
    * The issues that changed, when every change named one and none moved an issue into or out of a list (created,
-   * deleted, restored, owner or status changed). Absent, any issue may have changed.
+   * deleted, restored, owner, status, project, parent or executor changed). Absent, any issue may have changed, and
+   * which issues a list or a project holds may have changed too.
    */
   readonly issueIds?: readonly string[];
 }

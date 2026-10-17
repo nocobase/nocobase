@@ -43,16 +43,22 @@ export function lifecycleDiagramGraph(
   const graph: FlowDiagramGraph = {
     nodes: description.stateInfo.map((state) => ({
       id: state.name,
-      width: 160,
-      height: 48,
+      width: 232,
+      height: 104,
       label: options.stateLabel?.(state) ?? state.title,
+      configurable: (description.parameterConfiguration?.groups ?? []).some(
+        (group) =>
+          Object.values(group.fields).some((field) =>
+            field.bindings?.some((binding) => binding.state === state.name),
+          ),
+      ),
       visited: visitedStates.has(state.name),
       highlighted: state.name === options.currentState,
-      className: state.final
-        ? 'border-double border-4'
+      kind: state.final
+        ? 'final'
         : description.initialStates.includes(state.name)
-          ? 'rounded-full'
-          : undefined,
+          ? 'initial'
+          : 'state',
     })),
     edges: description.transitions.flatMap((transition) =>
       transition.from.flatMap((source) =>
@@ -61,6 +67,14 @@ export function lifecycleDiagramGraph(
           source,
           target,
           label: options.transitionLabel?.(transition) ?? transition.title,
+          configurable: (description.parameterConfiguration?.groups ?? []).some(
+            (group) =>
+              Object.values(group.fields).some((field) =>
+                field.bindings?.some(
+                  (binding) => binding.transition === transition.name,
+                ),
+              ),
+          ),
           visited: visitedEdges.has(
             JSON.stringify([transition.name, source, target]),
           ),
