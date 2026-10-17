@@ -484,8 +484,20 @@ export class FakeServer {
     };
   }
 
+  requests = 0;
+  authFailure:
+    | { route: string; reason: 'RUNNER_REVOKED' | 'RUNNER_KEY_INVALID' }
+    | undefined;
+
   private routes(): void {
     const { app } = this;
+
+    app.use('*', async (c, next) => {
+      this.requests += 1;
+      if (this.authFailure?.route === c.req.path)
+        return error(c, 401, this.authFailure.reason);
+      return next();
+    });
 
     app.post(RUNNER_ROUTES.register, async (c) => {
       const body = (await c.req.json()) as RegisterRequest;

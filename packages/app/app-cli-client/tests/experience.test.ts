@@ -3,6 +3,8 @@ import { configureAppCli } from '../src/config.ts';
 import { setOriginalArgv, unknownCommandError } from '../src/dynamic/index.ts';
 import { renderAnswer } from '../src/dynamic/output.ts';
 import { errorJsonOf } from '../src/lib/envelope.ts';
+import { AppApiError } from '../src/lib/http.ts';
+import { asCliError } from '../src/lib/command.ts';
 import type { CliCommand, CliManifest } from '../src/parse/manifest.ts';
 import { TEST_CLI } from './helpers.ts';
 
@@ -32,6 +34,59 @@ const manifest: CliManifest = {
 };
 
 describe('CLI experience', () => {
+  it.each([
+    {
+      message: 'Move the issue to In progress.',
+      run: {
+        command: 'acme',
+        args: ['issue', 'update', 'PM-12', '--status', 'in_progress'],
+      },
+    },
+    {
+      message:
+        'To start work when creating an issue, add --status in_progress with --start.',
+    },
+  ])(
+    'preserves API advice in JSON and terminal output: $message',
+    (suggestion) => {
+      const suggestions = [suggestion];
+      const error = new AppApiError(
+        400,
+        'CANNOT_START',
+        'An issue must be In progress to start work.',
+        { suggestions },
+      );
+      expect(errorJsonOf(error)).toMatchObject({
+        code: 'CANNOT_START',
+        suggestions,
+        details: { metadata: { suggestions } },
+      });
+      expect(asCliError(error).message).toContain(suggestion.message);
+      if (suggestion.run)
+        expect(asCliError(error).message).toContain(
+          'acme issue update PM-12 --status in_progress',
+        );
+    },
+  );
+
+  it('keeps the existing hints when API suggestions are absent or malformed', () => {
+    for (const metadata of [
+      undefined,
+      {},
+      { suggestions: 'bad' },
+      { suggestions: [{ run: 'shell' }] },
+    ]) {
+      expect(
+        errorJsonOf(
+          new AppApiError(401, 'UNAUTHENTICATED', 'Sign in.', metadata),
+          'acme',
+        ).suggestions,
+      ).toEqual([
+        { message: 'Sign in again with `acme login --server <url>`.' },
+      ]);
+    }
+  });
+
   it('suggests offered commands for nested and top-level typos in structured errors', () => {
     configureAppCli(TEST_CLI);
     const error = errorJsonOf(

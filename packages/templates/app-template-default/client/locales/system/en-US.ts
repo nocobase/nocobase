@@ -1,3 +1,4 @@
+import settings from './settings-en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import deviceApprovalEnUS from '#extensions/nocobase-device-approval/locales/en-US';
 import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
@@ -7,6 +8,7 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  * upgrade replaces this file, so put the application's own copy in `../en-US.ts` rather than here.
  */
 const systemEnUS = {
+  settings,
   'auth.passwordResetSuccess':
     'Your password has been reset. Sign in with your new password.',
   'auth.requestNewResetLink': 'Request a new reset link',

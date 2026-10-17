@@ -200,6 +200,7 @@
     "#extensions/nocobase-workflow-management/layout": "./registry/lifecycle/workflow-management/layout.tsx",
     "#extensions/nocobase-workflow-management/definition-list": "./registry/lifecycle/workflow-management/definition-list.tsx",
     "#extensions/nocobase-workflow-management/execution-detail": "./registry/lifecycle/workflow-management/execution-detail.tsx",
-    "#extensions/nocobase-workflow-management/execution-list": "./registry/lifecycle/workflow-management/execution-list.tsx"
+    "#extensions/nocobase-workflow-management/execution-list": "./registry/lifecycle/workflow-management/execution-list.tsx",
+    "#components/permission-filter": "./registry/authorization/permission-filter.tsx"
   }
 }

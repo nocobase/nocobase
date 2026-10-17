@@ -116,3 +116,15 @@ describeMigration('202610150003_agent_sessions_seen', {
     await sessions.not.toHaveField('noticedSeq');
   },
 });
+
+describeMigration('202610160001_agent_sessions_startup', {
+  sources: migrations,
+  up: async ({ expectCollection }) => {
+    await expectCollection('agentSessions').toHaveField('startup', {
+      nullable: true,
+    });
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('agentSessions').not.toHaveField('startup');
+  },
+});

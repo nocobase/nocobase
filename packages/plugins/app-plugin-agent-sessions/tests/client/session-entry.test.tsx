@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AgentSessionsPage from '../../client/pages/sessions.js';
 import plugin from '../../client/plugin.js';
 import { discoveryKey } from '../../client/use-choice-discovery.js';
+import { sessionMemoryKey } from '../../client/use-session-memory.js';
 import type { Session } from '../../shared/api.js';
 
 const recent: Session = {
@@ -18,6 +19,7 @@ const recent: Session = {
   title: 'Recent',
   titleSource: 'owner',
   state: null,
+  startup: null,
   settings: {},
   running: false,
   waiting: false,
@@ -57,6 +59,9 @@ async function setup(route = '/agent-sessions', cachedSettings = false) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  // The draft's session id names its discovery, so cached choices belong to one draft.
+  if (cachedSettings)
+    client.setQueryData(sessionMemoryKey('new-session:id'), 'draft-session');
   if (cachedSettings)
     client.setQueryData(
       [
@@ -71,6 +76,7 @@ async function setup(route = '/agent-sessions', cachedSettings = false) {
           'test',
         ]),
         {},
+        'draft-session',
       ],
       {
         status: 'available',

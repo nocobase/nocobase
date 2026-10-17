@@ -1,3 +1,4 @@
+import systemSettingsRoutes from './pages/settings/routes.js';
 import {
   FileText,
   Home,
@@ -263,6 +264,16 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-const routes: readonly AppClientRouteContribution[] = [appRoutes];
+const routes: readonly AppClientRouteContribution[] = [
+  appRoutes,
+  defineAppRoutes(
+    systemSettingsRoutes.routes.flatMap((group) =>
+      (group.children ?? []).map((route) => ({
+        ...route,
+        parent: 'systemManagement',
+      })),
+    ),
+  ),
+];
 
 export default routes;

@@ -1,9 +1,11 @@
+import settings from './settings-zh-CN.js';
 import type { SystemResource } from './en-US.js';
 import deviceApprovalZhCN from '#extensions/nocobase-device-approval/locales/zh-CN';
 import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  settings,
   'auth.passwordResetSuccess': '密码已重置，请用新密码登录。',
   'auth.requestNewResetLink': '重新申请重置链接',
 

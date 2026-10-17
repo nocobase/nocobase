@@ -122,6 +122,11 @@ const zhCN: AgentSessionsResource = {
     offlineBody:
       '对话记录和任务都保存在这里，可以照常查看。电脑重新上线后，会自动接上原来的会话。',
     working: 'Agent 正在工作…',
+    startup: {
+      starting: '正在你的电脑上启动 Agent…',
+      opening: '正在打开会话…',
+      configuring: '正在应用设置…',
+    },
     answering: '回复中',
     asking: '等你审批',
     stop: '停止',
@@ -164,6 +169,8 @@ const zhCN: AgentSessionsResource = {
     queue: '这一轮结束后发送',
     addImage: '添加图片',
     removeImage: '移除图片',
+    attached: '随消息一起发送',
+    removeAttached: '移除 {{name}}',
     commands: 'Agent 的命令',
     mentions: '引用任务',
     keys: {
@@ -174,6 +181,7 @@ const zhCN: AgentSessionsResource = {
     },
   },
   choices: { more: '更多选项' },
+  panel: { fullScreen: '全屏打开' },
   transcript: {
     image: {
       open: '打开图片预览',

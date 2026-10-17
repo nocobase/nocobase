@@ -3,6 +3,7 @@ import {
   DiscoveredChoicesSchema,
   type DiscoveredChoices,
   PromptContentSchema,
+  SessionStartupSchema,
   type PromptContent,
 } from '@nocobase/acp-bridge/protocol';
 import { z } from 'zod';
@@ -13,6 +14,7 @@ export const DiscoverChoicesInput: z.ZodType<{
   agentId: string;
   cwd: string;
   settings: Record<string, string>;
+  sessionId?: string | undefined;
 }> = z.strictObject({
   agentId: z.string().min(1).max(40).meta({
     description: 'The installed agent to initialize without a prompt.',
@@ -28,6 +30,10 @@ export const DiscoverChoicesInput: z.ZodType<{
     .meta({
       description: 'Selected overrides, applied to discover dependent choices.',
     }),
+  sessionId: z.uuid().optional().meta({
+    description:
+      'The `submissionId` the new session will be created with. The bridge keeps the agent it starts for that session, so its first message does not start another.',
+  }),
 });
 
 import {
@@ -195,6 +201,10 @@ export const SessionSchema: z.ZodType<Session> = z
     settings: z
       .record(z.string(), z.string())
       .meta({ description: 'The choices its owner made, by choice id.' }),
+    startup: SessionStartupSchema.nullable().meta({
+      description:
+        'What the bridge is doing to open its agent: starting it, opening its session or applying its choices; null once it is open.',
+    }),
     running: z.boolean(),
     waiting: z
       .boolean()
@@ -235,10 +245,19 @@ export const ListSessionsQuery: z.ZodType<{
   archived?: 'true' | 'false' | undefined;
   pageSize: number;
   pageToken?: string | undefined;
+  linked?: string | undefined;
 }> = z.object({
   archived: z.enum(['true', 'false']).optional(),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
   pageToken: z.string().optional(),
+  linked: z
+    .string()
+    .regex(/^[a-zA-Z][\w-]{0,63}:[^:\s][^\s]{0,199}$/u)
+    .optional()
+    .meta({
+      description:
+        'Only the sessions tied to one record, as `<kind>:<refId>`, such as `issue:42`: those that created or mentioned it.',
+    }),
 });
 
 export const ListEventsQuery: z.ZodType<{ after: number; pageSize: number }> =

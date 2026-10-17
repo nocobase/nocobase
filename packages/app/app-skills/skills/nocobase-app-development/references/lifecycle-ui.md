@@ -50,7 +50,7 @@ Diagram-bound dialogs are optional contextual entries, sharing the same editor a
 
 React Flow needs a definite sized ancestor; min-height alone inside unconstrained flex parents may collapse or oversize the canvas. Choose autoHeight for content-sized diagrams or a bounded canvas with pan/zoom and refitting after layout or container resizing. The examples use a 720px definition canvas and matching execution minimum; adapt this to the graph and viewport rather than prescribing it universally.
 
-Fit the full graph, including outer edge routes and labels. Prefer top-to-bottom direction for tall details, readable spacing, subdued ordinary edges and labels on their routes. Give the current node a strong marker and actual history lighter highlights. Keep current state, visited path and available actions distinct; infer no traversed edge from reachable states or endpoints alone. Use the shared theme tokens and translated accessible labels.
+Fit the full graph, including outer edge routes and labels. Prefer top-to-bottom direction for tall details, readable spacing, subdued ordinary edges and labels on their routes. Give the current node a strong marker and actual history lighter highlights, retaining the diagram's textual status and icons. Keep current state, visited path and available actions distinct; infer no traversed edge from reachable states or endpoints alone. Use the shared theme tokens and translated accessible labels.
 
 ## Execution detail
 

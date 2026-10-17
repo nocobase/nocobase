@@ -48,6 +48,18 @@ Build Registry items and install/materialize them into a temporary or intended A
 
 Check Plugin Skill frontmatter, ownership prefixes, absence of drafts, publication through `files`, and synchronization replacement/removal/conflict behavior. Then review every claimed public API, prerequisite, permission, and verification step against the implementation. File equality only proves synchronization; the target App must demonstrate the integration the Skill promises. The Skills example (`packages/examples/app-plugin-skills-example`) shows a public component consumer and actual App HTTP verification.
 
+## Keep tests lean
+
+These are habits rather than mechanical rules. When a suite gets slow, measure where the time goes (building, migrating, waiting, starting servers) and fix the largest part first.
+
+- **Test at the cheapest layer that proves the behavior.** Browser tests are for what only a real browser shows, such as a flow across pages, real input, history and focus. States, copy and combinations of locale, theme or role belong in component or unit tests, and a server contract in a route or service test.
+- **Do not repeat expensive setup per test.** Migrate a test database once per suite where the test tooling allows it, and start a whole App only for tests that need one.
+- **Do not wait for real time.** Make back-offs, poll and sweep intervals and cache lifetimes configurable and set them short in tests, or use fake timers. Never sleep to show that something did not happen.
+- **Keep tests independent.** Use a test's own user and data rather than changing shared fixtures or global settings, and let background work settle before closing a database.
+- **Remove tests with what they cover, and do not guard absences.** When a feature, route, option or export goes away, delete or rewrite its tests in the same change. Do not add tests that prove something removed stays removed, such as a deleted route answering 404 or an old key never returning. Do not keep one-off evidence tests written for a task, and do not test the wording of README, Skill or other documentation files.
+- **Test behavior, not implementation details.** Assert what a user or caller observes, not internal call counts, private helpers, patched timer values or copy that is not the subject of the change.
+- **Do not check the same thing twice.** Do not duplicate what a dedicated check already compares, such as the API document or generated references, and replace a large snapshot nobody reads with assertions on the figures that matter.
+
 ## Run scoped package and consumer checks
 
 For modified plugin code, run:

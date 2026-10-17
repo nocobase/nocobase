@@ -24,6 +24,8 @@ export const ListUsersQuery: z.ZodObject<
   {
     page: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
     pageSize: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
+    sort: z.ZodOptional<z.ZodEnum<{ name: 'name' }>>;
+    order: z.ZodOptional<z.ZodEnum<{ asc: 'asc'; desc: 'desc' }>>;
     q: z.ZodOptional<z.ZodString>;
     status: z.ZodOptional<
       z.ZodEnum<{ enabled: 'enabled'; disabled: 'disabled' }>
@@ -45,6 +47,8 @@ export const ListUsersQuery: z.ZodObject<
     .positive()
     .optional()
     .describe('The maximum number of records to return.'),
+  sort: z.enum(['name']).optional().describe('The field to sort by.'),
+  order: z.enum(['asc', 'desc']).optional().describe('The sort direction.'),
   q: z.string().optional().describe('Text to search for.'),
   status: z
     .enum(['enabled', 'disabled'])

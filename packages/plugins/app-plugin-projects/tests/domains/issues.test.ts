@@ -14,6 +14,34 @@ const alice = () => h.viewer('alice');
 const admin = () => h.viewer('admin', 'admin');
 
 describe('creating issues', () => {
+  it('rejects an explicit start in backlog before saving or allocating a number', async () => {
+    for (const status of [{}, { statusKey: 'backlog' }])
+      await expect(
+        h.services.issues.create(alice(), {
+          title: 'Rejected',
+          start: true,
+          ...status,
+        }),
+      ).rejects.toMatchObject({
+        code: 'ISSUE_START_REQUIRES_IN_PROGRESS',
+      });
+    const issue = await h.services.issues.create(alice(), {
+      title: 'Started',
+      statusKey: 'in_progress',
+      start: true,
+    });
+    expect(issue).toMatchObject({
+      identifier: 'PM-1',
+      statusKey: 'in_progress',
+    });
+    expect((await h.services.issueQueries.page(alice(), {})).data).toHaveLength(
+      1,
+    );
+    await expect(
+      h.services.issues.create(alice(), { title: 'Deferred', start: false }),
+    ).resolves.toMatchObject({ statusKey: 'backlog' });
+  });
+
   it('starts in backlog, owned by the creator', async () => {
     const issue = await h.services.issues.create(alice(), {
       title: '  Fix login  ',

@@ -28,10 +28,12 @@ import {
 } from '@nocobase/authorization/permission-sets';
 import {
   AUTHORIZATION_ERROR_DOMAIN,
+  AuthorizationInputError,
   createRouteHandler,
   createSettingsRouter,
   settingsAccess,
 } from '../extension/http.js';
+import { assertDatabaseScope } from '../database/scope.js';
 import { databaseHost } from '../database/api.js';
 import { databaseGrantViolations } from '../database/grant-validation.js';
 import {
@@ -378,7 +380,10 @@ export function createPermissionSetHandler(
             );
         }
       return context.json({
-        data: summarize(api, await api.update(key, input)),
+        data: summarize(
+          api,
+          await api.update(key, input, changes.expectedRevision),
+        ),
       });
     },
   );
@@ -469,7 +474,7 @@ function validateGrants(
                 Reflect.get(value, 'type') === 'recordAccess'
               ? Reflect.get(value, 'key')
               : undefined;
-        if (recordAccess === undefined) continue;
+        if (value === '' || recordAccess === undefined) continue;
         const target = dataScopeTarget(action, key).id;
         const definition =
           typeof recordAccess === 'string'
@@ -489,15 +494,81 @@ function validateGrants(
 }
 
 /**
- * A `database.collection` create or update grant may name only fields and relations a write can use; otherwise every
- * write it allows would fail. Answers `400 INVALID_ARGUMENT` with one field violation per offending member.
+ * Validate composite custom record filters against their registered database target, and reject
+ * database create/update grants naming fields or relations that cannot be written.
  */
 async function validateWriteGrants(
-  host: Pick<AuthorizationExtensionHost, 'database'>,
+  host: Pick<AuthorizationExtensionHost, 'database' | 'compositeResources'>,
   grants: readonly PermissionGrant[],
 ): Promise<void> {
   const checker = databaseHost(host.database);
   if (!checker) return;
+  for (const grant of grants) {
+    if (grant.resource.type !== 'composite') continue;
+    for (const entry of grant.actions) {
+      const action = host.compositeResources.getAction(
+        grant.resource.id,
+        entry.action,
+      );
+      for (const [key, selection] of Object.entries(
+        entry.policy?.scopes ?? {},
+      )) {
+        const record =
+          selection && typeof selection === 'object'
+            ? (selection as Record<string, unknown>)
+            : undefined;
+        if (
+          selection !== 'customFilter' &&
+          !(record?.type === 'recordAccess' && record.key === 'customFilter')
+        )
+          continue;
+        const scope = action?.dataScopes?.find((item) => item.key === key);
+        if (!scope || !action) throw new TypeError('Unknown data scope');
+        const target = dataScopeTarget(action, key).id;
+        const collection = await checker.describe(target);
+        const params: unknown = record?.params;
+        const filter: unknown =
+          params && typeof params === 'object'
+            ? Reflect.get(params, 'filter')
+            : undefined;
+        if (collection && typeof filter === 'boolean') continue;
+        if (!collection || !filter || typeof filter !== 'object')
+          throw new TypeError('Custom Filter requires configured conditions');
+        let count = 0;
+        const validate = (node: unknown, depth = 0): void => {
+          if (++count > 100 || depth > 8 || !node || typeof node !== 'object')
+            throw new TypeError('Invalid Custom Filter conditions');
+          if (Reflect.get(node, 'kind') === 'group') {
+            const items: unknown = Reflect.get(node, 'items');
+            if (!Array.isArray(items) || !items.length)
+              throw new TypeError('Custom Filter groups require conditions');
+            for (const item of items) validate(item, depth + 1);
+          } else {
+            const operator: unknown = Reflect.get(node, 'operator');
+            const value: unknown = Reflect.get(node, 'value');
+            if (
+              !['$empty', '$notEmpty', '$isTruly', '$isFalsy'].includes(
+                String(operator),
+              ) &&
+              value === undefined
+            )
+              throw new TypeError('Custom Filter conditions require a value');
+            if (typeof value === 'number' && !Number.isFinite(value))
+              throw new TypeError('Invalid Custom Filter value');
+          }
+        };
+        validate(filter);
+        try {
+          assertDatabaseScope(filter, collection.fields);
+        } catch (error) {
+          throw new AuthorizationInputError(
+            error instanceof Error ? error.message : 'Invalid Custom Filter',
+            'grants',
+          );
+        }
+      }
+    }
+  }
   const violations = await databaseGrantViolations(checker, grants);
   if (!violations.length) return;
   throw new ApiError({

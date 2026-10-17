@@ -296,7 +296,7 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
       ...pageOnly,
       summary: 'List your sessions',
       operationId: 'agentSessionsListSessions',
-      description: `Your sessions, the most recently active first; \`archived=true\` lists the archived ones. Pages by \`pageToken\`. ${own}`,
+      description: `Your sessions, the most recently active first; \`archived=true\` lists the archived ones, and \`linked=<kind>:<refId>\` only those tied to that record. Pages by \`pageToken\`. ${own}`,
       responses: {
         200: listResponse(SessionSchema),
         ...errors,

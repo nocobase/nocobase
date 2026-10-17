@@ -129,26 +129,25 @@ export function ProcessDiagram({
           direction='DOWN'
           autoHeight={autoHeight}
           className={className}
+          nodeActions={(node) =>
+            onParameterBinding &&
+            boundParameterGroups(description, 'state', node.id).length > 0 ? (
+              <button
+                type='button'
+                aria-label={t('parameters.editCurrent')}
+                className='inline-flex items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-card-foreground hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring'
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onParameterBinding('state', node.id);
+                }}
+              >
+                <Settings className='size-3' aria-hidden />
+                {t('parameters.editCurrent')}
+              </button>
+            ) : undefined
+          }
           stateLabel={(item) => stateLabel(item.name)}
           transitionLabel={transitionLabel}
-          renderState={(item) => (
-            <span className='flex flex-col items-center gap-0.5'>
-              <span className='inline-flex items-center gap-1.5'>
-                {stateLabel(item.name)}
-                {onParameterBinding &&
-                boundParameterGroups(description, 'state', item.name).length >
-                  0 ? (
-                  <span title={t('parameters.editCurrent')}>
-                    <Settings
-                      className='size-3.5 shrink-0'
-                      aria-label={t('parameters.editCurrent')}
-                      role='img'
-                    />
-                  </span>
-                ) : null}
-              </span>
-            </span>
-          )}
           onStateClick={(item) => {
             if (!onParameterBinding?.('state', item.name) && showDetails)
               setSelected({ kind: 'state', name: item.name });

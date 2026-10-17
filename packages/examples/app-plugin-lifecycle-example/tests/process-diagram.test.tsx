@@ -89,11 +89,11 @@ describe('example process diagram', () => {
       fireEvent.click(ending);
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
       const previous = screen.getByTestId('rf__node-new');
-      expect(previous).not.toHaveTextContent(resources.diagramStatus.visited);
+      expect(previous).toHaveTextContent(resources.flowDiagram.visited);
       expect(
         previous.querySelector('[data-execution-state="visited"]'),
       ).not.toBeNull();
-      expect(current).not.toHaveTextContent(resources.diagramStatus.current);
+      expect(current).toHaveTextContent(resources.flowDiagram.current);
       expect(
         current.querySelector('[data-execution-state="current"]'),
       ).not.toBeNull();
@@ -138,13 +138,15 @@ describe('example process diagram', () => {
       );
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
       const gear = within(screen.getByTestId('rf__node-open')).getByRole(
-        'img',
+        'button',
         {
           name: resources.parameters.editCurrent,
         },
       );
       expect(
-        within(screen.getByTestId('rf__node-new')).queryByRole('img'),
+        within(screen.getByTestId('rf__node-new')).queryByRole('button', {
+          name: resources.parameters.editCurrent,
+        }),
       ).toBeNull();
       fireEvent.click(gear);
       expect(onParameterBinding).toHaveBeenCalledWith('state', 'open');
@@ -160,16 +162,18 @@ describe('example process diagram', () => {
         </TestI18nProvider>,
       );
       expect(
-        within(screen.getByTestId('rf__node-open')).queryByRole('img'),
+        within(screen.getByTestId('rf__node-open')).queryByRole('button', {
+          name: resources.parameters.editCurrent,
+        }),
       ).toBeNull();
       expect(screen.getByTestId('rf__node-new')).not.toHaveTextContent(
         resources.diagramStatus.visited,
       );
       expect(screen.getByTestId('rf__node-open')).not.toHaveTextContent(
-        resources.diagramStatus.current,
+        resources.flowDiagram.current,
       );
-      expect(screen.getByTestId('rf__node-closed')).not.toHaveTextContent(
-        resources.diagramStatus.current,
+      expect(screen.getByTestId('rf__node-closed')).toHaveTextContent(
+        resources.flowDiagram.current,
       );
       expect(
         screen

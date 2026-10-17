@@ -31,6 +31,8 @@ import {
 export interface TransitionDeps {
   readonly clock: Clock;
   readonly subjects: SubjectRegistry;
+  /** The first back-off of a failed attempt (`retryDelayMs`); 30 seconds when left out. */
+  readonly retryBaseDelayMs?: number;
 }
 
 export interface FinishOutcome {
@@ -241,7 +243,11 @@ export async function requeueRun(
     ? 0
     : reason === 'workspaceBusy'
       ? workspaceBusyDelayMs(waits.trailing)
-      : retryDelayMs(reason, Number(run.attempt) - waits.total);
+      : retryDelayMs(
+          reason,
+          Number(run.attempt) - waits.total,
+          deps.retryBaseDelayMs,
+        );
   const availableAt = delay > 0 ? later(now, delay) : null;
   const result = await runsRepo(tx.conn).updateMany({
     filter: (f) =>

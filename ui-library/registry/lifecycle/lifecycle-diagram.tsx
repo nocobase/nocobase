@@ -13,9 +13,17 @@ export interface LifecycleDiagramProps
     LifecycleDiagramOptions,
     Omit<
       FlowDiagramProps,
-      'nodes' | 'edges' | 'renderNode' | 'onNodeClick' | 'onEdgeClick'
+      | 'nodes'
+      | 'edges'
+      | 'renderNode'
+      | 'nodeActions'
+      | 'onNodeClick'
+      | 'onEdgeClick'
     > {
   readonly description: LifecycleDescription;
+  readonly stateActions?: (
+    state: LifecycleDescription['stateInfo'][number],
+  ) => ReactNode;
   readonly renderState?: (
     state: LifecycleDescription['stateInfo'][number],
     node: FlowDiagramNode,
@@ -39,6 +47,7 @@ export function LifecycleDiagram({
   stateLabel,
   transitionLabel,
   renderState,
+  stateActions,
   onStateClick,
   onTransitionClick,
   ...props
@@ -67,8 +76,16 @@ export function LifecycleDiagram({
   );
   return (
     <FlowDiagram
+      direction='DOWN'
+      autoHeight
       {...props}
       {...graph}
+      nodeActions={(node) => {
+        const state = description.stateInfo.find(
+          (state) => state.name === node.id,
+        );
+        return state ? stateActions?.(state) : undefined;
+      }}
       renderNode={(node) => {
         const state = description.stateInfo.find(
           (state) => state.name === node.id,

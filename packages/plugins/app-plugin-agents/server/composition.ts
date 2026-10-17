@@ -144,6 +144,8 @@ import {
 
 export interface AgentsDeps {
   readonly runRetentionDays?: () => number;
+  /** The first back-off of a failed run attempt (`agents.runs.retryBaseDelayMs`); 30 seconds when left out. */
+  readonly retryBaseDelayMs?: number;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   readonly idGenerator: { generateString(): string };
   /**
@@ -319,7 +321,13 @@ export function createAgents(deps: AgentsDeps): Agents {
   const clock = deps.clock ?? systemClock;
   const subjects = createSubjectRegistry();
   const signal = createWorkSignal();
-  const transitions = { clock, subjects };
+  const transitions = {
+    clock,
+    subjects,
+    ...(deps.retryBaseDelayMs === undefined
+      ? {}
+      : { retryBaseDelayMs: deps.retryBaseDelayMs }),
+  };
   const app = deps.app ?? defaultRunApp(deps.cli);
   const cli = resolveAgentCli(deps.cli, app);
 
