@@ -1636,6 +1636,16 @@ const RunnerWorkspaceUsageSchema = z
           "The disk holding the runner's working directories; null when it did not say.",
       }),
     intervalMs: z.number().int().positive().optional(),
+    totalBytes: z.number().nonnegative().optional(),
+    sizeUnknownCount: z.number().int().nonnegative().optional(),
+    counts: z
+      .object({
+        all: z.number().int(),
+        active: z.number().int(),
+        retained: z.number().int(),
+        ended: z.number().int(),
+      })
+      .optional(),
     count: z.number().int(),
     unpushedCount: z.number().int(),
     measuredAt: dateTime.nullable(),
@@ -1758,6 +1768,7 @@ const runnerSummaryObject = runnerObject
     canChangeTrust: z.boolean(),
     canRevoke: z.boolean(),
     canClearQuota: z.boolean().optional(),
+    recentRunsCount: z.number().int().nonnegative().optional(),
     updateVersion: z.string().nullable(),
     requiredProtocol: z.object({
       min: z.number().int(),

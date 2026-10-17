@@ -604,14 +604,44 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             ? { ...request, handledInputIds: [] }
             : request,
         );
-        if (request.quota && run.tool && request.reason === 'toolQuota')
-          await deps.onQuota?.(
-            unit,
-            runner.id,
-            run.tool as AgentTool,
-            run.model ?? null,
-            request.quota,
+        if (request.quota && run.tool && request.reason === 'toolQuota') {
+          // A final failure repeats quota observations already accepted through events.
+          // Read their existing record so a late fail cannot undo an owner's clear.
+          // A new event sequence is still processed by events(), even with identical values.
+          const observations = await eventsRepo(unit.conn).findMany({
+            filter: { runId: run.id },
+            select: (s) => s.fields('meta'),
+          });
+          const identity = (window: QuotaReport['windows'][number]): string =>
+            JSON.stringify([
+              window.scope,
+              window.target,
+              window.window,
+              window.resetsAt,
+              window.usedPercent ?? null,
+              window.exhausted,
+            ]);
+          const seen = new Set<string>();
+          for (const observation of observations) {
+            const parsed = QuotaReportSchema.safeParse(
+              jsonObject(observation.meta).quota,
+            );
+            if (parsed.success)
+              for (const window of parsed.data.windows)
+                seen.add(identity(window));
+          }
+          const windows = request.quota.windows.filter(
+            (window) => !seen.has(identity(window)),
           );
+          if (windows.length)
+            await deps.onQuota?.(
+              unit,
+              runner.id,
+              run.tool as AgentTool,
+              run.model ?? null,
+              { windows },
+            );
+        }
         if (request.reason === 'modelUnavailable' && run.tool && run.model)
           await deps.onModelUnavailable?.(
             unit,

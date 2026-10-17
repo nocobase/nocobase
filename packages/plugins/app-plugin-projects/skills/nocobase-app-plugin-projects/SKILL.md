@@ -103,3 +103,5 @@ Work handlers receive the original optional `actor` on `onOwnerChanged`, `onUnbl
 with an identifier such as `PM-1`.
 
 Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.
+
+Applications can fill `ExecutorPresentationContext` from the client kit with `{ kind, Component }`. The component receives `{ id, name, place: 'trigger' | 'menu' }` in new-task and subtask executor selects; candidates and permissions still come from the server. This lets a runtime integration show scoped quota without Projects depending on that integration.

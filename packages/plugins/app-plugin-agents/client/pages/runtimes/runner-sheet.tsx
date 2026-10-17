@@ -238,9 +238,17 @@ function RunnerDetail({
             {t('runtimes.quota.overview')}
           </TabsTrigger>
           <TabsTrigger value='workspaces'>
-            {t('runtimes.quota.workspaces')}
+            {t('runtimes.quota.workspaces')}{' '}
+            <span aria-hidden='true' className='text-xs text-muted-foreground'>
+              {runner.workspaceUsage?.count ?? 0}
+            </span>
           </TabsTrigger>
-          <TabsTrigger value='runs'>{t('runtimes.quota.runs')}</TabsTrigger>
+          <TabsTrigger value='runs'>
+            {t('runtimes.quota.runs')}{' '}
+            <span aria-hidden='true' className='text-xs text-muted-foreground'>
+              {runner.recentRunsCount ?? '—'}
+            </span>
+          </TabsTrigger>
         </TabsList>
       </div>
       <TabsContent
@@ -805,7 +813,12 @@ function LoadWorkspaces({
               setOffset(0);
             }}
           >
-            {t(`runtimes.quota.filter.${value}`)}
+            {t(`runtimes.quota.filter.${value}`)}{' '}
+            <span aria-hidden='true' className='text-xs'>
+              {(data.data?.counts ?? runner.workspaceUsage?.counts)?.[
+                value as 'all' | 'active' | 'retained' | 'ended'
+              ] ?? '—'}
+            </span>
           </Button>
         ))}
       </div>

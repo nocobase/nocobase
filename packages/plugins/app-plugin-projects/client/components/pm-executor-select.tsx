@@ -1,5 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import type { ReactElement } from 'react';
+import { useContext, type ReactElement } from 'react';
+import { ExecutorPresentationContext } from '../kit/executor-presentation.js';
 
 import type { Executor } from '../../shared/issues.js';
 import type { Member } from '../../shared/members.js';
@@ -76,6 +77,7 @@ export function PmExecutorSelect({
 }: PmExecutorSelectProps): ReactElement {
   const { t } = useTranslation();
   const selected = encode(value);
+  const presentation = useContext(ExecutorPresentationContext);
   const items: { value: string; label: string; option?: ExecutorOption }[] = [
     { value: NONE, label: t('executor.none') },
     ...others.map((option) => ({
@@ -121,6 +123,14 @@ export function PmExecutorSelect({
                 </span>
               );
             const kind = kindOf(key);
+            if (presentation?.kind === kind && value)
+              return (
+                <presentation.Component
+                  id={value.id}
+                  name={item.label}
+                  place='trigger'
+                />
+              );
             // A person's name stands alone; initials beside it say nothing more.
             if (kind === 'user')
               return <span className='truncate'>{item.label}</span>;
@@ -162,6 +172,12 @@ export function PmExecutorSelect({
           >
             {item.value === NONE ? (
               item.label
+            ) : presentation?.kind === kindOf(item.value) && item.option ? (
+              <presentation.Component
+                id={item.option.id}
+                name={item.label}
+                place='menu'
+              />
             ) : (
               <span className='flex min-w-0 items-center gap-2'>
                 <ItemIcon kind={kindOf(item.value)} />

@@ -3,7 +3,7 @@ import type { Knex } from 'knex';
 import { afterEach, expect, it, vi } from 'vitest';
 import { claim, createHarness, type Harness } from './harness.js';
 import { quotaKey } from '../../server/runners/runner.service.js';
-import { runsEntry } from '../../shared/runners.js';
+import { runsEntry, quotaForAgent } from '../../shared/runners.js';
 let h: Harness;
 afterEach(async () => {
   vi.restoreAllMocks();
@@ -218,6 +218,144 @@ it('does not reapply an acknowledged quota event after a manual clear', async ()
   expect(
     (await h.services.runners.get(runner.runnerId)).unavailableModels,
   ).toEqual([]);
+});
+it('keeps a clear across events and final failure, retains history, and accepts a new sequence as a new observation', async () => {
+  h = await createHarness();
+  const agent = await h.createAgent();
+  const runtime = await h.registerRunner({ ownerUserId: 'alice' });
+  const quota = {
+    windows: [
+      {
+        scope: 'tool' as const,
+        target: '',
+        window: 'account',
+        exhausted: true,
+        resetsAt: null,
+      },
+    ],
+  };
+  const failed = await h.enqueue(agent, 'old');
+  await claim(h, runtime);
+  const post = (suffix: string, body: unknown) =>
+    h.request('POST', `/agents/runners/runs/${failed}/${suffix}`, {
+      runnerKey: runtime.key,
+      body,
+    });
+  const event = (seq: number) => ({
+    events: [
+      { seq, at: h.clock.now().toISOString(), type: 'status', meta: { quota } },
+    ],
+  });
+  const clear = async () => {
+    const runtimeState = await h.services.runners.get(runtime.runnerId);
+    await h.services.runners.clearQuota(
+      runtime.runnerId,
+      runtimeState.quotaRevision!,
+      quotaKey(runtimeState.unavailableModels![0]),
+    );
+  };
+  expect((await post('events', event(1))).status).toBe(200);
+  await clear();
+  expect((await post('events', event(2))).status).toBe(200);
+  expect(
+    (await h.services.runners.get(runtime.runnerId)).unavailableModels,
+  ).toHaveLength(1);
+  await clear();
+  expect((await post('fail', { reason: 'toolQuota', quota })).status).toBe(200);
+  expect(
+    (await h.services.runners.get(runtime.runnerId)).unavailableModels,
+  ).toEqual([]);
+  expect((await h.services.runs.get(failed)).executions?.at(-1)?.quota).toEqual(
+    quota,
+  );
+  const next = await h.enqueue(agent, 'new');
+  expect((await claim(h, runtime))[0].run.id).toBe(next);
+  expect(
+    (
+      await h.request('POST', `/agents/runners/runs/${next}/fail`, {
+        runnerKey: runtime.key,
+        body: { reason: 'toolQuota', quota },
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (await h.services.runners.get(runtime.runnerId)).unavailableModels,
+  ).toHaveLength(1);
+});
+it('uses the earliest known alternative while preserving unknown windows within each alternative', async () => {
+  h = await createHarness();
+  const registered = await h.registerRunner({
+    tools: ['claude', 'codex'].map((kind) => ({
+      kind: kind as 'claude' | 'codex',
+      authenticated: true,
+      models: [{ id: 'a' }],
+    })),
+  });
+  const reset = '2099-10-17T18:00:00.000Z';
+  const report = (
+    tool: 'claude' | 'codex',
+    window: string,
+    resetsAt: string | null,
+  ) =>
+    h.services.tx.run((unit) =>
+      h.services.runners.reportQuota(unit, registered.runnerId, tool, 'a', {
+        windows: [
+          { scope: 'tool', target: '', window, exhausted: true, resetsAt },
+        ],
+      }),
+    );
+  await report('claude', 'account', null);
+  await report('codex', '5h', reset);
+  const agent = {
+    id: 'alternatives',
+    name: 'Alternatives',
+    modelEntries: [
+      { tool: 'claude' as const, model: 'a', effort: null },
+      { tool: 'codex' as const, model: 'a', effort: null },
+    ],
+  };
+  expect(
+    quotaForAgent([await h.services.runners.get(registered.runnerId)], agent)[0]
+      .resetsAt,
+  ).toBe(reset);
+  await report('codex', '7d', '2099-10-20T18:00:00.000Z');
+  expect(
+    quotaForAgent([await h.services.runners.get(registered.runnerId)], agent)[0]
+      .resetsAt,
+  ).toBe('2099-10-20T18:00:00.000Z');
+  await report('codex', 'credits', null);
+  expect(
+    quotaForAgent([await h.services.runners.get(registered.runnerId)], agent)[0]
+      .resetsAt,
+  ).toBeNull();
+});
+it('serves a system candidate quota to its owner without revealing another member’s personal runtime', async () => {
+  h = await createHarness();
+  const agent = await h.createAgent({ id: 'system-manager' });
+  const runtime = await h.registerRunner({
+    ownerUserId: 'alice',
+    trust: 'ownerOnly',
+  });
+  await h.services.tx.run((unit) =>
+    h.services.runners.reportQuota(unit, runtime.runnerId, 'claude', null, {
+      windows: [
+        {
+          scope: 'tool',
+          target: '',
+          window: 'account',
+          resetsAt: null,
+          exhausted: true,
+        },
+      ],
+    }),
+  );
+  const owner = await h.request('GET', `/agents/${agent}`, { user: 'alice' });
+  expect(owner.status).toBe(200);
+  expect(owner.body.data.source).toBe('system');
+  expect(owner.body.data.quota).toHaveLength(1);
+  const member = await h.request('GET', `/agents/${agent}`, { user: 'bob' });
+  expect(member.status).toBe(200);
+  expect(member.body.data.quota).toEqual([]);
 });
 it('retains independent tool observations submitted concurrently', async () => {
   h = await createHarness();

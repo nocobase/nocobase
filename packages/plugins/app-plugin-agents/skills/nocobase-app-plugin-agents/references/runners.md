@@ -54,3 +54,5 @@ The runner finds each coding tool on its PATH and reports whether it is signed i
 ## Quota recovery
 
 Quota exhaustion is scoped to the runtime and a tool, provider prefix or model. Known resets restore claim eligibility automatically; unknown resets require the runtime owner or an administrator to clear the selected mark after restoring quota. This never restarts failed, withdrawn or expired work. Runtime Overview, Workspaces and Runs load separately; the list contains summaries. Use runtime workspaces for directories and runtime quota clear with the current revision/key for manual clearing. Upgrade runners for usage/reset reporting; old runners only report the failure. See the package README for fields, endpoint contracts and read/write costs.
+
+For application-owned system agents, `useAgentOption(id)` in the client kit reads the same viewer-scoped agent detail endpoint and includes quota; `useAgentOptions()` lists discovered runner agents only. A final failure reuses accepted event metadata for quota deduplication, while new event sequences remain new observations. The failure snapshot is retained even when its windows were already applied.

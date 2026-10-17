@@ -1,4 +1,7 @@
-import { workspaceCategory } from '../../../shared/runners.js';
+import {
+  workspaceCategory,
+  workspaceSummary,
+} from '../../../shared/runners.js';
 /**
  * The people-facing runners API, mounted at `/api/agents/runners` beside the runner protocol (`runner.ts`): runners
  * and registration tokens. Every route is behind the guard the route contribution passes (a signed-in user and their
@@ -457,7 +460,7 @@ export function createAdminRoutes(
       summary: 'Get a runner',
       operationId: 'agentsGetRunner',
       description:
-        'Includes directory diagnostics in workspaceUsage.workspaces for callers allowed to see the machine; other callers receive an empty directory array and the same totals.',
+        'Overview settings and workspace totals only. Directory details and recent run rows load from their own endpoints when the tab opens.',
       ...cliRoute({
         command: 'runtime get',
         args: ['runnerId'],
@@ -472,17 +475,26 @@ export function createAdminRoutes(
     runnerParam,
     async (context) => {
       const runner = await visibleRunner(context);
+      const recent = await services.tx
+        .read()
+        .query.selectFrom('agRuns')
+        .select((eb) => [eb.fn.countAll().as('count')])
+        .where('runnerId', '=', runner.id)
+        .executeTakeFirst();
       return context.json({
-        data: await summarizeRunner(
-          context,
-          {
-            ...runner,
-            workspaceUsage: runner.workspaceUsage
-              ? { ...runner.workspaceUsage, workspaces: [] }
-              : null,
-          },
-          await takesOf([runner]),
-        ),
+        data: {
+          ...(await summarizeRunner(
+            context,
+            {
+              ...runner,
+              workspaceUsage: runner.workspaceUsage
+                ? { ...workspaceSummary(runner.workspaceUsage), workspaces: [] }
+                : null,
+            },
+            await takesOf([runner]),
+          )),
+          recentRunsCount: Math.min(10, Number(recent?.count ?? 0)),
+        },
       });
     },
   );
@@ -684,8 +696,19 @@ export function createAdminRoutes(
     apiValidator(
       'json',
       z.object({
-        revision: z.number().int().nonnegative(),
-        key: z.string().max(1000),
+        revision: z
+          .number()
+          .int()
+          .nonnegative()
+          .describe(
+            'The current quotaRevision from runtime get. A stale revision returns 409; reload before clearing.',
+          ),
+        key: z
+          .string()
+          .max(1000)
+          .describe(
+            'The JSON-encoded [tool, scope, model, window] tuple of the selected unavailableModels quota mark from runtime get.',
+          ),
       }),
     ),
     async (context) => {
@@ -716,9 +739,25 @@ export function createAdminRoutes(
     apiValidator(
       'query',
       z.object({
-        offset: z.coerce.number().int().min(0).default(0),
-        limit: z.coerce.number().int().min(1).max(100).default(50),
-        status: z.enum(['all', 'active', 'retained', 'ended']).default('all'),
+        offset: z.coerce
+          .number()
+          .int()
+          .min(0)
+          .default(0)
+          .describe('Zero-based offset within the filtered workspace list.'),
+        limit: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .default(50)
+          .describe('Maximum workspace rows to return, from 1 to 100.'),
+        status: z
+          .enum(['all', 'active', 'retained', 'ended'])
+          .default('all')
+          .describe(
+            'All directories, active subjects, retained directories needing verification, or ended directories eligible for cleanup.',
+          ),
       }),
     ),
     async (context) => {
@@ -727,7 +766,15 @@ export function createAdminRoutes(
       );
       const rights = await runnerRights(context, runner);
       if (!rights.see) throw notFound('Runner');
-      const visible = runnerForViewer(runner, rights.machine);
+      const visible = runnerForViewer(
+        {
+          ...runner,
+          workspaceUsage: runner.workspaceUsage
+            ? workspaceSummary(runner.workspaceUsage)
+            : null,
+        },
+        rights.machine,
+      );
       const query = context.req.valid('query');
       const usage = visible.workspaceUsage;
       const rows = (usage?.workspaces ?? []).filter(

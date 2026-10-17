@@ -2,6 +2,7 @@
 const runtimesEnUS = {
   runtimes: {
     quota: {
+      workspaceSize: 'Workspace size: {{value}}',
       providers: '{{blocked}} of {{total}} providers at quota',
       runColumns: {
         issue: 'Issue / conversation',

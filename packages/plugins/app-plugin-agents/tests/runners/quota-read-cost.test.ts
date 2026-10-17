@@ -13,7 +13,7 @@ it.each([1, 10, 50])(
       ['/agents', 6],
       ['/agents/available', 5],
       ['/agents/runners', 4],
-      ['/agents/runners/:id', 4],
+      ['/agents/runners/:id', 5],
       ['/agents/runners/:id/runs', 2],
     ]);
     h = await createHarness();

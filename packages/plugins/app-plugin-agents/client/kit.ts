@@ -30,6 +30,8 @@ import {
 import { useAgentsApi } from './hooks/use-agents-api.js';
 import { useAgentText } from './hooks/use-vocabulary.js';
 import { useQuotaExpiry } from './hooks/use-quota-expiry.js';
+import { useRealtimeTopic } from './hooks/use-realtime-topic.js';
+import { RUNNERS_TOPIC } from '../shared/realtime.js';
 import { pickerAgentOf } from './lib/agents.js';
 import { RunnerAgentsSection as RunnerAgents } from './pages/agents/runner-agents.js';
 import { agentsQueryClient, withAgents } from './query.js';
@@ -205,4 +207,29 @@ export function useAgentOptions(): AgentOptions {
       return agent ? text.name(agent) : null;
     },
   };
+}
+
+/** One candidate, including an application's system agent, using the viewer-scoped detail API. */
+export function useAgentOption(agentId: string): ChatAgent | null {
+  const api = useAgentsApi();
+  const text = useAgentText();
+  const cache = agentsQueryClient();
+  const result = useQuery(
+    {
+      queryKey: agentsKeys.agent(agentId),
+      queryFn: () => api.agent(agentId),
+      staleTime: 30_000,
+    },
+    cache,
+  );
+  useQuotaExpiry(result.data ? [result.data] : []);
+  useRealtimeTopic(RUNNERS_TOPIC, () => {
+    void cache.invalidateQueries(
+      { queryKey: agentsKeys.agent(agentId) },
+      { cancelRefetch: false },
+    );
+  });
+  return result.data
+    ? pickerAgentOf(result.data, text.name(result.data))
+    : null;
 }

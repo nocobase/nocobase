@@ -173,6 +173,12 @@ export interface UnavailableModel {
 
 /** A runner's working directories, as it last reported them (`Runner.workspaceUsage`). */
 export interface RunnerWorkspaceUsage {
+  /** Computed from reported directory sizes; not a new runner protocol field. */
+  readonly totalBytes?: number;
+  readonly sizeUnknownCount?: number;
+  readonly counts?: Readonly<
+    Record<'all' | 'active' | 'retained' | 'ended', number>
+  >;
   readonly diskMeasuredAt?: string;
   readonly intervalMs?: number;
   /** The disk holding the runner's working directories; null when it did not say. */
@@ -295,6 +301,8 @@ export interface RunnerSummary extends Omit<Runner, 'hostname'> {
   /** The viewer may revoke it, and delete it once revoked: its owner, or a manager of runners in an emergency. */
   readonly canRevoke: boolean;
   readonly canClearQuota?: boolean;
+  /** Count of the recent (at most ten) run rows, without loading their details. */
+  readonly recentRunsCount?: number;
   /**
    * A newer runner version the application serves for its platform, which the runner installs on its own between
    * runs; null when it is up to date or the application serves none.
@@ -590,6 +598,14 @@ export function quotaForAgent(
 ): { runnerId: string; runnerName: string; resetsAt: string | null }[] {
   return runners.flatMap((runner) => {
     if (
+      !(runner.unavailableModels ?? []).some(
+        (mark) =>
+          mark.reason === 'toolQuota' &&
+          (!mark.resetsAt || Date.parse(mark.resetsAt) > Date.now()),
+      )
+    )
+      return [];
+    if (
       runner.trust !== 'team' &&
       actorUserId !== undefined &&
       runner.ownerUserId !== actorUserId
@@ -617,8 +633,25 @@ export function quotaForAgent(
       {
         runnerId: runner.id,
         runnerName: runner.name,
-        resetsAt: resets.includes(null) ? null : resets.sort()[0],
+        resetsAt:
+          resets.filter((reset): reset is string => reset !== null).sort()[0] ??
+          null,
       },
     ];
   });
+}
+
+/** Reuse the directory snapshot already read for detail; list reads keep their small JSON projection. */
+export function workspaceSummary(
+  usage: RunnerWorkspaceUsage,
+): RunnerWorkspaceUsage {
+  const counts = { all: usage.count, active: 0, retained: 0, ended: 0 };
+  let totalBytes = 0,
+    sizeUnknownCount = 0;
+  for (const workspace of usage.workspaces) {
+    counts[workspaceCategory(workspace)]++;
+    if (workspace.sizeBytes === undefined) sizeUnknownCount++;
+    else totalBytes += workspace.sizeBytes;
+  }
+  return { ...usage, totalBytes, sizeUnknownCount, counts };
 }

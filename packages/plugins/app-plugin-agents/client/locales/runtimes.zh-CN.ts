@@ -3,6 +3,7 @@ import type { RuntimesLocale } from './runtimes.en-US.js';
 const runtimesZhCN: RuntimesLocale = {
   runtimes: {
     quota: {
+      workspaceSize: '工作目录总占用：{{value}}',
       providers: '{{total}} 个服务商中 {{blocked}} 个额度用完',
       runColumns: {
         issue: '任务 / 对话',

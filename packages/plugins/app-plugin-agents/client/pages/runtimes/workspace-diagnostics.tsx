@@ -73,6 +73,13 @@ export function WorkspaceDiagnostics({
   const { low, stale } = workspaceDiskState(runner);
   const summary = (
     <div className='grid gap-2 rounded-lg border p-4 text-sm sm:grid-cols-2 [overflow-wrap:anywhere]'>
+      {usage?.totalBytes !== undefined ? (
+        <p>
+          {t('runtimes.quota.workspaceSize', {
+            value: `${usage.sizeUnknownCount ? '≥ ' : ''}${bytes(usage.totalBytes)}`,
+          })}
+        </p>
+      ) : null}
       {!usage ? (
         <p>{t('runtimes.workspaces.notReported')}</p>
       ) : (
@@ -94,7 +101,7 @@ export function WorkspaceDiagnostics({
                     })}
               </p>
               <div
-                className='h-1.5 overflow-hidden rounded-full bg-muted sm:col-span-2'
+                className='relative h-1.5 rounded-full bg-muted sm:col-span-2'
                 aria-hidden='true'
               >
                 <div
@@ -103,6 +110,15 @@ export function WorkspaceDiagnostics({
                     width: `${Math.max(0, Math.min(100, (1 - usage.disk.freeBytes / Math.max(1, usage.disk.totalBytes)) * 100))}%`,
                   }}
                 />
+                {usage.disk.minFreeBytes !== null ? (
+                  <span
+                    data-testid='minimum-free-marker'
+                    className='absolute -top-1 h-3.5 w-0.5 bg-amber-600'
+                    style={{
+                      left: `${Math.max(0, Math.min(100, (1 - usage.disk.minFreeBytes / Math.max(1, usage.disk.totalBytes)) * 100))}%`,
+                    }}
+                  />
+                ) : null}
               </div>
             </>
           )}
