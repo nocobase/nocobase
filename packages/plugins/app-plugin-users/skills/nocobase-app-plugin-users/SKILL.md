@@ -68,6 +68,8 @@ uses it for list pages and falls back to `get()` for existing scopes.
 
 ## Invite users
 
+Emails go through the notification plugin on the channel named by `users.invitations.emailChannel` (`system-email` by default). Without an enabled channel, the result has `emailSent: false`, an `emailError`, and the authorized inviter's link to forward by hand. Show both `emailError` and `inviteUrl` in the application-owned invitation form.
+
 Holders of `invite` on `user` can create invitations through `POST /api/users/invitations` or `UsersClient`; choosing roles also requires `assign-role`. Results include a shareable link even when email succeeds. A queued invitation closed or rotated by another request returns `emailSent=false` without a link, while the other recipients still complete. Original inviters can renew with `sendEmail=false`, which invalidates the old link. Plugin-specific invitations must use their domain endpoint, which rechecks its own grants. Other managers may resend email but receive no link. Tokens last seven days; only hashes are stored.
 
 New accounts register directly from the invitation link with a name and password; acceptance leaves `emailVerified=false`. Email delivery is optional: authorized original inviters can privately forward the link when the email channel is absent or fails. Links use `app.publicOrigin` when configured, otherwise the invitation request origin. Existing accounts must sign in with the invited email. Acceptance consumes only the supplied invitation and applies only its grants; handlers run in its transaction and roll back account creation on failure.

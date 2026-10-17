@@ -326,6 +326,9 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
       outcome: z.literal('invited'),
       invitationId: z.string(),
       emailSent: z.boolean(),
+      emailError: z.string().optional().meta({
+        description: 'Shown to the inviter when email delivery failed.',
+      }),
       inviteUrl: z.string().optional().meta({
         description:
           'Shareable invitation link, returned regardless of email delivery. Resends require the original inviter and empty plugin data.',

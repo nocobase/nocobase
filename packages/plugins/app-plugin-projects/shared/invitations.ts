@@ -41,6 +41,8 @@ export interface InvitationResult {
   readonly outcome: InvitationOutcome;
   /** On `invited`: whether the email went out. */
   readonly emailSent?: boolean;
+  /** A safe explanation when email could not be sent. */
+  readonly emailError?: string;
   /** The newly generated link, once, whether or not email was sent; the list never shows it. */
   readonly inviteUrl?: string;
 }

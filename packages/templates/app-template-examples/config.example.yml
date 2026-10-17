@@ -61,7 +61,7 @@ notification:
     inbox:
       provider: in-app
 
-    # Uncomment and configure independent email Channels.
+    # User invitations use the `system-email` Channel by default. Uncomment and configure it to send invitation emails.
     # Values are read as written: ${NAME} is not expanded. To take a secret from the environment instead, map a
     # variable onto its path in env of server/config/notification.ts, such as SMTP_PASSWORD.
     # system-email:
