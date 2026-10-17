@@ -158,9 +158,9 @@ test('configures a chat model and streams, persists, resumes and stops an owned 
     const streamText = events.text();
     fixture.complete(0);
     const output = await streamText;
-    expect(output).toContain('\"type\":\"text-delta\"');
+    expect(output).toContain('"type":"text-delta"');
     expect(output).toContain('Hello from the local model fixture.');
-    expect(output).toContain('\"type\":\"finish\"');
+    expect(output).toContain('"type":"finish"');
     expect(output).toContain('[DONE]');
     expect(output).toContain('"type":"completed"');
     await expect
