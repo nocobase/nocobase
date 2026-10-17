@@ -54,6 +54,7 @@ describe('app client routes', () => {
       'agents',
       'runtimes',
       'models',
+      'ai-structured-extraction',
     ]);
     for (const name of ['agents', 'runtimes']) {
       expect(
@@ -90,6 +91,20 @@ describe('app client routes', () => {
         action: 'read',
       },
     });
+    expect(
+      group.children?.find(
+        (route) => route.name === 'ai-structured-extraction',
+      ),
+    ).toMatchObject({
+      path: '/ai-structured-extraction',
+      auth: 'required',
+      authz: 'skip',
+      navigation: {
+        title: 'structuredExtraction.title',
+        icon: expect.anything(),
+      },
+      componentLoader: expect.any(Function),
+    });
   });
   it('keeps the inbox out of the application navigation', () => {
     // The inbox is reached from the header's inbox button, so it deliberately declares no menu entry.
@@ -112,6 +127,7 @@ describe('app client routes', () => {
       { name: 'runtimes', authorizedAs: 'runtimes' },
       { name: 'runtimes-connect', authorizedAs: 'runtimes' },
       { name: 'models', authorizedAs: 'settings:agents.services' },
+      { name: 'ai-structured-extraction', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'routeOverlays', authorizedAs: 'routeOverlays' },
       // Overlay children are nested under a page, so the parent's check is the only one.

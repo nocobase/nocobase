@@ -143,6 +143,7 @@ describe('API document of the examples application', () => {
     );
     expect(own.map(({ operationId }) => operationId).sort()).toEqual([
       'examplesCreateArticle',
+      'examplesExtractStructuredInformation',
       'examplesGetGreeting',
       'examplesGetNumericExamples',
       'examplesGetWorkflowDefinition',

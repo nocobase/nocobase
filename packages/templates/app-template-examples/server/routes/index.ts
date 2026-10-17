@@ -16,6 +16,7 @@ import { articlesRoutes } from './articles.js';
 import { numericExamplesRoutes } from './numeric-examples.js';
 import { analyticsRoutes } from './analytics.js';
 import { externalCrmRoutes } from './external-crm.js';
+import { structuredExtractionRoutes } from './structured-extraction.js';
 import { EXAMPLES_APP_TAGS as tags } from './domain.js';
 import { ExampleGreeting } from './schemas.js';
 
@@ -88,6 +89,7 @@ const routes: readonly AppRouteContribution<Application>[] = [
   analyticsRoutes,
   externalCrmRoutes,
   numericExamplesRoutes,
+  structuredExtractionRoutes,
 ];
 
 export default routes;

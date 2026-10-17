@@ -4,6 +4,68 @@ import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
+  structuredExtraction: {
+    title: 'AI structured extraction',
+    description:
+      'Two forms share one endpoint and constrain OnlineAgent.background() output with frontend JSON Schema.',
+    contactTitle: 'Contact profile',
+    contactDescription:
+      'Extract contact details, a nested address and a list of skills.',
+    orderTitle: 'Purchase order',
+    orderDescription:
+      'Extract a supplier, contact and up to five purchase items.',
+    contactSample:
+      'Alex Chen is a product manager at Example Studio in Shanghai, China. Email: alex@example.test; phone: +86 138 0000 0000. Skills: product design, TypeScript, data analysis.',
+    orderSample:
+      'Please order from Example Supplies. Contact: Morgan Lee, morgan@example.test. Currency: USD. We need 3 keyboards at 49.50 each and 2 monitors at 220 each. Please use recyclable packaging.',
+    model: 'Language model',
+    selectModel: 'Select a model',
+    source: 'Source text',
+    extract: 'Extract',
+    extracting: 'Extracting…',
+    localOnly:
+      "Demo only: form edits aren't saved and are lost on leaving this page. Extracting again replaces this form.",
+    success: 'Extracted information filled into the form',
+    noModels: 'No chat models are available.',
+    missingInput: 'Select a model and enter source text.',
+    textTooLong: 'Enter no more than 20,000 characters.',
+    invalidText: 'Enter between 1 and 20,000 characters.',
+    invalidModel: 'This model is unavailable. Select an available model.',
+    errorTitle: 'Could not extract information',
+    requestFailed:
+      'Extraction failed. Check the model configuration and retry manually.',
+    timeout:
+      'Extraction timed out; the result is unknown. Do not immediately resubmit.',
+    forbidden:
+      'You do not have permission to use this feature. Contact an administrator.',
+    sessionExpired: 'Your session expired. Sign in again.',
+    invalidSchema:
+      "This demo's output schema is invalid. Check its definition.",
+    catalogFailed: 'Could not load models.',
+    retry: 'Retry',
+    signIn: 'Sign in again',
+    emptyItems: 'No items yet. Extract text to fill them in.',
+    itemNumber: 'Item {{number}}',
+    fields: {
+      name: 'Name',
+      company: 'Company',
+      jobTitle: 'Job title',
+      email: 'Email',
+      phone: 'Phone',
+      address: 'Address',
+      city: 'City',
+      country: 'Country',
+      skills: 'Skills (comma-separated)',
+      supplier: 'Supplier',
+      contact: 'Contact',
+      currency: 'Currency',
+      notes: 'Notes',
+      items: 'Items',
+      product: 'Product',
+      quantity: 'Quantity',
+      unitPrice: 'Unit price',
+    },
+  },
   workflows: {
     group: 'Workflow',
     businessGroup: 'Business workflows',
