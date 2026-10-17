@@ -24,6 +24,85 @@ import type { MailService, MailSyncRunView } from '../../server/types.js';
 import serverLocales from '../../server/locales/index.js';
 
 describe('[API][SEC] mail API routes and permission boundaries', () => {
+  it('accepts a structured Unicode display name and rejects the second bulk recipient at its exact path', async () => {
+    const send = vi.fn<MailService['sendMessage']>(async (_context, input) => ({
+      id: 'submission',
+      accountId: input.accountId,
+      status: 'accepted',
+    }));
+    const bulk = vi.fn<MailService['sendBulk']>();
+    const router = await createRouter(
+      true,
+      service({ sendMessage: send, sendBulk: bulk }),
+    );
+    const common = {
+      accountId: 'account-1',
+      identityId: 'identity-1',
+      idempotencyKey: 'recipient-test',
+      text: 'Body',
+    };
+    const accepted = await router.request('/api/mail/messages/send', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        ...common,
+        to: [{ name: '周晓', address: 'someone@example.com' }],
+      }),
+    });
+    expect(accepted.status).toBe(200);
+    expect(send).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        to: [{ name: '周晓', address: 'someone@example.com' }],
+      }),
+    );
+    const rejected = await router.request('/api/mail/messages/sendBulk', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        ...common,
+        recipients: [{ address: 'valid@example.com' }, { address: 'bad' }],
+      }),
+    });
+    expect(rejected.status).toBe(400);
+    expect(await rejected.json()).toMatchObject({
+      error: {
+        reason: 'INVALID_INPUT',
+        fieldViolations: [{ field: 'recipients.1.address' }],
+      },
+    });
+    expect(bulk).not.toHaveBeenCalled();
+  });
+  it.each(['to', 'cc', 'bcc'] as const)(
+    'returns a precise HTTP 400 before sending invalid %s',
+    async (field) => {
+      const mail = service();
+      const send = vi.spyOn(mail, 'sendMessage');
+      const router = await createRouter(true, mail);
+      const response = await router.request('/api/mail/messages/send', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          accountId: 'account-1',
+          identityId: 'identity-1',
+          idempotencyKey: 'address-check',
+          text: 'Body',
+          to: [{ address: 'reader@example.com' }],
+          [field]: [{ address: '周晓 <someone@example.com>' }],
+        }),
+      });
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({
+        error: {
+          status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_INPUT',
+          domain: 'app',
+          fieldViolations: [{ field: `${field}.0.address` }],
+        },
+      });
+      expect(send).not.toHaveBeenCalled();
+    },
+  );
   it('rejects per-account automatic sync configuration as an unknown field', async () => {
     const mail = service();
     const updateAccount = vi.spyOn(mail, 'updateAccount');

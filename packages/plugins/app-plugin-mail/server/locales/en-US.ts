@@ -2,6 +2,8 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   errors: {
+    invalidRecipient:
+      'Correct the recipient email addresses and display names before sending.',
     accessDenied: 'Mail access is required.',
     idempotencyConflict:
       'The idempotency key is already associated with another request.',

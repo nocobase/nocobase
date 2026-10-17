@@ -8,6 +8,7 @@ import {
 } from '../lib/mail-pending-delivery.js';
 import { ApiClientError, resolveAppUrl } from '@nocobase/app-client';
 import { uploadedImageContentId } from '../../shared/inline-images.js';
+import { parseMailboxList } from '../../shared/addresses.js';
 import type { Dispatch, SetStateAction, RefObject } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -41,6 +42,7 @@ import { MAIL_PLUGIN_NS } from '../namespace.js';
 import { useMailClient } from '../runtime.js';
 const AUTO_SAVE_DELAY_MS = 2_000;
 const AUTO_SAVE_MAX_WAIT_MS = 10_000;
+type RecipientField = 'to' | 'cc' | 'bcc';
 export function useMailComposer({
   request,
   allowBulkSend = false,
@@ -60,6 +62,15 @@ export function useMailComposer({
     [onComplete, onCompletionError],
   );
   const [error, setError] = useState<string>();
+  const [checkedRecipients, setCheckedRecipients] = useState<
+    Partial<Record<RecipientField, { value: string; message?: string }>>
+  >({});
+  const recipientToRef = useRef<HTMLInputElement>(null);
+  const recipientCcRef = useRef<HTMLInputElement>(null);
+  const recipientBccRef = useRef<HTMLInputElement>(null);
+  const [focusRecipient, setFocusRecipient] = useState<{
+    field: RecipientField;
+  }>();
 
   const [initialRecovery] = useState(() =>
     request.value.mode === 'new'
@@ -82,6 +93,56 @@ export function useMailComposer({
   const [ccVisible, setCcVisible] = useState(Boolean(request.value.cc.trim()));
   const [bccVisible, setBccVisible] = useState(
     Boolean(request.value.bcc.trim()),
+  );
+  useEffect(() => {
+    if (focusRecipient) {
+      const ref =
+        focusRecipient.field === 'to'
+          ? recipientToRef
+          : focusRecipient.field === 'cc'
+            ? recipientCcRef
+            : recipientBccRef;
+      ref.current?.focus();
+    }
+  }, [focusRecipient]);
+  const recipientError = (
+    field: RecipientField,
+    bulk = false,
+  ): string | undefined => {
+    const value = composer?.[field] ?? '';
+    const parsed = parseMailboxList(
+      value,
+      bulk && field === 'to' ? Infinity : 100,
+    );
+    if (field === 'to' && parsed.mailboxes.length === 0)
+      return t('workspace.recipientRequired');
+    if (parsed.issues.length)
+      return t('workspace.invalidRecipient', {
+        value: (parsed.issues[0]?.input ?? value).slice(0, 160),
+      });
+    return undefined;
+  };
+  const validateRecipient = (field: RecipientField): void => {
+    setCheckedRecipients((current) => ({
+      ...current,
+      [field]: {
+        value: composer?.[field] ?? '',
+        message: recipientError(field),
+      },
+    }));
+  };
+  const recipientErrors = Object.fromEntries(
+    (['to', 'cc', 'bcc'] as const).map((field) => {
+      const checked = checkedRecipients[field];
+      return [
+        field,
+        checked
+          ? checked.value === composer?.[field]
+            ? checked.message
+            : recipientError(field)
+          : undefined,
+      ];
+    }),
   );
   const [scheduleEnabled, setScheduleEnabled] = useState(
     Boolean(request.value.scheduledAt),
@@ -329,15 +390,30 @@ export function useMailComposer({
       (mode === 'bulk' && !allowBulkSend)
     )
       return;
-    const to = parseAddressList(composer.to);
-    if (to.length === 0) {
-      setError(
-        t('workspace.recipientRequired', {
-          defaultValue: 'Add at least one recipient.',
-        }),
-      );
+    const errors = Object.fromEntries(
+      (['to', 'cc', 'bcc'] as const).map((field) => [
+        field,
+        recipientError(field, mode === 'bulk'),
+      ]),
+    );
+    setCheckedRecipients(
+      Object.fromEntries(
+        (['to', 'cc', 'bcc'] as const).map((field) => [
+          field,
+          { value: composer[field], message: errors[field] },
+        ]),
+      ),
+    );
+    const firstInvalid = (['to', 'cc', 'bcc'] as const).find(
+      (field) => errors[field],
+    );
+    if (firstInvalid) {
+      if (errors.cc) setCcVisible(true);
+      if (errors.bcc) setBccVisible(true);
+      setFocusRecipient({ field: firstInvalid });
       return;
     }
+    const to = parseAddressList(composer.to);
     if (
       !composer.text.trim() &&
       !/<img\b/iu.test(composer.html) &&
@@ -372,19 +448,6 @@ export function useMailComposer({
           t('dev.sendHub.bulkNoCopies', {
             defaultValue:
               'Separate sending does not support Cc or Bcc. Clear them to send separately.',
-          }),
-        );
-        return;
-      }
-      if (
-        recipients.some(
-          (recipient) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(recipient.address),
-        )
-      ) {
-        setError(
-          t('dev.bulkSend.invalidRecipient', {
-            defaultValue:
-              'Remove or correct invalid recipient addresses first.',
           }),
         );
         return;
@@ -548,6 +611,48 @@ export function useMailComposer({
           ) {
             clearPendingDelivery(composerAccountId, input.idempotencyKey);
             endingRef.current = false;
+            if (error instanceof ApiClientError && error.status === 400) {
+              const payload = error.payload as
+                | {
+                    error?: { fieldViolations?: readonly { field?: string }[] };
+                  }
+                | undefined;
+              const fields = payload?.error?.fieldViolations?.map(
+                ({ field }) => field?.split('.')[0],
+              );
+              const targets = [
+                ...new Set(
+                  fields
+                    ?.filter(
+                      (value): value is RecipientField | 'recipients' =>
+                        value === 'to' ||
+                        value === 'cc' ||
+                        value === 'bcc' ||
+                        value === 'recipients',
+                    )
+                    .map((field) => (field === 'recipients' ? 'to' : field)),
+                ),
+              ];
+              if (targets.length) {
+                setCheckedRecipients((current) => ({
+                  ...current,
+                  ...Object.fromEntries(
+                    targets.map((target) => [
+                      target,
+                      {
+                        value: composer[target],
+                        message: t('workspace.invalidRecipient', {
+                          value: composer[target].slice(0, 160),
+                        }),
+                      },
+                    ]),
+                  ),
+                }));
+                if (targets.includes('cc')) setCcVisible(true);
+                if (targets.includes('bcc')) setBccVisible(true);
+                setFocusRecipient({ field: targets[0] });
+              }
+            }
             requestError(error);
             return;
           }
@@ -856,6 +961,11 @@ export function useMailComposer({
     discardRecovery,
     t,
     error,
+    recipientErrors,
+    recipientToRef,
+    recipientCcRef,
+    recipientBccRef,
+    validateRecipient,
     composer,
     setComposer,
     composerAccountId,
@@ -913,6 +1023,11 @@ export interface MailComposerController {
   readonly discardRecovery: () => void;
   readonly t: ReturnType<typeof useTranslation>['t'];
   readonly error: string | undefined;
+  readonly recipientErrors: Partial<Record<RecipientField, string>>;
+  readonly recipientToRef: RefObject<HTMLInputElement | null>;
+  readonly recipientCcRef: RefObject<HTMLInputElement | null>;
+  readonly recipientBccRef: RefObject<HTMLInputElement | null>;
+  readonly validateRecipient: (field: RecipientField) => void;
   readonly composer: ComposerState | undefined;
   readonly setComposer: Dispatch<SetStateAction<ComposerState | undefined>>;
   readonly composerAccountId: string;

@@ -28,6 +28,7 @@ import {
   type MailComposerSubmissionSnapshot,
 } from '@nocobase/app-plugin-mail/client/components';
 import { MailWorkspaceComposer } from '../../client/components/mail-workspace-composer.js';
+import { MailComposer } from '../../client/components/mail-composer.js';
 import { useMailComposer } from '../../client/hooks/use-mail-composer.js';
 import { readPendingDeliveries } from '../../client/lib/mail-pending-delivery.js';
 import locales from '../../client/locales/index.js';
@@ -212,6 +213,200 @@ beforeEach(async () => {
 });
 
 describe('Mail composer completion through the actual hook', () => {
+  it('retains the existing separate-send deduplication before its recipient limit', async () => {
+    const initial = request();
+    const view = await mountComposer(
+      props({
+        allowBulkSend: true,
+        request: {
+          ...initial,
+          value: {
+            ...initial.value,
+            to: Array.from({ length: 101 }, () => 'Reader@example.com').join(
+              ', ',
+            ),
+          },
+        },
+      }),
+    );
+    act(() => view.result.current.sendComposer('bulk'));
+    await waitFor(() => expect(mail.sendBulk).toHaveBeenCalledOnce());
+    expect(mail.sendBulk.mock.calls[0]![0].recipients).toEqual([
+      { address: 'Reader@example.com' },
+    ]);
+  });
+  it('autosaves unfinished recipient text after validation fails and keeps it editable', async () => {
+    const view = await mountComposer(props());
+    vi.useFakeTimers();
+    try {
+      act(() =>
+        view.result.current.setComposer((current) => ({
+          ...current!,
+          to: '"Doe, Jane" <',
+          cc: 'bad; unfinished <',
+          text: '',
+          html: '',
+        })),
+      );
+      act(() => view.result.current.sendComposer());
+      expect(mail.sendMessage).not.toHaveBeenCalled();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2_000);
+      });
+      expect(mail.saveDraft).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: [{ address: '"Doe, Jane" <' }],
+          cc: [{ address: 'bad; unfinished <' }],
+          text: '',
+        }),
+      );
+      expect(view.result.current.composer?.to).toBe('"Doe, Jane" <');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+  it('maps a real server field violation back to the recipient field', async () => {
+    mail.sendMessage.mockRejectedValueOnce(
+      new ApiClientError('Invalid recipient', {
+        status: 400,
+        reason: 'INVALID_MAIL_REQUEST',
+        domain: 'mail',
+        method: 'POST',
+        url: '/api/mail/messages/send',
+        payload: { error: { fieldViolations: [{ field: 'cc.0.address' }] } },
+      }),
+    );
+    const initial = request();
+    const view = await mountComposer(
+      props({
+        request: {
+          ...initial,
+          value: { ...initial.value, cc: 'valid@example.com' },
+        },
+      }),
+    );
+    act(() => view.result.current.sendComposer());
+    await waitFor(() =>
+      expect(view.result.current.recipientErrors.cc).toBeTruthy(),
+    );
+    expect(view.result.current.ccVisible).toBe(true);
+    expect(view.result.current.composer?.text).toBe(initial.value.text);
+  });
+  it.each(['normal', 'scheduled', 'bulk'] as const)(
+    'sends structured display names for %s',
+    async (mode) => {
+      const initial = request();
+      const view = await mountComposer(
+        props({
+          allowBulkSend: true,
+          request: {
+            ...initial,
+            value: {
+              ...initial.value,
+              to: '周晓 <someone@example.com>, "Doe, Jane" <jane@example.com>',
+              scheduledAt: mode === 'scheduled' ? '2099-01-01T10:00' : '',
+            },
+          },
+        }),
+      );
+      act(() =>
+        view.result.current.sendComposer(mode === 'bulk' ? 'bulk' : 'normal'),
+      );
+      await waitFor(() =>
+        expect(
+          mode === 'bulk' ? mail.sendBulk : mail.sendMessage,
+        ).toHaveBeenCalledOnce(),
+      );
+      const body =
+        mode === 'bulk'
+          ? mail.sendBulk.mock.calls[0]![0].recipients
+          : mail.sendMessage.mock.calls[0]![0].to;
+      expect(body).toEqual([
+        { name: '周晓', address: 'someone@example.com' },
+        { name: 'Doe, Jane', address: 'jane@example.com' },
+      ]);
+    },
+  );
+  it.each(['to', 'cc', 'bcc'] as const)(
+    'blocks all send modes for invalid %s without losing edits',
+    async (field) => {
+      const initial = request();
+      const view = await mountComposer(
+        props({
+          allowBulkSend: true,
+          request: {
+            ...initial,
+            uploads: [upload],
+            value: { ...initial.value, [field]: 'incomplete <' },
+          },
+        }),
+      );
+      act(() => {
+        view.result.current.sendComposer();
+        view.result.current.sendComposer('bulk');
+      });
+      expect(mail.sendMessage).not.toHaveBeenCalled();
+      expect(mail.sendBulk).not.toHaveBeenCalled();
+      expect(view.result.current.recipientErrors[field]).toBeTruthy();
+      expect(view.result.current.composeAttachments).toEqual([upload]);
+      expect(view.result.current.composer?.text).toBe(initial.value.text);
+      act(() =>
+        view.result.current.setComposer((current) => ({
+          ...current!,
+          [field]: 'fixed@example.com',
+        })),
+      );
+      await waitFor(() =>
+        expect(view.result.current.recipientErrors[field]).toBeUndefined(),
+      );
+      act(() => view.result.current.sendComposer());
+      await waitFor(() => expect(mail.sendMessage).toHaveBeenCalledOnce());
+    },
+  );
+  it.each([
+    ['MailComposer', MailComposer],
+    ['MailWorkspaceComposer', MailWorkspaceComposer],
+  ] as const)(
+    'associates inline errors and focuses a hidden invalid Cc in %s',
+    async (_name, Component) => {
+      const initial = request();
+      render(
+        <Component
+          {...props({
+            request: { ...initial, value: { ...initial.value, cc: 'bad' } },
+          })}
+        />,
+        { wrapper: Wrapper },
+      );
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', { name: 'Send', exact: true }),
+        ).toBeEnabled(),
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Cc', exact: true }));
+      expect(
+        screen.queryByRole('textbox', { name: 'Cc', exact: true }),
+      ).toBeNull();
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Send', exact: true }),
+      );
+      const cc = await screen.findByRole('textbox', {
+        name: 'Cc',
+        exact: true,
+      });
+      await waitFor(() => expect(document.activeElement).toBe(cc));
+      expect(cc.getAttribute('aria-invalid')).toBe('true');
+      expect(
+        document.getElementById(cc.getAttribute('aria-describedby')!)
+          ?.textContent,
+      ).toContain('bad');
+      fireEvent.change(cc, { target: { value: '周晓 <someone@example.com>' } });
+      await waitFor(() =>
+        expect(cc.getAttribute('aria-invalid')).toBe('false'),
+      );
+      expect(mail.sendMessage).not.toHaveBeenCalled();
+    },
+  );
   it('closes before completing with the response ID and a detached exact wire body including signature, quote, copies, and attachments', async () => {
     const response = { ...submission(), error: rejection };
     const pending = deferred<MailSubmissionView>();
