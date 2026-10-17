@@ -534,6 +534,20 @@ function Header({
             {session.title}
           </h2>
         )}
+        {collapsed && (
+          <Button
+            variant='ghost'
+            size='sm'
+            className='h-9 shrink-0 gap-1 px-1.5 tabular-nums @md/agent-session:hidden'
+            aria-label={`${t('links.title')} ${session.links.length}`}
+            title={`${t('links.title')} ${session.links.length}`}
+            aria-expanded={details}
+            onClick={onShowDetails}
+          >
+            <ListChecksIcon aria-hidden />
+            {session.links.length}
+          </Button>
+        )}
         {session.waiting ? (
           <span className='@max-md/agent-session:sr-only inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-amber-800 dark:text-amber-300'>
             <span className='size-2 rounded-full bg-amber-400' />
