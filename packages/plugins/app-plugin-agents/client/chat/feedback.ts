@@ -43,7 +43,10 @@ export function chatFeedback(input: {
   if (input.stream?.phase === 'interrupted') return 'unknown';
   if (input.running) {
     if (input.hasOutput) return null;
-    return input.stream?.phase === 'streaming' ? 'thinking' : 'waiting';
+    // Occupancy is known before the first stream event, not only once text arrives.
+    return input.execution || input.stream?.phase === 'streaming'
+      ? 'thinking'
+      : 'waiting';
   }
   return (
     input.execution?.outcome ??

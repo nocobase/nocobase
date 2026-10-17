@@ -766,6 +766,148 @@ it.each([401, 403, 404, 500])(
   },
 );
 
+it.each([
+  ['en-US', true],
+  ['zh-CN', true],
+  ['en-US', false],
+  ['zh-CN', false],
+] as const)(
+  'shows thinking after sending in %s (new conversation: %s) before the first stream event',
+  async (locale, fresh) => {
+    let accepted = false;
+    let terminal = false;
+    let accept!: () => void;
+    let output!: ReadableStreamDefaultController<Uint8Array>;
+    const inputMessage = {
+      ...message,
+      id: 'input',
+      seq: fresh ? 1 : 2,
+      role: 'user' as const,
+      content: { type: 'text' as const, content: 'Next question' },
+    };
+    const reply = {
+      ...message,
+      seq: inputMessage.seq + 1,
+      content: { type: 'text' as const, content: 'First body' },
+    };
+    const detail = () => ({
+      ...conversation,
+      execution: terminal
+        ? { status: 'idle', outcome: 'completed' }
+        : { status: accepted ? 'running' : 'idle' },
+    });
+    const original = host.request.getMockImplementation()!;
+    host.catalog.mockResolvedValue(models);
+    host.stream.mockImplementation(async () =>
+      accepted
+        ? new ReadableStream({
+            start(controller) {
+              output = controller;
+            },
+          })
+        : null,
+    );
+    host.request.mockImplementation(async (input) => {
+      if (input.path === 'agents/conversations' && input.method === 'POST')
+        return { data: detail() };
+      if (input.path === 'agents/conversations/saved')
+        return { data: detail() };
+      if (input.path.endsWith('/messages')) {
+        if (input.method === 'POST') {
+          await new Promise<void>((resolve) => {
+            accept = resolve;
+          });
+          accepted = true;
+          return { data: { conversation: detail(), message: inputMessage } };
+        }
+        return {
+          data: [
+            ...(!fresh ? [{ ...message, id: 'previous-reply' }] : []),
+            ...(accepted ? [inputMessage] : []),
+            ...(terminal ? [reply] : []),
+          ],
+          meta: {
+            lastSeq: terminal
+              ? reply.seq
+              : accepted
+                ? inputMessage.seq
+                : fresh
+                  ? 0
+                  : 1,
+          },
+        };
+      }
+      return original(input);
+    });
+    await setup(locale);
+    if (!fresh) act(() => panel.openChat({ conversationId: 'saved' }));
+    const send = await screen.findByTestId('chat-send');
+    fireEvent.change(
+      screen.getByRole('textbox', {
+        name: locale === 'zh-CN' ? '发给 Agent 的消息' : 'Message to the agent',
+      }),
+      { target: { value: 'Next question' } },
+    );
+    await waitFor(() => expect(send).toBeEnabled());
+    fireEvent.click(send);
+    await waitFor(() => expect(accept).toBeTypeOf('function'));
+    const log = screen.getByRole('log');
+    const sending = document.querySelector('[data-chat-feedback="sending"]')!;
+    expect(sending).toBeVisible();
+    expect(log).toContainElement(sending);
+    expect(sending.closest('li')?.previousElementSibling).toHaveTextContent(
+      'Next question',
+    );
+    await act(async () => accept());
+    const thinking = await screen.findByText(
+      locale === 'zh-CN' ? '正在思考…' : 'Thinking…',
+    );
+    const status = thinking.closest('[data-chat-feedback]')!;
+    expect(status).toHaveAttribute('data-chat-feedback', 'thinking');
+    expect(status.querySelector('[data-slot="spinner"]')).toBeVisible();
+    expect(log).toContainElement(status);
+    const row = status.closest('li');
+    expect(row?.parentElement?.lastElementChild).toBe(row);
+    expect(row?.previousElementSibling).toHaveTextContent('Next question');
+    await waitFor(() => expect(output).toBeDefined());
+    expect(thinking).toBeVisible();
+    const emit = (event: object) =>
+      output.enqueue(
+        new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`),
+      );
+    act(() =>
+      emit({
+        type: 'delta',
+        boundary: { afterSeq: inputMessage.seq },
+        messageIndex: 0,
+        text: 'First body',
+      }),
+    );
+    expect(await screen.findByText('First body')).toBeVisible();
+    expect(
+      document.querySelector('[data-chat-feedback="thinking"]'),
+    ).toBeNull();
+    terminal = true;
+    act(() => {
+      emit({
+        type: 'saved',
+        boundary: { afterSeq: inputMessage.seq },
+        lastSeq: reply.seq,
+        status: 'idle',
+        outcome: 'completed',
+      });
+      output.close();
+    });
+    expect(
+      await screen.findByText(locale === 'zh-CN' ? '已完成。' : 'Completed.'),
+    ).toBeVisible();
+    expect(
+      document.querySelector('[data-chat-feedback] [data-slot="spinner"]'),
+    ).toBeNull();
+    expect(screen.getAllByText('First body')).toHaveLength(1);
+  },
+);
+
 it.each(['en-US', 'zh-CN'])(
   'shows first-response and cancellation confirmation feedback in %s without hiding the reply',
   async (locale) => {
@@ -810,9 +952,7 @@ it.each(['en-US', 'zh-CN'])(
     await setup(locale);
     act(() => panel.openChat({ conversationId: 'saved' }));
     expect(
-      await screen.findByText(
-        locale === 'zh-CN' ? '等待 Agent 响应…' : 'Waiting for the agent…',
-      ),
+      await screen.findByText(locale === 'zh-CN' ? '正在思考…' : 'Thinking…'),
     ).toBeVisible();
     const emit = (event: object) =>
       output.enqueue(
@@ -831,9 +971,7 @@ it.each(['en-US', 'zh-CN'])(
     );
     expect(await screen.findByText('First body')).toBeVisible();
     expect(
-      screen.queryByText(
-        locale === 'zh-CN' ? '等待 Agent 响应…' : 'Waiting for the agent…',
-      ),
+      screen.queryByText(locale === 'zh-CN' ? '正在思考…' : 'Thinking…'),
     ).not.toBeInTheDocument();
     fireEvent.click(
       screen.getByRole('button', {

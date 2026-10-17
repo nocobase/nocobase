@@ -45,6 +45,7 @@ import {
   EmptyTitle,
 } from '#components/ui/empty';
 import { Skeleton } from '#components/ui/skeleton';
+import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
 import { NewChatChoice } from './agent-choice.js';
@@ -362,10 +363,29 @@ function ConversationBody({
         item.content.content.trim().length > 0,
     ),
   });
+  const busyFeedback =
+    feedback === 'sending' ||
+    feedback === 'waiting' ||
+    feedback === 'thinking' ||
+    feedback === 'stopping';
+  const feedbackNotice = feedback ? (
+    <div
+      role='status'
+      aria-live='polite'
+      className='flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground'
+      data-chat-feedback={feedback}
+    >
+      {busyFeedback ? (
+        <Spinner aria-hidden='true' className='shrink-0' />
+      ) : null}
+      {t(`chat.feedback.${feedback}`)}
+    </div>
+  ) : null;
 
   const empty =
     entries.length === 0 &&
     messages.pending.length === 0 &&
+    !busyFeedback &&
     !running &&
     !messages.error &&
     (conversationId === null || messages.loaded);
@@ -573,6 +593,8 @@ function ConversationBody({
                     />
                   </li>
                 ) : null}
+                {/* Waiting belongs where the next reply will appear, not beside the composer. */}
+                {busyFeedback ? <li>{feedbackNotice}</li> : null}
               </ol>
             </>
           )}
@@ -593,16 +615,7 @@ function ConversationBody({
           </Button>
         </div>
       ) : null}
-      {feedback ? (
-        <div
-          role='status'
-          aria-live='polite'
-          className='px-3 py-2 text-sm text-muted-foreground'
-          data-chat-feedback={feedback}
-        >
-          {t(`chat.feedback.${feedback}`)}
-        </div>
-      ) : null}
+      {busyFeedback ? null : feedbackNotice}
       <TurnAnnouncer running={running} />
       <div className={page ? cn(PAGE_COLUMN, 'pt-2 pb-4') : undefined}>
         {sendAvailability?.notice}

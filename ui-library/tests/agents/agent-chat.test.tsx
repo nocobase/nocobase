@@ -157,7 +157,19 @@ describe('ChatPanel', () => {
       await screen.findByRole('button', { name: 'Stop', exact: true }),
     ).toBeVisible();
     expect(screen.queryByTestId('chat-live-steps')).toBeNull();
+    const thinking = await screen.findByText('Thinking…');
+    const log = screen.getByRole('log', { name: 'Messages' });
+    expect(log).toContainElement(thinking);
+    const row = thinking.closest('li');
+    expect(row?.parentElement?.lastElementChild).toBe(row);
+    expect(row?.previousElementSibling).toHaveTextContent('And the docs?');
+    expect(
+      thinking
+        .closest('[data-chat-feedback]')
+        ?.querySelector('[data-slot="spinner"]'),
+    ).toBeVisible();
     expect(await screen.findByText(/Here is what I would do/u)).toBeVisible();
+    expect(screen.queryByText('Thinking…')).not.toBeInTheDocument();
     expect(box).toHaveValue('');
   });
 

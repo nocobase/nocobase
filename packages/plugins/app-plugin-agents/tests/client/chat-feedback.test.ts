@@ -47,6 +47,31 @@ it('closes waiting after first body for Native and Runner and reports safe termi
     }),
   ).toBe('sending');
 });
+it.each([undefined, 'connecting', 'streaming', 'saved'] as const)(
+  'shows thinking for occupied OnlineAgent execution with stream phase %s before any body',
+  (phase) => {
+    const input = {
+      execution: { status: 'running' as const },
+      running: true,
+      stopping: false,
+      hasOutput: false,
+      ...(phase ? { stream: { phase, items: [] } } : {}),
+    };
+    expect(chatFeedback(input)).toBe('thinking');
+    expect(chatFeedback({ ...input, hasOutput: true })).toBeNull();
+    expect(chatFeedback({ ...input, stopping: true })).toBe('stopping');
+    expect(chatFeedback({ ...input, submission: { status: 'sending' } })).toBe(
+      'sending',
+    );
+    expect(chatFeedback({ ...input, submission: { status: 'unknown' } })).toBe(
+      'unknown',
+    );
+    expect(
+      chatFeedback({ ...input, stream: { phase: 'interrupted', items: [] } }),
+    ).toBe('unknown');
+  },
+);
+
 it('uses execution occupancy before legacy run and follows only near the bottom', () => {
   const run = { id: 'r' } as ConversationSummary['run'];
   expect(chatIsRunning({ execution: { status: 'running' }, run: null })).toBe(
