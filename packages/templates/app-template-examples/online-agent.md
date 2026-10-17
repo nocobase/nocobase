@@ -49,6 +49,24 @@ Successful archive notifications keep **Undo** usable after the history row disa
 
 The panel UI is installed application source in `client/extensions/nocobase-agent-chat/`. Examples adds a local send-availability contract, recovery actions and OnlineAgent wording. The shared controller and API behavior remain owned by the public Agents SDK. The integration wrapper in `client/components/online-agent/` supplies identity isolation, model readiness, permission-aware configuration links and lazy loading. Do not overwrite these local adaptations during Registry upgrades without reviewing their tests.
 
+## AI Translation: `OnlineAgent.background()`
+
+Open **Agents → AI Translation** (`/ai-translation`) as any signed-in user. Choose an enabled chat model, enter up to 10,000 characters, choose the source and target languages, then select **Translate**. The source defaults to automatic detection and the target to English. The read-only result preserves plain text and line breaks; changing any input clears it. No Runner or application business CLI build is required.
+
+This compact demo uses one awaited `POST /api/aiTranslation`. The application-owned helper in `server/providers/ai-translation.ts` calls the shared `agentsToken.onlineAgent.background()` with the trusted authenticated actor, native `online` executor, the selected model, and empty scope/tool lists. It calls `run(messages, schema)` with a `{ translation: string }` JSON Schema, waits until `status()` is idle, then reads the successful structured value with `get()`. Admission is not completion: `run()` alone does not return the translation. The route independently validates input and requires an unscoped signed-in identity; the browser never supplies user IDs or provider credentials.
+
+The server observes for at most 60 seconds and requests best-effort `abort()` on timeout without waiting indefinitely for cleanup. This is not a hard execution-stop guarantee. Leaving the page stops browser observation, not necessarily server execution. Interrupted requests have an unknown outcome and are never automatically resent; manually translating again may call the model twice.
+
+The demo creates no business tables, task records, polling endpoint, history page or cancellation UI. The Agents plugin still saves its background session in existing storage and currently includes it in the owner's chat history; that is not a realtime conversation that can be continued in the chat panel. This example does not hide, archive or delete those sessions. Page drafts and visible results are discarded on reload, navigation away or identity change.
+
+Focused verification uses local fixtures rather than paid providers:
+
+```bash
+pnpm exec vitest run tests/components/ai-translation.test.tsx tests/logic/ai-translation.test.ts tests/logic/ai-translation-helper.test.ts
+```
+
+These tests cover the real structured-generation HTTP chain, ordinary-member access, scoped-key denial, input limits, model selection, safe errors, bounded observation and late cleanup, as well as loading, validation, translations and identity isolation in the UI. They do not establish translation quality or connectivity to an external provider.
+
 ## Verification
 
 Run the focused tests from this application directory:

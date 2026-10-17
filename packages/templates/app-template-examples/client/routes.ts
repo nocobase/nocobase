@@ -97,6 +97,14 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
         breadcrumb: { title: 'onlineAgent.models' },
       },
       {
+        name: 'ai-translation',
+        path: '/ai-translation',
+        authz: 'skip',
+        navigation: { title: 'aiTranslation.title', icon: Languages },
+        breadcrumb: { title: 'aiTranslation.title' },
+        componentLoader: () => import('./pages/ai-translation/index.js'),
+      },
+      {
         name: 'ai-structured-extraction',
         path: '/ai-structured-extraction',
         auth: 'required',

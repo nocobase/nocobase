@@ -54,6 +54,7 @@ describe('app client routes', () => {
       'agents',
       'runtimes',
       'models',
+      'ai-translation',
       'ai-structured-extraction',
     ]);
     for (const name of ['agents', 'runtimes']) {
@@ -92,6 +93,16 @@ describe('app client routes', () => {
       },
     });
     expect(
+      group.children?.find((route) => route.name === 'ai-translation'),
+    ).toMatchObject({
+      path: '/ai-translation',
+      auth: 'required',
+      authz: 'skip',
+      navigation: { title: 'aiTranslation.title', icon: expect.any(Object) },
+      breadcrumb: { title: 'aiTranslation.title' },
+      componentLoader: expect.any(Function),
+    });
+    expect(
       group.children?.find(
         (route) => route.name === 'ai-structured-extraction',
       ),
@@ -127,6 +138,7 @@ describe('app client routes', () => {
       { name: 'runtimes', authorizedAs: 'runtimes' },
       { name: 'runtimes-connect', authorizedAs: 'runtimes' },
       { name: 'models', authorizedAs: 'settings:agents.services' },
+      { name: 'ai-translation', authorizedAs: null },
       { name: 'ai-structured-extraction', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'routeOverlays', authorizedAs: 'routeOverlays' },

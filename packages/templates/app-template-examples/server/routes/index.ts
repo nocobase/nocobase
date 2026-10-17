@@ -19,6 +19,7 @@ import { externalCrmRoutes } from './external-crm.js';
 import { structuredExtractionRoutes } from './structured-extraction.js';
 import { EXAMPLES_APP_TAGS as tags } from './domain.js';
 import { ExampleGreeting } from './schemas.js';
+import { aiTranslationRoutes } from './ai-translation.js';
 
 import { appExampleServiceToken } from '../providers/index.js';
 
@@ -89,6 +90,7 @@ const routes: readonly AppRouteContribution<Application>[] = [
   analyticsRoutes,
   externalCrmRoutes,
   numericExamplesRoutes,
+  aiTranslationRoutes,
   structuredExtractionRoutes,
 ];
 

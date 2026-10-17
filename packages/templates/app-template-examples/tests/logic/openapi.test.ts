@@ -151,6 +151,7 @@ describe('API document of the examples application', () => {
       'examplesListArticles',
       'examplesListWorkflowDefinitions',
       'examplesListWorkflowExecutions',
+      'examplesTranslateText',
       'examplesUpdateArticle',
     ]);
     expect(own.every(({ tags }) => tags?.[0] === 'Examples')).toBe(true);
