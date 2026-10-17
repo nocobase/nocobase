@@ -121,7 +121,7 @@ export function SessionView({
       viewport.removeEventListener('scroll', fit);
     };
   }, [session.data?.id]);
-  // Beside the conversation on a wide screen; on a narrower one, and in a panel, it opens over it, when asked for.
+  // Beside a full-page conversation on a wide screen, over it on narrower screens, and inside an embedded sidebar.
   const [details, setDetails] = useState(
     () =>
       !surface.panel &&
