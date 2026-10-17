@@ -66,7 +66,7 @@ describe('route navigation', () => {
   });
 });
 
-it('combines workflow plugin pages into two flat sections without changing page identity or permissions', () => {
+it('keeps business workflows flat and management in the application system group', () => {
   const lifecycle = '@nocobase/app-plugin-lifecycle-example';
   const office = '@nocobase/app-plugin-office-flows-example';
   const owned = (name: string, owner: string) => ({
@@ -91,7 +91,8 @@ it('combines workflow plugin pages into two flat sections without changing page 
   });
   const routes = [
     page('home', '/'),
-    group('lifecycle', lifecycle, [ticket, parameters, management]),
+    group('systemManagement', '@nocobase/app-template-examples', [management]),
+    group('lifecycle', lifecycle, [ticket, parameters]),
     group('office', office, [
       incoming,
       configuration,
@@ -101,27 +102,16 @@ it('combines workflow plugin pages into two flat sections without changing page 
   const items = buildRouteNavigation(routes, new Set([routeKey(incoming)]));
   expect(items.map((item) => item.route.name)).toEqual([
     'home',
+    'systemManagement',
     'workflowNavigation',
   ]);
-  const sections = items[1].children;
-  expect(sections.map((item) => item.route.name)).toEqual([
-    'workflowBusiness',
-    'workflowManagement',
-  ]);
-  expect(sections.every((item) => item.section)).toBe(true);
-  expect(sections[0].children.map((item) => item.route)).toEqual([
+  expect(items[1].children.map((item) => item.route)).toEqual([management]);
+  expect(items[2].children.map((item) => item.route)).toEqual([
     ticket,
     request,
   ]);
-  expect(sections[1].children.map((item) => item.route)).toEqual([
-    parameters,
-    management,
-    configuration,
-  ]);
-  expect(
-    sections
-      .flatMap((item) => item.children)
-      .every((item) => item.children.length === 0),
-  ).toBe(true);
+  expect(items[2].children.every((item) => item.children.length === 0)).toBe(
+    true,
+  );
   expect(selectedNavigationId(routes, ticket.path)).toBe(routeKey(ticket));
 });

@@ -25,6 +25,55 @@
           "target": "client/components/lifecycle-diagram-model.ts"
         }
       ]
+    },
+    {
+      "name": "workflow-management",
+      "type": "registry:block",
+      "title": "Workflow Management",
+      "description": "Workflow administration as presentational parts: one management page with Definitions and Executions tabs, a categorized definition list, a filtered execution list, definition diagram and parameter layout, and execution history inspection beside a diagram. Wire it to application-owned routes, data and permissions.",
+      "categories": ["lifecycle", "workflows"],
+      "meta": {
+        "group": "Workflows",
+        "iframeHeight": 900
+      },
+      "dependencies": ["lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "button",
+        "card",
+        "empty",
+        "table",
+        "tabs",
+        "@nocobase/page-container",
+        "@nocobase/page-header"
+      ],
+      "docs": "Install @nocobase/workflow-management and read @nocobase/workflow-management-demo. Render WorkflowManagementLayout around the application Outlet with URL-controlled Definitions and Executions tabs; declare sidebar navigation only on the Workflow management parent. Pass adapted rows, translated labels, search/category controls, status/empty content and callbacks to WorkflowDefinitionList and WorkflowExecutionList. WorkflowDefinitionDetail places the diagram beside an application-owned parameter form. WorkflowExecutionDetail takes transition/effect records and a renderDiagram callback receiving the selected history prefix and current state; render with @nocobase/lifecycle-diagram or an existing compatible diagram. It never executes transitions or saves configuration. Keep API fetching, URL query state, permissions, parameter persistence, recovery actions and breadcrumbs in the application. All wording comes from props; no example plugin or backend is installed.",
+      "files": [
+        {
+          "path": "workflow-management/definition-list.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-workflow-management/definition-list.tsx"
+        },
+        {
+          "path": "workflow-management/execution-detail.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-workflow-management/execution-detail.tsx"
+        },
+        {
+          "path": "workflow-management/execution-list.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-workflow-management/execution-list.tsx"
+        },
+        {
+          "path": "workflow-management/layout.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-workflow-management/layout.tsx"
+        },
+        {
+          "path": "workflow-management/README.md",
+          "type": "registry:file",
+          "target": "client/extensions/nocobase-workflow-management/README.md"
+        }
+      ]
     }
   ]
 }
