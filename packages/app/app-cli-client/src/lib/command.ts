@@ -8,6 +8,7 @@ import { EXIT_CODES, type ExitCode } from '@nocobase/agent-protocol';
 
 import { appCliConfig, appCliPaths, type AppCliPaths } from '../config.ts';
 import {
+  apiSuggestionsOf,
   CliCommandError,
   failureEnvelope,
   successEnvelope,
@@ -28,9 +29,12 @@ export class UsageError extends Error {
 /** A failure as oclif reports it, with the CLI's exit code. */
 export function asCliError(error: unknown): Error {
   if (error instanceof AppApiError) {
-    return new Errors.CLIError(`${error.reason}: ${error.message}`, {
-      exit: error.exitCode,
-    });
+    return asCliError(
+      new CliCommandError(error.reason, `${error.reason}: ${error.message}`, {
+        exit: error.exitCode,
+        suggestions: apiSuggestionsOf(error.metadata),
+      }),
+    );
   }
   if (error instanceof UsageError)
     return new Errors.CLIError(error.message, { exit: error.exit });
