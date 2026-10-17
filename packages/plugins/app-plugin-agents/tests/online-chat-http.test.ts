@@ -1,6 +1,7 @@
 import { appendFile } from 'node:fs/promises';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Hono, type MiddlewareHandler } from 'hono';
+import { appUIMessageText } from '../shared/online-agent.js';
 import { MockLanguageModelV4 } from 'ai/test';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { Knex } from 'knex';
@@ -86,6 +87,7 @@ async function fixture() {
       ids,
       tx: h.services.tx,
       attachments: attachments.links,
+      files: h.services.chatAttachments,
       now: () => new Date().toISOString(),
       measure: (phase, durationMs) => measurements.push({ phase, durationMs }),
     }),
@@ -144,7 +146,7 @@ async function fixture() {
   return { app, request, execute, release, model, sql, measurements };
 }
 
-it('uses the original API for authenticated SDK tools, cached first receive, safe history and continued input', async () => {
+it('uses standard POST streams for authenticated tools, authorized attachments and trusted continued history', async () => {
   const f = await fixture();
   expect((await f.request('/conversations', 'POST', {}, '')).status).toBe(401);
   expect(
@@ -198,11 +200,15 @@ it('uses the original API for authenticated SDK tools, cached first receive, saf
   expect(
     (
       await f.request(`/conversations/${conversation.id}/messages`, 'POST', {
-        content: 'Refused',
+        message: {
+          id: 'refused',
+          role: 'user',
+          parts: [{ type: 'text', text: 'Refused' }],
+        },
         attachmentIds: [ownFile, foreignFile],
       })
     ).status,
-  ).toBe(404);
+  ).toBe(400);
   expect(
     (
       await (
@@ -214,22 +220,36 @@ it('uses the original API for authenticated SDK tools, cached first receive, saf
     `/conversations/${conversation.id}/messages`,
     'POST',
     {
-      content: 'Run',
+      message: {
+        id: 'current',
+        role: 'user',
+        parts: [{ type: 'text', text: 'Run' }],
+      },
       attachmentIds: [ownFile],
-      clientId: 'display-only',
       context: { route: '/safe', items: [{ kind: 'secret', id: 'hidden' }] },
     },
   );
-  expect(sent.status).toBe(201);
-  expect((await sent.json()).data.message).toMatchObject({
-    metadata: { clientId: 'display-only' },
-    attachments: [{ id: ownFile }],
-    workContext: { items: [] },
+  expect(sent.status).toBe(200);
+  expect(sent.headers.get('x-vercel-ai-ui-message-stream')).toBe('v1');
+  const accepted = (
+    await (await f.request(`/conversations/${conversation.id}/messages`)).json()
+  ).data;
+  expect(accepted[0]).toMatchObject({
+    id: 'current',
+    role: 'user',
+    parts: [
+      { type: 'text', text: 'Run' },
+      { type: 'file', filename: 'fixture.txt' },
+    ],
   });
   expect(
     (
       await f.request(`/conversations/${conversation.id}/messages`, 'POST', {
-        content: 'Duplicate',
+        message: {
+          id: 'duplicate',
+          role: 'user',
+          parts: [{ type: 'text', text: 'Duplicate' }],
+        },
       })
     ).status,
   ).toBe(409);
@@ -240,9 +260,11 @@ it('uses the original API for authenticated SDK tools, cached first receive, saf
       })
     ).status,
   ).toBe(409);
-  const events = await f.request(`/conversations/${conversation.id}/events`);
   f.release();
-  expect(await events.text()).toContain('event: saved');
+  const response = await sent.text();
+  expect(response).toContain('[DONE]');
+  expect(response).toContain('message-metadata');
+  expect(response).not.toContain('event: saved');
   const agent = await service.realtime(
     {
       user: { id: 'alice' },
@@ -259,7 +281,9 @@ it('uses the original API for authenticated SDK tools, cached first receive, saf
   ).json();
   expect(JSON.stringify(history)).not.toContain('original');
   expect(JSON.stringify(history)).not.toContain('tool-result');
-  expect(JSON.stringify(history)).toContain('The business result is ready.');
+  expect(history.data.map(appUIMessageText)).toContain(
+    'The business result is ready.',
+  );
   expect(f.execute).toHaveBeenCalledTimes(1);
   expect(
     (await f.request(`/conversations/${conversation.id}/events`)).status,
@@ -267,10 +291,14 @@ it('uses the original API for authenticated SDK tools, cached first receive, saf
   expect(
     (
       await f.request(`/conversations/${conversation.id}/messages`, 'POST', {
-        content: 'Continue',
+        message: {
+          id: 'continue',
+          role: 'user',
+          parts: [{ type: 'text', text: 'Continue' }],
+        },
       })
     ).status,
-  ).toBe(201);
+  ).toBe(200);
   await vi.waitFor(async () => expect(await agent.status()).toBe('idle'));
   expect(
     (

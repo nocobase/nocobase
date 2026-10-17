@@ -277,6 +277,12 @@ function onlineExecution(
   const outcome = call.outcome;
   return {
     status: nativeExecutionStatus(call, active),
+    ...(call.state === 'waitingApproval' ? { waitingApproval: true } : {}),
+    ...(call.state === 'running' && !active ? { interrupted: true } : {}),
+    ...(typeof call.messageId === 'string'
+      ? { messageId: call.messageId }
+      : {}),
+    ...(typeof call.revision === 'number' ? { revision: call.revision } : {}),
     ...(outcome === 'completed' ||
     outcome === 'cancelled' ||
     outcome === 'failed'

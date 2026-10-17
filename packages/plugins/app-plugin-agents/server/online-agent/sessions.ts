@@ -24,15 +24,19 @@ import {
   findConversation,
   preferencesRepo,
   settingsRepo,
-  toMessage,
   type ConversationRecord,
 } from '../core/conversations/conversation.store.js';
 import type { ChatAttachmentLinks } from '../core/conversations/attachments.js';
 import type { ModelRef } from '../../shared/models.js';
+import { NativeSessionStore } from './native-store.js';
 
 export type OnlineAgentCall = {
   actorId: string;
-  state: 'running' | 'idle';
+  state: 'running' | 'idle' | 'waitingApproval';
+  executionId?: string;
+  messageId?: string;
+  revision?: number;
+  approvalExpiresAt?: string;
   outcome?: OnlineAgentOutcome;
   closing?: boolean;
   result?: OnlineAgentJson;
@@ -80,10 +84,7 @@ function session(row: ConversationRecord): OnlineAgentSession {
 }
 
 export interface OnlineAgentSessionManager {
-  publicHistory(
-    userId: string,
-    id: string,
-  ): Promise<import('../../shared/conversations.js').ConversationMessage[]>;
+  readonly native: NativeSessionStore;
   defaults(userId: string): Promise<{ scope?: string[]; model?: ModelRef }>;
   create(
     userId: string,
@@ -139,6 +140,10 @@ export function createSessionManager(deps: {
   basePath?: () => string;
   ids: IdSource;
   attachments: ChatAttachmentLinks;
+  files?: Pick<
+    import('../core/conversations/attachments.js').ChatAttachmentService,
+    'content'
+  >;
   now(): string;
   measure?: (phase: string, durationMs: number) => void;
 }): OnlineAgentSessionManager {
@@ -258,7 +263,11 @@ export function createSessionManager(deps: {
     current?: import('../../shared/conversations.js').ResolvedPageContext,
     replay = false,
   ): Promise<ModelMessage[]> {
-    await owned(deps.tx.read(), userId, id);
+    const row = await owned(deps.tx.read(), userId, id);
+    if (metadata(row).kind !== 'background')
+      throw invalid(
+        'Use the native UIMessage store for realtime conversations.',
+      );
     const rows = await messagesRepo(deps.tx.read()).findMany({
       filter: { conversationId: id },
       sort: (sort) => sort.field('seq').asc(),
@@ -282,6 +291,7 @@ export function createSessionManager(deps: {
   }
 
   return {
+    native: new NativeSessionStore(deps),
     async defaults(userId: string) {
       const conn = deps.tx.read();
       const [personal, system] = await Promise.all([
@@ -342,6 +352,7 @@ export function createSessionManager(deps: {
         const value = metadata(row);
         if (
           value.call?.state === 'running' ||
+          value.call?.state === 'waitingApproval' ||
           value.call?.closing ||
           value.call?.requiresEffectReview
         )
@@ -357,14 +368,6 @@ export function createSessionManager(deps: {
           },
         );
       });
-    },
-    async publicHistory(userId, id) {
-      await owned(deps.tx.read(), userId, id);
-      const rows = await messagesRepo(deps.tx.read()).findMany({
-        filter: { conversationId: id },
-        sort: (sort) => sort.field('seq').asc(),
-      });
-      return rows.map((row) => toMessage(row, deps.basePath?.() ?? ''));
     },
     async history(userId: string, id: string): Promise<ModelMessage[]> {
       return history(userId, id);
@@ -391,6 +394,10 @@ export function createSessionManager(deps: {
         'accept',
         async (conn, row) => {
           const value = metadata(row);
+          if (value.kind !== 'background')
+            throw invalid(
+              'Use the native UIMessage store for realtime conversations.',
+            );
           if (
             value.call?.state === 'running' ||
             value.call?.closing ||
@@ -446,6 +453,10 @@ export function createSessionManager(deps: {
         'save',
         async (conn, row) => {
           const value = metadata(row);
+          if (value.kind !== 'background')
+            throw invalid(
+              'Use the native UIMessage store for realtime conversations.',
+            );
           // Stable response ids allow a commit-unknown retry to verify, rather than append twice.
           const existing = items.length
             ? await messagesRepo(conn).findMany({

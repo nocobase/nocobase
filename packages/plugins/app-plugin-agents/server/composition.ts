@@ -574,6 +574,7 @@ export function createAgents(deps: AgentsDeps): Agents {
       tx,
       ids,
       attachments: chatAttachments.links,
+      files: chatAttachments.service,
       basePath,
       now: () => clock.now().toISOString(),
     }),

@@ -5,6 +5,10 @@ import type {
 } from '../../shared/conversations.js';
 import type { ModelRef } from '../../shared/models.js';
 import type { OnlineAgentStreamEvent } from '../../shared/online-agent.js';
+import type { AppUIMessage } from '../../shared/online-agent.js';
+import type { NativeUIChunk } from './native.js';
+import type { NativeApproval } from './native-store.js';
+import type { NativeHistoryQuery, NativeHistoryPage } from './native-store.js';
 import type {
   OnlineAgentOptions,
   OnlineAgentConfig,
@@ -14,6 +18,7 @@ import type {
 export type OnlineAgentSendOptions = {
   attachmentIds?: string[][];
   clientId?: string;
+  messageId?: string;
   workContext?: ResolvedPageContext;
   overrides?: OnlineAgentOptions;
   selectedModel?: ModelRef;
@@ -30,12 +35,18 @@ export interface OnlineAgentRealtimeSession {
   readonly sessionId: string;
   readonly backend: 'native' | 'runner';
   status(): Promise<'running' | 'idle'>;
-  history(): Promise<ConversationMessage[]>;
+  history(): Promise<ConversationMessage[] | AppUIMessage[]>;
+  approve?(input: NativeApproval): Promise<number>;
+  messages?(query: NativeHistoryQuery): Promise<NativeHistoryPage>;
   send(
     messages: ModelMessage[],
     input?: OnlineAgentSendOptions,
   ): Promise<number>;
-  receive(): Promise<ReadableStream<OnlineAgentStreamEvent> | null>;
+  receive(): Promise<
+    | ReadableStream<OnlineAgentStreamEvent>
+    | ReadableStream<NativeUIChunk>
+    | null
+  >;
   abort(): Promise<void>;
   retryFinalization(): Promise<void>;
 }

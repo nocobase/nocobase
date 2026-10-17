@@ -289,16 +289,23 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
           case 'conversation.changed':
             announceConversation(
               event.userId,
-              event.lastSeq === undefined
+              event.messageId !== undefined && event.revision !== undefined
                 ? {
-                    kind: 'conversation.changed',
+                    kind: 'conversation.messageUpdated',
                     conversationId: event.conversationId,
+                    messageId: event.messageId,
+                    revision: event.revision,
                   }
-                : {
-                    kind: 'conversation.messages',
-                    conversationId: event.conversationId,
-                    lastSeq: event.lastSeq,
-                  },
+                : event.lastSeq === undefined
+                  ? {
+                      kind: 'conversation.changed',
+                      conversationId: event.conversationId,
+                    }
+                  : {
+                      kind: 'conversation.messages',
+                      conversationId: event.conversationId,
+                      lastSeq: event.lastSeq,
+                    },
             );
             return;
           case 'run.changed':

@@ -3,7 +3,10 @@ export function nativeExecutionStatus(
   call: { state?: unknown; closing?: unknown } | null | undefined,
   active: boolean,
 ): 'running' | 'idle' {
-  return active || call?.state === 'running' || call?.closing
+  return active ||
+    call?.state === 'running' ||
+    call?.state === 'waitingApproval' ||
+    call?.closing
     ? 'running'
     : 'idle';
 }

@@ -54,7 +54,11 @@ export type OnlineAgentToolDefinition<I, O, C = OnlineAgentToolContext> = Tool<
 > & {
   execute: NonNullable<Tool<I, O, C>['execute']>;
   permissions?: never;
-  needsApproval?: never;
+  /** Explicit public projections; omitted tools remain private model evidence. */
+  public?: {
+    input(value: I): OnlineAgentJson;
+    output(value: O): OnlineAgentJson;
+  };
 };
 
 type OnlineAgentRegisteredTool = {
@@ -67,13 +71,9 @@ type OnlineAgentRegisteredTool = {
 function supported(value: object) {
   if ('skill' in value && Array.isArray(value.skill) && value.skill.length)
     throw invalid('Skills execution is not supported in PR1.');
-  if (
-    'permissions' in value ||
-    'needsApproval' in value ||
-    'toolApproval' in value
-  )
+  if ('permissions' in value || 'toolApproval' in value)
     throw invalid(
-      'Permissions and approval declarations are not supported in PR1.',
+      'Permission overrides and custom approval protocols are not supported.',
     );
 }
 
@@ -122,6 +122,13 @@ export class OnlineAgentConfigurer {
     )
       throw invalid(`Invalid or duplicate tool ${name}.`);
     if (typeof options.definition !== 'function') supported(options.definition);
+    if (
+      typeof options.definition !== 'function' &&
+      options.definition.needsApproval !== undefined &&
+      options.definition.needsApproval !== false &&
+      !options.definition.public
+    )
+      throw invalid(`Approval tool ${name} needs explicit public projections.`);
     let resolved: OnlineAgentToolDefinition<I, O, C> | undefined;
     this.tools.set(name, {
       version: options.version,
@@ -136,6 +143,14 @@ export class OnlineAgentConfigurer {
               ? options.definition(resolver!)
               : options.definition;
           supported(definition);
+          if (
+            definition.needsApproval !== undefined &&
+            definition.needsApproval !== false &&
+            !definition.public
+          )
+            throw invalid(
+              `Approval tool ${name} needs explicit public projections.`,
+            );
           if (typeof definition.execute !== 'function')
             throw invalid(`Tool ${name} needs an execute function.`);
           resolved = definition;
@@ -249,8 +264,9 @@ export class OnlineAgentConfigurer {
           throw invalid(`Tool ${name} has changed or is unavailable.`);
         const definition = registered.resolve(resolver);
         const execute = definition.execute;
+        const { public: _public, ...sdkDefinition } = definition;
         const bound = {
-          ...definition,
+          ...sdkDefinition,
           execute: (input: unknown, options: Parameters<typeof execute>[1]) => {
             context.signal.throwIfAborted();
             const result = execute(input, options);
@@ -282,5 +298,17 @@ export class OnlineAgentConfigurer {
         return [name, bound];
       }),
     );
+  }
+
+  publicProjection(
+    name: string,
+    resolver?: ServiceResolver,
+  ):
+    | {
+        input(value: unknown): OnlineAgentJson;
+        output(value: unknown): OnlineAgentJson;
+      }
+    | undefined {
+    return this.tools.get(name)?.resolve(resolver).public;
   }
 }

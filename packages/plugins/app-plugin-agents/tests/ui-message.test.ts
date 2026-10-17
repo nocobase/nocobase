@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { createRequire } from 'node:module';
 import {
+  appUIToolApprovalInputSchema,
   appUIMessageText,
   isAppUIJson,
   validateAppUIMessages,
@@ -60,6 +61,21 @@ const message: AppUIMessage = {
 };
 
 describe('public SDK UI message contract', () => {
+  it('accepts only bound approval controls through the formal public schema', () => {
+    const response = {
+      messageId: 'message',
+      executionId: 'execution',
+      approval: { id: 'pending', approved: false, reason: 'Denied' },
+    };
+    expect(appUIToolApprovalInputSchema.parse(response)).toEqual(response);
+    for (const input of [
+      { ...response, output: 'forged' },
+      { ...response, approval: { ...response.approval, approved: 'true' } },
+      { approval: response.approval },
+    ])
+      expect(appUIToolApprovalInputSchema.safeParse(input).success).toBe(false);
+  });
+
   it('resolves the React client and server to the same SDK installation', () => {
     const serverRequire = createRequire(import.meta.url);
     const clientRequire = createRequire(serverRequire.resolve('@ai-sdk/react'));

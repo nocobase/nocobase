@@ -101,6 +101,8 @@ export type AgentsEvent =
       readonly conversationId: string;
       readonly userId: string;
       readonly lastSeq?: number;
+      readonly messageId?: string;
+      readonly revision?: number;
     }
   | { readonly type: 'agent.changed'; readonly agentId: string }
   /**

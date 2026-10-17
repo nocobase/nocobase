@@ -1,8 +1,11 @@
-import { ChatController } from '../client/chat/controller.js';
-import type { ChatApi } from '../client/chat/api.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
-import type { JSONSchema7, ModelMessage } from 'ai';
+import {
+  readUIMessageStream,
+  isToolUIPart,
+  type JSONSchema7,
+  type ModelMessage,
+} from 'ai';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import {
   createServiceToken,
@@ -28,6 +31,7 @@ import {
   project,
   restore,
 } from '../server/online-agent/codec.js';
+import { appUIMessageText, type AppUIMessage } from '../shared/online-agent.js';
 
 const ref = { modelService: 'fixture', model: 'chat' };
 const context = (id = 'alice'): OnlineAgentContext => ({
@@ -94,6 +98,7 @@ async function fixture(
     tx: h.services.tx,
     ids,
     attachments: attachments.links,
+    files: h.services.chatAttachments,
     now: () => new Date().toISOString(),
     measure: (phase, durationMs) => measurements.push({ phase, durationMs }),
   });
@@ -121,8 +126,17 @@ async function fixture(
     errors,
     measurements,
     resolveModel,
-    history: (agent: { sessionId: string }, userId = 'alice') =>
-      sessions.history(userId, agent.sessionId),
+    history: async (agent: { sessionId: string }, userId = 'alice') =>
+      (await sessions.load(userId, agent.sessionId)).kind === 'background'
+        ? sessions.history(userId, agent.sessionId)
+        : (
+            await sessions.native.executionHistory(
+              userId,
+              agent.sessionId,
+              undefined,
+              false,
+            )
+          ).model,
   };
 }
 
@@ -148,16 +162,22 @@ describe('OnlineAgent service slice', () => {
     const agent = await f.service.realtime(context());
     await agent.send([{ role: 'user', content: 'Stream' }]);
     const reader = (await agent.receive())!.getReader();
+    expect((await reader.read()).value).toMatchObject({ type: 'start' });
     output.enqueue({ type: 'text-start', id: 'a' });
+    expect((await reader.read()).value).toMatchObject({ type: 'start-step' });
+    expect((await reader.read()).value).toMatchObject({
+      type: 'text-start',
+      id: 'a',
+    });
     output.enqueue({ type: 'text-delta', id: 'a', delta: 'A' });
     expect((await reader.read()).value).toMatchObject({
-      type: 'delta',
-      text: 'A',
+      type: 'text-delta',
+      delta: 'A',
     });
     output.enqueue({ type: 'text-delta', id: 'a', delta: 'B' });
     expect((await reader.read()).value).toMatchObject({
-      type: 'delta',
-      text: 'B',
+      type: 'text-delta',
+      delta: 'B',
     });
     expect(await agent.status()).toBe('running');
     output.enqueue({ type: 'text-end', id: 'a' });
@@ -165,10 +185,10 @@ describe('OnlineAgent service slice', () => {
     output.close();
     await settle(agent);
     expect(
-      (await agent.history()).map((message) => message.content.content),
+      ((await agent.history()) as AppUIMessage[]).map(appUIMessageText),
     ).toEqual(['Stream', 'AB']);
     expect(await f.history(agent)).toEqual([
-      { role: 'user', content: 'Stream' },
+      { role: 'user', content: [{ type: 'text', text: 'Stream' }] },
       expect.objectContaining({ role: 'assistant' }),
     ]);
     await reader.cancel();
@@ -234,7 +254,7 @@ describe('OnlineAgent service slice', () => {
         .connection()
         .repository('agConversationMessages')
         .count({ filter: { conversationId: agent.sessionId } }),
-    ).toBe(6);
+    ).toBe(2);
     const stored = await h.database
       .connection()
       .repository('agConversationMessages')
@@ -242,14 +262,10 @@ describe('OnlineAgent service slice', () => {
         filter: { conversationId: agent.sessionId },
         sort: (sort) => [sort.field('seq').asc()],
       });
-    expect(stored.map((row) => row.role)).toEqual([
-      'user',
-      'assistant',
-      'system',
-      'assistant',
-      'system',
-      'assistant',
-    ]);
+    expect(stored.map((row) => row.role)).toEqual(['user', 'assistant']);
+    expect(stored.every((row) => row.id === row.content.original.id)).toBe(
+      true,
+    );
     const publicHistory = await h.services.conversations.messages(
       'alice',
       agent.sessionId,
@@ -279,15 +295,24 @@ describe('OnlineAgent service slice', () => {
     expect(
       JSON.stringify(history.map((message) => project(message))),
     ).not.toContain('toolCallId');
+    const firstResponse = await agent.receive();
+    let snapshot;
+    for await (const current of readUIMessageStream({
+      stream: firstResponse as ReadableStream<
+        import('../server/online-agent/native.js').NativeUIChunk
+      >,
+    }))
+      snapshot = current;
+    expect(snapshot.id).toBe(stored[1].id);
+    expect(JSON.stringify(snapshot)).not.toContain('private-signature');
     expect(await agent.receive()).toBeNull();
     const reloaded = await f.service.realtime(context(), {
       sessionId: agent.sessionId,
     });
     expect(await f.history(reloaded)).toEqual(history);
     expect(f.measurements.map((item) => item.phase)).toEqual([
-      'accept',
-      'save',
-      'finish',
+      'native.accept',
+      'native.save',
     ]);
     if (process.env.PM438_SQL_REPORT)
       await appendFile(
@@ -368,44 +393,29 @@ describe('OnlineAgent service slice', () => {
         filter: { conversationId: agent.sessionId },
         sort: (sort) => sort.field('seq').asc(),
       });
-    const evidence = rows.filter(
-      (row) => row.content.original?.excludedFromHistory,
+    expect(rows).toHaveLength(2);
+    expect(rows[1].metadata.nativeEvidence.parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'tool-wait',
+          toolCallId: 'call',
+          input: {},
+          state: 'output-available',
+          output: { type: 'text', value: 'stopped' },
+        }),
+      ]),
     );
-    expect(evidence).toHaveLength(2);
-    expect(evidence.map((row) => decode(row.content.original.message))).toEqual(
-      [
-        {
-          role: 'assistant',
-          content: [
-            {
-              type: 'tool-call',
-              toolCallId: 'call',
-              toolName: 'wait',
-              input: {},
-            },
-          ],
-        },
-        {
-          role: 'tool',
-          content: [
-            {
-              type: 'tool-result',
-              toolCallId: 'call',
-              toolName: 'wait',
-              output: { type: 'text', value: 'stopped' },
-            },
-          ],
-        },
-      ],
+    expect(JSON.stringify(rows[1].content.original)).not.toContain(
+      'toolCallId',
     );
-    expect(evidence.map((row) => row.content.content)).toEqual(['', '']);
-    expect(await f.history(agent)).toEqual([{ role: 'user', content: 'Wait' }]);
+    expect(await f.history(agent)).toEqual([
+      { role: 'user', content: [{ type: 'text', text: 'Wait' }] },
+    ]);
     expect(model.doStreamCalls).toHaveLength(1);
     client.off('query', record);
     expect(f.measurements.map((item) => item.phase)).toEqual([
-      'accept',
-      'save',
-      'finish',
+      'native.accept',
+      'native.save',
     ]);
     if (process.env.PM438_SQL_REPORT)
       await appendFile(
@@ -425,43 +435,26 @@ describe('OnlineAgent service slice', () => {
     ).rejects.toThrow('not found');
   });
 
-  it('retries save and seal without rerunning the SDK or duplicating messages', async () => {
+  it('retries failed and commit-unknown UI saves without rerunning the SDK or duplicating messages', async () => {
     const model = new MockLanguageModelV4({
       doStream: async () => ({ stream: streamed(text('Saved once')) }),
     });
     const streams = new OnlineAgentMemoryStreamManager();
     const f = await fixture(model, streams);
+    const persist = f.sessions.native.save.bind(f.sessions.native);
     const save = vi
-      .spyOn(f.sessions, 'save')
-      .mockRejectedValueOnce(new Error('save failed'));
-    const clear = vi
-      .spyOn(f.sessions, 'finish')
-      .mockRejectedValueOnce(new Error('marker clear failed'));
-    const open = streams.open.bind(streams);
-    vi.spyOn(streams, 'open').mockImplementation(async (...args) => {
-      const writer = await open(...args);
-      const finish = writer.finish.bind(writer);
-      let first = true;
-      return {
-        ...writer,
-        finish: async (...completion) => {
-          await finish(...completion);
-          if (first) {
-            first = false;
-            throw new Error('seal response lost');
-          }
-        },
-      };
-    });
+      .spyOn(f.sessions.native, 'save')
+      .mockRejectedValueOnce(new Error('save failed'))
+      .mockImplementationOnce(async (...args) => {
+        await persist(...args);
+        throw new Error('commit response lost');
+      });
     const agent = await f.service.realtime(context());
     await agent.send([{ role: 'user', content: 'Save' }]);
     await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     expect(await agent.status()).toBe('running');
     await expect(agent.retryFinalization()).rejects.toThrow(
-      'marker clear failed',
-    );
-    await expect(agent.retryFinalization()).rejects.toThrow(
-      'seal response lost',
+      'commit response lost',
     );
     expect(await agent.status()).toBe('running');
     expect(
@@ -489,7 +482,7 @@ describe('OnlineAgent service slice', () => {
       (await h.services.conversations.get('alice', agent.sessionId)).execution
         ?.status,
     ).toBe('idle');
-    expect(clear).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenCalledTimes(3);
     expect(await agent.status()).toBe('idle');
     expect(model.doStreamCalls).toHaveLength(1);
     expect(await f.history(agent)).toHaveLength(2);
@@ -563,7 +556,9 @@ it('round trips provider fields, bytes, URLs and marker-shaped tool data without
     role: 'assistant',
     parts: [{ type: 'text', text: 'Public' }],
   });
-  expect(restore({ content: 'Old notice' }, 'system')).toBeNull();
+  expect(() => restore({ content: 'Old notice' }, 'system')).toThrow(
+    'background execution message',
+  );
 });
 
 it('resolves scope order and explicit overrides, rejects unsupported requirements and changed tools', async () => {
@@ -605,7 +600,7 @@ it('resolves scope order and explicit overrides, rejects unsupported requirement
       version: '1',
       definition: { needsApproval: true } as never,
     }),
-  ).toThrow('not supported');
+  ).toThrow('public projections');
 });
 
 it('replays the first cache before live events, disconnects without stopping execution and isolates old writers', async () => {
@@ -658,8 +653,8 @@ it('commits all inputs and attachment links atomically and rolls them back on a 
       doStream: async () => ({ stream: streamed(text('Done')) }),
     }),
   );
-  const first = await f.service.realtime(context());
-  const second = await f.service.realtime(context());
+  const first = await f.service.background(context());
+  const second = await f.service.background(context());
   const attachment = await h.services.chatAttachments.upload(
     'alice',
     new File(['fixture'], 'fixture.txt', { type: 'text/plain' }),
@@ -1180,7 +1175,7 @@ it.each(['realtime', 'background'] as const)(
     });
     const submit = () => opened.send([{ role: 'user', content: 'Next' }]);
     const accept = vi
-      .spyOn(f.sessions, 'accept')
+      .spyOn(kind === 'realtime' ? f.sessions.native : f.sessions, 'accept')
       .mockRejectedValueOnce(new Error('Admission failed'));
     await expect(submit()).rejects.toThrow('Admission failed');
     expect(
@@ -1257,7 +1252,7 @@ it.each(['success', 'error', 'stream'] as const)(
     });
     const agent = await f.service.realtime(context(), { tool: ['effect'] });
     const save = vi
-      .spyOn(f.sessions, 'save')
+      .spyOn(f.sessions.native, 'save')
       .mockRejectedValueOnce(new Error('Save unavailable'));
     await agent.send([{ role: 'user', content: 'Run' }]);
     await entered.promise;
@@ -1270,26 +1265,28 @@ it.each(['success', 'error', 'stream'] as const)(
       .connection()
       .repository('agConversationMessages')
       .findMany({ filter: { conversationId: agent.sessionId } });
-    const evidence = rows.filter(
-      (row) => row.content.original?.excludedFromHistory,
+    const evidence = rows.filter((row) => row.metadata.nativeEvidence);
+    expect(evidence).toHaveLength(1);
+    expect(JSON.stringify(evidence[0].metadata.nativeEvidence)).toContain(
+      'private-input',
     );
-    expect(evidence).toHaveLength(2);
-    const messages = evidence.map(
-      (row) => decode(row.content.original.message) as ModelMessage,
+    expect(JSON.stringify(evidence[0].metadata.nativeEvidence)).toContain(
+      'private-provider',
     );
-    expect(JSON.stringify(messages)).toContain('private-input');
-    expect(JSON.stringify(messages)).toContain('private-provider');
-    expect(JSON.stringify(messages)).toContain(
+    expect(JSON.stringify(evidence[0].metadata.nativeEvidence)).toContain(
       mode === 'error' ? 'private-failure' : 'private-result',
     );
-    expect(
-      JSON.stringify(messages.map((message) => project(message))),
-    ).not.toContain('private');
-    expect(await f.history(agent)).toEqual([{ role: 'user', content: 'Run' }]);
+    expect(JSON.stringify(await agent.history())).not.toContain('private');
+    expect(await f.history(agent)).toEqual([
+      { role: 'user', content: [{ type: 'text', text: 'Run' }] },
+    ]);
     expect(await agent.status()).toBe('idle');
     await agent.retryFinalization();
     expect(execute).toHaveBeenCalledTimes(1);
     expect(model.doStreamCalls).toHaveLength(1);
+    const initial = await agent.receive();
+    expect(initial).not.toBeNull();
+    await initial!.cancel();
     expect(await agent.receive()).toBeNull();
   },
 );
@@ -1359,7 +1356,7 @@ it.each([false, true])(
     });
     const agent = await f.service.realtime(context(), { tool: ['dated'] });
     const save = vi
-      .spyOn(f.sessions, 'save')
+      .spyOn(f.sessions.native, 'save')
       .mockRejectedValueOnce(new Error('Save unavailable'));
     await agent.send([{ role: 'user', content: 'Run' }]);
     await entered.promise;
@@ -1386,35 +1383,26 @@ it.each([false, true])(
       .connection()
       .repository('agConversationMessages')
       .findMany({ filter: { conversationId: agent.sessionId } });
-    const messages = rows.flatMap((row) =>
-      row.content.original?.message
-        ? [decode(row.content.original.message) as ModelMessage]
-        : [],
-    );
-    const result = messages.find((message) => message.role === 'tool');
+    const result = rows
+      .flatMap((row) => row.metadata.nativeEvidence?.parts ?? [])
+      .find((part) => isToolUIPart(part) && part.state === 'output-available');
     expect(result).toMatchObject({
-      role: 'tool',
-      content: [
-        {
-          type: 'tool-result',
-          output: {
-            type: 'json',
-            value: {
-              call: 'dated',
-              key: 'private-input',
-              value: 'private-result',
-              at: '1970-01-01T00:00:00.000Z',
-            },
-          },
+      type: 'tool-dated',
+      state: 'output-available',
+      output: {
+        type: 'json',
+        value: {
+          call: 'dated',
+          key: 'private-input',
+          value: 'private-result',
+          at: '1970-01-01T00:00:00.000Z',
         },
-      ],
+      },
     });
-    expect(
-      JSON.stringify(messages.map((message) => project(message))),
-    ).not.toContain('private');
+    expect(JSON.stringify(await agent.history())).not.toContain('private');
     if (cancel)
       expect(await f.history(agent)).toEqual([
-        { role: 'user', content: 'Run' },
+        { role: 'user', content: [{ type: 'text', text: 'Run' }] },
       ]);
     expect(await agent.status()).toBe('idle');
     const conversions = toModelOutput.mock.calls.length;
@@ -1469,12 +1457,14 @@ it('warns on failed shutdown finalization, drains other executions and preserves
   const f = await fixture(model);
   const first = await f.service.realtime(context());
   const second = await f.service.realtime(context());
-  const original = f.sessions.save.bind(f.sessions);
+  const original = f.sessions.native.save.bind(f.sessions.native);
   const failure = new Error('Shutdown persistence unavailable');
-  const save = vi.spyOn(f.sessions, 'save').mockImplementation((...args) => {
-    if (args[1] === first.sessionId) return Promise.reject(failure);
-    return original(...args);
-  });
+  const save = vi
+    .spyOn(f.sessions.native, 'save')
+    .mockImplementation((...args) => {
+      if (args[1] === first.sessionId) return Promise.reject(failure);
+      return original(...args);
+    });
   // send acknowledges SDK creation; the fixture delays its model request instead of admission.
   const sends = Promise.all([
     first.send([{ role: 'user', content: 'First' }]),
@@ -1510,113 +1500,58 @@ it('warns on failed shutdown finalization, drains other executions and preserves
   }
 });
 
-it('announces only committed new message watermarks and preserves metadata notifications', async () => {
-  const model = new MockLanguageModelV4({
-    doStream: async () => ({ stream: streamed(text('Saved')) }),
-  });
-  const f = await fixture(model);
+it('announces committed message revisions and permits stable ID rereads', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({ stream: streamed(text('Saved')) }),
+    }),
+  );
   const agent = await f.service.realtime(context());
-  const events: { lastSeq?: number }[] = [];
+  const events: { messageId?: string; revision?: number }[] = [];
   h.services.events.on('conversation.changed', (event) => {
     if (event.conversationId === agent.sessionId) events.push(event);
   });
   const save = vi
-    .spyOn(f.sessions, 'save')
+    .spyOn(f.sessions.native, 'save')
     .mockRejectedValueOnce(new Error('Save deferred'));
   await agent.send([{ role: 'user', content: 'Hello' }]);
   await vi.waitFor(() => expect(save).toHaveBeenCalledOnce());
-  expect(events.map((event) => event.lastSeq)).toEqual([1, undefined]);
+  expect(events.filter((event) => event.messageId)).toHaveLength(1);
   await agent.retryFinalization();
-  expect(events.map((event) => event.lastSeq)).toEqual([
-    1,
-    undefined,
-    2,
-    undefined,
-    undefined,
-  ]);
-  await f.sessions.finish('alice', agent.sessionId);
-  expect(events.at(-1)?.lastSeq).toBeUndefined();
+  const changed = events.filter((event) => event.messageId);
+  expect(changed.map((event) => event.revision)).toEqual([1, 1]);
+  for (const event of changed) {
+    const page = await f.sessions.native.page('alice', agent.sessionId, {
+      ids: [event.messageId!],
+      limit: 100,
+    });
+    expect(page.items[0]).toMatchObject({
+      id: event.messageId,
+      metadata: { revision: event.revision },
+    });
+  }
   const before = events.length;
+  const session = await f.sessions.load('alice', agent.sessionId);
   await expect(
-    f.sessions.accept(
+    f.sessions.native.accept(
       'alice',
       agent.sessionId,
-      (await f.sessions.load('alice', agent.sessionId)).config,
+      {
+        id: changed[0]!.messageId!,
+        parts: [{ type: 'text', text: 'Duplicate' }],
+        attachments: [],
+      },
+      session.config,
       ref,
-      [
-        {
-          id: 'rollback-message',
-          message: { role: 'user', content: 'Rolled back' },
-        },
-        {
-          id: 'duplicate-message',
-          message: { role: 'user', content: 'Duplicate' },
-        },
-        {
-          id: 'duplicate-message',
-          message: { role: 'user', content: 'Duplicate' },
-        },
-      ],
+      'another-execution',
+      'another-message',
+      session,
     ),
   ).rejects.toThrow();
   expect(events).toHaveLength(before);
   expect(
-    (await agent.history()).map((message) => message.content.content),
+    ((await agent.history()) as AppUIMessage[]).map(appUIMessageText),
   ).toEqual(['Hello', 'Saved']);
-});
-
-it('catches up two controllers from committed Native notifications and ignores duplicate watermarks', async () => {
-  const model = new MockLanguageModelV4({
-    doStream: async () => ({ stream: streamed(text('From another tab')) }),
-  });
-  const f = await fixture(model);
-  const agent = await f.service.realtime(context());
-  const tabs = [0, 1].map(
-    () =>
-      new ChatController({
-        messages: async (id, query) => ({
-          ...(await h.services.conversations.messages('alice', id, {
-            after: query?.after,
-          })),
-          nextCursor: null,
-        }),
-      } as ChatApi),
-  );
-  try {
-    await Promise.all(tabs.map((tab) => tab.loadHistory(agent.sessionId)));
-    const pending: Promise<void>[] = [];
-    h.services.events.on('conversation.changed', (event) => {
-      if (
-        event.conversationId !== agent.sessionId ||
-        event.lastSeq === undefined
-      )
-        return;
-      for (const tab of tabs)
-        if (
-          (tab.history(agent.sessionId).state.items.at(-1)?.seq ?? 0) <
-          event.lastSeq
-        )
-          pending.push(tab.loadHistory(agent.sessionId, false, true));
-    });
-    await agent.send([{ role: 'user', content: 'Hello from tab one' }]);
-    await settle(agent);
-    await Promise.all(pending);
-    h.services.events.emit({
-      type: 'conversation.changed',
-      conversationId: agent.sessionId,
-      userId: 'alice',
-      lastSeq: 2,
-    });
-    await Promise.all(pending);
-    for (const tab of tabs)
-      expect(
-        tab
-          .history(agent.sessionId)
-          .state.items.map((message) => message.content.content),
-      ).toEqual(['Hello from tab one', 'From another tab']);
-  } finally {
-    tabs.forEach((tab) => tab.dispose());
-  }
 });
 
 it('retries finalization without repeating a completed business tool or model step', async () => {
@@ -1638,20 +1573,10 @@ it('retries finalization without repeating a completed business tool or model st
       ),
     }),
   });
-  const streams = new OnlineAgentMemoryStreamManager();
-  const open = streams.open.bind(streams);
-  let fail = true;
-  vi.spyOn(streams, 'open').mockImplementation(async (...args) => {
-    const writer = await open(...args);
-    return {
-      ...writer,
-      finish: async (...result) => {
-        if (fail) throw new Error('Finalization pending');
-        await writer.finish(...result);
-      },
-    };
-  });
-  const f = await fixture(model, streams);
+  const f = await fixture(model);
+  vi.spyOn(f.sessions.native, 'save').mockRejectedValueOnce(
+    new Error('Finalization pending'),
+  );
   const execute = vi.fn(() => ({ done: true }));
   f.service.configurer.registerTool('business', {
     version: '1',
@@ -1669,15 +1594,16 @@ it('retries finalization without repeating a completed business tool or model st
   await expect(
     agent.send([{ role: 'user', content: 'Too early' }]),
   ).rejects.toThrow('busy');
-  fail = false;
   await agent.retryFinalization();
   expect(await agent.status()).toBe('idle');
   expect(model.doStreamCalls).toHaveLength(2);
   expect(execute).toHaveBeenCalledOnce();
   expect(
-    (await agent.history())
-      .filter((message) => message.role === 'assistant')
-      .at(-1)?.content.content,
+    appUIMessageText(
+      ((await agent.history()) as AppUIMessage[])
+        .filter((message) => message.role === 'assistant')
+        .at(-1)!,
+    ),
   ).toBe('Business saved');
 });
 
@@ -1687,7 +1613,7 @@ it('marks accepted input read, retains read on empty or tool-only finalization, 
       doStream: async () => ({ stream: streamed(text('unused')) }),
     }),
   );
-  const agent = await f.service.realtime(context());
+  const agent = await f.service.background(context());
   const id = agent.sessionId;
   const read = async () =>
     (await h.services.conversations.get('alice', id)).read;

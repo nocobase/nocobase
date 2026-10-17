@@ -18,6 +18,14 @@ import {
 import type { Context, Hono, MiddlewareHandler } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import type { UserModelMessage } from 'ai';
+import { createUIMessageStreamResponse } from 'ai';
+import {
+  appUIMessageMetadataSchema,
+  appUIToolApprovalInputSchema,
+} from '../../shared/online-agent.js';
+import type { NativeUIChunk } from '../online-agent/native.js';
+import { findConversation } from '../core/conversations/conversation.store.js';
+import { jsonObject } from '../kernel/values.js';
 import { cleanTitle } from '../core/conversations/titles.js';
 import { jsonSafe } from '../online-agent/codec.js';
 import { bodyLimit } from 'hono/body-limit';
@@ -141,7 +149,7 @@ const PatchSchema: z.ZodType<ConversationPatch> = z.strictObject({
     .describe('Whether to archive the conversation.'),
 });
 
-const SendSchema = z.strictObject({
+const RunnerSendSchema = z.strictObject({
   content: z
     .string()
     .max(MESSAGE_CONTENT_MAX * 2)
@@ -158,6 +166,35 @@ const SendSchema = z.strictObject({
       description: `The caller's uploads not sent yet (\`POST /api/agents/chatAttachments\`), at most ${CHAT_ATTACHMENTS_PER_MESSAGE_MAX}, sent with the message in this order.`,
     }),
 });
+
+const NativeSendSchema = z.strictObject({
+  message: z.strictObject({
+    id: z.string().min(1).max(64),
+    role: z.literal('user'),
+    parts: z
+      .array(
+        z.strictObject({
+          type: z.literal('text'),
+          text: z.string().max(MESSAGE_CONTENT_MAX * 2),
+        }),
+      )
+      .max(20),
+  }),
+  attachmentIds: z
+    .array(z.string().min(1).max(64))
+    .max(CHAT_ATTACHMENTS_PER_MESSAGE_MAX)
+    .optional(),
+  context: PageContextSchema.optional(),
+  selectedModel: SelectedModel.optional(),
+});
+const SendSchema = z.union([NativeSendSchema, RunnerSendSchema]);
+const NativeMessageSchema = z.object({
+  id: z.string(),
+  role: z.enum(['user', 'assistant', 'system']),
+  metadata: appUIMessageMetadataSchema,
+  parts: z.array(z.json()),
+});
+const ApprovalSchema = appUIToolApprovalInputSchema;
 
 /** A multipart body of one file, as `file`. */
 const singleFileBody: OpenAPIV3_1.RequestBodyObject = {
@@ -414,9 +451,12 @@ export function createChatRoutes(
         columns: ['seq', 'role', 'content.content', 'createdAt'],
       }),
       description:
-        'Newest page first, each page in order; `after` reads only what arrived since a `seq`, and a page token the page before.',
+        'Newest page first, each page in order; after reads newly inserted sequences and pageToken reads older pages. Native ids rereads current messages after revision notifications, including updates at unchanged sequences.',
       responses: {
-        200: listResponse(ConversationMessageSchema, SeqPageMetaSchema),
+        200: listResponse(
+          z.union([NativeMessageSchema, ConversationMessageSchema]),
+          SeqPageMetaSchema,
+        ),
         404: noConversation,
         ...apiErrorResponses,
       },
@@ -424,11 +464,48 @@ export function createChatRoutes(
     conversationParam,
     apiValidator('query', MessageListQuerySchema),
     async (context) => {
-      const { after, pageSize, pageToken } = context.req.valid('query');
+      const { after, pageSize, pageToken, ids } = context.req.valid('query');
       const before =
         pageToken === undefined
           ? undefined
           : decodePageToken(pageToken, MessagePosition).before;
+      const record = await findConversation(
+        services.tx.read(),
+        conversationId(context),
+      );
+      if (
+        record?.userId === me(context) &&
+        jsonObject(jsonObject(record.metadata).onlineAgent).kind === 'realtime'
+      ) {
+        const agent = await services.onlineAgent.realtime(trusted(context), {
+          sessionId: conversationId(context),
+        });
+        const wanted = ids?.split(',');
+        if (
+          wanted &&
+          (wanted.length > 100 || wanted.some((id) => !id || id.length > 64))
+        )
+          throw invalid('Select at most 100 valid message IDs.');
+        const page = await agent.messages!({
+          ids: wanted,
+          before,
+          after: before === undefined ? after : undefined,
+          limit: pageSize,
+        });
+        return context.json({
+          data: page.items,
+          meta: {
+            lastSeq: page.lastSeq,
+            ...(page.hasMore && after === undefined && page.items[0]
+              ? {
+                  nextPageToken: encodePageToken({
+                    before: page.items[0].metadata!.seq!,
+                  }),
+                }
+              : {}),
+          },
+        });
+      }
       const page = await conversations.messages(
         me(context),
         context.req.valid('param').conversationId,
@@ -481,8 +558,13 @@ export function createChatRoutes(
         ],
       }),
       description:
-        'The only input endpoint, for both first and later messages. Atomically binds attachments then starts the shared OnlineAgent execution. Busy input is refused. clientId correlates display only. A network timeout means outcome unknown; never automatically resend. Receive public output from events or read saved messages.',
+        'Native input accepts only the current SDK user message with text parts and authorized attachmentIds, returning a standard UI message stream. Server metadata, history, tools and config are not writable here. Runner input temporarily retains its content-based admission until its UI adapter is connected. Busy input is refused. A timeout means outcome unknown: reconcile history and execution, never automatically resend.',
       responses: {
+        200: {
+          description:
+            'Native AI SDK UI message stream. Finish closes this response; query execution for durable business state.',
+          content: { 'text/event-stream': { schema: { type: 'string' } } },
+        },
         201: dataResponse(SendMessageResultSchema, 'Created.'),
         404: noConversation,
         ...apiErrorResponses,
@@ -490,77 +572,133 @@ export function createChatRoutes(
     }),
     conversationParam,
     apiValidator('json', SendSchema),
-    async (context) =>
-      context.json(
+    async (context) => {
+      const id = context.req.valid('param').conversationId;
+      const request = context.req.valid('json');
+      const text =
+        'message' in request
+          ? request.message.parts.map((part) => part.text).join('\n')
+          : request.content;
+      if ([...text].length > MESSAGE_CONTENT_MAX)
+        throw invalid('The message is too long.');
+      if (!text.trim() && !request.attachmentIds?.length)
+        throw invalid('A message or attachment is required.');
+      const workContext = request.context
+        ? await conversations.contextKinds.resolve(
+            services.tx.read(),
+            me(context),
+            request.context,
+          )
+        : undefined;
+      const actor = trusted(context);
+      const agent = await services.onlineAgent.realtime(
         {
-          data: await (async () => {
-            const id = context.req.valid('param').conversationId;
-            const request = context.req.valid('json');
-            if ([...request.content].length > MESSAGE_CONTENT_MAX)
-              throw invalid('The message is too long.');
-            if (!request.content.trim() && !request.attachmentIds?.length)
-              throw invalid('A message or attachment is required.');
-            const workContext = request.context
-              ? await conversations.contextKinds.resolve(
-                  services.tx.read(),
-                  me(context),
-                  request.context,
-                )
-              : undefined;
-            const actor = trusted(context);
-            const agent = await services.onlineAgent.realtime(
-              {
-                ...actor,
-                ...(workContext ? { business: jsonSafe(workContext) } : {}),
-              },
-              { sessionId: id },
-            );
-            const parts: Exclude<UserModelMessage['content'], string> = [
-              { type: 'text', text: request.content },
-            ];
-            for (const fileId of agent.backend === 'native'
-              ? (request.attachmentIds ?? [])
-              : []) {
-              const file = await services.chatAttachments.content(
-                { userId: me(context) },
-                fileId,
-              );
-              const bytes = new Uint8Array(
-                await new Response(file.body).arrayBuffer(),
-              );
-              parts.push(
-                file.attachment.previewable
-                  ? {
-                      type: 'image',
-                      image: bytes,
-                      mediaType: file.attachment.mimeType,
-                    }
-                  : {
-                      type: 'file',
-                      data: bytes,
-                      filename: file.attachment.filename,
-                      mediaType: file.attachment.mimeType,
-                    },
-              );
-            }
-            const seq = await agent.send([{ role: 'user', content: parts }], {
-              attachmentIds: [[...(request.attachmentIds ?? [])]],
-              clientId: request.clientId,
-              workContext,
-            });
-            const page = await conversations.messages(me(context), id, {
-              after: seq - 1,
-              limit: 1,
-            });
-            return {
-              message: page.items[0],
-              conversation: await conversations.get(me(context), id),
-              run: null,
-            };
-          })(),
+          ...actor,
+          ...(workContext ? { business: jsonSafe(workContext) } : {}),
+        },
+        { sessionId: id },
+      );
+      const parts: Exclude<UserModelMessage['content'], string> =
+        'message' in request ? request.message.parts : [{ type: 'text', text }];
+      if (agent.backend === 'native' && !('message' in request))
+        throw invalid('Submit the current SDK user message.');
+      if (agent.backend === 'runner' && 'message' in request)
+        throw invalid('Runner UI input is not connected yet.');
+      const seq = await agent.send([{ role: 'user', content: parts }], {
+        attachmentIds: [[...(request.attachmentIds ?? [])]],
+        clientId: 'message' in request ? request.message.id : request.clientId,
+        messageId: 'message' in request ? request.message.id : undefined,
+        selectedModel: 'message' in request ? request.selectedModel : undefined,
+        workContext,
+      });
+      if (agent.backend === 'native') {
+        const stream = await agent.receive();
+        if (!stream)
+          throw invalid(
+            'The accepted response requires history reconciliation.',
+          );
+        return createUIMessageStreamResponse({
+          stream: stream as ReadableStream<NativeUIChunk>,
+          headers: { 'Cache-Control': 'private, no-store' },
+        });
+      }
+      const page = await conversations.messages(me(context), id, {
+        after: seq - 1,
+        limit: 1,
+      });
+      return context.json(
+        {
+          data: {
+            message: page.items[0],
+            conversation: await conversations.get(me(context), id),
+            run: null,
+          },
         },
         201,
-      ),
+      );
+    },
+  );
+  router.post(
+    '/conversations/:conversationId/approval',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Respond to a native SDK tool approval',
+      operationId: 'agentsRespondConversationApproval',
+      ...cliRoute(false),
+      description:
+        'Only the SDK approval response is accepted. The server binds it to the owner, execution, message and real pending tool call. Duplicate, expired and concurrent responses are rejected without executing tools again.',
+      responses: {
+        200: {
+          description: 'Standard SDK UI message continuation stream.',
+          content: { 'text/event-stream': { schema: { type: 'string' } } },
+        },
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    apiValidator('json', ApprovalSchema),
+    async (context) => {
+      const agent = await services.onlineAgent.realtime(trusted(context), {
+        sessionId: conversationId(context),
+      });
+      if (agent.backend !== 'native' || !agent.approve)
+        throw invalid('Runner tool approval is not supported.');
+      await agent.approve(context.req.valid('json'));
+      const stream = await agent.receive();
+      if (!stream)
+        throw invalid(
+          'The accepted continuation requires history reconciliation.',
+        );
+      return createUIMessageStreamResponse({
+        stream: stream as ReadableStream<NativeUIChunk>,
+        headers: { 'Cache-Control': 'private, no-store' },
+      });
+    },
+  );
+  router.post(
+    '/conversations/:conversationId/finalize',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Retry response persistence without executing again',
+      operationId: 'agentsFinalizeConversation',
+      ...cliRoute(false),
+      responses: {
+        200: dataResponse(ConversationDetailSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    apiValidator('json', z.strictObject({})),
+    async (context) => {
+      const id = conversationId(context);
+      const agent = await services.onlineAgent.realtime(trusted(context), {
+        sessionId: id,
+      });
+      await agent.retryFinalization();
+      return context.json({ data: await conversations.get(me(context), id) });
+    },
   );
   const acts: Record<
     'markRead' | 'stop',
@@ -643,11 +781,11 @@ export function createChatRoutes(
       operationId: 'agentsConversationEvents',
       ...cliRoute(false),
       description:
-        'SSE with an immutable initial prefix, then native text deltas or canonical Runner message blocks. part replaces a prefix, delta appends, message upserts by canonical ID and sequence, and saved confirms terminal persistence and sealing. No automatic reconnect or replay after closure. When no current stream exists, returns 204; read details then saved messages.',
+        'Native returns the unclaimed current standard SDK UI response once. Runner retains its existing block stream until the UI adapter is connected. No shared replay or execution recovery is provided here. Missing streams return 204, which does not mean idle or successful: reconcile execution and persisted history. Disconnect never invokes Stop.',
       responses: {
         200: {
           description:
-            'Public SSE events: part, delta, message or saved. Types are shared with the chat SDK.',
+            'Native SDK UI message stream; Runner block events remain separate until the Runner UI adapter is connected.',
           content: { 'text/event-stream': { schema: { type: 'string' } } },
         },
         204: { description: 'No current stream; read saved history.' },
@@ -662,6 +800,11 @@ export function createChatRoutes(
       context.header('Cache-Control', 'private, no-store');
       const events = await agent.receive();
       if (!events) return context.body(null, 204);
+      if (agent.backend === 'native')
+        return createUIMessageStreamResponse({
+          stream: events as ReadableStream<NativeUIChunk>,
+          headers: { 'Cache-Control': 'private, no-store' },
+        });
       return streamSSE(context, async (stream) => {
         const reader = events.getReader();
         stream.onAbort(() => {

@@ -26,6 +26,8 @@ export type {
 } from './realtime.js';
 export { RunnerOnlineAgentAdapter } from './runner.js';
 export {
+  appUIToolApprovalInputSchema,
+  type AppUIToolApprovalInput,
   appUIDataSchemas,
   appUIJsonSchema,
   appUIMessageMetadataSchema,
@@ -36,3 +38,5 @@ export {
   type AppUIMessageMetadata,
   type AppUITools,
 } from '../../shared/online-agent.js';
+
+export type { NativeHistoryQuery, NativeHistoryPage } from './native-store.js';

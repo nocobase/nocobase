@@ -225,6 +225,10 @@ export interface ConversationSummary {
     readonly status: 'running' | 'idle';
     readonly outcome?: 'completed' | 'cancelled' | 'failed';
     readonly requiresEffectReview?: boolean;
+    readonly waitingApproval?: boolean;
+    readonly interrupted?: boolean;
+    readonly messageId?: string;
+    readonly revision?: number;
   };
   readonly id: string;
   /** Null until the first message gives it one. */
@@ -551,6 +555,8 @@ export interface ConversationPatch {
  * highest `seq` in the conversation now.
  */
 export interface MessageListQuery {
+  /** Native UIMessage IDs to reread after a message revision notification, comma-separated (at most 100). */
+  readonly ids?: string;
   /** Messages with a higher `seq`. */
   readonly after?: number;
   /** The `meta.nextPageToken` of the previous page: older messages. */
@@ -662,6 +668,12 @@ export const CONVERSATIONS_TOPIC = 'agents:conversations';
  * `after`); `conversation`: its title, agent, run, archive or read state changed (fetch it, and the list).
  */
 export type ConversationChanged =
+  | {
+      readonly kind: 'conversation.messageUpdated';
+      readonly conversationId: string;
+      readonly messageId: string;
+      readonly revision: number;
+    }
   | {
       readonly kind: 'conversation.messages';
       readonly conversationId: string;

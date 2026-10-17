@@ -189,3 +189,8 @@ export {
 } from './chat/feedback.js';
 
 export { useChatScroll } from './chat/use-chat-scroll.js';
+
+export {
+  appUIToolApprovalInputSchema,
+  type AppUIToolApprovalInput,
+} from '../shared/online-agent.js';

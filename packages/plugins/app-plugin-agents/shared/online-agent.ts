@@ -32,6 +32,8 @@ export type OnlineAgentStreamEvent =
       outcome: OnlineAgentOutcome;
     };
 export {
+  appUIToolApprovalInputSchema,
+  type AppUIToolApprovalInput,
   appUIDataSchemas,
   appUIJsonSchema,
   appUIMessageMetadataSchema,

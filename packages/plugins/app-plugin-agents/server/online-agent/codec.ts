@@ -159,7 +159,7 @@ export function content(
   };
 }
 
-export function restore(value: unknown, role: string): ModelMessage | null {
+export function restore(value: unknown, _role: string): ModelMessage | null {
   const row = value as { content?: string; original?: OnlineAgentOriginal };
   if (row.original) {
     if (row.original.version !== 1)
@@ -168,9 +168,5 @@ export function restore(value: unknown, role: string): ModelMessage | null {
       ? (decode(row.original.message) as ModelMessage)
       : null;
   }
-  // Historical system records are notices, never model instructions.
-  return (role === 'user' || role === 'assistant') &&
-    typeof row.content === 'string'
-    ? { role, content: row.content }
-    : null;
+  throw invalid('A background execution message is required.');
 }

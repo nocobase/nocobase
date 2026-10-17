@@ -176,3 +176,20 @@ export function appUIMessageText(message: AppUIMessage): string {
     .map((part) => part.text)
     .join('\n');
 }
+
+/** A control response to a real pending SDK approval, never client-supplied tool output. */
+export type AppUIToolApprovalInput = {
+  messageId: string;
+  executionId: string;
+  approval: { id: string; approved: boolean; reason?: string };
+};
+export const appUIToolApprovalInputSchema: z.ZodType<AppUIToolApprovalInput> =
+  z.strictObject({
+    messageId: z.string().min(1).max(64),
+    executionId: z.string().min(1).max(64),
+    approval: z.strictObject({
+      id: z.string().min(1).max(200),
+      approved: z.boolean(),
+      reason: z.string().max(1000).optional(),
+    }),
+  });

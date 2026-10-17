@@ -388,8 +388,19 @@ export const ConversationListQuerySchema: z.ZodType<
 
 /** Messages, newest page first; `after` reads what arrived since a `seq`. Up to 200 for a whole short chat. */
 export const MessageListQuerySchema: z.ZodType<
-  Paging & { readonly after?: number | undefined }
+  Paging & {
+    readonly after?: number | undefined;
+    readonly ids?: string | undefined;
+  }
 > = z.object({
+  ids: z
+    .string()
+    .min(1)
+    .max(4000)
+    .optional()
+    .describe(
+      'Comma-separated native UI message IDs to refresh revisions; at most 100.',
+    ),
   after: z.coerce
     .number()
     .int()
@@ -1359,6 +1370,10 @@ const conversationSummaryObject = z.object({
       status: z.enum(['running', 'idle']),
       outcome: z.enum(['completed', 'cancelled', 'failed']).optional(),
       requiresEffectReview: z.boolean().optional(),
+      waitingApproval: z.boolean().optional(),
+      interrupted: z.boolean().optional(),
+      messageId: z.string().optional(),
+      revision: z.number().int().nonnegative().optional(),
     })
     .optional(),
   id: z.string(),
