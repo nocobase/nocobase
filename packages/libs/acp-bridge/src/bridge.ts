@@ -38,7 +38,11 @@ import {
   type ReportResponse,
 } from './protocol.js';
 import { listFolders } from './folders.js';
-import { BridgeSession, type WarmAgent } from './session.js';
+import {
+  BridgeSession,
+  type SessionContext,
+  type WarmAgent,
+} from './session.js';
 
 export interface BridgeOptions {
   /** The application's address as the command line knows it, with any base path: `https://host/app`. */
@@ -63,6 +67,8 @@ export interface BridgeOptions {
   readonly prepareSession?:
     | ((agentId: string, sessionId: string) => Promise<NodeJS.ProcessEnv>)
     | undefined;
+  /** Local instructions included in every prompt; never sent as a separate turn or during discovery. */
+  readonly sessionInstructions?: SessionContext['sessionInstructions'];
   /**
    * Whether a computer whose key the application refuses at start, such as one removed there, connects again as the
    * person, as when they start the bridge themselves (the default); a bridge started at login stops instead.
@@ -519,6 +525,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       if (kept && diagnostics) timing('agentTakenOver');
       session = new BridgeSession(command.session, {
         prepareSession: options.prepareSession,
+        sessionInstructions: options.sessionInstructions,
         warm: kept,
         client: options.client,
         env,

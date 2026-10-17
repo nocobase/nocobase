@@ -50,6 +50,10 @@ export interface SessionContext {
   readonly prepareSession?:
     | ((agentId: string, sessionId: string) => Promise<NodeJS.ProcessEnv>)
     | undefined;
+  /** Local instructions prepended to each ACP prompt, including after resume or discovery takeover. */
+  readonly sessionInstructions?:
+    | ((agentId: string, sessionId: string) => Promise<string | undefined>)
+    | undefined;
   /** The agent discovering this new session's choices started for it, to take over instead of starting another. */
   readonly warm?: Promise<WarmAgent | undefined> | undefined;
 }
@@ -224,6 +228,10 @@ export class BridgeSession {
     let error: string | null = null;
     try {
       const agent = await this.#open();
+      const instructions = await this.#context.sessionInstructions?.(
+        this.#target.agentId,
+        this.#target.id,
+      );
       // Cancelled while the agent was starting, which it never heard: the prompt is not sent at all.
       if (this.#turnCancelled) {
         stopReason = 'cancelled';
@@ -232,7 +240,12 @@ export class BridgeSession {
           acp.methods.agent.session.prompt,
           {
             sessionId: this.#acpSessionId!,
-            prompt: next.content.map(toContentBlock),
+            prompt: [
+              ...(instructions
+                ? [{ type: 'text' as const, text: instructions }]
+                : []),
+              ...next.content.map(toContentBlock),
+            ],
           },
         );
         stopReason = response.stopReason;

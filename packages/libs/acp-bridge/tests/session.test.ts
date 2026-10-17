@@ -12,7 +12,11 @@ import type {
   SessionTarget,
   SessionState,
 } from '../src/protocol.js';
-import { BridgeSession, type WarmAgent } from '../src/session.js';
+import {
+  BridgeSession,
+  type SessionContext,
+  type WarmAgent,
+} from '../src/session.js';
 
 const FAKE: ResolvedAgent = {
   spec: {
@@ -49,6 +53,7 @@ function start(
     sessionId: string,
   ) => Promise<NodeJS.ProcessEnv>,
   warm?: Promise<WarmAgent | undefined>,
+  sessionInstructions?: SessionContext['sessionInstructions'],
 ): {
   session: BridgeSession;
   events: BridgeEvent[];
@@ -73,6 +78,7 @@ function start(
     discoverySignal,
     prepareSession,
     warm,
+    sessionInstructions,
     roots: [root],
     resolve: () => Promise.resolve(agent),
     emit: (event) => events.push(event),
@@ -468,6 +474,92 @@ describe('BridgeSession', () => {
       error: 'Install the shared Skill first.',
     });
     expect(texts(events)).toEqual([]);
+  });
+
+  it.each(['new', 'resume', 'load', 'warm'])(
+    'delivers local instructions with the user content on every turn after %s',
+    async (opening) => {
+      const log = path.join(root, 'instructions.jsonl');
+      const env = {
+        ...process.env,
+        FAKE_LOG: log,
+        ...(['load', 'resume'].includes(opening)
+          ? { FAKE_VARIANT: opening }
+          : {}),
+      };
+      const warm = opening === 'warm' ? await discovered(env) : undefined;
+      const calls: string[] = [];
+      const { session, target, events } = start(
+        {
+          acpSessionId: ['load', 'resume'].includes(opening)
+            ? 's-earlier'
+            : null,
+        },
+        FAKE,
+        env,
+        undefined,
+        prepare,
+        warm ? Promise.resolve(warm) : undefined,
+        async (agentId, sessionId) => {
+          calls.push(`${agentId}:${sessionId}`);
+          return `shared instructions ${calls.length}`;
+        },
+      );
+      const content: PromptContent[] = [
+        { type: 'text', text: 'user message' },
+        { type: 'image', data: 'aW1hZ2U=', mimeType: 'image/png' },
+      ];
+      for (const promptId of ['p1', 'p2']) {
+        session.handle({ type: 'prompt', session: target, promptId, content });
+        expect(await until(events, ended(promptId))).toMatchObject({
+          error: null,
+        });
+      }
+      const trace = (await readFile(log, 'utf8'))
+        .trim()
+        .split('\n')
+        .map((line) => JSON.parse(line));
+      const prompts = trace.filter((entry) => entry.method === 'prompt');
+      expect(prompts).toHaveLength(2);
+      for (const [index, entry] of prompts.entries()) {
+        expect(entry.params.prompt).toEqual([
+          { type: 'text', text: `shared instructions ${index + 1}` },
+          ...content,
+        ]);
+      }
+      expect(calls).toEqual(['fake:session-1', 'fake:session-1']);
+      expect(
+        events.filter((event) => event.kind === 'turnStarted'),
+      ).toHaveLength(2);
+      expect(JSON.stringify(events)).not.toContain('shared instructions');
+      expect(
+        trace.some(
+          (entry) => entry.method === (opening === 'warm' ? 'new' : opening),
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it('does not silently send a prompt without required local instructions', async () => {
+    const log = path.join(root, 'instructions-error.jsonl');
+    const { session, target, events } = start(
+      {},
+      FAKE,
+      { ...process.env, FAKE_LOG: log },
+      undefined,
+      prepare,
+      undefined,
+      async () => {
+        throw new Error('Reinstall the CLI and resend the message.');
+      },
+    );
+    prompt(session, target, 'p1', 'hi');
+    expect(await until(events, ended('p1'))).toMatchObject({
+      error: 'Reinstall the CLI and resend the message.',
+    });
+    expect((await traced(log)).some((entry) => entry.method === 'prompt')).toBe(
+      false,
+    );
   });
 
   it('says what it is doing while the agent opens', async () => {
