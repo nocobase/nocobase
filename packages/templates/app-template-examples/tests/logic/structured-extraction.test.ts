@@ -52,7 +52,7 @@ beforeAll(async () => {
   });
   model = { modelService: service.name, model: 'fixture-chat' };
   // Deliberately hostile chat defaults must not select Runner execution, scopes or tools.
-  agents.onlineAgent.configurer.registerOnlineAgentGlobalScope({
+  agents.onlineAgent.configurator.registerOnlineAgentGlobalScope({
     agentId: 'unrelated-runner',
     tool: ['unrelated-tool'],
     model: ['unrelated/model'],

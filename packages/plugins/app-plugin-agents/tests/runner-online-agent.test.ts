@@ -221,7 +221,7 @@ it('accepts exactly one concurrent round, gates shared sends and keeps cancellin
 it('selects scoped Runner configuration before native model lookup and restores without providers', async () => {
   const f = await fixture();
   const provider = vi.fn(() => ({ agentId: f.agentId }));
-  h.services.onlineAgent.configurer.registerOnlineAgentScope(
+  h.services.onlineAgent.configurator.registerOnlineAgentScope(
     'coding',
     provider,
   );
@@ -283,7 +283,7 @@ it('selects scoped Runner configuration before native model lookup and restores 
 it('applies explicit pending scopes to the latest saved configuration and freezes providers while busy', async () => {
   const f = await fixture();
   const provider = vi.fn(() => ({ systemPromptTemplate: 'Pending prompt' }));
-  h.services.onlineAgent.configurer.registerOnlineAgentScope(
+  h.services.onlineAgent.configurator.registerOnlineAgentScope(
     'pending',
     provider,
   );

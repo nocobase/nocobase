@@ -27,7 +27,7 @@ import { conflict, invalid } from '../kernel/errors.js';
 import type { IdSource } from '../kernel/ids.js';
 import type { ModelRef } from '../../shared/models.js';
 import {
-  OnlineAgentConfigurer,
+  OnlineAgentConfigurator,
   type OnlineAgentContext,
   type OnlineAgentConfig,
   type OnlineAgentOptions,
@@ -124,7 +124,8 @@ export interface OnlineAgent {
   try(options?: { wait?: number }): Promise<OnlineAgentResult>;
 }
 export class OnlineAgentService implements OnlineAgentRealtimeService {
-  readonly configurer: OnlineAgentConfigurer = new OnlineAgentConfigurer();
+  readonly configurator: OnlineAgentConfigurator =
+    new OnlineAgentConfigurator();
   private stopping = false;
   private active = new Map<string, OnlineAgentExecution>();
   private gates = new Map<string, Promise<unknown>>();
@@ -146,13 +147,13 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       deps.uiStreams ??
       new OnlineAgentUIStreams({ onError: (error) => deps.onError(error) });
     deps.sessions.native.messages = new NativeMessages(
-      this.configurer,
+      this.configurator,
       deps.resolver,
     );
     this.native = new NativeOnlineAgent({
       uiStreams: this.uiStreams,
       ...deps,
-      configurer: this.configurer,
+      configurator: this.configurator,
       complete: (id, execution) => {
         if (this.active.get(id) === execution) this.active.delete(id);
       },
@@ -262,7 +263,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       const defaults = await this.deps.sessions.defaults(context.user.id);
       const selection =
         prepared ??
-        (await this.configurer.resolveSelection(
+        (await this.configurator.resolveSelection(
           context,
           { ...options, scope: options.scope ?? defaults.scope },
           undefined,
@@ -454,7 +455,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         throw conflict('This conversation is busy.');
       if (selectedModel)
         throw invalid('Runner chat does not use a native model.');
-      const config = await this.configurer.resolve(
+      const config = await this.configurator.resolve(
         context,
         options,
         runner,
@@ -470,7 +471,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     return this.gate(id, async () => {
       if (this.active.has(id)) throw conflict('This conversation is busy.');
       const session = await this.deps.sessions.load(context.user.id, id);
-      const config = await this.configurer.resolve(
+      const config = await this.configurator.resolve(
         context,
         options,
         session.config,
@@ -557,7 +558,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
             ))!;
             const requested = input?.overrides ?? pendingOptions;
             const resolved = requested
-              ? await this.configurer.resolve(context, requested, current)
+              ? await this.configurator.resolve(context, requested, current)
               : current;
             if (resolved.agentId !== binding.agentId)
               throw conflict(
@@ -585,7 +586,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     } else {
       const defaults = await this.deps.sessions.defaults(context.user.id);
       // Select the executor before querying any native model service.
-      prepared = await this.configurer.resolveSelection(
+      prepared = await this.configurator.resolveSelection(
         context,
         {
           ...options,
@@ -924,7 +925,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     let afterSeq: number;
     const pending: Promise<unknown>[] = [];
     let boundContext: OnlineAgentToolContext;
-    let tools: ReturnType<OnlineAgentConfigurer['bind']>;
+    let tools: ReturnType<OnlineAgentConfigurator['bind']>;
     try {
       session = await this.deps.sessions.load(context.user.id, id);
       if (session.call?.state === 'running' || session.call?.closing)
@@ -932,7 +933,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
           'The previous execution has not been confirmed stopped.',
         );
       config = input?.overrides
-        ? await this.configurer.resolve(
+        ? await this.configurator.resolve(
             context,
             input.overrides,
             session.config,
@@ -956,7 +957,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         sessionId: id,
         signal: execution.abort.signal,
       });
-      tools = this.configurer.bind(
+      tools = this.configurator.bind(
         config,
         boundContext,
         this.deps.resolver,

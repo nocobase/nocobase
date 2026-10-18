@@ -102,7 +102,7 @@ function supported(value: object) {
     );
 }
 
-export class OnlineAgentConfigurer {
+export class OnlineAgentConfigurator {
   private globals: (OnlineAgentScope | OnlineAgentScopeProvider)[] = [];
   private scopes = new Map<
     string,

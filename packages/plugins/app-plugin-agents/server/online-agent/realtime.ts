@@ -9,7 +9,7 @@ import type {
   OnlineAgentOptions,
   OnlineAgentConfig,
   OnlineAgentContext,
-  OnlineAgentConfigurer,
+  OnlineAgentConfigurator,
 } from './config.js';
 import type { OnlineAgent } from './service.js';
 
@@ -95,7 +95,7 @@ export interface OnlineAgentRuntime extends OnlineAgentRealtimeService {
   ): Promise<AppUIMessage>;
   /** Internal server boot hook, before accepting requests. */
   recoverAtStartup(): Promise<void>;
-  readonly configurer: OnlineAgentConfigurer;
+  readonly configurator: OnlineAgentConfigurator;
   background(
     context: OnlineAgentContext,
     options?: Omit<OnlineAgentRealtimeOptions, 'showInChatList'>,

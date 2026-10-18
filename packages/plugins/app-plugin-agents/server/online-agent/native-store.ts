@@ -30,7 +30,7 @@ import {
 import { conflict, invalid, notFound } from '../kernel/errors.js';
 import { asJson, jsonObject } from '../kernel/values.js';
 import type { Tx, TxRunner } from '../kernel/tx.js';
-import { OnlineAgentConfigurer, type OnlineAgentConfig } from './config.js';
+import { OnlineAgentConfigurator, type OnlineAgentConfig } from './config.js';
 import type { OnlineAgentCall } from './sessions.js';
 import { NativeMessages, type NativeMessage } from './messages.js';
 export type NativeApproval = AppUIToolApprovalInput;
@@ -51,7 +51,7 @@ export type NativeHistoryPage = {
 };
 
 export class NativeSessionStore {
-  messages: NativeMessages = new NativeMessages(new OnlineAgentConfigurer());
+  messages: NativeMessages = new NativeMessages(new OnlineAgentConfigurator());
   constructor(
     private deps: {
       tx: TxRunner;

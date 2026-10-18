@@ -3,7 +3,7 @@ import type { Tool } from 'ai';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { z } from 'zod';
 import {
-  OnlineAgentConfigurer,
+  OnlineAgentConfigurator,
   type OnlineAgentToolContext,
   type OnlineAgentToolDefinition,
 } from '../server/online-agent/config.js';
@@ -26,8 +26,8 @@ async function bind(
   execute: () => unknown,
   toModelOutput?: BoundTool['toModelOutput'],
 ) {
-  const configurer = new OnlineAgentConfigurer();
-  configurer.registerTool('business', {
+  const configurator = new OnlineAgentConfigurator();
+  configurator.registerTool('business', {
     version: '1',
     definition: {
       inputSchema: z.object({}),
@@ -37,11 +37,11 @@ async function bind(
     },
   });
   const pending: Promise<unknown>[] = [];
-  const config = await configurer.resolve(context, { tool: ['business'] });
-  const tool = configurer.bind(config, context, undefined, (task) => {
+  const config = await configurator.resolve(context, { tool: ['business'] });
+  const tool = configurator.bind(config, context, undefined, (task) => {
     pending.push(task);
   }).business;
-  return { tool, pending, configurer };
+  return { tool, pending, configurator };
 }
 
 async function collect(tool: BoundTool): Promise<OnlineAgentJson[]> {
@@ -130,7 +130,7 @@ describe('strict tool JSON results', () => {
         >['execute']
       >
     >();
-    expectTypeOf<ReturnType<OnlineAgentConfigurer['bind']>>().toEqualTypeOf<
+    expectTypeOf<ReturnType<OnlineAgentConfigurator['bind']>>().toEqualTypeOf<
       Record<string, BoundTool>
     >();
   });
@@ -276,7 +276,7 @@ describe('strict tool JSON results', () => {
       return { type: 'text' as const, value: record.nested.value };
     });
     const execute = vi.fn(() => raw);
-    const { tool, configurer } = await bind(execute, converter);
+    const { tool, configurator } = await bind(execute, converter);
     const [result] = await collect(tool);
     expect(
       await tool.toModelOutput!({
@@ -292,8 +292,8 @@ describe('strict tool JSON results', () => {
     expect(raw).toEqual({ nested: { value: 'business' } });
     expect(converter.mock.calls[0][0].output).not.toBe(result);
     expect(execute).toHaveBeenCalledTimes(1);
-    expect(configurer.toolDefinition('business')?.inputSchema).toBeDefined();
-    expect(configurer.toolDefinition('unknown')).toBeUndefined();
+    expect(configurator.toolDefinition('business')?.inputSchema).toBeDefined();
+    expect(configurator.toolDefinition('unknown')).toBeUndefined();
     expect(execute).toHaveBeenCalledTimes(1);
   });
 

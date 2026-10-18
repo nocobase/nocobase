@@ -142,7 +142,7 @@ async function fixture(
       defaultModel: async () => ref,
       onError: () => {},
     });
-    service.configurer.registerTool('business', {
+    service.configurator.registerTool('business', {
       version: '1',
       definition: {
         inputSchema: z.object({ value: z.string() }),
@@ -333,7 +333,7 @@ describe('native SDK transport, persistence and approval', () => {
   it('derives every public history exit from one private original and reprojects without writes or effects', async () => {
     const f = await fixture(true);
     let display = 'First public projection';
-    const definition = f.service.configurer.toolDefinition('business')!;
+    const definition = f.service.configurator.toolDefinition('business')!;
     vi.spyOn(definition.public!, 'input').mockImplementation(() => ({
       label: display,
     }));
@@ -631,7 +631,7 @@ describe('native SDK transport, persistence and approval', () => {
       execute: f.execute,
       public: { input, output: () => ({}) },
     };
-    vi.spyOn(f.service.configurer, 'toolDefinition').mockReturnValue(
+    vi.spyOn(f.service.configurator, 'toolDefinition').mockReturnValue(
       definition,
     );
     vi.spyOn(f.model, 'doStream')
@@ -670,7 +670,9 @@ describe('native SDK transport, persistence and approval', () => {
     ).toContain('invalid-input');
     await f.service.shutdown();
     const restored = f.reopen();
-    vi.spyOn(restored.configurer, 'toolDefinition').mockReturnValue(definition);
+    vi.spyOn(restored.configurator, 'toolDefinition').mockReturnValue(
+      definition,
+    );
     const restoredSession = await restored.realtime(actor(), {
       sessionId: f.agent.sessionId,
     });
@@ -1488,7 +1490,7 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
   () => {
     it('replays only projected tool data while preserving raw results for the model', async () => {
       const f = await fixture(true, false, 1, redisConfig());
-      const definition = f.service.configurer.toolDefinition('business')!;
+      const definition = f.service.configurator.toolDefinition('business')!;
       vi.spyOn(definition.public!, 'input').mockReturnValue({
         label: 'Public request',
       });

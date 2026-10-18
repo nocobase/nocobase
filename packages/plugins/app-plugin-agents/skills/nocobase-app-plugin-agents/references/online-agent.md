@@ -6,9 +6,9 @@ Use `OnlineAgentService` for SDK conversations that call application services an
 
 ## Obtain and configure the shared service
 
-Import the original `agentsToken` from `@nocobase/app-plugin-agents/server/tokens` and resolve `agentsToken.onlineAgent` in an application provider after the plugin has registered. Do not construct a second service for an HTTP entry or user: the application instance coordinates busy, stop and finalization across all facades. `OnlineAgentService` and `OnlineAgentConfigurer` are exported from `@nocobase/app-plugin-agents/server` and `@nocobase/app-plugin-agents/server/online-agent`; the latter also exports the prefixed configuration, tool and stream contracts.
+Import the original `agentsToken` from `@nocobase/app-plugin-agents/server/tokens` and resolve `agentsToken.onlineAgent` in an application provider after the plugin has registered. Do not construct a second service for an HTTP entry or user: the application instance coordinates busy, stop and finalization across all facades. `OnlineAgentService` and `OnlineAgentConfigurator` are exported from `@nocobase/app-plugin-agents/server` and `@nocobase/app-plugin-agents/server/online-agent`; the latter also exports the prefixed configuration, tool and stream contracts.
 
-`onlineAgent.configurer` is the `OnlineAgentConfigurer` (the configuration component). Register global layers, named business scopes and versioned tools once at application boot. It resolves prompts, variables, model lists and tool sets; a Scope selects ordinary configuration and grants no business permission.
+`onlineAgent.configurator` is the `OnlineAgentConfigurator` (the configuration component). Register global layers, named business scopes and versioned tools once at application boot. It resolves prompts, variables, model lists and tool sets; a Scope selects ordinary configuration and grants no business permission.
 
 ```ts
 import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
@@ -32,7 +32,7 @@ export function configureInvoices(
   invoiceToken: ServiceToken<InvoiceService>,
 ): OnlineAgentRuntime {
   const online = resolver.resolve(agentsToken).onlineAgent;
-  online.configurer.registerTool('read_invoice', {
+  online.configurator.registerTool('read_invoice', {
     version: '1',
     definition: (services) => ({
       inputSchema: z.object({ id: z.string() }),
@@ -40,11 +40,11 @@ export function configureInvoices(
         services.resolve(invoiceToken).read(id, context),
     }),
   });
-  online.configurer.registerOnlineAgentGlobalScope({
+  online.configurator.registerOnlineAgentGlobalScope({
     model: ['billing-models/chat'],
     systemPromptTemplate: 'Answer using the authorized business tools.',
   });
-  online.configurer.registerOnlineAgentScope('invoices', {
+  online.configurator.registerOnlineAgentScope('invoices', {
     tool: ['read_invoice'],
     systemPromptTemplate: {
       variableSchema: z.object({ invoiceId: z.string() }),
@@ -130,7 +130,7 @@ Permission-restricted configuration, custom permission/approval protocols and no
 `OnlineAgentRealtimeService` and `OnlineAgentRealtimeSession` are the replaceable public conversation contracts. Both executors return `AppUIMessage[]` history and standard SDK streams. Runner blocks retain source IDs, sequences, creation times and stable part identities in message metadata; render source segments around independent notifications while retaining one logical message. Use the SDK to parse, assemble and resume the stream. Native background sessions retain separate SDK history and structured `run(schema)` / `get()` capabilities; they have no browser `receive()` method. The retired custom stream contracts and memory replay manager are no longer exported. EOF or cancelling a subscriber means neither saved completion nor business Stop.
 
 ```ts
-online.configurer.registerOnlineAgentScope('coding', {
+online.configurator.registerOnlineAgentScope('coding', {
   agentId: 'runner-agent-id',
 });
 const chat = await online.realtime(actor, { scope: ['coding'] });

@@ -1,15 +1,15 @@
 import { expectTypeOf } from 'vitest';
 import { z } from 'zod';
 import {
-  OnlineAgentConfigurer,
+  OnlineAgentConfigurator,
   type OnlineAgentToolContext,
   type OnlineAgentToolDefinition,
 } from '../server/online-agent/config.js';
 import type { OnlineAgentJson } from '../server/online-agent/codec.js';
 
 // Compile-only checks: this file is included by tsconfig.type-tests.json, not Vitest.
-function checkContract(configurer: OnlineAgentConfigurer): void {
-  configurer.registerTool('inferred_json', {
+function checkContract(configurator: OnlineAgentConfigurator): void {
+  configurator.registerTool('inferred_json', {
     version: '1',
     definition: {
       inputSchema: z.object({ id: z.string() }),
@@ -34,14 +34,14 @@ function checkContract(configurer: OnlineAgentConfigurer): void {
       },
     },
   });
-  configurer.registerTool('promised_json', {
+  configurator.registerTool('promised_json', {
     version: '1',
     definition: {
       inputSchema: z.unknown(),
       execute: async () => ({ value: [null, true, 1, 'text'] }),
     },
   });
-  configurer.registerTool('streamed_json', {
+  configurator.registerTool('streamed_json', {
     version: '1',
     definition: {
       inputSchema: z.unknown(),
@@ -51,7 +51,7 @@ function checkContract(configurer: OnlineAgentConfigurer): void {
       },
     },
   });
-  configurer.registerTool('date', {
+  configurator.registerTool('date', {
     version: '1',
     definition: {
       inputSchema: z.unknown(),
@@ -59,7 +59,7 @@ function checkContract(configurer: OnlineAgentConfigurer): void {
       execute: () => new Date(0),
     },
   });
-  configurer.registerTool('bigint', {
+  configurator.registerTool('bigint', {
     version: '1',
     definition: {
       inputSchema: z.unknown(),
@@ -67,7 +67,7 @@ function checkContract(configurer: OnlineAgentConfigurer): void {
       execute: () => 1n,
     },
   });
-  configurer.registerTool('binary', {
+  configurator.registerTool('binary', {
     version: '1',
     definition: {
       inputSchema: z.unknown(),
@@ -75,7 +75,7 @@ function checkContract(configurer: OnlineAgentConfigurer): void {
       execute: () => new Uint8Array([1]),
     },
   });
-  configurer.registerTool('promised_date', {
+  configurator.registerTool('promised_date', {
     version: '1',
     definition: {
       inputSchema: z.unknown(),
@@ -83,7 +83,7 @@ function checkContract(configurer: OnlineAgentConfigurer): void {
       execute: async () => new Date(0),
     },
   });
-  configurer.registerTool('promised_bigint', {
+  configurator.registerTool('promised_bigint', {
     version: '1',
     definition: {
       inputSchema: z.unknown(),
@@ -91,7 +91,7 @@ function checkContract(configurer: OnlineAgentConfigurer): void {
       execute: async () => 1n,
     },
   });
-  configurer.registerTool('promised_binary', {
+  configurator.registerTool('promised_binary', {
     version: '1',
     definition: {
       inputSchema: z.unknown(),
@@ -99,7 +99,7 @@ function checkContract(configurer: OnlineAgentConfigurer): void {
       execute: async () => new Uint8Array([1]),
     },
   });
-  configurer.registerTool('streamed_date', {
+  configurator.registerTool('streamed_date', {
     version: '1',
     definition: {
       inputSchema: z.unknown(),
@@ -109,7 +109,7 @@ function checkContract(configurer: OnlineAgentConfigurer): void {
       },
     },
   });
-  configurer.registerTool('streamed_bigint', {
+  configurator.registerTool('streamed_bigint', {
     version: '1',
     definition: {
       inputSchema: z.unknown(),
@@ -119,7 +119,7 @@ function checkContract(configurer: OnlineAgentConfigurer): void {
       },
     },
   });
-  configurer.registerTool('streamed_binary', {
+  configurator.registerTool('streamed_binary', {
     version: '1',
     definition: {
       inputSchema: z.unknown(),
@@ -129,7 +129,7 @@ function checkContract(configurer: OnlineAgentConfigurer): void {
       },
     },
   });
-  configurer.registerTool('factory_date', {
+  configurator.registerTool('factory_date', {
     version: '1',
     // @ts-expect-error A factory cannot bypass the JSON output constraint.
     definition: () => ({
@@ -141,7 +141,7 @@ function checkContract(configurer: OnlineAgentConfigurer): void {
     inputSchema: z.unknown(),
     execute: () => ({ at: new Date(0).toISOString() }),
   };
-  configurer.registerTool('explicit_conversion', {
+  configurator.registerTool('explicit_conversion', {
     version: '1',
     definition: json,
   });

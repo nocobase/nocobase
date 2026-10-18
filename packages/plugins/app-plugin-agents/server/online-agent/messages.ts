@@ -18,7 +18,7 @@ import {
   type AppUIMessage,
   type AppUIMessageMetadata,
 } from '../../shared/online-agent.js';
-import type { OnlineAgentConfigurer } from './config.js';
+import type { OnlineAgentConfigurator } from './config.js';
 import { jsonSafe } from './codec.js';
 import { strictJson } from './strict-json.js';
 import type { NativeUIChunk } from './native.js';
@@ -103,7 +103,7 @@ function cloneModelValue(
 /** Central conversions from immutable, private SDK originals, never a second saved projection. */
 export class NativeMessages {
   constructor(
-    private configurer: OnlineAgentConfigurer,
+    private configurator: OnlineAgentConfigurator,
     private resolver: ServiceResolver | undefined = undefined,
   ) {}
 
@@ -233,7 +233,7 @@ export class NativeMessages {
     const name = toolName(part);
     if (allowedTools && !allowedTools.includes(name)) return undefined;
     try {
-      const definition = this.configurer.toolDefinition(name, this.resolver);
+      const definition = this.configurator.toolDefinition(name, this.resolver);
       if (!definition?.public) return undefined;
       // SDK tool inputs have already passed inputSchema, including its transforms.
       // Persisted SDK tool metadata distinguishes invalid model inputs without rerunning transforms.
@@ -454,7 +454,7 @@ export class NativeMessages {
             output: unknown;
           }): Promise<ToolResultPart['output']> => {
             try {
-              const definition = this.configurer.toolDefinition(
+              const definition = this.configurator.toolDefinition(
                 name,
                 this.resolver,
               );

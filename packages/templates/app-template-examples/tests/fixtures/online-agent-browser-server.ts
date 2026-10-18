@@ -15,7 +15,7 @@ const { createStandaloneServer } = (await import(
 const server = await createStandaloneServer({ viteDevUrl: false });
 const online = server.application.container.resolve(agentsToken).onlineAgent;
 let effects = 0;
-online.configurer.registerTool('fixture_action', {
+online.configurator.registerTool('fixture_action', {
   version: '1',
   definition: {
     inputSchema: z.object({ value: z.string() }),
@@ -58,7 +58,7 @@ online.configurer.registerTool('fixture_action', {
     },
   },
 });
-online.configurer.registerOnlineAgentScope('fixture-approval', {
+online.configurator.registerOnlineAgentScope('fixture-approval', {
   tool: ['fixture_action'],
 });
 await startNodeAppServer(server, {

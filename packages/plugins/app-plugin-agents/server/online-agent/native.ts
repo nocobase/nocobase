@@ -24,7 +24,7 @@ import { conflict, invalid } from '../kernel/errors.js';
 import type { IdSource } from '../kernel/ids.js';
 import { reasoningOf } from '../online/gateway.js';
 import type {
-  OnlineAgentConfigurer,
+  OnlineAgentConfigurator,
   OnlineAgentContext,
   OnlineAgentOptions,
   OnlineAgentToolContext,
@@ -50,7 +50,7 @@ export class NativeOnlineAgent {
       sessions: OnlineAgentSessionManager;
       uiStreams: OnlineAgentUIStreams;
       ids: IdSource;
-      configurer: OnlineAgentConfigurer;
+      configurator: OnlineAgentConfigurator;
       resolver?: ServiceResolver;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       onError(error: unknown): void;
@@ -88,7 +88,7 @@ export class NativeOnlineAgent {
     let metadata: AppUIMessageMetadata;
     let priorMessage: NativeMessage | undefined;
     let previousPage: ModelMessage | undefined;
-    let tools: ReturnType<OnlineAgentConfigurer['bind']>;
+    let tools: ReturnType<OnlineAgentConfigurator['bind']>;
     let model: LanguageModel;
     let afterSeq: number;
     let executionId: string;
@@ -116,7 +116,7 @@ export class NativeOnlineAgent {
     try {
       const session = await this.deps.sessions.load(context.user.id, id);
       config = input?.overrides
-        ? await this.deps.configurer.resolve(
+        ? await this.deps.configurator.resolve(
             context,
             input.overrides,
             session.config,
@@ -145,7 +145,7 @@ export class NativeOnlineAgent {
         sessionId: id,
         signal: execution.abort.signal,
       });
-      tools = this.deps.configurer.bind(
+      tools = this.deps.configurator.bind(
         config,
         boundContext,
         this.deps.resolver,

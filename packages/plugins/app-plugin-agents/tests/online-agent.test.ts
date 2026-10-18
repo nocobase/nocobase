@@ -18,7 +18,7 @@ import { createHarness, type Harness } from './harness.js';
 import { OnlineAgentService } from '../server/online-agent/service.js';
 import { createSessionManager } from '../server/online-agent/sessions.js';
 import {
-  OnlineAgentConfigurer,
+  OnlineAgentConfigurator,
   type OnlineAgentContext,
   type OnlineAgentToolContext,
 } from '../server/online-agent/config.js';
@@ -222,7 +222,7 @@ describe('OnlineAgent service slice', () => {
       return value * 10;
     });
     f.resolver.instance(token, { read });
-    f.service.configurer.registerTool('read', {
+    f.service.configurator.registerTool('read', {
       version: '1',
       definition: (resolver) => ({
         inputSchema: z.object({ value: z.number() }),
@@ -230,7 +230,7 @@ describe('OnlineAgent service slice', () => {
           resolver.resolve(token).read(value, actor),
       }),
     });
-    f.service.configurer.registerOnlineAgentGlobalScope({
+    f.service.configurator.registerOnlineAgentGlobalScope({
       tool: ['read'],
       systemPromptTemplate: 'Use the read tool twice.',
     });
@@ -341,7 +341,7 @@ describe('OnlineAgent service slice', () => {
       }),
     });
     const f = await fixture(model);
-    f.service.configurer.registerTool('wait', {
+    f.service.configurator.registerTool('wait', {
       version: '1',
       definition: {
         inputSchema: z.object({}),
@@ -353,7 +353,7 @@ describe('OnlineAgent service slice', () => {
       },
     });
     const provider = vi.fn(() => ({ tool: ['wait'] }));
-    f.service.configurer.registerOnlineAgentGlobalScope(provider);
+    f.service.configurator.registerOnlineAgentGlobalScope(provider);
     const client = await h.database.connection().client<Knex>();
     const sql: string[] = [];
     const record = (query: { sql: string }) => sql.push(query.sql);
@@ -520,7 +520,7 @@ describe('OnlineAgent service slice', () => {
       }),
     });
     const f = await fixture(model);
-    f.service.configurer.registerTool('fail', {
+    f.service.configurator.registerTool('fail', {
       version: '1',
       definition: {
         inputSchema: z.object({}),
@@ -574,27 +574,29 @@ it('round trips provider fields, bytes, URLs and marker-shaped tool data without
 });
 
 it('resolves scope order and explicit overrides, rejects unsupported requirements and changed tools', async () => {
-  const configurer = new OnlineAgentConfigurer();
-  configurer.registerOnlineAgentGlobalScope({
+  const configurator = new OnlineAgentConfigurator();
+  configurator.registerOnlineAgentGlobalScope({
     agentId: 'global-agent',
     systemPromptTemplate: 'Global',
     model: ['fixture/chat'],
   });
-  configurer.registerOnlineAgentScope('business', {
+  configurator.registerOnlineAgentScope('business', {
     agentId: 'business-agent',
     systemPromptTemplate: { template: (ctx) => `${ctx.systemPrompt}:business` },
     context: { variable: { value: 1 } },
   });
-  const initial = await configurer.resolve(context(), { scope: ['business'] });
+  const initial = await configurator.resolve(context(), {
+    scope: ['business'],
+  });
   expect(initial.agentId).toBe('business-agent');
-  configurer.registerOnlineAgentScope('coding', { agentId: 'coding-agent' });
+  configurator.registerOnlineAgentScope('coding', { agentId: 'coding-agent' });
   expect(
-    (await configurer.resolve(context(), { scope: ['business', 'coding'] }))
+    (await configurator.resolve(context(), { scope: ['business', 'coding'] }))
       .agentId,
   ).toBe('coding-agent');
   expect(
     (
-      await configurer.resolve(context(), {
+      await configurator.resolve(context(), {
         scope: ['business', 'coding'],
         agentId: 'online',
       })
@@ -602,13 +604,13 @@ it('resolves scope order and explicit overrides, rejects unsupported requirement
   ).toBe('online');
   expect(initial.systemPrompt).toBe('Global:business');
   expect(
-    (await configurer.resolve(context(), { model: [] }, initial)).model,
+    (await configurator.resolve(context(), { model: [] }, initial)).model,
   ).toEqual([]);
   expect(() =>
-    configurer.registerOnlineAgentGlobalScope({ permissions: [] } as never),
+    configurator.registerOnlineAgentGlobalScope({ permissions: [] } as never),
   ).toThrow('not supported');
   expect(() =>
-    configurer.registerTool('approval', {
+    configurator.registerTool('approval', {
       version: '1',
       definition: { needsApproval: true } as never,
     }),
@@ -788,11 +790,11 @@ it('keeps the JSON Schema through business tool calls and validates the final SD
     expect(actor.sessionId).toBe(background.sessionId);
     return { count: 2 };
   });
-  f.service.configurer.registerTool('count', {
+  f.service.configurator.registerTool('count', {
     version: '1',
     definition: { inputSchema: z.object({}), execute },
   });
-  f.service.configurer.registerOnlineAgentGlobalScope({ tool: ['count'] });
+  f.service.configurator.registerOnlineAgentGlobalScope({ tool: ['count'] });
   const background = await f.service.background(context('bob'));
   const schema: JSONSchema7 = {
     type: 'object',
@@ -941,8 +943,8 @@ it('does not evaluate providers on read and persists only explicit idle override
   );
   const global = vi.fn(() => ({ systemPromptTemplate: 'Initial' }));
   const business = vi.fn(() => ({ systemPromptTemplate: 'Changed' }));
-  f.service.configurer.registerOnlineAgentGlobalScope(global);
-  f.service.configurer.registerOnlineAgentScope('change', business);
+  f.service.configurator.registerOnlineAgentGlobalScope(global);
+  f.service.configurator.registerOnlineAgentScope('change', business);
   const agent = await f.service.realtime(context());
   const loaded = await f.service.realtime(context(), {
     sessionId: agent.sessionId,
@@ -1008,7 +1010,7 @@ it('caches a shared factory while binding distinct users to streaming tool execu
       yield { phase: 'complete', actor: actor.user.id };
     },
   }));
-  f.service.configurer.registerTool('who', {
+  f.service.configurator.registerTool('who', {
     version: '1',
     definition: factory,
   });
@@ -1057,7 +1059,7 @@ it('selects the first resolved business or request model before validating the o
       doStream: async () => ({ stream: streamed(text('Done')) }),
     }),
   );
-  f.service.configurer.registerOnlineAgentScope('business', {
+  f.service.configurator.registerOnlineAgentScope('business', {
     model: ['fixture/business'],
   });
   const business = await f.service.realtime(context(), { scope: ['business'] });
@@ -1128,7 +1130,7 @@ it.each(['realtime', 'background'] as const)(
         doStream: async () => ({ stream: streamed(text('Done')) }),
       }),
     );
-    f.service.configurer.registerOnlineAgentGlobalScope({
+    f.service.configurator.registerOnlineAgentGlobalScope({
       systemPromptTemplate: 'Initial',
     });
     const provider = vi.fn(() => ({
@@ -1136,7 +1138,7 @@ it.each(['realtime', 'background'] as const)(
         template: (ctx: OnlineAgentContext) => `${ctx.systemPrompt}:once`,
       },
     }));
-    f.service.configurer.registerOnlineAgentScope('change', provider);
+    f.service.configurator.registerOnlineAgentScope('change', provider);
     const agent = await f.service[kind](context());
     const opened = await f.service[kind](context(), {
       sessionId: agent.sessionId,
@@ -1207,7 +1209,7 @@ it.each(['success', 'error', 'stream', 'abort'] as const)(
         throw new DOMException('private-abort', 'AbortError');
       return { value: 'private-result' };
     });
-    f.service.configurer.registerTool('effect', {
+    f.service.configurator.registerTool('effect', {
       version: '1',
       definition: {
         inputSchema: z.object({ key: z.string() }),
@@ -1344,7 +1346,7 @@ it.each([false, true])(
         },
       }),
     );
-    f.service.configurer.registerTool('dated', {
+    f.service.configurator.registerTool('dated', {
       version: '1',
       definition: {
         inputSchema: z.object({ key: z.string() }),
@@ -1591,11 +1593,11 @@ it('retries finalization without repeating a completed business tool or model st
     new Error('Finalization pending'),
   );
   const execute = vi.fn(() => ({ done: true }));
-  f.service.configurer.registerTool('business', {
+  f.service.configurator.registerTool('business', {
     version: '1',
     definition: { inputSchema: z.object({}), execute },
   });
-  f.service.configurer.registerOnlineAgentGlobalScope({ tool: ['business'] });
+  f.service.configurator.registerOnlineAgentGlobalScope({ tool: ['business'] });
   const agent = await f.service.realtime(context());
   await agent.send([{ role: 'user', content: 'Do business' }]);
   await vi.waitFor(() => expect(f.errors).toHaveLength(1));
@@ -2283,7 +2285,7 @@ it('keeps result observers pending until an uncooperative tool actually ends aft
     }),
   });
   const f = await fixture(model);
-  f.service.configurer.registerTool('wait', {
+  f.service.configurator.registerTool('wait', {
     version: '1',
     definition: {
       inputSchema: z.object({}),
@@ -2297,7 +2299,7 @@ it('keeps result observers pending until an uncooperative tool actually ends aft
       },
     },
   });
-  f.service.configurer.registerOnlineAgentGlobalScope({ tool: ['wait'] });
+  f.service.configurator.registerOnlineAgentGlobalScope({ tool: ['wait'] });
   const job = await f.service.background(context());
   await job.run([{ role: 'user', content: 'Wait' }], countSchema);
   await entered.promise;
@@ -2453,9 +2455,9 @@ it('saves native notices in the outer transaction without waking, rolls back and
 });
 
 it('validates HTTP variables across selected scope schemas while keeping trusted SDK policy overrides', async () => {
-  const configurer = new OnlineAgentConfigurer();
+  const configurator = new OnlineAgentConfigurator();
   const seen: unknown[] = [];
-  configurer.registerOnlineAgentScope('first', (actor) => {
+  configurator.registerOnlineAgentScope('first', (actor) => {
     seen.push(actor.variable);
     return {
       systemPromptTemplate: {
@@ -2464,13 +2466,13 @@ it('validates HTTP variables across selected scope schemas while keeping trusted
       },
     };
   });
-  configurer.registerOnlineAgentScope('second', {
+  configurator.registerOnlineAgentScope('second', {
     systemPromptTemplate: {
       variableSchema: z.strictObject({ count: z.number() }),
       template: (value) => JSON.stringify(value.variable),
     },
   });
-  const resolved = await configurer.resolve(
+  const resolved = await configurator.resolve(
     context(),
     {
       scope: ['first', 'second'],
@@ -2482,7 +2484,7 @@ it('validates HTTP variables across selected scope schemas while keeping trusted
   );
   expect(resolved.variable).toEqual({ name: 'Alice', count: 2 });
   expect(seen).toEqual([undefined]);
-  const trusted = await configurer.resolve(context(), {
+  const trusted = await configurator.resolve(context(), {
     model: ['private/model'],
     systemPromptTemplate: 'Trusted prompt',
     context: { variable: { arbitrary: true } },

@@ -7,7 +7,7 @@ export {
 
 export {
   OnlineAgentService,
-  OnlineAgentConfigurer,
+  OnlineAgentConfigurator,
   OnlineAgentResultError,
   type OnlineAgent,
   type OnlineAgentResult,

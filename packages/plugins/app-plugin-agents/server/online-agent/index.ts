@@ -6,7 +6,7 @@ export {
   OnlineAgentService,
 } from './service.js';
 export {
-  OnlineAgentConfigurer,
+  OnlineAgentConfigurator,
   type OnlineAgentContext,
   type OnlineAgentToolContext,
   type OnlineAgentScope,

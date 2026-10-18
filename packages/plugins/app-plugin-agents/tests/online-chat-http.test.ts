@@ -104,7 +104,7 @@ async function fixture() {
     await wait;
     return { actor: options.context.user.id, value: 7 };
   });
-  service.configurer.registerTool('business', {
+  service.configurator.registerTool('business', {
     version: '1',
     definition: { inputSchema: z.object({}), execute },
   });
@@ -154,7 +154,7 @@ it('uses standard POST streams for authenticated tools, authorized attachments a
     (await f.request('/conversations', 'POST', { title: 'x'.repeat(201) }))
       .status,
   ).toBe(400);
-  service.configurer.registerOnlineAgentScope('business', {
+  service.configurator.registerOnlineAgentScope('business', {
     tool: ['business'],
   });
   const created = await f.request('/conversations', 'POST', {
@@ -337,7 +337,7 @@ it.each(['static', 'provider'])(
     const f = await fixture();
     const scope = { model: ['alternate/other'] };
     const provider = vi.fn(() => scope);
-    service.configurer.registerOnlineAgentScope(
+    service.configurator.registerOnlineAgentScope(
       'alternate',
       kind === 'static' ? scope : provider,
     );
@@ -445,7 +445,7 @@ it('lets only the owner stop an unbound historical run even after its agent beco
 it('accepts declared business variables but rejects browser policy overrides on create and configure', async () => {
   const f = await fixture();
   const actors: unknown[] = [];
-  service.configurer.registerOnlineAgentScope('business-input', (actor) => {
+  service.configurator.registerOnlineAgentScope('business-input', (actor) => {
     actors.push(actor);
     return {
       tool: ['business'],

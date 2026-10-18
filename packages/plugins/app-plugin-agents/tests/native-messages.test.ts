@@ -7,7 +7,7 @@ import {
   type UIMessageChunk,
 } from 'ai';
 import { ServiceContainer } from '@nocobase/service-provider';
-import { OnlineAgentConfigurer } from '../server/online-agent/config.js';
+import { OnlineAgentConfigurator } from '../server/online-agent/config.js';
 import {
   NativeMessages,
   type NativeMessage,
@@ -39,14 +39,14 @@ const result = (
   resultProviderMetadata: { provider: { secret: 'result-private' } },
 });
 function fixture() {
-  const configurer = new OnlineAgentConfigurer();
+  const configurator = new OnlineAgentConfigurator();
   const input = vi.fn((value: { value: string; secret?: string }) => ({
     value: value.value,
   }));
   const output = vi.fn((value: { display: string; secret: string }) => ({
     display: value.display,
   }));
-  configurer.registerTool('business', {
+  configurator.registerTool('business', {
     version: '1',
     definition: {
       inputSchema: z.object({
@@ -58,10 +58,10 @@ function fixture() {
     },
   });
   return {
-    configurer,
+    configurator,
     input,
     output,
-    messages: new NativeMessages(configurer),
+    messages: new NativeMessages(configurator),
   };
 }
 function toolOutputs(messages: Awaited<ReturnType<NativeMessages['model']>>) {
@@ -161,8 +161,8 @@ describe('NativeMessages private SDK originals', () => {
   });
 
   it('projects current registered public tools, never provider annotations or approval internals', async () => {
-    const { messages, configurer } = fixture();
-    configurer.registerTool('private', {
+    const { messages, configurator } = fixture();
+    configurator.registerTool('private', {
       version: '1',
       definition: { inputSchema: z.unknown(), execute: async () => 'private' },
     });
@@ -216,7 +216,7 @@ describe('NativeMessages private SDK originals', () => {
     expect((await messages.public([original], []))[0].parts).toEqual([
       { type: 'text', text: 'hello' },
     ]);
-    const replacement = new OnlineAgentConfigurer();
+    const replacement = new OnlineAgentConfigurator();
     replacement.registerTool('business', {
       version: '2',
       definition: {
@@ -269,9 +269,9 @@ describe('NativeMessages private SDK originals', () => {
   ])(
     'projects SDK-parsed approval inputs without running schema transforms again',
     async (amount) => {
-      const configurer = new OnlineAgentConfigurer();
+      const configurator = new OnlineAgentConfigurator();
       const input = vi.fn((value: { amount: number }) => value);
-      configurer.registerTool('business', {
+      configurator.registerTool('business', {
         version: '1',
         definition: {
           inputSchema: z.object({ amount }),
@@ -279,7 +279,7 @@ describe('NativeMessages private SDK originals', () => {
           public: { input, output: (value) => value },
         },
       });
-      const messages = new NativeMessages(configurer);
+      const messages = new NativeMessages(configurator);
       const original = message([
         {
           type: 'tool-business',
@@ -313,8 +313,8 @@ describe('NativeMessages private SDK originals', () => {
     },
   );
   it('fails closed for throwing factories, throwing formatters and non-JSON projections', async () => {
-    const { messages, configurer, output } = fixture();
-    configurer.registerTool('factory', {
+    const { messages, configurator, output } = fixture();
+    configurator.registerTool('factory', {
       version: '1',
       definition: () => {
         throw new Error('private');
@@ -334,9 +334,9 @@ describe('NativeMessages private SDK originals', () => {
   });
 
   it('clones public callback arguments and returned projection values', async () => {
-    const configurer = new OnlineAgentConfigurer();
+    const configurator = new OnlineAgentConfigurator();
     const projected = { nested: { value: 'public' } };
-    configurer.registerTool('business', {
+    configurator.registerTool('business', {
       version: '1',
       definition: {
         inputSchema: z.object({ value: z.string() }).transform((value) => {
@@ -358,7 +358,7 @@ describe('NativeMessages private SDK originals', () => {
     });
     const original = message([result('business', { value: 'raw' })]);
     const before = structuredClone(original);
-    const visible = await new NativeMessages(configurer).public([original]);
+    const visible = await new NativeMessages(configurator).public([original]);
     projected.nested.value = 'changed later';
     expect(visible[0].parts[0]).toMatchObject({
       input: { nested: { value: 'public' } },
@@ -582,7 +582,7 @@ describe('NativeMessages stream projection', () => {
 describe('NativeMessages model conversion', () => {
   it('converts raw outputs with current custom toModelOutput through the application resolver', async () => {
     const resolver = new ServiceContainer();
-    const configurer = new OnlineAgentConfigurer();
+    const configurator = new OnlineAgentConfigurator();
     const returned = { type: 'text' as const, value: 'model output' };
     const convert = vi.fn(
       ({
@@ -606,10 +606,13 @@ describe('NativeMessages model conversion', () => {
         toModelOutput: convert,
       };
     });
-    configurer.registerTool('business', { version: '1', definition: factory });
+    configurator.registerTool('business', {
+      version: '1',
+      definition: factory,
+    });
     const original = message([result()]);
     const before = structuredClone(original);
-    const model = await new NativeMessages(configurer, resolver).model([
+    const model = await new NativeMessages(configurator, resolver).model([
       original,
     ]);
     expect(toolOutputs(model)).toEqual([
@@ -625,13 +628,13 @@ describe('NativeMessages model conversion', () => {
   });
 
   it('uses text for default strings and json for raw JSON objects, without canonical nesting', async () => {
-    const configurer = new OnlineAgentConfigurer();
+    const configurator = new OnlineAgentConfigurator();
     for (const name of ['string', 'json'])
-      configurer.registerTool(name, {
+      configurator.registerTool(name, {
         version: '1',
         definition: { inputSchema: z.unknown(), execute: async () => null },
       });
-    const model = await new NativeMessages(configurer).model([
+    const model = await new NativeMessages(configurator).model([
       message([
         result('string', 'actual string'),
         result('json', { type: 'text', value: 'ordinary JSON' }),
@@ -644,8 +647,8 @@ describe('NativeMessages model conversion', () => {
   });
 
   it('uses explicit safe failures for missing tools, unavailable factories and converter exceptions', async () => {
-    const configurer = new OnlineAgentConfigurer();
-    configurer.registerTool('throws', {
+    const configurator = new OnlineAgentConfigurator();
+    configurator.registerTool('throws', {
       version: '1',
       definition: {
         inputSchema: z.unknown(),
@@ -655,14 +658,14 @@ describe('NativeMessages model conversion', () => {
         },
       },
     });
-    configurer.registerTool('factory', {
+    configurator.registerTool('factory', {
       version: '1',
       definition: () => {
         throw new Error('private factory error');
       },
     });
     const outputs = toolOutputs(
-      await new NativeMessages(configurer).model([
+      await new NativeMessages(configurator).model([
         message([result('missing'), result('throws'), result('factory')]),
       ]),
     );
@@ -686,8 +689,8 @@ describe('NativeMessages model conversion', () => {
       undefined,
     ];
     for (const invalid of invalidOutputs) {
-      const configurer = new OnlineAgentConfigurer();
-      configurer.registerTool('business', {
+      const configurator = new OnlineAgentConfigurator();
+      configurator.registerTool('business', {
         version: '1',
         definition: {
           inputSchema: z.unknown(),
@@ -697,7 +700,7 @@ describe('NativeMessages model conversion', () => {
       });
       expect(
         toolOutputs(
-          await new NativeMessages(configurer).model([message([result()])]),
+          await new NativeMessages(configurator).model([message([result()])]),
         ),
       ).toEqual([
         {
@@ -709,10 +712,10 @@ describe('NativeMessages model conversion', () => {
   });
 
   it('supports detached binary and URL content in transient custom model output', async () => {
-    const configurer = new OnlineAgentConfigurer();
+    const configurator = new OnlineAgentConfigurator();
     const bytes = new Uint8Array([1, 2, 3]);
     const url = new URL('https://example.com/model-only');
-    configurer.registerTool('business', {
+    configurator.registerTool('business', {
       version: '1',
       definition: {
         inputSchema: z.unknown(),
@@ -735,7 +738,7 @@ describe('NativeMessages model conversion', () => {
       },
     });
     const outputs = toolOutputs(
-      await new NativeMessages(configurer).model([message([result()])]),
+      await new NativeMessages(configurator).model([message([result()])]),
     );
     expect(outputs).toEqual([
       {

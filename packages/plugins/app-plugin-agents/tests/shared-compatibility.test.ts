@@ -7,15 +7,16 @@ import type {
   OnlineAgentResult,
   OnlineAgentSafeError,
 } from '@nocobase/app-plugin-agents/server/online-agent';
+import { OnlineAgentConfigurator as OnlineAgentEntryConfigurator } from '@nocobase/app-plugin-agents/server/online-agent';
 import {
-  OnlineAgentConfigurer,
+  OnlineAgentConfigurator,
   type OnlineAgentToolDefinition,
   type OnlineAgentToolContext,
 } from '../server/online-agent/config.js';
 import { expect, expectTypeOf, it } from 'vitest';
 import {
   OnlineAgentService as PublicOnlineAgentService,
-  OnlineAgentConfigurer as PublicOnlineAgentConfigurer,
+  OnlineAgentConfigurator as PublicOnlineAgentConfigurator,
 } from '@nocobase/app-plugin-agents/server';
 import { z } from 'zod';
 import type { JSONSchema7, ModelMessage } from 'ai';
@@ -184,7 +185,7 @@ it('lets applications guard a pending request and report a queued run', async ()
 });
 
 it('preserves SDK tool input, output and execution context generics', () => {
-  const configurer = new OnlineAgentConfigurer();
+  const configurator = new OnlineAgentConfigurator();
   const definition: OnlineAgentToolDefinition<
     { value: number },
     { doubled: number },
@@ -201,8 +202,8 @@ it('preserves SDK tool input, output and execution context generics', () => {
       return { doubled: input.value * 2 };
     },
   };
-  configurer.registerTool('typed', { version: '1', definition });
-  configurer.registerTool('factory', {
+  configurator.registerTool('typed', { version: '1', definition });
+  configurator.registerTool('factory', {
     version: '1',
     definition: () => definition,
   });
@@ -212,8 +213,15 @@ const businessSession = (context: PublicToolContext): string =>
   context.sessionId;
 void businessSession;
 
-it('exposes the shared service and configurer through the public server entry', () => {
-  expect(PublicOnlineAgentConfigurer).toBe(OnlineAgentConfigurer);
+it('exposes the shared service and configurator through the public server entry', () => {
+  expect(PublicOnlineAgentConfigurator).toBe(OnlineAgentConfigurator);
+  expect(OnlineAgentEntryConfigurator).toBe(OnlineAgentConfigurator);
+  expectTypeOf<
+    PublicOnlineAgentService['configurator']
+  >().toEqualTypeOf<OnlineAgentConfigurator>();
+  expectTypeOf<
+    OnlineAgentRuntime['configurator']
+  >().toEqualTypeOf<OnlineAgentConfigurator>();
   expectTypeOf<
     Awaited<ReturnType<PublicOnlineAgentService['realtime']>>
   >().toEqualTypeOf<OnlineAgentRealtimeSession>();
