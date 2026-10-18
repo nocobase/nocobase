@@ -133,3 +133,68 @@ it('loads both history streams to reveal an older target and scrolls once across
   expect(scroll).toHaveBeenCalledTimes(3);
   client.clear();
 });
+
+it('handles an already-visible target once before later content starts overflowing', () => {
+  const root = {
+    id: 'visible',
+    createdAt: '2026-01-02T00:00:00Z',
+  } as IssueDetail['threads'][number]['root'];
+  const detail = {
+    id: 'short-issue',
+    threads: [{ root, replies: [] }],
+    activities: [],
+    threadsNextCursor: null,
+    activitiesNextCursor: null,
+  } as unknown as IssueDetail;
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const scroll = vi.fn();
+  function Timeline({ grown }: { readonly grown: boolean }) {
+    const timeline = useIssueTimeline(
+      grown
+        ? {
+            ...detail,
+            threadsNextCursor: 'older',
+            threads: [
+              ...detail.threads,
+              { root: { ...root, id: 'new' }, replies: [] },
+            ],
+          }
+        : detail,
+      [],
+      'visible',
+    );
+    return (
+      <div
+        style={{ overflowY: 'auto' }}
+        ref={(element) => {
+          if (!element) return;
+          element.scrollTo = scroll;
+          Object.defineProperties(element, {
+            clientHeight: { value: 100, configurable: true },
+            scrollHeight: { value: grown ? 500 : 100, configurable: true },
+          });
+        }}
+      >
+        {timeline.entries.map((entry) =>
+          entry.kind === 'thread' ? (
+            <div key={entry.key} data-comment-id={entry.thread.root.id} />
+          ) : null,
+        )}
+      </div>
+    );
+  }
+  const view = (grown: boolean) => (
+    <QueryClientProvider client={client}>
+      <Timeline grown={grown} />
+    </QueryClientProvider>
+  );
+  const { rerender } = render(view(false));
+  expect(document.querySelector('[data-comment-id="visible"]')).not.toBeNull();
+  expect(scroll).not.toHaveBeenCalled();
+  rerender(view(true));
+  expect(document.querySelector('[data-comment-id="new"]')).not.toBeNull();
+  expect(scroll).not.toHaveBeenCalled();
+  client.clear();
+});

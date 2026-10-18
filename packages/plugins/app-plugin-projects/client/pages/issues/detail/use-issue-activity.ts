@@ -146,7 +146,9 @@ export function useIssueTimeline(
     const element = document.querySelector<HTMLElement>(
       `[data-comment-id="${CSS.escape(targetId)}"]`,
     );
-    if (element && scrollIntoNearestContainer(element, 'center')) {
+    if (element) {
+      scrollIntoNearestContainer(element, 'center');
+      // An already-visible target needs no scrolling, but is still handled once.
       scrolledToRef.current = target;
     }
   }, [
