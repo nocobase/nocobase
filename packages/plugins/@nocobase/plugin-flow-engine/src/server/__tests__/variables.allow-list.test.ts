@@ -193,6 +193,86 @@ describe('variables:resolve allow-list authorization', () => {
     resetVariablesRegistryForTest();
   });
 
+  it.each(['MarkdownItemModel', 'MarkdownBlockModel'])(
+    'authorizes persisted Liquid loop dependencies for a member using %s',
+    async (use) => {
+      const session = createTokenSession();
+      const modelUid = 'markdown-liquid';
+      const model = createFlowModel(modelUid, {});
+      const ctx = createFakeCtx({
+        token: session.token,
+        models: {
+          [modelUid]: {
+            ...model,
+            options: {
+              ...model.options,
+              use,
+              stepParams: {
+                ...model.options.stepParams,
+                markdownBlockSettings: {
+                  editMarkdown: {
+                    content: '{% for item in ctx.record.org_o2m_tree %}{{ item.orgname }}{% endfor %}',
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      const options = {
+        rd: session.rd(modelUid),
+        contextParams: { record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
+      };
+      const configured = await authorizeVariablesResolve(ctx, {
+        ...options,
+        template: { record: { org_o2m_tree: '{{ctx.record.org_o2m_tree}}' } },
+      });
+      expect(configured.allowed).toBe(true);
+      const unconfigured = await authorizeVariablesResolve(ctx, {
+        ...options,
+        template: '{{ctx.record.secret}}',
+      });
+      expect(unconfigured.allowed).toBe(false);
+    },
+  );
+
+  it.each([
+    ['partial', "{% include 'missing-server-template' %}{{ ctx.user.nickname }}", true],
+    ['condition', '{% if ctx.user.nickname %}Hello{% endif %}', true],
+    ['assignment', '{% assign name = ctx.user.nickname %}{{ name }}', true],
+    ['filter argument', '{{ "" | default: ctx.user.nickname }}', true],
+    ['translation', '{{t("Hello")}}{% if ctx.user.nickname %}Hello{% endif %}', true],
+    ['raw text', '{% raw %}{{ ctx.user.nickname }}{% endraw %}', false],
+    ['comment', '{% comment %}{{ ctx.user.nickname }}{% endcomment %}', false],
+    ['invalid Liquid', '{% if ctx.user.nickname %}', false],
+    ['loop local', '{% for ctx in items %}{{ ctx.user.nickname }}{% endfor %}', false],
+  ])('handles Markdown %s dependencies without granting unused paths', async (_name, content, allowed) => {
+    const session = createTokenSession();
+    const modelUid = 'markdown-dependencies';
+    const model = createFlowModel(modelUid, {});
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: {
+        [modelUid]: {
+          ...model,
+          options: {
+            ...model.options,
+            use: 'MarkdownItemModel',
+            stepParams: {
+              markdownBlockSettings: { editMarkdown: { content } },
+            },
+          },
+        },
+      },
+    });
+    expect(
+      (await authorizeVariablesResolve(ctx, { rd: session.rd(modelUid), template: '{{ctx.user.nickname}}' })).allowed,
+    ).toBe(allowed);
+    expect(
+      (await authorizeVariablesResolve(ctx, { rd: session.rd(modelUid), template: '{{ctx.user.password}}' })).allowed,
+    ).toBe(false);
+  });
+
   it('sanitizes user contextParams before configure role bypass', async () => {
     const result = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
       template: { userId: '{{ ctx.user.id }}' },
