@@ -1,5 +1,5 @@
 import type { S3Driver } from 'flydrive/drivers/s3';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   createDriveManager,
@@ -8,6 +8,16 @@ import {
 } from '../src/index.js';
 
 describe('parseDriveDiskConfig', () => {
+  it('keeps serializable configuration parsing separate from factories', () => {
+    const factory = vi.fn(() => {
+      throw new Error('Must stay lazy.');
+    });
+    expect(() => parseDriveDiskConfig(factory)).toThrow(
+      'Disk configuration must be an object.',
+    );
+    expect(factory).not.toHaveBeenCalled();
+  });
+
   it('copies only the fields the drivers read', () => {
     const credentials = { accessKeyId: 'id', secretAccessKey: 'secret' };
     const disk = {
