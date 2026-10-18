@@ -1358,8 +1358,8 @@ export class AgentSessionsService {
     const toldInstructions =
       currentInstructions && instructionsHash(currentInstructions);
     const instructions = currentInstructions;
-    // The agent reads the application's instructions until it was told them, what the message mentions, and the
-    // session's work when it changed since it was last told; the transcript keeps the message as written.
+    // Each queued message carries complete instructions and work context, independent of a withdrawn predecessor.
+    // The transcript keeps the person's message as written.
     const told: readonly PromptContent[] = [
       ...content,
       ...(instructions ? [{ type: 'text' as const, text: instructions }] : []),
