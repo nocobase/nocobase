@@ -1,0 +1,201 @@
+---
+import SiteHeader from '../SiteHeader/index.astro';
+import type { LanguageLink } from '../../lib/language-menu.ts';
+import AgentIcon from './AgentIcon.astro';
+import Blocks from './Blocks.astro';
+import chinese from './content.json';
+import english from './content.en.json';
+import './index.scss';
+
+interface Props {
+  language: string;
+  languageLinks: LanguageLink[];
+}
+
+const { language, languageLinks } = Astro.props;
+const content = language === 'cn' ? chinese : english;
+const home = language === 'cn' ? '/zh-CN/#start' : '/#start';
+const selectedGuide = content.guides[0];
+---
+
+<div
+  class='deployment-page'
+  lang={language === 'cn' ? 'zh-CN' : 'en'}
+  data-legacy-anchors={JSON.stringify(content.legacyAnchors)}
+>
+  <SiteHeader language={language} languageLinks={languageLinks} />
+  <main class='deployment-document' data-pagefind-body>
+    <header class='deployment-intro'>
+      <div>
+        <p class='deployment-eyebrow'>{content.layout.eyebrow}</p>
+        <h1 id='deployment-title'>{content.title}</h1>
+        <p class='deployment-lead'>{content.intro}</p>
+        <div class='deployment-actions'>
+          <a
+            class='deployment-action-primary'
+            href={`#${selectedGuide.skill.id}`}
+            data-guide-action='skill'
+          >
+            <AgentIcon />
+            {content.layout.agentAction}
+            <span aria-hidden='true'>↓</span>
+          </a>
+          <a
+            class='deployment-action-secondary'
+            data-guide-action='steps'
+            href={`#${selectedGuide.sections[0].id}`}
+          >
+            {content.layout.manualAction}
+            <span aria-hidden='true'>↓</span>
+          </a>
+        </div>
+      </div>
+      <div class='deployment-flow' aria-label={content.layout.flowLabel}>
+        <div class='flow-caption'>
+          <span>{content.layout.flowTitle}</span>
+          <span class='flow-methods'>PM2 / Docker</span>
+        </div>
+        <ol class='flow-stages'>
+          {content.layout.flowStages.map((stage, index) => (
+            <li>
+              <span class='flow-stage-index' aria-hidden='true'>
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <strong>{stage.title}</strong>
+              <span class='flow-stage-description'>{stage.description}</span>
+            </li>
+          ))}
+        </ol>
+        <div class='flow-artifacts'>
+          <span>{content.layout.flowArtifacts}</span>
+          <code>dist.tar.gz</code>
+          <span aria-hidden='true'>/</span>
+          <span>{content.layout.flowImage}</span>
+        </div>
+      </div>
+    </header>
+    <details class='deployment-example' id={content.environment.id}>
+      <summary>
+        <h2>
+          {content.environment.title}
+          <span class='example-environment' aria-hidden='true'>
+            {content.environment.summary}
+          </span>
+        </h2>
+      </summary>
+      <div class='example-content'>
+        <p class='example-description'>{content.environment.description}</p>
+        <dl class='example-parameters'>
+          {content.environment.parameters.map((parameter) => (
+            <div>
+              <dt>{parameter.label}</dt>
+              <dd>
+                <code>{parameter.value}</code>
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <div class='example-access'>
+          <h3 id={content.environment.accessId}>
+            {content.environment.accessTitle}
+          </h3>
+          <ol>
+            {content.environment.accessSteps.map((step) => (
+              <li>{step}</li>
+            ))}
+          </ol>
+          <p class='example-note'>{content.environment.note}</p>
+        </div>
+      </div>
+    </details>
+    <div
+      class='deployment-method-tabs'
+      role='tablist'
+      aria-label={content.navigationLabel}
+    >
+      {content.guides.map((guide) => (
+        <button
+          type='button'
+          role='tab'
+          id={`tab-${guide.id}`}
+          aria-label={guide.label}
+          aria-selected={guide.id === 'pm2'}
+          aria-controls={`panel-${guide.id}`}
+          tabindex={guide.id === 'pm2' ? 0 : -1}
+        >
+          {guide.label}
+        </button>
+      ))}
+    </div>
+    {content.guides.map((guide) => (
+      <section
+        class='deployment-guide'
+        id={`panel-${guide.id}`}
+        role='tabpanel'
+        aria-labelledby={`tab-${guide.id}`}
+        tabindex={0}
+        hidden={guide.id !== 'pm2'}
+      >
+        <header class='guide-heading'>
+          <h2 id={guide.id}>{guide.title}</h2>
+          <p>{guide.description}</p>
+        </header>
+        <div class='guide-layout'>
+          <aside class='guide-sidebar'>
+            <nav aria-label={`${guide.label} · ${content.layout.contents}`}>
+              <p class='guide-nav-title'>{content.layout.contents}</p>
+              <a href={`#${guide.skill.id}`} class='guide-skill-link'>
+                {guide.skill.title}
+                <span aria-hidden='true'>↗</span>
+              </a>
+              {guide.sections.map((section, index) => (
+                <a href={`#${section.id}`}>
+                  <span class='guide-nav-number' aria-hidden='true'>
+                    {index < 3 ? String(index + 1).padStart(2, '0') : '↻'}
+                  </span>
+                  {section.title.replace(/^\d+\. /, '')}
+                </a>
+              ))}
+            </nav>
+          </aside>
+          <div class='guide-body'>
+            <details class='deployment-skill' id={guide.skill.id} open>
+              <summary>
+                <h3>
+                  <span class='skill-mark'>
+                    <AgentIcon />
+                  </span>
+                  {guide.skill.title}
+                </h3>
+              </summary>
+              <div class='skill-content'>
+                <Blocks blocks={guide.skill.blocks} content={content} />
+              </div>
+            </details>
+            {guide.sections.map((section, index) => (
+              <section class='deployment-step' aria-labelledby={section.id}>
+                <header class='step-heading'>
+                  <span class='step-index' aria-hidden='true'>
+                    {index < 3 ? String(index + 1).padStart(2, '0') : '↻'}
+                  </span>
+                  <h3 id={section.id}>
+                    {section.title.replace(/^\d+\. /, '')}
+                  </h3>
+                </header>
+                <Blocks blocks={section.blocks} content={content} />
+              </section>
+            ))}
+          </div>
+        </div>
+      </section>
+    ))}
+    <footer class='deployment-footer'>
+      <a href={home}>{content.backHome} ↗</a>
+    </footer>
+  </main>
+</div>
+<script>
+  import { initializeDeployment } from './interactions.ts';
+  const root = document.querySelector<HTMLElement>('.deployment-page');
+  if (root) initializeDeployment(root);
+</script>
