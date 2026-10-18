@@ -12,6 +12,7 @@ const templates = ['default', 'examples'];
 // template that preinstalls it in the same pull request. `templates` names the templates an item is preinstalled in,
 // every template when left out.
 const preinstalled = [
+  { group: 'lifecycle', item: 'workflow-management', templates: ['examples'] },
   { group: 'auth', item: 'auth-forms' },
   { group: 'auth', item: 'auth-methods' },
   { group: 'auth', item: 'auth-split-layout' },

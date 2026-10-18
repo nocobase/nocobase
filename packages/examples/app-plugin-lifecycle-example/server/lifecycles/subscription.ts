@@ -1,3 +1,4 @@
+import { subscriptionTimingGroup } from '../configuration/definitions.js';
 import {
   defineEffect,
   defineLifecycle,
@@ -106,6 +107,10 @@ export const subscriptionLifecycle: Lifecycle<SubscriptionTypes> =
       { name: 'cancelled', final: true },
     ],
     // Periods of minutes rather than months, so a renewal can be watched.
+    parameterConfiguration: {
+      readMode: 'live',
+      groups: [subscriptionTimingGroup],
+    },
     parameters: { periodMinutes: 3, dunningMinutes: 1, maxDunning: 3 },
     transitions: {
       charged: {

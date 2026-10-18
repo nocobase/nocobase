@@ -1,5 +1,5 @@
 import { createDatabaseManager } from '@nocobase/db';
-import { StoredLifecycleParameters } from '@nocobase/lifecycle';
+import { WorkflowParameterStore } from '../server/configuration/workflow-parameter-store.js';
 import { exampleParameterRegistration } from '../server/configuration/store.js';
 import { ParameterConfigurationService } from '../server/services/parameter-configuration.js';
 import { parameterConfigurationServiceToken } from '../server/tokens.js';
@@ -53,7 +53,7 @@ function application(authentication: Auth) {
   const store = new MemoryLifecycleStore();
   const runtime = new LifecycleRuntime({ store });
   const services = createExampleServices({ info: () => undefined });
-  const parameters = new StoredLifecycleParameters(store);
+  const parameters = new WorkflowParameterStore(store);
   runtime.register(expenseLifecycle, {
     services,
     parameterConfiguration: exampleParameterRegistration(
@@ -66,8 +66,17 @@ function application(authentication: Auth) {
     parameterConfiguration: exampleParameterRegistration(parameters, 'tickets'),
   });
   // No step below reaches the sandbox: cancelling a draft has no checkout to close.
-  runtime.register(orderLifecycle, { services: {} as never });
-  runtime.register(invoiceLifecycle, { services: {} as never });
+  runtime.register(orderLifecycle, {
+    services: {} as never,
+    parameterConfiguration: exampleParameterRegistration(parameters, 'orders'),
+  });
+  runtime.register(invoiceLifecycle, {
+    services: {} as never,
+    parameterConfiguration: exampleParameterRegistration(
+      parameters,
+      'invoices',
+    ),
+  });
   store.insertRecord('lifecycleExampleInvoices', {
     id: 9,
     status: 'issued',
@@ -764,17 +773,6 @@ describe('lifecycle example routes', () => {
           `lifecycleExampleList${noun}s`,
           `lifecycleExampleRetry${noun}EffectRun`,
         ]),
-        ...['ReviewerDemo', 'ReviewerLiveDemo'].flatMap((noun) =>
-          ['Cancel', 'Continue', 'Retry']
-            .map((verb) => `lifecycleExample${verb}${noun}EffectRun`)
-            .concat([
-              `lifecycleExampleDescribe${noun}Lifecycle`,
-              `lifecycleExampleFire${noun}Transition`,
-              `lifecycleExampleGet${noun}`,
-            ]),
-        ),
-        'lifecycleExampleCreateSnapshotReviewerDemo',
-        'lifecycleExampleCreateLiveReviewerDemo',
         'lifecycleExampleGetParameterGroup',
         'lifecycleExampleListParameterGroups',
         'lifecycleExampleParameterHistory',
