@@ -49,7 +49,7 @@ pnpm exec vitest run --config vitest.client.config.ts
 pnpm exec vitest run --config vitest.cli.config.ts
 ```
 
-Run these commands one at a time. With all four groups copied, expect five database tests (including the migration), five server tests, four client tests and eight CLI tests (six file-command cases and two database-backed cases). A copied subset has the corresponding smaller count. The sample configurations set `passWithNoTests: false`; when using an existing configuration, still confirm that the named files ran.
+Run these commands one at a time. With all four groups copied, expect five database tests (including the migration), five server tests, five client tests and eight CLI tests (six file-command cases and two database-backed cases). A copied subset has the corresponding smaller count. The sample configurations set `passWithNoTests: false`; when using an existing configuration, still confirm that the named files ran.
 
 If startup fails, check the installed package exports, the selected driver, the fixture's migration sources and the application's registered plugins before replacing a real service with a mock. A missing collection in a repository test usually needs its migration sources; failed sign-in needs the configured test seed and trusted origin; a server `403` with a valid session needs the intended grants. Client translation failures need the real namespace and locale keys, and CLI JSON failures need assertions on `exitCode` and the JSON error envelope.
 

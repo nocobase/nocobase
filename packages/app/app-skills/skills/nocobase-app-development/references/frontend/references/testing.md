@@ -43,7 +43,7 @@ For anything else, start from the test that already sets it up:
 
 ## A minimal component test
 
-The [complete component example](../../testing/client/page.md) includes the React config, component, English and Chinese locale files, and four cases covering submission, retry and pending state. Reuse that setup for a component that calls `useApiClient()`, `useTranslation()` or `useToaster()`.
+The [complete component example](../../testing/client/page.md) includes the React config, component, English and Chinese locale files, and five cases covering bilingual submission and retry, plus pending state. Reuse that setup for a component that calls `useApiClient()`, `useTranslation()` or `useToaster()`.
 
 For a primitive that needs translations alone, `createTestI18nRuntime()` and `TestI18nProvider` from `@nocobase/i18n/testing` can provide the smaller context. Give that runtime the application's actual namespace and locale resources and keep its strict translation checks enabled. Keep this narrower setup for components that do not consume application services.
 

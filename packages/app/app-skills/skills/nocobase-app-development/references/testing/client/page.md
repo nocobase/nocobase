@@ -6,7 +6,7 @@ This complete example assumes a NocoBase 3 application with its normal React, Ty
 
 ## Configure client tests
 
-Create `vitest.client.config.ts` at the application root. The shared React preset provides jsdom, JSX transformation, jest-dom assertions and DOM cleanup after each test. An application that already has a client Vitest project can use that project instead.
+Create `vitest.client.config.ts` at the application root. The shared React preset provides jsdom, JSX transformation, jest-dom assertions and DOM cleanup after each test. An application that already has a client Vitest project can use that project instead. Discover both `.test.ts` and `.test.tsx` files; retain Vitest's default file parallelism for client-only suites, while keeping cases that share one DOM sequential.
 
 ```ts
 import { createReactVitestConfig } from '@nocobase/dev-config/vitest/react';
@@ -14,8 +14,7 @@ import { createReactVitestConfig } from '@nocobase/dev-config/vitest/react';
 export default createReactVitestConfig({
   cacheDir: './storage/tests/vite-client',
   test: {
-    include: ['tests/client/**/*.test.tsx'],
-    fileParallelism: false,
+    include: ['tests/client/**/*.test.{ts,tsx}'],
     passWithNoTests: false,
   },
 });
@@ -111,7 +110,7 @@ const locales: LocaleLoaders = {
 export default locales;
 ```
 
-The sample API contract is `POST /api/testingNotes` with `{ title }`, returning `{ data: { id, title } }`. The test supplies this response; adding a real backend route is separate feature work.
+The sample API contract is `POST /api/testingNotes` with `{ title }`, returning status `201` with `{ data: { id, title } }`. The test supplies this response; adding a real backend route is separate feature work.
 
 ## Test submission, failure, retry and pending state
 
@@ -134,108 +133,142 @@ import zhCN from '../../client/locales/zh-CN.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 
 const title = 'Review invoice';
-const appOptions = {
-  namespace: packageMetadata.name,
-  namespaces: { [packageMetadata.name]: locales },
-  locale: 'en-US',
+const createdNote = { data: { id: 'note-1', title } };
+const expectedCall: ApiCall = {
+  method: 'POST',
+  path: 'testingNotes',
+  json: { title },
 };
+const translations = {
+  'en-US': enUS.testingNotes,
+  'zh-CN': zhCN.testingNotes,
+};
+const localeCases = ['en-US', 'zh-CN'] as const;
 
-it.each([
-  { locale: 'en-US', copy: enUS.testingNotes },
-  { locale: 'zh-CN', copy: zhCN.testingNotes },
-])('submits a note and confirms it in $locale', async ({ locale, copy }) => {
+async function renderCreateNote(
+  respond: () => Response | Promise<Response>,
+  locale: keyof typeof translations = 'en-US',
+) {
   const user = userEvent.setup();
-  const handler = vi.fn(() => ({ data: { id: 'note-1', title } }));
+  const handler = vi.fn((call: ApiCall) => {
+    if (call.method !== 'POST' || call.path !== 'testingNotes') {
+      return new Response(null, { status: 404 });
+    }
+    return respond();
+  });
   const view = await renderWithApp(<CreateNoteButton title={title} />, {
-    ...appOptions,
+    namespace: packageMetadata.name,
+    namespaces: { [packageMetadata.name]: locales },
     locale,
     fetch: answerApi(handler),
   });
+  const copy = translations[locale];
+  const button = screen.getByRole('button', { name: copy.create });
+  return { user, handler, view, copy, button };
+}
 
-  await user.click(screen.getByRole('button', { name: copy.create }));
+it.each(localeCases)('submits a note and confirms it in %s', async (locale) => {
+  const { user, handler, view, copy, button } = await renderCreateNote(
+    () => Response.json(createdNote, { status: 201 }),
+    locale,
+  );
+
+  await user.click(button);
 
   await waitFor(() => {
     expect(view.toasts()).toMatchObject([
       { type: 'success', title: copy.created },
     ]);
-  });
-  expect(handler).toHaveBeenCalledTimes(1);
-  expect(handler).toHaveBeenCalledWith({
-    method: 'POST',
-    path: 'testingNotes',
-    json: { title },
-  });
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-});
-
-it('shows a failed request and allows retrying successfully', async () => {
-  const user = userEvent.setup();
-  const handler = vi
-    .fn<(call: ApiCall) => unknown>()
-    .mockReturnValueOnce(new Response(null, { status: 500 }))
-    .mockReturnValue({ data: { id: 'note-1', title } });
-  const view = await renderWithApp(<CreateNoteButton title={title} />, {
-    ...appOptions,
-    fetch: answerApi(handler),
-  });
-  const button = screen.getByRole('button', { name: enUS.testingNotes.create });
-
-  await user.click(button);
-
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    enUS.testingNotes.failed,
-  );
-  expect(view.toasts()).toEqual([]);
-  expect(button).toBeEnabled();
-
-  await user.click(button);
-
-  await waitFor(() => {
-    expect(view.toasts()).toMatchObject([
-      { type: 'success', title: enUS.testingNotes.created },
-    ]);
-  });
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  expect(handler).toHaveBeenCalledTimes(2);
-  expect(handler).toHaveBeenNthCalledWith(2, {
-    method: 'POST',
-    path: 'testingNotes',
-    json: { title },
-  });
-  expect(button).toBeEnabled();
-});
-
-it('disables the button while submitting and prevents a duplicate request', async () => {
-  const user = userEvent.setup();
-  const response = Promise.withResolvers<unknown>();
-  const handler = vi.fn(() => response.promise);
-  const view = await renderWithApp(<CreateNoteButton title={title} />, {
-    ...appOptions,
-    fetch: answerApi(handler),
-  });
-  const button = screen.getByRole('button', { name: enUS.testingNotes.create });
-
-  await user.click(button);
-  expect(button).toBeDisabled();
-  expect(view.toasts()).toEqual([]);
-
-  await user.click(button);
-  expect(handler).toHaveBeenCalledTimes(1);
-
-  await act(async () => {
-    response.resolve({ data: { id: 'note-1', title } });
-  });
-
-  await waitFor(() => {
     expect(button).toBeEnabled();
-    expect(view.toasts()).toMatchObject([
-      { type: 'success', title: enUS.testingNotes.created },
-    ]);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+  expect(handler.mock.calls).toEqual([[expectedCall]]);
+});
+
+it.each(localeCases)(
+  'shows a failure and retries successfully in %s',
+  async (locale) => {
+    const retry = Promise.withResolvers<Response>();
+    const respond = vi
+      .fn<() => Response | Promise<Response>>()
+      .mockReturnValueOnce(new Response(null, { status: 500 }))
+      .mockReturnValue(retry.promise);
+    const { user, handler, view, copy, button } = await renderCreateNote(
+      respond,
+      locale,
+    );
+
+    try {
+      await user.click(button);
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent(copy.failed);
+        expect(button).toBeEnabled();
+        expect(view.toasts()).toEqual([]);
+      });
+
+      await user.click(button);
+
+      expect(button).toBeDisabled();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(view.toasts()).toEqual([]);
+    } finally {
+      await act(async () => {
+        retry.resolve(Response.json(createdNote, { status: 201 }));
+      });
+    }
+
+    await waitFor(() => {
+      expect(view.toasts()).toMatchObject([
+        { type: 'success', title: copy.created },
+      ]);
+      expect(button).toBeEnabled();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+    expect(handler.mock.calls).toEqual([[expectedCall], [expectedCall]]);
+  },
+);
+
+it('prevents a duplicate request while submitting', async () => {
+  const response = Promise.withResolvers<Response>();
+  const { user, handler, view, copy, button } = await renderCreateNote(
+    () => response.promise,
+  );
+
+  try {
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+    expect(button).toBeDisabled();
+    expect(view.toasts()).toEqual([]);
+
+    await user.click(button);
+    expect(handler).toHaveBeenCalledTimes(1);
+  } finally {
+    await act(async () => {
+      response.resolve(Response.json(createdNote, { status: 201 }));
+    });
+  }
+
+  await waitFor(() => {
+    expect(view.toasts()).toMatchObject([
+      { type: 'success', title: copy.created },
+    ]);
+    expect(button).toBeEnabled();
+  });
+  expect(handler.mock.calls).toEqual([[expectedCall]]);
 });
 ```
 
-The first two cases verify the request payload and success notification in English and Chinese. The third checks that an HTTP 500 displays an error, allows another attempt, clears the error after a successful retry and then reports success. The final case holds the response pending to verify that the button stays disabled and another click cannot send a second request; it releases the response explicitly instead of waiting for a timer.
+The two success cases check the complete request and confirmation in English and Chinese. Two retry cases check the translated failure message, then hold the retry pending to verify that the old error clears immediately, the button disables and no success appears before the response. The final case verifies that a second click during submission cannot send another request.
+
+`renderCreateNote()` is a local setup helper for this component. Each call creates its own user-event session, request spy and client application; assertions and response timing stay in the test. Keep the helper local until another test actually needs the same setup.
+
+The request spy records every call before matching the method and path. Unexpected endpoints return `404`; `handler.mock.calls` checks the exact request history, including payloads and duplicates. Keep those assertions outside `answerApi()`: it converts a thrown assertion into an HTTP 500, which an error-state test could mistake for its intended failure.
+
+Wait for the final toast and enabled button together, because the success callback and `finally` complete separate parts of the interaction. Perform clicks outside `waitFor()`, whose callback may run repeatedly. Use `Promise.withResolvers<Response>()` to control pending requests without timers, and resolve them inside `act()` in `finally` so even a failing assertion releases the request before fixture cleanup.
 
 The application namespace and locale loaders are real. Missing translation keys fail the test. For a plugin-owned page, pass its registration in `plugins` and its package name in `namespace`; for a page that needs other services, include the registrations it actually consumes. `renderWithApp()` shuts down its client application when each test finishes.
 
@@ -263,6 +296,6 @@ Run from the application root:
 pnpm exec vitest run --config vitest.client.config.ts --reporter=verbose
 ```
 
-Expect one test file and four passing cases. These checks cover client interaction, API request construction and translations. Use the [server example](../server/routes.md) for permissions and persistence.
+Expect one test file and five passing cases. These checks cover client interaction, API request construction and translations. Use the [server example](../server/routes.md) for permissions and persistence.
 
 Return to [testing and verification](../../testing.md).
