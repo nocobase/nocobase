@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/realtime",
   "version": "0.1.0-beta.2",
-  "description": "Shared realtime protocol and browser WebSocket client for NocoBase.",
+  "description": "Realtime protocol, browser client, and authorized server topic service for NocoBase.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,
@@ -19,6 +19,10 @@
     "./protocol": {
       "types": "./src/protocol.ts",
       "import": "./src/protocol.ts"
+    },
+    "./server": {
+      "types": "./src/server/index.ts",
+      "import": "./src/server/index.ts"
     }
   },
   "files": [
@@ -39,6 +43,10 @@
       "./protocol": {
         "types": "./dist/protocol.d.ts",
         "import": "./dist/protocol.js"
+      },
+      "./server": {
+        "types": "./dist/server/index.d.ts",
+        "import": "./dist/server/index.js"
       }
     }
   },
