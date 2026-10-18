@@ -372,12 +372,8 @@ export function useLiveSessions(): void {
         });
       }
     };
-    const unsubscribe = realtime.subscribe<AgentSessionsChange>(
-      AGENT_SESSIONS_TOPIC,
-      ({ payload }) => refresh(payload),
-    );
     const connectionKey = ['agentSessions', 'discoveryConnection'];
-    client.setQueryData(connectionKey, realtime.connected);
+    client.setQueryData(connectionKey, false);
     const disconnected = (): void => {
       client.setQueryData(connectionKey, false);
       void cancelChoiceDiscoveries(client);
@@ -386,19 +382,21 @@ export function useLiveSessions(): void {
         refetchType: 'none',
       });
     };
-    const unsubscribeError = realtime.onError(disconnected);
-    // onError reports protocol errors, not transport closure; connected is the existing transport signal.
-    const connectionTimer = setInterval(() => {
-      if (!realtime.connected && client.getQueryData(connectionKey) !== false)
-        disconnected();
-    }, 1_000);
-    const unsubscribeOpen = realtime.onOpen(() => {
-      client.setQueryData(connectionKey, true);
-      refresh();
-    });
+    const subscription = realtime.watch<AgentSessionsChange>(
+      AGENT_SESSIONS_TOPIC,
+      {
+        onEvent: ({ payload }) => refresh(payload),
+        onStateChange: (state) => {
+          if (state !== 'subscribed') disconnected();
+        },
+        onReady: () => {
+          client.setQueryData(connectionKey, true);
+          refresh();
+        },
+      },
+    );
     const release = (): void => {
       disposed = true;
-      clearInterval(connectionTimer);
       void cancelChoiceDiscoveries(client);
       for (const slot of slots.values()) clearTimeout(slot.timer);
       // No bridge generation is exposed to the browser. Do not reuse discovery across an unobserved interval.
@@ -406,9 +404,7 @@ export function useLiveSessions(): void {
         queryKey: ['agentSessions', 'discovery'],
         refetchType: 'none',
       });
-      unsubscribe();
-      unsubscribeOpen();
-      unsubscribeError();
+      subscription.close();
     };
     liveSubscriptions.set(client, { refs: 1, release });
     refresh();

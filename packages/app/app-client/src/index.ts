@@ -53,6 +53,10 @@ export {
 } from './toaster.js';
 export type {
   RealtimeClient,
+  RealtimeSubscription,
+  RealtimeSubscriptionState,
+  RealtimeConnectionState,
+  RealtimeWatchOptions,
   RealtimeErrorEvent,
   RealtimeEvent,
   RealtimeListener,
@@ -137,3 +141,14 @@ export type {
 
 export { NavigationGuardProvider } from './navigation-guard-provider.js';
 export { useNavigationGuard } from './navigation-guard.js';
+
+export {
+  useRealtimeTopic,
+  useRealtimeRefresh,
+  useRealtimeConnectionState,
+  createRealtimeRefresh,
+  type UseRealtimeTopicOptions,
+  type UseRealtimeRefreshOptions,
+  type RealtimeRefresh,
+  type RealtimeRefreshOptions,
+} from './realtime.js';

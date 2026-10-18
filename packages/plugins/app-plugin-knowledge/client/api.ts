@@ -5,9 +5,8 @@
  * application composes these hooks into pages of its own as well as the plugin's.
  */
 import {
-  realtimeClientToken,
+  useRealtimeRefresh,
   useApiClient,
-  useService,
   type ApiClient,
 } from '@nocobase/app-client';
 import {
@@ -15,7 +14,7 @@ import {
   useQueryClient,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import {
   KNOWLEDGE_TOPIC,
@@ -532,14 +531,13 @@ export function useKnowledgeApi(): KnowledgeApi {
 
 /** Refetches open knowledge views when the server announces a change. */
 export function useKnowledgeRefresh(): void {
-  const realtime = useService(realtimeClientToken);
   const queryClient = useQueryClient();
-  useEffect(() => {
-    const stop = realtime.subscribe<unknown>(KNOWLEDGE_TOPIC, () => {
-      void queryClient.invalidateQueries({ queryKey: knowledgeKeys.all });
-    });
-    return () => stop?.();
-  }, [realtime, queryClient]);
+  useRealtimeRefresh(KNOWLEDGE_TOPIC, () =>
+    queryClient.invalidateQueries(
+      { queryKey: knowledgeKeys.all },
+      { cancelRefetch: false },
+    ),
+  );
 }
 
 export function useKnowledgeTree(

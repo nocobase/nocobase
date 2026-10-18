@@ -16,9 +16,9 @@ vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
   useService: () => ({
     onOpen: () => () => {},
-    subscribe: (topic: string, listener: RealtimeListener<unknown>) => {
-      listeners.set(topic, listener);
-      return () => listeners.delete(topic);
+    watch: (topic: string, options: { onEvent: RealtimeListener<unknown> }) => {
+      listeners.set(topic, options.onEvent);
+      return { close: () => listeners.delete(topic) };
     },
   }),
 }));

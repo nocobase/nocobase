@@ -80,6 +80,15 @@ export const realtime = {
     realtime.listeners.set(topic, set);
     return () => set.delete(listener);
   },
+  watch(
+    topic: string,
+    options?: { onEvent?: (event: { payload: unknown }) => void },
+  ) {
+    const close = realtime.subscribe(topic, (event) =>
+      options?.onEvent?.(event),
+    );
+    return { state: 'subscribed', close };
+  },
   onOpen: () => () => undefined,
   publish(topic: string, payload: unknown): void {
     for (const listener of realtime.listeners.get(topic) ?? [])

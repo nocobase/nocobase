@@ -87,7 +87,10 @@ it('shares nested subscriptions and invalidates inactive discovery results after
   const client = new QueryClient();
   const opened = new Set<() => void>();
   let subscriptions = 0;
-  const realtime: RealtimeClient = {
+  const realtime: Pick<
+    RealtimeClient,
+    'subscribe' | 'onOpen' | 'onError' | 'connected' | 'reconnect' | 'close'
+  > = {
     connected: true,
     subscribe: () => {
       subscriptions += 1;
@@ -121,8 +124,21 @@ it('shares nested subscriptions and invalidates inactive discovery results after
       namespace: '@nocobase/app-plugin-agent-sessions',
       services: (app) => {
         const actual = app.container.resolve(realtimeClientToken);
-        vi.spyOn(actual, 'subscribe').mockImplementation(realtime.subscribe);
-        vi.spyOn(actual, 'onOpen').mockImplementation(realtime.onOpen);
+        vi.spyOn(actual, 'watch').mockImplementation((topic, options) => {
+          const stop = realtime.subscribe(topic, (event) =>
+            options?.onEvent?.(event),
+          );
+          const stopReady = realtime.onOpen(() => options?.onReady?.());
+          return {
+            state: 'subscribed',
+            error: undefined,
+            retry: () => {},
+            close: () => {
+              stop();
+              stopReady();
+            },
+          };
+        });
       },
       fetch: answerApi(() => ({ data: [] })),
     },
@@ -174,9 +190,9 @@ it('does not cancel slow reads during a continuous stream and follows them with 
       namespace: '@nocobase/app-plugin-agent-sessions',
       services: (app) => {
         const actual = app.container.resolve(realtimeClientToken);
-        vi.spyOn(actual, 'subscribe').mockImplementation((topic, listener) => {
+        vi.spyOn(actual, 'watch').mockImplementation((topic, options) => {
           emit = () =>
-            listener({
+            options?.onEvent?.({
               type: 'event',
               topic,
               publishedAt: '2026-10-14T12:00:00Z',
@@ -186,7 +202,12 @@ it('does not cancel slow reads during a continuous stream and follows them with 
                 lastSeq: 2,
               } as never,
             });
-          return () => undefined;
+          return {
+            state: 'subscribed',
+            error: undefined,
+            retry: () => {},
+            close: () => {},
+          };
         });
       },
       fetch: (request) => {
@@ -217,60 +238,45 @@ it('does not cancel slow reads during a continuous stream and follows them with 
 
 it('observes transport closure without a protocol error and preserves memory on reconnect', async () => {
   const client = new QueryClient();
-  let connected = true;
   let opened: (() => void) | undefined;
-  let sample: (() => void) | undefined;
-  const original = globalThis.setInterval;
-  const timer = vi
-    .spyOn(globalThis, 'setInterval')
-    .mockImplementation((handler, ms, ...args) => {
-      if (ms === 1_000 && typeof handler === 'function')
-        sample = () => handler(...args);
-      return original(handler, ms, ...args);
-    });
-  try {
-    await renderWithApp(
-      createElement(QueryClientProvider, { client }, createElement(LiveProbe)),
-      {
-        plugins: [plugin({ routes: false })],
-        namespace: '@nocobase/app-plugin-agent-sessions',
-        fetch: answerApi(() => ({ data: [] })),
-        services: (app) => {
-          const realtime = app.container.resolve(realtimeClientToken);
-          vi.spyOn(realtime, 'connected', 'get').mockImplementation(
-            () => connected,
-          );
-          vi.spyOn(realtime, 'subscribe').mockImplementation(
-            () => () => undefined,
-          );
-          vi.spyOn(realtime, 'onOpen').mockImplementation((listener) => {
-            opened = listener;
-            return () => undefined;
-          });
-        },
+  let disconnected: (() => void) | undefined;
+  await renderWithApp(
+    createElement(QueryClientProvider, { client }, createElement(LiveProbe)),
+    {
+      plugins: [plugin({ routes: false })],
+      namespace: '@nocobase/app-plugin-agent-sessions',
+      fetch: answerApi(() => ({ data: [] })),
+      services: (app) => {
+        const realtime = app.container.resolve(realtimeClientToken);
+        vi.spyOn(realtime, 'watch').mockImplementation((_topic, options) => {
+          opened = () => options?.onReady?.();
+          disconnected = () => options?.onStateChange?.('pending');
+          return {
+            state: 'subscribed',
+            error: undefined,
+            retry: () => {},
+            close: () => {},
+          };
+        });
       },
-    );
-    const key = ['agentSessions', 'discovery', 'inactive'];
-    const memory = ['agentSessions', 'memory', 'settings:target'];
-    client.setQueryData(key, { status: 'available', choices: [] });
-    client.setQueryData(memory, { model: 'second' });
-    connected = false;
-    await act(async () => {
-      sample?.();
-    });
-    expect(client.getQueryData(['agentSessions', 'discoveryConnection'])).toBe(
-      false,
-    );
-    expect(client.getQueryState(key)?.isInvalidated).toBe(true);
-    connected = true;
-    await act(async () => {
-      opened?.();
-    });
-    expect(client.getQueryData(['agentSessions', 'discoveryConnection'])).toBe(
-      true,
-    );
-    expect(client.getQueryData(memory)).toEqual({ model: 'second' });
-  } finally {
-    timer.mockRestore();
-  }
+    },
+  );
+  const key = ['agentSessions', 'discovery', 'inactive'];
+  const memory = ['agentSessions', 'memory', 'settings:target'];
+  client.setQueryData(key, { status: 'available', choices: [] });
+  client.setQueryData(memory, { model: 'second' });
+  await act(async () => {
+    disconnected?.();
+  });
+  expect(client.getQueryData(['agentSessions', 'discoveryConnection'])).toBe(
+    false,
+  );
+  expect(client.getQueryState(key)?.isInvalidated).toBe(true);
+  await act(async () => {
+    opened?.();
+  });
+  expect(client.getQueryData(['agentSessions', 'discoveryConnection'])).toBe(
+    true,
+  );
+  expect(client.getQueryData(memory)).toEqual({ model: 'second' });
 });

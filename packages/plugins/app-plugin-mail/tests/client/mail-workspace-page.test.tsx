@@ -46,7 +46,12 @@ const mail = vi.hoisted(() => ({
 }));
 
 const realtime = vi.hoisted(() => ({
-  subscribe: vi.fn(() => () => undefined),
+  watch: vi.fn(() => ({
+    state: 'subscribed',
+    error: undefined,
+    retry: () => {},
+    close: () => {},
+  })),
   onOpen: vi.fn(() => () => undefined),
 }));
 vi.mock('@nocobase/app-client', async (importOriginal) => {
@@ -243,10 +248,12 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       'unfinished@example.com',
     );
     mail.listMessages.mockResolvedValue({ items: [incoming, initial] });
-    const subscribe = realtime.subscribe as unknown as {
-      mock: { calls: [string, (event: { payload: unknown }) => void][] };
+    const watch = realtime.watch as unknown as {
+      mock: {
+        calls: [string, { onEvent: (event: { payload: unknown }) => void }][];
+      };
     };
-    const listener = subscribe.mock.calls.at(-1)![1];
+    const listener = watch.mock.calls.at(-1)![1].onEvent;
     act(() => listener({ payload: { kind: 'mail.changed' } }));
     await screen.findByRole('button', { name: /new-mail/ });
     expect(screen.getByText('Body current-mail')).toBeInTheDocument();
