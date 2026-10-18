@@ -145,6 +145,65 @@ it('ignores delayed replies after release, retry and identity reconnect', () => 
   expect(ready).toHaveBeenCalledTimes(2);
 });
 
+it('stops dispatching an event when a listener changes the connection identity', () => {
+  const client = setup();
+  client.watch('test:one', {
+    onEvent: vi.fn().mockImplementationOnce(() => client.reconnect()),
+  });
+  const onEvent = vi.fn();
+  client.watch('test:one', { onEvent });
+  const oldSocket = sockets[0]!;
+  oldSocket.open();
+  oldSocket.ack();
+  oldSocket.event();
+  expect(onEvent).not.toHaveBeenCalled();
+  sockets[1]!.open();
+  sockets[1]!.ack();
+  oldSocket.event();
+  expect(onEvent).not.toHaveBeenCalled();
+  sockets[1]!.event();
+  expect(onEvent).toHaveBeenCalledOnce();
+});
+
+it('does not report readiness from an acknowledgement invalidated by a state listener', () => {
+  const client = setup();
+  let reconnect = true;
+  const onReady = vi.fn();
+  const subscription = client.watch('test:one', {
+    onReady,
+    onStateChange(state) {
+      if (state === 'subscribed' && reconnect) {
+        reconnect = false;
+        client.reconnect();
+      }
+    },
+  });
+  sockets[0]!.open();
+  sockets[0]!.ack();
+  expect(subscription.state).toBe('pending');
+  expect(onReady).not.toHaveBeenCalled();
+  sockets[1]!.open();
+  sockets[1]!.ack();
+  expect(onReady).toHaveBeenCalledOnce();
+});
+
+it('stops notifying open listeners after a reconnect and skips released watchers', () => {
+  const client = setup();
+  client.onOpen(vi.fn().mockImplementationOnce(() => client.reconnect()));
+  const onOpen = vi.fn();
+  client.onOpen(onOpen);
+  client.watch('test:one', { onEvent: () => second.close() });
+  const onEvent = vi.fn();
+  const second = client.watch('test:one', { onEvent });
+  sockets[0]!.open();
+  expect(onOpen).not.toHaveBeenCalled();
+  sockets[1]!.open();
+  sockets[1]!.ack();
+  expect(onOpen).toHaveBeenCalledOnce();
+  sockets[1]!.event();
+  expect(onEvent).not.toHaveBeenCalled();
+});
+
 it('times out pending subscriptions, cancels server work and rejects old acknowledgements', () => {
   const client = setup({ subscriptionTimeout: 100 });
   const subscription = client.watch('test:one');

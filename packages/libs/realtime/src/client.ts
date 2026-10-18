@@ -224,8 +224,18 @@ export function createRealtimeClient(
   ): void {
     topic.state = next;
     topic.error = error;
-    for (const watcher of [...topic.watchers])
-      notify(() => watcher.onStateChange?.(next));
+    const requestId = topic.requestId;
+    for (const watcher of [...topic.watchers]) {
+      if (
+        topics.get(topic.name) !== topic ||
+        topic.requestId !== requestId ||
+        topic.state !== next ||
+        topic.error !== error
+      )
+        break;
+      if (topic.watchers.has(watcher))
+        notify(() => watcher.onStateChange?.(next));
+    }
     checkReady();
   }
   function checkReady(): void {
@@ -233,8 +243,15 @@ export function createRealtimeClient(
     if (ready && !wasReady) {
       wasReady = true;
       reconnectCount = 0;
-      for (const listener of [...readyListeners]) notify(listener);
+      const current = socket;
+      for (const listener of [...readyListeners]) {
+        if (socket !== current || !client.ready) break;
+        if (readyListeners.has(listener)) notify(listener);
+      }
     } else wasReady = ready;
+  }
+  function isSubscribed(topic: Topic): boolean {
+    return topics.get(topic.name) === topic && topic.state === 'subscribed';
   }
   function resetTopics(): void {
     for (const topic of topics.values()) {
@@ -266,6 +283,7 @@ export function createRealtimeClient(
     clearTimeout(reconnectTimer);
     reconnectTimer = undefined;
     setState('connecting');
+    if (manuallyClosed || !topics.size || socket) return;
     let next: WebSocket;
     try {
       const url = options.resolveUrl();
@@ -287,9 +305,16 @@ export function createRealtimeClient(
     next.onopen = () => {
       if (socket !== next) return;
       setState('open');
-      for (const topic of topics.values()) subscribe(topic);
+      for (const topic of topics.values()) {
+        if (socket !== next) return;
+        subscribe(topic);
+      }
+      if (socket !== next) return;
       startPing();
-      for (const listener of [...openListeners]) notify(listener);
+      for (const listener of [...openListeners]) {
+        if (socket !== next) break;
+        if (openListeners.has(listener)) notify(listener);
+      }
     };
     next.onmessage = (event: MessageEvent<unknown>) => {
       if (socket !== next || typeof event.data !== 'string') return;
@@ -314,8 +339,11 @@ export function createRealtimeClient(
       if (message.type === 'event') {
         const topic = topics.get(message.topic);
         if (topic?.state !== 'subscribed') return;
-        for (const watcher of [...topic.watchers])
-          notify(() => watcher.onEvent?.(message));
+        for (const watcher of [...topic.watchers]) {
+          if (socket !== next || !isSubscribed(topic)) break;
+          if (topic.watchers.has(watcher))
+            notify(() => watcher.onEvent?.(message));
+        }
         return;
       }
       const topic = [...topics.values()].find(
@@ -331,7 +359,15 @@ export function createRealtimeClient(
         clearTimeout(topic.timer);
         topic.subscriptionId = message.subscriptionId;
         setTopic(topic, 'subscribed');
-        for (const watcher of [...topic.watchers]) notify(watcher.onReady);
+        for (const watcher of [...topic.watchers]) {
+          if (
+            socket !== next ||
+            topic.requestId !== message.id ||
+            !isSubscribed(topic)
+          )
+            break;
+          if (topic.watchers.has(watcher)) notify(watcher.onReady);
+        }
       } else if (message.type === 'unsubscribed') {
         if (!topic || topic.subscriptionId !== message.subscriptionId) return;
         failTopic(topic, {
@@ -367,13 +403,22 @@ export function createRealtimeClient(
   }
   function subscribe(topic: Topic): void {
     clearTimeout(topic.timer);
-    topic.requestId = id();
+    const current = socket;
+    const requestId = id();
+    topic.requestId = requestId;
     topic.subscriptionId = undefined;
     setTopic(topic, 'subscribing');
-    if (!send({ type: 'subscribe', id: topic.requestId, topic: topic.name }))
+    if (
+      socket !== current ||
+      topics.get(topic.name) !== topic ||
+      topic.requestId !== requestId ||
+      topic.state !== 'subscribing'
+    )
       return;
+    if (!send({ type: 'subscribe', id: requestId, topic: topic.name })) return;
     topic.timer = setTimeout(() => {
-      if (topic.state !== 'subscribing') return;
+      if (topic.state !== 'subscribing' || topic.requestId !== requestId)
+        return;
       // Cancel server work before allowing another attempt with a new correlation id.
       send({ type: 'unsubscribe', id: id(), topic: topic.name });
       failTopic(topic, {
