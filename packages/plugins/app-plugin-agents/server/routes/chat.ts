@@ -129,8 +129,12 @@ const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
     .describe(
       'Include this conversation in the default chat list (default true).',
     ),
-  config: ConfigInput.optional(),
-  selectedModel: SelectedModel.optional(),
+  config: ConfigInput.optional().describe(
+    'Explicit ordinary OnlineAgent configuration overrides for the new conversation.',
+  ),
+  selectedModel: SelectedModel.optional().describe(
+    'Native model selection as modelService and model; omit for a Runner agent.',
+  ),
 });
 
 const PatchSchema: z.ZodType<ConversationPatch> = z.strictObject({
@@ -157,7 +161,9 @@ const NativeSendSchema = z.strictObject({
         }),
       )
       .max(20),
-  }),
+  }).describe(
+    'The current SDK user message with id, role user and text parts.',
+  ),
   attachmentIds: z
     .array(z.string().min(1).max(64))
     .max(CHAT_ATTACHMENTS_PER_MESSAGE_MAX)
