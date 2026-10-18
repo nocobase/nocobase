@@ -142,15 +142,23 @@ describe('API document of the examples application', () => {
       operationId?.startsWith('examples'),
     );
     expect(own.map(({ operationId }) => operationId).sort()).toEqual([
+      'examplesAssignWorkflowCategory',
       'examplesCreateArticle',
+      'examplesCreateWorkflowCategory',
+      'examplesDeleteWorkflowCategory',
       'examplesGetGreeting',
       'examplesGetNumericExamples',
       'examplesGetWorkflowDefinition',
       'examplesGetWorkflowExecution',
+      'examplesGetWorkflowParameters',
       'examplesListArticles',
+      'examplesListWorkflowCategories',
       'examplesListWorkflowDefinitions',
       'examplesListWorkflowExecutions',
+      'examplesReorderWorkflowCategories',
+      'examplesSaveWorkflowParameters',
       'examplesUpdateArticle',
+      'examplesUpdateWorkflowCategory',
     ]);
     expect(own.every(({ tags }) => tags?.[0] === 'Examples')).toBe(true);
     expect(document.paths?.['/api/example']?.get?.security).toEqual([]);

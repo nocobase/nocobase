@@ -104,7 +104,7 @@ const enUS = {
       'Run this on the computer to keep it connected from every login.',
     noAgentTitle: 'No agent is ready on this computer',
     noAgentHint:
-      'Install any of them there and sign in with its own command; it shows up here within a minute, without connecting again.',
+      'Install any of them there and sign in with its own command. The bridge checks every minute and lists it after setup and startup succeed, without connecting again.',
     supported: 'Supported: {{names}}',
     failedAgent: '{{name}} could not start: {{detail}}',
     modelHint:
@@ -114,7 +114,7 @@ const enUS = {
     agents: 'Agents on this computer',
     availableAgents: 'Available agents',
     agentsHint:
-      'Only the agents installed on this computer are listed; one installed and signed in later shows up within a minute.',
+      'Only installed agents are listed. The bridge checks every minute; setup and startup must finish before an agent is ready.',
     alsoSupported: 'Also supported: {{names}}',
     thisComputer: 'This computer',
     recentFolders: 'Recently used',
@@ -286,6 +286,8 @@ const enUS = {
     remove: 'Remove',
     confirmRemove: 'Remove it',
     problems: { notInstalled: 'not installed', failed: 'could not start' },
+    recheckHint:
+      'While connected, the bridge automatically checks agents again every minute.',
     ready: 'Ready',
     name: 'Name',
     system: 'System',

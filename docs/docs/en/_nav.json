@@ -8,6 +8,10 @@
     "link": "/capabilities/"
   },
   {
+    "text": "Deployment",
+    "link": "/deployment"
+  },
+  {
     "text": "Home",
     "link": "https://www.nocobase.com/"
   }

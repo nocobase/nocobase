@@ -46,7 +46,9 @@ describe('lifecycle parameter configuration through the application API', () => 
       requestId: string,
     ) =>
       session.fetch(
-        root + '/parameterGroups/expenseThresholds?actAs=' + actor,
+        root +
+          '/parameterGroups/expenseThresholds?workflow=expenses&actAs=' +
+          actor,
         {
           method: 'PUT',
           headers: {
@@ -59,12 +61,13 @@ describe('lifecycle parameter configuration through the application API', () => 
     expect(
       (
         await session.fetch(
-          root + '/parameterGroups/expenseThresholds?actAs=lin',
+          root +
+            '/parameterGroups/expenseThresholds?workflow=expenses&actAs=lin',
         )
       ).status,
     ).toBe(200);
     const malformed = await session.fetch(
-      root + '/parameterGroups/expenseThresholds?actAs=lin',
+      root + '/parameterGroups/expenseThresholds?workflow=expenses&actAs=lin',
       {
         method: 'PUT',
         headers: {

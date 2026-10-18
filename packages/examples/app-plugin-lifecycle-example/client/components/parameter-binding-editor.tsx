@@ -37,11 +37,15 @@ export function useParameterBindingEditor(
   readonly editor: ReactElement;
 } {
   const client = useApiClient();
-  const api = parameterApi(client, actor);
+  const api = parameterApi(client, actor, description.name);
   const { t } = useTranslation(NAMESPACE);
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [opening, setOpening] = useState(0);
+  const [binding, setBinding] = useState<{
+    kind: 'state' | 'transition';
+    name: string;
+  }>();
   const [selected, setSelected] = useState<readonly string[]>([]);
   const { data, error } = useLoader(
     selected.length
@@ -56,6 +60,7 @@ export function useParameterBindingEditor(
       if (!groups.length) return false;
       // A fresh key prevents the previous opening from initializing a new form with stale values.
       setOpening((value) => value + 1);
+      setBinding({ kind, name });
       setSelected(groups);
       return true;
     },
@@ -89,7 +94,18 @@ export function useParameterBindingEditor(
                 key={`${actor}:${group.key}`}
                 embedded
                 onBusyChange={setBusy}
-                group={group}
+                group={{
+                  ...group,
+                  fields: Object.fromEntries(
+                    Object.entries(group.fields).filter(
+                      ([, field]) =>
+                        binding &&
+                        field.bindings?.some(
+                          (item) => item[binding.kind] === binding.name,
+                        ),
+                    ),
+                  ),
+                }}
                 api={api}
                 actor={actor}
                 onSaved={() => {

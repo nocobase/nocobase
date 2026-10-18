@@ -1070,6 +1070,44 @@
     font-size: 13px;
     line-height: 24px;
   }
+  .conversation-example {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    gap: 24px;
+    padding-bottom: 12px;
+  }
+  .conversation-deployment {
+    margin-top: auto;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 24px;
+
+    p {
+      display: inline;
+      margin: 0;
+    }
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-inline-start: 8px;
+      color: var(--brand);
+      font-weight: 500;
+      text-decoration: none;
+      white-space: nowrap;
+
+      &:hover {
+        text-decoration: underline;
+      }
+      &:focus-visible {
+        outline: 2px solid var(--brand);
+        outline-offset: 4px;
+        border-radius: 2px;
+      }
+    }
+  }
   .sample {
     border: 1px solid var(--rule-2);
     border-radius: 10px;
