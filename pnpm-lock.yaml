@@ -5145,6 +5145,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.1.10(vitest@4.1.10)
+      '@xyflow/react':
+        specifier: ^12.11.5
+        version: 12.12.0(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(immer@11.1.16)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       ai:
         specifier: 5.0.0
         version: 5.0.0(zod@4.6.5)
@@ -5166,6 +5169,9 @@ importers:
       echarts-for-react:
         specifier: 3.0.2
         version: 3.0.2(echarts@5.6.0)(react@19.2.8)
+      elkjs:
+        specifier: ^0.10.2
+        version: 0.10.2
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
@@ -5515,6 +5521,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.1.10(vitest@4.1.10)
+      '@xyflow/react':
+        specifier: ^12.11.5
+        version: 12.12.0(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(immer@11.1.16)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       ai:
         specifier: 5.0.0
         version: 5.0.0(zod@4.6.5)
@@ -5536,6 +5545,9 @@ importers:
       echarts-for-react:
         specifier: 3.0.2
         version: 3.0.2(echarts@5.6.0)(react@19.2.8)
+      elkjs:
+        specifier: ^0.10.2
+        version: 0.10.2
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)

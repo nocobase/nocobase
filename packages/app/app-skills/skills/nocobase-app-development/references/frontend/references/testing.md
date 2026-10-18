@@ -23,6 +23,8 @@ Tests never go beside the source. Vitest discovers `tests/**/*.test.{ts,tsx}` an
 
 ## Building the test harness
 
+Also run `tests/logic/page-permission-titles.test.ts` when adding or changing routes. It requires translated names for every application page permission, including overlays without navigation/breadcrumbs, and preserves the complete resource/action identity list. See [permission display names](page.md#permission-display-names).
+
 For a page or component that uses application services, start from the [complete `@nocobase/app-testing/client` example](../../testing/client/page.md). `renderWithApp()` supplies the real API client, router, translations and toaster. Supply HTTP responses through `answerApi()`, load the application's locale map, and assert visible state and `view.toasts()`. Register the client plugins or service doubles that the page actually consumes; avoid mocking the whole `@nocobase/app-client` module.
 
 Existing `tests/components/page-harness.test.tsx` files can still illustrate which states to cover: a request payload, a `403` without retry, a `401` offering sign-in, an action shown or hidden with permission, and a child route opened by URL. When adapting those cases, import the real page and use the application fixture for its service context. Put new files in the application's current test layout; the worked example uses `tests/client/` with an explicit React config.
