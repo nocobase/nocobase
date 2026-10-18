@@ -295,6 +295,9 @@ function ConversationBody({
           key={`m-${segment.key}`}
           message={segment.message}
           segment={segment}
+          streaming={
+            receiving && segment.message.id === messages.items.at(-1)?.id
+          }
           agentName={agentName}
           extra={
             segment.last

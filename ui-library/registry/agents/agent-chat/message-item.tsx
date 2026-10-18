@@ -46,6 +46,8 @@ export interface MessageItemProps {
   readonly extra?: ReactNode;
   readonly onApproval?: (input: AppUIToolApprovalInput) => Promise<void>;
   readonly approvalDisabled?: boolean;
+  /** Only the message owning the current SDK response may display a writing indicator. */
+  readonly streaming?: boolean;
 }
 export function MessageItem({
   message,
@@ -54,6 +56,7 @@ export function MessageItem({
   extra,
   onApproval,
   approvalDisabled,
+  streaming = false,
 }: MessageItemProps): ReactElement {
   const { t } = useChatTranslation();
   const extensions = useContext(ChatExtensionsContext);
@@ -63,9 +66,11 @@ export function MessageItem({
     segment?.partIndexes ?? message.parts.map((_part, index) => index)
   ).map((index) => ({ part: message.parts[index], index }));
   const fromAgent = message.role === 'assistant';
-  const streaming = parts.some(
-    ({ part }) => part.type === 'text' && part.state === 'streaming',
-  );
+  const writing =
+    streaming &&
+    parts.some(
+      ({ part }) => part.type === 'text' && part.state === 'streaming',
+    );
   const at = segment?.at || message.metadata?.createdAt;
   const approve = async (approval: { id: string; approved: boolean }) => {
     if (!onApproval || !message.metadata?.executionId || approving) return;
@@ -223,8 +228,8 @@ export function MessageItem({
       data-chat-message={message.role}
       data-message-id={message.id}
       data-seq={segment?.seq ?? message.metadata?.seq}
-      data-streaming={streaming ? true : undefined}
-      aria-busy={streaming ? true : undefined}
+      data-streaming={writing ? true : undefined}
+      aria-busy={writing ? true : undefined}
     >
       {fromAgent ? (
         <AgentAvatar name={name} size='sm' className='mt-0.5' />
@@ -250,7 +255,7 @@ export function MessageItem({
           )}
         >
           {content}
-          {streaming ? (
+          {writing ? (
             <span
               className='ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-foreground/60 align-middle motion-reduce:animate-none'
               role='status'

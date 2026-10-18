@@ -18,6 +18,43 @@ import { MessageItem } from '../../registry/agents/agent-chat/message-item';
 import { Composer } from '../../registry/agents/agent-chat/composer';
 import enUS from '../../registry/agents/agent-chat/locales/en-US';
 
+it('shows writing only for the active response, even when saved partial parts retain SDK streaming state', () => {
+  const partial: AppUIMessage = {
+    id: 'partial',
+    role: 'assistant',
+    metadata,
+    parts: [{ type: 'text', text: 'Saved partial reply', state: 'streaming' }],
+  };
+  const tree = render(
+    <ol>
+      <MessageItem message={partial} agentName={() => 'Agent'} />
+    </ol>,
+    { wrapper },
+  );
+  expect(screen.queryByLabelText(enUS.chat.reply.writing)).toBeNull();
+  tree.rerender(
+    <ol>
+      <MessageItem message={partial} agentName={() => 'Agent'} streaming />
+    </ol>,
+  );
+  expect(screen.getByLabelText(enUS.chat.reply.writing)).toBeVisible();
+  tree.rerender(
+    <ol>
+      <MessageItem
+        message={partial}
+        agentName={() => 'Agent'}
+        streaming={false}
+      />
+    </ol>,
+  );
+  expect(screen.queryByLabelText(enUS.chat.reply.writing)).toBeNull();
+  expect(partial.parts[0]).toEqual({
+    type: 'text',
+    text: 'Saved partial reply',
+    state: 'streaming',
+  });
+});
+
 const host = vi.hoisted(() => ({
   api: { request: vi.fn(), stream: vi.fn() },
   realtime: { subscribe: () => () => {}, onOpen: () => () => {} },

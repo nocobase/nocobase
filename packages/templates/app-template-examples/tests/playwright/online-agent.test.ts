@@ -87,6 +87,7 @@ test('streams through the installed chat, persists across reload and stops indep
       panel.getByText('Hello from the local model fixture.', { exact: true }),
     ).toBeVisible();
     await expect(panel.getByTestId('chat-stop')).toBeEnabled();
+    await expect(panel.locator('[data-streaming]')).toHaveCount(1);
     await screenshot('phase-e-generated-examples-stream.png');
     fixture.append(0, ' Saved without a workspace link.');
     fixture.complete(0);
@@ -142,7 +143,25 @@ test('streams through the installed chat, persists across reload and stops indep
       'assistant',
     ]);
     expect(fixture.streams).toHaveLength(2);
+    await expect(panel.locator('[data-streaming]')).toHaveCount(0);
+    await expect(panel.getByTestId('chat-stop')).toHaveCount(0);
     await screenshot('phase-e-generated-examples-stopped.png');
+    await page.goto(app + '/?chat=' + encodeURIComponent(conversationId));
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('[data-streaming]')).toHaveCount(0);
+    expect(fixture.streams).toHaveLength(2);
+    await panel
+      .locator('textarea')
+      .fill('Continue after the saved partial reply.');
+    await panel.getByTestId('chat-send').click();
+    await expect.poll(() => fixture.streams.length).toBe(3);
+    await expect(panel.locator('[data-streaming]')).toHaveCount(1);
+    fixture.complete(2);
+    await expect
+      .poll(async () => (await detail()).execution?.status)
+      .toBe('idle');
+    await expect(panel.locator('[data-streaming]')).toHaveCount(0);
+    expect(fixture.streams).toHaveLength(3);
     expect(errors).toEqual([]);
   } finally {
     if (serviceName)
