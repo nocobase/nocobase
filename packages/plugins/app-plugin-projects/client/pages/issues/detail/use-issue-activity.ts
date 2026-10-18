@@ -80,15 +80,26 @@ export function useIssueTimeline(
       detail.activities,
     ],
   );
-  const found =
+  const threadFound =
     targetId !== null &&
     threads.some(
       (thread) =>
         thread.root.id === targetId ||
         thread.replies.some((reply) => reply.id === targetId),
     );
+  const found =
+    targetId !== null &&
+    entries.some(
+      (entry) =>
+        entry.kind === 'thread' &&
+        (entry.thread.root.id === targetId ||
+          entry.thread.replies.some((reply) => reply.id === targetId)),
+    );
   const { hasMore: moreThreads, loading: loadingThreads } = olderThreads;
   const loadThreads = olderThreads.loadMore;
+  const { hasMore: moreActivities, loading: loadingActivities } =
+    olderActivities;
+  const loadActivities = olderActivities.loadMore;
   const scrolledToRef = useRef<string | null>(null);
   useEffect(() => {
     const target = targetId ? `${detail.id}:${targetId}` : null;
@@ -98,7 +109,9 @@ export function useIssueTimeline(
       return;
     }
     if (!found) {
-      if (moreThreads && !loadingThreads) loadThreads();
+      if (!threadFound && moreThreads && !loadingThreads) loadThreads();
+      // The timeline's watermark can hide a loaded thread until the activity pages reach it too.
+      if (moreActivities && !loadingActivities) loadActivities();
       return;
     }
     const element = document.querySelector<HTMLElement>(
@@ -108,7 +121,18 @@ export function useIssueTimeline(
       element.scrollIntoView({ block: 'center' });
       scrolledToRef.current = target;
     }
-  }, [detail.id, targetId, found, moreThreads, loadingThreads, loadThreads]);
+  }, [
+    detail.id,
+    targetId,
+    found,
+    threadFound,
+    moreThreads,
+    loadingThreads,
+    loadThreads,
+    moreActivities,
+    loadingActivities,
+    loadActivities,
+  ]);
 
   return {
     entries,
