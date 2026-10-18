@@ -1,7 +1,7 @@
 import type {
   OnlineAgent,
   OnlineAgentContext,
-  OnlineAgentRuntime,
+  OnlineAgentService,
 } from '@nocobase/app-plugin-agents/server/online-agent';
 import {
   offersEntry,
@@ -20,7 +20,7 @@ export interface StructuredExtractionInput {
 }
 
 type Dependencies = {
-  onlineAgent: Pick<OnlineAgentRuntime, 'background'>;
+  onlineAgent: OnlineAgentService;
   catalog(): Promise<ModelCatalog>;
   onError?(error: unknown): void;
 };

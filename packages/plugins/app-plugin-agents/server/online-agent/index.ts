@@ -16,8 +16,6 @@ export {
   type OnlineAgentToolDefinition,
 } from './config.js';
 export type {
-  OnlineAgentRuntime,
-  OnlineAgentRealtimeService,
   OnlineAgentRealtimeSession,
   OnlineAgentRealtimeOptions,
   OnlineAgentSendOptions,

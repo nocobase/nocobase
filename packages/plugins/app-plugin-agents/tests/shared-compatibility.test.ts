@@ -1,12 +1,12 @@
 import type {
   OnlineAgentToolContext as PublicToolContext,
   OnlineAgentRealtimeSession,
-  OnlineAgentRuntime,
   OnlineAgent,
   OnlineAgentJson,
   OnlineAgentResult,
   OnlineAgentSafeError,
 } from '@nocobase/app-plugin-agents/server/online-agent';
+import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 import { OnlineAgentConfigurator as OnlineAgentEntryConfigurator } from '@nocobase/app-plugin-agents/server/online-agent';
 import {
   OnlineAgentConfigurator,
@@ -220,8 +220,8 @@ it('exposes the shared service and configurator through the public server entry'
     PublicOnlineAgentService['configurator']
   >().toEqualTypeOf<OnlineAgentConfigurator>();
   expectTypeOf<
-    OnlineAgentRuntime['configurator']
-  >().toEqualTypeOf<OnlineAgentConfigurator>();
+    Agents['onlineAgent']
+  >().toEqualTypeOf<PublicOnlineAgentService>();
   expectTypeOf<
     Awaited<ReturnType<PublicOnlineAgentService['realtime']>>
   >().toEqualTypeOf<OnlineAgentRealtimeSession>();
@@ -260,9 +260,9 @@ it('exports typed result observation through the public server entry', () => {
   expect(failure.reason).toBe('failed');
 });
 
-it('keeps the chat directory outside the OnlineAgent runtime contract', () => {
+it('keeps the chat directory outside the OnlineAgent service contract', () => {
   expectTypeOf<
-    Extract<keyof OnlineAgentRuntime, 'chatAgents'>
+    Extract<keyof PublicOnlineAgentService, 'chatAgents'>
   >().toEqualTypeOf<never>();
 });
 
@@ -275,7 +275,7 @@ it('exposes conversation visibility without a background visibility override', (
   >();
   expectTypeOf<
     Extract<
-      keyof NonNullable<Parameters<OnlineAgentRuntime['background']>[1]>,
+      keyof NonNullable<Parameters<PublicOnlineAgentService['background']>[1]>,
       'showInChatList'
     >
   >().toEqualTypeOf<never>();

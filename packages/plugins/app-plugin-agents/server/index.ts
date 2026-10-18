@@ -16,8 +16,6 @@ export {
 } from './online-agent/index.js';
 
 export type {
-  OnlineAgentRuntime,
-  OnlineAgentRealtimeService,
   OnlineAgentRealtimeSession,
   OnlineAgentRealtimeOptions,
   OnlineAgentSendOptions,

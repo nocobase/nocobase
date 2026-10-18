@@ -16,7 +16,6 @@ import {
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { createOutputSchema } from './output.js';
 import type {
-  OnlineAgentRealtimeService,
   OnlineAgentRealtimeSession,
   OnlineAgentRealtimeOptions,
   OnlineAgentRunnerBackend,
@@ -123,7 +122,7 @@ export interface OnlineAgent {
   /** A finite observation budget; timeout never cancels the execution. */
   try(options?: { wait?: number }): Promise<OnlineAgentResult>;
 }
-export class OnlineAgentService implements OnlineAgentRealtimeService {
+export class OnlineAgentService {
   readonly configurator: OnlineAgentConfigurator =
     new OnlineAgentConfigurator();
   private stopping = false;

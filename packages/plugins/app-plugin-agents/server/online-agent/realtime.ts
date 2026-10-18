@@ -9,9 +9,7 @@ import type {
   OnlineAgentOptions,
   OnlineAgentConfig,
   OnlineAgentContext,
-  OnlineAgentConfigurator,
 } from './config.js';
-import type { OnlineAgent } from './service.js';
 
 export type OnlineAgentSendOptions = {
   attachmentIds?: string[][];
@@ -63,42 +61,5 @@ export interface OnlineAgentRunnerBackend {
     config: OnlineAgentConfig,
     expectedConfig: OnlineAgentConfig,
   ): Promise<void>;
-  shutdown(): Promise<void>;
-}
-
-export interface OnlineAgentRealtimeService {
-  realtime(
-    context: OnlineAgentContext,
-    options?: OnlineAgentRealtimeOptions,
-    boundary?: 'http',
-  ): Promise<OnlineAgentRealtimeSession>;
-  configuration(
-    context: OnlineAgentContext,
-    id: string,
-  ): Promise<OnlineAgentConfig & { selectedModel: ModelRef | null }>;
-  configure(
-    context: OnlineAgentContext,
-    id: string,
-    options: OnlineAgentOptions,
-    selectedModel?: ModelRef,
-    boundary?: 'http',
-  ): Promise<OnlineAgentConfig & { selectedModel: ModelRef | null }>;
-}
-
-/** Application runtime; native background execution remains a separate capability. */
-export interface OnlineAgentRuntime extends OnlineAgentRealtimeService {
-  readonly recovery: 'shared' | 'live';
-  notify(
-    context: OnlineAgentContext,
-    id: string,
-    input: { id: string; parts: AppUIMessage['parts'] },
-  ): Promise<AppUIMessage>;
-  /** Internal server boot hook, before accepting requests. */
-  recoverAtStartup(): Promise<void>;
-  readonly configurator: OnlineAgentConfigurator;
-  background(
-    context: OnlineAgentContext,
-    options?: Omit<OnlineAgentRealtimeOptions, 'showInChatList'>,
-  ): Promise<OnlineAgent>;
   shutdown(): Promise<void>;
 }

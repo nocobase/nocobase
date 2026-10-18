@@ -4,7 +4,6 @@ import {
 } from './online-agent/ui-streams.js';
 import { RunnerOnlineAgentAdapter } from './online-agent/runner.js';
 import type { ServiceResolver } from '@nocobase/service-provider';
-import type { OnlineAgentRuntime } from './online-agent/realtime.js';
 import { OnlineAgentService } from './online-agent/service.js';
 import { createSessionManager } from './online-agent/sessions.js';
 import { languageModel } from './online/providers.js';
@@ -198,7 +197,7 @@ export interface AgentsDeps {
 }
 
 export interface Agents {
-  readonly onlineAgent: OnlineAgentRuntime;
+  readonly onlineAgent: OnlineAgentService;
   readonly events: AgentsEventBus;
   readonly tx: TxRunner;
   readonly clock: Clock;

@@ -8,12 +8,14 @@ Use `OnlineAgentService` for SDK conversations that call application services an
 
 Import the original `agentsToken` from `@nocobase/app-plugin-agents/server/tokens` and resolve `agentsToken.onlineAgent` in an application provider after the plugin has registered. Do not construct a second service for an HTTP entry or user: the application instance coordinates busy, stop and finalization across all facades. `OnlineAgentService` and `OnlineAgentConfigurator` are exported from `@nocobase/app-plugin-agents/server` and `@nocobase/app-plugin-agents/server/online-agent`; the latter also exports the prefixed configuration, tool and stream contracts.
 
+Application dependencies and function parameters use the complete `OnlineAgentService` type. Resolve the shared instance through `agentsToken`; do not introduce another service interface or a method-only type projection.
+
 `onlineAgent.configurator` is the `OnlineAgentConfigurator` (the configuration component). Register global layers, named business scopes and versioned tools once at application boot. It resolves prompts, variables, model lists and tool sets; a Scope selects ordinary configuration and grants no business permission.
 
 ```ts
 import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
 import type {
-  OnlineAgentRuntime,
+  OnlineAgentService,
   OnlineAgentToolContext,
 } from '@nocobase/app-plugin-agents/server/online-agent';
 import type { ServiceResolver, ServiceToken } from '@nocobase/service-provider';
@@ -30,7 +32,7 @@ type InvoiceService = {
 export function configureInvoices(
   resolver: ServiceResolver,
   invoiceToken: ServiceToken<InvoiceService>,
-): OnlineAgentRuntime {
+): OnlineAgentService {
   const online = resolver.resolve(agentsToken).onlineAgent;
   online.configurator.registerTool('read_invoice', {
     version: '1',
@@ -67,11 +69,11 @@ Construct `OnlineAgentContext` from the authenticated user and full trusted entr
 ```ts
 import type {
   OnlineAgentContext,
-  OnlineAgentRuntime,
+  OnlineAgentService,
 } from '@nocobase/app-plugin-agents/server/online-agent';
 
 export async function askInvoice(
-  online: OnlineAgentRuntime,
+  online: OnlineAgentService,
   actor: OnlineAgentContext,
   invoiceId: string,
 ) {
@@ -91,7 +93,7 @@ export async function askInvoice(
 }
 
 export async function classify(
-  online: OnlineAgentRuntime,
+  online: OnlineAgentService,
   actor: OnlineAgentContext,
 ) {
   const job = await online.background(actor);
@@ -127,7 +129,7 @@ Permission-restricted configuration, custom permission/approval protocols and no
 
 ## Select a Runner executor
 
-`OnlineAgentRealtimeService` and `OnlineAgentRealtimeSession` are the replaceable public conversation contracts. Both executors return `AppUIMessage[]` history and standard SDK streams. Runner blocks retain source IDs, sequences, creation times and stable part identities in message metadata; render source segments around independent notifications while retaining one logical message. Use the SDK to parse, assemble and resume the stream. Native background sessions retain separate SDK history and structured `run(schema)` / `get()` capabilities; they have no browser `receive()` method. The retired custom stream contracts and memory replay manager are no longer exported. EOF or cancelling a subscriber means neither saved completion nor business Stop.
+Applications depend directly on the shared `OnlineAgentService`. Native and Runner execution share `OnlineAgentRealtimeSession`, and the Runner adapter implements `OnlineAgentRunnerBackend`. Both executors return `AppUIMessage[]` history and standard SDK streams. Runner blocks retain source IDs, sequences, creation times and stable part identities in message metadata; render source segments around independent notifications while retaining one logical message. Use the SDK to parse, assemble and resume the stream. Native background sessions retain separate SDK history and structured `run(schema)` / `get()` capabilities; they have no browser `receive()` method. The retired custom stream contracts and memory replay manager are no longer exported. EOF or cancelling a subscriber means neither saved completion nor business Stop.
 
 ```ts
 online.configurator.registerOnlineAgentScope('coding', {

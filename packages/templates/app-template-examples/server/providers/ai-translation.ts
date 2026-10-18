@@ -1,7 +1,7 @@
 import type {
   OnlineAgent,
   OnlineAgentContext,
-  OnlineAgentRuntime,
+  OnlineAgentService,
 } from '@nocobase/app-plugin-agents/server/online-agent';
 import type { ModelGateway } from '@nocobase/app-plugin-agents/server/tokens';
 
@@ -41,7 +41,7 @@ const systemPrompt = [
 /** Observe native structured generation; timeout requests abort but cannot guarantee an immediate execution stop. */
 export async function translateText(
   dependencies: {
-    online: Pick<OnlineAgentRuntime, 'background'>;
+    online: OnlineAgentService;
     models: Pick<ModelGateway, 'catalog'>;
     warn(message: string): void;
   },

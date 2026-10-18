@@ -7,6 +7,9 @@ import { ApiError } from '@nocobase/app-server/router';
 import type { ModelCatalog } from '@nocobase/app-plugin-agents/shared/models';
 import { afterEach, expect, it, vi } from 'vitest';
 import { StructuredExtractionService } from '../../server/providers/structured-extraction-service.js';
+import { createOnlineAgentServiceFixture } from '../fixtures/online-agent-service.js';
+
+const getOnlineAgent = createOnlineAgentServiceFixture();
 
 const model = { modelService: 'fixture', model: 'chat' };
 const input = {
@@ -63,8 +66,10 @@ function setup() {
     try: vi.fn<OnlineAgent['try']>(),
     retryFinalization: vi.fn(async () => {}),
   } satisfies OnlineAgent;
+  const onlineAgent = getOnlineAgent();
+  vi.spyOn(onlineAgent, 'background').mockResolvedValue(session);
   const deps = {
-    onlineAgent: { background: vi.fn(async () => session as OnlineAgent) },
+    onlineAgent,
     catalog: vi.fn(async () => catalog),
     onError: vi.fn(),
   };
@@ -111,7 +116,7 @@ it.each(['catalog', 'background', 'run', 'get'] as const)(
     const remove = vi.spyOn(controller.signal, 'removeEventListener');
     if (phase === 'catalog') deps.catalog.mockImplementation(never);
     if (phase === 'background')
-      deps.onlineAgent.background.mockImplementation(never);
+      vi.mocked(deps.onlineAgent.background).mockImplementation(never);
     if (phase === 'run') session.run.mockImplementation(never);
     if (phase === 'get') session.get.mockImplementation(never);
     session.abort.mockImplementation(never);
@@ -135,7 +140,7 @@ it.each(['deadline', 'disconnect'] as const)(
   async (cause) => {
     const { service, session, deps } = setup();
     const opened = deferred<OnlineAgent>();
-    deps.onlineAgent.background.mockReturnValue(opened.promise);
+    vi.mocked(deps.onlineAgent.background).mockReturnValue(opened.promise);
     const controller = new AbortController();
     const error = new Error('Provider refuses cancellation.');
     session.abort.mockRejectedValue(error);
@@ -173,7 +178,7 @@ it('checks an already disconnected request before opening a session', async () =
 it('rechecks the wall deadline before admission even if its timer has not fired', async () => {
   const { service, session, deps } = setup();
   const opened = deferred<OnlineAgent>();
-  deps.onlineAgent.background.mockReturnValue(opened.promise);
+  vi.mocked(deps.onlineAgent.background).mockReturnValue(opened.promise);
   const result = service.extract(actor, input).catch((error: unknown) => error);
   await vi.advanceTimersByTimeAsync(0);
   vi.setSystemTime(Date.now() + 1_001);
@@ -215,7 +220,7 @@ it.each([
       status,
     });
     if (phase === 'background')
-      deps.onlineAgent.background.mockRejectedValue(error);
+      vi.mocked(deps.onlineAgent.background).mockRejectedValue(error);
     else session[phase].mockRejectedValue(error);
     const result = service
       .extract(actor, input)

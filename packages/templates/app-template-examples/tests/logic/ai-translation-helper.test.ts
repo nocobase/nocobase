@@ -8,6 +8,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { translateText } from '../../server/providers/ai-translation.js';
 import type { TranslationInput } from '../../shared/ai-translation.js';
+import { createOnlineAgentServiceFixture } from '../fixtures/online-agent-service.js';
+
+const getOnlineAgent = createOnlineAgentServiceFixture();
 
 const input: TranslationInput = {
   text: '  Hello\nworld  ',
@@ -60,13 +63,14 @@ function fixture() {
       .mockResolvedValue({ translation: '訳文\n' }),
     abort: vi.fn<OnlineAgent['abort']>().mockResolvedValue(undefined),
     history: vi.fn<OnlineAgent['history']>().mockResolvedValue([]),
-    receive: vi.fn<OnlineAgent['receive']>().mockResolvedValue(null),
     send: vi.fn<OnlineAgent['send']>().mockResolvedValue(0),
     try: vi.fn<OnlineAgent['try']>(),
     retryFinalization: vi.fn<OnlineAgent['retryFinalization']>(),
   } satisfies OnlineAgent;
+  const online = getOnlineAgent();
+  vi.spyOn(online, 'background').mockResolvedValue(session);
   const dependencies = {
-    online: { background: vi.fn().mockResolvedValue(session) },
+    online,
     models: { catalog: vi.fn().mockResolvedValue(catalog) },
     warn: vi.fn(),
   };
@@ -75,6 +79,7 @@ function fixture() {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe('AI Translation native observation', () => {
@@ -177,7 +182,7 @@ describe('AI Translation native observation', () => {
       if (phase === 'catalog')
         dependencies.models.catalog.mockReturnValue(stuck);
       if (phase === 'background')
-        dependencies.online.background.mockReturnValue(stuck);
+        vi.mocked(dependencies.online.background).mockReturnValue(stuck);
       if (phase === 'run') session.run.mockReturnValue(stuck);
       if (phase === 'get') session.get.mockReturnValue(stuck);
       // A stuck abort cannot extend the response deadline.
@@ -199,7 +204,7 @@ describe('AI Translation native observation', () => {
     vi.useFakeTimers();
     const { session, dependencies } = fixture();
     const opening = deferred<OnlineAgent>();
-    dependencies.online.background.mockReturnValue(opening.promise);
+    vi.mocked(dependencies.online.background).mockReturnValue(opening.promise);
     session.abort.mockRejectedValue(new Error('cleanup secret'));
     dependencies.warn.mockImplementation(() => {
       throw new Error('logger failed');
