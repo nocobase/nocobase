@@ -248,7 +248,7 @@ visibility (`useProjectMembership`), working directories (`useProjectResources`,
 what the server would refuse (`client/lib/permissions.ts` mirrors its rules); the server still checks every request.
 Open pages refresh when the server announces a change on the `pm:changes` realtime topic: once for the events of a moment, naming the issues that changed when no change moved an issue between lists (`issueIds`), so a page refreshes only what it shows of them (`announcedIssueIds`, `changedIssueSegments` and `isIssueRead` in `client/kit`).
 
-`scrollIntoNearestContainer(element, block)` from `client/issues` positions a comment, summary or selected task row inside its nearest ancestor with vertical `overflow: auto` or `scroll`. It keeps horizontal scroll unchanged and never scrolls hidden layout shells or the document. `useIssueTimeline` uses it for comment links and keeps its once-per-target positioning across refreshes. Compose task content inside a vertical content scroller.
+`scrollIntoNearestContainer(element, block, behavior?)` from `client/issues` positions a comment, summary or selected task row inside its nearest ancestor with vertical `overflow: auto` or `scroll`. It keeps horizontal scroll unchanged and never scrolls hidden layout shells or the document. `useIssueTimeline` uses it for comment links and keeps its once-per-target positioning across refreshes. Content must be inside an overflowing vertical content scroller (`scrollHeight > clientHeight`). Horizontal-only auto containers are skipped. If none exists, it returns false without a document fallback.
 
 ## Layout
 

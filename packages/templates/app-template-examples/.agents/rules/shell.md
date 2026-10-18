@@ -33,3 +33,5 @@ Use `Loading` for page or panel waits and `Spinner` (the shadcn-compatible adapt
 The shared list of shell behaviors to keep when customizing is in [customizing the shell](../skills/nocobase-app-development/references/frontend/references/shell.md).
 
 The signed-in region waits in `client/routing/session-preparation.tsx` before mounting `AppLayout`: the authentication provider first reconnects active realtime subscriptions as the current session and waits for the open notification, including permission invalidation. A ten-second timeout shows a localized retry/sign-out screen. Keep this boundary inside `RequiredAuthentication`; guest login must remain reachable without realtime. Readiness is only for initial session preparation. Subsequent permission notifications and reconnects still use normal fail-closed route unmounting, including portal and effect cleanup.
+
+The main surface and sidebar provider use `overflow-clip` so scripts, focus and anchor navigation cannot scroll the application shell. Keep page content inside its own vertical scroll container; `overflow-hidden` still permits script scrolling.

@@ -26,6 +26,7 @@ function fixture(top = 450, bottom = 490) {
   Object.defineProperties(container, {
     clientTop: { value: 2 },
     clientHeight: { value: 300 },
+    scrollHeight: { value: 900, configurable: true },
   });
   vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
     top: 98,
@@ -45,7 +46,7 @@ describe('scoped task positioning', () => {
   ] as const)('aligns %s using only the content scroller', (block, top) => {
     const { target, scroll, outerScroll, container } = fixture();
     expect(scrollIntoNearestContainer(target, block)).toBe(true);
-    expect(scroll).toHaveBeenCalledExactlyOnceWith({ top });
+    expect(scroll).toHaveBeenCalledExactlyOnceWith({ top, behavior: 'auto' });
     expect(outerScroll).not.toHaveBeenCalled();
     expect(container.scrollLeft).toBe(30);
   });
@@ -58,7 +59,11 @@ describe('scoped task positioning', () => {
     const { target, scroll } = fixture(top, bottom);
     scrollIntoNearestContainer(target, 'nearest');
     if (expected === null) expect(scroll).not.toHaveBeenCalled();
-    else expect(scroll).toHaveBeenCalledExactlyOnceWith({ top: expected });
+    else
+      expect(scroll).toHaveBeenCalledExactlyOnceWith({
+        top: expected,
+        behavior: 'auto',
+      });
   });
 
   it('does not fall back to scrolling hidden shells or the document', () => {
@@ -68,4 +73,30 @@ describe('scoped task positioning', () => {
     expect(scroll).not.toHaveBeenCalled();
     expect(outerScroll).not.toHaveBeenCalled();
   });
+});
+
+it('skips a horizontal-only auto wrapper and reaches the overflowing vertical ancestor', () => {
+  const { container, target, scroll } = fixture();
+  const wrapper = target.parentElement!;
+  wrapper.style.overflowX = 'auto';
+  wrapper.style.overflowY = 'auto';
+  Object.defineProperties(wrapper, {
+    clientHeight: { value: 100 },
+    scrollHeight: { value: 100 },
+  });
+  wrapper.scrollTo = vi.fn();
+  expect(scrollIntoNearestContainer(target, 'start', 'smooth')).toBe(true);
+  expect(wrapper.scrollTo).not.toHaveBeenCalled();
+  expect(scroll).toHaveBeenCalledExactlyOnceWith({
+    top: 550,
+    behavior: 'smooth',
+  });
+  expect(container.scrollLeft).toBe(30);
+});
+
+it('returns false when auto containers have no vertical scroll range', () => {
+  const { container, target, scroll } = fixture();
+  Object.defineProperty(container, 'scrollHeight', { value: 300 });
+  expect(scrollIntoNearestContainer(target, 'center')).toBe(false);
+  expect(scroll).not.toHaveBeenCalled();
 });

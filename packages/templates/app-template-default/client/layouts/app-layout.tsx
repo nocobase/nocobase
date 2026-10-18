@@ -69,7 +69,7 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
               </div>
               <HeaderActions />
             </LayoutHeader>
-            <main className='app-brand-surface relative isolate min-w-0 flex-1 overflow-hidden'>
+            <main className='app-brand-surface relative isolate min-h-0 min-w-0 flex-1 overflow-clip'>
               <BrandWatermark className='-z-10' />
               {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
             moved by the page's scrolling nor stretched by its height. */}

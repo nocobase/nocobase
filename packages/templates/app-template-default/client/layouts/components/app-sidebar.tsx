@@ -47,7 +47,7 @@ export function AppSidebarProvider({
     <SidebarProvider
       open={!collapsed}
       onOpenChange={(open) => setCollapsed(!open)}
-      className='h-svh bg-background'
+      className='h-svh overflow-clip bg-background'
       // shadcn's 16rem in spacing units, so a density preset that changes the unit scales the sidebar together with
       // the items inside it (the provider's documented width override).
       style={

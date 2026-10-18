@@ -91,3 +91,5 @@ export function HeaderActions(): ReactElement {
 
 - Run the shell tests that cover what you changed: `tests/components/header-hover.test.tsx` (hover, keyboard and Escape), `navigation-menu.test.tsx`, `sidebar-permissions.test.tsx`, `sidebar-preference.test.tsx` and `language-switcher.test.tsx` under `tests/components/`, and `tests/logic/client-shell.test.tsx` and `tests/logic/user-menu-sign-out.test.tsx`.
 - Look at the App layout in the browser, on the desktop and at 375px, with the sidebar expanded and collapsed.
+
+Keep the application main surface and sidebar provider at `overflow: clip` so script, focus and anchor navigation cannot move the shell. `overflow: hidden` still permits script scrolling. Put page content in its own vertical scroll container, preserve `min-height: 0` on flex children, and use vertical-only overscroll containment when native horizontal browser navigation must remain available.

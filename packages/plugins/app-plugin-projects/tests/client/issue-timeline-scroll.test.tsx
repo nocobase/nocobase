@@ -96,7 +96,13 @@ it('loads both history streams to reveal an older target and scrolls once across
       <div
         style={{ overflowY: 'auto' }}
         ref={(element) => {
-          if (element) element.scrollTo = scroll;
+          if (element) {
+            element.scrollTo = scroll;
+            Object.defineProperties(element, {
+              clientHeight: { value: 100, configurable: true },
+              scrollHeight: { value: 500, configurable: true },
+            });
+          }
         }}
       >
         {timeline.entries.map((entry) =>
