@@ -53,11 +53,17 @@ export function RunnerRuns({
     );
   return (
     <div className='min-w-0 rounded-lg border' data-testid='runner-runs'>
-      <Table className='table-fixed min-w-[620px]'>
+      <Table className='table-fixed min-w-[720px]'>
         <TableHeader>
           <TableRow>
-            {['issue', 'agent', 'status', 'started', 'duration'].map((key) => (
-              <TableHead key={key}>
+            {[
+              ['issue', 'w-44'],
+              ['agent', 'w-40'],
+              ['status', 'w-44'],
+              ['started', 'w-24'],
+              ['duration', 'w-20'],
+            ].map(([key, width]) => (
+              <TableHead key={key} className={width}>
                 {t(`runtimes.quota.runColumns.${key}`)}
               </TableHead>
             ))}

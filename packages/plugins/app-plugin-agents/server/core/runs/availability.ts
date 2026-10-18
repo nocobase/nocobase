@@ -59,10 +59,11 @@ export function createAvailability(deps: {
       actorUserId === undefined
         ? undefined
         : await deps.eligibility.prepare(conn, agents, {});
+    const now = deps.clock.now().getTime();
     const result = new Map<string, AgentAvailability>();
     for (const agent of agents) {
       const fitting = runners.filter((runner) =>
-        runnerTakesAgent(runner, agent, deps.clock.now().getTime()),
+        runnerTakesAgent(runner, agent, now),
       );
       const team = fitting.filter((runner) => runner.trust === 'team');
       const personal = fitting.filter((runner) => runner.trust !== 'team');
@@ -79,12 +80,7 @@ export function createAvailability(deps: {
               }));
       result.set(agent.id, {
         online,
-        quota: quotaForAgent(
-          runners,
-          agent,
-          actorUserId,
-          deps.clock.now().getTime(),
-        ),
+        quota: quotaForAgent(runners, agent, actorUserId, now),
         busy: busy.get(agent.id) ?? 0,
         runners: {
           team: team.length,

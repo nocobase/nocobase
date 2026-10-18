@@ -174,6 +174,7 @@ export function createRunnerView(deps: {
       ).length;
     },
     async takes(runners) {
+      const now = deps.clock.now().getTime();
       const agents = (await deps.agents.list()).filter(
         (agent) => agent.status === 'enabled',
       );
@@ -181,9 +182,7 @@ export function createRunnerView(deps: {
         runners.map((runner) => [
           runner.id,
           agents
-            .filter((agent) =>
-              runnerTakesAgent(runner, agent, deps.clock.now().getTime()),
-            )
+            .filter((agent) => runnerTakesAgent(runner, agent, now))
             .map((agent) => ({ id: agent.id, name: agent.name })),
         ]),
       );

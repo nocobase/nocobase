@@ -371,14 +371,13 @@ export function createConversationService(
       runners: online,
       variableState,
     });
+    const now = clock.now().getTime();
     return availabilityOf(
       agent,
       userId,
       deps.agents.mayInvoke,
       eligible.length,
-      online.some((runner) =>
-        runnerTakesAgent(runner, agent, clock.now().getTime()),
-      ),
+      online.some((runner) => runnerTakesAgent(runner, agent, now)),
     );
   }
 
@@ -1473,6 +1472,7 @@ export function createConversationService(
         deps.settings.preferences(userId, conn),
       ]);
       const variableStates = await deps.eligibility.prepare(conn, agents, {});
+      const now = clock.now().getTime();
       return Promise.all(
         agents
           // People talk to the agents discovered from runners; an application's own agents do work of its own.
@@ -1482,7 +1482,7 @@ export function createConversationService(
           )
           .map(async (agent): Promise<ChatAgent> => {
             const fitting = runners.filter((runner) =>
-              runnerTakesAgent(runner, agent, clock.now().getTime()),
+              runnerTakesAgent(runner, agent, now),
             );
             return {
               id: agent.id,
@@ -1500,12 +1500,7 @@ export function createConversationService(
                 runners,
                 variableStates?.get(agent.id),
               ),
-              quota: quotaForAgent(
-                runners,
-                agent,
-                userId,
-                clock.now().getTime(),
-              ),
+              quota: quotaForAgent(runners, agent, userId, now),
               runnerNames: fitting
                 .filter(
                   (runner) =>

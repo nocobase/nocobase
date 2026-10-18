@@ -103,6 +103,7 @@ export function createClaimEligibility(deps: {
     candidates: readonly Runner[],
   ): Promise<Runner[]> {
     if (agent.status !== 'enabled') return [];
+    const now = deps.clock.now().getTime();
     // No variable reads when the tool, policy and trust rules already rule every runner out.
     const possible = candidates.filter(
       (runner) =>
@@ -112,7 +113,7 @@ export function createClaimEligibility(deps: {
           agent,
           request.actorUserId,
           request.requires ?? [],
-          deps.clock.now().getTime(),
+          now,
         ),
     );
     if (possible.length === 0) return [];
@@ -130,13 +131,7 @@ export function createClaimEligibility(deps: {
       (await deps.variables.teamOnly(conn, targets)).length > 0;
     return possible.filter(
       (runner) =>
-        fitsActor(
-          runner,
-          agent,
-          request.actorUserId,
-          requires,
-          deps.clock.now().getTime(),
-        ) &&
+        fitsActor(runner, agent, request.actorUserId, requires, now) &&
         (!teamOnly || runner.trust === 'team'),
     );
   }
@@ -189,6 +184,7 @@ export function createClaimEligibility(deps: {
       );
     },
     async mayQueue(conn, agent, request) {
+      const now = deps.clock.now().getTime();
       const registered = (request.runners ?? (await deps.runners.all(conn)))
         .map((runner) => ({
           ...runner,
@@ -204,7 +200,7 @@ export function createClaimEligibility(deps: {
               agent,
               request.actorUserId,
               request.requires ?? [],
-              deps.clock.now().getTime(),
+              now,
             ),
         );
       if (registered.length === 0) return true;
