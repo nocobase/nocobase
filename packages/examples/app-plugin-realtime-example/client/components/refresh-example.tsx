@@ -52,12 +52,13 @@ export function RefreshExample({
       </p>
       <p className='text-sm text-muted-foreground'>{t('counter.note')}</p>
       <Failure
-        error={snapshot.error ?? task.error}
+        error={snapshot.error}
         retry={() => {
           void snapshot.reload();
         }}
         reload={reload}
       />
+      <Failure error={task.error} reload={reload} />
       <div className='flex flex-wrap gap-2'>
         <Button
           variant='outline'

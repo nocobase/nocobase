@@ -89,7 +89,7 @@ export function RoomExample({
         </p>
       ) : null}
       <Failure
-        error={snapshot.error ?? task.error}
+        error={snapshot.error}
         retry={
           allowed
             ? () => {
@@ -99,6 +99,7 @@ export function RoomExample({
         }
         reload={reload}
       />
+      {!confirm ? <Failure error={task.error} reload={reload} /> : null}
       {!allowed || watch.state === 'error' ? (
         <p className='text-sm text-muted-foreground'>
           {t(allowed ? 'room.retryHint' : 'room.grantHint')}

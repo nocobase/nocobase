@@ -105,7 +105,7 @@ const enUS = {
     history: 'Recent connection states',
     note: 'Reconnect at the top reopens the shared application connection. Events are transient: snapshots recover state without replay.',
     instruction:
-      'Open another tab to publish changes; pause live refresh here, then resume or reconnect to observe catch-up.',
+      'Publish changes from another tab. Resume a paused refresh to catch up; reconnect refetches snapshots while refresh is active.',
     disconnected: 'Realtime sockets disconnected',
   },
   published: 'Publication accepted',

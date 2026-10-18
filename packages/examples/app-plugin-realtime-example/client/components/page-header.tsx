@@ -3,7 +3,7 @@ import type { ReactElement, ReactNode } from 'react';
 export interface PageHeaderProps {
   readonly title: ReactNode;
   readonly description?: ReactNode;
-  /** Page-level actions, aligned to the right of the title from the `sm` breakpoint up. */
+  /** Page-level actions, aligned to the right of the title at every viewport width. */
   readonly actions?: ReactNode;
 }
 
@@ -14,19 +14,19 @@ export function PageHeader({
   title,
 }: PageHeaderProps): ReactElement {
   return (
-    <header className='flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between'>
-      <div className='min-w-0'>
-        <h1 className='font-heading text-2xl font-semibold tracking-[-0.035em]'>
+    <header className='flex flex-col gap-2'>
+      <div className='flex items-start justify-between gap-4'>
+        <h1 className='min-w-0 font-heading text-2xl font-semibold tracking-[-0.035em]'>
           {title}
         </h1>
-        {description ? (
-          <p className='mt-2 max-w-2xl text-sm leading-6 text-muted-foreground'>
-            {description}
-          </p>
+        {actions ? (
+          <div className='flex shrink-0 items-center gap-2'>{actions}</div>
         ) : null}
       </div>
-      {actions ? (
-        <div className='flex shrink-0 items-center gap-2'>{actions}</div>
+      {description ? (
+        <p className='max-w-2xl text-sm leading-6 text-muted-foreground'>
+          {description}
+        </p>
       ) : null}
     </header>
   );
