@@ -11,6 +11,7 @@ import type { ResourcerContext } from '@nocobase/resourcer';
 import { MockServer } from '@nocobase/test';
 import { generateFlowModelRd } from '@nocobase/utils';
 import { vi } from 'vitest';
+import { Liquid } from 'liquidjs';
 import FlowModelRepository from '../repository';
 import { getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
@@ -67,6 +68,30 @@ describe('variables:resolve record slot projection security', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('resolves Markdown loop associations for members without authorizing unrelated fields', async () => {
+    const uid = 'markdown-loop-association';
+    const content = '{% for role in ctx.record.roles %}{{ role.name }};{% endfor %}';
+    await insertFlowModel({
+      uid,
+      use: 'MarkdownItemModel',
+      stepParams: { markdownBlockSettings: { editMarkdown: { content } } },
+    });
+    const contextParams = { record: { collection: 'users', dataSourceKey: 'main', filterByTk: 1 } };
+    const response = await execResolve({
+      rd: session.rd(uid),
+      contextParams,
+      template: { record: { roles: '{{ctx.record.roles}}' } },
+    });
+    const user = await app.db.getRepository('users').findOne({ appends: ['roles'], filterByTk: 1 });
+    const roles = user.get('roles') as Array<{ name: string }>;
+    expect(roles.length).toBeGreaterThan(0);
+    expect(await new Liquid().parseAndRender(content, { ctx: response })).toBe(
+      roles.map((role) => `${role.name};`).join(''),
+    );
+    const unconfigured = { value: '{{ctx.record.nickname}}' };
+    expect(await execResolve({ rd: session.rd(uid), contextParams, template: unconfigured })).toEqual(unconfigured);
   });
 
   it('blocks a moved Slot while resolving the descriptor in its exact Slot', async () => {
