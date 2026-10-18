@@ -9,10 +9,12 @@ import { expect, it, vi } from 'vitest';
 
 import CountEntries from '../../cli/count.js';
 import cliPlugin from '../../cli/index.js';
+import { createApp as createFixtureApp } from '../fixtures/app/server/app.js';
 
-it('runs the contributed command on its own installed database', async () => {
+it('runs the contributed command with an isolated database and storage', async () => {
   const config = await createTestAppConfig();
-  vi.stubEnv('APP_STORAGE_PATH', config.directory);
+  let storageDir: string | undefined;
+  vi.stubEnv('APP_STORAGE_DIR', config.directory);
   try {
     expect(cliPlugin.commands?.count).toBe(CountEntries);
     const run = await runAppCommand(
@@ -20,6 +22,11 @@ it('runs the contributed command on its own installed database', async () => {
         rootDir: fileURLToPath(new URL('../fixtures/app', import.meta.url)),
         config,
         id: 'reading-list:count',
+        createApp(runtime) {
+          const app = createFixtureApp(runtime);
+          storageDir = app.paths.storageDir;
+          return app;
+        },
       }),
       ['--json'],
     );
@@ -30,6 +37,7 @@ it('runs the contributed command on its own installed database', async () => {
       command: 'reading-list count',
       result: { count: 0 },
     });
+    expect(storageDir).toBe(config.directory);
   } finally {
     vi.unstubAllEnvs();
     await config.dispose();
