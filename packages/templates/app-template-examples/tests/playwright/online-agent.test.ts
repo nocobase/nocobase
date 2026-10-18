@@ -208,7 +208,7 @@ test('keeps partial approvals pending and renders advisory uncertainty and insta
       headers,
       data: {
         agentId: 'online',
-        scope: ['fixture-approval'],
+        config: { scope: ['fixture-approval'] },
         selectedModel: { modelService: serviceName, model: 'fixture-chat' },
       },
     });
