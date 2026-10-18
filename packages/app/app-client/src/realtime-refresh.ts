@@ -10,6 +10,8 @@ export interface RealtimeRefreshSnapshot {
 }
 export interface RealtimeRefreshOptions {
   readonly delayMs?: number;
+  /** Optional reconciliation for sources without durable invalidations; disabled by default. */
+  readonly refreshIntervalMs?: number;
   readonly retries?: number;
   readonly retryDelayMs?: number;
   readonly retryMaxDelayMs?: number;
@@ -139,6 +141,10 @@ export function createRealtimeRefresh(
     if (blocked && retryable(snapshot.error)) retry();
     else request();
   };
+  const calibration =
+    options.refreshIntervalMs && options.refreshIntervalMs > 0
+      ? setInterval(request, options.refreshIntervalMs)
+      : undefined;
   if (typeof document !== 'undefined')
     document.addEventListener('visibilitychange', wake);
   if (typeof window !== 'undefined') window.addEventListener('online', wake);
@@ -152,6 +158,7 @@ export function createRealtimeRefresh(
       if (closed) return;
       closed = true;
       clearTimeout(timer);
+      clearInterval(calibration);
       controller.abort();
       if (typeof document !== 'undefined')
         document.removeEventListener('visibilitychange', wake);

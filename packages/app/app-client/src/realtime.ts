@@ -100,6 +100,7 @@ export function useRealtimeRefresh(
     retries,
     retryDelayMs,
     retryMaxDelayMs,
+    refreshIntervalMs,
   } = options;
   useEffect(() => {
     if (!topic || !enabled) return;
@@ -111,6 +112,7 @@ export function useRealtimeRefresh(
         retries,
         retryDelayMs,
         retryMaxDelayMs,
+        refreshIntervalMs,
         shouldRetry: (error) =>
           callbacksRef.current.options.shouldRetry?.(error) ??
           isTransientRefreshError(error),
@@ -152,6 +154,7 @@ export function useRealtimeRefresh(
     retries,
     retryDelayMs,
     retryMaxDelayMs,
+    refreshIntervalMs,
   ]);
   const retry = useCallback(() => retryRef.current(), []);
   return {

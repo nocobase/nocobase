@@ -121,7 +121,7 @@ export function useSessions(
       }),
     initialPageParam: '',
     getNextPageParam: (last) => last.meta.nextPageToken,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: true,
   });
 }
@@ -161,7 +161,7 @@ export function useSession(sessionId: string): UseQueryResult<Session> {
     queryKey: keys.session(sessionId),
     queryFn: () => data<Session>(api, { path: path('sessions', sessionId) }),
     // Linked records may change without a session event (for example, an issue accepted elsewhere).
-    refetchInterval: 15_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: true,
   });
 }
@@ -193,7 +193,7 @@ export function useTranscript(
         );
       return shared;
     },
-    refetchInterval: 15_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: true,
     queryFn: async ({ signal }) => {
       const held =

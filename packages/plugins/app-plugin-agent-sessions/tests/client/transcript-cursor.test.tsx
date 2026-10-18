@@ -288,7 +288,7 @@ it('recovers a preceding streamed tail through the actual compensation polling c
     expect(client.getQueryData<TranscriptEvent[]>(key)?.at(-1)?.seq).toBe(3),
   );
   const poll = intervals.mock.calls
-    .filter(([, ms]) => ms === 15000)
+    .filter(([, ms]) => ms === 60_000)
     .at(-1)?.[0];
   expect(typeof poll).toBe('function');
   await act(async () => {

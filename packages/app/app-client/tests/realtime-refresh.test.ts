@@ -138,3 +138,28 @@ it('cancels failed refresh retries on cleanup', async () => {
   expect(refresh).toHaveBeenCalledOnce();
   expect(scheduler.snapshot.status).toBe('closed');
 });
+
+it('reconciles only when configured and pauses interval reads in hidden documents', async () => {
+  const document = Object.assign(new EventTarget(), {
+    visibilityState: 'visible',
+  });
+  vi.stubGlobal('document', document);
+  const refresh = vi.fn();
+  const scheduler = createRealtimeRefresh(refresh, {
+    refreshIntervalMs: 1_000,
+    delayMs: 1,
+  });
+  releases.push(scheduler.close);
+  await vi.advanceTimersByTimeAsync(1_001);
+  expect(refresh).toHaveBeenCalledOnce();
+  document.visibilityState = 'hidden';
+  await vi.advanceTimersByTimeAsync(3_000);
+  expect(refresh).toHaveBeenCalledOnce();
+  document.visibilityState = 'visible';
+  document.dispatchEvent(new Event('visibilitychange'));
+  await vi.advanceTimersByTimeAsync(1);
+  expect(refresh).toHaveBeenCalledTimes(2);
+  scheduler.close();
+  await vi.advanceTimersByTimeAsync(3_000);
+  expect(refresh).toHaveBeenCalledTimes(2);
+});

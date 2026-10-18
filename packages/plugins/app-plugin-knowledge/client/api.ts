@@ -617,7 +617,7 @@ export function useKnowledgeDocIndex(
     enabled: Boolean(id),
     retry: false,
     refetchInterval: (query) =>
-      query.state.data?.state === 'pending' ? INDEX_POLL_MS : false,
+      (query.state.data?.pending ?? 0) > 0 ? INDEX_POLL_MS : false,
   });
 }
 
@@ -645,7 +645,8 @@ export function useKnowledgeChunking(
     enabled: space !== null,
     retry: false,
     refetchInterval: (query) =>
-      query.state.data?.rechunking ? INDEX_POLL_MS : false,
+      // Chunking announces start and completion; retain low-frequency reconciliation.
+      query.state.data?.rechunking ? 60_000 : false,
   });
 }
 
