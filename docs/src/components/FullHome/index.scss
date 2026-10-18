@@ -1085,16 +1085,18 @@
     line-height: 24px;
 
     p {
+      display: inline;
       margin: 0;
     }
     a {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      margin-top: 4px;
+      margin-inline-start: 8px;
       color: var(--brand);
       font-weight: 500;
       text-decoration: none;
+      white-space: nowrap;
 
       &:hover {
         text-decoration: underline;
