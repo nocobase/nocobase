@@ -45,6 +45,8 @@ export interface AgentSessionsPanelAttach {
   readonly mode?: 'append' | 'replace';
   /** One following lifetime. Keep it stable for page changes; change it for a deliberate new start. */
   readonly scope?: string;
+  /** An application-specific hint for this new draft. Never inserted into the message. */
+  readonly placeholder?: string;
 }
 
 export interface AgentSessionsPanelProps extends AgentSessionsRouteOptions {
@@ -101,6 +103,10 @@ function Panel({
       // Freeze while an uncertain submission still owns this draft, even if another entry requests a new intent.
       if (client.getQueryData(sessionMemoryKey(`submission:${draftKey}`)))
         return;
+      if (previous?.scope !== scope) {
+        client.setQueryData(sessionMemoryKey(`text:${draftKey}`), '');
+        client.setQueryData(sessionMemoryKey(`mentions:${draftKey}`), []);
+      }
       client.setQueryData(key, {
         scope,
         stopped: false,
@@ -184,6 +190,7 @@ function Panel({
     projectId:
       attach?.mode === 'replace' ? automatic?.projectId : attach?.projectId,
     activeLink,
+    placeholder: attach?.placeholder,
   };
 
   return (
