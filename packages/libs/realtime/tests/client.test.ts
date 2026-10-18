@@ -221,3 +221,19 @@ it('does not reconnect a hidden tab solely because browser heartbeat timers were
   vi.advanceTimersByTime(1000);
   expect(client.connected).toBe(true);
 });
+
+it('recovers when a tab becomes visible and removes recovery listeners on close', () => {
+  const document = Object.assign(new EventTarget(), {
+    visibilityState: 'visible',
+  });
+  vi.stubGlobal('document', document);
+  const client = setup();
+  client.watch('test:one');
+  sockets[0]!.open();
+  sockets[0]!.ack();
+  document.dispatchEvent(new Event('visibilitychange'));
+  expect(sockets).toHaveLength(2);
+  client.close();
+  document.dispatchEvent(new Event('visibilitychange'));
+  expect(sockets).toHaveLength(2);
+});

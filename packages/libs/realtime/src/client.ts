@@ -31,7 +31,7 @@ export interface RealtimeSubscription {
   readonly state: RealtimeSubscriptionState;
   readonly error: RealtimeErrorEvent | undefined;
   retry(): void;
-  close(): void;
+  close(this: void): void;
 }
 export interface RealtimeClient {
   readonly connected: boolean;
@@ -48,10 +48,13 @@ export interface RealtimeClient {
   ): () => void;
   onOpen(listener: () => void): () => void;
   onReady(listener: () => void): () => void;
-  onStateChange(listener: (state: RealtimeConnectionState) => void): () => void;
+  onStateChange(
+    this: void,
+    listener: (state: RealtimeConnectionState) => void,
+  ): () => void;
   onError(listener: (event: RealtimeErrorEvent) => void): () => void;
   reconnect(): void;
-  close(): void;
+  close(this: void): void;
 }
 export interface RealtimeClientOptions {
   readonly pingInterval?: number;
@@ -83,6 +86,7 @@ export function createRealtimeClient(
   let sequence = 0;
   let wasReady = false;
   let manuallyClosed = false;
+  let recoveryInstalled = false;
   const topics = new Map<string, Topic>();
   const openListeners = new Set<() => void>();
   const readyListeners = new Set<() => void>();
@@ -180,9 +184,31 @@ export function createRealtimeClient(
       clearTimeout(reconnectTimer);
       reconnectTimer = undefined;
       disposeSocket();
+      removeRecovery();
       setState('closed');
     },
   };
+  function recover(): void {
+    if (!manuallyClosed && topics.size) client.reconnect();
+  }
+  function recoverVisible(): void {
+    if (document.visibilityState === 'visible') recover();
+  }
+  function installRecovery(): void {
+    if (recoveryInstalled) return;
+    recoveryInstalled = true;
+    if (typeof window !== 'undefined')
+      window.addEventListener?.('online', recover);
+    if (typeof document !== 'undefined')
+      document.addEventListener?.('visibilitychange', recoverVisible);
+  }
+  function removeRecovery(): void {
+    recoveryInstalled = false;
+    if (typeof window !== 'undefined')
+      window.removeEventListener?.('online', recover);
+    if (typeof document !== 'undefined')
+      document.removeEventListener?.('visibilitychange', recoverVisible);
+  }
   function id(): string {
     return `rt:${++sequence}`;
   }
@@ -236,6 +262,7 @@ export function createRealtimeClient(
     if (typeof WebSocket === 'undefined' || !topics.size) return;
     if (socket && socket.readyState < 2) return;
     manuallyClosed = false;
+    installRecovery();
     clearTimeout(reconnectTimer);
     reconnectTimer = undefined;
     setState('connecting');

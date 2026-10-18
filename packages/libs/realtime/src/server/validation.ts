@@ -33,6 +33,18 @@ export function snapshotPayload(value: unknown): unknown {
         'Realtime payload must contain plain JSON objects.',
       );
     }
+    if (
+      Array.isArray(item) &&
+      (Object.keys(item).length !== item.length ||
+        Object.keys(item).some(
+          (key) => !/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= item.length,
+        ))
+    ) {
+      throw new RealtimeProtocolError(
+        'INVALID_PAYLOAD',
+        'Realtime arrays must be dense JSON arrays.',
+      );
+    }
     ancestors.add(item);
     const descriptors = Object.getOwnPropertyDescriptors(item);
     for (const key of Reflect.ownKeys(descriptors)) {
