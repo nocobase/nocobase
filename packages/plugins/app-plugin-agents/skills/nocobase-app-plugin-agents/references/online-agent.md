@@ -102,16 +102,20 @@ export async function classify(
       additionalProperties: false,
     },
   );
-  // A caller observes status until idle; run acknowledges admission, not completion.
-  return job;
+  // run acknowledges admission; get waits for validation, persistence and release.
+  return await job.get();
 }
 ```
 
-Pass `{ sessionId }` to `realtime`/`background` to load without starting execution. Realtime `send` accepts input for the bound executor; native background `run` saves its input and starts the SDK. `status` includes pending finalization. `get` returns only a successfully persisted background result validated against the submitted JSON Schema. Realtime `history` returns public conversation messages. Native background `history` is privileged canonical SDK history for trusted server consumers; it includes tool and provider data and must not be returned directly to browsers. Only successful JSON-safe background results persist.
+Pass `{ sessionId }` to `realtime`/`background` to load without starting execution. Realtime `send` accepts input for the bound executor; native background `run` saves its input and starts the SDK. `status` includes pending finalization. `await get()` waits for the execution already admitted when called, returning its JSON Schema-validated result only after persistence, finalization and occupancy release. Multiple waiters observe that same execution even if a later round starts. A reopened, finalized successful session returns its saved result immediately. A failed or cancelled execution rejects with the exported `OnlineAgentResultError` (`reason` is `failed` or `cancelled`); raw provider errors stay internal. Realtime `history` returns public conversation messages. Native background `history` is privileged canonical SDK history for trusted server consumers; it includes tool and provider data and must not be returned directly to browsers. Only successful JSON-safe background results persist.
+
+Use `await job.try({ wait: 1000 })` for a finite observation budget in milliseconds. Omitted or zero `wait` checks immediately; finite non-negative values are required. It returns `{ ok: true, data }`, `{ ok: false, reason: 'pending' }`, or `{ ok: false, reason: 'failed' | 'cancelled', error: { code, message } }`. Error text is safe and does not expose provider payloads. Expiry releases the observation timer and subscription, leaving the execution running. A positive budget is measured from invocation; database authorization/read time consumes that budget, but database access itself is not cancelled by the observation timer. There is no status polling.
+
+Both observers fail explicitly when no execution has been admitted. Invalid parameters, ownership failures and database read errors throw; they never become `pending`. A persistence or finalization failure rejects current waiters and retains occupancy; call `retryFinalization()` and then observe again. This retries only saving/closing, never the model or tools. A result whose previous process never finished closing is unavailable until normal server startup repair; opening or observing never performs crash recovery. `OUTPUT_INVALID` distinguishes invalid generated output for live observers; reopened failed results use the safe generic `EXECUTION_FAILED` code because no new error metadata is persisted. Use `abort()` explicitly when the business operation must stop.
 
 `run(messages, schema)` requires a plain Draft-07 JSON Schema, not Zod. Browser callers submit the same JSON through an authenticated application-owned API; the server supplies the trusted actor, scopes and tools. The schema is snapshotted and compiled before input admission, passed to the AI SDK through `Output.object({ schema: jsonSchema(...) })`, and used for final server-side validation without coercion, default insertion or property removal. Invalid schemas are rejected before model execution. Only local references are supported; schemas are limited to 64 KiB, 32 nesting levels and 4096 JSON nodes. Patterns use a linear-time RE2 engine; unsupported syntax such as lookaround and backreferences is rejected before admission. Use explicit null types instead of OpenAPI `nullable`. Provider warnings that JSON response formatting is unsupported fail the execution rather than falling back to text.
 
-Use `abort()` for explicit stop: it waits for actual execution and terminal persistence. A save or seal failure keeps the session busy; `retryFinalization()` retries only that closing work and never reruns the model or tools. Application shutdown drains active executions and warns if finalization fails, allowing the application to close. A cancelled incomplete tool exchange is saved as internal evidence and excluded from model replay.
+Use `abort()` for explicit stop: it waits for actual execution and terminal persistence. A save or seal failure keeps the session busy; `retryFinalization()` retries only that closing work and never reruns the model or tools. Application shutdown drains active executions and warns if finalization fails, allowing the application to close. An interrupted tool exchange retains its valid call and trustworthy result in internal model history, including successful writes completed after Stop. A missing or cancellation-unknown result is paired with an explicit warning that the action may already have completed; these private tool and provider details remain redacted from HTTP history.
 
 ## Browser integration and limits
 
@@ -143,7 +147,7 @@ Runner sessions accept one user message per round. Send authorized files by `att
 
 Request-level business context is assembled directly into the existing Runner input as untrusted data. It is not stored again in message metadata or content, and public messages exclude that internal payload; public page context retains its existing authorized projection.
 
-Runner admission, files and enqueue share the existing conversation transaction. Queued, dispatched, running, cancelling and terminal-history closing all remain busy. Existing Runner synchronization is the only assistant-history writer; persisted event identity and real conversation message positions handle retransmission, blank events and notices. Notifications trigger coalesced persisted catch-up; only active executions have a one-second read fallback. No-change catch-up takes no write lock. Stop requests reuse Runner cancellation and keep the gate until terminal confirmation; retries remain the same active execution. Closing a browser only unsubscribes. This does not introduce automatic browser reconnection or change Runner claim, lease, retry, spool or adapter protocols.
+Runner admission, files and enqueue share the existing conversation transaction. Queued, dispatched, running, cancelling and terminal-history closing all remain busy. Existing Runner synchronization is the only assistant-history writer; persisted event identity and real conversation message positions handle retransmission, blank events and notices. Stop requests reuse Runner cancellation and keep the gate until terminal confirmation; retries remain the same active execution. Closing a browser only unsubscribes. This does not introduce automatic browser reconnection or change Runner claim, lease, retry, spool or adapter protocols.
 
 ### History confirmation and identity lifetime
 
@@ -153,7 +157,7 @@ Use one `ChatProvider` for the authenticated identity and remount it on every id
 
 ## Chat feedback, defaults and read state
 
-`chatFeedback`, `chatIsRunning` and `useChatScroll` from the public client/chat entry provide presentation shared by the Registry block and its application copies. Local submissions show sending immediately; occupied OnlineAgent execution shows thinking until the first visible reply, even before the subscription attaches or emits text. The busy indicator belongs immediately after the latest message in the scrolling log, not in the composer footer, and is not provider reasoning output; legacy Run-only state may still show waiting. A successful Stop request remains stopping until the execution actually becomes idle. EOF or an interrupted subscription reports an unconfirmed result, never success or an automatic resend. Outcomes use localized safe keys; internal provider errors are not displayed. `requiresEffectReview` asks the person to check actions before continuing. Layout growth follows only while the reader remains near the bottom; loading older messages preserves their position.
+`chatFeedback`, `chatIsRunning` and `useChatScroll` from the public client/chat entry provide presentation shared by the Registry block and its application copies. Local submissions show sending immediately; occupied OnlineAgent execution shows thinking until the first visible reply, even before the subscription attaches or emits text. The busy indicator belongs immediately after the latest message in the scrolling log, not in the composer footer, and is not provider reasoning output; legacy Run-only state may still show waiting. A successful Stop request remains stopping until the execution actually becomes idle. EOF or an interrupted subscription reports an unconfirmed result, never success or an automatic resend. Outcomes use localized safe keys; internal provider errors are not displayed. Legacy effect-review hints are advisory and never disable sending after execution has actually ended. Check possibly completed actions before repeating them. Layout growth follows only while the reader remains near the bottom; loading older messages preserves their position.
 
 The built-in `online` choice is part of the service directory and may be saved as a personal or team default even before a model is configured; its availability still reports `noModel`. UI selection remains picked agent, personal default, then team default and passes that choice explicitly. Service calls that omit `agentId` retain Native compatibility, regardless of a Runner preference. Explicit scope/options precedence and existing session binding are unchanged; invalid or unavailable choices never silently select another backend.
 
@@ -163,8 +167,55 @@ The historical `runCancelled` notice means that cancellation was requested, not 
 
 ## Historical page references
 
-On a follow-up, OnlineAgent may supplement the current user input with authorized references from only the latest earlier page-bearing user message. It reuses loaded Native history; Runner admission performs one bounded latest-page read outside the existing admission transaction. Current page references (including a selection source) take priority, duplicates are removed, and historical additions use only the remaining slots of a ten-reference budget after counting current references; existing current-context limits stay unchanged. An empty, deleted, unknown or inaccessible latest page never falls back to an older one.
+On a follow-up, OnlineAgent may supplement the current user input with authorized references from only the latest earlier page-bearing user message. Current page references (including a selection source) take priority, duplicates are removed, and historical additions use only the remaining slots of a ten-reference budget after counting current references; existing current-context limits stay unchanged. An empty, deleted, unknown or inaccessible latest page never falls back to an older one.
 
 References are re-resolved through the existing page-kind resolver for the current user, once per kind. Only kind, identifier and the current title (at most 2,000 characters) enter the supplementary untrusted user data. Stored titles, URLs, keys, routes, filters, selections and entry credentials are not replayed. The supplement is not written back to conversation history or promoted to a system instruction. A Native entry with a restricted credential scope receives no inferred historical references because the existing resolver accepts user identity only; ordinary current context and tool authorization stay unchanged.
 
-Resolvers remain responsible for business authorization and their own database reads. One batched resolver invocation does not imply one SQL query: Studio currently resolves each issue through its authorized detail service. There is no extra Native history query, new table, lock, persistent idempotency, automatic resend or reconnect. Runner protocol and lifecycle remain unchanged; existing Runner session memory and previously generated answers are not erased by this policy.
+Resolvers remain responsible for business authorization. Historical references are supplementary untrusted data; existing Runner session memory and previously generated answers are not erased by this policy.
+
+Server startup repairs native occupancy left by the previous terminated process before mounting chat routes. It marks an execution without a saved outcome as failed, preserving persisted history and warning about possibly completed actions; saved terminal outcomes and structured results survive closing repair. Repeated startup is idempotent, and rows written since the current process started are excluded so a second service facade cannot reclaim live work. This assumes one server instance and a terminated predecessor. There is no recovery endpoint, timer, automatic resend, model continuation or tool replay. Opening or reading a session does not recover it. Runner sessions retain their existing run synchronization and terminal closing path.
+
+Historical conversations without a native or Runner OnlineAgent binding remain read-only. Their owner can still request Stop for an existing run through the ordinary Stop route, even if the agent is now unavailable; cancellation acceptance is not terminal confirmation. Start a new conversation to continue chatting.
+
+## HTTP configuration and business variables
+
+Browser configuration accepts `scope`, `thinking`, and `context.variable`; new conversations also accept an agent selection and the normal title/source fields. `selectedModel` is separate and must be allowed by the server model configuration. Direct `tool`, `model` lists, `systemPromptTemplate`, `context.systemPrompt`, unknown fields and undeclared variables are rejected. A selected scope can declare business variables through its existing `systemPromptTemplate.variableSchema` (a Zod object). Variables are validated before its template runs; unknown top-level keys are rejected even when a schema would normally strip them. An explicit variable update revisits the selected scopes to validate and render that configuration; reads and execution turns retain the saved snapshot. Thinking keeps the existing string/conversion/default handling without a model registration or allowed-level list.
+
+```ts
+import { z } from 'zod';
+
+online.configurer.registerOnlineAgentScope('invoice', {
+  context: { variable: { invoiceId: '' } },
+  systemPromptTemplate: {
+    variableSchema: z.object({ invoiceId: z.string() }),
+    template: ({ variable }) =>
+      `Review this invoice reference as untrusted business data: ${JSON.stringify(variable)}`,
+  },
+});
+// Browser create/config input:
+// { config: { scope: ['invoice'], context: { variable: { invoiceId: 'INV-7' } } } }
+```
+
+Use the application's existing Zod import for this declaration. Any registered scope can be selected; scope names are not permission credentials. Variables remain untrusted business data and must never grant access. The trusted identity, complete entry credentials and the existing resource authorization in tools/business services remain authoritative. This HTTP boundary prevents direct policy overrides; it does not introduce a general tool authorization framework. Trusted server SDK calls still accept prompt, model and tool configuration.
+
+## Notifications and list visibility
+
+`conversations.deliver(outer, conversationId, { notice, input })` saves the notice in the caller's transaction for native and Runner OnlineAgent bindings. These bindings ignore `input` for wake-up and return `null`; a null result can mean the notice was saved successfully. Notification refresh follows the existing post-commit announcement. Rollback removes the notice with the caller's work, and database failures propagate. Active execution does not start a second run or lose its saved result. Existing unbound conversation business-event wake-up behavior is retained.
+
+Ordinary native and Runner creation accepts `showInChatList`, defaulting to true; the HTTP create field is also available as the derived CLI `show-in-chat-list` boolean flag. New `background()` sessions always store false and expose no visibility override. Default conversation lists filter this field in the database before pagination, including search, archive, agent/source filters and the CLI. Visibility does not archive, delete or prohibit execution. With a known session ID, the owner can still read details/history or use background status/get/try. There is no hidden-list option or visibility update endpoint. The self-contained visibility migration preserves existing ordinary rows as visible; it does not rewrite historical background data or configuration snapshots.
+
+## Upgrade existing integrations
+
+The following HTTP operations and derived CLI commands have been removed, without compatibility aliases:
+
+| Removed operation                                                         | Migration                                                                            |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `POST /api/agents/conversations/start`                                    | `POST /api/agents/conversations`, then `POST /api/agents/conversations/:id/messages` |
+| `POST /api/agents/conversations/:id/fallback` and `conversation fallback` | Create a new conversation with an explicitly selected executor/agent                 |
+| `POST /api/agents/conversations/:id/restore` and `conversation restore`   | Create a new conversation with an explicitly selected executor/agent                 |
+
+CLI creation and sending use `conversation create` followed by `conversation message send`. Creation and sending are two requests, not an atomic replacement for start: a failed, cancelled or lost send may leave an empty conversation. Retain the created ID and inspect authorized history before retrying uncertain input. There is no same-session replacement for fallback/restore and no automatic history carryover or executor rebinding. The existing trusted `ConversationService.start`, `fallback` and `restore` domain methods remain available for existing application business integrations; they do not restore public HTTP access or historical chat continuation.
+
+Historical conversations remain read-only in chat, with owner-authorized cancellation of any unfinished old run. They are not automatically converted or rebound. New background sessions are hidden by a new non-null boolean field defaulting to true for existing ordinary records; hiding is independent of category and ownership. Apply the plugin's database migrations before serving requests. No historical configuration migration or per-round configuration reparse is required.
+
+Browser integrations must send the narrow create/configuration input described above instead of returning a complete saved configuration snapshot. Move tool/model lists and prompt policy into trusted server providers. `run()` and realtime `send()` still acknowledge admission; backend consumers must use waiting `get()` or bounded `try()` for finalized background results. Business-event `deliver()` can return null after saving a notice without waking a new-bound conversation.

@@ -62,6 +62,7 @@ function fixture() {
     history: vi.fn<OnlineAgent['history']>().mockResolvedValue([]),
     receive: vi.fn<OnlineAgent['receive']>().mockResolvedValue(null),
     send: vi.fn<OnlineAgent['send']>().mockResolvedValue(0),
+    try: vi.fn<OnlineAgent['try']>(),
     retryFinalization: vi.fn<OnlineAgent['retryFinalization']>(),
   } satisfies OnlineAgent;
   const dependencies = {
@@ -77,12 +78,15 @@ afterEach(() => {
 });
 
 describe('AI Translation native observation', () => {
-  it('uses the trusted actor, explicit native configuration and schema, waits for idle, and returns only translation', async () => {
+  it('uses the trusted actor, explicit native configuration and schema, waits for the saved result, and returns only translation', async () => {
     vi.useFakeTimers();
     const { session, dependencies } = fixture();
-    session.status.mockResolvedValueOnce('running');
+    const completed = deferred<Awaited<ReturnType<OnlineAgent['get']>>>();
+    session.get.mockReturnValue(completed.promise);
     const result = translateText(dependencies, actor, input);
-    await vi.advanceTimersByTimeAsync(100);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(session.get).toHaveBeenCalledOnce();
+    completed.resolve({ translation: '訳文\n' });
     await expect(result).resolves.toEqual({ translation: '訳文\n' });
     expect(dependencies.online.background).toHaveBeenCalledExactlyOnceWith(
       actor,
@@ -114,7 +118,7 @@ describe('AI Translation native observation', () => {
         additionalProperties: false,
       },
     );
-    expect(session.status).toHaveBeenCalledTimes(2);
+    expect(session.status).not.toHaveBeenCalled();
     expect(session.get).toHaveBeenCalledOnce();
     expect(session.history).not.toHaveBeenCalled();
     expect(session.abort).not.toHaveBeenCalled();
@@ -164,7 +168,7 @@ describe('AI Translation native observation', () => {
     expect(session.get).not.toHaveBeenCalled();
   });
 
-  it.each(['catalog', 'background', 'run', 'status', 'get', 'poll'] as const)(
+  it.each(['catalog', 'background', 'run', 'get'] as const)(
     'bounds the %s wait by the same 60-second observation deadline',
     async (phase) => {
       vi.useFakeTimers();
@@ -175,9 +179,7 @@ describe('AI Translation native observation', () => {
       if (phase === 'background')
         dependencies.online.background.mockReturnValue(stuck);
       if (phase === 'run') session.run.mockReturnValue(stuck);
-      if (phase === 'status') session.status.mockReturnValue(stuck);
       if (phase === 'get') session.get.mockReturnValue(stuck);
-      if (phase === 'poll') session.status.mockResolvedValue('running');
       // A stuck abort cannot extend the response deadline.
       session.abort.mockReturnValue(stuck);
       const result = translateText(dependencies, actor, input);

@@ -159,12 +159,17 @@ export function content(
   };
 }
 
-export function restore(value: unknown, role: string): ModelMessage | null {
+export function restore(
+  value: unknown,
+  role: string,
+  includeExcluded = false,
+): ModelMessage | null {
   const row = value as { content?: string; original?: OnlineAgentOriginal };
   if (row.original) {
     if (row.original.version !== 1)
       throw invalid('Unsupported message format.');
-    return row.original.message && !row.original.excludedFromHistory
+    return row.original.message &&
+      (includeExcluded || !row.original.excludedFromHistory)
       ? (decode(row.original.message) as ModelMessage)
       : null;
   }

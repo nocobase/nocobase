@@ -92,14 +92,17 @@ export function AgentNotice({
         <AlertTitle>{t('chat.historicalReadOnly')}</AlertTitle>
       </Alert>
     );
-  if (
-    conversation.execution.outcome === 'failed' ||
-    conversation.execution.requiresEffectReview
-  )
+  if (conversation.execution.outcome === 'failed')
     return (
       <Alert>
         <UnplugIcon />
         <AlertTitle>{t('chat.executionFailed')}</AlertTitle>
+      </Alert>
+    );
+  if (conversation.execution.requiresEffectReview)
+    return (
+      <Alert>
+        <AlertTitle>{t('chat.feedback.effectReview')}</AlertTitle>
       </Alert>
     );
   if (conversation.availability.online) return null;

@@ -1365,6 +1365,7 @@ const conversationSummaryObject = z.object({
   title: z.string().nullable(),
   titleSource: z.enum(TITLE_SOURCES),
   category: z.literal('chat'),
+  showInChatList: z.boolean(),
   source: z.string(),
   mode: z.enum(['online', 'runner']),
   agent: conversationAgent,
