@@ -22,7 +22,10 @@ import { createChatRoutes } from '../server/routes/chat.js';
 import { ProtocolError } from '../server/kernel/errors.js';
 import { jsonSafe } from '../server/online-agent/codec.js';
 import type { AdminEnv } from '../server/routes/admin.js';
-import type { OnlineAgentContext } from '../server/online-agent/config.js';
+import type {
+  OnlineAgentContext,
+  OnlineAgentToolContext,
+} from '../server/online-agent/config.js';
 import type { AppUIMessage } from '../shared/online-agent.js';
 
 const ref = { modelService: 'fixture', model: 'chat' };
@@ -75,7 +78,10 @@ async function fixture(
   const prompts: unknown[] = [];
   const measurements: { phase: string; durationMs: number }[] = [];
   const execute = vi.fn(
-    async (_input: { value: string }, _options: { signal?: AbortSignal }) => ({
+    async (
+      _input: { value: string },
+      _options: { context: OnlineAgentToolContext },
+    ) => ({
       display: 'Allowed',
       secret: 'model-only-value',
     }),
@@ -864,7 +870,14 @@ describe('native SDK transport, persistence and approval', () => {
     const done = new Promise<void>((resolve) => {
       release = resolve;
     });
-    f.execute.mockImplementationOnce(async () => {
+    let acknowledgeStop!: () => void;
+    const stopReachedTool = new Promise<void>((resolve) => {
+      acknowledgeStop = resolve;
+    });
+    f.execute.mockImplementationOnce(async (_input, options) => {
+      options.context.signal.addEventListener('abort', acknowledgeStop, {
+        once: true,
+      });
       await done;
       return { display: 'Finished effect', secret: 'model-only-value' };
     });
@@ -886,7 +899,7 @@ describe('native SDK transport, persistence and approval', () => {
       return response;
     });
     try {
-      await new Promise((resolve) => setTimeout(resolve, 30));
+      await stopReachedTool;
       expect(stopped).toBe(false);
       expect(await f.agent.status()).toBe('running');
     } finally {
@@ -1472,6 +1485,17 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
     });
     it('acknowledges a commit-unknown approval after another instance advanced its trusted revision without overwriting it', async () => {
       const f = await fixture(true, true, 1, redisConfig());
+      let acknowledgeClose!: () => void;
+      const closed = new Promise<void>((resolve) => {
+        acknowledgeClose = resolve;
+      });
+      const close = f.service.uiStreams.close.bind(f.service.uiStreams);
+      vi.spyOn(f.service.uiStreams, 'close').mockImplementationOnce(
+        async (...args) => {
+          await close(...args);
+          acknowledgeClose();
+        },
+      );
       const persist = f.sessions.native.save.bind(f.sessions.native);
       vi.spyOn(f.sessions.native, 'save').mockImplementationOnce(
         async (...args) => {
@@ -1482,6 +1506,7 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
       const first = f.chatFor();
       await first.sendMessage({ text: 'Commit once' });
       expect(first.error).toBeDefined();
+      await closed;
       expect(f.service.isActive(f.agent.sessionId)).toBe(true);
       const waiting = (await f.agent.history()).at(-1)!;
       const part = waiting.parts.find(isToolUIPart)!;
