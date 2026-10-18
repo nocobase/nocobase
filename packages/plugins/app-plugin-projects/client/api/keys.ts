@@ -37,20 +37,8 @@ export const pmKeys = {
   ],
   issueSearch: (q: string): QueryKey => ['pm', 'issues', 'search', q],
   issue: (id: string): QueryKey => ['pm', 'issue', id],
-  activities: (id: string, cursor: string | null): QueryKey => [
-    'pm',
-    'issue',
-    id,
-    'activities',
-    cursor,
-  ],
+  activities: (id: string): QueryKey => ['pm', 'issue', id, 'activities'],
   /** Older thread pages, under the issue like its activities. */
-  threads: (id: string, cursor: string | null): QueryKey => [
-    'pm',
-    'issue',
-    id,
-    'threads',
-    cursor,
-  ],
+  threads: (id: string): QueryKey => ['pm', 'issue', id, 'threads'],
   mentions: (issueId: string | null): QueryKey => ['pm', 'mentions', issueId],
 };
