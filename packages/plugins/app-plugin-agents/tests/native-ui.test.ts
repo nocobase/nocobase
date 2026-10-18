@@ -158,8 +158,13 @@ async function fixture(
     return service;
   };
   const service = create();
-  vi.spyOn(h.services.onlineAgent, 'isActive').mockImplementation((id) =>
-    services.some((service) => service.isActive(id)),
+  vi.spyOn(h.services.onlineAgent, 'producerAvailable').mockImplementation(
+    async (id, running) =>
+      (
+        await Promise.all(
+          services.map((service) => service.producerAvailable(id, running)),
+        )
+      ).some(Boolean),
   );
   const guard: MiddlewareHandler<AdminEnv> = async (c, next) => {
     const user = c.req.header('x-user');
@@ -473,31 +478,6 @@ describe('native SDK transport, persistence and approval', () => {
         false,
       ),
     ).toEqual(trusted);
-    await f.service.notify(actor(), f.agent.sessionId, {
-      id: 'later-notification',
-      parts: [
-        {
-          type: 'data-notice',
-          id: 'later',
-          data: { type: 'fixture', title: 'Later notification' },
-        },
-      ],
-    });
-    const latest = await (
-      await f.request(`${f.base}/messages?pageSize=1`)
-    ).json();
-    const older = await (
-      await f.request(
-        `${f.base}/messages?pageSize=1&pageToken=${encodeURIComponent(latest.meta.nextPageToken)}`,
-      )
-    ).json();
-    expect(older.data).toHaveLength(1);
-    expect(older.data[0].id).toBe(message.id);
-    expect(older.data[0].parts.find(isToolUIPart)).toMatchObject({
-      input: { label: display },
-      output: { label: display },
-    });
-    assertPublic(older);
     expect(f.execute).toHaveBeenCalledOnce();
     expect(generate).toHaveBeenCalledTimes(2);
   });
@@ -960,11 +940,7 @@ describe('native SDK transport, persistence and approval', () => {
     expect(
       duplicate.filter((result) => result.status === 'rejected'),
     ).toHaveLength(1);
-    await vi.waitFor(() =>
-      expect(
-        services.every((service) => !service.isActive(f.agent.sessionId)),
-      ).toBe(true),
-    );
+    await vi.waitFor(async () => expect(await f.agent.status()).toBe('idle'));
     expect(f.execute).toHaveBeenCalledTimes(1);
     expect((await f.request(`${f.base}/approval`, 'POST', input)).status).toBe(
       409,
@@ -1001,7 +977,9 @@ describe('native SDK transport, persistence and approval', () => {
       if (gate === 'expired') expect(f.execute).not.toHaveBeenCalled();
       else {
         await vi.waitFor(() => expect(f.execute).toHaveBeenCalledOnce());
-        await vi.waitFor(() => expect(f.service.isActive(row.id)).toBe(false));
+        await vi.waitFor(async () =>
+          expect(await f.agent.status()).toBe('idle'),
+        );
       }
       expect(
         (await f.sessions.load('alice', row.id)).call?.requiresEffectReview,
@@ -1136,9 +1114,7 @@ describe('native SDK transport, persistence and approval', () => {
     expect(f.model.doStreamCalls).toHaveLength(0);
     expect(await f.agent.status()).toBe('idle');
     await f.agent.send([{ role: 'user', content: 'New explicit input' }]);
-    await vi.waitFor(() =>
-      expect(f.service.isActive(f.agent.sessionId)).toBe(false),
-    );
+    await vi.waitFor(async () => expect(await f.agent.status()).toBe('idle'));
     expect(f.model.doStreamCalls).toHaveLength(1);
     expect(
       (await f.agent.history()).filter(
@@ -1430,57 +1406,6 @@ describe('native SDK transport, persistence and approval', () => {
   });
 });
 
-describe('independent native business notifications', () => {
-  it('persists after finish, rereads by ID, deduplicates and keeps business data out of model input', async () => {
-    const f = await fixture();
-    await f.chatFor().sendMessage({ text: 'First' });
-    const input = {
-      id: 'independent-notice',
-      parts: [
-        {
-          type: 'data-notice' as const,
-          id: 'notice-part',
-          data: { type: 'fixture', title: 'Independent notice' },
-        },
-        {
-          type: 'data-business' as const,
-          id: 'business-part',
-          data: {
-            kind: 'fixture',
-            id: 'record-1',
-            payload: { privateToModel: 'Only public display' },
-          },
-        },
-      ],
-    };
-    const saved = await f.service.notify(actor(), f.agent.sessionId, input);
-    expect(await f.service.notify(actor(), f.agent.sessionId, input)).toEqual(
-      saved,
-    );
-    await expect(
-      f.service.notify(actor('bob'), f.agent.sessionId, input),
-    ).rejects.toThrow('not found');
-    await expect(
-      f.service.notify(actor(), f.agent.sessionId, {
-        ...input,
-        parts: [{ type: 'text', text: 'Forged' }],
-      }),
-    ).rejects.toThrow();
-    const page = await (
-      await f.request(`${f.base}/messages?ids=independent-notice`)
-    ).json();
-    expect(page.data).toEqual([saved]);
-    expect(await f.agent.receive()).toBeNull();
-    await f.chatFor(await f.agent.history()).sendMessage({ text: 'Next' });
-    expect(JSON.stringify(f.prompts.at(-1))).not.toContain(
-      'Only public display',
-    );
-    expect(
-      (await f.agent.history()).filter((message) => message.id === input.id),
-    ).toHaveLength(1);
-  });
-});
-
 const redisConfig = (): OnlineAgentRecoveryConfig => ({
   namespace: `pm481:${randomUUID()}`,
   redis: { host: '127.0.0.1', port: Number(process.env.PM481_REDIS_PORT) },
@@ -1670,8 +1595,8 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
         output.enqueue({ type: 'text-end', id: 'late' });
         output.enqueue(finish());
         output.close();
-        await vi.waitFor(() =>
-          expect(f.service.isActive(f.agent.sessionId)).toBe(false),
+        await vi.waitFor(async () =>
+          expect(await f.agent.status()).toBe('idle'),
         );
         expect((await f.agent.history()).at(-1)?.parts).toContainEqual({
           type: 'text',
@@ -1719,9 +1644,7 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
         sessionId: f.agent.sessionId,
       });
       await remote.abort();
-      await vi.waitFor(() =>
-        expect(f.service.isActive(f.agent.sessionId)).toBe(false),
-      );
+      await vi.waitFor(async () => expect(await f.agent.status()).toBe('idle'));
       expect(stopped).toBe(true);
       expect(await remote.status()).toBe('idle');
       expect((await f.agent.history()).at(-1)?.parts).toContainEqual(
@@ -1868,7 +1791,9 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
       await first.sendMessage({ text: 'Commit once' });
       expect(first.error).toBeDefined();
       await closed;
-      expect(f.service.isActive(f.agent.sessionId)).toBe(true);
+      expect(await f.service.producerAvailable(f.agent.sessionId, false)).toBe(
+        true,
+      );
       const waiting = (await f.agent.history()).at(-1)!;
       const part = waiting.parts.find(isToolUIPart)!;
       const other = f.reopen();
@@ -1882,7 +1807,9 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
       const current = await f.agent.history();
       expect(current.at(-1)?.metadata?.revision).toBe(3);
       await f.agent.retryFinalization();
-      expect(f.service.isActive(f.agent.sessionId)).toBe(false);
+      expect(await f.service.producerAvailable(f.agent.sessionId, false)).toBe(
+        false,
+      );
       expect(await f.agent.history()).toEqual(current);
       expect(f.execute).toHaveBeenCalledTimes(1);
       expect(f.model.doStreamCalls).toHaveLength(2);

@@ -36,7 +36,7 @@ Native messages generally have one segment. The server places the authorized dis
 | `newsText(notice, t)`                        | Localized wording, or null for the persisted title.                                                                                                                                                                                                                           |
 | `renderDataPart(part, message)`              | Ordered public `data-notice` or `data-business` display. Null retains the built-in display, including the ConsultationCard for a genuine consultation payload.                                                                                                                |
 
-Independent notifications are persisted through `onlineAgent.notify`, then read through business announcements or durable polling. They do not write into a finished model response. These display contracts do not restore a historical Studio plan/delegation producer or the deleted ask_agent chain.
+Independent system notifications are persisted through the existing `ConversationService.deliver()` business transaction, then read through business announcements or durable polling. They do not write into a finished model response or wake a new OnlineAgent execution. There is no separate `OnlineAgentService.notify()` entry. These display contracts do not restore a historical Studio plan/delegation producer or the deleted ask_agent chain.
 
 `Composer` exposes `toolbar` and `notice` as child component props. The installed view uses them for application actions and notices; they are not generic top-level ChatPanel slots. Preserve application-owned headers, avatars, menus and readiness/error handling when updating installed Registry source.
 

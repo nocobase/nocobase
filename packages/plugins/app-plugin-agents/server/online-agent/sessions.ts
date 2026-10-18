@@ -45,6 +45,41 @@ export type OnlineAgentSession = {
   call: OnlineAgentCall | null;
   lastSeq: number;
 };
+export type OnlineAgentSessionIdentity =
+  | { backend: 'native'; kind: OnlineAgentSession['kind'] }
+  | { backend: 'runner'; kind: 'realtime' };
+
+/** Classify persisted bindings without reading configuration through either execution backend. */
+function identity(row: ConversationRecord): OnlineAgentSessionIdentity {
+  const bindings = jsonObject(row.metadata);
+  if ('onlineAgent' in bindings && 'runnerOnlineAgent' in bindings)
+    throw invalid('Conflicting OnlineAgent backend bindings.');
+  const native = jsonObject(bindings.onlineAgent);
+  const nativeConfig = jsonObject(native.config);
+  if (
+    row.mode === 'online' &&
+    native === bindings.onlineAgent &&
+    native.version === 1 &&
+    nativeConfig === native.config &&
+    (nativeConfig.agentId === undefined || nativeConfig.agentId === 'online') &&
+    (native.kind === 'realtime' || native.kind === 'background')
+  )
+    return { backend: 'native', kind: native.kind };
+  const runner = jsonObject(bindings.runnerOnlineAgent);
+  const runnerConfig = jsonObject(runner.config);
+  if (
+    row.mode === 'runner' &&
+    runner === bindings.runnerOnlineAgent &&
+    runner.version === 1 &&
+    runnerConfig === runner.config &&
+    typeof runnerConfig.agentId === 'string' &&
+    runnerConfig.agentId.length > 0 &&
+    runnerConfig.agentId !== 'online' &&
+    runnerConfig.agentId === row.agentId
+  )
+    return { backend: 'runner', kind: 'realtime' };
+  throw invalid('This conversation has no valid OnlineAgent backend binding.');
+}
 type OnlineAgentMetadata = {
   version: 1;
   kind: OnlineAgentSession['kind'];
@@ -52,12 +87,9 @@ type OnlineAgentMetadata = {
   call: OnlineAgentCall | null;
 };
 function metadata(row: ConversationRecord): OnlineAgentMetadata {
-  const found = jsonObject(row.metadata).onlineAgent as
-    OnlineAgentMetadata | undefined;
-  if (!found || found.version !== 1)
-    throw invalid(
-      'This historical conversation has not been switched to OnlineAgent.',
-    );
+  if (identity(row).backend !== 'native')
+    throw invalid('A native OnlineAgent conversation is required.');
+  const found = jsonObject(row.metadata).onlineAgent as OnlineAgentMetadata;
   if ('permissions' in found.config)
     throw invalid('Permission-restricted configuration is not supported.');
   return found;
@@ -85,6 +117,7 @@ export interface OnlineAgentSessionManager {
     model: ModelRef,
     info?: { source?: string; title?: string; showInChatList?: boolean },
   ): Promise<string>;
+  identify(userId: string, id: string): Promise<OnlineAgentSessionIdentity>;
   load(userId: string, id: string): Promise<OnlineAgentSession>;
   configure(
     userId: string,
@@ -287,6 +320,9 @@ export function createSessionManager(deps: {
         emit({ type: 'conversation.changed', conversationId: id, userId });
       });
       return id;
+    },
+    async identify(userId, id) {
+      return identity(await owned(deps.tx.read(), userId, id));
     },
     async load(userId, id) {
       return session(await owned(deps.tx.read(), userId, id));

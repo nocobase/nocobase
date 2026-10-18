@@ -20,7 +20,6 @@ export {
   type OnlineAgentBoundary,
   type OnlineAgentConfiguration,
   type OnlineAgentInitialConfiguration,
-  type OnlineAgentNotification,
   NativeOnlineAgentBackend,
   NativeRealtimeOnlineAgent,
   NativeBackgroundOnlineAgent,

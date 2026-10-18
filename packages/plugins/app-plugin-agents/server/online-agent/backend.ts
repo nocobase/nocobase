@@ -6,7 +6,6 @@ import type {
 } from './config.js';
 import type { OnlineAgentRealtimeOptions } from './realtime.js';
 import type { ModelRef } from '../../shared/models.js';
-import type { AppUIMessage } from '../../shared/online-agent.js';
 import { invalid } from '../kernel/errors.js';
 
 export type OnlineAgentBackendKind = 'native' | 'runner';
@@ -19,12 +18,8 @@ export type OnlineAgentInitialConfiguration = {
   hasModel: boolean;
   defaultModel?: ModelRef;
 };
-export type OnlineAgentNotification = {
-  id: string;
-  parts: AppUIMessage['parts'];
-};
 
-/** Full execution contract. Unsupported capabilities reject; they are never optional or redirected. */
+/** Execution-specific contract. Unsupported capabilities reject; they are never optional or redirected. */
 export interface OnlineAgentBackend {
   readonly kind: OnlineAgentBackendKind;
   createRealtime(
@@ -52,7 +47,7 @@ export interface OnlineAgentBackend {
   configuration(
     context: OnlineAgentContext,
     id: string,
-  ): Promise<OnlineAgentConfiguration | null>;
+  ): Promise<OnlineAgentConfiguration>;
   configure(
     context: OnlineAgentContext,
     id: string,
@@ -60,14 +55,6 @@ export interface OnlineAgentBackend {
     selectedModel?: ModelRef,
     boundary?: OnlineAgentBoundary,
   ): Promise<OnlineAgentConfiguration>;
-  deliverNotification(
-    context: OnlineAgentContext,
-    id: string,
-    input: OnlineAgentNotification,
-  ): Promise<AppUIMessage>;
-  isActive(id: string): boolean;
-  producerAvailable(id: string, persistedRunning?: boolean): Promise<boolean>;
-  recoverAtStartup(): Promise<void>;
   shutdown(): Promise<void>;
 }
 

@@ -110,9 +110,6 @@ async function fixture(model: MockLanguageModelV4) {
     defaultModel: async () => ref,
     onError: (error) => errors.push(error),
   });
-  vi.spyOn(h.services.onlineAgent, 'isActive').mockImplementation((id) =>
-    service.isActive(id),
-  );
   // HTTP projections must observe the same real Service that owns this SDK fixture.
   vi.spyOn(h.services.onlineAgent, 'producerAvailable').mockImplementation(
     (id, running) => service.producerAvailable(id, running),
@@ -768,7 +765,6 @@ it('does not reserve occupancy when unsupported input cannot be normalized', asy
       schema,
     ),
   ).rejects.toThrow();
-  expect(f.service.isActive(job.sessionId)).toBe(false);
   expect(await job.status()).toBe('idle');
   expect(await job.history()).toEqual([]);
   await job.run([{ role: 'user', content: 'Count' }], schema);
@@ -1699,7 +1695,7 @@ it('keeps default and empty historical agent IDs readable without an OnlineAgent
     expect(detail.agent).toMatchObject({ id: agentId, name: null });
     await expect(
       f.service.realtime(context(), { sessionId: online.sessionId }),
-    ).rejects.toThrow('historical conversation');
+    ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
   }
 });
 

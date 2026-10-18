@@ -40,7 +40,6 @@ import {
   type OnlineAgentBoundary,
   type OnlineAgentConfiguration,
   type OnlineAgentInitialConfiguration,
-  type OnlineAgentNotification,
 } from './backend.js';
 import { runnerBinding } from './runner-metadata.js';
 
@@ -478,21 +477,16 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
   ): Promise<BackgroundOnlineAgent> {
     throw unsupportedCapability('runner', 'background');
   }
-  async deliverNotification(
-    _context: OnlineAgentContext,
-    _id: string,
-    _input: OnlineAgentNotification,
-  ): Promise<AppUIMessage> {
-    throw unsupportedCapability('runner', 'notifications');
-  }
   async configuration(
     context: OnlineAgentContext,
     id: string,
-  ): Promise<OnlineAgentConfiguration | null> {
+  ): Promise<OnlineAgentConfiguration> {
     const row = await owned(this.deps, context.user.id, id);
     const config = runnerBinding(row.metadata)?.config;
-    if (config) credentials(context);
-    return config ? { ...config, selectedModel: null } : null;
+    if (!config)
+      throw invalid('This is not a Runner OnlineAgent conversation.');
+    credentials(context);
+    return { ...config, selectedModel: null };
   }
   async configure(
     context: OnlineAgentContext,
@@ -504,8 +498,6 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
     this.available(context);
     if (selectedModel) throw unsupportedCapability('runner', 'native models');
     const current = await this.configuration(context, id);
-    if (!current)
-      throw invalid('This is not a Runner OnlineAgent conversation.');
     const { selectedModel: _selectedModel, ...expectedConfig } = current;
     const session = this.session(context, id, expectedConfig);
     if (this.state.admitting.has(id) || (await session.status()) === 'running')
@@ -551,22 +543,6 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
       });
     });
     return { ...config, selectedModel: null };
-  }
-  isActive(id: string): boolean {
-    return this.state.active.has(id);
-  }
-  async producerAvailable(
-    id: string,
-    persistedRunning = true,
-  ): Promise<boolean> {
-    return (
-      this.isActive(id) ||
-      (persistedRunning && (await this.deps.streams.producerAvailable(id)))
-    );
-  }
-  async recoverAtStartup(): Promise<void> {
-    // Runner owns durable dispatch/recovery. Terminal conversation projection is repaired on restore;
-    // startup must neither cancel nor re-enqueue work, nor invent a local UI producer for remote work.
   }
   /** Notifications wake a persisted read; they never supply authoritative text. */
   notify(runId: string): boolean {

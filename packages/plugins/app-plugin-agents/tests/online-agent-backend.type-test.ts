@@ -8,7 +8,6 @@ import type {
   OnlineAgentBoundary,
   OnlineAgentConfiguration,
   OnlineAgentInitialConfiguration,
-  OnlineAgentNotification,
 } from '../server/online-agent/backend.js';
 import type {
   OnlineAgentContext,
@@ -25,8 +24,8 @@ import type {
   RunnerOnlineAgentAdapter,
   RunnerRealtimeOnlineAgent,
 } from '../server/online-agent/runner.js';
+import type { OnlineAgentService } from '../server/online-agent/service.js';
 import type { ModelRef } from '../shared/models.js';
-import type { AppUIMessage } from '../shared/online-agent.js';
 
 interface ExpectedBackend {
   readonly kind: 'native' | 'runner';
@@ -55,7 +54,7 @@ interface ExpectedBackend {
   configuration(
     context: OnlineAgentContext,
     id: string,
-  ): Promise<OnlineAgentConfiguration | null>;
+  ): Promise<OnlineAgentConfiguration>;
   configure(
     context: OnlineAgentContext,
     id: string,
@@ -63,14 +62,6 @@ interface ExpectedBackend {
     selectedModel?: ModelRef,
     boundary?: OnlineAgentBoundary,
   ): Promise<OnlineAgentConfiguration>;
-  deliverNotification(
-    context: OnlineAgentContext,
-    id: string,
-    input: OnlineAgentNotification,
-  ): Promise<AppUIMessage>;
-  isActive(id: string): boolean;
-  producerAvailable(id: string, persistedRunning?: boolean): Promise<boolean>;
-  recoverAtStartup(): Promise<void>;
   shutdown(): Promise<void>;
 }
 
@@ -82,6 +73,33 @@ function checkContract(): void {
   expectTypeOf<OnlineAgentBackend>().toEqualTypeOf<ExpectedBackend>();
   expectTypeOf<OnlineAgentBackend>().toEqualTypeOf<
     Required<OnlineAgentBackend>
+  >();
+  expectTypeOf<
+    Extract<
+      | keyof OnlineAgentBackend
+      | keyof NativeOnlineAgentBackend
+      | keyof RunnerOnlineAgentAdapter,
+      | 'isActive'
+      | 'producerAvailable'
+      | 'recoverAtStartup'
+      | 'deliverNotification'
+    >
+  >().toEqualTypeOf<never>();
+  expectTypeOf<
+    Extract<keyof OnlineAgentService, 'isActive' | 'notify'>
+  >().toEqualTypeOf<never>();
+  expectTypeOf<OnlineAgentService>().toExtend<Required<OnlineAgentService>>();
+  expectTypeOf<OnlineAgentService['producerAvailable']>().toEqualTypeOf<
+    (id: string, persistedRunning?: boolean) => Promise<boolean>
+  >();
+  expectTypeOf<OnlineAgentService['configuration']>().toEqualTypeOf<
+    (
+      context: OnlineAgentContext,
+      id: string,
+    ) => Promise<OnlineAgentConfiguration>
+  >();
+  expectTypeOf<RunnerOnlineAgentAdapter['notify']>().toEqualTypeOf<
+    (runId: string) => boolean
   >();
   expectTypeOf<NativeOnlineAgentBackend>().toExtend<OnlineAgentBackend>();
   expectTypeOf<RunnerOnlineAgentAdapter>().toExtend<OnlineAgentBackend>();

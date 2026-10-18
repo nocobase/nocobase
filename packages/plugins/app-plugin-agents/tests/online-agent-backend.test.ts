@@ -175,16 +175,14 @@ describe('Native backend ownership and facade regressions', () => {
     const job = await backend.createBackground(actor, initial, {});
     await job.run(messages, { type: 'string' });
     await vi.waitFor(() => expect(output).toBeDefined());
-    expect(backend.isActive(job.sessionId)).toBe(true);
-    expect(await backend.producerAvailable(job.sessionId, false)).toBe(true);
+    expect(await job.status()).toBe('running');
     expect(await job.try()).toEqual({ ok: false, reason: 'pending' });
     const observed = job.get();
     text('"Backend result"').forEach((chunk) => output.enqueue(chunk));
     output.close();
     expect(await observed).toBe('Backend result');
     await settle(job);
-    expect(backend.isActive(job.sessionId)).toBe(false);
-    expect(await backend.producerAvailable(job.sessionId, false)).toBe(false);
+    expect(await job.status()).toBe('idle');
     expect((await f.sessions.load('alice', job.sessionId)).call).toMatchObject({
       state: 'idle',
       outcome: 'completed',
@@ -297,7 +295,7 @@ describe('Native backend ownership and facade regressions', () => {
         model: ref,
         lastSeq: 0,
       });
-      expect(f.service.isActive(original.sessionId)).toBe(false);
+      expect(await original.status()).toBe('idle');
       await submit(opened);
       expect(await f.sessions.load('alice', original.sessionId)).toMatchObject({
         config: { systemPrompt: 'Latest:pending', thinking: 'pending' },
@@ -339,7 +337,7 @@ describe('Native backend ownership and facade regressions', () => {
         await expect(submit(opened)).rejects.toThrow(
           'HTTP configuration cannot override',
         );
-        expect(f.service.isActive(original.sessionId)).toBe(false);
+        expect(await original.status()).toBe('idle');
         expect(
           await f.sessions.load('alice', original.sessionId),
         ).toMatchObject({

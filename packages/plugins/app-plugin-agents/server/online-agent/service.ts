@@ -6,7 +6,6 @@ import type {
   OnlineAgentBoundary,
   OnlineAgentConfiguration,
   OnlineAgentInitialConfiguration,
-  OnlineAgentNotification,
 } from './backend.js';
 import { NativeOnlineAgentBackend } from './native-backend.js';
 import { OnlineAgentUIStreams } from './ui-streams.js';
@@ -20,7 +19,6 @@ import type { OnlineAgentSessionManager } from './sessions.js';
 import type { IdSource } from '../kernel/ids.js';
 import { conflict, invalid } from '../kernel/errors.js';
 import type { ModelRef } from '../../shared/models.js';
-import type { AppUIMessage } from '../../shared/online-agent.js';
 
 export type {
   OnlineAgent,
@@ -37,7 +35,7 @@ export {
 export class OnlineAgentService {
   readonly configurator: OnlineAgentConfigurator;
   readonly uiStreams: OnlineAgentUIStreams;
-  private readonly native: OnlineAgentBackend;
+  private readonly native: NativeOnlineAgentBackend;
   private stopping = false;
 
   constructor(
@@ -66,8 +64,7 @@ export class OnlineAgentService {
 
   /** Only the owning Provider invokes startup recovery before serving requests. */
   async recoverAtStartup(): Promise<void> {
-    await this.native.recoverAtStartup();
-    await this.deps.runner?.recoverAtStartup();
+    await this.deps.sessions.recoverAtStartup();
   }
 
   async shutdown(): Promise<void> {
@@ -88,37 +85,18 @@ export class OnlineAgentService {
       );
   }
 
-  isActive(id: string): boolean {
-    return (
-      this.native.isActive(id) || (this.deps.runner?.isActive(id) ?? false)
-    );
-  }
-
   get recovery(): 'shared' | 'live' {
     return this.uiStreams.enabled ? 'shared' : 'live';
   }
 
+  /** Native status projection uses local occupancy even without a realtime output channel. */
   async producerAvailable(
     id: string,
     persistedRunning: boolean = true,
   ): Promise<boolean> {
     return (
-      (await this.native.producerAvailable(id, persistedRunning)) ||
-      (await this.deps.runner?.producerAvailable(id, persistedRunning)) ||
-      false
-    );
-  }
-
-  async notify(
-    context: OnlineAgentContext,
-    id: string,
-    input: OnlineAgentNotification,
-  ): Promise<AppUIMessage> {
-    this.trusted(context);
-    return (await this.persistedBackend(context, id)).deliverNotification(
-      context,
-      id,
-      input,
+      this.native.hasLocalExecution(id) ||
+      (persistedRunning && (await this.uiStreams.producerAvailable(id)))
     );
   }
 
@@ -144,9 +122,10 @@ export class OnlineAgentService {
     id: string,
   ): Promise<OnlineAgentConfiguration> {
     this.trusted(context);
-    const runner = await this.deps.runner?.configuration(context, id);
-    if (runner) return runner;
-    return (await this.native.configuration(context, id))!;
+    return (await this.persistedBackend(context, id)).configuration(
+      context,
+      id,
+    );
   }
 
   async realtime(
@@ -234,9 +213,10 @@ export class OnlineAgentService {
     context: OnlineAgentContext,
     id: string,
   ): Promise<OnlineAgentBackend> {
-    return (await this.deps.runner?.configuration(context, id))
-      ? this.deps.runner!
-      : this.native;
+    const identity = await this.deps.sessions.identify(context.user.id, id);
+    if (identity.backend === 'native') return this.native;
+    if (!this.deps.runner) throw invalid('Runner execution is unavailable.');
+    return this.deps.runner;
   }
 
   private trusted(context: OnlineAgentContext): void {

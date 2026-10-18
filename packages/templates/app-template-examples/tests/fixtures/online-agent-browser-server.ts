@@ -24,36 +24,10 @@ online.configurator.registerTool('fixture_action', {
       input: ({ value }) => ({ value }),
       output: ({ display, calls }) => ({ display, calls }),
     },
-    execute: async ({ value }, { context }) => {
+    execute: async ({ value }) => {
       if (value === 'uncertain')
         throw new DOMException('Fixture outcome unknown', 'AbortError');
       effects++;
-      await online.notify(context, context.sessionId, {
-        id: `fixture-card-${effects}`,
-        parts: [
-          {
-            type: 'data-business',
-            id: 'consultation',
-            data: {
-              kind: 'consultation',
-              id: `consultation-${effects}`,
-              payload: {
-                code: 'consultation',
-                callId: `consultation-${effects}`,
-                agentId: 'fixture',
-                agentName: 'Review agent',
-                runId: null,
-                question: 'Review the installed chat',
-                answer: 'The installed extension is ready.',
-                state: 'completed',
-                error: null,
-                plans: 3,
-                usage: { inputTokens: 1840, outputTokens: 212 },
-              },
-            },
-          },
-        ],
-      });
       return { display: 'Action completed', calls: effects };
     },
   },

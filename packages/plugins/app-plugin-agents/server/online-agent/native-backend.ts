@@ -16,7 +16,6 @@ import type {
   OnlineAgentBoundary,
   OnlineAgentInitialConfiguration,
   OnlineAgentConfiguration,
-  OnlineAgentNotification,
 } from './backend.js';
 import type { OnlineAgentResult } from './result.js';
 import { conflict, invalid } from '../kernel/errors.js';
@@ -38,7 +37,6 @@ import type {
   OnlineAgentSessionManager,
 } from './sessions.js';
 import type { ResolvedPageContext } from '../../shared/conversations.js';
-import type { AppUIMessage } from '../../shared/online-agent.js';
 
 type OnlineAgentAcceptance = {
   promise: Promise<number>;
@@ -122,10 +120,6 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       },
     });
   }
-  /** Called only by the server Provider before routes are mounted. */
-  async recoverAtStartup(): Promise<void> {
-    await this.deps.sessions.recoverAtStartup();
-  }
   async shutdown(): Promise<void> {
     this.stopping = true;
     const executions = [...this.active.values()];
@@ -146,39 +140,11 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       );
   }
 
-  /** Read-only process occupancy; no session lookup or authorization bypass. */
-  isActive(sessionId: string): boolean {
+  /** @internal Native process occupancy; no session lookup or authorization bypass. */
+  hasLocalExecution(sessionId: string): boolean {
     return this.active.has(sessionId);
   }
 
-  /** The application authorizes its business event before delivering it as the conversation owner. */
-  async deliverNotification(
-    context: OnlineAgentContext,
-    id: string,
-    input: OnlineAgentNotification,
-  ): Promise<AppUIMessage> {
-    this.available();
-    if (!input.id || input.id.length > 64)
-      throw invalid('A valid notification ID is required.');
-    return this.deps.sessions.native.deliver(
-      context.user.id,
-      id,
-      input.id,
-      input.parts,
-    );
-  }
-  get recovery(): 'shared' | 'live' {
-    return this.uiStreams.enabled ? 'shared' : 'live';
-  }
-  async producerAvailable(
-    id: string,
-    persistedRunning: boolean = true,
-  ): Promise<boolean> {
-    return (
-      this.isActive(id) ||
-      (persistedRunning && (await this.uiStreams.producerAvailable(id)))
-    );
-  }
   private async gate<T>(id: string, work: () => Promise<T>): Promise<T> {
     const previous = this.gates.get(id) ?? Promise.resolve();
     const next = previous.catch(() => {}).then(work);
@@ -354,7 +320,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       sessions: this.deps.sessions,
       native: this.native,
       uiStreams: this.uiStreams,
-      isActive: (id) => this.isActive(id),
+      isActive: (id) => this.hasLocalExecution(id),
       abort: (...args) => this.abort(...args),
       retryFinalization: (...args) => this.retryFinalization(...args),
       start: (...args) => this.start(...args),

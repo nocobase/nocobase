@@ -128,7 +128,7 @@ const unsupported = (capability: string) => ({
   details: { reason: 'UNSUPPORTED_CAPABILITY', backend: 'runner', capability },
 });
 
-it('does not apply Runner credential restrictions while identifying an unbound conversation', async () => {
+it('rejects unbound configuration and restricted restoration of a Runner conversation', async () => {
   const f = await fixture();
   const unbound = await h.services.conversations.create('alice', {
     agentId: f.agentId,
@@ -139,23 +139,11 @@ it('does not apply Runner credential restrictions while identifying an unbound c
   };
   await expect(
     backend.configuration(restricted, unbound.id),
-  ).resolves.toBeNull();
+  ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
   const runner = await f.create();
   await expect(
     backend.restoreRealtime(restricted, { sessionId: runner.sessionId }),
   ).rejects.toMatchObject({ code: 'FORBIDDEN' });
-});
-
-it('delegates Service liveness to the injected backend instead of inferring local activity', async () => {
-  await fixture();
-  const available = vi
-    .spyOn(RunnerOnlineAgentAdapter.prototype, 'producerAvailable')
-    .mockResolvedValue(true);
-  expect(h.services.onlineAgent.isActive('remote-session')).toBe(false);
-  await expect(
-    h.services.onlineAgent.producerAvailable('remote-session', false),
-  ).resolves.toBe(true);
-  expect(available).toHaveBeenCalledWith('remote-session', false);
 });
 
 it('returns the committed admission without a fallible post-commit detail projection', async () => {
@@ -186,7 +174,7 @@ it('returns the committed admission without a fallible post-commit detail projec
     await expect(
       h.services.conversations.get('alice', agent.sessionId),
     ).rejects.toThrow('Post-commit detail projection failed.');
-    expect(backend.isActive(agent.sessionId)).toBe(true);
+    expect(await agent.status()).toBe('running');
     expect(await agent.history()).toHaveLength(1);
     expect(
       await h.database
@@ -222,12 +210,6 @@ it('implements the full backend contract and rejects unsupported capabilities be
     contract.restoreBackground(context(), { sessionId: 'missing' }),
   ).rejects.toMatchObject(unsupported('background'));
   await expect(
-    contract.deliverNotification(context(), 'missing', {
-      id: 'notice',
-      parts: [],
-    }),
-  ).rejects.toMatchObject(unsupported('notifications'));
-  await expect(
     contract.createRealtime(
       context(),
       { config: { ...f.config, thinking: 'high' }, hasModel: false },
@@ -257,9 +239,6 @@ it('implements the full backend contract and rejects unsupported capabilities be
     ...f.config,
     selectedModel: null,
   });
-  expect(contract.isActive(agent.sessionId)).toBe(false);
-  expect(await contract.producerAvailable(agent.sessionId)).toBe(false);
-  await contract.recoverAtStartup();
   expect(await agent.status()).toBe('idle');
 });
 
@@ -564,7 +543,6 @@ it.each(['provider', 'stream', 'commit'] as const)(
     await stopping;
     await backend.shutdown();
     expect(stop).not.toHaveBeenCalled();
-    expect(backend.isActive(agent.sessionId)).toBe(false);
     expect(await streams.producerAvailable(agent.sessionId)).toBe(false);
     expect(await streams.producerAvailable('unrelated-native-fixture')).toBe(
       true,

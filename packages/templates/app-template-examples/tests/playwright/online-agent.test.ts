@@ -172,7 +172,7 @@ test('streams through the installed chat, persists across reload and stops indep
   }
 });
 
-test('keeps partial approvals pending and renders advisory uncertainty and installed consultation cards', async ({
+test('keeps partial approvals pending and renders advisory uncertainty', async ({
   page,
 }) => {
   test.skip(
@@ -241,7 +241,6 @@ test('keeps partial approvals pending and renders advisory uncertainty and insta
     ).toHaveCount(1);
     expect(fixture.streams).toHaveLength(1);
     expect((await detail()).execution.waitingApproval).toBe(true);
-    await expect(panel.getByTestId('chat-consultation')).toHaveCount(0);
     // Examples resets the panel on reload; restore it through the public conversation link.
     await page.goto(app + '/?chat=' + encodeURIComponent(id));
     await expect(
@@ -267,17 +266,6 @@ test('keeps partial approvals pending and renders advisory uncertainty and insta
     await expect
       .poll(async () => (await detail()).execution.status)
       .toBe('idle');
-    await expect(panel.getByTestId('chat-consultation')).toBeVisible();
-    await panel
-      .getByTestId('chat-consultation')
-      .locator('button')
-      .first()
-      .click();
-    await expect(
-      panel.getByText('The installed extension is ready.', { exact: true }),
-    ).toBeVisible();
-    await expect(panel.getByText(/1,840/)).toBeVisible();
-    await expect(panel.getByText(/Proposed .*plans/)).toHaveCount(0);
     await panel.locator('textarea').fill('Continue after the advisory.');
     await expect(panel.getByTestId('chat-send')).toBeEnabled();
     await expect(panel.locator('[data-streaming]')).toHaveCount(0);
@@ -285,7 +273,7 @@ test('keeps partial approvals pending and renders advisory uncertainty and insta
       await page.screenshot({
         path: path.join(
           process.env.E2E_SCREENSHOT_DIR,
-          'integration-advisory-and-card.png',
+          'integration-advisory.png',
         ),
         fullPage: true,
       });
