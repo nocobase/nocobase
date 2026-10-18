@@ -22,7 +22,11 @@ if (!dependencyRoot || process.argv.length !== 3) {
     const source = fileURLToPath(
       new URL('../assets/testing-example/', import.meta.url),
     );
-    await cp(source, scratch, { recursive: true });
+    await cp(source, scratch, {
+      recursive: true,
+      filter: (entry) =>
+        !['node_modules', 'storage'].includes(path.basename(entry)),
+    });
     await symlink(
       path.join(root, 'node_modules'),
       path.join(scratch, 'node_modules'),
