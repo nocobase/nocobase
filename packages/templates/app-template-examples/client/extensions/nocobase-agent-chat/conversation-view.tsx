@@ -2,6 +2,7 @@ import { useConversationActions } from './conversation-actions.js';
 import {
   ChatExtensionsContext,
   chatFeedback,
+  chatIsRunning,
   useChatScroll,
   newConversationAgent,
   timelineOrder,
@@ -193,7 +194,7 @@ function ConversationBody({
   const catalog = useChatModels(panel.open && !conversation);
   const [chosenModel, setChosenModel] = useState<ModelRef | null>(null);
   const run = conversation?.run ?? null;
-  const running = conversation?.execution?.status === 'running';
+  const running = chatIsRunning(conversation);
   const chatController = useChatController();
   const stream = useChatStream(conversation?.execution ? conversationId : null);
   const messages = useConversationMessages(
@@ -629,11 +630,7 @@ function ConversationBody({
               conversationId,
               `registry:${source}:${conversationId ?? 'new'}`,
             ) ||
-            Boolean(
-              conversation &&
-              (!conversation.execution ||
-                conversation.execution.requiresEffectReview),
-            )
+            Boolean(conversation && !conversation.execution)
           }
           running={running}
           stopping={stopping}

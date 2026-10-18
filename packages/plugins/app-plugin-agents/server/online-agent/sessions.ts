@@ -37,6 +37,7 @@ export type OnlineAgentCall = {
   closing?: boolean;
   result?: OnlineAgentJson;
   error?: string;
+  /** Legacy hint only; never an admission condition. Removed after finalization. */
   requiresEffectReview?: boolean;
 };
 export type OnlineAgentSession = {
@@ -80,6 +81,8 @@ function session(row: ConversationRecord): OnlineAgentSession {
 }
 
 export interface OnlineAgentSessionManager {
+  /** Server boot only, before requests; ignores rows written by this process. */
+  recoverAtStartup(): Promise<void>;
   publicHistory(
     userId: string,
     id: string,
@@ -263,9 +266,60 @@ export function createSessionManager(deps: {
       filter: { conversationId: id },
       sort: (sort) => sort.field('seq').asc(),
     });
-    const messages = rows.flatMap((row) => {
-      const value = restore(row.content, row.role);
-      return value ? [value] : [];
+    const messages = rows.flatMap((row, index): ModelMessage[] => {
+      const original = jsonObject(jsonObject(row.content).original);
+      if (!original.excludedFromHistory) {
+        const value = restore(row.content, row.role);
+        return value ? [value] : [];
+      }
+      // Earlier releases excluded interrupted tool evidence. Restore only valid
+      // calls and their adjacent results; never replay an unpaired fragment.
+      const value = restore(row.content, row.role, true);
+      if (value?.role !== 'assistant' || !Array.isArray(value.content))
+        return [];
+      const calls = value.content.filter(
+        (part): part is Extract<typeof part, { type: 'tool-call' }> =>
+          part.type === 'tool-call' &&
+          typeof part.toolCallId === 'string' &&
+          typeof part.toolName === 'string' &&
+          'input' in part,
+      );
+      if (!calls.length) return [];
+      const next = rows[index + 1];
+      const result =
+        next &&
+        jsonObject(jsonObject(next.content).original).excludedFromHistory
+          ? restore(next.content, next.role, true)
+          : null;
+      return [
+        { ...value, content: calls },
+        {
+          role: 'tool',
+          content: calls.map((call) => {
+            const saved =
+              result?.role === 'tool'
+                ? result.content.find(
+                    (part) =>
+                      part.type === 'tool-result' &&
+                      part.toolCallId === call.toolCallId &&
+                      part.toolName === call.toolName,
+                  )
+                : undefined;
+            return (
+              saved ?? {
+                type: 'tool-result',
+                toolCallId: call.toolCallId,
+                toolName: call.toolName,
+                output: {
+                  type: 'error-text',
+                  value:
+                    'Tool result unknown. The action may have completed; check its result before repeating it.',
+                },
+              }
+            );
+          }),
+        },
+      ];
     });
     const page =
       replay && deps.contextKinds
@@ -282,6 +336,93 @@ export function createSessionManager(deps: {
   }
 
   return {
+    async recoverAtStartup() {
+      const startedAt = new Date(performance.timeOrigin);
+      const stale = (row: ConversationRecord) => {
+        const value = jsonObject(row.metadata).onlineAgent as
+          OnlineAgentMetadata | undefined;
+        return (
+          !jsonObject(row.metadata).runnerOnlineAgent &&
+          value?.version === 1 &&
+          new Date(row.updatedAt) < startedAt &&
+          (value.call?.state === 'running' ||
+            value.call?.closing ||
+            value.call?.requiresEffectReview)
+        );
+      };
+      let offset = 0;
+      // Scan before locking: JSON metadata is inspected portably across database dialects.
+      for (;;) {
+        const rows = await conversationsRepo(deps.tx.read()).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('mode').eq('online'),
+              f.date('createdAt').before(startedAt),
+            ]),
+          sort: (s) => s.field('id').asc(),
+          limit: 200,
+          offset,
+        });
+        if (!rows.length) break;
+        for (const candidate of rows.filter(stale)) {
+          await write(
+            candidate.userId,
+            candidate.id,
+            'startup',
+            async (conn, row) => {
+              if (!stale(row)) return;
+              const value = metadata(row);
+              const {
+                closing: _closing,
+                requiresEffectReview: _review,
+                ...call
+              } = value.call!;
+              const unfinished = call.state === 'running' && !call.outcome;
+              const message =
+                'The server stopped before this execution finished. Some actions may have completed; check their results before repeating them.';
+              const lastSeq = unfinished
+                ? await append(
+                    conn,
+                    row,
+                    [
+                      {
+                        id: deps.ids.next(),
+                        message: { role: 'assistant', content: message },
+                      },
+                    ],
+                    'failed',
+                  )
+                : Number(row.lastSeq);
+              await saveMetadata(
+                conn,
+                row,
+                {
+                  ...value,
+                  call: {
+                    ...call,
+                    state: 'idle',
+                    ...(unfinished
+                      ? { outcome: 'failed', error: message, result: undefined }
+                      : {}),
+                  },
+                },
+                {
+                  lastSeq,
+                  ...(unfinished
+                    ? { read: false, lastMessageAt: deps.now() }
+                    : {}),
+                  updatedAt: deps.now(),
+                },
+              );
+              return lastSeq;
+            },
+            (seq) => seq ?? Number(candidate.lastSeq),
+          );
+        }
+        // Creation time is immutable, so finalization cannot move rows between pages.
+        offset += rows.length;
+      }
+    },
     async defaults(userId: string) {
       const conn = deps.tx.read();
       const [personal, system] = await Promise.all([
@@ -340,11 +481,7 @@ export function createSessionManager(deps: {
     async configure(userId, id, config, model) {
       await write(userId, id, 'configure', async (conn, row) => {
         const value = metadata(row);
-        if (
-          value.call?.state === 'running' ||
-          value.call?.closing ||
-          value.call?.requiresEffectReview
-        )
+        if (value.call?.state === 'running' || value.call?.closing)
           throw conflict('This conversation is busy.');
         await saveMetadata(
           conn,
@@ -391,14 +528,8 @@ export function createSessionManager(deps: {
         'accept',
         async (conn, row) => {
           const value = metadata(row);
-          if (
-            value.call?.state === 'running' ||
-            value.call?.closing ||
-            value.call?.requiresEffectReview
-          )
-            throw conflict(
-              'This conversation is busy or its previous execution needs review.',
-            );
+          if (value.call?.state === 'running' || value.call?.closing)
+            throw conflict('This conversation is busy.');
           if (row.archivedAt || row.syncRunId)
             throw conflict('This conversation cannot accept input.');
           const lastSeq = await append(conn, row, items, 'completed');
@@ -514,7 +645,11 @@ export function createSessionManager(deps: {
       return write(userId, id, 'finish', async (conn, row) => {
         const value = metadata(row);
         if (!value.call) throw conflict('No execution is being finalized.');
-        const { closing: _closing, ...call } = value.call;
+        const {
+          closing: _closing,
+          requiresEffectReview: _review,
+          ...call
+        } = value.call;
         await saveMetadata(conn, row, {
           ...value,
           call: { ...call, state: 'idle' },

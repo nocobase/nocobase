@@ -369,7 +369,7 @@ describe('OnlineAgent service slice', () => {
         sort: (sort) => sort.field('seq').asc(),
       });
     const evidence = rows.filter(
-      (row) => row.content.original?.excludedFromHistory,
+      (row) => row.role !== 'user' && row.content.original?.message,
     );
     expect(evidence).toHaveLength(2);
     expect(evidence.map((row) => decode(row.content.original.message))).toEqual(
@@ -399,7 +399,10 @@ describe('OnlineAgent service slice', () => {
       ],
     );
     expect(evidence.map((row) => row.content.content)).toEqual(['', '']);
-    expect(await f.history(agent)).toEqual([{ role: 'user', content: 'Wait' }]);
+    expect(await f.history(agent)).toEqual([
+      { role: 'user', content: 'Wait' },
+      ...evidence.map((row) => decode(row.content.original.message)),
+    ]);
     expect(model.doStreamCalls).toHaveLength(1);
     client.off('query', record);
     expect(f.measurements.map((item) => item.phase)).toEqual([
@@ -1214,7 +1217,7 @@ it.each(['realtime', 'background'] as const)(
   },
 );
 
-it.each(['success', 'error', 'stream'] as const)(
+it.each(['success', 'error', 'stream', 'abort'] as const)(
   'retains cancelled tool %s evidence through save retry without replay or public leakage',
   async (mode) => {
     const entered = deferred();
@@ -1239,6 +1242,8 @@ it.each(['success', 'error', 'stream'] as const)(
       entered.resolve();
       await release.promise;
       if (mode === 'error') throw new Error('private-failure');
+      if (mode === 'abort')
+        throw new DOMException('private-abort', 'AbortError');
       return { value: 'private-result' };
     });
     f.service.configurer.registerTool('effect', {
@@ -1271,7 +1276,7 @@ it.each(['success', 'error', 'stream'] as const)(
       .repository('agConversationMessages')
       .findMany({ filter: { conversationId: agent.sessionId } });
     const evidence = rows.filter(
-      (row) => row.content.original?.excludedFromHistory,
+      (row) => row.role !== 'user' && row.content.original?.message,
     );
     expect(evidence).toHaveLength(2);
     const messages = evidence.map(
@@ -1280,12 +1285,19 @@ it.each(['success', 'error', 'stream'] as const)(
     expect(JSON.stringify(messages)).toContain('private-input');
     expect(JSON.stringify(messages)).toContain('private-provider');
     expect(JSON.stringify(messages)).toContain(
-      mode === 'error' ? 'private-failure' : 'private-result',
+      mode === 'abort'
+        ? 'Tool result unknown'
+        : mode === 'error'
+          ? 'private-failure'
+          : 'private-result',
     );
     expect(
       JSON.stringify(messages.map((message) => project(message))),
     ).not.toContain('private');
-    expect(await f.history(agent)).toEqual([{ role: 'user', content: 'Run' }]);
+    expect(await f.history(agent)).toEqual([
+      { role: 'user', content: 'Run' },
+      ...messages,
+    ]);
     expect(await agent.status()).toBe('idle');
     await agent.retryFinalization();
     expect(execute).toHaveBeenCalledTimes(1);
@@ -1412,10 +1424,7 @@ it.each([false, true])(
     expect(
       JSON.stringify(messages.map((message) => project(message))),
     ).not.toContain('private');
-    if (cancel)
-      expect(await f.history(agent)).toEqual([
-        { role: 'user', content: 'Run' },
-      ]);
+    if (cancel) expect(await f.history(agent)).toEqual(messages);
     expect(await agent.status()).toBe('idle');
     const conversions = toModelOutput.mock.calls.length;
     await agent.send([{ role: 'user', content: 'Continue' }]);
@@ -1424,7 +1433,7 @@ it.each([false, true])(
     expect(toModelOutput).toHaveBeenCalledTimes(conversions);
     expect(model.doStreamCalls).toHaveLength(cancel ? 2 : 3);
     if (cancel)
-      expect(JSON.stringify(model.doStreamCalls[1].prompt)).not.toContain(
+      expect(JSON.stringify(model.doStreamCalls[1].prompt)).toContain(
         'private',
       );
   },
@@ -1756,3 +1765,228 @@ it('marks accepted input read, retains read on empty or tool-only finalization, 
   expect(await read()).toBe(true);
   await f.sessions.finish('alice', id);
 });
+
+it('repairs only previous-process native occupancy at server boot and preserves saved terminal results', async () => {
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({ stream: streamed(text('Next')) }),
+  });
+  const f = await fixture(model);
+  const repository = h.database.connection().repository('agConversations');
+  const accepted = async () => {
+    const agent = await f.service.background(context());
+    const session = await f.sessions.load('alice', agent.sessionId);
+    await f.sessions.accept('alice', agent.sessionId, session.config, ref, [
+      {
+        id: `input-${agent.sessionId}`,
+        message: { role: 'user', content: 'Work' },
+      },
+    ]);
+    return agent;
+  };
+  const abandoned = await accepted();
+  const saved = await accepted();
+  await f.sessions.save('alice', saved.sessionId, [], {
+    actorId: 'alice',
+    state: 'running',
+    outcome: 'completed',
+    result: { value: 7 },
+  });
+  const failed = await accepted();
+  await f.sessions.save('alice', failed.sessionId, [], {
+    actorId: 'alice',
+    state: 'running',
+    outcome: 'failed',
+    error: 'Safe failure',
+  });
+  const legacy = await accepted();
+  await repository.updateMany({
+    filter: { id: legacy.sessionId },
+    values: { metadata: null },
+  });
+  const runner = await accepted();
+  await repository.updateMany({
+    filter: { id: runner.sessionId },
+    values: {
+      metadata: { runnerOnlineAgent: { version: 1, closingRunId: 'old-run' } },
+    },
+  });
+  for (const agent of [abandoned, saved, failed, legacy, runner])
+    await repository.updateMany({
+      filter: { id: agent.sessionId },
+      values: {
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+      },
+    });
+  const client = await h.database.connection().client<Knex>();
+  const sql: string[] = [];
+  const record = (query: { sql: string }) => sql.push(query.sql);
+  client.on('query', record);
+  await f.service.recoverAtStartup();
+  const first = [...sql];
+  sql.length = 0;
+  await f.service.recoverAtStartup();
+  client.off('query', record);
+  expect(
+    (await f.sessions.load('alice', abandoned.sessionId)).call,
+  ).toMatchObject({ state: 'idle', outcome: 'failed' });
+  expect(await saved.get()).toEqual({ value: 7 });
+  expect((await f.sessions.load('alice', failed.sessionId)).call).toEqual({
+    actorId: 'alice',
+    state: 'idle',
+    outcome: 'failed',
+    error: 'Safe failure',
+  });
+  const history = await abandoned.history();
+  expect(history).toHaveLength(2);
+  expect(history[1]).toMatchObject({
+    role: 'assistant',
+    content: expect.stringContaining('Some actions may have completed'),
+  });
+  expect(
+    (await repository.findOne({ filter: { id: legacy.sessionId } }))?.metadata,
+  ).toBeNull();
+  expect(
+    (await repository.findOne({ filter: { id: runner.sessionId } }))?.metadata,
+  ).toEqual({ runnerOnlineAgent: { version: 1, closingRunId: 'old-run' } });
+  expect(model.doStreamCalls).toHaveLength(0);
+  if (process.env.PM482_SQL_REPORT)
+    await appendFile(
+      process.env.PM482_SQL_REPORT,
+      JSON.stringify({
+        scenario: 'startup',
+        first,
+        repeated: sql,
+        measurements: f.measurements,
+      }) + '\n',
+    );
+  await abandoned.run([{ role: 'user', content: 'Continue' }], {
+    type: 'string',
+  });
+  await vi.waitFor(async () => expect(await abandoned.status()).toBe('idle'));
+});
+
+it('does not reclaim current-process occupancy through a new service facade or boot hook', async () => {
+  const entered = deferred();
+  const release = deferred();
+  const model = new MockLanguageModelV4({
+    doStream: async () => {
+      entered.resolve();
+      await release.promise;
+      return { stream: streamed(text('Done')) };
+    },
+  });
+  const f = await fixture(model);
+  const agent = await f.service.realtime(context());
+  await agent.send([{ role: 'user', content: 'Work' }]);
+  await entered.promise;
+  const second = new OnlineAgentService({
+    sessions: f.sessions,
+    ids: { next: () => 'unused' },
+    model: async () => model,
+    defaultModel: async () => ref,
+    onError: () => {},
+  });
+  await second.recoverAtStartup();
+  const reopened = await second.realtime(context(), {
+    sessionId: agent.sessionId,
+  });
+  expect(await reopened.status()).toBe('running');
+  await expect(
+    reopened.send([{ role: 'user', content: 'Concurrent' }]),
+  ).rejects.toThrow('not been confirmed stopped');
+  release.resolve();
+  await settle(agent);
+});
+
+it.each([false, true])(
+  'replays persisted legacy tool evidence with a paired result (known=%s) without keeping a review lock',
+  async (known) => {
+    const f = await fixture(
+      new MockLanguageModelV4({
+        doStream: async () => ({ stream: streamed(text('Continue')) }),
+      }),
+    );
+    const agent = await f.service.realtime(context());
+    const loaded = await f.sessions.load('alice', agent.sessionId);
+    await f.sessions.accept('alice', agent.sessionId, loaded.config, ref, [
+      { id: 'old-input', message: { role: 'user', content: 'Write' } },
+    ]);
+    await f.sessions.save(
+      'alice',
+      agent.sessionId,
+      [
+        {
+          id: 'old-call',
+          excludedFromHistory: true,
+          message: {
+            role: 'assistant',
+            content: [
+              {
+                type: 'tool-call',
+                toolCallId: 'old',
+                toolName: 'write',
+                input: { private: true },
+              },
+            ],
+          },
+        },
+        ...(known
+          ? [
+              {
+                id: 'old-result',
+                excludedFromHistory: true,
+                message: {
+                  role: 'tool' as const,
+                  content: [
+                    {
+                      type: 'tool-result' as const,
+                      toolCallId: 'old',
+                      toolName: 'write',
+                      output: {
+                        type: 'text' as const,
+                        value: 'Actually written',
+                      },
+                    },
+                  ],
+                },
+              },
+            ]
+          : []),
+      ],
+      {
+        actorId: 'alice',
+        state: 'running',
+        outcome: 'cancelled',
+        requiresEffectReview: true,
+      },
+    );
+    await f.sessions.finish('alice', agent.sessionId);
+    const history = await f.history(agent);
+    expect(history).toHaveLength(3);
+    expect(JSON.stringify(history)).toContain(
+      known ? 'Actually written' : 'Tool result unknown',
+    );
+    expect(JSON.stringify(await agent.history())).not.toContain('private');
+    const repo = h.database.connection().repository('agConversations');
+    const row = await repo.findOne({ filter: { id: agent.sessionId } });
+    await repo.updateMany({
+      filter: { id: agent.sessionId },
+      values: {
+        metadata: {
+          ...row!.metadata,
+          onlineAgent: {
+            ...row!.metadata.onlineAgent,
+            call: {
+              ...row!.metadata.onlineAgent.call,
+              requiresEffectReview: true,
+            },
+          },
+        },
+      },
+    });
+    await f.service.configure(context(), agent.sessionId, {});
+    await agent.send([{ role: 'user', content: 'Continue' }]);
+    await settle(agent);
+  },
+);

@@ -1,4 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { RunnerOnlineAgentAdapter } from '../server/online-agent/runner.js';
+import { OnlineAgentMemoryStreamManager } from '../server/online-agent/streams.js';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { OnlineAgentContext } from '../server/online-agent/config.js';
 import type { OnlineAgentStreamEvent } from '../shared/online-agent.js';
@@ -454,88 +456,114 @@ it('catches up a fast terminal execution before the first subscription without r
   ).toEqual(['Fast', 'Fast answer']);
   expect(await f.agent.status()).toBe('idle');
 });
-it('retries only closing after a failed terminal marker clear, preserving busy and a single history writer', async () => {
-  const f = await fixture();
-  await f.agent.send([{ role: 'user', content: 'Closing fixture' }]);
-  const events: OnlineAgentStreamEvent[] = [];
-  const reader = (await f.agent.receive())!.getReader();
-  const reading = (async () => {
-    for (;;) {
-      const next = await reader.read();
-      if (next.done) break;
-      events.push(next.value);
-    }
-  })();
-  const [payload] = await claim(h, f.runner);
-  await f.report(payload.run.id, 'start', {
-    workDir: '/work/chat',
-    adapter: { kind: 'claude' },
-    acceptsInput: true,
-  });
-  await f.report(payload.run.id, 'events', {
-    events: [
-      {
-        seq: 1,
-        at: h.clock.now().toISOString(),
-        type: 'text',
-        content: 'Saved through syncIn',
-      },
-    ],
-  });
-  let refuseClear = true;
-  let refused = false;
-  const transaction = h.services.tx.run.bind(h.services.tx);
-  const failure = vi
-    .spyOn(h.services.tx, 'run')
-    .mockImplementation((work, outer) =>
-      transaction(async (unit) => {
-        const before = await unit.conn
-          .repository('agConversations')
-          .findOne({ filter: { id: f.agent.sessionId } });
-        const result = await work(unit);
-        const after = await unit.conn
-          .repository('agConversations')
-          .findOne({ filter: { id: f.agent.sessionId } });
-        const wasClosing = (
-          before?.metadata as { runnerOnlineAgent?: { closingRunId?: string } }
-        )?.runnerOnlineAgent?.closingRunId;
-        const closing = (
-          after?.metadata as { runnerOnlineAgent?: { closingRunId?: string } }
-        )?.runnerOnlineAgent?.closingRunId;
-        if (refuseClear && wasClosing && !closing) {
-          refused = true;
-          throw new Error('Fixture closing clear failed');
-        }
-        return result;
-      }, outer),
+it.each([false, true])(
+  'finishes saved Runner output after a failed marker clear (adapter restart=%s)',
+  async (restart) => {
+    const f = await fixture();
+    await f.agent.send([{ role: 'user', content: 'Closing fixture' }]);
+    const events: OnlineAgentStreamEvent[] = [];
+    const reader = (await f.agent.receive())!.getReader();
+    const reading = (async () => {
+      for (;;) {
+        const next = await reader.read();
+        if (next.done) break;
+        events.push(next.value);
+      }
+    })();
+    const [payload] = await claim(h, f.runner);
+    await f.report(payload.run.id, 'start', {
+      workDir: '/work/chat',
+      adapter: { kind: 'claude' },
+      acceptsInput: true,
+    });
+    await f.report(payload.run.id, 'events', {
+      events: [
+        {
+          seq: 1,
+          at: h.clock.now().toISOString(),
+          type: 'text',
+          content: 'Saved through syncIn',
+        },
+      ],
+    });
+    let refuseClear = true;
+    let refused = false;
+    const transaction = h.services.tx.run.bind(h.services.tx);
+    const failure = vi
+      .spyOn(h.services.tx, 'run')
+      .mockImplementation((work, outer) =>
+        transaction(async (unit) => {
+          const before = await unit.conn
+            .repository('agConversations')
+            .findOne({ filter: { id: f.agent.sessionId } });
+          const result = await work(unit);
+          const after = await unit.conn
+            .repository('agConversations')
+            .findOne({ filter: { id: f.agent.sessionId } });
+          const wasClosing = (
+            before?.metadata as {
+              runnerOnlineAgent?: { closingRunId?: string };
+            }
+          )?.runnerOnlineAgent?.closingRunId;
+          const closing = (
+            after?.metadata as { runnerOnlineAgent?: { closingRunId?: string } }
+          )?.runnerOnlineAgent?.closingRunId;
+          if (refuseClear && wasClosing && !closing) {
+            refused = true;
+            throw new Error('Fixture closing clear failed');
+          }
+          return result;
+        }, outer),
+      );
+    const complete = vi.spyOn(h.services.reports, 'complete');
+    const inputs = (await h.services.runs.detail(payload.run.id)).inputs.map(
+      (input) => input.id,
     );
-  const complete = vi.spyOn(h.services.reports, 'complete');
-  const inputs = (await h.services.runs.detail(payload.run.id)).inputs.map(
-    (input) => input.id,
-  );
-  await f.report(payload.run.id, 'complete', {
-    summary: 'Done',
-    handledInputIds: inputs,
-    sessionId: 'closing',
-  });
-  await vi.waitFor(() => expect(refused).toBe(true));
-  expect(await f.agent.status()).toBe('running');
-  expect(events.some((event) => event.type === 'saved')).toBe(false);
-  await expect(
-    f.agent.send([{ role: 'user', content: 'Blocked while closing' }]),
-  ).rejects.toThrow('busy');
-  refuseClear = false;
-  await f.agent.retryFinalization();
-  await reading;
-  expect(await f.agent.status()).toBe('idle');
-  expect(complete).toHaveBeenCalledTimes(1);
-  expect(
-    (await f.agent.history()).filter(
-      (message) => message.content.content === 'Saved through syncIn',
-    ),
-  ).toHaveLength(1);
-  failure.mockRestore();
-});
+    await f.report(payload.run.id, 'complete', {
+      summary: 'Done',
+      handledInputIds: inputs,
+      sessionId: 'closing',
+    });
+    await vi.waitFor(() => expect(refused).toBe(true));
+    expect(await f.agent.status()).toBe('running');
+    expect(events.some((event) => event.type === 'saved')).toBe(false);
+    await expect(
+      f.agent.send([{ role: 'user', content: 'Blocked while closing' }]),
+    ).rejects.toThrow('busy');
+    refuseClear = false;
+    let recovered = f.agent;
+    let adapter: RunnerOnlineAgentAdapter | undefined;
+    if (restart) {
+      const config = await h.services.onlineAgent.configuration(
+        context(),
+        f.agent.sessionId,
+      );
+      await h.services.onlineAgent.shutdown();
+      adapter = new RunnerOnlineAgentAdapter({
+        tx: h.services.tx,
+        conversations: h.services.conversations,
+        streams: new OnlineAgentMemoryStreamManager(),
+        now: () => h.clock.now().toISOString(),
+        basePath: () => '',
+        onError: () => {},
+      });
+      recovered = await adapter.open(context(), config, {
+        sessionId: f.agent.sessionId,
+      });
+    }
+    await recovered.retryFinalization();
+    await reading;
+    expect(await recovered.status()).toBe('idle');
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(
+      (await f.agent.history()).filter(
+        (message) => message.content.content === 'Saved through syncIn',
+      ),
+    ).toHaveLength(1);
+    failure.mockRestore();
+    await adapter?.shutdown();
+  },
+);
 
 it('preserves directory defaults, personal eligibility and offline reasons, and rejects unavailable identities', async () => {
   h = await createHarness();

@@ -16,6 +16,7 @@ import type {
   ConversationDetail,
 } from '../../shared/conversations.js';
 import { ChatApi } from './api.js';
+import { chatIsRunning } from './feedback.js';
 import { ChatSubmissions } from './submissions.js';
 import { agentsQueryClient } from '../query.js';
 import { chatKeys } from './keys.js';
@@ -149,10 +150,7 @@ export class ChatController {
   private streams = new Map<string, StreamState>();
   private stopRequests = new Set<string>();
   observeDetail(detail: ConversationDetail): void {
-    if (
-      detail.execution?.status === 'idle' &&
-      this.stopRequests.delete(detail.id)
-    )
+    if (!chatIsRunning(detail) && this.stopRequests.delete(detail.id))
       this.publish();
   }
   isStopping(id: string): boolean {
@@ -202,8 +200,7 @@ export class ChatController {
   }
   private remember(detail: ConversationDetail): void {
     this.nextDetailVersion(detail.id);
-    if (detail.execution?.status === 'idle')
-      this.stopRequests.delete(detail.id);
+    if (!chatIsRunning(detail)) this.stopRequests.delete(detail.id);
     this.publish();
     agentsQueryClient().setQueryData(chatKeys.conversation(detail.id), detail);
     void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
@@ -407,8 +404,8 @@ export class ChatController {
     if (!current() || !ordered()) return;
     agentsQueryClient().setQueryData(chatKeys.conversation(id), detail);
     this.submissions.observe(id, page.items);
+    if (!chatIsRunning(detail)) this.stopRequests.delete(id);
     if (detail.execution?.status === 'idle') {
-      this.stopRequests.delete(id);
       const stream = this.streams.get(id);
       if (stream)
         this.streams.set(id, {

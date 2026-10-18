@@ -168,7 +168,9 @@ describe('ChatPanel', () => {
         .closest('[data-chat-feedback]')
         ?.querySelector('[data-slot="spinner"]'),
     ).toBeVisible();
-    expect(await screen.findByText(/Here is what I would do/u)).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByText(/Here is what I would do/u)).toBeVisible(),
+    );
     expect(screen.queryByText('Thinking…')).not.toBeInTheDocument();
     expect(box).toHaveValue('');
   });

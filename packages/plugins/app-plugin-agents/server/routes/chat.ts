@@ -623,6 +623,9 @@ export function createChatRoutes(
             verb === 'stop'
               ? await (async () => {
                   const id = conversationId(context);
+                  const detail = await conversations.get(me(context), id);
+                  if (!detail.execution)
+                    return conversations.stop(me(context), id);
                   const agent = await services.onlineAgent.realtime(
                     trusted(context),
                     { sessionId: id },

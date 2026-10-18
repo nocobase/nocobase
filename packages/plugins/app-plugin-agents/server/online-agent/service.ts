@@ -117,6 +117,10 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
   ) {
     this.streams = deps.streams ?? new OnlineAgentMemoryStreamManager();
   }
+  /** Called only by the server Provider before routes are mounted. */
+  async recoverAtStartup(): Promise<void> {
+    await this.deps.sessions.recoverAtStartup();
+  }
   async shutdown(): Promise<void> {
     this.stopping = true;
     await this.deps.runner?.shutdown();
@@ -611,11 +615,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     let tools: ReturnType<OnlineAgentConfigurer['bind']>;
     try {
       session = await this.deps.sessions.load(context.user.id, id);
-      if (
-        session.call?.state === 'running' ||
-        session.call?.closing ||
-        session.call?.requiresEffectReview
-      )
+      if (session.call?.state === 'running' || session.call?.closing)
         throw conflict(
           'The previous execution has not been confirmed stopped.',
         );
@@ -744,9 +744,12 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
                 ? {
                     type: 'error-text' as const,
                     value:
-                      toolOutput.error instanceof Error
-                        ? toolOutput.error.message
-                        : String(toolOutput.error),
+                      toolOutput.error instanceof Error &&
+                      toolOutput.error.name === 'AbortError'
+                        ? 'Tool result unknown. The action may have completed; check its result before repeating it.'
+                        : toolOutput.error instanceof Error
+                          ? toolOutput.error.message
+                          : String(toolOutput.error),
                   }
                 : converter
                   ? await converter({
@@ -828,8 +831,8 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     }
     await sdkStopped;
     await Promise.allSettled(pending);
-    // Completed SDK steps remain canonical. Evidence from an unfinished step is
-    // retained for effect review, never replayed as a completed model exchange.
+    // Completed SDK steps remain canonical. Unfinished steps retain paired tool
+    // facts so the next model turn knows which actions may already have happened.
     const canonicalCalls = new Set(
       response.flatMap((message) =>
         message.role === 'assistant' && Array.isArray(message.content)
@@ -856,7 +859,34 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         for (const [callId, convert] of convertToolEvidence)
           if (!canonicalCalls.has(callId)) await convert();
         const evidence = [...toolEvidence.entries()].flatMap(
-          ([callId, messages]) => (canonicalCalls.has(callId) ? [] : messages),
+          ([callId, messages]) => {
+            if (canonicalCalls.has(callId)) return [];
+            if (!messages[1]) {
+              const call = messages[0];
+              if (call.role !== 'assistant' || !Array.isArray(call.content))
+                return [];
+              const part = call.content.find(
+                (part) => part.type === 'tool-call',
+              );
+              if (!part || part.type !== 'tool-call') return [];
+              messages[1] = {
+                role: 'tool',
+                content: [
+                  {
+                    type: 'tool-result',
+                    toolCallId: part.toolCallId,
+                    toolName: part.toolName,
+                    output: {
+                      type: 'error-text',
+                      value:
+                        'Tool result unknown. The action may have completed; check its result before repeating it.',
+                    },
+                  },
+                ],
+              };
+            }
+            return messages;
+          },
         );
         items = response.map((message) => ({
           id: this.deps.ids.next(),
@@ -866,7 +896,6 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
           ...evidence.map((message) => ({
             id: this.deps.ids.next(),
             message,
-            excludedFromHistory: true,
           })),
         );
         if (partial) items.push({ id: this.deps.ids.next(), message: null });
@@ -883,12 +912,6 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
             actorId: context.user.id,
             state: 'running',
             outcome,
-            ...(outcome !== 'completed' &&
-            [...toolEvidence.keys()].some(
-              (callId) => !convertToolEvidence.has(callId),
-            )
-              ? { requiresEffectReview: true }
-              : {}),
             ...(result === undefined ? {} : { result }),
           },
         );

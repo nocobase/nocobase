@@ -244,17 +244,18 @@ const agentChatEnUS: AgentChatLocale = {
       thinking: 'Thinking…',
       stopping: 'Stop requested. Waiting for the agent to finish…',
       completed: 'Completed.',
-      cancelled: 'Cancelled. Any partial reply is saved in history.',
+      cancelled:
+        'Cancelled. Check possibly completed actions before repeating them.',
       failed:
         'The response failed. Check history before deciding whether to send again.',
       unknown:
         'The result or its saved history is not confirmed. Refresh history before deciding whether to send again.',
       effectReview:
-        'Some actions may have completed. Review their results before continuing.',
+        'Some actions may have completed. Check their results before repeating them.',
     },
 
     executionFailed:
-      'Execution failed or its effects need review. Check saved history before continuing.',
+      'Execution failed. Check saved history and possibly completed actions before repeating them.',
     historicalReadOnly:
       'This historical conversation is read-only. Start a new chat to continue.',
     connectionUnknown:

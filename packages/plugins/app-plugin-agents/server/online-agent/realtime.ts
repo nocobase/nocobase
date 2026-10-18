@@ -82,6 +82,8 @@ export interface OnlineAgentRealtimeService {
 
 /** Application runtime; native background execution remains a separate capability. */
 export interface OnlineAgentRuntime extends OnlineAgentRealtimeService {
+  /** Internal server boot hook, before accepting requests. */
+  recoverAtStartup(): Promise<void>;
   readonly configurer: import('./config.js').OnlineAgentConfigurer;
   background(
     context: OnlineAgentContext,

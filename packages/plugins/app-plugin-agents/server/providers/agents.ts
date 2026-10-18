@@ -175,10 +175,11 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       secrets.registerStore(store);
   }
 
-  public override boot(): Promise<void> {
-    if (this.releases.length > 0) return Promise.resolve();
+  public override async boot(): Promise<void> {
+    if (this.releases.length > 0) return;
     const { container } = this.app;
     const services = container.resolve(agentsToken);
+    await services.onlineAgent.recoverAtStartup();
     this.announce(services);
     // The run token, runner key and registration token as security schemes of the API document.
     if (container.has(apiDocsToken))

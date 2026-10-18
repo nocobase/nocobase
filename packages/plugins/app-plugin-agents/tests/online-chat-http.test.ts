@@ -5,7 +5,7 @@ import { MockLanguageModelV4 } from 'ai/test';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { Knex } from 'knex';
 import { z } from 'zod';
-import { createHarness, type Harness } from './harness.js';
+import { claim, createHarness, type Harness } from './harness.js';
 import { createChatRoutes } from '../server/routes/chat.js';
 import type { AdminEnv } from '../server/routes/admin.js';
 import { OnlineAgentService } from '../server/online-agent/service.js';
@@ -354,3 +354,58 @@ it.each(['static', 'provider'])(
       );
   },
 );
+
+it('lets only the owner stop an unbound historical run even after its agent becomes unavailable', async () => {
+  const f = await fixture();
+  const runner = await h.registerRunner();
+  const agentId = await h.createAgent({ source: 'runner' });
+  const old = await h.services.conversations.create('alice', {
+    agentId,
+    source: 'panel',
+  });
+  await h.services.conversations.send('alice', old.id, {
+    content: 'Upgrade-era work',
+  });
+  const [payload] = await claim(h, runner);
+  const runId = payload.run.id;
+  await h.request('POST', `/agents/runners/runs/${runId}/start`, {
+    runnerKey: runner.key,
+    body: {
+      workDir: '/work/old',
+      adapter: { kind: 'claude' },
+      acceptsInput: true,
+    },
+  });
+  await h.disableAgent(agentId);
+  const path = `/conversations/${old.id}`;
+  expect((await f.request(`${path}/stop`, 'POST', {}, '')).status).toBe(401);
+  expect((await f.request(`${path}/stop`, 'POST', {}, 'bob')).status).toBe(404);
+  expect((await h.services.runs.detail(runId)).cancelRequestedAt).toBeNull();
+  const stopped = await f.request(`${path}/stop`, 'POST', {});
+  expect(stopped.status).toBe(200);
+  const detail = (await stopped.json()).data;
+  expect(detail.execution).toBeUndefined();
+  expect(detail.run.id).toBe(runId);
+  expect(
+    (await h.services.runs.detail(runId)).cancelRequestedAt,
+  ).not.toBeNull();
+  expect(
+    (await f.request(`${path}/messages`, 'POST', { content: 'Continue' }))
+      .status,
+  ).toBe(400);
+  expect((await f.request(`${path}/stop`, 'POST', {})).status).toBe(200);
+  const idle = await h.services.conversations.create('alice', {
+    agentId: await h.createAgent({ source: 'runner' }),
+    source: 'panel',
+  });
+  expect(
+    (await f.request(`/conversations/${idle.id}/stop`, 'POST', {})).status,
+  ).toBe(200);
+  expect(
+    (
+      await f.request(`/conversations/${idle.id}/messages`, 'POST', {
+        content: 'Continue',
+      })
+    ).status,
+  ).toBe(400);
+});

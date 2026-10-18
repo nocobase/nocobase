@@ -552,6 +552,47 @@ it('keeps Stop available independently of the model catalog', async () => {
     ),
   );
 });
+it('keeps an unbound historical run stoppable and an idle effect hint nonblocking', async () => {
+  host.catalog.mockResolvedValue(models);
+  await setup();
+  act(() => panel.openChat({ conversationId: 'saved' }));
+  await screen.findByText('Saved reply remains readable.');
+  act(() =>
+    agentsQueryClient().setQueryData(
+      ['agents', 'chat', 'conversation', 'saved'],
+      {
+        ...conversation,
+        execution: undefined,
+        run: { id: 'old-run', status: 'running' },
+        availability: { online: false, reason: 'agentGone', onlineRunners: 0 },
+      },
+    ),
+  );
+  expect(await screen.findByRole('button', { name: 'Stop' })).toBeEnabled();
+  expect(
+    screen.getByText(
+      'This historical conversation is read-only. Start a new chat to continue.',
+    ),
+  ).toBeVisible();
+  act(() =>
+    agentsQueryClient().setQueryData(
+      ['agents', 'chat', 'conversation', 'saved'],
+      {
+        ...conversation,
+        execution: {
+          status: 'idle',
+          outcome: 'cancelled',
+          requiresEffectReview: true,
+        },
+      },
+    ),
+  );
+  const input = screen.getByRole('textbox', { name: 'Message to the agent' });
+  fireEvent.change(input, { target: { value: 'Continue after completion' } });
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled(),
+  );
+});
 it.each(['empty', 'failed'])(
   'lets an available Runner send when the native catalog is %s',
   async (phase) => {
@@ -993,8 +1034,8 @@ it.each(['en-US', 'zh-CN'])(
     expect(
       await screen.findByText(
         locale === 'zh-CN'
-          ? '已取消。已生成的回复保留在历史中。'
-          : 'Cancelled. Any partial reply is saved in history.',
+          ? '已取消。再次执行前请核对可能已完成的操作。'
+          : 'Cancelled. Check possibly completed actions before repeating them.',
       ),
     ).toBeVisible();
     expect(screen.getByText('First body')).toBeVisible();
