@@ -32,6 +32,7 @@ import {
   type BridgeEvent,
   type ComputerInfo,
   type PollResponse,
+  type ClaimResponse,
   type RegisterRequest,
   type RegisterResponse,
   type ReplyRequest,
@@ -262,7 +263,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     `This computer is connected to ${options.server} as "${computer().name}".`,
   );
   const probing = new Map<string, Promise<void>>();
-  let refused: BridgeUpgradeRequired | undefined;
+  let refused: BridgeStopped | undefined;
   let registering: Promise<void> | undefined;
   let registrationTimer: NodeJS.Timeout | undefined;
   let registrationNeeded = false;
@@ -552,6 +553,20 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     );
   };
   const dispatch = (command: BridgeCommand): void => {
+    if (command.type === 'withdrawPrompt') {
+      const removed =
+        sessions.get(command.sessionId)?.withdraw(command.promptId) ?? true;
+      if (removed)
+        void post(BRIDGE_ROUTES.withdrawn, {
+          ...command,
+          computerId,
+          protocol: BRIDGE_PROTOCOL_VERSION,
+          bridgeStartedAt: startedAt,
+        }).catch((error: unknown) =>
+          log(`Could not confirm message withdrawal: ${message(error)}`),
+        );
+      return;
+    }
     if (command.type === 'discoverChoices') {
       const pending = discover(command);
       discoveries.add(pending);
@@ -582,6 +597,59 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       const kept = takeWarm(command.session);
       if (kept && diagnostics) timing('agentTakenOver');
       session = new BridgeSession(command.session, {
+        claim: async (promptId, seq) => {
+          if (seq === undefined) {
+            reporter.add(sessionId, {
+              kind: 'notice',
+              at: new Date().toISOString(),
+              level: 'warning',
+              message:
+                'A message queued before the bridge upgrade cannot start safely. Copy it into a new message to send it again; messages already received by an older bridge may still run there.',
+            });
+            return false;
+          }
+          // Claims use a separate request channel. Commit the previous turn's reports before its successor starts.
+          await reporter.flush(sessionId);
+          if (!sessions.has(sessionId)) return false;
+          for (let attempt = 1; !signal.aborted; attempt += 1) {
+            try {
+              const answer = await post<ClaimResponse>(
+                BRIDGE_ROUTES.claim,
+                {
+                  computerId,
+                  protocol: BRIDGE_PROTOCOL_VERSION,
+                  bridgeStartedAt: startedAt,
+                  sessionId,
+                  promptId,
+                  seq,
+                },
+                AbortSignal.any([signal, AbortSignal.timeout(30_000)]),
+              );
+              return answer.execute;
+            } catch (error) {
+              const stopped = refusal(error);
+              if (
+                stopped ||
+                (error instanceof BridgeHttpError &&
+                  error.status < 500 &&
+                  error.status !== 429)
+              ) {
+                log(
+                  `The application refused to start a message: ${message(error)}`,
+                );
+                refused = stopped ?? new BridgeStopped(message(error));
+                stopping.abort();
+                return false;
+              }
+              if (attempt === 1)
+                log(
+                  `Waiting for permission to start the next message: ${message(error)}`,
+                );
+              await sleep(backoff(attempt), signal);
+            }
+          }
+          return false;
+        },
         prepareSession: options.prepareSession,
         sessionInstructions: options.sessionInstructions,
         warm: kept,
@@ -608,7 +676,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
               promptId = undefined;
             }
           }
-          reporter.add(sessionId, event);
+          if (event.kind !== 'turnStarted') reporter.add(sessionId, event);
         },
         stateChanged: () => reporter.touch(sessionId),
       });
@@ -624,7 +692,12 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       try {
         const answer = await post<PollResponse>(
           BRIDGE_ROUTES.poll,
-          { computerId, wait: true },
+          {
+            computerId,
+            wait: true,
+            protocol: BRIDGE_PROTOCOL_VERSION,
+            bridgeStartedAt: startedAt,
+          },
           AbortSignal.any([signal, AbortSignal.timeout(POLL_WAIT_MS + 30_000)]),
         );
         commands = answer.commands;
@@ -642,6 +715,9 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         continue;
       }
       for (const command of commands) dispatch(command);
+      // Retained withdrawals are retried until acknowledged, without a busy poll loop after a lost acknowledgement.
+      if (commands.some((command) => command.type === 'withdrawPrompt'))
+        await sleep(1000, signal);
     }
   } finally {
     clearInterval(rescan);
@@ -748,6 +824,15 @@ class Reporter {
     this.#schedule(sessionId);
   }
 
+  /** A claim must not overtake buffered events or a report still retrying on another request channel. */
+  async flush(sessionId: string): Promise<void> {
+    const entry = this.#pending.get(sessionId);
+    if (!entry) return;
+    do {
+      await this.#send(sessionId);
+    } while (entry.events.length > 0 || entry.state);
+  }
+
   /** Sends what is left, giving up on a session the application does not answer for. */
   async drain(): Promise<void> {
     await Promise.all(
@@ -821,6 +906,7 @@ class Reporter {
             this.#options.log(
               `The application refused a report of session ${sessionId}: ${error.message}`,
             );
+            this.#options.closed(sessionId);
             break;
           }
           await new Promise((resolve) => setTimeout(resolve, backoff(attempt)));
@@ -893,6 +979,8 @@ function refusal(error: unknown): BridgeStopped | undefined {
       'This computer was removed in the application. Start the bridge again to connect it anew.',
     );
   }
+  if (error.reason === 'AGENT_SESSIONS_BRIDGE_REPLACED')
+    return new BridgeStopped(error.message);
   if (error.reason === 'AGENT_SESSIONS_UPGRADE_REQUIRED') {
     const protocol = error.metadata?.protocol;
     return new BridgeUpgradeRequired(

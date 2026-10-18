@@ -698,6 +698,7 @@ describe('conversations', () => {
       chat.find((agent: { name: string }) => agent.name === 'Designer'),
     ).toMatchObject({
       personalOnly: true,
+      runnerNames: [],
       availability: { online: false, reason: 'othersPersonal' },
     });
   });

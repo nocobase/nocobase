@@ -1,4 +1,5 @@
 const settings = {
+  unnamedPage: '未命名页面（{{path}}）',
   revokeRoles: '撤销角色',
   keyConflict: '此角色标识已被使用。',
   userPermissions: '用户管理',

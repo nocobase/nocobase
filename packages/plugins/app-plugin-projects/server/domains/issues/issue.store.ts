@@ -417,6 +417,18 @@ export async function issuesExecutedBy(
   return rows.map((row) => toIssue(row as IssueRecord));
 }
 
+/** Matching issue ids without loading their detail projections. */
+export async function findIssueIds(
+  conn: DatabaseConnection,
+  filter: RepositoryFilter<IssueRecord>,
+): Promise<string[]> {
+  const rows = await issues(conn).findMany({
+    filter,
+    select: (select) => select.fields('id'),
+  });
+  return rows.map((row) => row.id);
+}
+
 /** Issues by id, deleted or not; ids that match nothing are left out. */
 export async function findIssues(
   conn: DatabaseConnection,

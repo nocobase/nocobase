@@ -48,9 +48,14 @@ export function resolveArtifact(
   const prefix = rawPrefix.replace(/\/{2,}/gu, '/').replace(/\/+$/u, '');
   if (!drive?.disks || !Object.hasOwn(drive.disks, name))
     throw invalid('drive.disks');
+  const definition = drive.disks[name];
+  if (typeof definition === 'function')
+    throw new Error(
+      `Invalid drive.disks ${JSON.stringify(name)} for releases.artifact.disk: release artifacts require a serializable disk configuration object; driver factories are not supported.`,
+    );
   let disk: AppDriveDiskConfig;
   try {
-    disk = parseDriveDiskConfig(drive.disks[name]);
+    disk = parseDriveDiskConfig(definition);
   } catch (error) {
     if (!(error instanceof DriveDiskConfigError)) throw error;
     throw new Error(

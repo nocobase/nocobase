@@ -1,6 +1,8 @@
 /**
  * Runs as the browser and the server's admin API exchange them.
  */
+import type { QuotaReport } from '@nocobase/agent-protocol';
+
 import type {
   ActorKind,
   AgentTool,
@@ -29,6 +31,7 @@ export interface RunEffortReport {
 }
 
 export interface RunExecutionSnapshot {
+  readonly quota?: QuotaReport;
   readonly selection?: {
     readonly reason: 'preferredQueued' | 'preferredUnavailable';
     readonly preferredTool: string;

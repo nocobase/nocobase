@@ -1,6 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { WorkflowManagementLayout } from '../../registry/lifecycle/workflow-management/layout.js';
+import {
+  WorkflowDefinitionDetail,
+  WorkflowManagementLayout,
+} from '../../registry/lifecycle/workflow-management/layout.js';
 import { WorkflowExecutionDetail } from '../../registry/lifecycle/workflow-management/execution-detail.js';
 import { WorkflowDefinitionList } from '../../registry/lifecycle/workflow-management/definition-list.js';
 import { WorkflowExecutionList } from '../../registry/lifecycle/workflow-management/execution-list.js';
@@ -291,4 +294,203 @@ it('renders a read-only category tag without an assignment control when updates 
   expect(screen.getByText('Sales')).toBeInTheDocument();
   expect(screen.queryByRole('button')).not.toBeInTheDocument();
   expect(onChange).not.toHaveBeenCalled();
+});
+
+it('supports a full-width definition canvas with a contextual editor outside the permanent parameter slot', () => {
+  const view = render(
+    <WorkflowDefinitionDetail
+      diagramTitle='Definition'
+      parametersTitle='Parameters'
+      diagram={<p>Standard graph</p>}
+    />,
+  );
+  expect(
+    screen.getByRole('region', { name: 'Definition' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole('region', { name: 'Parameters' }),
+  ).not.toBeInTheDocument();
+  view.rerender(
+    <WorkflowDefinitionDetail
+      diagramTitle='Definition'
+      parametersTitle='Parameters'
+      diagram={<p>Standard graph</p>}
+      parameters={<p>Policy form</p>}
+    />,
+  );
+  expect(screen.getByRole('region', { name: 'Parameters' })).toHaveTextContent(
+    'Policy form',
+  );
+});
+
+it('renders the whole supplied definition page without double pagination or local reordering', () => {
+  const rows = Array.from({ length: 21 }, (_, index) => ({
+    id: String(index),
+    name: `key-${index}`,
+    title: `Process ${index}`,
+    activity: index,
+  }));
+  const sort = vi.fn();
+  render(
+    <WorkflowDefinitionList
+      rows={rows}
+      search={<input aria-label='Search' />}
+      loaded
+      loading={false}
+      empty='Empty'
+      labels={{
+        refresh: 'Refresh',
+        workflow: 'Workflow',
+        executionCount: 'Count',
+        executionActivity: 'Activity',
+      }}
+      sort={{ ascending: true }}
+      onSort={sort}
+      onRefresh={() => {}}
+    />,
+  );
+  expect(screen.getAllByRole('row')).toHaveLength(22);
+  expect(screen.getByText('Process 20')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Activity' }));
+  expect(sort).toHaveBeenCalledOnce();
+  expect(screen.getAllByRole('row')[1]).toHaveTextContent('Process 0');
+});
+
+it('does not show a no-results message while an execution page is loading', () => {
+  const props = {
+    rows: [],
+    loaded: false,
+    loading: true,
+    filters: null,
+    empty: 'No executions yet',
+    labels: {
+      refresh: 'Refresh',
+      record: 'Record',
+      workflow: 'Workflow',
+      state: 'State',
+      createdAt: 'Created',
+      previous: 'Previous',
+      next: 'Next',
+    },
+    order: 'newest' as const,
+    onSort: () => {},
+    onRefresh: () => {},
+    pagination: null,
+    previousDisabled: true,
+    nextDisabled: true,
+    onPrevious: () => {},
+    onNext: () => {},
+  };
+  const view = render(<WorkflowExecutionList {...props} />);
+  expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true');
+  expect(screen.queryByText('No results.')).not.toBeInTheDocument();
+  expect(screen.queryByText('No executions yet')).not.toBeInTheDocument();
+  view.rerender(<WorkflowExecutionList {...props} loaded loading={false} />);
+  expect(screen.getByText('No executions yet')).toBeInTheDocument();
+});
+
+it('preserves definition links and focused sorting controls across refresh and ordering changes', () => {
+  const firstSort = vi.fn();
+  const nextSort = vi.fn();
+  const props = {
+    rows: [
+      {
+        id: 'expense',
+        name: 'expenses',
+        title: <a href='/expense'>Expenses</a>,
+        activity: <a href='/executions'>Executions</a>,
+      },
+    ],
+    loaded: true,
+    loading: false,
+    search: null,
+    empty: 'Empty',
+    labels: {
+      refresh: 'Refresh',
+      workflow: 'Workflow',
+      executionCount: 'Count',
+      executionActivity: 'Activity',
+    },
+    onRefresh: vi.fn(),
+    onSort: firstSort,
+    sort: { ascending: true },
+  };
+  const view = render(<WorkflowDefinitionList {...props} />);
+  const title = screen.getByRole('link', { name: 'Expenses' });
+  const activity = screen.getByRole('link', { name: 'Executions' });
+  const sort = screen.getByRole('button', { name: 'Activity' });
+  sort.focus();
+  view.rerender(
+    <WorkflowDefinitionList
+      {...props}
+      loading
+      onSort={nextSort}
+      sort={{ ascending: false }}
+    />,
+  );
+  expect(screen.getByRole('link', { name: 'Expenses' })).toBe(title);
+  expect(screen.getByRole('link', { name: 'Executions' })).toBe(activity);
+  expect(screen.getByRole('button', { name: 'Activity' })).toBe(sort);
+  expect(sort).toHaveFocus();
+  expect(sort.closest('th')).toHaveAttribute('aria-sort', 'descending');
+  fireEvent.click(sort);
+  expect(firstSort).not.toHaveBeenCalled();
+  expect(nextSort).toHaveBeenCalledOnce();
+});
+
+it('preserves execution links and sorting focus while using fresh callbacks', () => {
+  const nextSort = vi.fn();
+  const props = {
+    rows: [
+      {
+        id: '1',
+        record: <a href='/record'>Expense 1</a>,
+        workflow: <a href='/definition'>Expense workflow</a>,
+        state: 'Review',
+        createdAt: 'Today',
+      },
+    ],
+    loaded: true,
+    loading: false,
+    filters: null,
+    empty: 'Empty',
+    labels: {
+      refresh: 'Refresh',
+      record: 'Record',
+      workflow: 'Workflow',
+      state: 'State',
+      createdAt: 'Created',
+      previous: 'Previous',
+      next: 'Next',
+    },
+    order: 'newest' as const,
+    onSort: vi.fn(),
+    onRefresh: vi.fn(),
+    pagination: null,
+    previousDisabled: true,
+    nextDisabled: true,
+    onPrevious: vi.fn(),
+    onNext: vi.fn(),
+  };
+  const view = render(<WorkflowExecutionList {...props} />);
+  const record = screen.getByRole('link', { name: 'Expense 1' });
+  const workflow = screen.getByRole('link', { name: 'Expense workflow' });
+  const sort = screen.getByRole('button', { name: 'Created' });
+  sort.focus();
+  view.rerender(
+    <WorkflowExecutionList
+      {...props}
+      loading
+      order='oldest'
+      onSort={nextSort}
+    />,
+  );
+  expect(screen.getByRole('link', { name: 'Expense 1' })).toBe(record);
+  expect(screen.getByRole('link', { name: 'Expense workflow' })).toBe(workflow);
+  expect(screen.getByRole('button', { name: 'Created' })).toBe(sort);
+  expect(sort).toHaveFocus();
+  expect(sort.closest('th')).toHaveAttribute('aria-sort', 'ascending');
+  fireEvent.click(sort);
+  expect(props.onSort).not.toHaveBeenCalled();
+  expect(nextSort).toHaveBeenCalledOnce();
 });

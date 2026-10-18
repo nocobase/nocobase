@@ -715,6 +715,20 @@
           "target": "client/extensions/nocobase-workflow-management-demo/categories.tsx"
         }
       ]
+    },
+    {
+      "name": "data-table-demo",
+      "type": "registry:example",
+      "title": "Data Table Demo",
+      "description": "Standard TanStack DataTable with stable row identities, sortable columns and pagination.",
+      "registryDependencies": ["@nocobase/data-table"],
+      "files": [
+        {
+          "path": "components/data-table.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-data-table-demo/data-table.tsx"
+        }
+      ]
     }
   ]
 }

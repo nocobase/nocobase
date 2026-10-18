@@ -37,7 +37,18 @@ function setup(database: DatabaseManager) {
     },
   });
   const take = async (computerId: string): Promise<BridgeCommand[]> =>
-    (await service.poll('u1', { computerId, wait: false }, signal)).commands;
+    (
+      await service.poll(
+        'u1',
+        {
+          computerId,
+          wait: false,
+          protocol: BRIDGE_PROTOCOL_VERSION,
+          bridgeStartedAt: 'bridge-1',
+        },
+        signal,
+      )
+    ).commands;
   return { service, request, take };
 }
 

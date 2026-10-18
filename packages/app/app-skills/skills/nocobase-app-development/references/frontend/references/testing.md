@@ -23,7 +23,11 @@ Tests never go beside the source. Vitest discovers `tests/**/*.test.{ts,tsx}` an
 
 ## Building the test harness
 
-**For a page, copy `tests/components/page-harness.test.tsx`.** It renders a small list page with a child-route `RouteDialog` in a memory router inside the real, strict i18n runtime (next section), and mocks only what the page reaches outside itself for: `useApiClient` (keeping the real `ApiClientError`), `useCan` and `useToaster`, all created with `vi.hoisted`. Its tests are the shapes to repeat: the request the page sends, a 403 without "Retry", a 401 that offers "Sign in again", an action shown with permission and hidden without it, and a child route opened from its URL and closed back to the list. It also mocks `useAuthentication` for the 401 case. Replace its inline page with your page and its child routes, drop the `copy` the harness defines for its inline page, since your page's keys are in `client/locales/`, keep the setup, and put the file in `tests/components/` (the template's own overlay test happens to sit in `tests/logic/`).
+Also run `tests/logic/page-permission-titles.test.ts` when adding or changing routes. It requires translated names for every application page permission, including overlays without navigation/breadcrumbs, and preserves the complete resource/action identity list. See [permission display names](page.md#permission-display-names).
+
+For a page or component that uses application services, start from the [complete `@nocobase/app-testing/client` example](../../testing/client/page.md). `renderWithApp()` supplies the real API client, router, translations and toaster. Supply HTTP responses through `answerApi()`, load the application's locale map, and assert visible state and `view.toasts()`. Register the client plugins or service doubles that the page actually consumes; avoid mocking the whole `@nocobase/app-client` module.
+
+Existing `tests/components/page-harness.test.tsx` files can still illustrate which states to cover: a request payload, a `403` without retry, a `401` offering sign-in, an action shown or hidden with permission, and a child route opened by URL. When adapting those cases, import the real page and use the application fixture for its service context. Put new files in the application's current test layout; the worked example uses `tests/client/` with an explicit React config.
 
 For anything else, start from the test that already sets it up:
 
@@ -32,7 +36,7 @@ For anything else, start from the test that already sets it up:
 - **A UI Library item**: it passes its English as `defaultValue`, but the strict runtime still fails on a key `client/locales/` lacks, so add the keys the item's README lists before testing a page that renders it.
 
 - Assert what the user can see: text, roles and accessible names, the result of a click (`@testing-library/react`, `@testing-library/user-event` and the jest-dom assertions are set up). Do not assert internal state.
-- To assert a toast, mock `useToaster` as the harness does, returning one shared `{ show: vi.fn(), close: vi.fn() }`, and assert what `show` was called with: its `type`, `title` and `description`, not how Base UI renders them. A component rendered without a registered toaster still renders; its toasts are logged to the console instead of shown.
+- To assert a toast from `renderWithApp()`, use `await waitFor(() => expect(view.toasts()).toMatchObject([...]))` with the expected `type`, `title` or `description`. The fixture registers a test toaster and also renders its messages as text; assertions do not depend on Base UI internals.
 - When a button contains a `Spinner`, the spinner's "Loading" label becomes part of the button's name, so use a regular expression when you query by name.
 - An open `RouteDialog` or `RouteDrawer` hides the page behind it from the accessibility tree, so a role query for something behind it, such as the selected tab, passes `hidden: true`: `getByRole('link', { name: 'Orders', hidden: true })`.
 - A `Button` rendered as a `Link` (`nativeButton={false}`) has the `button` role, not `link`; query "New project" with `getByRole('button', …)`. Test an absence together with the presence case, as the harness does, so the assertion can fail.
@@ -41,72 +45,20 @@ For anything else, start from the test that already sets it up:
 
 ## A minimal component test
 
-Render with the real i18n runtime and the application's own locale files, a router, and one shared mock of each hook that reaches outside the component. `tests/components/` in the application holds more examples to follow.
+The [complete component example](../../testing/client/page.md) includes the React config, component, English and Chinese locale files, and five cases covering bilingual submission and retry, plus pending state. Reuse that setup for a component that calls `useApiClient()`, `useTranslation()` or `useToaster()`.
 
-```tsx
-import {
-  TestI18nProvider,
-  createTestI18nRuntime,
-} from '@nocobase/i18n/testing';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
-import { expect, it, vi } from 'vitest';
-
-import packageMetadata from '../../package.json' with { type: 'json' };
-import enUS from '../../client/locales/en-US.js';
-import OrdersPage from '../../client/pages/orders.js';
-
-// One object for the whole file, so effects that depend on `api` do not refetch on every render.
-const api = { request: vi.fn() };
-const toaster = { show: vi.fn(), close: vi.fn() };
-vi.mock('@nocobase/app-client', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@nocobase/app-client')>()),
-  useApiClient: () => api,
-  useToaster: () => toaster,
-}));
-
-it('creates an order and confirms it', async () => {
-  api.request
-    .mockResolvedValueOnce({
-      data: [],
-      meta: { page: 1, pageSize: 20, total: 0 },
-    })
-    .mockResolvedValueOnce({ data: { id: '1' } });
-  const runtime = await createTestI18nRuntime({
-    application: { namespace: packageMetadata.name, resources: enUS },
-  });
-
-  render(
-    <TestI18nProvider runtime={runtime} namespace={packageMetadata.name}>
-      <MemoryRouter>
-        <OrdersPage />
-      </MemoryRouter>
-    </TestI18nProvider>,
-  );
-  await userEvent.click(
-    await screen.findByRole('button', { name: enUS.orders.create }),
-  );
-
-  expect(api.request).toHaveBeenLastCalledWith(
-    expect.objectContaining({ path: 'orders', method: 'POST' }),
-  );
-  expect(toaster.show).toHaveBeenCalledWith(
-    expect.objectContaining({ type: 'success' }),
-  );
-});
-```
+For a primitive that needs translations alone, `createTestI18nRuntime()` and `TestI18nProvider` from `@nocobase/i18n/testing` can provide the smaller context. Give that runtime the application's actual namespace and locale resources and keep its strict translation checks enabled. Keep this narrower setup for components that do not consume application services.
 
 - **Do not mock `@nocobase/i18n/client`.** A mocked `t` returns what the test told it to, so a misspelt key, a key the locale file lacks, or a component reading the wrong namespace all pass. The test runtime is strict: a key missing from the whole fallback chain throws, even when the call passes a `defaultValue`.
 - When a strict runtime throws, fix the locale file or the component, not the test. Pass `strict: false` only for strings that are not keys, such as route titles passed through as their own `defaultValue`.
 - Omit `namespace` on `TestI18nProvider` for a component a plugin exports for the application to render, so the test proves the component names its own namespace.
-- To check a second language, pass the `client/locales/index.ts` loader map instead of a resource and call `runtime.changeLanguage('zh-CN')` inside `act`.
+- To check a second language with `renderWithApp()`, pass the loader map in `namespaces` and set `locale: 'zh-CN'`. With a directly created i18n runtime, pass the loader map instead of one resource and call `runtime.changeLanguage('zh-CN')` inside `act`.
 
 `packages/libs/i18n/README.md` in the `@nocobase/i18n` package documents every option.
 
 ## Running tests
 
-Run only the related test files, then lint them: `tests/` is outside every tsconfig and only ESLint checks it (`tests/playwright/` is covered by `tsconfig.node.json`):
+Run the related test files with the application's matching React configuration, then lint them. Inspect its tsconfig includes before claiming the tests were typechecked; many templates exclude Vitest tests from their build configs. The complete client example uses `--config vitest.client.config.ts`:
 
 ```bash
 pnpm exec vitest run <related-test-files>

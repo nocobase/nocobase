@@ -54,6 +54,8 @@ export interface RunnerRecord {
   readonly variables?: unknown;
   readonly workspaceUsage?: unknown;
   readonly unavailableModels?: unknown;
+  readonly quotaUsage?: unknown;
+  readonly quotaRevision?: number;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -246,6 +248,20 @@ export function storedUnavailableModels(value: unknown): UnavailableModel[] {
         model: item.model,
         at: item.at,
         reported: stringArray(item.reported),
+        ...(item.reason === 'toolQuota'
+          ? {
+              reason: 'toolQuota' as const,
+              scope:
+                item.scope === 'provider'
+                  ? ('provider' as const)
+                  : item.scope === 'model'
+                    ? ('model' as const)
+                    : ('tool' as const),
+              window: typeof item.window === 'string' ? item.window : 'account',
+              resetsAt:
+                typeof item.resetsAt === 'string' ? item.resetsAt : null,
+            }
+          : {}),
       },
     ];
   });
@@ -331,6 +347,10 @@ export function toRunner(
       workspaceDetails,
     ),
     unavailableModels: storedUnavailableModels(record.unavailableModels),
+    quotaRevision: Number(record.quotaRevision ?? 0),
+    quotaUsage: (Array.isArray(record.quotaUsage)
+      ? record.quotaUsage
+      : []) as Runner['quotaUsage'],
     lastSeenAt: record.lastSeenAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,

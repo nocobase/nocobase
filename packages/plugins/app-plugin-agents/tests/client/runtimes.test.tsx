@@ -34,6 +34,16 @@ const { default: RuntimesPage } =
 const { default: ConnectPage } =
   await import('../../client/pages/runtimes/connect.js');
 
+const workspacePage = (usage: RunnerSummary['workspaceUsage']) => ({
+  data: usage?.workspaces ?? [],
+  meta: {
+    page: 1,
+    pageSize: 50,
+    total: usage?.workspaces.length ?? 0,
+    usage: usage ?? null,
+  },
+});
+
 describe('runtimes page', () => {
   let runners: RunnerSummary[];
   beforeEach(() => {
@@ -61,6 +71,8 @@ describe('runtimes page', () => {
       'agents/runners': () => runners,
       'agents/runners/r1': () => runners[0],
       'agents/runners/r2': () => runners[1],
+      'agents/runners/r1/workspaces': () =>
+        workspacePage(runners[0]?.workspaceUsage),
       'agents/runners/r1/runs': () => [
         {
           id: 'run1',
@@ -96,6 +108,15 @@ describe('runtimes page', () => {
     const sheet = await screen.findByTestId('runner-sheet');
     await within(sheet).findByText('runtimes.detail.general');
     return sheet;
+  };
+
+  const openWorkspaces = async (sheet: HTMLElement): Promise<void> => {
+    await userEvent.click(
+      within(sheet).getByRole('tab', { name: 'runtimes.quota.workspaces' }),
+    );
+    await waitFor(() =>
+      expect(within(sheet).queryByRole('status')).not.toBeInTheDocument(),
+    );
   };
 
   it('shows loading and a retryable failure while fetching a runner instead of an empty diagnostic', async () => {
@@ -151,14 +172,15 @@ describe('runtimes page', () => {
       },
     ];
     api.routes['agents/runners/r1'] = () => detail;
+    api.routes['agents/runners/r1/workspaces'] = () =>
+      workspacePage(detail.workspaceUsage);
     renderPage(<RuntimesPage />);
     await screen.findByTestId('runner-r1');
     expect(callsTo('GET', 'agents/runners/r1')).toHaveLength(0);
     const sheet = await openSheet();
+    await openWorkspaces(sheet);
     expect(callsTo('GET', 'agents/runners/r1')).toHaveLength(1);
-    expect(
-      within(sheet).getByRole('button', { name: /PM-396/u }),
-    ).toBeInTheDocument();
+    expect(within(sheet).getByText('PM-396')).toBeInTheDocument();
   });
 
   it('updates disk state from a fresh heartbeat while retaining the older directory collection time', async () => {
@@ -184,6 +206,7 @@ describe('runtimes page', () => {
       screen.getByText(/runtimes\.activity\.low_disk/u),
     ).toBeInTheDocument();
     const sheet = await openSheet();
+    await openWorkspaces(sheet);
     expect(
       within(sheet).getByText('runtimes.workspaces.empty'),
     ).toBeInTheDocument();
@@ -242,6 +265,7 @@ describe('runtimes page', () => {
     };
     renderPage(<RuntimesPage />);
     const sheet = await openSheet();
+    await openWorkspaces(sheet);
     expect(
       within(sheet).getByText('runtimes.workspaces.notReported'),
     ).toBeInTheDocument();
@@ -270,6 +294,7 @@ describe('runtimes page', () => {
       await screen.findByText('runtimes.workspaces.previousLow'),
     ).toBeInTheDocument();
     const sheet = await openSheet();
+    await openWorkspaces(sheet);
     expect(
       within(sheet).getByText('runtimes.workspaces.low'),
     ).toBeInTheDocument();
@@ -284,7 +309,7 @@ describe('runtimes page', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('keeps ended work distinct from cleanup and exposes diagnostic details through a keyboard trigger', async () => {
+  it('keeps ended work distinct from cleanup in the compact workspace table', async () => {
     runners[0] = {
       ...runners[0]!,
       canSeeMachine: true,
@@ -308,23 +333,15 @@ describe('runtimes page', () => {
     };
     renderPage(<RuntimesPage />);
     const sheet = await openSheet();
-    const trigger = within(sheet).getByRole('button', {
-      name: /subject · runtimes.workspaces.ended/u,
-    });
-    trigger.focus();
-    await userEvent.keyboard('{Enter}');
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await openWorkspaces(sheet);
     expect(within(sheet).getByText('/work/long/subject')).toBeInTheDocument();
     expect(
-      within(sheet).getByText('runtimes.workspaces.noCleanup'),
+      within(sheet).getByText('runtimes.quota.workspaceStatus.unpushed'),
     ).toBeInTheDocument();
     expect(
-      within(sheet).getByText('runtimes.workspaces.oldRunner'),
+      within(sheet).getByText('runtimes.quota.unpushed'),
     ).toBeInTheDocument();
-    // Runners no longer measure sizes routinely: no line rather than "unknown" on every directory.
-    expect(
-      within(sheet).queryByText(/^runtimes\.workspaces\.size/u),
-    ).toBeNull();
+    expect(within(sheet).getAllByRole('cell')[2]).toHaveTextContent('—');
   });
 
   it('shows a working directory size when the runner reported one', async () => {
@@ -351,12 +368,104 @@ describe('runtimes page', () => {
     };
     renderPage(<RuntimesPage />);
     const sheet = await openSheet();
-    await userEvent.click(
-      within(sheet).getByRole('button', { name: /^subject · /u }),
-    );
+    await openWorkspaces(sheet);
+    expect(within(sheet).getByText('2.00 KiB')).toBeInTheDocument();
+  });
+
+  it('uses an unknown placeholder when neither workspace measurement time was reported', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canSeeMachine: true,
+      workspaceUsage: {
+        disk: null,
+        count: 0,
+        unpushedCount: 0,
+        measuredAt: null,
+        workspaces: [],
+      },
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    await openWorkspaces(sheet);
     expect(
-      within(sheet).getByText(/^runtimes\.workspaces\.size\(value=/u),
+      within(sheet).getByText('runtimes.workspaces.reportedAt(time=—)'),
     ).toBeInTheDocument();
+    expect(sheet).not.toHaveTextContent('Invalid Date');
+  });
+
+  it('confirms a quota clear inside the page and keeps it available to a runtime administrator', async () => {
+    const confirm = vi.spyOn(window, 'confirm');
+    runners[0] = {
+      ...runners[0]!,
+      canManage: false,
+      canClearQuota: true,
+      quotaRevision: 4,
+      unavailableModels: [
+        {
+          tool: 'claude',
+          model: '',
+          scope: 'tool',
+          reason: 'toolQuota',
+          window: 'account',
+          resetsAt: null,
+          at: new Date().toISOString(),
+          reported: [],
+        },
+      ],
+    };
+    api.routes['POST agents/runners/r1/quota/clear'] = () => {
+      runners[0] = { ...runners[0]!, unavailableModels: [], quotaRevision: 5 };
+      return undefined;
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'runtimes.quota.clear' }),
+    );
+    expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(0);
+    expect(
+      within(sheet).getByText('runtimes.quota.confirm(target=tools.claude)'),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'runtimes.quota.clearMark' }),
+    );
+    await waitFor(() =>
+      expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(1),
+    );
+    expect(confirm).not.toHaveBeenCalled();
+    expect(callsTo('POST', 'agents/runners/r1/quota/clear')[0]?.json).toEqual({
+      tool: 'claude',
+      scope: 'tool',
+      target: '',
+      window: 'account',
+    });
+    confirm.mockRestore();
+  });
+
+  it('shows near-limit usage without disabling a signed-in tool, and hides clearing from readers', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canManage: false,
+      canClearQuota: false,
+      quotaUsage: [
+        {
+          tool: 'claude',
+          scope: 'tool',
+          target: '',
+          window: '5h',
+          usedPercent: 93,
+          resetsAt: null,
+          observedAt: new Date().toISOString(),
+        },
+      ],
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    expect(within(sheet).getByText(/93%/u)).toBeInTheDocument();
+    expect(within(sheet).getByText('runtimes.quota.near')).toBeInTheDocument();
+    expect(
+      within(sheet).queryByRole('button', { name: 'runtimes.quota.clear' }),
+    ).not.toBeInTheDocument();
   });
 
   it('lists each runtime as one overview row, without switches', async () => {
@@ -417,22 +526,27 @@ describe('runtimes page', () => {
     };
     renderPage(<RuntimesPage />);
     const sheet = await openSheet();
-    expect(sheet).toHaveClass('data-[side=right]:sm:max-w-xl');
+    expect(sheet).toHaveClass('data-[side=right]:sm:max-w-[780px]');
     expect(sheet).not.toHaveClass('data-[side=right]:sm:max-w-sm');
     within(sheet).getByText('runtimes.detail.general');
     expect(within(sheet).getByLabelText('runtimes.edit.name')).toHaveValue(
       'Mac Studio',
     );
     const claude = within(sheet).getByTestId('runner-tool-claude');
-    within(claude).getByText('runtimes.tool.version(version=2.1.0)');
-    // Where it is installed, as small text in the row when the server sent it.
-    expect(
-      within(claude).getByTestId('runner-tool-claude-path'),
-    ).toHaveTextContent('/usr/bin/claude');
+    within(claude).getByTitle('/usr/bin/claude');
+    // The compact table preserves the installed path in its version tooltip.
+    expect(within(claude).getByTitle('/usr/bin/claude')).toHaveTextContent(
+      '2.1.0',
+    );
     within(claude).getByText('runtimes.tool.signedIn');
     within(sheet).getByText('NP-*');
     within(sheet).getByText('runtimes.policy.nothing');
     within(sheet).getByText('runtimes.policy.any');
+    expect(callsTo('GET', 'agents/runners/r1/runs')).toHaveLength(0);
+    expect(callsTo('GET', 'agents/runners/r1/workspaces')).toHaveLength(0);
+    await userEvent.click(
+      within(sheet).getByRole('tab', { name: 'runtimes.quota.runs' }),
+    );
     const runs = await within(sheet).findByTestId('runner-runs');
     expect(within(runs).getByRole('link', { name: 'Coder' })).toHaveAttribute(
       'href',
@@ -565,7 +679,9 @@ describe('runtimes page', () => {
     ).toHaveValue('');
     // What it runs per tool is unknown, not zero.
     expect(
-      within(within(sheet).getByTestId('runner-tool-claude')).getByText('—'),
+      within(within(sheet).getByTestId('runner-tool-claude'))
+        .getAllByRole('cell')
+        .at(-1),
     ).toBeInTheDocument();
   });
 

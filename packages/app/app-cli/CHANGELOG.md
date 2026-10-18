@@ -1,5 +1,11 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 00b85da: Pack CLI and runner distribution archives without host extended attributes, preventing repeated LIBARCHIVE warnings during installation with GNU tar while preserving extraction errors.
+
 ## 1.0.0-beta.23
 
 ### Patch Changes
