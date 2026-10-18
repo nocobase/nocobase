@@ -226,6 +226,8 @@ Authentication diagnostics use the application `auth` logger unless an explicit 
 
 ## Storage
 
+For file storage configuration and custom Driver factories in `drive.disks`, read [file storage](references/app-structure.md#file-storage). Keep the application's shared Drive provider and token when adding a custom disk.
+
 Standalone source and compiled entries share the deployment directory's storage; `APP_STORAGE_DIR` selects another storage directory, and explicit storage paths take precedence over it. Embedded applications use Host-provided paths. Expanded releases live at `appRevisionsDir/<appId>/<sha256>` and restart recovery requires their installed metadata. Build archives use `storage/exports/dist.tar.gz`.
 
 ## Process UI delivery gate
