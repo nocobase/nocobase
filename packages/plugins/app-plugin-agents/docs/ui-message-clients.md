@@ -40,7 +40,7 @@ Independent notifications are persisted through `onlineAgent.notify`, then read 
 
 `Composer` exposes `toolbar` and `notice` as child component props. The installed view uses them for application actions and notices; they are not generic top-level ChatPanel slots. Preserve application-owned headers, avatars, menus and readiness/error handling when updating installed Registry source.
 
-Tool approval buttons use genuine SDK approval parts, binding `messageId`, `executionId` and `approval.id` to the server's pending call. SDK approval updates are followed by a controlled approval POST and canonical reread. They never submit browser tool output. Runner does not gain remote tool approval support. Effect-review occupancy remains independent of approval.
+Tool approval buttons use genuine SDK approval parts, binding `messageId`, `executionId` and `approval.id` to the server's pending call. SDK approval updates are followed by a controlled approval POST and canonical reread. They never submit browser tool output. Runner does not gain remote tool approval support. Effect-review hints are advisory after actual tool termination and finalization; pending approvals still enforce their owner, execution, message and tool-call bindings.
 
 ## Requests and cost
 
