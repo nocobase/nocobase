@@ -146,11 +146,16 @@ export function useIssueTimeline(
     const element = document.querySelector<HTMLElement>(
       `[data-comment-id="${CSS.escape(targetId)}"]`,
     );
-    if (element) {
+    if (!element) return;
+    // Child measurements (for example, folded Markdown controls) can commit another render after this effect.
+    // Position once at the next frame, using the final geometry, rather than following later content updates.
+    const frame = requestAnimationFrame(() => {
+      if (!element.isConnected) return;
       scrollIntoNearestContainer(element, 'center');
       // An already-visible target needs no scrolling, but is still handled once.
       scrolledToRef.current = target;
-    }
+    });
+    return () => cancelAnimationFrame(frame);
   }, [
     detail.id,
     targetId,

@@ -6,7 +6,7 @@ import {
   renderHook,
   waitFor,
 } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useState, type ReactNode } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import type { IssueDetail } from '../../shared/issues.js';
@@ -127,14 +127,14 @@ it('loads both history streams to reveal an older target and scrolls once across
   rerender(view('old'));
   expect(scroll).toHaveBeenCalledTimes(1);
   rerender(view('latest'));
-  expect(scroll).toHaveBeenCalledTimes(2);
+  await waitFor(() => expect(scroll).toHaveBeenCalledTimes(2));
   rerender(view(null));
   rerender(view('latest'));
-  expect(scroll).toHaveBeenCalledTimes(3);
+  await waitFor(() => expect(scroll).toHaveBeenCalledTimes(3));
   client.clear();
 });
 
-it('handles an already-visible target once before later content starts overflowing', () => {
+it('handles an already-visible target once before later content starts overflowing', async () => {
   const root = {
     id: 'visible',
     createdAt: '2026-01-02T00:00:00Z',
@@ -192,9 +192,72 @@ it('handles an already-visible target once before later content starts overflowi
   );
   const { rerender } = render(view(false));
   expect(document.querySelector('[data-comment-id="visible"]')).not.toBeNull();
+  await act(
+    () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+  );
   expect(scroll).not.toHaveBeenCalled();
   rerender(view(true));
   expect(document.querySelector('[data-comment-id="new"]')).not.toBeNull();
   expect(scroll).not.toHaveBeenCalled();
+  client.clear();
+});
+
+it('positions using the committed child measurement instead of the initial comment geometry', async () => {
+  const root = {
+    id: 'measured',
+    createdAt: '2026-01-02T00:00:00Z',
+  } as IssueDetail['threads'][number]['root'];
+  const detail = {
+    id: 'measured-issue',
+    threads: [{ root, replies: [] }],
+    activities: [],
+    threadsNextCursor: null,
+    activitiesNextCursor: null,
+  } as unknown as IssueDetail;
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const scroll = vi.fn();
+  function Timeline() {
+    useIssueTimeline(detail, [], 'measured');
+    const [measured, setMeasured] = useState(false);
+    // A child measurement schedules a commit after passive effects from the initial render have run.
+    useLayoutEffect(() => setMeasured(true), []);
+    return (
+      <div
+        style={{ overflowY: 'auto' }}
+        ref={(element) => {
+          if (!element) return;
+          element.scrollTo = scroll;
+          element.getBoundingClientRect = () => new DOMRect(0, 0, 300, 100);
+          Object.defineProperties(element, {
+            clientHeight: { value: 100, configurable: true },
+            scrollHeight: { value: 2000, configurable: true },
+          });
+        }}
+      >
+        <div
+          data-comment-id='measured'
+          ref={(element) => {
+            if (element)
+              element.getBoundingClientRect = () =>
+                new DOMRect(0, measured ? 300 : 900, 300, 20);
+          }}
+        />
+      </div>
+    );
+  }
+  render(
+    <QueryClientProvider client={client}>
+      <Timeline />
+    </QueryClientProvider>,
+  );
+  await waitFor(() =>
+    expect(scroll).toHaveBeenCalledExactlyOnceWith({
+      top: 260,
+      behavior: 'auto',
+    }),
+  );
   client.clear();
 });
