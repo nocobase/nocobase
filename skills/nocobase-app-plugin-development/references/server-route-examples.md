@@ -437,32 +437,28 @@ export default plugin;
 
 ## Test the production contributions
 
-Call each exported contribution's real `createRouter()` with a complete `AppPluginApplication`. The following focused test uses the real `Auth` class with an in-memory SQLite connection and substitutes only `getSession()` to select anonymous behavior without unsafe partial-class casts.
+Call each exported contribution's real `createRouter()` with a complete `AppPluginApplication`. The following focused test uses the real `Auth` class with an isolated database from `@nocobase/app-testing/server` and substitutes only `getSession()` to select anonymous behavior without unsafe partial-class casts. No authentication tables are read in this focused case; real sign-in belongs in an App fixture with the authentication plugin registered. See [test environments and fixture ownership](testing.md#use-app-testing-in-a-plugin).
 
 ```ts
-// tests/routes.test.ts
+// tests/server/routes.test.ts
 import { Auth, authenticationToken } from '@nocobase/app-plugin-authentication';
-import { createConfigPaths } from '@nocobase/app-server/config';
+import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
-import { createDatabaseManager } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { createTestDatabase } from '@nocobase/app-testing/server';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { describe, expect, it, vi } from 'vitest';
 
-import { apiRoutes } from '../server/routes/api.js';
-import { rootRoutes } from '../server/routes/root.js';
-import { orderServiceToken } from '../server/tokens.js';
+import { apiRoutes } from '../../server/routes/api.js';
+import { rootRoutes } from '../../server/routes/root.js';
+import { orderServiceToken } from '../../server/tokens.js';
 
 describe('order Route contributions', () => {
   it('owns both authentication boundaries without middleware bleed', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
+    const fixture = await createTestDatabase();
     try {
       const authentication = new Auth({
-        connection: database.connection(),
+        connection: fixture.database.connection(),
         baseURL: 'http://example.test',
         secret: 'route-example-test-secret-at-least-32-characters',
       });
@@ -476,11 +472,14 @@ describe('order Route contributions', () => {
       });
 
       const application = new Hono();
+      const config = new AppConfig();
+      await config.loadAll();
+      config.mergeDefaults({ app: { name: 'main', publicBasePath: '' } });
       const app: AppPluginApplication = {
         appName: 'main',
         publicBasePath: '',
-        config: { app: { name: 'main', publicBasePath: '' } },
-        paths: createConfigPaths({ rootDir: '/tmp/order-route-example' }),
+        config,
+        paths: createAppPaths({ rootDir: '/tmp/order-route-example' }),
         router: application,
         container,
       };
@@ -494,7 +493,7 @@ describe('order Route contributions', () => {
         (await application.request('/api/laterPlugin')).text(),
       ).resolves.toBe('later');
     } finally {
-      await database.destroy();
+      await fixture.destroy();
     }
   });
 });
@@ -510,7 +509,7 @@ Add focused tests for authenticated success, `403` with `error.reason` `AUTHORIZ
 
 - Runnable Root and API contribution implementations (`packages/examples/app-plugin-routes-example/server/routes`)
 - Production `createRouter()` contribution tests and middleware-leak check (`packages/examples/app-plugin-routes-example/tests/routes.test.ts`)
-- Typed real-`Auth` test fixture backed by SQLite (`packages/examples/app-plugin-repository-example/tests/helpers.ts`)
+- Typed real-`Auth` test fixture on the selected test dialect (`packages/examples/app-plugin-repository-example/tests/helpers.ts`)
 - Authentication middleware and `AuthEnv` (`packages/plugins/app-plugin-authentication/server/auth.ts`)
 - Authorization middleware, error mapping, and protected handlers (`packages/plugins/app-plugin-authorization/server/routes/authorization.ts`)
 - Route contribution contracts (`packages/app/app-server/src/router/routes.ts`)

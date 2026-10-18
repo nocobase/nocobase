@@ -153,6 +153,7 @@ New accounts register directly from the invitation link with a name and password
 | `POST /comments/{commentId}/resolve`, `…/unresolve`                                | Resolves or reopens a thread (on its root)                  |
 | `POST /issues/{issueId}/subscribe`, `…/unsubscribe`                                | Follows or unfollows the issue                              |
 | `GET/POST /issues/{issueId}/attachments`                                           | The issue's own files; uploads one onto it                  |
+| `GET /issues/{issueId}/screenshots`                                                | Latest 100 live Agent comment images and comment provenance |
 | `POST /attachments`                                                                | Uploads one file, attached to nothing yet                   |
 | `GET /attachments/{attachmentId}`, `…/content`, `DELETE`                           | A file, its bytes (`?download=true`), removing it           |
 | `POST /issues/{issueId}/dependencies`                                              | Adds a link (`{ dependsOnIssueId, type }`)                  |

@@ -52,6 +52,7 @@ import {
   type Mention,
   useAnswer,
   useCancel,
+  useWithdraw,
   useChoose,
   useComputers,
   useDecideLinks,
@@ -82,6 +83,7 @@ import { LinkBar } from './link-bar.js';
 import { LinkName } from './link-name.js';
 import { StatusPill } from './status-pill.js';
 import { TranscriptView } from './transcript-view.js';
+import { WithdrawnEditor } from './withdrawn-editor.js';
 
 export function SessionView({
   sessionId,
@@ -229,6 +231,11 @@ function Conversation({
   const sending =
     useIsMutating({ mutationKey: ['agentSessions', 'prompt', session.id] }) > 0;
   const cancel = useCancel(session.id);
+  const withdraw = useWithdraw(session.id);
+  const [editor, setEditor] = useState<{
+    item: Extract<TranscriptItem, { type: 'prompt' }>;
+    key: string;
+  } | null>(null);
   const answer = useAnswer(session.id);
   const decide = useDecideLinks(session.id);
   const choose = useChoose(session.id);
@@ -404,6 +411,19 @@ function Conversation({
               agentName={agentName(session, computer)}
               writable={writable}
               actions={{
+                withdraw: async (seq) => {
+                  try {
+                    await withdraw.mutateAsync(seq);
+                  } catch (error) {
+                    fail(error);
+                    throw error;
+                  }
+                },
+                edit: (item) =>
+                  setEditor({
+                    item,
+                    key: `reedit:${session.id}:${crypto.randomUUID()}`,
+                  }),
                 answer: (requestId, optionId) =>
                   answer.mutate({ requestId, optionId }, { onError: fail }),
                 decide: (kind, start, skip) =>
@@ -430,6 +450,14 @@ function Conversation({
         </div>
       </div>
       <div className='mx-auto w-full max-w-[760px] px-3 pt-2 pb-3 @md/agent-session:px-6 @md/agent-session:pb-4'>
+        {editor && (
+          <WithdrawnEditor
+            item={editor.item}
+            session={session}
+            draftKey={editor.key}
+            close={() => setEditor(null)}
+          />
+        )}
         <SubmissionNotice
           pending={submission.pending}
           sending={sending}

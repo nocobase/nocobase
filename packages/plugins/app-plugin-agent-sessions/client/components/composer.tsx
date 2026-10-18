@@ -45,6 +45,7 @@ type Image = Extract<PromptContent, { type: 'image' }>;
 type Pending = Image & { readonly id: string };
 
 export interface ComposerProps {
+  readonly initialContent?: readonly PromptContent[];
   readonly placeholder: string;
   readonly draftKey?: string;
   readonly disabled?: boolean;
@@ -120,15 +121,23 @@ export function Composer({
   autoFocus,
   onSend,
   onEdit,
+  initialContent = [],
 }: ComposerProps): ReactElement {
   const { t } = useTranslation();
   const client = useQueryClient();
-  const [text, setText] = useSessionMemory(draftKey && `text:${draftKey}`, '');
+  const [text, setText] = useSessionMemory(
+    draftKey && `text:${draftKey}`,
+    initialContent
+      .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+      .join('\n\n'),
+  );
   const [expanded, setExpanded] = useState(false);
   const [caret, setCaret] = useState(0);
   const [images, setImages] = useSessionMemory<Pending[]>(
     draftKey && `images:${draftKey}`,
-    [],
+    initialContent
+      .filter((part): part is Image => part.type === 'image')
+      .map((part, index) => ({ ...part, id: `original-${index}` })),
   );
   const [mentioned, setMentioned] = useSessionMemory<Reference[]>(
     draftKey && `mentions:${draftKey}`,
