@@ -26,7 +26,6 @@ type Dependencies = {
 };
 type Timing = {
   deadlineMs?: number;
-  pollMs?: number;
   cleanupMs?: number;
 };
 
@@ -101,13 +100,12 @@ export class StructuredExtractionService {
   ): Promise<ExtractionResult> {
     const schema = extractionSchema(input.schema);
     const deadlineMs = this.timing.deadlineMs ?? 60_000;
-    const pollMs = this.timing.pollMs ?? 250;
     const cleanupMs = Math.min(this.timing.cleanupMs ?? 2_000, 2_000);
     const expires = Date.now() + deadlineMs;
     let session: OnlineAgent | undefined;
     let stopped: ApiError | undefined;
     const progress: {
-      phase: 'catalog' | 'background' | 'run' | 'status' | 'get';
+      phase: 'catalog' | 'background' | 'run' | 'get';
     } = { phase: 'catalog' };
     let rejectStop!: (error: ApiError) => void;
     const stopPromise = new Promise<never>((_resolve, reject) => {
@@ -140,19 +138,6 @@ export class StructuredExtractionService {
             .then(() => session!.abort())
             .catch(log)
         : Promise.resolve();
-    const pause = async () => {
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      try {
-        await Promise.race([
-          new Promise<void>((resolve) => {
-            timer = setTimeout(resolve, pollMs);
-          }),
-          stopPromise,
-        ]);
-      } finally {
-        clearTimeout(timer);
-      }
-    };
     const work = async (): Promise<ExtractionResult> => {
       try {
         check();
@@ -175,13 +160,6 @@ export class StructuredExtractionService {
         await session.run([{ role: 'user', content: input.text }], schema, {
           selectedModel: input.model,
         });
-        check();
-        progress.phase = 'status';
-        while ((await session.status()) !== 'idle') {
-          check();
-          await pause();
-          check();
-        }
         check();
         progress.phase = 'get';
         // get() is the public authority for a successfully validated, persisted schema result.
@@ -222,7 +200,17 @@ export class StructuredExtractionService {
       if (status === 403 || status === 'PERMISSION_DENIED')
         throw failure('EXTRACTION_FORBIDDEN', 'PERMISSION_DENIED');
       if (status === 400 || status === 'INVALID_ARGUMENT') {
-        if (progress.phase === 'run')
+        const details =
+          error && typeof error === 'object' && 'details' in error
+            ? error.details
+            : undefined;
+        if (
+          progress.phase === 'run' &&
+          details &&
+          typeof details === 'object' &&
+          'field' in details &&
+          details.field === 'schema'
+        )
           throw failure('INVALID_SCHEMA', 'INVALID_ARGUMENT');
         if (progress.phase === 'background')
           throw failure('INVALID_MODEL', 'INVALID_ARGUMENT');

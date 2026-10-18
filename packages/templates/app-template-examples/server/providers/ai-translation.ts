@@ -50,7 +50,6 @@ export async function translateText(
 ): Promise<TranslationResult> {
   let session: OnlineAgent | undefined;
   let expired = false;
-  let pollTimer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new TranslationError('TRANSLATION_TIMEOUT');
   const warn = () => {
     try {
@@ -107,6 +106,7 @@ export async function translateText(
           return created;
         }),
     );
+    if (expired) throw timeout;
     await observe(
       job
         .run(
@@ -127,13 +127,6 @@ export async function translateText(
           if (expired) abort();
         }),
     );
-    while ((await observe(job.status())) !== 'idle') {
-      await observe(
-        new Promise<void>((resolve) => {
-          pollTimer = setTimeout(resolve, 100);
-        }),
-      );
-    }
     const result = await observe(job.get());
     if (
       !result ||
@@ -152,6 +145,5 @@ export async function translateText(
     throw new TranslationError('TRANSLATION_FAILED');
   } finally {
     clearTimeout(deadlineTimer!);
-    clearTimeout(pollTimer);
   }
 }

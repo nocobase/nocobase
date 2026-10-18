@@ -60,7 +60,34 @@ function acceptance(): OnlineAgentAcceptance {
   return { promise, resolve, reject };
 }
 
+export type OnlineAgentResult =
+  | { ok: true; data: OnlineAgentJson }
+  | { ok: false; reason: 'pending' }
+  | { ok: false; reason: 'failed' | 'cancelled'; error: OnlineAgentSafeError };
+
+export type OnlineAgentSafeError = {
+  code: 'EXECUTION_FAILED' | 'EXECUTION_CANCELLED' | 'OUTPUT_INVALID';
+  message: string;
+};
+
+/** A safe execution failure; admission and infrastructure errors still throw separately. */
+export class OnlineAgentResultError extends Error {
+  readonly code: OnlineAgentSafeError['code'];
+  constructor(
+    readonly reason: 'failed' | 'cancelled',
+    error: OnlineAgentSafeError,
+  ) {
+    super(error.message);
+    this.name = 'OnlineAgentResultError';
+    this.code = error.code;
+  }
+}
+
+type Observation = { result: OnlineAgentResult } | { error: unknown };
 type OnlineAgentExecution = {
+  admitted?: boolean;
+  observation?: Observation;
+  observers: Set<(value: Observation) => void>;
   abort: AbortController;
   task?: Promise<void>;
   finalize?: () => Promise<void>;
@@ -92,7 +119,10 @@ export interface OnlineAgent {
     schema: JSONSchema7,
     input?: { overrides?: OnlineAgentOptions; selectedModel?: ModelRef },
   ): Promise<void>;
+  /** Wait for the execution admitted at invocation, including persistence and finalization. */
   get(): Promise<OnlineAgentJson>;
+  /** A finite observation budget; timeout never cancels the execution. */
+  try(options?: { wait?: number }): Promise<OnlineAgentResult>;
 }
 export class OnlineAgentService implements OnlineAgentRealtimeService {
   readonly configurer: OnlineAgentConfigurer = new OnlineAgentConfigurer();
@@ -345,14 +375,19 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         requestedModel = undefined;
       },
       get: async (): Promise<OnlineAgentJson> => {
-        const row = await this.deps.sessions.load(userId, sessionId);
-        if (
-          (await status()) !== 'idle' ||
-          row.call?.outcome !== 'completed' ||
-          row.call.result === undefined
-        )
-          throw conflict('No successful structured result is available.');
-        return row.call.result;
+        const result = await this.observe(userId, sessionId);
+        if (result.ok) return result.data;
+        if (result.reason === 'pending')
+          throw conflict('The execution has not finished.');
+        throw new OnlineAgentResultError(result.reason, result.error);
+      },
+      try: (options?: { wait?: number }) => {
+        const wait = options?.wait === undefined ? 0 : options.wait;
+        if (!Number.isFinite(wait) || wait < 0)
+          return Promise.reject(
+            invalid('wait must be a finite non-negative number.'),
+          );
+        return this.observe(userId, sessionId, wait);
       },
     };
   }
@@ -543,11 +578,124 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     if (!allowed.includes(`${model.modelService}/${model.model}`))
       throw invalid('The selected model is outside this configuration.');
   }
+  private notify(execution: OnlineAgentExecution, value: Observation): void {
+    execution.observation = value;
+    for (const observer of execution.observers) observer(value);
+    execution.observers.clear();
+  }
+  private async observe(
+    userId: string,
+    id: string,
+    wait?: number,
+  ): Promise<OnlineAgentResult> {
+    // Capture before the ownership read: an earlier waiter must never follow a later turn.
+    const execution = this.active.get(id);
+    const admitted = execution?.admitted;
+    const started = performance.now();
+    const row = await (execution
+      ? this.deps.sessions.load(userId, id)
+      : this.gate(id, async () => {
+          if (this.active.has(id))
+            throw conflict(
+              'The execution changed while reading its result. Read again.',
+            );
+          return this.deps.sessions.load(userId, id);
+        }));
+    let observed: Observation;
+    if (execution) {
+      if (!admitted) throw conflict('No accepted execution is available.');
+      if (execution.observation) observed = execution.observation;
+      else {
+        const remaining =
+          wait === undefined
+            ? undefined
+            : Math.max(0, wait - (performance.now() - started));
+        if (remaining === 0) return { ok: false, reason: 'pending' };
+        observed = await new Promise<Observation>((resolve) => {
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          const done = (value: Observation) => {
+            clearTimeout(timer);
+            execution.observers.delete(done);
+            resolve(value);
+          };
+          execution.observers.add(done);
+          if (remaining !== undefined) {
+            // Avoid Node's overflow-to-1ms behavior for valid large budgets.
+            const deadline = performance.now() + remaining;
+            const expire = () => {
+              const left = deadline - performance.now();
+              if (left <= 0) done({ result: { ok: false, reason: 'pending' } });
+              else timer = setTimeout(expire, Math.min(left, 2_147_483_647));
+            };
+            timer = setTimeout(expire, Math.min(remaining, 2_147_483_647));
+          }
+        });
+      }
+    } else {
+      if (!row.call) throw conflict('No accepted execution is available.');
+      if (row.call.state === 'running' || row.call.closing)
+        throw conflict(
+          'This execution is not owned by the current server process.',
+        );
+      observed = { result: this.result(row.call.outcome, row.call.result) };
+    }
+    if ('error' in observed) throw observed.error;
+    // Each observer owns its returned value; mutations cannot affect other waiters.
+    return observed.result.ok
+      ? { ok: true, data: jsonSafe(observed.result.data) }
+      : {
+          ...observed.result,
+          ...(observed.result.reason === 'pending'
+            ? {}
+            : { error: { ...observed.result.error } }),
+        };
+  }
+  private result(
+    outcome: OnlineAgentOutcome | undefined,
+    data?: OnlineAgentJson,
+    outputInvalid = false,
+  ): OnlineAgentResult {
+    if (outcome === 'completed' && data !== undefined)
+      return { ok: true, data };
+    if (outcome === 'cancelled')
+      return {
+        ok: false,
+        reason: 'cancelled',
+        error: {
+          code: 'EXECUTION_CANCELLED',
+          message: 'The execution was cancelled.',
+        },
+      };
+    if (outcome === 'failed')
+      return {
+        ok: false,
+        reason: 'failed',
+        error: {
+          code: outputInvalid ? 'OUTPUT_INVALID' : 'EXECUTION_FAILED',
+          message: outputInvalid
+            ? 'The model output does not match the JSON Schema.'
+            : 'The execution failed.',
+        },
+      };
+    throw conflict('No successful structured result is available.');
+  }
   private finish(execution: OnlineAgentExecution) {
-    if (!execution.finalizing)
-      execution.finalizing = execution.finalize?.().finally(() => {
-        execution.finalizing = undefined;
-      });
+    if (!execution.finalizing && execution.finalize) {
+      execution.observation = undefined;
+      execution.finalizing = execution
+        .finalize()
+        .catch((error: unknown) => {
+          this.notify(execution, {
+            error: conflict(
+              'The execution could not be finalized. Retry finalization before reading its result.',
+            ),
+          });
+          throw error;
+        })
+        .finally(() => {
+          execution.finalizing = undefined;
+        });
+    }
     return execution.finalizing;
   }
   private async start(
@@ -567,7 +715,10 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       throw invalid('Input must contain user messages.');
     messages.forEach((message) => encode(message));
     if (this.stopping) throw conflict('OnlineAgent is stopping.');
-    const execution: OnlineAgentExecution = { abort: new AbortController() };
+    const execution: OnlineAgentExecution = {
+      abort: new AbortController(),
+      observers: new Set(),
+    };
     const accepted = acceptance();
     await this.gate(id, async () => {
       if (this.stopping) throw conflict('OnlineAgent is stopping.');
@@ -680,6 +831,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       accepted.reject(error);
       return;
     }
+    execution.admitted = true;
     const toolEvidence = new Map<string, ModelMessage[]>();
     const toolCompletions = new Map<string, () => void>();
     const convertToolEvidence = new Map<string, () => Promise<void>>();
@@ -688,6 +840,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     let partial = '';
     let outcome: OnlineAgentOutcome = 'completed';
     let result: OnlineAgentJson | undefined;
+    let outputInvalid = false;
     let sdkStopped: Promise<void> | undefined;
     try {
       if (session.kind === 'realtime')
@@ -818,8 +971,14 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
           )
         )
           throw new Error('The model does not support structured output.');
-        if (schema) result = jsonSafe(await generated.output);
-        else if (session.kind === 'background')
+        if (schema) {
+          try {
+            result = jsonSafe(await generated.output);
+          } catch (error) {
+            outputInvalid = true;
+            throw error;
+          }
+        } else if (session.kind === 'background')
           result = jsonSafe(await generated.text);
       }
     } catch (error) {
@@ -926,6 +1085,14 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       }
       execution.finalize = undefined;
       if (this.active.get(id) === execution) this.active.delete(id);
+      // Persistence, stream finalization and occupancy release all precede notification.
+      try {
+        this.notify(execution, {
+          result: this.result(outcome, result, outputInvalid),
+        });
+      } catch (error) {
+        this.notify(execution, { error });
+      }
     };
     try {
       await this.finish(execution);

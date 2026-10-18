@@ -758,7 +758,7 @@ it.each([
   };
   await background.run([{ role: 'user', content: 'Count' }], schema);
   await settle(background);
-  await expect(background.get()).rejects.toThrow('No successful');
+  await expect(background.get()).rejects.toMatchObject({ reason: 'failed' });
   const row = await f.sessions.load('alice', background.sessionId);
   expect(row.call).toMatchObject({ actorId: 'alice', outcome: 'failed' });
   expect(row.call?.result).toBeUndefined();
@@ -887,7 +887,9 @@ it.each([
     });
     await settle(background);
     if (failed) {
-      await expect(background.get()).rejects.toThrow('No successful');
+      await expect(background.get()).rejects.toMatchObject({
+        reason: 'failed',
+      });
       expect(f.errors).toEqual([
         expect.objectContaining({
           message: 'The model does not support structured output.',
@@ -916,7 +918,7 @@ it('retries structured result persistence without rerunning the model', async ()
   await background.run([{ role: 'user', content: 'Count' }], schema);
   await vi.waitFor(() => expect(f.errors).toHaveLength(1));
   expect(await background.status()).toBe('running');
-  await expect(background.get()).rejects.toThrow('No successful');
+  await expect(background.get()).rejects.toThrow('finalized');
   await background.retryFinalization();
   expect(await background.status()).toBe('idle');
   expect(await background.get()).toEqual({ count: 2 });
@@ -929,7 +931,7 @@ it('retries structured result persistence without rerunning the model', async ()
     required: ['count'],
   });
   await settle(background);
-  await expect(background.get()).rejects.toThrow('No successful');
+  await expect(background.get()).rejects.toMatchObject({ reason: 'failed' });
 });
 
 it('cancels incomplete structured generation without saving a result', async () => {
@@ -966,7 +968,7 @@ it('cancels incomplete structured generation without saving a result', async () 
   await entered.promise;
   await background.abort();
   expect(await background.status()).toBe('idle');
-  await expect(background.get()).rejects.toThrow('No successful');
+  await expect(background.get()).rejects.toMatchObject({ reason: 'cancelled' });
   expect(
     (await f.sessions.load('alice', background.sessionId)).call,
   ).toMatchObject({ outcome: 'cancelled' });
@@ -1990,3 +1992,374 @@ it.each([false, true])(
     await settle(agent);
   },
 );
+
+const countSchema: JSONSchema7 = {
+  type: 'object',
+  properties: { count: { type: 'integer' } },
+  required: ['count'],
+  additionalProperties: false,
+};
+
+it('waits for persistence and release, isolates multiple observers across rounds, and reopens saved results', async () => {
+  const outputs: ReadableStreamDefaultController[] = [];
+  const ready = [deferred(), deferred()];
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({
+      stream: new ReadableStream({
+        start(controller) {
+          outputs.push(controller);
+          ready[outputs.length - 1].resolve();
+        },
+      }),
+    }),
+  });
+  const f = await fixture(model);
+  const job = await f.service.background(context());
+  await expect(job.get()).rejects.toThrow('No accepted');
+  await expect(job.try()).rejects.toThrow('No accepted');
+  await job.run([{ role: 'user', content: 'First' }], countSchema);
+  await ready[0].promise;
+  const reopened = await f.service.background(context(), {
+    sessionId: job.sessionId,
+  });
+  expect(await reopened.try()).toEqual({ ok: false, reason: 'pending' });
+  const release = deferred();
+  const finishing = deferred();
+  const original = f.sessions.finish.bind(f.sessions);
+  vi.spyOn(f.sessions, 'finish').mockImplementationOnce(async (...args) => {
+    finishing.resolve();
+    await release.promise;
+    await original(...args);
+  });
+  const first = job.get();
+  const readRelease = deferred();
+  const load = f.sessions.load.bind(f.sessions);
+  vi.spyOn(f.sessions, 'load').mockImplementationOnce(async (...args) => {
+    const row = await load(...args);
+    await readRelease.promise;
+    return row;
+  });
+  const second = reopened.get();
+  const bounded = job.try({ wait: 10_000 });
+  text('{"count":1}').forEach((chunk) => outputs[0].enqueue(chunk));
+  outputs[0].close();
+  await finishing.promise;
+  expect(await job.try({ wait: 0 })).toEqual({ ok: false, reason: 'pending' });
+  expect(await job.status()).toBe('running');
+  let delivered = false;
+  void first.then(() => {
+    delivered = true;
+  });
+  expect(delivered).toBe(false);
+  release.resolve();
+  // Starting another round from the first observer cannot move the other observers to it.
+  const next = first.then(async (value) => {
+    expect(value).toEqual({ count: 1 });
+    expect(await job.status()).toBe('idle');
+    await job.run([{ role: 'user', content: 'Second' }], countSchema);
+  });
+  await next;
+  await ready[1].promise;
+  // Even an ownership read that resolves after the next admission retains the earlier execution.
+  readRelease.resolve();
+  expect(await second).toEqual({ count: 1 });
+  expect(await bounded).toEqual({ ok: true, data: { count: 1 } });
+  const final = job.get();
+  text('{"count":2}').forEach((chunk) => outputs[1].enqueue(chunk));
+  outputs[1].close();
+  expect(await final).toEqual({ count: 2 });
+  const restarted = new OnlineAgentService({
+    sessions: f.sessions,
+    ids: { next: () => 'unused-read-id' },
+    model: f.resolveModel,
+    defaultModel: async () => ref,
+    onError: (error) => f.errors.push(error),
+  });
+  const loaded = await restarted.background(context(), {
+    sessionId: job.sessionId,
+  });
+  expect(await loaded.get()).toEqual({ count: 2 });
+  expect(await loaded.try({ wait: 10_000 })).toEqual({
+    ok: true,
+    data: { count: 2 },
+  });
+});
+
+it.each(['save', 'finish'] as const)(
+  'rejects waiters on %s failure and retries only finalization',
+  async (phase) => {
+    let output!: ReadableStreamDefaultController;
+    const opened = deferred();
+    const model = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: new ReadableStream({
+          start(controller) {
+            output = controller;
+            opened.resolve();
+          },
+        }),
+      }),
+    });
+    const f = await fixture(model);
+    const job = await f.service.background(context());
+    vi.spyOn(f.sessions, phase).mockRejectedValueOnce(
+      new Error('PRIVATE_DATABASE_FAILURE'),
+    );
+    await job.run([{ role: 'user', content: 'Count' }], countSchema);
+    await opened.promise;
+    const first = job.get().catch((error: unknown) => error);
+    const second = job.get().catch((error: unknown) => error);
+    text('{"count":3}').forEach((chunk) => output.enqueue(chunk));
+    output.close();
+    for (const failed of [first, second]) {
+      expect(await failed).toMatchObject({
+        message: expect.stringContaining('finalized'),
+      });
+      expect(String(await failed)).not.toContain('PRIVATE');
+    }
+    expect(await job.status()).toBe('running');
+    await expect(job.try()).rejects.toThrow('finalized');
+    await job.retryFinalization();
+    expect(await job.get()).toEqual({ count: 3 });
+    expect(await job.status()).toBe('idle');
+    expect(model.doStreamCalls).toHaveLength(1);
+    expect(
+      (await job.history()).filter((item) => item.role === 'assistant'),
+    ).toHaveLength(1);
+  },
+);
+
+it('returns pending only for an unfinished execution and a finite timeout leaves it running', async () => {
+  let output!: ReadableStreamDefaultController;
+  const opened = deferred();
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({
+      stream: new ReadableStream({
+        start(controller) {
+          output = controller;
+          opened.resolve();
+        },
+      }),
+    }),
+  });
+  const f = await fixture(model);
+  const job = await f.service.background(context());
+  await job.run([{ role: 'user', content: 'Count' }], countSchema);
+  await opened.promise;
+  for (const wait of [undefined, 0, 5]) {
+    expect(await job.try({ wait })).toEqual({ ok: false, reason: 'pending' });
+  }
+  expect(await job.status()).toBe('running');
+  const value = job.get();
+  text('{"count":4}').forEach((chunk) => output.enqueue(chunk));
+  output.close();
+  expect(await value).toEqual({ count: 4 });
+  expect(model.doStreamCalls).toHaveLength(1);
+});
+
+it('rejects invalid observation budgets and never hides ownership or read failures as pending', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({ stream: streamed(text('{"count":1}')) }),
+    }),
+  );
+  const job = await f.service.background(context());
+  for (const wait of [-1, NaN, Infinity, -Infinity, null, '1']) {
+    await expect(job.try({ wait: wait as number })).rejects.toMatchObject({
+      code: 'INVALID_REQUEST',
+    });
+  }
+  await job.run([{ role: 'user', content: 'Count' }], countSchema);
+  await job.get();
+  const reading = vi.spyOn(f.sessions, 'load');
+  reading.mockRejectedValueOnce(new Error('Database unavailable'));
+  await expect(job.try()).rejects.toThrow('Database unavailable');
+  await h.database
+    .connection()
+    .repository('agConversations')
+    .updateMany({ filter: { id: job.sessionId }, values: { userId: 'bob' } });
+  await expect(job.get()).rejects.toMatchObject({
+    code: 'CONVERSATION_NOT_FOUND',
+  });
+  await expect(job.try()).rejects.toMatchObject({
+    code: 'CONVERSATION_NOT_FOUND',
+  });
+});
+
+it.each(['failed', 'cancelled'] as const)(
+  'reports a safe %s result to current waiters and reopened sessions',
+  async (outcome) => {
+    let output!: ReadableStreamDefaultController;
+    const opened = deferred();
+    const f = await fixture(
+      new MockLanguageModelV4({
+        doStream: async ({ abortSignal }) => ({
+          stream: new ReadableStream({
+            start(controller) {
+              output = controller;
+              opened.resolve();
+              abortSignal?.addEventListener(
+                'abort',
+                () =>
+                  controller.error(new DOMException('Aborted', 'AbortError')),
+                { once: true },
+              );
+            },
+          }),
+        }),
+      }),
+    );
+    const job = await f.service.background(context());
+    await job.run([{ role: 'user', content: 'Count' }], countSchema);
+    await opened.promise;
+    const value = job.get().catch((error: unknown) => error);
+    const observed = job.try({ wait: 10_000 });
+    if (outcome === 'cancelled') await job.abort();
+    else {
+      output.enqueue({
+        type: 'error',
+        error: new Error('PRIVATE_PROVIDER_PAYLOAD'),
+      });
+      output.close();
+    }
+    expect(await value).toMatchObject({ reason: outcome });
+    expect(await observed).toMatchObject({
+      ok: false,
+      reason: outcome,
+      error: {
+        code:
+          outcome === 'cancelled' ? 'EXECUTION_CANCELLED' : 'EXECUTION_FAILED',
+      },
+    });
+    expect(JSON.stringify(await observed)).not.toContain('PRIVATE');
+    const reopened = await f.service.background(context(), {
+      sessionId: job.sessionId,
+    });
+    await expect(reopened.get()).rejects.toMatchObject({ reason: outcome });
+    expect(await reopened.try()).toMatchObject({ ok: false, reason: outcome });
+  },
+);
+
+it('distinguishes generated output validation from invalid admission schemas', async () => {
+  let output!: ReadableStreamDefaultController;
+  const opened = deferred();
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: new ReadableStream({
+          start(controller) {
+            output = controller;
+            opened.resolve();
+          },
+        }),
+      }),
+    }),
+  );
+  const job = await f.service.background(context());
+  await expect(
+    job.run([{ role: 'user', content: 'Count' }], {
+      type: 'invalid',
+    } as unknown as JSONSchema7),
+  ).rejects.toMatchObject({
+    code: 'INVALID_REQUEST',
+    details: { field: 'schema' },
+  });
+  await job.run([{ role: 'user', content: 'Count' }], countSchema);
+  await opened.promise;
+  const result = job.try({ wait: 10_000 });
+  text('{"count":"invalid"}').forEach((chunk) => output.enqueue(chunk));
+  output.close();
+  expect(await result).toMatchObject({
+    ok: false,
+    reason: 'failed',
+    error: { code: 'OUTPUT_INVALID' },
+  });
+});
+
+it('cleans up a finite observation timer without cancelling the execution', async () => {
+  let output!: ReadableStreamDefaultController;
+  const opened = deferred();
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: new ReadableStream({
+          start(controller) {
+            output = controller;
+            opened.resolve();
+          },
+        }),
+      }),
+    }),
+  );
+  const job = await f.service.background(context());
+  await job.run([{ role: 'user', content: 'Count' }], countSchema);
+  await opened.promise;
+  const row = await f.sessions.load('alice', job.sessionId);
+  // Timer ownership is isolated from database-driver timers, using an already authorized snapshot.
+  const read = vi.spyOn(f.sessions, 'load').mockResolvedValue(row);
+  vi.useFakeTimers();
+  try {
+    const pending = job.try({ wait: 1000 });
+    await vi.advanceTimersByTimeAsync(999);
+    expect(vi.getTimerCount()).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await pending).toEqual({ ok: false, reason: 'pending' });
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    vi.useRealTimers();
+    read.mockRestore();
+  }
+  expect(await job.status()).toBe('running');
+  const completed = job.get();
+  text('{"count":5}').forEach((chunk) => output.enqueue(chunk));
+  output.close();
+  expect(await completed).toEqual({ count: 5 });
+});
+
+it('keeps result observers pending until an uncooperative tool actually ends after cancellation', async () => {
+  const entered = deferred();
+  const cancelled = deferred();
+  const release = deferred();
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({
+      stream: streamed([
+        {
+          type: 'tool-call',
+          toolCallId: 'call',
+          toolName: 'wait',
+          input: '{}',
+        },
+        finish('tool-calls'),
+      ]),
+    }),
+  });
+  const f = await fixture(model);
+  f.service.configurer.registerTool('wait', {
+    version: '1',
+    definition: {
+      inputSchema: z.object({}),
+      execute: async (_input, options) => {
+        options.abortSignal?.addEventListener('abort', cancelled.resolve, {
+          once: true,
+        });
+        entered.resolve();
+        await release.promise;
+        return 'actually completed';
+      },
+    },
+  });
+  f.service.configurer.registerOnlineAgentGlobalScope({ tool: ['wait'] });
+  const job = await f.service.background(context());
+  await job.run([{ role: 'user', content: 'Wait' }], countSchema);
+  await entered.promise;
+  const value = job.get().catch((error: unknown) => error);
+  const stopping = job.abort();
+  await cancelled.promise;
+  expect(await job.try()).toEqual({ ok: false, reason: 'pending' });
+  expect(await job.status()).toBe('running');
+  release.resolve();
+  await stopping;
+  expect(await value).toMatchObject({ reason: 'cancelled' });
+  expect(await job.status()).toBe('idle');
+  expect(model.doStreamCalls).toHaveLength(1);
+});

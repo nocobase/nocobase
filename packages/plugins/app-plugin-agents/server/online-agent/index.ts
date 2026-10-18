@@ -1,4 +1,10 @@
-export { type OnlineAgent, OnlineAgentService } from './service.js';
+export {
+  type OnlineAgent,
+  type OnlineAgentResult,
+  type OnlineAgentSafeError,
+  OnlineAgentResultError,
+  OnlineAgentService,
+} from './service.js';
 export {
   OnlineAgentConfigurer,
   type OnlineAgentContext,
@@ -25,3 +31,5 @@ export type {
   OnlineAgentRunnerBackend,
 } from './realtime.js';
 export { RunnerOnlineAgentAdapter } from './runner.js';
+
+export type { OnlineAgentJson } from './codec.js';
