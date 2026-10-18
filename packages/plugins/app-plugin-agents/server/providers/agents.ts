@@ -179,7 +179,9 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     if (this.releases.length > 0) return;
     const { container } = this.app;
     const services = container.resolve(agentsToken);
-    // Command hosts also start Providers, but do not replace the serving process.
+    // Command hosts also start Providers, but do not replace the serving process. Detected by
+    // `consoleLogStream`, which `app-cli` sets to `stderr` for a command and leaves unset for
+    // `start`/`dev`; a host that changes this logging configuration would need another signal.
     if (this.app.consoleLogStream !== 'stderr')
       await services.onlineAgent.recoverAtStartup();
     this.announce(services);

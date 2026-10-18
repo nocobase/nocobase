@@ -348,20 +348,26 @@ export function createSessionManager(deps: {
             value.call?.requiresEffectReview)
         );
       };
-      let offset = 0;
+      let cursor: string | undefined;
       // Scan before locking: JSON metadata is inspected portably across database dialects.
+      // A plain `id` cursor (ids are allocated in increasing order and never change) avoids the
+      // offset re-scan of every earlier page, which made each page cost grow with the table size.
       for (;;) {
+        let scan = deps.tx
+          .read()
+          .query.selectFrom('agConversations')
+          .select('id')
+          .where('mode', '=', 'online')
+          .where('createdAt', '<', startedAt);
+        if (cursor !== undefined) scan = scan.where('id', '>', cursor);
+        const ids = await scan.orderBy('id').limit(200).execute();
+        if (!ids.length) break;
         const rows = await conversationsRepo(deps.tx.read()).findMany({
           filter: (f) =>
-            f.and([
-              f.string('mode').eq('online'),
-              f.date('createdAt').before(startedAt),
-            ]),
+            f.or(ids.map((row) => f.string('id').eq(String(row.id)))),
           sort: (s) => s.field('id').asc(),
-          limit: 200,
-          offset,
         });
-        if (!rows.length) break;
+        cursor = String(ids.at(-1)!.id);
         for (const candidate of rows.filter(stale)) {
           await write(
             candidate.userId,
@@ -417,8 +423,7 @@ export function createSessionManager(deps: {
             (seq) => seq ?? Number(candidate.lastSeq),
           );
         }
-        // Creation time is immutable, so finalization cannot move rows between pages.
-        offset += rows.length;
+        if (ids.length < 200) break;
       }
     },
     async defaults(userId: string) {
