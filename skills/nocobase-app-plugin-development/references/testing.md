@@ -2,6 +2,55 @@
 
 Use this reference to select checks for the changed behavior and its target App integration. Plugin tests belong in the plugin-root `tests/` directory and use `*.test.ts` or `*.test.tsx`; they must stay out of published build output.
 
+## Use app-testing in a plugin
+
+Declare `@nocobase/app-testing` in the plugin's `devDependencies`. Import fixtures through its `/server`, `/client` or `/cli` entry instead of importing `@nocobase/db-testing` or `@nocobase/app-cli/testing` directly. Declare the runtime peers and test libraries the selected entry needs, following `packages/tools/app-testing/README.md` and the generated plugin manifest. Database is a test directory, not an `/database` package export; browser tests use `@playwright/test`, not an `/playwright` export.
+
+| Directory | Environment and entry | Use it for |
+| --- | --- | --- |
+| `tests/database/` | Node, `@nocobase/app-testing/server` | `describeMigration()` for apply/rollback/reapply; `createDatabaseTest()` for repository and seed behavior |
+| `tests/server/` | Node, `@nocobase/app-testing/server` | `createAppTest()` or `createTestApp()` for real plugin registration, routes, authentication and permissions |
+| `tests/client/` | jsdom, `@nocobase/app-testing/client` | `renderWithApp()` and `answerApi()` for components using the real client runtime, services and translations |
+| `tests/cli/` | Node, `@nocobase/app-testing/cli` | `bindAppCommand()` and `runAppCommand()` for command behavior; `bindTestAppCommand()` for commands that open a database-backed App |
+| Target App's `tests/playwright/` | Browser, `@playwright/test` | Plugin integration across pages, real navigation, focus and browser-only behavior |
+
+Keep fixtures in `tests/fixtures/` and shared helpers in `tests/helpers/`. Retain an older package's established layout until migrating it deliberately. A plugin is not a standalone App: an integration test needs a fixture App or target App that explicitly registers the plugin in the runtime under test. Installing the package or importing its declaration does not register it.
+
+### Select the Vitest environment
+
+Keep the scaffold's `vitest.config.ts` projects: `createNodeVitestConfig()` runs Server, database, CLI and project tests under Node; `createReactVitestConfig()` runs `tests/client/**/*.test.{ts,tsx}` under jsdom with DOM cleanup. The maintained configuration is `packages/tools/create-plugin/template/vitest.config.template.ts`. Exclude browser tests from Vitest if the package also owns them. Do not import `/server` into a jsdom suite merely to obtain a database fixture.
+
+Run a focused file from the repository root, replacing the package and path with the ones under test:
+
+```bash
+pnpm --filter <plugin-package> exec vitest run tests/database/migrations.test.ts --project node --no-file-parallelism
+pnpm --filter <plugin-package> exec vitest run tests/server/routes.test.ts --project node --no-file-parallelism
+pnpm --filter <plugin-package> exec vitest run tests/client/page.test.tsx --project client
+pnpm --filter <plugin-package> exec vitest run tests/cli/greet.test.ts --project node --no-file-parallelism
+```
+
+These selectors assume the scaffold's `node` and `client` project names; inspect an existing package's configuration first. Run database and Server suites one at a time. CLI output capture and environment stubs affect the process, so keep command cases sequential. Client files can use normal file parallelism, but cases sharing one DOM must not run concurrently. Confirm the named tests ran even when an existing scaffold allows an empty suite.
+
+### Own the fixture and register the real plugin
+
+- **Database:** give `createDatabaseTest({ migrations })` the plugin's migration sources and any prerequisite sources. Let `NOCOBASE_TEST_DB_DIALECT` select the driver; do not construct a SQLite-only connection in a plugin test. Use `expectCollection()` for schema assertions and the real Repository for constraints and transactions. The [migration example](database.md#test-a-migration-against-a-real-database) applies, rolls back and reapplies the production migration.
+- **Server:** keep a small fixture App in `tests/fixtures/app/` with a real `createStandaloneServer` factory, explicit Server plugin registration and configuration loading through `context.configPath ?? context.environment.APP_CONFIG_FILE`. Pass that factory to `createAppTest({ createServer: createStandaloneServer })`. Startup discovers the registered plugin's migrations and seeds. File scope is the default and shares data between cases; use distinct records or `scope: 'test'` when a case needs a fresh App. The fixture closes automatically; a direct `createTestApp()` call needs `await app.close()` in `finally`.
+- **Authentication:** register the required authentication and authorization plugins in that fixture, seed test users and grants, and call `signIn()` from `@nocobase/app-plugin-authentication/testing`. Check anonymous, signed-in-but-denied and allowed requests through the App. A permitted administrator alone does not prove the denied path.
+- **Client:** pass the production Client plugin in `plugins`, its package name in `namespace`, and a supported `locale` to `renderWithApp()`. This exercises its actual providers and locale loaders. Use `namespaces` and `services` for a focused component fixture when full registration is not the subject; do not also register a plugin whose service the fixture replaces. The [Client example](client-examples.md#behavior-test-for-redirect-query-and-access-fallback) shows this distinction. Each render owns a client App that shuts down after the test.
+- **CLI:** use the production command class and its plugin-topic command ID. For commands that open an App, use a fixture root with Server registration, load the generated test configuration and bind it with `bindTestAppCommand()`. Provision only connections owned by the test. Preparing migration sources for the test database and registering the plugin with the App are separate steps; a command may need both. Dispose `createTestAppConfig()` in `finally`, and keep file-writing commands in a temporary fixture root. See the [command example](cli.md#test).
+
+For a client request test, match the HTTP method and API-relative path explicitly in `answerApi()`, return a non-success `Response` for unexpected endpoints, and assert on the recorded request outside the handler. The handler converts thrown errors, including failed assertions, into HTTP 500 responses. Check the payload and duplicate submissions when they are part of the component's behavior. Cover translated success and failure, and hold a response with `Promise.withResolvers<Response>()` to check loading and retry state without timers; release it inside `act()` in `finally`. Keep user interactions outside `waitFor()`.
+
+Browser checks belong to a running target App that registers the plugin. Use its verified application entry URL and the App's existing Playwright setup; a jsdom `MemoryRouter` test does not prove browser reload or the host's route authorization. Authentication state belongs to a test user and must stay out of committed files.
+
+### Find complete examples in the workspace
+
+Start with the self-contained [complete plugin example](testing-example.md) for one plugin spanning a migration, service, configuration factory, protected API, translated Client component and CLI command. Its source and fixture App travel with this Skill under `assets/testing-example/`; the accompanying verifier runs lint, typecheck and both test environments against an installed NocoBase 3 application's dependencies.
+
+The application Skill's complete examples live under `packages/app/app-skills/skills/nocobase-app-development/references/testing/`: `database/repository.md`, `database/migration.md`, `server/routes.md`, `client/page.md`, `cli/command.md`, `cli/files.md` and `playwright/login.md`. Read them from the source workspace when a complete fixture is needed. Adapt application-owned imports to the production plugin and explicitly register it in the fixture; do not copy an application composition unchanged and assume it includes the plugin. Those paths are repository lookup locations, not relative dependencies of this globally distributed Skill.
+
+Maintained executable fixtures also live in `packages/tools/app-testing/tests/`, with its minimal App in `tests/fixtures/app/`, and scaffold tests in `packages/tools/create-plugin/template/tests/`. Inspect the current exports and fixture configuration before borrowing code; keep tests focused on the plugin's behavior rather than copying the harness's own tests.
+
 ## Select observable checks
 
 | Changed surface           | Verify                                                                                                                    |
