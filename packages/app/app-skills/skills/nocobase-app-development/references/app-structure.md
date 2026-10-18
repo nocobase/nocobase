@@ -45,9 +45,7 @@ Editable module defaults live in `server/config/` and are collected by `defaultA
 
 ### File storage
 
-Configure storage in `server/config/drive.ts`. Each `drive.disks` entry accepts an `fs`, `s3`, or `oss` configuration object or a synchronous driver factory, for example `custom() { return new CustomDriver(options); }`. A factory returns Flydrive's `DriverContract`, receives no arguments or bound `this`, and runs on first use of that disk. Keep the default `DriveProvider`, resolve `driveManagerToken` from `@nocobase/app-server/drive`, and use `drive.use('custom')`; File Repository selects the same disk by name. Factories can coexist with object disks, including as the default disk. Put factories in TypeScript configuration and declare their runtime dependencies in the application. See [custom driver factories](custom-drivers.md) for a complete configuration example.
-
-The framework prepares directories only for object-configured filesystem disks. Custom drivers own their initialization; application Providers own resources requiring startup or shutdown. Factory closures do not automatically receive merged configuration overrides or hot-reloaded values. Release artifact references require serializable object disks and reject factories before Host initialization. When inspecting disk configuration, narrow out functions before reading fields such as `driver`.
+Configure storage in `server/config/drive.ts`, with serializable overrides in `config.yml`. Keep the default `DriveProvider` and resolve `driveManagerToken` from `@nocobase/app-server/drive`; File Repository uses the same manager. Read `.agents/skills/nocobase-drive/SKILL.md` for the `fs`, `s3`, and `oss` configuration guides, custom driver factories, URL behavior, and release artifact limitations. That Skill ships with `@nocobase/drive` and is synchronized from the installed package.
 
 ## The rest is framework structure
 

@@ -47,6 +47,7 @@ NocoBase packages may publish Skills under `.agents/skills/`. Current applicatio
 | Roles, permissions, per-user or per-record access         | `@nocobase/app-plugin-authorization`  |
 | Sign-in, registration, sessions                           | `@nocobase/app-plugin-authentication` |
 | File upload and metadata through Repository               | `@nocobase/app-plugin-file`           |
+| File storage, disk configuration, or custom drivers       | `@nocobase/drive`                     |
 | Translated text and language switching                    | `@nocobase/app-plugin-i18n`           |
 | User administration and application-owned role assignment | `@nocobase/app-plugin-users`          |
 | Reading or writing data, schema changes, migrations       | `@nocobase/db`                        |
@@ -226,7 +227,7 @@ Authentication diagnostics use the application `auth` logger unless an explicit 
 
 ## Storage
 
-For file storage configuration and custom Driver factories in `drive.disks`, read [file storage](references/app-structure.md#file-storage). Keep the application's shared Drive provider and token when adding a custom disk.
+For file storage configuration and custom driver factories in `drive.disks`, read `.agents/skills/nocobase-drive/SKILL.md`, supplied by the installed `@nocobase/drive` package. Keep the application's shared Drive provider and token when adding a custom disk. [File storage](references/app-structure.md#file-storage) identifies the application configuration entry point.
 
 Standalone source and compiled entries share the deployment directory's storage; `APP_STORAGE_DIR` selects another storage directory, and explicit storage paths take precedence over it. Embedded applications use Host-provided paths. Expanded releases live at `appRevisionsDir/<appId>/<sha256>` and restart recovery requires their installed metadata. Build archives use `storage/exports/dist.tar.gz`.
 

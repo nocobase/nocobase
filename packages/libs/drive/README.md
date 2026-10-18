@@ -2,8 +2,11 @@
 
 File storage for NocoBase applications.
 
-## Configuration guides
+## Skill and configuration guides
 
-- [Custom driver factories in `disks`](docs/custom-drivers.md)
-- [Native Aliyun OSS storage and ECS RAM roles](https://github.com/nocobase/nocobase/blob/v3-develop/packages/libs/drive/docs/aliyun-ecs-ram-role.md)
-- [阿里云 OSS 存储与实例角色配置](https://github.com/nocobase/nocobase/blob/v3-develop/packages/libs/drive/docs/zh-CN/aliyun-ecs-ram-role.md)
+The package ships the [NocoBase Drive Skill](skills/nocobase-drive/SKILL.md). Applications that declare `@nocobase/drive` as a direct dependency can run `pnpm nocobase skills sync` to copy it into `.agents/skills/nocobase-drive/`; the standard application templates run synchronization during installation.
+
+- [Filesystem storage (`fs`)](skills/nocobase-drive/references/fs.md)
+- [S3 and compatible storage (`s3`)](skills/nocobase-drive/references/s3.md)
+- [Native Aliyun OSS and ECS RAM roles (`oss`)](skills/nocobase-drive/references/aliyun-ecs-ram-role.md)
+- [Custom driver factories in `disks`](skills/nocobase-drive/references/custom-drivers.md)
