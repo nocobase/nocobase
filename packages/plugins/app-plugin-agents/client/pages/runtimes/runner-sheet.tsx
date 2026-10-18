@@ -223,7 +223,10 @@ function RunnerDetail({
           <RunnerRuns runnerId={runner.id} />
         </TabsContent>
         {editable && tab === 'overview' ? (
-          <div data-fixed-sheet-footer className='flex shrink-0 justify-end gap-2 border-t bg-background p-4'>
+          <div
+            data-fixed-sheet-footer
+            className='flex shrink-0 justify-end gap-2 border-t bg-background p-4'
+          >
             <Button
               type='button'
               variant='outline'
