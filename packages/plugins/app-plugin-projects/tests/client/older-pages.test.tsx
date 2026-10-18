@@ -1,8 +1,14 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  QueryClient,
+  QueryClientProvider,
+  QueryObserver,
+  onlineManager,
+} from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 
+import { PmQueryClient } from '../../client/api/invalidate-queries.js';
 import { useOlderPages } from '../../client/pages/issues/detail/use-older-pages.js';
 
 const clients: QueryClient[] = [];
@@ -20,7 +26,7 @@ it.each([
 ] as const)(
   'retains loaded %s across a multi-page burst (%s)',
   async (kind, order) => {
-    const client = new QueryClient({
+    const client = new PmQueryClient({
       defaultOptions: { queries: { retry: false } },
     });
     clients.push(client);
@@ -115,3 +121,196 @@ it.each([
     );
   },
 );
+
+it.each(['threads', 'activities'] as const)(
+  'keeps an in-flight %s page and coalesces invalidations during loading and refreshing',
+  async (kind) => {
+    const client = new PmQueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    clients.push(client);
+    let text = 'old';
+    let hold = false;
+    let release: (() => void) | undefined;
+    const rows = Array.from({ length: 10 }, (_, i) => ({ id: String(i + 1) }));
+    const read = vi.fn(async (cursor?: string) => {
+      const end = cursor
+        ? rows.findIndex((row) => row.id === cursor)
+        : rows.length;
+      const start = Math.max(0, end - 2);
+      const page = {
+        data: rows.slice(start, end).map((row) => ({ ...row, text })),
+        nextCursor: start ? rows[start]!.id : null,
+      };
+      if (hold) {
+        hold = false;
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+      }
+      return page;
+    });
+    function Wrapper({ children }: { readonly children: ReactNode }) {
+      return (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      );
+    }
+    const { result } = renderHook(
+      () => useOlderPages('race', kind, '9', '9', read, (row) => row.id),
+      { wrapper: Wrapper },
+    );
+    act(() => result.current.loadMore());
+    await waitFor(() => expect(result.current.items).toHaveLength(4));
+    read.mockClear();
+    hold = true;
+    act(() => result.current.loadMore());
+    await waitFor(() => expect(release).toBeDefined());
+    text = 'edited during loading';
+    const refresh = () => client.invalidateQueries({ queryKey: ['pm'] });
+    const pending = [refresh(), refresh(), refresh()];
+    await act(async () => {
+      release!();
+      await Promise.all(pending);
+    });
+    await waitFor(() =>
+      expect(result.current.items.map((row) => row.id)).toEqual([
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        '10',
+      ]),
+    );
+    await waitFor(() =>
+      expect(result.current.items.every((row) => row.text === text)).toBe(true),
+    );
+    // One next-page read, then B + P - 1 = 2 + 2 - 1 reads for the expanded range.
+    expect(read).toHaveBeenCalledTimes(4);
+    read.mockClear();
+    release = undefined;
+    hold = true;
+    const firstRefresh = refresh();
+    await waitFor(() => expect(release).toBeDefined());
+    text = 'edited during refresh';
+    const trailing = [refresh(), refresh(), refresh()];
+    await act(async () => {
+      release!();
+      await Promise.all([firstRefresh, ...trailing]);
+    });
+    await waitFor(() =>
+      expect(result.current.items.every((row) => row.text === text)).toBe(true),
+    );
+    expect(read).toHaveBeenCalledTimes(6);
+    read.mockClear();
+    act(() => result.current.loadMore());
+    await waitFor(() => expect(result.current.items[0]?.id).toBe('3'));
+    expect(read).toHaveBeenCalledTimes(1);
+  },
+);
+
+it.each(['inactive', 'removed', 'failure'] as const)(
+  'does not spin or recreate history after %s while a page is pending',
+  async (stop) => {
+    const client = new PmQueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    clients.push(client);
+    let release: (() => void) | undefined;
+    let pending = false;
+    const read = vi.fn(async (cursor?: string) => {
+      if (pending) {
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        if (stop === 'failure') throw new Error('Unavailable');
+      }
+      return {
+        data: [{ id: cursor ?? '3' }],
+        nextCursor: cursor === '2' ? '1' : '2',
+      };
+    });
+    function Wrapper({ children }: { readonly children: ReactNode }) {
+      return (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      );
+    }
+    const { result, unmount } = renderHook(
+      () => useOlderPages('stop', 'threads', '2', '3', read, (row) => row.id),
+      { wrapper: Wrapper },
+    );
+    act(() => result.current.loadMore());
+    await waitFor(() => expect(result.current.items).toHaveLength(2));
+    pending = true;
+    act(() => result.current.loadMore());
+    await waitFor(() => expect(release).toBeDefined());
+    const key = ['pm', 'issue', 'stop', 'threads'];
+    const refresh = client.invalidateQueries({ queryKey: key });
+    if (stop === 'inactive') unmount();
+    if (stop === 'removed') {
+      unmount();
+      client.removeQueries({ queryKey: key });
+    }
+    pending = false;
+    await act(async () => {
+      release!();
+      await refresh;
+    });
+    if (stop === 'removed') expect(client.getQueryData(key)).toBeUndefined();
+    if (stop === 'inactive')
+      expect(client.getQueryState(key)?.isInvalidated).toBe(true);
+    // Failed next-page reads permit one requested refresh, but no self-triggered retry loop.
+    expect(read).toHaveBeenCalledTimes(stop === 'failure' ? 5 : 3);
+  },
+);
+
+it('leaves inactive history stale and uses ordinary semantics for non-history reads', async () => {
+  const client = new PmQueryClient();
+  clients.push(client);
+  const history = ['pm', 'issue', 'inactive', 'threads'];
+  client.setQueryData(history, { pages: [], pageParams: [] });
+  const read = vi.fn(async () => 'detail');
+  const observer = new QueryObserver(client, {
+    queryKey: ['pm', 'issue', 'active'],
+    queryFn: read,
+  });
+  const off = observer.subscribe(() => undefined);
+  await waitFor(() => expect(observer.getCurrentResult().data).toBe('detail'));
+  read.mockClear();
+  await client.invalidateQueries({ queryKey: ['pm'] });
+  expect(client.getQueryState(history)?.isInvalidated).toBe(true);
+  expect(read).toHaveBeenCalledTimes(1);
+  off();
+});
+
+it('does not loop while offline and resumes the existing read on reconnect', async () => {
+  const client = new PmQueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  clients.push(client);
+  client.mount();
+  const read = vi.fn(async () => 'new');
+  const key = ['pm', 'issue', 'offline', 'threads'];
+  client.setQueryData(key, 'old');
+  const observer = new QueryObserver(client, {
+    queryKey: key,
+    queryFn: read,
+    staleTime: Infinity,
+  });
+  const off = observer.subscribe(() => undefined);
+  try {
+    onlineManager.setOnline(false);
+    await client.invalidateQueries({ queryKey: ['pm'] });
+    expect(client.getQueryState(key)?.fetchStatus).toBe('paused');
+    expect(read).not.toHaveBeenCalled();
+    const pending = client.invalidateQueries({ queryKey: key });
+    onlineManager.setOnline(true);
+    await pending;
+    expect(observer.getCurrentResult().data).toBe('new');
+    expect(read).toHaveBeenCalledTimes(2);
+  } finally {
+    onlineManager.setOnline(true);
+    off();
+    client.unmount();
+  }
+});
