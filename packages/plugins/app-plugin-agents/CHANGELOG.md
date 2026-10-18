@@ -1,5 +1,57 @@
 # @nocobase/app-plugin-agents
 
+## 0.1.0-beta.12
+
+### Minor Changes
+
+- c28f719: The agent queue reads a fixed number of queries however many runs are held or queued: each queued row carries the claim rules' quick explanation, the newest activity of all held runs takes two reads, and the exact reason a queued run waits is read only when its row is unfolded (`RunService.queueWait`, `GET /api/agentBoard/issues/:issueId/agents/:agentId/wait`). The queue refreshes from coalesced announcements with a 45-second fallback poll, and the agents' work marks on issue lists refresh only for announcements about the issues shown, with a 60-second fallback poll.
+
+### Patch Changes
+
+- 14b7aec: Make the run retry back-off and the runners sweep interval configurable: `agents.runs.retryBaseDelayMs` sets the first back-off of a failed run attempt (30 seconds by default, still doubling up to ten minutes) and `agents.runners.sweepIntervalMs` how often the sweep runs (30 seconds by default). The defaults are unchanged; shorter values are meant for tests.
+- 56251bc: Reuse issue context, previous summaries, comment deltas and initialization reads for matching parameters within a transaction, reducing repeated work during runner claims.
+- ff3ce5d: Clarify that native agents must use the CLI for management operations while explicitly authorized independent test instances allow browser and HTTP verification, with existing credential and permission protections preserved.
+- f1f3bd7: Read the dashboard, usage and metrics reports with a fixed number of queries whatever the number of issues, runs and usage records: runs, usage and issues are read in one query each with only the columns the figures use, model usage outside runs is summed in the database, and issue facts are read in three queries instead of two per 200 issues. The Studio dashboard now loads each panel from its own route, `GET /api/reports/delivery`, `GET /api/reports/agents` and `GET /api/reports/projects` (CLI `report delivery`, `report agents`, `report projects`), each loading, failing and refreshing on its own; `GET /api/reports/dashboard` and `report dashboard` are removed.
+- 644a773: Reuse claim-local run, capacity, skill and sealed variable reads, batch candidate agent reads, and update routine runner activity timestamps without a separate transaction while preserving dispatch writes and delivery audits.
+- 8b9fff1: Read run status without a transaction when no new input needs delivery, while preserving cancellation, lease ownership checks, and input redelivery.
+- 616561b: Give dispatched agent runs five minutes to start while their runtime stays online. Immediately requeue server-reclaimed pre-start runtime interruptions without consuming failure attempts or losing unhandled input, stopping after ten consecutive interruptions. Count runner-reported worker startup failures against the normal failure budget with backoff, and distinguish terminal runtime failures from agent failures. Count and list only inbox decisions whose in-app messages still exist, filtering before pagination.
+- f2fa59b: Revoke all prior runner registrations and keys when the same owner registers the same name and host again, without a registration lock or new table. Simultaneous registrations may temporarily leave multiple active records, which the next registration revokes. Add a paginated runtime token list that exposes only usable token metadata within the caller's permissions, provide executable revoke/delete guidance, and require an explicit server for runner installation before any files are installed.
+- 7abd72b: Allow administrators to configure global and new-project skill defaults in the attachment section, and show visible attachment targets by name with project settings links. Align new-project defaults CLI access with the existing settings permissions.
+- c2132c9: Return only workspace totals from the runner list API and `runtime list`, read independent runner summaries concurrently, and fetch directory diagnostics when opening a runner's details. Scripts reading `workspaceUsage.workspaces` from the list must use `runtime get` or the single-runner API instead. The CLI table now includes directory counts, unpushed counts and free disk bytes.
+- e94b470: Send selected PNG and JPEG images through the existing conversation attachment flow when organizing requirements. Keep the source requirements and files in memory across navigation, with a manual return to edit or choose another agent after a reading failure.
+- 49f61b9: Show optional settings permissions separately from business actions in CLI identity output, and explain run-token-only permissions. Add available-command typo suggestions, a hint for truncated text, and clean shutdown when a pipe closes early. Describe route schema inputs so generated CLI help and reference tables explain their parameters. The manifest identity and whoami JSON result gain an optional settings list; command admission and authorization are unchanged.
+- e8f52c9: Keep variable and agent capability dialog actions reachable by limiting dialog height and scrolling long form content internally.
+- Updated dependencies [846e75f]
+- Updated dependencies [d34b6eb]
+- Updated dependencies [98b3862]
+- Updated dependencies [525ace4]
+- Updated dependencies [1cdbaf4]
+- Updated dependencies [5fe8773]
+- Updated dependencies [b22d999]
+- Updated dependencies [616561b]
+- Updated dependencies [83e3609]
+- Updated dependencies [00c5970]
+- Updated dependencies [0037dd2]
+- Updated dependencies [55fcee1]
+- Updated dependencies [c0b7537]
+- Updated dependencies [eb4b081]
+- Updated dependencies [14b7aec]
+- Updated dependencies [49f61b9]
+- Updated dependencies [0037dd2]
+  - @nocobase/app-cli-client@0.1.0-beta.8
+  - @nocobase/app-cli@1.0.0-beta.23
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/app-client@3.0.0-beta.2
+  - @nocobase/app-server@2.0.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.9
+  - @nocobase/app-plugin-file@1.0.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.10
+  - @nocobase/app-plugin-authorization@1.0.0-beta.28
+  - @nocobase/authorization@1.0.0-beta.14
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/markdown-mermaid@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 0.1.0-beta.11
 
 ### Minor Changes

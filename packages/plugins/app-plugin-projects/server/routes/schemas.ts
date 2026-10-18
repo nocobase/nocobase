@@ -544,6 +544,12 @@ export const CreateIssueBody: z.ZodType<CreateIssueRequest> = z.strictObject({
       "The caller's unattached uploads; requires attachment upload permission. Bound before work starts.",
   }),
   ...issueFields,
+  start: z
+    .boolean()
+    .optional()
+    .describe(
+      'Start work after saving. Requires --status in_progress (statusKey: in_progress in JSON); explicit true with backlog or no status is rejected before saving.',
+    ),
   blockedBy: z
     .array(id)
     .optional()

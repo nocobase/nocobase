@@ -20,7 +20,7 @@ import {
   type UseMutationResult,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import { useContext, useEffect, useRef } from 'react';
+import { useCallback, useContext, useEffect, useRef } from 'react';
 import { cancelChoiceDiscoveries } from './discovery-requests.js';
 import {
   ApplicationCacheContext,
@@ -80,6 +80,24 @@ export function useComputers(): UseQueryResult<Computer[]> {
     // Online is a matter of time as well as of polls: look again now and then.
     refetchInterval: 30_000,
   });
+}
+
+/** Check the owner's current computers on demand, without adding a background poll to the host page. */
+export function useAgentSessionAvailability(): () => Promise<boolean> {
+  const api = useApiClient();
+  const cache =
+    useContext(ApplicationCacheContext) ?? agentSessionsQueryClient();
+  return useCallback(async () => {
+    const computers = await cache.fetchQuery({
+      queryKey: keys.computers,
+      queryFn: () => data<Computer[]>(api, { path: path('computers') }),
+      staleTime: 0,
+    });
+    return computers.some(
+      (computer) =>
+        computer.online && computer.agents.some((agent) => !agent.problem),
+    );
+  }, [api, cache]);
 }
 
 export function useSessions(

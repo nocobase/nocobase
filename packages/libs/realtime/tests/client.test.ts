@@ -52,6 +52,7 @@ it('connects lazily, dispatches events, and restores topics after reconnecting',
   const events: RealtimeEvent<{ readonly kind: string }>[] = [];
   const errors: string[] = [];
   const client = createRealtimeClient({ resolveUrl: () => '/main/ws' });
+  expect(client.active).toBe(false);
   client.onError((event) => errors.push(event.code));
   const opened = vi.fn();
   const listenerError = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -65,6 +66,7 @@ it('connects lazily, dispatches events, and restores topics after reconnecting',
     'notifications:in-app',
     (event) => events.push(event),
   );
+  expect(client.active).toBe(true);
 
   sockets[0]?.open();
   expect(sockets[0]?.url).toBe('wss://example.com/main/ws');
@@ -122,4 +124,5 @@ it('connects lazily, dispatches events, and restores topics after reconnecting',
 
   unsubscribeReplacement();
   unsubscribeOther();
+  expect(client.active).toBe(false);
 });

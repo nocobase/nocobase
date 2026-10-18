@@ -32,6 +32,8 @@ A new session's first command may instead take over the agent that discovering i
 
 Sessions work only in the directories given as `roots`, the home directory by default; a command for any other directory fails its turn. The application narrows them further to the folders the person chose, which it finds by asking the bridge to list a directory's folders (`listFolders`, hidden ones left out, at most `MAX_FOLDERS`) and taking its answer on `BRIDGE_ROUTES.reply`. The agent receives no built-in MCP servers. The CLI's `prepareSession` callback ensures the shared Skill is available and supplies the selected login profile and session id through the process environment before every new or restored session.
 
+The optional local `sessionInstructions(agentId, sessionId)` callback supplies equivalent instructions for agents without native Skill installation. Its text is prepended as an ACP text block to each user prompt, including when a process resumes, loads history or takes over a prewarmed agent. Discovery sends no prompt. The original content blocks keep their order and no extra turn is generated. A callback failure fails that turn explicitly instead of sending it without required instructions. This callback adds no fields to the bridge wire protocol.
+
 A permission request waits for the person up to 30 minutes and is then declined. Stopping a turn drops the messages waiting behind it and cancels the permission requests it left open.
 
 ## Agent status refresh

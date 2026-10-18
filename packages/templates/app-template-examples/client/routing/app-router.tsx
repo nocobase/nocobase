@@ -11,6 +11,7 @@ import { EMPTY_ARRAY } from '#lib/constants';
 import { AppLayout } from '../layouts/app-layout.js';
 import { renderRouteTree } from './route-tree.js';
 import { StandalonePageLayout } from './standalone-page-layout.js';
+import { SessionPreparation } from './session-preparation.js';
 
 export interface AppRouterProps {
   readonly clientRoutes: readonly AppClientRegisteredRoute[];
@@ -34,7 +35,9 @@ export function AppRouter({ clientRoutes }: AppRouterProps): ReactElement {
       <Route
         element={
           <RequiredAuthentication>
-            <Outlet />
+            <SessionPreparation>
+              <Outlet />
+            </SessionPreparation>
           </RequiredAuthentication>
         }
       >

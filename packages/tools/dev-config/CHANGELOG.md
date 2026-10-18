@@ -1,5 +1,11 @@
 # @nocobase/dev-config
 
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- eb4b081: Keep React tests on Node 24's package export conditions and the native react-router instance so installed test helpers, navigation guards, and plugins share Router and application contexts. Cover published JavaScript boundaries with a regression and repair registry installation fixtures and revision expectations used by CI.
+
 ## 0.1.0-beta.22
 
 ### Patch Changes

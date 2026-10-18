@@ -31,7 +31,12 @@ import {
 
 import type { PromptContent, Reference } from '../../shared/api.js';
 import { useMentions, type Mention } from '../api.js';
-import { attachedKey, type Attachment } from '../lib/attachments.js';
+import {
+  attachedKey,
+  stopAutomaticAttachment,
+  type Attachment,
+} from '../lib/attachments.js';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSessionMemory } from '../use-session-memory.js';
 import { StatusPill } from './status-pill.js';
 
@@ -117,6 +122,7 @@ export function Composer({
   onEdit,
 }: ComposerProps): ReactElement {
   const { t } = useTranslation();
+  const client = useQueryClient();
   const [text, setText] = useSessionMemory(draftKey && `text:${draftKey}`, '');
   const [expanded, setExpanded] = useState(false);
   const [caret, setCaret] = useState(0);
@@ -229,6 +235,7 @@ export function Composer({
     if (empty || disabled || sendDisabled || sending || sendingRef.current)
       return;
     sendingRef.current = true;
+    stopAutomaticAttachment(client, draftKey);
     const content: PromptContent[] = [
       ...(text.trim() ? [{ type: 'text' as const, text: text.trim() }] : []),
       ...attached.flatMap(({ text: said }) =>
@@ -403,6 +410,8 @@ export function Composer({
                   })}
                   onClick={() => {
                     onEdit?.();
+                    if (attachment.automatic)
+                      stopAutomaticAttachment(client, draftKey);
                     setAttached((current) =>
                       current.filter((other) => other.id !== attachment.id),
                     );

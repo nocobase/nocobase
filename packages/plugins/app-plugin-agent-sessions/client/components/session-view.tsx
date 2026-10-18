@@ -121,7 +121,7 @@ export function SessionView({
       viewport.removeEventListener('scroll', fit);
     };
   }, [session.data?.id]);
-  // Beside the conversation on a wide screen; on a narrower one, and in a panel, it opens over it, when asked for.
+  // Beside a full-page conversation on a wide screen, over it on narrower screens, and inside an embedded sidebar.
   const [details, setDetails] = useState(
     () =>
       !surface.panel &&
@@ -156,7 +156,10 @@ export function SessionView({
   const showDetails = details && !panel.opened;
   return (
     <LinkOpenContext.Provider value={panel.open}>
-      <div ref={viewportRef} className='flex h-full min-h-0'>
+      <div
+        ref={viewportRef}
+        className={cn('flex h-full min-h-0', surface.panel && 'flex-col')}
+      >
         <Conversation
           session={session.data}
           computer={computer}
@@ -169,10 +172,11 @@ export function SessionView({
             } else setDetails(!details);
           }}
           onSummary={() => {
-            if (!panel.openSummary()) setDetails(true);
+            if (surface.panel) setDetails(!details);
+            else if (!panel.openSummary()) setDetails(true);
           }}
         />
-        {showDetails && (
+        {showDetails && !surface.panel && (
           <div
             aria-hidden
             className={cn(
@@ -187,7 +191,7 @@ export function SessionView({
             session={session.data}
             computer={computer}
             items={items}
-            overlay={surface.panel}
+            inline={surface.panel}
             onClose={() => setDetails(false)}
           />
         )}
@@ -534,6 +538,20 @@ function Header({
             {session.title}
           </h2>
         )}
+        {collapsed && (
+          <Button
+            variant='ghost'
+            size='sm'
+            className='h-9 shrink-0 gap-1 px-1.5 tabular-nums @md/agent-session:hidden'
+            aria-label={`${t('links.title')} ${session.links.length}`}
+            title={`${t('links.title')} ${session.links.length}`}
+            aria-expanded={details}
+            onClick={onShowDetails}
+          >
+            <ListChecksIcon aria-hidden />
+            {session.links.length}
+          </Button>
+        )}
         {session.waiting ? (
           <span className='@max-md/agent-session:sr-only inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-amber-800 dark:text-amber-300'>
             <span className='size-2 rounded-full bg-amber-400' />
@@ -779,17 +797,18 @@ function Details({
   session,
   computer,
   items,
-  overlay,
+  inline,
   onClose,
 }: {
   readonly session: Session;
   readonly computer: Computer | undefined;
   readonly items: readonly TranscriptItem[];
-  /** Over the conversation whatever the screen's width, as in a panel. */
-  readonly overlay: boolean;
+  /** Inside the host's sidebar, without covering the main page. */
+  readonly inline: boolean;
   readonly onClose: () => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
+  const surface = useSessionSurface();
   const decide = useDecideLinks(session.id);
   const toaster = useToaster();
   const context = session.state?.context;
@@ -801,16 +820,17 @@ function Details({
   return (
     <aside
       className={cn(
-        'bg-background fixed inset-y-0 right-0 z-50 w-[min(100%,22rem)] overflow-y-auto border-l shadow-xl',
-        !overlay &&
-          'xl:static xl:z-auto xl:w-[296px] xl:shrink-0 xl:shadow-none',
+        'bg-background overflow-y-auto',
+        inline
+          ? 'max-h-[50%] min-h-0 shrink-0 border-t'
+          : 'fixed inset-y-0 right-0 z-50 w-[min(100%,22rem)] border-l shadow-xl xl:static xl:z-auto xl:w-[296px] xl:shrink-0 xl:shadow-none',
       )}
       aria-label={t('session.details')}
     >
       <div
         className={cn(
           'flex items-center justify-between border-b px-5 py-3',
-          !overlay && 'xl:hidden',
+          !inline && 'xl:hidden',
         )}
       >
         <h2 className='text-[15px] font-semibold'>{t('session.details')}</h2>
@@ -848,7 +868,13 @@ function Details({
               {session.links.map((link) => (
                 <li
                   key={`${link.kind}:${link.refId}`}
-                  className='flex flex-col gap-1 px-3 py-2'
+                  aria-current={
+                    surface.activeLink?.kind === link.kind &&
+                    surface.activeLink.refId === link.refId
+                      ? 'true'
+                      : undefined
+                  }
+                  className='flex flex-col gap-1 px-3 py-2 aria-[current=true]:bg-accent'
                 >
                   <div className='flex min-w-0 items-center gap-2'>
                     <LinkName
