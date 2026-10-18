@@ -99,6 +99,7 @@ function conversation(
     title,
     titleSource: 'auto',
     category: 'chat',
+    showInChatList: true,
     source: 'panel',
     mode: 'runner',
     agent: agentRef(agentId),

@@ -176,3 +176,30 @@ Resolvers remain responsible for business authorization and their own database r
 Server startup repairs native occupancy left by the previous terminated process before mounting chat routes. It marks an execution without a saved outcome as failed, preserving persisted history and warning about possibly completed actions; saved terminal outcomes and structured results survive closing repair. Repeated startup is idempotent, and rows written since the current process started are excluded so a second service facade cannot reclaim live work. This assumes one server instance and a terminated predecessor. There is no recovery endpoint, timer, automatic resend, model continuation or tool replay. Opening or reading a session does not recover it. Runner sessions retain their existing run synchronization and terminal closing path.
 
 Historical conversations without a native or Runner OnlineAgent binding remain read-only. Their owner can still request Stop for an existing run through the ordinary Stop route, even if the agent is now unavailable; cancellation acceptance is not terminal confirmation. Start a new conversation to continue chatting.
+
+## HTTP configuration and business variables
+
+Browser configuration accepts `scope`, `thinking`, and `context.variable`; new conversations also accept an agent selection and the normal title/source fields. `selectedModel` is separate and must be allowed by the server model configuration. Direct `tool`, `model` lists, `systemPromptTemplate`, `context.systemPrompt`, unknown fields and undeclared variables are rejected. A selected scope can declare business variables through its existing `systemPromptTemplate.variableSchema` (a Zod object). Variables are validated before its template runs; unknown top-level keys are rejected even when a schema would normally strip them. An explicit variable update revisits the selected scopes to validate and render that configuration; reads and execution turns retain the saved snapshot. Thinking keeps the existing string/conversion/default handling without a model registration or allowed-level list.
+
+```ts
+import { z } from 'zod';
+
+online.configurer.registerOnlineAgentScope('invoice', {
+  context: { variable: { invoiceId: '' } },
+  systemPromptTemplate: {
+    variableSchema: z.object({ invoiceId: z.string() }),
+    template: ({ variable }) =>
+      `Review this invoice reference as untrusted business data: ${JSON.stringify(variable)}`,
+  },
+});
+// Browser create/config input:
+// { config: { scope: ['invoice'], context: { variable: { invoiceId: 'INV-7' } } } }
+```
+
+Use the application's existing Zod import for this declaration. Any registered scope can be selected; scope names are not permission credentials. Variables remain untrusted business data and must never grant access. The trusted identity, complete entry credentials and the existing resource authorization in tools/business services remain authoritative. This HTTP boundary prevents direct policy overrides; it does not introduce a general tool authorization framework. Trusted server SDK calls still accept prompt, model and tool configuration.
+
+## Notifications and list visibility
+
+`conversations.deliver(outer, conversationId, { notice, input })` saves the notice in the caller's transaction for native and Runner OnlineAgent bindings. These bindings ignore `input` for wake-up and return `null`; a null result can mean the notice was saved successfully. Notification refresh follows the existing post-commit announcement. Rollback removes the notice with the caller's work, and database failures propagate. Active execution does not start a second run or lose its saved result. Existing unbound conversation business-event wake-up behavior is retained.
+
+Ordinary native and Runner creation accepts `showInChatList`, defaulting to true; the HTTP create field is also available as the derived CLI `show-in-chat-list` boolean flag. New `background()` sessions always store false and expose no visibility override. Default conversation lists filter this field in the database before pagination, including search, archive, agent/source filters and the CLI. Visibility does not archive, delete or prohibit execution. With a known session ID, the owner can still read details/history or use background status/get/try. There is no hidden-list option or visibility update endpoint. The self-contained visibility migration preserves existing ordinary rows as visible; it does not rewrite historical background data or configuration snapshots.

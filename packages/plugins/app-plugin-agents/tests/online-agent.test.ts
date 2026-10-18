@@ -2363,3 +2363,184 @@ it('keeps result observers pending until an uncooperative tool actually ends aft
   expect(await job.status()).toBe('idle');
   expect(model.doStreamCalls).toHaveLength(1);
 });
+
+it('saves native notices in the outer transaction without waking, rolls back and preserves active structured output', async () => {
+  let output!: ReadableStreamDefaultController;
+  const opened = deferred();
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({
+      stream: new ReadableStream({
+        start(controller) {
+          output = controller;
+          opened.resolve();
+        },
+      }),
+    }),
+  });
+  const f = await fixture(model);
+  const job = await f.service.background(context());
+  const detail = await h.services.conversations.get('alice', job.sessionId);
+  expect(detail.showInChatList).toBe(false);
+  const forced = await f.service.background(context(), {
+    title: 'Still hidden',
+    ...{ showInChatList: true },
+  });
+  expect(
+    (await h.services.conversations.get('alice', forced.sessionId))
+      .showInChatList,
+  ).toBe(false);
+  expect((await h.services.conversations.list('alice', {})).items).toEqual([]);
+  const notices = () =>
+    h.services.conversations.messages('alice', job.sessionId, {});
+  const news = (title: string, input = false) => ({
+    notice: { code: 'news' as const, type: 'fixture', title },
+    ...(input
+      ? {
+          input: {
+            type: 'signal' as const,
+            actor: { kind: 'user' as const, id: 'alice', name: 'Alice' },
+            text: 'Do not wake',
+          },
+        }
+      : {}),
+  });
+  const events: unknown[] = [];
+  h.services.events.on('conversation.changed', (event) => {
+    if (event.conversationId === job.sessionId) events.push(event);
+  });
+  const client = await h.database.connection().client<Knex>();
+  const sql: string[] = [];
+  const record = (query: { sql: string }) => sql.push(query.sql);
+  client.on('query', record);
+  await h.services.tx.run(async (unit) => {
+    expect(
+      await h.services.conversations.deliver(
+        unit,
+        job.sessionId,
+        news('Committed'),
+      ),
+    ).toBeNull();
+    expect(events).toHaveLength(0);
+    expect(
+      await unit.conn
+        .repository('agConversationMessages')
+        .count({ filter: { conversationId: job.sessionId } }),
+    ).toBe(1);
+  });
+  client.off('query', record);
+  expect(events).toHaveLength(1);
+  await h.services.tx.run(async (unit) => {
+    expect(
+      await h.services.conversations.deliver(
+        unit,
+        job.sessionId,
+        news('Input ignored', true),
+      ),
+    ).toBeNull();
+  });
+  expect(model.doStreamCalls).toHaveLength(0);
+  await expect(
+    h.services.tx.run(async (unit) => {
+      await h.services.conversations.deliver(
+        unit,
+        job.sessionId,
+        news('Rolled back', true),
+      );
+      throw new Error('Rollback fixture');
+    }),
+  ).rejects.toThrow('Rollback fixture');
+  expect(events).toHaveLength(2);
+  expect((await notices()).items.map((item) => item.content.content)).toEqual([
+    'Committed',
+    'Input ignored',
+  ]);
+  // A real uniqueness error from the database must escape deliver and roll back its outer work.
+  await expect(
+    h.services.tx.run(async (unit) => {
+      const repo = unit.conn.repository('agConversationMessages');
+      const row = await repo.findOne({
+        filter: { conversationId: job.sessionId },
+      });
+      await repo.createOne({
+        values: { ...row!, id: 'reserved-notice-seq', seq: 3 },
+      });
+      await h.services.conversations.deliver(
+        unit,
+        job.sessionId,
+        news('Cannot save'),
+      );
+    }),
+  ).rejects.toThrow();
+  expect((await notices()).items).toHaveLength(2);
+  await job.run([{ role: 'user', content: 'Count' }], countSchema);
+  await opened.promise;
+  await h.services.tx.run(async (unit) => {
+    expect(
+      await h.services.conversations.deliver(
+        unit,
+        job.sessionId,
+        news('While running', true),
+      ),
+    ).toBeNull();
+  });
+  const result = job.get();
+  text('{"count":7}').forEach((chunk) => output.enqueue(chunk));
+  output.close();
+  expect(await result).toEqual({ count: 7 });
+  const rows = (await notices()).items;
+  expect(rows.map((item) => item.seq)).toEqual([1, 2, 3, 4, 5]);
+  expect(rows[3].content.content).toBe('While running');
+  expect(model.doStreamCalls).toHaveLength(1);
+  expect(
+    await h.services.tx.run((unit) =>
+      h.services.conversations.deliver(unit, 'missing', news('Missing')),
+    ),
+  ).toBeNull();
+  if (process.env.PM482_SQL_REPORT)
+    await appendFile(
+      process.env.PM482_SQL_REPORT,
+      JSON.stringify({ scenario: 'native-notice-commit', sql }) + '\n',
+    );
+});
+
+it('validates HTTP variables across selected scope schemas while keeping trusted SDK policy overrides', async () => {
+  const configurer = new OnlineAgentConfigurer();
+  const seen: unknown[] = [];
+  configurer.registerOnlineAgentScope('first', (actor) => {
+    seen.push(actor.variable);
+    return {
+      systemPromptTemplate: {
+        variableSchema: z.strictObject({ name: z.string() }),
+        template: (value) => JSON.stringify(value.variable),
+      },
+    };
+  });
+  configurer.registerOnlineAgentScope('second', {
+    systemPromptTemplate: {
+      variableSchema: z.strictObject({ count: z.number() }),
+      template: (value) => JSON.stringify(value.variable),
+    },
+  });
+  const resolved = await configurer.resolve(
+    context(),
+    {
+      scope: ['first', 'second'],
+      context: { variable: { name: 'Alice', count: 2 } },
+    },
+    undefined,
+    [],
+    true,
+  );
+  expect(resolved.variable).toEqual({ name: 'Alice', count: 2 });
+  expect(seen).toEqual([undefined]);
+  const trusted = await configurer.resolve(context(), {
+    model: ['private/model'],
+    systemPromptTemplate: 'Trusted prompt',
+    context: { variable: { arbitrary: true } },
+  });
+  expect(trusted).toMatchObject({
+    model: ['private/model'],
+    systemPrompt: 'Trusted prompt',
+    variable: { arbitrary: true },
+  });
+});

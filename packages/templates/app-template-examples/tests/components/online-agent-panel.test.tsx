@@ -68,6 +68,7 @@ const conversation: ConversationDetail = {
   title: 'Saved conversation',
   titleSource: 'manual',
   category: 'chat',
+  showInChatList: true,
   source: 'panel',
   mode: 'online',
   agent: {

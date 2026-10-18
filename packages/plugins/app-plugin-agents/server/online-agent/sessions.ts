@@ -93,7 +93,7 @@ export interface OnlineAgentSessionManager {
     kind: OnlineAgentSession['kind'],
     config: OnlineAgentConfig,
     model: ModelRef,
-    info?: { source?: string; title?: string },
+    info?: { source?: string; title?: string; showInChatList?: boolean },
   ): Promise<string>;
   load(userId: string, id: string): Promise<OnlineAgentSession>;
   configure(
@@ -439,7 +439,7 @@ export function createSessionManager(deps: {
       kind: OnlineAgentSession['kind'],
       config: OnlineAgentConfig,
       model: ModelRef,
-      info?: { source?: string; title?: string },
+      info?: { source?: string; title?: string; showInChatList?: boolean },
     ) {
       const id = deps.ids.next();
       const now = deps.now();
@@ -455,6 +455,8 @@ export function createSessionManager(deps: {
             title: info?.title ?? null,
             titleSource: info?.title ? 'user' : 'auto',
             category: 'chat',
+            showInChatList:
+              kind === 'background' ? false : (info?.showInChatList ?? true),
             source: info?.source ?? 'chat',
             read: true,
             thread: 0,

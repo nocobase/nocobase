@@ -235,6 +235,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       selectedModel?: ModelRef;
       source?: string;
       title?: string;
+      showInChatList?: boolean;
     },
     prepared?: { config: OnlineAgentConfig; hasModel: boolean },
   ) {
@@ -271,7 +272,11 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         kind,
         config,
         model,
-        { source: options.source, title: options.title },
+        {
+          source: options.source,
+          title: options.title,
+          showInChatList: options.showInChatList,
+        },
       );
     }
     const loaded = await this.deps.sessions.load(context.user.id, id);
@@ -289,6 +294,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       selectedModel: initialModel,
       source: _source,
       title: _title,
+      showInChatList: _showInChatList,
       ...requestedOptions
     } = options;
     let requestedModel = options.sessionId ? initialModel : undefined;
@@ -396,6 +402,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     id: string,
     options: OnlineAgentOptions,
     selectedModel?: ModelRef,
+    boundary?: 'http',
   ): Promise<OnlineAgentConfig & { selectedModel: ModelRef | null }> {
     this.trusted(context);
     const runner = await this.deps.runner?.configuration(context, id);
@@ -407,7 +414,13 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         throw conflict('This conversation is busy.');
       if (selectedModel)
         throw invalid('Runner chat does not use a native model.');
-      const config = await this.configurer.resolve(context, options, runner);
+      const config = await this.configurer.resolve(
+        context,
+        options,
+        runner,
+        [],
+        boundary === 'http',
+      );
       if (config.agentId !== runner.agentId)
         throw conflict('Start a new conversation to choose another agent.');
       await this.deps.runner!.configure(context, id, config, runner);
@@ -421,6 +434,8 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         context,
         options,
         session.config,
+        [],
+        boundary === 'http',
       );
       if ((config.agentId ?? 'online') !== (session.config.agentId ?? 'online'))
         throw conflict('Start a new conversation to choose another agent.');
@@ -450,6 +465,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
   async realtime(
     context: OnlineAgentContext,
     options: OnlineAgentRealtimeOptions = {},
+    boundary?: 'http',
   ): Promise<OnlineAgentRealtimeSession> {
     this.trusted(context);
     let prepared: { config: OnlineAgentConfig; hasModel: boolean } | undefined;
@@ -465,6 +481,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
           sessionId: _id,
           source: _source,
           title: _title,
+          showInChatList: _showInChatList,
           selectedModel,
           ...overrides
         } = options;
@@ -525,10 +542,16 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     } else {
       const defaults = await this.deps.sessions.defaults(context.user.id);
       // Select the executor before querying any native model service.
-      prepared = await this.configurer.resolveSelection(context, {
-        ...options,
-        scope: options.scope ?? defaults.scope,
-      });
+      prepared = await this.configurer.resolveSelection(
+        context,
+        {
+          ...options,
+          scope: options.scope ?? defaults.scope,
+        },
+        undefined,
+        [],
+        boundary === 'http',
+      );
       if (prepared.config.agentId && prepared.config.agentId !== 'online') {
         if (!this.deps.runner)
           throw invalid('Runner realtime execution is unavailable.');

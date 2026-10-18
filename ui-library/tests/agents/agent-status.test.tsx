@@ -20,6 +20,7 @@ const conversation: ConversationDetail = {
   title: 'Chat',
   titleSource: 'user',
   category: 'chat',
+  showInChatList: true,
   source: 'panel',
   mode: 'online',
   agent: {

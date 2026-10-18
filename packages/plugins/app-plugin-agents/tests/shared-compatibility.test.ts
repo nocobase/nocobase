@@ -1,6 +1,7 @@
 import type {
   OnlineAgentToolContext as PublicToolContext,
   OnlineAgentRealtimeSession,
+  OnlineAgentRuntime,
   OnlineAgent,
   OnlineAgentJson,
   OnlineAgentResult,
@@ -245,4 +246,19 @@ it('exports typed result observation through the public server entry', () => {
     } satisfies OnlineAgentSafeError,
   };
   expect(failure.reason).toBe('failed');
+});
+
+it('exposes conversation visibility without a background visibility override', () => {
+  expectTypeOf<
+    import('../shared/conversations.js').ConversationSummary['showInChatList']
+  >().toEqualTypeOf<boolean>();
+  expectTypeOf<
+    import('../shared/conversations.js').CreateConversationRequest['showInChatList']
+  >().toEqualTypeOf<boolean | undefined>();
+  expectTypeOf<
+    Extract<
+      keyof NonNullable<Parameters<OnlineAgentRuntime['background']>[1]>,
+      'showInChatList'
+    >
+  >().toEqualTypeOf<never>();
 });

@@ -92,6 +92,11 @@ it('streams two canonical blocks before completion, deduplicates retransmission 
   await h.services.tx.run((unit) =>
     h.services.conversations.deliver(unit, f.agent.sessionId, {
       notice: { code: 'news', type: 'fixture', title: 'Notice' },
+      input: {
+        type: 'signal',
+        actor: { kind: 'user', id: 'alice', name: 'Alice' },
+        text: 'Do not wake another run',
+      },
     }),
   );
   expect(
@@ -137,6 +142,7 @@ it('streams two canonical blocks before completion, deduplicates retransmission 
   const inputs = (await h.services.runs.detail(runId)).inputs.map(
     (input) => input.id,
   );
+  expect(inputs).toHaveLength(1);
   expect(
     (
       await f.report(runId, 'complete', {
@@ -873,4 +879,67 @@ it('replays only the most recent authorized page in Runner input without persist
   expect(JSON.stringify(messages.map((m) => m.content))).not.toContain(
     'Previous page references',
   );
+});
+
+it('saves Runner notices transactionally without waking and persists ordinary visibility through SDK and HTTP creation', async () => {
+  const f = await fixture();
+  const hidden = await h.services.onlineAgent.realtime(context(), {
+    agentId: f.agentId,
+    showInChatList: false,
+  });
+  expect(
+    (await h.services.conversations.get('alice', hidden.sessionId))
+      .showInChatList,
+  ).toBe(false);
+  const created = await h.request('POST', '/agents/conversations', {
+    user: 'alice',
+    body: { agentId: f.agentId, showInChatList: false },
+  });
+  expect(created.status).toBe(201);
+  expect(created.body.data.showInChatList).toBe(false);
+  expect(
+    (await h.services.conversations.list('alice', { pageSize: 1 })).items.map(
+      (row) => row.id,
+    ),
+  ).toEqual([f.agent.sessionId]);
+  const enqueue = vi.spyOn(h.services.runs, 'enqueue');
+  for (const input of [
+    undefined,
+    {
+      type: 'signal' as const,
+      actor: { kind: 'user' as const, id: 'alice', name: 'Alice' },
+      text: 'Do not wake',
+    },
+  ]) {
+    await h.services.tx.run(async (unit) => {
+      expect(
+        await h.services.conversations.deliver(unit, hidden.sessionId, {
+          notice: { code: 'news', type: 'fixture', title: 'Committed' },
+          input,
+        }),
+      ).toBeNull();
+    });
+  }
+  await expect(
+    h.services.tx.run(async (unit) => {
+      await h.services.conversations.deliver(unit, hidden.sessionId, {
+        notice: { code: 'news', type: 'fixture', title: 'Rolled back' },
+        input: {
+          type: 'signal',
+          actor: { kind: 'user', id: 'alice', name: 'Alice' },
+          text: 'Do not wake',
+        },
+      });
+      throw new Error('Rollback fixture');
+    }),
+  ).rejects.toThrow('Rollback fixture');
+  expect((await hidden.history()).map((row) => row.content.content)).toEqual([
+    'Committed',
+    'Committed',
+  ]);
+  expect(enqueue).not.toHaveBeenCalled();
+  expect(await hidden.status()).toBe('idle');
+  await expect(
+    h.services.conversations.get('bob', hidden.sessionId),
+  ).rejects.toThrow('not found');
 });

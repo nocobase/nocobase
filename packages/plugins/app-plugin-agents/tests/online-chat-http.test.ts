@@ -1,3 +1,4 @@
+import { ApiDocsService, CliService } from '@nocobase/app-server/router';
 import { appendFile } from 'node:fs/promises';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Hono, type MiddlewareHandler } from 'hono';
@@ -151,8 +152,11 @@ it('uses the original API for authenticated SDK tools, cached first receive, saf
     (await f.request('/conversations', 'POST', { title: 'x'.repeat(201) }))
       .status,
   ).toBe(400);
+  service.configurer.registerOnlineAgentScope('business', {
+    tool: ['business'],
+  });
   const created = await f.request('/conversations', 'POST', {
-    config: { tool: ['business'] },
+    config: { scope: ['business'] },
     title: 'Fixture chat',
   });
   expect(created.status).toBe(201);
@@ -408,4 +412,211 @@ it('lets only the owner stop an unbound historical run even after its agent beco
       })
     ).status,
   ).toBe(400);
+});
+
+it('accepts declared business variables but rejects browser policy overrides on create and configure', async () => {
+  const f = await fixture();
+  const actors: unknown[] = [];
+  service.configurer.registerOnlineAgentScope('business-input', (actor) => {
+    actors.push(actor);
+    return {
+      tool: ['business'],
+      model: ['fixture/chat', 'fixture/second'],
+      context: { variable: { count: 0 } },
+      systemPromptTemplate: {
+        variableSchema: z.strictObject({ count: z.number().int().min(0) }),
+        template: (value) =>
+          `Count ${(value.variable as { count: number }).count}`,
+      },
+    };
+  });
+  const configuration = {
+    scope: ['business-input'],
+    context: { variable: { count: 2 } },
+    thinking: 'unregistered-level',
+  };
+  const created = await f.request('/conversations', 'POST', {
+    config: configuration,
+  });
+  expect(created.status).toBe(201);
+  const id = (await created.json()).data.id;
+  const path = `/conversations/${id}/config`;
+  expect((await (await f.request(path)).json()).data).toMatchObject({
+    systemPrompt: 'Count 2',
+    variable: { count: 2 },
+    tool: ['business'],
+    thinking: 'unregistered-level',
+  });
+  for (const config of [
+    { tool: [] },
+    { model: ['fixture/forged'] },
+    { systemPromptTemplate: 'forged' },
+    { context: { systemPrompt: 'forged' } },
+    { permissions: [] },
+    { unknown: true },
+    { scope: ['business-input'], context: { variable: { count: '2' } } },
+    {
+      scope: ['business-input'],
+      context: { variable: { count: 2, isAdmin: true } },
+    },
+    { scope: [], context: { variable: {} } },
+    { scope: ['not-registered'] },
+    { context: { variable: null } },
+  ]) {
+    expect((await f.request('/conversations', 'POST', { config })).status).toBe(
+      400,
+    );
+    expect((await f.request(path, 'PATCH', { config })).status).toBe(400);
+  }
+  const denied = await f.request(
+    path,
+    'PATCH',
+    { config: { scope: ['business-input'] } },
+    'bob',
+  );
+  expect(denied.status).toBe(404);
+  expect(
+    (
+      await f.request(path, 'PATCH', {
+        config: {},
+        selectedModel: { modelService: 'fixture', model: 'forged' },
+      })
+    ).status,
+  ).toBe(400);
+  expect(
+    (
+      await f.request(path, 'PATCH', {
+        config: { context: { variable: { count: 3 } } },
+        selectedModel: { modelService: 'fixture', model: 'second' },
+      })
+    ).status,
+  ).toBe(200);
+  expect((await (await f.request(path)).json()).data).toMatchObject({
+    systemPrompt: 'Count 3',
+    variable: { count: 3 },
+    selectedModel: { modelService: 'fixture', model: 'second' },
+  });
+  expect(actors).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        user: { id: 'alice' },
+        credentials: { fixture: 'alice' },
+      }),
+    ]),
+  );
+});
+
+it('filters visibility before pagination for HTTP and its derived CLI, preserving owned direct reads', async () => {
+  const f = await fixture();
+  const create = async (visible?: boolean) => {
+    const response = await f.request('/conversations', 'POST', {
+      title: 'Needle',
+      ...(visible === undefined ? {} : { showInChatList: visible }),
+    });
+    expect(response.status).toBe(201);
+    const row = (await response.json()).data;
+    expect(row.showInChatList).toBe(visible ?? true);
+    return row.id as string;
+  };
+  const first = await create();
+  const hidden = await create(false);
+  const second = await create(true);
+  const repo = h.database.connection().repository('agConversations');
+  for (const [index, id] of [first, second, hidden].entries())
+    await repo.updateMany({
+      filter: { id },
+      values: { lastMessageAt: new Date(1000 + index * 1000) },
+    });
+  for (const suffix of [
+    '',
+    '&q=needle',
+    '&agentId=online',
+    '&source=panel',
+    '&archived=all',
+  ]) {
+    const page = await (
+      await f.request(`/conversations?pageSize=1${suffix}`)
+    ).json();
+    expect(page.data.map((row: { id: string }) => row.id)).toEqual([second]);
+    const next = await (
+      await f.request(
+        `/conversations?pageSize=1${suffix}&pageToken=${encodeURIComponent(page.meta.nextPageToken)}`,
+      )
+    ).json();
+    expect(next.data.map((row: { id: string }) => row.id)).toEqual([first]);
+    expect(next.meta.nextPageToken).toBeUndefined();
+  }
+  expect((await f.request(`/conversations/${hidden}`)).status).toBe(200);
+  expect((await f.request(`/conversations/${hidden}/messages`)).status).toBe(
+    200,
+  );
+  expect(
+    (await f.request(`/conversations/${hidden}`, 'GET', undefined, 'bob'))
+      .status,
+  ).toBe(404);
+  expect(
+    (
+      await f.request(`/conversations/${hidden}`, 'PATCH', {
+        showInChatList: true,
+      })
+    ).status,
+  ).toBe(400);
+  for (const id of [first, hidden])
+    await f.request(`/conversations/${id}`, 'PATCH', { archived: true });
+  expect(
+    (
+      await (
+        await f.request(
+          '/conversations?archived=true&q=needle&agentId=online&source=panel',
+        )
+      ).json()
+    ).data.map((row: { id: string }) => row.id),
+  ).toEqual([first]);
+  const docs = new ApiDocsService();
+  docs.attach({
+    api: f.app,
+    describe: () => ({ info: { title: 'Chat', version: 'test' } }),
+  });
+  const cli = new CliService();
+  const manifest = cli.manifestFor(await docs.getDocument(), {
+    kind: 'person',
+    userId: 'alice',
+    displayName: 'Alice',
+  });
+  const command = manifest.commands.find(
+    (item) => item.id === 'conversation:list',
+  )!;
+  expect(command.method).toBe('GET');
+  const cliApp = new Hono().route('/api', f.app);
+  const page = await cliApp.request(`${command.path}?pageSize=1&archived=all`, {
+    headers: { 'x-user': 'alice' },
+  });
+  const cliPage = await page.json();
+  expect(cliPage.data.map((row: { id: string }) => row.id)).toEqual([second]);
+  const cliNext = await cliApp.request(
+    `${command.path}?pageSize=1&archived=all&pageToken=${encodeURIComponent(cliPage.meta.nextPageToken)}`,
+    { headers: { 'x-user': 'alice' } },
+  );
+  expect(
+    (await cliNext.json()).data.map((row: { id: string }) => row.id),
+  ).toEqual([first]);
+  const createCommand = manifest.commands.find(
+    (item) => item.id === 'conversation:create',
+  )!;
+  expect(createCommand.parameters).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        name: 'show-in-chat-list',
+        field: 'showInChatList',
+        type: 'boolean',
+      }),
+    ]),
+  );
+  const cliCreated = await cliApp.request(createCommand.path, {
+    method: createCommand.method,
+    headers: { 'x-user': 'alice', 'content-type': 'application/json' },
+    body: JSON.stringify({ showInChatList: false }),
+  });
+  expect(cliCreated.status).toBe(201);
+  expect((await cliCreated.json()).data.showInChatList).toBe(false);
 });
