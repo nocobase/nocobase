@@ -1,5 +1,58 @@
 # Testing and verification
 
+## Testing with `@nocobase/app-testing`
+
+Application tests use `@nocobase/app-testing` in `devDependencies`. It exposes `/server`, `/client` and `/cli`; choose the entry that matches the test environment. Use the real repository, application composition or command class whose behavior the test needs to prove. The examples below are references of the `nocobase-app-development` Skill delivered by `@nocobase/app-skills`.
+
+### Worked examples by directory
+
+Start with the example for the boundary you need to test. These examples run from a NocoBase 3 application's root and use its installed packages; they do not require the NocoBase source repository.
+
+| Directory     | Example                                                                                                                                                       | Runtime and entry                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `database/`   | [Records, constraints, transactions and isolation](testing/database/repository.md), [apply, roll back and reapply a migration](testing/database/migration.md) | Node; `@nocobase/app-testing/server`                      |
+| `server/`     | [Authentication, permissions, validation and persistence](testing/server/routes.md)                                                                           | Node; `@nocobase/app-testing/server`                      |
+| `client/`     | [Submit from a component with the real API client and translations](testing/client/page.md)                                                                   | jsdom; `@nocobase/app-testing/client`                     |
+| `cli/`        | [Test file output, dry runs and failures](testing/cli/files.md), [run a database-backed command](testing/cli/command.md)                                      | Node; `@nocobase/app-testing/cli`                         |
+| `playwright/` | [Sign in once and reuse the browser session](testing/playwright/login.md)                                                                                     | Browser; `@playwright/test` against a running application |
+
+The directory names organize the examples and their suggested test files. They are not five package exports: database fixtures come from `/server`, and there is no `@nocobase/app-testing/database` or `@nocobase/app-testing/playwright` entry. Playwright tests use an actual application URL; the server fixture handles requests in process without opening a browser-accessible port.
+
+The examples assume `@nocobase/app-testing`, Vitest and the selected database driver are installed at versions compatible with the application. The client example additionally uses the React Vitest preset, Testing Library and jsdom already configured by the official templates. Each example lists its additional prerequisites. Run the named file and confirm it appears in the test summary; a successful command with no tests found is not verification.
+
+The examples use `tests/database/`, `tests/server/`, `tests/client/`, `tests/cli/` and `tests/playwright/`. An existing application may still use the `logic/` and `components/` layout below; follow its current conventions instead of moving unrelated tests. Directory names alone do not select a Vitest environment. Each complete Vitest example supplies a dedicated configuration that selects Node or jsdom and limits test discovery; use the matching `--config` when running it. When adopting the files into the regular suite, use the application's existing environment selection or Vitest projects and keep `tests/playwright/**` excluded from Vitest. Preserve existing aliases, setup files and test discovery.
+
+### Fixture selection and ownership
+
+| What the test exercises                                   | Helper                                                       | Isolation and cleanup                                                                                                |
+| --------------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| Repositories and transactions without application startup | `createDatabaseTest()` from `/server`                        | `isolation: 'schema'` resets and migrates before each case; the fixture destroys connections and drops its databases |
+| A migration's schema and rollback                         | `describeMigration()` from `/server`                         | Owns its database and checks apply → rollback → reapply; `up` assertions run twice                                   |
+| Routes, providers, plugins and authentication             | `createAppTest()` from `/server`                             | Default `scope: 'file'` shares an application; `scope: 'test'` installs a fresh one per case; cleanup is automatic   |
+| A manually started test application                       | `createTestApp()` from `/server`                             | The caller closes it in `finally` with `await testApp.close()`                                                       |
+| Components using application services                     | `renderWithApp()` from `/client`                             | Call inside a test; client shutdown is automatic and the React preset cleans up the DOM                              |
+| A command operating on files or flags                     | `bindAppCommand()` + `runAppCommand()` from `/cli`           | The test owns its temporary files; command output capture is process-wide                                            |
+| A command opening the real application                    | `createTestAppConfig()` + `bindTestAppCommand()` from `/cli` | The caller disposes the configuration in `finally`; `withApp()` closes the command's application                     |
+
+For database, server and database-backed CLI tests, `NOCOBASE_TEST_DB_DIALECT` selects the dialect; unset means SQLite. Provision every application-owned connection by listing it in `connections`. An omitted connection keeps the application's configuration. Keep provisioned connection locations intact; use test configuration overrides for auth, seeds or other settings. Pure repository tests take explicit migration and seed sources; application fixtures install the application's registered sources by default.
+
+Run database and server suites sequentially. CLI stream capture and environment stubs are process-wide, so do not use concurrent command cases. Keep temporary storage under the fixture's ownership, and never clean up a shared development database or a running Vite cache.
+
+### Run a complete example
+
+After creating the files in the linked examples, run from the application root:
+
+```bash
+pnpm exec vitest run --config vitest.database.config.ts
+pnpm exec vitest run --config vitest.server.config.ts
+pnpm exec vitest run --config vitest.client.config.ts
+pnpm exec vitest run --config vitest.cli.config.ts
+```
+
+Run these commands one at a time. With all four groups copied, expect five database tests (including the migration), five server tests, four client tests and eight CLI tests (six file-command cases and two database-backed cases). A copied subset has the corresponding smaller count. The sample configurations set `passWithNoTests: false`; when using an existing configuration, still confirm that the named files ran.
+
+If startup fails, check the installed package exports, the selected driver, the fixture's migration sources and the application's registered plugins before replacing a real service with a mock. A missing collection in a repository test usually needs its migration sources; failed sign-in needs the configured test seed and trusted origin; a server `403` with a valid session needs the intended grants. Client translation failures need the real namespace and locale keys, and CLI JSON failures need assertions on `exitCode` and the JSON error envelope.
+
 ## Where tests go
 
 ```text
