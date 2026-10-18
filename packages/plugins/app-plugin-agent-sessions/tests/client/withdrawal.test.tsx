@@ -118,7 +118,7 @@ describe('withdrawing a queued message', () => {
     await waitFor(() => expect(withdraw).toHaveBeenCalledTimes(2));
     expect(withdraw).toHaveBeenLastCalledWith(3);
     expect(
-      screen.getByText(/older bridge and cannot be safely withdrawn/),
+      screen.getByText(/older message cannot be safely withdrawn/),
     ).toBeVisible();
   });
 

@@ -6,7 +6,7 @@ const enUS = {
     promptStarted:
       'The message has started processing and cannot be withdrawn.',
     withdrawalUnsupported:
-      'This message was delivered to an older bridge and cannot be safely withdrawn. Update the command line and restart the computer connection.',
+      'This older message cannot be safely withdrawn. Update the command line and restart the computer connection.',
     bridgeReplaced:
       'Another bridge has registered this computer. Restart this connection.',
     submissionConflict:

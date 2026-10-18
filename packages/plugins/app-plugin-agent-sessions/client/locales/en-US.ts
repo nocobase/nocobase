@@ -220,7 +220,7 @@ const enUS = {
         'Could not load the original attachments. Retry before editing.',
       loading: 'Loading message and attachments…',
       unsupported:
-        'This message reached an older bridge and cannot be safely withdrawn. Update and restart the computer connection.',
+        'This older message cannot be safely withdrawn. Update the command line and restart the computer connection.',
       queued: 'Queued, sent when this turn ends',
       cancelled: 'Cancelled',
       failed: 'Not answered',

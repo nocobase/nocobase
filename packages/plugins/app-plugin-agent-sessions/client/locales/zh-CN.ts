@@ -202,7 +202,7 @@ const zhCN: AgentSessionsResource = {
       editBody: '在独立草稿中编辑这条消息，当前输入框的草稿会保留。',
       attachmentError: '无法读取原附件，请重试后再编辑。',
       loading: '正在读取消息和附件…',
-      unsupported: '此消息由旧执行端接收，无法安全撤回。请升级并重启电脑连接。',
+      unsupported: '这条旧消息无法安全撤回，请升级命令行并重启电脑连接。',
       queued: '排队中，这一轮结束后发出',
       cancelled: '已取消',
       failed: '没有得到回复',
