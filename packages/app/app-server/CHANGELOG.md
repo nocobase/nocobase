@@ -1,5 +1,33 @@
 # @nocobase/app-server
 
+## 2.0.0-beta.8
+
+### Patch Changes
+
+- 5fe8773: Reject empty or whitespace-only Git credential files before sending a request, and preserve saved credentials when validation fails. Support explicit credential removal through a JSON update file with null values, returning the incomplete connection state when required credentials are cleared.
+- 49f61b9: Show optional settings permissions separately from business actions in CLI identity output, and explain run-token-only permissions. Add available-command typo suggestions, a hint for truncated text, and clean shutdown when a pipe closes early. Describe route schema inputs so generated CLI help and reference tables explain their parameters. The manifest identity and whoami JSON result gain an optional settings list; command admission and authorization are unchanged.
+- Updated dependencies [98b3862]
+- Updated dependencies [89648ee]
+- Updated dependencies [fe81e4b]
+- Updated dependencies [b22d999]
+- Updated dependencies [0037dd2]
+- Updated dependencies [c0b7537]
+- Updated dependencies [14b7aec]
+- Updated dependencies [0037dd2]
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/drive@0.1.0-beta.6
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/realtime@0.1.0-beta.2
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/caching@0.1.0-beta.3
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 2.0.0-beta.7
 
 ### Minor Changes
