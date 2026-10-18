@@ -8,7 +8,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import {
   REACTION_EMOJIS,
@@ -89,16 +89,26 @@ export function useIssueTimeline(
     );
   const { hasMore: moreThreads, loading: loadingThreads } = olderThreads;
   const loadThreads = olderThreads.loadMore;
+  const scrolledToRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!targetId) return;
+    const target = targetId ? `${detail.id}:${targetId}` : null;
+    if (scrolledToRef.current === target) return;
+    if (!targetId) {
+      scrolledToRef.current = null;
+      return;
+    }
     if (!found) {
       if (moreThreads && !loadingThreads) loadThreads();
       return;
     }
-    document
-      .querySelector<HTMLElement>(`[data-comment-id="${CSS.escape(targetId)}"]`)
-      ?.scrollIntoView({ block: 'center' });
-  }, [targetId, found, moreThreads, loadingThreads, loadThreads]);
+    const element = document.querySelector<HTMLElement>(
+      `[data-comment-id="${CSS.escape(targetId)}"]`,
+    );
+    if (element) {
+      element.scrollIntoView({ block: 'center' });
+      scrolledToRef.current = target;
+    }
+  }, [detail.id, targetId, found, moreThreads, loadingThreads, loadThreads]);
 
   return {
     entries,

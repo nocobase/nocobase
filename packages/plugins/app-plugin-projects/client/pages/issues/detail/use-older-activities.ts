@@ -1,9 +1,6 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-
 import type { Activity } from '../../../../shared/issues.js';
-import { pmKeys } from '../../../api/keys.js';
 import { usePmApi } from '../../../hooks/use-pm-api.js';
+import { useOlderPages } from './use-older-pages.js';
 
 export interface OlderActivities {
   readonly activities: readonly Activity[];
@@ -22,24 +19,17 @@ export function useOlderActivities(
   firstCursor: string | null,
 ): OlderActivities {
   const api = usePmApi();
-  const [requested, setRequested] = useState(false);
-  const query = useInfiniteQuery({
-    queryKey: pmKeys.activities(issueId, firstCursor),
-    queryFn: ({ pageParam }) => api.activities(issueId, pageParam),
-    initialPageParam: firstCursor ?? '',
-    getNextPageParam: (last) => last.nextCursor ?? undefined,
-    enabled: requested && !!firstCursor,
-  });
+  const history = useOlderPages(
+    issueId,
+    'activities',
+    firstCursor,
+    (cursor) => api.activities(issueId, cursor),
+    (activity) => activity.id,
+  );
   return {
-    // Each page is oldest first; later pages are older still.
-    activities: [...(query.data?.pages ?? [])]
-      .reverse()
-      .flatMap((page) => page.data),
-    hasMore: !!firstCursor && (!query.data || query.hasNextPage),
-    loading: query.isFetching,
-    loadMore: () => {
-      if (!requested) setRequested(true);
-      else void query.fetchNextPage();
-    },
+    activities: history.items,
+    hasMore: history.hasMore,
+    loading: history.loading,
+    loadMore: history.loadMore,
   };
 }
