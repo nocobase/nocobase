@@ -93,19 +93,18 @@ it('loads both history streams to reveal an older target and scrolls once across
   function Timeline({ target }: { readonly target: string | null }) {
     const timeline = useIssueTimeline(detail, [], target);
     return (
-      <>
+      <div
+        style={{ overflowY: 'auto' }}
+        ref={(element) => {
+          if (element) element.scrollTo = scroll;
+        }}
+      >
         {timeline.entries.map((entry) =>
           entry.kind === 'thread' ? (
-            <div
-              key={entry.key}
-              data-comment-id={entry.thread.root.id}
-              ref={(element) => {
-                if (element) element.scrollIntoView = scroll;
-              }}
-            />
+            <div key={entry.key} data-comment-id={entry.thread.root.id} />
           ) : null,
         )}
-      </>
+      </div>
     );
   }
   const view = (target: string | null) => (

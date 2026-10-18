@@ -36,7 +36,7 @@ for generic collection CRUD; the plugin's tables are only written through its AP
   issue dialog with its AI draft and manual tabs, a plan) from `client/pages` (`issueChildRoutes`). It also owns an
   issue's page (`/issues/:issueId`), presented over the same headless entry (`useIssueDetail`, `useIssuePageActions`,
   `useIssueTimeline`, `useIssueCommentActions` and the rest), and hosts the plugin's "New sub-issue" dialog under it
-  (`issueDetailChildRoutes`).
+  (`issueDetailChildRoutes`). Comment positioning in `useIssueTimeline` only scrolls the nearest vertical content scroller; wrap task content in `overflow-y: auto` or `scroll`. Reuse `scrollIntoNearestContainer(element, block)` from `client/issues` for summary and task-row positioning so hidden layout ancestors and horizontal scroll stay in place.
   The settings pages (issue prefix, labels) are exported from
   `@nocobase/app-plugin-projects/client/config` for the App to route under its own settings page, and shared page
   components from `@nocobase/app-plugin-projects/client/kit`. Changes are announced on the realtime topic `pm:changes`, naming the changed issues in `issueIds` when they can; refresh only those issues' reads then.

@@ -17,6 +17,7 @@ import {
 import type { IssueDetail } from '../../../../shared/issues.js';
 import { useNotify } from '../../../hooks/use-notify.js';
 import { usePmApi } from '../../../hooks/use-pm-api.js';
+import { scrollIntoNearestContainer } from '../../../lib/scroll-into-nearest-container.js';
 import { useMentionCandidates } from '../use-mention-candidates.js';
 import {
   refreshIssue,
@@ -145,8 +146,7 @@ export function useIssueTimeline(
     const element = document.querySelector<HTMLElement>(
       `[data-comment-id="${CSS.escape(targetId)}"]`,
     );
-    if (element) {
-      element.scrollIntoView({ block: 'center' });
+    if (element && scrollIntoNearestContainer(element, 'center')) {
       scrolledToRef.current = target;
     }
   }, [

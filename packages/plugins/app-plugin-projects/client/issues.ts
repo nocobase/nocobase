@@ -15,6 +15,8 @@ import { ACCESS_NAMESPACE } from '../shared/access.js';
 import type { StatusDefinition } from '../shared/issues.js';
 import { statusName } from './lib/status.js';
 
+export { scrollIntoNearestContainer } from './lib/scroll-into-nearest-container.js';
+
 export { findStatus, statusTone } from './lib/status.js';
 export type { PmTone } from './components/pm-tones.js';
 
