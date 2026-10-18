@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { startNodeAppServer } from '@nocobase/app-server/node';
 import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
-import { createStandaloneServer } from '../../server/standalone.js';
+const { createStandaloneServer } = (await import(
+  new URL('../../dist/server/standalone.js', import.meta.url).href
+)) as typeof import('../../server/standalone.js');
 
 // An isolated complete application with deterministic tools registered through its public server SDK.
 // Run only against disposable smoke configuration; this fixture never changes installed application source.
