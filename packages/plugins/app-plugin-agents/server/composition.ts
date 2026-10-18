@@ -553,6 +553,8 @@ export function createAgents(deps: AgentsDeps): Agents {
     settings: chat,
     nativeAvailable: async () =>
       Boolean((await modelServices.catalog().catch(() => null))?.defaultModel),
+    nativeNotice: (unit, row, id, parts) =>
+      sessions.native.deliver(row.userId, row.id, id, parts, { unit, row }),
     nativeActive: (id, persistedRunning) =>
       onlineAgent.producerAvailable(id, persistedRunning),
     contextKinds: createPageContextKinds(),
@@ -575,19 +577,20 @@ export function createAgents(deps: AgentsDeps): Agents {
     onError: (error) =>
       onError('Runner OnlineAgent synchronization failed.', error),
   });
+  const sessions = createSessionManager({
+    contextKinds: conversations.contextKinds,
+    tx,
+    ids,
+    attachments: chatAttachments.links,
+    files: chatAttachments.service,
+    basePath,
+    now: () => clock.now().toISOString(),
+  });
   const onlineAgent = new OnlineAgentService({
     runner: runnerOnlineAgent,
     uiStreams,
     chatAgents: (userId) => conversations.chatAgents(userId),
-    sessions: createSessionManager({
-      contextKinds: conversations.contextKinds,
-      tx,
-      ids,
-      attachments: chatAttachments.links,
-      files: chatAttachments.service,
-      basePath,
-      now: () => clock.now().toISOString(),
-    }),
+    sessions,
     ids,
     resolver: deps.resolver,
     model: async (ref, sessionId) =>

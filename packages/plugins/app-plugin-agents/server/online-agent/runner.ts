@@ -157,6 +157,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
             agentId: config.agentId,
             source: options.source,
             title: options.title,
+            showInChatList: options.showInChatList,
           },
           config,
         )

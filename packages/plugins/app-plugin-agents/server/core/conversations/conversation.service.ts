@@ -128,6 +128,12 @@ import { autoTitle, cleanTitle } from './titles.js';
 const SYNC_PAGE = 500;
 
 export interface ConversationServiceDeps {
+  readonly nativeNotice?: (
+    unit: Tx,
+    record: ConversationRecord,
+    id: string,
+    parts: import('../../../shared/online-agent.js').AppUIMessage['parts'],
+  ) => Promise<unknown>;
   readonly tx: TxRunner;
   readonly measure?: (phase: string, durationMs: number) => void;
   readonly ids: IdSource;
@@ -378,6 +384,7 @@ export function createConversationService(
         title: record.title,
         titleSource: record.titleSource,
         category: record.category,
+        showInChatList: record.showInChatList,
         source: record.source,
         mode: record.mode,
         execution: onlineExecution(
@@ -557,6 +564,37 @@ export function createConversationService(
     value: ConversationNotice,
     runId: string | null = null,
   ): Promise<void> {
+    if (
+      jsonObject(jsonObject(record.metadata).onlineAgent).kind === 'realtime'
+    ) {
+      if (!deps.nativeNotice)
+        throw conflict('Native notification storage is unavailable.');
+      const id = ids.next();
+      await deps.nativeNotice(unit, record, id, [
+        value.code === 'news'
+          ? {
+              type: 'data-notice',
+              id: `record:${id}`,
+              data: {
+                type: value.type,
+                title: value.title,
+                ...(value.params ? { params: { ...value.params } } : {}),
+              },
+            }
+          : {
+              type: 'data-business',
+              id: `record:${id}`,
+              data: {
+                kind: value.code,
+                id,
+                payload: JSON.parse(
+                  JSON.stringify(value),
+                ) as import('../../../shared/online-agent.js').AppUIJson,
+              },
+            },
+      ]);
+      return;
+    }
     const agentIds =
       value.code === 'switchedToDefault' ||
       value.code === 'switchedToOnline' ||
@@ -1240,6 +1278,7 @@ export function createConversationService(
         filter: (f) =>
           f.and([
             f.string('userId').eq(userId),
+            f.boolean('showInChatList').isTrue(),
 
             ...(query.archived === 'all'
               ? []
@@ -1336,6 +1375,7 @@ export function createConversationService(
             title,
             titleSource: title ? 'user' : 'auto',
             category: 'chat',
+            showInChatList: request.showInChatList ?? true,
             source,
             read: true,
             thread: 0,
@@ -1657,12 +1697,13 @@ export function createConversationService(
     async deliver(outer, conversationId, news) {
       const record = await lockConversation(outer.conn, conversationId, now());
       if (!record) return null;
+      await notice(outer, record, news.notice);
+      // New bindings save business notices atomically but never wake a second execution.
       if (
         jsonObject(record.metadata).onlineAgent ||
-        (news.input && runnerBinding(record.metadata))
+        runnerBinding(record.metadata)
       )
-        throw invalid('Use OnlineAgent business tools for this conversation.');
-      await notice(outer, record, news.notice);
+        return null;
       if (!news.input) return null;
       const agent = record.agentId
         ? await findAgent(outer.conn, record.agentId)

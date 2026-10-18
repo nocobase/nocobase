@@ -235,6 +235,8 @@ export interface ConversationSummary {
   readonly title: string | null;
   readonly titleSource: TitleSource;
   readonly category: ConversationCategory;
+  /** Visibility in the default chat list; direct owned reads remain available. */
+  readonly showInChatList: boolean;
   readonly source: ConversationSource;
   readonly mode: ConversationMode;
   readonly agent: ConversationAgent;
@@ -525,13 +527,12 @@ export interface OnlineChatConfigSnapshot {
   readonly variable?: OnlineChatJson;
 }
 export interface CreateConversationRequest {
+  /** Defaults to true; background SDK sessions are always hidden. */
+  readonly showInChatList?: boolean;
   readonly config?: {
     agentId?: string;
-    tool?: string[];
-    systemPromptTemplate?: string;
-    context?: { variable?: OnlineChatJson; systemPrompt?: string };
+    context?: { variable?: OnlineChatJson };
     scope?: string[];
-    model?: string[];
     thinking?: string;
   };
   readonly selectedModel?: { modelService: string; model: string };

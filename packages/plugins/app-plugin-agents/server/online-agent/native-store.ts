@@ -37,7 +37,7 @@ import {
 } from '../core/conversations/conversation.store.js';
 import { conflict, invalid, notFound } from '../kernel/errors.js';
 import { asJson, jsonObject } from '../kernel/values.js';
-import type { TxRunner } from '../kernel/tx.js';
+import type { Tx, TxRunner } from '../kernel/tx.js';
 import type { OnlineAgentConfig } from './config.js';
 import type { OnlineAgentCall } from './sessions.js';
 import { jsonSafe } from './codec.js';
@@ -98,12 +98,13 @@ export class NativeSessionStore {
       row: ConversationRecord,
       changed: (message: AppUIMessage) => void,
     ) => Promise<T>,
+    outer?: { unit: Tx; row: ConversationRecord },
   ): Promise<T> {
     let start: number | undefined;
     try {
       return await this.deps.tx.run(async ({ conn, emit }) => {
         start = performance.now();
-        const row = await this.owned(userId, id, conn, true);
+        const row = outer?.row ?? (await this.owned(userId, id, conn, true));
         const result = await work(conn, row, (message) =>
           emit({
             type: 'conversation.changed',
@@ -115,7 +116,7 @@ export class NativeSessionStore {
         );
         emit({ type: 'conversation.changed', conversationId: id, userId });
         return result;
-      });
+      }, outer?.unit);
     } finally {
       // Includes lock acquisition and commit, a conservative upper bound on lock ownership.
       if (start !== undefined)
@@ -147,6 +148,7 @@ export class NativeSessionStore {
     id: string,
     messageId: string,
     parts: AppUIMessage['parts'],
+    outer?: { unit: Tx; row: ConversationRecord },
   ): Promise<AppUIMessage> {
     return this.write(
       userId,
@@ -221,7 +223,120 @@ export class NativeSessionStore {
         changed(message);
         return message;
       },
+      outer,
     );
+  }
+  /** Server startup only: the previous process must have exited under single-instance deployment. */
+  async recover(
+    conn: DatabaseConnection,
+    row: ConversationRecord,
+    call: OnlineAgentCall,
+  ): Promise<number> {
+    const existing = call.messageId
+      ? await messagesRepo(conn).findOne({
+          filter: { id: call.messageId, conversationId: row.id },
+        })
+      : null;
+    const savedOutcome = jsonObject(existing?.metadata).nativeOutcome;
+    if (call.outcome && existing && savedOutcome === call.outcome)
+      return Number(row.lastSeq);
+    const text =
+      'The server stopped before this execution finished. Some actions may have completed; check their results before repeating them.';
+    const previous = existing
+      ? (
+          await validateAppUIMessages([jsonObject(existing.content).original])
+        )[0]
+      : undefined;
+    const evidence: UIMessage = existing
+      ? (
+          await validateUIMessages({
+            messages: [
+              jsonObject(existing.metadata).nativeEvidence ?? previous,
+            ],
+          })
+        )[0]
+      : { id: call.messageId!, role: 'assistant', parts: [] };
+    for (const part of evidence.parts) {
+      if (
+        isToolUIPart(part) &&
+        !['output-available', 'output-error', 'output-denied'].includes(
+          part.state,
+        )
+      )
+        Object.assign(part, {
+          state: 'output-error',
+          errorText:
+            'Tool result unknown. The action may have completed; check its result before repeating it.',
+        });
+    }
+    const message: AppUIMessage = {
+      id: call.messageId!,
+      role: 'assistant',
+      metadata: {
+        ...previous?.metadata,
+        conversationId: row.id,
+        createdAt: previous?.metadata?.createdAt ?? this.deps.now(),
+        seq: existing ? Number(existing.seq) : Number(row.lastSeq) + 1,
+        revision: (previous?.metadata?.revision ?? 0) + 1,
+        ...(call.executionId
+          ? { executionId: call.executionId, turnId: call.executionId }
+          : {}),
+      },
+      parts: [
+        ...(previous?.parts.filter(
+          (part) =>
+            part.type !== 'data-notice' || part.id !== 'execution-status',
+        ) ?? []),
+        {
+          type: 'data-notice',
+          id: 'execution-status',
+          data: { type: 'failed', title: text },
+        },
+      ],
+    };
+    await validateAppUIMessages([message]);
+    evidence.id = message.id;
+    const values = {
+      content: asJson({
+        type: 'text',
+        content: appUIMessageText(message),
+        original: message,
+      }),
+      searchText: appUIMessageText(message),
+      metadata: asJson({
+        ...jsonObject(existing?.metadata),
+        nativeEvidence: jsonSafe(evidence),
+        nativeOutcome: 'failed',
+      }),
+      updatedAt: this.deps.now(),
+    };
+    if (existing)
+      await messagesRepo(conn).updateMany({
+        filter: { id: existing.id },
+        values,
+      });
+    else
+      await messagesRepo(conn).createOne({
+        values: {
+          ...values,
+          id: message.id,
+          conversationId: row.id,
+          seq: message.metadata!.seq!,
+          role: 'assistant',
+          createdAt: message.metadata!.createdAt,
+          toolCalls: null,
+          attachments: null,
+          workContext: null,
+          runId: null,
+          runEventSeq: null,
+        },
+      });
+    call.state = 'idle';
+    call.outcome = 'failed';
+    call.error = text;
+    delete call.result;
+    call.revision = message.metadata!.revision;
+    return Math.max(Number(row.lastSeq), message.metadata!.seq!);
   }
   async history(
     userId: string,
@@ -315,13 +430,10 @@ export class NativeSessionStore {
           String(jsonObject(row.metadata).nativeOutcome),
         )
       ) {
-        const canonical = jsonObject(row.metadata).nativeCanonicalCalls;
         message.parts = message.parts.filter(
           (part) =>
             part.type === 'step-start' ||
             (isToolUIPart(part) &&
-              Array.isArray(canonical) &&
-              canonical.includes(part.toolCallId) &&
               ['output-available', 'output-error', 'output-denied'].includes(
                 part.state,
               )),
@@ -418,7 +530,6 @@ export class NativeSessionStore {
           call?.state === 'running' ||
           call?.state === 'waitingApproval' ||
           call?.closing ||
-          call?.requiresEffectReview ||
           row.archivedAt ||
           row.syncRunId
         )
@@ -539,7 +650,6 @@ export class NativeSessionStore {
         if (
           !call ||
           call.actorId !== userId ||
-          call.requiresEffectReview ||
           call.closing ||
           call.state !== 'waitingApproval' ||
           call.messageId !== input.messageId ||
@@ -621,11 +731,7 @@ export class NativeSessionStore {
       async (conn, row, changed) => {
         const call = jsonObject(jsonObject(row.metadata).onlineAgent)
           .call as OnlineAgentCall | null;
-        if (
-          call?.state !== 'waitingApproval' ||
-          call.requiresEffectReview ||
-          !call.messageId
-        )
+        if (call?.state !== 'waitingApproval' || !call.messageId)
           throw conflict('This execution is not waiting for approval.');
         const record = await messagesRepo(conn).findOne({
           filter: { id: call.messageId, conversationId: id },

@@ -8,6 +8,11 @@ export {
 export {
   OnlineAgentService,
   OnlineAgentConfigurer,
+  OnlineAgentResultError,
+  type OnlineAgent,
+  type OnlineAgentResult,
+  type OnlineAgentSafeError,
+  type OnlineAgentJson,
 } from './online-agent/index.js';
 
 export type {

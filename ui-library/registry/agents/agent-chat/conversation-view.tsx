@@ -9,6 +9,7 @@ import {
   appUIMessageText,
   chatMessageSegments,
   chatFeedback,
+  chatIsRunning,
   useChatScroll,
   newConversationAgent,
   timelineOrder,
@@ -196,7 +197,7 @@ function ConversationBody({
   const stream = useChatStream(conversation?.execution ? conversationId : null);
   const receiving =
     stream?.status === 'submitted' || stream?.status === 'streaming';
-  const running = conversation?.execution?.status === 'running' || receiving;
+  const running = chatIsRunning(conversation) || receiving;
   const chatController = useChatController();
   const [saveError, setSaveError] = useState<unknown>(null);
   const messages = useConversationMessages(conversationId);
@@ -304,9 +305,7 @@ function ConversationBody({
               ? extensions.renderMessageExtra?.(segment.message)
               : null
           }
-          approvalDisabled={
-            receiving || conversation?.execution?.requiresEffectReview
-          }
+          approvalDisabled={receiving}
           onApproval={
             conversationId
               ? (input) => chatController.approve(conversationId, input)
@@ -603,11 +602,7 @@ function ConversationBody({
               conversationId,
               `registry:${source}:${conversationId ?? 'new'}`,
             ) ||
-            Boolean(
-              conversation &&
-              (!conversation.execution ||
-                conversation.execution.requiresEffectReview),
-            )
+            Boolean(conversation && !conversation.execution)
           }
           running={running}
           stopping={stopping}

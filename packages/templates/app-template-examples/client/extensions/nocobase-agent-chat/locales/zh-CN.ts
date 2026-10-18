@@ -16,13 +16,14 @@ const agentChatZhCN: AgentChatLocale = {
       thinking: '正在思考…',
       stopping: '已请求停止，等待 Agent 确认结束…',
       completed: '已完成。',
-      cancelled: '已取消。已生成的回复保留在历史中。',
+      cancelled: '已取消。再次执行前请核对可能已完成的操作。',
       failed: '响应失败。请先查看历史，再决定是否重新发送。',
       unknown: '结果或历史保存尚未确认。请刷新历史后再决定是否重新发送。',
-      effectReview: '部分操作可能已完成，请核对结果后再继续。',
+      effectReview: '部分操作可能已完成，再次执行前请核对结果。',
     },
 
-    executionFailed: '执行失败或执行效果待核对，请先查看已保存历史。',
+    executionFailed:
+      '执行失败。再次执行前请查看已保存历史，核对可能已完成的操作。',
     historicalReadOnly: '历史会话仅供查看，请新建聊天以继续。',
     connectionUnknown:
       '连接已中断，结果待确认。请刷新已保存历史后决定是否再次发送。',
@@ -111,8 +112,6 @@ const agentChatZhCN: AgentChatLocale = {
       question: '问题',
       answer: '回答',
       steps: '它的步骤',
-      plans_one: '提出了一个计划，等你确认。',
-      plans_other: '提出了 {{count}} 个计划，等你确认。',
       usage: '用了 {{input}} 个输入 token 和 {{output}} 个输出 token。',
       state: {
         running: '回答中…',

@@ -20,6 +20,7 @@ import type {
   AppUIToolApprovalInput,
 } from '../../shared/online-agent.js';
 import { ChatApi } from './api.js';
+import { chatIsRunning } from './feedback.js';
 import { ChatSubmissions, type SubmissionSend } from './submissions.js';
 import { agentsQueryClient } from '../query.js';
 import { chatKeys } from './keys.js';
@@ -682,7 +683,7 @@ export class ChatController {
   }
   observeDetail(detail: ConversationDetail): void {
     if (detail.execution?.status === 'running') this.receive(detail.id, detail);
-    if (detail.execution?.status === 'idle') {
+    if (!chatIsRunning(detail)) {
       if (this.chats.get(detail.id)?.status === 'streaming')
         this.scheduleRefresh(detail.id);
       this.stopRequests.delete(detail.id);

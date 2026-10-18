@@ -76,6 +76,26 @@ export async function createOnlineAgentModelFixture(
     append(index: number, text: string) {
       chunk(streams[index]!, { content: text });
     },
+    tools(index: number, calls: { id: string; value: string }[]) {
+      const response = streams[index]!;
+      calls.forEach((call, toolIndex) =>
+        chunk(response, {
+          tool_calls: [
+            {
+              index: toolIndex,
+              id: call.id,
+              type: 'function',
+              function: {
+                name: 'fixture_action',
+                arguments: JSON.stringify({ value: call.value }),
+              },
+            },
+          ],
+        }),
+      );
+      chunk(response, {}, 'tool_calls');
+      response.end('data: [DONE]\n\n');
+    },
     complete(index: number) {
       const response = streams[index]!;
       chunk(response, {}, 'stop');

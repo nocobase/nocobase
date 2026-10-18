@@ -370,9 +370,12 @@ export class NativeOnlineAgent {
           const value = evidenceCalls.get(toolCall.toolCallId)!;
           if (toolOutput.type === 'tool-error')
             value.error =
-              toolOutput.error instanceof Error
-                ? toolOutput.error.message
-                : String(toolOutput.error);
+              toolOutput.error instanceof Error &&
+              toolOutput.error.name === 'AbortError'
+                ? 'Tool result unknown. The action may have completed; check its result before repeating it.'
+                : toolOutput.error instanceof Error
+                  ? toolOutput.error.message
+                  : String(toolOutput.error);
           else value.output = toolOutput.output;
           value.convert = async () =>
             value.error !== undefined
@@ -497,13 +500,21 @@ export class NativeOnlineAgent {
         };
         privateMessage.parts.push(part);
       }
-      if (isToolUIPart(part) && ended.has(callId))
-        Object.assign(
-          part,
-          evidence.error !== undefined
-            ? { state: 'output-error', errorText: evidence.error }
-            : { state: 'output-available', output: evidence.output },
-        );
+      if (isToolUIPart(part)) {
+        if (ended.has(callId))
+          Object.assign(
+            part,
+            evidence.error !== undefined
+              ? { state: 'output-error', errorText: evidence.error }
+              : { state: 'output-available', output: evidence.output },
+          );
+        else
+          Object.assign(part, {
+            state: 'output-error',
+            errorText:
+              'Tool result unknown. The action may have completed; check its result before repeating it.',
+          });
+      }
     }
     const waiting =
       outcome === 'completed' &&
@@ -637,7 +648,10 @@ export class NativeOnlineAgent {
               ).toISOString(),
             }
           : {}),
-        ...([...begun].some((call) => !ended.has(call))
+        ...([...begun].some((call) => !ended.has(call)) ||
+        [...evidenceCalls.values()].some((evidence) =>
+          evidence.error?.startsWith('Tool result unknown.'),
+        )
           ? { requiresEffectReview: true }
           : {}),
       };

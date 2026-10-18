@@ -24,6 +24,7 @@ export type OnlineAgentRealtimeOptions = OnlineAgentOptions & {
   selectedModel?: ModelRef;
   source?: string;
   title?: string;
+  showInChatList?: boolean;
 };
 
 /** The conversation capability shared by native and Runner execution. */
@@ -67,6 +68,7 @@ export interface OnlineAgentRealtimeService {
   realtime(
     context: OnlineAgentContext,
     options?: OnlineAgentRealtimeOptions,
+    boundary?: 'http',
   ): Promise<OnlineAgentRealtimeSession>;
   configuration(
     context: OnlineAgentContext,
@@ -77,6 +79,7 @@ export interface OnlineAgentRealtimeService {
     id: string,
     options: OnlineAgentOptions,
     selectedModel?: ModelRef,
+    boundary?: 'http',
   ): Promise<OnlineAgentConfig & { selectedModel: ModelRef | null }>;
   chatAgents(
     userId: string,
@@ -91,10 +94,12 @@ export interface OnlineAgentRuntime extends OnlineAgentRealtimeService {
     id: string,
     input: { id: string; parts: AppUIMessage['parts'] },
   ): Promise<AppUIMessage>;
+  /** Internal server boot hook, before accepting requests. */
+  recoverAtStartup(): Promise<void>;
   readonly configurer: import('./config.js').OnlineAgentConfigurer;
   background(
     context: OnlineAgentContext,
-    options?: OnlineAgentRealtimeOptions,
+    options?: Omit<OnlineAgentRealtimeOptions, 'showInChatList'>,
   ): Promise<import('./service.js').OnlineAgent>;
   shutdown(): Promise<void>;
 }

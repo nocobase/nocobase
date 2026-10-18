@@ -81,6 +81,7 @@ function summary(id: string): ConversationSummary {
     title: `Conversation ${id}`,
     titleSource: 'auto',
     category: 'chat',
+    showInChatList: true,
     source: 'panel',
     mode: 'runner',
     agent: { id: 'pm', name: 'Project manager', avatar: null, archived: false },

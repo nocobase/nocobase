@@ -41,6 +41,7 @@ export type OnlineAgentCall = {
   closing?: boolean;
   result?: OnlineAgentJson;
   error?: string;
+  /** Legacy hint only; never an admission condition. Removed after finalization. */
   requiresEffectReview?: boolean;
 };
 export type OnlineAgentSession = {
@@ -66,9 +67,7 @@ function metadata(row: ConversationRecord): OnlineAgentMetadata {
       'This historical conversation has not been switched to OnlineAgent.',
     );
   if ('permissions' in found.config)
-    throw invalid(
-      'Permission-restricted configuration is not supported in PR1.',
-    );
+    throw invalid('Permission-restricted configuration is not supported.');
   return found;
 }
 function session(row: ConversationRecord): OnlineAgentSession {
@@ -85,13 +84,14 @@ function session(row: ConversationRecord): OnlineAgentSession {
 
 export interface OnlineAgentSessionManager {
   readonly native: NativeSessionStore;
+  recoverAtStartup(): Promise<void>;
   defaults(userId: string): Promise<{ scope?: string[]; model?: ModelRef }>;
   create(
     userId: string,
     kind: OnlineAgentSession['kind'],
     config: OnlineAgentConfig,
     model: ModelRef,
-    info?: { source?: string; title?: string },
+    info?: { source?: string; title?: string; showInChatList?: boolean },
   ): Promise<string>;
   load(userId: string, id: string): Promise<OnlineAgentSession>;
   configure(
@@ -272,7 +272,8 @@ export function createSessionManager(deps: {
       filter: { conversationId: id },
       sort: (sort) => sort.field('seq').asc(),
     });
-    const messages = rows.flatMap((row) => {
+    const messages = rows.flatMap((row): ModelMessage[] => {
+      if (jsonObject(row.metadata).notice) return [];
       const value = restore(row.content, row.role);
       return value ? [value] : [];
     });
@@ -290,8 +291,107 @@ export function createSessionManager(deps: {
     return messages;
   }
 
+  const native = new NativeSessionStore(deps);
   return {
-    native: new NativeSessionStore(deps),
+    native,
+    async recoverAtStartup() {
+      const startedAt = new Date(performance.timeOrigin);
+      const stale = (row: ConversationRecord) => {
+        const value = jsonObject(row.metadata).onlineAgent as
+          OnlineAgentMetadata | undefined;
+        return (
+          !jsonObject(row.metadata).runnerOnlineAgent &&
+          value?.version === 1 &&
+          value.call?.state !== 'waitingApproval' &&
+          new Date(row.updatedAt) < startedAt &&
+          (value.call?.state === 'running' ||
+            value.call?.closing ||
+            value.call?.requiresEffectReview)
+        );
+      };
+      let cursor: string | undefined;
+      // Scan before locking: JSON metadata is inspected portably across database dialects.
+      // A plain `id` cursor (ids are allocated in increasing order and never change) avoids the
+      // offset re-scan of every earlier page, which made each page cost grow with the table size.
+      for (;;) {
+        let scan = deps.tx
+          .read()
+          .query.selectFrom('agConversations')
+          .select('id')
+          .where('mode', '=', 'online')
+          .where('createdAt', '<', startedAt);
+        if (cursor !== undefined) scan = scan.where('id', '>', cursor);
+        const ids = await scan.orderBy('id').limit(200).execute();
+        if (!ids.length) break;
+        const rows = await conversationsRepo(deps.tx.read()).findMany({
+          filter: (f) =>
+            f.or(ids.map((row) => f.string('id').eq(String(row.id)))),
+          sort: (s) => s.field('id').asc(),
+        });
+        cursor = String(ids.at(-1)!.id);
+        for (const candidate of rows.filter(stale)) {
+          await write(
+            candidate.userId,
+            candidate.id,
+            'startup',
+            async (conn, row) => {
+              if (!stale(row)) return;
+              const value = metadata(row);
+              const {
+                closing: _closing,
+                requiresEffectReview: _review,
+                ...call
+              } = value.call!;
+              const unfinished = call.state === 'running' && !call.outcome;
+              const message =
+                'The server stopped before this execution finished. Some actions may have completed; check their results before repeating them.';
+              if (value.kind === 'realtime' && !call.messageId)
+                call.messageId = deps.ids.next();
+              const lastSeq =
+                value.kind === 'realtime'
+                  ? await native.recover(conn, row, call)
+                  : unfinished
+                    ? await append(
+                        conn,
+                        row,
+                        [
+                          {
+                            id: deps.ids.next(),
+                            message: { role: 'assistant', content: message },
+                          },
+                        ],
+                        'failed',
+                      )
+                    : Number(row.lastSeq);
+              await saveMetadata(
+                conn,
+                row,
+                {
+                  ...value,
+                  call: {
+                    ...call,
+                    state: 'idle',
+                    ...(unfinished && value.kind === 'background'
+                      ? { outcome: 'failed', error: message, result: undefined }
+                      : {}),
+                  },
+                },
+                {
+                  lastSeq,
+                  ...(unfinished
+                    ? { read: false, lastMessageAt: deps.now() }
+                    : {}),
+                  updatedAt: deps.now(),
+                },
+              );
+              return lastSeq;
+            },
+            (seq) => seq ?? Number(candidate.lastSeq),
+          );
+        }
+        if (ids.length < 200) break;
+      }
+    },
     async defaults(userId: string) {
       const conn = deps.tx.read();
       const [personal, system] = await Promise.all([
@@ -308,7 +408,7 @@ export function createSessionManager(deps: {
       kind: OnlineAgentSession['kind'],
       config: OnlineAgentConfig,
       model: ModelRef,
-      info?: { source?: string; title?: string },
+      info?: { source?: string; title?: string; showInChatList?: boolean },
     ) {
       const id = deps.ids.next();
       const now = deps.now();
@@ -324,6 +424,8 @@ export function createSessionManager(deps: {
             title: info?.title ?? null,
             titleSource: info?.title ? 'user' : 'auto',
             category: 'chat',
+            showInChatList:
+              kind === 'background' ? false : (info?.showInChatList ?? true),
             source: info?.source ?? 'chat',
             read: true,
             thread: 0,
@@ -353,8 +455,7 @@ export function createSessionManager(deps: {
         if (
           value.call?.state === 'running' ||
           value.call?.state === 'waitingApproval' ||
-          value.call?.closing ||
-          value.call?.requiresEffectReview
+          value.call?.closing
         )
           throw conflict('This conversation is busy.');
         await saveMetadata(
@@ -398,11 +499,7 @@ export function createSessionManager(deps: {
             throw invalid(
               'Use the native UIMessage store for realtime conversations.',
             );
-          if (
-            value.call?.state === 'running' ||
-            value.call?.closing ||
-            value.call?.requiresEffectReview
-          )
+          if (value.call?.state === 'running' || value.call?.closing)
             throw conflict(
               'This conversation is busy or its previous execution needs review.',
             );
@@ -525,7 +622,11 @@ export function createSessionManager(deps: {
       return write(userId, id, 'finish', async (conn, row) => {
         const value = metadata(row);
         if (!value.call) throw conflict('No execution is being finalized.');
-        const { closing: _closing, ...call } = value.call;
+        const {
+          closing: _closing,
+          requiresEffectReview: _review,
+          ...call
+        } = value.call;
         await saveMetadata(conn, row, {
           ...value,
           call: { ...call, state: 'idle' },

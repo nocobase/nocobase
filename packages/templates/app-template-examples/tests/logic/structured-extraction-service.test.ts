@@ -60,6 +60,7 @@ function setup() {
     abort: vi.fn(async () => {}),
     history: vi.fn(async () => []),
     send: vi.fn(async () => 1),
+    try: vi.fn<OnlineAgent['try']>(),
     retryFinalization: vi.fn(async () => {}),
   } satisfies OnlineAgent;
   const deps = {
@@ -69,7 +70,6 @@ function setup() {
   };
   const service = new StructuredExtractionService(deps, {
     deadlineMs: 1_000,
-    pollMs: 250,
     cleanupMs: 20,
   });
   return { service, session, deps };
@@ -79,21 +79,18 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it('waits beyond admission with bounded status polling, then reads only the successful result', async () => {
+it('waits for the saved result after admission without polling', async () => {
   const { service, session, deps } = setup();
-  session.status
-    .mockResolvedValueOnce('running')
-    .mockResolvedValueOnce('running')
-    .mockResolvedValueOnce('idle');
+  const completed = deferred<{ name: string }>();
+  session.get.mockReturnValue(completed.promise);
   const controller = new AbortController();
   const remove = vi.spyOn(controller.signal, 'removeEventListener');
   const pending = service.extract(actor, input, controller.signal);
   await vi.advanceTimersByTimeAsync(0);
   expect(session.run).toHaveBeenCalledOnce();
-  expect(session.get).not.toHaveBeenCalled();
-  await vi.advanceTimersByTimeAsync(249);
-  expect(session.status).toHaveBeenCalledTimes(1);
-  await vi.advanceTimersByTimeAsync(251);
+  expect(session.get).toHaveBeenCalledOnce();
+  expect(session.status).not.toHaveBeenCalled();
+  completed.resolve({ name: 'Ada' });
   expect(await pending).toEqual({ name: 'Ada' });
   expect(session.get).toHaveBeenCalledOnce();
   expect(session.history).not.toHaveBeenCalled();
@@ -106,7 +103,7 @@ it('waits beyond admission with bounded status polling, then reads only the succ
   expect(vi.getTimerCount()).toBe(0);
 });
 
-it.each(['catalog', 'background', 'run', 'status', 'get'] as const)(
+it.each(['catalog', 'background', 'run', 'get'] as const)(
   'bounds a stalled %s and uncooperative cancellation without leaking timers/listeners',
   async (phase) => {
     const { service, session, deps } = setup();
@@ -116,7 +113,6 @@ it.each(['catalog', 'background', 'run', 'status', 'get'] as const)(
     if (phase === 'background')
       deps.onlineAgent.background.mockImplementation(never);
     if (phase === 'run') session.run.mockImplementation(never);
-    if (phase === 'status') session.status.mockImplementation(never);
     if (phase === 'get') session.get.mockImplementation(never);
     session.abort.mockImplementation(never);
     const result = service
@@ -207,8 +203,8 @@ it.each([
   ['background', 403, 'EXTRACTION_FORBIDDEN'],
   ['background', 'PERMISSION_DENIED', 'EXTRACTION_FORBIDDEN'],
   ['background', 400, 'INVALID_MODEL'],
-  ['run', 400, 'INVALID_SCHEMA'],
-  ['run', 'INVALID_ARGUMENT', 'INVALID_SCHEMA'],
+  ['run', 400, 'EXTRACTION_FAILED'],
+  ['run', 'INVALID_ARGUMENT', 'EXTRACTION_FAILED'],
   ['get', 409, 'EXTRACTION_FAILED'],
   ['run', undefined, 'EXTRACTION_FAILED'],
 ] as const)(
@@ -262,4 +258,22 @@ it('does not pass through an upstream ApiError or its provider message', async (
   });
   expect(deps.onError).toHaveBeenCalledWith(error);
   expect(vi.getTimerCount()).toBe(0);
+});
+
+it('maps only a schema-tagged admission rejection to invalid input, never output or storage failures', async () => {
+  const { service, session } = setup();
+  session.run.mockRejectedValueOnce({
+    status: 400,
+    details: { field: 'schema' },
+  });
+  await expect(service.extract(actor, input)).rejects.toMatchObject({
+    reason: 'INVALID_SCHEMA',
+  });
+  session.get.mockRejectedValueOnce({
+    status: 400,
+    details: { field: 'schema' },
+  });
+  await expect(service.extract(actor, input)).rejects.toMatchObject({
+    reason: 'EXTRACTION_FAILED',
+  });
 });

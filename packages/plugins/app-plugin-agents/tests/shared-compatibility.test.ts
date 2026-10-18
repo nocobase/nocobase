@@ -1,6 +1,11 @@
 import type {
   OnlineAgentToolContext as PublicToolContext,
   OnlineAgentRealtimeSession,
+  OnlineAgentRuntime,
+  OnlineAgent,
+  OnlineAgentJson,
+  OnlineAgentResult,
+  OnlineAgentSafeError,
 } from '@nocobase/app-plugin-agents/server/online-agent';
 import {
   OnlineAgentConfigurer,
@@ -220,4 +225,40 @@ it('requires JSON Schema for background run through the public server entry', ()
   >();
   expectTypeOf<z.ZodObject>().not.toExtend<Parameters<Run>[1]>();
   expectTypeOf<ReturnType<Run>>().toEqualTypeOf<Promise<void>>();
+});
+
+it('exports typed result observation through the public server entry', () => {
+  expectTypeOf<ReturnType<OnlineAgent['get']>>().toEqualTypeOf<
+    Promise<OnlineAgentJson>
+  >();
+  expectTypeOf<ReturnType<OnlineAgent['try']>>().toEqualTypeOf<
+    Promise<OnlineAgentResult>
+  >();
+  expectTypeOf<Parameters<OnlineAgent['try']>>().toEqualTypeOf<
+    [options?: { wait?: number }]
+  >();
+  const failure: OnlineAgentResult = {
+    ok: false,
+    reason: 'failed',
+    error: {
+      code: 'EXECUTION_FAILED',
+      message: 'The execution failed.',
+    } satisfies OnlineAgentSafeError,
+  };
+  expect(failure.reason).toBe('failed');
+});
+
+it('exposes conversation visibility without a background visibility override', () => {
+  expectTypeOf<
+    import('../shared/conversations.js').ConversationSummary['showInChatList']
+  >().toEqualTypeOf<boolean>();
+  expectTypeOf<
+    import('../shared/conversations.js').CreateConversationRequest['showInChatList']
+  >().toEqualTypeOf<boolean | undefined>();
+  expectTypeOf<
+    Extract<
+      keyof NonNullable<Parameters<OnlineAgentRuntime['background']>[1]>,
+      'showInChatList'
+    >
+  >().toEqualTypeOf<never>();
 });

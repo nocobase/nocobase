@@ -623,7 +623,7 @@ describe('native SDK transport, persistence and approval', () => {
     expect(f.prompts).toHaveLength(1);
     expect(await f.agent.history()).toHaveLength(2);
   });
-  it('rejects concurrent, expired and effect-review approval responses without repeated effects', async () => {
+  it('rejects concurrent and expired approval responses without repeated effects', async () => {
     const f = await fixture(true, true);
     const chat = f.chatFor();
     await chat.sendMessage({ text: 'Act' });
@@ -658,7 +658,7 @@ describe('native SDK transport, persistence and approval', () => {
   });
 
   it.each(['expired', 'effect-review'])(
-    'protects pending approvals with the %s gate',
+    'preserves approval binding while treating %s as its declared policy',
     async (gate) => {
       const f = await fixture(true, true);
       const chat = f.chatFor();
@@ -683,13 +683,113 @@ describe('native SDK transport, persistence and approval', () => {
             approval: { id: part.approval!.id, approved: true },
           })
         ).status,
-      ).toBe(409);
-      expect(f.execute).not.toHaveBeenCalled();
+      ).toBe(gate === 'expired' ? 409 : 200);
+      if (gate === 'expired') expect(f.execute).not.toHaveBeenCalled();
+      else {
+        await vi.waitFor(() => expect(f.execute).toHaveBeenCalledOnce());
+        await vi.waitFor(() => expect(f.service.isActive(row.id)).toBe(false));
+      }
       expect(
         (await f.sessions.load('alice', row.id)).call?.requiresEffectReview,
-      ).toBe(gate === 'effect-review' ? true : undefined);
+      ).toBeUndefined();
     },
   );
+
+  it('commits and rolls back native business notices in the original transaction without starting another execution', async () => {
+    const f = await fixture(true, true);
+    const chat = f.chatFor();
+    await chat.sendMessage({ text: 'Wait for my decision' });
+    const before = await f.agent.history();
+    const changed = vi.fn();
+    const release = h.services.events.on('conversation.changed', changed);
+    const deliver = (title: string, input = false) =>
+      h.services.tx.run(async (unit) => {
+        expect(
+          await h.services.conversations.deliver(unit, f.agent.sessionId, {
+            notice: { code: 'news', type: 'fixture', title },
+            ...(input
+              ? {
+                  input: {
+                    type: 'signal' as const,
+                    actor: {
+                      kind: 'user' as const,
+                      id: 'alice',
+                      name: 'Alice',
+                    },
+                    text: 'No wake',
+                  },
+                }
+              : {}),
+          }),
+        ).toBeNull();
+        expect(changed).not.toHaveBeenCalled();
+      });
+    await deliver('Committed');
+    expect(changed).toHaveBeenCalled();
+    changed.mockClear();
+    await deliver('With ignored input', true);
+    const committed = await f.agent.history();
+    expect(
+      committed.slice(before.length).map((message) => message.parts),
+    ).toEqual([
+      [
+        {
+          type: 'data-notice',
+          id: expect.any(String),
+          data: { type: 'fixture', title: 'Committed' },
+        },
+      ],
+      [
+        {
+          type: 'data-notice',
+          id: expect.any(String),
+          data: { type: 'fixture', title: 'With ignored input' },
+        },
+      ],
+    ]);
+    changed.mockClear();
+    await expect(
+      h.services.tx.run(async (unit) => {
+        await h.services.conversations.deliver(unit, f.agent.sessionId, {
+          notice: { code: 'news', type: 'fixture', title: 'Rollback' },
+        });
+        throw new Error('Rollback notification');
+      }),
+    ).rejects.toThrow('Rollback notification');
+    expect(changed).not.toHaveBeenCalled();
+    expect(await f.agent.history()).toEqual(committed);
+    expect(f.execute).not.toHaveBeenCalled();
+    expect(f.model.doStreamCalls).toHaveLength(1);
+    const waiting = committed.find((message) =>
+      message.parts.some(
+        (part) => isToolUIPart(part) && part.state === 'approval-requested',
+      ),
+    )!;
+    expect(waiting.id).toBe(before.at(-1)!.id);
+    release();
+  });
+
+  it('preserves a current-process approval and its revision through repeated startup hooks and new facades', async () => {
+    const f = await fixture(true, true);
+    const chat = f.chatFor();
+    await chat.sendMessage({ text: 'Act after approval' });
+    const before = await f.agent.history();
+    const call = (await f.sessions.load('alice', f.agent.sessionId)).call;
+    await f.service.recoverAtStartup();
+    await f.reopen().recoverAtStartup();
+    expect(await f.agent.history()).toEqual(before);
+    expect((await f.sessions.load('alice', f.agent.sessionId)).call).toEqual(
+      call,
+    );
+    expect(f.execute).not.toHaveBeenCalled();
+    expect(await f.agent.status()).toBe('running');
+    await expect(
+      f.agent.send([{ role: 'user', content: 'Cannot skip approval' }]),
+    ).rejects.toThrow('cannot accept input');
+    await f.agent.abort();
+    expect(await f.agent.status()).toBe('idle');
+    expect(f.execute).not.toHaveBeenCalled();
+  });
 
   it('keeps producing after browser disconnect and confirms Stop only after the business tool ends', async () => {
     const f = await fixture(true);

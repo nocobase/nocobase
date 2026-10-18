@@ -171,3 +171,127 @@ test('streams through the installed chat, persists across reload and stops indep
     await fixture.close();
   }
 });
+
+test('keeps partial approvals pending and renders advisory uncertainty and installed consultation cards', async ({
+  page,
+}) => {
+  test.skip(
+    !process.env.PM481_BROWSER_FIXTURE,
+    'Use the isolated online-agent-browser-server fixture.',
+  );
+  const app = applicationUrl!.replace(/\/$/, '');
+  const fixture = await createOnlineAgentModelFixture({ initialText: '' });
+  const headers = { origin: new URL(app).origin };
+  let serviceName: string | undefined;
+  try {
+    await page.goto(app + '/login');
+    await page.getByLabel('Username or email').fill(process.env.E2E_USERNAME!);
+    await page
+      .getByLabel('Password', { exact: true })
+      .fill(process.env.E2E_PASSWORD!);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await page.waitForURL((url) => !url.pathname.endsWith('/login'));
+    const configured = await page.request.post(app + '/api/agents/services', {
+      headers,
+      data: {
+        title: 'Installed approval fixture',
+        provider: 'openai-compatible',
+        baseUrl: fixture.url,
+        apiKey: 'isolated-local-fixture-only',
+        enabled: true,
+        models: [{ value: 'fixture-chat', kind: 'chat' }],
+      },
+    });
+    expect(configured.status()).toBe(201);
+    serviceName = (await configured.json()).data.name;
+    const created = await page.request.post(app + '/api/agents/conversations', {
+      headers,
+      data: {
+        agentId: 'online',
+        scope: ['fixture-approval'],
+        selectedModel: { modelService: serviceName, model: 'fixture-chat' },
+      },
+    });
+    expect(created.status()).toBe(201);
+    const id = (await created.json()).data.id;
+    const endpoint = app + '/api/agents/conversations/' + id;
+    const detail = async () =>
+      (await (await page.request.get(endpoint)).json()).data;
+    await page.goto(app + '/?chat=' + encodeURIComponent(id));
+    const panel = page.getByTestId('chat-panel');
+    await expect(panel).toBeVisible();
+    await panel
+      .locator('textarea')
+      .fill('Request two separately approved actions.');
+    await panel.getByTestId('chat-send').click();
+    await expect.poll(() => fixture.streams.length).toBe(1);
+    fixture.tools(0, [
+      { id: 'first', value: 'normal' },
+      { id: 'second', value: 'uncertain' },
+    ]);
+    await expect(
+      panel.getByRole('button', { name: 'Approve', exact: true }),
+    ).toHaveCount(2);
+    await panel
+      .getByRole('button', { name: 'Approve', exact: true })
+      .first()
+      .click();
+    await expect(
+      panel.getByRole('button', { name: 'Approve', exact: true }),
+    ).toHaveCount(1);
+    expect(fixture.streams).toHaveLength(1);
+    expect((await detail()).execution.waitingApproval).toBe(true);
+    await page.reload();
+    await expect(
+      panel.getByRole('button', { name: 'Approve', exact: true }),
+    ).toHaveCount(1);
+    expect(fixture.streams).toHaveLength(1);
+    if (process.env.E2E_SCREENSHOT_DIR)
+      await page.screenshot({
+        path: path.join(
+          process.env.E2E_SCREENSHOT_DIR,
+          'integration-approval.png',
+        ),
+        fullPage: true,
+      });
+    await panel.getByRole('button', { name: 'Approve', exact: true }).click();
+    await expect.poll(() => fixture.streams.length).toBe(2);
+    expect(JSON.stringify(fixture.requests.at(-1)?.messages)).toContain(
+      'Tool result unknown',
+    );
+    fixture.append(1, 'The approved actions have been reconciled.');
+    fixture.complete(1);
+    await expect
+      .poll(async () => (await detail()).execution.status)
+      .toBe('idle');
+    await expect(panel.getByTestId('chat-consultation')).toBeVisible();
+    await panel
+      .getByTestId('chat-consultation')
+      .locator('button')
+      .first()
+      .click();
+    await expect(
+      panel.getByText('The installed extension is ready.', { exact: true }),
+    ).toBeVisible();
+    await expect(panel.getByText(/1,840/)).toBeVisible();
+    await expect(panel.getByText(/Proposed .*plans/)).toHaveCount(0);
+    await panel.locator('textarea').fill('Continue after the advisory.');
+    await expect(panel.getByTestId('chat-send')).toBeEnabled();
+    await expect(panel.locator('[data-streaming]')).toHaveCount(0);
+    if (process.env.E2E_SCREENSHOT_DIR)
+      await page.screenshot({
+        path: path.join(
+          process.env.E2E_SCREENSHOT_DIR,
+          'integration-advisory-and-card.png',
+        ),
+        fullPage: true,
+      });
+  } finally {
+    if (serviceName)
+      await page.request.delete(
+        app + '/api/agents/services/' + encodeURIComponent(serviceName),
+        { headers },
+      );
+    await fixture.close();
+  }
+});

@@ -179,7 +179,8 @@ export interface ConversationService {
   /**
    * In the caller's transaction: writes `news.notice` to the conversation and hands `news.input` to its agent (a new
    * run, or the open one), as a message would. Answers the run, or null when the agent was not woken (no input, or
-   * the agent can no longer be woken) or the conversation is gone.
+   * the agent can no longer be woken) or the conversation is gone. Native and Runner OnlineAgent bindings save
+   * the notice but ignore input for wake-up and return null; null can therefore mean a notice was saved.
    */
   deliver(
     outer: Tx,
