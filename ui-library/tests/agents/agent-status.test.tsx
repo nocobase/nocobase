@@ -1,7 +1,5 @@
-import type {
-  ConversationDetail,
-  ConversationMessage,
-} from '@nocobase/app-plugin-agents/shared/conversations';
+import type { AppUIMessage } from '@nocobase/app-plugin-agents/client/chat';
+import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
 import {
   TestI18nProvider,
   createTestI18nRuntime,
@@ -60,46 +58,36 @@ it.each([
       locale,
       application: { namespace: 'chat-test', resources },
     });
-    const messages: ConversationMessage[] = [
+    const notices = [
+      { code: 'switchedToOnline', agentId: 'assistant', fromAgentId: 'coder' },
       {
-        id: 'switched',
-        conversationId: 'chat',
-        seq: 1,
-        role: 'system',
-        content: { type: 'text', content: 'untranslated' },
-        toolCalls: null,
-        attachments: null,
-        workContext: null,
-        metadata: {
-          notice: {
-            code: 'switchedToOnline',
-            agentId: 'assistant',
-            fromAgentId: 'coder',
-          },
-        },
-        runId: null,
-        createdAt: at,
-      },
-      {
-        id: 'unavailable',
-        conversationId: 'chat',
-        seq: 2,
-        role: 'system',
-        content: { type: 'text', content: 'untranslated' },
-        toolCalls: null,
-        attachments: null,
-        workContext: null,
-        metadata: {
-          notice: {
-            code: 'onlineFallbackUnavailable',
-            fromAgentId: 'coder',
-            reason: 'modelUnavailable',
-          },
-        },
-        runId: null,
-        createdAt: at,
+        code: 'onlineFallbackUnavailable',
+        fromAgentId: 'coder',
+        reason: 'modelUnavailable',
       },
     ];
+    const messages: AppUIMessage[] = notices.map((notice, index) => ({
+      id: notice.code,
+      role: 'system',
+      metadata: {
+        conversationId: 'chat',
+        seq: index + 1,
+        revision: 1,
+        createdAt: at,
+      },
+      parts: [
+        {
+          type: 'data-business',
+          id: notice.code,
+          data: {
+            kind: notice.code,
+            id: notice.code,
+            payload: JSON.parse(JSON.stringify(notice)),
+          },
+        },
+      ],
+    }));
+
     render(
       <TestI18nProvider runtime={runtime}>
         <AgentNotice conversation={conversation} />

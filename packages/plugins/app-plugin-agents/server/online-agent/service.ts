@@ -1,4 +1,7 @@
+import { OnlineAgentUIStreams } from './ui-streams.js';
 import { nativeExecutionStatus } from './execution.js';
+import { NativeOnlineAgent } from './native.js';
+import type { NativeApproval } from './native-store.js';
 import {
   streamText,
   stepCountIs,
@@ -30,7 +33,6 @@ import {
 } from './config.js';
 import {
   jsonSafe,
-  project,
   type OnlineAgentJson,
   type OnlineAgentOutcome,
 } from './codec.js';
@@ -38,11 +40,6 @@ import type {
   OnlineAgentSession,
   OnlineAgentSessionManager,
 } from './sessions.js';
-import {
-  OnlineAgentMemoryStreamManager,
-  type OnlineAgentStreamManager,
-  type OnlineAgentStreamWriter,
-} from './streams.js';
 
 type OnlineAgentAcceptance = {
   promise: Promise<number>;
@@ -98,10 +95,7 @@ export interface OnlineAgent {
   readonly sessionId: string;
   status(): Promise<'running' | 'idle'>;
   history(): Promise<ModelMessage[]>;
-  receive(): Promise<ReadableStream<
-    import('./streams.js').OnlineAgentStreamEvent
-  > | null>;
-  /** Processes cancellation; Runner may still be busy until terminal confirmation and history synchronization. */
+  /** Waits for background cancellation and finalization; a failed save keeps the execution busy. */
   abort(): Promise<void>;
   retryFinalization(): Promise<void>;
   send(
@@ -109,6 +103,7 @@ export interface OnlineAgent {
     input?: {
       attachmentIds?: string[][];
       clientId?: string;
+      messageId?: string;
       workContext?: import('../../shared/conversations.js').ResolvedPageContext;
       overrides?: OnlineAgentOptions;
       selectedModel?: ModelRef;
@@ -129,7 +124,8 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
   private stopping = false;
   private active = new Map<string, OnlineAgentExecution>();
   private gates = new Map<string, Promise<unknown>>();
-  readonly streams: OnlineAgentStreamManager;
+  private native: NativeOnlineAgent;
+  readonly uiStreams: OnlineAgentUIStreams;
   constructor(
     private deps: {
       sessions: OnlineAgentSessionManager;
@@ -141,11 +137,21 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       resolver?: ServiceResolver;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
-      streams?: OnlineAgentStreamManager;
+      uiStreams?: OnlineAgentUIStreams;
       onError(error: unknown): void;
     },
   ) {
-    this.streams = deps.streams ?? new OnlineAgentMemoryStreamManager();
+    this.uiStreams =
+      deps.uiStreams ??
+      new OnlineAgentUIStreams({ onError: (error) => deps.onError(error) });
+    this.native = new NativeOnlineAgent({
+      uiStreams: this.uiStreams,
+      ...deps,
+      configurer: this.configurer,
+      complete: (id, execution) => {
+        if (this.active.get(id) === execution) this.active.delete(id);
+      },
+    });
   }
   /** Called only by the server Provider before routes are mounted. */
   async recoverAtStartup(): Promise<void> {
@@ -165,6 +171,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     const failures = results.flatMap((result) =>
       result.status === 'rejected' ? [result.reason as unknown] : [],
     );
+    await this.uiStreams.shutdown();
     if (failures.length)
       console.warn(
         'OnlineAgent finalization failed during shutdown.',
@@ -177,6 +184,37 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     return this.active.has(sessionId);
   }
 
+  /** The application authorizes its business event before delivering it as the conversation owner. */
+  async notify(
+    context: OnlineAgentContext,
+    id: string,
+    input: {
+      id: string;
+      parts: import('../../shared/online-agent.js').AppUIMessage['parts'];
+    },
+  ): Promise<import('../../shared/online-agent.js').AppUIMessage> {
+    this.trusted(context);
+    if (!input.id || input.id.length > 64)
+      throw invalid('A valid notification ID is required.');
+    return this.deps.sessions.native.deliver(
+      context.user.id,
+      id,
+      input.id,
+      input.parts,
+    );
+  }
+  get recovery(): 'shared' | 'live' {
+    return this.uiStreams.enabled ? 'shared' : 'live';
+  }
+  async producerAvailable(
+    id: string,
+    persistedRunning: boolean = true,
+  ): Promise<boolean> {
+    return (
+      this.isActive(id) ||
+      (persistedRunning && (await this.uiStreams.producerAvailable(id)))
+    );
+  }
   async chatAgents(
     userId: string,
   ): Promise<import('../../shared/conversations.js').ChatAgent[]> {
@@ -302,11 +340,13 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       options.sessionId && Object.keys(requestedOptions).length
         ? requestedOptions
         : undefined;
+    let responseExecution: OnlineAgentExecution | undefined;
     if (
       options.sessionId &&
       (requestedOverrides || requestedModel) &&
       (this.active.has(sessionId) ||
         loaded.call?.state === 'running' ||
+        loaded.call?.state === 'waitingApproval' ||
         loaded.call?.closing)
     )
       throw conflict('This conversation is busy.');
@@ -316,12 +356,16 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     };
     return {
       sessionId,
+      receiveUI: async () => {
+        await this.deps.sessions.load(userId, sessionId);
+        return this.native.receive(userId, sessionId, responseExecution);
+      },
+      approve: (input: NativeApproval) =>
+        this.approve(context, sessionId, input, (execution) => {
+          responseExecution = execution;
+        }),
       status,
       history: () => this.deps.sessions.history(userId, sessionId),
-      receive: async () => {
-        await this.deps.sessions.load(userId, sessionId);
-        return this.streams.receive(sessionId);
-      },
       abort: async () => {
         await this.deps.sessions.load(userId, sessionId);
         const execution = await this.gate(sessionId, async () => {
@@ -335,11 +379,18 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         }
       },
       retryFinalization: async () => {
-        await this.deps.sessions.load(userId, sessionId);
+        const current = await this.deps.sessions.load(userId, sessionId);
         const execution = this.active.get(sessionId);
         if (execution) {
           await execution.task;
           await this.finish(execution);
+        } else if (
+          kind === 'realtime' &&
+          (current.call?.state === 'running' || current.call?.closing)
+        ) {
+          throw conflict(
+            'Finalization requires the live producer that owns its snapshot; reconcile history and execution.',
+          );
         }
       },
       send: async (
@@ -347,16 +398,26 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         input?: {
           attachmentIds?: string[][];
           clientId?: string;
+          messageId?: string;
           workContext?: import('../../shared/conversations.js').ResolvedPageContext;
           overrides?: OnlineAgentOptions;
           selectedModel?: ModelRef;
         },
       ) => {
-        const seq = await this.start(context, sessionId, messages, {
-          ...input,
-          overrides: input?.overrides ?? requestedOverrides,
-          selectedModel: input?.selectedModel ?? requestedModel,
-        });
+        const seq = await this.start(
+          context,
+          sessionId,
+          messages,
+          {
+            ...input,
+            overrides: input?.overrides ?? requestedOverrides,
+            selectedModel: input?.selectedModel ?? requestedModel,
+          },
+          undefined,
+          (execution) => {
+            responseExecution = execution;
+          },
+        );
         requestedOverrides = undefined;
         requestedModel = undefined;
         return seq;
@@ -501,8 +562,10 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         ).length
           ? overrides
           : undefined;
+        let submitted = runner;
         return {
           ...runner,
+          receive: () => submitted.receive(),
           send: async (messages, input) => {
             if (
               (input?.overrides || pendingOptions) &&
@@ -530,6 +593,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
               },
               current,
             );
+            submitted = opened;
             const accepted = await opened.send(messages, {
               ...input,
               overrides: undefined,
@@ -569,11 +633,56 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       backend: 'native',
       status: native.status,
       send: native.send,
-      receive: native.receive,
-      abort: native.abort,
+      receive: native.receiveUI,
+      approve: native.approve,
+      messages: (query) =>
+        this.deps.sessions.native.page(
+          context.user.id,
+          native.sessionId,
+          query,
+        ),
+      abort: async () => {
+        // This facade was authorized when opened. Signal its local producer before any asynchronous state read.
+        const execution = this.active.get(native.sessionId);
+        if (execution) {
+          execution.abort.abort();
+          await execution.task;
+          await this.finish(execution);
+          return;
+        }
+        const current = await this.deps.sessions.load(
+          context.user.id,
+          native.sessionId,
+        );
+        if (current.call?.state === 'waitingApproval') {
+          await this.deps.sessions.native.stop(
+            context.user.id,
+            native.sessionId,
+          );
+          return;
+        }
+        if (
+          current.call?.state === 'running' &&
+          !this.active.has(native.sessionId)
+        ) {
+          if (
+            current.call.executionId &&
+            (await this.uiStreams.requestStop(
+              context.user.id,
+              native.sessionId,
+              current.call.executionId,
+            ))
+          )
+            return;
+          throw conflict(
+            'The producer is unavailable; stopping has not been confirmed.',
+          );
+        }
+        await native.abort();
+      },
       retryFinalization: native.retryFinalization,
       history: () =>
-        this.deps.sessions.publicHistory(context.user.id, native.sessionId),
+        this.deps.sessions.native.history(context.user.id, native.sessionId),
     };
   }
   background(
@@ -601,7 +710,10 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     if (!allowed.includes(`${model.modelService}/${model.model}`))
       throw invalid('The selected model is outside this configuration.');
   }
-  private notify(execution: OnlineAgentExecution, value: Observation): void {
+  private notifyObservers(
+    execution: OnlineAgentExecution,
+    value: Observation,
+  ): void {
     execution.observation = value;
     for (const observer of execution.observers) observer(value);
     execution.observers.clear();
@@ -708,7 +820,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       execution.finalizing = execution
         .finalize()
         .catch((error: unknown) => {
-          this.notify(execution, {
+          this.notifyObservers(execution, {
             error: conflict(
               'The execution could not be finalized. Retry finalization before reading its result.',
             ),
@@ -721,6 +833,37 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     }
     return execution.finalizing;
   }
+  private async approve(
+    context: OnlineAgentContext,
+    id: string,
+    input: NativeApproval,
+    onExecution?: (execution: OnlineAgentExecution) => void,
+  ): Promise<number> {
+    this.trusted(context);
+    const accepted = acceptance();
+    const execution: OnlineAgentExecution = {
+      abort: new AbortController(),
+      observers: new Set(),
+    };
+    await this.gate(id, async () => {
+      if (this.stopping) throw conflict('OnlineAgent is stopping.');
+      if (this.active.size >= 1024)
+        throw conflict('OnlineAgent execution limit exceeded.');
+      if (this.active.has(id)) throw conflict('This conversation is busy.');
+      this.active.set(id, execution);
+      onExecution?.(execution);
+      execution.task = this.native.run(
+        context,
+        id,
+        [],
+        undefined,
+        execution,
+        accepted,
+        input,
+      );
+    });
+    return accepted.promise;
+  }
   private async start(
     context: OnlineAgentContext,
     id: string,
@@ -728,15 +871,19 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     input?: {
       attachmentIds?: string[][];
       clientId?: string;
+      messageId?: string;
       workContext?: import('../../shared/conversations.js').ResolvedPageContext;
       overrides?: OnlineAgentOptions;
       selectedModel?: ModelRef;
     },
     schema?: Schema<OnlineAgentJson>,
+    onExecution?: (execution: OnlineAgentExecution) => void,
   ): Promise<number> {
     if (!messages.length || messages.some((message) => message.role !== 'user'))
       throw invalid('Input must contain user messages.');
-    messages.forEach((message) => encode(message));
+    const session = await this.deps.sessions.load(context.user.id, id);
+    if (session.kind === 'background')
+      messages.forEach((message) => encode(message));
     if (this.stopping) throw conflict('OnlineAgent is stopping.');
     const execution: OnlineAgentExecution = {
       abort: new AbortController(),
@@ -749,15 +896,26 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       if (this.active.size >= 1024)
         throw conflict('OnlineAgent execution limit exceeded.');
       this.active.set(id, execution);
-      execution.task = this.prepareAndExecute(
-        context,
-        id,
-        decode(encode(messages)) as ModelMessage[],
-        input,
-        schema,
-        execution,
-        accepted,
-      );
+      onExecution?.(execution);
+      execution.task =
+        session.kind === 'realtime'
+          ? this.native.run(
+              context,
+              id,
+              structuredClone(messages),
+              input,
+              execution,
+              accepted,
+            )
+          : this.prepareAndExecute(
+              context,
+              id,
+              decode(encode(messages)) as ModelMessage[],
+              input,
+              schema,
+              execution,
+              accepted,
+            );
     });
     return accepted.promise;
   }
@@ -770,6 +928,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       | {
           attachmentIds?: string[][];
           clientId?: string;
+          messageId?: string;
           workContext?: import('../../shared/conversations.js').ResolvedPageContext;
           overrides?: OnlineAgentOptions;
           selectedModel?: ModelRef;
@@ -858,7 +1017,6 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     const toolEvidence = new Map<string, ModelMessage[]>();
     const toolCompletions = new Map<string, () => void>();
     const convertToolEvidence = new Map<string, () => Promise<void>>();
-    let writer: OnlineAgentStreamWriter | undefined;
     let response: ModelMessage[] = [];
     let partial = '';
     let outcome: OnlineAgentOutcome = 'completed';
@@ -866,8 +1024,6 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     let outputInvalid = false;
     let sdkStopped: Promise<void> | undefined;
     try {
-      if (session.kind === 'realtime')
-        writer = await this.streams.open(id, afterSeq);
       let sdkFailure: { error: unknown } | undefined;
       const generated = streamText({
         model,
@@ -951,7 +1107,6 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         onChunk: async ({ chunk }) => {
           if (chunk.type === 'text-delta') {
             partial += chunk.text;
-            await writer?.append(response.length, chunk.text);
           }
         },
         onError: ({ error }) => {
@@ -965,11 +1120,8 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
             step.finishReason === 'other'
           )
             return;
-          const first = response.length;
           response.push(...step.response.messages);
           partial = '';
-          for (let index = first; index < response.length; index++)
-            await writer?.publish(index, project(response[index]));
         },
       });
       sdkStopped = Promise.resolve(generated.responseMessages).then(
@@ -1032,7 +1184,6 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         }[]
       | undefined;
     let saved: number | undefined;
-    let sealed = false;
     let cleared = false;
     execution.finalize = async () => {
       if (!items) {
@@ -1097,24 +1248,19 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
             ...(result === undefined ? {} : { result }),
           },
         );
-      await writer?.seal();
       if (!cleared) {
         await this.deps.sessions.finish(context.user.id, id);
         cleared = true;
-      }
-      if (!sealed) {
-        await writer?.finish(outcome, saved);
-        sealed = true;
       }
       execution.finalize = undefined;
       if (this.active.get(id) === execution) this.active.delete(id);
       // Persistence, stream finalization and occupancy release all precede notification.
       try {
-        this.notify(execution, {
+        this.notifyObservers(execution, {
           result: this.result(outcome, result, outputInvalid),
         });
       } catch (error) {
-        this.notify(execution, { error });
+        this.notifyObservers(execution, { error });
       }
     };
     try {

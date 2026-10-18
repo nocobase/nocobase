@@ -1,10 +1,10 @@
 import type { ModelMessage } from 'ai';
-import type {
-  ConversationMessage,
-  ResolvedPageContext,
-} from '../../shared/conversations.js';
+import type { ResolvedPageContext } from '../../shared/conversations.js';
 import type { ModelRef } from '../../shared/models.js';
-import type { OnlineAgentStreamEvent } from '../../shared/online-agent.js';
+import type { AppUIMessage } from '../../shared/online-agent.js';
+import type { NativeUIChunk } from './native.js';
+import type { NativeApproval } from './native-store.js';
+import type { NativeHistoryQuery, NativeHistoryPage } from './native-store.js';
 import type {
   OnlineAgentOptions,
   OnlineAgentConfig,
@@ -14,6 +14,7 @@ import type {
 export type OnlineAgentSendOptions = {
   attachmentIds?: string[][];
   clientId?: string;
+  messageId?: string;
   workContext?: ResolvedPageContext;
   overrides?: OnlineAgentOptions;
   selectedModel?: ModelRef;
@@ -31,12 +32,14 @@ export interface OnlineAgentRealtimeSession {
   readonly sessionId: string;
   readonly backend: 'native' | 'runner';
   status(): Promise<'running' | 'idle'>;
-  history(): Promise<ConversationMessage[]>;
+  history(): Promise<AppUIMessage[]>;
+  approve?(input: NativeApproval): Promise<number>;
+  messages(query: NativeHistoryQuery): Promise<NativeHistoryPage>;
   send(
     messages: ModelMessage[],
     input?: OnlineAgentSendOptions,
   ): Promise<number>;
-  receive(): Promise<ReadableStream<OnlineAgentStreamEvent> | null>;
+  receive(): Promise<ReadableStream<NativeUIChunk> | null>;
   abort(): Promise<void>;
   retryFinalization(): Promise<void>;
 }
@@ -85,6 +88,12 @@ export interface OnlineAgentRealtimeService {
 
 /** Application runtime; native background execution remains a separate capability. */
 export interface OnlineAgentRuntime extends OnlineAgentRealtimeService {
+  readonly recovery: 'shared' | 'live';
+  notify(
+    context: OnlineAgentContext,
+    id: string,
+    input: { id: string; parts: AppUIMessage['parts'] },
+  ): Promise<AppUIMessage>;
   /** Internal server boot hook, before accepting requests. */
   recoverAtStartup(): Promise<void>;
   readonly configurer: import('./config.js').OnlineAgentConfigurer;

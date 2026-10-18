@@ -1,14 +1,19 @@
+import { JsonToSseTransformStream, type UIMessageChunk } from 'ai';
+
 import { ConsultationCard } from '../../client/extensions/nocobase-agent-chat/consultation-card.js';
 import {
   agentsQueryClient,
+  ChatExtensionsContext,
+  appUIMessageText,
+  type ChatExtensions,
   ChatProvider,
   useChatPanel,
   type ChatPanelState,
+  type AppUIMessage,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type {
   ChatAgent,
   ConversationDetail,
-  ConversationMessage,
 } from '@nocobase/app-plugin-agents/shared/conversations';
 import {
   createTestI18nRuntime,
@@ -23,6 +28,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useQuery } from '@tanstack/react-query';
 import { useLayoutEffect } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -93,16 +99,18 @@ const conversation: ConversationDetail = {
   execution: { status: 'idle' },
 };
 
-const message: ConversationMessage = {
+const message: AppUIMessage = {
   id: 'reply',
-  conversationId: 'saved',
-  seq: 1,
   role: 'assistant',
-  content: { type: 'text', content: 'Saved reply remains readable.' },
-  metadata: {},
-  toolCalls: null,
-  attachments: null,
-  createdAt: '2026-01-01T00:00:00Z',
+  metadata: {
+    conversationId: 'saved',
+    seq: 1,
+    revision: 1,
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+  parts: [
+    { type: 'text', text: 'Saved reply remains readable.', state: 'done' },
+  ],
 };
 const models = {
   data: [
@@ -136,17 +144,19 @@ const runtime = await createTestI18nRuntime({
   strict: false,
 });
 
-async function setup(locale = 'en-US') {
+async function setup(locale = 'en-US', extensions: ChatExtensions = {}) {
   await runtime.changeLanguage(locale);
   const tree = render(
     <TestI18nProvider runtime={runtime}>
       <MemoryRouter basename='/demo' initialEntries={['/demo/']}>
         <OnlineAgentIdentityScope>
           <ChatProvider>
-            <Probe />
-            <ChatHeaderButton />
-            <OnlineAgentExample />
-            <OnlineAgentPanel />
+            <ChatExtensionsContext.Provider value={extensions}>
+              <Probe />
+              <ChatHeaderButton />
+              <OnlineAgentExample />
+              <OnlineAgentPanel />
+            </ChatExtensionsContext.Provider>
           </ChatProvider>
         </OnlineAgentIdentityScope>
       </MemoryRouter>
@@ -725,17 +735,12 @@ it('renders unreadable message history as an error instead of an empty conversat
 });
 
 it('lets a failed known-unsubmitted input be discarded without leaving Send blocked', async () => {
-  const normal = host.request.getMockImplementation()!;
   host.catalog.mockResolvedValue(models);
-  host.request.mockImplementation((input) =>
-    input.path.endsWith('/messages') && input.method === 'POST'
-      ? Promise.reject({
-          domain: 'agents',
-          reason: 'INVALID_REQUEST',
-          status: 400,
-        })
-      : normal(input),
-  );
+  host.stream.mockRejectedValue({
+    domain: 'agents',
+    reason: 'INVALID_REQUEST',
+    status: 400,
+  });
   await setup();
   act(() => {
     panel.openChat({ conversationId: 'saved' });
@@ -820,18 +825,31 @@ it.each([
     let accepted = false;
     let terminal = false;
     let accept!: () => void;
-    let output!: ReadableStreamDefaultController<Uint8Array>;
+    let output!: ReadableStreamDefaultController<UIMessageChunk>;
     const inputMessage = {
       ...message,
       id: 'input',
-      seq: fresh ? 1 : 2,
+      metadata: { ...message.metadata!, seq: fresh ? 1 : 2 },
       role: 'user' as const,
-      content: { type: 'text' as const, content: 'Next question' },
+      parts: [
+        {
+          type: 'text' as const,
+          text: 'Next question',
+          state: 'done' as const,
+        },
+      ],
     };
     const reply = {
       ...message,
-      seq: inputMessage.seq + 1,
-      content: { type: 'text' as const, content: 'First body' },
+      id: 'answer',
+      metadata: {
+        ...message.metadata!,
+        seq: inputMessage.metadata.seq! + 1,
+        executionId: 'native-1',
+      },
+      parts: [
+        { type: 'text' as const, text: 'First body', state: 'done' as const },
+      ],
     };
     const detail = () => ({
       ...conversation,
@@ -841,28 +859,28 @@ it.each([
     });
     const original = host.request.getMockImplementation()!;
     host.catalog.mockResolvedValue(models);
-    host.stream.mockImplementation(async () =>
-      accepted
-        ? new ReadableStream({
-            start(controller) {
-              output = controller;
-            },
-          })
-        : null,
-    );
+    host.stream.mockImplementation(async (input) => {
+      expect(input.method).toBe('POST');
+      const body = input.json as { message: AppUIMessage };
+      inputMessage.id = body.message.id;
+      await new Promise<void>((resolve) => {
+        accept = resolve;
+      });
+      accepted = true;
+      return new ReadableStream<UIMessageChunk>({
+        start(controller) {
+          output = controller;
+        },
+      })
+        .pipeThrough(new JsonToSseTransformStream())
+        .pipeThrough(new TextEncoderStream());
+    });
     host.request.mockImplementation(async (input) => {
       if (input.path === 'agents/conversations' && input.method === 'POST')
         return { data: detail() };
       if (input.path === 'agents/conversations/saved')
         return { data: detail() };
       if (input.path.endsWith('/messages')) {
-        if (input.method === 'POST') {
-          await new Promise<void>((resolve) => {
-            accept = resolve;
-          });
-          accepted = true;
-          return { data: { conversation: detail(), message: inputMessage } };
-        }
         return {
           data: [
             ...(!fresh ? [{ ...message, id: 'previous-reply' }] : []),
@@ -871,9 +889,9 @@ it.each([
           ],
           meta: {
             lastSeq: terminal
-              ? reply.seq
+              ? reply.metadata.seq
               : accepted
-                ? inputMessage.seq
+                ? inputMessage.metadata.seq
                 : fresh
                   ? 0
                   : 1,
@@ -914,31 +932,24 @@ it.each([
     expect(row?.previousElementSibling).toHaveTextContent('Next question');
     await waitFor(() => expect(output).toBeDefined());
     expect(thinking).toBeVisible();
-    const emit = (event: object) =>
-      output.enqueue(
-        new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`),
-      );
-    act(() =>
+    const emit = (event: UIMessageChunk) => output.enqueue(event);
+    act(() => {
       emit({
-        type: 'delta',
-        boundary: { afterSeq: inputMessage.seq },
-        messageIndex: 0,
-        text: 'First body',
-      }),
-    );
+        type: 'start',
+        messageId: 'answer',
+        messageMetadata: reply.metadata,
+      });
+      emit({ type: 'text-start', id: 'text' });
+      emit({ type: 'text-delta', id: 'text', delta: 'First body' });
+    });
     expect(await screen.findByText('First body')).toBeVisible();
     expect(
       document.querySelector('[data-chat-feedback="thinking"]'),
     ).toBeNull();
     terminal = true;
     act(() => {
-      emit({
-        type: 'saved',
-        boundary: { afterSeq: inputMessage.seq },
-        lastSeq: reply.seq,
-        status: 'idle',
-        outcome: 'completed',
-      });
+      emit({ type: 'text-end', id: 'text' });
+      emit({ type: 'finish', messageMetadata: reply.metadata });
       output.close();
     });
     expect(
@@ -954,16 +965,18 @@ it.each([
 it.each(['en-US', 'zh-CN'])(
   'shows first-response and cancellation confirmation feedback in %s without hiding the reply',
   async (locale) => {
-    let output!: ReadableStreamDefaultController<Uint8Array>;
+    let output!: ReadableStreamDefaultController<UIMessageChunk>;
     let terminal = false;
     const original = host.request.getMockImplementation()!;
     host.catalog.mockResolvedValue(models);
     host.stream.mockResolvedValue(
-      new ReadableStream({
+      new ReadableStream<UIMessageChunk>({
         start(controller) {
           output = controller;
         },
-      }),
+      })
+        .pipeThrough(new JsonToSseTransformStream())
+        .pipeThrough(new TextEncoderStream()),
     );
     host.request.mockImplementation(async (input) => {
       if (
@@ -985,10 +998,26 @@ it.each(['en-US', 'zh-CN'])(
               ...message,
               id: 'input',
               role: 'user',
-              content: { type: 'text', content: 'Question' },
+              parts: [{ type: 'text', text: 'Question', state: 'done' }],
             },
+            ...(terminal
+              ? [
+                  {
+                    id: 'answer',
+                    role: 'assistant',
+                    metadata: {
+                      ...message.metadata,
+                      seq: 2,
+                      executionId: 'native-1',
+                    },
+                    parts: [
+                      { type: 'text', text: 'First body', state: 'done' },
+                    ],
+                  },
+                ]
+              : []),
           ],
-          meta: { lastSeq: 1 },
+          meta: { lastSeq: terminal ? 2 : 1 },
         };
       return original(input);
     });
@@ -997,21 +1026,21 @@ it.each(['en-US', 'zh-CN'])(
     expect(
       await screen.findByText(locale === 'zh-CN' ? '正在思考…' : 'Thinking…'),
     ).toBeVisible();
-    const emit = (event: object) =>
-      output.enqueue(
-        new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`),
-      );
-    act(() =>
+    const emit = (event: UIMessageChunk) => output.enqueue(event);
+    act(() => {
       emit({
-        type: 'part',
-        boundary: { afterSeq: 1 },
-        messageIndex: 0,
-        item: {
-          role: 'assistant',
-          parts: [{ type: 'text', text: 'First body' }],
+        type: 'start',
+        messageId: 'answer',
+        messageMetadata: {
+          conversationId: 'saved',
+          createdAt: message.metadata!.createdAt,
+          revision: 0,
+          executionId: 'native-1',
         },
-      }),
-    );
+      });
+      emit({ type: 'text-start', id: 'text' });
+      emit({ type: 'text-delta', id: 'text', delta: 'First body' });
+    });
     expect(await screen.findByText('First body')).toBeVisible();
     expect(
       screen.queryByText(locale === 'zh-CN' ? '正在思考…' : 'Thinking…'),
@@ -1030,7 +1059,8 @@ it.each(['en-US', 'zh-CN'])(
     ).toBeVisible();
     terminal = true;
     act(() => {
-      emit({ type: 'saved', lastSeq: 2 });
+      emit({ type: 'text-end', id: 'text' });
+      emit({ type: 'finish' });
       output.close();
     });
     expect(
@@ -1043,6 +1073,226 @@ it.each(['en-US', 'zh-CN'])(
     expect(screen.getByText('First body')).toBeVisible();
   },
 );
+
+it('uses formal extensions with one segmented logical message, independent notices, revisions and complete history pages', async () => {
+  const at = (second: number) => `2026-01-01T00:00:0${second}Z`;
+  const reply: AppUIMessage = {
+    id: 'logical-run',
+    role: 'assistant',
+    metadata: {
+      conversationId: 'saved',
+      seq: 2,
+      revision: 1,
+      createdAt: at(1),
+      executionId: 'run',
+      sourceRecords: [
+        {
+          recordId: 'block-a',
+          partId: 'text-a',
+          partIndex: 0,
+          seq: 2,
+          createdAt: at(1),
+        },
+        {
+          recordId: 'block-b',
+          partId: 'text-b',
+          partIndex: 1,
+          seq: 4,
+          createdAt: at(3),
+        },
+      ],
+    },
+    parts: [
+      {
+        type: 'text',
+        text: 'First block: PM-1 PM-1. `PM-2`\n\n```ts\nPM-4\n```',
+        state: 'done',
+      },
+      { type: 'text', text: 'Second block: PM-3', state: 'done' },
+    ],
+  };
+  const notice: AppUIMessage = {
+    id: 'independent',
+    role: 'system',
+    metadata: {
+      conversationId: 'saved',
+      seq: 3,
+      revision: 1,
+      createdAt: at(2),
+    },
+    parts: [
+      {
+        type: 'data-notice',
+        id: 'news',
+        data: {
+          type: 'delegated',
+          title: 'Delegation notice',
+          params: { runId: 'child' },
+        },
+      },
+    ],
+  };
+  let records = [reply, notice],
+    revision = 1;
+  const normal = host.request.getMockImplementation()!;
+  host.request.mockImplementation(async (input) => {
+    if (input.path === 'fixture/plans')
+      return {
+        data: [{ id: 'plan-1', title: `Plan revision ${revision}`, at: at(1) }],
+      };
+    if (input.path === 'fixture/references')
+      return { data: [{ key: 'PM-1', title: 'Readable issue' }] }; // PM-3 is deliberately unreadable.
+    if (input.path.endsWith('/messages'))
+      return {
+        data: input.query?.ids
+          ? records.filter((row) => input.query.ids.split(',').includes(row.id))
+          : records,
+        meta: {
+          lastSeq: 4,
+          nextPageToken: input.query?.pageToken ? null : 'older',
+        },
+      };
+    return normal(input);
+  });
+  function References({ message }: { message: AppUIMessage }) {
+    const text = appUIMessageText(message).replace(/`[^`]*`/gu, '');
+    const keys = [...new Set(text.match(/PM-\d+/gu) ?? [])];
+    const query = useQuery(
+      {
+        queryKey: ['fixture-references', ...keys],
+        queryFn: () =>
+          api.request({
+            path: 'fixture/references',
+            query: { keys: keys.join(',') },
+          }),
+      },
+      agentsQueryClient(),
+    );
+    return (
+      <aside aria-label='References'>
+        {query.data?.data.map((record: { key: string; title: string }) => (
+          <a key={record.key} href={`/issues/${record.key}`}>
+            {record.title}
+          </a>
+        ))}
+      </aside>
+    );
+  }
+  const extra = vi.fn((row: AppUIMessage) =>
+    row.role === 'assistant' ? <References message={row} /> : null,
+  );
+  const extensions: ChatExtensions = {
+    useTimelineItems: (id, version) => {
+      const query = useQuery(
+        {
+          queryKey: ['fixture-plans', id, version],
+          queryFn: () => api.request({ path: 'fixture/plans' }),
+        },
+        agentsQueryClient(),
+      );
+      return (
+        query.data?.data.map(
+          (plan: { id: string; title: string; at: string }) => ({
+            key: plan.id,
+            at: plan.at,
+            node: <article>{plan.title}</article>,
+          }),
+        ) ?? []
+      );
+    },
+    renderMessageExtra: extra,
+    renderNews: (news) =>
+      news.type === 'delegated' ? <article>Delegation card</article> : null,
+    newsText: (news) =>
+      news.type === 'translated' ? 'Translated notification' : null,
+  };
+  await setup('en-US', extensions);
+  act(() => panel.openChat({ conversationId: 'saved' }));
+  await waitFor(() =>
+    expect(screen.getByText('Second block: PM-3')).toBeVisible(),
+  );
+  expect(await screen.findByText('Plan revision 1')).toBeVisible();
+  expect(await screen.findByText('Readable issue')).toBeVisible();
+  const log = screen.getByRole('log');
+  const assertOrder = () => {
+    expect(
+      [...log.querySelectorAll('ol[aria-label="Messages"] > li')]
+        .filter((node) => !node.querySelector('[data-chat-feedback]'))
+        .map(
+          (node) =>
+            node.getAttribute('data-message-id') ??
+            node.getAttribute('data-chat-item'),
+        ),
+    ).toEqual(['logical-run', 'plan-1', 'independent', 'logical-run']);
+    expect(
+      log.querySelectorAll('[data-message-id="logical-run"]'),
+    ).toHaveLength(2);
+    expect(within(log).getAllByLabelText('References')).toHaveLength(1);
+  };
+  assertOrder();
+  expect(
+    extra.mock.calls
+      .filter(([row]) => row.id === 'logical-run')
+      .every(
+        ([row]) =>
+          row ===
+          extra.mock.calls.find(
+            ([message]) => message.id === 'logical-run',
+          )?.[0],
+      ),
+  ).toBe(true);
+  const referenceRequest = host.request.mock.calls.find(
+    ([request]) => request.path === 'fixture/references',
+  )![0];
+  expect(referenceRequest.query.keys).toBe('PM-1,PM-3');
+  expect(
+    within(screen.getByLabelText('References')).queryByText('PM-2'),
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Earlier messages' }));
+  await waitFor(() =>
+    expect(host.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: expect.objectContaining({ pageToken: 'older' }),
+      }),
+    ),
+  );
+  assertOrder();
+  revision = 2;
+  records = [
+    { ...reply, metadata: { ...reply.metadata!, revision: 2 } },
+    notice,
+  ];
+  const callbacks = host.realtime.subscribe.mock.calls as unknown as [
+    string,
+    (event: { payload: unknown }) => void,
+  ][];
+  act(() =>
+    callbacks
+      .filter(([topic]) => topic === 'agents:conversations')
+      .forEach(([, listener]) =>
+        listener({
+          payload: {
+            kind: 'conversation.messageUpdated',
+            conversationId: 'saved',
+            messageId: 'logical-run',
+            revision: 2,
+          },
+        }),
+      ),
+  );
+  expect(await screen.findByText('Plan revision 2')).toBeVisible();
+  assertOrder();
+  revision = 3;
+  await act(async () => {
+    await agentsQueryClient().invalidateQueries({
+      queryKey: ['fixture-plans'],
+    });
+  });
+  await waitFor(() =>
+    expect(screen.getByText('Plan revision 3')).toBeVisible(),
+  );
+  assertOrder();
+});
 
 it.each(['en-US', 'zh-CN'])(
   'renders a historical consultation with plans in %s without a quantity prompt',

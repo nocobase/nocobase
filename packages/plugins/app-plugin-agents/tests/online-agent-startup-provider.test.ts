@@ -36,7 +36,7 @@ it.each([undefined, 'stderr'] as const)(
         model: ['fixture/chat'],
       };
       const model = { modelService: 'fixture', model: 'chat' };
-      const id = await sessions.create('alice', 'realtime', config, model);
+      const id = await sessions.create('alice', 'background', config, model);
       await sessions.accept('alice', id, config, model, [
         {
           id: 'accepted',

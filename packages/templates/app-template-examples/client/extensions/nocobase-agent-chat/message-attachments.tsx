@@ -1,3 +1,4 @@
+import type { FileUIPart } from 'ai';
 import type { MessageAttachment } from '@nocobase/app-plugin-agents/shared/conversations';
 import { useLocale } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
@@ -10,7 +11,22 @@ import { cn } from 'cn';
 
 import { useAttachmentLabels } from './chat-i18n.js';
 
-function fileOf(attachment: MessageAttachment): AttachmentFile {
+function fileOf(attachment: MessageAttachment | FileUIPart): AttachmentFile {
+  if ('type' in attachment)
+    return {
+      id: attachment.url,
+      name: attachment.filename ?? attachment.mediaType,
+      url: attachment.url,
+      downloadUrl: attachment.url,
+      image: [
+        'image/png',
+        'image/jpeg',
+        'image/gif',
+        'image/webp',
+        'image/avif',
+        'image/bmp',
+      ].includes(attachment.mediaType),
+    };
   return {
     id: attachment.id,
     name: attachment.filename,
@@ -22,7 +38,7 @@ function fileOf(attachment: MessageAttachment): AttachmentFile {
 }
 
 export interface MessageAttachmentsProps {
-  readonly attachments: readonly MessageAttachment[];
+  readonly attachments: readonly (MessageAttachment | FileUIPart)[];
   readonly className?: string;
 }
 

@@ -24,6 +24,15 @@ import type {
   AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
 
+export type {
+  AppUIData,
+  AppUIJson,
+  AppUIMessage,
+  AppUIMessageMetadata,
+  AppUITools,
+} from '../shared/online-agent.js';
+export { appUIMessageText } from '../shared/online-agent.js';
+
 export {
   CHAT_PANEL_ATTRIBUTE,
   CHAT_PANEL_ID,
@@ -42,7 +51,6 @@ export {
 } from './chat/provider.js';
 export {
   CHAT_POLL_MS,
-  CHAT_STREAM_POLL_MS,
   useChatAgents,
   useChatModels,
   useChatApi,
@@ -79,6 +87,7 @@ export {
   ChatExtensionsContext,
   type ChatExtensions,
   type ChatTimelineItem,
+  type ChatDataPart,
 } from './chat/extensions.js';
 export {
   buildPageContext,
@@ -94,6 +103,9 @@ export {
   type ChatSelection,
 } from './chat/context-model.js';
 export {
+  chatMessageSegments,
+  type ChatMessageSegment,
+  type UIMessagePage,
   liveStepsView,
   newConversationAgent,
   noticeText,
@@ -180,3 +192,8 @@ export {
 } from './chat/feedback.js';
 
 export { useChatScroll } from './chat/use-chat-scroll.js';
+
+export {
+  appUIToolApprovalInputSchema,
+  type AppUIToolApprovalInput,
+} from '../shared/online-agent.js';

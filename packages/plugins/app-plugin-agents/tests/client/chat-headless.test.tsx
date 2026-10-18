@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { sdkResponse } from './sdk-chat.js';
 /**
  * The chat's headless exports, as an application's own chat UI uses them: the data hooks read this plugin's cache
  * whatever `QueryClientProvider` is above them (or none), and `ChatProvider` holds the one realtime subscription.
@@ -276,10 +277,7 @@ describe('headless chat hooks', () => {
           new Promise<ConversationDetail>((resolve) => {
             finishCreate = resolve;
           }),
-        'POST agents/conversations/c1/messages': () => ({
-          conversation,
-          message: { id: 'm1', seq: 1 },
-        }),
+        'POST agents/conversations/c1/messages': () => sdkResponse(),
       });
       const selectedModel = { modelService, model: 'shared/model' };
       const { result, rerender } = renderHook(
@@ -332,7 +330,13 @@ describe('headless chat hooks', () => {
       );
       expect(
         callsTo('POST', 'agents/conversations/c1/messages')[0]?.json,
-      ).toEqual({ content: 'Hello', clientId: expect.any(String) });
+      ).toEqual({
+        message: {
+          id: expect.any(String),
+          role: 'user',
+          parts: [{ type: 'text', text: 'Hello' }],
+        },
+      });
     },
   );
 
@@ -353,10 +357,7 @@ describe('headless chat hooks', () => {
       };
       resetApi({
         'POST agents/conversations': () => conversation,
-        'POST agents/conversations/c1/messages': () => ({
-          conversation,
-          message: { id: 'm1', seq: 1 },
-        }),
+        'POST agents/conversations/c1/messages': () => sdkResponse(),
       });
       const { result } = renderHook(
         () => {
@@ -388,7 +389,13 @@ describe('headless chat hooks', () => {
       );
       expect(
         callsTo('POST', 'agents/conversations/c1/messages')[0]?.json,
-      ).toEqual({ content: 'Hello', clientId: expect.any(String) });
+      ).toEqual({
+        message: {
+          id: expect.any(String),
+          role: 'user',
+          parts: [{ type: 'text', text: 'Hello' }],
+        },
+      });
     },
   );
 
@@ -406,12 +413,7 @@ describe('headless chat hooks', () => {
     resetApi({
       'POST agents/chatAttachments': () => file,
       'DELETE agents/chatAttachments/f1': () => undefined,
-      'POST agents/conversations/c1/messages': (request) => ({
-        message: { id: 'm1', seq: 1, attachments: [file] },
-        run: null,
-        conversation: summary('c1'),
-        echo: request.json,
-      }),
+      'POST agents/conversations/c1/messages': () => sdkResponse(),
     });
     const { result } = renderHook(() => chat.useChatAttachments());
     const uploaded = await result.current.upload(
@@ -450,8 +452,11 @@ describe('headless chat hooks', () => {
     expect(
       callsTo('POST', 'agents/conversations/c1/messages')[0]?.json,
     ).toEqual({
-      content: '',
-      clientId: expect.any(String),
+      message: {
+        id: expect.any(String),
+        role: 'user',
+        parts: [{ type: 'text', text: '' }],
+      },
       attachmentIds: ['f1'],
     });
     expect(dispatch.mock.calls[0]?.[0]).toMatchObject({

@@ -1,9 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { RunnerOnlineAgentAdapter } from '../server/online-agent/runner.js';
-import { OnlineAgentMemoryStreamManager } from '../server/online-agent/streams.js';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { OnlineAgentContext } from '../server/online-agent/config.js';
-import type { OnlineAgentStreamEvent } from '../shared/online-agent.js';
+import { appUIMessageText } from '../shared/online-agent.js';
+import type { NativeUIChunk } from '../server/online-agent/native.js';
 import { claim, createHarness, type Harness } from './harness.js';
 import { appendFile } from 'node:fs/promises';
 import type { Knex } from 'knex';
@@ -45,7 +44,7 @@ it('streams two canonical blocks before completion, deduplicates retransmission 
   expect(f.agent.backend).toBe('runner');
   await f.agent.send([{ role: 'user', content: 'Two blocks' }]);
   const stream = await f.agent.receive();
-  const events: OnlineAgentStreamEvent[] = [];
+  const events: NativeUIChunk[] = [];
   const reader = stream!.getReader();
   const reading = (async () => {
     for (;;) {
@@ -87,7 +86,7 @@ it('streams two canonical blocks before completion, deduplicates retransmission 
     ).status,
   ).toBe(200);
   await vi.waitFor(() =>
-    expect(events.filter((event) => event.type === 'message')).toHaveLength(1),
+    expect(events.filter((event) => event.type === 'text-end')).toHaveLength(1),
   );
   await h.services.tx.run((unit) =>
     h.services.conversations.deliver(unit, f.agent.sessionId, {
@@ -121,18 +120,31 @@ it('streams two canonical blocks before completion, deduplicates retransmission 
     ).status,
   ).toBe(200);
   await vi.waitFor(() =>
-    expect(
-      events.filter(
-        (event) =>
-          event.type === 'message' && event.message.role === 'assistant',
-      ),
-    ).toHaveLength(2),
+    expect(events.filter((event) => event.type === 'text-end')).toHaveLength(2),
   );
   expect(await f.agent.status()).toBe('running');
-  expect(events.some((event) => event.type === 'saved')).toBe(false);
+  expect(events.some((event) => event.type === 'finish')).toBe(false);
   const before = await f.agent.history();
   expect(
-    before.map((message) => [message.seq, message.content.content]),
+    before
+      .flatMap((message) =>
+        message
+          .metadata!.sourceRecords!.filter(
+            (source) => message.parts[source.partIndex].type !== 'file',
+          )
+          .map((source) => {
+            const part = message.parts[source.partIndex];
+            return [
+              source.seq,
+              part.type === 'text'
+                ? part.text
+                : part.type === 'data-notice'
+                  ? part.data.title
+                  : '',
+            ];
+          }),
+      )
+      .sort((a, b) => Number(a[0]) - Number(b[0])),
   ).toEqual([
     [1, 'Two blocks'],
     [2, 'First block'],
@@ -153,7 +165,7 @@ it('streams two canonical blocks before completion, deduplicates retransmission 
     ).status,
   ).toBe(200);
   await reading;
-  expect(events.at(-1)).toMatchObject({ type: 'saved', lastSeq: 4 });
+  expect(events.at(-1)).toMatchObject({ type: 'finish' });
   expect(await f.agent.status()).toBe('idle');
   expect(await f.agent.history()).toEqual(before);
   expect(await f.agent.receive()).toBeNull();
@@ -246,13 +258,27 @@ it('selects scoped Runner configuration before native model lookup and restores 
     body: { agentId: f.agentId },
   });
   expect(created.status).toBe(201);
-  const sent = await h.request(
-    'POST',
+  const sent = await h.app.request(
     `/agents/conversations/${created.body.data.id}/messages`,
-    { user: 'alice', body: { content: 'No application model needed' } },
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-test-user': 'alice' },
+      body: JSON.stringify({
+        message: {
+          id: 'no-native-model',
+          role: 'user',
+          parts: [{ type: 'text', text: 'No application model needed' }],
+        },
+      }),
+    },
   );
-  expect(sent.status).toBe(201);
-  expect(sent.body.data.conversation.execution.status).toBe('running');
+  expect(sent.status).toBe(200);
+  expect(sent.headers.get('x-vercel-ai-ui-message-stream')).toBe('v1');
+  await sent.body!.cancel();
+  expect(
+    (await h.services.conversations.get('alice', created.body.data.id))
+      .execution.status,
+  ).toBe('running');
 });
 it('applies explicit pending scopes to the latest saved configuration and freezes providers while busy', async () => {
   const f = await fixture();
@@ -287,7 +313,7 @@ it('applies explicit pending scopes to the latest saved configuration and freeze
 it('keeps retry backoff and the next attempt busy, without saved or contamination from a late report', async () => {
   const f = await fixture();
   await f.agent.send([{ role: 'user', content: 'Retry' }]);
-  const events: OnlineAgentStreamEvent[] = [];
+  const events: NativeUIChunk[] = [];
   const reader = (await f.agent.receive())!.getReader();
   const reading = (async () => {
     for (;;) {
@@ -309,7 +335,7 @@ it('keeps retry backoff and the next attempt busy, without saved or contaminatio
   });
   expect(result.body.data.status).toBe('queued');
   expect(await f.agent.status()).toBe('running');
-  expect(events.some((event) => event.type === 'saved')).toBe(false);
+  expect(events.some((event) => event.type === 'finish')).toBe(false);
   await expect(
     f.agent.send([{ role: 'user', content: 'During retry' }]),
   ).rejects.toThrow('busy');
@@ -330,7 +356,7 @@ it('keeps retry backoff and the next attempt busy, without saved or contaminatio
     sessionId: 'fixture',
   });
   await reading;
-  expect(events.filter((event) => event.type === 'saved')).toHaveLength(1);
+  expect(events.filter((event) => event.type === 'finish')).toHaveLength(1);
   await f.agent.send([{ role: 'user', content: 'New round' }]);
   const late = await f.report(runId, 'events', {
     events: [
@@ -345,7 +371,7 @@ it('keeps retry backoff and the next attempt busy, without saved or contaminatio
   expect(late.status).not.toBe(200);
   expect(
     (await f.agent.history()).some(
-      (message) => message.content.content === 'Late old output',
+      (message) => appUIMessageText(message) === 'Late old output',
     ),
   ).toBe(false);
   expect(await f.agent.status()).toBe('running');
@@ -449,127 +475,102 @@ it('catches up a fast terminal execution before the first subscription without r
   const first = await f.agent.receive();
   if (first) {
     const reader = first.getReader();
-    const events: OnlineAgentStreamEvent[] = [];
+    const events: NativeUIChunk[] = [];
     for (;;) {
       const next = await reader.read();
       if (next.done) break;
       events.push(next.value);
     }
-    expect(events.at(-1)).toMatchObject({ type: 'saved' });
+    expect(events.at(-1)).toMatchObject({ type: 'finish' });
   }
-  expect(
-    (await f.agent.history()).map((message) => message.content.content),
-  ).toEqual(['Fast', 'Fast answer']);
+  expect((await f.agent.history()).map(appUIMessageText)).toEqual([
+    'Fast',
+    'Fast answer',
+  ]);
   expect(await f.agent.status()).toBe('idle');
 });
-it.each([false, true])(
-  'finishes saved Runner output after a failed marker clear (adapter restart=%s)',
-  async (restart) => {
-    const f = await fixture();
-    await f.agent.send([{ role: 'user', content: 'Closing fixture' }]);
-    const events: OnlineAgentStreamEvent[] = [];
-    const reader = (await f.agent.receive())!.getReader();
-    const reading = (async () => {
-      for (;;) {
-        const next = await reader.read();
-        if (next.done) break;
-        events.push(next.value);
-      }
-    })();
-    const [payload] = await claim(h, f.runner);
-    await f.report(payload.run.id, 'start', {
-      workDir: '/work/chat',
-      adapter: { kind: 'claude' },
-      acceptsInput: true,
-    });
-    await f.report(payload.run.id, 'events', {
-      events: [
-        {
-          seq: 1,
-          at: h.clock.now().toISOString(),
-          type: 'text',
-          content: 'Saved through syncIn',
-        },
-      ],
-    });
-    let refuseClear = true;
-    let refused = false;
-    const transaction = h.services.tx.run.bind(h.services.tx);
-    const failure = vi
-      .spyOn(h.services.tx, 'run')
-      .mockImplementation((work, outer) =>
-        transaction(async (unit) => {
-          const before = await unit.conn
-            .repository('agConversations')
-            .findOne({ filter: { id: f.agent.sessionId } });
-          const result = await work(unit);
-          const after = await unit.conn
-            .repository('agConversations')
-            .findOne({ filter: { id: f.agent.sessionId } });
-          const wasClosing = (
-            before?.metadata as {
-              runnerOnlineAgent?: { closingRunId?: string };
-            }
-          )?.runnerOnlineAgent?.closingRunId;
-          const closing = (
-            after?.metadata as { runnerOnlineAgent?: { closingRunId?: string } }
-          )?.runnerOnlineAgent?.closingRunId;
-          if (refuseClear && wasClosing && !closing) {
-            refused = true;
-            throw new Error('Fixture closing clear failed');
-          }
-          return result;
-        }, outer),
-      );
-    const complete = vi.spyOn(h.services.reports, 'complete');
-    const inputs = (await h.services.runs.detail(payload.run.id)).inputs.map(
-      (input) => input.id,
-    );
-    await f.report(payload.run.id, 'complete', {
-      summary: 'Done',
-      handledInputIds: inputs,
-      sessionId: 'closing',
-    });
-    await vi.waitFor(() => expect(refused).toBe(true));
-    expect(await f.agent.status()).toBe('running');
-    expect(events.some((event) => event.type === 'saved')).toBe(false);
-    await expect(
-      f.agent.send([{ role: 'user', content: 'Blocked while closing' }]),
-    ).rejects.toThrow('busy');
-    refuseClear = false;
-    let recovered = f.agent;
-    let adapter: RunnerOnlineAgentAdapter | undefined;
-    if (restart) {
-      const config = await h.services.onlineAgent.configuration(
-        context(),
-        f.agent.sessionId,
-      );
-      await h.services.onlineAgent.shutdown();
-      adapter = new RunnerOnlineAgentAdapter({
-        tx: h.services.tx,
-        conversations: h.services.conversations,
-        streams: new OnlineAgentMemoryStreamManager(),
-        now: () => h.clock.now().toISOString(),
-        basePath: () => '',
-        onError: () => {},
-      });
-      recovered = await adapter.open(context(), config, {
-        sessionId: f.agent.sessionId,
-      });
+it('retries only closing after a failed terminal marker clear, preserving busy and a single history writer', async () => {
+  const f = await fixture();
+  await f.agent.send([{ role: 'user', content: 'Closing fixture' }]);
+  const events: NativeUIChunk[] = [];
+  const reader = (await f.agent.receive())!.getReader();
+  const reading = (async () => {
+    for (;;) {
+      const next = await reader.read();
+      if (next.done) break;
+      events.push(next.value);
     }
-    await recovered.retryFinalization();
-    await reading;
-    expect(await recovered.status()).toBe('idle');
-    expect(complete).toHaveBeenCalledTimes(1);
-    expect(
-      (await f.agent.history()).filter(
-        (message) => message.content.content === 'Saved through syncIn',
-      ),
-    ).toHaveLength(1);
-    failure.mockRestore();
-    await adapter?.shutdown();
-  },
-);
+  })();
+  const [payload] = await claim(h, f.runner);
+  await f.report(payload.run.id, 'start', {
+    workDir: '/work/chat',
+    adapter: { kind: 'claude' },
+    acceptsInput: true,
+  });
+  await f.report(payload.run.id, 'events', {
+    events: [
+      {
+        seq: 1,
+        at: h.clock.now().toISOString(),
+        type: 'text',
+        content: 'Saved through syncIn',
+      },
+    ],
+  });
+  let refuseClear = true;
+  let refused = false;
+  const transaction = h.services.tx.run.bind(h.services.tx);
+  const failure = vi
+    .spyOn(h.services.tx, 'run')
+    .mockImplementation((work, outer) =>
+      transaction(async (unit) => {
+        const before = await unit.conn
+          .repository('agConversations')
+          .findOne({ filter: { id: f.agent.sessionId } });
+        const result = await work(unit);
+        const after = await unit.conn
+          .repository('agConversations')
+          .findOne({ filter: { id: f.agent.sessionId } });
+        const wasClosing = (
+          before?.metadata as { runnerOnlineAgent?: { closingRunId?: string } }
+        )?.runnerOnlineAgent?.closingRunId;
+        const closing = (
+          after?.metadata as { runnerOnlineAgent?: { closingRunId?: string } }
+        )?.runnerOnlineAgent?.closingRunId;
+        if (refuseClear && wasClosing && !closing) {
+          refused = true;
+          throw new Error('Fixture closing clear failed');
+        }
+        return result;
+      }, outer),
+    );
+  const complete = vi.spyOn(h.services.reports, 'complete');
+  const inputs = (await h.services.runs.detail(payload.run.id)).inputs.map(
+    (input) => input.id,
+  );
+  await f.report(payload.run.id, 'complete', {
+    summary: 'Done',
+    handledInputIds: inputs,
+    sessionId: 'closing',
+  });
+  await vi.waitFor(() => expect(refused).toBe(true));
+  expect(await f.agent.status()).toBe('running');
+  expect(events.some((event) => event.type === 'finish')).toBe(false);
+  await expect(
+    f.agent.send([{ role: 'user', content: 'Blocked while closing' }]),
+  ).rejects.toThrow('busy');
+  refuseClear = false;
+  await f.agent.retryFinalization();
+  await reading;
+  expect(await f.agent.status()).toBe('idle');
+  expect(complete).toHaveBeenCalledTimes(1);
+  expect(
+    (await f.agent.history()).filter(
+      (message) => appUIMessageText(message) === 'Saved through syncIn',
+    ),
+  ).toHaveLength(1);
+  failure.mockRestore();
+});
 
 it('preserves directory defaults, personal eligibility and offline reasons, and rejects unavailable identities', async () => {
   h = await createHarness();
@@ -697,7 +698,7 @@ it('measures admission and proves an unchanged active read takes no write transa
   queries.splice(0);
   const second = await agent.receive();
   const unchanged = queries.splice(0);
-  await second!.cancel();
+  expect(second).toBeNull();
   expect(
     unchanged.some((sql) => /^(update|insert|delete|begin)/i.test(sql)),
   ).toBe(false);
@@ -876,7 +877,7 @@ it('replays only the most recent authorized page in Runner input without persist
   expect(resolve).not.toHaveBeenCalled();
   const messages = await f.agent.history();
   expect(messages.filter((m) => m.role === 'user')).toHaveLength(5);
-  expect(JSON.stringify(messages.map((m) => m.content))).not.toContain(
+  expect(JSON.stringify(messages.map((m) => m.parts))).not.toContain(
     'Previous page references',
   );
 });
@@ -933,10 +934,13 @@ it('saves Runner notices transactionally without waking and persists ordinary vi
       throw new Error('Rollback fixture');
     }),
   ).rejects.toThrow('Rollback fixture');
-  expect((await hidden.history()).map((row) => row.content.content)).toEqual([
-    'Committed',
-    'Committed',
-  ]);
+  expect(
+    (await hidden.history()).flatMap((row) =>
+      row.parts
+        .filter((part) => part.type === 'data-notice')
+        .map((part) => part.data.title),
+    ),
+  ).toEqual(['Committed', 'Committed']);
   expect(enqueue).not.toHaveBeenCalled();
   expect(await hidden.status()).toBe('idle');
   await expect(

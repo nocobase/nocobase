@@ -40,20 +40,15 @@ export function chatFeedback(input: {
   if (input.stopping && input.running) return 'stopping';
   if (!input.running && input.execution?.requiresEffectReview)
     return 'effectReview';
-  if (input.stream?.phase === 'interrupted') return 'unknown';
+  if (input.stream?.error) return 'unknown';
   if (input.running) {
     if (input.hasOutput) return null;
     // Occupancy is known before the first stream event, not only once text arrives.
-    return input.execution || input.stream?.phase === 'streaming'
+    return input.execution || input.stream?.status === 'streaming'
       ? 'thinking'
       : 'waiting';
   }
-  return (
-    input.execution?.outcome ??
-    (input.stream?.phase === 'saved' && input.stream.lastSeq === input.lastSeq
-      ? (input.stream.outcome ?? null)
-      : null)
-  );
+  return input.execution?.outcome ?? null;
 }
 
 /** A scroller follows output until the person chooses to read further up. */

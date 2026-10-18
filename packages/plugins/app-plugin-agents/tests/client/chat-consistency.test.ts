@@ -2,12 +2,12 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { ChatController } from '../../client/chat/controller.js';
 import { agentsQueryClient } from '../../client/query.js';
 import { chatKeys } from '../../client/chat/keys.js';
-import type { ChatApi } from '../../client/chat/api.js';
-import type {
-  ConversationDetail,
-  ConversationMessage,
-  MessagePage,
-} from '../../shared/conversations.js';
+import { ChatApi } from '../../client/chat/api.js';
+import { DefaultChatTransport } from 'ai';
+import type { ApiClient } from '@nocobase/app-client';
+import type { AppUIMessage } from '../../client/chat.js';
+import { uiMessage } from './sdk-chat.js';
+import type { ConversationDetail } from '../../shared/conversations.js';
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((done) => {
@@ -15,24 +15,18 @@ function deferred<T>() {
   });
   return { resolve, promise };
 }
-const message = (seq: number, clientId?: string): ConversationMessage => ({
-  id: `m${seq}`,
-  conversationId: 'c',
-  seq,
-  role: 'user',
-  content: { type: 'text', content: `Message ${seq}` },
-  metadata: clientId ? { clientId } : {},
-  workContext: null,
-  toolCalls: null,
-  attachments: null,
-  runId: null,
-  createdAt: '2026-10-01T00:00:00.000Z',
-});
+const message = (seq: number, clientId?: string): AppUIMessage =>
+  uiMessage(seq, 'user', `Message ${seq}`, clientId);
 const page = (
-  items: ConversationMessage[],
+  items: AppUIMessage[],
   lastSeq: number,
   nextCursor: string | null = null,
-): MessagePage & { nextCursor: string | null } => ({
+): {
+  items: AppUIMessage[];
+  lastSeq: number;
+  hasMore: boolean;
+  nextCursor: string | null;
+} => ({
   items,
   lastSeq,
   nextCursor,
@@ -42,7 +36,10 @@ const detail = (title: string, status: 'idle' | 'running' = 'idle') =>
   ({ id: 'c', title, execution: { status } }) as ConversationDetail;
 const controllers: ChatController[] = [];
 function controller(api: Partial<ChatApi>) {
-  const c = new ChatController(api as ChatApi);
+  const c = new ChatController({
+    transport: () => new DefaultChatTransport(),
+    ...api,
+  } as ChatApi);
   controllers.push(c);
   return c;
 }
@@ -68,7 +65,9 @@ it('drains a coalesced fresh refresh after an older page, using loaded messages 
     { pageToken: 'older' },
     { after: 10 },
   ]);
-  expect(c.history('c').state.items.map((m) => m.seq)).toEqual([1, 10, 11]);
+  expect(c.history('c').state.items.map((m) => m.metadata?.seq)).toEqual([
+    1, 10, 11,
+  ]);
 });
 it('does not let an older detail response overwrite a newer refresh', async () => {
   const a = deferred<ConversationDetail>(),
@@ -118,18 +117,16 @@ it.each(['Stop', 'Archive', 'Undo'])(
   },
 );
 it('merges canonical confirmation after a lost response exactly once without sending again or opening events', async () => {
-  let saved!: ConversationMessage;
-  const events = vi.fn();
-  const sendMessage = vi.fn(
-    async (_id: string, input: { clientId?: string }) => {
-      saved = message(1, input.clientId);
-      throw Error('Response lost');
-    },
-  );
+  let saved: AppUIMessage | undefined;
+  const post = vi.fn(async (options: { json: { message: AppUIMessage } }) => {
+    saved = message(1, options.json.message.id);
+    throw Error('Response lost');
+  });
+  const host = { stream: post } as unknown as ApiClient;
+  const transportApi = new ChatApi(host);
   const c = controller({
-    sendMessage,
-    messages: async () => page([saved], 1),
-    events,
+    transport: (id, accepted) => transportApi.transport(id, accepted),
+    messages: async () => page(saved ? [saved] : [], 1),
   });
   c.submissions.submit({
     conversationId: 'c',
@@ -142,11 +139,14 @@ it('merges canonical confirmation after a lost response exactly once without sen
   await vi.waitFor(() =>
     expect(c.submissions.snapshot()[0].status).toBe('confirmed'),
   );
-  c.submissions.observe('c', [saved]);
+  c.submissions.observe('c', [saved!]);
   await c.submissions.reconcile(c.submissions.snapshot()[0].clientId);
   expect(c.history('c').state.items).toEqual([saved]);
-  expect(sendMessage).toHaveBeenCalledOnce();
-  expect(events).not.toHaveBeenCalled();
+  expect(post).toHaveBeenCalledOnce();
+  expect(post.mock.calls[0][0]).toMatchObject({
+    method: 'POST',
+    path: 'agents/conversations/c/messages',
+  });
 });
 it('rejects delayed history and commands from a previous Provider activation', async () => {
   const old = deferred<ReturnType<typeof page>>();
@@ -196,7 +196,9 @@ it('does not advance the history coverage past intervening messages after single
   expect(c.history('c').loadedThrough).toBe(10);
   await c.loadHistory('c', false, true);
   expect(messages).toHaveBeenCalledWith('c', { after: 10 });
-  expect(c.history('c').state.items.map((m) => m.seq)).toEqual([10, 11, 12]);
+  expect(c.history('c').state.items.map((m) => m.metadata?.seq)).toEqual([
+    10, 11, 12,
+  ]);
   expect(c.history('c').loadedThrough).toBe(12);
 });
 
@@ -209,4 +211,22 @@ it('does not clear the new identity cache when the previous Provider finishes de
   expect(agentsQueryClient().getQueryData(chatKeys.conversation('c'))).toEqual(
     current,
   );
+});
+
+it('keeps persisted source sequence authoritative when source timestamps are equal or skewed', async () => {
+  const { timelineOrder } = await import('../../client/chat/message-model.js');
+  const entries = [
+    { key: 'first', seq: 2, rank: 0, at: '2026-01-01T00:00:03Z' },
+    { key: 'notification', seq: 3, rank: 0, at: '2026-01-01T00:00:02Z' },
+    { key: 'second', seq: 4, rank: 0, at: '2026-01-01T00:00:03Z' },
+    { key: 'plan', rank: 1, at: '2026-01-01T00:00:02Z' },
+  ];
+  expect(
+    timelineOrder(entries)
+      .filter((entry) => entry.seq)
+      .map((entry) => entry.key),
+  ).toEqual(['first', 'notification', 'second']);
+  expect(
+    timelineOrder(entries).filter((entry) => entry.key === 'plan'),
+  ).toHaveLength(1);
 });

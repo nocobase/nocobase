@@ -4,6 +4,11 @@
  * conversation hooks (fetching, sending, the actions), and the panel state `ChatProvider` keeps. The UI built on them is
  * the UI Library's agent-chat block, tested there.
  */
+import {
+  appUIMessageText,
+  type AppUIMessage,
+} from '../../shared/ui-message.js';
+import { sdkResponse } from './sdk-chat.js';
 import type { RunEvent } from '@nocobase/agent-protocol';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -23,7 +28,6 @@ import {
   CONVERSATIONS_TOPIC,
   type ChatAgent,
   type ConversationDetail,
-  type ConversationMessage,
 } from '../../shared/conversations.js';
 import {
   callsTo,
@@ -119,23 +123,21 @@ function detail(
 
 function message(
   seq: number,
-  role: ConversationMessage['role'],
+  role: AppUIMessage['role'],
   text: string,
-  overrides: Partial<ConversationMessage> = {},
-): ConversationMessage {
+  overrides: { metadata?: Partial<NonNullable<AppUIMessage['metadata']>> } = {},
+): AppUIMessage {
   return {
     id: `m${seq}`,
-    conversationId: 'c1',
-    seq,
     role,
-    content: { type: 'text', content: text },
-    toolCalls: null,
-    attachments: null,
-    workContext: null,
-    metadata: {},
-    runId: null,
-    createdAt: AT,
-    ...overrides,
+    metadata: {
+      conversationId: 'c1',
+      seq,
+      createdAt: AT,
+      revision: 1,
+      ...overrides.metadata,
+    },
+    parts: [{ type: 'text', text, state: 'done' }],
   };
 }
 
@@ -158,7 +160,7 @@ function renderChat(url = '/issues', children?: ReactNode): void {
 }
 
 let conversation: ConversationDetail;
-let messages: ConversationMessage[];
+let messages: AppUIMessage[];
 
 function routes(extra: Routes = {}): Routes {
   return {
@@ -168,12 +170,21 @@ function routes(extra: Routes = {}): Routes {
     ],
     [`agents/${C}`]: () => conversation,
     [`agents/${C}/messages`]: (request) => {
+      const ids = String(request.query.ids ?? '').split(',');
+      if (request.query.ids)
+        return {
+          data: messages.filter((item) => ids.includes(item.id)),
+          meta: { lastSeq: messages.at(-1)?.metadata?.seq ?? 0 },
+        };
       const after = request.query.after;
       const items =
         after === undefined
           ? messages
-          : messages.filter((item) => item.seq > Number(after));
-      return { data: items, meta: { lastSeq: messages.at(-1)?.seq ?? 0 } };
+          : messages.filter((item) => item.metadata!.seq! > Number(after));
+      return {
+        data: items,
+        meta: { lastSeq: messages.at(-1)?.metadata?.seq ?? 0 },
+      };
     },
     [`POST agents/${C}/markRead`]: () => ({ ...conversation, read: true }),
     ...extra,
@@ -211,6 +222,7 @@ describe('online models', () => {
       page: {
         items: [message(1, 'assistant', 'Hi')],
         hasMore: false,
+        nextCursor: null,
         lastSeq: 1,
       },
     });
@@ -220,11 +232,12 @@ describe('online models', () => {
       page: {
         items: [message(2, 'user', 'Hello', { metadata: { clientId: 'k1' } })],
         hasMore: false,
+        nextCursor: null,
         lastSeq: 2,
       },
     });
     expect(state.pending).toHaveLength(0);
-    expect(state.items.map((item) => item.seq)).toEqual([1, 2]);
+    expect(state.items.map((item) => item.metadata!.seq!)).toEqual([1, 2]);
     expect(state.lastSeq).toBe(2);
   });
 
@@ -382,7 +395,7 @@ function useChat(
   conversationId: string | null,
   onCreated: (detail: ConversationDetail) => void = () => undefined,
 ) {
-  const messages = useConversationMessages(conversationId, false);
+  const messages = useConversationMessages(conversationId);
   const send = useSendMessage({
     conversationId,
     agentId: 'pm',
@@ -438,7 +451,7 @@ describe('conversation hooks', () => {
     messages = [
       ...messages,
       message(3, 'assistant', 'Two issues are', {
-        metadata: { agentId: 'pm', streaming: true },
+        metadata: { agentId: 'pm', revision: 1 },
       }),
     ];
     const { result } = renderHook(() => useChat('c1'), { wrapper });
@@ -446,29 +459,25 @@ describe('conversation hooks', () => {
     messages = [
       ...messages.slice(0, 2),
       message(3, 'assistant', 'Two issues are open.', {
-        metadata: { agentId: 'pm', runEventSeq: 4 },
+        metadata: { agentId: 'pm', revision: 2 },
       }),
     ];
-    // Announcements carry its seq, at or below the last loaded: fetched again from before it.
     act(() =>
       realtime.publish(CONVERSATIONS_TOPIC, {
-        kind: 'conversation.messages',
+        kind: 'conversation.messageUpdated',
         conversationId: 'c1',
-        lastSeq: 3,
+        messageId: 'm3',
+        revision: 2,
       }),
     );
     await waitFor(() =>
-      expect(result.current.messages.items.at(-1)?.content.content).toBe(
+      expect(appUIMessageText(result.current.messages.items.at(-1)!)).toBe(
         'Two issues are open.',
       ),
     );
     expect(result.current.messages.items).toHaveLength(3);
-    expect(result.current.messages.items.at(-1)?.metadata.streaming).toBe(
-      undefined,
-    );
-    expect(
-      callsTo('GET', `agents/${C}/messages`).map((call) => call.query.after),
-    ).toContain(2);
+    expect(result.current.messages.items.at(-1)?.metadata?.revision).toBe(2);
+    expect(callsTo('GET', `agents/${C}/messages`).at(-1)?.query.ids).toBe('m3');
   });
 
   it('shows a message at once and replaces it with the server’s copy', async () => {
@@ -479,17 +488,12 @@ describe('conversation hooks', () => {
           await new Promise<void>((resolve) => {
             release = resolve;
           });
-          const json = request.json as { content: string; clientId: string };
-          const sent = message(3, 'user', json.content, {
-            metadata: { clientId: json.clientId },
-            runId: 'r1',
+          const json = request.json as { message: AppUIMessage };
+          const sent = message(3, 'user', appUIMessageText(json.message), {
+            metadata: { clientId: json.message.id },
           });
           messages = [...messages, sent];
-          return {
-            message: sent,
-            run: { id: 'r1', outcome: 'appended' },
-            conversation,
-          };
+          return sdkResponse();
         },
       }),
     );
@@ -519,14 +523,14 @@ describe('conversation hooks', () => {
     await waitFor(() =>
       expect(result.current.messages.pending).toHaveLength(0),
     );
-    expect(result.current.messages.items.at(-1)?.content.content).toBe(
+    expect(appUIMessageText(result.current.messages.items.at(-1)!)).toBe(
       'Also check PM-3',
     );
     const sent = callsTo('POST', `agents/${C}/messages`)[0]?.json as {
-      clientId?: string;
+      message?: { id: string };
       context?: { route: string };
     };
-    expect(sent.clientId).toMatch(/^[0-9a-f-]{36}$/u);
+    expect(sent.message?.id).toMatch(/^[0-9a-f-]{36}$/u);
     expect(sent.context?.route).toBe('/issues');
   });
 
@@ -563,12 +567,12 @@ describe('conversation hooks', () => {
       routes({
         'POST agents/conversations': () => conversation,
         [`POST agents/${C}/messages`]: (request) => {
-          const json = request.json as { content: string; clientId: string };
-          const sent = message(3, 'user', json.content, {
-            metadata: { clientId: json.clientId },
+          const json = request.json as { message: AppUIMessage };
+          const sent = message(3, 'user', appUIMessageText(json.message), {
+            metadata: { clientId: json.message.id },
           });
           messages = [sent];
-          return { message: sent, run: null, conversation };
+          return sdkResponse();
         },
       }),
     );

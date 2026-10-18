@@ -14,15 +14,18 @@ it('closes waiting after first body for Native and Runner and reports safe termi
     hasOutput: false,
   };
   expect(chatFeedback(base)).toBe('waiting');
-  expect(
-    chatFeedback({ ...base, stream: { phase: 'streaming', items: [] } }),
-  ).toBe('thinking');
+  expect(chatFeedback({ ...base, stream: { status: 'streaming' } })).toBe(
+    'thinking',
+  );
   expect(chatFeedback({ ...base, hasOutput: true })).toBeNull();
   expect(chatFeedback({ ...base, stopping: true, hasOutput: true })).toBe(
     'stopping',
   );
   expect(
-    chatFeedback({ ...base, stream: { phase: 'interrupted', items: [] } }),
+    chatFeedback({
+      ...base,
+      stream: { status: 'error', error: new Error('Disconnected') },
+    }),
   ).toBe('unknown');
   for (const outcome of ['completed', 'cancelled', 'failed'] as const) {
     expect(
@@ -47,15 +50,15 @@ it('closes waiting after first body for Native and Runner and reports safe termi
     }),
   ).toBe('sending');
 });
-it.each([undefined, 'connecting', 'streaming', 'saved'] as const)(
-  'shows thinking for occupied OnlineAgent execution with stream phase %s before any body',
-  (phase) => {
+it.each([undefined, 'submitted', 'streaming', 'ready'] as const)(
+  'shows thinking for occupied OnlineAgent execution with SDK status %s before any body',
+  (status) => {
     const input = {
       execution: { status: 'running' as const },
       running: true,
       stopping: false,
       hasOutput: false,
-      ...(phase ? { stream: { phase, items: [] } } : {}),
+      ...(status ? { stream: { status } } : {}),
     };
     expect(chatFeedback(input)).toBe('thinking');
     expect(chatFeedback({ ...input, hasOutput: true })).toBeNull();
@@ -67,7 +70,10 @@ it.each([undefined, 'connecting', 'streaming', 'saved'] as const)(
       'unknown',
     );
     expect(
-      chatFeedback({ ...input, stream: { phase: 'interrupted', items: [] } }),
+      chatFeedback({
+        ...input,
+        stream: { status: 'error', error: new Error('Disconnected') },
+      }),
     ).toBe('unknown');
   },
 );
@@ -107,16 +113,16 @@ it('releases an uncertain old input without masking the next turn or resending i
 });
 
 it.each(['completed', 'cancelled', 'failed'] as const)(
-  'uses the existing saved event for Runner %s without manufacturing a server outcome',
+  'uses only trusted saved execution for Runner %s after SDK finish',
   (outcome) => {
     expect(
       chatFeedback({
         running: false,
         stopping: false,
         hasOutput: true,
-        execution: { status: 'idle' },
+        execution: { status: 'idle', outcome },
         lastSeq: 2,
-        stream: { phase: 'saved', items: [], lastSeq: 2, outcome },
+        stream: { status: 'ready' },
       }),
     ).toBe(outcome);
   },
@@ -129,7 +135,28 @@ it('never applies a previous saved outcome to a newer canonical turn', () => {
       stopping: false,
       hasOutput: true,
       lastSeq: 4,
-      stream: { phase: 'saved', items: [], lastSeq: 2, outcome: 'cancelled' },
+      stream: { status: 'ready' },
     }),
   ).toBeNull();
+});
+
+it('does not treat SDK finish or missing transport as business success', () => {
+  for (const status of ['ready', 'submitted'] as const)
+    expect(
+      chatFeedback({
+        running: false,
+        stopping: false,
+        hasOutput: true,
+        stream: { status },
+      }),
+    ).toBeNull();
+  expect(
+    chatFeedback({
+      running: true,
+      stopping: false,
+      hasOutput: false,
+      execution: { status: 'running', waitingApproval: true },
+      stream: { status: 'ready' },
+    }),
+  ).toBe('thinking');
 });

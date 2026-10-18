@@ -24,8 +24,10 @@ import {
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useReducer,
+  useRef,
   useSyncExternalStore,
   type Dispatch,
 } from 'react';
@@ -46,11 +48,7 @@ import type { ModelRef, ModelService } from '../../shared/models.js';
 import { useRealtimeTopic } from '../hooks/use-realtime-topic.js';
 import { errorText } from '../hooks/use-notify.js';
 import { agentsQueryClient } from '../query.js';
-import {
-  useChatController,
-  useChatStream,
-  useChatStreamState,
-} from './controller.js';
+import { useChatController, useChatStream } from './controller.js';
 import { ChatApi } from './api.js';
 import { chatKeys } from './keys.js';
 import {
@@ -62,8 +60,6 @@ import {
 
 /** How often an open conversation with a run is fetched when no announcement comes. */
 export const CHAT_POLL_MS = 5000;
-/** How often while an online agent's reply is being written, so it grows even without announcements. */
-export const CHAT_STREAM_POLL_MS = 1000;
 
 export function useChatApi(): ChatApi {
   const api = useApiClient();
@@ -84,7 +80,11 @@ export function isChatPayload(
 ): payload is ConversationChanged {
   if (!payload || typeof payload !== 'object') return false;
   const kind = (payload as { kind?: unknown }).kind;
-  return kind === 'conversation.messages' || kind === 'conversation.changed';
+  return (
+    kind === 'conversation.messages' ||
+    kind === 'conversation.changed' ||
+    kind === 'conversation.messageUpdated'
+  );
 }
 
 /** The agents the viewer may chat with, with whether each can answer now. */
@@ -148,7 +148,6 @@ export function useConversation(
 ): UseQueryResult<ConversationDetail> {
   const api = useChatApi();
   const controller = useChatController();
-  const stream = useChatStreamState(conversationId);
   return useQuery(
     {
       queryKey: chatKeys.conversation(conversationId ?? ''),
@@ -165,8 +164,7 @@ export function useConversation(
       retry: notRetriedOnClientErrors,
       refetchInterval: (query) =>
         query.state.data?.run ||
-        (query.state.data?.execution?.status === 'running' &&
-          stream?.phase !== 'interrupted')
+        query.state.data?.execution?.status === 'running'
           ? CHAT_POLL_MS
           : false,
     },
@@ -233,11 +231,9 @@ export interface ConversationMessages extends MessagesState {
 /** Canonical pages and the initial stream live in one controller, independent of mounted views. */
 export function useConversationMessages(
   conversationId: string | null,
-  _polling: boolean,
-  online = false,
 ): ConversationMessages {
   const controller = useChatController();
-  const stream = useChatStream(online ? conversationId : null);
+  useChatStream(conversationId);
   useSyncExternalStore(
     controller.subscribe,
     controller.snapshot,
@@ -252,56 +248,71 @@ export function useConversationMessages(
       void controller.loadHistory(conversationId, false, true);
   }, [controller, conversationId]);
   useRealtimeTopic(conversationId ? CONVERSATIONS_TOPIC : null, (payload) => {
-    if (
-      isChatPayload(payload) &&
+    if (!conversationId) return;
+    if (payload === undefined) {
+      void controller
+        .refresh(conversationId)
+        .then(() => controller.resume(conversationId))
+        .catch(() => {});
+      return;
+    }
+    if (!isChatPayload(payload) || payload.conversationId !== conversationId)
+      return;
+    if (payload.kind === 'conversation.messageUpdated')
+      controller.messageUpdated(
+        conversationId,
+        payload.messageId,
+        payload.revision,
+      );
+    else if (
       payload.kind === 'conversation.messages' &&
-      payload.conversationId === conversationId &&
-      (payload.lastSeq > controller.history(conversationId).loadedThrough ||
-        controller
-          .history(conversationId)
-          .state.items.some((item) => item.metadata.streaming))
+      payload.lastSeq > controller.history(conversationId).loadedThrough
     )
       fetchNewer();
   });
+  // One durable subscription/poll owner regardless of how many surfaces display this conversation.
+  useEffect(
+    () => (conversationId ? controller.watch(conversationId) : undefined),
+    [controller, conversationId],
+  );
   const loaded = conversationId
     ? controller.history(conversationId)
     : { state: draft, loadingOlder: false, error: undefined };
-  const state = loaded.state;
+  const records = controller.submissions
+    .snapshot()
+    .filter(
+      (record) =>
+        record.conversationId === conversationId &&
+        !record.message &&
+        !['rejected', 'confirmed'].includes(record.status),
+    );
   const pending = conversationId
-    ? controller.submissions
-        .snapshot()
-        .filter(
-          (record) =>
-            record.conversationId === conversationId &&
-            !record.message &&
-            !['rejected', 'confirmed'].includes(record.status),
-        )
-        .map((record) => ({
-          clientId: record.clientId,
-          content: record.content,
-          context: record.context,
-          attachments: record.attachments,
-          createdAt: record.createdAt,
-          status:
-            record.status === 'notSubmitted'
-              ? ('failed' as const)
-              : record.status === 'unknown' ||
-                  record.status === 'creationUnknown'
-                ? ('unknown' as const)
-                : ('sending' as const),
-        }))
-    : state.pending;
+    ? records.map((record) => ({
+        clientId: record.clientId,
+        content: record.content,
+        context: record.context,
+        attachments: record.attachments,
+        createdAt: record.createdAt,
+        status:
+          record.status === 'notSubmitted'
+            ? ('failed' as const)
+            : record.status === 'unknown' || record.status === 'creationUnknown'
+              ? ('unknown' as const)
+              : ('sending' as const),
+      }))
+    : loaded.state.pending;
   return {
-    ...state,
+    ...loaded.state,
     pending,
-    items: stream
-      ? [
-          ...state.items,
-          ...stream.items.filter(
-            (item) => !state.items.some((saved) => saved.seq === item.seq),
-          ),
-        ].sort((a, b) => a.seq - b.seq)
-      : state.items,
+    // The SDK owns optimistic user messages; recovery controls replace their presentation until admission is reconciled.
+    items: loaded.state.items.filter(
+      (message) =>
+        !records.some(
+          (record) =>
+            message.id === record.clientId &&
+            message.metadata?.seq === undefined,
+        ),
+    ),
     loadingOlder: loaded.loadingOlder,
     error: loaded.error,
     fetchNewer,
@@ -347,42 +358,62 @@ export function useSendMessage({
   readonly onCreated: (conversation: ConversationDetail) => void;
 }): (input: SendInput) => boolean {
   const controller = useChatController();
+  const editorKey = `registry:${source}:${conversationId ?? 'new'}`;
+  const editorRef = useRef(editorKey);
+  const observersRef = useRef(new Set<() => void>());
+  useLayoutEffect(() => {
+    editorRef.current = editorKey;
+    const observers = observersRef.current;
+    return () => {
+      for (const cleanup of observers) cleanup();
+      observers.clear();
+    };
+  }, [controller, editorKey]);
   return useCallback(
     (input: SendInput) => {
-      const editorKey = `registry:${source}:${conversationId ?? 'new'}`;
       if (input.clientId) {
         if (!controller.submissions.editRejected(input.clientId)) return false;
         dispatch({ type: 'discard', clientId: input.clientId });
       }
+      const submission = { clientId: undefined as string | undefined };
+      const active = controller.lifetime();
+      const visible = () =>
+        active() &&
+        editorRef.current === editorKey &&
+        observersRef.current.has(cleanup);
+      const cleanup = () => {
+        off();
+        stop();
+        observersRef.current.delete(cleanup);
+      };
       const off = controller.submissions.onUpdated(
         (detail, record, created) => {
-          if (record.editorKey !== editorKey) return;
+          if (record.clientId !== submission.clientId || !visible()) return;
           if (created) onCreated(detail);
-          if (record.message) {
-            dispatch({ type: 'confirmed', message: record.message });
-            off();
-            stop();
-          }
         },
       );
       const stop = controller.submissions.subscribe(() => {
         const record = controller.submissions
           .snapshot()
-          .slice()
-          .reverse()
-          .find((record) => record.editorKey === editorKey);
-        if (
-          record &&
-          ['unknown', 'creationUnknown', 'notSubmitted'].includes(record.status)
+          .find((record) => record.clientId === submission.clientId);
+        if (!record || !visible()) return;
+        if (record.status === 'confirmed') {
+          if (record.message)
+            dispatch({ type: 'confirmed', message: record.message });
+          cleanup();
+        } else if (
+          ['unknown', 'creationUnknown', 'notSubmitted', 'rejected'].includes(
+            record.status,
+          )
         ) {
           dispatch({
             type: record.status === 'notSubmitted' ? 'failed' : 'unknown',
             clientId: record.clientId,
           });
-          off();
-          stop();
+          cleanup();
         }
       });
+      observersRef.current.add(cleanup);
       const submitted = controller.submissions.submit({
         content: input.content,
         context: input.context,
@@ -398,11 +429,11 @@ export function useSendMessage({
         },
       });
       if (!submitted) {
-        off();
-        stop();
+        cleanup();
         return false;
       }
       const record = controller.submissions.snapshot().at(-1)!;
+      submission.clientId = record.clientId;
       dispatch({
         type: 'sending',
         message: {
@@ -422,6 +453,7 @@ export function useSendMessage({
       agentId,
       source,
       selectedModel,
+      editorKey,
       dispatch,
       onCreated,
     ],

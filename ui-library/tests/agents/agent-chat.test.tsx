@@ -151,29 +151,37 @@ describe('ChatPanel', () => {
   it('sends a message and shows the agent at work', async () => {
     renderPanel('release-plan');
     const box = await screen.findByLabelText('Message to the agent');
-    fireEvent.change(box, { target: { value: 'And the docs?' } });
-    fireEvent.keyDown(box, { key: 'Enter' });
-    expect(await screen.findByText('And the docs?')).toBeVisible();
-    expect(
-      await screen.findByRole('button', { name: 'Stop', exact: true }),
-    ).toBeVisible();
-    expect(screen.queryByTestId('chat-live-steps')).toBeNull();
-    const thinking = await screen.findByText('Thinking…');
-    const log = screen.getByRole('log', { name: 'Messages' });
-    expect(log).toContainElement(thinking);
-    const row = thinking.closest('li');
-    expect(row?.parentElement?.lastElementChild).toBe(row);
-    expect(row?.previousElementSibling).toHaveTextContent('And the docs?');
-    expect(
-      thinking
-        .closest('[data-chat-feedback]')
-        ?.querySelector('[data-slot="spinner"]'),
-    ).toBeVisible();
-    await waitFor(() =>
-      expect(screen.getByText(/Here is what I would do/u)).toBeVisible(),
-    );
-    expect(screen.queryByText('Thinking…')).not.toBeInTheDocument();
-    expect(box).toHaveValue('');
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.change(box, { target: { value: 'And the docs?' } });
+        fireEvent.keyDown(box, { key: 'Enter' });
+      });
+      expect(screen.getByText('And the docs?')).toBeVisible();
+      expect(
+        screen.getByRole('button', { name: 'Stop', exact: true }),
+      ).toBeVisible();
+      expect(screen.queryByTestId('chat-live-steps')).toBeNull();
+      const thinking = screen.getByText('Thinking…');
+      const log = screen.getByRole('log', { name: 'Messages' });
+      expect(log).toContainElement(thinking);
+      const row = thinking.closest('li');
+      expect(row?.parentElement?.lastElementChild).toBe(row);
+      expect(row?.previousElementSibling).toHaveTextContent('And the docs?');
+      expect(
+        thinking
+          .closest('[data-chat-feedback]')
+          ?.querySelector('[data-slot="spinner"]'),
+      ).toBeVisible();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1100);
+      });
+      expect(screen.getByText(/Here is what I would do/u)).toBeVisible();
+      expect(screen.queryByText('Thinking…')).not.toBeInTheDocument();
+      expect(box).toHaveValue('');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('drops a reply still on its way when the demo is reset', async () => {
@@ -191,7 +199,9 @@ describe('ChatPanel', () => {
       act(() => resetChatDemo());
       fireEvent.change(box, { target: { value: 'Again' } });
       fireEvent.keyDown(box, { key: 'Enter' });
-      act(() => vi.advanceTimersByTime(5000));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
       expect(screen.getByText('Again')).toBeVisible();
       expect(screen.getAllByText(/Here is what I would do/u)).toHaveLength(1);
     } finally {

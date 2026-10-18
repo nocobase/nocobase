@@ -1,6 +1,12 @@
+import {
+  runnerUIMessages,
+  runnerUIPage,
+  runnerMessageId,
+} from './runner-ui.js';
+import { OnlineAgentUIStreams, type UIStreamChannel } from './ui-streams.js';
+import type { AppUIMessage } from '../../shared/online-agent.js';
 import { isDeepStrictEqual } from 'node:util';
 import type { ModelMessage } from 'ai';
-import type { ConversationMessage } from '../../shared/conversations.js';
 import type { Run } from '../../shared/runs.js';
 import type { ConversationService } from '../core/conversations/ports.js';
 import {
@@ -11,6 +17,7 @@ import {
   toMessage,
 } from '../core/conversations/conversation.store.js';
 import { openRunsOnEach } from '../core/runs/index.js';
+import { findRunRecord, toRun } from '../core/runs/run.store.js';
 import { conflict, forbidden, invalid, notFound } from '../kernel/errors.js';
 import type { TxRunner } from '../kernel/tx.js';
 import { asJson, jsonObject } from '../kernel/values.js';
@@ -22,17 +29,17 @@ import type {
   OnlineAgentSendOptions,
 } from './realtime.js';
 import { runnerBinding } from './runner-metadata.js';
-import type {
-  OnlineAgentStreamManager,
-  OnlineAgentStreamWriter,
-} from './streams.js';
 
 type Execution = {
   id: string;
   userId: string;
   runId?: string;
   cursor: number;
-  writer: OnlineAgentStreamWriter;
+  writer: UIStreamChannel;
+  published: Set<string>;
+  ready: boolean;
+  started: boolean;
+  snapshot?: AppUIMessage;
   pending?: Promise<void>;
   again: boolean;
   timer?: ReturnType<typeof setTimeout>;
@@ -43,13 +50,12 @@ type Execution = {
 /** A conversation adapter over the existing Runner queue, events and canonical history. */
 export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
   private active = new Map<string, Execution>();
-  private restoring = new Map<string, Promise<void>>();
   private stopping = false;
   constructor(
     private deps: {
       tx: TxRunner;
       conversations: ConversationService;
-      streams: OnlineAgentStreamManager;
+      streams: OnlineAgentUIStreams;
       now(): string;
       basePath(): string;
       onError(error: unknown): void;
@@ -159,48 +165,23 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
     const row = await this.owned(context.user.id, id);
     if (row.agentId !== config.agentId)
       throw conflict('Start a new conversation to choose another agent.');
-    if (!this.active.has(id) && !this.restoring.has(id)) {
-      const task = (async () => {
-        const runId =
-          runnerBinding(row.metadata)?.closingRunId ??
-          (await openRunsOnEach(this.deps.tx.read(), 'conversation', [id]))[0]
-            ?.id;
-        if (runId && !this.active.has(id)) {
-          if (this.active.size >= 1024)
-            throw conflict('OnlineAgent execution limit exceeded.');
-          const writer = await this.deps.streams.open(id, 0);
-          const execution: Execution = {
-            id,
-            userId: context.user.id,
-            runId,
-            cursor: 0,
-            writer,
-            again: false,
-          };
-          this.active.set(id, execution);
-          void this.refresh(execution).catch((error) =>
-            this.deps.onError(error),
-          );
-        }
-      })();
-      this.restoring.set(id, task);
+    const closingRunId = runnerBinding(row.metadata)?.closingRunId;
+    if (closingRunId && !this.active.has(id)) {
+      // Missing streams never imply completion. Only a saved terminal Run can release this gate.
+      const stored = await findRunRecord(this.deps.tx.read(), closingRunId);
+      if (stored && this.terminal(toRun(stored)))
+        await this.finalizeSavedRun(context.user.id, id, closingRunId);
     }
-    const restored = this.restoring.get(id);
-    if (restored) {
-      try {
-        await restored;
-      } finally {
-        if (this.restoring.get(id) === restored) this.restoring.delete(id);
-      }
-    }
-
-    const history = async (): Promise<ConversationMessage[]> => {
+    let response: UIStreamChannel | undefined;
+    const history = async (): Promise<AppUIMessage[]> => {
       await this.owned(context.user.id, id);
       const rows = await messagesRepo(this.deps.tx.read()).findMany({
         filter: { conversationId: id },
-        sort: (sort) => sort.field('seq').asc(),
+        sort: (s) => s.field('seq').asc(),
       });
-      return rows.map((row) => toMessage(row, this.deps.basePath()));
+      return runnerUIMessages(
+        rows.map((row) => toMessage(row, this.deps.basePath())),
+      );
     };
     const status = async () => {
       const current = await this.owned(context.user.id, id);
@@ -214,17 +195,35 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
       sessionId: id,
       backend: 'runner',
       history,
+      messages: async (query) => {
+        const row = await this.owned(context.user.id, id);
+        return runnerUIPage(
+          this.deps.tx,
+          id,
+          Number(row.lastSeq),
+          query,
+          this.deps.basePath(),
+        );
+      },
       status,
       receive: async () => {
         await this.owned(context.user.id, id);
-        const execution = this.active.get(id);
-        if (execution) await this.refresh(execution);
-        return this.deps.streams.receive(id);
+        return this.deps.streams.receive(
+          context.user.id,
+          id,
+          response ?? this.active.get(id)?.writer,
+        );
       },
       retryFinalization: async () => {
         await this.owned(context.user.id, id);
         const execution = this.active.get(id);
         if (execution) await this.refresh(execution);
+        else {
+          const row = await this.owned(context.user.id, id);
+          const runId = runnerBinding(row.metadata)?.closingRunId;
+          if (!runId) return;
+          await this.finalizeSavedRun(context.user.id, id, runId);
+        }
       },
       abort: async () => {
         await this.owned(context.user.id, id);
@@ -274,15 +273,24 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
         if (this.active.size >= 1024)
           throw conflict('OnlineAgent execution limit exceeded.');
         // Install the channel before enqueue can notify a fast execution machine.
-        const writer = await this.deps.streams.open(id, Number(before.lastSeq));
+        const writer = await this.deps.streams.open(
+          context.user.id,
+          id,
+          input?.clientId ?? id,
+          'runner',
+        );
         const execution: Execution = {
           id,
           userId: context.user.id,
           cursor: Number(before.lastSeq),
           writer,
+          published: new Set(),
+          ready: false,
+          started: false,
           again: false,
         };
         this.active.set(id, execution);
+        response = writer;
         try {
           const accepted = await this.deps.conversations.sendRealtime(
             context.user.id,
@@ -301,13 +309,17 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
           );
           execution.runId = accepted.run!.id;
           execution.cursor = accepted.message.seq;
+          await this.deps.streams
+            .bind(id, writer, execution.runId)
+            .catch((error) => writer.fail(error));
+          execution.ready = true;
           void this.refresh(execution).catch((error) =>
             this.deps.onError(error),
           );
           return accepted.message.seq;
         } catch (error) {
           this.active.delete(id);
-          await writer.discard();
+          await this.deps.streams.close(id, writer);
           throw error;
         }
       },
@@ -323,7 +335,11 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
     return true;
   }
   private refresh(execution: Execution): Promise<void> {
-    if (!execution.runId || this.active.get(execution.id) !== execution)
+    if (
+      !execution.runId ||
+      !execution.ready ||
+      this.active.get(execution.id) !== execution
+    )
       return Promise.resolve();
     if (execution.pending) {
       execution.again = true;
@@ -352,77 +368,119 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
     const run = await this.deps.conversations.syncRun(execution.runId!);
     if (run.actorUserId !== execution.userId || run.subject.id !== execution.id)
       throw forbidden('This run does not belong to the conversation.');
-    // syncRun checks its persisted cursor before acquiring any write lock.
-    let row = await this.owned(execution.userId, execution.id);
-    while (Number(row.lastSeq) > execution.cursor) {
-      const page = await this.deps.conversations.messages(
-        execution.userId,
-        execution.id,
-        { after: execution.cursor, limit: 200 },
-      );
-      if (!page.items.length) break;
-      for (const message of page.items) {
-        if (!execution.streamFailed) {
-          try {
-            await execution.writer.message(message);
-          } catch (error) {
-            execution.streamFailed = true;
-            await execution.writer.discard(
-              new Error(
-                'The stream cache limit was exceeded; refresh saved history.',
-              ),
-            );
-            this.deps.onError(error);
-          }
+    // Existing synchronization commits first. Independent notices are delivered by durable business rereads.
+    const row = await this.owned(execution.userId, execution.id);
+    if (Number(row.lastSeq) > execution.cursor) {
+      const records = await messagesRepo(this.deps.tx.read()).findMany({
+        filter: {
+          conversationId: execution.id,
+          runId: execution.runId!,
+          role: 'assistant',
+        },
+        sort: (s) => s.field('seq').asc(),
+      });
+      const message = runnerUIMessages(
+        records.map((record) => toMessage(record, this.deps.basePath())),
+      )[0];
+      if (message) {
+        if (!execution.started) {
+          execution.writer.write({
+            type: 'start',
+            messageId: runnerMessageId(execution.runId!),
+            messageMetadata: message.metadata!,
+          });
+          execution.started = true;
         }
-        execution.cursor = message.seq;
+        execution.writer.write({
+          type: 'message-metadata',
+          messageMetadata: message.metadata!,
+        });
+        for (const source of message.metadata!.sourceRecords!) {
+          if (execution.published.has(source.partId)) continue;
+          const part = message.parts[source.partIndex];
+          if (part.type === 'text') {
+            execution.writer.write({ type: 'text-start', id: source.partId });
+            execution.writer.write({
+              type: 'text-delta',
+              id: source.partId,
+              delta: part.text,
+            });
+            execution.writer.write({ type: 'text-end', id: source.partId });
+          } else if (part.type === 'file')
+            execution.writer.write({
+              type: 'file',
+              url: part.url,
+              mediaType: part.mediaType,
+              ...(part.filename ? { filename: part.filename } : {}),
+            });
+          execution.published.add(source.partId);
+        }
+        execution.snapshot = message;
       }
-      row = await this.owned(execution.userId, execution.id);
+      execution.cursor = Number(row.lastSeq);
     }
     if (!this.terminal(run)) return;
-    await execution.writer.seal();
     const started = performance.now();
     try {
       if (!execution.cleared)
-        await this.deps.tx.run(async (unit) => {
-          const current = await lockConversation(
-            unit.conn,
-            execution.id,
-            this.deps.now(),
-          );
-          if (!current || current.userId !== execution.userId)
-            throw notFound('Conversation');
-          const binding = runnerBinding(current.metadata);
-          if (binding?.closingRunId && binding.closingRunId !== run.id)
-            throw conflict('Another execution is being finalized.');
-          if (binding?.closingRunId) {
-            const { closingRunId: _closed, ...kept } = binding;
-            await conversationsRepo(unit.conn).updateMany({
-              filter: { id: current.id },
-              values: {
-                metadata: asJson({
-                  ...jsonObject(current.metadata),
-                  runnerOnlineAgent: kept,
-                }),
-              },
-            });
-          }
-        });
+        await this.clearClosing(execution.userId, execution.id, run.id);
       execution.cleared = true;
     } finally {
       this.deps.measure?.('runner-finish', performance.now() - started);
     }
-    await execution.writer.finish(
-      run.status === 'completed'
-        ? 'completed'
-        : run.status === 'cancelled'
-          ? 'cancelled'
-          : 'failed',
-      Number(row.lastSeq),
-    );
+    await this.deps.streams.release(execution.id, execution.writer);
+    execution.writer.write({
+      type: 'finish',
+      finishReason: run.status === 'completed' ? 'stop' : 'other',
+      ...(execution.snapshot
+        ? { messageMetadata: execution.snapshot.metadata }
+        : {}),
+    });
+    execution.writer.close();
     if (this.active.get(execution.id) === execution)
       this.active.delete(execution.id);
     clearTimeout(execution.timer);
+  }
+  private async finalizeSavedRun(
+    userId: string,
+    id: string,
+    runId: string,
+  ): Promise<void> {
+    const run = await this.deps.conversations.syncRun(runId);
+    if (
+      run.actorUserId !== userId ||
+      run.subject.kind !== 'conversation' ||
+      run.subject.id !== id
+    )
+      throw forbidden('This run does not belong to the conversation.');
+    if (!this.terminal(run))
+      throw conflict('This run has not confirmed termination.');
+    await this.deps.streams.forgetCompleted(userId, id, runId);
+    await this.clearClosing(userId, id, runId);
+  }
+  private async clearClosing(
+    userId: string,
+    id: string,
+    runId: string,
+  ): Promise<void> {
+    await this.deps.tx.run(async ({ conn }) => {
+      const current = await lockConversation(conn, id, this.deps.now());
+      if (!current || current.userId !== userId) throw notFound('Conversation');
+      const binding = runnerBinding(current.metadata);
+      if (binding?.closingRunId && binding.closingRunId !== runId)
+        throw conflict('Another execution is being finalized.');
+      if (!binding?.closingRunId) return;
+      const { closingRunId: _closed, ...kept } = binding;
+      await conversationsRepo(conn).updateMany({
+        filter: { id },
+        values: {
+          metadata: asJson({
+            ...jsonObject(current.metadata),
+            runnerOnlineAgent: kept,
+          }),
+        },
+      });
+    });
   }
   private terminal(run: Run): boolean {
     return (
@@ -439,8 +497,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
         (item) => item.pending ?? Promise.resolve(),
       ),
     );
-    for (const execution of this.active.values())
-      await execution.writer.discard();
+    for (const execution of this.active.values()) execution.writer.close();
     this.active.clear();
     // Browser and application shutdown do not cancel or redispatch Runner work.
   }

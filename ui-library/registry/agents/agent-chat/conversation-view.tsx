@@ -6,6 +6,8 @@
  */
 import {
   ChatExtensionsContext,
+  appUIMessageText,
+  chatMessageSegments,
   chatFeedback,
   chatIsRunning,
   useChatScroll,
@@ -23,10 +25,7 @@ import {
   useSendMessage,
   type ChatTimelineItem,
 } from '@nocobase/app-plugin-agents/client/chat';
-import type {
-  ConversationDetail,
-  ConversationMessage,
-} from '@nocobase/app-plugin-agents/shared/conversations';
+import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
 import type { ModelRef } from '@nocobase/app-plugin-agents/shared/models';
 import { BotMessageSquareIcon, PaperclipIcon } from 'lucide-react';
 import {
@@ -170,6 +169,7 @@ interface Entry {
   readonly at: string;
   /** Messages before other items at the same time. */
   readonly rank: number;
+  readonly seq?: number;
   readonly node: ReactNode;
 }
 
@@ -194,16 +194,19 @@ function ConversationBody({
   const catalog = useChatModels(panel.open && !conversation);
   const [chosenModel, setChosenModel] = useState<ModelRef | null>(null);
   const run = conversation?.run ?? null;
-  const running = chatIsRunning(conversation);
-  const chatController = useChatController();
   const stream = useChatStream(conversation?.execution ? conversationId : null);
-  const messages = useConversationMessages(
-    conversationId,
-    running,
-    Boolean(conversation?.execution),
-  );
+  const receiving =
+    stream?.status === 'submitted' || stream?.status === 'streaming';
+  const running = chatIsRunning(conversation) || receiving;
+  const chatController = useChatController();
+  const [saveError, setSaveError] = useState<unknown>(null);
+  const messages = useConversationMessages(conversationId);
   const useTimelineItems = extensions.useTimelineItems ?? noTimelineItems;
-  const revision = messages.lastSeq * 10 + (running ? 1 : 0);
+  const revision =
+    messages.items.reduce(
+      (sum, message) => sum + (message.metadata?.revision ?? 0),
+      messages.lastSeq,
+    ) + (running ? 1 : 0);
   const timeline: readonly ChatTimelineItem[] = useTimelineItems(
     conversationId ?? '',
     revision,
@@ -281,17 +284,33 @@ function ConversationBody({
     (target ? text.name(target) : null) ??
     (conversation ? t('chat.agentGone') : t('chat.anyAgent'));
 
+  const segments = chatMessageSegments(messages.items);
   const entries: Entry[] = timelineOrder([
-    ...messages.items.map((message: ConversationMessage): Entry => ({
-      key: `m-${message.id}`,
-      at: message.createdAt,
+    ...segments.map((segment): Entry => ({
+      key: `m-${segment.key}`,
+      at: segment.at,
+      seq: segment.seq,
       rank: 0,
       node: (
         <MessageItem
-          key={`m-${message.id}`}
-          message={message}
+          key={`m-${segment.key}`}
+          message={segment.message}
+          segment={segment}
+          streaming={
+            receiving && segment.message.id === messages.items.at(-1)?.id
+          }
           agentName={agentName}
-          extra={extensions.renderMessageExtra?.(message)}
+          extra={
+            segment.last
+              ? extensions.renderMessageExtra?.(segment.message)
+              : null
+          }
+          approvalDisabled={receiving}
+          onApproval={
+            conversationId
+              ? (input) => chatController.approve(conversationId, input)
+              : undefined
+          }
         />
       ),
     })),
@@ -308,14 +327,14 @@ function ConversationBody({
   ]);
 
   // Follow the end of the log as messages arrive; keep the place when older ones are loaded above.
-  const listRef = useChatScroll(messages.items[0]?.seq);
+  const listRef = useChatScroll(segments[0]?.seq);
   const stopping =
     conversationId !== null &&
     chatController.isStopping(conversationId) &&
     running;
   const afterUser =
-    messages.items.filter((item) => item.role === 'user').at(-1)?.seq ??
-    Infinity;
+    messages.items.filter((item) => item.role === 'user').at(-1)?.metadata
+      ?.seq ?? Infinity;
   const feedback = chatFeedback({
     execution: conversation?.execution,
     lastSeq: messages.lastSeq,
@@ -333,9 +352,15 @@ function ConversationBody({
     stream,
     hasOutput: messages.items.some(
       (item) =>
-        item.seq > afterUser &&
-        item.role !== 'user' &&
-        item.content.content.trim().length > 0,
+        (item.metadata?.seq ?? Infinity) > afterUser &&
+        item.role === 'assistant' &&
+        (appUIMessageText(item).trim().length > 0 ||
+          item.parts.some(
+            (part) =>
+              part.type === 'dynamic-tool' ||
+              part.type.startsWith('tool-') ||
+              part.type === 'file',
+          )),
     ),
   });
   const busyFeedback =
@@ -487,7 +512,7 @@ function ConversationBody({
                     }
                     onCheck={() => {
                       if (conversationId)
-                        void chatController.refresh(conversationId);
+                        void chatController.resume(conversationId);
                     }}
                     onDiscard={() =>
                       messages.dispatch({
@@ -524,7 +549,7 @@ function ConversationBody({
           )}
         </div>
       </div>
-      {stream?.phase === 'interrupted' ? (
+      {stream?.error ? (
         <div role='alert' className='px-3 py-2 text-sm text-muted-foreground'>
           {t('chat.connectionUnknown')}{' '}
           <Button
@@ -532,16 +557,41 @@ function ConversationBody({
             size='sm'
             onClick={() => {
               messages.fetchNewer();
-              if (conversationId) void chatController.refresh(conversationId);
+              if (conversationId) void chatController.resume(conversationId);
             }}
           >
             {t('chat.refreshHistory')}
           </Button>
+          {conversationId ? (
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() =>
+                void chatController
+                  .finalize(conversationId)
+                  .then(() => setSaveError(null), setSaveError)
+              }
+            >
+              {t('chat.retrySaving')}
+            </Button>
+          ) : null}
         </div>
       ) : null}
       {busyFeedback ? null : feedbackNotice}
       <TurnAnnouncer running={running} />
       <div className={page ? cn(PAGE_COLUMN, 'pt-2 pb-4') : undefined}>
+        {saveError ? (
+          <LoadError
+            title={t('chat.loadFailed')}
+            error={saveError}
+            onRetry={() => {
+              if (conversationId)
+                void chatController
+                  .finalize(conversationId)
+                  .then(() => setSaveError(null), setSaveError);
+            }}
+          />
+        ) : null}
         <Composer
           variant={variant}
           disabled={

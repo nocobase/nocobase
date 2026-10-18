@@ -128,6 +128,12 @@ import { autoTitle, cleanTitle } from './titles.js';
 const SYNC_PAGE = 500;
 
 export interface ConversationServiceDeps {
+  readonly nativeNotice?: (
+    unit: Tx,
+    record: ConversationRecord,
+    id: string,
+    parts: import('../../../shared/online-agent.js').AppUIMessage['parts'],
+  ) => Promise<unknown>;
   readonly tx: TxRunner;
   readonly measure?: (phase: string, durationMs: number) => void;
   readonly ids: IdSource;
@@ -145,7 +151,10 @@ export interface ConversationServiceDeps {
   /** Availability of the built-in model-backed chat capability. */
   readonly nativeAvailable?: () => Promise<boolean>;
   /** Native process occupancy, combined with the authorized persisted row. */
-  readonly nativeActive?: (sessionId: string) => boolean;
+  readonly nativeActive?: (
+    sessionId: string,
+    persistedRunning?: boolean,
+  ) => boolean | Promise<boolean>;
   /** The files people send with messages; without them a message that names files is refused. */
   readonly attachments?: ChatAttachmentLinks;
   /** The application's public base path (`/app`, or empty), for the files' URLs. */
@@ -277,6 +286,12 @@ function onlineExecution(
   const outcome = call.outcome;
   return {
     status: nativeExecutionStatus(call, active),
+    ...(call.state === 'waitingApproval' ? { waitingApproval: true } : {}),
+    ...(call.state === 'running' && !active ? { interrupted: true } : {}),
+    ...(typeof call.messageId === 'string'
+      ? { messageId: call.messageId }
+      : {}),
+    ...(typeof call.revision === 'number' ? { revision: call.revision } : {}),
     ...(outcome === 'completed' ||
     outcome === 'cancelled' ||
     outcome === 'failed'
@@ -363,40 +378,53 @@ export function createConversationService(
       CONVERSATION_SUBJECT,
       records.map((record) => record.id),
     );
-    return records.map((record) => ({
-      id: record.id,
-      title: record.title,
-      titleSource: record.titleSource,
-      category: record.category,
-      showInChatList: record.showInChatList,
-      source: record.source,
-      mode: record.mode,
-      execution: onlineExecution(record, open, deps.nativeActive?.(record.id)),
-      agent: jsonObject(record.metadata).onlineAgent
-        ? {
-            id: 'online',
-            name: 'Online agent',
-            nameText: null,
-            avatar: null,
-            archived: false,
-          }
-        : agentRef(
-            record.agentId,
-            record.agentId ? (agents.get(record.agentId) ?? null) : null,
-          ),
-      fallbackFrom: record.fallbackFromAgentId
-        ? agentRef(
-            record.fallbackFromAgentId,
-            agents.get(record.fallbackFromAgentId) ?? null,
-          )
-        : null,
-      read: Boolean(record.read),
-      lastMessageAt: record.lastMessageAt,
-      archivedAt: record.archivedAt,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-      run: runRef(open.filter((run) => run.subject.id === record.id)),
-    }));
+    return Promise.all(
+      records.map(async (record) => ({
+        id: record.id,
+        title: record.title,
+        titleSource: record.titleSource,
+        category: record.category,
+        showInChatList: record.showInChatList,
+        source: record.source,
+        mode: record.mode,
+        execution: onlineExecution(
+          record,
+          open,
+          jsonObject(record.metadata).onlineAgent
+            ? await deps.nativeActive?.(
+                record.id,
+                jsonObject(
+                  jsonObject(jsonObject(record.metadata).onlineAgent).call,
+                ).state === 'running',
+              )
+            : false,
+        ),
+        agent: jsonObject(record.metadata).onlineAgent
+          ? {
+              id: 'online',
+              name: 'Online agent',
+              nameText: null,
+              avatar: null,
+              archived: false,
+            }
+          : agentRef(
+              record.agentId,
+              record.agentId ? (agents.get(record.agentId) ?? null) : null,
+            ),
+        fallbackFrom: record.fallbackFromAgentId
+          ? agentRef(
+              record.fallbackFromAgentId,
+              agents.get(record.fallbackFromAgentId) ?? null,
+            )
+          : null,
+        read: Boolean(record.read),
+        lastMessageAt: record.lastMessageAt,
+        archivedAt: record.archivedAt,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+        run: runRef(open.filter((run) => run.subject.id === record.id)),
+      })),
+    );
   }
 
   async function systemDefault(
@@ -536,6 +564,37 @@ export function createConversationService(
     value: ConversationNotice,
     runId: string | null = null,
   ): Promise<void> {
+    if (
+      jsonObject(jsonObject(record.metadata).onlineAgent).kind === 'realtime'
+    ) {
+      if (!deps.nativeNotice)
+        throw conflict('Native notification storage is unavailable.');
+      const id = ids.next();
+      await deps.nativeNotice(unit, record, id, [
+        value.code === 'news'
+          ? {
+              type: 'data-notice',
+              id: `record:${id}`,
+              data: {
+                type: value.type,
+                title: value.title,
+                ...(value.params ? { params: { ...value.params } } : {}),
+              },
+            }
+          : {
+              type: 'data-business',
+              id: `record:${id}`,
+              data: {
+                kind: value.code,
+                id,
+                payload: JSON.parse(
+                  JSON.stringify(value),
+                ) as import('../../../shared/online-agent.js').AppUIJson,
+              },
+            },
+      ]);
+      return;
+    }
     const agentIds =
       value.code === 'switchedToDefault' ||
       value.code === 'switchedToOnline' ||

@@ -1,12 +1,27 @@
 import {
   MESSAGE_CONTENT_MAX,
   type ConversationDetail,
-  type ConversationMessage,
   type CreateConversationRequest,
   type MessageAttachment,
   type PageContext,
 } from '../../shared/conversations.js';
 import type { ChatApi } from './api.js';
+import type { AppUIMessage } from '../../shared/online-agent.js';
+export interface SubmissionSend {
+  readonly content: string;
+  readonly clientId: string;
+  readonly context?: PageContext;
+  readonly attachmentIds?: readonly string[];
+}
+export interface ChatSubmissionApi extends Pick<
+  ChatApi,
+  'createConversation' | 'messages'
+> {
+  sendMessage(
+    id: string,
+    input: SubmissionSend,
+  ): Promise<{ message: AppUIMessage; conversation: ConversationDetail }>;
+}
 
 /** UUID v4 correlation IDs also work on LAN HTTP origins, where randomUUID is unavailable. */
 function createClientId(): string {
@@ -48,7 +63,7 @@ export interface ChatSubmission extends SubmissionInput {
   /** The user explicitly permits another input without asserting the old write failed. */
   released?: boolean;
   operation: number;
-  message?: ConversationMessage;
+  message?: AppUIMessage;
   error?: unknown;
 }
 
@@ -83,10 +98,7 @@ export class ChatSubmissions {
   }
   private readonly listeners = new Set<() => void>();
   public constructor(
-    private readonly api: Pick<
-      ChatApi,
-      'createConversation' | 'sendMessage' | 'messages'
-    >,
+    private readonly api: ChatSubmissionApi,
     private readonly updated: (
       detail: ConversationDetail,
       record: ChatSubmission,
@@ -95,7 +107,7 @@ export class ChatSubmissions {
     private readonly timeoutMs = 30_000,
     private readonly confirmed: (
       id: string,
-      message: ConversationMessage,
+      message: AppUIMessage,
     ) => void = () => {},
   ) {}
   public subscribe = (listener: () => void): (() => void) => {
@@ -217,18 +229,19 @@ export class ChatSubmissions {
       if (record.status === 'unknown') void this.reconcile(record.clientId);
     }
   }
-  private confirm(record: ChatSubmission, message: ConversationMessage): void {
+  private confirm(record: ChatSubmission, message: AppUIMessage): void {
     record.message = message;
     record.status = 'confirmed';
-    this.confirmed(message.conversationId, message);
+    this.confirmed(message.metadata!.conversationId, message);
   }
-  public observe(id: string, messages: readonly ConversationMessage[]): void {
+  public observe(id: string, messages: readonly AppUIMessage[]): void {
     let changed = false;
     for (const record of this.records) {
       if (record.conversationId !== id || record.status === 'confirmed')
         continue;
       const found = messages.find(
-        (message) => message.metadata?.clientId === record.clientId,
+        (message) =>
+          (message.metadata?.clientId ?? message.id) === record.clientId,
       );
       if (found) {
         this.confirm(record, found);

@@ -45,6 +45,41 @@ function answerOf(result: unknown): unknown {
 export const api = {
   routes: {} as Routes,
   calls: [] as ApiRequest[],
+  stream: vi.fn(
+    async (options: {
+      path: string;
+      method?: string;
+      query?: Record<string, unknown>;
+      json?: unknown;
+      signal?: AbortSignal;
+    }): Promise<ReadableStream<Uint8Array>> => {
+      const request: ApiRequest = {
+        path: options.path,
+        method: options.method ?? 'GET',
+        query: options.query ?? {},
+        json: options.json,
+        ...(options.signal ? { signal: options.signal } : {}),
+      };
+      api.calls.push(request);
+      const handler =
+        api.routes[`${request.method} ${request.path}`] ??
+        (request.method === 'GET' ? api.routes[request.path] : undefined);
+      if (!handler)
+        throw new FakeApiError(
+          404,
+          `NO_ROUTE ${request.method} ${request.path}`,
+        );
+      const response = await handler(request);
+      if (response instanceof Response && response.body) return response.body;
+      if (response instanceof ReadableStream) return response;
+      if (
+        response === undefined ||
+        (response instanceof Response && response.status === 204)
+      )
+        throw new FakeApiError(204);
+      throw new Error('Provide a standard SDK stream fixture.');
+    },
+  ),
   request: vi.fn(
     async (options: {
       path: string;
@@ -155,6 +190,7 @@ export function resetApi(
   api.routes = routes;
   api.calls = [];
   api.request.mockClear();
+  api.stream.mockClear();
   toasts.length = 0;
   realtime.listeners.clear();
   granted.clear();

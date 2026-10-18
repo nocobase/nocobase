@@ -1,10 +1,19 @@
 /* eslint-disable react-refresh/only-export-components, @eslint-react/no-unnecessary-use-prefix -- a stand-in for a
    module of components and hooks, under the names of the real ones whether or not the stand-in calls a hook */
 import type * as Chat from '@nocobase/app-plugin-agents/client/chat';
+import { Chat as SDKChat, useChat as useSDKChat } from '@ai-sdk/react';
+import {
+  createUIMessageStreamResponse,
+  DefaultChatTransport,
+  type UIMessageChunk,
+} from 'ai';
+import { appUIMessageText } from '../../../../packages/plugins/app-plugin-agents/shared/ui-message.js';
+export { appUIMessageText };
+export { chatMessageSegments } from '../../../../packages/plugins/app-plugin-agents/client/chat/message-model.js';
 import type {
   ChatAgent,
   ConversationDetail,
-  ConversationMessage,
+  ResolvedPageContext,
   ConversationNotice,
   ConversationSource,
   MessageAttachment,
@@ -120,23 +129,67 @@ function conversation(
 function message(
   conversationId: string,
   seq: number,
-  role: ConversationMessage['role'],
+  role: Chat.AppUIMessage['role'],
   content: string,
-  fields: Partial<ConversationMessage> = {},
-): ConversationMessage {
+  fields: {
+    createdAt?: string;
+    workContext?: ResolvedPageContext;
+    attachments?: readonly MessageAttachment[];
+    metadata?: {
+      agentId?: string;
+      clientId?: string;
+      notice?: ConversationNotice;
+    };
+  } = {},
+): Chat.AppUIMessage {
+  const notice = fields.metadata?.notice;
   return {
     id: `${conversationId}-${seq}`,
-    conversationId,
-    seq,
     role,
-    content: { type: 'text', content },
-    toolCalls: null,
-    attachments: null,
-    workContext: null,
-    metadata: {},
-    runId: null,
-    createdAt: ago(30 - seq),
-    ...fields,
+    metadata: {
+      conversationId,
+      seq,
+      revision: 1,
+      createdAt: fields.createdAt ?? ago(30 - seq),
+      ...(fields.metadata?.agentId ? { agentId: fields.metadata.agentId } : {}),
+      ...(fields.metadata?.clientId
+        ? { clientId: fields.metadata.clientId }
+        : {}),
+      ...(fields.workContext ? { context: fields.workContext } : {}),
+    },
+    parts: [
+      ...(notice
+        ? notice.code === 'news'
+          ? [
+              {
+                type: 'data-notice' as const,
+                id: `notice-${seq}`,
+                data: {
+                  type: notice.type,
+                  title: notice.title,
+                  ...(notice.params ? { params: { ...notice.params } } : {}),
+                },
+              },
+            ]
+          : [
+              {
+                type: 'data-business' as const,
+                id: `business-${seq}`,
+                data: {
+                  kind: notice.code,
+                  id: `record-${seq}`,
+                  payload: JSON.parse(JSON.stringify(notice)) as Chat.AppUIJson,
+                },
+              },
+            ]
+        : [{ type: 'text' as const, text: content, state: 'done' as const }]),
+      ...(fields.attachments ?? []).map((file) => ({
+        type: 'file' as const,
+        filename: file.filename,
+        mediaType: file.mimeType,
+        url: file.contentUrl,
+      })),
+    ],
   };
 }
 
@@ -166,7 +219,7 @@ function attachment(
 
 interface Store {
   readonly conversations: readonly ConversationDetail[];
-  readonly messages: Readonly<Record<string, readonly ConversationMessage[]>>;
+  readonly messages: Readonly<Record<string, readonly Chat.AppUIMessage[]>>;
   readonly events: Readonly<Record<string, readonly RunEvent[]>>;
 }
 
@@ -308,6 +361,29 @@ function initialStore(): Store {
 
 let store: Store = initialStore();
 const listeners = new Set<() => void>();
+const chats = new Map<string, SDKChat<Chat.AppUIMessage>>();
+const stopReplies = new Map<string, () => void>();
+let generation = 0;
+function demoChat(id: string): SDKChat<Chat.AppUIMessage> {
+  let chat = chats.get(id);
+  if (!chat) {
+    chat = new SDKChat<Chat.AppUIMessage>({
+      id,
+      messages: [...(store.messages[id] ?? [])],
+      transport: new DefaultChatTransport({
+        api: id,
+        fetch: async () =>
+          answer(
+            id,
+            store.conversations.find((item) => item.id === id)?.agent.id ??
+              'assistant',
+          ),
+      }),
+    });
+    chats.set(id, chat);
+  }
+  return chat;
+}
 
 function update(next: (current: Store) => Store): void {
   store = next(store);
@@ -329,6 +405,11 @@ const replyTimers = new Set<ReturnType<typeof setTimeout>>();
 
 /** Puts the sample conversations back; the tests call it between cases. */
 export function resetChatDemo(): void {
+  generation++;
+  for (const stop of stopReplies.values()) stop();
+  stopReplies.clear();
+  for (const chat of chats.values()) void chat.stop();
+  chats.clear();
   for (const timer of replyTimers) clearTimeout(timer);
   replyTimers.clear();
   update(() => initialStore());
@@ -349,8 +430,8 @@ function patchConversation(
 
 function appendMessage(
   conversationId: string,
-  build: (seq: number) => ConversationMessage,
-): ConversationMessage {
+  build: (seq: number) => Chat.AppUIMessage,
+): Chat.AppUIMessage {
   const list = store.messages[conversationId] ?? [];
   const added = build(list.length + 1);
   update((current) => ({
@@ -360,56 +441,96 @@ function appendMessage(
   return added;
 }
 
-function replaceMessage(added: ConversationMessage): void {
-  update((current) => ({
-    ...current,
-    messages: {
-      ...current.messages,
-      [added.conversationId]: (
-        current.messages[added.conversationId] ?? []
-      ).map((item) => (item.id === added.id ? added : item)),
-    },
-  }));
-}
-
 const REPLY =
   'Here is what I would do:\n\n1. Review **PM-12** today.\n2. Let the coding agent finish PM-15.\n3. Move PM-18 to the next release.';
 
-/** An agent's reply: a run opens, then the reply grows in place until it is final. */
-function answer(conversationId: string, agentId: string): void {
+/** A deterministic producer emits standard SDK chunks and saves only its final public message. */
+function answer(conversationId: string, agentId: string): Response {
+  const ownGeneration = generation;
+  const seq = (store.messages[conversationId]?.length ?? 0) + 1;
+  const id = `${conversationId}-${seq}`;
+  const createdAt = new Date().toISOString();
+  let length = 0,
+    ended = false;
+  let output!: ReadableStreamDefaultController<UIMessageChunk>;
+  let interval: ReturnType<typeof setInterval> | undefined;
+  let start: ReturnType<typeof setTimeout>;
   patchConversation(conversationId, (item) => ({
     ...item,
     run: { id: `run-${conversationId}`, status: 'running', acceptsInput: true },
+    execution: { status: 'running' },
   }));
-  const start = setTimeout(() => {
+  const finish = (cancelled = false) => {
+    if (ended) return;
+    ended = true;
+    clearTimeout(start);
+    clearInterval(interval);
     replyTimers.delete(start);
-    const draft = appendMessage(conversationId, (seq) =>
-      message(conversationId, seq, 'assistant', '', {
-        createdAt: new Date().toISOString(),
-        metadata: { agentId, streaming: true },
-      }),
-    );
-    let length = 0;
-    const timer = setInterval(() => {
-      length = Math.min(REPLY.length, length + 12);
-      const done = length === REPLY.length;
-      replaceMessage({
-        ...draft,
-        content: { type: 'text', content: REPLY.slice(0, length) },
-        metadata: { agentId, ...(done ? {} : { streaming: true }) },
-      });
-      if (!done) return;
-      clearInterval(timer);
-      replyTimers.delete(timer);
-      patchConversation(conversationId, (item) => ({
-        ...item,
-        run: null,
-        lastMessageAt: new Date().toISOString(),
-      }));
-    }, 80);
-    replyTimers.add(timer);
-  }, 700);
-  replyTimers.add(start);
+    if (interval) replyTimers.delete(interval);
+    stopReplies.delete(conversationId);
+    if (ownGeneration !== generation) {
+      output.close();
+      return;
+    }
+    const saved: Chat.AppUIMessage = {
+      id,
+      role: 'assistant',
+      metadata: { conversationId, seq, revision: 1, createdAt, agentId },
+      parts: [{ type: 'text', text: REPLY.slice(0, length), state: 'done' }],
+    };
+    if (length) appendMessage(conversationId, () => saved);
+    patchConversation(conversationId, (item) => ({
+      ...item,
+      run: null,
+      execution: {
+        status: 'idle',
+        outcome: cancelled ? 'cancelled' : 'completed',
+      },
+      lastMessageAt: new Date().toISOString(),
+    }));
+    if (length) output.enqueue({ type: 'text-end', id: 'text' });
+    output.enqueue({
+      type: 'finish',
+      ...(length ? { messageMetadata: saved.metadata } : {}),
+      finishReason: cancelled ? 'other' : 'stop',
+    });
+    output.close();
+  };
+  const stream = new ReadableStream<UIMessageChunk>({
+    start(controller) {
+      output = controller;
+      start = setTimeout(() => {
+        replyTimers.delete(start);
+        if (ownGeneration !== generation) return;
+        output.enqueue({
+          type: 'start',
+          messageId: id,
+          messageMetadata: { conversationId, createdAt, agentId, revision: 0 },
+        });
+        output.enqueue({ type: 'text-start', id: 'text' });
+        interval = setInterval(() => {
+          const before = length;
+          length = Math.min(REPLY.length, length + 12);
+          output.enqueue({
+            type: 'text-delta',
+            id: 'text',
+            delta: REPLY.slice(before, length),
+          });
+          if (length === REPLY.length) finish();
+        }, 80);
+        replyTimers.add(interval);
+      }, 700);
+      replyTimers.add(start);
+    },
+    cancel() {
+      ended = true;
+      clearTimeout(start);
+      clearInterval(interval);
+      stopReplies.delete(conversationId);
+    },
+  });
+  stopReplies.set(conversationId, () => finish(true));
+  return createUIMessageStreamResponse({ stream });
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -851,7 +972,12 @@ export const useConversation: typeof Chat.useConversation = (
       ? (() => {
           const item = conversations.find((item) => item.id === conversationId);
           return item
-            ? { ...item, execution: { status: item.run ? 'running' : 'idle' } }
+            ? {
+                ...item,
+                execution: item.execution ?? {
+                  status: item.run ? 'running' : 'idle',
+                },
+              }
             : undefined;
         })()
       : undefined,
@@ -873,7 +999,7 @@ export const useConversationList: typeof Chat.useConversationList = (
         (!q ||
           (item.title ?? '').toLowerCase().includes(q) ||
           (messages[item.id] ?? []).some((entry) =>
-            entry.content.content.toLowerCase().includes(q),
+            appUIMessageText(entry).toLowerCase().includes(q),
           )),
     )
     .sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt));
@@ -891,14 +1017,15 @@ export const useConversationList: typeof Chat.useConversationList = (
 export const useConversationMessages: typeof Chat.useConversationMessages = (
   conversationId,
 ) => {
-  const { messages } = useStore();
-  const items = conversationId ? (messages[conversationId] ?? []) : [];
+  useStore();
+  const sdk = useSDKChat({ chat: demoChat(conversationId ?? 'draft') });
+  const items = conversationId ? sdk.messages : [];
   return {
     items,
     pending: [],
     hasMore: false,
     olderToken: null,
-    lastSeq: items.at(-1)?.seq ?? 0,
+    lastSeq: Math.max(0, ...items.map((message) => message.metadata?.seq ?? 0)),
     loaded: true,
     loadingOlder: false,
     error: undefined,
@@ -933,7 +1060,8 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
         onCreated(created);
       }
       const target = id;
-      appendMessage(target, (seq) =>
+      const sdk = demoChat(target);
+      const saved = appendMessage(target, (seq) =>
         message(target, seq, 'user', input.content, {
           createdAt: new Date().toISOString(),
           ...(input.attachments?.length
@@ -942,7 +1070,7 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
         }),
       );
       const detail = store.conversations.find((item) => item.id === target);
-      if (detail) answer(target, detail.agent.id);
+      if (detail) void sdk.sendMessage(saved);
       return true;
     },
     [conversationId, agentId, source, onCreated],
@@ -1000,9 +1128,14 @@ export const useConversationActions: typeof Chat.useConversationActions =
         archivedAt: archived ? new Date().toISOString() : null,
       })),
     ),
-    stop: mutation<string>((id) =>
-      patchConversation(id, (item) => ({ ...item, run: null })),
-    ),
+    stop: mutation<string>((id) => {
+      stopReplies.get(id)?.();
+      patchConversation(id, (item) => ({
+        ...item,
+        run: null,
+        execution: { status: 'idle', outcome: 'cancelled' },
+      }));
+    }),
     markRead: (id: string) => {
       if (store.conversations.find((item) => item.id === id)?.read === false)
         patchConversation(id, (item) => ({ ...item, read: true }));
@@ -1021,10 +1154,16 @@ export const useConversationSources: typeof Chat.useConversationSources = () =>
   SOURCES;
 
 /** The preview has no network stream; production chat uses the plugin controller. */
-export const useChatStream: typeof Chat.useChatStream = () => undefined;
+export const useChatStream: typeof Chat.useChatStream = (id) => {
+  const sdk = useSDKChat({ chat: demoChat(id ?? 'draft') });
+  return id ? { status: sdk.status, error: sdk.error } : undefined;
+};
 export const useChatController: typeof Chat.useChatController = () =>
   ({
     refresh: async () => {},
+    resume: async () => {},
+    finalize: async () => {},
+    approve: async () => {},
     isStopping: () => false,
     submissions: {
       blocked: () => false,

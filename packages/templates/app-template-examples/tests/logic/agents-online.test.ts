@@ -6,10 +6,11 @@ import {
 } from '@nocobase/app-plugin-authentication/testing';
 import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
 import { OnlineAgentService } from '@nocobase/app-plugin-agents/server/online-agent';
-import type {
-  ConversationDetail,
-  ConversationMessage,
-} from '@nocobase/app-plugin-agents/shared/conversations';
+import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
+import {
+  appUIMessageText,
+  type AppUIMessage,
+} from '@nocobase/app-plugin-agents/shared/online-agent';
 import type { ModelServiceView } from '@nocobase/app-plugin-agents/shared/models';
 import { createAppTest } from '@nocobase/app-testing/server';
 import { expect } from 'vitest';
@@ -137,34 +138,37 @@ test('configures a chat model and streams, persists, resumes and stops an owned 
     const history = async () =>
       (
         (await (await member.fetch(`${path}/messages?after=0`)).json()) as {
-          data: ConversationMessage[];
+          data: AppUIMessage[];
         }
       ).data;
     expect(fixture.streams).toHaveLength(0);
-    expect(
-      (
-        await member.fetch(
-          `${path}/messages`,
-          write({ content: 'Hello fixture', clientId: 'first' }),
-        )
-      ).status,
-    ).toBe(201);
-    await expect.poll(() => fixture.streams.length).toBe(1);
-    const events = await member.fetch(`${path}/events`);
+    const events = await member.fetch(
+      `${path}/messages`,
+      write({
+        message: {
+          id: 'first',
+          role: 'user',
+          parts: [{ type: 'text', text: 'Hello fixture' }],
+        },
+      }),
+    );
     expect(events.status).toBe(200);
+    expect(events.headers.get('x-vercel-ai-ui-message-stream')).toBe('v1');
+    await expect.poll(() => fixture.streams.length).toBe(1);
     const streamText = events.text();
     fixture.complete(0);
     const output = await streamText;
-    expect(output).toContain('event: part');
+    expect(output).toContain('"type":"text-delta"');
     expect(output).toContain('Hello from the local model fixture.');
-    expect(output).toContain('event: saved');
-    expect(output).toContain('"outcome":"completed"');
+    expect(output).toContain('"type":"finish"');
+    expect(output).toContain('[DONE]');
+    expect(output).toContain('"type":"completed"');
     await expect
       .poll(async () => (await detail()).execution?.status)
       .toBe('idle');
     const saved = await history();
     expect(saved.map((message) => message.role)).toEqual(['user', 'assistant']);
-    expect(saved[1]!.content.content).toContain(
+    expect(appUIMessageText(saved[1]!)).toContain(
       'Hello from the local model fixture.',
     );
     expect(saved.every((message) => !('original' in message))).toBe(true);
@@ -175,31 +179,42 @@ test('configures a chat model and streams, persists, resumes and stops an owned 
     }
     for (const suffix of ['/messages', '/stop']) {
       expect(
-        (await admin.fetch(`${path}${suffix}`, write({ content: 'Not mine' })))
-          .status,
+        (
+          await admin.fetch(
+            `${path}${suffix}`,
+            write({
+              message: {
+                id: 'forged',
+                role: 'user',
+                parts: [{ type: 'text', text: 'Not mine' }],
+              },
+            }),
+          )
+        ).status,
       ).toBe(404);
     }
-    expect(
-      (
-        await member.fetch(
-          `${path}/messages`,
-          write({ content: 'Continue, then stop', clientId: 'second' }),
-        )
-      ).status,
-    ).toBe(201);
+    const second = await member.fetch(
+      `${path}/messages`,
+      write({
+        message: {
+          id: 'second',
+          role: 'user',
+          parts: [{ type: 'text', text: 'Continue, then stop' }],
+        },
+      }),
+    );
+    expect(second.status).toBe(200);
     await expect.poll(() => fixture.streams.length).toBe(2);
     expect(JSON.stringify(fixture.requests.at(-1)!.messages)).toContain(
       'Hello from the local model fixture.',
     );
-    const second = await member.fetch(`${path}/events`);
-    expect(second.status).toBe(200);
     const cancelledText = second.text();
     expect((await member.fetch(`${path}/stop`, write())).status).toBe(200);
-    expect(await cancelledText).toContain('"outcome":"cancelled"');
+    expect(await cancelledText).toContain('"type":"cancelled"');
     await expect
       .poll(async () => (await detail()).execution?.status)
       .toBe('idle');
-    expect((await history()).at(-1)!.content.content).toContain(
+    expect(appUIMessageText((await history()).at(-1)!)).toContain(
       'Hello from the local model fixture.',
     );
     expect((await member.fetch(`${path}/events`)).status).toBe(204);

@@ -195,6 +195,10 @@ Variables and model service keys are sealed with the application's secrets servi
 
 ```yaml
 agents:
+  # Optional SDK UI replay across instances; omit for live responses and history only.
+  # uiRecovery:
+  #   namespace: acme:online-ui
+  #   redis: { host: 127.0.0.1, port: 6379 }
   cli: # the CLI runs get; named after app.id when left out
     name: acme
     credentialFile: .acme/run.json # .<name>/run.json by default

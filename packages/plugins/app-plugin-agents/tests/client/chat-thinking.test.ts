@@ -1,71 +1,50 @@
 import { expect, it, vi } from 'vitest';
-import type { ChatApi } from '../../client/chat/api.js';
-import { ChatController } from '../../client/chat/controller.js';
+import { appUIMessageText } from '../../client/chat.js';
 import { chatFeedback } from '../../client/chat/feedback.js';
-import { OnlineAgentMemoryStreamManager } from '../../server/online-agent/streams.js';
-
-it('shows thinking before native stream attachment and first text, then yields to the reply', async () => {
-  const manager = new OnlineAgentMemoryStreamManager();
-  const writer = await manager.open('conversation', 1);
-  let attach!: () => void;
-  const ready = new Promise<void>((resolve) => {
-    attach = resolve;
-  });
-  const api = {
-    events: vi.fn(async () => {
-      await ready;
-      const stream = await manager.receive('conversation');
-      return stream!.pipeThrough(
-        new TransformStream({
-          transform(event, output) {
-            output.enqueue(
-              new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`),
-            );
-          },
-        }),
-      );
-    }),
-  };
-  const controller = new ChatController(api as unknown as ChatApi);
-  const feedback = () => {
-    const stream = controller.state('conversation');
-    return chatFeedback({
+import { sdkController } from './sdk-controller.js';
+it('shows thinking before SDK attachment and first text, then yields to the real SDK reply', async () => {
+  const f = sdkController(),
+    output = f.output();
+  const feedback = () =>
+    chatFeedback({
       execution: { status: 'running' },
       running: true,
       stopping: false,
       submission: { status: 'confirmed' },
-      stream,
-      hasOutput: Boolean(
-        stream?.items.some(
-          (item) =>
-            item.seq > 1 &&
-            item.role !== 'user' &&
-            item.content.content.trim().length > 0,
+      stream: f.controller.state('c1'),
+      hasOutput: f.controller
+        .chat('c1')
+        .messages.some(
+          (message) =>
+            message.role === 'assistant' && Boolean(appUIMessageText(message)),
         ),
-      ),
     });
-  };
   try {
-    controller.receive('conversation');
+    f.controller.receive('c1');
     expect(feedback()).toBe('thinking');
-    attach();
-    await vi.waitFor(() => expect(api.events).toHaveResolved());
+    await vi.waitFor(() => expect(output.attached).toBe(true));
     expect(feedback()).toBe('thinking');
-    await writer.append(0, 'First');
+    output.emit({
+      type: 'start',
+      messageId: 'answer',
+      messageMetadata: {
+        conversationId: 'c1',
+        createdAt: '2026-10-01T00:00:00.000Z',
+        revision: 0,
+      },
+    });
+    output.emit({ type: 'text-start', id: 'part' });
+    output.emit({ type: 'text-delta', id: 'part', delta: 'First' });
     await vi.waitFor(() => expect(feedback()).toBeNull());
-    expect(controller.state('conversation')?.items[0]?.content.content).toBe(
-      'First',
-    );
-    await writer.append(0, ' reply');
+    expect(appUIMessageText(f.controller.chat('c1').messages[0])).toBe('First');
+    output.emit({ type: 'text-delta', id: 'part', delta: ' reply' });
     await vi.waitFor(() =>
-      expect(controller.state('conversation')?.items[0]?.content.content).toBe(
+      expect(appUIMessageText(f.controller.chat('c1').messages[0])).toBe(
         'First reply',
       ),
     );
     expect(feedback()).toBeNull();
   } finally {
-    attach();
-    controller.dispose();
-    await writer.discard();
+    f.controller.dispose();
   }
 });

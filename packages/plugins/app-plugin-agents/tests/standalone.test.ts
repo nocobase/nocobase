@@ -42,7 +42,10 @@ const migrationsOf = (name: string) =>
   );
 
 let testDatabase: TestDatabase | undefined;
+let stopServices: (() => Promise<void>) | undefined;
 afterEach(async () => {
+  await stopServices?.();
+  stopServices = undefined;
   await testDatabase?.destroy();
   testDatabase = undefined;
 });
@@ -76,6 +79,8 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
     }),
     onError: () => undefined,
   });
+
+  stopServices = () => agents.onlineAgent.shutdown();
 
   // A signed-in person, as the application's authentication and authorization would set them.
   const guard: MiddlewareHandler<AdminEnv> = async (context, nextHandler) => {
@@ -260,14 +265,12 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
     ).status,
   ).toBe(200);
 
-  const messages = await call('GET', `/agents/conversations/${id}/messages`, {
-    user: 'alice',
+  await agents.conversations.syncRun(runId);
+  const messages = await agents.conversations.messages('alice', id, {
+    limit: 20,
   });
   expect(
-    messages.body.data.map((message: { role: string; content: any }) => [
-      message.role,
-      message.content.content,
-    ]),
+    messages.items.map((message) => [message.role, message.content.content]),
   ).toEqual([
     ['user', 'ping'],
     ['assistant', 'ping'],

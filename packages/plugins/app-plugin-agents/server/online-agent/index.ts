@@ -15,13 +15,6 @@ export {
   type OnlineAgentConfig,
   type OnlineAgentToolDefinition,
 } from './config.js';
-export {
-  OnlineAgentMemoryStreamManager,
-  type OnlineAgentStreamManager,
-  type OnlineAgentStreamWriter,
-  type OnlineAgentStreamEvent,
-} from './streams.js';
-
 export type {
   OnlineAgentRuntime,
   OnlineAgentRealtimeService,
@@ -31,5 +24,25 @@ export type {
   OnlineAgentRunnerBackend,
 } from './realtime.js';
 export { RunnerOnlineAgentAdapter } from './runner.js';
+export {
+  appUIToolApprovalInputSchema,
+  type AppUIToolApprovalInput,
+  appUIDataSchemas,
+  appUIJsonSchema,
+  appUIMessageMetadataSchema,
+  validateAppUIMessages,
+  type AppUIData,
+  type AppUIJson,
+  type AppUIMessage,
+  type AppUIMessageMetadata,
+  type AppUITools,
+} from '../../shared/online-agent.js';
+
+export type { NativeHistoryQuery, NativeHistoryPage } from './native-store.js';
+
+export {
+  OnlineAgentUIStreams,
+  type OnlineAgentRecoveryConfig,
+} from './ui-streams.js';
 
 export type { OnlineAgentJson } from './codec.js';

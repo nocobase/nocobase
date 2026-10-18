@@ -13,7 +13,7 @@ import {
   type OnlineAgentJson,
   type OnlineAgentOutcome,
 } from './codec.js';
-import type { TxRunner } from '../kernel/tx.js';
+import type { Tx, TxRunner } from '../kernel/tx.js';
 import type { IdSource } from '../kernel/ids.js';
 import { asJson, jsonObject } from '../kernel/values.js';
 import { conflict, invalid, notFound } from '../kernel/errors.js';
@@ -24,15 +24,19 @@ import {
   findConversation,
   preferencesRepo,
   settingsRepo,
-  toMessage,
   type ConversationRecord,
 } from '../core/conversations/conversation.store.js';
 import type { ChatAttachmentLinks } from '../core/conversations/attachments.js';
 import type { ModelRef } from '../../shared/models.js';
+import { NativeSessionStore } from './native-store.js';
 
 export type OnlineAgentCall = {
   actorId: string;
-  state: 'running' | 'idle';
+  state: 'running' | 'idle' | 'waitingApproval';
+  executionId?: string;
+  messageId?: string;
+  revision?: number;
+  approvalExpiresAt?: string;
   outcome?: OnlineAgentOutcome;
   closing?: boolean;
   result?: OnlineAgentJson;
@@ -79,12 +83,8 @@ function session(row: ConversationRecord): OnlineAgentSession {
 }
 
 export interface OnlineAgentSessionManager {
-  /** Server boot only, before requests; ignores rows written by this process. */
+  readonly native: NativeSessionStore;
   recoverAtStartup(): Promise<void>;
-  publicHistory(
-    userId: string,
-    id: string,
-  ): Promise<import('../../shared/conversations.js').ConversationMessage[]>;
   defaults(userId: string): Promise<{ scope?: string[]; model?: ModelRef }>;
   create(
     userId: string,
@@ -140,6 +140,10 @@ export function createSessionManager(deps: {
   basePath?: () => string;
   ids: IdSource;
   attachments: ChatAttachmentLinks;
+  files?: Pick<
+    import('../core/conversations/attachments.js').ChatAttachmentService,
+    'content'
+  >;
   now(): string;
   measure?: (phase: string, durationMs: number) => void;
 }): OnlineAgentSessionManager {
@@ -159,7 +163,11 @@ export function createSessionManager(deps: {
     userId: string,
     id: string,
     phase: string,
-    change: (conn: DatabaseConnection, row: ConversationRecord) => Promise<T>,
+    change: (
+      conn: DatabaseConnection,
+      row: ConversationRecord,
+      emit: Tx['emit'],
+    ) => Promise<T>,
     messageSeq?: (result: T) => number,
   ) => {
     let start: number | undefined;
@@ -167,7 +175,7 @@ export function createSessionManager(deps: {
       return await deps.tx.run(async ({ conn, emit }) => {
         start = performance.now();
         const row = await owned(conn, userId, id, true);
-        const result = await change(conn, row);
+        const result = await change(conn, row, emit);
         const lastSeq = messageSeq?.(result);
         if (lastSeq !== undefined && lastSeq > Number(row.lastSeq)) {
           emit({
@@ -259,65 +267,19 @@ export function createSessionManager(deps: {
     current?: import('../../shared/conversations.js').ResolvedPageContext,
     replay = false,
   ): Promise<ModelMessage[]> {
-    await owned(deps.tx.read(), userId, id);
+    const row = await owned(deps.tx.read(), userId, id);
+    if (metadata(row).kind !== 'background')
+      throw invalid(
+        'Use the native UIMessage store for realtime conversations.',
+      );
     const rows = await messagesRepo(deps.tx.read()).findMany({
       filter: { conversationId: id },
       sort: (sort) => sort.field('seq').asc(),
     });
-    const messages = rows.flatMap((row, index): ModelMessage[] => {
-      const original = jsonObject(jsonObject(row.content).original);
-      if (!original.excludedFromHistory) {
-        const value = restore(row.content, row.role);
-        return value ? [value] : [];
-      }
-      // Earlier releases excluded interrupted tool evidence. Restore only valid
-      // calls and their adjacent results; never replay an unpaired fragment.
-      const value = restore(row.content, row.role, true);
-      if (value?.role !== 'assistant' || !Array.isArray(value.content))
-        return [];
-      const calls = value.content.filter(
-        (part): part is Extract<typeof part, { type: 'tool-call' }> =>
-          part.type === 'tool-call' &&
-          typeof part.toolCallId === 'string' &&
-          typeof part.toolName === 'string' &&
-          'input' in part,
-      );
-      if (!calls.length) return [];
-      const next = rows[index + 1];
-      const result =
-        next &&
-        jsonObject(jsonObject(next.content).original).excludedFromHistory
-          ? restore(next.content, next.role, true)
-          : null;
-      return [
-        { ...value, content: calls },
-        {
-          role: 'tool',
-          content: calls.map((call) => {
-            const saved =
-              result?.role === 'tool'
-                ? result.content.find(
-                    (part) =>
-                      part.type === 'tool-result' &&
-                      part.toolCallId === call.toolCallId &&
-                      part.toolName === call.toolName,
-                  )
-                : undefined;
-            return (
-              saved ?? {
-                type: 'tool-result',
-                toolCallId: call.toolCallId,
-                toolName: call.toolName,
-                output: {
-                  type: 'error-text',
-                  value:
-                    'Tool result unknown. The action may have completed; check its result before repeating it.',
-                },
-              }
-            );
-          }),
-        },
-      ];
+    const messages = rows.flatMap((row): ModelMessage[] => {
+      if (jsonObject(row.metadata).notice) return [];
+      const value = restore(row.content, row.role);
+      return value ? [value] : [];
     });
     const page =
       replay && deps.contextKinds
@@ -333,7 +295,9 @@ export function createSessionManager(deps: {
     return messages;
   }
 
+  const native = new NativeSessionStore(deps);
   return {
+    native,
     async recoverAtStartup() {
       const startedAt = new Date(performance.timeOrigin);
       const stale = (row: ConversationRecord) => {
@@ -342,6 +306,7 @@ export function createSessionManager(deps: {
         return (
           !jsonObject(row.metadata).runnerOnlineAgent &&
           value?.version === 1 &&
+          value.call?.state !== 'waitingApproval' &&
           new Date(row.updatedAt) < startedAt &&
           (value.call?.state === 'running' ||
             value.call?.closing ||
@@ -373,7 +338,7 @@ export function createSessionManager(deps: {
             candidate.userId,
             candidate.id,
             'startup',
-            async (conn, row) => {
+            async (conn, row, emit) => {
               if (!stale(row)) return;
               const value = metadata(row);
               const {
@@ -384,19 +349,24 @@ export function createSessionManager(deps: {
               const unfinished = call.state === 'running' && !call.outcome;
               const message =
                 'The server stopped before this execution finished. Some actions may have completed; check their results before repeating them.';
-              const lastSeq = unfinished
-                ? await append(
-                    conn,
-                    row,
-                    [
-                      {
-                        id: deps.ids.next(),
-                        message: { role: 'assistant', content: message },
-                      },
-                    ],
-                    'failed',
-                  )
-                : Number(row.lastSeq);
+              if (value.kind === 'realtime' && !call.messageId)
+                call.messageId = deps.ids.next();
+              const lastSeq =
+                value.kind === 'realtime'
+                  ? await native.recover(conn, row, call)
+                  : unfinished
+                    ? await append(
+                        conn,
+                        row,
+                        [
+                          {
+                            id: deps.ids.next(),
+                            message: { role: 'assistant', content: message },
+                          },
+                        ],
+                        'failed',
+                      )
+                    : Number(row.lastSeq);
               await saveMetadata(
                 conn,
                 row,
@@ -405,7 +375,7 @@ export function createSessionManager(deps: {
                   call: {
                     ...call,
                     state: 'idle',
-                    ...(unfinished
+                    ...(unfinished && value.kind === 'background'
                       ? { outcome: 'failed', error: message, result: undefined }
                       : {}),
                   },
@@ -418,6 +388,18 @@ export function createSessionManager(deps: {
                   updatedAt: deps.now(),
                 },
               );
+              if (
+                value.kind === 'realtime' &&
+                call.messageId &&
+                call.revision !== undefined
+              )
+                emit({
+                  type: 'conversation.changed',
+                  conversationId: row.id,
+                  userId: row.userId,
+                  messageId: call.messageId,
+                  revision: call.revision,
+                });
               return lastSeq;
             },
             (seq) => seq ?? Number(candidate.lastSeq),
@@ -486,7 +468,11 @@ export function createSessionManager(deps: {
     async configure(userId, id, config, model) {
       await write(userId, id, 'configure', async (conn, row) => {
         const value = metadata(row);
-        if (value.call?.state === 'running' || value.call?.closing)
+        if (
+          value.call?.state === 'running' ||
+          value.call?.state === 'waitingApproval' ||
+          value.call?.closing
+        )
           throw conflict('This conversation is busy.');
         await saveMetadata(
           conn,
@@ -499,14 +485,6 @@ export function createSessionManager(deps: {
           },
         );
       });
-    },
-    async publicHistory(userId, id) {
-      await owned(deps.tx.read(), userId, id);
-      const rows = await messagesRepo(deps.tx.read()).findMany({
-        filter: { conversationId: id },
-        sort: (sort) => sort.field('seq').asc(),
-      });
-      return rows.map((row) => toMessage(row, deps.basePath?.() ?? ''));
     },
     async history(userId: string, id: string): Promise<ModelMessage[]> {
       return history(userId, id);
@@ -533,8 +511,14 @@ export function createSessionManager(deps: {
         'accept',
         async (conn, row) => {
           const value = metadata(row);
+          if (value.kind !== 'background')
+            throw invalid(
+              'Use the native UIMessage store for realtime conversations.',
+            );
           if (value.call?.state === 'running' || value.call?.closing)
-            throw conflict('This conversation is busy.');
+            throw conflict(
+              'This conversation is busy or its previous execution needs review.',
+            );
           if (row.archivedAt || row.syncRunId)
             throw conflict('This conversation cannot accept input.');
           const lastSeq = await append(conn, row, items, 'completed');
@@ -582,6 +566,10 @@ export function createSessionManager(deps: {
         'save',
         async (conn, row) => {
           const value = metadata(row);
+          if (value.kind !== 'background')
+            throw invalid(
+              'Use the native UIMessage store for realtime conversations.',
+            );
           // Stable response ids allow a commit-unknown retry to verify, rather than append twice.
           const existing = items.length
             ? await messagesRepo(conn).findMany({

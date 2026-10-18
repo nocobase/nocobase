@@ -27,7 +27,9 @@ function renderMarkdown(text: string): ReactElement {
   return <ChatMarkdown content={text} />;
 }
 
-/** The consulted agent's steps so far, from its run's transcript, fetched as its topic announces them. */
+/** A genuine saved consultation data part; same-message revision rereads update its structured state and answer.
+ * This renderer does not restore an ask_agent producer. Run transcript reads remain authorized by their own API.
+ */
 function ConsultationSteps({
   runId,
 }: {

@@ -13,7 +13,7 @@
     "defaultTemplateVersion": "1.0.0-beta.69"
   },
   "devDependencies": {
-    "@ai-sdk/react": "2.0.0",
+    "@ai-sdk/react": "catalog:",
     "@base-ui/react": "catalog:",
     "@dicebear/core": "^9.4.3",
     "@hookform/resolvers": "^5.0.1",
@@ -52,7 +52,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "ai": "5.0.0",
+    "ai": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "dayjs": "^1.10.7",
