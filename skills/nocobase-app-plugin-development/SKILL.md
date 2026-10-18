@@ -16,8 +16,9 @@ These English references adapt the plugin development guide into task-specific i
 | Create a plugin, choose capabilities, change declarations, exports, dependencies, or public contracts | [Scaffolding and package contracts](references/plugin-foundation.md) |
 | Register, configure, upgrade, disable, unregister, or diagnose plugin integration                     | [Registration and lifecycle](references/registration.md)             |
 | Choose Client components, ServiceProviders, React Providers, configuration, or API access             | [Client architecture](references/client.md)                          |
+| Define Server configuration defaults, environment mappings, validation, or browser-visible fields    | [Plugin configuration](references/configuration.md)                  |
 | Build or change any plugin UI                                                                         | [shadcn components and styling](references/client-components.md)     |
-| Add pages, Settings, Dev routes, menus, Tabs, route dialogs/drawers, child routes, or page overrides  | [Client routing](references/client-routing.md)                       |
+| Add business pages, menus, Tabs, route dialogs/drawers, child routes, or page overrides                 | [Client routing](references/client-routing.md)                       |
 | Design configuration entities, settings permissions, routed editors and safe saves                    | [System settings](references/system-settings.md)                     |
 | Define service contracts, Tokens, dependency injection, or lifecycle                                  | [Services and Providers](references/services.md)                     |
 | Add HTTP endpoints, authorization, Repository operations, background jobs, or queues                  | [Server development](references/server.md)                           |
@@ -27,7 +28,8 @@ These English references adapt the plugin development guide into task-specific i
 | Author, publish, install, upgrade, or remove App-owned editable Client source                         | [Registry](references/registry.md)                                   |
 | Expose a plugin's capabilities to the App Agent                                                       | [Plugin Skills](references/plugin-skills.md)                         |
 | Add commands, CLI exports, or CLI registration                                                        | [CLI plugins](references/cli.md)                                     |
-| Select behavior tests and verify package/App integration                                              | [Testing and delivery](references/testing.md)                        |
+| Use `@nocobase/app-testing` for database, Server, Client or CLI tests and verify App integration       | [Testing and delivery](references/testing.md)                        |
+| Follow one executable plugin through migrations, protected API, Client, configuration and CLI tests | [Complete testing example](references/testing-example.md)            |
 
 For worked implementations and tests, read the matching [Server Route examples](references/server-route-examples.md), [ServiceToken and Provider examples](references/service-examples.md), [Client examples](references/client-examples.md), or [Repository examples](references/repository-examples.md). These supplement the topic references with concrete code and point to maintained source fixtures; adapt their explicit example access policies to the requested product.
 
@@ -44,6 +46,7 @@ When creating a page or writing a page component, refer to [Pages, routes, and m
 - Every `/api` route follows the [HTTP API rules](references/http-api.md): camelCase paths under the plugin's namespace, standard methods, `{ data }` responses, `ApiError` for every failure (clients branch on `reason`), zod input validated through `apiValidator()`, and a `describeRoute()` declaration on every route for the application's OpenAPI document at `/api/swagger/docs`. Data endpoints are `POST /api/{name}/{action}` with camelCase exposure names and are documented without a declaration.
 - Each Server Route owns and tests its authentication and authorization, or its explicit public protocol boundary. Another contribution's middleware or registration order is not protection. Test the production contribution through `createRouter()`.
 - Every Server plugin declares an absolute `baseDir`. Migrations, seeds, and Jobs resolve relative to it so compiled plugins use compiled resources. Migrations are explicit, self-contained, immutable after merge, and tested against a real database.
+- Plugin test fixtures come from `@nocobase/app-testing/server`, `/client` or `/cli`, declared in `devDependencies`. Use the [test directory and fixture guide](references/testing.md#use-app-testing-in-a-plugin) to select the environment, register the production plugin and keep databases and storage isolated.
 - Register Client, Server, and CLI exports explicitly in the corresponding target App composition roots. Installation, registration, Skills synchronization, and runtime behavior are separate facts; legacy manifest metadata is not runtime discovery.
 - Plugin integration knowledge is authored in `<plugin>/skills/`; the target App's `.agents/skills/` is generated output. Registry source copied into an App belongs to that App. This repository's development Skill is maintained source, distinct from either kind of output.
 - Follow the repository's dependency rules: shared runtimes and client value imports are peers, ordinary server runtime imports are dependencies, and development-only imports are devDependencies. A type reference retained in published declarations needs a consumer-resolvable contract.

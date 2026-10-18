@@ -2,6 +2,7 @@ packages:
   - packages/*/*
   - ui-library
   - docs
+  - skills/nocobase-app-plugin-development/assets/testing-example
 
 # Commands with --dry-run must not trigger an implicit install before their
 # own code can enforce read-only behavior. Dependency changes are synchronized

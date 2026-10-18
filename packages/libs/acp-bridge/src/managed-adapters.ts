@@ -8,6 +8,7 @@
  */
 import { execFile } from 'node:child_process';
 import {
+  lstat,
   mkdir,
   mkdtemp,
   readFile,
@@ -15,10 +16,12 @@ import {
   rename,
   rm,
   stat,
+  writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
 
 import { findProgram } from './programs.js';
+import { startupDetail } from './startup-detail.js';
 
 /** An adapter on npm, at the version the bridge pins, and the program of its package the bridge runs. */
 export interface AdapterPackage {
@@ -36,19 +39,19 @@ export interface AdapterInstallOptions {
   readonly log?: ((message: string) => void) | undefined;
   /** How long npm may take; five minutes by default. */
   readonly timeoutMs?: number;
+  /** Stops npm when its owning bridge shuts down. */
+  readonly signal?: AbortSignal | undefined;
 }
 
 /** Long enough for npm to download an adapter with a cold cache over a slow connection: about a minute on a fast one. */
 const INSTALL_TIMEOUT_MS = 300_000;
-/** After a failed install, how long the bridge starts the agent another way before trying again. */
-const RETRY_MS = 10 * 60_000;
 /** A temporary directory this old is left over from an install that did not finish. */
 const STALE_MS = 60 * 60_000;
 const BATCH_FILE = /\.(?:cmd|bat)$/iu;
 
-const installs = new Map<string, Promise<string | undefined>>();
-const failures = new Map<string, number>();
-const reported = new Set<string>();
+const installs = new Map<string, Promise<string>>();
+const INVENTORY = 'bridge-files.json';
+type InstalledFile = { readonly path: string; readonly link: boolean };
 
 /** The directory `pkg` is installed in, under `dir`. */
 export function adapterDir(dir: string, pkg: AdapterPackage): string {
@@ -72,27 +75,47 @@ export async function installedAdapter(
         : (manifest.bin as Record<string, unknown> | undefined)?.[pkg.bin];
     if (typeof bin !== 'string') return undefined;
     const file = path.join(packageDir, bin);
-    return (await stat(file)).isFile() ? file : undefined;
+    if (!(await stat(file)).isFile()) return undefined;
+    const files = JSON.parse(
+      await readFile(path.join(root, INVENTORY), 'utf8'),
+    ) as InstalledFile[];
+    if (!Array.isArray(files) || files.length === 0) return undefined;
+    // Bound filesystem concurrency without loading package contents on every scan.
+    for (let offset = 0; offset < files.length; offset += 32) {
+      const valid = await Promise.all(
+        files.slice(offset, offset + 32).map(async (entry) => {
+          if (
+            typeof entry.path !== 'string' ||
+            path.isAbsolute(entry.path) ||
+            entry.path.split(/[\\/]/u).includes('..')
+          )
+            return false;
+          const full = path.join(root, entry.path);
+          const info = await lstat(full);
+          return entry.link
+            ? info.isSymbolicLink() && (await stat(full)).isFile()
+            : info.isFile();
+        }),
+      );
+      if (valid.includes(false)) return undefined;
+    }
+    return file;
   } catch {
     return undefined;
   }
 }
 
 /**
- * Installs `pkg` under `options.dir` unless it is there already, and answers its program's file; undefined when it
- * cannot be installed, which is said once. An install already running is joined, and one that failed is not tried
- * again for ten minutes. It never rejects.
+ * Installs `pkg` under `options.dir` unless it is there already, and answers its program's file. An install already
+ * running is joined. Failures reject with the install command and stderr; the next scan can try again.
  */
 export function installAdapter(
   pkg: AdapterPackage,
   options: AdapterInstallOptions,
-): Promise<string | undefined> {
+): Promise<string> {
   const target = adapterDir(options.dir, pkg);
   const running = installs.get(target);
   if (running) return running;
-  const failed = failures.get(target);
-  if (failed !== undefined && Date.now() - failed < RETRY_MS)
-    return Promise.resolve(undefined);
   const install = runInstall(pkg, target, options).finally(() => {
     installs.delete(target);
   });
@@ -104,35 +127,42 @@ async function runInstall(
   pkg: AdapterPackage,
   target: string,
   options: AdapterInstallOptions,
-): Promise<string | undefined> {
+): Promise<string> {
   const label = `${pkg.name}@${pkg.version}`;
   let temp: string | undefined;
+  let npm = 'npm';
+  let args = ['install', '--prefix', target, label];
   try {
     const existing = await installedAdapter(target, pkg);
     if (existing) return existing;
-    const npm = await findProgram('npm', [], options.env, options.platform);
-    if (!npm) throw new Error('npm was not found on PATH');
+    const program = await findProgram('npm', [], options.env, options.platform);
+    if (!program) throw new Error('npm was not found on PATH');
+    npm = program;
     const parent = path.dirname(target);
     await mkdir(parent, { recursive: true });
     await removeStale(parent, `.${path.basename(target)}-`);
     temp = await mkdtemp(path.join(parent, `.${path.basename(target)}-`));
     const started = Date.now();
     options.log?.(`Installing the ACP adapter ${label} into ${target}.`);
-    await run(
-      npm,
-      [
-        'install',
-        '--prefix',
-        temp,
-        '--omit=optional',
-        '--no-audit',
-        '--no-fund',
-        '--no-save',
-        '--ignore-scripts',
-        '--loglevel=error',
-        label,
-      ],
-      options,
+    args = [
+      'install',
+      '--prefix',
+      temp,
+      '--omit=optional',
+      '--no-audit',
+      '--no-fund',
+      '--no-save',
+      '--ignore-scripts',
+      '--cache',
+      path.join(options.dir, 'npm-cache'),
+      '--prefer-offline',
+      '--loglevel=error',
+      label,
+    ];
+    await run(npm, args, options);
+    await writeFile(
+      path.join(temp, INVENTORY),
+      JSON.stringify(await inventory(temp)),
     );
     if (!(await installedAdapter(temp, pkg)))
       throw new Error(`npm did not install its ${pkg.bin} program`);
@@ -153,17 +183,35 @@ async function runInstall(
     );
     return installed;
   } catch (error) {
-    failures.set(target, Date.now());
-    if (!reported.has(target)) {
-      reported.add(target);
-      options.log?.(
-        `Could not install the ACP adapter ${label} (${error instanceof Error ? error.message : String(error)}); the agent starts another way until it can be installed.`,
-      );
-    }
-    return undefined;
+    throw new Error(
+      startupDetail(
+        npm,
+        args,
+        `Could not install the ACP adapter ${label}: ${error instanceof Error ? error.message : String(error)}`,
+      ),
+      { cause: error },
+    );
   } finally {
     if (temp) await rm(temp, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+/** Records the files npm actually installed, including dependency files and bin link targets. */
+async function inventory(root: string): Promise<InstalledFile[]> {
+  const files: InstalledFile[] = [];
+  const visit = async (dir: string): Promise<void> => {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) await visit(full);
+      else if (entry.isFile() || entry.isSymbolicLink())
+        files.push({
+          path: path.relative(root, full),
+          link: entry.isSymbolicLink(),
+        });
+    }
+  };
+  await visit(path.join(root, 'node_modules'));
+  return files;
 }
 
 /** Removes the temporary directories starting with `prefix` in `dir` that installs left behind. */
@@ -195,6 +243,7 @@ function run(
         env: { ...options.env, npm_config_update_notifier: 'false' },
         shell: batch,
         timeout: options.timeoutMs ?? INSTALL_TIMEOUT_MS,
+        signal: options.signal,
         windowsHide: true,
         maxBuffer: 16 * 1024 * 1024,
       },
@@ -204,7 +253,7 @@ function run(
         reject(
           new Error(
             error.killed
-              ? `npm did not finish within ${(options.timeoutMs ?? INSTALL_TIMEOUT_MS) / 1000}s`
+              ? `npm did not finish within ${(options.timeoutMs ?? INSTALL_TIMEOUT_MS) / 1000}s${output ? `\n${output}` : ''}`
               : output || error.message,
           ),
         );

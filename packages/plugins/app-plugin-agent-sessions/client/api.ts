@@ -536,6 +536,16 @@ export function useCancel(sessionId: string): Mutation<void> {
   });
 }
 
+export function useWithdraw(sessionId: string): Mutation<number> {
+  return useSessionWrite(sessionId, async (api, seq: number) => {
+    await api.request({
+      path: path('sessions', sessionId, 'withdraw'),
+      method: 'POST',
+      json: { seq },
+    });
+  });
+}
+
 export function useAnswer(
   sessionId: string,
 ): Mutation<{ requestId: string; optionId: string | null }> {
