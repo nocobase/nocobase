@@ -29,7 +29,7 @@ if (process.env.PM481_STARTUP_PHASE === 'prepare') {
         conversationId: id,
         executionId: `${id}-execution`,
         createdAt: now,
-        seq: 1,
+        seq: 2,
         revision: 1,
       },
       parts:
@@ -57,7 +57,11 @@ if (process.env.PM481_STARTUP_PHASE === 'prepare') {
         source: 'fixture',
         showInChatList: id !== 'background',
         read: true,
-        lastSeq: ['saved', 'approval'].includes(id) ? 1 : 0,
+        lastSeq: ['saved', 'approval'].includes(id)
+          ? 2
+          : id === 'unfinished'
+            ? 1
+            : 0,
         lastMessageAt: now,
         createdAt: now,
         updatedAt: now,
@@ -103,12 +107,33 @@ if (process.env.PM481_STARTUP_PHASE === 'prepare') {
               },
       },
     });
+    if (['unfinished', 'saved', 'approval'].includes(id)) {
+      const user = {
+        id: `${id}-input`,
+        role: 'user',
+        metadata: { conversationId: id, createdAt: now, seq: 1, revision: 1 },
+        parts: [{ type: 'text', text: 'Accepted work', state: 'done' }],
+      };
+      await messages.createOne({
+        values: {
+          id: user.id,
+          conversationId: id,
+          seq: 1,
+          role: 'user',
+          content: { type: 'text', content: 'Accepted work', original: user },
+          metadata: {},
+          searchText: 'Accepted work',
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+    }
     if (id === 'saved' || id === 'approval')
       await messages.createOne({
         values: {
           id: assistant.id,
           conversationId: id,
-          seq: 1,
+          seq: 2,
           role: 'assistant',
           content: {
             type: 'text',
