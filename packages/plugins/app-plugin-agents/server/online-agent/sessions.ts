@@ -13,7 +13,7 @@ import {
   type OnlineAgentJson,
   type OnlineAgentOutcome,
 } from './codec.js';
-import type { TxRunner } from '../kernel/tx.js';
+import type { Tx, TxRunner } from '../kernel/tx.js';
 import type { IdSource } from '../kernel/ids.js';
 import { asJson, jsonObject } from '../kernel/values.js';
 import { conflict, invalid, notFound } from '../kernel/errors.js';
@@ -163,7 +163,11 @@ export function createSessionManager(deps: {
     userId: string,
     id: string,
     phase: string,
-    change: (conn: DatabaseConnection, row: ConversationRecord) => Promise<T>,
+    change: (
+      conn: DatabaseConnection,
+      row: ConversationRecord,
+      emit: Tx['emit'],
+    ) => Promise<T>,
     messageSeq?: (result: T) => number,
   ) => {
     let start: number | undefined;
@@ -171,7 +175,7 @@ export function createSessionManager(deps: {
       return await deps.tx.run(async ({ conn, emit }) => {
         start = performance.now();
         const row = await owned(conn, userId, id, true);
-        const result = await change(conn, row);
+        const result = await change(conn, row, emit);
         const lastSeq = messageSeq?.(result);
         if (lastSeq !== undefined && lastSeq > Number(row.lastSeq)) {
           emit({
@@ -334,7 +338,7 @@ export function createSessionManager(deps: {
             candidate.userId,
             candidate.id,
             'startup',
-            async (conn, row) => {
+            async (conn, row, emit) => {
               if (!stale(row)) return;
               const value = metadata(row);
               const {
@@ -384,6 +388,18 @@ export function createSessionManager(deps: {
                   updatedAt: deps.now(),
                 },
               );
+              if (
+                value.kind === 'realtime' &&
+                call.messageId &&
+                call.revision !== undefined
+              )
+                emit({
+                  type: 'conversation.changed',
+                  conversationId: row.id,
+                  userId: row.userId,
+                  messageId: call.messageId,
+                  revision: call.revision,
+                });
               return lastSeq;
             },
             (seq) => seq ?? Number(candidate.lastSeq),
