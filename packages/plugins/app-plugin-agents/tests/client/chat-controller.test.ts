@@ -184,20 +184,31 @@ it('does not let a stale idle detail overwrite a newer command or clear an inter
     f.state.detail,
   );
 });
-it('keeps Stop pending until trusted terminal confirmation and clears identity lifetimes', async () => {
-  const f = fixture();
-  vi.spyOn(f.api, 'stop').mockResolvedValue(f.state.detail);
-  await f.controller.stop('c1');
-  expect(f.controller.isStopping('c1')).toBe(true);
-  f.controller.observeDetail({
-    ...f.state.detail,
-    execution: { status: 'idle' },
-  });
-  expect(f.controller.isStopping('c1')).toBe(false);
-  await f.controller.stop('c1');
-  f.controller.invalidate();
-  expect(f.controller.isStopping('c1')).toBe(false);
-});
+it.each([false, true])(
+  'keeps Stop pending until terminal confirmation and clears identity lifetimes (historical=%s)',
+  async (historical) => {
+    const f = fixture();
+    if (historical)
+      f.state.detail = {
+        ...f.state.detail,
+        execution: undefined,
+        run: { id: 'legacy-run' } as NonNullable<ConversationDetail['run']>,
+      };
+    vi.spyOn(f.api, 'stop').mockResolvedValue(f.state.detail);
+    await f.controller.stop('c1');
+    expect(f.controller.isStopping('c1')).toBe(true);
+    f.controller.observeDetail({
+      ...f.state.detail,
+      ...(historical
+        ? { run: null }
+        : { execution: { status: 'idle' as const } }),
+    });
+    expect(f.controller.isStopping('c1')).toBe(false);
+    await f.controller.stop('c1');
+    f.controller.invalidate();
+    expect(f.controller.isStopping('c1')).toBe(false);
+  },
+);
 it('drains nextAfter before advancing the conversation watermark and rereads revisions by ID', async () => {
   const f = fixture();
   const first = {
