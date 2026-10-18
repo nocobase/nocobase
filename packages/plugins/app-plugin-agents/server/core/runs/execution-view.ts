@@ -1,3 +1,4 @@
+import type { AgentService } from '../agents/agent.service.js';
 import type { Run, RunExecutionSnapshot } from '../../../shared/runs.js';
 
 /** An application's permission decision, using the same rules as its runner machine views. */
@@ -38,5 +39,25 @@ export function runForViewer<T extends Run>(
     ...(hidden
       ? { runnerName: null, runnerOwnerName: null, machineHidden: true }
       : {}),
+  };
+}
+
+/** Shared machine-visibility decision for plugin and application run projections. */
+export async function runMachineViewerFor(
+  agents: Pick<AgentService, 'list' | 'mayInvoke'>,
+  viewer: {
+    readonly userId: string;
+    readonly manage: boolean;
+    readonly read: boolean;
+  },
+): Promise<RunMachineViewer> {
+  return {
+    userId: viewer.userId,
+    seesMachines:
+      viewer.manage ||
+      (viewer.read &&
+        (await agents.list()).some((agent) =>
+          agents.mayInvoke(agent, viewer.userId),
+        )),
   };
 }

@@ -76,7 +76,7 @@ function LoadRunnerDetail({
   const api = useAgentsApi();
   const { t } = useTranslation();
   const detail = useQuery({
-    queryKey: [...agentsKeys.runners, 'detail', runner.id],
+    queryKey: agentsKeys.runner(runner.id),
     queryFn: () => api.runner(runner.id),
   });
   if (detail.isPending || detail.isError)

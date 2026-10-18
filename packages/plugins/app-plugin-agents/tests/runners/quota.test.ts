@@ -93,10 +93,12 @@ it('keeps unknown provider marks through model changes, and clears only the sele
     ),
   );
   const runner = await h.services.runners.get(a.runnerId);
-  expect(runsEntry(runner, { tool: 'pi', model: 'openrouter/a' })).toBe(false);
-  expect(runsEntry(runner, { tool: 'pi', model: 'openrouter-other/a' })).toBe(
-    true,
-  );
+  expect(
+    runsEntry(runner, { tool: 'pi', model: 'openrouter/a' }, Date.now()),
+  ).toBe(false);
+  expect(
+    runsEntry(runner, { tool: 'pi', model: 'openrouter-other/a' }, Date.now()),
+  ).toBe(true);
   const target = targetOf(runner.unavailableModels![0]);
   const path = `/agents/runners/${a.runnerId}/quota/clear`;
   expect(
@@ -568,7 +570,11 @@ it('rejects manual clearing of known resets and retains default Claude weekly ma
     `/agents/runners/${runner.runnerId}/quota/clear`,
     { user: 'alice', body: targetOf(mark) },
   );
-  expect(result.status).toBe(409);
+  expect(result.status).toBe(400);
+  expect(result.body.error).toMatchObject({
+    status: 'FAILED_PRECONDITION',
+    reason: 'QUOTA_RESET_KNOWN',
+  });
   expect(
     (await h.services.runners.get(runner.runnerId)).unavailableModels,
   ).toHaveLength(1);
@@ -637,4 +643,82 @@ it('coalesces quota observations in a batch and reads only quota event metadata 
   expect((await h.services.runs.get(runId)).executions?.at(-1)?.quota).toEqual(
     quota,
   );
+});
+
+it('projects affected discovered agents to the owner without requiring Agent read or revealing application agents', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner({
+    ownerUserId: 'alice',
+    tools: [
+      {
+        kind: 'opencode',
+        authenticated: true,
+        models: [{ id: 'openrouter/model-a' }, { id: 'anthropic/model-b' }],
+      },
+    ],
+  });
+  const blocked = await h.createAgent({
+    name: 'OpenRouter worker',
+    source: 'runner',
+    modelEntries: [{ tool: 'opencode', model: 'openrouter/model-a' }],
+  });
+  await h.createAgent({
+    name: 'Other provider worker',
+    source: 'runner',
+    modelEntries: [{ tool: 'opencode', model: 'anthropic/model-b' }],
+  });
+  await h.createAgent({
+    name: 'Private application agent',
+    modelEntries: [{ tool: 'opencode', model: 'openrouter/model-a' }],
+  });
+  const manager = await h.createAgent({
+    name: 'Triggering manager',
+    modelEntries: [{ tool: 'opencode', model: 'openrouter/model-a' }],
+  });
+  const notices: unknown[] = [];
+  const stop = h.services.events.on('notice', ({ notice }) =>
+    notices.push(notice),
+  );
+  await h.services.tx.run((unit) =>
+    h.services.runners.reportQuota(
+      unit,
+      runner.runnerId,
+      'opencode',
+      'openrouter/model-a',
+      {
+        windows: [
+          {
+            scope: 'provider',
+            target: 'openrouter',
+            window: 'credits',
+            exhausted: true,
+            resetsAt: null,
+          },
+        ],
+      },
+      {
+        runId: 'trigger',
+        agentId: manager,
+        subject: { kind: 'issue', id: 'i1' },
+      },
+    ),
+  );
+  stop();
+  expect(notices).toEqual([
+    expect.objectContaining({
+      type: 'runner_quota',
+      userIds: ['alice'],
+      params: expect.objectContaining({
+        affectedAgentNames: 'OpenRouter worker, Triggering manager',
+      }),
+    }),
+  ]);
+  const owner = await h.request('GET', '/agents', { user: 'alice', can: [] });
+  expect(
+    owner.body.data.find((agent: { id: string }) => agent.id === blocked)
+      .canEdit,
+  ).toBe(false);
+  expect(await h.services.agents.get(blocked)).toMatchObject({
+    source: 'runner',
+  });
 });

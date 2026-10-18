@@ -1,4 +1,5 @@
-import { useCallback, useSyncExternalStore } from 'react';
+import { agentsKeys } from '../api/keys.js';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 import { agentsQueryClient } from '../query.js';
 
 interface Subscription {
@@ -7,7 +8,6 @@ interface Subscription {
 }
 const subscriptions = new Set<Subscription>();
 let currentTime = Date.now();
-const snapshot = (): number => currentTime;
 let timer: ReturnType<typeof setTimeout> | undefined;
 function schedule(): void {
   if (timer) clearTimeout(timer);
@@ -28,18 +28,24 @@ function schedule(): void {
         // Quota eligibility affects these views, never transcripts, usage reports or skills.
         const cache = agentsQueryClient();
         void cache.invalidateQueries({
-          predicate: (query) =>
-            query.queryKey[0] === 'agents' &&
-            (['agents', 'agent', 'available'].includes(
-              String(query.queryKey[1]),
-            ) ||
-              (query.queryKey[1] === 'chat' &&
-                query.queryKey[2] === 'agents') ||
-              (query.queryKey[1] === 'runners' &&
-                (query.queryKey.length === 2 ||
-                  query.queryKey[2] === 'detail'))),
+          predicate: ({ queryKey }) => {
+            const prefixes = [
+              agentsKeys.agents,
+              agentsKeys.agent('').slice(0, -1),
+              agentsKeys.available,
+              agentsKeys.chatAgents,
+              agentsKeys.runner('').slice(0, -1),
+            ];
+            return (
+              (queryKey.length === agentsKeys.runners.length &&
+                agentsKeys.runners.every((key, i) => queryKey[i] === key)) ||
+              prefixes.some((prefix) =>
+                prefix.every((key, i) => queryKey[i] === key),
+              )
+            );
+          },
         });
-        for (const subscriber of subscriptions) subscriber.update(at);
+        for (const subscriber of due) subscriber.update(at);
       }
       schedule();
     },
@@ -61,13 +67,11 @@ export function useQuotaClock(
     .join(',');
   const subscribe = useCallback(
     (changed: () => void) => {
-      currentTime = Date.now();
       const subscription = {
         times: signature ? signature.split(',').map(Number) : [],
         update: changed,
       };
       subscriptions.add(subscription);
-      for (const subscriber of subscriptions) subscriber.update(currentTime);
       schedule();
       return () => {
         subscriptions.delete(subscription);
@@ -75,6 +79,11 @@ export function useQuotaClock(
       };
     },
     [signature],
+  );
+  const [mountedAt] = useState(() => Date.now());
+  const snapshot = useCallback(
+    () => Math.max(mountedAt, currentTime),
+    [mountedAt],
   );
   return useSyncExternalStore(subscribe, snapshot, snapshot);
 }

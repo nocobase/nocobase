@@ -72,6 +72,7 @@ export type ErrorCode =
   | 'RUN_REQUEST_NOT_FOUND'
   | 'COMMAND_UNKNOWN'
   | 'PLATFORM_UNSUPPORTED'
+  | 'QUOTA_RESET_KNOWN'
   | 'CONFLICT'
   | 'LEASE_LOST'
   | 'REVISION_CONFLICT'
@@ -142,6 +143,7 @@ export const ERROR_API_STATUS: Readonly<Record<ErrorCode, ApiStatus>> = {
   /** The application serves no build of this product for the asking platform; `metadata.targets` lists those it has. */
   PLATFORM_UNSUPPORTED: 'NOT_FOUND',
   /** A concurrent change won; read again and retry. */
+  QUOTA_RESET_KNOWN: 'FAILED_PRECONDITION',
   CONFLICT: 'ABORTED',
   LEASE_LOST: 'ABORTED',
   /** The object changed since the revision the edit was made against; `metadata.revision` is the current one. */

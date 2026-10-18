@@ -165,7 +165,7 @@ export function ToolTable({
             {quotaTargets(runner, tool).map((target) => (
               <div
                 key={target}
-                className={`border-t p-3 ${confirming(tool, target) ? 'bg-destructive/5' : 'bg-muted/30'}`}
+                className={`border-t p-3 ${confirming(tool, target) ? '[&>td]:bg-destructive/5' : 'bg-muted/30'}`}
               >
                 <div className='mb-1 text-xs font-medium text-muted-foreground'>
                   {nameOf(tool, target)}
@@ -226,7 +226,7 @@ export function ToolTable({
                 data-testid={`runner-tool-${tool}`}
                 data-enabled={enabledTools.includes(tool)}
                 className={
-                  confirming(tool, '') ? 'bg-destructive/5' : undefined
+                  confirming(tool, '') ? '[&>td]:bg-destructive/5' : undefined
                 }
               >
                 <TableCell className='whitespace-normal'>
@@ -269,7 +269,7 @@ export function ToolTable({
                   key={target}
                   className={
                     confirming(tool, target)
-                      ? 'bg-destructive/5'
+                      ? '[&>td]:bg-destructive/5'
                       : 'bg-muted/30'
                   }
                 >

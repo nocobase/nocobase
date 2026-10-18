@@ -1,3 +1,4 @@
+import { compactDateTime } from '../../lib/format.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement, ReactNode } from 'react';
 import { WORKSPACE_REPORT_INTERVAL_MS } from '@nocobase/agent-protocol';
@@ -71,7 +72,7 @@ export function WorkspaceDiagnostics({
   readonly filters?: ReactNode;
   readonly rowsPending?: boolean;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const format = useFormatters();
   const usage = runner.workspaceUsage;
   const { low, stale } = workspaceDiskState(runner);
@@ -128,7 +129,10 @@ export function WorkspaceDiagnostics({
           )}
           <p className='text-xs text-muted-foreground sm:col-span-2'>
             {t('runtimes.workspaces.reportedAt', {
-              time: format.dateTime(usage.diskMeasuredAt ?? usage.measuredAt),
+              time: compactDateTime(
+                usage.diskMeasuredAt ?? usage.measuredAt ?? '',
+                i18n.language,
+              ),
             })}
           </p>
           {low && !stale ? <p>{t('runtimes.workspaces.paused')}</p> : null}
@@ -140,7 +144,7 @@ export function WorkspaceDiagnostics({
   return (
     <>
       {low ? (
-        <Alert>
+        <Alert className='border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200'>
           <AlertTitle>{t('runtimes.workspaces.low')}</AlertTitle>
           <AlertDescription>{summary}</AlertDescription>
         </Alert>
@@ -278,7 +282,7 @@ function WorkspaceStatus({
   });
   return (
     <span
-      className={`block truncate text-xs ${category === 'active' ? 'text-blue-700 dark:text-blue-300' : category === 'ended' ? 'text-green-700 dark:text-green-300' : 'text-destructive'}`}
+      className={`block truncate text-xs ${category === 'active' ? 'text-blue-700 dark:text-blue-300' : category === 'ended' ? 'text-green-700 dark:text-green-300' : 'text-amber-700 dark:text-amber-300'}`}
       title={text}
     >
       {text}

@@ -100,11 +100,12 @@ it('bounds directory rows to one page and excludes private detail fields from th
     'unavailableModels',
     'quotaUsage',
     'load',
+    'quotaRevision',
   ])
     expect(list.body.data[0]).not.toHaveProperty(field);
   const page = await h.request(
     'GET',
-    `/agents/runners/${runner.runnerId}/workspaces?page=2&pageSize=25`,
+    `/agents/runners/${runner.runnerId}/workspaces?page=2&pageSize=25&unknown=ignored`,
     { user: 'alice' },
   );
   expect(page.status).toBe(200);

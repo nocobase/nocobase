@@ -277,7 +277,10 @@ export interface RunnerRecentRun {
  * executable paths) is shown only to its owner, the managers of runners and anyone who may wake an agent: `hostname`
  * is null and the tools carry no `path` for everyone else.
  */
-export interface RunnerSummary extends Omit<Runner, 'hostname'> {
+export interface RunnerSummary extends Omit<
+  Runner,
+  'hostname' | 'quotaRevision'
+> {
   readonly canSeeMachine?: boolean;
   /** Null when the viewer may not manage it. */
   readonly hostname: string | null;
@@ -322,36 +325,66 @@ export interface RunnerSummary extends Omit<Runner, 'hostname'> {
 }
 
 /** The list carries totals only; fetch a single runner for directory diagnostics. */
+export const RUNNER_LIST_FIELDS = {
+  id: true,
+  name: true,
+  hostname: true,
+  os: true,
+  arch: true,
+  version: true,
+  product: true,
+  tools: true,
+  enabledTools: true,
+  trust: true,
+  ownerUserId: true,
+  ownerName: true,
+  status: true,
+  slots: true,
+  toolSlots: true,
+  activeRuns: true,
+  activeJobs: true,
+  activeByTool: true,
+  lastSeenAt: true,
+  draining: true,
+  canManage: true,
+  canChangeTrust: true,
+  canRevoke: true,
+  takes: true,
+  updateVersion: true,
+} as const;
+
 export interface RunnerListItem extends Pick<
   RunnerSummary,
-  | 'id'
-  | 'name'
-  | 'hostname'
-  | 'os'
-  | 'arch'
-  | 'version'
-  | 'product'
-  | 'tools'
-  | 'enabledTools'
-  | 'trust'
-  | 'ownerUserId'
-  | 'ownerName'
-  | 'status'
-  | 'slots'
-  | 'toolSlots'
-  | 'activeRuns'
-  | 'activeJobs'
-  | 'activeByTool'
-  | 'lastSeenAt'
-  | 'draining'
-  | 'canManage'
-  | 'canChangeTrust'
-  | 'canRevoke'
-  | 'takes'
-  | 'updateVersion'
+  keyof typeof RUNNER_LIST_FIELDS
 > {
   readonly takesCount: number;
   readonly workspaceUsage?: Omit<RunnerWorkspaceUsage, 'workspaces'> | null;
+}
+
+/** The single public runtime-list projection; schema and type use the same field set. */
+export function runnerListItem(
+  summary: Omit<RunnerSummary, 'recentRunsCount'>,
+): RunnerListItem {
+  const selected = Object.fromEntries(
+    Object.keys(RUNNER_LIST_FIELDS).map((key) => [
+      key,
+      summary[key as keyof typeof RUNNER_LIST_FIELDS],
+    ]),
+  ) as Pick<RunnerSummary, keyof typeof RUNNER_LIST_FIELDS>;
+  const totals = summary.workspaceUsage
+    ? (({ workspaces: _rows, ...rest }) => rest)(summary.workspaceUsage)
+    : null;
+  return {
+    ...selected,
+    tools: summary.tools.map(({ kind, version, authenticated }) => ({
+      kind,
+      version,
+      authenticated,
+    })),
+    takes: summary.takes.slice(0, 3),
+    takesCount: summary.takes.length,
+    workspaceUsage: summary.workspaceUsage ? totals : null,
+  };
 }
 
 export interface RunnerWorkspacePage {
@@ -470,7 +503,7 @@ export function reportedModels(
 export function runsEntry(
   runner: Pick<Runner, 'enabledTools' | 'tools' | 'unavailableModels'>,
   entry: Pick<RunnerModelEntry, 'tool' | 'model'>,
-  now: number = Date.now(),
+  now: number,
 ): boolean {
   if (
     !runsTool(runner, entry.tool) ||
@@ -627,7 +660,7 @@ export function runnerTakesAgent(
     | 'workspaceUsage'
   >,
   agent: RunnerAgentFit,
-  now: number = Date.now(),
+  now: number,
 ): boolean {
   return (
     !runnerLowOnDisk(runner) &&

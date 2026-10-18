@@ -1,3 +1,4 @@
+import { RUNNER_LIST_FIELDS } from '../../shared/runners.js';
 /**
  * The path parameters, query strings and small bodies of the plugin's routes. Bodies the services own (an agent, a
  * skill, a model service) keep their schemas beside the service, strict there too.
@@ -1798,11 +1799,13 @@ const runnerObject = z.object({
   updatedAt: dateTime,
 });
 
-export const RunnerSchema: z.ZodType<Runner> = runnerObject.meta({
-  ref: 'AgentsRunner',
-});
+export const RunnerSchema: z.ZodType<Omit<Runner, 'quotaRevision'>> =
+  runnerObject.omit({ quotaRevision: true }).meta({
+    ref: 'AgentsRunner',
+  });
 
 const runnerSummaryObject = runnerObject
+  .omit({ quotaRevision: true })
   .extend({
     hostname: z.string().nullable().meta({
       description:
@@ -1847,33 +1850,7 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> =
   runnerSummaryObject;
 export const RunnerListItemSchema: z.ZodType<RunnerListItem> =
   runnerSummaryObject
-    .pick({
-      id: true,
-      name: true,
-      hostname: true,
-      os: true,
-      arch: true,
-      version: true,
-      product: true,
-      tools: true,
-      enabledTools: true,
-      trust: true,
-      ownerUserId: true,
-      ownerName: true,
-      status: true,
-      slots: true,
-      toolSlots: true,
-      activeRuns: true,
-      activeJobs: true,
-      activeByTool: true,
-      lastSeenAt: true,
-      draining: true,
-      canManage: true,
-      canChangeTrust: true,
-      canRevoke: true,
-      takes: true,
-      updateVersion: true,
-    })
+    .pick(RUNNER_LIST_FIELDS)
     .extend({
       tools: z
         .array(

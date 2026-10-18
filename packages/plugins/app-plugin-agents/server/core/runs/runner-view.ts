@@ -90,13 +90,22 @@ export interface RunnerMachineView {
  * wake an agent see them (the routes decide); everyone else sees none of them, and of the working directories only
  * their totals.
  */
-export function runnerForViewer<T extends Runner>(
+/** Internal quota revisions never cross a user-facing runtime boundary. */
+export function runnerPublicData<T extends Runner>(
   runner: T,
+): Omit<T, 'quotaRevision'> {
+  const { quotaRevision: _revision, ...visible } = runner;
+  return visible;
+}
+
+export function runnerForViewer(
+  runner: Runner,
   seesMachine: boolean,
-): Omit<T, 'hostname' | 'tools'> & RunnerMachineView {
-  if (seesMachine) return { ...runner, canSeeMachine: true };
+): Omit<Runner, 'hostname' | 'tools' | 'quotaRevision'> & RunnerMachineView {
+  const visible = runnerPublicData(runner);
+  if (seesMachine) return { ...visible, canSeeMachine: true };
   return {
-    ...runner,
+    ...visible,
     canSeeMachine: false,
     hostname: null,
     tools: runner.tools.map(({ path: _path, ...tool }) => tool),

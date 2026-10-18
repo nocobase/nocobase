@@ -1,3 +1,5 @@
+import type { Agent } from '../../shared/agents.js';
+import { quotaBlocks, runnerTakesAgent } from '../../shared/runners.js';
 /**
  * Runners: registering with a one-time token, authenticating by key, heartbeats, and what people change afterwards
  * (name, trust, slots, which coding tools it may run, revocation). What a runner has (its system, features and coding
@@ -156,6 +158,8 @@ export interface RunnerService {
 }
 
 export interface RunnerServiceDeps {
+  /** Enabled discovered agents, read once only when a fresh quota notice is emitted. */
+  readonly quotaAgents: (unit: Tx) => Promise<readonly Agent[]>;
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -932,6 +936,8 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         );
       if (JSON.stringify(marks) !== oldMarks)
         unit.emit({ type: 'runner.changed', runnerId });
+      const noticeAgents =
+        runner.ownerUserId && fresh.length ? await deps.quotaAgents(unit) : [];
       if (runner.ownerUserId)
         for (const mark of fresh)
           unit.emit({
@@ -947,6 +953,31 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
                 : 'Reset time unknown. Restore the quota, then clear the mark on the runtime page.',
               params: {
                 runnerName: runner.name,
+                affectedAgentNames: noticeAgents
+                  .filter(
+                    (agent) =>
+                      (agent.source === 'runner' ||
+                        agent.id === observation?.agentId) &&
+                      runnerTakesAgent(
+                        {
+                          ...runner,
+                          unavailableModels: [],
+                          workspaceUsage: null,
+                        },
+                        agent,
+                        Date.parse(now),
+                      ) &&
+                      agent.modelEntries.some(
+                        (entry) =>
+                          quotaBlocks(
+                            { ...runner, unavailableModels: [mark] },
+                            entry,
+                            Date.parse(now),
+                          ).length > 0,
+                      ),
+                  )
+                  .map((agent) => agent.name)
+                  .join(', '),
                 ...(observation
                   ? {
                       runId: observation.runId,
@@ -982,8 +1013,8 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           (mark) => mark.reason === 'toolQuota' && quotaKey(mark) === key,
         );
         if (selected?.resetsAt)
-          throw new ProtocolError(
-            'CONFLICT',
+          throw precondition(
+            'QUOTA_RESET_KNOWN',
             'Known quota reset times clear automatically.',
           );
         const kept = marks.filter(

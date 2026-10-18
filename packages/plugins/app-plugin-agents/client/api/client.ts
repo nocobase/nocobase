@@ -256,11 +256,16 @@ export class AgentsApi {
     return this.runnersApi.createRegistrationToken(input);
   }
 
-  public updateRunner(runnerId: string, patch: RunnerPatch): Promise<Runner> {
+  public updateRunner(
+    runnerId: string,
+    patch: RunnerPatch,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
     return this.runnersApi.updateRunner(runnerId, patch);
   }
 
-  public revokeRunner(runnerId: string): Promise<Runner> {
+  public revokeRunner(
+    runnerId: string,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
     return this.runnersApi.revokeRunner(runnerId);
   }
 

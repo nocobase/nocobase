@@ -72,11 +72,16 @@ export class RunnersApi {
     return this.send('registrationTokens', 'POST', input);
   }
 
-  public updateRunner(runnerId: string, patch: RunnerPatch): Promise<Runner> {
+  public updateRunner(
+    runnerId: string,
+    patch: RunnerPatch,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
     return this.send(id(runnerId), 'PATCH', patch);
   }
 
-  public revokeRunner(runnerId: string): Promise<Runner> {
+  public revokeRunner(
+    runnerId: string,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
     return this.send(`${id(runnerId)}/revoke`, 'POST');
   }
 

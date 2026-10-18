@@ -18,10 +18,12 @@
  *   (`runnerForViewer`).
  */
 import {
+  runnerListItem,
   workspaceCategory,
   workspaceSummary,
 } from '../../../shared/runners.js';
 import {
+  AgentToolSchema,
   MIN_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
 } from '@nocobase/agent-protocol';
@@ -46,7 +48,10 @@ import type {
   RunnerWorkTarget,
 } from '../../../shared/runners.js';
 import type { Agents } from '../../composition.js';
-import { runnerForViewer } from '../../core/runs/runner-view.js';
+import {
+  runnerForViewer,
+  runnerPublicData,
+} from '../../core/runs/runner-view.js';
 import { upgradeFor } from '../../distribution/index.js';
 import { forbidden, notFound } from '../../kernel/errors.js';
 import { domainRouter } from '../../kernel/http.js';
@@ -223,8 +228,9 @@ export function createAdminRoutes(
     const held =
       prefetched?.held.get(runner.id) ??
       (await services.slots.held(services.tx.read(), runner.id));
+    const visible = runnerForViewer(runner, rights.machine);
     return {
-      ...runnerForViewer(runner, rights.machine),
+      ...visible,
       activeRuns: held.runs,
       activeJobs: held.jobs,
       activeByTool: held.byTool ?? {},
@@ -358,44 +364,7 @@ export function createAdminRoutes(
             held,
             inactive,
           });
-          const totals = summary.workspaceUsage
-            ? (({ workspaces: _rows, ...value }) => value)(
-                summary.workspaceUsage,
-              )
-            : null;
-          return {
-            id: summary.id,
-            name: summary.name,
-            hostname: summary.hostname,
-            os: summary.os,
-            arch: summary.arch,
-            version: summary.version,
-            product: summary.product,
-            enabledTools: summary.enabledTools,
-            trust: summary.trust,
-            ownerUserId: summary.ownerUserId,
-            ownerName: summary.ownerName,
-            status: summary.status,
-            slots: summary.slots,
-            toolSlots: summary.toolSlots,
-            activeRuns: summary.activeRuns,
-            activeJobs: summary.activeJobs,
-            activeByTool: summary.activeByTool,
-            lastSeenAt: summary.lastSeenAt,
-            draining: summary.draining,
-            canManage: summary.canManage,
-            canChangeTrust: summary.canChangeTrust,
-            canRevoke: summary.canRevoke,
-            updateVersion: summary.updateVersion,
-            tools: summary.tools.map(({ kind, version, authenticated }) => ({
-              kind,
-              version,
-              authenticated,
-            })),
-            takes: summary.takes.slice(0, 3),
-            takesCount: summary.takes.length,
-            workspaceUsage: totals,
-          };
+          return runnerListItem(summary);
         }),
       );
       return context.json({ data, meta: { total: data.length } });
@@ -618,9 +587,11 @@ export function createAdminRoutes(
     apiValidator('json', RunnerPatchInput),
     async (context) =>
       context.json({
-        data: await services.runners.update(
-          context.get('runnerToManage').id,
-          context.req.valid('json'),
+        data: runnerPublicData(
+          await services.runners.update(
+            context.get('runnerToManage').id,
+            context.req.valid('json'),
+          ),
         ),
       }),
   );
@@ -660,7 +631,7 @@ export function createAdminRoutes(
         );
       // What it held goes back to the queue now rather than at the next sweep.
       await services.sweeper.sweep();
-      return context.json({ data: revoked });
+      return context.json({ data: runnerPublicData(revoked) });
     },
   );
   router.delete(
@@ -715,9 +686,13 @@ export function createAdminRoutes(
           'Only the runtime owner or a runtime administrator may clear an unknown-reset quota mark.',
         ),
         404: notVisible,
+        400: apiErrorResponse(
+          400,
+          'A known reset clears automatically (QUOTA_RESET_KNOWN, FAILED_PRECONDITION).',
+        ),
         409: apiErrorResponse(
           409,
-          'The mark has a known reset time, or a concurrent quota change requires retrying.',
+          'A concurrent quota change requires retrying (REVISION_CONFLICT).',
         ),
       },
     }),
@@ -725,9 +700,9 @@ export function createAdminRoutes(
     apiValidator(
       'json',
       z.strictObject({
-        tool: z
-          .enum(['claude', 'codex', 'opencode', 'pi'])
-          .describe('The coding tool whose unknown-reset mark is selected.'),
+        tool: AgentToolSchema.describe(
+          'The coding tool whose unknown-reset mark is selected.',
+        ),
         scope: z
           .enum(['tool', 'provider', 'model'])
           .describe('The scope of the selected quota mark.'),
@@ -743,11 +718,7 @@ export function createAdminRoutes(
       }),
     ),
     async (context) => {
-      const runner = await visibleRunner(context);
-      if (!(await runnerRights(context, runner)).revoke)
-        throw forbidden(
-          'Only the runtime owner or a runtime administrator may clear quota.',
-        );
+      const runner = await revocableRunner(context);
       await services.runners.clearQuota(runner.id, context.req.valid('json'));
       return context.body(null, 204);
     },
@@ -772,7 +743,7 @@ export function createAdminRoutes(
     runnerParam,
     apiValidator(
       'query',
-      z.strictObject({
+      z.object({
         page: z.coerce
           .number()
           .int()

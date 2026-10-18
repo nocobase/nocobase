@@ -40,3 +40,24 @@ it('shares one expiry timer, keeps stable subscriptions for equivalent arrays an
     expect(predicate({ queryKey })).toBe(false);
   expect(vi.getTimerCount()).toBe(0);
 });
+
+it('does not rerender existing rows as later rows subscribe, and only updates due rows', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2031-01-01T00:00:00Z'));
+  const renders = Array.from({ length: 50 }, () => vi.fn());
+  renders.forEach((render, index) => {
+    renderHook(() => {
+      render();
+      return useQuotaClock([
+        new Date(Date.now() + 60_000 + index * 1000).toISOString(),
+      ]);
+    });
+    vi.advanceTimersByTime(1);
+  });
+  expect(renders.map((render) => render.mock.calls.length)).toEqual(
+    Array(50).fill(1),
+  );
+  act(() => vi.advanceTimersByTime(60_000));
+  expect(renders[0]).toHaveBeenCalledTimes(2);
+  expect(renders[49]).toHaveBeenCalledTimes(1);
+});

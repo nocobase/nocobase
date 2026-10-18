@@ -163,6 +163,7 @@ export function PmExecutorSelect({
         </SelectValue>
       </SelectTrigger>
       <SelectContent
+        side='top'
         align='start'
         alignItemWithTrigger={false}
         className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'

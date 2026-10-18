@@ -433,12 +433,6 @@ function AgentRow({
       <TableCell>
         <div className='min-w-0 leading-tight'>
           <div className='truncate font-medium'>{agent.name}</div>
-          <div className='truncate font-mono text-xs text-muted-foreground'>
-            {agent.tool ? TOOL_LABELS[agent.tool] : ''} ·{' '}
-            {agent.tool && agent.model
-              ? modelLabel(agent.tool, agent.model)
-              : ''}
-          </div>
         </div>
       </TableCell>
       <TableCell className='max-w-80 whitespace-normal'>

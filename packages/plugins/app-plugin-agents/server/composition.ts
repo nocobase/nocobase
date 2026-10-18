@@ -335,6 +335,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   const dist = createDistService(deps.dist);
   const slots = createSlots(runsHeldSnapshot);
   const runners = createRunnerService({
+    quotaAgents: (unit) => agents.listActive(unit.conn),
     tx,
     ids,
     clock,
