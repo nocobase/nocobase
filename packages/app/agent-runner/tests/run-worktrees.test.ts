@@ -184,7 +184,7 @@ describe('per-attempt worktrees', () => {
             `${continuationWorkDir(paths, 'app', 'PM-300')}.lock`
         ) {
           intercepted = true;
-          // Pause after reading P, before the existing lock protects the registration update.
+          // Pause after reading the first delivery, before registration acquires its existing lock.
           pause();
           await resumed;
         }
@@ -360,6 +360,71 @@ describe('per-attempt worktrees', () => {
       (await readContinuationState(paths, 'app', 'PM-300'))?.repos[0].pushedSha,
     ).toBe(head);
     await fsPromises.rename(`${bare}.offline`, bare);
+  });
+  it.each(['offline', 'leaseLost'] as const)(
+    'logs a %s lookup without a push failure for a non-pushing run',
+    async (kind) => {
+      const a = await start('non-pushing-lookup', true);
+      const bare = path.join(root, 'origin-repo.git');
+      if (kind === 'offline') await fsPromises.rename(bare, `${bare}.offline`);
+      const logs: string[] = [];
+      a.repo.remoteMissing = true;
+      try {
+        const [report] = await reportRepos([a.repo], {
+          push: false,
+          ...(kind === 'leaseLost' ? { active: () => false } : {}),
+          log: (message) => logs.push(message),
+        });
+        expect(report.pushed).toBe(false);
+        expect(report.failure).toBeUndefined();
+        expect(a.repo.remoteMissing).toBeUndefined();
+        expect(logs.join('\n')).toContain('report:');
+        await markWorkspaceEnded(paths, a.workDir, [report]);
+        expect(
+          (
+            await finalizeRunWorktrees(paths, a.workDir, () => {}, {
+              repos: [a.repo],
+            })
+          )[0].saved,
+        ).toBe(true);
+      } finally {
+        if (kind === 'offline')
+          await fsPromises.rename(`${bare}.offline`, bare);
+      }
+    },
+  );
+  it('forgets pre-push absence when delivery succeeds but its confirmation lookup fails', async () => {
+    const a = await start('unconfirmed-delivery');
+    const head = commitFile(a.repo.dir);
+    await finalizeRunWorktrees(paths, a.workDir, () => {}, { remove: false });
+    const original = checkoutModule.git;
+    let lookups = 0;
+    const spy = vi
+      .spyOn(checkoutModule, 'git')
+      .mockImplementation(async (args, ...rest) => {
+        if (args.includes('ls-remote') && ++lookups === 2)
+          throw new checkoutModule.CheckoutError(
+            'git ls-remote failed: injected confirmation failure',
+          );
+        return original(args, ...rest);
+      });
+    try {
+      const [report] = await reportRepos([a.repo], { push: true });
+      expect(lookups).toBe(2);
+      expect(remoteHead()).toBe(head);
+      expect(report.pushed).toBe(false);
+      expect(report.failure?.message).toContain(
+        'injected confirmation failure',
+      );
+      expect(a.repo.remoteMissing).toBeUndefined();
+      await markWorkspaceEnded(paths, a.workDir, [report]);
+      await finalizeRunWorktrees(paths, a.workDir, () => {}, {
+        repos: [a.repo],
+      });
+      expect(git(['rev-parse', resumeRef(a.repo)], a.repo.cache)).toBe(head);
+    } finally {
+      spy.mockRestore();
+    }
   });
   it('preserves unknown historical continuations without republishing until new work is added', async () => {
     const a = await start('historical');

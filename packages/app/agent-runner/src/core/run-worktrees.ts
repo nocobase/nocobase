@@ -190,11 +190,12 @@ async function ref(cache: string, name: string): Promise<string | undefined> {
   return git(['rev-parse', '--verify', `${name}^{commit}`], cache);
 }
 
-/** Equality to the original start means no work; delivered history also covers squash-deleted branches. */
-async function hasNoPendingCommits(
+/** No pending work, or commits already in the default history, need no task branch. */
+async function canDiscardContinuation(
   cache: string,
   head: string,
   record: WorkspaceRepo | undefined,
+  defaultBranch: string,
 ): Promise<boolean> {
   return (
     head === record?.startSha ||
@@ -202,7 +203,16 @@ async function hasNoPendingCommits(
       (await gitOk(
         ['merge-base', '--is-ancestor', head, record.pushedSha],
         cache,
-      )))
+      ))) ||
+    (await gitOk(
+      [
+        'merge-base',
+        '--is-ancestor',
+        head,
+        `refs/remotes/origin/${defaultBranch}`,
+      ],
+      cache,
+    ))
   );
 }
 
@@ -452,6 +462,8 @@ export async function addRunWorktree(options: {
       );
   }
   await mkdir(path.dirname(dir), { recursive: true });
+  // Register ownership before cache/worktree preparation can fail, so recovery can find a partial attempt.
+  // The delivery baseline is chosen later under the cache lock and saved in a separate update below.
   await updateContinuationState(paths, appKey, subjectKey, (state) => {
     // Preserve delivery confirmed while preparation was waiting for this lock.
     record = state.repos.find((item) => item.continuation === key);
@@ -488,16 +500,7 @@ export async function addRunWorktree(options: {
       !options.clean &&
       local &&
       !remote &&
-      ((await hasNoPendingCommits(cache, local, record)) ||
-        (await gitOk(
-          [
-            'merge-base',
-            '--is-ancestor',
-            local,
-            `refs/remotes/origin/${repo.defaultBranch}`,
-          ],
-          cache,
-        )))
+      (await canDiscardContinuation(cache, local, record, repo.defaultBranch))
     ) {
       await git(['update-ref', '-d', resume, local], cache);
       local = undefined;
@@ -840,16 +843,12 @@ export async function finalizeRunWorktrees(
             )?.repos.find((item) => item.continuation === repo.continuation);
             const discard =
               reported?.remoteMissing === true &&
-              ((await hasNoPendingCommits(repo.cache, head, continuation)) ||
-                (await gitOk(
-                  [
-                    'merge-base',
-                    '--is-ancestor',
-                    head,
-                    `refs/remotes/origin/${reported.defaultBranch}`,
-                  ],
-                  repo.cache,
-                )));
+              (await canDiscardContinuation(
+                repo.cache,
+                head,
+                continuation,
+                reported.defaultBranch,
+              ));
             if (
               currentBranch !== undefined &&
               currentBranch !== repo.localBranch
@@ -916,6 +915,10 @@ export async function finalizeRunWorktrees(
                 )))
             ) {
               await git(['update-ref', resume, head], repo.cache);
+              // Adopt this attempt's start only after it adds work, allowing failed pushes to retry.
+              // Returning to that adopted start intentionally counts as no pending work, even if it
+              // contains unpublished historical commits of unknown provenance; an absent remote may
+              // then allow the continuation to be cleared.
               if (
                 continuation?.startSha === undefined &&
                 repo.startSha !== undefined &&

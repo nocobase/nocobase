@@ -1383,10 +1383,11 @@ export async function reportRepos(
       repo.remoteMissing = remote === '';
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      failure = {
-        reason: pushFailureOf(error),
-        message: message.slice(0, 2000),
-      };
+      if (options.push)
+        failure = {
+          reason: pushFailureOf(error),
+          message: message.slice(0, 2000),
+        };
       options.log?.(`report: ${repo.url}: ${message}`);
     }
     let pushed = headSha !== '' && remote === headSha;
@@ -1429,6 +1430,8 @@ export async function reportRepos(
       !pushed &&
       hasWork
     ) {
+      // A push can create the branch; only its confirmation may establish absence again.
+      repo.remoteMissing = undefined;
       try {
         await withRepoAuth(options.auth, repo.url, (auth) => {
           if (options.active?.() === false)
