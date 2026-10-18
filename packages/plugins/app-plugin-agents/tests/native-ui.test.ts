@@ -1,4 +1,4 @@
-import { measureUIReadCost } from './ui-read-cost.js';
+import { measureUIReadCost, measureUIOperationCost } from './ui-read-cost.js';
 import { createServer, connect, type Socket } from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { Redis } from 'ioredis';
@@ -188,14 +188,18 @@ async function fixture(
     tool: tool ? ['business'] : [],
   });
   const base = `/conversations/${agent.sessionId}`;
-  const chatFor = (initial: AppUIMessage[] = [], approval?: unknown) =>
+  const chatFor = (
+    initial: AppUIMessage[] = [],
+    approval?: unknown,
+    target = app,
+  ) =>
     new Chat<AppUIMessage>({
       id: agent.sessionId,
       messages: initial,
       transport: new DefaultChatTransport<AppUIMessage>({
         api: `http://fixture/agents${base}/messages`,
         headers: { 'x-user': 'alice' },
-        fetch: async (input, init) => app.request(new Request(input, init)),
+        fetch: async (input, init) => target.request(new Request(input, init)),
         prepareReconnectToStreamRequest: () => ({
           api: `http://fixture/agents${base}/events`,
         }),
@@ -418,6 +422,127 @@ describe('native SDK transport, persistence and approval', () => {
           measurements: f.measurements,
         }) + '\n',
       );
+  });
+
+  it.each([
+    [true, true],
+    [true, false],
+    [false, true],
+    [false, false],
+  ])(
+    'waits for both approvals across refresh before continuing (first=%s, second=%s)',
+    async (first, second) => {
+      const f = await fixture(true, true, 2);
+      let chat = f.chatFor();
+      await chat.sendMessage({ text: 'Two independent decisions' });
+      const message = chat.messages.at(-1)!;
+      const tools = message.parts.filter(isToolUIPart);
+      expect(tools).toHaveLength(2);
+      const input = (index: number, approved: boolean) => ({
+        messageId: message.id,
+        executionId: message.metadata!.executionId!,
+        approval: {
+          id: tools[index].approval!.id,
+          approved,
+          reason: approved ? 'Allowed' : 'Denied',
+        },
+      });
+      const firstInput = input(0, first);
+      await chat.addToolApprovalResponse(firstInput.approval);
+      chat = f.chatFor(chat.messages, firstInput);
+      await measureUIOperationCost(h, 'partial-approval', () =>
+        chat.sendMessage(),
+      );
+      expect(chat.error).toBeUndefined();
+      expect(f.prompts).toHaveLength(1);
+      expect(f.execute).not.toHaveBeenCalled();
+      const history = await f.agent.history();
+      expect(jsonSafe(chat.messages.at(-1))).toEqual(history.at(-1));
+      expect(history.at(-1)).toMatchObject({
+        id: message.id,
+        metadata: { revision: 2 },
+      });
+      expect(
+        (await (await f.request(f.base)).json()).data.execution.waitingApproval,
+      ).toBe(true);
+      expect(
+        (await f.request(`${f.base}/approval`, 'POST', firstInput)).status,
+      ).toBe(409);
+      await f.service.shutdown();
+      const restored = f.reopen();
+      const secondInput = input(1, second);
+      chat = f.chatFor(await f.agent.history(), secondInput);
+      await chat.addToolApprovalResponse(secondInput.approval);
+      await measureUIOperationCost(h, 'complete-approvals', () =>
+        chat.sendMessage(),
+      );
+      expect(chat.error).toBeUndefined();
+      expect(f.prompts).toHaveLength(2);
+      expect(f.execute).toHaveBeenCalledTimes(Number(first) + Number(second));
+      expect(f.execute.mock.calls.map(([value]) => value.value).sort()).toEqual(
+        [first && 'requested-0', second && 'requested-1']
+          .filter(Boolean)
+          .sort(),
+      );
+      const saved = await (
+        await restored.realtime(actor(), { sessionId: f.agent.sessionId })
+      ).history();
+      expect(saved.filter((row) => row.role === 'assistant')).toHaveLength(1);
+      expect(saved.at(-1)).toMatchObject({
+        id: message.id,
+        metadata: { revision: 4 },
+      });
+      expect(
+        saved
+          .at(-1)!
+          .parts.filter(isToolUIPart)
+          .map((part) => part.state),
+      ).toEqual(
+        [first, second].map((approved) =>
+          approved ? 'output-available' : 'output-denied',
+        ),
+      );
+      for (const tool of tools)
+        expect(JSON.stringify(f.prompts[1])).toContain(tool.toolCallId);
+      expect(await f.agent.status()).toBe('idle');
+      expect(
+        (await f.request(`${f.base}/approval`, 'POST', secondInput)).status,
+      ).toBe(409);
+      expect(f.prompts).toHaveLength(2);
+    },
+  );
+
+  it('stops a partially answered step without leaving an approved tool executable in the next round', async () => {
+    const f = await fixture(true, true, 2);
+    let chat = f.chatFor();
+    await chat.sendMessage({ text: 'Partial approval then Stop' });
+    const message = chat.messages.at(-1)!;
+    const input = {
+      messageId: message.id,
+      executionId: message.metadata!.executionId!,
+      approval: {
+        id: message.parts.filter(isToolUIPart)[0].approval!.id,
+        approved: true,
+      },
+    };
+    await chat.addToolApprovalResponse(input.approval);
+    chat = f.chatFor(chat.messages, input);
+    await chat.sendMessage();
+    expect(chat.error).toBeUndefined();
+    expect((await f.request(`${f.base}/stop`, 'POST')).status).toBe(200);
+    const history = await f.agent.history();
+    expect(
+      history
+        .at(-1)!
+        .parts.filter(isToolUIPart)
+        .map((part) => part.state),
+    ).toEqual(['output-denied', 'output-denied']);
+    const next = f.chatFor(history);
+    await next.sendMessage({ text: 'Continue without those operations' });
+    expect(next.error).toBeUndefined();
+    expect(f.execute).not.toHaveBeenCalled();
+    expect(f.prompts).toHaveLength(2);
+    expect(await f.agent.status()).toBe('idle');
   });
 
   it('denies tools, rejects forged history and approval identity, and protects the owner boundary', async () => {
@@ -748,12 +873,27 @@ describe('native SDK transport, persistence and approval', () => {
     expect(f.prompts).toHaveLength(0);
   });
   it('retains earlier approved effects if a later continuation fails before model execution', async () => {
-    const f = await fixture(true, true, 2);
+    const f = await fixture(true, true);
     const chat = f.chatFor();
     await chat.sendMessage({ text: 'Act twice' });
     const waiting = chat.messages.at(-1)!;
     const parts = waiting.parts.filter(isToolUIPart);
-    expect(parts).toHaveLength(2);
+    expect(parts).toHaveLength(1);
+    // The second approval belongs to a later model step, after the first effect completed.
+    f.model.doStream = async (options) => {
+      f.prompts.push(options.prompt);
+      return {
+        stream: chunks([
+          {
+            type: 'tool-call',
+            toolCallId: 'actual-call-1',
+            toolName: 'business',
+            input: JSON.stringify({ value: 'requested-1' }),
+          },
+          finish('tool-calls'),
+        ]),
+      };
+    };
     const respond = async (current: Chat<AppUIMessage>, index: number) => {
       const part = current.messages.at(-1)!.parts.filter(isToolUIPart)[index]!;
       const input = {
@@ -1050,6 +1190,50 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
         }),
       );
     });
+    it('serializes different concurrent approvals across Redis instances without early continuation or repeated effects', async () => {
+      const f = await fixture(true, true, 2, redisConfig());
+      const initial = f.chatFor();
+      await initial.sendMessage({ text: 'Concurrent mixed decisions' });
+      const message = initial.messages.at(-1)!;
+      const inputs = message.parts.filter(isToolUIPart).map((part, index) => ({
+        messageId: message.id,
+        executionId: message.metadata!.executionId!,
+        approval: { id: part.approval!.id, approved: index === 0 },
+      }));
+      const a = f.chatFor(initial.messages, inputs[0]);
+      await a.addToolApprovalResponse(inputs[0].approval);
+      f.reopen();
+      const b = f.chatFor(initial.messages, inputs[1]);
+      await b.addToolApprovalResponse(inputs[1].approval);
+      await Promise.all([a.sendMessage(), b.sendMessage()]);
+      const pending = (await f.agent.history())
+        .at(-1)!
+        .parts.filter(isToolUIPart)
+        .filter((part) => part.state === 'approval-requested');
+      if (pending.length) {
+        expect(pending).toHaveLength(1);
+        expect(f.prompts).toHaveLength(1);
+        expect(f.execute).not.toHaveBeenCalled();
+        const input = inputs.find(
+          (input) => input.approval.id === pending[0].approval!.id,
+        )!;
+        const retry = f.chatFor(await f.agent.history(), input);
+        await retry.addToolApprovalResponse(input.approval);
+        await retry.sendMessage();
+        expect(retry.error).toBeUndefined();
+      }
+      expect(f.prompts).toHaveLength(2);
+      expect(f.execute).toHaveBeenCalledTimes(1);
+      expect(f.execute.mock.calls[0][0].value).toBe('requested-0');
+      expect(await f.agent.status()).toBe('idle');
+      for (const input of inputs)
+        expect(
+          (await f.request(`${f.base}/approval`, 'POST', input)).status,
+        ).toBe(409);
+      expect(f.execute).toHaveBeenCalledTimes(1);
+      expect((await f.request(`${f.base}/events`)).status).toBe(204);
+    });
+
     it('clears each approval response association before the next SDK approval continuation', async () => {
       const f = await fixture(true, true, 1, redisConfig());
       const chat = f.chatFor();

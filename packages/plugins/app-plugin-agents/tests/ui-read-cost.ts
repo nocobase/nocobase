@@ -49,3 +49,39 @@ export async function measureUIReadCost(
       );
   }
 }
+
+/** Opt-in review measurements include durable writes without logging SQL or bound values. */
+export async function measureUIOperationCost<T>(
+  h: Harness,
+  operation: string,
+  run: () => Promise<T>,
+): Promise<T> {
+  if (!process.env.PM481_FIX_COST_REPORT) return run();
+  const client = await h.database.connection().client<QuerySource>();
+  const statements: string[] = [];
+  const listener = ({ sql }: { sql: string }) => statements.push(sql);
+  client.on('query', listener);
+  const start = performance.now();
+  try {
+    return await run();
+  } finally {
+    client.off('query', listener);
+    await appendFile(
+      process.env.PM481_FIX_COST_REPORT,
+      JSON.stringify({
+        operation,
+        selects: statements.filter((sql) => /^\s*(select|with)\b/iu.test(sql))
+          .length,
+        writes: statements.filter((sql) =>
+          /^\s*(insert|update|delete)\b/iu.test(sql),
+        ).length,
+        transactions: statements.filter((sql) => /^\s*begin\b/iu.test(sql))
+          .length,
+        conversationLocks: statements.filter(
+          (sql) => /^\s*update\b/iu.test(sql) && /locked_at/iu.test(sql),
+        ).length,
+        elapsedMs: Number((performance.now() - start).toFixed(2)),
+      }) + '\n',
+    );
+  }
+}

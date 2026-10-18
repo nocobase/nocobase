@@ -1,4 +1,4 @@
-import { measureUIReadCost } from './ui-read-cost.js';
+import { measureUIReadCost, measureUIOperationCost } from './ui-read-cost.js';
 import { appendFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -10,6 +10,7 @@ import { createAgents, type Agents } from '../server/composition.js';
 import type { OnlineAgentContext } from '../server/online-agent/config.js';
 import type { AdminEnv } from '../server/routes/admin.js';
 import { createChatRoutes } from '../server/routes/chat.js';
+import { OnlineAgentUIStreams } from '../server/online-agent/ui-streams.js';
 import { appUIMessageText, type AppUIMessage } from '../shared/online-agent.js';
 import { createHarness, claim, type Harness } from './harness.js';
 
@@ -276,7 +277,127 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
           .count({ filter: { subjectId: id } }),
       ).toBe(1);
     });
-    it('keeps a lost producer busy and lets a different instance request Stop without dispatching another run', async () => {
+    it('finalizes a completed Run after restart through concurrent ordinary HTTP reads without redispatch', async () => {
+      const recovery = {
+        namespace: `pm481:${randomUUID()}`,
+        redis: {
+          host: '127.0.0.1',
+          port: Number(process.env.PM481_REDIS_PORT),
+        },
+      };
+      h = await createHarness({ uiRecovery: recovery });
+      const runner = await h.registerRunner();
+      const agentId = await h.createAgent({ source: 'runner' });
+      const local = await h.services.onlineAgent.realtime(actor(), { agentId });
+      await local.send([
+        { role: 'user', content: 'Finish after producer restart' },
+      ]);
+      const [payload] = await claim(h, runner);
+      expect(
+        (
+          await h.request(
+            'POST',
+            `/agents/runners/runs/${payload.run.id}/start`,
+            {
+              runnerKey: runner.key,
+              body: {
+                workDir: '/fixture',
+                adapter: { kind: 'claude' },
+                acceptsInput: true,
+              },
+            },
+          )
+        ).status,
+      ).toBe(200);
+      await h.services.onlineAgent.shutdown();
+      expect(
+        (
+          await h.request(
+            'POST',
+            `/agents/runners/runs/${payload.run.id}/events`,
+            {
+              runnerKey: runner.key,
+              body: {
+                events: [
+                  {
+                    seq: 1,
+                    at: h.clock.now().toISOString(),
+                    type: 'text',
+                    content: 'Saved before completion',
+                  },
+                ],
+              },
+            },
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await h.request(
+            'POST',
+            `/agents/runners/runs/${payload.run.id}/complete`,
+            {
+              runnerKey: runner.key,
+              body: {
+                summary: 'Finished',
+                handledInputIds: (
+                  await h.services.runs.detail(payload.run.id)
+                ).inputs.map((input) => input.id),
+                sessionId: 'fixture',
+              },
+            },
+          )
+        ).status,
+      ).toBe(200);
+      other = createAgents({
+        database: h.database,
+        idGenerator: { generateString: randomUUID },
+        uiRecovery: recovery,
+        clock: h.clock,
+        onError: () => {},
+      });
+      const finalizer = createAgents({
+        database: h.database,
+        idGenerator: { generateString: randomUUID },
+        uiRecovery: recovery,
+        clock: h.clock,
+        onError: () => {},
+      });
+      try {
+        const a = new Hono().route('/agents', createChatRoutes(other, guard));
+        const b = new Hono().route(
+          '/agents',
+          createChatRoutes(finalizer, guard),
+        );
+        const path = `/agents/conversations/${local.sessionId}`;
+        const answers = await Promise.all([
+          a.request(`${path}/messages`),
+          b.request(`${path}/messages`),
+        ]);
+        for (const answer of answers) expect(answer.status).toBe(200);
+        for (const app of [a, b])
+          expect(
+            (await (await app.request(path)).json()).data.execution.status,
+          ).toBe('idle');
+        const page = (await (await a.request(`${path}/messages`)).json())
+          .data as AppUIMessage[];
+        expect(
+          page.filter((message) => message.role === 'assistant'),
+        ).toHaveLength(1);
+        expect(appUIMessageText(page.at(-1)!)).toBe('Saved before completion');
+        expect((await b.request(`${path}/events`)).status).toBe(204);
+        expect(
+          await h.services.tx
+            .read()
+            .repository('agRuns')
+            .count({ filter: { subjectId: local.sessionId } }),
+        ).toBe(1);
+      } finally {
+        await finalizer.onlineAgent.shutdown();
+      }
+    });
+
+    it('keeps a lost producer busy, stops independently and automatically finalizes only a synchronized terminal Run', async () => {
       const recovery = {
         namespace: `pm481:${randomUUID()}`,
         redis: {
@@ -298,9 +419,14 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
         clock: h.clock,
         onError: () => {},
       });
-      const remote = await other.onlineAgent.realtime(actor(), {
-        sessionId: local.sessionId,
-      });
+      const remote = await measureUIOperationCost(
+        h,
+        'runner-reopen-running',
+        () =>
+          other!.onlineAgent.realtime(actor(), {
+            sessionId: local.sessionId,
+          }),
+      );
       expect(await remote.status()).toBe('running');
       await expect(remote.receive()).rejects.toThrow(
         /expired|finished|interrupted/,
@@ -323,11 +449,51 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
         onError: () => {},
       });
       try {
-        await (
-          await finalizer.onlineAgent.realtime(actor(), {
+        await expect(
+          finalizer.onlineAgent.realtime(actor('bob'), {
             sessionId: local.sessionId,
-          })
-        ).retryFinalization();
+          }),
+        ).rejects.toThrow();
+        const sync = vi
+          .spyOn(finalizer.conversations, 'syncRun')
+          .mockRejectedValueOnce(new Error('Final synchronization failed'));
+        await expect(
+          finalizer.onlineAgent.realtime(actor(), {
+            sessionId: local.sessionId,
+          }),
+        ).rejects.toThrow('Final synchronization failed');
+        expect(await remote.status()).toBe('running');
+        const cleanup = vi
+          .spyOn(OnlineAgentUIStreams.prototype, 'forgetCompleted')
+          .mockRejectedValueOnce(new Error('Association cleanup failed'));
+        try {
+          await expect(
+            finalizer.onlineAgent.realtime(actor(), {
+              sessionId: local.sessionId,
+            }),
+          ).rejects.toThrow('Association cleanup failed');
+          expect(await remote.status()).toBe('running');
+        } finally {
+          cleanup.mockRestore();
+        }
+        const reopened = await measureUIOperationCost(
+          h,
+          'runner-reopen-terminal',
+          () =>
+            finalizer.onlineAgent.realtime(actor(), {
+              sessionId: local.sessionId,
+            }),
+        );
+        expect(await reopened.status()).toBe('idle');
+        expect(await reopened.receive()).toBeNull();
+        expect(
+          await (
+            await finalizer.onlineAgent.realtime(actor(), {
+              sessionId: local.sessionId,
+            })
+          ).status(),
+        ).toBe('idle');
+        expect(sync).toHaveBeenCalledTimes(3);
       } finally {
         await finalizer.onlineAgent.shutdown();
       }

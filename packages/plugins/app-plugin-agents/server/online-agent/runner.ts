@@ -17,6 +17,7 @@ import {
   toMessage,
 } from '../core/conversations/conversation.store.js';
 import { openRunsOnEach } from '../core/runs/index.js';
+import { findRunRecord, toRun } from '../core/runs/run.store.js';
 import { conflict, forbidden, invalid, notFound } from '../kernel/errors.js';
 import type { TxRunner } from '../kernel/tx.js';
 import { asJson, jsonObject } from '../kernel/values.js';
@@ -163,6 +164,13 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
     const row = await this.owned(context.user.id, id);
     if (row.agentId !== config.agentId)
       throw conflict('Start a new conversation to choose another agent.');
+    const closingRunId = runnerBinding(row.metadata)?.closingRunId;
+    if (closingRunId && !this.active.has(id)) {
+      // Missing streams never imply completion. Only a saved terminal Run can release this gate.
+      const stored = await findRunRecord(this.deps.tx.read(), closingRunId);
+      if (stored && this.terminal(toRun(stored)))
+        await this.finalizeSavedRun(context.user.id, id, closingRunId);
+    }
     let response: UIStreamChannel | undefined;
     const history = async (): Promise<AppUIMessage[]> => {
       await this.owned(context.user.id, id);
@@ -213,13 +221,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
           const row = await this.owned(context.user.id, id);
           const runId = runnerBinding(row.metadata)?.closingRunId;
           if (!runId) return;
-          const run = await this.deps.conversations.syncRun(runId);
-          if (run.actorUserId !== context.user.id || run.subject.id !== id)
-            throw forbidden('This run does not belong to the conversation.');
-          if (!this.terminal(run))
-            throw conflict('This run has not confirmed termination.');
-          await this.clearClosing(context.user.id, id, runId);
-          await this.deps.streams.forgetCompleted(context.user.id, id, runId);
+          await this.finalizeSavedRun(context.user.id, id, runId);
         }
       },
       abort: async () => {
@@ -437,6 +439,23 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
     if (this.active.get(execution.id) === execution)
       this.active.delete(execution.id);
     clearTimeout(execution.timer);
+  }
+  private async finalizeSavedRun(
+    userId: string,
+    id: string,
+    runId: string,
+  ): Promise<void> {
+    const run = await this.deps.conversations.syncRun(runId);
+    if (
+      run.actorUserId !== userId ||
+      run.subject.kind !== 'conversation' ||
+      run.subject.id !== id
+    )
+      throw forbidden('This run does not belong to the conversation.');
+    if (!this.terminal(run))
+      throw conflict('This run has not confirmed termination.');
+    await this.deps.streams.forgetCompleted(userId, id, runId);
+    await this.clearClosing(userId, id, runId);
   }
   private async clearClosing(
     userId: string,

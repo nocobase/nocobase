@@ -119,6 +119,7 @@ export class NativeOnlineAgent {
       ReturnType<OnlineAgentSessionManager['load']>
     >['config'];
     let sdkFailure = false;
+    let waitingApprovals = false;
     try {
       const session = await this.deps.sessions.load(context.user.id, id);
       config = input?.overrides
@@ -176,6 +177,7 @@ export class NativeOnlineAgent {
         );
         priorPublic = approved.message;
         priorEvidence = approved.evidence;
+        waitingApprovals = approved.waiting;
         afterSeq = session.lastSeq;
       } else {
         if (messages.length !== 1 || messages[0].role !== 'user')
@@ -262,6 +264,43 @@ export class NativeOnlineAgent {
       return;
     }
     const output = response;
+    if (waitingApprovals) {
+      // The answer is durable, but SDK conversion must wait for every approval in this step.
+      output.write({ type: 'start', messageId, messageMetadata: metadata });
+      output.write({
+        type: 'tool-approval-response',
+        approvalId: approval!.approval.id,
+        approved: approval!.approval.approved,
+        ...(approval!.approval.reason !== undefined
+          ? { reason: approval!.approval.reason }
+          : {}),
+      });
+      const notice = priorPublic!.parts.find(
+        (part) => part.type === 'data-notice' && part.id === 'execution-status',
+      );
+      if (notice) output.write(notice as NativeUIChunk);
+      accepted.resolve(afterSeq);
+      execution.finalize = async () => {
+        await this.deps.uiStreams.release(id, output);
+        output.write({ type: 'finish', messageMetadata: metadata });
+        output.close();
+        if (this.responses.get(id) === output) this.responses.delete(id);
+        execution.finalize = undefined;
+        this.deps.complete(id, execution);
+      };
+      try {
+        await execution.finalize();
+      } catch (error) {
+        this.deps.onError(error);
+        output.write({
+          type: 'error',
+          errorText:
+            'The approval was saved. Reconcile history and retry finalization.',
+        });
+        await this.deps.uiStreams.close(id, output);
+      }
+      return;
+    }
     let privateMessage: UIMessage = priorEvidence
       ? structuredClone(priorEvidence)
       : { id: messageId, role: 'assistant', parts: [], metadata };

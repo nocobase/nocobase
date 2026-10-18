@@ -528,7 +528,7 @@ export class NativeSessionStore {
     userId: string,
     id: string,
     input: NativeApproval,
-  ): Promise<{ message: AppUIMessage; evidence: UIMessage }> {
+  ): Promise<{ message: AppUIMessage; evidence: UIMessage; waiting: boolean }> {
     return this.write(
       userId,
       id,
@@ -580,10 +580,15 @@ export class NativeSessionStore {
           }
         if (found !== 2)
           throw conflict('The requested tool approval is not pending.');
+        const waiting = evidence.parts.some(
+          (part) => isToolUIPart(part) && part.state === 'approval-requested',
+        );
         publicMessage.metadata.revision += 1;
         for (const part of publicMessage.parts)
           if (part.type === 'data-notice' && part.id === 'execution-status')
-            part.data = { type: 'running', title: 'Continuing' };
+            part.data = waiting
+              ? { type: 'approval', title: 'Waiting for approval' }
+              : { type: 'running', title: 'Continuing' };
         await messagesRepo(conn).updateMany({
           filter: { id: record.id },
           values: {
@@ -600,11 +605,11 @@ export class NativeSessionStore {
         });
         await this.update(conn, row, {
           ...call,
-          state: 'running',
+          state: waiting ? 'waitingApproval' : 'running',
           revision: publicMessage.metadata.revision,
         });
         changed(publicMessage);
-        return { message: publicMessage, evidence };
+        return { message: publicMessage, evidence, waiting };
       },
     );
   }
@@ -639,7 +644,8 @@ export class NativeSessionStore {
             if (
               'approval' in part &&
               'state' in part &&
-              part.state === 'approval-requested' &&
+              (part.state === 'approval-requested' ||
+                part.state === 'approval-responded') &&
               part.approval
             )
               Object.assign(part, {
