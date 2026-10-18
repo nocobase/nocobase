@@ -115,6 +115,51 @@ const registers = (): Seen[] =>
   seen.filter((request) => request.path.endsWith('/register'));
 
 describe('runBridge', () => {
+  it('does not claim a successor after the application permanently refuses its preceding report', async () => {
+    const close = vi.spyOn(BridgeSession.prototype, 'close');
+    answer = (request) =>
+      request.path.endsWith('/report')
+        ? {
+            status: 400,
+            error: { reason: 'INVALID_REPORT', message: 'Report refused.' },
+          }
+        : { data: { computerId: 'c1', key: 'k1' } };
+    const session = {
+      id: 'session',
+      agentId: 'opencode',
+      cwd: root,
+      acpSessionId: null,
+      settings: {},
+    };
+    commands.push(
+      {
+        type: 'prompt',
+        session,
+        promptId: 'first',
+        seq: 1,
+        content: [{ type: 'text', text: 'first' }],
+      },
+      {
+        type: 'prompt',
+        session,
+        promptId: 'second',
+        seq: 2,
+        content: [{ type: 'text', text: 'second' }],
+      },
+    );
+    const { done, stop } = await run();
+    try {
+      await until(() => close.mock.calls.length > 0);
+      expect(
+        seen
+          .filter((request) => request.path.endsWith('/claim'))
+          .map((request) => request.body.promptId),
+      ).toEqual(['first']);
+    } finally {
+      stop();
+      await done;
+    }
+  });
   it('explains an unsequenced pre-upgrade command instead of silently dropping or executing it', async () => {
     answer = () => ({ data: { computerId: 'c1', key: 'k1', open: true } });
     commands.push({

@@ -9,3 +9,5 @@ Allow owners to withdraw individual queued agent messages through server executi
 Unsequenced pre-upgrade commands still on the server cannot be authorized by the new bridge and display a warning asking the owner to send a new message. They are never silently executed without a claim.
 
 Avoid returning unused command payloads during enqueueing so large prompts also work on Oracle.
+
+Confirm each turn’s reports before claiming its successor so errors, usage and completion details keep their transcript boundary. Settle cancelled pending claims even when an approval response is delayed or lost, preventing archived sessions from remaining active or replaying closed messages.

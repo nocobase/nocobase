@@ -116,7 +116,12 @@ export class BridgeSession {
   readonly #seen = new Set<string>();
   #pumping = false;
   #pending:
-    | { readonly promptId: string; removed: boolean; cancelled: boolean }
+    | {
+        readonly promptId: string;
+        readonly seq: number | undefined;
+        removed: boolean;
+        cancelled: boolean;
+      }
     | undefined;
   #turn: string | undefined;
   /** The running turn was cancelled; until its prompt reaches the agent, only this remembers it. */
@@ -246,6 +251,7 @@ export class BridgeSession {
     this.#pumping = true;
     const pending = {
       promptId: next.promptId,
+      seq: next.seq,
       removed: false,
       cancelled: false,
     };
@@ -254,22 +260,30 @@ export class BridgeSession {
       ? await this.#context.claim(next.promptId, next.seq)
       : true;
     this.#pending = undefined;
-    if (!execute || pending.removed || this.#closed) {
+    if (!execute || pending.removed || pending.cancelled || this.#closed) {
+      // A declined retry may follow a committed claim whose response was lost (for example after archive).
+      // Terminal reports are idempotent and the server ignores them for a withdrawn or already ended identity.
+      if (!execute && !pending.removed && !pending.cancelled)
+        this.#emit({
+          kind: 'turnEnded',
+          seq: next.seq,
+          at: now(),
+          promptId: next.promptId,
+          stopReason: 'cancelled',
+          usage: null,
+          error: null,
+        });
       this.#pumping = false;
       void this.#pump();
       return;
     }
     this.#turn = next.promptId;
-    this.#turnCancelled = pending.cancelled;
+    this.#turnCancelled = false;
     this.#emit({ kind: 'turnStarted', at: now(), promptId: next.promptId });
     let stopReason: string | null = null;
     let usage: TurnUsage | null = null;
     let error: string | null = null;
     try {
-      if (pending.cancelled) {
-        stopReason = 'cancelled';
-        return;
-      }
       const agent = await this.#open();
       const instructions = await this.#context.sessionInstructions?.(
         this.#target.agentId,
@@ -320,7 +334,20 @@ export class BridgeSession {
   }
 
   #cancel(): void {
-    if (this.#pending) this.#pending.cancelled = true;
+    if (this.#pending && !this.#pending.cancelled) {
+      // The server may already have committed this claim even when its response was lost. Settle by identity now;
+      // the same session mutex either ends that claim or prevents a delayed claim from starting the cancelled item.
+      this.#pending.cancelled = true;
+      this.#emit({
+        kind: 'turnEnded',
+        seq: this.#pending.seq,
+        at: now(),
+        promptId: this.#pending.promptId,
+        stopReason: 'cancelled',
+        usage: null,
+        error: null,
+      });
+    }
     for (const dropped of this.#queue.splice(0)) {
       this.#emit({
         kind: 'turnEnded',

@@ -550,6 +550,9 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
             });
             return false;
           }
+          // Claims use a separate request channel. Commit the previous turn's reports before its successor starts.
+          await reporter.flush(sessionId);
+          if (!sessions.has(sessionId)) return false;
           for (let attempt = 1; !signal.aborted; attempt += 1) {
             try {
               const answer = await post<ClaimResponse>(
@@ -761,6 +764,15 @@ class Reporter {
     this.#schedule(sessionId);
   }
 
+  /** A claim must not overtake buffered events or a report still retrying on another request channel. */
+  async flush(sessionId: string): Promise<void> {
+    const entry = this.#pending.get(sessionId);
+    if (!entry) return;
+    do {
+      await this.#send(sessionId);
+    } while (entry.events.length > 0 || entry.state);
+  }
+
   /** Sends what is left, giving up on a session the application does not answer for. */
   async drain(): Promise<void> {
     await Promise.all(
@@ -834,6 +846,7 @@ class Reporter {
             this.#options.log(
               `The application refused a report of session ${sessionId}: ${error.message}`,
             );
+            this.#options.closed(sessionId);
             break;
           }
           await new Promise((resolve) => setTimeout(resolve, backoff(attempt)));
