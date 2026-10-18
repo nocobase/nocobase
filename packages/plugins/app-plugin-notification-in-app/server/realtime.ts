@@ -24,7 +24,7 @@ export function createRealtimeInAppStore(
   return {
     async deliver(input) {
       const item = await store.deliver(input);
-      publishChange(topic, input.userId, 'created');
+      await publishChange(topic, input.userId, 'created');
       return item;
     },
     list(input) {
@@ -36,7 +36,7 @@ export function createRealtimeInAppStore(
     async update(input) {
       const item = await store.update(input);
       if (item) {
-        publishChange(
+        await publishChange(
           topic,
           input.userId,
           input.action === 'delete' ? 'deleted' : input.action,
@@ -47,20 +47,20 @@ export function createRealtimeInAppStore(
     async markAllRead(userId) {
       const updated = await store.markAllRead(userId);
       if (updated > 0) {
-        publishChange(topic, userId, 'read-all');
+        await publishChange(topic, userId, 'read-all');
       }
       return updated;
     },
   };
 }
 
-function publishChange(
+async function publishChange(
   topic: InAppNotificationRealtimeTopic,
   userId: string,
   change: InAppNotificationChange,
-): void {
+): Promise<void> {
   try {
-    topic.publishFor(userId, {
+    await topic.publishFor(userId, {
       kind: 'inbox.changed',
       change,
     });
