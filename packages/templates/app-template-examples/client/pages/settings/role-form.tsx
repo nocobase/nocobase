@@ -16,7 +16,8 @@ import {
   type PermissionGrant,
   type PermissionSet,
 } from '@nocobase/app-plugin-authorization/client';
-import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
+import { pagePermissionResources } from './page-permissions.js';
+import { pagePermissionTitles } from './page-permission-titles.js';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
   useLocation,
@@ -40,7 +41,6 @@ import {
   unconfiguredFilter,
   setPermissions,
   setScope,
-  type CatalogResource,
 } from './permissions-model.js';
 
 function RoleEditor(): ReactElement {
@@ -100,32 +100,11 @@ function RoleEditor(): ReactElement {
   const catalog = useMemo(() => {
     if (!options.data) return undefined;
     const source = options.data.data;
-    const pages: CatalogResource[] = [];
-    const collect = (routes: readonly AppClientRegisteredRoute[]) => {
-      for (const route of routes) {
-        const pageTitle = route.navigation?.title ?? route.breadcrumb?.title;
-        if (
-          route.componentLoader &&
-          typeof route.authz === 'object' &&
-          route.authz.resource.type === 'page'
-        )
-          pages.push({
-            type: 'page',
-            id: route.authz.resource.id,
-            title: pageTitle
-              ? { key: pageTitle, ns: route.packageName }
-              : route.id,
-            actions: [
-              {
-                name: 'access',
-                title: { key: 'settings.access' },
-              },
-            ],
-          });
-        collect(route.children ?? []);
-      }
-    };
-    collect(app.runtime.routes);
+    const pages = pagePermissionResources(
+      app.runtime.routes,
+      pagePermissionTitles,
+      (path) => t('settings.unnamedPage', { path }),
+    );
     return {
       ...source,
       sections: [
@@ -180,7 +159,7 @@ function RoleEditor(): ReactElement {
         })),
       ],
     };
-  }, [options.data, app]);
+  }, [options.data, app, t]);
   const allowed = creating
     ? canCreate
     : canUpdate &&

@@ -164,3 +164,5 @@ Report the range merged, how each contested file was decided, any manual actions
 ## Crossing several releases
 
 Compare BASE directly with TARGET and merge the resulting changes once. Check the user's code against changed or removed contracts and preserve existing configuration, data, and migration history. If a compatibility step cannot be determined from the endpoints, inspect the relevant intermediate release or ask for the missing project context; do not assume every historical instruction applies.
+
+When the target adds or changes the standard process UI sources, also follow [standard process management source upgrades](references/edge-cases.md#standard-process-management-source-upgrades): confirm existing process pages actually consume the merged components, while preserving explicit user customizations, parameters, grants and history.

@@ -38,6 +38,7 @@ import {
   SessionWorkSchema,
   TranscriptEventSchema,
   UpdateSessionInput,
+  WithdrawInput,
 } from './schemas.js';
 
 const tags = ['AgentSessions'];
@@ -541,6 +542,36 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
       await service.cancel(
         userId(context),
         context.req.valid('param').sessionId,
+      );
+      return context.body(null, 204);
+    },
+  );
+
+  router.post(
+    '/sessions/:sessionId/withdraw',
+    describeRoute({
+      tags,
+      ...pageOnly,
+      summary: 'Withdraw one queued message',
+      operationId: 'agentSessionsWithdrawPrompt',
+      description: `Prevents one queued message from starting. Completion waits for computer confirmation, including while offline. ${own}`,
+      responses: {
+        204: emptyResponse('Withdrawal requested or already confirmed.'),
+        ...errors,
+        400: apiErrorResponse(
+          400,
+          'The message has started processing, was delivered to an older bridge, or the session is archived.',
+        ),
+        404: sessionNotFound,
+      },
+    }),
+    apiValidator('param', SessionParams),
+    apiValidator('json', WithdrawInput),
+    async (context) => {
+      await service.withdraw(
+        userId(context),
+        context.req.valid('param').sessionId,
+        context.req.valid('json').seq,
       );
       return context.body(null, 204);
     },

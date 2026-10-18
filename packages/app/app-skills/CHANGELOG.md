@@ -1,5 +1,26 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.38
+
+### Patch Changes
+
+- 1b537d6: Expand the application testing skill references with complete database, server, client, and CLI examples, explicit Vitest configurations, fixture ownership and cleanup guidance, and focused run commands. Cover repository constraints and rollback, authentication and permissions, translated client interactions, exact request history, pending state and retry, command output and file effects, and commands on isolated databases. Align frontend test guidance with the real application harness and include the Playwright session-reuse example.
+- 44bc7a7: Require localized page-permission labels, including routes without navigation or breadcrumbs. Preserve authorization identities and grants, provide a localized fallback for missing titles, and add template checks and application-development guidance to prevent technical route IDs from appearing as permission names.
+- 44bc7a7: Preinstall the standard React Flow process components and management layouts without enabling unused settings. Improve themed node hierarchy and configuration controls, and keep the default lifecycle view readable at a minimum initial zoom of 70%. Add authorized configuration entries for native state and outgoing-transition parameter bindings, using a chooser for multiple targets. Clarify UI Registry discovery, upgrade reconciliation and process acceptance requirements. Preserve workflow table links and keyboard focus across refreshes and sorting changes, and document node entries to authoritative organization and role settings.
+- 9adf684: Reuse the UI Library workflow-management block in the example application's definition and execution pages, preserving the single sidebar entry, page tabs, list filters, category controls, parameter editing, historical inspection and read/update authorization boundaries. Keep data fetching, routing and persistence in application adapters.
+
+  Guide application development to install and connect the workflow-management block by default for process administration, with translated display data, controlled list state and application-owned parameter forms and permissions.
+
+  Keep the definition search and refresh controls aligned, stack categories above the list on narrow screens, and demonstrate category filtering, creation, renaming, color selection and deletion without removing workflows, with concise Edit and Delete menu actions.
+
+  Demonstrate changing or clearing a workflow definition's category from the colored tag beside its detail title, keeping category assignments consistent with list filtering and showing a read-only tag when updates are denied.
+
+- 9adf684: Consolidate example workflow administration under System management with explicit read and update permissions, persistent categories, server-side name search, execution activity links and paginated execution records. Give definition and execution details full child pages with filter-preserving breadcrumbs, readable diagrams, inline parameter configuration and historical execution inspection.
+
+  Store lifecycle configuration atomically by workflow key and revision, migrate existing settings while preserving historical facts, and group fields by their bound business nodes. Apply office workflow department, calendar and dispatch overrides, share department role membership, and use searchable member selection. Remove standalone configuration pages and candidate-review demonstrations while retaining historical migrations and records.
+
+  Make system administration a default deliverable for complete applications, including user management, roles and permissions, and authenticated administrator acceptance checks. Place workflows, background tasks and other applicable capabilities directly under System management as sibling entries, with execution status, failures and supported recovery actions inside their own pages instead of a separate monitoring group. Require workflow management pages whenever application requirements include a process, using the existing workflow example's navigation and list/detail layouts by default. Keep one Workflow management sidebar entry with URL-backed Definitions and Executions tabs inside its page; child views do not declare sidebar navigation. Align Lifecycle and parameter guidance with visible parameter forms, execution history and effect inspection, while respecting explicit UI exclusions and API-only scope. Reuse installed capabilities and existing UI Library components, and retain optional contextual editing.
+
 ## 0.1.0-beta.37
 
 ### Patch Changes

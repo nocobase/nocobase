@@ -18,6 +18,7 @@ import {
   type LinkResolver,
 } from '../../server/service.js';
 import { test } from '../helpers/database.js';
+import { bridgeReport } from '../helpers/bridge-report.js';
 
 const T0 = Date.parse('2026-10-13T08:00:00.000Z');
 const owner = { userId: 'u1', locale: 'en-US' };
@@ -72,7 +73,7 @@ function setup(database: DatabaseManager) {
     events: BridgeEvent[],
     extra: Partial<ReportRequest> = {},
   ) =>
-    service.report('u1', {
+    bridgeReport(service, 'u1', {
       computerId,
       sessionId,
       batch: ++batch,
@@ -83,7 +84,16 @@ function setup(database: DatabaseManager) {
     });
   const take = (computerId: string) =>
     service
-      .poll('u1', { computerId, wait: false }, signal)
+      .poll(
+        'u1',
+        {
+          computerId,
+          wait: false,
+          protocol: BRIDGE_PROTOCOL_VERSION,
+          bridgeStartedAt: 'bridge-1',
+        },
+        signal,
+      )
       .then((r) => r.commands);
   async function started() {
     const { computerId } = await register();
@@ -597,7 +607,16 @@ describe('AgentSessionsService', () => {
     const { service, started, take } = setup(database);
     const { computerId, session } = await started();
     await take(computerId);
-    const waiting = service.poll('u1', { computerId, wait: true }, signal);
+    const waiting = service.poll(
+      'u1',
+      {
+        computerId,
+        wait: true,
+        protocol: BRIDGE_PROTOCOL_VERSION,
+        bridgeStartedAt: 'bridge-1',
+      },
+      signal,
+    );
     setTimeout(() => void service.cancel('u1', session.id), 50);
     const before = Date.now();
     await expect(waiting).resolves.toMatchObject({
@@ -1133,6 +1152,7 @@ describe('AgentSessionsService', () => {
     const { computerId } = await service.register('u1', {
       protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
+      bridgeStartedAt: 'bridge-1',
       computer: {
         name: 'Laptop',
         platform: 'darwin',
@@ -1158,7 +1178,16 @@ describe('AgentSessionsService', () => {
     expect(session.project).toEqual({ id: 'p1', name: 'Studio' });
 
     const [command] = (
-      await service.poll('u1', { computerId, wait: false }, signal)
+      await service.poll(
+        'u1',
+        {
+          computerId,
+          wait: false,
+          protocol: BRIDGE_PROTOCOL_VERSION,
+          bridgeStartedAt: 'bridge-1',
+        },
+        signal,
+      )
     ).commands;
     expect(command?.type === 'prompt' && command.session).not.toHaveProperty(
       'tools',
@@ -1240,7 +1269,7 @@ describe('AgentSessionsService', () => {
     ]);
   });
 
-  test('tells the agent the session’s work, again only when it changed', async ({
+  test('tells the agent the session’s work, in full for every independently withdrawable message', async ({
     database,
   }) => {
     const { service, started, take } = setup(database);
@@ -1280,16 +1309,16 @@ describe('AgentSessionsService', () => {
     await expect(told()).resolves.toBeUndefined();
     await service.link(session.id, 'issue', 'ST-1');
     await expect(told()).resolves.toMatch(/\n- #ST-1 Issue ST-1: Backlog$/u);
-    await expect(told()).resolves.toBeUndefined();
+    await expect(told()).resolves.toMatch(/#ST-1 Issue ST-1: Backlog/u);
 
     status.set('ST-1', 'In progress');
     await service.link(session.id, 'issue', 'ST-2');
     await expect(told()).resolves.toMatch(
-      /\n- #ST-1 Issue ST-1: In progress \(was Backlog\)\n- #ST-2 Issue ST-2: Backlog \(new\)$/u,
+      /\n- #ST-1 Issue ST-1: In progress\n- #ST-2 Issue ST-2: Backlog$/u,
     );
   });
 
-  test('tells the agent how the application wants it to work, again only when that changed', async ({
+  test('tells the agent how the application wants it to work, in every independently withdrawable message', async ({
     database,
   }) => {
     const { service, started, take } = setup(database);
@@ -1309,7 +1338,10 @@ describe('AgentSessionsService', () => {
       'How to work in this session:\nHand development on as issues.',
     ]);
     await service.prompt(owner, session.id, text('and?'));
-    await expect(told()).resolves.toEqual(['and?']);
+    await expect(told()).resolves.toEqual([
+      'and?',
+      'How to work in this session:\nHand development on as issues.',
+    ]);
 
     service.registerInstructions('Make small fixes yourself.');
     await service.prompt(owner, session.id, text('and now?'));
@@ -1352,7 +1384,10 @@ describe('AgentSessionsService', () => {
       const restored = new AgentSessionsService({ database, now: () => T0 });
       restored.registerInstructions(instructions);
       await restored.prompt(viewer, session.id, text('Continue'));
-      await expect(told()).resolves.toEqual(['Continue']);
+      await expect(told()).resolves.toEqual([
+        'Continue',
+        `How to work in this session:\nCreate tasks in ${locale}.`,
+      ]);
       const switched = locale === 'zh-CN' ? 'en-US' : 'zh-CN';
       await restored.prompt(
         { ...viewer, locale: switched },
@@ -1411,6 +1446,7 @@ describe('AgentSessionsService', () => {
     const { computerId } = await service.register('u1', {
       protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
+      bridgeStartedAt: 'bridge-1',
       computer: {
         name: 'Laptop',
         platform: 'darwin',

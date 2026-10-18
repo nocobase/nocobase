@@ -1,15 +1,13 @@
 import type { ReactElement, ReactNode } from 'react';
+import type {
+  CellContext,
+  ColumnMeta,
+  HeaderContext,
+} from '@tanstack/react-table';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Button } from '#components/ui/button';
 import { Empty, EmptyDescription } from '#components/ui/empty';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '#components/ui/table';
+import { DataTable } from '#components/data-table/data-table';
 
 export interface WorkflowExecutionRow {
   id: string;
@@ -44,6 +42,9 @@ export interface WorkflowExecutionListProps {
   onNext: () => void;
 }
 
+type ExecutionDateMeta = ColumnMeta<WorkflowExecutionRow, unknown> &
+  Pick<WorkflowExecutionListProps, 'labels' | 'order' | 'onSort'>;
+
 export function WorkflowExecutionList({
   rows,
   loaded,
@@ -61,6 +62,7 @@ export function WorkflowExecutionList({
   onPrevious,
   onNext,
 }: WorkflowExecutionListProps): ReactElement {
+  const activityMeta: ExecutionDateMeta = { labels, order, onSort };
   return (
     <section className='flex flex-col gap-4'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
@@ -70,55 +72,52 @@ export function WorkflowExecutionList({
         </Button>
       </div>
       {status}
-      <div className='overflow-hidden rounded-lg border bg-card'>
-        <Table>
-          <TableHeader>
-            <TableRow className='bg-muted/40 hover:bg-muted/40'>
-              <TableHead className='px-3 text-muted-foreground'>
-                {labels.record}
-              </TableHead>
-              <TableHead className='px-3 text-muted-foreground'>
-                {labels.workflow}
-              </TableHead>
-              <TableHead className='px-3 text-muted-foreground'>
-                {labels.state}
-              </TableHead>
-              <TableHead
-                className='px-3 text-muted-foreground'
-                aria-sort={order === 'newest' ? 'descending' : 'ascending'}
-              >
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  className='-ml-3 h-8'
-                  onClick={onSort}
-                >
-                  {labels.createdAt}
-                  {order === 'newest' ? <ArrowDown /> : <ArrowUp />}
-                </Button>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell className='px-3'>{row.record}</TableCell>
-                <TableCell className='px-3'>{row.workflow}</TableCell>
-                <TableCell className='px-3'>{row.state}</TableCell>
-                <TableCell className='px-3'>{row.createdAt}</TableCell>
-              </TableRow>
-            ))}
-            {loaded && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4}>
-                  <Empty>
-                    <EmptyDescription>{empty}</EmptyDescription>
-                  </Empty>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <div className='bg-card'>
+        <DataTable
+          data={rows}
+          getRowId={(row) => row.id}
+          pagination={false}
+          manualSorting
+          sortingState={[{ id: 'createdAt', desc: order === 'newest' }]}
+          loading={loading}
+          emptyMessage={
+            loaded ? (
+              <Empty>
+                <EmptyDescription>{empty}</EmptyDescription>
+              </Empty>
+            ) : (
+              ''
+            )
+          }
+          columns={[
+            {
+              id: 'record',
+              header: labels.record,
+              enableSorting: false,
+              cell: ExecutionRecordCell,
+            },
+            {
+              id: 'workflow',
+              header: labels.workflow,
+              enableSorting: false,
+              cell: ExecutionWorkflowCell,
+            },
+            {
+              id: 'state',
+              header: labels.state,
+              enableSorting: false,
+              cell: ExecutionStateCell,
+            },
+            {
+              id: 'createdAt',
+              accessorFn: (row) => row.createdAt,
+              enableSorting: true,
+              meta: activityMeta,
+              header: ExecutionDateHeader,
+              cell: ExecutionCreatedAtCell,
+            },
+          ]}
+        />
       </div>
       <div className='flex flex-wrap items-center justify-between gap-3 text-sm'>
         <p>{pagination}</p>
@@ -136,5 +135,41 @@ export function WorkflowExecutionList({
         </div>
       </div>
     </section>
+  );
+}
+
+function ExecutionRecordCell({
+  row,
+}: CellContext<WorkflowExecutionRow, unknown>) {
+  return row.original.record;
+}
+
+function ExecutionWorkflowCell({
+  row,
+}: CellContext<WorkflowExecutionRow, unknown>) {
+  return row.original.workflow;
+}
+
+function ExecutionStateCell({
+  row,
+}: CellContext<WorkflowExecutionRow, unknown>) {
+  return row.original.state;
+}
+
+function ExecutionCreatedAtCell({
+  row,
+}: CellContext<WorkflowExecutionRow, unknown>) {
+  return row.original.createdAt;
+}
+
+function ExecutionDateHeader({
+  column,
+}: HeaderContext<WorkflowExecutionRow, unknown>) {
+  const { labels, order, onSort } = column.columnDef.meta as ExecutionDateMeta;
+  return (
+    <Button variant='ghost' size='sm' onClick={onSort}>
+      {labels.createdAt}
+      {order === 'newest' ? <ArrowDown /> : <ArrowUp />}
+    </Button>
   );
 }

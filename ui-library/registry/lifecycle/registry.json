@@ -10,9 +10,13 @@
         "group": "Diagrams",
         "iframeHeight": 560
       },
-      "dependencies": ["@nocobase/lifecycle@^0.1.0-beta.0"],
-      "registryDependencies": ["@nocobase/flow-diagram"],
-      "docs": "Pass description.description from useLifecycle/createLifecycleHook, currentState from view.record, availableTransitions filtered from view.available, and history from view.history.transitions. History matches the exact transition/source/destination; current state alone never implies a visited path. Pass a translated endLabel for separate decorative markers on explicit final states. Defaults to direction DOWN and autoHeight for vertical page reading. Override direction and autoHeight explicitly for compact canvases. stateActions supplies explicit configuration buttons; nodeDescription displays real policy summaries. Translate ariaLabel, stateLabel and transitionLabel; append a gear to automatic transition labels if needed. Edges are solid with inline labels and subdued neutral strokes; current/visited/available highlights use the application primary theme token. Current nodes have a stronger fill and ring, visited nodes a light fill, with no extra visited label. onStateClick/onTransitionClick open details and never fire transitions. Keep toMermaid for documentation/export.",
+      "dependencies": [
+        "@nocobase/lifecycle@^0.1.0-beta.0",
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["@nocobase/flow-diagram", "button", "popover"],
+      "docs": "Pass description.description from useLifecycle/createLifecycleHook, currentState from view.record, availableTransitions filtered from view.available, and history from view.history.transitions. History matches the exact transition/source/destination; current state alone never implies a visited path. Pass a translated endLabel for separate decorative markers on explicit final states. Defaults to direction DOWN, autoHeight and initialMinZoom 0.7 for readable vertical page reading. The Fit control still shows the entire graph; an explicit initialMinZoom overrides the default. Override direction and autoHeight explicitly for compact canvases. stateActions supplies explicit configuration buttons; nodeDescription displays real policy summaries. Translate ariaLabel, stateLabel and transitionLabel; append a gear to automatic transition labels if needed. Edges are solid with inline labels and subdued neutral strokes; current/visited/available highlights use the application primary theme token. Current nodes have a stronger border and ring; icons, top accents and status footers distinguish current, visited and configurable nodes using theme tokens. onStateClick/onTransitionClick open details and never fire transitions. Keep toMermaid for documentation/export. Pass configuration={label, canConfigure, onConfigure} for automatic Configure buttons on authorized bound states and configuration selection on bound transitions. onConfigure receives the exact target and permitted bound fields grouped by native parameter key; connect the existing real editor and API. canConfigure is required and is only a UI affordance. Explicit direction/style overrides are reserved for user-requested customization; Mermaid is documentation/export only.",
       "files": [
         {
           "path": "lifecycle-diagram.tsx",
@@ -44,9 +48,10 @@
         "table",
         "tabs",
         "@nocobase/page-container",
-        "@nocobase/page-header"
+        "@nocobase/page-header",
+        "@nocobase/data-table"
       ],
-      "docs": "Install @nocobase/workflow-management and read @nocobase/workflow-management-demo. Render WorkflowManagementLayout around the application Outlet with URL-controlled Definitions and Executions tabs; declare sidebar navigation only on the Workflow management parent. Pass adapted rows, translated labels, search/category controls, status/empty content and callbacks to WorkflowDefinitionList and WorkflowExecutionList. WorkflowDefinitionDetail places the diagram beside an application-owned parameter form. WorkflowExecutionDetail takes transition/effect records and a renderDiagram callback receiving the selected history prefix and current state; render with @nocobase/lifecycle-diagram or an existing compatible diagram. It never executes transitions or saves configuration. Keep API fetching, URL query state, permissions, parameter persistence, recovery actions and breadcrumbs in the application. All wording comes from props; no example plugin or backend is installed.",
+      "docs": "Install @nocobase/workflow-management and read @nocobase/workflow-management-demo. Render WorkflowManagementLayout around the application Outlet with URL-controlled Definitions and Executions tabs; declare sidebar navigation only on the Workflow management parent. Pass adapted rows, translated labels, search/category controls, status/empty content and callbacks to WorkflowDefinitionList and WorkflowExecutionList. WorkflowDefinitionDetail places the diagram beside an application-owned parameter form. WorkflowExecutionDetail takes transition/effect records and a renderDiagram callback receiving the selected history prefix and current state; render with @nocobase/lifecycle-diagram or an existing compatible diagram. It never executes transitions or saves configuration. Keep API fetching, URL query state, permissions, parameter persistence, recovery actions and breadcrumbs in the application. All wording comes from props; no example plugin or backend is installed. Lifecycle diagrams are preinstalled in current app templates. Omit parameters to give a node-configured diagram full width, and open the same editor from LifecycleDiagram.configuration; supplying parameters retains the existing two-column layout.",
       "files": [
         {
           "path": "workflow-management/definition-list.tsx",

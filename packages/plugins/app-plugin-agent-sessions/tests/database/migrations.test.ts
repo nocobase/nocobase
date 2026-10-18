@@ -14,6 +14,18 @@ const COLLECTIONS = [
   'agentSessionLinks',
 ];
 
+describeMigration('202610180001_agent_sessions_bridge_protocol', {
+  sources: migrations,
+  up: async ({ expectCollection }) => {
+    await expectCollection('agentSessionComputers').toHaveField('protocol', {
+      nullable: true,
+    });
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('agentSessionComputers').not.toHaveField('protocol');
+  },
+});
+
 describe('@nocobase/app-plugin-agent-sessions', () => {
   it('loads its migrations', async () => {
     const { directory } = migrations[0]!;

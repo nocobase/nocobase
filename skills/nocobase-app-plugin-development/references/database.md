@@ -76,44 +76,42 @@ The filename and exported `name` should match and remain globally stable. Task s
 
 Every Migration needs a migration-level test that runs `up()` through the real Migrator and, when reversible, `down()`. Verify both logical metadata and the physical schema: Collection and field definitions, table and column names, types, nullability, relations, foreign keys, indexes, and constraints relevant to the change. An import test or `validateMigrations()` proves only shape and discovery, not DDL correctness.
 
-For the `auditLogs` migration above, place this in the plugin's `tests/database.test.ts`. The plugin must provide its usual test dependencies, including the SQLite adapter. This fixture points at the plugin's own migration directory and assumes the example migration is part of the fresh batch:
+Save the `auditLogs` migration above as `database/migrations/202609180001_create_audit_logs.ts` and place this test in `tests/database/migrations.test.ts`. Use the Node project and dependencies described in [testing and delivery](testing.md#use-app-testing-in-a-plugin). The helper selects the test dialect, applies earlier migrations, applies this migration, rolls it back and reapplies it, checking schema and metadata consistency at each step:
 
 ```ts
-// @vitest-environment node
-import path from 'node:path';
-import { createDatabaseManager } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
-import { expect, it } from 'vitest';
+import { fileURLToPath } from 'node:url';
 
-it('creates logical and physical audit schema and rolls it back', async () => {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-  try {
-    const migrator = database.createMigrator({
-      directory: path.resolve(import.meta.dirname, '../database/migrations'),
-      packageName: '@nocobase/app-plugin-audit-log',
+import { describeMigration } from '@nocobase/app-testing/server';
+
+import packageMetadata from '../../package.json' with { type: 'json' };
+
+describeMigration('202609180001_create_audit_logs', {
+  sources: [
+    {
+      packageName: packageMetadata.name,
+      directory: fileURLToPath(
+        new URL('../../database/migrations', import.meta.url),
+      ),
+    },
+  ],
+  up: async ({ expectCollection }) => {
+    await expectCollection('auditLogs').toHaveField('action', {
+      type: 'string',
+      nullable: false,
+      length: 255,
     });
-    await migrator.latest();
-    const collections = database.connection().collections;
-    expect((await collections.get('auditLogs'))?.fields).toContainEqual(
-      expect.objectContaining({ name: 'action', type: 'string' }),
-    );
-    expect(
-      (await collections.getPhysical('auditLogs'))?.columns,
-    ).toContainEqual(
-      expect.objectContaining({ columnName: 'action', nullable: false }),
-    );
-
-    await migrator.rollback();
-    expect(await collections.get('auditLogs')).toBeUndefined();
-    expect(await collections.getPhysical('auditLogs')).toBeUndefined();
-  } finally {
-    await database.destroy();
-  }
+    await expectCollection('auditLogs').toHaveField('createdAt', {
+      type: 'datetime',
+      nullable: false,
+    });
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('auditLogs').not.toExist();
+  },
 });
 ```
+
+Include prerequisite plugins' migration sources when the migration references their Collections. `describeMigration()` owns database cleanup; do not destroy its connection inside a callback. Repository and seed cases can use `createDatabaseTest()` from the same entry with their required migrations and independent test data.
 
 The maintained Repository migration test (`packages/examples/app-plugin-repository-example/tests/database.test.ts`) additionally verifies relation metadata, physical foreign keys, indexes, optimistic-lock fields, and reverse deletion order.
 

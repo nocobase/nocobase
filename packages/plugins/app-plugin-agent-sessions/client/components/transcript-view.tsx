@@ -54,6 +54,8 @@ import { LinkName } from './link-name.js';
 import { StatusPill } from './status-pill.js';
 
 export interface TranscriptActions {
+  readonly withdraw?: (seq: number) => Promise<void>;
+  readonly edit?: (item: Extract<TranscriptItem, { type: 'prompt' }>) => void;
   readonly answer: (requestId: string, optionId: string | null) => void;
   readonly decide: (kind: string, start: string[], skip: string[]) => void;
 }
@@ -155,6 +157,41 @@ function Item({
               </span>
             )}
           </span>
+          {session.archivedAt === null &&
+            item.state === 'queued' &&
+            actions.withdraw &&
+            (item.withdrawable ? (
+              <WithdrawButton
+                seq={Number(item.key)}
+                withdraw={actions.withdraw}
+              />
+            ) : (
+              <span className='text-muted-foreground max-w-80 text-right text-xs'>
+                {t('transcript.prompt.unsupported')}
+              </span>
+            ))}
+          {item.state === 'withdrawn' && (
+            <div className='flex gap-2'>
+              {item.text && (
+                <Button
+                  size='xs'
+                  variant='ghost'
+                  onClick={() => void navigator.clipboard.writeText(item.text)}
+                >
+                  {t('transcript.prompt.copy')}
+                </Button>
+              )}
+              {actions.edit && session.archivedAt === null && (
+                <Button
+                  size='xs'
+                  variant='ghost'
+                  onClick={() => actions.edit?.(item)}
+                >
+                  {t('transcript.prompt.edit')}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       );
     case 'message':
@@ -335,6 +372,36 @@ function Item({
         />
       );
   }
+}
+
+function WithdrawButton({
+  seq,
+  withdraw,
+}: {
+  readonly seq: number;
+  readonly withdraw: (seq: number) => Promise<void>;
+}): ReactElement {
+  const { t } = useTranslation();
+  const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
+  return (
+    <Button
+      size='xs'
+      variant='ghost'
+      disabled={pending}
+      onClick={() => {
+        setPending(true);
+        void withdraw(seq)
+          .then(
+            () => setFailed(false),
+            () => setFailed(true),
+          )
+          .finally(() => setPending(false));
+      }}
+    >
+      {t(failed ? 'transcript.prompt.retry' : 'transcript.prompt.withdraw')}
+    </Button>
+  );
 }
 
 /** A person's message, with what it mentions with `#` opening where its application shows it. */

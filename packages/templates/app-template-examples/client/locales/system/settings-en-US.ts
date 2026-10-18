@@ -1,4 +1,5 @@
 const settings = {
+  unnamedPage: 'Unnamed page ({{path}})',
   revokeRoles: 'Revoke roles',
   keyConflict: 'This role key is already in use.',
   userPermissions: 'User management',
