@@ -183,7 +183,7 @@ it('uses production background run/get and forwards each unrelated schema unchan
     selectedModel: model,
   });
   const session = await background.mock.results.at(-1)!.value;
-  expect(await session.receive()).toBeNull();
+  expect(await session.get()).toEqual({ name: 'Ada' });
   const providerInput = fixture.requests.at(-1)! as unknown as {
     response_format: { json_schema: { schema: unknown } };
     messages: { role: string; content: string }[];
