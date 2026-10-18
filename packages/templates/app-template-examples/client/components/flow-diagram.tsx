@@ -606,19 +606,19 @@ function DiagramToolbar({
     {
       label: t('flowDiagram.zoomOut', { defaultValue: 'Zoom out' }),
       icon: MinusIcon,
-      disabled: !flow.viewportInitialized || zoom <= 0.1,
+      disabled: zoom <= 0.1,
       run: () => void flow.zoomOut(),
     },
     {
       label: t('flowDiagram.zoomIn', { defaultValue: 'Zoom in' }),
       icon: PlusIcon,
-      disabled: !flow.viewportInitialized || zoom >= 2,
+      disabled: zoom >= 2,
       run: () => void flow.zoomIn(),
     },
     {
       label: t('flowDiagram.fit', { defaultValue: 'Fit to view' }),
       icon: MaximizeIcon,
-      disabled: !flow.viewportInitialized,
+      disabled: false,
       run: () => void flow.fitView({ padding: 0.2, maxZoom: 1 }),
     },
   ];
