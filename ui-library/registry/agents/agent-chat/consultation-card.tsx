@@ -136,11 +136,7 @@ export function ConsultationCard({
             {notice.error}
           </p>
         ) : null}
-        {notice.plans > 0 ? (
-          <p className='text-xs text-muted-foreground'>
-            {t('chat.consultation.plans', { count: notice.plans })}
-          </p>
-        ) : null}
+
         {notice.usage ? (
           <p
             className='text-xs text-muted-foreground tabular-nums'

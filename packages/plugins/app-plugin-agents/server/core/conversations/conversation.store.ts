@@ -38,6 +38,7 @@ export interface ConversationRecord {
   readonly title: string | null;
   readonly titleSource: TitleSource;
   readonly category: ConversationCategory;
+  readonly showInChatList: boolean;
   readonly source: ConversationSource;
   readonly read: boolean;
   readonly thread: number;

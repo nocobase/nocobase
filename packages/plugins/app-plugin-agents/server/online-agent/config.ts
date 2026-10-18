@@ -66,15 +66,13 @@ type OnlineAgentRegisteredTool = {
 
 function supported(value: object) {
   if ('skill' in value && Array.isArray(value.skill) && value.skill.length)
-    throw invalid('Skills execution is not supported in PR1.');
+    throw invalid('Skills are not supported.');
   if (
     'permissions' in value ||
     'needsApproval' in value ||
     'toolApproval' in value
   )
-    throw invalid(
-      'Permissions and approval declarations are not supported in PR1.',
-    );
+    throw invalid('Permissions and approval declarations are not supported.');
 }
 
 export class OnlineAgentConfigurer {
@@ -155,9 +153,16 @@ export class OnlineAgentConfigurer {
     options: OnlineAgentOptions,
     previous?: OnlineAgentConfig,
     fallbackModels: string[] = [],
+    http: boolean = false,
   ): Promise<OnlineAgentConfig> {
     return (
-      await this.resolveSelection(context, options, previous, fallbackModels)
+      await this.resolveSelection(
+        context,
+        options,
+        previous,
+        fallbackModels,
+        http,
+      )
     ).config;
   }
 
@@ -166,9 +171,30 @@ export class OnlineAgentConfigurer {
     options: OnlineAgentOptions,
     previous?: OnlineAgentConfig,
     fallbackModels: string[] = [],
+    http: boolean = false,
   ): Promise<{ config: OnlineAgentConfig; hasModel: boolean }> {
     let hasModel = previous !== undefined;
     supported(options);
+    if (
+      http &&
+      (options.tool !== undefined ||
+        options.model !== undefined ||
+        options.systemPromptTemplate !== undefined ||
+        options.context?.systemPrompt !== undefined)
+    )
+      throw invalid(
+        'HTTP configuration cannot override tools, models or system prompts.',
+      );
+    const supplied = http ? options.context?.variable : undefined;
+    if (
+      supplied !== undefined &&
+      (!supplied || typeof supplied !== 'object' || Array.isArray(supplied))
+    )
+      throw invalid(
+        'Business variables must be an object declared by a selected scope.',
+      );
+    const declared = new Set<string>();
+    let validated = false;
     const result: OnlineAgentConfig = previous
       ? structuredClone(previous)
       : {
@@ -178,16 +204,22 @@ export class OnlineAgentConfigurer {
           toolVersions: {},
           model: [...fallbackModels],
         };
-    const layers: (OnlineAgentScope | OnlineAgentScopeProvider)[] = previous
+    const layers: {
+      value: OnlineAgentScope | OnlineAgentScopeProvider;
+      selected: boolean;
+    }[] = previous
       ? []
-      : [...this.globals];
-    for (const name of options.scope ?? []) {
+      : this.globals.map((value) => ({ value, selected: false }));
+    // Only explicit HTTP variable changes revisit the selected scope declarations.
+    for (const name of options.scope ??
+      (supplied !== undefined ? previous?.scope : undefined) ??
+      []) {
       const found = this.scopes.get(name);
       if (!found) throw invalid(`Scope ${name} is not registered.`);
-      layers.push(...found);
+      layers.push(...found.map((value) => ({ value, selected: true })));
     }
-    layers.push(options);
-    for (const layer of layers) {
+    layers.push({ value: options, selected: false });
+    for (const { value: layer, selected } of layers) {
       const current: OnlineAgentContext = {
         ...context,
         variable: result.variable,
@@ -195,17 +227,47 @@ export class OnlineAgentConfigurer {
       };
       const scope = typeof layer === 'function' ? await layer(current) : layer;
       supported(scope);
-      if (scope.context?.variable !== undefined)
+      if (scope.context?.variable !== undefined && !(http && layer === options))
         result.variable = jsonSafe(scope.context.variable);
       if (scope.context?.systemPrompt !== undefined)
         result.systemPrompt = scope.context.systemPrompt;
       const template = scope.systemPromptTemplate;
       if (typeof template === 'string') result.systemPrompt = template;
       else if (template) {
-        if (template.variableSchema)
+        if (template.variableSchema) {
+          const existing =
+            result.variable &&
+            typeof result.variable === 'object' &&
+            !Array.isArray(result.variable)
+              ? result.variable
+              : {};
+          let candidate = result.variable;
+          if (supplied !== undefined && selected) {
+            validated = true;
+            candidate = Object.fromEntries(
+              Object.keys(template.variableSchema.shape).flatMap((key) => {
+                declared.add(key);
+                if (Object.hasOwn(supplied, key)) return [[key, supplied[key]]];
+                return Object.hasOwn(existing, key)
+                  ? [[key, existing[key]]]
+                  : [];
+              }),
+            );
+          }
+          const parsed = template.variableSchema.safeParse(candidate);
+          if (!parsed.success) {
+            if (http)
+              throw invalid(
+                'Business variables do not match the selected scope schema.',
+              );
+            throw parsed.error;
+          }
           result.variable = jsonSafe(
-            template.variableSchema.parse(result.variable),
+            supplied !== undefined && selected
+              ? { ...existing, ...parsed.data }
+              : parsed.data,
           );
+        }
         result.systemPrompt = template.template({
           ...context,
           variable: result.variable,
@@ -224,6 +286,13 @@ export class OnlineAgentConfigurer {
       }
       if (scope.thinking !== undefined) result.thinking = scope.thinking;
     }
+    if (
+      supplied !== undefined &&
+      (!validated || Object.keys(supplied).some((key) => !declared.has(key)))
+    )
+      throw invalid(
+        'Business variables must be declared by the selected scopes.',
+      );
     if (options.scope !== undefined) result.scope = [...options.scope];
     result.toolVersions = Object.fromEntries(
       result.tool.map((name) => {

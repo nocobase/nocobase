@@ -97,6 +97,7 @@ function detail(
     title: 'Plan the release',
     titleSource: 'auto',
     category: 'chat',
+    showInChatList: true,
     source: 'panel',
     mode: 'runner',
     agent: { id: 'pm', name: 'Project manager', avatar: null, archived: false },

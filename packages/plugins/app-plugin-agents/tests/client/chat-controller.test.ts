@@ -159,21 +159,29 @@ it('does not let an old idle refresh mark the next subscription as saved', async
   f.controller.dispose();
 });
 
-it('keeps Stop requested after a successful response until actual idle, and clears across lifetimes', async () => {
-  const f = fixture([]);
-  f.controller.api.stop = vi.fn(
-    async () =>
-      ({ id: 'c1', execution: { status: 'running' } }) as ConversationDetail,
-  );
-  await f.controller.stop('c1');
-  expect(f.controller.isStopping('c1')).toBe(true);
-  f.controller.observeDetail({
-    id: 'c1',
-    execution: { status: 'idle' },
-  } as ConversationDetail);
-  expect(f.controller.isStopping('c1')).toBe(false);
-  await f.controller.stop('c1');
-  f.controller.invalidate();
-  expect(f.controller.isStopping('c1')).toBe(false);
-  f.controller.dispose();
-});
+it.each([false, true])(
+  'keeps Stop pending until terminal confirmation and clears across lifetimes (historical=%s)',
+  async (historical) => {
+    const f = fixture([]);
+    f.controller.api.stop = vi.fn(
+      async () =>
+        ({
+          id: 'c1',
+          ...(historical
+            ? { run: { id: 'legacy-run' } }
+            : { execution: { status: 'running' } }),
+        }) as ConversationDetail,
+    );
+    await f.controller.stop('c1');
+    expect(f.controller.isStopping('c1')).toBe(true);
+    f.controller.observeDetail({
+      id: 'c1',
+      ...(historical ? { run: null } : { execution: { status: 'idle' } }),
+    } as ConversationDetail);
+    expect(f.controller.isStopping('c1')).toBe(false);
+    await f.controller.stop('c1');
+    f.controller.invalidate();
+    expect(f.controller.isStopping('c1')).toBe(false);
+    f.controller.dispose();
+  },
+);

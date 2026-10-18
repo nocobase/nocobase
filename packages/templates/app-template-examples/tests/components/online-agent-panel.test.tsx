@@ -1,3 +1,4 @@
+import { ConsultationCard } from '../../client/extensions/nocobase-agent-chat/consultation-card.js';
 import {
   agentsQueryClient,
   ChatProvider,
@@ -68,6 +69,7 @@ const conversation: ConversationDetail = {
   title: 'Saved conversation',
   titleSource: 'manual',
   category: 'chat',
+  showInChatList: true,
   source: 'panel',
   mode: 'online',
   agent: {
@@ -552,6 +554,47 @@ it('keeps Stop available independently of the model catalog', async () => {
     ),
   );
 });
+it('keeps an unbound historical run stoppable and an idle effect hint nonblocking', async () => {
+  host.catalog.mockResolvedValue(models);
+  await setup();
+  act(() => panel.openChat({ conversationId: 'saved' }));
+  await screen.findByText('Saved reply remains readable.');
+  act(() =>
+    agentsQueryClient().setQueryData(
+      ['agents', 'chat', 'conversation', 'saved'],
+      {
+        ...conversation,
+        execution: undefined,
+        run: { id: 'old-run', status: 'running' },
+        availability: { online: false, reason: 'agentGone', onlineRunners: 0 },
+      },
+    ),
+  );
+  expect(await screen.findByRole('button', { name: 'Stop' })).toBeEnabled();
+  expect(
+    screen.getByText(
+      'This historical conversation is read-only. Start a new chat to continue.',
+    ),
+  ).toBeVisible();
+  act(() =>
+    agentsQueryClient().setQueryData(
+      ['agents', 'chat', 'conversation', 'saved'],
+      {
+        ...conversation,
+        execution: {
+          status: 'idle',
+          outcome: 'cancelled',
+          requiresEffectReview: true,
+        },
+      },
+    ),
+  );
+  const input = screen.getByRole('textbox', { name: 'Message to the agent' });
+  fireEvent.change(input, { target: { value: 'Continue after completion' } });
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled(),
+  );
+});
 it.each(['empty', 'failed'])(
   'lets an available Runner send when the native catalog is %s',
   async (phase) => {
@@ -993,10 +1036,53 @@ it.each(['en-US', 'zh-CN'])(
     expect(
       await screen.findByText(
         locale === 'zh-CN'
-          ? '已取消。已生成的回复保留在历史中。'
-          : 'Cancelled. Any partial reply is saved in history.',
+          ? '已取消。再次执行前请核对可能已完成的操作。'
+          : 'Cancelled. Check possibly completed actions before repeating them.',
       ),
     ).toBeVisible();
     expect(screen.getByText('First body')).toBeVisible();
+  },
+);
+
+it.each(['en-US', 'zh-CN'])(
+  'renders a historical consultation with plans in %s without a quantity prompt',
+  async (locale) => {
+    const cardRuntime = await createTestI18nRuntime({
+      application: {
+        namespace: 'consultation-test',
+        resources: {
+          'en-US': () => Promise.resolve({ default: enUS }),
+          'zh-CN': () => Promise.resolve({ default: zhCN }),
+        },
+      },
+    });
+    await cardRuntime.changeLanguage(locale);
+    render(
+      <TestI18nProvider runtime={cardRuntime}>
+        <ConsultationCard
+          notice={{
+            code: 'consultation',
+            callId: 'historic',
+            agentId: 'agent',
+            agentName: 'Review agent',
+            runId: null,
+            question: 'Review this change',
+            answer: 'The change is ready.',
+            state: 'completed',
+            error: null,
+            usage: { inputTokens: 1840, outputTokens: 212 },
+            plans: 3,
+          }}
+        />
+      </TestI18nProvider>,
+    );
+    fireEvent.click(
+      screen.getByTestId('chat-consultation').querySelector('button')!,
+    );
+    expect(await screen.findByText('The change is ready.')).toBeVisible();
+    expect(screen.getByText(/1,840/)).toBeVisible();
+    expect(
+      screen.queryByText(/Proposed .*plans|提出了.*计划/u),
+    ).not.toBeInTheDocument();
   },
 );

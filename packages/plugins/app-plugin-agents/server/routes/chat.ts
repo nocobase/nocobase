@@ -80,14 +80,10 @@ const MessagePosition = z.object({ before: z.number().int().min(1) });
 const ConfigInput = z.strictObject({
   agentId: z.string().min(1).max(64).optional(),
   scope: z.array(z.string()).optional(),
-  model: z.array(z.string()).optional(),
   thinking: z.string().optional(),
-  tool: z.array(z.string()).optional(),
-  systemPromptTemplate: z.string().optional(),
   context: z
     .strictObject({
       variable: z.json().optional(),
-      systemPrompt: z.string().optional(),
     })
     .optional(),
 });
@@ -125,6 +121,12 @@ const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
     .regex(CONVERSATION_SOURCE_PATTERN)
     .optional()
     .describe('The source context associated with this conversation.'),
+  showInChatList: z
+    .boolean()
+    .optional()
+    .describe(
+      'Include this conversation in the default chat list (default true).',
+    ),
   config: ConfigInput.optional(),
   selectedModel: SelectedModel.optional(),
 });
@@ -293,7 +295,10 @@ export function createChatRoutes(
       operationId: 'agentsCreateConversation',
       ...cliRoute({
         command: 'conversation create',
-        flags: { agentId: { name: 'agent' } },
+        flags: {
+          agentId: { name: 'agent' },
+          showInChatList: { name: 'show-in-chat-list' },
+        },
       }),
       description:
         'Creates an OnlineAgent session without sending input. Configuration defaults are resolved once; original model columns remain authoritative.',
@@ -333,7 +338,9 @@ export function createChatRoutes(
                 selectedModel: request.selectedModel,
                 source: request.source ?? 'panel',
                 title: title?.text || undefined,
+                showInChatList: request.showInChatList,
               },
+              'http',
             );
             return conversations.get(me(context), agent.sessionId);
           })(),
@@ -623,6 +630,9 @@ export function createChatRoutes(
             verb === 'stop'
               ? await (async () => {
                   const id = conversationId(context);
+                  const detail = await conversations.get(me(context), id);
+                  if (!detail.execution)
+                    return conversations.stop(me(context), id);
                   const agent = await services.onlineAgent.realtime(
                     trusted(context),
                     { sessionId: id },
@@ -731,6 +741,7 @@ export function createChatRoutes(
         conversationId(context),
         input.config,
         input.selectedModel,
+        'http',
       );
       return context.json({ data: config });
     },

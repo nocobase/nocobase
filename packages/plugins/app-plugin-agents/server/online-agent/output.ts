@@ -5,6 +5,10 @@ import { RE2JS } from 're2js';
 import { jsonSafe, type OnlineAgentJson } from './codec.js';
 import { invalid } from '../kernel/errors.js';
 
+function invalidSchema(message: string): ReturnType<typeof invalid> {
+  return invalid(message, { field: 'schema' });
+}
+
 const draft = 'http://json-schema.org/draft-07/schema#';
 const linearRegExp: NonNullable<CodeOptions['regExp']> = Object.assign(
   (pattern: string, flags: string) =>
@@ -19,27 +23,27 @@ export function createOutputSchema(
   let nodes = 0;
   const checkSize = (value: unknown, depth: number): void => {
     if (++nodes > 4096 || depth > 32)
-      throw invalid('The output JSON Schema is too complex.');
+      throw invalidSchema('The output JSON Schema is too complex.');
     if (value !== null && typeof value === 'object')
       for (const child of Object.values(value)) checkSize(child, depth + 1);
   };
   checkSize(schema, 0);
   const snapshot = jsonSafe(schema) as JSONSchema7;
   if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot))
-    throw invalid('An output JSON Schema object is required.');
+    throw invalidSchema('An output JSON Schema object is required.');
   if (Buffer.byteLength(JSON.stringify(snapshot)) > 65536)
-    throw invalid('The output JSON Schema exceeds 64 KiB.');
+    throw invalidSchema('The output JSON Schema exceeds 64 KiB.');
   if (snapshot.$schema !== undefined && snapshot.$schema !== draft)
-    throw invalid('The output JSON Schema must use Draft-07.');
+    throw invalidSchema('The output JSON Schema must use Draft-07.');
   if ('$async' in snapshot)
-    throw invalid('Asynchronous output JSON Schemas are not supported.');
+    throw invalidSchema('Asynchronous output JSON Schemas are not supported.');
 
   const checkReferences = (node: JSONSchema7 | boolean): void => {
     if (typeof node !== 'object' || node === null) return;
     if ('nullable' in node)
-      throw invalid('Use a JSON Schema null type instead of nullable.');
+      throw invalidSchema('Use a JSON Schema null type instead of nullable.');
     if (node.$ref !== undefined && !node.$ref.startsWith('#'))
-      throw invalid('Output JSON Schema references must be local.');
+      throw invalidSchema('Output JSON Schema references must be local.');
     for (const map of [
       node.properties,
       node.patternProperties,
@@ -92,7 +96,7 @@ export function createOutputSchema(
             },
     });
   } catch (error) {
-    throw invalid(
+    throw invalidSchema(
       `Invalid output JSON Schema: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
