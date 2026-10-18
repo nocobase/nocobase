@@ -440,7 +440,7 @@ export async function addRunWorktree(options: {
   const key = continuationKey(appKey, subjectKey, repo.url, repo.branch);
   const warnings: string[] = [];
   const state = await readContinuationState(paths, appKey, subjectKey);
-  let record = state?.repos.find((item) => item.continuation === key);
+  let record: WorkspaceRepo | undefined;
   for (const previous of state?.activeWorkDirs ?? []) {
     await retryWorkspaceRemoval(paths, previous, () => {});
     const record = await readWorkspaceMeta(paths, previous);
@@ -453,6 +453,8 @@ export async function addRunWorktree(options: {
   }
   await mkdir(path.dirname(dir), { recursive: true });
   await updateContinuationState(paths, appKey, subjectKey, (state) => {
+    // Preserve delivery confirmed while preparation was waiting for this lock.
+    record = state.repos.find((item) => item.continuation === key);
     return {
       ...state,
       lastRunId: options.runId,

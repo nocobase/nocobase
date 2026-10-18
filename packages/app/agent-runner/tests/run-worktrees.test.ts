@@ -155,6 +155,84 @@ describe('per-attempt worktrees', () => {
     ).toBe(true);
     return reports[0];
   }
+  it('preserves the latest delivery when read-only preparation overlaps a writer finishing', async () => {
+    const a = await start('first-delivery');
+    const first = commitFile(a.repo.dir);
+    expect((await finish(a)).pushed).toBe(true);
+    const baseline = (await readContinuationState(paths, 'app', 'PM-300'))!
+      .repos[0].startSha;
+    const writer = await start('writer');
+    const second = commitFile(writer.repo.dir, 'second.txt');
+    const original = (
+      await vi.importActual<typeof fsPromises>('node:fs/promises')
+    ).mkdir;
+    let pause!: () => void;
+    let resume!: () => void;
+    const paused = new Promise<void>((resolve) => {
+      pause = resolve;
+    });
+    const resumed = new Promise<void>((resolve) => {
+      resume = resolve;
+    });
+    let intercepted = false;
+    const spy = vi
+      .spyOn(fsPromises, 'mkdir')
+      .mockImplementation(async (...args) => {
+        if (
+          !intercepted &&
+          String(args[0]) ===
+            `${continuationWorkDir(paths, 'app', 'PM-300')}.lock`
+        ) {
+          intercepted = true;
+          // Pause after reading P, before the existing lock protects the registration update.
+          pause();
+          await resumed;
+        }
+        return original(...args);
+      });
+    const preparing = start('reader', true);
+    try {
+      await paused;
+      expect(
+        (await readContinuationState(paths, 'app', 'PM-300'))!.repos[0]
+          .pushedSha,
+      ).toBe(first);
+      expect((await finish(writer)).pushed).toBe(true);
+      expect(
+        (await readContinuationState(paths, 'app', 'PM-300'))!.repos[0]
+          .pushedSha,
+      ).toBe(second);
+      resume();
+      const reader = await preparing;
+      const record = (await readContinuationState(paths, 'app', 'PM-300'))!
+        .repos[0];
+      const readerBase = reader.repo.deliveryBaseSha;
+      await finish(reader, false);
+      git(
+        ['update-ref', '-d', remoteBranch],
+        path.join(root, 'origin-repo.git'),
+      );
+      const next = await start('after-deletion');
+      const report = await finish(next);
+      expect({
+        startSha: record.startSha,
+        pushedSha: record.pushedSha,
+        readerBase,
+        pushed: report.pushed,
+        remote: remoteHead(),
+      }).toEqual({
+        startSha: baseline,
+        pushedSha: second,
+        readerBase: second,
+        pushed: false,
+        remote: '',
+      });
+    } finally {
+      resume();
+      await preparing.catch(() => undefined);
+      spy.mockRestore();
+    }
+  });
   it('does not push an untouched checkout when another run advances the shared default ref', async () => {
     const a = await start('shared-cache');
     const original = git(['rev-parse', 'HEAD'], a.repo.dir);
