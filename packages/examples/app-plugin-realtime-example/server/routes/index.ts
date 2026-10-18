@@ -7,6 +7,7 @@ import {
 import { Hono } from 'hono';
 
 import { renderRealtimePage } from '../realtime-page.js';
+import { exportRoutes } from './exports.js';
 import { apiRoutes } from './api.js';
 
 export const rootRoutes: AppRootRouteContribution<AppPluginApplication> =
@@ -19,6 +20,7 @@ export const rootRoutes: AppRootRouteContribution<AppPluginApplication> =
 const routes: readonly AppRouteContribution<AppPluginApplication>[] = [
   rootRoutes,
   apiRoutes,
+  exportRoutes,
 ];
 
 export default routes;

@@ -11,6 +11,7 @@
     "server/**/*.ts",
     "client/**/*.ts",
     "client/**/*.tsx",
-    "shared/**/*.ts"
+    "shared/**/*.ts",
+    "database/**/*.ts"
   ]
 }

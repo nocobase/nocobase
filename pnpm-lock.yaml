@@ -1683,15 +1683,30 @@ importers:
       '@nocobase/app-plugin-authentication':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-authentication
+      '@nocobase/app-plugin-notification-example':
+        specifier: workspace:^
+        version: link:../app-plugin-notification-example
+      '@nocobase/app-plugin-notification-in-app':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-notification-in-app
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
+      '@nocobase/db':
+        specifier: workspace:^
+        version: link:../../libs/db
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.4(react@19.2.8)
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1

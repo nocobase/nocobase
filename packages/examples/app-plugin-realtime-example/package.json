@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-plugin-realtime-example",
   "displayName": "Realtime Example App Plugin",
-  "description": "Interactive examples of Realtime topics, resource authorization, acknowledged subscriptions, React refresh hooks, and connection recovery.",
+  "description": "Business realtime examples for collaborative tasks, personal notifications, background CSV exports, and a subscription capability lab.",
   "version": "0.1.0-beta.8",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -43,7 +43,7 @@
   ],
   "scripts": {
     "clean": "node ./scripts/clean-dist.mjs",
-    "build": "pnpm clean && tsc -p tsconfig.json",
+    "build": "pnpm clean && tsc -p tsconfig.json && nocobase-db-manifests",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint . --max-warnings 0",
@@ -87,7 +87,12 @@
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "react": "^19.0.0",
-    "react-router": "catalog:"
+    "react-router": "catalog:",
+    "@nocobase/db": "workspace:^",
+    "@nocobase/jobs": "workspace:^",
+    "@nocobase/app-plugin-notification-example": "workspace:^",
+    "@nocobase/app-plugin-notification-in-app": "workspace:^",
+    "@tanstack/react-query": "catalog:"
   },
   "imports": {
     "#components/*": {
