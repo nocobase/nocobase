@@ -46,6 +46,8 @@ import {
 } from '../../shared/conversations.js';
 import type { ModelRef, ModelService } from '../../shared/models.js';
 import { useRealtimeTopic } from '../hooks/use-realtime-topic.js';
+import { useQuotaExpiry } from '../hooks/use-quota-expiry.js';
+import { RUNNERS_TOPIC } from '../../shared/realtime.js';
 import { errorText } from '../hooks/use-notify.js';
 import { agentsQueryClient } from '../query.js';
 import { useChatController, useChatStream } from './controller.js';
@@ -100,6 +102,7 @@ export function useChatAgents(enabled = true): UseQueryResult<ChatAgent[]> {
     },
     agentsQueryClient(),
   );
+  useQuotaExpiry(query.data ?? []);
   const { refetch } = query;
   useEffect(() => {
     if (enabled) void refetch({ cancelRefetch: false });
@@ -205,6 +208,9 @@ export function useConversationList(
  */
 export function useChatRealtime(enabled: boolean): void {
   const queryClient = agentsQueryClient();
+  useRealtimeTopic(enabled ? RUNNERS_TOPIC : null, () => {
+    void queryClient.invalidateQueries({ queryKey: chatKeys.agents });
+  });
   useRealtimeTopic(enabled ? CONVERSATIONS_TOPIC : null, (payload) => {
     if (payload === undefined) {
       void queryClient.invalidateQueries({ queryKey: chatKeys.all });

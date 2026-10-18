@@ -129,7 +129,9 @@ export function explainWait(
   let fitting = context.runners;
   if (fitting.length === 0) return wait('noRunnerOnline');
   fitting = fitting.filter((runner) =>
-    agent.modelEntries.some((entry) => runsEntry(runner, entry)),
+    agent.modelEntries.some((entry) =>
+      runsEntry(runner, entry, context.now.getTime()),
+    ),
   );
   if (fitting.length === 0)
     return wait('toolUnavailable', {
@@ -190,7 +192,9 @@ export function explainWait(
     free.every(
       (runner) =>
         !agent.modelEntries.some(
-          (entry) => runsEntry(runner, entry) && hasRoom(runner, entry.tool),
+          (entry) =>
+            runsEntry(runner, entry, context.now.getTime()) &&
+            hasRoom(runner, entry.tool),
         ),
     )
   ) {
@@ -609,7 +613,9 @@ export async function readWorkload(
       online:
         agent.status === 'enabled' &&
         online.some((runner) =>
-          agent.modelEntries.some((entry) => runsEntry(runner, entry)),
+          agent.modelEntries.some((entry) =>
+            runsEntry(runner, entry, state.now.getTime()),
+          ),
         ),
     });
   }

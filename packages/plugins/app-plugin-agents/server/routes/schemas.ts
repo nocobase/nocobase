@@ -2,6 +2,11 @@
  * The path parameters, query strings and small bodies of the plugin's routes. Bodies the services own (an agent, a
  * skill, a model service) keep their schemas beside the service, strict there too.
  */
+import { RUNNER_LIST_FIELDS } from '../../shared/runners.js';
+
+import type { QuotaLocation } from '../../shared/quota.js';
+import type { RunnerWorkspacePage } from '../../shared/runners.js';
+
 import {
   ACTOR_KINDS,
   AGENT_TOOLS,
@@ -25,6 +30,7 @@ import {
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import { z } from 'zod';
+import { QuotaReportSchema } from '@nocobase/agent-protocol';
 
 import {
   AGENT_CHANGE_ACTIONS,
@@ -134,6 +140,20 @@ export interface Paging {
   readonly pageSize: number;
   readonly pageToken?: string | undefined;
 }
+
+export const QuotaLocationSchema: z.ZodType<QuotaLocation> = z
+  .object({
+    runnerId: z.string().describe('The visible runtime with the quota mark.'),
+    runnerName: z.string().describe('The runtime display name.'),
+    resetsAt: z
+      .string()
+      .nullable()
+      .describe('The known reset time, or null for an unknown reset.'),
+  })
+  .meta({
+    ref: 'AgentsQuotaLocation',
+    description: 'A runtime whose quota blocks this agent for the viewer.',
+  });
 
 export const AgentParams: z.ZodType<{ agentId: string }> = z.object({
   agentId: id.describe('The agent identifier.'),
@@ -652,6 +672,12 @@ export const AgentViewSchema: z.ZodType<AgentView> = agentObject
         description:
           'The online runners that have its tool and model: team ones, personal ones, the caller’s own, and a few names.',
       }),
+    quota: z
+      .array(QuotaLocationSchema)
+      .optional()
+      .describe(
+        'Viewer-visible runtime quota blocks; an empty list means no quota block.',
+      ),
     personalOnly: z.boolean().meta({
       description: 'Only personal runners have it.',
     }),
@@ -686,6 +712,12 @@ export const AvailableAgentSchema: z.ZodType<AvailableAgent> = z
     online: z.boolean().meta({
       description: 'Whether a runner would take the caller’s work now.',
     }),
+    quota: z
+      .array(QuotaLocationSchema)
+      .optional()
+      .describe(
+        'Viewer-visible runtime quota blocks; an empty list means no quota block.',
+      ),
     personalOnly: z.boolean().meta({
       description: 'Only personal runners have it.',
     }),
@@ -965,6 +997,7 @@ const RunEffortReportSchema: z.ZodType<RunEffortReport> = z
 
 export const RunExecutionSnapshotSchema: z.ZodType<RunExecutionSnapshot> = z
   .object({
+    quota: QuotaReportSchema.optional(),
     selection: z
       .object({
         reason: z.enum(['preferredQueued', 'preferredUnavailable']),
@@ -1572,6 +1605,9 @@ export const SendMessageResultSchema: z.ZodType<SendMessageResult> = z
   .meta({ ref: 'AgentsSendMessageResult' });
 
 export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
+  runnerNames: z
+    .array(z.string())
+    .describe('Eligible runtime display names visible to this caller.'),
   id: z.string(),
   name: z.string(),
   description: z.string().nullable(),
@@ -1580,6 +1616,7 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
   avatar: z.string().nullable(),
   isSystemDefault: z.boolean(),
   isMyDefault: z.boolean(),
+  quota: z.array(QuotaLocationSchema).optional(),
   availability,
   personalOnly: z.boolean().meta({
     description: 'Only personal runners have it.',
@@ -1598,7 +1635,7 @@ export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
 });
 
 // A runner's working directories, as it last reported them.
-const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
+export const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
   subjectKey: z.string().optional(),
   sizeBytes: z.number().int().nonnegative().optional(),
   decision: WorkspaceDecisionSchema.optional(),
@@ -1638,6 +1675,25 @@ const RunnerWorkspaceUsageSchema = z
           "The disk holding the runner's working directories; null when it did not say.",
       }),
     intervalMs: z.number().int().positive().optional(),
+    totalBytes: z
+      .number()
+      .nonnegative()
+      .optional()
+      .describe('Sum of measured directory sizes in bytes.'),
+    sizeUnknownCount: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe('Directories without a measured size.'),
+    counts: z
+      .object({
+        all: z.number().int(),
+        active: z.number().int(),
+        retained: z.number().int(),
+        ended: z.number().int(),
+      })
+      .optional(),
     count: z.number().int(),
     unpushedCount: z.number().int(),
     measuredAt: dateTime.nullable(),
@@ -1692,6 +1748,80 @@ const runnerObject = z.object({
     description:
       'The names of the variables it provides to runs that take them from the runner, as it last reported them; null when it reported none. Names only.',
   }),
+  quotaRevision: z
+    .number()
+    .int()
+    .describe('The server quota-state revision; clearing does not require it.'),
+  quotaUsage: z
+    .array(
+      z.object({
+        tool: AgentToolSchema.describe(
+          'The coding tool whose quota was observed.',
+        ),
+        window: z
+          .string()
+          .describe('The tool-reported usage window identifier.'),
+        scope: z
+          .enum(['tool', 'provider', 'model'])
+          .describe('The affected quota scope.'),
+        target: z
+          .string()
+          .describe('Provider or model identifier; empty for the whole tool.'),
+        usedPercent: z
+          .number()
+          .optional()
+          .describe('Observed usage percentage, when the tool reports it.'),
+        resetsAt: z
+          .string()
+          .nullable()
+          .describe('Known reset instant; null means manual recovery.'),
+        observedAt: z
+          .string()
+          .describe('When the usage snapshot was accepted.'),
+        exhausted: z
+          .boolean()
+          .optional()
+          .describe('Whether the observed window was exhausted.'),
+      }),
+    )
+    .nullable()
+    .optional()
+    .describe(
+      'Throttled usage snapshots, persisted at five-point changes or state transitions.',
+    ),
+  unavailableModels: z
+    .array(
+      z.object({
+        tool: AgentToolSchema.describe(
+          'The coding tool whose quota was observed.',
+        ),
+        model: z
+          .string()
+          .describe('Affected model or provider; empty for a tool-wide mark.'),
+        at: z.string().describe('When the unavailable mark was observed.'),
+        reported: z
+          .array(z.string())
+          .describe('Models reported by the tool when the mark was recorded.'),
+        reason: z
+          .enum(['modelUnavailable', 'toolQuota'])
+          .optional()
+          .describe('The reason this scope cannot accept work.'),
+        scope: z
+          .enum(['tool', 'provider', 'model'])
+          .optional()
+          .describe('The marked scope; legacy marks target one model.'),
+        window: z.string().optional().describe('The exhausted usage window.'),
+        resetsAt: z
+          .string()
+          .nullable()
+          .optional()
+          .describe(
+            'Automatic recovery instant; absent or null means unknown.',
+          ),
+      }),
+    )
+    .nullable()
+    .optional(),
   workspaceUsage: RunnerWorkspaceUsageSchema.nullable().optional().meta({
     description:
       'The working directories it keeps for this application and the free space on the disk holding them, as it last reported them; null or absent before it reports.',
@@ -1701,11 +1831,13 @@ const runnerObject = z.object({
   updatedAt: dateTime,
 });
 
-export const RunnerSchema: z.ZodType<Runner> = runnerObject.meta({
-  ref: 'AgentsRunner',
-});
+export const RunnerSchema: z.ZodType<Omit<Runner, 'quotaRevision'>> =
+  runnerObject.omit({ quotaRevision: true }).meta({
+    ref: 'AgentsRunner',
+  });
 
 const runnerSummaryObject = runnerObject
+  .omit({ quotaRevision: true })
   .extend({
     hostname: z.string().nullable().meta({
       description:
@@ -1726,6 +1858,14 @@ const runnerSummaryObject = runnerObject
     canManage: z.boolean(),
     canChangeTrust: z.boolean(),
     canRevoke: z.boolean(),
+    canClearQuota: z
+      .boolean()
+      .describe('The viewer may clear an unknown-reset quota mark.'),
+    recentRunsCount: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe('Recent run rows shown by the Runs tab, bounded to ten.'),
     updateVersion: z.string().nullable(),
     requiredProtocol: z.object({
       min: z.number().int(),
@@ -1742,16 +1882,65 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> =
   runnerSummaryObject;
 export const RunnerListItemSchema: z.ZodType<RunnerListItem> =
   runnerSummaryObject
+    .pick(RUNNER_LIST_FIELDS)
     .extend({
+      tools: z
+        .array(
+          z
+            .object({
+              kind: AgentToolSchema,
+              version: z.string().optional(),
+              authenticated: z.boolean(),
+            })
+            .meta({
+              ref: 'AgentsRunnerToolSummary',
+              description:
+                'Tool identity, version and sign-in state; model catalogs and machine paths belong to runtime get.',
+            }),
+        )
+        .describe('Compact coding tool states for this list.'),
+      takesCount: z
+        .number()
+        .int()
+        .describe('Total eligible agents; takes contains at most three.'),
       workspaceUsage: RunnerWorkspaceUsageSchema.omit({ workspaces: true })
-        .meta({ ref: 'AgentsRunnerWorkspaceTotals' })
         .nullable()
-        .optional(),
+        .optional()
+        .describe('Directory and disk totals without directory rows.'),
     })
     .meta({ ref: 'AgentsRunnerListItem' });
 
+export const RunnerWorkspacePageMetaSchema: z.ZodType<
+  RunnerWorkspacePage['meta']
+> = z
+  .object({
+    total: z
+      .number()
+      .int()
+      .describe('Directories matching the selected status.'),
+    page: z.number().int().min(1).describe('The requested one-based page.'),
+    pageSize: z.number().int().min(1).describe('Maximum rows per page.'),
+    usage: RunnerWorkspaceUsageSchema.omit({ workspaces: true })
+      .nullable()
+      .describe('Disk and directory totals, without directory rows.'),
+  })
+  .meta({
+    ref: 'AgentsRunnerWorkspacePageMeta',
+    description: 'Paging and shared runtime workspace totals.',
+  });
+
 export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
   .object({
+    subjectLabel: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('The visible task or conversation label.'),
+    failureReason: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('Terminal failure classification, including toolQuota.'),
     id: z.string(),
     title: z.string(),
     status: RunStatusSchema,

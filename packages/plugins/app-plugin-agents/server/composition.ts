@@ -349,6 +349,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   const dist = createDistService(deps.dist);
   const slots = createSlots(runsHeldSnapshot);
   const runners = createRunnerService({
+    quotaAgents: (unit) => agents.listActive(unit.conn),
     tx,
     ids,
     clock,
@@ -437,10 +438,12 @@ export function createAgents(deps: AgentsDeps): Agents {
     },
   });
   const eligibility = createClaimEligibility({
+    clock,
     runners,
     variables,
   });
   const availability = createAvailability({
+    clock,
     runners,
     eligibility,
     openRuns: openCounts,
@@ -498,6 +501,8 @@ export function createAgents(deps: AgentsDeps): Agents {
     secrets,
     cliName: cli.name,
     appName: app.name,
+    onQuota: (unit, runnerId, tool, model, quota, observation) =>
+      runners.reportQuota(unit, runnerId, tool, model, quota, observation),
     onModelUnavailable: (unit, runnerId, tool, model) =>
       runners.markModelUnavailable(unit, runnerId, tool, model),
   });
@@ -669,7 +674,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     app,
     cli,
     runners,
-    runnerView: createRunnerView({ agents, subjects, tx }),
+    runnerView: createRunnerView({ agents, subjects, tx, clock }),
     workspaces: createRunnerWorkspaces({ tx, clock, subjects }),
     jobs,
     slots,

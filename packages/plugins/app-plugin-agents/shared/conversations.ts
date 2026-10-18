@@ -7,6 +7,8 @@
  * Legacy IDs/text/files remain readable; unknown Runner effects are never automatically replayed.
  * Internal SDK envelopes, tool payloads and provider metadata never enter this public DTO.
  */
+import type { QuotaLocation } from './quota.js';
+
 import type { FailureReason, RunStatus } from '@nocobase/agent-protocol';
 
 import type { I18nText } from './i18n.js';
@@ -627,6 +629,9 @@ export interface StartConversationRequest {
 
 /** An agent the person may chat with (`GET agents`). */
 export interface ChatAgent {
+  readonly quota?: readonly QuotaLocation[];
+  /** Viewer-visible eligible runtimes, for partial quota availability. */
+  readonly runnerNames: readonly string[];
   readonly id: string;
   readonly name: string;
   readonly description: string | null;

@@ -21,6 +21,7 @@ export {
 export {
   canSee,
   issueVisibleTo,
+  visibleIssueIds,
   managesIssue,
   requireEditor,
   requireVisible,

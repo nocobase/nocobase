@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { prepareDriveStorage, type AppDriveConfig } from '../src/index.js';
 
@@ -25,6 +25,26 @@ describe('prepareDriveStorage', () => {
 
     expect(existsSync(path.join(root, 'storage'))).toBe(true);
     expect(result.directories).toEqual([path.join(root, 'storage')]);
+  });
+
+  it('prepares object disks without invoking factories', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'nocobase-drive-'));
+    tempDirs.push(root);
+    const custom = vi.fn(() => {
+      throw new Error('Must stay lazy.');
+    });
+    const config = createConfig(root);
+    config.default = 'custom';
+    config.disks.custom = custom;
+
+    expect(await prepareDriveStorage(config)).toEqual({
+      directories: [path.join(root, 'storage')],
+    });
+    expect(existsSync(path.join(root, 'storage'))).toBe(true);
+    expect(
+      await prepareDriveStorage({ default: 'custom', disks: { custom } }),
+    ).toEqual({ directories: [] });
+    expect(custom).not.toHaveBeenCalled();
   });
 });
 

@@ -3,6 +3,7 @@
  * them.
  */
 import { z } from 'zod';
+import { QuotaReportSchema, type QuotaReport } from './quota.js';
 import { createRedactor } from './redact.js';
 
 import {
@@ -669,6 +670,7 @@ export const CompleteRequestSchema: z.ZodType<CompleteRequest> = z.object({
 });
 
 export interface FailRequest {
+  readonly quota?: QuotaReport;
   readonly reason: FailureReason;
   readonly detail?: string;
   readonly handledInputIds?: readonly string[];
@@ -678,6 +680,7 @@ export interface FailRequest {
 }
 
 export const FailRequestSchema: z.ZodType<FailRequest> = z.object({
+  quota: QuotaReportSchema.optional(),
   reason: FailureReasonSchema,
   detail: z.string().max(10_000).optional(),
   handledInputIds: z.array(z.string()).optional(),

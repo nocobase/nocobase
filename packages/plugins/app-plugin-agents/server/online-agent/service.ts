@@ -226,6 +226,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       ...agents,
       {
         id: 'online',
+        runnerNames: [],
         name: 'Online agent',
         description: 'Chat with a configured model and registered tools.',
         nameText: null,

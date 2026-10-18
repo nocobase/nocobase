@@ -17,6 +17,7 @@ import { nativeExecutionStatus } from '../../online-agent/execution.js';
  */
 import { runnerBinding } from '../../online-agent/runner-metadata.js';
 import { isDeepStrictEqual } from 'node:util';
+import { quotaForAgent } from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
@@ -141,7 +142,10 @@ export interface ConversationServiceDeps {
   readonly clock: Clock;
   readonly agents: Pick<AgentService, 'mayInvoke' | 'get' | 'list'>;
   readonly runners: Pick<RunnerService, 'list'>;
-  readonly eligibility: Pick<ClaimEligibility, 'canClaim' | 'runnersFor'>;
+  readonly eligibility: Pick<
+    ClaimEligibility,
+    'canClaim' | 'runnersFor' | 'prepare'
+  >;
   readonly runs: Pick<
     RunService,
     'enqueue' | 'cancel' | 'withdrawQueued' | 'get' | 'detail'
@@ -444,6 +448,7 @@ export function createConversationService(
     agent: Agent | null,
     userId: string,
     runners?: readonly Runner[],
+    variableState?: { readonly held: boolean; readonly teamOnly: boolean },
   ): Promise<ChatAvailability> {
     if (!wakeable(agent, userId, deps.agents.mayInvoke))
       return availabilityOf(agent, userId, deps.agents.mayInvoke, 0);
@@ -455,13 +460,15 @@ export function createConversationService(
     const eligible = await deps.eligibility.runnersFor(conn, agent, {
       actorUserId: userId,
       runners: online,
+      variableState,
     });
+    const now = clock.now().getTime();
     return availabilityOf(
       agent,
       userId,
       deps.agents.mayInvoke,
       eligible.length,
-      online.some((runner) => runnerTakesAgent(runner, agent)),
+      online.some((runner) => runnerTakesAgent(runner, agent, now)),
     );
   }
 
@@ -1760,6 +1767,8 @@ export function createConversationService(
         deps.settings.settings(conn),
         deps.settings.preferences(userId, conn),
       ]);
+      const variableStates = await deps.eligibility.prepare(conn, agents, {});
+      const now = clock.now().getTime();
       const catalog = await Promise.all(
         agents
           // People talk to the agents discovered from runners; an application's own agents do work of its own.
@@ -1769,7 +1778,7 @@ export function createConversationService(
           )
           .map(async (agent): Promise<ChatAgent> => {
             const fitting = runners.filter((runner) =>
-              runnerTakesAgent(runner, agent),
+              runnerTakesAgent(runner, agent, now),
             );
             return {
               id: agent.id,
@@ -1780,7 +1789,21 @@ export function createConversationService(
               avatar: agent.avatar,
               isSystemDefault: agent.id === settings.defaultAgentId,
               isMyDefault: agent.id === preferences.defaultAgentId,
-              availability: await availabilityFor(conn, agent, userId, runners),
+              availability: await availabilityFor(
+                conn,
+                agent,
+                userId,
+                runners,
+                variableStates?.get(agent.id),
+              ),
+              quota: quotaForAgent(runners, agent, userId, now),
+              runnerNames: fitting
+                .filter(
+                  (runner) =>
+                    runner.trust === 'team' || runner.ownerUserId === userId,
+                )
+                .slice(0, 3)
+                .map((runner) => runner.name),
               personalOnly:
                 fitting.length > 0 &&
                 fitting.every((runner) => runner.trust !== 'team'),
@@ -1791,6 +1814,7 @@ export function createConversationService(
         const online = await deps.nativeAvailable();
         catalog.push({
           id: 'online',
+          runnerNames: [],
           name: 'Online agent',
           description: 'Chat with a configured model and registered tools.',
           nameText: null,
