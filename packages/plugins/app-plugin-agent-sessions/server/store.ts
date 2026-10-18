@@ -316,23 +316,27 @@ export async function takeCommands(
   conn: DatabaseConnection,
   computerId: string,
 ): Promise<BridgeCommand[]> {
-  // Reserve capacity for both classes: retained acknowledgements must never starve ordinary commands.
-  const batches = await Promise.all(
-    [false, true].map((retained) =>
-      commands(conn).findMany({
-        filter: (f) =>
-          f.and([
-            f.string('computerId').eq(computerId),
-            retained
-              ? f.string('id').startsWith('withdraw:')
-              : f.string('id').notIncludes('withdraw:'),
-          ]),
-        sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
-        limit: 25,
-      }),
-    ),
+  let waiting = await commands(conn).findMany({
+    filter: { computerId },
+    sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
+    limit: 50,
+  });
+  const retained = waiting.filter(
+    (row) => row.command.type === 'withdrawPrompt',
   );
-  const waiting = batches.flat();
+  // Only an overfull retained backlog needs a second read. Empty polls retain their original cost.
+  if (waiting.length === 50 && retained.length > 25) {
+    const ordinary = await commands(conn).findMany({
+      filter: (f) =>
+        f.and([
+          f.string('computerId').eq(computerId),
+          f.string('id').notIncludes('withdraw:'),
+        ]),
+      sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
+      limit: 25,
+    });
+    waiting = [...ordinary, ...retained.slice(0, 25)];
+  }
   if (waiting.length === 0) return [];
   const disposable = waiting.filter(
     (row) => row.command.type !== 'withdrawPrompt',

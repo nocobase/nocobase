@@ -4,7 +4,12 @@ import {
 } from '@nocobase/acp-bridge/protocol';
 import { describe, expect } from 'vitest';
 import { AgentSessionsService } from '../../server/service.js';
-import { computers, events } from '../../server/store.js';
+import {
+  computers,
+  events,
+  enqueue,
+  takeCommands,
+} from '../../server/store.js';
 import { test } from '../helpers/database.js';
 
 const owner = { userId: 'owner' };
@@ -16,6 +21,47 @@ const generation = {
 };
 
 describe('queued message withdrawal', () => {
+  test('does not let retained withdrawals starve ordinary commands', async ({
+    database,
+  }) => {
+    const connection = database.connection();
+    const at = new Date().toISOString();
+    for (let index = 0; index < 51; index += 1)
+      await enqueue(
+        connection,
+        'computer',
+        {
+          type: 'withdrawPrompt',
+          sessionId: 'session',
+          promptId: `p${index}`,
+          seq: index + 1,
+        },
+        at,
+        `withdraw:${String(index).padStart(27, '0')}`,
+      );
+    await enqueue(
+      connection,
+      'computer',
+      { type: 'close', sessionId: 'other' },
+      at,
+    );
+    const first = await takeCommands(connection, 'computer');
+    expect(
+      first.filter((command) => command.type === 'withdrawPrompt'),
+    ).toHaveLength(25);
+    expect(first).toContainEqual({ type: 'close', sessionId: 'other' });
+    await enqueue(
+      connection,
+      'computer',
+      { type: 'close', sessionId: 'next' },
+      at,
+    );
+    const second = await takeCommands(connection, 'computer');
+    expect(second).toContainEqual({ type: 'close', sessionId: 'next' });
+    expect(
+      second.filter((command) => command.type === 'withdrawPrompt'),
+    ).toHaveLength(25);
+  });
   test('arbitrates execution, keeps other turns and images, persists offline withdrawal until acknowledgement, and rejects stale delivery', async ({
     database,
   }) => {
@@ -146,6 +192,47 @@ describe('queued message withdrawal', () => {
     await expect(
       service.withdraw(owner.userId, session.id, c.seq),
     ).rejects.toMatchObject({ key: 'promptStarted' });
+    await service.report(owner.userId, {
+      ...generation,
+      computerId,
+      sessionId: session.id,
+      batch: 2,
+      state: null,
+      events: [
+        {
+          kind: 'turnEnded',
+          seq: a.seq,
+          at: new Date(time).toISOString(),
+          promptId: a.promptId,
+          stopReason: 'end_turn',
+          usage: null,
+          error: null,
+        },
+      ],
+    });
+    expect((await service.getSession(owner, session.id)).running).toBe(true);
+    await service.report(owner.userId, {
+      ...generation,
+      computerId,
+      sessionId: session.id,
+      batch: 3,
+      state: null,
+      events: [
+        {
+          kind: 'turnEnded',
+          seq: c.seq,
+          at: new Date(time).toISOString(),
+          promptId: c.promptId,
+          stopReason: 'end_turn',
+          usage: null,
+          error: null,
+        },
+      ],
+    });
+    expect((await service.getSession(owner, session.id)).running).toBe(false);
+    expect(
+      await service.claim(owner.userId, request(c.seq, c.promptId)),
+    ).toEqual({ execute: false });
   });
 
   test('permits only one winner under simultaneous claim and withdrawal, and fences old bridges and unknown messages', async ({

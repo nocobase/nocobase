@@ -31,32 +31,43 @@ async function mount(
   database: DatabaseManager,
   options: { readonly images?: ImageStorage } = {},
 ): Promise<Hono> {
-  const required = (): MiddlewareHandler => async (context, next) => {
-    const id = context.req.header('x-user');
-    if (!id)
-      return context.json(
-        { error: { reason: 'AUTHENTICATION_REQUIRED' } },
-        401,
+  const required =
+    (options?: { readonly scopedKeys?: boolean }): MiddlewareHandler =>
+    async (context, next) => {
+      const id = context.req.header('x-user');
+      if (!id)
+        return context.json(
+          { error: { reason: 'AUTHENTICATION_REQUIRED' } },
+          401,
+        );
+      const computer = context.req.header('x-computer');
+      if (
+        computer &&
+        !options?.scopedKeys &&
+        !context.req.path.includes('/agentSessions/bridge/')
+      )
+        return context.json(
+          { error: { reason: 'SCOPED_CREDENTIAL_FORBIDDEN' } },
+          403,
+        );
+      context.set(
+        'auth' as never,
+        {
+          user: { id },
+          ...(computer
+            ? {
+                credential: {
+                  type: COMPUTER_CREDENTIAL,
+                  id: computer,
+                  userId: id,
+                  scheme: COMPUTER_KEY_SCHEME,
+                },
+              }
+            : {}),
+        } as never,
       );
-    const computer = context.req.header('x-computer');
-    context.set(
-      'auth' as never,
-      {
-        user: { id },
-        ...(computer
-          ? {
-              credential: {
-                type: COMPUTER_CREDENTIAL,
-                id: computer,
-                userId: id,
-                scheme: COMPUTER_KEY_SCHEME,
-              },
-            }
-          : {}),
-      } as never,
-    );
-    await next();
-  };
+      await next();
+    };
   const container = new ServiceContainer();
   container.instance(authenticationToken, { required } as never);
   container.instance(
@@ -97,6 +108,108 @@ const computer = {
 };
 
 describe('the agent sessions routes', () => {
+  test('protects withdrawal, claim and removal acknowledgement with ownership and computer identity', async ({
+    database,
+  }) => {
+    const router = await mount(database);
+    const generation = {
+      protocol: BRIDGE_PROTOCOL_VERSION,
+      bridgeStartedAt: 'withdrawal',
+    };
+    const {
+      data: { computerId },
+    } = await (
+      await call(router, 'POST', '/bridge/register', 'u1', {
+        ...generation,
+        computerId: null,
+        computer,
+      })
+    ).json();
+    const { data: session } = await (
+      await call(router, 'POST', '/sessions', 'u1', {
+        computerId,
+        agentId: 'codex',
+        cwd: '/home/zhou',
+        content: [{ type: 'text', text: 'Queued' }],
+      })
+    ).json();
+    const { data: transcript } = await (
+      await call(router, 'GET', `/sessions/${session.id}/events`, 'u1')
+    ).json();
+    const prompt = transcript[0];
+    const route = `/sessions/${session.id}/withdraw`;
+    expect(
+      (await call(router, 'POST', route, undefined, { seq: prompt.seq }))
+        .status,
+    ).toBe(401);
+    expect(
+      (await call(router, 'POST', route, 'u2', { seq: prompt.seq })).status,
+    ).toBe(404);
+    expect((await call(router, 'POST', route, 'u1', { seq: 0 })).status).toBe(
+      400,
+    );
+    expect(
+      (await call(router, 'POST', route, 'u1', { seq: prompt.seq }, computerId))
+        .status,
+    ).toBe(403);
+    const request = {
+      ...generation,
+      computerId,
+      sessionId: session.id,
+      seq: prompt.seq,
+      promptId: prompt.promptId,
+    };
+    expect(
+      (await call(router, 'POST', '/bridge/claim', undefined, request)).status,
+    ).toBe(401);
+    expect(
+      (await call(router, 'POST', '/bridge/claim', 'u2', request)).status,
+    ).toBe(404);
+    expect(
+      (
+        await call(
+          router,
+          'POST',
+          '/bridge/withdrawn',
+          'u1',
+          request,
+          'another',
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (await call(router, 'POST', route, 'u1', { seq: prompt.seq })).status,
+    ).toBe(204);
+    expect(
+      await (
+        await call(router, 'POST', '/bridge/claim', 'u1', request, computerId)
+      ).json(),
+    ).toEqual({ data: { execute: false } });
+    expect(
+      (
+        await call(
+          router,
+          'POST',
+          '/bridge/withdrawn',
+          'u1',
+          request,
+          computerId,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await call(
+          router,
+          'POST',
+          '/bridge/withdrawn',
+          'u1',
+          request,
+          computerId,
+        )
+      ).status,
+    ).toBe(200);
+  });
   test('validates submission IDs, protects confirmation ownership and hides internal metadata', async ({
     database,
   }) => {

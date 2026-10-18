@@ -79,6 +79,11 @@ interface Execution {
   readonly bridgeStartedAt?: string;
 }
 
+/** Fits the existing 36-character command key on every supported database. */
+function withdrawalCommandId(eventId: string): string {
+  return `withdraw:${createHash('sha256').update(eventId).digest('hex').slice(0, 27)}`;
+}
+
 /** Who reads: a person, and the language the answer is for. */
 export interface Viewer {
   readonly userId: string;
@@ -881,7 +886,7 @@ export class AgentSessionsService {
         session.computerId,
         { type: 'withdrawPrompt', sessionId, seq, promptId },
         now,
-        `withdraw:${prompt.id}`,
+        withdrawalCommandId(prompt.id),
       );
       const changed = await this.#append(
         conn,
@@ -936,7 +941,7 @@ export class AgentSessionsService {
         },
       });
       await commands(conn).deleteMany({
-        filter: { id: `withdraw:${prompt.id}`, computerId: computer.id },
+        filter: { id: withdrawalCommandId(prompt.id), computerId: computer.id },
       });
       const changed = await this.#append(
         conn,
