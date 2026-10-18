@@ -11,7 +11,7 @@ import {
 import type { AppWebSocket, AppWebSocketReadyState } from '../src/websocket.js';
 
 describe('realtime', () => {
-  it('subscribes, publishes, and unsubscribes through a typed topic', () => {
+  it('subscribes, publishes, and unsubscribes through a typed topic', async () => {
     const realtime = createRealtimeService();
     const topic = realtime.defineTopic<string, 'public'>('test:realtime', {
       audience: 'public',
@@ -19,16 +19,16 @@ describe('realtime', () => {
     const websocket = createTestWebSocket();
     const connection = realtime.connect(websocket);
 
-    realtime.handleClientMessage(
+    await realtime.handleClientMessage(
       connection,
       JSON.stringify({ type: 'subscribe', topic: topic.name }),
     );
-    topic.publish('tick');
-    realtime.handleClientMessage(
+    await topic.publish('tick');
+    await realtime.handleClientMessage(
       connection,
       JSON.stringify({ type: 'unsubscribe', topic: topic.name }),
     );
-    topic.publish('after unsubscribe');
+    await topic.publish('after unsubscribe');
 
     expect(websocket.messages).toEqual([
       expect.objectContaining({
@@ -44,10 +44,10 @@ describe('realtime', () => {
       expect.objectContaining({ type: 'unsubscribed', topic: topic.name }),
     ]);
     topic.close();
-    realtime.close();
+    await realtime.close();
   });
 
-  it('isolates user topics by authenticated principal', () => {
+  it('isolates user topics by authenticated principal', async () => {
     const realtime = createRealtimeService();
     const topic = realtime.defineTopic<
       { readonly kind: 'inbox.changed' },
@@ -63,12 +63,12 @@ describe('realtime', () => {
     ];
 
     for (const connection of connections) {
-      realtime.handleClientMessage(
+      await realtime.handleClientMessage(
         connection,
         JSON.stringify({ type: 'subscribe', topic: topic.name }),
       );
     }
-    topic.publishFor('user-1', { kind: 'inbox.changed' });
+    await topic.publishFor('user-1', { kind: 'inbox.changed' });
 
     expect(first.messages.at(-1)).toMatchObject({ type: 'event' });
     expect(second.messages).toHaveLength(1);
@@ -79,10 +79,10 @@ describe('realtime', () => {
       }),
     ]);
     topic.close();
-    realtime.close();
+    await realtime.close();
   });
 
-  it('delivers an authenticated public topic only to connections with a principal', () => {
+  it('delivers an authenticated public topic only to connections with a principal', async () => {
     const realtime = createRealtimeService();
     const topic = realtime.defineTopic<{ readonly ids: string[] }, 'public'>(
       'test:signed-in',
@@ -100,7 +100,7 @@ describe('realtime', () => {
     ];
     const visitor = realtime.connect(anonymous);
     for (const connection of [...signedIn, visitor])
-      realtime.handleClientMessage(
+      await realtime.handleClientMessage(
         connection,
         JSON.stringify({ type: 'subscribe', topic: topic.name }),
       );
@@ -110,43 +110,35 @@ describe('realtime', () => {
         code: 'AUTHENTICATION_REQUIRED',
       }),
     ]);
-    expect(() => realtime.subscribe(visitor, topic.name)).toThrow(
+    await expect(realtime.subscribe(visitor, topic.name)).rejects.toThrow(
       /requires authentication/u,
     );
-    expect(topic.publish({ ids: ['a'] }).subscriberCount).toBe(2);
+    await topic.publish({ ids: ['a'] });
     for (const socket of [first, second])
       expect(socket.messages.at(-1)).toMatchObject({
         type: 'event',
         payload: { ids: ['a'] },
       });
     expect(anonymous.messages).toHaveLength(1);
-    // A subscription made before the topic was registered is skipped too.
-    const early = createTestWebSocket();
-    const earlyVisitor = realtime.connect(early);
-    realtime.subscribe(earlyVisitor, 'test:late');
-    const late = realtime.defineTopic<string, 'public'>('test:late', {
-      audience: 'public',
-      authenticated: true,
-    });
-    expect(late.publish('hidden').subscriberCount).toBe(0);
-    expect(early.messages).toEqual([]);
-    late.close();
+    await expect(realtime.subscribe(visitor, 'test:late')).rejects.toThrow(
+      /not registered/u,
+    );
     // A topic that does not opt in keeps reaching anonymous connections.
-    realtime.handleClientMessage(
+    await realtime.handleClientMessage(
       visitor,
       JSON.stringify({ type: 'subscribe', topic: open.name }),
     );
-    expect(open.publish('tick').subscriberCount).toBe(1);
+    await open.publish('tick');
     expect(anonymous.messages.at(-1)).toMatchObject({
       type: 'event',
       payload: 'tick',
     });
     topic.close();
     open.close();
-    realtime.close();
+    await realtime.close();
   });
 
-  it('disconnects all realtime connections for one user', () => {
+  it('disconnects all realtime connections for one user', async () => {
     const realtime = createRealtimeService();
     const first = createTestWebSocket();
     const second = createTestWebSocket();
@@ -155,13 +147,13 @@ describe('realtime', () => {
     realtime.connect(second, { principal: { userId: 'user-1' } });
     realtime.connect(other, { principal: { userId: 'user-2' } });
 
-    expect(realtime.disconnectUser('user-1')).toBe(2);
+    expect(await realtime.disconnectUser('user-1')).toBe(2);
     expect(first.readyState).toBe(3);
     expect(second.readyState).toBe(3);
     expect(other.readyState).toBe(1);
-    expect(realtime.disconnectUser('user-1')).toBe(0);
+    expect(await realtime.disconnectUser('user-1')).toBe(0);
 
-    realtime.close();
+    await realtime.close();
   });
 
   it('checks browser origins and resolves a principal before accepting a connection', async () => {
@@ -197,7 +189,7 @@ describe('realtime', () => {
     });
     expect(forbidden).toBeInstanceOf(Response);
     expect((forbidden as Response).status).toBe(403);
-    realtime.close();
+    await realtime.close();
   });
 });
 
@@ -224,3 +216,37 @@ function createTestWebSocket(): TestWebSocket {
     },
   };
 }
+
+it('invalidates the original session and never recreates a connection after a transport error', async () => {
+  const realtime = createRealtimeService();
+  realtime.registerTopic('test:user', { audience: 'user' });
+  let sessionId = 'session-1';
+  const container = new ServiceContainer();
+  container.instance(realtimeServiceToken, realtime);
+  container.instance(realtimePrincipalResolverToken, {
+    resolve: async () => ({ userId: 'user-1', sessionId }),
+  });
+  const events = await createRealtimeWebSocketHandler(container)(
+    new Request('http://localhost/ws'),
+  );
+  if (!events || events instanceof Response)
+    throw new Error('Expected a websocket handler.');
+  const socket = createTestWebSocket();
+  await events.onOpen?.({ type: 'open' }, socket);
+  sessionId = 'session-2';
+  await events.onMessage?.(
+    {
+      type: 'message',
+      data: JSON.stringify({ type: 'subscribe', topic: 'test:user' }),
+    },
+    socket,
+  );
+  expect(socket.readyState).toBe(3);
+  await events.onError?.({ type: 'error', error: new Error('failed') }, socket);
+  await events.onMessage?.(
+    { type: 'message', data: JSON.stringify({ type: 'ping' }) },
+    socket,
+  );
+  expect(realtime.diagnostics().connections).toBe(0);
+  await realtime.close();
+});
