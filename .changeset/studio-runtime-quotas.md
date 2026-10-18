@@ -11,6 +11,3 @@ Runtime API and CLI: runtime get returns directory totals without directory rows
 
 Classify quota revision races as retryable REVISION_CONFLICT while known-reset clears fail with QUOTA_RESET_KNOWN / FAILED_PRECONDITION.
 
-Refresh overdue quota displays when reset data changes or subscriptions replan a delayed shared expiry timer, while notifying only affected rows.
-
-Keep quota displays consistent with selected executors, empty workspaces and mobile agent tables; preserve injected claim clocks and package-owned conflict tests.

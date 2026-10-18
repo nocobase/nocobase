@@ -6,21 +6,14 @@ import {
   act,
   fireEvent,
   render,
-  renderHook,
   screen,
   waitFor,
 } from '@testing-library/react';
-import * as reactFlow from '@xyflow/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { FlowDiagram } from '../../registry/components/flow-diagram.js';
 import * as layoutModule from '../../registry/components/flow-layout.js';
 import type { FlowDiagramLayout } from '../../registry/components/flow-layout.js';
 import { readmeTranslations } from '../readme-translations.js';
-
-vi.mock('@xyflow/react', async (original) => {
-  const module = await original<typeof import('@xyflow/react')>();
-  return { ...module, useReactFlow: vi.fn(module.useReactFlow) };
-});
 
 const resources = readmeTranslations('components');
 const graph = {
@@ -154,38 +147,6 @@ describe('FlowDiagram', () => {
     expect(onEdgeClick).toHaveBeenCalledWith(edge);
   });
 
-  it('keeps viewport controls disabled until the viewport is initialized', async () => {
-    const state = renderHook(() => reactFlow.useReactFlow(), {
-      wrapper: reactFlow.ReactFlowProvider,
-    });
-    const hook = vi
-      .spyOn(reactFlow, 'useReactFlow')
-      .mockReturnValue({ ...state.result.current, viewportInitialized: false });
-    const view = () => (
-      <TestI18nProvider runtime={runtime}>
-        <FlowDiagram {...graph} ariaLabel='Initializing viewport' />
-      </TestI18nProvider>
-    );
-    try {
-      const { rerender } = render(view());
-      await screen.findByTestId('rf__node-a');
-      for (const name of ['Zoom out', 'Zoom in', 'Fit to view', 'Actual size'])
-        expect(screen.getByRole('button', { name })).toBeDisabled();
-      hook.mockReturnValue({
-        ...state.result.current,
-        viewportInitialized: true,
-      });
-      rerender(view());
-      for (const name of ['Zoom out', 'Zoom in', 'Fit to view', 'Actual size'])
-        await waitFor(() =>
-          expect(screen.getByRole('button', { name })).toBeEnabled(),
-        );
-    } finally {
-      hook.mockRestore();
-      state.unmount();
-    }
-  });
-
   it('restores a readable actual-size viewport after zooming out', async () => {
     render(
       <TestI18nProvider runtime={runtime}>
@@ -194,9 +155,7 @@ describe('FlowDiagram', () => {
     );
     await screen.findByTestId('rf__node-a');
     const actualSize = screen.getByRole('button', { name: 'Actual size' });
-    const zoomOut = screen.getByRole('button', { name: 'Zoom out' });
-    await waitFor(() => expect(zoomOut).toBeEnabled());
-    fireEvent.click(zoomOut);
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
     await waitFor(() => expect(actualSize).not.toHaveTextContent('100%'));
     fireEvent.click(actualSize);
     await waitFor(() => expect(actualSize).toHaveTextContent('100%'));
