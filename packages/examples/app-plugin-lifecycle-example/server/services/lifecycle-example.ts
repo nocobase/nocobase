@@ -17,10 +17,6 @@ import { fulfilmentLifecycle } from '../lifecycles/fulfilment.js';
 import { orderLifecycle } from '../lifecycles/order.js';
 import { purchaseLifecycle } from '../lifecycles/purchase.js';
 import { subscriptionLifecycle } from '../lifecycles/subscription.js';
-import {
-  reviewerDemoLifecycle,
-  reviewerLiveDemoLifecycle,
-} from '../lifecycles/reviewer-demo.js';
 import { expenseLifecycle } from '../lifecycles/expense.js';
 import { ticketLifecycle } from '../lifecycles/ticket.js';
 import type { ExampleLifecycleName, Plain } from '../tokens.js';
@@ -104,8 +100,6 @@ export class LifecycleExampleService {
     return [
       ticketLifecycle,
       expenseLifecycle,
-      reviewerDemoLifecycle,
-      reviewerLiveDemoLifecycle,
       orderLifecycle,
       invoiceLifecycle,
       exportLifecycle,

@@ -1,3 +1,4 @@
+import { workflowNamesEnUS } from '../../shared/workflow-names.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
@@ -67,6 +68,137 @@ const enUS = {
     },
   },
   workflows: {
+    operation: 'Operation',
+    resultingState: 'Resulting state',
+    initialState: 'Initial',
+    finalState: 'Final',
+    processDescription: 'Workflow description',
+    processSummary:
+      '{{title}} has {{states}} states and {{transitions}} transitions. The diagram shows how records move between states.',
+    initialStates: 'Initial states',
+    finalStates: 'Final states',
+    stateTransitions: 'State transitions',
+    manualTransition: 'User action',
+    automaticTransition: 'Automatic',
+    noTransitions: 'No state transitions are defined.',
+    processDiagram: 'Workflow diagram',
+
+    dragCategory: 'Drag to reorder {{title}}',
+    categoryMenu: 'Category menu: {{title}}',
+    moveCategoryUp: 'Move up',
+    moveCategoryDown: 'Move down',
+    savingCategories: 'Saving category changes',
+    editCategoryTitle: 'Edit category',
+    categoryDialogHelp: 'Choose a name for this workflow category.',
+    changeCategory: 'Change category: {{title}}',
+
+    readOnlyParameters:
+      'This workflow has configurable parameters. Your access is read-only.',
+    unsavedParameters: 'Your parameter changes have not been saved.',
+    keepParameterEditing: 'Keep editing',
+    discardParameterChanges: 'Discard changes',
+    reloadParameterRevision: 'Load latest revision and keep draft',
+    nodeParametersDescription:
+      'Only parameters associated with this node or transition are shown. Other workflow parameters remain unchanged.',
+    workflowParameters: 'Workflow parameters',
+    parameterRevision: 'Workflow parameter version {{revision}}',
+    parametersTitle: '{{name}} parameters',
+    parametersDescription:
+      'These settings apply only to this workflow. Existing snapshots remain unchanged.',
+    discardParameters: 'Discard unsaved parameter changes?',
+    noParameters: 'This workflow has no configurable parameters.',
+    addParameterEntry: 'Add entry',
+    removeParameterEntry: 'Remove entry',
+    saveParameters: 'Save parameters',
+    parametersSaved: 'Parameters saved.',
+    parametersFailed: 'Could not save parameters.',
+    officeRules: {
+      removeTitle: 'Remove department “{{name}}”?',
+      removeAction: 'Remove department',
+      reloadTitle: 'Discard edits and reload?',
+      reloadAction: 'Discard and reload',
+
+      invalidDepartmentName:
+        'Use a unique department name of 1–100 characters.',
+      clerksRequired: 'Select at least one clerk for this department.',
+      removeSelectedDepartment:
+        'Clear this department from Allowed departments before removing it. Other workflows may also reference it.',
+
+      removeDepartment:
+        'Remove shared department “{{name}}”? This affects new dispatch rows in all office workflows. Existing task participants are retained.',
+      reloadConfirm:
+        'Reload the latest configuration and discard your unsaved workflow and shared department changes?',
+
+      title: 'Dispatch rules',
+      help: 'Resolve participants from the shared organization when adding a dispatch row. Existing rows keep their participants.',
+      departments: 'Allowed departments',
+      allDepartments:
+        'No selection allows all shared departments. Selecting departments restricts distribution to those departments.',
+      ownDepartment: 'Only allow the department of the current task',
+      assigneeRole: 'Default executor role',
+      ccHeads: 'Copy department heads by default',
+      ccLeaders: 'Copy leaders by default',
+      sharedOrganization: 'Shared departments and role members',
+      sharedHelp:
+        'Shared by incoming documents, clerk tasks and team tasks. Changes apply to new dispatch rows in all three workflows. Maintain role membership here; workflow rules select who receives each task.',
+      legacyHelp:
+        'Legacy workflow departments are combined here. For duplicate names, incoming settings take precedence, then clerk and team settings. Saving shared departments replaces the legacy sources for future rows.',
+      searchPeople: 'Search people for {{role}}',
+      noPeople:
+        'No additional matching people. Clear the search to show selected members only.',
+      invalidOrganization: 'Check department names and clerk membership below.',
+      departmentInUse:
+        'This department is selected by another workflow. Update that workflow before renaming or removing it.',
+    },
+    parameterFields: {
+      departments: 'Departments',
+      managementGroups: 'Management groups',
+      holidays: 'Work calendar',
+      name: 'Name',
+      clerks: 'Clerks',
+      heads: 'Department heads',
+      leaders: 'Leaders',
+      members: 'Members',
+      date: 'Date',
+      workday: 'Working day (otherwise a holiday)',
+    },
+    parameterSettings: 'Parameter settings',
+    back: 'Back',
+    systemManagement: 'System management',
+    allCategories: 'All categories',
+    uncategorized: 'Uncategorized',
+    manageCategories: 'Manage categories',
+    categoryHelp:
+      'Organize workflows without changing their definitions. Lower sort orders appear first.',
+    discardChanges: 'Discard unsaved category changes?',
+    editCategory: 'Edit',
+    deleteCategory: 'Delete',
+    deleteCategoryConfirm:
+      'Delete “{{title}}”? Its workflows will become uncategorized.',
+    confirmDelete: 'Confirm deletion',
+    cancel: 'Cancel',
+    addCategory: 'New category',
+    categoryColor: 'Color',
+    categoryColors: {
+      gray: 'Gray',
+      red: 'Red',
+      orange: 'Orange',
+      amber: 'Amber',
+      green: 'Green',
+      teal: 'Teal',
+      blue: 'Blue',
+      indigo: 'Indigo',
+      purple: 'Purple',
+      pink: 'Pink',
+    },
+    categoryName: 'Category name',
+    categoryOrder: 'Sort order',
+    save: 'Save',
+    saveFailed:
+      'Could not save. Check your access and refresh the list before retrying.',
+    category: 'Category',
+    categoryFilter: 'Filter by category',
+
     group: 'Workflow',
     businessGroup: 'Business workflows',
     managementGroup: 'Workflow management',
@@ -78,6 +210,9 @@ const enUS = {
     definition: 'Workflow definition',
     execution: 'Workflow execution',
     executionCount: 'Executions',
+    executionActivity: 'Executions',
+    lastExecutedAt: 'Last {{date}}',
+    neverExecuted: 'Not executed yet',
     workflow: 'Workflow',
     source: 'Source',
     states: 'States',
@@ -89,6 +224,7 @@ const enUS = {
     all: 'All workflows',
     filter: 'Filter by workflow',
     clear: 'Clear filter',
+    filterByName: 'Filter by name',
     refresh: 'Refresh',
     previous: 'Previous',
     next: 'Next',
@@ -102,11 +238,10 @@ const enUS = {
     notFound: 'This workflow or execution no longer exists.',
     signIn: 'Sign in to view workflows.',
     retry: 'Retry',
+    executionCountLink: 'Executions: {{count}}',
     viewExecutions: 'View executions',
     parameterHint:
       'Click a configured node or transition to adjust its runtime parameters. Other nodes show their definition details. Changes apply according to each workflow’s snapshot or live mode.',
-    noParameters:
-      'This workflow has no configurable node parameters. Click a node or transition to inspect its definition.',
     currentState: 'Displayed state',
     latest: 'Latest progress',
     historyHint:
@@ -135,24 +270,7 @@ const enUS = {
       lifecycle: 'Lifecycle examples',
       office: 'Office workflows',
     },
-    names: {
-      tickets: 'Help desk',
-      expenses: 'Expense approval',
-      reviewerDemo: 'Reviewer approval (snapshot)',
-      reviewerLiveDemo: 'Reviewer approval (live)',
-      orders: 'Order payment',
-      invoices: 'E-invoicing',
-      exports: 'Data exports',
-      purchases: 'Flash sale',
-      fulfilments: 'Shipping',
-      subscriptions: 'Subscriptions',
-      dataRequests: 'Data usage requests',
-      extractions: 'Data extraction tasks',
-      incoming: 'Incoming documents',
-      clerkTasks: 'Clerk tasks',
-      teamTasks: 'Team tasks',
-      executorTasks: 'Executor tasks',
-    },
+    names: workflowNamesEnUS,
     runStates: {
       queued: 'Queued',
       running: 'Running',

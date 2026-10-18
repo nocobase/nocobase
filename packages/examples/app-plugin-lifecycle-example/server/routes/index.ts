@@ -241,8 +241,6 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     for (const [lifecycle, noun] of [
       ['tickets', 'Ticket'],
       ['expenses', 'Expense'],
-      ['reviewerDemo', 'ReviewerDemo'],
-      ['reviewerLiveDemo', 'ReviewerLiveDemo'],
       ['orders', 'Order'],
       ['invoices', 'Invoice'],
       ['exports', 'Export'],
@@ -254,12 +252,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         basePath: BASE,
         lifecycle,
         noun,
-        ...([
-          'tickets',
-          'expenses',
-          'reviewerDemo',
-          'reviewerLiveDemo',
-        ].includes(lifecycle)
+        ...(['tickets', 'expenses'].includes(lifecycle)
           ? {
               authorizeParameters: (actor: string) => {
                 for (const group of service.runtime.describe(lifecycle)
@@ -270,11 +263,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           : {}),
         // The durable flows are about waiting for the outside, not about who
         // may act: they act as the signed-in user, with no persona.
-        persona:
-          lifecycle === 'tickets' ||
-          lifecycle === 'expenses' ||
-          lifecycle === 'reviewerDemo' ||
-          lifecycle === 'reviewerLiveDemo',
+        persona: lifecycle === 'tickets' || lifecycle === 'expenses',
       });
 
     // `:recordId`, as the record routes above name it: one path, one parameter.
