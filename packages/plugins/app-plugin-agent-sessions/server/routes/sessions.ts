@@ -38,6 +38,7 @@ import {
   SessionWorkSchema,
   TranscriptEventSchema,
   UpdateSessionInput,
+  WithdrawInput,
 } from './schemas.js';
 
 const tags = ['AgentSessions'];
@@ -557,21 +558,15 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
       responses: {
         204: emptyResponse('Withdrawal requested or already confirmed.'),
         ...errors,
-        400: notWritable,
+        400: apiErrorResponse(
+          400,
+          'The message has started processing, was delivered to an older bridge, or the session is archived.',
+        ),
         404: sessionNotFound,
       },
     }),
     apiValidator('param', SessionParams),
-    apiValidator(
-      'json',
-      z.object({
-        seq: z
-          .number()
-          .int()
-          .positive()
-          .meta({ description: 'The original prompt event sequence.' }),
-      }),
-    ),
+    apiValidator('json', WithdrawInput),
     async (context) => {
       await service.withdraw(
         userId(context),
