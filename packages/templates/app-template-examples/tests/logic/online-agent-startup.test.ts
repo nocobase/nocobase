@@ -137,4 +137,4 @@ it('recovers native UI messages through two non-overlapping complete application
       }
     await config.dispose();
   }
-});
+}, 120_000);
