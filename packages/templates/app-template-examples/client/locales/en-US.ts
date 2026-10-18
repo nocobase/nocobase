@@ -288,6 +288,7 @@ const enUS = {
     group: 'Agents',
     agents: 'Agents',
     runtimes: 'Runtimes',
+    connectRuntime: 'Connect runtime',
     models: 'Models',
     openModels: 'Open models',
     checkingModels: 'Checking chat models…',
