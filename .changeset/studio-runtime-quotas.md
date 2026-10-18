@@ -10,3 +10,5 @@ Report coding account quota windows, filter scoped exhausted tools before claims
 Runtime API and CLI: runtime get returns directory totals without directory rows; runtime list omits models, policy, variables, quota details and load, and caps takes at three with takesCount. Use the paginated runtime workspaces command for directory rows. Runtime quota clear takes structured tool/scope/target/window fields and no client revision; only unknown-reset marks may be cleared.
 
 Classify quota revision races as retryable REVISION_CONFLICT while known-reset clears fail with QUOTA_RESET_KNOWN / FAILED_PRECONDITION.
+
+Refresh overdue quota displays when reset data changes or subscriptions replan a delayed shared expiry timer, while notifying only affected rows.
