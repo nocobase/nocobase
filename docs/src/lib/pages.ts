@@ -17,7 +17,8 @@ import { extractPageMeta } from './page-meta.ts';
  * others keep their Markdown source — it is what `llms.txt` and the page's `.md` copy publish — but render a
  * hand-built page instead of the body.
  */
-export type PageKind = 'doc' | 'home' | 'comparison' | 'capability-overview';
+export type PageKind =
+  'doc' | 'home' | 'comparison' | 'capability-overview' | 'deployment';
 
 export interface DocPage {
   entry: DocEntry;
@@ -49,6 +50,7 @@ function pageKind(
   route: string,
   pageName: string | undefined,
 ): { kind: PageKind; module?: string } {
+  if (pageName === 'deployment') return { kind: 'deployment' };
   if (pageName === 'home') return { kind: 'home' };
   if (pageName === 'version-comparison') return { kind: 'comparison' };
   const module = /^\/capabilities\/([^/]+)\/?$/.exec(route)?.[1];
@@ -120,7 +122,7 @@ export function translationsOf(
  * would ship the home page's styles on every Markdown page.
  *
  * - `doc`: `src/pages/[...slug].astro`, `slug` is the public path;
- * - `home`, `comparison`: `src/pages/[...base]/…`, `base` is the language base (`zh-CN`, or nothing for English);
+ * - `home`, `comparison`, `deployment`: `src/pages/[...base]/…`, `base` is the language base (`zh-CN`, or nothing for English);
  * - `capability-overview`: `src/pages/[...base]/capabilities/[module].astro`.
  */
 export async function staticPathsOf(kind: PageKind) {
