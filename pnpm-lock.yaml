@@ -687,6 +687,9 @@ importers:
       '@nocobase/realtime':
         specifier: workspace:^
         version: link:../../libs/realtime
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.4(react@19.2.8)
     devDependencies:
       '@nocobase/dev-config':
         specifier: workspace:*

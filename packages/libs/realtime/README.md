@@ -122,6 +122,7 @@ Application components reuse the host client. Use `enabled: false` or a null top
 import {
   useRealtimeTopic,
   useRealtimeRefresh,
+  refreshRealtimeQueries,
   useRealtimeConnectionState,
 } from '@nocobase/app-client';
 
@@ -129,11 +130,8 @@ function Orders({ visible }: { visible: boolean }) {
   const connection = useRealtimeConnectionState();
   useRealtimeRefresh(
     'orders:changed',
-    () =>
-      queryClient.invalidateQueries(
-        { queryKey: ['orders'] },
-        { cancelRefetch: false },
-      ),
+    (signal) =>
+      refreshRealtimeQueries(queryClient, { queryKey: ['orders'] }, signal),
     { enabled: visible, delayMs: 100 },
   );
   return <OrdersTable connection={connection} />;

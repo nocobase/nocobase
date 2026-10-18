@@ -13,7 +13,7 @@ export interface InboxFocusTarget {
 export function subscribeToInboxInvalidations(
   realtime: Pick<RealtimeClient, 'watch'>,
   target: InboxFocusTarget,
-  refresh: () => void,
+  refresh: (signal: AbortSignal) => void | Promise<unknown>,
 ): () => void {
   const scheduled = createRealtimeRefresh(refresh);
   const subscription = realtime.watch<unknown>(
@@ -25,10 +25,10 @@ export function subscribeToInboxInvalidations(
       },
     },
   );
-  target.addEventListener('focus', refresh);
+  target.addEventListener('focus', scheduled.request);
 
   return (): void => {
-    target.removeEventListener('focus', refresh);
+    target.removeEventListener('focus', scheduled.request);
     subscription.close();
     scheduled.close();
   };

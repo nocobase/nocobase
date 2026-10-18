@@ -1,6 +1,7 @@
 import {
   ApiClientError,
   createRealtimeRefresh,
+  refreshRealtimeQueries,
   realtimeClientToken,
   useService,
 } from '@nocobase/app-client';
@@ -56,22 +57,23 @@ function RealtimeRefresh(): null {
   useEffect(() => {
     let full = false;
     let pending: PmChangeEvent[] = [];
-    const scheduled = createRealtimeRefresh(async () => {
+    const scheduled = createRealtimeRefresh(async (signal) => {
       const all = full;
       const changes = pending;
       full = false;
       pending = [];
       if (all || changes.length === 0) {
-        await queryClient.invalidateQueries(
+        await refreshRealtimeQueries(
+          queryClient,
           { queryKey: pmKeys.all },
-          { cancelRefetch: false },
+          signal,
         );
         return;
       }
       const requests: Promise<void>[] = [];
       const invalidate = (queryKey: readonly unknown[]) => {
         requests.push(
-          queryClient.invalidateQueries({ queryKey }, { cancelRefetch: false }),
+          refreshRealtimeQueries(queryClient, { queryKey }, signal),
         );
       };
       if (changes.some((change) => change.domain === 'labels'))
@@ -89,12 +91,13 @@ function RealtimeRefresh(): null {
           const ids = new Set(named.flatMap((ids) => (ids ? [...ids] : [])));
           const segments = changedIssueSegments(queryClient, ids);
           requests.push(
-            queryClient.invalidateQueries(
+            refreshRealtimeQueries(
+              queryClient,
               {
                 queryKey: ['pm', 'issue'],
                 predicate: (query) => isIssueRead(query.queryKey, segments),
               },
-              { cancelRefetch: false },
+              signal,
             ),
           );
         }

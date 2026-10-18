@@ -4,6 +4,7 @@
  */
 import {
   realtimeClientToken,
+  refreshRealtimeQueries,
   useApiClient,
   useService,
   type ApiClient,
@@ -297,6 +298,7 @@ export function useLiveSessions(): void {
     };
     const slots = new Map<string, Slot>();
     let disposed = false;
+    const controller = new AbortController();
     const arm = (slot: Slot): void => {
       if (disposed || slot.timer || slot.running) return;
       const delay = slot.started
@@ -312,15 +314,15 @@ export function useLiveSessions(): void {
       slot.pending = false;
       slot.running = true;
       slot.started = Date.now();
-      // An existing read may predate this notification. Follow it with a fresh read after it settles.
-      if (client.getQueryState(slot.key)?.fetchStatus === 'fetching')
-        slot.pending = true;
       try {
         // Never keep aborting a slow read during a continuous stream.
-        await client.invalidateQueries(
+        await refreshRealtimeQueries(
+          client,
           { queryKey: slot.key },
-          { cancelRefetch: false },
+          controller.signal,
         );
+      } catch (error) {
+        console.error('Realtime session refresh failed.', error);
       } finally {
         slot.running = false;
         if (slot.pending) arm(slot);
@@ -397,6 +399,7 @@ export function useLiveSessions(): void {
     );
     const release = (): void => {
       disposed = true;
+      controller.abort();
       void cancelChoiceDiscoveries(client);
       for (const slot of slots.values()) clearTimeout(slot.timer);
       // No bridge generation is exposed to the browser. Do not reuse discovery across an unobserved interval.

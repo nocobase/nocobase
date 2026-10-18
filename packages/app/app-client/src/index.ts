@@ -1,3 +1,4 @@
+export { refreshRealtimeQueries } from './realtime-query.js';
 export {
   apiClientToken,
   ClientApplication,

@@ -54,12 +54,16 @@ describe('in-app notification Client subscription', () => {
     });
     await vi.advanceTimersByTimeAsync(100);
     focusListener?.(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(100);
 
     expect(refresh).toHaveBeenCalledTimes(3);
 
     cleanup();
 
-    expect(target.removeEventListener).toHaveBeenCalledWith('focus', refresh);
+    expect(target.removeEventListener).toHaveBeenCalledWith(
+      'focus',
+      focusListener,
+    );
     expect(unsubscribeEvent).toHaveBeenCalledOnce();
   });
 });

@@ -6,6 +6,7 @@
  */
 import {
   useRealtimeRefresh,
+  refreshRealtimeQueries,
   useApiClient,
   type ApiClient,
 } from '@nocobase/app-client';
@@ -532,10 +533,11 @@ export function useKnowledgeApi(): KnowledgeApi {
 /** Refetches open knowledge views when the server announces a change. */
 export function useKnowledgeRefresh(): void {
   const queryClient = useQueryClient();
-  useRealtimeRefresh(KNOWLEDGE_TOPIC, () =>
-    queryClient.invalidateQueries(
+  useRealtimeRefresh(KNOWLEDGE_TOPIC, (signal) =>
+    refreshRealtimeQueries(
+      queryClient,
       { queryKey: knowledgeKeys.all },
-      { cancelRefetch: false },
+      signal,
     ),
   );
 }
