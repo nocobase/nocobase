@@ -42,8 +42,33 @@ afterEach(async () => {
 });
 describeMigration('202610180001_create_realtime_example_exports', {
   sources: [source],
-  up: async ({ expectCollection }) => {
+  up: async ({ connection, expectCollection }) => {
     await expectCollection('realtimeExampleExports').toHaveField('userId');
+    await expectCollection('realtimeExampleExports').toHaveField('content');
+    const content =
+      '\uFEFFid,title\r\n' +
+      Array.from(
+        { length: 500 },
+        (_, index) => `${index},"${'Quarterly report '.repeat(10)}"\r\n`,
+      ).join('');
+    expect(Buffer.byteLength(content, 'utf8')).toBeGreaterThan(65_535);
+    const id = crypto.randomUUID();
+    await connection.query
+      .insertInto('realtimeExampleExports')
+      .values({
+        id,
+        userId: 'alice',
+        status: 'completed',
+        createdAt: '2026-10-18T00:00:00',
+        content,
+      })
+      .execute();
+    const stored = await connection.query
+      .selectFrom('realtimeExampleExports')
+      .select('content')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    expect(stored?.content).toBe(content);
   },
   down: async ({ expectCollection }) => {
     await expectCollection('realtimeExampleExports').not.toExist();

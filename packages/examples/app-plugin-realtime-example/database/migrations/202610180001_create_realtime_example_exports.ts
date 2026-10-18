@@ -2,7 +2,7 @@ import { defineMigration, type MigrationDefinition } from '@nocobase/db';
 
 const migration: MigrationDefinition = defineMigration({
   name: '202610180001_create_realtime_example_exports',
-  async up({ builder }) {
+  async up({ builder, connection }) {
     await builder.createCollection('realtimeExampleExports', (c) => {
       c.uuid('id').primary().notNull();
       c.string('userId', { length: 255 }).notNull();
@@ -13,7 +13,9 @@ const migration: MigrationDefinition = defineMigration({
       c.string('createdAt', { length: 32 }).notNull();
       c.string('finishedAt', { length: 32 });
       c.string('reason', { length: 32 });
-      c.text('content');
+      c.text('content', {
+        db: connection.dialect === 'mysql' ? { nativeType: 'longtext' } : {},
+      });
       c.index('userId');
     });
   },
