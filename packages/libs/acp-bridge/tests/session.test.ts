@@ -156,36 +156,81 @@ function texts(events: readonly BridgeEvent[]): string[] {
 describe('BridgeSession', () => {
   it('withdraws only B while A awaits permission and C remains queued, deduplicating delayed delivery', async () => {
     const claim = vi.fn(async () => true);
-    const { session, target, events } = start({}, FAKE, process.env, undefined, undefined, undefined, undefined, claim);
+    const { session, target, events } = start(
+      {},
+      FAKE,
+      process.env,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      claim,
+    );
     prompt(session, target, 'a', 'permission');
-    const asked = await until(events, (event) => event.kind === 'permissionRequested');
-    if (asked.kind !== 'permissionRequested') throw new Error('Expected permission');
+    const asked = await until(
+      events,
+      (event) => event.kind === 'permissionRequested',
+    );
+    if (asked.kind !== 'permissionRequested')
+      throw new Error('Expected permission');
     prompt(session, target, 'b', 'never execute');
     prompt(session, target, 'c', 'next');
     expect(session.withdraw('a')).toBe(false);
     expect(session.withdraw('b')).toBe(true);
     expect(session.withdraw('b')).toBe(true);
     prompt(session, target, 'b', 'late duplicate');
-    session.handle({ type: 'permission', session: target, requestId: asked.requestId, optionId: 'yes' });
-    await until(events, (event) => event.kind === 'turnEnded' && event.promptId === 'c');
+    session.handle({
+      type: 'permission',
+      session: target,
+      requestId: asked.requestId,
+      optionId: 'yes',
+    });
+    await until(
+      events,
+      (event) => event.kind === 'turnEnded' && event.promptId === 'c',
+    );
     expect(claim.mock.calls.map((call) => call[0])).toEqual(['a', 'c']);
-    expect(events.filter((event) => event.kind === 'turnEnded').map((event) => event.promptId)).toEqual(['a', 'c']);
+    expect(
+      events
+        .filter((event) => event.kind === 'turnEnded')
+        .map((event) => event.promptId),
+    ).toEqual(['a', 'c']);
     expect(texts(events)).toContain('permission: yes');
   });
 
   it('removes a head awaiting a claim response before opening an agent, then runs the next prompt once', async () => {
     let release!: (execute: boolean) => void;
-    const pending = new Promise<boolean>((resolve) => { release = resolve; });
-    const claim = vi.fn((promptId: string) => promptId === 'b' ? pending : Promise.resolve(true));
-    const { session, target, events } = start({}, FAKE, process.env, undefined, undefined, undefined, undefined, claim);
+    const pending = new Promise<boolean>((resolve) => {
+      release = resolve;
+    });
+    const claim = vi.fn((promptId: string) =>
+      promptId === 'b' ? pending : Promise.resolve(true),
+    );
+    const { session, target, events } = start(
+      {},
+      FAKE,
+      process.env,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      claim,
+    );
     prompt(session, target, 'b', 'never execute');
     prompt(session, target, 'c', 'next');
     expect(session.state).toBeNull();
     expect(session.withdraw('b')).toBe(true);
     release(false);
-    await until(events, (event) => event.kind === 'turnEnded' && event.promptId === 'c');
+    await until(
+      events,
+      (event) => event.kind === 'turnEnded' && event.promptId === 'c',
+    );
     prompt(session, target, 'c', 'duplicate');
-    expect(events.filter((event) => event.kind === 'turnStarted').map((event) => event.promptId)).toEqual(['c']);
+    expect(
+      events
+        .filter((event) => event.kind === 'turnStarted')
+        .map((event) => event.promptId),
+    ).toEqual(['c']);
     expect(claim.mock.calls.map((call) => call[0])).toEqual(['b', 'c']);
   });
   it.each(['permission', 'modes', 'fixed', 'empty', 'unsupported'])(
