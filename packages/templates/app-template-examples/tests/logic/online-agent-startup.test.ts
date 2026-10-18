@@ -107,10 +107,11 @@ it('recovers native UI messages through two non-overlapping complete application
       runnerOnlineAgent: { version: 1, closingRunId: 'fixture-run' },
     });
     const saved = recovered.first.messages;
-    expect(saved).toHaveLength(6);
+    expect(saved).toHaveLength(8);
     expect(rows.find((row) => row.id === 'unfinished').lastSeq).toBe(2);
     expect(rows.find((row) => row.id === 'saved').lastSeq).toBe(2);
     expect(rows.find((row) => row.id === 'approval').lastSeq).toBe(2);
+    expect(rows.find((row) => row.id === 'background').lastSeq).toBe(2);
     const ui = await validateAppUIMessages(
       saved.map((row) => row.content.original),
     );

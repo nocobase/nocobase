@@ -24,7 +24,12 @@ import { strictJson } from './strict-json.js';
 import type { NativeUIChunk } from './native.js';
 
 /** The one persisted SDK message: raw tool results and provider/approval evidence stay here. */
-export type NativeMessage = UIMessage<AppUIMessageMetadata>;
+export type NativeMessage = UIMessage<
+  AppUIMessageMetadata & {
+    inputProviderOptions?: ModelMessage['providerOptions'];
+    inputFiles?: number[];
+  }
+>;
 type ToolPart = Extract<UIMessage['parts'][number], { toolCallId: string }>;
 type PublicPart = AppUIMessage['parts'][number];
 const toolError = 'The tool could not complete.';
@@ -140,11 +145,43 @@ export class NativeMessages {
       }
     }
     // Finalize SDK construction's optional properties only after checking raw tool values.
-    const values = jsonSafe(structuredClone(messages));
+    const values = jsonSafe(
+      structuredClone(messages),
+    ) as unknown as NativeMessage[];
+    const privateMetadata = new Map<
+      string,
+      {
+        inputProviderOptions?: ModelMessage['providerOptions'];
+        inputFiles?: number[];
+      }
+    >();
+    for (const value of values) {
+      if (!value || typeof value !== 'object' || !value.metadata) continue;
+      const { inputProviderOptions, inputFiles, ...metadata } = value.metadata;
+      if (inputProviderOptions !== undefined || inputFiles !== undefined) {
+        if (
+          inputFiles !== undefined &&
+          (!Array.isArray(inputFiles) ||
+            inputFiles.some((index) => !Number.isInteger(index) || index < 0))
+        )
+          throw new Error('Invalid private file indices.');
+        privateMetadata.set(value.id, {
+          ...(inputProviderOptions !== undefined
+            ? { inputProviderOptions }
+            : {}),
+          ...(inputFiles !== undefined ? { inputFiles } : {}),
+        });
+      }
+      value.metadata = metadata;
+    }
     const result = await validateUIMessages<NativeMessage>({
       messages: values,
       metadataSchema: appUIMessageMetadataSchema,
     });
+    for (const value of result) {
+      const extra = privateMetadata.get(value.id);
+      if (extra) value.metadata = { ...value.metadata!, ...extra };
+    }
     const ids = new Set<string>();
     for (const message of result) {
       if (!message.id || ids.has(message.id))
@@ -162,7 +199,10 @@ export class NativeMessages {
     const result: AppUIMessage[] = [];
     for (const message of structuredClone(messages)) {
       const parts: PublicPart[] = [];
-      for (const part of message.parts) {
+      const privateFiles =
+        (message.metadata as NativeMessage['metadata'])?.inputFiles ?? [];
+      for (const [index, part] of message.parts.entries()) {
+        if (privateFiles.includes(index)) continue;
         const projected = isToolUIPart(part)
           ? await this.publicTool(part, allowedTools)
           : this.publicPart(part);
@@ -497,11 +537,24 @@ export class NativeMessages {
         };
       }
     }
-    return convertToModelMessages(
-      originals.filter((message) =>
-        message.parts.some((part) => part.type !== 'step-start'),
-      ),
-      { tools, ignoreIncompleteToolCalls: true },
+    const replay = originals.filter((message) =>
+      message.parts.some((part) => part.type !== 'step-start'),
     );
+    const converted = await convertToModelMessages(replay, {
+      tools,
+      ignoreIncompleteToolCalls: true,
+    });
+    const users = replay.filter((message) => message.role === 'user');
+    let userIndex = 0;
+    for (const message of converted) {
+      if (message.role !== 'user') continue;
+      const metadata = users[userIndex++]
+        ?.metadata as NativeMessage['metadata'];
+      if (metadata?.inputProviderOptions)
+        message.providerOptions = structuredClone(
+          metadata.inputProviderOptions,
+        );
+    }
+    return converted;
   }
 }

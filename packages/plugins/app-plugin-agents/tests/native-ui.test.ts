@@ -711,10 +711,10 @@ describe('native SDK transport, persistence and approval', () => {
     await continued.sendMessage();
     expect(continued.error).toBeUndefined();
     expect(f.execute).toHaveBeenCalledTimes(1);
-    const saved = (
-      await restored.realtime(actor(), { sessionId: f.agent.sessionId })
-    ).history;
-    const history = (await saved()) as AppUIMessage[];
+    const saved = await restored.realtime(actor(), {
+      sessionId: f.agent.sessionId,
+    });
+    const history = await saved.history();
     expect(
       history.filter((message) => message.role === 'assistant'),
     ).toHaveLength(1);

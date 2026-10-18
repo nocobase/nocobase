@@ -75,6 +75,40 @@ function toolOutputs(messages: Awaited<ReturnType<NativeMessages['model']>>) {
 }
 
 describe('NativeMessages private SDK originals', () => {
+  it('restores provider options only for user messages retained in model replay', async () => {
+    const { messages } = fixture();
+    const originals: NativeMessage[] = [
+      {
+        id: 'empty',
+        role: 'user',
+        parts: [],
+        metadata: {
+          ...metadata,
+          inputProviderOptions: { fixture: { owner: 'empty' } },
+        },
+      },
+      {
+        id: 'question',
+        role: 'user',
+        parts: [{ type: 'text', text: 'Question' }],
+        metadata: {
+          ...metadata,
+          inputProviderOptions: { fixture: { owner: 'question' } },
+        },
+      },
+    ];
+    expect(await messages.model(originals)).toEqual([
+      {
+        role: 'user',
+        content: [{ type: 'text', text: 'Question' }],
+        providerOptions: { fixture: { owner: 'question' } },
+      },
+    ]);
+    expect(originals[0].metadata?.inputProviderOptions).toEqual({
+      fixture: { owner: 'empty' },
+    });
+  });
+
   it('validates SDK internals independently of the public validator and detaches originals', async () => {
     const { messages } = fixture();
     const original = message([

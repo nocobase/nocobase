@@ -1,6 +1,6 @@
 // @vitest-environment node
 import type {
-  OnlineAgent,
+  BackgroundOnlineAgent,
   OnlineAgentContext,
 } from '@nocobase/app-plugin-agents/server/online-agent';
 import type { ModelCatalog } from '@nocobase/app-plugin-agents/shared/models';
@@ -56,17 +56,16 @@ function deferred<T>() {
 function fixture() {
   const session = {
     sessionId: 'fixture-session',
-    run: vi.fn<OnlineAgent['run']>().mockResolvedValue(undefined),
-    status: vi.fn<OnlineAgent['status']>().mockResolvedValue('idle'),
+    run: vi.fn<BackgroundOnlineAgent['run']>().mockResolvedValue(undefined),
+    status: vi.fn<BackgroundOnlineAgent['status']>().mockResolvedValue('idle'),
     get: vi
-      .fn<OnlineAgent['get']>()
+      .fn<BackgroundOnlineAgent['get']>()
       .mockResolvedValue({ translation: '訳文\n' }),
-    abort: vi.fn<OnlineAgent['abort']>().mockResolvedValue(undefined),
-    history: vi.fn<OnlineAgent['history']>().mockResolvedValue([]),
-    send: vi.fn<OnlineAgent['send']>().mockResolvedValue(0),
-    try: vi.fn<OnlineAgent['try']>(),
-    retryFinalization: vi.fn<OnlineAgent['retryFinalization']>(),
-  } satisfies OnlineAgent;
+    abort: vi.fn<BackgroundOnlineAgent['abort']>().mockResolvedValue(undefined),
+    history: vi.fn<BackgroundOnlineAgent['history']>().mockResolvedValue([]),
+    try: vi.fn<BackgroundOnlineAgent['try']>(),
+    retryFinalization: vi.fn<BackgroundOnlineAgent['retryFinalization']>(),
+  } satisfies BackgroundOnlineAgent;
   const online = getOnlineAgent();
   vi.spyOn(online, 'background').mockResolvedValue(session);
   const dependencies = {
@@ -86,7 +85,8 @@ describe('AI Translation native observation', () => {
   it('uses the trusted actor, explicit native configuration and schema, waits for the saved result, and returns only translation', async () => {
     vi.useFakeTimers();
     const { session, dependencies } = fixture();
-    const completed = deferred<Awaited<ReturnType<OnlineAgent['get']>>>();
+    const completed =
+      deferred<Awaited<ReturnType<BackgroundOnlineAgent['get']>>>();
     session.get.mockReturnValue(completed.promise);
     const result = translateText(dependencies, actor, input);
     await vi.advanceTimersByTimeAsync(0);
@@ -150,7 +150,7 @@ describe('AI Translation native observation', () => {
   ])('rejects invalid result projection %j', async (value) => {
     const { session, dependencies } = fixture();
     session.get.mockResolvedValue(
-      value as Awaited<ReturnType<OnlineAgent['get']>>,
+      value as Awaited<ReturnType<BackgroundOnlineAgent['get']>>,
     );
     await expect(
       translateText(dependencies, actor, input),
@@ -203,7 +203,7 @@ describe('AI Translation native observation', () => {
   it('aborts a late-created session without running it, even if cleanup and logging fail', async () => {
     vi.useFakeTimers();
     const { session, dependencies } = fixture();
-    const opening = deferred<OnlineAgent>();
+    const opening = deferred<BackgroundOnlineAgent>();
     vi.mocked(dependencies.online.background).mockReturnValue(opening.promise);
     session.abort.mockRejectedValue(new Error('cleanup secret'));
     dependencies.warn.mockImplementation(() => {

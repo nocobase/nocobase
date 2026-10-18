@@ -43,7 +43,13 @@ if (process.env.PM481_STARTUP_PHASE === 'prepare') {
                 approval: { id: 'approval-id' },
               },
             ]
-          : [{ type: 'text', text: 'Saved answer', state: 'done' }],
+          : [
+              {
+                type: 'text',
+                text: id === 'background' ? '{"count":7}' : 'Saved answer',
+                state: 'done',
+              },
+            ],
     };
     await repo.createOne({
       values: {
@@ -57,7 +63,7 @@ if (process.env.PM481_STARTUP_PHASE === 'prepare') {
         source: 'fixture',
         showInChatList: id !== 'background',
         read: true,
-        lastSeq: ['saved', 'approval'].includes(id)
+        lastSeq: ['saved', 'approval', 'background'].includes(id)
           ? 2
           : id === 'unfinished'
             ? 1
@@ -84,9 +90,7 @@ if (process.env.PM481_STARTUP_PHASE === 'prepare') {
                     state: id === 'approval' ? 'waitingApproval' : 'running',
                     messageId: `${id}-answer`,
                     executionId: `${id}-execution`,
-                    ...(id !== 'background'
-                      ? { revision: id === 'unfinished' ? 0 : 1 }
-                      : {}),
+                    revision: id === 'unfinished' ? 0 : 1,
                     ...(id === 'saved'
                       ? { outcome: 'completed', closing: true }
                       : {}),
@@ -110,7 +114,7 @@ if (process.env.PM481_STARTUP_PHASE === 'prepare') {
               },
       },
     });
-    if (['unfinished', 'saved', 'approval'].includes(id)) {
+    if (['unfinished', 'saved', 'approval', 'background'].includes(id)) {
       const user = {
         id: `${id}-input`,
         role: 'user',
@@ -131,7 +135,7 @@ if (process.env.PM481_STARTUP_PHASE === 'prepare') {
         },
       });
     }
-    if (id === 'saved' || id === 'approval')
+    if (['saved', 'approval', 'background'].includes(id))
       await messages.createOne({
         values: {
           id: assistant.id,
@@ -140,12 +144,16 @@ if (process.env.PM481_STARTUP_PHASE === 'prepare') {
           role: 'assistant',
           content: {
             type: 'text',
-            content: id === 'saved' ? 'Saved answer' : '',
+            content:
+              id === 'background'
+                ? '{"count":7}'
+                : id === 'saved'
+                  ? 'Saved answer'
+                  : '',
             original: assistant,
           },
           metadata: {
-            nativeOutcome: id === 'saved' ? 'completed' : undefined,
-            nativeEvidence: assistant,
+            nativeOutcome: id === 'approval' ? undefined : 'completed',
           },
           searchText: '',
           createdAt: now,

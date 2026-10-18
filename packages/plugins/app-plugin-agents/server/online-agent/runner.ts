@@ -1,3 +1,4 @@
+import type { RealtimeOnlineAgent } from './agent.js';
 import {
   runnerUIMessages,
   runnerUIPage,
@@ -24,11 +25,45 @@ import { asJson, jsonObject } from '../kernel/values.js';
 import type { OnlineAgentConfig, OnlineAgentContext } from './config.js';
 import type {
   OnlineAgentRealtimeOptions,
-  OnlineAgentRealtimeSession,
   OnlineAgentRunnerBackend,
   OnlineAgentSendOptions,
 } from './realtime.js';
 import { runnerBinding } from './runner-metadata.js';
+
+/** A Runner session keeps its admitted response channel distinct from later facade submissions. */
+class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
+  readonly backend = 'runner' as const;
+  constructor(
+    readonly sessionId: string,
+    private operations: Omit<RealtimeOnlineAgent, 'sessionId' | 'backend'>,
+  ) {}
+  status(): ReturnType<RealtimeOnlineAgent['status']> {
+    return this.operations.status();
+  }
+  history(): ReturnType<RealtimeOnlineAgent['history']> {
+    return this.operations.history();
+  }
+  messages(
+    query: Parameters<RealtimeOnlineAgent['messages']>[0],
+  ): ReturnType<RealtimeOnlineAgent['messages']> {
+    return this.operations.messages(query);
+  }
+  send(
+    messages: ModelMessage[],
+    input?: OnlineAgentSendOptions,
+  ): Promise<number> {
+    return this.operations.send(messages, input);
+  }
+  receive(): ReturnType<RealtimeOnlineAgent['receive']> {
+    return this.operations.receive();
+  }
+  abort(): Promise<void> {
+    return this.operations.abort();
+  }
+  retryFinalization(): Promise<void> {
+    return this.operations.retryFinalization();
+  }
+}
 
 type Execution = {
   id: string;
@@ -145,7 +180,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
     config: OnlineAgentConfig,
     options: OnlineAgentRealtimeOptions,
     expectedConfig: OnlineAgentConfig = config,
-  ): Promise<OnlineAgentRealtimeSession> {
+  ): Promise<RealtimeOnlineAgent> {
     this.credentials(context);
     this.supported(config, options);
     const id =
@@ -191,9 +226,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
         ? ('running' as const)
         : ('idle' as const);
     };
-    return {
-      sessionId: id,
-      backend: 'runner',
+    return new RunnerRealtimeOnlineAgent(id, {
       history,
       messages: async (query) => {
         const row = await this.owned(context.user.id, id);
@@ -323,7 +356,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
           throw error;
         }
       },
-    };
+    });
   }
   /** Notifications wake a persisted read; they never supply authoritative text. */
   notify(runId: string): boolean {

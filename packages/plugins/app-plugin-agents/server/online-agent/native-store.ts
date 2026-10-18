@@ -50,6 +50,15 @@ export type NativeHistoryPage = {
   nextAfter?: number;
 };
 
+export type NativeInput = {
+  id: string;
+  parts: NativeMessage['parts'];
+  attachments: string[];
+  clientId?: string;
+  workContext?: ResolvedPageContext;
+  providerOptions?: ModelMessage['providerOptions'];
+};
+
 export class NativeSessionStore {
   messages: NativeMessages = new NativeMessages(new OnlineAgentConfigurator());
   constructor(
@@ -74,8 +83,12 @@ export class NativeSessionStore {
       ? await lockConversation(conn, id, this.deps.now())
       : await findConversation(conn, id);
     if (!row || row.userId !== userId) throw notFound('Conversation');
-    if (jsonObject(jsonObject(row.metadata).onlineAgent).kind !== 'realtime')
-      throw invalid('A native realtime conversation is required.');
+    if (
+      !['realtime', 'background'].includes(
+        String(jsonObject(jsonObject(row.metadata).onlineAgent).kind),
+      )
+    )
+      throw invalid('A native OnlineAgent conversation is required.');
     return row;
   }
   private async write<T>(
@@ -394,7 +407,7 @@ export class NativeSessionStore {
     context?: ResolvedPageContext,
     page = true,
   ): Promise<{ ui: UIMessage[]; model: ModelMessage[]; page?: ModelMessage }> {
-    await this.owned(userId, id);
+    const owner = await this.owned(userId, id);
     const rows = await messagesRepo(this.deps.tx.read()).findMany({
       filter: { conversationId: id },
       sort: (s) => s.field('seq').asc(),
@@ -429,6 +442,15 @@ export class NativeSessionStore {
             part.url,
         );
         if (!file) {
+          if (
+            message.role === 'user' &&
+            jsonObject(jsonObject(owner.metadata).onlineAgent).kind ===
+              'background' &&
+            (message.metadata?.inputFiles ?? []).includes(
+              message.parts.indexOf(part),
+            )
+          )
+            continue;
           if (message.role === 'assistant' && part.url.startsWith('data:'))
             continue;
           throw invalid('A saved file reference cannot be authorized.');
@@ -462,13 +484,7 @@ export class NativeSessionStore {
   accept(
     userId: string,
     id: string,
-    input: {
-      id: string;
-      parts: { type: 'text'; text: string }[];
-      attachments: string[];
-      clientId?: string;
-      workContext?: ResolvedPageContext;
-    },
+    input: NativeInput | NativeInput[],
     config: OnlineAgentConfig,
     model: { modelService: string; model: string },
     executionId: string,
@@ -478,6 +494,7 @@ export class NativeSessionStore {
       model: { modelService: string; model: string };
     },
   ): Promise<number> {
+    const inputs = structuredClone(Array.isArray(input) ? input : [input]);
     return this.write(
       userId,
       id,
@@ -491,10 +508,15 @@ export class NativeSessionStore {
           call?.closing ||
           row.archivedAt ||
           row.syncRunId
-        )
+        ) {
           throw conflict('This conversation cannot accept input.');
-        if (!input.id || input.id.length > 64)
+        }
+        if (
+          !inputs.length ||
+          inputs.some((item) => !item.id || item.id.length > 64)
+        ) {
           throw invalid('A message ID of at most 64 characters is required.');
+        }
         if (
           !isDeepStrictEqual(
             jsonObject(jsonObject(row.metadata).onlineAgent).config,
@@ -502,67 +524,85 @@ export class NativeSessionStore {
           ) ||
           row.model !== expected.model.model ||
           row.modelService !== expected.model.modelService
-        )
+        ) {
           throw conflict(
             'The conversation configuration has changed. Refresh before sending.',
           );
-        const files = await this.deps.attachments.attach(
-          conn,
-          userId,
-          { conversationId: id, messageId: input.id },
-          input.attachments,
-        );
-        const text = input.parts.map((part) => part.text).join('\n');
-        const seq = Number(row.lastSeq) + 1;
-        const message: AppUIMessage = {
-          id: input.id,
-          role: 'user',
-          metadata: {
-            conversationId: id,
-            createdAt: this.deps.now(),
-            revision: 1,
-            seq,
-            executionId,
-            turnId: executionId,
-            ...(input.workContext
-              ? { context: publicUIPageContext(input.workContext) }
-              : {}),
-          },
-          parts: [
-            ...input.parts,
-            ...files.map((file) => ({
-              type: 'file' as const,
-              filename: file.filename,
-              mediaType: file.mimeType,
-              url: chatAttachmentUrl(this.deps.basePath?.() ?? '', file.id),
-            })),
-          ],
-        };
-        await validateAppUIMessages([message]);
-        await messagesRepo(conn).createOne({
-          values: {
-            id: message.id,
-            conversationId: id,
-            seq,
+        }
+        let seq = Number(row.lastSeq);
+        const title: string[] = [];
+        for (const item of inputs) {
+          const files = await this.deps.attachments.attach(
+            conn,
+            userId,
+            { conversationId: id, messageId: item.id },
+            item.attachments,
+          );
+          const message: NativeMessage = {
+            id: item.id,
             role: 'user',
-            content: asJson({
-              type: 'text',
-              content: appUIMessageText(message),
-              original: message,
-            }),
-            searchText: appUIMessageText(message),
-            toolCalls: null,
-            attachments: files.length ? asJson(files) : null,
-            workContext: asJson(input.workContext),
-            metadata: asJson(
-              input.clientId ? { clientId: input.clientId } : {},
-            ),
-            runId: null,
-            runEventSeq: null,
-            createdAt: message.metadata!.createdAt,
-            updatedAt: this.deps.now(),
-          },
-        });
+            metadata: {
+              conversationId: id,
+              createdAt: this.deps.now(),
+              revision: 1,
+              seq: ++seq,
+              executionId,
+              turnId: executionId,
+              ...(item.clientId ? { clientId: item.clientId } : {}),
+              ...(item.providerOptions
+                ? { inputProviderOptions: item.providerOptions }
+                : {}),
+              ...(item.parts.some((part) => part.type === 'file')
+                ? {
+                    inputFiles: item.parts.flatMap((part, index) =>
+                      part.type === 'file' ? [index] : [],
+                    ),
+                  }
+                : {}),
+              ...(item.workContext
+                ? { context: publicUIPageContext(item.workContext) }
+                : {}),
+            },
+            parts: [
+              ...item.parts,
+              ...files.map((file) => ({
+                type: 'file' as const,
+                filename: file.filename,
+                mediaType: file.mimeType,
+                url: chatAttachmentUrl(this.deps.basePath?.() ?? '', file.id),
+              })),
+            ],
+          };
+          await this.messages.validate([message]);
+          const publicMessage = (await this.messages.public([message]))[0];
+          const text = appUIMessageText(publicMessage);
+          title.push(text);
+          await messagesRepo(conn).createOne({
+            values: {
+              id: message.id,
+              conversationId: id,
+              seq,
+              role: 'user',
+              content: asJson({
+                type: 'text',
+                content: text,
+                original: message,
+              }),
+              searchText: text,
+              toolCalls: null,
+              attachments: files.length ? asJson(files) : null,
+              workContext: asJson(item.workContext),
+              metadata: asJson(
+                item.clientId ? { clientId: item.clientId } : {},
+              ),
+              runId: null,
+              runEventSeq: null,
+              createdAt: message.metadata!.createdAt,
+              updatedAt: this.deps.now(),
+            },
+          });
+          changed(message);
+        }
         const binding = jsonObject(jsonObject(row.metadata).onlineAgent);
         await conversationsRepo(conn).updateMany({
           filter: { id },
@@ -583,13 +623,12 @@ export class NativeSessionStore {
             modelService: model.modelService,
             model: model.model,
             lastSeq: seq,
-            title: row.title ?? text.slice(0, 30),
+            title: row.title ?? title.join(' ').slice(0, 30),
             read: true,
             lastMessageAt: this.deps.now(),
             updatedAt: this.deps.now(),
           },
         });
-        changed(message);
         return seq;
       },
     );

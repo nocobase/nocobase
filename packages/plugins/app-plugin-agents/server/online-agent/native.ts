@@ -1,6 +1,13 @@
+import {
+  jsonSafe,
+  type OnlineAgentJson,
+  type OnlineAgentOutcome,
+} from './codec.js';
 import { OnlineAgentUIStreams, type UIStreamChannel } from './ui-streams.js';
 import {
   streamText,
+  Output,
+  type Schema,
   toUIMessageStream,
   stepCountIs,
   isToolUIPart,
@@ -30,11 +37,16 @@ import type {
   OnlineAgentToolContext,
 } from './config.js';
 import type { OnlineAgentSessionManager, OnlineAgentCall } from './sessions.js';
-import type { NativeApproval, NativeSnapshot } from './native-store.js';
+import type {
+  NativeApproval,
+  NativeSnapshot,
+  NativeInput,
+} from './native-store.js';
 import type { NativeMessage } from './messages.js';
 
 export type NativeUIChunk = UIMessageChunk<AppUIMessageMetadata, AppUIData>;
 export type NativeExecution = {
+  admitted?: boolean;
   abort: AbortController;
   task?: Promise<void>;
   finalize?: () => Promise<void>;
@@ -54,7 +66,16 @@ export class NativeOnlineAgent {
       resolver?: ServiceResolver;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       onError(error: unknown): void;
-      complete(id: string, execution: NativeExecution): void;
+      complete(
+        id: string,
+        execution: NativeExecution,
+        result?: {
+          outcome: OnlineAgentOutcome;
+          data?: OnlineAgentJson;
+          outputInvalid: boolean;
+        },
+      ): void;
+      finish(execution: NativeExecution): Promise<void> | undefined;
     },
   ) {}
   async receive(
@@ -70,7 +91,7 @@ export class NativeOnlineAgent {
   async run(
     context: OnlineAgentContext,
     id: string,
-    messages: ModelMessage[],
+    inputs: NativeInput[],
     input:
       | {
           attachmentIds?: string[][];
@@ -84,6 +105,7 @@ export class NativeOnlineAgent {
     execution: NativeExecution,
     accepted: Acceptance,
     approval?: NativeApproval,
+    schema?: Schema<OnlineAgentJson>,
   ): Promise<void> {
     let metadata: AppUIMessageMetadata;
     let priorMessage: NativeMessage | undefined;
@@ -113,8 +135,12 @@ export class NativeOnlineAgent {
     >['config'];
     let sdkFailure = false;
     let waitingApprovals = false;
+    let background = false;
+    let result: OnlineAgentJson | undefined;
+    let outputInvalid = false;
     try {
       const session = await this.deps.sessions.load(context.user.id, id);
+      background = session.kind === 'background';
       config = input?.overrides
         ? await this.deps.configurator.resolve(
             context,
@@ -172,28 +198,23 @@ export class NativeOnlineAgent {
         waitingApprovals = approved.waiting;
         afterSeq = session.lastSeq;
       } else {
-        if (messages.length !== 1 || messages[0].role !== 'user')
-          throw invalid('Submit only the current user message.');
-        const content = messages[0].content;
-        if (
-          typeof content !== 'string' &&
-          content.some((part) => part.type !== 'text')
-        )
-          throw invalid('Use authorized attachment IDs for native files.');
-        const text =
-          typeof content === 'string'
-            ? content
-            : content
-                .map((part) => (part.type === 'text' ? part.text : ''))
-                .join('\n');
-        if (
-          [...text].length > MESSAGE_CONTENT_MAX ||
-          (!text.trim() && !input?.attachmentIds?.[0]?.length)
-        )
-          throw invalid('A valid user input is required.');
+        if (!background) {
+          if (inputs.length !== 1)
+            throw invalid('Submit only the current user message.');
+          const content = inputs[0].parts;
+          if (content.some((part) => part.type !== 'text'))
+            throw invalid('Use authorized attachment IDs for native files.');
+          const text = content
+            .map((part) => (part.type === 'text' ? part.text : ''))
+            .join('\n');
+          if (
+            [...text].length > MESSAGE_CONTENT_MAX ||
+            (!text.trim() && !input?.attachmentIds?.[0]?.length)
+          )
+            throw invalid('A valid user input is required.');
+        }
         executionId = this.deps.ids.next();
         messageId = this.deps.ids.next();
-        // Resolve existing history and files before accepting input. No model execution occurs here.
         previousPage = (
           await this.deps.sessions.native.executionHistory(
             context.user.id,
@@ -203,36 +224,25 @@ export class NativeOnlineAgent {
           )
         ).page;
         execution.abort.signal.throwIfAborted();
-        response = await this.deps.uiStreams.open(
-          context.user.id,
-          id,
-          executionId,
-          'native',
-          () => execution.abort.abort(),
-        );
+        if (!background)
+          response = await this.deps.uiStreams.open(
+            context.user.id,
+            id,
+            executionId,
+            'native',
+            () => execution.abort.abort(),
+          );
         afterSeq = await this.deps.sessions.native.accept(
           context.user.id,
           id,
-          {
-            id: input?.messageId ?? this.deps.ids.next(),
-            parts:
-              typeof content === 'string'
-                ? [{ type: 'text', text: content }]
-                : content.flatMap((part) =>
-                    part.type === 'text'
-                      ? [{ type: 'text' as const, text: part.text }]
-                      : [],
-                  ),
-            attachments: input?.attachmentIds?.[0] ?? [],
-            clientId: input?.clientId,
-            workContext: input?.workContext,
-          },
+          background ? inputs : inputs[0],
           config,
           selected,
           executionId,
           messageId,
           session,
         );
+        execution.admitted = true;
       }
       metadata = {
         ...(priorMessage?.metadata ?? {
@@ -244,8 +254,10 @@ export class NativeOnlineAgent {
         executionId,
         turnId: executionId,
       };
-      this.responses.set(id, response);
-      this.executionResponses.set(execution, response);
+      if (response) {
+        this.responses.set(id, response);
+        this.executionResponses.set(execution, response);
+      }
     } catch (error) {
       if (response)
         await this.deps.uiStreams
@@ -262,7 +274,7 @@ export class NativeOnlineAgent {
     );
     if (waitingApprovals) {
       // The answer is durable, but SDK conversion must wait for every approval in this step.
-      output.write({ type: 'start', messageId, messageMetadata: metadata });
+      output?.write({ type: 'start', messageId, messageMetadata: metadata });
       const answer = await publicStream.project({
         type: 'tool-approval-response',
         approvalId: approval!.approval.id,
@@ -271,30 +283,30 @@ export class NativeOnlineAgent {
           ? { reason: approval!.approval.reason }
           : {}),
       });
-      if (answer) output.write(answer);
+      if (answer) output?.write(answer);
       const notice = priorMessage!.parts.find(
         (part) => part.type === 'data-notice' && part.id === 'execution-status',
       );
-      if (notice) output.write(notice as NativeUIChunk);
+      if (notice) output?.write(notice as NativeUIChunk);
       accepted.resolve(afterSeq);
       execution.finalize = async () => {
-        await this.deps.uiStreams.release(id, output);
-        output.write({ type: 'finish', messageMetadata: metadata });
-        output.close();
+        if (output) await this.deps.uiStreams.release(id, output);
+        output?.write({ type: 'finish', messageMetadata: metadata });
+        output?.close();
         if (this.responses.get(id) === output) this.responses.delete(id);
         execution.finalize = undefined;
         this.deps.complete(id, execution);
       };
       try {
-        await execution.finalize();
+        await this.deps.finish(execution);
       } catch (error) {
         this.deps.onError(error);
-        output.write({
+        output?.write({
           type: 'error',
           errorText:
             'The approval was saved. Reconcile history and retry finalization.',
         });
-        await this.deps.uiStreams.close(id, output);
+        if (output) await this.deps.uiStreams.close(id, output);
       }
       return;
     }
@@ -303,7 +315,7 @@ export class NativeOnlineAgent {
       : { id: messageId, role: 'assistant', parts: [], metadata };
     let outcome: 'completed' | 'cancelled' | 'failed' = 'completed';
     let finishChunk: NativeUIChunk = { type: 'finish' };
-    output.write({ type: 'start', messageId, messageMetadata: metadata });
+    output?.write({ type: 'start', messageId, messageMetadata: metadata });
     try {
       const trusted = await this.deps.sessions.native.executionHistory(
         context.user.id,
@@ -320,6 +332,7 @@ export class NativeOnlineAgent {
         );
       const generated = streamText({
         model,
+        output: schema ? Output.object({ schema }) : undefined,
         tools,
         messages: history,
         system:
@@ -400,7 +413,7 @@ export class NativeOnlineAgent {
         if (chunk.type === 'tool-input-error')
           invalidToolInputs.add(chunk.toolCallId);
         const projected = await publicStream.project(chunk);
-        if (projected) output.write(projected);
+        if (projected) output?.write(projected);
       }
       await generated.responseMessages;
       if (sdkFailure) outcome = 'failed';
@@ -412,6 +425,23 @@ export class NativeOnlineAgent {
         )
       )
         outcome = 'failed';
+      if (background && outcome === 'completed') {
+        if (!schema) throw new Error('A background output schema is required.');
+        if (
+          (await generated.warnings)?.some(
+            (warning) =>
+              warning.type === 'unsupported' &&
+              warning.feature.startsWith('responseFormat'),
+          )
+        )
+          throw new Error('The model does not support structured output.');
+        try {
+          result = jsonSafe(await generated.output);
+        } catch (error) {
+          outputInvalid = true;
+          throw error;
+        }
+      }
     } catch (error) {
       outcome = execution.abort.signal.aborted ? 'cancelled' : 'failed';
       execution.abort.abort();
@@ -457,6 +487,7 @@ export class NativeOnlineAgent {
     }
     const waiting =
       outcome === 'completed' &&
+      !background &&
       privateMessage.parts.some(
         (part) => isToolUIPart(part) && part.state === 'approval-requested',
       );
@@ -502,6 +533,13 @@ export class NativeOnlineAgent {
         executionId,
         messageId,
         ...(!waiting ? { outcome } : {}),
+        ...(background
+          ? {
+              state: 'running' as const,
+              closing: true,
+              ...(result !== undefined ? { result } : {}),
+            }
+          : {}),
         ...(waiting
           ? {
               approvalExpiresAt: new Date(
@@ -523,34 +561,39 @@ export class NativeOnlineAgent {
         call,
         metadata.revision,
       );
-      await this.deps.uiStreams.release(id, output);
-      output.write(notice);
-      output.write({
+      if (background) await this.deps.sessions.finish(context.user.id, id);
+      if (output) await this.deps.uiStreams.release(id, output);
+      output?.write(notice);
+      output?.write({
         type: 'message-metadata',
         messageMetadata: appUIMessageMetadataSchema.parse(saved.metadata),
       });
-      output.write({
+      output?.write({
         type: 'finish',
         ...(finishChunk.type === 'finish' && finishChunk.finishReason
           ? { finishReason: finishChunk.finishReason }
           : {}),
         messageMetadata: saved.metadata,
       });
-      output.close();
+      output?.close();
       if (this.responses.get(id) === output) this.responses.delete(id);
       execution.finalize = undefined;
-      this.deps.complete(id, execution);
+      this.deps.complete(
+        id,
+        execution,
+        background ? { outcome, data: result, outputInvalid } : undefined,
+      );
     };
     try {
-      await execution.finalize();
+      await this.deps.finish(execution);
     } catch (error) {
       this.deps.onError(error);
-      output.write({
+      output?.write({
         type: 'error',
         errorText:
           'The response could not be saved. Reconcile history and retry finalization.',
       });
-      await this.deps.uiStreams.close(id, output);
+      if (output) await this.deps.uiStreams.close(id, output);
     }
   }
 }

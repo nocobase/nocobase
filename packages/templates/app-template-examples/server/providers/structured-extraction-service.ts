@@ -1,5 +1,5 @@
 import type {
-  OnlineAgent,
+  BackgroundOnlineAgent,
   OnlineAgentContext,
   OnlineAgentService,
 } from '@nocobase/app-plugin-agents/server/online-agent';
@@ -11,7 +11,7 @@ import {
 import { ApiError } from '@nocobase/app-server/router';
 import { EXAMPLES_APP_DOMAIN } from '../routes/domain.js';
 
-export type ExtractionSchema = Parameters<OnlineAgent['run']>[1];
+export type ExtractionSchema = Parameters<BackgroundOnlineAgent['run']>[1];
 export type ExtractionResult = Record<string, unknown>;
 export interface StructuredExtractionInput {
   text: string;
@@ -102,7 +102,7 @@ export class StructuredExtractionService {
     const deadlineMs = this.timing.deadlineMs ?? 60_000;
     const cleanupMs = Math.min(this.timing.cleanupMs ?? 2_000, 2_000);
     const expires = Date.now() + deadlineMs;
-    let session: OnlineAgent | undefined;
+    let session: BackgroundOnlineAgent | undefined;
     let stopped: ApiError | undefined;
     const progress: {
       phase: 'catalog' | 'background' | 'run' | 'get';

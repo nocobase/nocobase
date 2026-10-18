@@ -1,5 +1,5 @@
 import type {
-  OnlineAgent,
+  BackgroundOnlineAgent,
   OnlineAgentContext,
   OnlineAgentService,
 } from '@nocobase/app-plugin-agents/server/online-agent';
@@ -48,7 +48,7 @@ export async function translateText(
   actor: OnlineAgentContext,
   input: TranslationInput,
 ): Promise<TranslationResult> {
-  let session: OnlineAgent | undefined;
+  let session: BackgroundOnlineAgent | undefined;
   let expired = false;
   const timeout = new TranslationError('TRANSLATION_TIMEOUT');
   const warn = () => {

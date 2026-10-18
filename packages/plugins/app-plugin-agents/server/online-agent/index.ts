@@ -1,3 +1,4 @@
+export type { RealtimeOnlineAgent, BackgroundOnlineAgent } from './agent.js';
 export {
   type OnlineAgent,
   type OnlineAgentResult,
@@ -16,7 +17,6 @@ export {
   type OnlineAgentToolDefinition,
 } from './config.js';
 export type {
-  OnlineAgentRealtimeSession,
   OnlineAgentRealtimeOptions,
   OnlineAgentSendOptions,
   OnlineAgentRunnerBackend,

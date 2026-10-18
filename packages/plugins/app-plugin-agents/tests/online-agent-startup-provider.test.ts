@@ -37,12 +37,20 @@ it.each([undefined, 'stderr'] as const)(
       };
       const model = { modelService: 'fixture', model: 'chat' };
       const id = await sessions.create('alice', 'background', config, model);
-      await sessions.accept('alice', id, config, model, [
+      await sessions.native.accept(
+        'alice',
+        id,
         {
           id: 'accepted',
-          message: { role: 'user', content: 'Already accepted by the server' },
+          parts: [{ type: 'text', text: 'Already accepted by the server' }],
+          attachments: [],
         },
-      ]);
+        config,
+        model,
+        'startup-execution',
+        'startup-answer',
+        { config, model },
+      );
       await provider.boot();
       await provider.boot();
       expect((await sessions.load('alice', id)).call).toMatchObject(
@@ -50,9 +58,14 @@ it.each([undefined, 'stderr'] as const)(
           ? { state: 'running' }
           : { state: 'idle', outcome: 'failed' },
       );
-      expect(await sessions.history('alice', id)).toHaveLength(
-        consoleLogStream === 'stderr' ? 1 : 2,
-      );
+      expect(await sessions.history('alice', id)).toHaveLength(1);
+      const history = await sessions.native.history('alice', id);
+      expect(history).toHaveLength(consoleLogStream === 'stderr' ? 1 : 2);
+      if (consoleLogStream !== 'stderr')
+        expect(history.at(-1)).toMatchObject({
+          id: 'startup-answer',
+          role: 'assistant',
+        });
     } finally {
       await provider.shutdown();
       start.mockRestore();

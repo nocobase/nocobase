@@ -566,7 +566,9 @@ export function createConversationService(
     runId: string | null = null,
   ): Promise<void> {
     if (
-      jsonObject(jsonObject(record.metadata).onlineAgent).kind === 'realtime'
+      ['realtime', 'background'].includes(
+        String(jsonObject(jsonObject(record.metadata).onlineAgent).kind),
+      )
     ) {
       if (!deps.nativeNotice)
         throw conflict('Native notification storage is unavailable.');

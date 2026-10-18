@@ -1,6 +1,6 @@
 // @vitest-environment node
 import type {
-  OnlineAgent,
+  BackgroundOnlineAgent,
   OnlineAgentContext,
 } from '@nocobase/app-plugin-agents/server/online-agent';
 import { ApiError } from '@nocobase/app-server/router';
@@ -62,10 +62,9 @@ function setup() {
     get: vi.fn(async () => ({ name: 'Ada' })),
     abort: vi.fn(async () => {}),
     history: vi.fn(async () => []),
-    send: vi.fn(async () => 1),
-    try: vi.fn<OnlineAgent['try']>(),
+    try: vi.fn<BackgroundOnlineAgent['try']>(),
     retryFinalization: vi.fn(async () => {}),
-  } satisfies OnlineAgent;
+  } satisfies BackgroundOnlineAgent;
   const onlineAgent = getOnlineAgent();
   vi.spyOn(onlineAgent, 'background').mockResolvedValue(session);
   const deps = {
@@ -139,7 +138,7 @@ it.each(['deadline', 'disconnect'] as const)(
   'never starts run when background creation completes after %s; observes late abort rejection',
   async (cause) => {
     const { service, session, deps } = setup();
-    const opened = deferred<OnlineAgent>();
+    const opened = deferred<BackgroundOnlineAgent>();
     vi.mocked(deps.onlineAgent.background).mockReturnValue(opened.promise);
     const controller = new AbortController();
     const error = new Error('Provider refuses cancellation.');
@@ -177,7 +176,7 @@ it('checks an already disconnected request before opening a session', async () =
 
 it('rechecks the wall deadline before admission even if its timer has not fired', async () => {
   const { service, session, deps } = setup();
-  const opened = deferred<OnlineAgent>();
+  const opened = deferred<BackgroundOnlineAgent>();
   vi.mocked(deps.onlineAgent.background).mockReturnValue(opened.promise);
   const result = service.extract(actor, input).catch((error: unknown) => error);
   await vi.advanceTimersByTimeAsync(0);

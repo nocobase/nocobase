@@ -1,7 +1,8 @@
 import type {
   OnlineAgentToolContext as PublicToolContext,
-  OnlineAgentRealtimeSession,
+  RealtimeOnlineAgent,
   OnlineAgent,
+  BackgroundOnlineAgent,
   OnlineAgentJson,
   OnlineAgentResult,
   OnlineAgentSafeError,
@@ -224,7 +225,21 @@ it('exposes the shared service and configurator through the public server entry'
   >().toEqualTypeOf<PublicOnlineAgentService>();
   expectTypeOf<
     Awaited<ReturnType<PublicOnlineAgentService['realtime']>>
-  >().toEqualTypeOf<OnlineAgentRealtimeSession>();
+  >().toEqualTypeOf<RealtimeOnlineAgent>();
+});
+
+it('shares public UI history while keeping background submission capabilities separate', () => {
+  expectTypeOf<RealtimeOnlineAgent>().toExtend<OnlineAgent>();
+  expectTypeOf<BackgroundOnlineAgent>().toExtend<OnlineAgent>();
+  expectTypeOf<ReturnType<BackgroundOnlineAgent['history']>>().toEqualTypeOf<
+    ReturnType<RealtimeOnlineAgent['history']>
+  >();
+  expectTypeOf<
+    Extract<keyof BackgroundOnlineAgent, 'send' | 'receive' | 'approve'>
+  >().toEqualTypeOf<never>();
+  expectTypeOf<
+    Awaited<ReturnType<PublicOnlineAgentService['background']>>
+  >().toEqualTypeOf<BackgroundOnlineAgent>();
 });
 
 it('requires JSON Schema for background run through the public server entry', () => {
@@ -240,13 +255,13 @@ it('requires JSON Schema for background run through the public server entry', ()
 });
 
 it('exports typed result observation through the public server entry', () => {
-  expectTypeOf<ReturnType<OnlineAgent['get']>>().toEqualTypeOf<
+  expectTypeOf<ReturnType<BackgroundOnlineAgent['get']>>().toEqualTypeOf<
     Promise<OnlineAgentJson>
   >();
-  expectTypeOf<ReturnType<OnlineAgent['try']>>().toEqualTypeOf<
+  expectTypeOf<ReturnType<BackgroundOnlineAgent['try']>>().toEqualTypeOf<
     Promise<OnlineAgentResult>
   >();
-  expectTypeOf<Parameters<OnlineAgent['try']>>().toEqualTypeOf<
+  expectTypeOf<Parameters<BackgroundOnlineAgent['try']>>().toEqualTypeOf<
     [options?: { wait?: number }]
   >();
   const failure: OnlineAgentResult = {

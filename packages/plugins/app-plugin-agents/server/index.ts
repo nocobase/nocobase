@@ -10,13 +10,14 @@ export {
   OnlineAgentConfigurator,
   OnlineAgentResultError,
   type OnlineAgent,
+  type RealtimeOnlineAgent,
+  type BackgroundOnlineAgent,
   type OnlineAgentResult,
   type OnlineAgentSafeError,
   type OnlineAgentJson,
 } from './online-agent/index.js';
 
 export type {
-  OnlineAgentRealtimeSession,
   OnlineAgentRealtimeOptions,
   OnlineAgentSendOptions,
   OnlineAgentRunnerBackend,

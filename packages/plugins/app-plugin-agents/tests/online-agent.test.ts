@@ -4,7 +4,7 @@ import {
   readUIMessageStream,
   isToolUIPart,
   type JSONSchema7,
-  type ModelMessage,
+  type UIMessage,
 } from 'ai';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import {
@@ -15,7 +15,11 @@ import { z } from 'zod';
 import type { Knex } from 'knex';
 import { appendFile } from 'node:fs/promises';
 import { createHarness, type Harness } from './harness.js';
-import { OnlineAgentService } from '../server/online-agent/service.js';
+import {
+  OnlineAgentService,
+  type OnlineAgent,
+} from '../server/online-agent/service.js';
+import { OnlineAgentUIStreams } from '../server/online-agent/ui-streams.js';
 import { createSessionManager } from '../server/online-agent/sessions.js';
 import {
   OnlineAgentConfigurator,
@@ -23,15 +27,9 @@ import {
   type OnlineAgentToolContext,
 } from '../server/online-agent/config.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
-import {
-  content,
-  decode,
-  encode,
-  project,
-  restore,
-} from '../server/online-agent/codec.js';
-import { appUIMessageText, type AppUIMessage } from '../shared/online-agent.js';
+import { appUIMessageText } from '../shared/online-agent.js';
 import type { NativeUIChunk } from '../server/online-agent/native.js';
+import type { NativeMessage } from '../server/online-agent/messages.js';
 
 const ref = { modelService: 'fixture', model: 'chat' };
 const context = (id = 'alice'): OnlineAgentContext => ({
@@ -123,22 +121,18 @@ async function fixture(model: MockLanguageModelV4) {
     measurements,
     resolveModel,
     history: async (agent: { sessionId: string }, userId = 'alice') =>
-      (await sessions.load(userId, agent.sessionId)).kind === 'background'
-        ? sessions.history(userId, agent.sessionId)
-        : (
-            await sessions.native.executionHistory(
-              userId,
-              agent.sessionId,
-              undefined,
-              false,
-            )
-          ).model,
+      (
+        await sessions.native.executionHistory(
+          userId,
+          agent.sessionId,
+          undefined,
+          false,
+        )
+      ).model,
   };
 }
 
-async function settle(
-  agent: Awaited<ReturnType<OnlineAgentService['realtime']>>,
-) {
+async function settle(agent: Pick<OnlineAgent, 'status'>) {
   await vi.waitFor(async () => expect(await agent.status()).toBe('idle'));
 }
 
@@ -180,9 +174,10 @@ describe('OnlineAgent service slice', () => {
     output.enqueue(finish());
     output.close();
     await settle(agent);
-    expect(
-      ((await agent.history()) as AppUIMessage[]).map(appUIMessageText),
-    ).toEqual(['Stream', 'AB']);
+    expect((await agent.history()).map(appUIMessageText)).toEqual([
+      'Stream',
+      'AB',
+    ]);
     expect(await f.history(agent)).toEqual([
       { role: 'user', content: [{ type: 'text', text: 'Stream' }] },
       expect.objectContaining({ role: 'assistant' }),
@@ -285,12 +280,13 @@ describe('OnlineAgent service slice', () => {
       'assistant',
     ]);
     expect(JSON.stringify(history)).toContain('private-signature');
-    expect(
-      JSON.stringify(history.map((message) => project(message))),
-    ).not.toContain('private-signature');
-    expect(
-      JSON.stringify(history.map((message) => project(message))),
-    ).not.toContain('toolCallId');
+    const projected = await agent.history();
+    expect(projected.map((message) => message.role)).toEqual([
+      'user',
+      'assistant',
+    ]);
+    expect(JSON.stringify(projected)).not.toContain('private-signature');
+    expect(JSON.stringify(projected)).not.toContain('toolCallId');
     const firstResponse = await agent.receive();
     let snapshot;
     for await (const current of readUIMessageStream({
@@ -544,33 +540,236 @@ describe('OnlineAgent service slice', () => {
   });
 });
 
-it('round trips provider fields, bytes, URLs and marker-shaped tool data without exposing private parts', () => {
-  const data = {
-    bytes: new Uint8Array([1, 255]),
-    url: new URL('https://example.test/file'),
-    nested: { __type: 'bytes', data: 'ordinary' },
-  };
-  expect(decode(encode(data))).toEqual(data);
-  expect(() => encode({ infinite: Infinity })).toThrow();
-  const message: ModelMessage = {
-    role: 'assistant',
-    content: [
+it.each(['realtime', 'background'] as const)(
+  'stores one SDK UI original and separates public and model history for %s',
+  async (kind) => {
+    const f = await fixture(
+      new MockLanguageModelV4({
+        doStream: async () => ({ stream: streamed(text('Unused')) }),
+      }),
+    );
+    const agent = await f.service[kind](context());
+    const expected = await f.sessions.load('alice', agent.sessionId);
+    await f.sessions.native.accept(
+      'alice',
+      agent.sessionId,
+      {
+        id: 'input',
+        parts: [{ type: 'text', text: 'Question' }],
+        attachments: [],
+      },
+      expected.config,
+      ref,
+      'execution',
+      'answer',
+      expected,
+    );
+    await f.sessions.native.save(
+      'alice',
+      agent.sessionId,
+      {
+        message: {
+          id: 'answer',
+          role: 'assistant',
+          metadata: {
+            conversationId: agent.sessionId,
+            createdAt: new Date().toISOString(),
+            executionId: 'execution',
+            turnId: 'execution',
+            revision: 0,
+          },
+          parts: [
+            { type: 'text', text: 'Public' },
+            {
+              type: 'reasoning',
+              text: 'Private',
+              providerMetadata: { fixture: { signature: 'secret' } },
+            },
+          ],
+        },
+      },
+      {
+        actorId: 'alice',
+        state: 'running',
+        executionId: 'execution',
+        messageId: 'answer',
+        outcome: 'completed',
+      },
+      0,
+    );
+    await f.sessions.finish('alice', agent.sessionId);
+    const rows = await h.database
+      .connection()
+      .repository('agConversationMessages')
+      .findMany({
+        filter: { conversationId: agent.sessionId },
+        sort: (sort) => sort.field('seq').asc(),
+      });
+    expect(rows.map((row) => row.role)).toEqual(['user', 'assistant']);
+    expect(rows.every((row) => row.id === row.content.original.id)).toBe(true);
+    expect(rows[1].content.original.parts).toEqual([
       { type: 'text', text: 'Public' },
       {
         type: 'reasoning',
         text: 'Private',
-        providerOptions: { fixture: { signature: 'secret' } },
+        providerMetadata: { fixture: { signature: 'secret' } },
       },
-    ],
-  };
-  expect(restore(content(message), 'assistant')).toEqual(message);
-  expect(project(message)).toEqual({
-    role: 'assistant',
-    parts: [{ type: 'text', text: 'Public' }],
+    ]);
+    const history = await agent.history();
+    expect(history.map(appUIMessageText)).toEqual(['Question', 'Public']);
+    expect(history[1].parts).toEqual([{ type: 'text', text: 'Public' }]);
+    expect(JSON.stringify(history)).not.toContain('secret');
+    const internal = await f.history(agent);
+    expect(JSON.stringify(internal)).toContain('Private');
+    expect(JSON.stringify(internal)).toContain('secret');
+    expect(await f.sessions.history('alice', agent.sessionId)).toEqual(
+      internal,
+    );
+    expect(await f.sessions.executionHistory('alice', agent.sessionId)).toEqual(
+      internal,
+    );
+  },
+);
+
+it('assembles background UI messages without transport and replays private user files and provider options', async () => {
+  const model = new MockLanguageModelV4({
+    supportedUrls: { 'text/plain': [/^https:\/\//] },
+    doStream: async () => ({ stream: streamed(text('{"count":1}')) }),
   });
-  expect(() => restore({ content: 'Old notice' }, 'system')).toThrow(
-    'background execution message',
-  );
+  const f = await fixture(model);
+  const open = vi
+    .spyOn(OnlineAgentUIStreams.prototype, 'open')
+    .mockRejectedValue(new Error('No browser transport'));
+  const receive = vi
+    .spyOn(OnlineAgentUIStreams.prototype, 'receive')
+    .mockRejectedValue(new Error('No browser transport'));
+  try {
+    const job = await f.service.background(context());
+    await job.run(
+      [
+        {
+          role: 'user',
+          providerOptions: { fixture: { token: 'private-user-options' } },
+          content: [
+            {
+              type: 'text',
+              text: 'Files',
+              providerOptions: { fixture: { token: 'private-part-options' } },
+            },
+            {
+              type: 'file',
+              mediaType: 'text/plain',
+              filename: 'private.txt',
+              data: new Uint8Array([65, 66]),
+            },
+            {
+              type: 'file',
+              mediaType: 'text/plain',
+              data: new URL('https://private.example/file.txt'),
+            },
+          ],
+        },
+        { role: 'user', content: 'Count' },
+      ],
+      {
+        type: 'object',
+        properties: { count: { type: 'integer' } },
+        required: ['count'],
+        additionalProperties: false,
+      },
+    );
+    expect(await job.get()).toEqual({ count: 1 });
+    expect(open).not.toHaveBeenCalled();
+    expect(receive).not.toHaveBeenCalled();
+    expect(model.doStreamCalls).toHaveLength(1);
+    const history = await job.history();
+    expect(history.slice(0, 2).map(appUIMessageText)).toEqual([
+      'Files',
+      'Count',
+    ]);
+    expect(history[0].parts).toEqual([{ type: 'text', text: 'Files' }]);
+    expect(JSON.stringify(history)).not.toContain('private');
+    const replay = await f.sessions.history('alice', job.sessionId);
+    expect(replay[0]).toMatchObject({
+      role: 'user',
+      providerOptions: { fixture: { token: 'private-user-options' } },
+      content: [
+        {
+          type: 'text',
+          text: 'Files',
+          providerOptions: { fixture: { token: 'private-part-options' } },
+        },
+        {
+          type: 'file',
+          mediaType: 'text/plain',
+          filename: 'private.txt',
+          data: { type: 'url', url: new URL('data:text/plain;base64,QUI=') },
+        },
+        {
+          type: 'file',
+          mediaType: 'text/plain',
+          data: {
+            type: 'url',
+            url: new URL('https://private.example/file.txt'),
+          },
+        },
+      ],
+    });
+    const rows = await h.database
+      .connection()
+      .repository('agConversationMessages')
+      .findMany({
+        filter: { conversationId: job.sessionId },
+        sort: (sort) => sort.field('seq').asc(),
+      });
+    expect(rows).toHaveLength(3);
+    expect(rows[0].content.original.parts[1]).toMatchObject({
+      type: 'file',
+      url: 'data:text/plain;base64,QUI=',
+    });
+    expect(rows[0].content.original.metadata.inputProviderOptions).toEqual({
+      fixture: { token: 'private-user-options' },
+    });
+  } finally {
+    open.mockRestore();
+    receive.mockRestore();
+  }
+});
+
+it('does not reserve occupancy when unsupported input cannot be normalized', async () => {
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({ stream: streamed(text('{"count":1}')) }),
+  });
+  const f = await fixture(model);
+  const job = await f.service.background(context());
+  const schema = {
+    type: 'object',
+    properties: { count: { type: 'integer' } },
+    required: ['count'],
+  } as const;
+  await expect(
+    job.run(
+      [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'file',
+              mediaType: 'text/plain',
+              data: (() => 'unsupported') as never,
+            },
+          ],
+        },
+      ],
+      schema,
+    ),
+  ).rejects.toThrow();
+  expect(f.service.isActive(job.sessionId)).toBe(false);
+  expect(await job.status()).toBe('idle');
+  expect(await job.history()).toEqual([]);
+  await job.run([{ role: 'user', content: 'Count' }], schema);
+  expect(await job.get()).toEqual({ count: 1 });
+  expect(model.doStreamCalls).toHaveLength(1);
 });
 
 it('resolves scope order and explicit overrides, rejects unsupported requirements and changed tools', async () => {
@@ -629,14 +828,31 @@ it('commits all inputs and attachment links atomically and rolls them back on a 
     'alice',
     new File(['fixture'], 'fixture.txt', { type: 'text/plain' }),
   );
+  const accept = async (
+    agent: { sessionId: string },
+    inputs: { id: string; text: string; attachments: string[] }[],
+  ) => {
+    const expected = await f.sessions.load('alice', agent.sessionId);
+    return f.sessions.native.accept(
+      'alice',
+      agent.sessionId,
+      inputs.map(({ id, text, attachments }) => ({
+        id,
+        parts: [{ type: 'text' as const, text }],
+        attachments,
+      })),
+      expected.config,
+      ref,
+      `execution-${agent.sessionId}`,
+      `answer-${agent.sessionId}`,
+      expected,
+    );
+  };
   await expect(
-    first.send(
-      [
-        { role: 'user', content: 'First' },
-        { role: 'user', content: 'Second' },
-      ],
-      { attachmentIds: [[attachment.id], ['missing-upload']] },
-    ),
+    accept(first, [
+      { id: 'first', text: 'First', attachments: [attachment.id] },
+      { id: 'second', text: 'Second', attachments: ['missing-upload'] },
+    ]),
   ).rejects.toThrow();
   expect(await f.history(first)).toEqual([]);
   expect((await f.sessions.load('alice', first.sessionId)).call).toBeNull();
@@ -649,19 +865,27 @@ it('commits all inputs and attachment links atomically and rolls them back on a 
     )?.conversationId,
   ).toBeNull();
   await expect(
-    first.send([{ role: 'user', content: 'Duplicate upload' }], {
-      attachmentIds: [[attachment.id, attachment.id]],
-    }),
+    accept(first, [
+      {
+        id: 'duplicate',
+        text: 'Duplicate upload',
+        attachments: [attachment.id, attachment.id],
+      },
+    ]),
   ).rejects.toThrow('distinct attachments');
   expect(await f.history(first)).toEqual([]);
-  await second.send([{ role: 'user', content: 'Use the upload' }], {
-    attachmentIds: [[attachment.id]],
-  });
-  await settle(second);
+  await accept(second, [
+    { id: 'use-upload', text: 'Use the upload', attachments: [attachment.id] },
+    { id: 'batch-followup', text: 'Accepted together', attachments: [] },
+  ]);
+  expect((await second.history()).map(appUIMessageText)).toEqual([
+    'Use the upload',
+    'Accepted together',
+  ]);
   await expect(
-    first.send([{ role: 'user', content: 'Reuse' }], {
-      attachmentIds: [[attachment.id]],
-    }),
+    accept(first, [
+      { id: 'reuse', text: 'Reuse', attachments: [attachment.id] },
+    ]),
   ).rejects.toThrow();
   expect(await f.history(first)).toEqual([]);
 });
@@ -725,6 +949,9 @@ it.each([
   expect(row.call?.result).toBeUndefined();
   expect((await background.history()).at(-1)).toMatchObject({
     role: 'assistant',
+    parts: expect.arrayContaining([
+      expect.objectContaining({ type: 'text', text: answer }),
+    ]),
   });
   expect(f.errors).toHaveLength(1);
 });
@@ -735,7 +962,7 @@ it('rejects invalid output schemas before accepting input or calling the model',
   });
   const f = await fixture(model);
   const background = await f.service.background(context());
-  const accept = vi.spyOn(f.sessions, 'accept');
+  const accept = vi.spyOn(f.sessions.native, 'accept');
   for (const schema of [
     { type: 'object', required: 'count' },
     { $ref: 'https://example.com/schema.json' },
@@ -809,12 +1036,13 @@ it('keeps the JSON Schema through business tool calls and validates the final SD
   expect(model.doStreamCalls).toHaveLength(2);
   for (const call of model.doStreamCalls)
     expect(call.responseFormat).toEqual({ type: 'json', schema });
-  expect((await background.history()).map((message) => message.role)).toEqual([
-    'user',
-    'assistant',
-    'tool',
-    'assistant',
-  ]);
+  const history = await background.history();
+  expect(history.map((message) => message.role)).toEqual(['user', 'assistant']);
+  expect(history.map(appUIMessageText)).toEqual(['Count', '{"count":2}']);
+  expect(JSON.stringify(history)).not.toContain('toolCallId');
+  expect(
+    (await f.history(background, 'bob')).map((message) => message.role),
+  ).toEqual(['user', 'assistant', 'tool', 'assistant']);
   expect(f.errors).toEqual([]);
 });
 
@@ -869,7 +1097,7 @@ it('retries structured result persistence without rerunning the model', async ()
   const f = await fixture(model);
   const background = await f.service.background(context());
   const save = vi
-    .spyOn(f.sessions, 'save')
+    .spyOn(f.sessions.native, 'save')
     .mockRejectedValueOnce(new Error('Save unavailable'));
   const schema: JSONSchema7 = {
     type: 'object',
@@ -885,7 +1113,10 @@ it('retries structured result persistence without rerunning the model', async ()
   expect(await background.get()).toEqual({ count: 2 });
   expect(save).toHaveBeenCalledTimes(2);
   expect(model.doStreamCalls).toHaveLength(1);
-  expect(await background.history()).toHaveLength(2);
+  expect((await background.history()).map(appUIMessageText)).toEqual([
+    'Count',
+    '{"count":2}',
+  ]);
   await background.run([{ role: 'user', content: 'Expect a string instead' }], {
     type: 'object',
     properties: { count: { type: 'string' } },
@@ -1127,7 +1358,7 @@ it.each(['realtime', 'background'] as const)(
   async (kind) => {
     const f = await fixture(
       new MockLanguageModelV4({
-        doStream: async () => ({ stream: streamed(text('Done')) }),
+        doStream: async () => ({ stream: streamed(text('"Done"')) }),
       }),
     );
     f.service.configurator.registerOnlineAgentGlobalScope({
@@ -1144,9 +1375,12 @@ it.each(['realtime', 'background'] as const)(
       sessionId: agent.sessionId,
       scope: ['change'],
     });
-    const submit = () => opened.send([{ role: 'user', content: 'Next' }]);
+    const submit = () =>
+      'send' in opened
+        ? opened.send([{ role: 'user', content: 'Next' }])
+        : opened.run([{ role: 'user', content: 'Next' }], { type: 'string' });
     const accept = vi
-      .spyOn(kind === 'realtime' ? f.sessions.native : f.sessions, 'accept')
+      .spyOn(f.sessions.native, 'accept')
       .mockRejectedValueOnce(new Error('Admission failed'));
     await expect(submit()).rejects.toThrow('Admission failed');
     expect(
@@ -1166,9 +1400,15 @@ it.each(['realtime', 'background'] as const)(
     const newer = await f.service[kind](context(), {
       sessionId: agent.sessionId,
     });
-    await newer.send([{ role: 'user', content: 'Update elsewhere' }], {
-      overrides: { systemPromptTemplate: 'Newer' },
-    });
+    const input = { overrides: { systemPromptTemplate: 'Newer' } };
+    if ('send' in newer)
+      await newer.send([{ role: 'user', content: 'Update elsewhere' }], input);
+    else
+      await newer.run(
+        [{ role: 'user', content: 'Update elsewhere' }],
+        { type: 'string' },
+        input,
+      );
     await settle(newer);
     await submit();
     await settle(opened);
@@ -1564,9 +1804,10 @@ it('announces committed message revisions and permits stable ID rereads', async 
     ),
   ).rejects.toThrow();
   expect(events).toHaveLength(before);
-  expect(
-    ((await agent.history()) as AppUIMessage[]).map(appUIMessageText),
-  ).toEqual(['Hello', 'Saved']);
+  expect((await agent.history()).map(appUIMessageText)).toEqual([
+    'Hello',
+    'Saved',
+  ]);
 });
 
 it('retries finalization without repeating a completed business tool or model step', async () => {
@@ -1615,7 +1856,7 @@ it('retries finalization without repeating a completed business tool or model st
   expect(execute).toHaveBeenCalledOnce();
   expect(
     appUIMessageText(
-      ((await agent.history()) as AppUIMessage[])
+      (await agent.history())
         .filter((message) => message.role === 'assistant')
         .at(-1)!,
     ),
@@ -1632,67 +1873,95 @@ it('marks accepted input read, retains read on empty or tool-only finalization, 
   const id = agent.sessionId;
   const read = async () =>
     (await h.services.conversations.get('alice', id)).read;
-  const session = await f.sessions.load('alice', id);
-  const accept = (messageId: string) =>
-    f.sessions.accept('alice', id, session.config, ref, [
-      { id: messageId, message: { role: 'user', content: 'input' } },
-    ]);
-  await accept('input-one');
-  expect(await read()).toBe(true);
-  await f.sessions.save('alice', id, [], {
-    state: 'idle',
-    actorId: 'alice',
-    outcome: 'cancelled',
-  });
-  expect(await read()).toBe(true);
-  await f.sessions.finish('alice', id);
-  await accept('empty-failure');
-  await f.sessions.save('alice', id, [], {
-    state: 'idle',
-    actorId: 'alice',
-    outcome: 'failed',
-  });
-  expect(await read()).toBe(true);
-  await f.sessions.finish('alice', id);
-  await accept('input-two');
-  const items = [
-    {
-      id: 'output',
-      message: { role: 'assistant' as const, content: 'visible' },
-    },
-  ];
-  const call = {
-    state: 'idle' as const,
-    actorId: 'alice',
-    outcome: 'completed' as const,
+  const accept = async (messageId: string) => {
+    const expected = await f.sessions.load('alice', id);
+    const executionId = `execution-${messageId}`;
+    const answerId = `answer-${messageId}`;
+    await f.sessions.native.accept(
+      'alice',
+      id,
+      {
+        id: messageId,
+        parts: [{ type: 'text', text: 'input' }],
+        attachments: [],
+      },
+      expected.config,
+      ref,
+      executionId,
+      answerId,
+      expected,
+    );
+    return {
+      message: {
+        id: answerId,
+        role: 'assistant' as const,
+        metadata: {
+          conversationId: id,
+          createdAt: new Date().toISOString(),
+          executionId,
+          turnId: executionId,
+          revision: 0,
+        },
+        parts: [] as UIMessage['parts'],
+      },
+      call: (await f.sessions.load('alice', id)).call!,
+    };
   };
-  await f.sessions.save('alice', id, items, call);
-  expect(await read()).toBe(false);
-  await h.services.conversations.markRead('alice', id);
-  await f.sessions.save('alice', id, items, call);
+  const cancelled = await accept('input-one');
   expect(await read()).toBe(true);
-  await f.sessions.finish('alice', id);
-  await accept('input-three');
-  await f.sessions.save(
+  await f.sessions.native.save(
     'alice',
     id,
-    [
-      {
-        id: 'hidden-output',
-        message: {
-          role: 'assistant',
-          content: [
-            {
-              type: 'tool-call',
-              toolCallId: 't',
-              toolName: 'fixture',
-              input: {},
-            },
-          ],
-        },
-      },
-    ],
+    { message: cancelled.message },
+    { ...cancelled.call, outcome: 'cancelled' },
+    0,
+  );
+  expect(await read()).toBe(true);
+  await f.sessions.finish('alice', id);
+  const failed = await accept('empty-failure');
+  await f.sessions.native.save(
+    'alice',
+    id,
+    { message: failed.message },
+    { ...failed.call, outcome: 'failed' },
+    0,
+  );
+  expect(await read()).toBe(true);
+  await f.sessions.finish('alice', id);
+  const output = await accept('input-two');
+  output.message.parts.push({ type: 'text', text: 'visible' });
+  const call = { ...output.call, outcome: 'completed' as const };
+  await f.sessions.native.save(
+    'alice',
+    id,
+    { message: output.message },
     call,
+    0,
+  );
+  expect(await read()).toBe(false);
+  await h.services.conversations.markRead('alice', id);
+  await f.sessions.native.save(
+    'alice',
+    id,
+    { message: output.message },
+    call,
+    0,
+  );
+  expect(await read()).toBe(true);
+  await f.sessions.finish('alice', id);
+  const hidden = await accept('input-three');
+  hidden.message.parts.push({
+    type: 'tool-fixture',
+    toolCallId: 't',
+    state: 'input-available',
+    input: {},
+  });
+  await f.sessions.native.save(
+    'alice',
+    id,
+    { message: hidden.message },
+    { ...hidden.call, outcome: 'completed' },
+    0,
   );
   expect(await read()).toBe(true);
   await f.sessions.finish('alice', id);
@@ -1707,29 +1976,59 @@ it('repairs only previous-process native occupancy at server boot and preserves 
   const accepted = async () => {
     const agent = await f.service.background(context());
     const session = await f.sessions.load('alice', agent.sessionId);
-    await f.sessions.accept('alice', agent.sessionId, session.config, ref, [
+    await f.sessions.native.accept(
+      'alice',
+      agent.sessionId,
       {
         id: `input-${agent.sessionId}`,
-        message: { role: 'user', content: 'Work' },
+        parts: [{ type: 'text', text: 'Work' }],
+        attachments: [],
       },
-    ]);
+      session.config,
+      ref,
+      `execution-${agent.sessionId}`,
+      `answer-${agent.sessionId}`,
+      session,
+    );
     return agent;
   };
   const abandoned = await accepted();
   const saved = await accepted();
-  await f.sessions.save('alice', saved.sessionId, [], {
-    actorId: 'alice',
-    state: 'running',
-    outcome: 'completed',
-    result: { value: 7 },
-  });
+  const save = async (
+    agent: { sessionId: string },
+    outcome: 'completed' | 'failed',
+  ) => {
+    const session = await f.sessions.load('alice', agent.sessionId);
+    await f.sessions.native.save(
+      'alice',
+      agent.sessionId,
+      {
+        message: {
+          id: session.call!.messageId!,
+          role: 'assistant',
+          metadata: {
+            conversationId: agent.sessionId,
+            createdAt: new Date().toISOString(),
+            executionId: session.call!.executionId,
+            turnId: session.call!.executionId,
+            revision: 0,
+          },
+          parts: [],
+        },
+      },
+      {
+        ...session.call!,
+        outcome,
+        ...(outcome === 'completed'
+          ? { result: { value: 7 } }
+          : { error: 'Safe failure' }),
+      },
+      0,
+    );
+  };
+  await save(saved, 'completed');
   const failed = await accepted();
-  await f.sessions.save('alice', failed.sessionId, [], {
-    actorId: 'alice',
-    state: 'running',
-    outcome: 'failed',
-    error: 'Safe failure',
-  });
+  await save(failed, 'failed');
   const legacy = await accepted();
   await repository.updateMany({
     filter: { id: legacy.sessionId },
@@ -1763,17 +2062,30 @@ it('repairs only previous-process native occupancy at server boot and preserves 
     (await f.sessions.load('alice', abandoned.sessionId)).call,
   ).toMatchObject({ state: 'idle', outcome: 'failed' });
   expect(await saved.get()).toEqual({ value: 7 });
-  expect((await f.sessions.load('alice', failed.sessionId)).call).toEqual({
-    actorId: 'alice',
-    state: 'idle',
-    outcome: 'failed',
-    error: 'Safe failure',
-  });
+  expect((await f.sessions.load('alice', failed.sessionId)).call).toMatchObject(
+    {
+      actorId: 'alice',
+      state: 'idle',
+      executionId: `execution-${failed.sessionId}`,
+      messageId: `answer-${failed.sessionId}`,
+      revision: 1,
+      outcome: 'failed',
+      error: 'Safe failure',
+    },
+  );
   const history = await abandoned.history();
   expect(history).toHaveLength(2);
   expect(history[1]).toMatchObject({
     role: 'assistant',
-    content: expect.stringContaining('Some actions may have completed'),
+    parts: expect.arrayContaining([
+      expect.objectContaining({
+        type: 'data-notice',
+        data: expect.objectContaining({
+          type: 'failed',
+          title: expect.stringContaining('Some actions may have completed'),
+        }),
+      }),
+    ]),
   });
   expect(
     (await repository.findOne({ filter: { id: legacy.sessionId } }))?.metadata,
@@ -1834,93 +2146,152 @@ it('does not reclaim current-process occupancy through a new service facade or b
 it.each([false, true])(
   'replays trusted background tool facts with a paired result (known=%s) without keeping a review lock',
   async (known) => {
-    const f = await fixture(
-      new MockLanguageModelV4({
-        doStream: async () => ({ stream: streamed(text('Continue')) }),
-      }),
-    );
-    const agent = await f.service.background(context());
+    const model = new MockLanguageModelV4({
+      doStream: async () => ({ stream: streamed(text('"Continue"')) }),
+    });
+    const f = await fixture(model);
+    const rawOutput = {
+      value: 'Actually written',
+      nested: { __type: 'bytes', data: 'ordinary JSON' },
+    };
+    let converter = 'current';
+    const execute = vi.fn(() => rawOutput);
+    const toModelOutput = vi.fn(({ output }: { output: typeof rawOutput }) => ({
+      type: 'text' as const,
+      value: `${converter}: ${output.value}`,
+    }));
+    f.service.configurator.registerTool('write', {
+      version: '1',
+      definition: {
+        inputSchema: z.object({ private: z.boolean() }),
+        execute,
+        toModelOutput,
+      },
+    });
+    const agent = await f.service.background(context(), { tool: ['write'] });
     const loaded = await f.sessions.load('alice', agent.sessionId);
-    await f.sessions.accept('alice', agent.sessionId, loaded.config, ref, [
-      { id: 'old-input', message: { role: 'user', content: 'Write' } },
-    ]);
-    await f.sessions.save(
+    await f.sessions.native.accept(
       'alice',
       agent.sessionId,
-      [
-        {
-          id: 'old-call',
-          message: {
-            role: 'assistant',
-            content: [
-              {
-                type: 'tool-call',
-                toolCallId: 'old',
-                toolName: 'write',
-                input: { private: true },
-              },
-            ],
-          },
-        },
-        ...(known
-          ? [
-              {
-                id: 'old-result',
-                message: {
-                  role: 'tool' as const,
-                  content: [
-                    {
-                      type: 'tool-result' as const,
-                      toolCallId: 'old',
-                      toolName: 'write',
-                      output: {
-                        type: 'text' as const,
-                        value: 'Actually written',
-                      },
-                    },
-                  ],
-                },
-              },
-            ]
-          : []),
-      ],
       {
-        actorId: 'alice',
-        state: 'running',
-        outcome: 'cancelled',
-        requiresEffectReview: true,
+        id: 'old-input',
+        parts: [{ type: 'text', text: 'Write' }],
+        attachments: [],
       },
+      loaded.config,
+      ref,
+      'old-execution',
+      'old-call',
+      loaded,
     );
-    await f.sessions.finish('alice', agent.sessionId);
-    if (!known)
-      await f.sessions.save(
+    const message: NativeMessage = {
+      id: 'old-call',
+      role: 'assistant',
+      metadata: {
+        conversationId: agent.sessionId,
+        createdAt: new Date().toISOString(),
+        executionId: 'old-execution',
+        turnId: 'old-execution',
+        revision: 0,
+      },
+      parts: [
+        {
+          type: 'tool-write',
+          toolCallId: 'old',
+          input: { private: true },
+          ...(known
+            ? { state: 'output-available' as const, output: rawOutput }
+            : { state: 'input-available' as const }),
+        },
+      ],
+    };
+    const call = {
+      actorId: 'alice',
+      state: 'running' as const,
+      executionId: 'old-execution',
+      messageId: 'old-call',
+      outcome: 'cancelled' as const,
+      requiresEffectReview: true,
+    };
+    await f.sessions.native.save(
+      'alice',
+      agent.sessionId,
+      { message },
+      call,
+      0,
+    );
+    if (!known) {
+      message.parts = [
+        {
+          type: 'tool-write',
+          toolCallId: 'old',
+          input: { private: true },
+          state: 'output-error',
+          errorText: 'Tool result unknown',
+        },
+      ];
+      await f.sessions.native.save(
         'alice',
         agent.sessionId,
-        [
-          {
-            id: 'unknown-result',
-            message: {
-              role: 'tool',
-              content: [
-                {
-                  type: 'tool-result',
-                  toolCallId: 'old',
-                  toolName: 'write',
-                  output: { type: 'error-text', value: 'Tool result unknown' },
-                },
-              ],
-            },
-          },
-        ],
-        { actorId: 'alice', state: 'running', outcome: 'cancelled' },
+        { message },
+        call,
+        1,
       );
+    }
     await f.sessions.finish('alice', agent.sessionId);
+    const publicHistory = await agent.history();
+    expect(publicHistory.map((item) => item.role)).toEqual([
+      'user',
+      'assistant',
+    ]);
+    expect(publicHistory[1].parts).toEqual([]);
+    expect(JSON.stringify(publicHistory)).not.toContain('private');
+    expect(JSON.stringify(publicHistory)).not.toContain('toolCallId');
+    expect(JSON.stringify(publicHistory)).not.toContain('Actually written');
+    expect(toModelOutput).not.toHaveBeenCalled();
     const history = await f.history(agent);
-    expect(history).toHaveLength(3);
-    expect(JSON.stringify(history)).toContain(
-      known ? 'Actually written' : 'Tool result unknown',
+    expect(history.map((item) => item.role)).toEqual([
+      'user',
+      'assistant',
+      'tool',
+    ]);
+    expect(JSON.stringify(history)).toContain('private');
+    expect(history[2]).toMatchObject({
+      role: 'tool',
+      content: [
+        expect.objectContaining({
+          type: 'tool-result',
+          toolCallId: 'old',
+          output: known
+            ? { type: 'text', value: 'current: Actually written' }
+            : { type: 'error-text', value: 'Tool result unknown' },
+        }),
+      ],
+    });
+    const conversions = toModelOutput.mock.calls.length;
+    await agent.history();
+    expect(toModelOutput).toHaveBeenCalledTimes(conversions);
+    converter = 'updated';
+    expect(JSON.stringify(await f.history(agent))).toContain(
+      known ? 'updated: Actually written' : 'Tool result unknown',
     );
-    expect(JSON.stringify(await agent.history())).toContain('private');
+    expect(toModelOutput).toHaveBeenCalledTimes(known ? 2 : 0);
+    expect(execute).not.toHaveBeenCalled();
+    const rows = await h.database
+      .connection()
+      .repository('agConversationMessages')
+      .findMany({
+        filter: { conversationId: agent.sessionId },
+        sort: (sort) => sort.field('seq').asc(),
+      });
+    expect(rows.map((row) => row.role)).toEqual(['user', 'assistant']);
+    expect(rows[1].content.original.parts).toEqual([
+      expect.objectContaining(
+        known
+          ? { state: 'output-available', output: rawOutput }
+          : { state: 'output-error', errorText: 'Tool result unknown' },
+      ),
+    ]);
     const repo = h.database.connection().repository('agConversations');
     const row = await repo.findOne({ filter: { id: agent.sessionId } });
     await repo.updateMany({
@@ -1939,8 +2310,16 @@ it.each([false, true])(
       },
     });
     await f.sessions.configure('alice', agent.sessionId, loaded.config, ref);
-    await agent.send([{ role: 'user', content: 'Continue' }]);
+    await agent.run([{ role: 'user', content: 'Continue' }], {
+      type: 'string',
+    });
     await settle(agent);
+    expect(await agent.get()).toBe('Continue');
+    expect(execute).not.toHaveBeenCalled();
+    expect(model.doStreamCalls).toHaveLength(1);
+    expect(JSON.stringify(model.doStreamCalls[0].prompt)).toContain(
+      known ? 'updated: Actually written' : 'Tool result unknown',
+    );
   },
 );
 
@@ -2053,9 +2432,10 @@ it.each(['save', 'finish'] as const)(
     });
     const f = await fixture(model);
     const job = await f.service.background(context());
-    vi.spyOn(f.sessions, phase).mockRejectedValueOnce(
-      new Error('PRIVATE_DATABASE_FAILURE'),
-    );
+    const failure = new Error('PRIVATE_DATABASE_FAILURE');
+    if (phase === 'save')
+      vi.spyOn(f.sessions.native, 'save').mockRejectedValueOnce(failure);
+    else vi.spyOn(f.sessions, 'finish').mockRejectedValueOnce(failure);
     await job.run([{ role: 'user', content: 'Count' }], countSchema);
     await opened.promise;
     const first = job.get().catch((error: unknown) => error);
@@ -2074,9 +2454,11 @@ it.each(['save', 'finish'] as const)(
     expect(await job.get()).toEqual({ count: 3 });
     expect(await job.status()).toBe('idle');
     expect(model.doStreamCalls).toHaveLength(1);
-    expect(
-      (await job.history()).filter((item) => item.role === 'assistant'),
-    ).toHaveLength(1);
+    const answers = (await job.history()).filter(
+      (item) => item.role === 'assistant',
+    );
+    expect(answers).toHaveLength(1);
+    expect(appUIMessageText(answers[0])).toBe('{"count":3}');
   },
 );
 
@@ -2379,7 +2761,7 @@ it('saves native notices in the outer transaction without waking, rolls back and
     ).toBe(1);
   });
   client.off('query', record);
-  expect(events).toHaveLength(1);
+  expect(events).toHaveLength(2);
   await h.services.tx.run(async (unit) => {
     expect(
       await h.services.conversations.deliver(
@@ -2400,10 +2782,22 @@ it('saves native notices in the outer transaction without waking, rolls back and
       throw new Error('Rollback fixture');
     }),
   ).rejects.toThrow('Rollback fixture');
-  expect(events).toHaveLength(2);
-  expect((await notices()).items.map((item) => item.content.content)).toEqual([
-    'Committed',
-    'Input ignored',
+  expect(events).toHaveLength(4);
+  expect((await job.history()).map((item) => item.parts)).toEqual([
+    [
+      {
+        type: 'data-notice',
+        id: expect.any(String),
+        data: { type: 'fixture', title: 'Committed' },
+      },
+    ],
+    [
+      {
+        type: 'data-notice',
+        id: expect.any(String),
+        data: { type: 'fixture', title: 'Input ignored' },
+      },
+    ],
   ]);
   // A real uniqueness error from the database must escape deliver and roll back its outer work.
   await expect(
@@ -2440,7 +2834,13 @@ it('saves native notices in the outer transaction without waking, rolls back and
   expect(await result).toEqual({ count: 7 });
   const rows = (await notices()).items;
   expect(rows.map((item) => item.seq)).toEqual([1, 2, 3, 4, 5]);
-  expect(rows[3].content.content).toBe('While running');
+  expect((await job.history())[3].parts).toEqual([
+    {
+      type: 'data-notice',
+      id: expect.any(String),
+      data: { type: 'fixture', title: 'While running' },
+    },
+  ]);
   expect(model.doStreamCalls).toHaveLength(1);
   expect(
     await h.services.tx.run((unit) =>
