@@ -1,4 +1,3 @@
-import { quotaForAgent } from '../../../shared/runners.js';
 /**
  * Conversations over this plugin's own tables. Everything people and other plugins do with conversations goes through
  * `ConversationService` (`ports.ts`); a later move to a shared platform conversation layer, or to the AI employee's
@@ -14,6 +13,7 @@ import { quotaForAgent } from '../../../shared/runners.js';
  * - Switching to the system default and back moves the queued work and the unanswered messages to the other agent,
  *   and bumps `thread`, so every switch starts a new session.
  */
+import { quotaForAgent } from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
@@ -376,7 +376,9 @@ export function createConversationService(
       userId,
       deps.agents.mayInvoke,
       eligible.length,
-      online.some((runner) => runnerTakesAgent(runner, agent)),
+      online.some((runner) =>
+        runnerTakesAgent(runner, agent, clock.now().getTime()),
+      ),
     );
   }
 
@@ -1470,7 +1472,7 @@ export function createConversationService(
         deps.settings.settings(conn),
         deps.settings.preferences(userId, conn),
       ]);
-      const variableStates = await deps.eligibility.prepare?.(conn, agents, {});
+      const variableStates = await deps.eligibility.prepare(conn, agents, {});
       return Promise.all(
         agents
           // People talk to the agents discovered from runners; an application's own agents do work of its own.
@@ -1480,7 +1482,7 @@ export function createConversationService(
           )
           .map(async (agent): Promise<ChatAgent> => {
             const fitting = runners.filter((runner) =>
-              runnerTakesAgent(runner, agent),
+              runnerTakesAgent(runner, agent, clock.now().getTime()),
             );
             return {
               id: agent.id,
@@ -1498,7 +1500,19 @@ export function createConversationService(
                 runners,
                 variableStates?.get(agent.id),
               ),
-              quota: quotaForAgent(runners, agent, userId),
+              quota: quotaForAgent(
+                runners,
+                agent,
+                userId,
+                clock.now().getTime(),
+              ),
+              runnerNames: fitting
+                .filter(
+                  (runner) =>
+                    runner.trust === 'team' || runner.ownerUserId === userId,
+                )
+                .slice(0, 3)
+                .map((runner) => runner.name),
               personalOnly:
                 fitting.length > 0 &&
                 fitting.every((runner) => runner.trust !== 'team'),

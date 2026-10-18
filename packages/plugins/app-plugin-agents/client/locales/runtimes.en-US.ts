@@ -2,8 +2,36 @@
 const runtimesEnUS = {
   runtimes: {
     quota: {
+      workspaceStatus: {
+        active: 'Work continues',
+        ended: 'Ended · cleanup allowed',
+        checks: 'Ended · checks pending',
+        inUse: 'Retained: in use',
+        changed: 'Retained: reused',
+        trackedChanges: 'Retained: uncommitted files',
+        unpushed: 'Retained: unpushed work',
+        missingEvidence: 'Retained: verification needed',
+        gitFailed: 'Retained: Git check failed',
+        runNotFound: 'Retained: run not found',
+        ownershipUnknown: 'Retained: owner unverified',
+        ambiguousSubject: 'Retained: ambiguous task',
+        bindingUnavailable: 'Retained: binding unavailable',
+        subjectUnknown: 'Retained: task unknown',
+        unknown: 'Retained: unverified',
+      },
+      usageLimit: 'Usage limit',
+      shortReset: 'resets {{time}}',
+      shortUnknown: 'reset unknown',
+      automatic: 'Clears by itself at the reset.',
+      since: 'since {{time}}',
+      marks: '{{count}} quota marks',
+      queueHint:
+        'An agent at quota can still be selected. Work will queue with its existing waiting deadline.',
+      partial: 'Runs on {{available}} · {{blocked}} at quota',
+
       workspaceSize: 'Workspace size: {{value}}',
-      providers: '{{blocked}} of {{total}} providers at quota',
+      providers_one: '{{count}} provider at quota',
+      providers_other: '{{count}} providers at quota',
       runColumns: {
         issue: 'Issue / conversation',
         agent: 'Agent',
@@ -30,7 +58,7 @@ const runtimesEnUS = {
       working: 'Working',
       readOnly: 'Read-only copy',
       clean: 'Clean',
-      unpushed: 'Unpushed / unverified',
+      unpushed: 'Unpushed',
       overview: 'Overview',
       workspaces: 'Workspaces',
       runs: 'Runs',

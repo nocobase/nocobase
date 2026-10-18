@@ -315,10 +315,9 @@ describe("a runner's working directories", () => {
       `/agents/runners/${runner.runnerId}/workspaces`,
       { user: 'owner' },
     );
-    expect(directories.body.data).toEqual({
-      ...before.workspaceUsage,
-      ...summary,
-    });
+    const { workspaces: originalRows, ...totals } = before.workspaceUsage!;
+    expect(directories.body.meta.usage).toEqual({ ...totals, ...summary });
+    expect(directories.body.data).toEqual(originalRows);
   });
 
   it('keeps the report on the runner, most recently used first, with each subject, what was decided and the disk', async () => {
@@ -341,7 +340,10 @@ describe("a runner's working directories", () => {
         user: 'owner',
       },
     );
-    expect(shown.body.data).toMatchObject({
+    expect({
+      ...shown.body.meta.usage,
+      workspaces: shown.body.data,
+    }).toMatchObject({
       disk,
       count: 2,
       unpushedCount: 1,
@@ -398,7 +400,10 @@ describe("a runner's working directories", () => {
         { user: 'viewer', can: ['agents.runners/read'] },
       );
       expect(shown.status).toBe(200);
-      expect(shown.body.data).toMatchObject({
+      expect({
+        ...shown.body.meta.usage,
+        workspaces: shown.body.data,
+      }).toMatchObject({
         count: 1,
         totalBytes: 0,
         sizeUnknownCount: 1,
@@ -424,7 +429,10 @@ describe("a runner's working directories", () => {
         user: 'owner',
       },
     );
-    expect(shown.body.data).toMatchObject({
+    expect({
+      ...shown.body.meta.usage,
+      workspaces: shown.body.data,
+    }).toMatchObject({
       disk: null,
       workspaces: [{ runId: runIds[0], settled: null }],
     });

@@ -8,6 +8,8 @@ export interface ExecutorPresentationProps {
 export interface ExecutorPresentation {
   readonly kind: string;
   readonly Component: ComponentType<ExecutorPresentationProps>;
+  /** Optional shared explanation below the candidate list. */
+  readonly Footer?: ComponentType;
 }
 export const ExecutorPresentationContext: Context<ExecutorPresentation | null> =
   createContext<ExecutorPresentation | null>(null);

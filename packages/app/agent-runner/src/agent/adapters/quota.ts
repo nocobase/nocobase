@@ -22,7 +22,7 @@ export function claudeQuota(
       : name === 'seven_day_sonnet'
         ? 'sonnet'
         : undefined;
-  if (family && !model?.includes(family)) return undefined;
+  if (family && model && !model.includes(family)) return undefined;
   if (
     !family &&
     ![
@@ -37,8 +37,8 @@ export function claudeQuota(
     windows: [
       {
         window: name,
-        scope: family ? 'model' : 'tool',
-        target: family ? model! : '',
+        scope: family && model ? 'model' : 'tool',
+        target: family && model ? model : '',
         resetsAt: reset(info.resetsAt),
         exhausted:
           info.status === 'rejected' &&
@@ -54,16 +54,17 @@ export function claudeQuota(
 export function codexQuota(
   value: unknown,
   exhausted = false,
+  error?: unknown,
 ): QuotaReport | undefined {
   const limits = object(value);
-  const windows: QuotaWindow[] = [];
+  let windows: QuotaWindow[] = [];
   for (const key of ['primary', 'secondary']) {
     const item = object(limits[key]);
-    if (
-      typeof item.usedPercent !== 'number' ||
-      !Number.isFinite(item.usedPercent)
-    )
-      continue;
+    const usedPercent =
+      typeof item.usedPercent === 'number' && Number.isFinite(item.usedPercent)
+        ? Math.min(100, Math.max(0, item.usedPercent))
+        : undefined;
+    if (usedPercent === undefined && !reset(item.resetsAt)) continue;
     windows.push({
       window:
         typeof item.windowDurationMins === 'number'
@@ -72,17 +73,39 @@ export function codexQuota(
       scope: 'tool',
       target: '',
       resetsAt: reset(item.resetsAt),
-      usedPercent: Math.min(100, Math.max(0, item.usedPercent)),
-      exhausted: exhausted && item.usedPercent >= 100,
+      ...(usedPercent === undefined ? {} : { usedPercent }),
+      exhausted: exhausted && usedPercent !== undefined && usedPercent >= 100,
     });
   }
-  if (exhausted && !windows.some((window) => window.exhausted))
-    windows.push({
-      window: 'account',
-      scope: 'tool',
-      target: '',
-      resetsAt: null,
-      exhausted: true,
-    });
+  if (exhausted) {
+    const info = object(error);
+    const structured = object(info.usageLimitExceeded);
+    const errorReset = reset(structured.resetsAt ?? info.resetsAt);
+    if (!windows.some((window) => window.exhausted)) {
+      const highest = windows.reduce<QuotaWindow | undefined>(
+        (best, window) =>
+          !best || (window.usedPercent ?? -1) > (best.usedPercent ?? -1)
+            ? window
+            : best,
+        undefined,
+      );
+      if (highest)
+        windows = windows.map((window) =>
+          window === highest ? { ...window, exhausted: true } : window,
+        );
+      else
+        windows.push({
+          window: 'account',
+          scope: 'tool',
+          target: '',
+          resetsAt: errorReset,
+          exhausted: true,
+        });
+    }
+    if (errorReset)
+      windows = windows.map((window) =>
+        window.exhausted ? { ...window, resetsAt: errorReset } : window,
+      );
+  }
   return windows.length ? { windows } : undefined;
 }

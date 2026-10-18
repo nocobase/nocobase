@@ -5,13 +5,16 @@
  * agent offers "Fill in and enable", an enabled or disabled one "Edit" (`agent-dialog.tsx`), for someone who manages
  * agents; everyone else reads. Under the table, how to add an agent: connect a runner whose tool has the model.
  */
+import { AgentQuotaHint, QuotaLabel } from '../../components/quota-status.js';
+import { modelLabel, TOOL_LABELS } from '../../../shared/model-catalog.js';
+
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDownIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
-import { discoveryKey, TOOL_LABELS } from '../../../shared/model-catalog.js';
+import { discoveryKey } from '../../../shared/model-catalog.js';
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -229,7 +232,13 @@ export function RunnerAgentsSection(): ReactElement {
                     <div className='min-w-0 flex-1'>
                       <div className='font-medium'>{agent.name}</div>
                       <div className='break-all text-xs text-muted-foreground'>
-                        {group.map((candidate) => candidate.model).join(', ')}
+                        {group
+                          .map((candidate) =>
+                            candidate.tool && candidate.model
+                              ? modelLabel(candidate.tool, candidate.model)
+                              : t('agents.effort.default'),
+                          )
+                          .join(', ')}
                       </div>
                     </div>
                     {agent.canEdit ? (
@@ -388,6 +397,10 @@ function AgentRow({
   const { t } = useTranslation();
   const format = useFormatters();
   const state = stateOf(agent);
+  const quotaBlocked =
+    agent.status === 'enabled' &&
+    !!agent.quota?.length &&
+    ['noRunner', 'othersPersonal'].includes(agent.unusable ?? '');
   const { runners } = agent;
   const where =
     runners.team + runners.personal === 0
@@ -412,12 +425,19 @@ function AgentRow({
           ? t('agents.where.names', { names: runners.names.join(', ') })
           : '';
   return (
-    <TableRow data-testid={`agent-${agent.id}`} data-state={state}>
+    <TableRow
+      data-testid={`agent-${agent.id}`}
+      data-state={state}
+      className={quotaBlocked ? 'bg-destructive/5' : undefined}
+    >
       <TableCell>
         <div className='min-w-0 leading-tight'>
           <div className='truncate font-medium'>{agent.name}</div>
           <div className='truncate font-mono text-xs text-muted-foreground'>
-            {agent.tool} / {agent.model}
+            {agent.tool ? TOOL_LABELS[agent.tool] : ''} ·{' '}
+            {agent.tool && agent.model
+              ? modelLabel(agent.tool, agent.model)
+              : ''}
           </div>
         </div>
       </TableCell>
@@ -432,21 +452,17 @@ function AgentRow({
       </TableCell>
       <TableCell>
         <div className='leading-tight'>
-          <div>{where}</div>
-          {agent.quota?.map((quota) => (
-            <div
-              key={quota.runnerId}
-              className='text-xs text-amber-700 dark:text-amber-400'
-            >
-              {quota.runnerName}: {t('runtimes.quota.reached')} ·{' '}
-              {quota.resetsAt
-                ? t('runtimes.quota.resets', {
-                    time: format.dateTime(quota.resetsAt),
-                  })
-                : t('runtimes.quota.unknown')}
-            </div>
-          ))}
-          {whereNote ? (
+          <div>
+            {quotaBlocked
+              ? agent.quota?.map((q) => q.runnerName).join(', ')
+              : where}
+          </div>
+          <AgentQuotaHint
+            quota={agent.quota}
+            online={!quotaBlocked}
+            names={runners.names}
+          />
+          {!quotaBlocked && !agent.quota?.length && whereNote ? (
             <div className='text-xs text-muted-foreground'>{whereNote}</div>
           ) : null}
         </div>
@@ -458,9 +474,13 @@ function AgentRow({
       </TableCell>
       <TableCell>
         <div className='flex items-center gap-2'>
-          <AgTag tone={STATE_TONE[state]} dot>
-            {t(`agents.state.${state}`)}
-          </AgTag>
+          {quotaBlocked ? (
+            <QuotaLabel />
+          ) : (
+            <AgTag tone={STATE_TONE[state]} dot>
+              {t(`agents.state.${state}`)}
+            </AgTag>
+          )}
         </div>
       </TableCell>
       <TableCell className='text-right'>

@@ -97,15 +97,13 @@ describe('admin API', () => {
       `/agents/runners/${runner.runnerId}/workspaces`,
       { user: 'alice' },
     );
-    expect(detail.body.data.workspaces).toEqual([
-      expect.objectContaining(directory),
-    ]);
+    expect(detail.body.data).toEqual([expect.objectContaining(directory)]);
     const redacted = await h.request(
       'GET',
       `/agents/runners/${runner.runnerId}/workspaces`,
       { user: 'bob', can: ['agents.runners/read'] },
     );
-    expect(redacted.body.data.workspaces).toEqual([]);
+    expect(redacted.body.data).toEqual([]);
     expect(
       (
         await h.request(

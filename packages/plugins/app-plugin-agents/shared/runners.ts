@@ -1,6 +1,8 @@
 /**
  * Runners as the browser and the server's admin API exchange them.
  */
+import type { QuotaLocation } from './quota.js';
+
 import {
   AGENT_TOOLS,
   policyAllowsAgent,
@@ -120,7 +122,7 @@ export interface Runner {
    * tool's models differently. Null or absent for none.
    */
   readonly unavailableModels?: readonly UnavailableModel[] | null;
-  readonly quotaRevision?: number;
+  readonly quotaRevision: number;
   readonly quotaUsage?: readonly RunnerQuotaUsage[] | null;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
@@ -135,13 +137,15 @@ export interface RunnerQuotaUsage {
   readonly usedPercent?: number;
   readonly resetsAt: string | null;
   readonly observedAt: string;
+  /** Whether this observation exhausted its window. */
+  readonly exhausted?: boolean;
 }
 
 /** Active quota blocks for a candidate; default models still obey tool blocks. */
 export function quotaBlocks(
   runner: Pick<Runner, 'unavailableModels'>,
   entry: Pick<RunnerModelEntry, 'tool' | 'model'>,
-  now: number = Date.now(),
+  now: number,
 ): UnavailableModel[] {
   const model = entry.model ? normalizeModel(entry.tool, entry.model) : '';
   return (runner.unavailableModels ?? []).filter(
@@ -300,9 +304,9 @@ export interface RunnerSummary extends Omit<Runner, 'hostname'> {
   readonly canChangeTrust: boolean;
   /** The viewer may revoke it, and delete it once revoked: its owner, or a manager of runners in an emergency. */
   readonly canRevoke: boolean;
-  readonly canClearQuota?: boolean;
+  readonly canClearQuota: boolean;
   /** Count of the recent (at most ten) run rows, without loading their details. */
-  readonly recentRunsCount?: number;
+  readonly recentRunsCount: number;
   /**
    * A newer runner version the application serves for its platform, which the runner installs on its own between
    * runs; null when it is up to date or the application serves none.
@@ -318,9 +322,46 @@ export interface RunnerSummary extends Omit<Runner, 'hostname'> {
 }
 
 /** The list carries totals only; fetch a single runner for directory diagnostics. */
-export interface RunnerListItem extends Omit<RunnerSummary, 'workspaceUsage'> {
-  readonly takesCount?: number;
+export interface RunnerListItem extends Pick<
+  RunnerSummary,
+  | 'id'
+  | 'name'
+  | 'hostname'
+  | 'os'
+  | 'arch'
+  | 'version'
+  | 'product'
+  | 'tools'
+  | 'enabledTools'
+  | 'trust'
+  | 'ownerUserId'
+  | 'ownerName'
+  | 'status'
+  | 'slots'
+  | 'toolSlots'
+  | 'activeRuns'
+  | 'activeJobs'
+  | 'activeByTool'
+  | 'lastSeenAt'
+  | 'draining'
+  | 'canManage'
+  | 'canChangeTrust'
+  | 'canRevoke'
+  | 'takes'
+  | 'updateVersion'
+> {
+  readonly takesCount: number;
   readonly workspaceUsage?: Omit<RunnerWorkspaceUsage, 'workspaces'> | null;
+}
+
+export interface RunnerWorkspacePage {
+  readonly data: readonly RunnerWorkspace[];
+  readonly meta: {
+    readonly total: number;
+    readonly page: number;
+    readonly pageSize: number;
+    readonly usage: Omit<RunnerWorkspaceUsage, 'workspaces'> | null;
+  };
 }
 
 /** What people change about a runner after it registered. */
@@ -429,8 +470,12 @@ export function reportedModels(
 export function runsEntry(
   runner: Pick<Runner, 'enabledTools' | 'tools' | 'unavailableModels'>,
   entry: Pick<RunnerModelEntry, 'tool' | 'model'>,
+  now: number = Date.now(),
 ): boolean {
-  if (!runsTool(runner, entry.tool) || quotaBlocks(runner, entry).length > 0)
+  if (
+    !runsTool(runner, entry.tool) ||
+    quotaBlocks(runner, entry, now).length > 0
+  )
     return false;
   if (!entry.model) return true;
   const model = normalizeModel(entry.tool, entry.model);
@@ -582,10 +627,11 @@ export function runnerTakesAgent(
     | 'workspaceUsage'
   >,
   agent: RunnerAgentFit,
+  now: number = Date.now(),
 ): boolean {
   return (
     !runnerLowOnDisk(runner) &&
-    agent.modelEntries.some((entry) => runsEntry(runner, entry)) &&
+    agent.modelEntries.some((entry) => runsEntry(runner, entry, now)) &&
     policyAllowsAgent(runner.policy, agent)
   );
 }
@@ -594,14 +640,15 @@ export function runnerTakesAgent(
 export function quotaForAgent(
   runners: readonly Runner[],
   agent: RunnerAgentFit,
-  actorUserId?: string,
-): { runnerId: string; runnerName: string; resetsAt: string | null }[] {
+  actorUserId: string | undefined,
+  now: number,
+): QuotaLocation[] {
   return runners.flatMap((runner) => {
     if (
       !(runner.unavailableModels ?? []).some(
         (mark) =>
           mark.reason === 'toolQuota' &&
-          (!mark.resetsAt || Date.parse(mark.resetsAt) > Date.now()),
+          (!mark.resetsAt || Date.parse(mark.resetsAt) > now),
       )
     )
       return [];
@@ -617,10 +664,10 @@ export function quotaForAgent(
         (mark) => mark.reason !== 'toolQuota',
       ),
     };
-    if (!runnerTakesAgent(compatible, agent)) return [];
+    if (!runnerTakesAgent(compatible, agent, now)) return [];
     const blocks = agent.modelEntries
-      .filter((entry) => runsEntry(compatible, entry))
-      .map((entry) => quotaBlocks(runner, entry));
+      .filter((entry) => runsEntry(compatible, entry, now))
+      .map((entry) => quotaBlocks(runner, entry, now));
     if (blocks.some((list) => !list.length)) return [];
     const resets = blocks.map((list) =>
       list.some((mark) => !mark.resetsAt)

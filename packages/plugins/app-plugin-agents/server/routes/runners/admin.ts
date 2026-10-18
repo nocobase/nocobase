@@ -1,7 +1,3 @@
-import {
-  workspaceCategory,
-  workspaceSummary,
-} from '../../../shared/runners.js';
 /**
  * The people-facing runners API, mounted at `/api/agents/runners` beside the runner protocol (`runner.ts`): runners
  * and registration tokens. Every route is behind the guard the route contribution passes (a signed-in user and their
@@ -21,6 +17,10 @@ import {
  *   its owner, the managers of runners and anyone who may wake at least one agent see; everyone else sees neither
  *   (`runnerForViewer`).
  */
+import {
+  workspaceCategory,
+  workspaceSummary,
+} from '../../../shared/runners.js';
 import {
   MIN_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
@@ -51,7 +51,7 @@ import { upgradeFor } from '../../distribution/index.js';
 import { forbidden, notFound } from '../../kernel/errors.js';
 import { domainRouter } from '../../kernel/http.js';
 import { z } from 'zod';
-import { runsRepo } from '../../core/runs/run.store.js';
+import { ACTIVE, runsRepo } from '../../core/runs/run.store.js';
 import { tags } from '../openapi.js';
 import {
   RegistrationTokenInputSchema,
@@ -64,7 +64,8 @@ import {
   RunnerRecentRunSchema,
   RunnerSchema,
   RunnerSummarySchema,
-  RunnerWorkspaceUsageResponseSchema,
+  RunnerWorkspaceSchema,
+  RunnerWorkspacePageMetaSchema,
   RunnerListItemSchema,
 } from '../schemas.js';
 
@@ -177,6 +178,7 @@ export function createAdminRoutes(
   const runnerRights = async (
     context: Context<AdminEnv>,
     runner: Runner,
+    inactive?: ReadonlySet<string>,
   ): Promise<{
     readonly see: boolean;
     readonly edit: boolean;
@@ -186,7 +188,6 @@ export function createAdminRoutes(
     const who = caller(context);
     const own = runner.ownerUserId === who.userId;
     const revoke = own || (await can(who, 'agents.runners', 'manage'));
-    const inactive = listInactive.get(who);
     const edit =
       own ||
       (revoke &&
@@ -206,22 +207,21 @@ export function createAdminRoutes(
       ? services.runnerView.takes(runners)
       : new Map<string, readonly RunnerWorkTarget[]>();
 
-  const listHeld = new WeakMap<
-    AdminCaller,
-    ReadonlyMap<
-      string,
-      { runs: number; jobs: number; byTool: Record<string, number> }
-    >
-  >();
-  const listInactive = new WeakMap<AdminCaller, ReadonlySet<string>>();
   const summarizeRunner = async (
     context: Context<AdminEnv>,
     runner: Runner,
     takes: ReadonlyMap<string, readonly RunnerWorkTarget[]>,
-  ): Promise<RunnerSummary> => {
-    const rights = await runnerRights(context, runner);
+    prefetched?: {
+      readonly held: ReadonlyMap<
+        string,
+        { runs: number; jobs: number; byTool: Record<string, number> }
+      >;
+      readonly inactive: ReadonlySet<string>;
+    },
+  ): Promise<Omit<RunnerSummary, 'recentRunsCount'>> => {
+    const rights = await runnerRights(context, runner, prefetched?.inactive);
     const held =
-      listHeld.get(caller(context))?.get(runner.id) ??
+      prefetched?.held.get(runner.id) ??
       (await services.slots.held(services.tx.read(), runner.id));
     return {
       ...runnerForViewer(runner, rights.machine),
@@ -313,23 +313,17 @@ export function createAdminRoutes(
     async (context) => {
       const all = await services.runners.list({ workspaceDetails: false });
       const conn = services.tx.read();
-      listInactive.set(
-        caller(context),
-        await services.people.inactive(conn, [
-          ...new Set(
-            all.flatMap((runner) =>
-              runner.ownerUserId ? [runner.ownerUserId] : [],
-            ),
+      const inactive = await services.people.inactive(conn, [
+        ...new Set(
+          all.flatMap((runner) =>
+            runner.ownerUserId ? [runner.ownerUserId] : [],
           ),
-        ]),
-      );
+        ),
+      ]);
       const jobs = await services.slots.jobsByRunner(conn);
       const runs = await runsRepo(conn).findMany({
         filter: (f) =>
-          f.or([
-            f.string('status').eq('dispatched'),
-            f.string('status').eq('running'),
-          ]),
+          f.or([...ACTIVE.map((status) => f.string('status').eq(status))]),
         select: (s) => s.fields('runnerId', 'tool'),
       });
       const held = new Map<
@@ -353,26 +347,55 @@ export function createAdminRoutes(
             item.byTool[run.tool] = (item.byTool[run.tool] ?? 0) + 1;
         }
       }
-      listHeld.set(caller(context), held);
       const visible: Runner[] = [];
       for (const runner of all)
-        if ((await runnerRights(context, runner)).see) visible.push(runner);
+        if ((await runnerRights(context, runner, inactive)).see)
+          visible.push(runner);
       const takes = await takesOf(visible);
       const data = await Promise.all(
         visible.map(async (runner): Promise<RunnerListItem> => {
-          const summary = await summarizeRunner(context, runner, takes);
-          const { workspaceUsage, ...full } = summary;
-          const rest = {
-            ...full,
-            tools: full.tools.map(({ models: _models, ...tool }) => tool),
-            takes: full.takes.slice(0, 3),
-            takesCount: full.takes.length,
+          const summary = await summarizeRunner(context, runner, takes, {
+            held,
+            inactive,
+          });
+          const totals = summary.workspaceUsage
+            ? (({ workspaces: _rows, ...value }) => value)(
+                summary.workspaceUsage,
+              )
+            : null;
+          return {
+            id: summary.id,
+            name: summary.name,
+            hostname: summary.hostname,
+            os: summary.os,
+            arch: summary.arch,
+            version: summary.version,
+            product: summary.product,
+            enabledTools: summary.enabledTools,
+            trust: summary.trust,
+            ownerUserId: summary.ownerUserId,
+            ownerName: summary.ownerName,
+            status: summary.status,
+            slots: summary.slots,
+            toolSlots: summary.toolSlots,
+            activeRuns: summary.activeRuns,
+            activeJobs: summary.activeJobs,
+            activeByTool: summary.activeByTool,
+            lastSeenAt: summary.lastSeenAt,
+            draining: summary.draining,
+            canManage: summary.canManage,
+            canChangeTrust: summary.canChangeTrust,
+            canRevoke: summary.canRevoke,
+            updateVersion: summary.updateVersion,
+            tools: summary.tools.map(({ kind, version, authenticated }) => ({
+              kind,
+              version,
+              authenticated,
+            })),
+            takes: summary.takes.slice(0, 3),
+            takesCount: summary.takes.length,
+            workspaceUsage: totals,
           };
-          if (workspaceUsage) {
-            const { workspaces: _workspaces, ...totals } = workspaceUsage;
-            return { ...rest, workspaceUsage: totals };
-          }
-          return { ...rest, workspaceUsage };
         }),
       );
       return context.json({ data, meta: { total: data.length } });
@@ -475,12 +498,6 @@ export function createAdminRoutes(
     runnerParam,
     async (context) => {
       const runner = await visibleRunner(context);
-      const recent = await services.tx
-        .read()
-        .query.selectFrom('agRuns')
-        .select((eb) => [eb.fn.countAll().as('count')])
-        .where('runnerId', '=', runner.id)
-        .executeTakeFirst();
       return context.json({
         data: {
           ...(await summarizeRunner(
@@ -493,7 +510,7 @@ export function createAdminRoutes(
             },
             await takesOf([runner]),
           )),
-          recentRunsCount: Math.min(10, Number(recent?.count ?? 0)),
+          recentRunsCount: await services.runnerView.recentCount(runner.id),
         },
       });
     },
@@ -681,7 +698,6 @@ export function createAdminRoutes(
   router.post(
     '/:runnerId/quota/clear',
     guard,
-    runnerParam,
     describeRoute({
       tags,
       summary: 'Clear a runtime quota mark',
@@ -691,37 +707,54 @@ export function createAdminRoutes(
         args: ['runnerId'],
         flags: { runnerId: { name: 'runtime' } },
       }),
-      responses: { 204: emptyResponse(), ...revokeErrors },
+      responses: {
+        204: emptyResponse(),
+        ...apiErrorResponses,
+        403: apiErrorResponse(
+          403,
+          'Only the runtime owner or a runtime administrator may clear an unknown-reset quota mark.',
+        ),
+        404: notVisible,
+        409: apiErrorResponse(
+          409,
+          'The mark has a known reset time, or a concurrent quota change requires retrying.',
+        ),
+      },
     }),
+    runnerParam,
     apiValidator(
       'json',
-      z.object({
-        revision: z
-          .number()
-          .int()
-          .nonnegative()
-          .describe(
-            'The current quotaRevision from runtime get. A stale revision returns 409; reload before clearing.',
-          ),
-        key: z
+      z.strictObject({
+        tool: z
+          .enum(['claude', 'codex', 'opencode', 'pi'])
+          .describe('The coding tool whose unknown-reset mark is selected.'),
+        scope: z
+          .enum(['tool', 'provider', 'model'])
+          .describe('The scope of the selected quota mark.'),
+        target: z
           .string()
-          .max(1000)
-          .describe(
-            'The JSON-encoded [tool, scope, model, window] tuple of the selected unavailableModels quota mark from runtime get.',
-          ),
+          .max(200)
+          .describe('The provider or model id; empty for a whole-tool mark.'),
+        window: z
+          .string()
+          .min(1)
+          .max(100)
+          .describe('The selected usage window.'),
       }),
     ),
     async (context) => {
-      const runner = await revocableRunner(context);
-      const input = context.req.valid('json');
-      await services.runners.clearQuota(runner.id, input.revision, input.key);
+      const runner = await visibleRunner(context);
+      if (!(await runnerRights(context, runner)).revoke)
+        throw forbidden(
+          'Only the runtime owner or a runtime administrator may clear quota.',
+        );
+      await services.runners.clearQuota(runner.id, context.req.valid('json'));
       return context.body(null, 204);
     },
   );
   router.get(
     '/:runnerId/workspaces',
     guard,
-    runnerParam,
     describeRoute({
       tags,
       summary: 'Read runtime workspace diagnostics',
@@ -732,26 +765,27 @@ export function createAdminRoutes(
         flags: { runnerId: { name: 'runtime' } },
       }),
       responses: {
-        200: dataResponse(RunnerWorkspaceUsageResponseSchema.nullable()),
+        200: listResponse(RunnerWorkspaceSchema, RunnerWorkspacePageMetaSchema),
         ...apiErrorResponses,
       },
     }),
+    runnerParam,
     apiValidator(
       'query',
-      z.object({
-        offset: z.coerce
+      z.strictObject({
+        page: z.coerce
           .number()
           .int()
-          .min(0)
-          .default(0)
-          .describe('Zero-based offset within the filtered workspace list.'),
-        limit: z.coerce
+          .min(1)
+          .default(1)
+          .describe('One-based workspace page.'),
+        pageSize: z.coerce
           .number()
           .int()
           .min(1)
           .max(100)
           .default(50)
-          .describe('Maximum workspace rows to return, from 1 to 100.'),
+          .describe('Workspace rows per page, from 1 to 100.'),
         status: z
           .enum(['all', 'active', 'retained', 'ended'])
           .default('all')
@@ -782,14 +816,18 @@ export function createAdminRoutes(
           query.status === 'all' ||
           workspaceCategory(workspace) === query.status,
       );
+      const { workspaces: _rows, ...totals } = usage ?? { workspaces: [] };
       return context.json({
-        data: usage
-          ? {
-              ...usage,
-              workspaces: rows.slice(query.offset, query.offset + query.limit),
-            }
-          : null,
-        meta: { total: rows.length, offset: query.offset, limit: query.limit },
+        data: rows.slice(
+          (query.page - 1) * query.pageSize,
+          query.page * query.pageSize,
+        ),
+        meta: {
+          total: rows.length,
+          page: query.page,
+          pageSize: query.pageSize,
+          usage: usage ? totals : null,
+        },
       });
     },
   );

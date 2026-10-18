@@ -166,7 +166,13 @@ export function modelLabel(tool: AgentTool, model: string): string {
   if (known) return known.label;
   const id = normalizeModel(tool, model);
   const slash = id.lastIndexOf('/');
-  return slash >= 0 ? id.slice(slash + 1) : id;
+  const label = slash >= 0 ? id.slice(slash + 1) : id;
+  if (label.startsWith('gemini-'))
+    return label
+      .split('-')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  return label;
 }
 
 /** An agent's name for a tool and model: "Claude · Opus 5.5". */
@@ -182,4 +188,38 @@ export function sameModel(tool: AgentTool, a: string, b: string): boolean {
 /** Display identity only. Unknown models retain their provider; execution identity never changes. */
 export function discoveryKey(tool: AgentTool, model: string): string {
   return `${tool}:${catalogEntry(tool, model)?.id ?? model}`;
+}
+
+/** Provider ids remain execution identities; these names are for display only. */
+export function providerLabel(provider: string): string {
+  const names: Readonly<Record<string, string>> = {
+    openrouter: 'OpenRouter',
+    anthropic: 'Anthropic',
+    openai: 'OpenAI',
+    google: 'Google',
+    'google-generative-ai': 'Google',
+    azure: 'Azure',
+    'amazon-bedrock': 'Amazon Bedrock',
+  };
+  return (
+    names[provider.toLowerCase()] ??
+    provider
+      .replace(
+        /(^|[-_ ])([a-z])/gu,
+        (_all, _space, letter: string) => ` ${letter.toUpperCase()}`,
+      )
+      .trim()
+  );
+}
+
+export function quotaTargetLabel(
+  tool: AgentTool,
+  scope: 'tool' | 'provider' | 'model',
+  target: string,
+): string {
+  return scope === 'tool'
+    ? TOOL_LABELS[tool]
+    : scope === 'provider'
+      ? providerLabel(target)
+      : modelLabel(tool, target);
 }

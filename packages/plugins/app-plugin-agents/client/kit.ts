@@ -233,3 +233,12 @@ export function useAgentOption(agentId: string): ChatAgent | null {
     ? pickerAgentOf(result.data, text.name(result.data))
     : null;
 }
+
+export {
+  AgentQuotaHint,
+  QuotaLabel,
+  QuotaQueueHint,
+} from './components/quota-status.js';
+export { compactDateTime, quotaWindowLabel } from './lib/format.js';
+
+export { useQuotaClock } from './hooks/use-quota-expiry.js';

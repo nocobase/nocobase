@@ -1,5 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { WORKSPACE_REPORT_INTERVAL_MS } from '@nocobase/agent-protocol';
 import {
   runnerLowOnDisk,
@@ -64,15 +64,19 @@ function bytes(value: number): string {
 
 export function WorkspaceDiagnostics({
   runner,
+  filters,
+  rowsPending = false,
 }: {
   readonly runner: RunnerSummary;
+  readonly filters?: ReactNode;
+  readonly rowsPending?: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   const format = useFormatters();
   const usage = runner.workspaceUsage;
   const { low, stale } = workspaceDiskState(runner);
   const summary = (
-    <div className='grid gap-2 rounded-lg border p-4 text-sm sm:grid-cols-2 [overflow-wrap:anywhere]'>
+    <div className='grid min-w-0 gap-2 rounded-lg border p-3 text-sm sm:grid-cols-2 [overflow-wrap:anywhere]'>
       {usage?.totalBytes !== undefined ? (
         <p>
           {t('runtimes.quota.workspaceSize', {
@@ -143,8 +147,10 @@ export function WorkspaceDiagnostics({
       ) : (
         summary
       )}
-      {runner.canSeeMachine === true ? (
+      {filters}
+      {runner.canSeeMachine === true && !rowsPending ? (
         <AgSection
+          className='max-w-none min-w-0'
           id='workspace-diagnostics'
           title={t('runtimes.workspaces.title')}
         >
@@ -157,7 +163,15 @@ export function WorkspaceDiagnostics({
               {t('runtimes.workspaces.empty')}
             </p>
           ) : (
-            <Table>
+            <Table className='table-fixed min-w-[740px] sm:min-w-0'>
+              <colgroup>
+                <col className='w-[24%]' />
+                <col className='w-[12%]' />
+                <col className='w-[12%]' />
+                <col className='w-[14%]' />
+                <col className='w-[24%]' />
+                <col className='w-[14%]' />
+              </colgroup>
               <TableHeader>
                 <TableRow>
                   {[
@@ -177,7 +191,7 @@ export function WorkspaceDiagnostics({
               <TableBody>
                 {usage.workspaces.map((workspace) => (
                   <TableRow key={workspace.workDir}>
-                    <TableCell className='max-w-48'>
+                    <TableCell className='min-w-0 overflow-hidden'>
                       <div className='truncate'>
                         {workspace.subjectKey ??
                           workspace.subjectId ??
@@ -203,7 +217,14 @@ export function WorkspaceDiagnostics({
                         : bytes(workspace.sizeBytes)}
                     </TableCell>
                     <TableCell>
-                      <AgTag tone={workspace.unpushed ? 'amber' : 'green'}>
+                      <AgTag
+                        title={
+                          workspace.unpushed
+                            ? t('runtimes.workspaces.unpushed')
+                            : undefined
+                        }
+                        tone={workspace.unpushed ? 'amber' : 'green'}
+                      >
                         {t(
                           workspace.unpushed
                             ? 'runtimes.quota.unpushed'
@@ -211,32 +232,13 @@ export function WorkspaceDiagnostics({
                         )}
                       </AgTag>
                     </TableCell>
-                    <TableCell className='max-w-48 whitespace-normal'>
-                      {workspaceCategory(workspace) === 'retained' ? (
-                        <AgTag tone='amber'>
-                          {t('runtimes.quota.filter.retained')}
-                        </AgTag>
-                      ) : null}
-                      <span>
-                        {workspace.cleanup &&
-                        workspaceCategory(workspace) === 'retained'
-                          ? t(
-                              `runtimes.workspaces.cleanup.${workspace.cleanup.reason}`,
-                            )
-                          : workspace.decision
-                            ? t(
-                                `runtimes.workspaces.decision.${workspace.decision.reason}`,
-                              )
-                            : t(
-                                workspace.settled === false
-                                  ? 'runtimes.workspaces.active'
-                                  : workspace.settled === true
-                                    ? 'runtimes.workspaces.ended'
-                                    : 'runtimes.workspaces.unknown',
-                              )}
-                      </span>
+                    <TableCell className='min-w-0 overflow-hidden'>
+                      <WorkspaceStatus workspace={workspace} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell
+                      className='whitespace-nowrap text-xs text-muted-foreground'
+                      title={format.dateTime(workspace.lastUsedAt)}
+                    >
                       {format.relative(workspace.lastUsedAt)}
                     </TableCell>
                   </TableRow>
@@ -247,5 +249,39 @@ export function WorkspaceDiagnostics({
         </AgSection>
       ) : null}
     </>
+  );
+}
+
+function WorkspaceStatus({
+  workspace,
+}: {
+  readonly workspace: NonNullable<
+    RunnerSummary['workspaceUsage']
+  >['workspaces'][number];
+}): ReactElement {
+  const { t } = useTranslation();
+  const category = workspaceCategory(workspace);
+  const reason =
+    workspace.cleanup?.reason ??
+    workspace.decision?.reason ??
+    (workspace.unpushed ? 'unpushed' : 'unknown');
+  const key =
+    category === 'active'
+      ? 'active'
+      : category === 'ended'
+        ? workspace.cleanup?.reason === 'allowed'
+          ? 'ended'
+          : 'checks'
+        : reason;
+  const text = t(`runtimes.quota.workspaceStatus.${key}`, {
+    defaultValue: t('runtimes.quota.workspaceStatus.unknown'),
+  });
+  return (
+    <span
+      className={`block truncate text-xs ${category === 'active' ? 'text-blue-700 dark:text-blue-300' : category === 'ended' ? 'text-green-700 dark:text-green-300' : 'text-destructive'}`}
+      title={text}
+    >
+      {text}
+    </span>
   );
 }

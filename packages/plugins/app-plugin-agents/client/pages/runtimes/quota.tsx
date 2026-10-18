@@ -1,46 +1,28 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import type { AgentTool } from '@nocobase/agent-protocol';
-import type { RunnerSummary } from '../../../shared/runners.js';
-import { agentsKeys } from '../../api/keys.js';
-import { useAgentsApi } from '../../hooks/use-agents-api.js';
-import { useNotify } from '../../hooks/use-notify.js';
+import type {
+  RunnerSummary,
+  UnavailableModel,
+} from '../../../shared/runners.js';
+import { compactDateTime, quotaWindowLabel } from '../../lib/format.js';
+import { QuotaLabel } from '../../components/quota-status.js';
 import { Button } from '../../components/ui/button.js';
-import { AgTag } from '../../components/ag-tag.js';
-import { quotaTargets } from './quota-targets.js';
-import { useQuotaClock } from '../../hooks/use-quota-expiry.js';
-import { useFormatters } from '../../lib/format.js';
 
 export function QuotaCell({
   runner,
   tool,
   target = '',
+  now,
+  onClear,
 }: {
   readonly runner: RunnerSummary;
   readonly tool: AgentTool;
   readonly target?: string;
+  readonly now: number;
+  readonly onClear: (mark: UnavailableModel) => void;
 }): ReactElement {
-  const { t } = useTranslation();
-  const api = useAgentsApi();
-  const query = useQueryClient();
-  const notify = useNotify();
-  const format = useFormatters();
-  const now = useQuotaClock([
-    ...(runner.unavailableModels ?? []).map((mark) => mark.resetsAt),
-    ...(runner.quotaUsage ?? []).map((usage) => usage.resetsAt),
-  ]);
-  const [confirm, setConfirm] = useState<string | null>(null);
-  const clear = useMutation({
-    mutationFn: (key: string) =>
-      api.clearQuota(runner.id, runner.quotaRevision ?? 0, key),
-    onSuccess: () => {
-      setConfirm(null);
-      void query.invalidateQueries({ queryKey: agentsKeys.runners });
-      void query.invalidateQueries({ queryKey: agentsKeys.agents });
-    },
-    onError: (error) => notify.error(error),
-  });
+  const { t, i18n } = useTranslation();
   const marks = (runner.unavailableModels ?? []).filter(
     (m) =>
       m.reason === 'toolQuota' &&
@@ -50,147 +32,145 @@ export function QuotaCell({
   );
   const usage = (runner.quotaUsage ?? []).filter(
     (u) =>
-      u.tool === tool && u.target === target && u.usedPercent !== undefined,
+      u.tool === tool &&
+      u.target === target &&
+      u.usedPercent !== undefined &&
+      (!u.resetsAt || Date.parse(u.resetsAt) > now) &&
+      !(u.window === 'account' && marks.length) &&
+      !(u.exhausted && !marks.length),
   );
   const providerTool = tool === 'opencode' || tool === 'pi';
-  const blockedProviders = new Set(
+  const blocked = new Set(
     (runner.unavailableModels ?? [])
       .filter(
-        (mark) =>
-          mark.reason === 'toolQuota' &&
-          mark.scope === 'provider' &&
-          mark.tool === tool &&
-          (!mark.resetsAt || Date.parse(mark.resetsAt) > now),
+        (m) =>
+          m.reason === 'toolQuota' &&
+          m.tool === tool &&
+          m.scope === 'provider' &&
+          (!m.resetsAt || Date.parse(m.resetsAt) > now),
       )
-      .map((mark) => mark.model),
+      .map((m) => m.model),
   ).size;
-  const stale = usage.some(
-    (u) =>
-      Date.parse(u.observedAt) < now - 300000 ||
-      (u.resetsAt !== null && Date.parse(u.resetsAt) <= now),
-  );
+  const near =
+    !marks.length &&
+    usage.some(
+      (u) =>
+        (u.usedPercent ?? 0) >= 90 &&
+        (!u.resetsAt || Date.parse(u.resetsAt) > now),
+    );
   return (
-    <div className='space-y-1 text-xs whitespace-normal'>
-      {marks.map((mark) => {
-        const key = JSON.stringify([
-          mark.tool,
-          mark.scope ?? 'model',
-          mark.model,
-          mark.window ?? 'account',
-        ]);
-        return (
-          <div key={key} className='flex flex-wrap items-center gap-1.5'>
-            {confirm === key ? (
-              <>
-                <span>
-                  {t('runtimes.quota.confirm', { target: target || tool })}
-                </span>
-                <Button
-                  type='button'
-                  size='sm'
-                  disabled={clear.isPending}
-                  onClick={() => clear.mutate(key)}
-                >
-                  {t('runtimes.quota.clearMark')}
-                </Button>
-                <Button
-                  type='button'
-                  size='sm'
-                  variant='outline'
-                  onClick={() => setConfirm(null)}
-                >
-                  {t('actions.cancel')}
-                </Button>
-              </>
-            ) : (
-              <>
-                <AgTag tone='amber'>{t('runtimes.quota.reached')}</AgTag>
-                <span>
-                  {mark.resetsAt
-                    ? t('runtimes.quota.resets', {
-                        time: format.dateTime(mark.resetsAt),
-                      })
-                    : t('runtimes.quota.unknown')}
-                </span>
-                {runner.canClearQuota ? (
-                  <Button
-                    type='button'
-                    size='sm'
-                    variant='outline'
-                    onClick={() => setConfirm(key)}
-                  >
-                    {t('runtimes.quota.clear')}
-                  </Button>
-                ) : null}
-              </>
-            )}
-          </div>
-        );
-      })}
+    <div className='min-w-0 space-y-1 text-xs whitespace-normal'>
+      {marks.map((mark) => (
+        <div
+          key={`${mark.scope}:${mark.window}`}
+          className='flex flex-wrap items-center gap-x-1.5 gap-y-1'
+        >
+          <QuotaLabel />
+          <span>
+            {mark.resetsAt
+              ? t('runtimes.quota.resets', {
+                  time: compactDateTime(mark.resetsAt, i18n.language, now),
+                })
+              : t('runtimes.quota.unknown')}
+          </span>
+          {!mark.resetsAt ? (
+            <span className='text-muted-foreground'>
+              {t('runtimes.quota.since', {
+                time: compactDateTime(mark.at, i18n.language, now),
+              })}
+            </span>
+          ) : null}
+          {!mark.resetsAt && runner.canClearQuota ? (
+            <Button
+              type='button'
+              size='xs'
+              variant='outline'
+              className='ml-auto'
+              onClick={() => onClear(mark)}
+            >
+              {t('runtimes.quota.clear')}
+            </Button>
+          ) : null}
+        </div>
+      ))}
       {usage.length ? (
-        <div className='flex flex-wrap gap-2'>
+        <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
           {usage.map((u) => (
             <span
               key={u.window}
-              title={t('runtimes.quota.observed', {
-                time: format.dateTime(u.observedAt),
-              })}
               className='inline-flex items-center gap-1'
+              title={t('runtimes.quota.observed', {
+                time: compactDateTime(u.observedAt, i18n.language, now),
+              })}
             >
-              {u.window
-                .replace('five_hour', '5h')
-                .replace(/^seven_day.*$/u, '7d')
-                .replace('300m', '5h')
-                .replace('10080m', '7d')}
-              {u.usedPercent === undefined ? (
-                '—'
-              ) : (
-                <>
-                  <span className='h-1 w-8 overflow-hidden rounded bg-muted'>
-                    <span
-                      className={
-                        u.usedPercent >= 90
-                          ? 'block h-full bg-amber-600'
-                          : 'block h-full bg-primary'
-                      }
-                      style={{ width: `${u.usedPercent}%` }}
-                    />
-                  </span>
-                  {Math.round(u.usedPercent)}%
-                  {u.usedPercent >= 90 &&
-                  !marks.length &&
-                  (!u.resetsAt || Date.parse(u.resetsAt) > now) ? (
-                    <AgTag tone='amber'>{t('runtimes.quota.near')}</AgTag>
-                  ) : null}
-                </>
-              )}
+              {quotaWindowLabel(u.window)}{' '}
+              <span className='h-1 w-8 overflow-hidden rounded bg-muted'>
+                <span
+                  className={
+                    (u.usedPercent ?? 0) >= 100
+                      ? 'block h-full bg-destructive'
+                      : (u.usedPercent ?? 0) >= 90
+                        ? 'block h-full bg-amber-600'
+                        : 'block h-full bg-primary'
+                  }
+                  style={{ width: `${u.usedPercent}%` }}
+                />
+              </span>
+              {Math.round(u.usedPercent ?? 0)}%
             </span>
           ))}
+          {near ? <QuotaLabel near /> : null}
         </div>
-      ) : !marks.length ? (
-        <span className='text-muted-foreground'>
-          {target
-            ? t('runtimes.quota.ok')
-            : providerTool && blockedProviders > 0
-              ? t('runtimes.quota.providers', {
-                  blocked: blockedProviders,
-                  total: quotaTargets(runner, tool).length,
-                })
-              : '—'}
-        </span>
       ) : null}
-      {usage.length && stale ? (
-        <p className='text-muted-foreground'>
-          {t('runtimes.quota.observed', {
-            time: format.relative(
-              usage
-                .map((u) => u.observedAt)
-                .sort()
-                .at(-1),
-            ),
-          })}
-        </p>
+      {marks.some((m) => m.resetsAt) ? (
+        <p className='text-muted-foreground'>{t('runtimes.quota.automatic')}</p>
       ) : null}
+      {!usage.length && !marks.length ? (
+        providerTool && !target && blocked > 0 ? (
+          <span className='text-muted-foreground'>
+            {t('runtimes.quota.providers', {
+              count: blocked,
+            })}
+          </span>
+        ) : (
+          <span className='text-green-700 dark:text-green-300'>
+            {t('runtimes.quota.ok')}
+          </span>
+        )
+      ) : null}
+    </div>
+  );
+}
+
+export function QuotaClearConfirmation({
+  name,
+  pending,
+  onClear,
+  onCancel,
+}: {
+  readonly name: string;
+  readonly pending: boolean;
+  readonly onClear: () => void;
+  readonly onCancel: () => void;
+}): ReactElement {
+  const { t } = useTranslation();
+  return (
+    <div className='flex flex-wrap items-center justify-between gap-2 text-xs'>
+      <span>{t('runtimes.quota.confirm', { target: name })}</span>
+      <div className='flex gap-2'>
+        <Button type='button' size='xs' disabled={pending} onClick={onClear}>
+          {t('runtimes.quota.clearMark')}
+        </Button>
+        <Button
+          type='button'
+          size='xs'
+          variant='outline'
+          disabled={pending}
+          onClick={onCancel}
+        >
+          {t('actions.cancel')}
+        </Button>
+      </div>
     </div>
   );
 }

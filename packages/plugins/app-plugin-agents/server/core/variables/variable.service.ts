@@ -93,7 +93,7 @@ export interface VariableTarget {
 }
 
 export interface VariableService {
-  admissionMetadata?(
+  admissionMetadata(
     conn: DatabaseConnection,
     targets: readonly VariableTarget[],
   ): Promise<

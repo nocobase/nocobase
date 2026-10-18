@@ -1,8 +1,14 @@
-import { appendFile } from 'node:fs/promises';
 import type { Knex } from 'knex';
 import { afterEach, expect, it, vi } from 'vitest';
 import { claim, createHarness, type Harness } from './harness.js';
-import { quotaKey } from '../../server/runners/runner.service.js';
+import type { QuotaMarkTarget } from '../../shared/quota.js';
+import type { UnavailableModel } from '../../shared/runners.js';
+const targetOf = (mark: UnavailableModel): QuotaMarkTarget => ({
+  tool: mark.tool,
+  scope: mark.scope ?? 'model',
+  target: mark.model,
+  window: mark.window ?? 'account',
+});
 import { runsEntry, quotaForAgent } from '../../shared/runners.js';
 let h: Harness;
 afterEach(async () => {
@@ -23,7 +29,6 @@ const known = {
 };
 it('filters quota before claim, permits another machine, and expires without rewriting marks or reviving failures', async () => {
   h = await createHarness();
-  vi.spyOn(Date, 'now').mockImplementation(() => h.clock.now().getTime());
   const agent = await h.createAgent();
   const a = await h.registerRunner();
   const b = await h.registerRunner();
@@ -55,7 +60,7 @@ it('filters quota before claim, permits another machine, and expires without rew
   );
   expect((await h.services.runs.get(failed)).status).toBe('failed');
 });
-it('keeps unknown provider marks through model changes, and clears only the selected mark with owner/admin permission and a matching revision', async () => {
+it('keeps unknown provider marks through model changes, and clears only the selected mark with owner/admin permission without a client revision and idempotently', async () => {
   h = await createHarness();
   const a = await h.registerRunner({
     ownerUserId: 'alice',
@@ -92,12 +97,12 @@ it('keeps unknown provider marks through model changes, and clears only the sele
   expect(runsEntry(runner, { tool: 'pi', model: 'openrouter-other/a' })).toBe(
     true,
   );
-  const key = quotaKey(runner.unavailableModels![0]);
+  const target = targetOf(runner.unavailableModels![0]);
   const path = `/agents/runners/${a.runnerId}/quota/clear`;
   expect(
     (
       await h.request('POST', path, {
-        body: { key, revision: runner.quotaRevision },
+        body: target,
       })
     ).status,
   ).toBe(401);
@@ -106,7 +111,7 @@ it('keeps unknown provider marks through model changes, and clears only the sele
       await h.request('POST', path, {
         user: 'bob',
         can: ['agents.runners/read'],
-        body: { key, revision: runner.quotaRevision },
+        body: target,
       })
     ).status,
   ).toBe(403);
@@ -114,22 +119,31 @@ it('keeps unknown provider marks through model changes, and clears only the sele
     (
       await h.request('POST', path, {
         user: 'alice',
-        body: { key, revision: 99 },
+        body: { ...target, revision: 99 },
       })
     ).status,
-  ).toBe(409);
+  ).toBe(400);
   expect(
     (
       await h.request('POST', path, {
         user: 'root',
         can: ['agents.runners/manage'],
-        body: { key, revision: runner.quotaRevision },
+        body: target,
       })
     ).status,
   ).toBe(204);
   expect((await h.services.runners.get(a.runnerId)).unavailableModels).toEqual(
     [],
   );
+  expect(
+    (
+      await h.request('POST', path, {
+        user: 'root',
+        can: ['agents.runners/manage'],
+        body: target,
+      })
+    ).status,
+  ).toBe(204);
 });
 it('merges independent reports, deduplicates repeated events, and rejects forged provider scope', async () => {
   h = await createHarness();
@@ -209,8 +223,7 @@ it('does not reapply an acknowledged quota event after a manual clear', async ()
   const marked = await h.services.runners.get(runner.runnerId);
   await h.services.runners.clearQuota(
     runner.runnerId,
-    marked.quotaRevision!,
-    quotaKey(marked.unavailableModels![0]),
+    targetOf(marked.unavailableModels![0]),
   );
   expect(
     (await h.request('POST', path, { runnerKey: runner.key, body })).status,
@@ -250,8 +263,7 @@ it('keeps a clear across events and final failure, retains history, and accepts 
     const runtimeState = await h.services.runners.get(runtime.runnerId);
     await h.services.runners.clearQuota(
       runtime.runnerId,
-      runtimeState.quotaRevision!,
-      quotaKey(runtimeState.unavailableModels![0]),
+      targetOf(runtimeState.unavailableModels![0]),
     );
   };
   expect((await post('events', event(1))).status).toBe(200);
@@ -315,18 +327,30 @@ it('uses the earliest known alternative while preserving unknown windows within 
     ],
   };
   expect(
-    quotaForAgent([await h.services.runners.get(registered.runnerId)], agent)[0]
-      .resetsAt,
+    quotaForAgent(
+      [await h.services.runners.get(registered.runnerId)],
+      agent,
+      undefined,
+      h.clock.now().getTime(),
+    )[0].resetsAt,
   ).toBe(reset);
   await report('codex', '7d', '2099-10-20T18:00:00.000Z');
   expect(
-    quotaForAgent([await h.services.runners.get(registered.runnerId)], agent)[0]
-      .resetsAt,
+    quotaForAgent(
+      [await h.services.runners.get(registered.runnerId)],
+      agent,
+      undefined,
+      h.clock.now().getTime(),
+    )[0].resetsAt,
   ).toBe('2099-10-20T18:00:00.000Z');
   await report('codex', 'credits', null);
   expect(
-    quotaForAgent([await h.services.runners.get(registered.runnerId)], agent)[0]
-      .resetsAt,
+    quotaForAgent(
+      [await h.services.runners.get(registered.runnerId)],
+      agent,
+      undefined,
+      h.clock.now().getTime(),
+    )[0].resetsAt,
   ).toBeNull();
 });
 it('serves a system candidate quota to its owner without revealing another member’s personal runtime', async () => {
@@ -425,11 +449,6 @@ it('adds no SQL, writes, transactions or locks to heartbeat or an excluded claim
       transactions: sql.filter((q) => /^begin/i.test(q)).length,
       locks: sql.filter((q) => /for update|for share/i.test(q)).length,
     };
-    if (process.env.PM480_HOT_REPORT)
-      await appendFile(
-        process.env.PM480_HOT_REPORT,
-        JSON.stringify(result) + '\n',
-      );
     return result;
   };
   const runner = await h.services.runners.get(registration.runnerId);
@@ -476,4 +495,146 @@ it('adds no SQL, writes, transactions or locks to heartbeat or an excluded claim
   expect(costAfterC.writes).toBe(0);
   expect(costAfterC.transactions).toBe(0);
   expect(costAfterC.locks).toBe(0);
+});
+it('throttles small usage changes, saves boundary transitions and broadcasts only mark changes', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner();
+  const broadcasts: unknown[] = [];
+  const stop = h.services.events.on('runner.changed', (event) =>
+    broadcasts.push(event),
+  );
+  const report = (usedPercent: number, exhausted = false) =>
+    h.services.tx.run((unit) =>
+      h.services.runners.reportQuota(unit, runner.runnerId, 'claude', null, {
+        windows: [
+          {
+            scope: 'tool',
+            target: '',
+            window: '5h',
+            resetsAt: '2026-10-01T01:00:00.000Z',
+            usedPercent,
+            exhausted,
+          },
+        ],
+      }),
+    );
+  await report(62);
+  const revision = (await h.services.runners.get(runner.runnerId))
+    .quotaRevision;
+  for (const percent of [63, 64, 65, 66]) await report(percent);
+  expect((await h.services.runners.get(runner.runnerId)).quotaRevision).toBe(
+    revision,
+  );
+  expect(broadcasts).toHaveLength(0);
+  await report(67);
+  expect(
+    (await h.services.runners.get(runner.runnerId)).quotaUsage?.[0]
+      ?.usedPercent,
+  ).toBe(67);
+  await report(89);
+  await report(90);
+  expect(
+    (await h.services.runners.get(runner.runnerId)).quotaUsage?.[0]
+      ?.usedPercent,
+  ).toBe(90);
+  expect(broadcasts).toHaveLength(0);
+  await report(100, true);
+  expect(broadcasts).toHaveLength(1);
+  await report(99, true);
+  expect(broadcasts).toHaveLength(1);
+  stop();
+});
+it('rejects manual clearing of known resets and retains default Claude weekly marks', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner({ ownerUserId: 'alice' });
+  await h.services.tx.run((unit) =>
+    h.services.runners.reportQuota(unit, runner.runnerId, 'claude', null, {
+      windows: [
+        {
+          scope: 'model',
+          target: 'claude-opus-5-5',
+          window: 'seven_day_opus',
+          resetsAt: '2026-10-01T01:00:00.000Z',
+          exhausted: true,
+        },
+      ],
+    }),
+  );
+  const mark = (await h.services.runners.get(runner.runnerId))
+    .unavailableModels![0];
+  expect(mark).toMatchObject({ scope: 'tool', model: '' });
+  const result = await h.request(
+    'POST',
+    `/agents/runners/${runner.runnerId}/quota/clear`,
+    { user: 'alice', body: targetOf(mark) },
+  );
+  expect(result.status).toBe(409);
+  expect(
+    (await h.services.runners.get(runner.runnerId)).unavailableModels,
+  ).toHaveLength(1);
+});
+it('coalesces quota observations in a batch and reads only quota event metadata at final failure', async () => {
+  h = await createHarness();
+  const agent = await h.createAgent();
+  const runtime = await h.registerRunner();
+  const runId = await h.enqueue(agent, 'batched');
+  await claim(h, runtime);
+  const client = await h.database.connection().client<Knex>();
+  const sql: string[] = [];
+  const listen = (query: { sql: string }) => sql.push(query.sql);
+  client.on('query', listen);
+  const quota = {
+    windows: [
+      {
+        scope: 'tool' as const,
+        target: '',
+        window: '5h',
+        exhausted: true,
+        resetsAt: null,
+        usedPercent: 100,
+      },
+    ],
+  };
+  try {
+    const result = await h.request(
+      'POST',
+      `/agents/runners/runs/${runId}/events`,
+      {
+        runnerKey: runtime.key,
+        body: {
+          events: Array.from({ length: 20 }, (_, i) => ({
+            seq: i + 1,
+            at: h.clock.now().toISOString(),
+            type: 'status',
+            meta: i === 19 ? { quota } : { detail: 'ordinary' },
+          })),
+        },
+      },
+    );
+    expect(result.status).toBe(200);
+    expect(
+      sql.filter((query) => /^update.*ag_runners.*quota_usage/is.test(query)),
+    ).toHaveLength(1);
+    sql.length = 0;
+    expect(
+      (
+        await h.request('POST', `/agents/runners/runs/${runId}/fail`, {
+          runnerKey: runtime.key,
+          body: { reason: 'toolQuota', quota },
+        })
+      ).status,
+    ).toBe(200);
+    const observations = sql.filter((query) =>
+      /^select.*meta.*ag_run_events/is.test(query),
+    );
+    expect(observations).toHaveLength(1);
+    expect(observations[0]).toMatch(
+      /json_array_length|jsonb_array_length|json_length/i,
+    );
+  } finally {
+    client.off('query', listen);
+  }
+  expect((await h.services.runs.get(runId)).executions?.at(-1)?.quota).toEqual(
+    quota,
+  );
 });

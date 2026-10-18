@@ -1,9 +1,9 @@
-import { QuotaReportSchema, type QuotaReport } from '@nocobase/agent-protocol';
 /**
  * What a runner reports about the runs it holds: lease renewals, the start, events, and how the run ended. Every
  * report first checks that the runner still holds the run; a runner that lost it (the sweeper took it back, or it
  * ended) is told `LEASE_LOST` and must stop.
  */
+import { QuotaReportSchema, type QuotaReport } from '@nocobase/agent-protocol';
 import {
   isRetryable,
   MAX_EVENT_CONTENT_BYTES,
@@ -112,17 +112,22 @@ export interface RunnerReportsDeps extends TransitionDeps, InputGateDeps {
    * patterns before they are stored, whatever the runner did (`kernel/redaction.ts`).
    */
   readonly secrets?: SecretMemory;
-  /**
-   * A run failed `modelUnavailable` on `runnerId` with its tool and model: the runner's mark that the model is not
-   * offered there (`RunnerService.markModelUnavailable`), in the failure's transaction.
-   */
   readonly onQuota?: (
     unit: Tx,
     runnerId: string,
     tool: AgentTool,
     model: string | null,
     quota: QuotaReport,
+    observation: {
+      runId: string;
+      agentId: string;
+      subject: { kind: string; id: string };
+    },
   ) => Promise<void>;
+  /**
+   * A run failed `modelUnavailable` on `runnerId` with its tool and model: the runner's mark that the model is not
+   * offered there (`RunnerService.markModelUnavailable`), in the failure's transaction.
+   */
   readonly onModelUnavailable?: (
     unit: Tx,
     runnerId: string,
@@ -400,6 +405,11 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             run.tool as AgentTool,
             run.model ?? null,
             { windows: [...latest.values()] },
+            {
+              runId: run.id,
+              agentId: run.agentId,
+              subject: { kind: run.subjectKind, id: run.subjectId },
+            },
           );
         }
 
@@ -609,7 +619,11 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           // Read their existing record so a late fail cannot undo an owner's clear.
           // A new event sequence is still processed by events(), even with identical values.
           const observations = await eventsRepo(unit.conn).findMany({
-            filter: { runId: run.id },
+            filter: (f) =>
+              f.and([
+                f.string('runId').eq(run.id),
+                f.json('meta').path(['quota', 'windows']).isNotEmpty(),
+              ]),
             select: (s) => s.fields('meta'),
           });
           const identity = (window: QuotaReport['windows'][number]): string =>
@@ -640,6 +654,11 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
               run.tool as AgentTool,
               run.model ?? null,
               { windows },
+              {
+                runId: run.id,
+                agentId: run.agentId,
+                subject: { kind: run.subjectKind, id: run.subjectId },
+              },
             );
         }
         if (request.reason === 'modelUnavailable' && run.tool && run.model)

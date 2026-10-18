@@ -20,7 +20,7 @@ import {
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import type { Runner } from '../../../shared/runners.js';
-import type { DatabaseConnection } from '@nocobase/db';
+import type { DatabaseConnection, ExpressionBuilder } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
 import type { RunBrief } from '../../../shared/briefs.js';
@@ -1782,15 +1782,32 @@ export function createRunService(deps: RunServiceDeps): RunService {
     async inputTriggers(runIds) {
       const result = new Map<string, { type: string; payload: unknown }[]>();
       if (!runIds.length) return result;
-      const rows = await inputsRepo(tx.read()).findMany({
-        filter: (f) => f.or(runIds.map((id) => f.string('runId').eq(id))),
-        select: (s) => s.fields('runId', 'type', 'payload'),
-        sort: (s) => s.field('createdAt').asc(),
-      });
+      const rows = await tx
+        .read()
+        .query.selectFrom('agRunInputs as input')
+        .select(['input.runId', 'input.type', 'input.payload'])
+        .where('input.runId', 'in', [...runIds])
+        .where((eb: ExpressionBuilder) =>
+          eb(
+            'input.id',
+            '=',
+            eb
+              .selectFrom('agRunInputs as first')
+              .select('first.id')
+              .whereRef('first.runId', '=', 'input.runId')
+              .orderBy('first.createdAt', 'asc')
+              .orderBy('first.id', 'asc')
+              .limit(1),
+          ),
+        )
+        .execute();
       for (const row of rows) {
-        const inputs = result.get(row.runId) ?? [];
-        inputs.push({ type: row.type, payload: row.payload });
-        result.set(row.runId, inputs);
+        const inputs = result.get(String(row.runId)) ?? [];
+        inputs.push({
+          type: String(row.type),
+          payload: jsonObject(row.payload),
+        });
+        result.set(String(row.runId), inputs);
       }
       return result;
     },

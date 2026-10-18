@@ -1,4 +1,3 @@
-import { appendFile } from 'node:fs/promises';
 import type { Knex } from 'knex';
 import { afterEach, expect, it } from 'vitest';
 import { createHarness, type Harness } from './harness.js';
@@ -12,6 +11,7 @@ it.each([1, 10, 50])(
     const counts = new Map<string, number>([
       ['/agents', 6],
       ['/agents/available', 5],
+      ['/agents/chatAgents', 6],
       ['/agents/runners', 4],
       ['/agents/runners/:id', 5],
       ['/agents/runners/:id/runs', 2],
@@ -36,6 +36,7 @@ it.each([1, 10, 50])(
     for (const endpoint of [
       '/agents',
       '/agents/available',
+      '/agents/chatAgents',
       '/agents/runners',
       `/agents/runners/${runnerId}`,
       `/agents/runners/${runnerId}/runs`,
@@ -46,17 +47,11 @@ it.each([1, 10, 50])(
           can: ['agents.agents/read', 'agents.runners/read'],
         });
       await request();
-      for (
-        let sample = 0;
-        sample < Number(process.env.PM480_COST_SAMPLES ?? 1);
-        sample++
-      ) {
+      {
         const sql: string[] = [];
         const listen = (query: { sql: string }) => sql.push(query.sql);
         client.on('query', listen);
-        const start = performance.now();
         const result = await request();
-        const ms = performance.now() - start;
         client.off('query', listen);
         expect(result.status).toBe(200);
         const name = endpoint.replace(runnerId, ':id');
@@ -66,12 +61,107 @@ it.each([1, 10, 50])(
         ).length;
         expect(writes).toBe(0);
         expect(reads).toBe(counts.get(name));
-        if (process.env.PM480_SQL_REPORT)
-          await appendFile(
-            process.env.PM480_SQL_REPORT,
-            `${JSON.stringify({ n, endpoint: name, queries: reads, writes, transactions: sql.filter((query) => /^begin/i.test(query)).length, locks: sql.filter((query) => /for update|for share/i.test(query)).length, ms: Math.round(ms * 100) / 100, bytes: JSON.stringify(result.body).length })}\n`,
-          );
       }
     }
   },
 );
+it('bounds directory rows to one page and excludes private detail fields from the runtime list', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner({ ownerUserId: 'alice' });
+  const conn = h.database.connection();
+  const workspaces = Array.from({ length: 1000 }, (_, i) => ({
+    workDir: `/work/PM-${i}`,
+    lastUsedAt: h.clock.now().toISOString(),
+    sizeBytes: 1024,
+    unpushed: false,
+  }));
+  await conn.query
+    .updateTable('agRunners')
+    .set({
+      workspaceUsage: {
+        disk: null,
+        count: 1000,
+        unpushedCount: 0,
+        measuredAt: h.clock.now().toISOString(),
+        workspaces,
+      },
+    })
+    .where('id', '=', runner.runnerId)
+    .execute();
+  const detail = await h.request('GET', `/agents/runners/${runner.runnerId}`, {
+    user: 'alice',
+  });
+  expect(detail.body.data.workspaceUsage.count).toBe(1000);
+  expect(detail.body.data.workspaceUsage.workspaces).toEqual([]);
+  const list = await h.request('GET', '/agents/runners', { user: 'alice' });
+  for (const field of [
+    'policy',
+    'variables',
+    'unavailableModels',
+    'quotaUsage',
+    'load',
+  ])
+    expect(list.body.data[0]).not.toHaveProperty(field);
+  const page = await h.request(
+    'GET',
+    `/agents/runners/${runner.runnerId}/workspaces?page=2&pageSize=25`,
+    { user: 'alice' },
+  );
+  expect(page.status).toBe(200);
+  expect(page.body.data).toHaveLength(25);
+  expect(page.body.data[0].workDir).toBe('/work/PM-25');
+  expect(page.body.meta).toMatchObject({ total: 1000, page: 2, pageSize: 25 });
+  expect(
+    (
+      await h.request(
+        'GET',
+        `/agents/runners/${runner.runnerId}/workspaces?pageSize=101`,
+        { user: 'alice' },
+      )
+    ).status,
+  ).toBe(400);
+});
+it('loads only the first input payload for each run in one query', async () => {
+  h = await createHarness();
+  const agent = await h.createAgent();
+  const ids = await Promise.all([
+    h.enqueue(agent, 'first'),
+    h.enqueue(agent, 'second'),
+  ]);
+  const conn = h.database.connection();
+  for (const id of ids)
+    for (let i = 0; i < 20; i++)
+      await conn.query
+        .insertInto('agRunInputs')
+        .values({
+          id: `later-${id}-${i}`,
+          runId: id,
+          type: 'comment',
+          actorKind: 'user',
+          actorId: 'alice',
+          actorName: 'Alice',
+          text: 'later',
+          payload: { later: true, content: 'x'.repeat(1000) },
+          createdAt: '2030-01-01T00:00:00Z',
+          deliveredAt: null,
+          handledAt: null,
+        })
+        .execute();
+  const client = await conn.client<Knex>();
+  let rows = 0;
+  const record = (answer: unknown) => {
+    if (Array.isArray(answer)) rows += answer.length;
+  };
+  client.on('query-response', record);
+  let result;
+  try {
+    result = await h.services.runs.inputTriggers(ids);
+  } finally {
+    client.off('query-response', record);
+  }
+  expect(rows).toBe(2);
+  for (const id of ids) {
+    expect(result.get(id)).toHaveLength(1);
+    expect(result.get(id)?.[0].payload).not.toHaveProperty('later');
+  }
+});

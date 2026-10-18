@@ -34,6 +34,16 @@ const { default: RuntimesPage } =
 const { default: ConnectPage } =
   await import('../../client/pages/runtimes/connect.js');
 
+const workspacePage = (usage: RunnerSummary['workspaceUsage']) => ({
+  data: usage?.workspaces ?? [],
+  meta: {
+    page: 1,
+    pageSize: 50,
+    total: usage?.workspaces.length ?? 0,
+    usage: usage ?? null,
+  },
+});
+
 describe('runtimes page', () => {
   let runners: RunnerSummary[];
   beforeEach(() => {
@@ -61,7 +71,8 @@ describe('runtimes page', () => {
       'agents/runners': () => runners,
       'agents/runners/r1': () => runners[0],
       'agents/runners/r2': () => runners[1],
-      'agents/runners/r1/workspaces': () => runners[0]?.workspaceUsage ?? null,
+      'agents/runners/r1/workspaces': () =>
+        workspacePage(runners[0]?.workspaceUsage),
       'agents/runners/r1/runs': () => [
         {
           id: 'run1',
@@ -161,7 +172,8 @@ describe('runtimes page', () => {
       },
     ];
     api.routes['agents/runners/r1'] = () => detail;
-    api.routes['agents/runners/r1/workspaces'] = () => detail.workspaceUsage;
+    api.routes['agents/runners/r1/workspaces'] = () =>
+      workspacePage(detail.workspaceUsage);
     renderPage(<RuntimesPage />);
     await screen.findByTestId('runner-r1');
     expect(callsTo('GET', 'agents/runners/r1')).toHaveLength(0);
@@ -324,7 +336,7 @@ describe('runtimes page', () => {
     await openWorkspaces(sheet);
     expect(within(sheet).getByText('/work/long/subject')).toBeInTheDocument();
     expect(
-      within(sheet).getByText('runtimes.workspaces.ended'),
+      within(sheet).getByText('runtimes.quota.workspaceStatus.unpushed'),
     ).toBeInTheDocument();
     expect(
       within(sheet).getByText('runtimes.quota.unpushed'),
@@ -391,7 +403,7 @@ describe('runtimes page', () => {
     );
     expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(0);
     expect(
-      within(sheet).getByText('runtimes.quota.confirm(target=claude)'),
+      within(sheet).getByText('runtimes.quota.confirm(target=tools.claude)'),
     ).toBeInTheDocument();
     fireEvent.click(
       within(sheet).getByRole('button', { name: 'runtimes.quota.clearMark' }),
@@ -401,8 +413,10 @@ describe('runtimes page', () => {
     );
     expect(confirm).not.toHaveBeenCalled();
     expect(callsTo('POST', 'agents/runners/r1/quota/clear')[0]?.json).toEqual({
-      revision: 4,
-      key: JSON.stringify(['claude', 'tool', '', 'account']),
+      tool: 'claude',
+      scope: 'tool',
+      target: '',
+      window: 'account',
     });
     confirm.mockRestore();
   });
@@ -498,11 +512,11 @@ describe('runtimes page', () => {
       'Mac Studio',
     );
     const claude = within(sheet).getByTestId('runner-tool-claude');
-    within(claude).getByText('runtimes.tool.version(version=2.1.0)');
-    // Where it is installed, as small text in the row when the server sent it.
-    expect(
-      within(claude).getByTestId('runner-tool-claude-path'),
-    ).toHaveTextContent('/usr/bin/claude');
+    within(claude).getByTitle('/usr/bin/claude');
+    // The compact table preserves the installed path in its version tooltip.
+    expect(within(claude).getByTitle('/usr/bin/claude')).toHaveTextContent(
+      '2.1.0',
+    );
     within(claude).getByText('runtimes.tool.signedIn');
     within(sheet).getByText('NP-*');
     within(sheet).getByText('runtimes.policy.nothing');

@@ -2,6 +2,9 @@
  * The browser API of `/api/agents/runners`, typed with the `shared/` view models: one method per endpoint, answers
  * unwrapped from `{ data }`. Failures throw `ApiClientError` (`status`, `reason`, `domain`).
  */
+import type { QuotaMarkTarget } from '../../shared/quota.js';
+import type { RunnerWorkspacePage } from '../../shared/runners.js';
+
 import type { ApiClient } from '@nocobase/app-client';
 
 import type {
@@ -35,22 +38,17 @@ export class RunnersApi {
     return this.list('');
   }
 
-  public clearQuota(
-    runnerId: string,
-    revision: number,
-    key: string,
-  ): Promise<void> {
-    return this.send(`${id(runnerId)}/quota/clear`, 'POST', { revision, key });
+  public clearQuota(runnerId: string, target: QuotaMarkTarget): Promise<void> {
+    return this.send(`${id(runnerId)}/quota/clear`, 'POST', target);
   }
   public runnerWorkspaces(
     runnerId: string,
     status = 'all',
-    offset = 0,
-  ): Promise<Runner['workspaceUsage']> {
-    return this.get(`${id(runnerId)}/workspaces`, {
-      status,
-      offset,
-      limit: 50,
+    page = 1,
+  ): Promise<RunnerWorkspacePage> {
+    return this.api.request<RunnerWorkspacePage>({
+      path: pathOf(`${id(runnerId)}/workspaces`),
+      query: { status, page, pageSize: 50 },
     });
   }
 

@@ -9,6 +9,8 @@
  * assembly, merged as a run gets them; the features are those the caller names besides `secrets`, which follows from
  * the variables. What only the assembled payload tells (working directories, skills) is the claim's to check.
  */
+import type { Clock } from '../../kernel/clock.js';
+
 import type { RunnerFeature } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -38,7 +40,7 @@ export interface EligibilityRequest {
 }
 
 export interface ClaimEligibility {
-  prepare?(
+  prepare(
     conn: DatabaseConnection,
     agents: readonly Agent[],
     request: Pick<EligibilityRequest, 'scopes'>,
@@ -76,6 +78,7 @@ export interface ClaimEligibility {
 }
 
 export function createClaimEligibility(deps: {
+  readonly clock: Clock;
   readonly runners: {
     online(conn: DatabaseConnection): Promise<Runner[]>;
     all(conn: DatabaseConnection): Promise<Runner[]>;
@@ -104,7 +107,13 @@ export function createClaimEligibility(deps: {
     const possible = candidates.filter(
       (runner) =>
         (!request.workspaceKey || supportsWorkspaceKey(runner)) &&
-        fitsActor(runner, agent, request.actorUserId, request.requires ?? []),
+        fitsActor(
+          runner,
+          agent,
+          request.actorUserId,
+          request.requires ?? [],
+          deps.clock.now().getTime(),
+        ),
     );
     if (possible.length === 0) return [];
     const targets = targetsOf(agent, request);
@@ -121,14 +130,20 @@ export function createClaimEligibility(deps: {
       (await deps.variables.teamOnly(conn, targets)).length > 0;
     return possible.filter(
       (runner) =>
-        fitsActor(runner, agent, request.actorUserId, requires) &&
+        fitsActor(
+          runner,
+          agent,
+          request.actorUserId,
+          requires,
+          deps.clock.now().getTime(),
+        ) &&
         (!teamOnly || runner.trust === 'team'),
     );
   }
 
   return {
     async prepare(conn, agents, request) {
-      const metadata = await deps.variables.admissionMetadata?.(
+      const metadata = await deps.variables.admissionMetadata(
         conn,
         agents.flatMap((agent) => targetsOf(agent, request)),
       );
@@ -189,6 +204,7 @@ export function createClaimEligibility(deps: {
               agent,
               request.actorUserId,
               request.requires ?? [],
+              deps.clock.now().getTime(),
             ),
         );
       if (registered.length === 0) return true;

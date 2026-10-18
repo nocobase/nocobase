@@ -162,7 +162,11 @@ export function PmExecutorSelect({
           }}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+      <SelectContent
+        align='start'
+        alignItemWithTrigger={false}
+        className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'
+      >
         {items.map((item) => (
           <SelectItem
             key={item.value}
@@ -191,6 +195,7 @@ export function PmExecutorSelect({
             )}
           </SelectItem>
         ))}
+        {presentation?.Footer ? <presentation.Footer /> : null}
       </SelectContent>
     </Select>
   );

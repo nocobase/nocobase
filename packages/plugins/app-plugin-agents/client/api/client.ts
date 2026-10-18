@@ -3,6 +3,9 @@
  * unwrapped from `{ data }`. Failures throw `ApiClientError` (`status`, `reason`, `domain`). Runners and registration
  * tokens go through the runners' API (`RunnersApi`, `/api/agents/runners`).
  */
+import type { QuotaMarkTarget } from '../../shared/quota.js';
+import type { RunnerWorkspacePage } from '../../shared/runners.js';
+
 import type { ApiClient } from '@nocobase/app-client';
 import type { RunStatus } from '@nocobase/agent-protocol';
 
@@ -228,19 +231,15 @@ export class AgentsApi {
     return this.runnersApi.runners();
   }
 
-  public clearQuota(
-    runnerId: string,
-    revision: number,
-    key: string,
-  ): Promise<void> {
-    return this.runnersApi.clearQuota(runnerId, revision, key);
+  public clearQuota(runnerId: string, target: QuotaMarkTarget): Promise<void> {
+    return this.runnersApi.clearQuota(runnerId, target);
   }
   public runnerWorkspaces(
     runnerId: string,
     status = 'all',
-    offset = 0,
-  ): Promise<RunnerSummary['workspaceUsage']> {
-    return this.runnersApi.runnerWorkspaces(runnerId, status, offset);
+    page = 1,
+  ): Promise<RunnerWorkspacePage> {
+    return this.runnersApi.runnerWorkspaces(runnerId, status, page);
   }
   public runner(runnerId: string): Promise<RunnerSummary> {
     return this.runnersApi.runner(runnerId);

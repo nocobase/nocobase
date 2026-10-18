@@ -1152,7 +1152,7 @@ class CodexRun {
       this.emit({
         type: 'status',
         content: 'quota',
-        meta: { quota: codexQuota(this.rateLimits, true) },
+        meta: { quota: codexQuota(this.rateLimits, true, info) },
       });
     return { ...base, exit: 'error', error: classifyCodexFailure(signal) };
   }

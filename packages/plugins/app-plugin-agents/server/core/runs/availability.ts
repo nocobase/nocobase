@@ -4,6 +4,9 @@
  * runs. Asked for a person (`actorUserId`), an agent counts only the runners that would take that person's work by the
  * claim's rules (`eligibility.ts`): trust, features and the agent's variables included. Ask outside a transaction then.
  */
+import type { Clock } from '../../kernel/clock.js';
+import type { QuotaLocation } from '../../../shared/quota.js';
+
 import type { RunnerService } from '../../runners/index.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -17,11 +20,7 @@ const RUNNER_NAMES = 3;
 
 /** Whether an agent could start work now, where it can run, and how busy it is. */
 export interface AgentAvailability {
-  readonly quota?: readonly {
-    runnerId: string;
-    runnerName: string;
-    resetsAt: string | null;
-  }[];
+  readonly quota?: readonly QuotaLocation[];
   /** An online runner would take the work now: the person's, when asked for one. */
   readonly online: boolean;
   /** Its runs not finished (queued or held). */
@@ -40,6 +39,7 @@ export type Availability = (
 ) => Promise<Map<string, AgentAvailability>>;
 
 export function createAvailability(deps: {
+  readonly clock: Clock;
   readonly runners: Pick<RunnerService, 'online'>;
   /** Whether a runner would take a person's work. */
   readonly eligibility: Pick<ClaimEligibility, 'canClaim' | 'prepare'>;
@@ -58,11 +58,11 @@ export function createAvailability(deps: {
     const variables =
       actorUserId === undefined
         ? undefined
-        : await deps.eligibility.prepare?.(conn, agents, {});
+        : await deps.eligibility.prepare(conn, agents, {});
     const result = new Map<string, AgentAvailability>();
     for (const agent of agents) {
       const fitting = runners.filter((runner) =>
-        runnerTakesAgent(runner, agent),
+        runnerTakesAgent(runner, agent, deps.clock.now().getTime()),
       );
       const team = fitting.filter((runner) => runner.trust === 'team');
       const personal = fitting.filter((runner) => runner.trust !== 'team');
@@ -79,7 +79,12 @@ export function createAvailability(deps: {
               }));
       result.set(agent.id, {
         online,
-        quota: quotaForAgent(runners, agent, actorUserId),
+        quota: quotaForAgent(
+          runners,
+          agent,
+          actorUserId,
+          deps.clock.now().getTime(),
+        ),
         busy: busy.get(agent.id) ?? 0,
         runners: {
           team: team.length,
