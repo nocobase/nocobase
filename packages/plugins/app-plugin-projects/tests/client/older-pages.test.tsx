@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 
 import { useOlderPages } from '../../client/pages/issues/detail/use-older-pages.js';
 
@@ -10,9 +10,14 @@ afterEach(() => {
   clients.splice(0).forEach((client) => client.clear());
 });
 
-it.each(['threads', 'activities'] as const)(
-  'retains loaded %s and fills a burst spanning several newest pages',
-  async (kind) => {
+it.each([
+  ['threads', false],
+  ['threads', true],
+  ['activities', false],
+  ['activities', true],
+] as const)(
+  'retains loaded %s across a multi-page burst (history finishes first: %s)',
+  async (kind, historyFirst) => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -21,7 +26,7 @@ it.each(['threads', 'activities'] as const)(
       id: String(i + 1),
       text: 'original',
     }));
-    const read = async (cursor?: string) => {
+    const read = vi.fn(async (cursor?: string) => {
       const end = cursor
         ? rows.findIndex((row) => row.id === cursor)
         : rows.length;
@@ -30,7 +35,7 @@ it.each(['threads', 'activities'] as const)(
         data: rows.slice(start, end),
         nextCursor: start ? rows[start]!.id : null,
       };
-    };
+    });
     function Wrapper({ children }: { readonly children: ReactNode }) {
       return (
         <QueryClientProvider client={client}>{children}</QueryClientProvider>
@@ -57,6 +62,10 @@ it.each(['threads', 'activities'] as const)(
     act(() => result.current.loadMore());
     await waitFor(() => expect(result.current.items[0]?.id).toBe('5'));
     const loadMore = result.current.loadMore;
+    const items = result.current.items;
+    rerender({ issue: 'issue-one', cursor: '9' });
+    expect(result.current.items).toBe(items);
+    read.mockClear();
     rows = [
       ...rows.map((row) => (row.id === '7' ? { ...row, text: 'edited' } : row)),
       ...Array.from({ length: 7 }, (_, i) => ({
@@ -64,6 +73,13 @@ it.each(['threads', 'activities'] as const)(
         text: 'new',
       })),
     ];
+    if (historyFirst) {
+      await act(async () => {
+        await client.invalidateQueries({
+          queryKey: ['pm', 'issue', 'issue-one'],
+        });
+      });
+    }
     rerender({ issue: 'issue-one', cursor: '16' });
     await waitFor(() =>
       expect(result.current.items.map((row) => row.id)).toEqual(
@@ -74,6 +90,8 @@ it.each(['threads', 'activities'] as const)(
       'edited',
     );
     expect(result.current.loadMore).toBe(loadMore);
+    // One refresh to the old boundary, then the already-loaded second page. No second complete refresh.
+    expect(read).toHaveBeenCalledTimes(7);
     act(() => result.current.loadMore());
     await waitFor(() => expect(result.current.items[0]?.id).toBe('3'));
     act(() => result.current.loadMore());

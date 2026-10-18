@@ -3,13 +3,15 @@ import {
   useQueryClient,
   type InfiniteData,
 } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { pmKeys } from '../../../api/keys.js';
 
 interface HistoryPage<T> {
   readonly data: readonly T[];
   readonly nextCursor: string | null;
+  /** Newest page boundary covered by the first history page. */
+  readonly headCursor?: string | null;
 }
 
 interface OlderPages<T> {
@@ -28,7 +30,7 @@ export function useOlderPages<T>(
   idOf: (item: T) => string,
 ): OlderPages<T> {
   const client = useQueryClient();
-  const key = pmKeys[kind](issueId, null);
+  const key = useMemo(() => pmKeys[kind](issueId), [kind, issueId]);
   const [requestedIssue, setRequestedIssue] = useState<string | null>(null);
   const requested =
     requestedIssue === issueId || client.getQueryData(key) !== undefined;
@@ -41,6 +43,7 @@ export function useOlderPages<T>(
         client.getQueryData<InfiniteData<HistoryPage<T>>>(key)?.pages[0];
       const boundary = previous?.data[0];
       let page = await read();
+      const headCursor = page.nextCursor;
       let items = [...page.data];
       // The first load includes an older page. On refresh, keep reaching at least the old boundary.
       while (
@@ -61,8 +64,9 @@ export function useOlderPages<T>(
         return {
           data: loaded.slice(boundaryIndex),
           nextCursor: previous.nextCursor,
+          headCursor,
         };
-      return { data: loaded, nextCursor: page.nextCursor };
+      return { data: loaded, nextCursor: page.nextCursor, headCursor };
     },
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     enabled: requested && !!firstCursor,
@@ -73,21 +77,28 @@ export function useOlderPages<T>(
     if (query.isFetching) return;
     const changed = previousCursorRef.current !== firstCursor;
     previousCursorRef.current = firstCursor;
-    if (changed && requested && firstCursor)
+    if (
+      changed &&
+      requested &&
+      firstCursor &&
+      query.data?.pages[0]?.headCursor !== firstCursor
+    )
       void client.invalidateQueries({
-        queryKey: pmKeys[kind](issueId, null),
+        queryKey: key,
         exact: true,
       });
-  }, [client, issueId, kind, firstCursor, requested, query.isFetching]);
+  }, [client, key, firstCursor, requested, query.isFetching, query.data]);
   const { fetchNextPage } = query;
   const loadMore = useCallback(() => {
     if (!requested) setRequestedIssue(issueId);
     else void fetchNextPage();
   }, [requested, issueId, fetchNextPage, setRequestedIssue]);
+  const items = useMemo(
+    () => [...(query.data?.pages ?? [])].reverse().flatMap((page) => page.data),
+    [query.data],
+  );
   return {
-    items: [...(query.data?.pages ?? [])]
-      .reverse()
-      .flatMap((page) => page.data),
+    items,
     hasMore: !!firstCursor && (!query.data || query.hasNextPage),
     loading: query.isFetching,
     loadMore,

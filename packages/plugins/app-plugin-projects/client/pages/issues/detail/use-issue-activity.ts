@@ -37,6 +37,9 @@ import { useOlderThreads } from './use-older-threads.js';
 /** The emoji a reaction may be. */
 export const ISSUE_REACTION_EMOJIS: readonly string[] = REACTION_EMOJIS;
 
+// Bound automatic permalink lookup. The person can still load older entries explicitly.
+const TARGET_HISTORY_PAGES = 10;
+
 export interface IssueTimeline {
   /** Threads, changes and runs, oldest first. */
   readonly entries: readonly TimelineEntry[];
@@ -101,17 +104,37 @@ export function useIssueTimeline(
     olderActivities;
   const loadActivities = olderActivities.loadMore;
   const scrolledToRef = useRef<string | null>(null);
+  const searchRef = useRef({ target: '', threads: 0, activities: 0 });
   useEffect(() => {
     const target = targetId ? `${detail.id}:${targetId}` : null;
+    if (searchRef.current.target !== target)
+      searchRef.current = { target: target ?? '', threads: 0, activities: 0 };
     if (scrolledToRef.current === target) return;
     if (!targetId) {
       scrolledToRef.current = null;
       return;
     }
     if (!found) {
-      if (!threadFound && moreThreads && !loadingThreads) loadThreads();
+      if (
+        !threadFound &&
+        moreThreads &&
+        !loadingThreads &&
+        searchRef.current.threads < TARGET_HISTORY_PAGES
+      ) {
+        searchRef.current.threads++;
+        loadThreads();
+      }
       // The timeline's watermark can hide a loaded thread until the activity pages reach it too.
-      if (moreActivities && !loadingActivities) loadActivities();
+      // Read activities only after the target is known to exist in the loaded threads.
+      if (
+        threadFound &&
+        moreActivities &&
+        !loadingActivities &&
+        searchRef.current.activities < TARGET_HISTORY_PAGES
+      ) {
+        searchRef.current.activities++;
+        loadActivities();
+      }
       return;
     }
     const element = document.querySelector<HTMLElement>(
@@ -132,6 +155,8 @@ export function useIssueTimeline(
     moreActivities,
     loadingActivities,
     loadActivities,
+    olderThreads.threads,
+    olderActivities.activities,
   ]);
 
   return {

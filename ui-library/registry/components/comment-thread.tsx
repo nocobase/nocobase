@@ -395,7 +395,9 @@ function TimelineEntries({
   readonly renderEntry: (entry: CommentTimelineEntry) => ReactNode;
 }): ReactElement {
   const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
-  if (entries.length <= VIRTUALIZE_AFTER)
+  // Keep the browser's scroll anchor while entries arrive or history is loaded.
+  const [virtual] = useState(() => entries.length > VIRTUALIZE_AFTER);
+  if (!virtual)
     return (
       <ul className='space-y-3' aria-label={label}>
         {entries.map((entry) => (
