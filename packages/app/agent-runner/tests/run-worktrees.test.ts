@@ -5,6 +5,7 @@ import { waitFor } from './fake-server.ts';
 import { workspaceHolders } from '../src/core/process-tree.ts';
 import * as fsPromises from 'node:fs/promises';
 import * as checkoutModule from '../src/core/checkout.ts';
+import * as gitModule from '../src/core/git.ts';
 import { collectWorkspaces } from '../src/core/workspaces.ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
@@ -397,10 +398,10 @@ describe('per-attempt worktrees', () => {
     const a = await start('unconfirmed-delivery');
     const head = commitFile(a.repo.dir);
     await finalizeRunWorktrees(paths, a.workDir, () => {}, { remove: false });
-    const original = checkoutModule.git;
+    const original = gitModule.git;
     let lookups = 0;
     const spy = vi
-      .spyOn(checkoutModule, 'git')
+      .spyOn(gitModule, 'git')
       .mockImplementation(async (args, ...rest) => {
         if (args.includes('ls-remote') && ++lookups === 2)
           throw new checkoutModule.CheckoutError(
