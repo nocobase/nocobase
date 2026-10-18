@@ -187,7 +187,11 @@ describe('resolveAgent', () => {
           '  : > "$1/node_modules/fixture-dependency/index.js"',
           '}',
           // Another bridge finishes installing the same version first.
-          'if [ -n "$NPM_RACE" ]; then install "$NPM_RACE"; fi',
+          'if [ -n "$NPM_RACE" ]; then',
+          '  install "$NPM_RACE"',
+          '  /bin/cp "$NPM_RACE_INVENTORY" "$NPM_RACE/bridge-files.json"',
+          '  : > "$NPM_RACE/winner"',
+          'fi',
           'install "$prefix"',
           '',
         ].join('\n'),
@@ -365,15 +369,34 @@ describe('resolveAgent', () => {
     it('uses the installation another bridge finished first and discards its own', async () => {
       await agent('bin/agent', '2.1.3');
       const target = path.join(adapters, '@scope', 'adapter@1.0.0');
+      const raceInventory = await file(
+        'race-files.json',
+        0o644,
+        JSON.stringify(
+          [
+            'node_modules/@scope/adapter/package.json',
+            'node_modules/@scope/adapter/dist/index.js',
+            'node_modules/@scope/adapter/dist/required.js',
+            'node_modules/fixture-dependency/package.json',
+            'node_modules/fixture-dependency/index.js',
+          ].map((path) => ({ path, link: false })),
+        ),
+      );
       await expect(
-        resolveAgent(MANAGED, { ...env, NPM_RACE: target }, 'linux', {
-          adapters,
-          waitForInstall: true,
-        }),
+        resolveAgent(
+          MANAGED,
+          { ...env, NPM_RACE: target, NPM_RACE_INVENTORY: raceInventory },
+          'linux',
+          {
+            adapters,
+            waitForInstall: true,
+          },
+        ),
       ).resolves.toMatchObject({ args: [entry()] });
       expect(await readdir(path.join(adapters, '@scope'))).toEqual([
         'adapter@1.0.0',
       ]);
+      expect(await readFile(path.join(target, 'winner'), 'utf8')).toBe('');
     });
 
     it('removes what an unfinished install left behind', async () => {
