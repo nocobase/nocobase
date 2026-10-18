@@ -83,5 +83,12 @@ it.each(['threads', 'activities'] as const)(
     );
     rerender({ issue: 'issue-two', cursor: '16' });
     expect(result.current.items).toEqual([]);
+    rows = [...rows, { id: '18', text: 'after navigation' }];
+    rerender({ issue: 'issue-one', cursor: '17' });
+    await waitFor(() =>
+      expect(result.current.items.map((row) => row.id)).toEqual(
+        rows.map((row) => row.id),
+      ),
+    );
   },
 );

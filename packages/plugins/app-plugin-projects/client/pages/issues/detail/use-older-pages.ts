@@ -30,7 +30,8 @@ export function useOlderPages<T>(
   const client = useQueryClient();
   const key = pmKeys[kind](issueId, null);
   const [requestedIssue, setRequestedIssue] = useState<string | null>(null);
-  const requested = requestedIssue === issueId;
+  const requested =
+    requestedIssue === issueId || client.getQueryData(key) !== undefined;
   const query = useInfiniteQuery({
     queryKey: key,
     initialPageParam: '',
