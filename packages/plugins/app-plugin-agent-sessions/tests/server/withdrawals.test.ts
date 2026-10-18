@@ -1,0 +1,239 @@
+import {
+  BRIDGE_PROTOCOL_VERSION,
+  type PromptRequest,
+} from '@nocobase/acp-bridge/protocol';
+import { describe, expect } from 'vitest';
+import { AgentSessionsService } from '../../server/service.js';
+import { computers, events } from '../../server/store.js';
+import { test } from '../helpers/database.js';
+
+const owner = { userId: 'owner' };
+const text = (text: string) => [{ type: 'text' as const, text }];
+const signal = new AbortController().signal;
+const generation = {
+  protocol: BRIDGE_PROTOCOL_VERSION,
+  bridgeStartedAt: 'one',
+};
+
+describe('queued message withdrawal', () => {
+  test('arbitrates execution, keeps other turns and images, persists offline withdrawal until acknowledgement, and rejects stale delivery', async ({
+    database,
+  }) => {
+    let time = Date.now();
+    const service = new AgentSessionsService({ database, now: () => time });
+    const { computerId } = await service.register(owner.userId, {
+      ...generation,
+      computerId: null,
+      computer: {
+        name: 'Test',
+        platform: 'linux',
+        arch: 'x64',
+        host: 'test',
+        roots: ['/work'],
+        agents: [{ id: 'fake', name: 'Fake', version: null }],
+      },
+    });
+    const session = await service.createSession(owner, {
+      computerId,
+      agentId: 'fake',
+      cwd: '/work',
+      content: text('A'),
+    });
+    const a = (
+      await service.listEvents(owner.userId, session.id, {
+        after: 0,
+        limit: 100,
+      })
+    )[0]!;
+    if (a.kind !== 'prompt') throw new Error('Expected prompt');
+    const request = (seq: number, promptId: string): PromptRequest => ({
+      ...generation,
+      computerId,
+      sessionId: session.id,
+      seq,
+      promptId,
+    });
+    expect(
+      await service.claim(owner.userId, request(a.seq, a.promptId)),
+    ).toEqual({ execute: true });
+    const image = {
+      type: 'image' as const,
+      mimeType: 'image/png',
+      data: 'aGVsbG8=',
+    };
+    const b = await service.prompt(owner, session.id, [...text('B'), image]);
+    const c = await service.prompt(owner, session.id, text('C'));
+    if (b.kind !== 'prompt' || c.kind !== 'prompt')
+      throw new Error('Expected prompts');
+    // The bridge already received B; withdrawal must still veto its later claim.
+    await service.poll(
+      owner.userId,
+      { ...generation, computerId, wait: false },
+      signal,
+    );
+    await expect(
+      service.withdraw('stranger', session.id, b.seq),
+    ).rejects.toMatchObject({ key: 'sessionNotFound' });
+    await expect(
+      service.withdraw(owner.userId, session.id, a.seq),
+    ).rejects.toMatchObject({ key: 'promptStarted' });
+    time += 70_000;
+    await service.withdraw(owner.userId, session.id, b.seq);
+    await service.withdraw(owner.userId, session.id, b.seq);
+    expect(
+      await service.claim(owner.userId, request(b.seq, b.promptId)),
+    ).toEqual({ execute: false });
+    expect((await service.getSession(owner, session.id)).running).toBe(true);
+    const take = () =>
+      service.poll(
+        owner.userId,
+        { ...generation, computerId, wait: false },
+        signal,
+      );
+    const first = (await take()).commands;
+    expect(first).toEqual([
+      {
+        type: 'withdrawPrompt',
+        sessionId: session.id,
+        seq: b.seq,
+        promptId: b.promptId,
+      },
+    ]);
+    expect((await take()).commands).toEqual(first); // Lost response: retained until confirmation.
+    await service.withdrawn(owner.userId, request(b.seq, b.promptId));
+    await service.withdrawn(owner.userId, request(b.seq, b.promptId));
+    expect((await take()).commands).toEqual([]);
+    expect((await service.getSession(owner, session.id)).running).toBe(true);
+    await service.report(owner.userId, {
+      ...generation,
+      computerId,
+      sessionId: session.id,
+      batch: 1,
+      state: null,
+      events: [
+        {
+          kind: 'turnEnded',
+          seq: b.seq,
+          at: new Date(time).toISOString(),
+          promptId: b.promptId,
+          stopReason: 'cancelled',
+          usage: null,
+          error: null,
+        },
+      ],
+    });
+    expect((await service.getSession(owner, session.id)).running).toBe(true);
+    const transcript = await service.listEvents(owner.userId, session.id, {
+      after: 0,
+      limit: 100,
+    });
+    expect(
+      transcript.filter((event) => event.kind === 'withdrawalRequested'),
+    ).toHaveLength(1);
+    expect(
+      transcript.filter((event) => event.kind === 'promptWithdrawn'),
+    ).toHaveLength(1);
+    expect(transcript.find((event) => event.seq === b.seq)).toMatchObject({
+      content: [...text('B'), image],
+    });
+    expect(JSON.stringify(transcript)).not.toContain('_execution');
+    expect(
+      await service.claim(owner.userId, request(c.seq, c.promptId)),
+    ).toEqual({ execute: true });
+    expect(
+      await service.claim(owner.userId, request(c.seq, c.promptId)),
+    ).toEqual({ execute: true });
+    await expect(
+      service.withdraw(owner.userId, session.id, c.seq),
+    ).rejects.toMatchObject({ key: 'promptStarted' });
+  });
+
+  test('permits only one winner under simultaneous claim and withdrawal, and fences old bridges and unknown messages', async ({
+    database,
+  }) => {
+    const service = new AgentSessionsService({ database });
+    const registration = {
+      ...generation,
+      computerId: null,
+      computer: {
+        name: 'Test',
+        platform: 'linux',
+        arch: 'x64',
+        host: 'test',
+        roots: ['/work'],
+        agents: [{ id: 'fake', name: 'Fake', version: null }],
+      },
+    };
+    const { computerId } = await service.register(owner.userId, registration);
+    const session = await service.createSession(owner, {
+      computerId,
+      agentId: 'fake',
+      cwd: '/work',
+      content: text('Race'),
+    });
+    const prompt = (
+      await service.listEvents(owner.userId, session.id, {
+        after: 0,
+        limit: 10,
+      })
+    )[0]!;
+    if (prompt.kind !== 'prompt') throw new Error('Expected prompt');
+    const request = {
+      ...generation,
+      computerId,
+      sessionId: session.id,
+      seq: prompt.seq,
+      promptId: prompt.promptId,
+    };
+    const [claim, withdrawal] = await Promise.allSettled([
+      service.claim(owner.userId, request),
+      service.withdraw(owner.userId, session.id, prompt.seq),
+    ]);
+    expect(claim.status).toBe('fulfilled');
+    if (claim.status !== 'fulfilled') throw claim.reason;
+    expect(claim.value.execute).toBe(withdrawal.status === 'rejected');
+    await expect(service.claim('stranger', request)).rejects.toMatchObject({
+      key: 'computerNotFound',
+    });
+    await expect(
+      service.claim(owner.userId, { ...request, promptId: 'wrong' }),
+    ).rejects.toMatchObject({ key: 'promptNotFound' });
+    await expect(
+      service.poll(owner.userId, { computerId, wait: false }, signal),
+    ).rejects.toMatchObject({ key: 'upgradeRequired' });
+    await service.register(
+      owner.userId,
+      { ...registration, computerId, bridgeStartedAt: 'two' },
+      true,
+    );
+    await expect(service.claim(owner.userId, request)).rejects.toMatchObject({
+      key: 'bridgeReplaced',
+    });
+    expect(
+      await service.claim(owner.userId, { ...request, bridgeStartedAt: 'two' }),
+    ).toEqual({ execute: false });
+    // A pre-upgrade in-flight prompt has no claim decision, even after its computer upgrades.
+    const row = await events(database.connection()).findOne({
+      filter: { sessionId: session.id, seq: prompt.seq },
+    });
+    const { _execution: _decision, ...legacy } = row!.data;
+    await events(database.connection()).updateMany({
+      filter: { id: row!.id },
+      values: { data: legacy },
+    });
+    await expect(
+      service.withdraw(owner.userId, session.id, prompt.seq),
+    ).rejects.toMatchObject({ key: 'withdrawalUnsupported' });
+    await computers(database.connection()).updateMany({
+      filter: { id: computerId },
+      values: { protocol: null },
+    });
+    await expect(
+      service.poll(
+        owner.userId,
+        { ...generation, computerId, wait: false },
+        signal,
+      ),
+    ).rejects.toMatchObject({ key: 'upgradeRequired' });
+  });
+});

@@ -178,6 +178,18 @@ A session's transcript is the ACP `session/update` payloads as the agent sent th
 
 Messages sent while the agent works wait their turn; stopping the turn (`POST .../cancel`) drops them too. Archiving a session stops its agent and refuses new messages until it is restored.
 
+### Withdrawing one queued message
+
+The owner can withdraw one queued message without stopping the current reply or the other queued messages. `POST /agentSessions/sessions/{sessionId}/withdraw` names the original prompt event's `seq`. A short transaction under the existing session mutex decides whether withdrawal or the bridge's execution claim wins. Approval to execute is the start boundary, including agent initialization. Once approved, withdrawal answers `AGENT_SESSIONS_PROMPT_STARTED` and the browser refreshes the transcript.
+
+Withdrawal immediately vetoes execution, including messages already in the computer's memory queue. It remains **Withdrawing, waiting for computer confirmation** until the computer removes that message and acknowledges it; offline withdrawals can wait indefinitely. The withdrawal command is retained and retransmitted until acknowledged. Repeated requests and acknowledgements are idempotent, and reconnecting or restarting cannot replay a withdrawn message. The original text and images remain readable; **Edit and send again** opens a separate draft with the original images and creates a new submission without replacing the current composer draft. Unreadable images block that edit with Retry rather than silently dropping them.
+
+Bridge protocol 4 adds `/bridge/claim` and `/bridge/withdrawn`, identifies prompts by session, sequence and prompt ID, and fences polls and claims by the registered protocol and bridge start time. The computer's nullable `protocol` column is added by migration; old records remain unknown. The prompt event's private `_execution` JSON stores queued, claimed, withdrawing, withdrawn or ended decisions; the terminal decision prevents a late retry from executing a completed prompt. Public `withdrawalRequested` and `promptWithdrawn` events update every window without changing the current running turn or generating a reply notification. Streamed updates add no prompt lookups; terminal reports carry the original sequence and cannot revive withdrawals or clear a newer running turn.
+
+Upgrade and restart the computer connection. Older bridges cannot poll new commands; already delivered legacy prompts have no withdrawal capability, even after the computer upgrades. Their transcript explains that they cannot be safely withdrawn. A network outage leaves the current turn running but prevents the next prompt from starting until a claim succeeds. Every new prompt carries complete application instructions and its work snapshot, avoiding a dependency on a preceding queued prompt that may be withdrawn. Roll out the server and bundled CLI together; no fallback executes a prompt before authorization.
+
+Each new start adds one HTTP round trip and one session transaction, replacing the reported start event. Withdrawal and acknowledgement each take one session transaction. Polls reserve 25 slots each for ordinary and retained commands using two bounded reads, so a lost acknowledgement cannot starve other commands; empty polls take no session lock. A poll containing withdrawals waits one second before repeating. There are no leases, automatic reruns or additional background sweepers.
+
 ## Data
 
 | Collection              | Holds                                                                                                                                                                                                                              |

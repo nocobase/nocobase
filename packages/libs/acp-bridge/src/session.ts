@@ -37,6 +37,10 @@ import {
 } from './protocol.js';
 
 export interface SessionContext {
+  /** Must authorize before opening an agent or sending a prompt; transport failures keep the head waiting. */
+  readonly claim?:
+    | ((promptId: string, seq: number | undefined) => Promise<boolean>)
+    | undefined;
   readonly client: acp.Implementation;
   readonly env: NodeJS.ProcessEnv;
   /** The directories sessions may work in. */
@@ -106,8 +110,14 @@ export class BridgeSession {
   #warm: Promise<WarmAgent | undefined> | undefined;
   readonly #queue: {
     readonly promptId: string;
+    readonly seq?: number | undefined;
     readonly content: readonly PromptContent[];
   }[] = [];
+  readonly #seen = new Set<string>();
+  #pumping = false;
+  #pending:
+    | { readonly promptId: string; removed: boolean; cancelled: boolean }
+    | undefined;
   #turn: string | undefined;
   /** The running turn was cancelled; until its prompt reaches the agent, only this remembers it. */
   #turnCancelled = false;
@@ -184,8 +194,11 @@ export class BridgeSession {
     this.#target = command.session;
     switch (command.type) {
       case 'prompt':
+        if (this.#seen.has(command.promptId)) return;
+        this.#seen.add(command.promptId);
         this.#queue.push({
           promptId: command.promptId,
+          seq: command.seq,
           content: command.content,
         });
         void this.#pump();
@@ -205,6 +218,16 @@ export class BridgeSession {
     }
   }
 
+  /** Removes one waiting prompt, including a head waiting for authorization; never cancels a running turn. */
+  withdraw(promptId: string): boolean {
+    if (this.#turn === promptId) return false;
+    this.#seen.add(promptId);
+    const index = this.#queue.findIndex((item) => item.promptId === promptId);
+    if (index >= 0) this.#queue.splice(index, 1);
+    if (this.#pending?.promptId === promptId) this.#pending.removed = true;
+    return true;
+  }
+
   async close(): Promise<void> {
     this.#closed = true;
     this.#cancel();
@@ -217,16 +240,36 @@ export class BridgeSession {
   }
 
   async #pump(): Promise<void> {
-    if (this.#turn !== undefined || this.#closed) return;
+    if (this.#pumping || this.#closed) return;
     const next = this.#queue.shift();
     if (!next) return;
+    this.#pumping = true;
+    const pending = {
+      promptId: next.promptId,
+      removed: false,
+      cancelled: false,
+    };
+    this.#pending = pending;
+    const execute = this.#context.claim
+      ? await this.#context.claim(next.promptId, next.seq)
+      : true;
+    this.#pending = undefined;
+    if (!execute || pending.removed || this.#closed) {
+      this.#pumping = false;
+      void this.#pump();
+      return;
+    }
     this.#turn = next.promptId;
-    this.#turnCancelled = false;
+    this.#turnCancelled = pending.cancelled;
     this.#emit({ kind: 'turnStarted', at: now(), promptId: next.promptId });
     let stopReason: string | null = null;
     let usage: TurnUsage | null = null;
     let error: string | null = null;
     try {
+      if (pending.cancelled) {
+        stopReason = 'cancelled';
+        return;
+      }
       const agent = await this.#open();
       const instructions = await this.#context.sessionInstructions?.(
         this.#target.agentId,
@@ -262,22 +305,26 @@ export class BridgeSession {
     } finally {
       this.#resolvePermissions('cancelled');
       this.#turn = undefined;
+      this.#pumping = false;
+      this.#emit({
+        kind: 'turnEnded',
+        seq: next.seq,
+        at: now(),
+        promptId: next.promptId,
+        stopReason,
+        usage,
+        error,
+      });
+      void this.#pump();
     }
-    this.#emit({
-      kind: 'turnEnded',
-      at: now(),
-      promptId: next.promptId,
-      stopReason,
-      usage,
-      error,
-    });
-    void this.#pump();
   }
 
   #cancel(): void {
+    if (this.#pending) this.#pending.cancelled = true;
     for (const dropped of this.#queue.splice(0)) {
       this.#emit({
         kind: 'turnEnded',
+        seq: dropped.seq,
         at: now(),
         promptId: dropped.promptId,
         stopReason: 'cancelled',

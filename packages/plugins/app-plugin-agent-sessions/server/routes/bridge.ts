@@ -1,6 +1,7 @@
 import {
   BridgeCommandSchema,
   PollRequestSchema,
+  PromptRequestSchema,
   RegisterRequestSchema,
   ReplyRequestSchema,
   ReportRequestSchema,
@@ -39,6 +40,45 @@ const computerNotFound = apiErrorResponse(
 /** The bridge's side of agent sessions, under `/agentSessions/bridge`. Not on the command line: only the bridge calls. */
 export function bridgeRoutes(service: AgentSessionsService): Hono<AuthEnv> {
   const router = new Hono<AuthEnv>();
+
+  for (const operation of ['claim', 'withdrawn'] as const) {
+    router.post(
+      `/${operation}`,
+      describeRoute({
+        tags,
+        summary:
+          operation === 'claim'
+            ? 'Authorize a queued message to start'
+            : 'Confirm removal of a withdrawn message',
+        operationId:
+          operation === 'claim'
+            ? 'agentSessionsClaimPrompt'
+            : 'agentSessionsConfirmWithdrawal',
+        ...cliRoute(false),
+        security,
+        description: bridgeOnly,
+        responses: {
+          200: dataResponse(
+            operation === 'claim'
+              ? z.object({ execute: z.boolean() })
+              : z.object({ confirmed: z.boolean() }),
+          ),
+          ...errors,
+          400: apiErrorResponse(400),
+          404: computerNotFound,
+        },
+      }),
+      apiValidator('json', PromptRequestSchema),
+      async (context) => {
+        const request = context.req.valid('json');
+        const userId = bridgeCaller(context, request.computerId).userId;
+        if (operation === 'claim')
+          return context.json({ data: await service.claim(userId, request) });
+        await service.withdrawn(userId, request);
+        return context.json({ data: { confirmed: true } });
+      },
+    );
+  }
 
   router.post(
     '/register',

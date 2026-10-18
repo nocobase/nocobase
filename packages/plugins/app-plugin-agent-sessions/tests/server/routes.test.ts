@@ -195,7 +195,12 @@ describe('the agent sessions routes', () => {
           'POST',
           '/bridge/poll',
           'u1',
-          { computerId, wait: false },
+          {
+            computerId,
+            wait: false,
+            protocol: BRIDGE_PROTOCOL_VERSION,
+            bridgeStartedAt: 'bridge-1',
+          },
           computerId,
         )
       ).json()) as {
@@ -419,7 +424,12 @@ describe('the agent sessions routes', () => {
         'POST',
         '/bridge/poll',
         'u1',
-        { computerId, wait: false },
+        {
+          computerId,
+          wait: false,
+          protocol: BRIDGE_PROTOCOL_VERSION,
+          bridgeStartedAt: 'bridge-1',
+        },
         mine.computerId,
       );
     expect((await poll(mine.computerId)).status).toBe(200);

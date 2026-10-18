@@ -18,6 +18,8 @@ import {
   type FolderListing,
   type PollRequest,
   type PollResponse,
+  type PromptRequest,
+  type ClaimResponse,
   type PromptContent,
   type RegisterRequest,
   type RegisterResponse,
@@ -46,6 +48,7 @@ import {
   appendEvents,
   computers,
   computerView,
+  commands,
   enqueue,
   events,
   eventView,
@@ -70,6 +73,11 @@ import {
   type SessionNoticeType,
 } from './notices.js';
 import { workName, workNote, workSnapshot, type WorkItem } from './work.js';
+
+interface Execution {
+  readonly state: 'queued' | 'claimed' | 'withdrawing' | 'withdrawn' | 'ended';
+  readonly bridgeStartedAt?: string;
+}
 
 /** Who reads: a person, and the language the answer is for. */
 export interface Viewer {
@@ -516,6 +524,7 @@ export class AgentSessionsService {
       ? undefined
       : `nbc_${randomBytes(32).toString('base64url')}`;
     const values = {
+      protocol: request.protocol,
       ...request.computer,
       home: request.computer.home ?? null,
       bridgeStartedAt: request.bridgeStartedAt,
@@ -533,6 +542,7 @@ export class AgentSessionsService {
     const restarted = known?.bridgeStartedAt !== request.bridgeStartedAt;
     const viewChanged =
       !known ||
+      known.protocol !== request.protocol ||
       restarted ||
       !isOnline(known, this.#now()) ||
       Object.entries(request.computer).some(
@@ -609,6 +619,7 @@ export class AgentSessionsService {
     signal: AbortSignal,
   ): Promise<PollResponse> {
     const computer = await this.#computer(userId, request.computerId);
+    this.#checkBridge(computer, request);
     const wasOnline = isOnline(computer, this.#now());
     await computers(this.#conn()).updateMany({
       filter: { id: computer.id },
@@ -625,13 +636,11 @@ export class AgentSessionsService {
         Math.min(POLL_CHECK_MS, deadline - this.#now()),
         signal,
       );
-      if (
-        !(await computers(this.#conn()).findOne({
-          filter: { id: computer.id },
-        }))
-      ) {
-        throw new AgentSessionsError('computerNotFound');
-      }
+      const current = await computers(this.#conn()).findOne({
+        filter: { id: computer.id },
+      });
+      if (!current) throw new AgentSessionsError('computerNotFound');
+      this.#checkBridge(current, request);
     }
   }
 
@@ -650,6 +659,8 @@ export class AgentSessionsService {
       ) {
         throw new AgentSessionsError('sessionNotFound');
       }
+      if (computer.bridgeStartedAt !== request.bridgeStartedAt)
+        throw new AgentSessionsError('bridgeReplaced');
       const repeated =
         session.bridgeStartedAt === request.bridgeStartedAt &&
         request.batch <= Number(session.reportedBatch);
@@ -662,14 +673,70 @@ export class AgentSessionsService {
         };
       let running = Boolean(session.running);
       let pending = Number(session.pendingPermissions);
+      const accepted: (typeof request.events)[number][] = [];
       for (const event of request.events) {
+        // A new bridge starts only through claim. Old in-flight turns keep their historical report contract.
+        if (
+          event.kind === 'turnStarted' &&
+          computer.protocol === BRIDGE_PROTOCOL_VERSION
+        )
+          continue;
+        if (
+          event.kind === 'turnEnded' &&
+          computer.protocol === BRIDGE_PROTOCOL_VERSION
+        ) {
+          if (event.seq === undefined) continue;
+          const prompt = await events(conn).findOne({
+            filter: { sessionId: session.id, seq: event.seq, kind: 'prompt' },
+          });
+          const decision = prompt?.data._execution as Execution | undefined;
+          if (
+            !prompt ||
+            prompt.data.promptId !== event.promptId ||
+            !decision ||
+            decision.state === 'withdrawing' ||
+            decision.state === 'withdrawn' ||
+            decision.state === 'ended'
+          )
+            continue;
+          if (
+            decision.state === 'claimed' &&
+            decision.bridgeStartedAt !== request.bridgeStartedAt
+          )
+            continue;
+          if (decision.state === 'queued' && event.stopReason !== 'cancelled')
+            continue;
+          await events(conn).updateMany({
+            filter: { id: prompt.id },
+            values: {
+              data: {
+                ...prompt.data,
+                _execution: {
+                  state: 'ended',
+                  bridgeStartedAt: request.bridgeStartedAt,
+                },
+              },
+            },
+          });
+          const latest = await events(conn).findOne({
+            filter: { sessionId: session.id, kind: 'turnStarted' },
+            sort: (sort) => sort.field('seq').desc(),
+          });
+          if (latest?.data.promptId === event.promptId)
+            [running, pending] = [false, 0];
+        }
         if (event.kind === 'turnStarted') running = true;
-        if (event.kind === 'turnEnded') [running, pending] = [false, 0];
+        if (
+          event.kind === 'turnEnded' &&
+          computer.protocol !== BRIDGE_PROTOCOL_VERSION
+        )
+          [running, pending] = [false, 0];
         if (event.kind === 'permissionRequested') pending += 1;
         if (event.kind === 'permissionResolved')
           pending = Math.max(0, pending - 1);
+        accepted.push(event);
       }
-      const result = await this.#append(conn, session, request.events, now, {
+      const result = await this.#append(conn, session, accepted, now, {
         running,
         pendingPermissions: pending,
         reportedBatch: request.batch,
@@ -692,7 +759,7 @@ export class AgentSessionsService {
       return {
         ...result,
         open: session.archivedAt === null,
-        added: request.events,
+        added: accepted,
       };
     });
     this.#changed(changed);
@@ -704,6 +771,183 @@ export class AgentSessionsService {
   }
 
   // Sessions.
+
+  #checkBridge(
+    computer: ComputerRecord,
+    request: {
+      readonly protocol?: number | undefined;
+      readonly bridgeStartedAt?: string | undefined;
+    },
+  ): void {
+    if (
+      request.protocol !== BRIDGE_PROTOCOL_VERSION ||
+      computer.protocol !== BRIDGE_PROTOCOL_VERSION
+    )
+      throw new AgentSessionsError('upgradeRequired', undefined, undefined, {
+        protocol: BRIDGE_PROTOCOL_VERSION,
+      });
+    if (computer.bridgeStartedAt !== request.bridgeStartedAt)
+      throw new AgentSessionsError('bridgeReplaced');
+  }
+
+  /** The session mutex is the single arbitration point shared with withdrawal. */
+  async claim(userId: string, request: PromptRequest): Promise<ClaimResponse> {
+    await this.#computer(userId, request.computerId);
+    await this.#session(userId, request.sessionId);
+    const result = await this.#transaction(async (conn, now) => {
+      const session = (await lockSession(conn, request.sessionId, now))!;
+      const computer = await computers(conn).findOne({
+        filter: { id: request.computerId, userId },
+      });
+      if (!computer) throw new AgentSessionsError('computerNotFound');
+      this.#checkBridge(computer, request);
+      if (session.userId !== userId || session.computerId !== computer.id)
+        throw new AgentSessionsError('sessionNotFound');
+      const prompt = await events(conn).findOne({
+        filter: { sessionId: session.id, seq: request.seq, kind: 'prompt' },
+      });
+      if (!prompt || prompt.data.promptId !== request.promptId)
+        throw new AgentSessionsError('promptNotFound');
+      const decision = prompt.data._execution as Execution | undefined;
+      if (session.archivedAt !== null || !decision) return { execute: false };
+      if (decision.state !== 'queued')
+        return {
+          execute:
+            decision.state === 'claimed' &&
+            decision.bridgeStartedAt === request.bridgeStartedAt,
+        };
+      await events(conn).updateMany({
+        filter: { id: prompt.id },
+        values: {
+          data: {
+            ...prompt.data,
+            _execution: {
+              state: 'claimed',
+              bridgeStartedAt: request.bridgeStartedAt,
+            },
+          },
+        },
+      });
+      const changed = await this.#append(
+        conn,
+        session,
+        [{ kind: 'turnStarted', at: now, promptId: request.promptId }],
+        now,
+        { running: true },
+      );
+      conn.afterCommit(() => this.#changed(changed));
+      return { execute: true };
+    });
+    return result;
+  }
+
+  /** Offline is allowed: the durable veto takes effect before the computer confirms removal. */
+  async withdraw(
+    userId: string,
+    sessionId: string,
+    seq: number,
+  ): Promise<void> {
+    await this.#session(userId, sessionId);
+    const existing = await events(this.#conn()).findOne({
+      filter: { sessionId, seq, kind: 'prompt' },
+    });
+    const prior = existing?.data._execution as Execution | undefined;
+    if (prior?.state === 'withdrawing' || prior?.state === 'withdrawn') return;
+    await this.#transaction(async (conn, now) => {
+      const session = (await lockSession(conn, sessionId, now))!;
+      if (session.userId !== userId)
+        throw new AgentSessionsError('sessionNotFound');
+      const prompt = await events(conn).findOne({
+        filter: { sessionId, seq, kind: 'prompt' },
+      });
+      if (!prompt) throw new AgentSessionsError('promptNotFound');
+      const decision = prompt.data._execution as Execution | undefined;
+      if (!decision) throw new AgentSessionsError('withdrawalUnsupported');
+      if (decision.state === 'withdrawing' || decision.state === 'withdrawn')
+        return;
+      if (session.archivedAt !== null)
+        throw new AgentSessionsError('sessionArchived');
+      if (decision.state !== 'queued')
+        throw new AgentSessionsError('promptStarted');
+      const promptId = prompt.data.promptId as string;
+      await events(conn).updateMany({
+        filter: { id: prompt.id },
+        values: {
+          data: { ...prompt.data, _execution: { state: 'withdrawing' } },
+        },
+      });
+      await enqueue(
+        conn,
+        session.computerId,
+        { type: 'withdrawPrompt', sessionId, seq, promptId },
+        now,
+        `withdraw:${prompt.id}`,
+      );
+      const changed = await this.#append(
+        conn,
+        session,
+        [{ kind: 'withdrawalRequested', at: now, promptId }],
+        now,
+        {},
+      );
+      conn.afterCommit(() => {
+        this.#wake(session.computerId);
+        this.#changed(changed);
+      });
+    });
+  }
+
+  async withdrawn(userId: string, request: PromptRequest): Promise<void> {
+    const registered = await this.#computer(userId, request.computerId);
+    this.#checkBridge(registered, request);
+    const owned = await this.#session(userId, request.sessionId);
+    if (owned.computerId !== registered.id)
+      throw new AgentSessionsError('sessionNotFound');
+    const existing = await events(this.#conn()).findOne({
+      filter: { sessionId: owned.id, seq: request.seq, kind: 'prompt' },
+    });
+    if (
+      existing?.data.promptId === request.promptId &&
+      (existing.data._execution as Execution | undefined)?.state === 'withdrawn'
+    )
+      return;
+    await this.#transaction(async (conn, now) => {
+      const session = (await lockSession(conn, request.sessionId, now))!;
+      const computer = await computers(conn).findOne({
+        filter: { id: request.computerId, userId },
+      });
+      if (!computer) throw new AgentSessionsError('computerNotFound');
+      this.#checkBridge(computer, request);
+      if (session.userId !== userId || session.computerId !== computer.id)
+        throw new AgentSessionsError('sessionNotFound');
+      const prompt = await events(conn).findOne({
+        filter: { sessionId: session.id, seq: request.seq, kind: 'prompt' },
+      });
+      if (!prompt || prompt.data.promptId !== request.promptId)
+        throw new AgentSessionsError('promptNotFound');
+      const decision = prompt.data._execution as Execution | undefined;
+      if (decision?.state === 'withdrawn') return;
+      if (decision?.state !== 'withdrawing')
+        throw new AgentSessionsError('promptStarted');
+      await events(conn).updateMany({
+        filter: { id: prompt.id },
+        values: {
+          data: { ...prompt.data, _execution: { state: 'withdrawn' } },
+        },
+      });
+      await commands(conn).deleteMany({
+        filter: { id: `withdraw:${prompt.id}`, computerId: computer.id },
+      });
+      const changed = await this.#append(
+        conn,
+        session,
+        [{ kind: 'promptWithdrawn', at: now, promptId: request.promptId }],
+        now,
+        {},
+      );
+      conn.afterCommit(() => this.#changed(changed));
+    });
+  }
 
   async listSessions(
     viewer: Viewer,
@@ -1104,14 +1348,11 @@ export class AgentSessionsService {
     const sessionId = session.id;
     const promptId = randomUUID();
     const locked = (await lockSession(conn, sessionId, now))!;
-    const note = workNote(work, locked.toldWork);
+    const note = workNote(work, null);
     const currentInstructions = this.#instructionsFor(viewer);
     const toldInstructions =
       currentInstructions && instructionsHash(currentInstructions);
-    const instructions =
-      toldInstructions !== locked.toldInstructions
-        ? currentInstructions
-        : undefined;
+    const instructions = currentInstructions;
     // The agent reads the application's instructions until it was told them, what the message mentions, and the
     // session's work when it changed since it was last told; the transcript keeps the message as written.
     const told: readonly PromptContent[] = [
@@ -1140,6 +1381,7 @@ export class AgentSessionsService {
           kind: 'prompt',
           at: now,
           promptId,
+          withdrawable: true,
           content: storesImages ? [] : content,
         },
       ],
@@ -1159,13 +1401,15 @@ export class AgentSessionsService {
             conn,
           )
         : content;
-    if (storesImages) {
+    {
       await events(conn).updateMany({
         filter: { sessionId, seq: result.lastSeq },
         values: {
           data: {
             at: now,
             promptId,
+            withdrawable: true,
+            _execution: { state: 'queued' },
             content: kept.map((part) =>
               part.type === 'text'
                 ? { ...part, text: redactor.text(part.text) }
@@ -1196,6 +1440,7 @@ export class AgentSessionsService {
         type: 'prompt',
         session: this.#target(locked),
         promptId,
+        seq: result.lastSeq,
         content: told,
       },
       now,
@@ -1221,6 +1466,7 @@ export class AgentSessionsService {
       kind: 'prompt',
       at: changed.session.lastActivityAt,
       promptId,
+      withdrawable: true,
       content: kept.map((part) =>
         part.type === 'text'
           ? { ...part, text: redactor.text(part.text) }

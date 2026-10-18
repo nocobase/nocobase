@@ -208,6 +208,19 @@ const enUS = {
     thought: 'Thinking',
     plan: 'Plan {{done}}/{{total}}',
     prompt: {
+      withdrawing: 'Withdrawing, waiting for computer confirmation',
+      withdrawn: 'Withdrawn',
+      withdraw: 'Withdraw',
+      retry: 'Retry',
+      copy: 'Copy',
+      edit: 'Edit and send again',
+      editBody:
+        'Edit this message in a separate draft. Your current draft stays as it is.',
+      attachmentError:
+        'Could not load the original attachments. Retry before editing.',
+      loading: 'Loading message and attachments…',
+      unsupported:
+        'This message reached an older bridge and cannot be safely withdrawn. Update and restart the computer connection.',
       queued: 'Queued, sent when this turn ends',
       cancelled: 'Cancelled',
       failed: 'Not answered',

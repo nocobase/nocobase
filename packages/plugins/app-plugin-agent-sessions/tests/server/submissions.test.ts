@@ -75,7 +75,12 @@ test('new sessions and prompts return the original confirmation for sequential a
   expect(JSON.stringify(events)).not.toContain('_submission');
   const commands = await service.poll(
     'u1',
-    { computerId: input.computerId, wait: false },
+    {
+      computerId: input.computerId,
+      wait: false,
+      protocol: BRIDGE_PROTOCOL_VERSION,
+      bridgeStartedAt: 'one',
+    },
     new AbortController().signal,
   );
   expect(JSON.stringify(commands)).not.toContain('_submission');

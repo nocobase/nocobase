@@ -2,6 +2,11 @@ import type { AgentSessionsResource } from './en-US.js';
 
 const zhCN: AgentSessionsResource = {
   errors: {
+    promptNotFound: '会话中没有找到这条消息。',
+    promptStarted: '消息已开始处理，无法撤回。',
+    withdrawalUnsupported:
+      '此消息由旧执行端接收，无法安全撤回。请升级命令行并重启电脑连接。',
+    bridgeReplaced: '另一连接已登记这台电脑，请重启当前连接。',
     submissionConflict: '该提交 ID 已用于另一项请求。',
     discoveryFailed: '无法加载智能体设置。请检查此电脑上的智能体后重试。',
     authenticationRequired: '请先登录。',

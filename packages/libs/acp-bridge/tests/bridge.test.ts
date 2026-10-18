@@ -54,7 +54,9 @@ beforeEach(async () => {
         error,
       }: Answer = one.path.endsWith('/poll')
         ? { data: { commands: commands.splice(0) } }
-        : answer(one);
+        : one.path.endsWith('/claim')
+          ? { data: { execute: true } }
+          : answer(one);
       const body = JSON.stringify(
         status === 200
           ? { data }
@@ -191,6 +193,7 @@ describe('runBridge', () => {
       type: 'prompt',
       session,
       promptId: 'p1',
+      seq: 1,
       content: [{ type: 'text', text: 'hang' }],
     });
     const { done, stop } = await run();
@@ -306,6 +309,7 @@ describe('runBridge', () => {
           settings: {},
         },
         promptId: 'p1',
+        seq: 1,
         content: [{ type: 'text', text: 'hi' }],
       });
       await until(() =>
@@ -586,6 +590,7 @@ describe('runBridge', () => {
         settings: {},
       },
       promptId: 'p1',
+      seq: 1,
       content: [{ type: 'text', text: 'hang' }],
     });
     const { done, stop } = await run();
