@@ -1,4 +1,9 @@
 import type { ReactElement, ReactNode } from 'react';
+import type {
+  CellContext,
+  ColumnMeta,
+  HeaderContext,
+} from '@tanstack/react-table';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Button } from '#components/ui/button';
 import { Empty, EmptyDescription } from '#components/ui/empty';
@@ -37,6 +42,9 @@ export interface WorkflowExecutionListProps {
   onNext: () => void;
 }
 
+type ExecutionDateMeta = ColumnMeta<WorkflowExecutionRow, unknown> &
+  Pick<WorkflowExecutionListProps, 'labels' | 'order' | 'onSort'>;
+
 export function WorkflowExecutionList({
   rows,
   loaded,
@@ -54,6 +62,7 @@ export function WorkflowExecutionList({
   onPrevious,
   onNext,
 }: WorkflowExecutionListProps): ReactElement {
+  const activityMeta: ExecutionDateMeta = { labels, order, onSort };
   return (
     <section className='flex flex-col gap-4'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
@@ -85,31 +94,27 @@ export function WorkflowExecutionList({
               id: 'record',
               header: labels.record,
               enableSorting: false,
-              cell: ({ row }) => row.original.record,
+              cell: ExecutionRecordCell,
             },
             {
               id: 'workflow',
               header: labels.workflow,
               enableSorting: false,
-              cell: ({ row }) => row.original.workflow,
+              cell: ExecutionWorkflowCell,
             },
             {
               id: 'state',
               header: labels.state,
               enableSorting: false,
-              cell: ({ row }) => row.original.state,
+              cell: ExecutionStateCell,
             },
             {
               id: 'createdAt',
               accessorFn: (row) => row.createdAt,
               enableSorting: true,
-              header: () => (
-                <Button variant='ghost' size='sm' onClick={onSort}>
-                  {labels.createdAt}
-                  {order === 'newest' ? <ArrowDown /> : <ArrowUp />}
-                </Button>
-              ),
-              cell: ({ row }) => row.original.createdAt,
+              meta: activityMeta,
+              header: ExecutionDateHeader,
+              cell: ExecutionCreatedAtCell,
             },
           ]}
         />
@@ -130,5 +135,41 @@ export function WorkflowExecutionList({
         </div>
       </div>
     </section>
+  );
+}
+
+function ExecutionRecordCell({
+  row,
+}: CellContext<WorkflowExecutionRow, unknown>) {
+  return row.original.record;
+}
+
+function ExecutionWorkflowCell({
+  row,
+}: CellContext<WorkflowExecutionRow, unknown>) {
+  return row.original.workflow;
+}
+
+function ExecutionStateCell({
+  row,
+}: CellContext<WorkflowExecutionRow, unknown>) {
+  return row.original.state;
+}
+
+function ExecutionCreatedAtCell({
+  row,
+}: CellContext<WorkflowExecutionRow, unknown>) {
+  return row.original.createdAt;
+}
+
+function ExecutionDateHeader({
+  column,
+}: HeaderContext<WorkflowExecutionRow, unknown>) {
+  const { labels, order, onSort } = column.columnDef.meta as ExecutionDateMeta;
+  return (
+    <Button variant='ghost' size='sm' onClick={onSort}>
+      {labels.createdAt}
+      {order === 'newest' ? <ArrowDown /> : <ArrowUp />}
+    </Button>
   );
 }

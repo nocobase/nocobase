@@ -1,4 +1,9 @@
 import type { ReactElement, ReactNode } from 'react';
+import type {
+  CellContext,
+  ColumnMeta,
+  HeaderContext,
+} from '@tanstack/react-table';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Button } from '#components/ui/button';
 import { Empty, EmptyDescription } from '#components/ui/empty';
@@ -29,6 +34,9 @@ export interface WorkflowDefinitionListProps {
   onRefresh: () => void;
 }
 
+type DefinitionActivityMeta = ColumnMeta<WorkflowDefinitionRow, unknown> &
+  Pick<WorkflowDefinitionListProps, 'labels' | 'sort' | 'onSort'>;
+
 export function WorkflowDefinitionList({
   rows,
   categories,
@@ -42,6 +50,7 @@ export function WorkflowDefinitionList({
   onSort,
   onRefresh,
 }: WorkflowDefinitionListProps): ReactElement {
+  const activityMeta: DefinitionActivityMeta = { labels, sort, onSort };
   return (
     <section className='flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:gap-4'>
       {categories !== undefined && (
@@ -77,37 +86,15 @@ export function WorkflowDefinitionList({
                   id: 'workflow',
                   header: labels.workflow,
                   enableSorting: false,
-                  cell: ({ row }) => (
-                    <>
-                      {row.original.title}
-                      <p className='text-xs text-muted-foreground'>
-                        {row.original.name}
-                      </p>
-                    </>
-                  ),
+                  cell: DefinitionTitleCell,
                 },
                 {
                   id: 'activity',
                   accessorFn: (row) => row.activity,
                   enableSorting: true,
-                  header: () => (
-                    <div className='text-right'>
-                      <Button
-                        variant='ghost'
-                        size='sm'
-                        title={labels.executionCount}
-                        onClick={onSort}
-                      >
-                        {labels.executionActivity}
-                        {sort && (sort.ascending ? <ArrowUp /> : <ArrowDown />)}
-                      </Button>
-                    </div>
-                  ),
-                  cell: ({ row }) => (
-                    <div className='text-right tabular-nums'>
-                      {row.original.activity}
-                    </div>
-                  ),
+                  meta: activityMeta,
+                  header: DefinitionActivityHeader,
+                  cell: DefinitionActivityCell,
                 },
               ]}
             />
@@ -120,5 +107,42 @@ export function WorkflowDefinitionList({
         )}
       </div>
     </section>
+  );
+}
+
+// Stable renderer identities preserve mounted links and keyboard focus while
+// the owning application refreshes rows, labels or sorting callbacks.
+function DefinitionTitleCell({
+  row,
+}: CellContext<WorkflowDefinitionRow, unknown>) {
+  return (
+    <>
+      {row.original.title}
+      <p className='text-xs text-muted-foreground'>{row.original.name}</p>
+    </>
+  );
+}
+function DefinitionActivityCell({
+  row,
+}: CellContext<WorkflowDefinitionRow, unknown>) {
+  return <div className='text-right tabular-nums'>{row.original.activity}</div>;
+}
+function DefinitionActivityHeader({
+  column,
+}: HeaderContext<WorkflowDefinitionRow, unknown>) {
+  const { labels, sort, onSort } = column.columnDef
+    .meta as DefinitionActivityMeta;
+  return (
+    <div className='text-right'>
+      <Button
+        variant='ghost'
+        size='sm'
+        title={labels.executionCount}
+        onClick={onSort}
+      >
+        {labels.executionActivity}
+        {sort && (sort.ascending ? <ArrowUp /> : <ArrowDown />)}
+      </Button>
+    </div>
   );
 }
