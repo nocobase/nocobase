@@ -768,11 +768,4 @@
       padding-inline: 12px;
     }
   }
-  @media (max-width: 480px) {
-    --deploy-scroll-offset: 176px;
-
-    .deployment-method-tabs {
-      top: 96px;
-    }
-  }
 }

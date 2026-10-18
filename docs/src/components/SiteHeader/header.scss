@@ -138,37 +138,3 @@
     width: 96px;
   }
 }
-
-@media (max-width: 480px) {
-  :is(.docs-top-nav, .docs-full-home, .capability-overview)
-    .topbar:has(.deployment-link) {
-    height: 96px;
-    padding-block: 8px;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: center;
-    gap: 4px;
-
-    .brand {
-      align-self: flex-start;
-      flex-shrink: 0;
-    }
-    .brand .brand-logo {
-      width: 122px;
-    }
-    .toplinks {
-      width: 100%;
-      min-height: 40px;
-      justify-content: space-between;
-      gap: 12px;
-      font-size: 13px;
-      white-space: nowrap;
-    }
-    .toplinks > * {
-      flex-shrink: 0;
-    }
-  }
-  :root {
-    --docs-header-height: 96px;
-  }
-}
