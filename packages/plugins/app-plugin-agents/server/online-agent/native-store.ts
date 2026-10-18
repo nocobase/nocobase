@@ -58,6 +58,7 @@ export type NativeHistoryPage = {
   items: AppUIMessage[];
   lastSeq: number;
   hasMore: boolean;
+  nextAfter?: number;
 };
 
 export class NativeSessionStore {
@@ -139,6 +140,88 @@ export class NativeSessionStore {
       },
     });
   }
+  /** Independent application notifications, including after the model response has ended. */
+  deliver(
+    userId: string,
+    id: string,
+    messageId: string,
+    parts: AppUIMessage['parts'],
+  ): Promise<AppUIMessage> {
+    return this.write(
+      userId,
+      id,
+      'native.notify',
+      async (conn, row, changed) => {
+        if (
+          !parts.length ||
+          parts.some(
+            (part) =>
+              part.type !== 'data-notice' && part.type !== 'data-business',
+          )
+        )
+          throw invalid('Notifications accept only public data parts.');
+        const existing = await messagesRepo(conn).findOne({
+          filter: { id: messageId },
+        });
+        if (existing) {
+          if (existing.conversationId !== id)
+            throw conflict(
+              'This notification ID already belongs to another conversation.',
+            );
+          const message = (
+            await validateAppUIMessages([jsonObject(existing.content).original])
+          )[0];
+          if (
+            message.role !== 'system' ||
+            !isDeepStrictEqual(message.parts, parts)
+          )
+            throw conflict('This notification ID has different content.');
+          return message;
+        }
+        const message: AppUIMessage = {
+          id: messageId,
+          role: 'system',
+          metadata: {
+            conversationId: id,
+            createdAt: this.deps.now(),
+            revision: 1,
+            seq: Number(row.lastSeq) + 1,
+          },
+          parts,
+        };
+        await validateAppUIMessages([message]);
+        await messagesRepo(conn).createOne({
+          values: {
+            id: messageId,
+            conversationId: id,
+            seq: message.metadata!.seq!,
+            role: 'system',
+            content: asJson({ type: 'text', content: '', original: message }),
+            searchText: '',
+            metadata: asJson({}),
+            attachments: null,
+            toolCalls: null,
+            workContext: null,
+            runId: null,
+            runEventSeq: null,
+            createdAt: message.metadata!.createdAt,
+            updatedAt: this.deps.now(),
+          },
+        });
+        await conversationsRepo(conn).updateMany({
+          filter: { id },
+          values: {
+            lastSeq: message.metadata!.seq!,
+            read: false,
+            lastMessageAt: this.deps.now(),
+            updatedAt: this.deps.now(),
+          },
+        });
+        changed(message);
+        return message;
+      },
+    );
+  }
   async history(
     userId: string,
     id: string,
@@ -196,6 +279,9 @@ export class NativeSessionStore {
         : [],
       hasMore,
       lastSeq: Number(owner.lastSeq),
+      ...(query.after !== undefined && hasMore && selected.length
+        ? { nextAfter: Number(selected.at(-1)!.seq) }
+        : {}),
     };
   }
   async executionHistory(
@@ -274,10 +360,17 @@ export class NativeSessionStore {
               output as ToolResultPart['output'],
           };
       }
-    const model = await convertToModelMessages(ui, {
-      tools,
-      ignoreIncompleteToolCalls: true,
-    });
+    const model = await convertToModelMessages(
+      ui.filter(
+        (message) =>
+          message.role !== 'system' ||
+          message.parts.some((part) => part.type === 'text'),
+      ),
+      {
+        tools,
+        ignoreIncompleteToolCalls: true,
+      },
+    );
     const current =
       page && this.deps.contextKinds
         ? await historicalPageContext(
@@ -606,6 +699,18 @@ export class NativeSessionStore {
       if (existing && jsonObject(current).revision !== revision) {
         if (isDeepStrictEqual(jsonObject(existing.content).original, message))
           return message;
+        // Only trusted approval/continuation writes can advance this same native message and execution.
+        // A newer revision therefore acknowledges an earlier commit whose response was lost.
+        if (
+          existing.role === 'assistant' &&
+          typeof jsonObject(current).revision === 'number' &&
+          Number(jsonObject(current).revision) > revision + 1 &&
+          jsonObject(current).executionId === message.metadata!.executionId &&
+          jsonObject(current).conversationId === id
+        )
+          return (
+            await validateAppUIMessages([jsonObject(existing.content).original])
+          )[0];
         throw conflict('The message revision has changed.');
       }
       const currentCall = jsonObject(

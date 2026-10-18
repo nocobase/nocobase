@@ -61,6 +61,8 @@ export interface AppUIMessageMetadata {
   createdAt: string;
   agentId?: string;
   turnId?: string;
+  /** Accepted browser input correlation; never a database primary key. */
+  clientId?: string;
   executionId?: string;
   /** Absent before the first save. Never used as an update cursor. */
   seq?: number;
@@ -81,6 +83,7 @@ export const appUIMessageMetadataSchema: z.ZodType<AppUIMessageMetadata> =
     createdAt: z.iso.datetime({ offset: true }),
     agentId: identity.optional(),
     turnId: identity.optional(),
+    clientId: identity.optional(),
     executionId: identity.optional(),
     /** Absent before the first save. Never used as an update cursor. */
     seq: z.number().int().positive().optional(),

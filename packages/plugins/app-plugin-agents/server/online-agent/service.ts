@@ -1,3 +1,4 @@
+import { OnlineAgentUIStreams } from './ui-streams.js';
 import { nativeExecutionStatus } from './execution.js';
 import { NativeOnlineAgent } from './native.js';
 import type { NativeApproval } from './native-store.js';
@@ -102,6 +103,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
   private gates = new Map<string, Promise<unknown>>();
   readonly streams: OnlineAgentStreamManager;
   private native: NativeOnlineAgent;
+  readonly uiStreams: OnlineAgentUIStreams;
   constructor(
     private deps: {
       sessions: OnlineAgentSessionManager;
@@ -114,11 +116,16 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
       streams?: OnlineAgentStreamManager;
+      uiStreams?: OnlineAgentUIStreams;
       onError(error: unknown): void;
     },
   ) {
     this.streams = deps.streams ?? new OnlineAgentMemoryStreamManager();
+    this.uiStreams =
+      deps.uiStreams ??
+      new OnlineAgentUIStreams({ onError: (error) => deps.onError(error) });
     this.native = new NativeOnlineAgent({
+      uiStreams: this.uiStreams,
       ...deps,
       configurer: this.configurer,
       complete: (id, execution) => {
@@ -140,6 +147,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     const failures = results.flatMap((result) =>
       result.status === 'rejected' ? [result.reason as unknown] : [],
     );
+    await this.uiStreams.shutdown();
     if (failures.length)
       console.warn(
         'OnlineAgent finalization failed during shutdown.',
@@ -152,6 +160,37 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     return this.active.has(sessionId);
   }
 
+  /** The application authorizes its business event before delivering it as the conversation owner. */
+  async notify(
+    context: OnlineAgentContext,
+    id: string,
+    input: {
+      id: string;
+      parts: import('../../shared/online-agent.js').AppUIMessage['parts'];
+    },
+  ): Promise<import('../../shared/online-agent.js').AppUIMessage> {
+    this.trusted(context);
+    if (!input.id || input.id.length > 64)
+      throw invalid('A valid notification ID is required.');
+    return this.deps.sessions.native.deliver(
+      context.user.id,
+      id,
+      input.id,
+      input.parts,
+    );
+  }
+  get recovery(): 'shared' | 'live' {
+    return this.uiStreams.enabled ? 'shared' : 'live';
+  }
+  async producerAvailable(
+    id: string,
+    persistedRunning: boolean = true,
+  ): Promise<boolean> {
+    return (
+      this.isActive(id) ||
+      (persistedRunning && (await this.uiStreams.producerAvailable(id)))
+    );
+  }
   async chatAgents(
     userId: string,
   ): Promise<import('../../shared/conversations.js').ChatAgent[]> {
@@ -289,7 +328,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       sessionId,
       receiveUI: async () => {
         await this.deps.sessions.load(userId, sessionId);
-        return this.native.receive(sessionId, responseExecution);
+        return this.native.receive(userId, sessionId, responseExecution);
       },
       approve: (input: NativeApproval) =>
         this.approve(context, sessionId, input, (execution) => {
@@ -314,11 +353,18 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         }
       },
       retryFinalization: async () => {
-        await this.deps.sessions.load(userId, sessionId);
+        const current = await this.deps.sessions.load(userId, sessionId);
         const execution = this.active.get(sessionId);
         if (execution) {
           await execution.task;
           await this.finish(execution);
+        } else if (
+          kind === 'realtime' &&
+          (current.call?.state === 'running' || current.call?.closing)
+        ) {
+          throw conflict(
+            'Finalization requires the live producer that owns its snapshot; reconcile history and execution.',
+          );
         }
       },
       send: async (
@@ -474,8 +520,10 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         ).length
           ? overrides
           : undefined;
+        let submitted = runner;
         return {
           ...runner,
+          receive: () => submitted.receive(),
           send: async (messages, input) => {
             if (
               (input?.overrides || pendingOptions) &&
@@ -503,6 +551,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
               },
               current,
             );
+            submitted = opened;
             const accepted = await opened.send(messages, {
               ...input,
               overrides: undefined,
@@ -567,10 +616,20 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         if (
           current.call?.state === 'running' &&
           !this.active.has(native.sessionId)
-        )
+        ) {
+          if (
+            current.call.executionId &&
+            (await this.uiStreams.requestStop(
+              context.user.id,
+              native.sessionId,
+              current.call.executionId,
+            ))
+          )
+            return;
           throw conflict(
             'The producer is unavailable; stopping has not been confirmed.',
           );
+        }
         await native.abort();
       },
       retryFinalization: native.retryFinalization,

@@ -16,16 +16,12 @@ import {
   type OpenAPIV3_1,
 } from '@nocobase/app-server/router';
 import type { Context, Hono, MiddlewareHandler } from 'hono';
-import { streamSSE } from 'hono/streaming';
 import type { UserModelMessage } from 'ai';
 import { createUIMessageStreamResponse } from 'ai';
 import {
   appUIMessageMetadataSchema,
   appUIToolApprovalInputSchema,
 } from '../../shared/online-agent.js';
-import type { NativeUIChunk } from '../online-agent/native.js';
-import { findConversation } from '../core/conversations/conversation.store.js';
-import { jsonObject } from '../kernel/values.js';
 import { cleanTitle } from '../core/conversations/titles.js';
 import { jsonSafe } from '../online-agent/codec.js';
 import { bodyLimit } from 'hono/body-limit';
@@ -66,13 +62,11 @@ import {
   ChatDefaultAgentSchema,
   ConversationDetailSchema,
   ConversationListQuerySchema,
-  ConversationMessageSchema,
   ConversationParams,
   ConversationSummarySchema,
   MessageAttachmentSchema,
   MessageListQuerySchema,
   PageTokenMetaSchema,
-  SendMessageResultSchema,
   SeqPageMetaSchema,
 } from './schemas.js';
 
@@ -149,24 +143,6 @@ const PatchSchema: z.ZodType<ConversationPatch> = z.strictObject({
     .describe('Whether to archive the conversation.'),
 });
 
-const RunnerSendSchema = z.strictObject({
-  content: z
-    .string()
-    .max(MESSAGE_CONTENT_MAX * 2)
-    .meta({
-      description: 'Markdown; empty only when files are sent.',
-    }),
-  context: PageContextSchema.optional(),
-  clientId: z.string().min(1).max(100).optional(),
-  attachmentIds: z
-    .array(z.string().min(1).max(64))
-    .max(CHAT_ATTACHMENTS_PER_MESSAGE_MAX)
-    .optional()
-    .meta({
-      description: `The caller's uploads not sent yet (\`POST /api/agents/chatAttachments\`), at most ${CHAT_ATTACHMENTS_PER_MESSAGE_MAX}, sent with the message in this order.`,
-    }),
-});
-
 const NativeSendSchema = z.strictObject({
   message: z.strictObject({
     id: z.string().min(1).max(64),
@@ -187,7 +163,7 @@ const NativeSendSchema = z.strictObject({
   context: PageContextSchema.optional(),
   selectedModel: SelectedModel.optional(),
 });
-const SendSchema = z.union([NativeSendSchema, RunnerSendSchema]);
+const SendSchema = NativeSendSchema;
 const NativeMessageSchema = z.object({
   id: z.string(),
   role: z.enum(['user', 'assistant', 'system']),
@@ -453,10 +429,7 @@ export function createChatRoutes(
       description:
         'Newest page first, each page in order; after reads newly inserted sequences and pageToken reads older pages. Native ids rereads current messages after revision notifications, including updates at unchanged sequences.',
       responses: {
-        200: listResponse(
-          z.union([NativeMessageSchema, ConversationMessageSchema]),
-          SeqPageMetaSchema,
-        ),
+        200: listResponse(NativeMessageSchema, SeqPageMetaSchema),
         404: noConversation,
         ...apiErrorResponses,
       },
@@ -469,59 +442,34 @@ export function createChatRoutes(
         pageToken === undefined
           ? undefined
           : decodePageToken(pageToken, MessagePosition).before;
-      const record = await findConversation(
-        services.tx.read(),
-        conversationId(context),
-      );
+      const agent = await services.onlineAgent.realtime(trusted(context), {
+        sessionId: conversationId(context),
+      });
+      const wanted = ids?.split(',');
       if (
-        record?.userId === me(context) &&
-        jsonObject(jsonObject(record.metadata).onlineAgent).kind === 'realtime'
-      ) {
-        const agent = await services.onlineAgent.realtime(trusted(context), {
-          sessionId: conversationId(context),
-        });
-        const wanted = ids?.split(',');
-        if (
-          wanted &&
-          (wanted.length > 100 || wanted.some((id) => !id || id.length > 64))
-        )
-          throw invalid('Select at most 100 valid message IDs.');
-        const page = await agent.messages!({
-          ids: wanted,
-          before,
-          after: before === undefined ? after : undefined,
-          limit: pageSize,
-        });
-        return context.json({
-          data: page.items,
-          meta: {
-            lastSeq: page.lastSeq,
-            ...(page.hasMore && after === undefined && page.items[0]
-              ? {
-                  nextPageToken: encodePageToken({
-                    before: page.items[0].metadata!.seq!,
-                  }),
-                }
-              : {}),
-          },
-        });
-      }
-      const page = await conversations.messages(
-        me(context),
-        context.req.valid('param').conversationId,
-        {
-          ...(before === undefined ? {} : { before }),
-          ...(after === undefined || before !== undefined ? {} : { after }),
-          limit: pageSize,
-        },
-      );
-      const first = page.items[0];
+        wanted &&
+        (wanted.length > 100 || wanted.some((id) => !id || id.length > 100))
+      )
+        throw invalid('Select at most 100 valid message IDs.');
+      const page = await agent.messages({
+        ids: wanted,
+        before,
+        after: before === undefined ? after : undefined,
+        limit: pageSize,
+      });
       return context.json({
         data: page.items,
         meta: {
           lastSeq: page.lastSeq,
-          ...(page.hasMore && first
-            ? { nextPageToken: encodePageToken({ before: first.seq }) }
+          ...(page.nextAfter !== undefined
+            ? { nextAfter: page.nextAfter }
+            : {}),
+          ...(page.hasMore && after === undefined && page.items[0]
+            ? {
+                nextPageToken: encodePageToken({
+                  before: page.items[0].metadata!.seq!,
+                }),
+              }
             : {}),
         },
       });
@@ -558,14 +506,13 @@ export function createChatRoutes(
         ],
       }),
       description:
-        'Native input accepts only the current SDK user message with text parts and authorized attachmentIds, returning a standard UI message stream. Server metadata, history, tools and config are not writable here. Runner input temporarily retains its content-based admission until its UI adapter is connected. Busy input is refused. A timeout means outcome unknown: reconcile history and execution, never automatically resend.',
+        'Native input accepts only the current SDK user message with text parts and authorized attachmentIds, returning a standard UI message stream. Server metadata, history, tools and config are not writable here. Runner uses the same input and standard stream; only saved source records are projected. Busy input is refused. A timeout means outcome unknown: reconcile history and execution, never automatically resend.',
       responses: {
         200: {
           description:
             'Native AI SDK UI message stream. Finish closes this response; query execution for durable business state.',
           content: { 'text/event-stream': { schema: { type: 'string' } } },
         },
-        201: dataResponse(SendMessageResultSchema, 'Created.'),
         404: noConversation,
         ...apiErrorResponses,
       },
@@ -575,10 +522,7 @@ export function createChatRoutes(
     async (context) => {
       const id = context.req.valid('param').conversationId;
       const request = context.req.valid('json');
-      const text =
-        'message' in request
-          ? request.message.parts.map((part) => part.text).join('\n')
-          : request.content;
+      const text = request.message.parts.map((part) => part.text).join('\n');
       if ([...text].length > MESSAGE_CONTENT_MAX)
         throw invalid('The message is too long.');
       if (!text.trim() && !request.attachmentIds?.length)
@@ -599,43 +543,24 @@ export function createChatRoutes(
         { sessionId: id },
       );
       const parts: Exclude<UserModelMessage['content'], string> =
-        'message' in request ? request.message.parts : [{ type: 'text', text }];
-      if (agent.backend === 'native' && !('message' in request))
-        throw invalid('Submit the current SDK user message.');
-      if (agent.backend === 'runner' && 'message' in request)
-        throw invalid('Runner UI input is not connected yet.');
-      const seq = await agent.send([{ role: 'user', content: parts }], {
+        request.message.parts;
+      await agent.send([{ role: 'user', content: parts }], {
         attachmentIds: [[...(request.attachmentIds ?? [])]],
-        clientId: 'message' in request ? request.message.id : request.clientId,
-        messageId: 'message' in request ? request.message.id : undefined,
-        selectedModel: 'message' in request ? request.selectedModel : undefined,
+        clientId: request.message.id,
+        messageId: request.message.id,
+        selectedModel: request.selectedModel,
         workContext,
       });
-      if (agent.backend === 'native') {
-        const stream = await agent.receive();
-        if (!stream)
-          throw invalid(
-            'The accepted response requires history reconciliation.',
-          );
-        return createUIMessageStreamResponse({
-          stream: stream as ReadableStream<NativeUIChunk>,
-          headers: { 'Cache-Control': 'private, no-store' },
-        });
-      }
-      const page = await conversations.messages(me(context), id, {
-        after: seq - 1,
-        limit: 1,
-      });
-      return context.json(
-        {
-          data: {
-            message: page.items[0],
-            conversation: await conversations.get(me(context), id),
-            run: null,
-          },
+      const stream = await agent.receive();
+      if (!stream)
+        throw invalid('The accepted response requires history reconciliation.');
+      return createUIMessageStreamResponse({
+        stream,
+        headers: {
+          'Cache-Control': 'private, no-store',
+          'x-online-agent-recovery': services.onlineAgent.recovery,
         },
-        201,
-      );
+      });
     },
   );
   router.post(
@@ -671,8 +596,11 @@ export function createChatRoutes(
           'The accepted continuation requires history reconciliation.',
         );
       return createUIMessageStreamResponse({
-        stream: stream as ReadableStream<NativeUIChunk>,
-        headers: { 'Cache-Control': 'private, no-store' },
+        stream,
+        headers: {
+          'Cache-Control': 'private, no-store',
+          'x-online-agent-recovery': services.onlineAgent.recovery,
+        },
       });
     },
   );
@@ -777,15 +705,14 @@ export function createChatRoutes(
     guard,
     describeRoute({
       tags,
-      summary: 'Receive the current OnlineAgent stream once',
+      summary: 'Resume the current OnlineAgent UI stream',
       operationId: 'agentsConversationEvents',
       ...cliRoute(false),
       description:
-        'Native returns the unclaimed current standard SDK UI response once. Runner retains its existing block stream until the UI adapter is connected. No shared replay or execution recovery is provided here. Missing streams return 204, which does not mean idle or successful: reconcile execution and persisted history. Disconnect never invokes Stop.',
+        'Returns a full standard SDK replay and subsequent chunks when optional shared Redis recovery is configured. Without it, only an unclaimed local live response is available. Execution is never restarted. Missing streams return 204, which does not mean idle or successful: reconcile execution and persisted history. Disconnect never invokes Stop.',
       responses: {
         200: {
-          description:
-            'Native SDK UI message stream; Runner block events remain separate until the Runner UI adapter is connected.',
+          description: 'Standard SDK UI message stream for Native and Runner.',
           content: { 'text/event-stream': { schema: { type: 'string' } } },
         },
         204: { description: 'No current stream; read saved history.' },
@@ -798,30 +725,15 @@ export function createChatRoutes(
         sessionId: conversationId(context),
       });
       context.header('Cache-Control', 'private, no-store');
+      context.header('x-online-agent-recovery', services.onlineAgent.recovery);
       const events = await agent.receive();
       if (!events) return context.body(null, 204);
-      if (agent.backend === 'native')
-        return createUIMessageStreamResponse({
-          stream: events as ReadableStream<NativeUIChunk>,
-          headers: { 'Cache-Control': 'private, no-store' },
-        });
-      return streamSSE(context, async (stream) => {
-        const reader = events.getReader();
-        stream.onAbort(() => {
-          void reader.cancel();
-        });
-        try {
-          while (true) {
-            const next = await reader.read();
-            if (next.done) break;
-            await stream.writeSSE({
-              event: next.value.type,
-              data: JSON.stringify(next.value),
-            });
-          }
-        } finally {
-          await reader.cancel();
-        }
+      return createUIMessageStreamResponse({
+        stream: events,
+        headers: {
+          'Cache-Control': 'private, no-store',
+          'x-online-agent-recovery': services.onlineAgent.recovery,
+        },
       });
     },
   );

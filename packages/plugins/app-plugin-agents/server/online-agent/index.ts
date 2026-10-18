@@ -40,3 +40,8 @@ export {
 } from '../../shared/online-agent.js';
 
 export type { NativeHistoryQuery, NativeHistoryPage } from './native-store.js';
+
+export {
+  OnlineAgentUIStreams,
+  type OnlineAgentRecoveryConfig,
+} from './ui-streams.js';

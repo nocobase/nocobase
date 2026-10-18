@@ -1,3 +1,4 @@
+import type { OnlineAgentRecoveryConfig } from '../online-agent/ui-streams.js';
 /**
  * Binds the plugin's services, and at boot connects them to the platform: realtime announcements of runs and
  * conversations, and the vector queue's worker. The runners' side (their announcements, the sweeper and the wake-ups of
@@ -40,6 +41,7 @@ import { agentsToken } from '../tokens.js';
 
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
+  readonly uiRecovery?: OnlineAgentRecoveryConfig;
   /**
    * Completed runs' events and prompt snapshots are kept `retentionDays`: 14 days by default, 0 disables cleanup. A
    * failed attempt waits `retryBaseDelayMs` before the next, doubling up to ten minutes: 30 seconds by default.
@@ -117,6 +119,7 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
           ? { secrets: resolver.resolve(secretsServiceToken) }
           : {}),
         ...(config?.cli ? { cli: config.cli } : {}),
+        uiRecovery: config?.uiRecovery,
         manifestUrl: `${this.app.publicBasePath}/api/cli/manifest`,
         ...(config?.vectors ? { vectors: config.vectors } : {}),
         paths: {

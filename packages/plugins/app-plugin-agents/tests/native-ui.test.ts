@@ -1,3 +1,10 @@
+import { createServer, connect, type Socket } from 'node:net';
+import { randomUUID } from 'node:crypto';
+import { Redis } from 'ioredis';
+import {
+  OnlineAgentUIStreams,
+  type OnlineAgentRecoveryConfig,
+} from '../server/online-agent/ui-streams.js';
 import { appendFile } from 'node:fs/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Chat } from '@ai-sdk/react';
@@ -55,7 +62,12 @@ afterEach(async () => {
   await h?.close();
 });
 
-async function fixture(tool = false, needsApproval = false, toolCount = 1) {
+async function fixture(
+  tool = false,
+  needsApproval = false,
+  toolCount = 1,
+  recovery?: OnlineAgentRecoveryConfig,
+) {
   h = await createHarness();
   let counter = 0,
     step = 0;
@@ -111,6 +123,13 @@ async function fixture(tool = false, needsApproval = false, toolCount = 1) {
   const create = () => {
     const service = new OnlineAgentService({
       sessions,
+      uiStreams: new OnlineAgentUIStreams({
+        tx: h.services.tx,
+        recovery,
+        measure: (phase, durationMs) =>
+          measurements.push({ phase, durationMs }),
+        onError: () => {},
+      }),
       ids,
       model: async () => model,
       defaultModel: async () => ref,
@@ -176,6 +195,9 @@ async function fixture(tool = false, needsApproval = false, toolCount = 1) {
         api: `http://fixture/agents${base}/messages`,
         headers: { 'x-user': 'alice' },
         fetch: async (input, init) => app.request(new Request(input, init)),
+        prepareReconnectToStreamRequest: () => ({
+          api: `http://fixture/agents${base}/events`,
+        }),
         prepareSendMessagesRequest: ({ messages }) => ({
           api: `http://fixture/agents${base}/${approval ? 'approval' : 'messages'}`,
           body: approval ?? { message: messages.at(-1) },
@@ -762,3 +784,432 @@ describe('native SDK transport, persistence and approval', () => {
     });
   });
 });
+
+describe('independent native business notifications', () => {
+  it('persists after finish, rereads by ID, deduplicates and keeps business data out of model input', async () => {
+    const f = await fixture();
+    await f.chatFor().sendMessage({ text: 'First' });
+    const input = {
+      id: 'independent-notice',
+      parts: [
+        {
+          type: 'data-notice' as const,
+          id: 'notice-part',
+          data: { type: 'fixture', title: 'Independent notice' },
+        },
+        {
+          type: 'data-business' as const,
+          id: 'business-part',
+          data: {
+            kind: 'fixture',
+            id: 'record-1',
+            payload: { privateToModel: 'Only public display' },
+          },
+        },
+      ],
+    };
+    const saved = await f.service.notify(actor(), f.agent.sessionId, input);
+    expect(await f.service.notify(actor(), f.agent.sessionId, input)).toEqual(
+      saved,
+    );
+    await expect(
+      f.service.notify(actor('bob'), f.agent.sessionId, input),
+    ).rejects.toThrow('not found');
+    await expect(
+      f.service.notify(actor(), f.agent.sessionId, {
+        ...input,
+        parts: [{ type: 'text', text: 'Forged' }],
+      }),
+    ).rejects.toThrow();
+    const page = await (
+      await f.request(`${f.base}/messages?ids=independent-notice`)
+    ).json();
+    expect(page.data).toEqual([saved]);
+    expect(await f.agent.receive()).toBeNull();
+    await f.chatFor(await f.agent.history()).sendMessage({ text: 'Next' });
+    expect(JSON.stringify(f.prompts.at(-1))).not.toContain(
+      'Only public display',
+    );
+    expect(
+      (await f.agent.history()).filter((message) => message.id === input.id),
+    ).toHaveLength(1);
+  });
+});
+
+const redisConfig = (): OnlineAgentRecoveryConfig => ({
+  namespace: `pm481:${randomUUID()}`,
+  redis: { host: '127.0.0.1', port: Number(process.env.PM481_REDIS_PORT) },
+});
+describe.skipIf(!process.env.PM481_REDIS_PORT)(
+  'native shared recovery with real Redis and independent services',
+  () => {
+    it('replays prior chunks through SDK Chat on instance B and receives later chunks without another execution', async () => {
+      const recovery = redisConfig();
+      const f = await fixture(false, false, 1, recovery);
+      let output!: ReadableStreamDefaultController<unknown>;
+      const run = vi.fn(async (options: { abortSignal?: AbortSignal }) => ({
+        stream: new ReadableStream({
+          start(controller) {
+            output = controller;
+            options.abortSignal?.addEventListener(
+              'abort',
+              () => controller.close(),
+              { once: true },
+            );
+            controller.enqueue({ type: 'text-start', id: 'part' });
+            controller.enqueue({
+              type: 'text-delta',
+              id: 'part',
+              delta: 'Before',
+            });
+          },
+        }),
+      }));
+      f.model.doStream = run;
+      const response = await f.request(`${f.base}/messages`, 'POST', {
+        message: {
+          id: 'shared-input',
+          role: 'user',
+          parts: [{ type: 'text', text: 'One execution' }],
+        },
+      });
+      expect(response.status).toBe(200);
+      await response.body!.cancel();
+      const other = f.reopen();
+      const chat = f.chatFor(await f.agent.history());
+      const resuming = chat.resumeStream();
+      await vi.waitFor(() =>
+        expect(chat.messages.at(-1)?.parts).toContainEqual({
+          type: 'text',
+          text: 'Before',
+          state: 'streaming',
+        }),
+      );
+      expect(
+        (await f.request(`${f.base}/events`, 'GET', undefined, 'bob')).status,
+      ).toBe(404);
+      expect(
+        await (
+          await other.realtime(actor(), { sessionId: f.agent.sessionId })
+        ).status(),
+      ).toBe('running');
+      output.enqueue({ type: 'text-delta', id: 'part', delta: 'After' });
+      output.enqueue({ type: 'text-end', id: 'part' });
+      output.enqueue(finish());
+      output.close();
+      await resuming;
+      expect(chat.error).toBeUndefined();
+      expect(chat.messages.at(-1)).toEqual((await f.agent.history()).at(-1));
+      expect(chat.messages.at(-1)?.parts).toContainEqual({
+        type: 'text',
+        text: 'BeforeAfter',
+        state: 'done',
+      });
+      expect(run).toHaveBeenCalledTimes(1);
+      if (process.env.PM481_C_REPORT)
+        await appendFile(
+          process.env.PM481_C_REPORT,
+          JSON.stringify({
+            kind: 'native-recovery',
+            measurements: f.measurements,
+          }) + '\n',
+        );
+      expect((await f.request(`${f.base}/events`)).status).toBe(204);
+      const row = await h.services.tx
+        .read()
+        .repository('agConversations')
+        .findOne({ filter: { id: f.agent.sessionId } });
+      expect(row?.metadata).not.toHaveProperty('onlineUIStream');
+    });
+    it('saves accepted output when its Redis connection fails, with no retry of model or input', async () => {
+      const sockets = new Set<Socket>();
+      const proxy = createServer((socket) => {
+        const upstream = connect({
+          host: '127.0.0.1',
+          port: Number(process.env.PM481_REDIS_PORT),
+        });
+        sockets.add(socket);
+        sockets.add(upstream);
+        socket.on('error', () => upstream.destroy());
+        upstream.on('error', () => socket.destroy());
+        socket.pipe(upstream).pipe(socket);
+      });
+      await new Promise<void>((resolve) =>
+        proxy.listen(0, '127.0.0.1', resolve),
+      );
+      const address = proxy.address();
+      if (!address || typeof address === 'string')
+        throw new Error('TCP fixture did not listen.');
+      const recovery = {
+        ...redisConfig(),
+        redis: { host: '127.0.0.1', port: address.port },
+      };
+      const f = await fixture(false, false, 1, recovery);
+      let output!: ReadableStreamDefaultController<unknown>;
+      const run = vi.fn(async (options: { abortSignal?: AbortSignal }) => ({
+        stream: new ReadableStream({
+          start(controller) {
+            output = controller;
+            options.abortSignal?.addEventListener(
+              'abort',
+              () => controller.close(),
+              { once: true },
+            );
+          },
+        }),
+      }));
+      f.model.doStream = run;
+      try {
+        const response = await f.request(`${f.base}/messages`, 'POST', {
+          message: {
+            id: 'outage-input',
+            role: 'user',
+            parts: [{ type: 'text', text: 'Accepted once' }],
+          },
+        });
+        expect(response.status).toBe(200);
+        await response.body!.cancel();
+        for (const socket of sockets) socket.destroy();
+        await new Promise<void>((resolve) => proxy.close(() => resolve()));
+        output.enqueue({ type: 'text-start', id: 'late' });
+        output.enqueue({
+          type: 'text-delta',
+          id: 'late',
+          delta: 'Saved after outage',
+        });
+        output.enqueue({ type: 'text-end', id: 'late' });
+        output.enqueue(finish());
+        output.close();
+        await vi.waitFor(() =>
+          expect(f.service.isActive(f.agent.sessionId)).toBe(false),
+        );
+        expect((await f.agent.history()).at(-1)?.parts).toContainEqual({
+          type: 'text',
+          text: 'Saved after outage',
+          state: 'done',
+        });
+        expect(run).toHaveBeenCalledTimes(1);
+        expect(await f.agent.history()).toHaveLength(2);
+      } finally {
+        for (const socket of sockets) socket.destroy();
+        if (proxy.listening)
+          await new Promise<void>((resolve) => proxy.close(() => resolve()));
+      }
+    });
+    it('routes an independently authorized Stop from instance B to the live native producer', async () => {
+      const f = await fixture(false, false, 1, redisConfig());
+      let stopped = false;
+      f.model.doStream = async (options) => ({
+        stream: new ReadableStream({
+          start(controller) {
+            options.abortSignal?.addEventListener(
+              'abort',
+              () => {
+                stopped = true;
+                controller.close();
+              },
+              { once: true },
+            );
+          },
+        }),
+      });
+      const response = await f.request(`${f.base}/messages`, 'POST', {
+        message: {
+          id: 'stop-input',
+          role: 'user',
+          parts: [{ type: 'text', text: 'Stop across instances' }],
+        },
+      });
+      await response.body!.cancel();
+      const other = f.reopen();
+      expect(
+        (await f.request(`${f.base}/stop`, 'POST', undefined, 'bob')).status,
+      ).toBe(404);
+      const remote = await other.realtime(actor(), {
+        sessionId: f.agent.sessionId,
+      });
+      await remote.abort();
+      await vi.waitFor(() =>
+        expect(f.service.isActive(f.agent.sessionId)).toBe(false),
+      );
+      expect(stopped).toBe(true);
+      expect(await remote.status()).toBe('idle');
+      expect((await f.agent.history()).at(-1)?.parts).toContainEqual(
+        expect.objectContaining({
+          type: 'data-notice',
+          data: expect.objectContaining({ type: 'cancelled' }),
+        }),
+      );
+    });
+    it('clears each approval response association before the next SDK approval continuation', async () => {
+      const f = await fixture(true, true, 1, redisConfig());
+      const chat = f.chatFor();
+      await chat.sendMessage({ text: 'Approve remotely' });
+      const waiting = chat.messages.at(-1)!;
+      const part = waiting.parts.find(isToolUIPart)!;
+      const other = f.reopen();
+      const remote = await other.realtime(actor(), {
+        sessionId: f.agent.sessionId,
+      });
+      expect(await remote.status()).toBe('running');
+      expect((await f.request(`${f.base}/events`)).status).toBe(204);
+      const input = {
+        messageId: waiting.id,
+        executionId: waiting.metadata!.executionId!,
+        approval: { id: part.approval!.id, approved: true },
+      };
+      const continued = f.chatFor(await remote.history(), input);
+      await continued.sendMessage();
+      expect(continued.error).toBeUndefined();
+      expect(f.execute).toHaveBeenCalledTimes(1);
+      expect((await remote.history()).at(-1)?.metadata?.revision).toBe(3);
+    });
+    it('ends an already resumed subscription when its producer lease is lost without ending business execution', async () => {
+      const recovery = redisConfig();
+      const f = await fixture(false, false, 1, recovery);
+      f.model.doStream = async (options) => ({
+        stream: new ReadableStream({
+          start(controller) {
+            options.abortSignal?.addEventListener(
+              'abort',
+              () => controller.close(),
+              { once: true },
+            );
+          },
+        }),
+      });
+      const response = await f.request(`${f.base}/messages`, 'POST', {
+        message: {
+          id: 'live-loss-input',
+          role: 'user',
+          parts: [{ type: 'text', text: 'Keep business occupied' }],
+        },
+      });
+      await response.body!.cancel();
+      f.reopen();
+      const resumed = await f.request(`${f.base}/events`);
+      expect(resumed.status).toBe(200);
+      const chat = new Chat<AppUIMessage>({
+        id: f.agent.sessionId,
+        messages: await f.agent.history(),
+        transport: new DefaultChatTransport<AppUIMessage>({
+          api: 'http://fixture/events',
+          fetch: async () => resumed,
+        }),
+      });
+      const reading = chat.resumeStream();
+      const client = new Redis(recovery.redis);
+      try {
+        await client.del(`${recovery.namespace}:producer:${f.agent.sessionId}`);
+      } finally {
+        client.disconnect();
+      }
+      await reading;
+      expect(chat.error?.message).toMatch(/interrupted|lost/);
+      expect(await f.agent.status()).toBe('running');
+      await f.agent.abort();
+      expect(await f.agent.status()).toBe('idle');
+    });
+    it('acknowledges a commit-unknown approval after another instance advanced its trusted revision without overwriting it', async () => {
+      const f = await fixture(true, true, 1, redisConfig());
+      const persist = f.sessions.native.save.bind(f.sessions.native);
+      vi.spyOn(f.sessions.native, 'save').mockImplementationOnce(
+        async (...args) => {
+          await persist(...args);
+          throw new Error('Commit acknowledgment lost');
+        },
+      );
+      const first = f.chatFor();
+      await first.sendMessage({ text: 'Commit once' });
+      expect(first.error).toBeDefined();
+      expect(f.service.isActive(f.agent.sessionId)).toBe(true);
+      const waiting = (await f.agent.history()).at(-1)!;
+      const part = waiting.parts.find(isToolUIPart)!;
+      const other = f.reopen();
+      const continued = f.chatFor(await f.agent.history(), {
+        messageId: waiting.id,
+        executionId: waiting.metadata!.executionId!,
+        approval: { id: part.approval!.id, approved: true },
+      });
+      await continued.sendMessage();
+      expect(continued.error).toBeUndefined();
+      const current = await f.agent.history();
+      expect(current.at(-1)?.metadata?.revision).toBe(3);
+      await f.agent.retryFinalization();
+      expect(f.service.isActive(f.agent.sessionId)).toBe(false);
+      expect(await f.agent.history()).toEqual(current);
+      expect(f.execute).toHaveBeenCalledTimes(1);
+      expect(f.model.doStreamCalls).toHaveLength(2);
+      expect(
+        await (
+          await other.realtime(actor(), { sessionId: f.agent.sessionId })
+        ).status(),
+      ).toBe('idle');
+    });
+    it('rejects unavailable configured recovery before admission', async () => {
+      const f = await fixture(false, false, 1, {
+        ...redisConfig(),
+        redis: { host: '127.0.0.1', port: 1 },
+      });
+      const response = await f.request(`${f.base}/messages`, 'POST', {
+        message: {
+          id: 'not-accepted',
+          role: 'user',
+          parts: [{ type: 'text', text: 'No fallback' }],
+        },
+      });
+      expect(response.status).toBe(409);
+      expect(await f.agent.history()).toEqual([]);
+      expect(f.prompts).toEqual([]);
+    });
+    it.each(['lease', 'cache'])(
+      'reports %s expiry while keeping accepted work and independent Stop',
+      async (failure) => {
+        const recovery = redisConfig();
+        const f = await fixture(false, false, 1, recovery);
+        f.model.doStream = async (options) => ({
+          stream: new ReadableStream({
+            start(controller) {
+              options.abortSignal?.addEventListener(
+                'abort',
+                () => controller.close(),
+                { once: true },
+              );
+            },
+          }),
+        });
+        const response = await f.request(`${f.base}/messages`, 'POST', {
+          message: {
+            id: 'expiry-input',
+            role: 'user',
+            parts: [{ type: 'text', text: 'Accepted' }],
+          },
+        });
+        await response.body!.cancel();
+        f.reopen();
+        const row = await h.services.tx
+          .read()
+          .repository('agConversations')
+          .findOne({ filter: { id: f.agent.sessionId } });
+        const streamId = (
+          row!.metadata as { onlineUIStream: { streamId: string } }
+        ).onlineUIStream.streamId;
+        const client = new Redis(recovery.redis);
+        try {
+          await client.del(
+            failure === 'lease'
+              ? `${recovery.namespace}:producer:${f.agent.sessionId}`
+              : `${recovery.namespace}:rs:sentinel:${streamId}`,
+          );
+        } finally {
+          client.disconnect();
+        }
+        expect((await f.request(`${f.base}/events`)).status).toBe(409);
+        expect(await f.agent.status()).toBe('running');
+        await f.agent.abort();
+        expect(await f.agent.status()).toBe('idle');
+        expect(await f.agent.history()).toHaveLength(2);
+      },
+    );
+  },
+);

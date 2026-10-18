@@ -3166,6 +3166,9 @@ importers:
       '@ai-sdk/openai-compatible':
         specifier: 'catalog:'
         version: 3.0.63(zod@4.6.5)
+      '@ai-sdk/provider-utils':
+        specifier: 5.0.54
+        version: 5.0.54(zod@4.6.5)
       '@ai-sdk/react':
         specifier: 'catalog:'
         version: 4.0.131(react@19.2.8)(zod@4.6.5)
@@ -3241,6 +3244,9 @@ importers:
       hono:
         specifier: 'catalog:'
         version: 4.13.2
+      ioredis:
+        specifier: 'catalog:'
+        version: 5.11.1
       knex:
         specifier: 'catalog:'
         version: 3.3.0(better-sqlite3@13.0.3)(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)
@@ -3274,6 +3280,9 @@ importers:
       remark-gfm:
         specifier: 'catalog:'
         version: 4.0.1
+      resumable-stream:
+        specifier: 2.2.13
+        version: 2.2.13
       sqlite-vec:
         specifier: ^0.1.9
         version: 0.1.9
@@ -14172,6 +14181,9 @@ packages:
     engines: {node: '>= 0.4'}
     hasBin: true
 
+  resumable-stream@2.2.13:
+    resolution: {integrity: sha512-qy1ZZUP7sFKGXSx7OdbjU3f07VfSM7CghOlUaKT+35AuADX0sAYndmeCb5kVwgi4MSfkZZiL4yrdxWX1xx/Lnw==}
+
   restore-cursor@3.1.0:
     resolution: {integrity: sha512-l+sSefzHpj5qimhFSE5a8nufZYAM3sBSVMAPtYkmC+4EH2anSGaEMXSD0izRQbu9nfyQ9y5JrVmp7E8oZrUjvA==}
     engines: {node: '>=8'}
@@ -24833,6 +24845,8 @@ snapshots:
       is-core-module: 2.16.2
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
+
+  resumable-stream@2.2.13: {}
 
   restore-cursor@3.1.0:
     dependencies:

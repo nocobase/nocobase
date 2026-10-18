@@ -145,7 +145,10 @@ export interface ConversationServiceDeps {
   /** Availability of the built-in model-backed chat capability. */
   readonly nativeAvailable?: () => Promise<boolean>;
   /** Native process occupancy, combined with the authorized persisted row. */
-  readonly nativeActive?: (sessionId: string) => boolean;
+  readonly nativeActive?: (
+    sessionId: string,
+    persistedRunning?: boolean,
+  ) => boolean | Promise<boolean>;
   /** The files people send with messages; without them a message that names files is refused. */
   readonly attachments?: ChatAttachmentLinks;
   /** The application's public base path (`/app`, or empty), for the files' URLs. */
@@ -369,39 +372,52 @@ export function createConversationService(
       CONVERSATION_SUBJECT,
       records.map((record) => record.id),
     );
-    return records.map((record) => ({
-      id: record.id,
-      title: record.title,
-      titleSource: record.titleSource,
-      category: record.category,
-      source: record.source,
-      mode: record.mode,
-      execution: onlineExecution(record, open, deps.nativeActive?.(record.id)),
-      agent: jsonObject(record.metadata).onlineAgent
-        ? {
-            id: 'online',
-            name: 'Online agent',
-            nameText: null,
-            avatar: null,
-            archived: false,
-          }
-        : agentRef(
-            record.agentId,
-            record.agentId ? (agents.get(record.agentId) ?? null) : null,
-          ),
-      fallbackFrom: record.fallbackFromAgentId
-        ? agentRef(
-            record.fallbackFromAgentId,
-            agents.get(record.fallbackFromAgentId) ?? null,
-          )
-        : null,
-      read: Boolean(record.read),
-      lastMessageAt: record.lastMessageAt,
-      archivedAt: record.archivedAt,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-      run: runRef(open.filter((run) => run.subject.id === record.id)),
-    }));
+    return Promise.all(
+      records.map(async (record) => ({
+        id: record.id,
+        title: record.title,
+        titleSource: record.titleSource,
+        category: record.category,
+        source: record.source,
+        mode: record.mode,
+        execution: onlineExecution(
+          record,
+          open,
+          jsonObject(record.metadata).onlineAgent
+            ? await deps.nativeActive?.(
+                record.id,
+                jsonObject(
+                  jsonObject(jsonObject(record.metadata).onlineAgent).call,
+                ).state === 'running',
+              )
+            : false,
+        ),
+        agent: jsonObject(record.metadata).onlineAgent
+          ? {
+              id: 'online',
+              name: 'Online agent',
+              nameText: null,
+              avatar: null,
+              archived: false,
+            }
+          : agentRef(
+              record.agentId,
+              record.agentId ? (agents.get(record.agentId) ?? null) : null,
+            ),
+        fallbackFrom: record.fallbackFromAgentId
+          ? agentRef(
+              record.fallbackFromAgentId,
+              agents.get(record.fallbackFromAgentId) ?? null,
+            )
+          : null,
+        read: Boolean(record.read),
+        lastMessageAt: record.lastMessageAt,
+        archivedAt: record.archivedAt,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+        run: runRef(open.filter((run) => run.subject.id === record.id)),
+      })),
+    );
   }
 
   async function systemDefault(

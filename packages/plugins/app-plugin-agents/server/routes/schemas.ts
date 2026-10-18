@@ -1165,12 +1165,20 @@ export const RunEventItemSchema: z.ZodType<RunEvent> = RunEventSchema;
 /** The `meta` of a page read after a `seq`: the highest `seq` returned, and a token for the next page. */
 export const SeqPageMetaSchema: z.ZodType<{
   lastSeq: number;
+  nextAfter?: number;
   nextPageToken?: string | undefined;
 }> = z
   .object({
+    nextAfter: z
+      .number()
+      .int()
+      .optional()
+      .describe(
+        'Continue an incomplete forward page with after=nextAfter; lastSeq is the current conversation watermark.',
+      ),
     lastSeq: z.number().int().meta({
       description:
-        'The highest `seq` returned; ask for what follows with `after`.',
+        'The current conversation sequence watermark; when nextAfter is present, drain further pages first.',
     }),
     nextPageToken: z.string().optional(),
   })

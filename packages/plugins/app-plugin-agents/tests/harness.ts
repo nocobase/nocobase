@@ -297,6 +297,7 @@ export function testSecrets(
 export async function createHarness(
   options: {
     /** `null` for an application without secrets keys. */
+    readonly uiRecovery?: import('../server/online-agent/ui-streams.js').OnlineAgentRecoveryConfig;
     readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
@@ -324,6 +325,7 @@ export async function createHarness(
   const chatFiles = memoryChatFiles(database, clock);
   const services = createAgents({
     measureOnlineAgent: options.measureOnlineAgent,
+    uiRecovery: options.uiRecovery,
     database,
     idGenerator,
     chatFiles,

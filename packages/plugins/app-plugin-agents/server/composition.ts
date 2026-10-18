@@ -1,3 +1,7 @@
+import {
+  OnlineAgentUIStreams,
+  type OnlineAgentRecoveryConfig,
+} from './online-agent/ui-streams.js';
 import { RunnerOnlineAgentAdapter } from './online-agent/runner.js';
 import { OnlineAgentMemoryStreamManager } from './online-agent/streams.js';
 import type { ServiceResolver } from '@nocobase/service-provider';
@@ -150,6 +154,7 @@ import {
 } from './core/runs/index.js';
 
 export interface AgentsDeps {
+  readonly uiRecovery?: OnlineAgentRecoveryConfig;
   readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
   readonly resolver?: ServiceResolver;
   readonly runRetentionDays?: () => number;
@@ -549,17 +554,24 @@ export function createAgents(deps: AgentsDeps): Agents {
     settings: chat,
     nativeAvailable: async () =>
       Boolean((await modelServices.catalog().catch(() => null))?.defaultModel),
-    nativeActive: (id) => onlineAgent.isActive(id),
+    nativeActive: (id, persistedRunning) =>
+      onlineAgent.producerAvailable(id, persistedRunning),
     contextKinds: createPageContextKinds(),
     attachments: chatAttachments.links,
     basePath,
   });
   const streams = new OnlineAgentMemoryStreamManager();
+  const uiStreams = new OnlineAgentUIStreams({
+    tx,
+    measure: deps.measureOnlineAgent,
+    recovery: deps.uiRecovery,
+    onError: (error) => onError('OnlineAgent UI recovery failed.', error),
+  });
   const runnerOnlineAgent = new RunnerOnlineAgentAdapter({
     measure: deps.measureOnlineAgent,
     tx,
     conversations,
-    streams,
+    streams: uiStreams,
     now: () => clock.now().toISOString(),
     basePath,
     onError: (error) =>
@@ -567,6 +579,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
   const onlineAgent = new OnlineAgentService({
     runner: runnerOnlineAgent,
+    uiStreams,
     chatAgents: (userId) => conversations.chatAgents(userId),
     streams,
     sessions: createSessionManager({

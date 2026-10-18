@@ -1,3 +1,4 @@
+import { OnlineAgentUIStreams, type UIStreamChannel } from './ui-streams.js';
 import {
   streamText,
   toUIMessageStream,
@@ -45,46 +46,13 @@ export type NativeExecution = {
 };
 type Acceptance = { resolve(seq: number): void; reject(error: unknown): void };
 
-/** A single live HTTP response. This is not a replay cache or an execution AbortSignal. */
-class NativeResponse {
-  private controller!: ReadableStreamDefaultController<NativeUIChunk>;
-  private disconnected = false;
-  claimed = false;
-  readonly stream: ReadableStream<NativeUIChunk>;
-  constructor() {
-    this.stream = new ReadableStream(
-      {
-        start: (controller) => {
-          this.controller = controller;
-        },
-        cancel: () => {
-          this.disconnected = true;
-        },
-      },
-      { highWaterMark: 4096 },
-    );
-  }
-  write(chunk: NativeUIChunk): void {
-    if (this.disconnected) return;
-    if ((this.controller.desiredSize ?? 0) <= 0) {
-      this.controller.error(new Error('The response consumer is too slow.'));
-      this.disconnected = true;
-      return;
-    }
-    this.controller.enqueue(chunk);
-  }
-  close(): void {
-    if (!this.disconnected) this.controller.close();
-    this.disconnected = true;
-  }
-}
-
 export class NativeOnlineAgent {
-  private responses = new Map<string, NativeResponse>();
-  private executionResponses = new WeakMap<NativeExecution, NativeResponse>();
+  private responses = new Map<string, UIStreamChannel>();
+  private executionResponses = new WeakMap<NativeExecution, UIStreamChannel>();
   constructor(
     private deps: {
       sessions: OnlineAgentSessionManager;
+      uiStreams: OnlineAgentUIStreams;
       ids: IdSource;
       configurer: OnlineAgentConfigurer;
       resolver?: ServiceResolver;
@@ -93,16 +61,15 @@ export class NativeOnlineAgent {
       complete(id: string, execution: NativeExecution): void;
     },
   ) {}
-  receive(
+  async receive(
+    userId: string,
     id: string,
     execution?: NativeExecution,
-  ): ReadableStream<NativeUIChunk> | null {
+  ): Promise<ReadableStream<NativeUIChunk> | null> {
     const response = execution
       ? this.executionResponses.get(execution)
       : this.responses.get(id);
-    if (!response || response.claimed) return null;
-    response.claimed = true;
-    return response.stream;
+    return this.deps.uiStreams.receive(userId, id, response);
   }
   async run(
     context: OnlineAgentContext,
@@ -147,7 +114,7 @@ export class NativeOnlineAgent {
     >();
     const toolNames = new Map<string, string>();
     const invalidToolInputs = new Set<string>();
-    const response = new NativeResponse();
+    let response: UIStreamChannel | undefined;
     let config: Awaited<
       ReturnType<OnlineAgentSessionManager['load']>
     >['config'];
@@ -195,6 +162,13 @@ export class NativeOnlineAgent {
       if (approval) {
         executionId = approval.executionId;
         messageId = approval.messageId;
+        response = await this.deps.uiStreams.open(
+          context.user.id,
+          id,
+          executionId,
+          'native',
+          () => execution.abort.abort(),
+        );
         const approved = await this.deps.sessions.native.approve(
           context.user.id,
           id,
@@ -235,6 +209,13 @@ export class NativeOnlineAgent {
           )
         ).page;
         execution.abort.signal.throwIfAborted();
+        response = await this.deps.uiStreams.open(
+          context.user.id,
+          id,
+          executionId,
+          'native',
+          () => execution.abort.abort(),
+        );
         afterSeq = await this.deps.sessions.native.accept(
           context.user.id,
           id,
@@ -272,17 +253,22 @@ export class NativeOnlineAgent {
       this.responses.set(id, response);
       this.executionResponses.set(execution, response);
     } catch (error) {
+      if (response)
+        await this.deps.uiStreams
+          .close(id, response)
+          .catch((error: unknown) => this.deps.onError(error));
       this.deps.complete(id, execution);
       accepted.reject(error);
       return;
     }
+    const output = response;
     let privateMessage: UIMessage = priorEvidence
       ? structuredClone(priorEvidence)
       : { id: messageId, role: 'assistant', parts: [], metadata };
     let outcome: 'completed' | 'cancelled' | 'failed' = 'completed';
     let canonical: ModelMessage[] = [];
     let finishChunk: NativeUIChunk = { type: 'finish' };
-    response.write({ type: 'start', messageId, messageMetadata: metadata });
+    output.write({ type: 'start', messageId, messageMetadata: metadata });
     // Completed public parts retain their already-approved display projection across continuation.
     const previousTools = new Map(
       priorPublic?.parts
@@ -439,7 +425,7 @@ export class NativeOnlineAgent {
           if (chunk.type === 'tool-output-error')
             clean.errorText = 'The tool could not complete.';
         }
-        response.write(jsonSafe(clean) as NativeUIChunk);
+        output.write(jsonSafe(clean) as NativeUIChunk);
       }
       canonical = await generated.responseMessages;
       if (sdkFailure) outcome = 'failed';
@@ -623,20 +609,21 @@ export class NativeOnlineAgent {
         call,
         metadata.revision,
       );
-      response.write(notice);
-      response.write({
+      await this.deps.uiStreams.release(id, output);
+      output.write(notice);
+      output.write({
         type: 'message-metadata',
         messageMetadata: appUIMessageMetadataSchema.parse(saved.metadata),
       });
-      response.write({
+      output.write({
         type: 'finish',
         ...(finishChunk.type === 'finish' && finishChunk.finishReason
           ? { finishReason: finishChunk.finishReason }
           : {}),
         messageMetadata: saved.metadata,
       });
-      response.close();
-      if (this.responses.get(id) === response) this.responses.delete(id);
+      output.close();
+      if (this.responses.get(id) === output) this.responses.delete(id);
       execution.finalize = undefined;
       this.deps.complete(id, execution);
     };
@@ -644,12 +631,12 @@ export class NativeOnlineAgent {
       await execution.finalize();
     } catch (error) {
       this.deps.onError(error);
-      response.write({
+      output.write({
         type: 'error',
         errorText:
           'The response could not be saved. Reconcile history and retry finalization.',
       });
-      response.close();
+      await this.deps.uiStreams.close(id, output);
     }
   }
   private toolName(message: UIMessage, id: string): string {
