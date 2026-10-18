@@ -83,7 +83,7 @@ export function useOlderPages<T>(
   const loadMore = useCallback(() => {
     if (!requested) setRequestedIssue(issueId);
     else void fetchNextPage();
-  }, [requested, issueId, fetchNextPage]);
+  }, [requested, issueId, fetchNextPage, setRequestedIssue]);
   return {
     items: [...(query.data?.pages ?? [])]
       .reverse()
