@@ -94,6 +94,78 @@ describe('variables:resolve record slot projection security', () => {
     expect(await execResolve({ rd: session.rd(uid), contextParams, template: unconfigured })).toEqual(unconfigured);
   });
 
+  it('resolves the reported Markdown template in a nested details model through the batch API', async () => {
+    app.db.collection({
+      name: 'markdownOrganizations',
+      fields: [
+        { name: 'orgname', type: 'string' },
+        { name: 'userId', type: 'bigInt' },
+      ],
+    });
+    app.db.collection({
+      name: 'markdownUsers',
+      fields: [
+        { name: 'name', type: 'string' },
+        { name: 'org_o2m_tree', type: 'hasMany', target: 'markdownOrganizations', foreignKey: 'userId' },
+      ],
+    });
+    await app.db.sync();
+    await app.db.getRepository('markdownUsers').create({ values: { id: 1, name: 'Unconfigured value' } });
+    await app.db.getRepository('markdownOrganizations').create({ values: { orgname: 'Company A', userId: 1 } });
+    await app.db.getRepository('markdownOrganizations').create({ values: { orgname: 'Company B', userId: 1 } });
+
+    const uid = 'nested-markdown-item';
+    const content =
+      '<div style="text-align: center; font-weight: bold; font-size: 20px;">\n' +
+      '{% for item in ctx.record.org_o2m_tree%} {{ item.orgname }}：{{ item.orgname }}分 ' +
+      '{% if forloop.first %}    <span style="color: #FF5722;">vs    </span> {% endif %}{% endfor %}\n\n\n';
+    await insertFlowModel({
+      uid: 'markdown-details',
+      use: 'DetailsBlockModel',
+      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'markdownUsers' } } },
+      subModels: {
+        grid: {
+          uid: 'markdown-details-grid',
+          use: 'DetailsGridModel',
+          subModels: {
+            items: [
+              {
+                uid,
+                use: 'MarkdownItemModel',
+                stepParams: { markdownBlockSettings: { editMarkdown: { content } } },
+              },
+            ],
+          },
+        },
+      },
+    });
+    const options = {
+      rd: session.rd(uid),
+      contextParams: { record: { collection: 'markdownUsers', dataSourceKey: 'main', filterByTk: 1 } },
+    };
+    const unconfigured = { record: { name: '{{ctx.record.name}}' } };
+    const response = await execResolve({
+      batch: [
+        { ...options, id: 'configured', template: { record: { org_o2m_tree: '{{ctx.record.org_o2m_tree}}' } } },
+        { ...options, id: 'unconfigured', template: unconfigured },
+      ],
+    });
+    const configured = response.results?.find((result) => result.id === 'configured');
+    expect(configured?.data).toMatchObject({
+      record: {
+        org_o2m_tree: expect.arrayContaining([
+          expect.objectContaining({ orgname: 'Company A', userId: 1 }),
+          expect.objectContaining({ orgname: 'Company B', userId: 1 }),
+        ]),
+      },
+    });
+    const rendered = await new Liquid().parseAndRender(content, { ctx: configured?.data });
+    expect(rendered).toContain('Company A：Company A分');
+    expect(rendered).toContain('Company B：Company B分');
+    expect(rendered.match(/>vs /g)).toHaveLength(1);
+    expect(response.results?.find((result) => result.id === 'unconfigured')?.data).toEqual(unconfigured);
+  });
+
   it('blocks a moved Slot while resolving the descriptor in its exact Slot', async () => {
     const uid = 'record-projection-single';
     const template = { id: '{{ ctx.backend.record.id }}', role: '{{ ctx.backend.record.roles[0].title }}' };
