@@ -26,11 +26,13 @@ export interface DemoTask {
   readonly error: unknown;
   run(
     operation: (signal: AbortSignal) => Promise<void>,
-    successKey?: string,
+    successKey?: string | false,
   ): Promise<boolean>;
 }
 
-export function useDemoTask(): DemoTask {
+export function useDemoTask(
+  getErrorKey: (error: unknown) => string = errorKey,
+): DemoTask {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<unknown>();
   const activeRef = useRef<AbortController | undefined>(undefined);
@@ -54,12 +56,12 @@ export function useDemoTask(): DemoTask {
       try {
         await operation(controller.signal);
         if (controller.signal.aborted) return false;
-        toast.show({ type: 'success', title: t(successKey) });
+        if (successKey) toast.show({ type: 'success', title: t(successKey) });
         return true;
       } catch (failure) {
         if (!controller.signal.aborted) {
           setError(failure);
-          toast.show({ type: 'error', title: t(errorKey(failure)) });
+          toast.show({ type: 'error', title: t(getErrorKey(failure)) });
         }
         return false;
       } finally {

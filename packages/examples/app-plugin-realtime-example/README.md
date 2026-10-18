@@ -1,14 +1,28 @@
 # @nocobase/app-plugin-realtime-example
 
-An interactive guide to acknowledged subscriptions, resource authorization, React hooks and connection recovery. It uses the application's real WebSocket connection and authenticated HTTP APIs.
+Three connected business workflows demonstrate where realtime updates help: collaborating on assigned tasks, following personal notifications, and downloading background task exports. A separate capability lab explains the underlying subscription, authorization and recovery APIs.
 
 ## Open the examples
 
 The examples application registers both the Server and Client exports. Start it with `pnpm --filter @nocobase/app-template-examples dev`, open the application entry URL printed as `Local:`, sign in, and select **Realtime examples** in the sidebar (`/realtime-example`, beneath any application base path). English and Chinese are supported.
 
+The default route opens **Tasks**. The **Inbox**, **Exports**, and **Capability lab** views have their own URLs under `/realtime-example`, so links, refresh and browser history retain the selected view.
+
+## Try the business workflows
+
+| Scenario              | Try it                                                                                                                                                                                                                                                                                                 | What changes live                                                                                                                                                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Task collaboration    | Open Tasks in two windows. Create “Review the customer renewal quote”, describe the work, and assign it to yourself. Start it in the second window, then complete it. For collaboration between people, assign it to another active account and sign in as that account in a separate browser profile. | Both participants' boards follow creation and status changes. Details open over the current board. A reassigned former assignee loses access and their view refetches without receiving task contents in an event.                                    |
+| Personal inbox        | Create a task assigned to yourself, open Inbox in two windows, then mark its notification read or unread. For cross-user updates, have the assignee change the status: the other participants receive a notification.                                                                                  | A real, durable notification arrives through the existing notification module. Read status changes in both windows. Clicking a task notification opens its details over the inbox. The inbox includes all of the account's application notifications. |
+| Background CSV export | Create several tasks, open Exports and click Export tasks. Leave the page and return, or follow the same export in a second window. Download the completed file and open it in a spreadsheet.                                                                                                          | A real background job reads the requester's permitted tasks, encodes CSV in batches and saves progress and the file. Only the owner can list or download the result. Small exports may complete immediately; no timer stretches the progress.         |
+
+Tasks and notifications are normal application records, not disposable counters. The board reuses the notification example's task API and its creator-or-assignee policy. The task HTTP API remains authoritative after every invalidation, subscription acknowledgement, reconnection and visibility change. Status changes submit only the status field, preserving unrelated changes.
+
+Exports are snapshots of the tasks visible to their requester at generation time. A completed snapshot stays owned by that requester even if a task is subsequently reassigned. Up to 5,000 rows are supported; larger exports fail explicitly. The latest 20 export records and files are retained, with files stored in the example's database table. Quoting handles commas, quotes and multiline descriptions, and spreadsheet formula prefixes are neutralized. Failed exports can be submitted again. Interrupted jobs and an export recorded immediately before a process crash are recovered on startup; completed files survive restarts. This example targets one application process with the default jobs backend; cross-process realtime delivery and coordinated export execution are not demonstrated.
+
 The original public clock at `/realtime` is also available without signing in. It is a small native WebSocket protocol example; the interactive page demonstrates the application client and React hooks.
 
-For another application, register the exports explicitly in its respective `server/plugins.ts` and `client/plugins.ts` composition roots:
+For another application, first register authentication, the notification core, in-app notifications and the notification task example on the Server, and their corresponding Client plugins. This plugin uses their public APIs and requires the application's database and jobs runtimes. Then register the exports explicitly in its respective `server/plugins.ts` and `client/plugins.ts` composition roots:
 
 ```ts
 // Server registration, alongside the application's authentication plugin.
@@ -22,7 +36,7 @@ import realtimeExample from '@nocobase/app-plugin-realtime-example/client';
 // Add realtimeExample() to defineClientPlugins([...]).
 ```
 
-## Walk through every scenario
+## Walk through the capability lab
 
 | Scenario                               | Steps                                                                                                                                                              | Observable result                                                                                                                                                                                |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -39,15 +53,28 @@ import realtimeExample from '@nocobase/app-plugin-realtime-example/client';
 
 An open socket is not the same as an acknowledged subscription. The room and unknown-topic examples deliberately reject subscriptions, so aggregate `client.ready` can remain false while permitted topics work. Use a topic's `onReady` for its initial read and recovery, as the personal and room cards do.
 
-## Data and access boundaries
+## Capability lab data and access boundaries
 
 Each authenticated account owns a personal counter, a refresh counter and a randomly identified room. HTTP requests derive the owner from the session; callers cannot provide an arbitrary recipient or topic. The room's HTTP reads and event delivery share an owner-and-access check. Revocation publishes an internal invalidation to force existing subscribers through that check immediately. A read started before revocation cannot restore the cleared snapshot when it finishes late.
 
-All demo state is local to one process, expires after one hour without activity, and resets on restart. At most 1,000 accounts have active demo state. An expired room offers **Reload demonstration**; a full demo offers a retry. No business records are modified and no migrations are required. These are transient notifications with snapshot recovery, not durable event storage or replay. Redis and cross-process delivery are outside this example's current scope.
+All capability lab state is local to one process, expires after one hour without activity, and resets on restart. At most 1,000 accounts have active demo state. An expired room offers **Reload demonstration**; a full demo offers a retry. The capability lab does not modify business records. The business export scenario separately installs the `realtimeExampleExports` migration and modifies real task and notification data through their owning plugins. Realtime events are transient invalidations with HTTP snapshot recovery; task records, inbox messages and export files are persisted separately. Redis and cross-process delivery are outside this example's current scope.
 
-The page requires authentication and intentionally skips business permission resources because its data and actions are scoped to the current account. The `/realtimeExample/*` API contribution owns its authentication middleware. The legacy `/realtime` page and `clock:now` topic are explicitly public.
+Every page requires authentication and intentionally skips page permission resources. Business APIs independently enforce task participation or current-account ownership; the capability lab is scoped to the current account. The `/realtimeExample/*` API contribution owns its authentication middleware. The legacy `/realtime` page and `clock:now` topic are explicitly public.
 
-## Read the implementation
+## Read the business implementation
+
+| Source                                                                       | Responsibility                                                                     |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `client/pages/business/tasks.tsx`, `task-create.tsx`, `task-detail.tsx`      | URL-addressable board, create form and detail drawer over the task API             |
+| `client/pages/business/inbox.tsx`                                            | Reuses the in-app notification package's public query, mutation and refresh hooks  |
+| `client/pages/business/exports.tsx`                                          | Follows durable export history and downloads an authorized CSV                     |
+| `client/pages/business/use-business-data.ts`                                 | Authoritative reads, stale-request cancellation and `useRealtimeRefresh`           |
+| `server/export-service.ts`, `providers/task-exports.ts`, `routes/exports.ts` | Real jobs, persistent progress/results, owner-only endpoints and OpenAPI contracts |
+| `database/migrations/202610180001_create_realtime_example_exports.ts`        | Export persistence and the active-user uniqueness constraint                       |
+| `@nocobase/app-plugin-notification-example/realtime`                         | Public task invalidation topic and task types                                      |
+| `@nocobase/app-plugin-notification-example/server`                           | Owner-filtered task snapshot contract used by the export job                       |
+
+## Read the capability lab implementation
 
 | Source                                   | Responsibility                                                                                     |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------- |

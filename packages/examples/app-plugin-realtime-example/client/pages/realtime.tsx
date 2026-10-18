@@ -6,6 +6,7 @@ import {
 } from '@nocobase/app-client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
+import { BusinessNavigation } from './business/shared.js';
 import type { DemoState } from '../../shared/demo.js';
 import { useDemoSnapshot } from '../hooks/demo.js';
 import { PageContainer } from '../components/page-container.js';
@@ -96,6 +97,7 @@ export default function RealtimeExamplePage(): ReactElement {
           </Button>
         }
       />
+      <BusinessNavigation />
       <p className='text-sm text-muted-foreground'>{t('scope')}</p>
       <dl>
         <Metric label={t('connection')}>{t(`states.${connection}`)}</Metric>
