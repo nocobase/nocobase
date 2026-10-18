@@ -13,6 +13,8 @@
  * tool and model; only its default reasoning effort can be changed. The rest of what an agent is (its instructions,
  * the business actions it may perform, how many attempts a run gets) is the application's, the same for every agent.
  */
+import type { QuotaLocation } from './quota.js';
+
 import {
   TOOL_EFFORTS,
   type AgentTool,
@@ -147,6 +149,7 @@ export interface AgentRunners {
 
 /** An agent as the Agent page lists it (`GET /api/agents`), for the caller. */
 export interface AgentView extends Agent {
+  readonly quota?: readonly QuotaLocation[];
   readonly discoveryKey?: string;
   readonly discoveryRevision?: number;
   readonly ignored?: boolean;
@@ -178,6 +181,7 @@ export interface AgentName {
 
 /** An agent the caller may give work to: what it is good at, and whether it can take work now. */
 export interface AvailableAgent {
+  readonly quota?: readonly QuotaLocation[];
   readonly runners?: AgentRunners;
   readonly id: string;
   readonly name: string;

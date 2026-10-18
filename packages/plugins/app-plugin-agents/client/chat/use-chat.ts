@@ -45,6 +45,8 @@ import {
   type SendMessageResult,
 } from '../../shared/conversations.js';
 import { useRealtimeTopic } from '../hooks/use-realtime-topic.js';
+import { useQuotaExpiry } from '../hooks/use-quota-expiry.js';
+import { RUNNERS_TOPIC } from '../../shared/realtime.js';
 import { errorText } from '../hooks/use-notify.js';
 import { agentsQueryClient } from '../query.js';
 import { ChatApi } from './api.js';
@@ -90,7 +92,7 @@ export function isChatPayload(
 /** The agents the viewer may chat with, with whether each can answer now. */
 export function useChatAgents(enabled = true): UseQueryResult<ChatAgent[]> {
   const api = useChatApi();
-  return useQuery(
+  const result = useQuery(
     {
       queryKey: chatKeys.agents,
       queryFn: () => api.agents(),
@@ -99,6 +101,8 @@ export function useChatAgents(enabled = true): UseQueryResult<ChatAgent[]> {
     },
     agentsQueryClient(),
   );
+  useQuotaExpiry(result.data ?? []);
+  return result;
 }
 
 /** One conversation; polled while its run is open. */
@@ -153,6 +157,9 @@ export function useConversationList(
  */
 export function useChatRealtime(enabled: boolean): void {
   const queryClient = agentsQueryClient();
+  useRealtimeTopic(enabled ? RUNNERS_TOPIC : null, () => {
+    void queryClient.invalidateQueries({ queryKey: chatKeys.agents });
+  });
   useRealtimeTopic(enabled ? CONVERSATIONS_TOPIC : null, (payload) => {
     if (payload === undefined) {
       void queryClient.invalidateQueries({ queryKey: chatKeys.all });

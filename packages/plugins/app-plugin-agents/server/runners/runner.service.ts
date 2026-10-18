@@ -15,6 +15,11 @@
  * Thin stand-in: runner keys live in this plugin's own table until the platform offers device authorization (RFC
  * 8628) or an API key kind fit for machines; the protocol does not change when they move.
  */
+import type { Agent } from '../../shared/agents.js';
+import { quotaBlocks, runnerTakesAgent } from '../../shared/runners.js';
+
+import type { QuotaMarkTarget } from '../../shared/quota.js';
+
 import {
   isProtocolSupported,
   MIN_PROTOCOL_VERSION,
@@ -22,6 +27,7 @@ import {
   ProtocolError,
   TIMINGS,
   ReportedToolInfoSchema,
+  type QuotaReport,
   type HeartbeatRequest,
   type RegisterRequest,
   type RegisterResponse,
@@ -33,7 +39,11 @@ import {
 
 import type { DatabaseConnection, RepositoryFilter } from '@nocobase/db';
 
-import { normalizeModel } from '../../shared/model-catalog.js';
+import {
+  normalizeModel,
+  TOOL_DISPLAY_NAMES,
+  quotaTargetLabel,
+} from '../../shared/model-catalog.js';
 import type {
   RegistrationToken,
   RegistrationTokenInput,
@@ -102,6 +112,19 @@ export interface RunnerService {
     },
   ): Promise<Runner>;
   heartbeat(runner: Runner, request: HeartbeatRequest): Promise<Runner>;
+  reportQuota(
+    unit: Tx,
+    runnerId: string,
+    tool: AgentTool,
+    model: string | null,
+    quota: QuotaReport,
+    observation?: {
+      runId: string;
+      agentId: string;
+      subject: { kind: string; id: string };
+    },
+  ): Promise<void>;
+  clearQuota(id: string, target: QuotaMarkTarget): Promise<void>;
   list(options?: { readonly workspaceDetails?: boolean }): Promise<Runner[]>;
   /** 404 when absent. */
   get(id: string): Promise<Runner>;
@@ -136,6 +159,8 @@ export interface RunnerService {
 }
 
 export interface RunnerServiceDeps {
+  /** Enabled discovered agents, read once only when a fresh quota notice is emitted. */
+  readonly quotaAgents: (unit: Tx) => Promise<readonly Agent[]>;
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -159,6 +184,15 @@ function modelsOf(tools: readonly ToolInfo[], tool: AgentTool): string[] {
   ].sort();
 }
 
+export function quotaKey(mark: UnavailableModel): string {
+  return JSON.stringify([
+    mark.tool,
+    mark.scope ?? 'model',
+    mark.model,
+    mark.window ?? 'account',
+  ]);
+}
+
 /** The marks that still hold: those whose tool the runner reports the same models for as when it was marked. */
 export function keptMarks(
   marks: readonly UnavailableModel[],
@@ -166,8 +200,9 @@ export function keptMarks(
 ): UnavailableModel[] {
   return marks.filter(
     (mark) =>
+      mark.reason === 'toolQuota' ||
       JSON.stringify(modelsOf(tools, mark.tool)) ===
-      JSON.stringify([...mark.reported].sort()),
+        JSON.stringify([...mark.reported].sort()),
   );
 }
 
@@ -555,9 +590,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         const tools = request.tools.map((tool) =>
           ReportedToolInfoSchema.parse(tool),
         );
-        const marks = runner.unavailableModels ?? [];
+        const current = await require(conn, runner.id);
+        const marks = current.unavailableModels ?? [];
         const kept = keptMarks(marks, tools);
-        const workspaceUsage = (await require(conn, runner.id)).workspaceUsage;
+        const workspaceUsage = current.workspaceUsage;
         const changed =
           (request.disk !== undefined &&
             diskMoved(workspaceUsage?.disk ?? null, request.disk)) ||
@@ -570,8 +606,11 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           JSON.stringify(runner.policy) !== JSON.stringify(policy) ||
           JSON.stringify(runner.variables ?? null) !==
             JSON.stringify(variables);
-        await runnersRepo(conn).updateMany({
-          filter: { id: runner.id },
+        const heartbeatUpdate = await runnersRepo(conn).updateMany({
+          filter:
+            kept.length !== marks.length
+              ? { id: runner.id, quotaRevision: current.quotaRevision ?? 0 }
+              : { id: runner.id },
           values: {
             version: request.version,
             product: request.product ?? null,
@@ -580,7 +619,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             policy: asJson(policy),
             variables: asJson(variables),
             ...(kept.length !== marks.length
-              ? { unavailableModels: asJson(kept) }
+              ? {
+                  unavailableModels: asJson(kept),
+                  quotaRevision: (current.quotaRevision ?? 0) + 1,
+                }
               : {}),
             // What it holds per tool across every application: read for why a run waits, so it changes nothing else.
             load: asJson({
@@ -615,6 +657,11 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             updatedAt: changed ? now : runner.updatedAt,
           },
         });
+        if (heartbeatUpdate.updatedCount !== 1)
+          throw new ProtocolError(
+            'REVISION_CONFLICT',
+            'Quota changed during heartbeat; report again.',
+          );
         if (changed) emit({ type: 'runner.changed', runnerId: runner.id });
         const reported = await require(conn, runner.id);
         await deps.onReport?.(unit, reported);
@@ -772,12 +819,240 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
 
     find: (conn, id) => findRunner(conn, id),
 
+    async reportQuota(unit, runnerId, tool, model, quota, observation) {
+      const runner = await require(unit.conn, runnerId);
+      const now = clock.now().toISOString();
+      const marks = [...(runner.unavailableModels ?? [])];
+      const oldMarks = JSON.stringify(marks);
+      const usage = [...(runner.quotaUsage ?? [])];
+      const fresh: UnavailableModel[] = [];
+      for (const window of quota.windows) {
+        // A default Claude lease cannot prove a model-specific target; block this tool conservatively.
+        const scope =
+          tool === 'claude' && !model && window.scope === 'model'
+            ? 'tool'
+            : window.scope;
+        const target =
+          scope === 'tool'
+            ? ''
+            : scope === 'model'
+              ? normalizeModel(tool, window.target)
+              : window.target;
+        // The lease, not an untrusted report, decides which provider/model may be affected.
+        const normalized = model ? normalizeModel(tool, model) : '';
+        if (
+          scope !== 'tool' &&
+          (!normalized ||
+            (scope === 'provider'
+              ? normalized.split('/')[0] !== target
+              : normalized !== target))
+        )
+          continue;
+        if ((tool === 'opencode' || tool === 'pi') && scope !== 'provider')
+          continue;
+        const same = (m: UnavailableModel) =>
+          m.reason === 'toolQuota' &&
+          m.tool === tool &&
+          m.scope === scope &&
+          m.model === target &&
+          m.window === window.window;
+        const index = usage.findIndex(
+          (u) =>
+            u.tool === tool &&
+            u.scope === scope &&
+            u.target === target &&
+            u.window === window.window,
+        );
+        const previous = index < 0 ? undefined : usage[index];
+        const sample = {
+          tool,
+          window: window.window,
+          scope: scope,
+          target,
+          resetsAt: window.resetsAt,
+          ...(window.usedPercent === undefined
+            ? {}
+            : { usedPercent: window.usedPercent }),
+          observedAt: now,
+          exhausted: window.exhausted,
+        };
+        if (
+          !previous ||
+          previous.resetsAt !== sample.resetsAt ||
+          previous.exhausted !== sample.exhausted ||
+          (previous.usedPercent === undefined) !==
+            (sample.usedPercent === undefined) ||
+          Math.abs((previous.usedPercent ?? 0) - (sample.usedPercent ?? 0)) >=
+            5 ||
+          (previous.usedPercent ?? 0) >= 90 !== (sample.usedPercent ?? 0) >= 90
+        ) {
+          if (index < 0) usage.push(sample);
+          else usage[index] = sample;
+        }
+        if (!window.exhausted) continue;
+        const old = marks.find(same);
+        if (
+          old &&
+          old.resetsAt === window.resetsAt &&
+          (!old.resetsAt || Date.parse(old.resetsAt) > Date.parse(now))
+        )
+          continue;
+        const mark: UnavailableModel = {
+          reason: 'toolQuota',
+          tool,
+          scope: scope,
+          model: target,
+          window: window.window,
+          resetsAt: window.resetsAt,
+          at: now,
+          reported: [],
+        };
+        const at = marks.findIndex(same);
+        if (at < 0) marks.push(mark);
+        else marks[at] = mark;
+        if (
+          !old ||
+          (old.resetsAt && Date.parse(old.resetsAt) <= Date.parse(now))
+        )
+          fresh.push(mark);
+      }
+      if (
+        JSON.stringify(marks) ===
+          JSON.stringify(runner.unavailableModels ?? []) &&
+        JSON.stringify(usage) === JSON.stringify(runner.quotaUsage ?? [])
+      )
+        return;
+      const changed = await runnersRepo(unit.conn).updateMany({
+        filter: { id: runnerId, quotaRevision: runner.quotaRevision ?? 0 },
+        values: {
+          unavailableModels: asJson(marks),
+          quotaUsage: asJson(usage),
+          quotaRevision: (runner.quotaRevision ?? 0) + 1,
+        },
+      });
+      if (changed.updatedCount !== 1)
+        throw new ProtocolError(
+          'REVISION_CONFLICT',
+          'Quota changed; report again.',
+        );
+      if (JSON.stringify(marks) !== oldMarks)
+        unit.emit({ type: 'runner.changed', runnerId });
+      const noticeAgents =
+        runner.ownerUserId && fresh.length ? await deps.quotaAgents(unit) : [];
+      if (runner.ownerUserId)
+        for (const mark of fresh)
+          unit.emit({
+            type: 'notice',
+            notice: {
+              key: `runners:quota:${runnerId}:${quotaKey(mark)}:${mark.at}`,
+              type: 'runner_quota',
+              userIds: [runner.ownerUserId],
+              subject: { kind: 'runner', id: runnerId, label: runner.name },
+              title: `${TOOL_DISPLAY_NAMES[tool]}${mark.model ? ` · ${quotaTargetLabel(tool, mark.scope ?? 'model', mark.model)}` : ''} quota exhausted on ${runner.name}`,
+              body: mark.resetsAt
+                ? `Expected reset: ${mark.resetsAt}. Queued work can resume afterwards.`
+                : 'Reset time unknown. Restore the quota, then clear the mark on the runtime page.',
+              params: {
+                runnerName: runner.name,
+                affectedAgentNames: noticeAgents
+                  .filter(
+                    (agent) =>
+                      (agent.source === 'runner' ||
+                        agent.id === observation?.agentId) &&
+                      runnerTakesAgent(
+                        {
+                          ...runner,
+                          unavailableModels: [],
+                          workspaceUsage: null,
+                        },
+                        agent,
+                        Date.parse(now),
+                      ) &&
+                      agent.modelEntries.some(
+                        (entry) =>
+                          quotaBlocks(
+                            { ...runner, unavailableModels: [mark] },
+                            entry,
+                            Date.parse(now),
+                          ).length > 0,
+                      ),
+                  )
+                  .map((agent) => agent.name)
+                  .join(', '),
+                ...(observation
+                  ? {
+                      runId: observation.runId,
+                      agentId: observation.agentId,
+                      issueId:
+                        observation.subject.kind === 'issue'
+                          ? observation.subject.id
+                          : null,
+                    }
+                  : {}),
+                tool,
+                scope: mark.scope ?? 'model',
+                target: mark.model,
+                resetsAt: mark.resetsAt ?? null,
+                quotaKey: quotaKey(mark),
+              },
+            },
+          });
+    },
+
+    clearQuota: (id, target) =>
+      tx.run(async (unit) => {
+        const runner = await require(unit.conn, id);
+        const revision = runner.quotaRevision;
+        const key = JSON.stringify([
+          target.tool,
+          target.scope,
+          target.target,
+          target.window,
+        ]);
+        const marks = runner.unavailableModels ?? [];
+        const selected = marks.find(
+          (mark) => mark.reason === 'toolQuota' && quotaKey(mark) === key,
+        );
+        if (selected?.resetsAt)
+          throw precondition(
+            'QUOTA_RESET_KNOWN',
+            'Known quota reset times clear automatically.',
+          );
+        const kept = marks.filter(
+          (mark) => mark.reason !== 'toolQuota' || quotaKey(mark) !== key,
+        );
+        if (kept.length === marks.length) return;
+        const changed = await runnersRepo(unit.conn).updateMany({
+          filter: { id, quotaRevision: revision },
+          values: {
+            unavailableModels: asJson(kept),
+            quotaRevision: revision + 1,
+          },
+        });
+        if (changed.updatedCount !== 1)
+          throw new ProtocolError(
+            'REVISION_CONFLICT',
+            'Quota changed; clear again.',
+          );
+        unit.emit({ type: 'runner.changed', runnerId: id });
+        unit.emit({
+          type: 'notice.cleared',
+          notice: {
+            type: 'runner_quota',
+            subject: { kind: 'runner', id, label: runner.name },
+            key,
+          },
+        });
+      }),
+
     async markModelUnavailable(unit, runnerId, tool, model) {
       const runner = await findRunner(unit.conn, runnerId);
       if (!runner) return;
       const normalized = normalizeModel(tool, model);
       const marks = (runner.unavailableModels ?? []).filter(
-        (mark) => !(mark.tool === tool && mark.model === normalized),
+        (mark) =>
+          mark.reason === 'toolQuota' ||
+          !(mark.tool === tool && mark.model === normalized),
       );
       const mark: UnavailableModel = {
         tool,
@@ -785,13 +1060,19 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         at: clock.now().toISOString(),
         reported: modelsOf(runner.tools, tool),
       };
-      await runnersRepo(unit.conn).updateMany({
-        filter: { id: runnerId },
+      const changed = await runnersRepo(unit.conn).updateMany({
+        filter: { id: runnerId, quotaRevision: runner.quotaRevision ?? 0 },
         values: {
+          quotaRevision: (runner.quotaRevision ?? 0) + 1,
           unavailableModels: asJson([...marks, mark]),
           updatedAt: clock.now().toISOString(),
         },
       });
+      if (changed.updatedCount !== 1)
+        throw new ProtocolError(
+          'REVISION_CONFLICT',
+          'Quota changed; report again.',
+        );
       unit.emit({ type: 'runner.changed', runnerId });
     },
   };

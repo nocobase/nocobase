@@ -89,6 +89,7 @@ import {
   type CredentialServer,
 } from './git-credentials.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
+import { QuotaReportSchema, type QuotaReport } from '@nocobase/agent-protocol';
 import { EventSpool } from '../core/events.ts';
 import { isDiskFull } from '../lib/disk-full.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
@@ -515,7 +516,24 @@ export class RunWorker {
   }
 
   /** Spools an adapter event, noting the inputs it reports as picked up. */
+  private quota: QuotaReport | undefined;
   private recordEvent(event: AdapterEvent): void {
+    const quota = QuotaReportSchema.safeParse(event.meta?.quota);
+    if (quota.success) {
+      const windows = new Map(
+        (this.quota?.windows ?? []).map((window) => [
+          JSON.stringify([window.scope, window.target, window.window]),
+          window,
+        ]),
+      );
+      for (const window of quota.data.windows)
+        if (window.exhausted)
+          windows.set(
+            JSON.stringify([window.scope, window.target, window.window]),
+            window,
+          );
+      if (windows.size) this.quota = { windows: [...windows.values()] };
+    }
     if (event.type === 'status' && event.content === 'sessionRecovery') {
       this.sessionId = undefined;
       this.confirmedSessionId = undefined;
@@ -912,6 +930,23 @@ export class RunWorker {
       if (this.ending !== undefined) return this.finishEnding();
       if (result.exit === 'error') {
         const { reason, detail } = failureReason(result);
+        if (
+          reason === 'toolQuota' &&
+          (payload.tool.kind === 'opencode' || payload.tool.kind === 'pi') &&
+          payload.tool.model?.includes('/')
+        ) {
+          this.quota = {
+            windows: [
+              {
+                window: 'provider',
+                scope: 'provider',
+                target: payload.tool.model.split('/')[0],
+                resetsAt: null,
+                exhausted: true,
+              },
+            ],
+          };
+        }
         this.spool.push({ type: 'error', content: detail, meta: { reason } });
         return this.finishFailed(reason, detail);
       }
@@ -1195,6 +1230,7 @@ Local save event could not be recorded: ${failure}`;
     try {
       await this.report(routePath(RUNNER_ROUTES.fail, { runId: this.runId }), {
         reason,
+        ...(reason === 'toolQuota' && this.quota ? { quota: this.quota } : {}),
         detail: saved === '' ? detail : `${detail}\n\n${saved}`,
         handledInputIds: [...this.delivered],
         usage: this.usage,

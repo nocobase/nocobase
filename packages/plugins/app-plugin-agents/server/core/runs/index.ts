@@ -105,6 +105,7 @@ export { createSweeper, type Sweeper, type SweepReport } from './sweeper.js';
 export {
   executionForViewer,
   runForViewer,
+  runMachineViewerFor,
   type RunMachineViewer,
 } from './execution-view.js';
 export {

@@ -4,3 +4,6 @@ export {
   registerBusinesses,
   registerSettings,
 } from './providers/authorization.js';
+
+export { RunSchema } from './routes/schemas.js';
+export { runMachineViewerFor } from './core/runs/execution-view.js';
