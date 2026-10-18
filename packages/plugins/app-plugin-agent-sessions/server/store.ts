@@ -306,8 +306,9 @@ export async function enqueue(
   now: string,
   id: string = randomUUID(),
 ): Promise<void> {
-  await commands(conn).createOne({
-    values: { id, computerId, command, createdAt: now },
+  // No returned row is needed, especially not a large JSON OUT bind on Oracle.
+  await commands(conn).createMany({
+    values: [{ id, computerId, command, createdAt: now }],
   });
 }
 
