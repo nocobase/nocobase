@@ -30,6 +30,8 @@ The package README is the full reference: read it at `node_modules/@nocobase/app
 
 ## Verification
 
+Hosts embedding `AgentSessionsPanel` can use `attach.mode: 'replace'` with a stable `scope` and a fresh update `id` to follow page context in a new draft. A new explicit entry starts another scope. Automatic context replaces only its own attachments and stops following after removal or submission; manual mentions, images and attachments survive page changes. Use `activeLink` to mark the host page's current record in the sidebar's internal task list; sidebar task links keep that list open without a page overlay.
+
 - The page's "My computers" dialog lists the computer as online with its agents' versions; an agent marked not installed or failed shows why on hover.
 - A new session answers its first message; its details show the agent and its mode.
 - Asking the agent to use the App calls its CLI as the signed-in owner. Verify creation checks the session owner and links records through the existing service.

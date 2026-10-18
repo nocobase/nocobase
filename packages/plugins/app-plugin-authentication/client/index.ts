@@ -12,6 +12,7 @@ export {
   AuthenticationProvider,
   useAuthentication,
   useAuthenticationClient,
+  type AuthenticationContextValue,
 } from './auth-provider.js';
 
 export {

@@ -5,8 +5,15 @@ import {
   type ApiCall,
 } from '@nocobase/app-testing/client';
 import { QueryClient } from '@tanstack/react-query';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useState } from 'react';
 
 import {
   AgentSessionsPanel,
@@ -109,14 +116,23 @@ async function setup(
       };
     return { data: [], meta: {} };
   });
-  await renderWithApp(
-    <ApplicationCacheContext.Provider value={client}>
+  let update: (next: Partial<AgentSessionsPanelProps>) => void = () =>
+    undefined;
+  function ControlledPanel() {
+    const [current, setCurrent] = useState(props);
+    update = (next) => setCurrent((held) => ({ ...held, ...next }));
+    return (
       <AgentSessionsPanel
         cli='acme'
         view={{ kind: 'session', sessionId: 'session' }}
         onViewChange={onViewChange}
-        {...props}
+        {...current}
       />
+    );
+  }
+  await renderWithApp(
+    <ApplicationCacheContext.Provider value={client}>
+      <ControlledPanel />
     </ApplicationCacheContext.Provider>,
     {
       plugins: [plugin({ routes: false })],
@@ -132,10 +148,173 @@ async function setup(
       route: '/my-issues/7',
     },
   );
-  return { client, requests, onViewChange };
+  return {
+    client,
+    requests,
+    onViewChange,
+    update: (next: Partial<AgentSessionsPanelProps>) => act(() => update(next)),
+  };
 }
 
 describe('the sessions panel', () => {
+  const auto = (id: string, scope = 'page') => ({
+    id,
+    scope,
+    mode: 'replace' as const,
+    projectId: id,
+    attachments: [
+      { id, label: `Task ${id}`, reference: { kind: 'issue', refId: id } },
+    ],
+  });
+
+  it('uses the host hint without prefilling text and clears text only for a deliberate new scope', async () => {
+    const { update, requests } = await setup({
+      view: { kind: 'new' },
+      attach: { ...auto('a'), placeholder: 'Describe the task' },
+    });
+    const box = await screen.findByPlaceholderText('Describe the task');
+    expect(box).toHaveValue('');
+    fireEvent.change(box, { target: { value: 'Unsent request' } });
+    update({ attach: { ...auto('b'), placeholder: 'Describe the task' } });
+    await screen.findByText('Task b');
+    expect(box).toHaveValue('Unsent request');
+    update({
+      attach: { ...auto('c', 'new-intent'), placeholder: 'Describe the task' },
+    });
+    await screen.findByText('Task c');
+    expect(box).toHaveValue('');
+    expect(
+      requests.mock.calls.some(
+        ([call]) =>
+          call.method === 'POST' && call.path === 'agentSessions/sessions',
+      ),
+    ).toBe(false);
+  });
+
+  it('replaces automatic context, keeps manual attachments, and updates the project of a mounted new draft', async () => {
+    const { client, update, requests } = await setup(
+      { view: { kind: 'new' }, attach: auto('a') },
+      ({ path, method }) => {
+        if (path === 'agentSessions/projects')
+          return {
+            data: [
+              { id: 'a', name: 'Project A' },
+              { id: 'b', name: 'Project B' },
+            ],
+          };
+        if (path.endsWith('/discoverChoices'))
+          return { data: { status: 'available', choices: [] } };
+        if (path === 'agentSessions/sessions' && method === 'POST')
+          return { data: session };
+        return undefined;
+      },
+    );
+    await screen.findByText('Task a');
+    client.setQueryData(
+      ['agentSessions', 'memory', 'attached:new-session'],
+      (held: object[] = []) => [
+        ...held,
+        { id: 'manual', label: 'My note', text: 'Keep my note' },
+      ],
+    );
+    update({ attach: auto('b') });
+    await screen.findByText('Task b');
+    expect(screen.queryByText('Task a')).toBeNull();
+    expect(screen.getByText('My note')).toBeTruthy();
+    await screen.findByText('Project B');
+    const box = await screen.findByRole('textbox');
+    fireEvent.change(box, { target: { value: 'Start here' } });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    await waitFor(() =>
+      expect(requests).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: 'agentSessions/sessions',
+          method: 'POST',
+          json: expect.objectContaining({
+            projectId: 'b',
+            mentions: [{ kind: 'issue', refId: 'b' }],
+          }),
+        }),
+      ),
+    );
+    update({ attach: auto('c') });
+    await waitFor(() => expect(screen.queryByText('Task c')).toBeNull());
+  });
+
+  it('stops following after removal, including remounts, and resumes only for another explicit intent', async () => {
+    const { update } = await setup({
+      view: { kind: 'new' },
+      attach: auto('a'),
+    });
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Remove Task a' }),
+    );
+    update({ attach: auto('b') });
+    await waitFor(() => expect(screen.queryByText('Task a')).toBeNull());
+    expect(screen.queryByText('Task b')).toBeNull();
+    update({ view: { kind: 'list' } });
+    await screen.findByText(session.title);
+    update({ view: { kind: 'new' } });
+    await screen.findByRole('textbox');
+    expect(screen.queryByText('Task b')).toBeNull();
+    update({ attach: auto('b', 'another-start') });
+    await screen.findByText('Task b');
+  });
+
+  it('never deposits pending automatic context into a session selected from history', async () => {
+    const { update } = await setup({
+      view: { kind: 'list' },
+      attach: auto('a'),
+    });
+    await screen.findByText(session.title);
+    update({ view: { kind: 'session', sessionId: 'session' } });
+    await screen.findByRole('textbox');
+    expect(screen.queryByText('Task a')).toBeNull();
+  });
+
+  it('keeps details inside the sidebar and marks the main page task as current', async () => {
+    const { update } = await setup(
+      { activeLink: { kind: 'issue', refId: '7' } },
+      ({ path, method }) =>
+        path === 'agentSessions/sessions/session' && method === 'GET'
+          ? {
+              data: {
+                ...session,
+                links: [
+                  {
+                    kind: 'issue',
+                    refId: '7',
+                    key: 'PM-7',
+                    title: 'Fix sign-in',
+                    group: null,
+                    status: null,
+                    href: '/issues/7',
+                    startable: false,
+                    decidedAt: null,
+                  },
+                ],
+              },
+            }
+          : undefined,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /Tasks 1/ }));
+    const details = await screen.findByRole('complementary', {
+      name: 'Session details',
+    });
+    expect(details.classList.contains('fixed')).toBe(false);
+    expect(details.parentElement?.querySelector('.bg-black\\/30')).toBeNull();
+    expect(within(details).getByText('PM-7').closest('li')).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    update({ activeLink: null });
+    await waitFor(() =>
+      expect(
+        within(details).getByText('PM-7').closest('li'),
+      ).not.toHaveAttribute('aria-current'),
+    );
+    expect(details).toBeVisible();
+  });
   it('shows a session with the panel’s buttons in its header, and no way back to the page’s list', async () => {
     const onFullScreen = vi.fn();
     const { onViewChange } = await setup({
