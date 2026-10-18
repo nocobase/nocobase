@@ -1,6 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { WorkflowManagementLayout } from '../../registry/lifecycle/workflow-management/layout.js';
+import {
+  WorkflowDefinitionDetail,
+  WorkflowManagementLayout,
+} from '../../registry/lifecycle/workflow-management/layout.js';
 import { WorkflowExecutionDetail } from '../../registry/lifecycle/workflow-management/execution-detail.js';
 import { WorkflowDefinitionList } from '../../registry/lifecycle/workflow-management/definition-list.js';
 import { WorkflowExecutionList } from '../../registry/lifecycle/workflow-management/execution-list.js';
@@ -291,4 +294,97 @@ it('renders a read-only category tag without an assignment control when updates 
   expect(screen.getByText('Sales')).toBeInTheDocument();
   expect(screen.queryByRole('button')).not.toBeInTheDocument();
   expect(onChange).not.toHaveBeenCalled();
+});
+
+it('supports a full-width definition canvas with a contextual editor outside the permanent parameter slot', () => {
+  const view = render(
+    <WorkflowDefinitionDetail
+      diagramTitle='Definition'
+      parametersTitle='Parameters'
+      diagram={<p>Standard graph</p>}
+    />,
+  );
+  expect(
+    screen.getByRole('region', { name: 'Definition' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole('region', { name: 'Parameters' }),
+  ).not.toBeInTheDocument();
+  view.rerender(
+    <WorkflowDefinitionDetail
+      diagramTitle='Definition'
+      parametersTitle='Parameters'
+      diagram={<p>Standard graph</p>}
+      parameters={<p>Policy form</p>}
+    />,
+  );
+  expect(screen.getByRole('region', { name: 'Parameters' })).toHaveTextContent(
+    'Policy form',
+  );
+});
+
+it('renders the whole supplied definition page without double pagination or local reordering', () => {
+  const rows = Array.from({ length: 21 }, (_, index) => ({
+    id: String(index),
+    name: `key-${index}`,
+    title: `Process ${index}`,
+    activity: index,
+  }));
+  const sort = vi.fn();
+  render(
+    <WorkflowDefinitionList
+      rows={rows}
+      search={<input aria-label='Search' />}
+      loaded
+      loading={false}
+      empty='Empty'
+      labels={{
+        refresh: 'Refresh',
+        workflow: 'Workflow',
+        executionCount: 'Count',
+        executionActivity: 'Activity',
+      }}
+      sort={{ ascending: true }}
+      onSort={sort}
+      onRefresh={() => {}}
+    />,
+  );
+  expect(screen.getAllByRole('row')).toHaveLength(22);
+  expect(screen.getByText('Process 20')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Activity' }));
+  expect(sort).toHaveBeenCalledOnce();
+  expect(screen.getAllByRole('row')[1]).toHaveTextContent('Process 0');
+});
+
+it('does not show a no-results message while an execution page is loading', () => {
+  const props = {
+    rows: [],
+    loaded: false,
+    loading: true,
+    filters: null,
+    empty: 'No executions yet',
+    labels: {
+      refresh: 'Refresh',
+      record: 'Record',
+      workflow: 'Workflow',
+      state: 'State',
+      createdAt: 'Created',
+      previous: 'Previous',
+      next: 'Next',
+    },
+    order: 'newest' as const,
+    onSort: () => {},
+    onRefresh: () => {},
+    pagination: null,
+    previousDisabled: true,
+    nextDisabled: true,
+    onPrevious: () => {},
+    onNext: () => {},
+  };
+  const view = render(<WorkflowExecutionList {...props} />);
+  expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true');
+  expect(screen.queryByText('No results.')).not.toBeInTheDocument();
+  expect(screen.queryByText('No executions yet')).not.toBeInTheDocument();
+  view.rerender(<WorkflowExecutionList {...props} loaded loading={false} />);
+  expect(screen.getByText('No executions yet')).toBeInTheDocument();
 });

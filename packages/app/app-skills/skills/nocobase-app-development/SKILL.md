@@ -227,3 +227,7 @@ Authentication diagnostics use the application `auth` logger unless an explicit 
 ## Storage
 
 Standalone source and compiled entries share the deployment directory's storage; `APP_STORAGE_DIR` selects another storage directory, and explicit storage paths take precedence over it. Embedded applications use Host-provided paths. Expanded releases live at `appRevisionsDir/<appId>/<sha256>` and restart recovery requires their installed metadata. Build archives use `storage/exports/dist.tar.gz`.
+
+## Process UI delivery gate
+
+When adding a business process, read [Lifecycle UI](references/lifecycle-ui.md#default-diagram-and-configuration-contract) before selecting a renderer. Current templates already ship the standard React Flow components and workflow-management parts. Preserve their default style unless the user explicitly requests another style; declare and connect suitable business parameters and contextual configuration automatically. UI Registry entries are not npm packages: an npm 404 is not installation failure. Acceptance must compare actual component use and configuration behavior to the original requirement, even if an intermediate design approved a fallback.

@@ -2,14 +2,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Button } from '#components/ui/button';
 import { Empty, EmptyDescription } from '#components/ui/empty';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '#components/ui/table';
+import { DataTable } from '#components/data-table/data-table';
 
 export interface WorkflowExecutionRow {
   id: string;
@@ -70,55 +63,56 @@ export function WorkflowExecutionList({
         </Button>
       </div>
       {status}
-      <div className='overflow-hidden rounded-lg border bg-card'>
-        <Table>
-          <TableHeader>
-            <TableRow className='bg-muted/40 hover:bg-muted/40'>
-              <TableHead className='px-3 text-muted-foreground'>
-                {labels.record}
-              </TableHead>
-              <TableHead className='px-3 text-muted-foreground'>
-                {labels.workflow}
-              </TableHead>
-              <TableHead className='px-3 text-muted-foreground'>
-                {labels.state}
-              </TableHead>
-              <TableHead
-                className='px-3 text-muted-foreground'
-                aria-sort={order === 'newest' ? 'descending' : 'ascending'}
-              >
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  className='-ml-3 h-8'
-                  onClick={onSort}
-                >
+      <div className='bg-card'>
+        <DataTable
+          data={rows}
+          getRowId={(row) => row.id}
+          pagination={false}
+          manualSorting
+          sortingState={[{ id: 'createdAt', desc: order === 'newest' }]}
+          loading={loading}
+          emptyMessage={
+            loaded ? (
+              <Empty>
+                <EmptyDescription>{empty}</EmptyDescription>
+              </Empty>
+            ) : (
+              ''
+            )
+          }
+          columns={[
+            {
+              id: 'record',
+              header: labels.record,
+              enableSorting: false,
+              cell: ({ row }) => row.original.record,
+            },
+            {
+              id: 'workflow',
+              header: labels.workflow,
+              enableSorting: false,
+              cell: ({ row }) => row.original.workflow,
+            },
+            {
+              id: 'state',
+              header: labels.state,
+              enableSorting: false,
+              cell: ({ row }) => row.original.state,
+            },
+            {
+              id: 'createdAt',
+              accessorFn: (row) => row.createdAt,
+              enableSorting: true,
+              header: () => (
+                <Button variant='ghost' size='sm' onClick={onSort}>
                   {labels.createdAt}
                   {order === 'newest' ? <ArrowDown /> : <ArrowUp />}
                 </Button>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell className='px-3'>{row.record}</TableCell>
-                <TableCell className='px-3'>{row.workflow}</TableCell>
-                <TableCell className='px-3'>{row.state}</TableCell>
-                <TableCell className='px-3'>{row.createdAt}</TableCell>
-              </TableRow>
-            ))}
-            {loaded && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4}>
-                  <Empty>
-                    <EmptyDescription>{empty}</EmptyDescription>
-                  </Empty>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ),
+              cell: ({ row }) => row.original.createdAt,
+            },
+          ]}
+        />
       </div>
       <div className='flex flex-wrap items-center justify-between gap-3 text-sm'>
         <p>{pagination}</p>

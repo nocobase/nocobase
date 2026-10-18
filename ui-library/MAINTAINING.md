@@ -162,3 +162,7 @@ The tests cover an item's behavior only as far as jsdom shows it: no check lays 
 - A request for an item that does not exist returns the site's `index.html` with status 200, because the bucket's static-website fallback answers every unknown path. shadcn then reports `Unexpected token '<', "<!doctype "... is not valid JSON` rather than a missing item.
 - The registry serves only the latest version of each item.
 - The preview site wires each item by hand, as step 6 of [Adding an item](#adding-an-item) describes.
+
+## Preinstalled process components
+
+The Default and Examples application templates preinstall the `data-table`, `flow-diagram`, `lifecycle-diagram` and `workflow-management` source items. When changing these items, carry applicable source changes into both templates in the same delivery; `tests/project/template-process-components.test.ts` detects drift between the registry targets and template copies. Keep their client dependencies and locale resources synchronized too. Preinstallation adds no Default route, menu, sample process or business data. Applications receive updates through the template upgrade's source reconciliation, preserving customizations; publishing this site alone does not replace installed source.

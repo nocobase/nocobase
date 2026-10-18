@@ -83,6 +83,7 @@ import { AgentQueueDemo } from './demo/agents/agent-queue';
 import { IssueCardDemo } from './demo/projects/issue-card';
 import { PlanCardDemo } from './demo/projects/plan-card';
 import { IssueTableDemo } from './demo/projects/issue-table';
+import { DataTableDemo } from './demo/components/data-table';
 import { FlowDiagramDemo } from './demo/components/flow-diagram';
 import { WorkflowManagementDemo } from './demo/lifecycle/workflow-management';
 import { LifecycleDiagramDemo } from './demo/lifecycle/lifecycle-diagram';
@@ -170,6 +171,7 @@ const itemPreviews: Record<string, ItemPreview> = {
     path: '/demo/authorization/permission-editor',
     icon: ToggleRight,
   },
+  'data-table': { path: '/demo/components/data-table', icon: Table2 },
   'flow-diagram': { path: '/demo/components/flow-diagram', icon: Layers },
   'workflow-management': {
     path: '/demo/lifecycle/workflow-management',
@@ -286,6 +288,8 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/components/route-overlays')) {
     return <RouteOverlaysDemo />;
   }
+  if (pathname.startsWith('/demo/components/data-table'))
+    return <DataTableDemo />;
   if (pathname.startsWith('/demo/components/flow-diagram'))
     return <FlowDiagramDemo />;
   if (pathname.startsWith('/demo/lifecycle/workflow-management'))

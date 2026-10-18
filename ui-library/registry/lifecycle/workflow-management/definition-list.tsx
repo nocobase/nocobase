@@ -2,14 +2,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Button } from '#components/ui/button';
 import { Empty, EmptyDescription } from '#components/ui/empty';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '#components/ui/table';
+import { DataTable } from '#components/data-table/data-table';
 
 export interface WorkflowDefinitionRow {
   id: string;
@@ -70,52 +63,54 @@ export function WorkflowDefinitionList({
         </div>
         {status}
         {loaded && rows.length > 0 && (
-          <div className='overflow-hidden rounded-lg border bg-card'>
-            <Table>
-              <TableHeader>
-                <TableRow className='bg-muted/40 hover:bg-muted/40'>
-                  <TableHead className='px-3 text-muted-foreground'>
-                    {labels.workflow}
-                  </TableHead>
-                  <TableHead
-                    className='px-3 text-right text-muted-foreground'
-                    aria-sort={
-                      sort
-                        ? sort.ascending
-                          ? 'ascending'
-                          : 'descending'
-                        : 'none'
-                    }
-                  >
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      className='-mr-3 h-8'
-                      title={labels.executionCount}
-                      onClick={onSort}
-                    >
-                      {labels.executionActivity}
-                      {sort && (sort.ascending ? <ArrowUp /> : <ArrowDown />)}
-                    </Button>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((workflow) => (
-                  <TableRow key={workflow.id}>
-                    <TableCell className='px-3'>
-                      {workflow.title}
+          <div className='bg-card'>
+            <DataTable
+              data={rows}
+              getRowId={(row) => row.id}
+              pagination={false}
+              manualSorting
+              sortingState={
+                sort ? [{ id: 'activity', desc: !sort.ascending }] : []
+              }
+              columns={[
+                {
+                  id: 'workflow',
+                  header: labels.workflow,
+                  enableSorting: false,
+                  cell: ({ row }) => (
+                    <>
+                      {row.original.title}
                       <p className='text-xs text-muted-foreground'>
-                        {workflow.name}
+                        {row.original.name}
                       </p>
-                    </TableCell>
-                    <TableCell className='px-3 text-right tabular-nums'>
-                      {workflow.activity}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </>
+                  ),
+                },
+                {
+                  id: 'activity',
+                  accessorFn: (row) => row.activity,
+                  enableSorting: true,
+                  header: () => (
+                    <div className='text-right'>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        title={labels.executionCount}
+                        onClick={onSort}
+                      >
+                        {labels.executionActivity}
+                        {sort && (sort.ascending ? <ArrowUp /> : <ArrowDown />)}
+                      </Button>
+                    </div>
+                  ),
+                  cell: ({ row }) => (
+                    <div className='text-right tabular-nums'>
+                      {row.original.activity}
+                    </div>
+                  ),
+                },
+              ]}
+            />
           </div>
         )}
         {loaded && rows.length === 0 && (

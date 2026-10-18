@@ -84,7 +84,9 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "tar": "catalog:"
+    "tar": "catalog:",
+    "@xyflow/react": "^12.11.5",
+    "elkjs": "^0.10.2"
   },
   "files": [
     ".prettierignore",
