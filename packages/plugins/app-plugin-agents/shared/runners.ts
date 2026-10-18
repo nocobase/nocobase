@@ -335,6 +335,8 @@ export const RUNNER_LIST_FIELDS = {
   arch: true,
   version: true,
   product: true,
+  features: true,
+  toolsRefreshRequestId: true,
   tools: true,
   enabledTools: true,
   trust: true,

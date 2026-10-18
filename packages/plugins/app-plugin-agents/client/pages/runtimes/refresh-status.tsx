@@ -12,7 +12,10 @@ export function RefreshStatus({
   runner,
   menu = false,
 }: {
-  readonly runner: RunnerListItem;
+  readonly runner: Pick<
+    RunnerListItem,
+    'id' | 'canManage' | 'status' | 'features' | 'toolsRefreshRequestId'
+  >;
   readonly menu?: boolean;
 }): ReactElement | null {
   const { t } = useTranslation();

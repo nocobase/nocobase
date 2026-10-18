@@ -18,6 +18,15 @@ describe('runner tool status refresh', () => {
     expect(first.body.data).not.toHaveProperty('quotaRevision');
     const requestId = first.body.data.toolsRefreshRequestId;
     expect(requestId).toEqual(expect.any(String));
+    const list = await h.request('GET', '/agents/runners', { user: 'owner' });
+    expect(list.status).toBe(200);
+    expect(list.body.data).toEqual([
+      expect.objectContaining({
+        id: r.runnerId,
+        features: expect.arrayContaining(['tools.refresh']),
+        toolsRefreshRequestId: requestId,
+      }),
+    ]);
     expect(
       (await h.request('POST', path, { user: 'owner' })).body.data
         .toolsRefreshRequestId,
