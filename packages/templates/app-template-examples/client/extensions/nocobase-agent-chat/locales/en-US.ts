@@ -93,8 +93,6 @@ export interface AgentChatLocale {
       readonly question: string;
       readonly answer: string;
       readonly steps: string;
-      readonly plans_one: string;
-      readonly plans_other: string;
       readonly usage: string;
       readonly state: {
         readonly running: string;
@@ -351,8 +349,6 @@ const agentChatEnUS: AgentChatLocale = {
       question: 'Question',
       answer: 'Answer',
       steps: 'Its steps',
-      plans_one: 'Proposed a plan for you to confirm.',
-      plans_other: 'Proposed {{count}} plans for you to confirm.',
       usage: 'Used {{input}} input and {{output}} output tokens.',
       state: {
         running: 'Answering…',

@@ -104,8 +104,6 @@ const agentChatZhCN: AgentChatLocale = {
       question: '问题',
       answer: '回答',
       steps: '它的步骤',
-      plans_one: '提出了一个计划，等你确认。',
-      plans_other: '提出了 {{count}} 个计划，等你确认。',
       usage: '用了 {{input}} 个输入 token 和 {{output}} 个输出 token。',
       state: {
         running: '回答中…',

@@ -1,3 +1,4 @@
+import { ConsultationCard } from '../../client/extensions/nocobase-agent-chat/consultation-card.js';
 import {
   agentsQueryClient,
   ChatProvider,
@@ -1040,5 +1041,48 @@ it.each(['en-US', 'zh-CN'])(
       ),
     ).toBeVisible();
     expect(screen.getByText('First body')).toBeVisible();
+  },
+);
+
+it.each(['en-US', 'zh-CN'])(
+  'renders a historical consultation with plans in %s without a quantity prompt',
+  async (locale) => {
+    const cardRuntime = await createTestI18nRuntime({
+      application: {
+        namespace: 'consultation-test',
+        resources: {
+          'en-US': () => Promise.resolve({ default: enUS }),
+          'zh-CN': () => Promise.resolve({ default: zhCN }),
+        },
+      },
+    });
+    await cardRuntime.changeLanguage(locale);
+    render(
+      <TestI18nProvider runtime={cardRuntime}>
+        <ConsultationCard
+          notice={{
+            code: 'consultation',
+            callId: 'historic',
+            agentId: 'agent',
+            agentName: 'Review agent',
+            runId: null,
+            question: 'Review this change',
+            answer: 'The change is ready.',
+            state: 'completed',
+            error: null,
+            usage: { inputTokens: 1840, outputTokens: 212 },
+            plans: 3,
+          }}
+        />
+      </TestI18nProvider>,
+    );
+    fireEvent.click(
+      screen.getByTestId('chat-consultation').querySelector('button')!,
+    );
+    expect(await screen.findByText('The change is ready.')).toBeVisible();
+    expect(screen.getByText(/1,840/)).toBeVisible();
+    expect(
+      screen.queryByText(/Proposed .*plans|提出了.*计划/u),
+    ).not.toBeInTheDocument();
   },
 );

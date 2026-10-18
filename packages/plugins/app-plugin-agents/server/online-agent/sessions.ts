@@ -63,9 +63,7 @@ function metadata(row: ConversationRecord): OnlineAgentMetadata {
       'This historical conversation has not been switched to OnlineAgent.',
     );
   if ('permissions' in found.config)
-    throw invalid(
-      'Permission-restricted configuration is not supported in PR1.',
-    );
+    throw invalid('Permission-restricted configuration is not supported.');
   return found;
 }
 function session(row: ConversationRecord): OnlineAgentSession {

@@ -231,7 +231,7 @@ function initialStore(): Store {
                 'About an hour: the templates are done, the tests remain.',
               error: null,
               usage: { inputTokens: 1840, outputTokens: 212 },
-              plans: 0,
+              plans: 3,
             },
           },
         }),

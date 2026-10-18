@@ -2,7 +2,6 @@
  * Files people send with chat messages: uploading, sending them with a message, who may read them (the owner, a run
  * on the conversation by its token, nobody else), what the agent is told, and the purge of uploads never sent.
  */
-import { legacyConversationRequest } from './legacy-conversation-domain.js';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { CHAT_ATTACHMENT_SIZE_MAX } from '../shared/conversations.js';
@@ -10,7 +9,6 @@ import { claim, createHarness, type Harness } from './harness.js';
 
 const ALICE = 'alice';
 const BOB = 'bob';
-const base = '/agents/conversations';
 
 /** A 1×1 PNG. */
 const PNG = Uint8Array.from(
@@ -34,7 +32,7 @@ describe('chat attachments', () => {
   ) {
     const form = new FormData();
     form.set('file', new File([body], name, { type }));
-    return legacyConversationRequest(h, 'POST', '/agents/chatAttachments', {
+    return h.request('POST', '/agents/chatAttachments', {
       user,
       form,
     });
@@ -52,20 +50,14 @@ describe('chat attachments', () => {
   }
 
   async function conversation(agentId: string, user = ALICE) {
-    const created = await legacyConversationRequest(h, 'POST', base, {
-      user,
-      body: { agentId },
-    });
-    expect(created.status).toBe(201);
-    return created.body.data.id as string;
+    return (await h.services.conversations.create(user, { agentId })).id;
   }
 
   const content = (
     id: string,
     options: { user?: string; runToken?: string; download?: boolean } = {},
   ) =>
-    legacyConversationRequest(
-      h,
+    h.request(
       'GET',
       `/agents/chatAttachments/${id}/content${options.download ? '?download=true' : ''}`,
       {
@@ -82,22 +74,13 @@ describe('chat attachments', () => {
       key: 'intake',
       title: { key: 'intake', ns: 'test' },
     });
-    const started = await legacyConversationRequest(
-      h,
-      'POST',
-      `${base}/start`,
-      {
-        user: ALICE,
-        body: {
-          source: 'intake',
-          agentId,
-          text: 'Read the image',
-          attachmentIds: [file.id],
-        },
-      },
-    );
-    expect(started.status).toBe(200);
-    expect(started.body.data.message.attachments).toMatchObject([
+    const started = await h.services.conversations.start(ALICE, {
+      source: 'intake',
+      agentId,
+      text: 'Read the image',
+      attachmentIds: [file.id],
+    });
+    expect(started.message.attachments).toMatchObject([
       { id: file.id, filename: 'screen.png' },
     ]);
     expect((await content(file.id, { user: ALICE })).status).toBe(200);
@@ -130,26 +113,16 @@ describe('chat attachments', () => {
     // Only its uploader discards it.
     expect(
       (
-        await legacyConversationRequest(
-          h,
-          'DELETE',
-          `/agents/chatAttachments/${file.id}`,
-          {
-            user: BOB,
-          },
-        )
+        await h.request('DELETE', `/agents/chatAttachments/${file.id}`, {
+          user: BOB,
+        })
       ).status,
     ).toBe(404);
     expect(
       (
-        await legacyConversationRequest(
-          h,
-          'DELETE',
-          `/agents/chatAttachments/${file.id}`,
-          {
-            user: ALICE,
-          },
-        )
+        await h.request('DELETE', `/agents/chatAttachments/${file.id}`, {
+          user: ALICE,
+        })
       ).status,
     ).toBe(204);
     expect((await content(file.id, { user: ALICE })).status).toBe(404);
@@ -173,17 +146,11 @@ describe('chat attachments', () => {
     const image = await uploaded(ALICE, 'screen.png', PNG, 'image/png');
     const log = await uploaded(ALICE, 'build.log', 'failed at step 3');
 
-    const sent = await legacyConversationRequest(
-      h,
-      'POST',
-      `${base}/${id}/messages`,
-      {
-        user: ALICE,
-        body: { content: '', attachmentIds: [image.id, log.id] },
-      },
-    );
-    expect(sent.status).toBe(201);
-    expect(sent.body.data.message.attachments).toEqual([
+    const sent = await h.services.conversations.send(ALICE, id, {
+      content: '',
+      attachmentIds: [image.id, log.id],
+    });
+    expect(sent.message.attachments).toEqual([
       expect.objectContaining({
         id: image.id,
         filename: 'screen.png',
@@ -195,18 +162,11 @@ describe('chat attachments', () => {
         previewable: false,
       }),
     ]);
-    // Reopened, the message still has them.
-    const listed = await legacyConversationRequest(
-      h,
-      'GET',
-      `${base}/${id}/messages`,
-      {
-        user: ALICE,
-      },
-    );
-    expect(
-      listed.body.data[0].attachments.map((file: { id: string }) => file.id),
-    ).toEqual([image.id, log.id]);
+    const listed = await h.services.conversations.messages(ALICE, id, {});
+    expect(listed.items[0].attachments.map((file) => file.id)).toEqual([
+      image.id,
+      log.id,
+    ]);
 
     const inline = await content(image.id, { user: ALICE });
     expect(inline.status).toBe(200);
@@ -221,62 +181,40 @@ describe('chat attachments', () => {
     // Sent, it is no longer an upload to discard.
     expect(
       (
-        await legacyConversationRequest(
-          h,
-          'DELETE',
-          `/agents/chatAttachments/${log.id}`,
-          {
-            user: ALICE,
-          },
-        )
+        await h.request('DELETE', `/agents/chatAttachments/${log.id}`, {
+          user: ALICE,
+        })
       ).status,
     ).toBe(404);
 
     // Sent once only, the sender's own, and only with something to send.
-    const again = await legacyConversationRequest(
-      h,
-      'POST',
-      `${base}/${id}/messages`,
-      {
-        user: ALICE,
-        body: { content: 'Again', attachmentIds: [log.id] },
-      },
-    );
-    expect(again.status).toBe(400);
+    await expect(
+      h.services.conversations.send(ALICE, id, {
+        content: 'Again',
+        attachmentIds: [log.id],
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
     const bobs = await uploaded(BOB, 'bob.txt');
-    const foreign = await legacyConversationRequest(
-      h,
-      'POST',
-      `${base}/${id}/messages`,
-      {
-        user: ALICE,
-        body: { content: 'Mine?', attachmentIds: [bobs.id] },
-      },
-    );
-    expect(foreign.status).toBe(400);
-    expect(foreign.body.error.metadata).toMatchObject({ fileId: bobs.id });
-    expect(
-      (
-        await legacyConversationRequest(h, 'POST', `${base}/${id}/messages`, {
-          user: ALICE,
-          body: { content: '  ' },
-        })
-      ).status,
-    ).toBe(400);
-    // A refused message sends nothing: Bob's upload is still his.
+    await expect(
+      h.services.conversations.send(ALICE, id, {
+        content: 'Mine?',
+        attachmentIds: [bobs.id],
+      }),
+    ).rejects.toMatchObject({
+      code: 'INVALID_REQUEST',
+      details: { fileId: bobs.id },
+    });
+    await expect(
+      h.services.conversations.send(ALICE, id, { content: '  ' }),
+    ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
     expect((await content(bobs.id, { user: BOB })).status).toBe(200);
-    // Someone else's conversation is not theirs to post files in.
     const mine = await uploaded(BOB, 'mine.txt');
-    const intrude = await legacyConversationRequest(
-      h,
-      'POST',
-      `${base}/${id}/messages`,
-      {
-        user: BOB,
-        body: { content: 'Hi', attachmentIds: [mine.id] },
-      },
-    );
-    expect(intrude.status).toBe(404);
+    await expect(
+      h.services.conversations.send(BOB, id, {
+        content: 'Hi',
+        attachmentIds: [mine.id],
+      }),
+    ).rejects.toMatchObject({ code: 'CONVERSATION_NOT_FOUND' });
   });
 
   it('lists the files for the agent and lets its run on the conversation download them', async () => {
@@ -286,9 +224,9 @@ describe('chat attachments', () => {
     const id = await conversation(agentId);
     const log = await uploaded(ALICE, 'build.log', 'failed at step 3');
     const unsent = await uploaded(ALICE, 'later.txt');
-    await legacyConversationRequest(h, 'POST', `${base}/${id}/messages`, {
-      user: ALICE,
-      body: { content: 'Why did it fail?', attachmentIds: [log.id] },
+    await h.services.conversations.send(ALICE, id, {
+      content: 'Why did it fail?',
+      attachmentIds: [log.id],
     });
 
     const [payload] = await claim(h, runner);
@@ -322,21 +260,13 @@ describe('chat attachments', () => {
     const agentId = await h.createAgent();
     const id = await conversation(agentId);
     const log = await uploaded(ALICE, 'build.log');
-    const first = await legacyConversationRequest(
-      h,
-      'POST',
-      `${base}/${id}/messages`,
-      {
-        user: ALICE,
-        body: { content: 'Look at this.', attachmentIds: [log.id] },
-      },
-    );
-    expect(first.status).toBe(201);
-    await h.services.conversations.stop(ALICE, id);
-    await legacyConversationRequest(h, 'POST', `${base}/${id}/messages`, {
-      user: ALICE,
-      body: { content: 'And now?' },
+    const first = await h.services.conversations.send(ALICE, id, {
+      content: 'Look at this.',
+      attachmentIds: [log.id],
     });
+    expect(first.message.attachments).toHaveLength(1);
+    await h.services.conversations.stop(ALICE, id);
+    await h.services.conversations.send(ALICE, id, { content: 'And now?' });
     const runner = await h.registerRunner();
     const [payload] = await claim(h, runner);
     expect(payload.prompt.system).toContain('Earlier in this conversation');
@@ -351,9 +281,9 @@ describe('chat attachments', () => {
     const id = await conversation(agentId);
     const sent = await uploaded(ALICE, 'sent.txt');
     const unsent = await uploaded(ALICE, 'unsent.txt');
-    await legacyConversationRequest(h, 'POST', `${base}/${id}/messages`, {
-      user: ALICE,
-      body: { content: 'Here', attachmentIds: [sent.id] },
+    await h.services.conversations.send(ALICE, id, {
+      content: 'Here',
+      attachmentIds: [sent.id],
     });
     expect(await h.services.chatAttachments.purge()).toBe(0);
     h.clock.advance(25 * 60 * 60 * 1000);

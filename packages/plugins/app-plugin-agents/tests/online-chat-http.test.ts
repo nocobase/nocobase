@@ -620,3 +620,76 @@ it('filters visibility before pagination for HTTP and its derived CLI, preservin
   expect(cliCreated.status).toBe(201);
   expect((await cliCreated.json()).data.showInChatList).toBe(false);
 });
+
+it('exposes create then send without the removed start or executor-switch routes and commands', async () => {
+  const f = await fixture();
+  const created = await f.request('/conversations', 'POST', {});
+  const id = (await created.json()).data.id;
+  for (const path of [
+    '/conversations/start',
+    `/conversations/${id}/fallback`,
+    `/conversations/${id}/restore`,
+  ]) {
+    expect((await f.request(path, 'POST', {})).status).toBe(404);
+  }
+  for (const context of [
+    {
+      route: '/',
+      items: Array.from({ length: 11 }, (_, n) => ({
+        kind: 'ticket',
+        id: String(n),
+      })),
+    },
+    { route: 'x'.repeat(501), items: [] },
+    {
+      route: '/',
+      items: [],
+      filter: {
+        page: 'tickets',
+        params: Object.fromEntries(
+          Array.from({ length: 21 }, (_, n) => [`k${n}`, 'v']),
+        ),
+      },
+    },
+    { route: '/', items: [], selection: { text: 'x'.repeat(2001) } },
+  ]) {
+    expect(
+      (
+        await f.request(`/conversations/${id}/messages`, 'POST', {
+          content: 'Check this page',
+          context,
+        })
+      ).status,
+    ).toBe(400);
+  }
+  const docs = new ApiDocsService();
+  docs.attach({
+    api: f.app,
+    describe: () => ({ info: { title: 'Chat', version: 'test' } }),
+  });
+  const document = await docs.getDocument();
+  const cli = new CliService();
+  const ids = cli
+    .manifestFor(document, {
+      kind: 'person',
+      userId: 'alice',
+      displayName: 'Alice',
+    })
+    .commands.map((x) => x.id);
+  expect(ids).toEqual(
+    expect.arrayContaining([
+      'conversation:create',
+      'conversation:message:send',
+    ]),
+  );
+  for (const id of [
+    'conversation:start',
+    'conversation:fallback',
+    'conversation:restore',
+  ])
+    expect(ids).not.toContain(id);
+  for (const path of Object.keys(document.paths ?? {}))
+    expect(path).not.toMatch(
+      /conversations\/(?:start|[^/]+\/(?:fallback|restore))$/,
+    );
+});

@@ -66,15 +66,13 @@ type OnlineAgentRegisteredTool = {
 
 function supported(value: object) {
   if ('skill' in value && Array.isArray(value.skill) && value.skill.length)
-    throw invalid('Skills execution is not supported in PR1.');
+    throw invalid('Skills are not supported.');
   if (
     'permissions' in value ||
     'needsApproval' in value ||
     'toolApproval' in value
   )
-    throw invalid(
-      'Permissions and approval declarations are not supported in PR1.',
-    );
+    throw invalid('Permissions and approval declarations are not supported.');
 }
 
 export class OnlineAgentConfigurer {

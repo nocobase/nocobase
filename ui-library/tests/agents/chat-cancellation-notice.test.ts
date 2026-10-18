@@ -32,8 +32,8 @@ it.each([
     expect(text).not.toMatch(/stopped|已停止|已取消/i);
     expect(t('chat.feedback.cancelled')).toBe(
       locale === 'en-US'
-        ? 'Cancelled. Any partial reply is saved in history.'
-        : '已取消。已生成的回复保留在历史中。',
+        ? 'Cancelled. Check possibly completed actions before repeating them.'
+        : '已取消。再次执行前请核对可能已完成的操作。',
     );
   },
 );
