@@ -179,7 +179,9 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     if (this.releases.length > 0) return;
     const { container } = this.app;
     const services = container.resolve(agentsToken);
-    await services.onlineAgent.recoverAtStartup();
+    // Command hosts also start Providers, but do not replace the serving process.
+    if (this.app.consoleLogStream !== 'stderr')
+      await services.onlineAgent.recoverAtStartup();
     this.announce(services);
     // The run token, runner key and registration token as security schemes of the API document.
     if (container.has(apiDocsToken))
