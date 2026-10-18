@@ -286,6 +286,19 @@ test('keeps partial approvals pending and renders advisory uncertainty and insta
         ),
         fullPage: true,
       });
+    await panel.getByTestId('chat-send').click();
+    await expect.poll(() => fixture.streams.length).toBe(3);
+    expect(JSON.stringify(fixture.requests.at(-1)?.messages)).toContain(
+      'Tool result unknown',
+    );
+    expect(JSON.stringify(fixture.requests.at(-1)?.messages)).toContain(
+      'Action completed',
+    );
+    fixture.append(2, 'Continued without repeating completed actions.');
+    fixture.complete(2);
+    await expect
+      .poll(async () => (await detail()).execution.status)
+      .toBe('idle');
   } finally {
     if (serviceName)
       await page.request.delete(
