@@ -86,6 +86,7 @@ export class NativeOnlineAgent {
     const response = execution
       ? this.executionResponses.get(execution)
       : this.responses.get(id);
+    if (execution && !response) return null;
     return this.deps.uiStreams.receive(userId, id, response);
   }
   async run(
@@ -100,6 +101,7 @@ export class NativeOnlineAgent {
           workContext?: ResolvedPageContext;
           overrides?: OnlineAgentOptions;
           selectedModel?: ModelRef;
+          boundary?: 'http';
         }
       | undefined,
     execution: NativeExecution,
@@ -146,6 +148,8 @@ export class NativeOnlineAgent {
             context,
             input.overrides,
             session.config,
+            [],
+            input.boundary === 'http',
           )
         : session.config;
       if ((config.agentId ?? 'online') !== (session.config.agentId ?? 'online'))

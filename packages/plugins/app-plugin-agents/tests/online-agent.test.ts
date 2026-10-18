@@ -113,6 +113,10 @@ async function fixture(model: MockLanguageModelV4) {
   vi.spyOn(h.services.onlineAgent, 'isActive').mockImplementation((id) =>
     service.isActive(id),
   );
+  // HTTP projections must observe the same real Service that owns this SDK fixture.
+  vi.spyOn(h.services.onlineAgent, 'producerAvailable').mockImplementation(
+    (id, running) => service.producerAvailable(id, running),
+  );
   return {
     service,
     sessions,

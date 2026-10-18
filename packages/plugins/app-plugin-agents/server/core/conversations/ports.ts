@@ -131,7 +131,7 @@ export interface ConversationService {
     id: string,
     request: SendMessageRequest,
   ): Promise<SendMessageResult>;
-  /** Strict admission for a Runner-bound OnlineAgent, within the shared conversation lock. */
+  /** Strict admission receipt after commit; it does not project conversation detail after acceptance. */
   sendRealtime(
     userId: string,
     id: string,
@@ -142,7 +142,7 @@ export interface ConversationService {
       workContext?: ResolvedPageContext;
       business?: OnlineAgentJson;
     },
-  ): Promise<SendMessageResult>;
+  ): Promise<{ readonly seq: number; readonly run: SendMessageResult['run'] }>;
   /** A new conversation and its first message (`StartConversationRequest`): the application pages' buttons. */
   start(
     userId: string,

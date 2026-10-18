@@ -595,8 +595,6 @@ export function createChatRoutes(
       const agent = await services.onlineAgent.realtime(trusted(context), {
         sessionId: conversationId(context),
       });
-      if (agent.backend !== 'native' || !agent.approve)
-        throw invalid('Runner tool approval is not supported.');
       await agent.approve(context.req.valid('json'));
       const stream = await agent.receive();
       if (!stream)

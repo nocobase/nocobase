@@ -252,7 +252,14 @@ it('selects scoped Runner configuration before native model lookup and restores 
   ).rejects.toThrow('native models');
   await expect(
     h.services.onlineAgent.background(context(), { agentId: f.agentId }),
-  ).rejects.toThrow('Runner realtime');
+  ).rejects.toMatchObject({
+    code: 'INVALID_REQUEST',
+    details: {
+      reason: 'UNSUPPORTED_CAPABILITY',
+      backend: 'runner',
+      capability: 'background',
+    },
+  });
   const created = await h.request('POST', '/agents/conversations', {
     user: 'alice',
     body: { agentId: f.agentId },

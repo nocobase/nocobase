@@ -1113,12 +1113,25 @@ export function createConversationService(
     }
   }
 
+  function sendMessage(
+    userId: string,
+    id: string,
+    request: SendMessageRequest,
+  ): Promise<SendMessageResult>;
+  function sendMessage(
+    userId: string,
+    id: string,
+    request: SendMessageRequest,
+    realtime: Parameters<ConversationService['sendRealtime']>[3],
+  ): ReturnType<ConversationService['sendRealtime']>;
   async function sendMessage(
     userId: string,
     id: string,
     request: SendMessageRequest,
     realtime?: Parameters<ConversationService['sendRealtime']>[3],
-  ): Promise<SendMessageResult> {
+  ): Promise<
+    SendMessageResult | Awaited<ReturnType<ConversationService['sendRealtime']>>
+  > {
     const content = request.content;
     const attachmentIds = readAttachmentIds(request.attachmentIds);
     if (
@@ -1254,6 +1267,8 @@ export function createConversationService(
         }))!,
       };
     });
+    // A Runner-bound caller only needs the committed receipt. No fallible read follows admission.
+    if (realtime) return { seq: sent.message.seq, run: sent.run };
     return {
       message: viewOf(sent.message),
       run: sent.run,

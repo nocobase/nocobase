@@ -10,7 +10,7 @@ import type {
 import type { NativeUIChunk } from './native.js';
 import type { OnlineAgentSendOptions } from './realtime.js';
 import type { OnlineAgentJson } from './codec.js';
-import type { OnlineAgentResult } from './service.js';
+import type { OnlineAgentResult } from './result.js';
 
 /** Public conversation capabilities; model replay always derives from the private original. */
 export interface OnlineAgent {
@@ -29,7 +29,7 @@ export interface RealtimeOnlineAgent extends OnlineAgent {
     input?: OnlineAgentSendOptions,
   ): Promise<number>;
   receive(): Promise<ReadableStream<NativeUIChunk> | null>;
-  approve?(input: NativeApproval): Promise<number>;
+  approve(input: NativeApproval): Promise<number>;
 }
 
 export interface BackgroundOnlineAgent extends OnlineAgent {

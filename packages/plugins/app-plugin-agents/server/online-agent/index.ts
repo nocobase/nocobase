@@ -19,8 +19,20 @@ export {
 export type {
   OnlineAgentRealtimeOptions,
   OnlineAgentSendOptions,
-  OnlineAgentRunnerBackend,
 } from './realtime.js';
+export type {
+  OnlineAgentBackend,
+  OnlineAgentBackendKind,
+  OnlineAgentBoundary,
+  OnlineAgentConfiguration,
+  OnlineAgentInitialConfiguration,
+  OnlineAgentNotification,
+} from './backend.js';
+export { NativeOnlineAgentBackend } from './native-backend.js';
+export {
+  NativeRealtimeOnlineAgent,
+  NativeBackgroundOnlineAgent,
+} from './native-session.js';
 export { RunnerOnlineAgentAdapter } from './runner.js';
 export {
   appUIToolApprovalInputSchema,

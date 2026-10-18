@@ -22,11 +22,9 @@ import type {
   OnlineAgentSession,
   OnlineAgentSessionManager,
 } from './sessions.js';
-import {
-  OnlineAgentResultError,
-  type OnlineAgentExecution,
-  type OnlineAgentResult,
-} from './service.js';
+import type { OnlineAgentExecution } from './native-backend.js';
+import type { OnlineAgentBoundary } from './backend.js';
+import { OnlineAgentResultError, type OnlineAgentResult } from './result.js';
 import { nativeExecutionStatus } from './execution.js';
 import { createOutputSchema } from './output.js';
 import { conflict, invalid } from '../kernel/errors.js';
@@ -36,14 +34,18 @@ export type NativeSessionHost = {
   sessions: OnlineAgentSessionManager;
   native: NativeOnlineAgent;
   uiStreams: OnlineAgentUIStreams;
-  active: Map<string, OnlineAgentExecution>;
-  gate<T>(id: string, work: () => Promise<T>): Promise<T>;
-  finish(execution: OnlineAgentExecution): Promise<void> | undefined;
+  isActive(id: string): boolean;
+  abort(
+    context: OnlineAgentContext,
+    id: string,
+    kind: OnlineAgentSession['kind'],
+  ): Promise<void>;
+  retryFinalization(context: OnlineAgentContext, id: string): Promise<void>;
   start(
     context: OnlineAgentContext,
     id: string,
     messages: ModelMessage[],
-    input?: OnlineAgentSendOptions,
+    input?: OnlineAgentSendOptions & { boundary?: OnlineAgentBoundary },
     schema?: Schema<OnlineAgentJson>,
     onExecution?: (execution: OnlineAgentExecution) => void,
   ): Promise<number>;
@@ -64,14 +66,17 @@ abstract class NativeAgentSession implements OnlineAgent {
   readonly sessionId: string;
   protected requestedOverrides: OnlineAgentOptions | undefined;
   protected requestedModel: ModelRef | undefined;
+  private readonly kind: OnlineAgentSession['kind'];
 
   constructor(
     protected host: NativeSessionHost,
     protected context: OnlineAgentContext,
     session: OnlineAgentSession,
     options: OnlineAgentRealtimeOptions,
+    protected boundary?: OnlineAgentBoundary,
   ) {
     this.sessionId = session.id;
+    this.kind = session.kind;
     const {
       sessionId,
       selectedModel,
@@ -86,7 +91,7 @@ abstract class NativeAgentSession implements OnlineAgent {
     if (
       sessionId &&
       (this.requestedOverrides || this.requestedModel) &&
-      (host.active.has(session.id) ||
+      (host.isActive(session.id) ||
         session.call?.state === 'running' ||
         session.call?.state === 'waitingApproval' ||
         session.call?.closing)
@@ -100,10 +105,7 @@ abstract class NativeAgentSession implements OnlineAgent {
       this.context.user.id,
       this.sessionId,
     );
-    return nativeExecutionStatus(
-      row.call,
-      this.host.active.has(this.sessionId),
-    );
+    return nativeExecutionStatus(row.call, this.host.isActive(this.sessionId));
   }
 
   history(): ReturnType<OnlineAgent['history']> {
@@ -113,22 +115,12 @@ abstract class NativeAgentSession implements OnlineAgent {
     );
   }
 
-  abstract abort(): Promise<void>;
+  abort(): Promise<void> {
+    return this.host.abort(this.context, this.sessionId, this.kind);
+  }
 
-  async retryFinalization(): Promise<void> {
-    const current = await this.host.sessions.load(
-      this.context.user.id,
-      this.sessionId,
-    );
-    const execution = this.host.active.get(this.sessionId);
-    if (execution) {
-      await execution.task;
-      await this.host.finish(execution);
-    } else if (current.call?.state === 'running' || current.call?.closing) {
-      throw conflict(
-        'Finalization requires the live producer that owns its snapshot; reconcile history and execution.',
-      );
-    }
+  retryFinalization(): Promise<void> {
+    return this.host.retryFinalization(this.context, this.sessionId);
   }
 
   protected consumed(): void {
@@ -156,6 +148,7 @@ export class NativeRealtimeOnlineAgent
         ...input,
         overrides: input?.overrides ?? this.requestedOverrides,
         selectedModel: input?.selectedModel ?? this.requestedModel,
+        boundary: this.boundary,
       },
       undefined,
       (execution) => {
@@ -193,46 +186,6 @@ export class NativeRealtimeOnlineAgent
       query,
     );
   }
-
-  async abort(): Promise<void> {
-    // This facade was authorized when opened. Signal the local producer before asynchronous reads.
-    const execution = this.host.active.get(this.sessionId);
-    if (execution) {
-      execution.abort.abort();
-      await execution.task;
-      await this.host.finish(execution);
-      return;
-    }
-    const current = await this.host.sessions.load(
-      this.context.user.id,
-      this.sessionId,
-    );
-    if (current.call?.state === 'waitingApproval') {
-      await this.host.sessions.native.stop(
-        this.context.user.id,
-        this.sessionId,
-      );
-      return;
-    }
-    if (
-      current.call?.state === 'running' &&
-      !this.host.active.has(this.sessionId)
-    ) {
-      if (
-        current.call.executionId &&
-        (await this.host.uiStreams.requestStop(
-          this.context.user.id,
-          this.sessionId,
-          current.call.executionId,
-        ))
-      )
-        return;
-      throw conflict(
-        'The producer is unavailable; stopping has not been confirmed.',
-      );
-    }
-    await this.host.sessions.load(this.context.user.id, this.sessionId);
-  }
 }
 
 export class NativeBackgroundOnlineAgent
@@ -253,6 +206,7 @@ export class NativeBackgroundOnlineAgent
         ...input,
         overrides: input?.overrides ?? this.requestedOverrides,
         selectedModel: input?.selectedModel ?? this.requestedModel,
+        boundary: this.boundary,
       },
       output,
     );
@@ -277,18 +231,5 @@ export class NativeBackgroundOnlineAgent
         invalid('wait must be a finite non-negative number.'),
       );
     return this.host.observe(this.context.user.id, this.sessionId, wait);
-  }
-
-  async abort(): Promise<void> {
-    await this.host.sessions.load(this.context.user.id, this.sessionId);
-    const execution = await this.host.gate(this.sessionId, async () => {
-      const current = this.host.active.get(this.sessionId);
-      current?.abort.abort();
-      return current;
-    });
-    if (execution) {
-      await execution.task;
-      await this.host.finish(execution);
-    }
   }
 }

@@ -433,7 +433,11 @@ export class OnlineAgentUIStreams {
     if (!stream) {
       if (!this.enabled) return null;
       await this.preflight();
-      association = await this.association(userId, id);
+      // A supplied channel belongs to one accepted submission, even after its initial stream was claimed.
+      // Only an unpinned conversation read may discover the current producer.
+      association = channel
+        ? channel.association
+        : await this.association(userId, id);
       if (!association) return null;
       if ((await this.publisher!.get(this.key(id))) !== association.streamId)
         throw conflict(

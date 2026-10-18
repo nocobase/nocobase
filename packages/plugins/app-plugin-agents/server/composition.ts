@@ -2,6 +2,7 @@ import {
   OnlineAgentUIStreams,
   type OnlineAgentRecoveryConfig,
 } from './online-agent/ui-streams.js';
+import { OnlineAgentConfigurator } from './online-agent/config.js';
 import { RunnerOnlineAgentAdapter } from './online-agent/runner.js';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { OnlineAgentService } from './online-agent/service.js';
@@ -566,7 +567,9 @@ export function createAgents(deps: AgentsDeps): Agents {
     recovery: deps.uiRecovery,
     onError: (error) => onError('OnlineAgent UI recovery failed.', error),
   });
+  const configurator = new OnlineAgentConfigurator();
   const runnerOnlineAgent = new RunnerOnlineAgentAdapter({
+    configurator,
     measure: deps.measureOnlineAgent,
     tx,
     conversations,
@@ -586,6 +589,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     now: () => clock.now().toISOString(),
   });
   const onlineAgent = new OnlineAgentService({
+    configurator,
     runner: runnerOnlineAgent,
     uiStreams,
     sessions,

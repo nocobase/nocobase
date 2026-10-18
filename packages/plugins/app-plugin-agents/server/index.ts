@@ -15,10 +15,18 @@ export {
   type OnlineAgentResult,
   type OnlineAgentSafeError,
   type OnlineAgentJson,
+  type OnlineAgentBackend,
+  type OnlineAgentBackendKind,
+  type OnlineAgentBoundary,
+  type OnlineAgentConfiguration,
+  type OnlineAgentInitialConfiguration,
+  type OnlineAgentNotification,
+  NativeOnlineAgentBackend,
+  NativeRealtimeOnlineAgent,
+  NativeBackgroundOnlineAgent,
 } from './online-agent/index.js';
 
 export type {
   OnlineAgentRealtimeOptions,
   OnlineAgentSendOptions,
-  OnlineAgentRunnerBackend,
 } from './online-agent/realtime.js';
