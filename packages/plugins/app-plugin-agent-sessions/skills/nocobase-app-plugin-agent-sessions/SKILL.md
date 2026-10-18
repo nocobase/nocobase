@@ -38,6 +38,8 @@ Hosts embedding `AgentSessionsPanel` can use `attach.mode: 'replace'` with a sta
 
 ## Troubleshooting
 
+Queued messages support individual withdrawal with bridge protocol 4. The server arbitrates withdrawal against execution before agent initialization, and the UI waits for computer removal confirmation before showing Withdrawn. Offline withdrawal remains pending. Upgrade and restart older computer connections; messages already delivered to an older bridge explicitly have no safe withdrawal capability. Editing a withdrawn message opens a separate draft and retains its images, without replacing the current draft. Do not replace this protocol with session cancellation or client-only hiding.
+
 | Symptom                                     | Cause                                                                                                                                                                                |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | The computer is offline                     | Its bridge has not polled for a minute: it stopped, or cannot reach the App. `<cli> acp service status` says whether the service runs and where its output is.                       |

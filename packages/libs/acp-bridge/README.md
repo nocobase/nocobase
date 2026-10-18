@@ -4,6 +4,8 @@ The bridge that makes a person's computer a place where their agent sessions run
 
 Signed in as the person the first time, the bridge registers the computer with the agents it found and receives the computer's own key, with which it registers and talks to the application from then on (`BRIDGE_HEADERS.computerKey`), so it keeps working however long the person's sign-in lasts. It long-polls the application for commands, runs each session's agent over the [Agent Client Protocol](https://agentclientprotocol.com) and reports what the agent does. It speaks plain HTTPS to the application, so it works from behind any network that lets the person open the application, and needs no port of its own.
 
+Protocol 4 authorizes every queued prompt through `BRIDGE_ROUTES.claim` before opening its agent or sending ACP content. A claim names the registered bridge generation and original prompt sequence; an uncertain response retries that same identity, while a denial drops it. The current reply continues through a network outage, but the next prompt waits for authorization. `withdrawPrompt` removes only its named waiting item, including one awaiting a claim response, and acknowledges through `BRIDGE_ROUTES.withdrawn`; it never cancels an active turn. The server retains that command until acknowledgement, and the bridge spaces polls containing withdrawals by one second. Local prompt deduplication and durable server decisions fence delayed delivery and restart. Upgrade and restart older bridges; commands already delivered to them have no safe individual withdrawal guarantee.
+
 ```ts
 import { runBridge } from '@nocobase/acp-bridge';
 

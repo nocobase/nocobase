@@ -30,6 +30,7 @@ let root: string;
 let server: Server;
 let seen: Seen[];
 let answer: (request: Seen) => Answer;
+let claimAnswer: ((request: Seen) => Answer) | undefined;
 let commands: BridgeCommand[];
 let activeRegistrations: number;
 let maxRegistrations: number;
@@ -40,6 +41,7 @@ beforeEach(async () => {
   vi.stubEnv('HOME', root);
   seen = [];
   commands = [];
+  claimAnswer = undefined;
   activeRegistrations = 0;
   maxRegistrations = 0;
   server = createServer((request, response) => {
@@ -60,7 +62,9 @@ beforeEach(async () => {
         delay,
       }: Answer = one.path.endsWith('/poll')
         ? { data: { commands: commands.splice(0) } }
-        : answer(one);
+        : one.path.endsWith('/claim')
+          ? (claimAnswer?.(one) ?? { data: { execute: true } })
+          : answer(one);
       const body = JSON.stringify(
         status === 200
           ? { data }
@@ -125,6 +129,231 @@ const registers = (): Seen[] =>
   seen.filter((request) => request.path.endsWith('/register'));
 
 describe('runBridge', () => {
+  it('withdraws a queued message and confirms turn reports while another agent installation is pending', async () => {
+    let release!: () => void;
+    const installation = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let installing = false;
+    vi.spyOn(agents, 'resolveAgent').mockImplementation(
+      async (spec, _env, _platform, options) => {
+        if (spec.id === 'claude' && options?.waitForInstall) {
+          installing = true;
+          options.installing?.('Installation in progress');
+          await installation;
+          installing = false;
+        }
+        return spec.id === 'opencode'
+          ? {
+              spec,
+              command: process.execPath,
+              args: [path.join(import.meta.dirname, 'fixtures/fake-agent.mjs')],
+            }
+          : undefined;
+      },
+    );
+    answer = (request) => ({
+      data: request.path.endsWith('/register')
+        ? { computerId: 'c1', key: 'k1' }
+        : { open: true },
+    });
+    const session = {
+      id: 'session',
+      agentId: 'opencode',
+      cwd: root,
+      acpSessionId: null,
+      settings: {},
+    };
+    for (const [index, text] of ['permission', 'withdraw me', 'next'].entries())
+      commands.push({
+        type: 'prompt',
+        session,
+        promptId: `p${index + 1}`,
+        seq: index + 1,
+        content: [{ type: 'text', text }],
+      });
+    const eventsOf = (request: Seen) =>
+      request.path.endsWith('/report')
+        ? (request.body.events as {
+            kind: string;
+            promptId?: string;
+            requestId?: string;
+          }[])
+        : [];
+    const claimed = () =>
+      seen
+        .filter((request) => request.path.endsWith('/claim'))
+        .map((request) => request.body.promptId);
+    const { done, stop } = await run();
+    try {
+      await until(() =>
+        seen.some((request) =>
+          eventsOf(request).some(
+            (event) => event.kind === 'permissionRequested',
+          ),
+        ),
+      );
+      const permission = seen
+        .flatMap(eventsOf)
+        .find((event) => event.kind === 'permissionRequested')!;
+      commands.push({
+        type: 'withdrawPrompt',
+        sessionId: session.id,
+        promptId: 'p2',
+        seq: 2,
+      });
+      await until(() =>
+        seen.some((request) => request.path.endsWith('/withdrawn')),
+      );
+      expect(installing).toBe(true);
+      expect(claimed()).toEqual(['p1']);
+      commands.push({
+        type: 'permission',
+        session,
+        requestId: permission.requestId!,
+        optionId: 'yes',
+      });
+      await until(() =>
+        seen.some((request) =>
+          eventsOf(request).some(
+            (event) => event.kind === 'turnEnded' && event.promptId === 'p3',
+          ),
+        ),
+      );
+      expect(installing).toBe(true);
+      expect(claimed()).toEqual(['p1', 'p3']);
+      const firstEnd = seen.findIndex((request) =>
+        eventsOf(request).some(
+          (event) => event.kind === 'turnEnded' && event.promptId === 'p1',
+        ),
+      );
+      const nextClaim = seen.findIndex(
+        (request) =>
+          request.path.endsWith('/claim') && request.body.promptId === 'p3',
+      );
+      expect(firstEnd).toBeGreaterThanOrEqual(0);
+      expect(nextClaim).toBeGreaterThan(firstEnd);
+    } finally {
+      release();
+      stop();
+      await done;
+    }
+  });
+
+  it('does not claim a successor after the application permanently refuses its preceding report', async () => {
+    const close = vi.spyOn(BridgeSession.prototype, 'close');
+    answer = (request) =>
+      request.path.endsWith('/report')
+        ? {
+            status: 400,
+            error: { reason: 'INVALID_REPORT', message: 'Report refused.' },
+          }
+        : { data: { computerId: 'c1', key: 'k1' } };
+    const session = {
+      id: 'session',
+      agentId: 'opencode',
+      cwd: root,
+      acpSessionId: null,
+      settings: {},
+    };
+    commands.push(
+      {
+        type: 'prompt',
+        session,
+        promptId: 'first',
+        seq: 1,
+        content: [{ type: 'text', text: 'first' }],
+      },
+      {
+        type: 'prompt',
+        session,
+        promptId: 'second',
+        seq: 2,
+        content: [{ type: 'text', text: 'second' }],
+      },
+    );
+    const { done, stop } = await run();
+    try {
+      await until(() => close.mock.calls.length > 0);
+      expect(
+        seen
+          .filter((request) => request.path.endsWith('/claim'))
+          .map((request) => request.body.promptId),
+      ).toEqual(['first']);
+    } finally {
+      stop();
+      await done;
+    }
+  });
+  it('explains an unsequenced pre-upgrade command instead of silently dropping or executing it', async () => {
+    answer = () => ({ data: { computerId: 'c1', key: 'k1', open: true } });
+    commands.push({
+      type: 'prompt',
+      session: {
+        id: 'legacy',
+        agentId: 'opencode',
+        cwd: root,
+        acpSessionId: null,
+        settings: {},
+      },
+      promptId: 'old',
+      content: [{ type: 'text', text: 'Legacy' }],
+    });
+    const { done, stop } = await run();
+    try {
+      await until(() =>
+        seen.some(
+          (one) =>
+            one.path.endsWith('/report') &&
+            (one.body.events as { kind: string }[]).some(
+              (event) => event.kind === 'notice',
+            ),
+        ),
+      );
+    } finally {
+      stop();
+      await done;
+    }
+    expect(seen.some((one) => one.path.endsWith('/claim'))).toBe(false);
+  });
+  it('propagates a claim protocol refusal so the CLI can upgrade and restart', async () => {
+    const { BridgeUpgradeRequired } = await import('../src/bridge.js');
+    answer = () => ({ data: { computerId: 'c1', key: 'k1' } });
+    claimAnswer = () => ({
+      status: 400,
+      error: {
+        reason: 'AGENT_SESSIONS_UPGRADE_REQUIRED',
+        message: 'Upgrade the bridge.',
+        metadata: { protocol: BRIDGE_PROTOCOL_VERSION + 1 },
+      },
+    });
+    commands.push({
+      type: 'prompt',
+      session: {
+        id: 'session',
+        agentId: 'opencode',
+        cwd: root,
+        acpSessionId: null,
+        settings: {},
+      },
+      promptId: 'p1',
+      seq: 1,
+      content: [{ type: 'text', text: 'Must not execute' }],
+    });
+    const { done, stop } = await run();
+    try {
+      await expect(done).rejects.toBeInstanceOf(BridgeUpgradeRequired);
+    } finally {
+      stop();
+    }
+    expect(
+      seen.some(
+        (one) =>
+          one.path.endsWith('/report') &&
+          (one.body.events as unknown[]).length > 0,
+      ),
+    ).toBe(false);
+  });
   it.each([
     { damageAt: 1, installationMs: 15_000, budgetMs: 180_000 },
     { damageAt: 59_999, installationMs: 15_000, budgetMs: 180_000 },
@@ -369,12 +598,15 @@ describe('runBridge', () => {
     answer = () => ({ data: { computerId: 'c1', key: 'k1' } });
     const { done, stop } = await run();
     try {
-      await until(() => registers().length >= 2);
-      const info = (
-        registers().at(-1)?.body.computer as {
-          agents: { id: string; detail?: string; problem?: string }[];
-        }
-      ).agents.find((one) => one.id === 'claude')!;
+      const latest = () =>
+        (
+          registers().at(-1)?.body.computer as
+            | { agents: { id: string; detail?: string; problem?: string }[] }
+            | undefined
+        )?.agents.find((one) => one.id === 'claude');
+      // A coalesced registration may precede the probe's completion.
+      await until(() => latest()?.problem === 'failed');
+      const info = latest()!;
       expect(info.problem).toBe('failed');
       expect(info.detail).toContain(`Command: ${process.execPath} -e `);
       expect(info.detail).toContain('first line\nlast failure line');
@@ -465,6 +697,7 @@ describe('runBridge', () => {
       type: 'prompt',
       session,
       promptId: 'p1',
+      seq: 1,
       content: [{ type: 'text', text: 'hang' }],
     });
     const { done, stop } = await run();
@@ -588,6 +821,7 @@ describe('runBridge', () => {
           settings: {},
         },
         promptId: 'p1',
+        seq: 1,
         content: [{ type: 'text', text: 'hi' }],
       });
       await until(() =>
@@ -876,6 +1110,7 @@ describe('runBridge', () => {
         settings: {},
       },
       promptId: 'p1',
+      seq: 1,
       content: [{ type: 'text', text: 'hang' }],
     });
     const { done, stop } = await run();
