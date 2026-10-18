@@ -3,7 +3,6 @@ import {
   type OnlineAgentRecoveryConfig,
 } from './online-agent/ui-streams.js';
 import { RunnerOnlineAgentAdapter } from './online-agent/runner.js';
-import { OnlineAgentMemoryStreamManager } from './online-agent/streams.js';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import type { OnlineAgentRuntime } from './online-agent/realtime.js';
 import { OnlineAgentService } from './online-agent/service.js';
@@ -560,7 +559,6 @@ export function createAgents(deps: AgentsDeps): Agents {
     attachments: chatAttachments.links,
     basePath,
   });
-  const streams = new OnlineAgentMemoryStreamManager();
   const uiStreams = new OnlineAgentUIStreams({
     tx,
     measure: deps.measureOnlineAgent,
@@ -581,7 +579,6 @@ export function createAgents(deps: AgentsDeps): Agents {
     runner: runnerOnlineAgent,
     uiStreams,
     chatAgents: (userId) => conversations.chatAgents(userId),
-    streams,
     sessions: createSessionManager({
       contextKinds: conversations.contextKinds,
       tx,

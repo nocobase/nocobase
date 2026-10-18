@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { OnlineAgentContext } from '../server/online-agent/config.js';
 import { appUIMessageText } from '../shared/online-agent.js';
-import type { NativeUIChunk as OnlineAgentStreamEvent } from '../server/online-agent/native.js';
+import type { NativeUIChunk } from '../server/online-agent/native.js';
 import { claim, createHarness, type Harness } from './harness.js';
 import { appendFile } from 'node:fs/promises';
 import type { Knex } from 'knex';
@@ -44,7 +44,7 @@ it('streams two canonical blocks before completion, deduplicates retransmission 
   expect(f.agent.backend).toBe('runner');
   await f.agent.send([{ role: 'user', content: 'Two blocks' }]);
   const stream = await f.agent.receive();
-  const events: OnlineAgentStreamEvent[] = [];
+  const events: NativeUIChunk[] = [];
   const reader = stream!.getReader();
   const reading = (async () => {
     for (;;) {
@@ -307,7 +307,7 @@ it('applies explicit pending scopes to the latest saved configuration and freeze
 it('keeps retry backoff and the next attempt busy, without saved or contamination from a late report', async () => {
   const f = await fixture();
   await f.agent.send([{ role: 'user', content: 'Retry' }]);
-  const events: OnlineAgentStreamEvent[] = [];
+  const events: NativeUIChunk[] = [];
   const reader = (await f.agent.receive())!.getReader();
   const reading = (async () => {
     for (;;) {
@@ -469,7 +469,7 @@ it('catches up a fast terminal execution before the first subscription without r
   const first = await f.agent.receive();
   if (first) {
     const reader = first.getReader();
-    const events: OnlineAgentStreamEvent[] = [];
+    const events: NativeUIChunk[] = [];
     for (;;) {
       const next = await reader.read();
       if (next.done) break;
@@ -486,7 +486,7 @@ it('catches up a fast terminal execution before the first subscription without r
 it('retries only closing after a failed terminal marker clear, preserving busy and a single history writer', async () => {
   const f = await fixture();
   await f.agent.send([{ role: 'user', content: 'Closing fixture' }]);
-  const events: OnlineAgentStreamEvent[] = [];
+  const events: NativeUIChunk[] = [];
   const reader = (await f.agent.receive())!.getReader();
   const reading = (async () => {
     for (;;) {

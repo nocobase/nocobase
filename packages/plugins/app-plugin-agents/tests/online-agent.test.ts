@@ -23,7 +23,6 @@ import {
   type OnlineAgentToolContext,
 } from '../server/online-agent/config.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
-import { OnlineAgentMemoryStreamManager } from '../server/online-agent/streams.js';
 import {
   content,
   decode,
@@ -74,10 +73,7 @@ const deferred = () => {
 let h: Harness;
 afterEach(async () => h?.close());
 
-async function fixture(
-  model: MockLanguageModelV4,
-  streams = new OnlineAgentMemoryStreamManager(),
-) {
+async function fixture(model: MockLanguageModelV4) {
   h = await createHarness();
   let counter = 0;
   const ids = { next: () => `online-${++counter}` };
@@ -111,7 +107,6 @@ async function fixture(
     sessions,
     ids,
     resolver,
-    streams,
     model: resolveModel,
     defaultModel: async () => ref,
     onError: (error) => errors.push(error),
@@ -439,8 +434,7 @@ describe('OnlineAgent service slice', () => {
     const model = new MockLanguageModelV4({
       doStream: async () => ({ stream: streamed(text('Saved once')) }),
     });
-    const streams = new OnlineAgentMemoryStreamManager();
-    const f = await fixture(model, streams);
+    const f = await fixture(model);
     const persist = f.sessions.native.save.bind(f.sessions.native);
     const save = vi
       .spyOn(f.sessions.native, 'save')
@@ -603,50 +597,6 @@ it('resolves scope order and explicit overrides, rejects unsupported requirement
   ).toThrow('public projections');
 });
 
-it('replays the first cache before live events, disconnects without stopping execution and isolates old writers', async () => {
-  const streams = new OnlineAgentMemoryStreamManager();
-  const writer = await streams.open('s', 1);
-  await writer.publish(0, project(null, 'First'));
-  const reader = (await streams.receive('s'))!.getReader();
-  expect((await reader.read()).value).toMatchObject({
-    type: 'part',
-    item: { parts: [{ text: 'First' }] },
-  });
-  await reader.cancel();
-  await writer.publish(0, project(null, 'Final'));
-  const late = (await streams.receive('s'))!.getReader();
-  expect((await late.read()).value).toMatchObject({ type: 'part' });
-  await writer.finish('completed', 2);
-  expect(await streams.receive('s')).toBeNull();
-  const next = await streams.open('s', 2);
-  await writer.finish('completed', 2);
-  expect(await streams.receive('s')).not.toBeNull();
-  await next.finish('completed', 2);
-});
-it('captures an immutable cumulative prefix, then delivers live increments once within cache limits', async () => {
-  const streams = new OnlineAgentMemoryStreamManager(400);
-  const writer = await streams.open('prefix', 1);
-  await writer.append(0, 'A');
-  await writer.append(0, 'B');
-  const reader = (await streams.receive('prefix'))!.getReader();
-  await writer.append(0, 'C');
-  expect((await reader.read()).value).toMatchObject({
-    type: 'part',
-    item: { parts: [{ text: 'AB' }] },
-  });
-  expect((await reader.read()).value).toMatchObject({
-    type: 'delta',
-    text: 'C',
-  });
-  for (let index = 0; index < 100; index++) await writer.append(0, 'x');
-  // One retained prefix fits; retaining every cumulative snapshot would exhaust the limit.
-  await expect(writer.append(0, 'y'.repeat(400))).rejects.toThrow(
-    'cache limit',
-  );
-  await reader.cancel();
-  await writer.finish('completed', 2);
-});
-
 it('commits all inputs and attachment links atomically and rolls them back on a later failure', async () => {
   const f = await fixture(
     new MockLanguageModelV4({
@@ -717,7 +667,6 @@ it('passes a frontend JSON Schema to the SDK and persists its validated result',
     schema,
   });
   expect(await background.get()).toEqual({ count: 2 });
-  expect(await background.receive()).toBeNull();
   const loaded = await f.service.background(context('bob'), {
     sessionId: background.sessionId,
   });

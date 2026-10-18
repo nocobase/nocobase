@@ -57,7 +57,7 @@ Measured warm read requests, excluding the host's authentication and authorizati
 
 Thus an added idle forward poll costs three native or four Runner SELECTs per visible conversation every 30 seconds in these fixtures. Opening a page, reading a changed group or following pagination adds its corresponding read requests. Batched IDs and larger source groups change row counts and execution time; the table is not a production latency estimate. Existing approval, input, Stop and finalization mutations retain their server-side costs; the SDK coordinator does not add another mutation or lock around them.
 
-The server's existing native, notification and shared Redis costs remain those in [UI messages](./ui-messages.md#stage-c-request-cost). Runner claims, heartbeats, execution scheduling, synchronization, lifecycle and machine writes are unchanged.
+The server's existing native, notification and shared Redis costs remain those in [UI messages](./ui-messages.md#shared-recovery-request-cost). Runner claims, heartbeats, execution scheduling, synchronization, lifecycle and machine writes are unchanged.
 
 ## CLI input
 

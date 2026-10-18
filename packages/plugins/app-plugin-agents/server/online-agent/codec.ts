@@ -102,25 +102,23 @@ export function jsonSafe(value: unknown): OnlineAgentJson {
   return visit(value);
 }
 
-export type {
-  OnlineAgentOutcome,
-  OnlineAgentPublicItem,
-} from '../../shared/online-agent.js';
-import type {
-  OnlineAgentOutcome,
-  OnlineAgentPublicItem,
-} from '../../shared/online-agent.js';
+// Background execution keeps canonical model evidence independently of public UI messages.
+export type OnlineAgentOutcome = 'completed' | 'cancelled' | 'failed';
+type BackgroundTextProjection = {
+  role: 'user' | 'assistant' | 'notice';
+  parts: { type: 'text'; text: string }[];
+};
 export type OnlineAgentOriginal = {
   version: 1;
   message: OnlineAgentCodecNode | null;
   outcome: OnlineAgentOutcome;
   excludedFromHistory?: boolean;
 };
-/** Only user and assistant text is public; tool payloads and provider metadata stay internal. */
+/** Derived text for background records; canonical tool evidence remains in their internal original. */
 export function project(
   message: ModelMessage | null,
   partial = '',
-): OnlineAgentPublicItem {
+): BackgroundTextProjection {
   const role =
     message?.role === 'user'
       ? 'user'

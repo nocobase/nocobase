@@ -40,10 +40,6 @@ import type {
   OnlineAgentSession,
   OnlineAgentSessionManager,
 } from './sessions.js';
-import {
-  OnlineAgentMemoryStreamManager,
-  type OnlineAgentStreamManager,
-} from './streams.js';
 
 type OnlineAgentAcceptance = {
   promise: Promise<number>;
@@ -72,10 +68,7 @@ export interface OnlineAgent {
   readonly sessionId: string;
   status(): Promise<'running' | 'idle'>;
   history(): Promise<ModelMessage[]>;
-  receive(): Promise<ReadableStream<
-    import('./streams.js').OnlineAgentStreamEvent
-  > | null>;
-  /** Processes cancellation; Runner may still be busy until terminal confirmation and history synchronization. */
+  /** Waits for background cancellation and finalization; a failed save keeps the execution busy. */
   abort(): Promise<void>;
   retryFinalization(): Promise<void>;
   send(
@@ -101,7 +94,6 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
   private stopping = false;
   private active = new Map<string, OnlineAgentExecution>();
   private gates = new Map<string, Promise<unknown>>();
-  readonly streams: OnlineAgentStreamManager;
   private native: NativeOnlineAgent;
   readonly uiStreams: OnlineAgentUIStreams;
   constructor(
@@ -115,12 +107,10 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       resolver?: ServiceResolver;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
-      streams?: OnlineAgentStreamManager;
       uiStreams?: OnlineAgentUIStreams;
       onError(error: unknown): void;
     },
   ) {
-    this.streams = deps.streams ?? new OnlineAgentMemoryStreamManager();
     this.uiStreams =
       deps.uiStreams ??
       new OnlineAgentUIStreams({ onError: (error) => deps.onError(error) });
@@ -336,10 +326,6 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
         }),
       status,
       history: () => this.deps.sessions.history(userId, sessionId),
-      receive: async () => {
-        await this.deps.sessions.load(userId, sessionId);
-        return this.streams.receive(sessionId);
-      },
       abort: async () => {
         await this.deps.sessions.load(userId, sessionId);
         const execution = await this.gate(sessionId, async () => {

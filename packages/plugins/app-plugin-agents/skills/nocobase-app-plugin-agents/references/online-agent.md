@@ -127,7 +127,7 @@ Permission-restricted configuration, custom permission/approval protocols and no
 
 ## Select a Runner executor
 
-`OnlineAgentRealtimeService` and `OnlineAgentRealtimeSession` are the replaceable public conversation contracts. Both executors return `AppUIMessage[]` history and standard SDK streams. Runner blocks retain source IDs, sequences, creation times and stable part identities in message metadata; render source segments around independent notifications while retaining one logical message. Use the SDK to parse, assemble and resume the stream. Native background sessions retain separate SDK history and structured `run(schema)` / `get()` capabilities. EOF or cancelling a subscriber means neither saved completion nor business Stop.
+`OnlineAgentRealtimeService` and `OnlineAgentRealtimeSession` are the replaceable public conversation contracts. Both executors return `AppUIMessage[]` history and standard SDK streams. Runner blocks retain source IDs, sequences, creation times and stable part identities in message metadata; render source segments around independent notifications while retaining one logical message. Use the SDK to parse, assemble and resume the stream. Native background sessions retain separate SDK history and structured `run(schema)` / `get()` capabilities; they have no browser `receive()` method. The retired custom stream contracts and memory replay manager are no longer exported. EOF or cancelling a subscriber means neither saved completion nor business Stop.
 
 ```ts
 online.configurer.registerOnlineAgentScope('coding', {

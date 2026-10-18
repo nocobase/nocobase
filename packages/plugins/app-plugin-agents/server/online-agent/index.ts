@@ -9,13 +9,6 @@ export {
   type OnlineAgentConfig,
   type OnlineAgentToolDefinition,
 } from './config.js';
-export {
-  OnlineAgentMemoryStreamManager,
-  type OnlineAgentStreamManager,
-  type OnlineAgentStreamWriter,
-  type OnlineAgentStreamEvent,
-} from './streams.js';
-
 export type {
   OnlineAgentRuntime,
   OnlineAgentRealtimeService,
