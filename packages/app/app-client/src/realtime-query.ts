@@ -1,3 +1,4 @@
+import { ApiClientError } from '@nocobase/api-client';
 import type { QueryClient, QueryFilters } from '@tanstack/react-query';
 
 /** Invalidates matching snapshots and reads active queries after any pre-event request settles. */
@@ -31,6 +32,12 @@ export async function refreshRealtimeQueries(
           signal,
         );
       } catch (error) {
+        if (
+          error instanceof ApiClientError &&
+          (error.status === 401 || error.status === 403)
+        ) {
+          query.setState({ data: undefined, dataUpdatedAt: 0 });
+        }
         query.invalidate();
         throw error;
       }

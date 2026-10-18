@@ -1,3 +1,4 @@
+import { ApiClientError } from '@nocobase/api-client';
 import {
   QueryClient,
   QueryObserver,
@@ -104,4 +105,26 @@ it('reports a failed fresh read and leaves it invalid for recovery', async () =>
   cleanup.push(observer.subscribe(() => undefined));
   await expect(refreshRealtimeQueries(client)).rejects.toBe(error);
   expect(client.getQueryState(['inbox'])?.isInvalidated).toBe(true);
+});
+
+it('removes previously authorized data when the fresh snapshot is forbidden', async () => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  cleanup.push(() => client.clear());
+  const error = new ApiClientError('Forbidden', {
+    status: 403,
+    method: 'GET',
+    url: '/private',
+  });
+  const observer = new QueryObserver(client, {
+    queryKey: ['private'],
+    initialData: 'private content',
+    staleTime: Infinity,
+    queryFn: () => Promise.reject(error),
+  });
+  cleanup.push(observer.subscribe(() => undefined));
+  await expect(refreshRealtimeQueries(client)).rejects.toBe(error);
+  expect(observer.getCurrentResult().data).toBeUndefined();
+  expect(observer.getCurrentResult().error).toBe(error);
 });

@@ -152,4 +152,6 @@ export {
   type UseRealtimeRefreshOptions,
   type RealtimeRefresh,
   type RealtimeRefreshOptions,
+  type RealtimeRefreshSnapshot,
+  type UseRealtimeRefreshResult,
 } from './realtime.js';

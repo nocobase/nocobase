@@ -107,7 +107,7 @@ function RealtimeRefresh(): null {
     const subscription = realtime.watch<unknown>(PM_REALTIME_TOPIC, {
       onReady: () => {
         full = true;
-        scheduled.request();
+        scheduled.retry();
       },
       onEvent: ({ payload }) => {
         if (!isChange(payload)) return;

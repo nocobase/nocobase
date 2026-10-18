@@ -281,7 +281,7 @@ it('does not reconnect a hidden tab solely because browser heartbeat timers were
   expect(client.connected).toBe(true);
 });
 
-it('recovers when a tab becomes visible and removes recovery listeners on close', () => {
+it('probes a visible tab without replacing a healthy socket and cleans up on close', () => {
   const document = Object.assign(new EventTarget(), {
     visibilityState: 'visible',
   });
@@ -291,8 +291,98 @@ it('recovers when a tab becomes visible and removes recovery listeners on close'
   sockets[0]!.open();
   sockets[0]!.ack();
   document.dispatchEvent(new Event('visibilitychange'));
-  expect(sockets).toHaveLength(2);
+  expect(sockets).toHaveLength(1);
+  const ping = sockets[0]!.sent.at(-1)!;
+  expect(ping.type).toBe('ping');
+  sockets[0]!.message({ type: 'pong', id: ping.id });
   client.close();
   document.dispatchEvent(new Event('visibilitychange'));
-  expect(sockets).toHaveLength(2);
+  expect(sockets).toHaveLength(1);
+});
+
+it('recovers transient topic errors without interrupting other subscriptions', () => {
+  const client = setup({ pingInterval: 0, subscriptionRetryInterval: 10 });
+  const ready = vi.fn();
+  const failed = client.watch('test:one', { onReady: ready });
+  const healthy = vi.fn();
+  client.watch('test:two', { onEvent: healthy });
+  const socket = sockets[0]!;
+  socket.open();
+  const old = socket.sent[0]!;
+  socket.ack(socket.sent[1]);
+  socket.message({
+    type: 'error',
+    id: old.id,
+    code: 'AUTHORIZATION_TIMEOUT',
+    message: 'Timeout',
+  });
+  socket.event('test:two');
+  expect(healthy).toHaveBeenCalledOnce();
+  vi.advanceTimersByTime(10);
+  expect(failed.state).toBe('subscribing');
+  socket.ack(old);
+  expect(ready).not.toHaveBeenCalled();
+  socket.ack();
+  expect(failed.state).toBe('subscribed');
+  expect(ready).toHaveBeenCalledOnce();
+  expect(sockets).toHaveLength(1);
+});
+
+it('bounds automatic retries and allows an explicit retry after exhaustion', () => {
+  const client = setup({
+    pingInterval: 0,
+    subscriptionRetries: 2,
+    subscriptionRetryInterval: 10,
+    subscriptionTimeout: 10,
+  });
+  const subscription = client.watch('test:one');
+  const socket = sockets[0]!;
+  socket.open();
+  vi.advanceTimersByTime(1_000);
+  expect(subscription.error?.code).toBe('SUBSCRIPTION_TIMEOUT');
+  expect(
+    socket.sent.filter((message) => message.type === 'subscribe'),
+  ).toHaveLength(3);
+  subscription.retry();
+  socket.ack();
+  expect(subscription.state).toBe('subscribed');
+});
+
+it.each(['FORBIDDEN', 'AUTHENTICATION_REQUIRED', 'TOPIC_NOT_FOUND'])(
+  'does not automatically retry %s',
+  (code) => {
+    const client = setup({ pingInterval: 0 });
+    client.watch('test:one');
+    const socket = sockets[0]!;
+    socket.open();
+    socket.message({
+      type: 'error',
+      id: socket.sent[0]?.id,
+      code,
+      message: 'Denied',
+    });
+    vi.advanceTimersByTime(120_000);
+    expect(
+      socket.sent.filter((message) => message.type === 'subscribe'),
+    ).toHaveLength(1);
+  },
+);
+
+it('cancels transient retries when the last watcher leaves', () => {
+  const client = setup({ pingInterval: 0 });
+  const subscription = client.watch('test:one');
+  const socket = sockets[0]!;
+  socket.open();
+  socket.message({
+    type: 'error',
+    id: socket.sent[0]?.id,
+    code: 'AUTHORIZATION_TIMEOUT',
+    message: 'Timeout',
+  });
+  subscription.close();
+  vi.advanceTimersByTime(120_000);
+  expect(
+    socket.sent.filter((message) => message.type === 'subscribe'),
+  ).toHaveLength(1);
+  expect(sockets).toHaveLength(1);
 });

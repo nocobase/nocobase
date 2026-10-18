@@ -61,6 +61,10 @@ export interface RealtimeClientOptions {
   readonly pongTimeout?: number;
   readonly subscriptionTimeout?: number;
   readonly reconnectMaxInterval?: number;
+  /** Automatic retries per topic for transient failures; defaults to five. */
+  readonly subscriptionRetries?: number;
+  readonly subscriptionRetryInterval?: number;
+  readonly subscriptionRetryMaxInterval?: number;
   readonly resolveUrl: () => string | undefined;
 }
 interface Topic {
@@ -71,6 +75,8 @@ interface Topic {
   requestId?: string;
   subscriptionId?: string;
   timer?: ReturnType<typeof setTimeout>;
+  retryTimer?: ReturnType<typeof setTimeout>;
+  retries: number;
 }
 
 export function createRealtimeClient(
@@ -118,7 +124,7 @@ export function createRealtimeClient(
       let topic = topics.get(name);
       const fresh = !topic;
       if (!topic) {
-        topic = { name, watchers: new Set(), state: 'pending' };
+        topic = { name, watchers: new Set(), state: 'pending', retries: 0 };
         topics.set(name, topic);
       }
       const entry = topic;
@@ -131,6 +137,13 @@ export function createRealtimeClient(
       if (!fresh && entry.state === 'subscribed')
         queueMicrotask(() => {
           if (!closed && entry.state === 'subscribed') notify(watcher.onReady);
+        });
+      else if (!fresh && entry.state === 'error')
+        queueMicrotask(() => {
+          if (closed || entry.state !== 'error' || !entry.error) return;
+          notify(() => watcher.onStateChange?.('error'));
+          if (!closed && entry.error)
+            notify(() => watcher.onError?.(entry.error!));
         });
       return {
         get state() {
@@ -146,6 +159,7 @@ export function createRealtimeClient(
             entry.state === 'subscribed'
           )
             return;
+          entry.retries = 0;
           if (client.connected) subscribe(entry);
           else client.reconnect();
         },
@@ -155,6 +169,7 @@ export function createRealtimeClient(
           entry.watchers.delete(watcher);
           if (entry.watchers.size) return;
           clearTimeout(entry.timer);
+          clearTimeout(entry.retryTimer);
           topics.delete(name);
           send({ type: 'unsubscribe', id: id(), topic: name });
           checkReady();
@@ -189,7 +204,19 @@ export function createRealtimeClient(
     },
   };
   function recover(): void {
-    if (!manuallyClosed && topics.size) client.reconnect();
+    if (manuallyClosed || !topics.size) return;
+    if (!client.connected) {
+      client.reconnect();
+      return;
+    }
+    // Probe a live socket instead of discarding all subscriptions on every focus.
+    if (!pingId) ping();
+    for (const topic of topics.values()) {
+      if (topic.state === 'error' && topic.error && isTransient(topic.error)) {
+        topic.retries = 0;
+        subscribe(topic);
+      }
+    }
   }
   function recoverVisible(): void {
     if (document.visibilityState === 'visible') recover();
@@ -256,6 +283,9 @@ export function createRealtimeClient(
   function resetTopics(): void {
     for (const topic of topics.values()) {
       clearTimeout(topic.timer);
+      clearTimeout(topic.retryTimer);
+      topic.retryTimer = undefined;
+      topic.retries = 0;
       topic.timer = undefined;
       topic.requestId = undefined;
       topic.subscriptionId = undefined;
@@ -357,6 +387,7 @@ export function createRealtimeClient(
         )
           return;
         clearTimeout(topic.timer);
+        topic.retries = 0;
         topic.subscriptionId = message.subscriptionId;
         setTopic(topic, 'subscribed');
         for (const watcher of [...topic.watchers]) {
@@ -377,7 +408,11 @@ export function createRealtimeClient(
           message: 'Realtime topic was closed.',
         });
       } else if (message.type === 'error') {
-        if (topic) failTopic(topic, message);
+        if (
+          topic &&
+          (topic.state === 'subscribing' || topic.state === 'subscribed')
+        )
+          failTopic(topic, message);
         else if (!message.id) report(message);
       }
     };
@@ -403,6 +438,8 @@ export function createRealtimeClient(
   }
   function subscribe(topic: Topic): void {
     clearTimeout(topic.timer);
+    clearTimeout(topic.retryTimer);
+    topic.retryTimer = undefined;
     const current = socket;
     const requestId = id();
     topic.requestId = requestId;
@@ -431,10 +468,39 @@ export function createRealtimeClient(
   }
   function failTopic(topic: Topic, error: RealtimeErrorEvent): void {
     clearTimeout(topic.timer);
+    const requestId = topic.requestId;
     setTopic(topic, 'error', error);
     for (const watcher of [...topic.watchers])
       notify(() => watcher.onError?.(error));
     report(error);
+    if (
+      manuallyClosed ||
+      !client.connected ||
+      topics.get(topic.name) !== topic ||
+      topic.state !== 'error' ||
+      topic.requestId !== requestId ||
+      !isTransient(error) ||
+      topic.retries >= (options.subscriptionRetries ?? 5)
+    )
+      return;
+    const ceiling = Math.min(
+      Math.max(1, options.subscriptionRetryMaxInterval ?? 30_000),
+      Math.max(1, options.subscriptionRetryInterval ?? 1_000) *
+        2 ** Math.min(topic.retries++, 20),
+    );
+    clearTimeout(topic.retryTimer);
+    topic.retryTimer = setTimeout(
+      () => {
+        topic.retryTimer = undefined;
+        if (
+          client.connected &&
+          topics.get(topic.name) === topic &&
+          topic.state === 'error'
+        )
+          subscribe(topic);
+      },
+      Math.max(1, Math.floor(ceiling * (0.5 + Math.random() * 0.5))),
+    );
   }
   function report(error: RealtimeErrorEvent): void {
     for (const listener of [...errorListeners]) notify(() => listener(error));
@@ -465,23 +531,36 @@ export function createRealtimeClient(
         startPing();
         return;
       }
-      pingId = id();
-      if (!send({ type: 'ping', id: pingId })) return;
-      pongTimer = setTimeout(() => {
-        if (
-          typeof document !== 'undefined' &&
-          document.visibilityState === 'hidden'
-        ) {
-          pingId = undefined;
-          startPing();
-          return;
-        }
-        disposeSocket();
-        scheduleReconnect();
-      }, options.pongTimeout ?? 10_000);
+      ping();
     }, options.pingInterval ?? 30_000);
   }
+  function ping(): void {
+    clearTimeout(pingTimer);
+    clearTimeout(pongTimer);
+    pingId = id();
+    if (!send({ type: 'ping', id: pingId })) return;
+    pongTimer = setTimeout(() => {
+      if (
+        typeof document !== 'undefined' &&
+        document.visibilityState === 'hidden'
+      ) {
+        pingId = undefined;
+        startPing();
+        return;
+      }
+      disposeSocket();
+      scheduleReconnect();
+    }, options.pongTimeout ?? 10_000);
+  }
   return client;
+}
+function isTransient(error: RealtimeErrorEvent): boolean {
+  return [
+    'SUBSCRIPTION_TIMEOUT',
+    'AUTHORIZATION_TIMEOUT',
+    'REALTIME_ERROR',
+    'SERVICE_CLOSED',
+  ].includes(error.code);
 }
 function addListener<T>(listeners: Set<T>, listener: T): () => void {
   listeners.add(listener);

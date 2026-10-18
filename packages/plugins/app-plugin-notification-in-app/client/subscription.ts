@@ -19,7 +19,7 @@ export function subscribeToInboxInvalidations(
   const subscription = realtime.watch<unknown>(
     IN_APP_NOTIFICATION_REALTIME_TOPIC,
     {
-      onReady: scheduled.request,
+      onReady: scheduled.retry,
       onEvent: (event): void => {
         if (isInboxChanged(event.payload)) scheduled.request();
       },

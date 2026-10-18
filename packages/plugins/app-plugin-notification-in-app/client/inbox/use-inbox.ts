@@ -220,7 +220,7 @@ export function useInboxRefresh(extraTopics: readonly string[] = []): void {
     const stops = [subscribeToInboxInvalidations(realtime, window, refresh)];
     for (const topic of topics ? topics.split('\n') : []) {
       const subscription = realtime.watch<unknown>(topic, {
-        onReady: scheduled.request,
+        onReady: scheduled.retry,
         onEvent: scheduled.request,
       });
       stops.push(subscription.close);

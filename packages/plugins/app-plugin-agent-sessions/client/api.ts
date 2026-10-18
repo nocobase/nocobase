@@ -5,6 +5,8 @@
 import {
   realtimeClientToken,
   refreshRealtimeQueries,
+  createRealtimeRefresh,
+  type RealtimeRefresh,
   useApiClient,
   useService,
   type ApiClient,
@@ -17,6 +19,7 @@ import {
   useQueryClient,
   type InfiniteData,
   type QueryClient,
+  type QueryFilters,
   type UseInfiniteQueryResult,
   type UseMutationResult,
   type UseQueryResult,
@@ -287,65 +290,29 @@ export function useLiveSessions(): void {
       existing.refs += 1;
       return detach;
     }
-    type Slot = {
-      readonly id: string;
-      readonly key: readonly unknown[];
-      readonly interval: number;
-      pending: boolean;
-      running: boolean;
-      started: number;
-      timer: ReturnType<typeof setTimeout> | undefined;
-    };
-    const slots = new Map<string, Slot>();
-    let disposed = false;
-    const controller = new AbortController();
-    const arm = (slot: Slot): void => {
-      if (disposed || slot.timer || slot.running) return;
-      const delay = slot.started
-        ? Math.max(0, slot.started + slot.interval - Date.now())
-        : slot.interval;
-      const timer = setTimeout(() => {
-        slot.timer = undefined;
-        void flush(slot);
-      }, delay);
-      slot.timer = timer;
-    };
-    const flush = async (slot: Slot): Promise<void> => {
-      slot.pending = false;
-      slot.running = true;
-      slot.started = Date.now();
-      try {
-        // Never keep aborting a slow read during a continuous stream.
-        await refreshRealtimeQueries(
-          client,
-          { queryKey: slot.key },
-          controller.signal,
-        );
-      } catch (error) {
-        console.error('Realtime session refresh failed.', error);
-      } finally {
-        slot.running = false;
-        if (slot.pending) arm(slot);
-        else slots.delete(slot.id);
-      }
-    };
+    const slots = new Map<string, RealtimeRefresh>();
     const schedule = (
       id: string,
-      key: readonly unknown[],
+      filters: QueryFilters,
       interval: number,
     ): void => {
-      const slot = slots.get(id) ?? {
-        id,
-        key,
-        interval,
-        pending: false,
-        running: false,
-        started: 0,
-        timer: undefined,
-      };
-      slots.set(id, slot);
-      slot.pending = true;
-      arm(slot);
+      let slot = slots.get(id);
+      if (!slot) {
+        slot = createRealtimeRefresh(
+          (signal) => refreshRealtimeQueries(client, filters, signal),
+          {
+            delayMs: interval,
+            onStateChange: (snapshot) => {
+              if (snapshot.status === 'idle') {
+                slots.get(id)?.close();
+                slots.delete(id);
+              }
+            },
+          },
+        );
+        slots.set(id, slot);
+      }
+      slot.request();
     };
     const invalidateDiscovery = (): void => {
       void cancelChoiceDiscoveries(client);
@@ -356,22 +323,24 @@ export function useLiveSessions(): void {
     const refresh = (change?: AgentSessionsChange): void => {
       if (change?.kind === 'session') {
         const id = change.sessionId;
-        schedule(`events:${id}`, keys.transcript(id), 250);
-        schedule(`session:${id}`, keys.session(id), 1_000);
-        schedule('list', ['agentSessions', 'sessions'], 2_000);
+        schedule(`events:${id}`, { queryKey: keys.transcript(id) }, 250);
+        schedule(`session:${id}`, { queryKey: keys.session(id) }, 1_000);
+        schedule('list', { queryKey: ['agentSessions', 'sessions'] }, 2_000);
       } else if (change?.kind === 'computers') {
         invalidateDiscovery();
-        void client.invalidateQueries({ queryKey: keys.computers });
-        void client.invalidateQueries({
-          queryKey: ['agentSessions', 'session'],
-        });
+        schedule('computers', { queryKey: keys.computers }, 100);
+        schedule('details', { queryKey: ['agentSessions', 'session'] }, 100);
       } else {
         invalidateDiscovery();
-        void client.invalidateQueries({
-          predicate: (query) =>
-            query.queryKey[0] === 'agentSessions' &&
-            query.queryKey[1] !== 'discovery',
-        });
+        schedule(
+          'all',
+          {
+            predicate: (query) =>
+              query.queryKey[0] === 'agentSessions' &&
+              query.queryKey[1] !== 'discovery',
+          },
+          100,
+        );
       }
     };
     const connectionKey = ['agentSessions', 'discoveryConnection'];
@@ -393,15 +362,15 @@ export function useLiveSessions(): void {
         },
         onReady: () => {
           client.setQueryData(connectionKey, true);
+          for (const slot of slots.values()) slot.retry();
           refresh();
         },
       },
     );
     const release = (): void => {
-      disposed = true;
-      controller.abort();
       void cancelChoiceDiscoveries(client);
-      for (const slot of slots.values()) clearTimeout(slot.timer);
+      for (const slot of slots.values()) slot.close();
+      slots.clear();
       // No bridge generation is exposed to the browser. Do not reuse discovery across an unobserved interval.
       void client.invalidateQueries({
         queryKey: ['agentSessions', 'discovery'],

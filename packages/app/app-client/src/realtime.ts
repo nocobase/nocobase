@@ -1,11 +1,32 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import type {
   RealtimeConnectionState,
+  RealtimeErrorEvent,
+  RealtimeSubscriptionState,
   RealtimeListener,
   RealtimeWatchOptions,
 } from '@nocobase/realtime/client';
 import { realtimeClientToken } from './application.js';
 import { useService } from './hooks.js';
+import {
+  createRealtimeRefresh,
+  idleRealtimeRefresh,
+  isTransientRefreshError,
+  type RealtimeRefreshOptions,
+  type RealtimeRefreshSnapshot,
+} from './realtime-refresh.js';
+export {
+  createRealtimeRefresh,
+  type RealtimeRefresh,
+  type RealtimeRefreshOptions,
+  type RealtimeRefreshSnapshot,
+} from './realtime-refresh.js';
 
 export function useRealtimeConnectionState(): RealtimeConnectionState {
   const realtime = useService(realtimeClientToken);
@@ -48,105 +69,95 @@ export function useRealtimeTopic<Payload = unknown>(
   }, [realtime, topic, enabled]);
 }
 
-export interface RealtimeRefreshOptions {
-  readonly delayMs?: number;
-  readonly onError?: (error: unknown) => void;
-}
-export interface RealtimeRefresh {
-  request(this: void): void;
-  close(this: void): void;
-}
-
-/** Coalesces bursts, pauses hidden views and preserves one follow-up during an in-flight refresh. */
-export function createRealtimeRefresh(
-  refresh: (signal: AbortSignal) => void | Promise<unknown>,
-  options: RealtimeRefreshOptions = {},
-): RealtimeRefresh {
-  let dirty = false;
-  let running = false;
-  let closed = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const controller = new AbortController();
-  const visible = () =>
-    typeof document === 'undefined' || document.visibilityState !== 'hidden';
-  const schedule = (): void => {
-    if (closed || running || timer || !dirty || !visible()) return;
-    timer = setTimeout(() => {
-      timer = undefined;
-      if (closed || !visible()) return;
-      dirty = false;
-      running = true;
-      void Promise.resolve()
-        .then(() => {
-          if (!closed) return refresh(controller.signal);
-        })
-        .catch((error: unknown) => {
-          if (closed) return;
-          if (options.onError) options.onError(error);
-          else console.error('Realtime refresh failed.', error);
-        })
-        .finally(() => {
-          running = false;
-          schedule();
-        });
-    }, options.delayMs ?? 100);
-  };
-  const wake = (): void => {
-    if (visible()) {
-      dirty = true;
-      schedule();
-    }
-  };
-  if (typeof document !== 'undefined')
-    document.addEventListener('visibilitychange', wake);
-  return {
-    request() {
-      dirty = true;
-      schedule();
-    },
-    close() {
-      closed = true;
-      clearTimeout(timer);
-      controller.abort();
-      if (typeof document !== 'undefined')
-        document.removeEventListener('visibilitychange', wake);
-    },
-  };
-}
-
 export interface UseRealtimeRefreshOptions extends RealtimeRefreshOptions {
   readonly enabled?: boolean;
+  readonly onSubscriptionError?: (error: RealtimeErrorEvent) => void;
+  readonly onSubscriptionStateChange?: (
+    state: RealtimeSubscriptionState,
+  ) => void;
+}
+export interface UseRealtimeRefreshResult extends RealtimeRefreshSnapshot {
+  retry(): void;
 }
 export function useRealtimeRefresh(
   topic: string | null | undefined,
   refresh: (signal: AbortSignal) => void | Promise<unknown>,
   options: UseRealtimeRefreshOptions = {},
-): void {
+): UseRealtimeRefreshResult {
   const realtime = useService(realtimeClientToken);
-  const callbacksRef = useRef({ refresh, onError: options.onError });
+  const callbacksRef = useRef({ refresh, options });
+  const retryRef = useRef<() => void>(() => {});
+  const [observed, setObserved] = useState<{
+    topic: string;
+    snapshot: RealtimeRefreshSnapshot;
+  }>();
   useEffect(() => {
-    callbacksRef.current = { refresh, onError: options.onError };
+    callbacksRef.current = { refresh, options };
   });
-  const { enabled = true, delayMs } = options;
+  const {
+    enabled = true,
+    delayMs,
+    retries,
+    retryDelayMs,
+    retryMaxDelayMs,
+  } = options;
   useEffect(() => {
     if (!topic || !enabled) return;
+    let active = true;
     const scheduled = createRealtimeRefresh(
       (signal) => callbacksRef.current.refresh(signal),
       {
         delayMs,
+        retries,
+        retryDelayMs,
+        retryMaxDelayMs,
+        shouldRetry: (error) =>
+          callbacksRef.current.options.shouldRetry?.(error) ??
+          isTransientRefreshError(error),
         onError: (error) => {
-          if (callbacksRef.current.onError) callbacksRef.current.onError(error);
+          if (callbacksRef.current.options.onError)
+            callbacksRef.current.options.onError(error);
           else console.error('Realtime refresh failed.', error);
+        },
+        onStateChange: (snapshot) => {
+          if (!active) return;
+          setObserved({ topic, snapshot });
+          callbacksRef.current.options.onStateChange?.(snapshot);
         },
       },
     );
     const subscription = realtime.watch(topic, {
       onEvent: scheduled.request,
-      onReady: scheduled.request,
+      onReady: scheduled.retry,
+      onError: (error) =>
+        callbacksRef.current.options.onSubscriptionError?.(error),
+      onStateChange: (state) =>
+        callbacksRef.current.options.onSubscriptionStateChange?.(state),
     });
+    retryRef.current = () => {
+      subscription.retry();
+      scheduled.retry();
+    };
     return () => {
+      active = false;
+      retryRef.current = () => {};
       subscription.close();
       scheduled.close();
     };
-  }, [realtime, topic, enabled, delayMs]);
+  }, [
+    realtime,
+    topic,
+    enabled,
+    delayMs,
+    retries,
+    retryDelayMs,
+    retryMaxDelayMs,
+  ]);
+  const retry = useCallback(() => retryRef.current(), []);
+  return {
+    ...(enabled && observed && observed.topic === topic
+      ? observed.snapshot
+      : idleRealtimeRefresh),
+    retry,
+  };
 }
