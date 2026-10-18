@@ -1,5 +1,3 @@
-import type { Agent } from '../../shared/agents.js';
-import { quotaBlocks, runnerTakesAgent } from '../../shared/runners.js';
 /**
  * Runners: registering with a one-time token, authenticating by key, heartbeats, and what people change afterwards
  * (name, trust, slots, which coding tools it may run, revocation). What a runner has (its system, features and coding
@@ -17,6 +15,9 @@ import { quotaBlocks, runnerTakesAgent } from '../../shared/runners.js';
  * Thin stand-in: runner keys live in this plugin's own table until the platform offers device authorization (RFC
  * 8628) or an API key kind fit for machines; the protocol does not change when they move.
  */
+import type { Agent } from '../../shared/agents.js';
+import { quotaBlocks, runnerTakesAgent } from '../../shared/runners.js';
+
 import type { QuotaMarkTarget } from '../../shared/quota.js';
 
 import {
@@ -40,7 +41,7 @@ import type { DatabaseConnection, RepositoryFilter } from '@nocobase/db';
 
 import {
   normalizeModel,
-  TOOL_LABELS,
+  TOOL_DISPLAY_NAMES,
   quotaTargetLabel,
 } from '../../shared/model-catalog.js';
 import type {
@@ -947,7 +948,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
               type: 'runner_quota',
               userIds: [runner.ownerUserId],
               subject: { kind: 'runner', id: runnerId, label: runner.name },
-              title: `${TOOL_LABELS[tool]}${mark.model ? ` · ${quotaTargetLabel(tool, mark.scope ?? 'model', mark.model)}` : ''} quota exhausted on ${runner.name}`,
+              title: `${TOOL_DISPLAY_NAMES[tool]}${mark.model ? ` · ${quotaTargetLabel(tool, mark.scope ?? 'model', mark.model)}` : ''} quota exhausted on ${runner.name}`,
               body: mark.resetsAt
                 ? `Expected reset: ${mark.resetsAt}. Queued work can resume afterwards.`
                 : 'Reset time unknown. Restore the quota, then clear the mark on the runtime page.',

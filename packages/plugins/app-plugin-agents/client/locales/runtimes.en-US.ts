@@ -24,7 +24,8 @@ const runtimesEnUS = {
       shortUnknown: 'reset unknown',
       automatic: 'Clears by itself at the reset.',
       since: 'since {{time}}',
-      marks: '{{count}} quota marks',
+      marks_one: '{{count}} quota mark',
+      marks_other: '{{count}} quota marks',
       queueHint:
         'An agent at quota can still be selected. Work will queue with its existing waiting deadline.',
       partial: 'Runs on {{available}} · {{blocked}} at quota',

@@ -305,7 +305,6 @@
     "prettier": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@nocobase/agent-runner": "workspace:*"
+    "vitest": "catalog:"
   }
 }

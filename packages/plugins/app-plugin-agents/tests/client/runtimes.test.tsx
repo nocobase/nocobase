@@ -372,6 +372,27 @@ describe('runtimes page', () => {
     expect(within(sheet).getByText('2.00 KiB')).toBeInTheDocument();
   });
 
+  it('uses an unknown placeholder when neither workspace measurement time was reported', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canSeeMachine: true,
+      workspaceUsage: {
+        disk: null,
+        count: 0,
+        unpushedCount: 0,
+        measuredAt: null,
+        workspaces: [],
+      },
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    await openWorkspaces(sheet);
+    expect(
+      within(sheet).getByText('runtimes.workspaces.reportedAt(time=—)'),
+    ).toBeInTheDocument();
+    expect(sheet).not.toHaveTextContent('Invalid Date');
+  });
+
   it('confirms a quota clear inside the page and keeps it available to a runtime administrator', async () => {
     const confirm = vi.spyOn(window, 'confirm');
     runners[0] = {

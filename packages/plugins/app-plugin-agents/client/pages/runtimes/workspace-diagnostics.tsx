@@ -77,7 +77,9 @@ export function WorkspaceDiagnostics({
   const usage = runner.workspaceUsage;
   const { low, stale } = workspaceDiskState(runner);
   const summary = (
-    <div className='grid min-w-0 gap-2 rounded-lg border p-3 text-sm sm:grid-cols-2 [overflow-wrap:anywhere]'>
+    <div
+      className={`grid min-w-0 gap-2 text-sm sm:grid-cols-2 [overflow-wrap:anywhere] ${low ? '' : 'rounded-lg border p-3'}`}
+    >
       {usage?.totalBytes !== undefined ? (
         <p>
           {t('runtimes.quota.workspaceSize', {
@@ -129,10 +131,13 @@ export function WorkspaceDiagnostics({
           )}
           <p className='text-xs text-muted-foreground sm:col-span-2'>
             {t('runtimes.workspaces.reportedAt', {
-              time: compactDateTime(
-                usage.diskMeasuredAt ?? usage.measuredAt ?? '',
-                i18n.language,
-              ),
+              time:
+                usage.diskMeasuredAt || usage.measuredAt
+                  ? compactDateTime(
+                      (usage.diskMeasuredAt ?? usage.measuredAt)!,
+                      i18n.language,
+                    )
+                  : '—',
             })}
           </p>
           {low && !stale ? <p>{t('runtimes.workspaces.paused')}</p> : null}

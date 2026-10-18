@@ -1,3 +1,4 @@
+/** Shared machine visibility for every public run projection. */
 import type { AgentService } from '../agents/agent.service.js';
 import type { Run, RunExecutionSnapshot } from '../../../shared/runs.js';
 

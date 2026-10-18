@@ -1,4 +1,3 @@
-export { RunSchema } from './routes/schemas.js';
 export { SkillIdsSchema } from './core/skills/skill.service.js';
 import type { AuthorizationIdentity } from '@nocobase/authorization/core';
 import {
@@ -65,7 +64,6 @@ export type {
 export { commandRef } from './core/runs/ports.js';
 export { RepoAccessError } from './core/runs/extensions.js';
 export {
-  runMachineViewerFor,
   executionForViewer,
   runForViewer,
   type RunMachineViewer,

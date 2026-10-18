@@ -25,7 +25,8 @@ const runtimesZhCN: RuntimesLocale = {
       shortUnknown: '恢复时间未知',
       automatic: '到恢复时间自动解除。',
       since: '始于 {{time}}',
-      marks: '{{count}} 个额度标记',
+      marks_one: '{{count}} 个额度标记',
+      marks_other: '{{count}} 个额度标记',
       queueHint: '额度用完的 Agent 仍可选择，工作会按现有等待期限排队。',
       partial: '可在 {{available}} 运行 · {{blocked}} 额度用完',
 

@@ -25,8 +25,8 @@ export function QuotaLabel({
       data-quota-hint
       className={
         near
-          ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
-          : 'bg-destructive/10 text-destructive'
+          ? 'bg-amber-500/10 text-amber-700! dark:text-amber-300!'
+          : 'bg-destructive/10 text-destructive!'
       }
     >
       {t(
@@ -58,7 +58,7 @@ export function AgentQuotaHint({
     return (
       <span
         data-quota-hint
-        className='block truncate text-xs text-amber-700 dark:text-amber-300'
+        className='block truncate text-xs text-amber-700! dark:text-amber-300!'
       >
         {t('runtimes.quota.partial', {
           available:

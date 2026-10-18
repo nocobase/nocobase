@@ -142,8 +142,9 @@ export const ERROR_API_STATUS: Readonly<Record<ErrorCode, ApiStatus>> = {
   COMMAND_UNKNOWN: 'NOT_FOUND',
   /** The application serves no build of this product for the asking platform; `metadata.targets` lists those it has. */
   PLATFORM_UNSUPPORTED: 'NOT_FOUND',
-  /** A concurrent change won; read again and retry. */
+  /** A known reset clears automatically; manual clearing is not allowed. */
   QUOTA_RESET_KNOWN: 'FAILED_PRECONDITION',
+  /** A business conflict with the current state. */
   CONFLICT: 'ABORTED',
   LEASE_LOST: 'ABORTED',
   /** The object changed since the revision the edit was made against; `metadata.revision` is the current one. */

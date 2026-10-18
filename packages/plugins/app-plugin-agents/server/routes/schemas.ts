@@ -1,8 +1,9 @@
-import { RUNNER_LIST_FIELDS } from '../../shared/runners.js';
 /**
  * The path parameters, query strings and small bodies of the plugin's routes. Bodies the services own (an agent, a
  * skill, a model service) keep their schemas beside the service, strict there too.
  */
+import { RUNNER_LIST_FIELDS } from '../../shared/runners.js';
+
 import type { QuotaLocation } from '../../shared/quota.js';
 import type { RunnerWorkspacePage } from '../../shared/runners.js';
 

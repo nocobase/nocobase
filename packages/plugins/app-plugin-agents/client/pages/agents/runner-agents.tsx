@@ -283,7 +283,10 @@ export function RunnerAgentsSection(): ReactElement {
     ? groups.find((group) => group.some((agent) => agent.id === editing.id))
     : undefined;
   return (
-    <section className='space-y-3' aria-labelledby='agents-runner-heading'>
+    <section
+      className='min-w-0 space-y-3'
+      aria-labelledby='agents-runner-heading'
+    >
       <SectionHeading
         id='agents-runner-heading'
         title={t('agents.fromRunners')}
@@ -363,8 +366,8 @@ function AgentTable({
 }): ReactElement {
   const { t } = useTranslation();
   return (
-    <div className='rounded-lg border'>
-      <Table>
+    <div className='min-w-0 max-w-full overflow-hidden rounded-lg border'>
+      <Table className='min-w-[48rem]'>
         <TableHeader>
           <TableRow>
             <TableHead>{t('agents.columns.agent')}</TableHead>

@@ -185,7 +185,7 @@ function RunnerDetail({
             <TabsTrigger value='workspaces'>
               {t('runtimes.quota.workspaces')}{' '}
               <span aria-hidden className='text-xs text-muted-foreground'>
-                {runner.workspaceUsage?.count ?? '—'}
+                {runner.workspaceUsage?.count ?? 0}
               </span>
             </TabsTrigger>
             <TabsTrigger value='runs'>

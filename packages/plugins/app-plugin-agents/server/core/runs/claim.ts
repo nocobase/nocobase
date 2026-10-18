@@ -272,7 +272,7 @@ type Attempt =
 export function pickEntry(
   runner: Runner,
   agent: Pick<Agent, 'modelEntries'>,
-  now: number = Date.now(),
+  now: number,
 ): RunnerModelEntry | null {
   return (
     agent.modelEntries.find((entry) => runsEntry(runner, entry, now)) ?? null
@@ -287,7 +287,7 @@ export function pickOpenEntry(
   runner: Runner,
   agent: Pick<Agent, 'modelEntries'>,
   open: (tool: AgentTool) => boolean,
-  now: number = Date.now(),
+  now: number,
 ): RunnerModelEntry | null {
   return (
     agent.modelEntries.find(
@@ -300,7 +300,7 @@ export function pickOpenEntry(
 export function hasTool(
   runner: Runner,
   agent: Pick<Agent, 'modelEntries'>,
-  now: number = Date.now(),
+  now: number,
 ): boolean {
   return pickEntry(runner, agent, now) !== null;
 }
@@ -314,7 +314,7 @@ export function fitsActor(
   agent: Agent,
   actorUserId: string,
   requires: readonly RunnerFeature[],
-  now: number = Date.now(),
+  now: number,
 ): boolean {
   if (agent.status !== 'enabled' || runnerLowOnDisk(runner)) return false;
   if (
@@ -334,7 +334,7 @@ export function fits(
   runner: Runner,
   agent: Agent,
   run: RunRecord,
-  now: number = Date.now(),
+  now: number,
 ): boolean {
   return fitsActor(runner, agent, run.actorUserId, toRun(run).requires, now);
 }

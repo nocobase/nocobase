@@ -18,6 +18,12 @@ export const TOOL_LABELS: Readonly<Record<AgentTool, string>> = {
   pi: 'Pi',
 };
 
+/** Product names used outside the shorter agent identity labels. */
+export const TOOL_DISPLAY_NAMES: Readonly<Record<AgentTool, string>> = {
+  ...TOOL_LABELS,
+  claude: 'Claude Code',
+};
+
 /** What the catalog knows about one model. */
 export interface CatalogModel {
   /** The model's id without a provider, as Claude Code or Codex take it. */
