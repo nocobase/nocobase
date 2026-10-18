@@ -330,15 +330,310 @@ describe('native SDK transport, persistence and approval', () => {
     expect(JSON.stringify(trusted.model)).toContain('private-signature');
   });
 
+  it('derives every public history exit from one private original and reprojects without writes or effects', async () => {
+    const f = await fixture(true);
+    let display = 'First public projection';
+    const definition = f.service.configurer.toolDefinition('business')!;
+    vi.spyOn(definition.public!, 'input').mockImplementation(() => ({
+      label: display,
+    }));
+    vi.spyOn(definition.public!, 'output').mockImplementation(() => ({
+      label: display,
+    }));
+    const generate = vi
+      .spyOn(f.model, 'doStream')
+      .mockResolvedValueOnce({
+        stream: chunks([
+          { type: 'reasoning-start', id: 'private-reasoning' },
+          {
+            type: 'reasoning-delta',
+            id: 'private-reasoning',
+            delta: 'Private reasoning evidence',
+            providerMetadata: { fixture: { signature: 'private-signature' } },
+          },
+          { type: 'reasoning-end', id: 'private-reasoning' },
+          {
+            type: 'tool-call',
+            toolCallId: 'private-call',
+            toolName: 'business',
+            input: JSON.stringify({ value: 'private-input' }),
+            providerMetadata: { fixture: { token: 'private-provider-token' } },
+          },
+          finish('tool-calls'),
+        ]),
+      })
+      .mockResolvedValueOnce({ stream: chunks(text('Public answer')) });
+    const chat = f.chatFor();
+    await chat.sendMessage({ text: 'Use the business service' });
+    expect(chat.error).toBeUndefined();
+    const history = await f.agent.history();
+    const message = history.at(-1)!;
+    const repo = h.services.tx.read().repository('agConversationMessages');
+    const stored = await repo.findOne({ filter: { id: message.id } });
+    expect(stored.content.original.id).toBe(stored.id);
+    expect(stored.content.original.parts.find(isToolUIPart)).toMatchObject({
+      input: { value: 'private-input' },
+      output: { display: 'Allowed', secret: 'model-only-value' },
+    });
+    expect(JSON.stringify(stored.content.original)).toContain(
+      'Private reasoning evidence',
+    );
+    expect(JSON.stringify(stored.content.original)).toContain(
+      'private-signature',
+    );
+    expect(JSON.stringify(stored.content.original)).toContain(
+      'private-provider-token',
+    );
+    expect(stored.metadata).toEqual({ nativeOutcome: 'completed' });
+    expect(stored.content.content).toBe('Public answer');
+    expect(stored.searchText).toBe('Public answer');
+    const privateMarkers = [
+      'private-input',
+      'model-only-value',
+      'Private reasoning evidence',
+      'private-signature',
+      'private-provider-token',
+    ];
+    const assertPublic = (value: unknown) => {
+      for (const marker of privateMarkers)
+        expect(JSON.stringify(value)).not.toContain(marker);
+    };
+    const pages = async () => {
+      const newest = await (
+        await f.request(`${f.base}/messages?pageSize=1`)
+      ).json();
+      expect(newest.data.map((row: AppUIMessage) => row.id)).toEqual([
+        message.id,
+      ]);
+      expect(newest.meta.nextPageToken).toBeDefined();
+      const older = await (
+        await f.request(
+          `${f.base}/messages?pageSize=1&pageToken=${encodeURIComponent(newest.meta.nextPageToken)}`,
+        )
+      ).json();
+      expect(older.data.map((row: AppUIMessage) => row.id)).toEqual([
+        history[0].id,
+      ]);
+      const forward = await (
+        await f.request(`${f.base}/messages?after=1`)
+      ).json();
+      const exact = await (
+        await f.request(`${f.base}/messages?ids=${message.id}`)
+      ).json();
+      const all = await (await f.request(`${f.base}/messages`)).json();
+      expect(forward.data).toEqual(newest.data);
+      expect(exact.data).toEqual(newest.data);
+      expect(all.data).toEqual(await f.agent.history());
+      for (const page of [newest, older, forward, exact, all])
+        assertPublic(page);
+      return newest.data[0] as AppUIMessage;
+    };
+    assertPublic(chat.messages);
+    expect(jsonSafe(chat.messages.at(-1))).toEqual(message);
+    expect((await pages()).parts.find(isToolUIPart)).toMatchObject({
+      input: { label: display },
+      output: { label: display },
+    });
+    const generic = await h.services.conversations.messages(
+      'alice',
+      f.agent.sessionId,
+      {},
+    );
+    assertPublic(generic);
+    expect(generic.items.at(-1)!.content).toEqual({
+      type: 'text',
+      content: 'Public answer',
+    });
+    const trusted = await f.sessions.native.executionHistory(
+      'alice',
+      f.agent.sessionId,
+      undefined,
+      false,
+    );
+    for (const marker of privateMarkers)
+      expect(JSON.stringify(trusted)).toContain(marker);
+
+    display = 'Changed read-time projection';
+    expect((await pages()).parts.find(isToolUIPart)).toMatchObject({
+      input: { label: display },
+      output: { label: display },
+    });
+    expect(
+      (await f.agent.history()).at(-1)!.parts.find(isToolUIPart),
+    ).toMatchObject({
+      input: { label: display },
+      output: { label: display },
+    });
+    expect(await repo.findOne({ filter: { id: message.id } })).toEqual(stored);
+    expect(
+      await f.sessions.native.executionHistory(
+        'alice',
+        f.agent.sessionId,
+        undefined,
+        false,
+      ),
+    ).toEqual(trusted);
+    await f.service.notify(actor(), f.agent.sessionId, {
+      id: 'later-notification',
+      parts: [
+        {
+          type: 'data-notice',
+          id: 'later',
+          data: { type: 'fixture', title: 'Later notification' },
+        },
+      ],
+    });
+    const latest = await (
+      await f.request(`${f.base}/messages?pageSize=1`)
+    ).json();
+    const older = await (
+      await f.request(
+        `${f.base}/messages?pageSize=1&pageToken=${encodeURIComponent(latest.meta.nextPageToken)}`,
+      )
+    ).json();
+    expect(older.data).toHaveLength(1);
+    expect(older.data[0].id).toBe(message.id);
+    expect(older.data[0].parts.find(isToolUIPart)).toMatchObject({
+      input: { label: display },
+      output: { label: display },
+    });
+    assertPublic(older);
+    expect(f.execute).toHaveBeenCalledOnce();
+    expect(generate).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps approval provider evidence private while retaining the public decision reason', async () => {
+    const f = await fixture(true, true, 2);
+    const chat = f.chatFor();
+    await chat.sendMessage({ text: 'Two decisions with internal evidence' });
+    expect(chat.error).toBeUndefined();
+    const waiting = chat.messages.at(-1)!;
+    const repo = h.services.tx.read().repository('agConversationMessages');
+    const row = await repo.findOne({ filter: { id: waiting.id } });
+    for (const part of row.content.original.parts.filter(isToolUIPart)) {
+      Object.assign(part.approval!, {
+        descriptor: { token: 'private-descriptor' },
+        requestReason: 'private-request-reason',
+        signature: 'private-approval-signature',
+        inputSchemaInput: { value: 'private-schema-input' },
+      });
+      part.callProviderMetadata = {
+        fixture: { token: 'private-approval-provider' },
+      };
+    }
+    await repo.updateMany({
+      filter: { id: waiting.id },
+      values: { content: row.content },
+    });
+    const history = await f.agent.history();
+    expect(history.at(-1)).toEqual(waiting);
+    const input = {
+      messageId: waiting.id,
+      executionId: waiting.metadata!.executionId!,
+      approval: {
+        id: waiting.parts.filter(isToolUIPart)[0].approval!.id,
+        approved: true,
+        reason: 'Public owner decision',
+      },
+    };
+    const response = await f.request(`${f.base}/approval`, 'POST', input);
+    expect(response.status).toBe(200);
+    const stream = await response.text();
+    const saved = await repo.findOne({ filter: { id: waiting.id } });
+    expect(
+      saved.content.original.parts.filter(isToolUIPart)[0].approval,
+    ).toMatchObject({
+      approved: true,
+      reason: input.approval.reason,
+      descriptor: { token: 'private-descriptor' },
+      signature: 'private-approval-signature',
+    });
+    for (const value of [
+      stream,
+      JSON.stringify(await f.agent.history()),
+      await (await f.request(`${f.base}/messages`)).text(),
+      await (await f.request(`${f.base}/messages?after=1`)).text(),
+      await (await f.request(`${f.base}/messages?ids=${waiting.id}`)).text(),
+    ]) {
+      expect(value).not.toContain('private-');
+      expect(value).toContain(input.approval.reason);
+    }
+    expect(f.execute).not.toHaveBeenCalled();
+    expect(f.prompts).toHaveLength(1);
+    await f.agent.abort();
+    expect(f.execute).not.toHaveBeenCalled();
+    expect(await f.agent.status()).toBe('idle');
+  });
+
+  it.each(['date', 'undefined', 'accessor'] as const)(
+    'never repeats a business effect with a non-JSON %s result when finalization is retried',
+    async (kind) => {
+      const f = await fixture(true);
+      const accessor = vi.fn(() => 'must-not-be-read');
+      const result =
+        kind === 'date'
+          ? { display: 'Allowed', secret: new Date() }
+          : kind === 'undefined'
+            ? { display: 'Allowed', secret: undefined }
+            : Object.defineProperty({ display: 'Allowed' }, 'secret', {
+                enumerable: true,
+                get: accessor,
+              });
+      f.execute.mockResolvedValueOnce(
+        result as unknown as { display: string; secret: string },
+      );
+      const save = vi
+        .spyOn(f.sessions.native, 'save')
+        .mockRejectedValueOnce(
+          new Error('Persistence unavailable after business effect'),
+        );
+      const chat = f.chatFor();
+      await chat.sendMessage({ text: 'Perform one effect' });
+      expect(chat.error).toBeDefined();
+      expect(f.execute).toHaveBeenCalledOnce();
+      expect(accessor).not.toHaveBeenCalled();
+      expect(await f.agent.status()).toBe('running');
+      expect((await f.request(`${f.base}/finalize`, 'POST', {})).status).toBe(
+        200,
+      );
+      expect((await f.request(`${f.base}/finalize`, 'POST', {})).status).toBe(
+        200,
+      );
+      expect(save).toHaveBeenCalledTimes(2);
+      expect(f.execute).toHaveBeenCalledOnce();
+      expect(f.prompts).toHaveLength(2);
+      expect(await f.agent.status()).toBe('idle');
+      const history = await f.agent.history();
+      expect(history).toHaveLength(2);
+      expect(history.at(-1)!.parts.find(isToolUIPart)).toMatchObject({
+        state: 'output-error',
+        errorText: 'The tool could not complete.',
+      });
+      const trusted = await f.sessions.native.executionHistory(
+        'alice',
+        f.agent.sessionId,
+        undefined,
+        false,
+      );
+      expect(JSON.stringify(trusted.model)).toContain('actual-call-0');
+      expect(JSON.stringify(trusted.model)).toContain('error-text');
+      expect(accessor).not.toHaveBeenCalled();
+    },
+  );
+
   it('keeps invalid SDK tool inputs private and finishes without invoking a typed public formatter', async () => {
     const f = await fixture(true);
     const input = vi.fn((value: unknown) => ({
       value: (value as { value: string }).value.toUpperCase(),
     }));
-    vi.spyOn(f.service.configurer, 'publicProjection').mockReturnValue({
-      input,
-      output: () => ({}),
-    });
+    const definition = {
+      inputSchema: z.object({ value: z.string() }),
+      execute: f.execute,
+      public: { input, output: () => ({}) },
+    };
+    vi.spyOn(f.service.configurer, 'toolDefinition').mockReturnValue(
+      definition,
+    );
     vi.spyOn(f.model, 'doStream')
       .mockResolvedValueOnce({
         stream: chunks([
@@ -373,6 +668,17 @@ describe('native SDK transport, persistence and approval', () => {
         ),
       ),
     ).toContain('invalid-input');
+    await f.service.shutdown();
+    const restored = f.reopen();
+    vi.spyOn(restored.configurer, 'toolDefinition').mockReturnValue(definition);
+    const restoredSession = await restored.realtime(actor(), {
+      sessionId: f.agent.sessionId,
+    });
+    expect(
+      (await restoredSession.history()).at(-1)!.parts.some(isToolUIPart),
+    ).toBe(false);
+    expect(input).not.toHaveBeenCalled();
+    expect(f.execute).not.toHaveBeenCalled();
   });
 
   it('restores a persisted approval, continues the same ID, and never repeats an approved effect', async () => {
@@ -1008,6 +1314,14 @@ describe('native SDK transport, persistence and approval', () => {
       parts: [{ type: 'file', filename: 'owned.txt' }],
     });
     expect(JSON.stringify(f.prompts)).not.toContain('Private content');
+    const generic = await h.services.conversations.messages(
+      'alice',
+      f.agent.sessionId,
+      {},
+    );
+    expect(generic.items[0].content).toEqual({ type: 'text', content: '' });
+    expect(generic.items[0].attachments).toEqual([own]);
+    expect(generic.items[0].content).not.toHaveProperty('original');
     const read = vi
       .spyOn(h.services.chatAttachments, 'content')
       .mockRejectedValueOnce(
@@ -1172,6 +1486,51 @@ const redisConfig = (): OnlineAgentRecoveryConfig => ({
 describe.skipIf(!process.env.PM481_REDIS_PORT)(
   'native shared recovery with real Redis and independent services',
   () => {
+    it('replays only projected tool data while preserving raw results for the model', async () => {
+      const f = await fixture(true, false, 1, redisConfig());
+      const definition = f.service.configurer.toolDefinition('business')!;
+      vi.spyOn(definition.public!, 'input').mockReturnValue({
+        label: 'Public request',
+      });
+      let release!: () => void;
+      const ended = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      f.execute.mockImplementationOnce(async () => {
+        await ended;
+        return { display: 'Allowed', secret: 'model-only-value' };
+      });
+      const response = await f.request(`${f.base}/messages`, 'POST', {
+        message: {
+          id: 'projected-recovery',
+          role: 'user',
+          parts: [{ type: 'text', text: 'One business call' }],
+        },
+      });
+      expect(response.status).toBe(200);
+      await response.body!.cancel();
+      await vi.waitFor(() => expect(f.execute).toHaveBeenCalledOnce());
+      const chat = f.chatFor(await f.agent.history());
+      const resuming = chat.resumeStream();
+      try {
+        await vi.waitFor(() =>
+          expect(chat.messages.at(-1)?.parts.find(isToolUIPart)).toMatchObject({
+            input: { label: 'Public request' },
+          }),
+        );
+      } finally {
+        release();
+      }
+      await resuming;
+      expect(chat.error).toBeUndefined();
+      expect(chat.messages.at(-1)).toEqual((await f.agent.history()).at(-1));
+      expect(JSON.stringify(chat.messages)).not.toContain('requested-0');
+      expect(JSON.stringify(chat.messages)).not.toContain('model-only-value');
+      expect(f.execute).toHaveBeenCalledOnce();
+      expect(f.prompts).toHaveLength(2);
+      expect(JSON.stringify(f.prompts)).toContain('model-only-value');
+    });
+
     it('replays prior chunks through SDK Chat on instance B and receives later chunks without another execution', async () => {
       const recovery = redisConfig();
       const f = await fixture(false, false, 1, recovery);

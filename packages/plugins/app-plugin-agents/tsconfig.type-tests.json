@@ -3,5 +3,9 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["tests/shared-compatibility.test.ts", "tests/ui-message.test.ts"]
+  "include": [
+    "tests/shared-compatibility.test.ts",
+    "tests/ui-message.test.ts",
+    "tests/online-agent-json.type-test.ts"
+  ]
 }

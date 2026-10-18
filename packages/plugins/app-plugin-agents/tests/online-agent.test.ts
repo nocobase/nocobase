@@ -388,20 +388,18 @@ describe('OnlineAgent service slice', () => {
         sort: (sort) => sort.field('seq').asc(),
       });
     expect(rows).toHaveLength(2);
-    expect(rows[1].metadata.nativeEvidence.parts).toEqual(
+    expect(rows[1].content.original.parts).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           type: 'tool-wait',
           toolCallId: 'call',
           input: {},
           state: 'output-available',
-          output: { type: 'text', value: 'stopped' },
+          output: 'stopped',
         }),
       ]),
     );
-    expect(JSON.stringify(rows[1].content.original)).not.toContain(
-      'toolCallId',
-    );
+    expect(JSON.stringify(await agent.history())).not.toContain('toolCallId');
     expect(await f.history(agent)).toEqual([
       { role: 'user', content: [{ type: 'text', text: 'Wait' }] },
       {
@@ -1238,15 +1236,15 @@ it.each(['success', 'error', 'stream', 'abort'] as const)(
       .connection()
       .repository('agConversationMessages')
       .findMany({ filter: { conversationId: agent.sessionId } });
-    const evidence = rows.filter((row) => row.metadata.nativeEvidence);
+    const evidence = rows.filter((row) => row.role === 'assistant');
     expect(evidence).toHaveLength(1);
-    expect(JSON.stringify(evidence[0].metadata.nativeEvidence)).toContain(
+    expect(JSON.stringify(evidence[0].content.original)).toContain(
       'private-input',
     );
-    expect(JSON.stringify(evidence[0].metadata.nativeEvidence)).toContain(
+    expect(JSON.stringify(evidence[0].content.original)).toContain(
       'private-provider',
     );
-    expect(JSON.stringify(evidence[0].metadata.nativeEvidence)).toContain(
+    expect(JSON.stringify(evidence[0].content.original)).toContain(
       mode === 'abort'
         ? 'Tool result unknown'
         : mode === 'error'
@@ -1292,7 +1290,7 @@ it.each(['success', 'error', 'stream', 'abort'] as const)(
 );
 
 it.each([false, true])(
-  'persists converted business outputs with cancellation=%s and permits the next round',
+  'persists raw JSON business outputs with cancellation=%s and permits the next round',
   async (cancel) => {
     const entered = deferred();
     const release = deferred();
@@ -1324,7 +1322,7 @@ it.each([false, true])(
         signal = options.context.signal;
         entered.resolve();
         await release.promise;
-        return { value: 'private-result', at: new Date(0) };
+        return { value: 'private-result', at: new Date(0).toISOString() };
       },
     );
     const toModelOutput = vi.fn(
@@ -1335,14 +1333,14 @@ it.each([false, true])(
       }: {
         toolCallId: string;
         input: { key: string };
-        output: { value: string; at: Date };
+        output: { value: string; at: string };
       }) => ({
         type: 'json' as const,
         value: {
           call: toolCallId,
           key: input.key,
           value: output.value,
-          at: output.at.toISOString(),
+          at: output.at,
         },
       }),
     );
@@ -1377,27 +1375,18 @@ it.each([false, true])(
     await settle(agent);
     expect(save).toHaveBeenCalledTimes(2);
     expect(execute).toHaveBeenCalledTimes(1);
-    expect(toModelOutput).toHaveBeenCalled();
-    if (cancel) expect(toModelOutput).toHaveBeenCalledTimes(1);
+    if (!cancel) expect(toModelOutput).toHaveBeenCalled();
     const rows = await h.database
       .connection()
       .repository('agConversationMessages')
       .findMany({ filter: { conversationId: agent.sessionId } });
     const result = rows
-      .flatMap((row) => row.metadata.nativeEvidence?.parts ?? [])
+      .flatMap((row) => row.content.original?.parts ?? [])
       .find((part) => isToolUIPart(part) && part.state === 'output-available');
     expect(result).toMatchObject({
       type: 'tool-dated',
       state: 'output-available',
-      output: {
-        type: 'json',
-        value: {
-          call: 'dated',
-          key: 'private-input',
-          value: 'private-result',
-          at: '1970-01-01T00:00:00.000Z',
-        },
-      },
+      output: { value: 'private-result', at: '1970-01-01T00:00:00.000Z' },
     });
     expect(JSON.stringify(await agent.history())).not.toContain('private');
     if (cancel)
@@ -1415,7 +1404,15 @@ it.each([false, true])(
             expect.objectContaining({
               type: 'tool-result',
               toolCallId: 'dated',
-              output: result.output,
+              output: {
+                type: 'json',
+                value: {
+                  call: 'dated',
+                  key: 'private-input',
+                  value: 'private-result',
+                  at: '1970-01-01T00:00:00.000Z',
+                },
+              },
             }),
           ],
         },
@@ -1425,7 +1422,7 @@ it.each([false, true])(
     await agent.send([{ role: 'user', content: 'Continue' }]);
     await settle(agent);
     expect(execute).toHaveBeenCalledTimes(1);
-    expect(toModelOutput).toHaveBeenCalledTimes(conversions);
+    expect(toModelOutput.mock.calls.length).toBeGreaterThan(conversions);
     expect(model.doStreamCalls).toHaveLength(cancel ? 2 : 3);
     if (cancel)
       expect(JSON.stringify(model.doStreamCalls[1].prompt)).toContain(

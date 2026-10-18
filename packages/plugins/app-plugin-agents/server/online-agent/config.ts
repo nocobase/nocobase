@@ -4,6 +4,7 @@ import type { ServiceResolver } from '@nocobase/service-provider';
 import type { ZodObject } from 'zod';
 import { invalid } from '../kernel/errors.js';
 import { jsonSafe, type OnlineAgentJson } from './codec.js';
+import { strictJson } from './strict-json.js';
 
 export type OnlineAgentContext = Readonly<{
   user: { id: string };
@@ -47,11 +48,11 @@ export type OnlineAgentConfig = {
   model: string[];
   thinking?: string;
 };
-export type OnlineAgentToolDefinition<I, O, C = OnlineAgentToolContext> = Tool<
+export type OnlineAgentToolDefinition<
   I,
-  O,
-  C
-> & {
+  O extends OnlineAgentJson,
+  C = OnlineAgentToolContext,
+> = Tool<I, O, C> & {
   execute: NonNullable<Tool<I, O, C>['execute']>;
   permissions?: never;
   /** Explicit public projections; omitted tools remain private model evidence. */
@@ -65,8 +66,32 @@ type OnlineAgentRegisteredTool = {
   version: string;
   resolve(
     resolver?: ServiceResolver,
-  ): OnlineAgentToolDefinition<unknown, unknown, OnlineAgentToolContext>;
+  ): OnlineAgentToolDefinition<
+    unknown,
+    OnlineAgentJson,
+    OnlineAgentToolContext
+  >;
 };
+
+/** Detect SDK result protocols without accidentally executing an accessor on a raw result. */
+function resultMethod(value: unknown, key: string | symbol): boolean {
+  if (
+    value === null ||
+    (typeof value !== 'object' && typeof value !== 'function')
+  )
+    return false;
+  let current: object | null = value;
+  while (current) {
+    const descriptor = Object.getOwnPropertyDescriptor(current, key);
+    if (descriptor) {
+      if (!('value' in descriptor))
+        throw invalid('Tool result protocols cannot use accessors.');
+      return typeof descriptor.value === 'function';
+    }
+    current = Object.getPrototypeOf(current) as object | null;
+  }
+  return false;
+}
 
 function supported(value: object) {
   if ('skill' in value && Array.isArray(value.skill) && value.skill.length)
@@ -106,7 +131,7 @@ export class OnlineAgentConfigurer {
     this.scopes.set(name, scope);
   }
 
-  registerTool<I, O, C = OnlineAgentToolContext>(
+  registerTool<I, O extends OnlineAgentJson, C = OnlineAgentToolContext>(
     name: string,
     options: {
       version: string;
@@ -158,7 +183,7 @@ export class OnlineAgentConfigurer {
         }
         return resolved as unknown as OnlineAgentToolDefinition<
           unknown,
-          unknown,
+          OnlineAgentJson,
           OnlineAgentToolContext
         >;
       },
@@ -327,7 +352,7 @@ export class OnlineAgentConfigurer {
     context: OnlineAgentToolContext,
     resolver: ServiceResolver | undefined,
     track: (task: Promise<unknown>) => void = () => {},
-  ): Record<string, Tool<unknown, unknown, OnlineAgentToolContext>> {
+  ): Record<string, Tool<unknown, OnlineAgentJson, OnlineAgentToolContext>> {
     return Object.fromEntries(
       config.tool.map((name) => {
         const registered = this.tools.get(name);
@@ -338,14 +363,24 @@ export class OnlineAgentConfigurer {
         const { public: _public, ...sdkDefinition } = definition;
         const bound = {
           ...sdkDefinition,
+          ...(definition.toModelOutput
+            ? {
+                toModelOutput: (
+                  options: Parameters<
+                    NonNullable<typeof definition.toModelOutput>
+                  >[0],
+                ) =>
+                  definition.toModelOutput!({
+                    ...options,
+                    input: structuredClone(options.input),
+                    output: strictJson(options.output),
+                  }),
+              }
+            : {}),
           execute: (input: unknown, options: Parameters<typeof execute>[1]) => {
             context.signal.throwIfAborted();
             const result = execute(input, options);
-            if (
-              result &&
-              typeof result === 'object' &&
-              Symbol.asyncIterator in result
-            ) {
+            if (resultMethod(result, Symbol.asyncIterator)) {
               const iterable = result as AsyncIterable<unknown>;
               let done!: () => void;
               track(
@@ -354,21 +389,47 @@ export class OnlineAgentConfigurer {
                 }),
               );
               return (async function* () {
+                let yielded = false;
                 try {
-                  yield* iterable;
+                  for await (const value of iterable) {
+                    yield strictJson(
+                      resultMethod(value, 'then') ? await value : value,
+                    );
+                    yielded = true;
+                  }
+                  if (!yielded)
+                    throw invalid(
+                      'A tool result stream must yield a JSON value.',
+                    );
                 } finally {
                   done();
                 }
               })();
             }
-            const task = Promise.resolve(result);
+            // Validate synchronous values before any caller can mutate them; await only SDK promises.
+            const task = resultMethod(result, 'then')
+              ? Promise.resolve(result).then(strictJson)
+              : Promise.resolve(strictJson(result));
             track(task);
             return task;
           },
-        } as Tool<unknown, unknown, OnlineAgentToolContext>;
+        } as Tool<unknown, OnlineAgentJson, OnlineAgentToolContext>;
         return [name, bound];
       }),
     );
+  }
+
+  toolDefinition(
+    name: string,
+    resolver?: ServiceResolver,
+  ):
+    | OnlineAgentToolDefinition<
+        unknown,
+        OnlineAgentJson,
+        OnlineAgentToolContext
+      >
+    | undefined {
+    return this.tools.get(name)?.resolve(resolver);
   }
 
   publicProjection(

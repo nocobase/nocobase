@@ -1,4 +1,6 @@
 import { OnlineAgentUIStreams } from './ui-streams.js';
+import { NativeMessages } from './messages.js';
+import { strictJson } from './strict-json.js';
 import { nativeExecutionStatus } from './execution.js';
 import { NativeOnlineAgent } from './native.js';
 import type { NativeApproval } from './native-store.js';
@@ -143,6 +145,10 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     this.uiStreams =
       deps.uiStreams ??
       new OnlineAgentUIStreams({ onError: (error) => deps.onError(error) });
+    deps.sessions.native.messages = new NativeMessages(
+      this.configurer,
+      deps.resolver,
+    );
     this.native = new NativeOnlineAgent({
       uiStreams: this.uiStreams,
       ...deps,
@@ -1060,7 +1066,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
                   ? await converter({
                       toolCallId,
                       input: toolCall.input,
-                      output: toolOutput.output,
+                      output: strictJson(toolOutput.output),
                     })
                   : typeof toolOutput.output === 'string'
                     ? { type: 'text' as const, value: toolOutput.output }

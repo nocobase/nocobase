@@ -8,12 +8,10 @@ import {
   type UIMessageChunk,
   type ModelMessage,
   type LanguageModel,
-  type ToolResultPart,
 } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import {
   appUIMessageMetadataSchema,
-  type AppUIMessage,
   type AppUIMessageMetadata,
   type AppUIData,
 } from '../../shared/online-agent.js';
@@ -25,7 +23,6 @@ import type { ModelRef } from '../../shared/models.js';
 import { conflict, invalid } from '../kernel/errors.js';
 import type { IdSource } from '../kernel/ids.js';
 import { reasoningOf } from '../online/gateway.js';
-import { jsonSafe } from './codec.js';
 import type {
   OnlineAgentConfigurer,
   OnlineAgentContext,
@@ -34,6 +31,7 @@ import type {
 } from './config.js';
 import type { OnlineAgentSessionManager, OnlineAgentCall } from './sessions.js';
 import type { NativeApproval, NativeSnapshot } from './native-store.js';
+import type { NativeMessage } from './messages.js';
 
 export type NativeUIChunk = UIMessageChunk<AppUIMessageMetadata, AppUIData>;
 export type NativeExecution = {
@@ -88,8 +86,7 @@ export class NativeOnlineAgent {
     approval?: NativeApproval,
   ): Promise<void> {
     let metadata: AppUIMessageMetadata;
-    let priorPublic: AppUIMessage | undefined;
-    let priorEvidence: UIMessage | undefined;
+    let priorMessage: NativeMessage | undefined;
     let previousPage: ModelMessage | undefined;
     let tools: ReturnType<OnlineAgentConfigurer['bind']>;
     let model: LanguageModel;
@@ -100,6 +97,7 @@ export class NativeOnlineAgent {
     const begun = new Set<string>();
     const ended = new Set<string>();
     const toolEnds = new Map<string, () => void>();
+    const invalidToolInputs = new Set<string>();
     const evidenceCalls = new Map<
       string,
       {
@@ -107,11 +105,8 @@ export class NativeOnlineAgent {
         input: unknown;
         output?: unknown;
         error?: string;
-        convert?: () => Promise<ToolResultPart['output']>;
       }
     >();
-    const toolNames = new Map<string, string>();
-    const invalidToolInputs = new Set<string>();
     let response: UIStreamChannel | undefined;
     let config: Awaited<
       ReturnType<OnlineAgentSessionManager['load']>
@@ -173,8 +168,7 @@ export class NativeOnlineAgent {
           id,
           approval,
         );
-        priorPublic = approved.message;
-        priorEvidence = approved.evidence;
+        priorMessage = approved.message;
         waitingApprovals = approved.waiting;
         afterSeq = session.lastSeq;
       } else {
@@ -241,7 +235,7 @@ export class NativeOnlineAgent {
         );
       }
       metadata = {
-        ...(priorPublic?.metadata ?? {
+        ...(priorMessage?.metadata ?? {
           conversationId: id,
           createdAt: new Date().toISOString(),
           revision: 0,
@@ -262,10 +256,14 @@ export class NativeOnlineAgent {
       return;
     }
     const output = response;
+    const publicStream = this.deps.sessions.native.messages.stream(
+      config.tool,
+      priorMessage,
+    );
     if (waitingApprovals) {
       // The answer is durable, but SDK conversion must wait for every approval in this step.
       output.write({ type: 'start', messageId, messageMetadata: metadata });
-      output.write({
+      const answer = await publicStream.project({
         type: 'tool-approval-response',
         approvalId: approval!.approval.id,
         approved: approval!.approval.approved,
@@ -273,7 +271,8 @@ export class NativeOnlineAgent {
           ? { reason: approval!.approval.reason }
           : {}),
       });
-      const notice = priorPublic!.parts.find(
+      if (answer) output.write(answer);
+      const notice = priorMessage!.parts.find(
         (part) => part.type === 'data-notice' && part.id === 'execution-status',
       );
       if (notice) output.write(notice as NativeUIChunk);
@@ -299,19 +298,12 @@ export class NativeOnlineAgent {
       }
       return;
     }
-    let privateMessage: UIMessage = priorEvidence
-      ? structuredClone(priorEvidence)
+    let privateMessage: UIMessage = priorMessage
+      ? structuredClone(priorMessage)
       : { id: messageId, role: 'assistant', parts: [], metadata };
     let outcome: 'completed' | 'cancelled' | 'failed' = 'completed';
-    let canonical: ModelMessage[] = [];
     let finishChunk: NativeUIChunk = { type: 'finish' };
     output.write({ type: 'start', messageId, messageMetadata: metadata });
-    // Completed public parts retain their already-approved display projection across continuation.
-    const previousTools = new Map(
-      priorPublic?.parts
-        .filter(isToolUIPart)
-        .map((part) => [part.toolCallId, part]) ?? [],
-    );
     try {
       const trusted = await this.deps.sessions.native.executionHistory(
         context.user.id,
@@ -322,7 +314,7 @@ export class NativeOnlineAgent {
       const original = trusted.ui;
       const history = trusted.model;
       if (previousPage) history.push(previousPage);
-      if (priorPublic)
+      if (priorMessage)
         privateMessage = structuredClone(
           original.find((message) => message.id === messageId)!,
         );
@@ -375,18 +367,6 @@ export class NativeOnlineAgent {
                   ? toolOutput.error.message
                   : String(toolOutput.error);
           else value.output = toolOutput.output;
-          value.convert = async () =>
-            value.error !== undefined
-              ? { type: 'error-text', value: value.error }
-              : tools[toolCall.toolName]?.toModelOutput
-                ? await tools[toolCall.toolName].toModelOutput!({
-                    toolCallId: toolCall.toolCallId,
-                    input: toolCall.input,
-                    output: value.output,
-                  })
-                : typeof value.output === 'string'
-                  ? { type: 'text', value: value.output }
-                  : { type: 'json', value: jsonSafe(value.output) };
           toolEnds.get(toolCall.toolCallId)?.();
         },
         onError: ({ error }) => {
@@ -408,14 +388,7 @@ export class NativeOnlineAgent {
       });
       accepted.resolve(afterSeq);
       for await (const chunk of stream) {
-        if (
-          chunk.type === 'start' ||
-          chunk.type === 'reasoning-start' ||
-          chunk.type === 'reasoning-delta' ||
-          chunk.type === 'reasoning-end' ||
-          chunk.type === 'reasoning-file'
-        )
-          continue;
+        if (chunk.type === 'start') continue;
         if (chunk.type === 'finish') {
           finishChunk = chunk as NativeUIChunk;
           continue;
@@ -424,50 +397,12 @@ export class NativeOnlineAgent {
           sdkFailure = true;
           continue;
         }
-        if (chunk.type === 'tool-input-error') {
-          // A failed SDK schema check has no valid input for the application's public formatter.
+        if (chunk.type === 'tool-input-error')
           invalidToolInputs.add(chunk.toolCallId);
-          continue;
-        }
-        if ('toolCallId' in chunk && invalidToolInputs.has(chunk.toolCallId))
-          continue;
-        if (
-          chunk.type === 'tool-input-start' ||
-          chunk.type === 'tool-input-available'
-        )
-          toolNames.set(chunk.toolCallId, chunk.toolName);
-        if (
-          chunk.type === 'tool-input-start' ||
-          chunk.type === 'tool-input-delta'
-        )
-          continue;
-        const clean = { ...chunk } as Record<string, unknown>;
-        for (const key of Object.keys(clean))
-          if (
-            (key.endsWith('Metadata') && key !== 'messageMetadata') ||
-            key === 'providerReference' ||
-            key === 'inputSchemaInput' ||
-            key === 'approvalDescriptor'
-          )
-            delete clean[key];
-        if ('toolCallId' in chunk) {
-          const name =
-            toolNames.get(chunk.toolCallId) ??
-            this.toolName(privateMessage, chunk.toolCallId);
-          const projection = config.tool.includes(name)
-            ? this.deps.configurer.publicProjection(name, this.deps.resolver)
-            : undefined;
-          if (!projection) continue;
-          if (chunk.type === 'tool-input-available')
-            clean.input = projection.input(chunk.input);
-          if (chunk.type === 'tool-output-available')
-            clean.output = projection.output(chunk.output);
-          if (chunk.type === 'tool-output-error')
-            clean.errorText = 'The tool could not complete.';
-        }
-        output.write(jsonSafe(clean) as NativeUIChunk);
+        const projected = await publicStream.project(chunk);
+        if (projected) output.write(projected);
       }
-      canonical = await generated.responseMessages;
+      await generated.responseMessages;
       if (sdkFailure) outcome = 'failed';
       else if (execution.abort.signal.aborted) outcome = 'cancelled';
       else if (
@@ -514,6 +449,12 @@ export class NativeOnlineAgent {
           });
       }
     }
+    for (const part of privateMessage.parts) {
+      if (isToolUIPart(part) && invalidToolInputs.has(part.toolCallId)) {
+        // Keep validation state with the SDK part so rereads never call typed formatters on raw invalid input.
+        part.toolMetadata = { ...part.toolMetadata, nativeInputInvalid: true };
+      }
+    }
     const waiting =
       outcome === 'completed' &&
       privateMessage.parts.some(
@@ -536,102 +477,24 @@ export class NativeOnlineAgent {
     let snapshot: NativeSnapshot | undefined;
     execution.finalize = async () => {
       if (!snapshot) {
-        const parts: AppUIMessage['parts'] = [];
-        for (const part of privateMessage.parts) {
-          if (part.type === 'reasoning' || part.type === 'reasoning-file')
-            continue;
-          if (
-            part.type === 'data-notice' &&
-            'id' in part &&
-            part.id === 'execution-status'
-          )
-            continue;
-          const clean = { ...part } as Record<string, unknown>;
-          for (const key of Object.keys(clean))
-            if (key.endsWith('Metadata') || key === 'providerReference')
-              delete clean[key];
-          if (isToolUIPart(part)) {
-            if (invalidToolInputs.has(part.toolCallId)) continue;
-            const name =
-              part.type === 'dynamic-tool' ? part.toolName : part.type.slice(5);
-            const projection = config.tool.includes(name)
-              ? this.deps.configurer.publicProjection(name, this.deps.resolver)
-              : undefined;
-            if (!projection) continue;
-            if (part.state === 'input-streaming') continue;
-            const previous = previousTools.get(part.toolCallId);
-            if (
-              previous &&
-              (previous.state === 'output-available' ||
-                previous.state === 'output-error' ||
-                previous.state === 'output-denied')
-            ) {
-              parts.push(previous);
-              continue;
-            }
-            if ('input' in part && part.input !== undefined)
-              clean.input = projection.input(part.input);
-            if (part.state === 'output-available')
-              clean.output = projection.output(part.output);
-            if (clean.errorText !== undefined)
-              clean.errorText = 'The tool could not complete.';
-            if (part.approval) {
-              const {
-                inputSchemaInput: _input,
-                signature: _signature,
-                descriptor: _descriptor,
-                ...approval
-              } = part.approval;
-              clean.approval = approval;
-            }
-          }
-          parts.push(jsonSafe(clean) as AppUIMessage['parts'][number]);
-        }
-        parts.push(notice);
-        // Keep model-only canonical results in private evidence, never in the public original.
-        const evidence = structuredClone(privateMessage);
-        for (const part of evidence.parts)
-          if (isToolUIPart(part) && part.state === 'output-available') {
-            const result = canonical
-              .flatMap((message) =>
-                message.role === 'tool' ? message.content : [],
-              )
-              .find(
-                (result) =>
-                  result.type === 'tool-result' &&
-                  result.toolCallId === part.toolCallId,
-              );
-            if (result?.type === 'tool-result') part.output = result.output;
-            else {
-              const convert = evidenceCalls.get(part.toolCallId)?.convert;
-              if (convert) part.output = await convert();
-            }
-          }
-        snapshot = {
-          message: { id: messageId, role: 'assistant', metadata, parts },
-          evidence: jsonSafe(evidence) as unknown as UIMessage,
-          canonicalCalls: [
-            ...new Set([
-              ...(priorEvidence?.parts
-                .filter(isToolUIPart)
-                .filter((part) =>
-                  [
-                    'output-available',
-                    'output-error',
-                    'output-denied',
-                  ].includes(part.state),
-                )
-                .map((part) => part.toolCallId) ?? []),
-              ...canonical.flatMap((message) =>
-                message.role === 'assistant' && Array.isArray(message.content)
-                  ? message.content.flatMap((part) =>
-                      part.type === 'tool-call' ? [part.toolCallId] : [],
-                    )
-                  : [],
-              ),
-            ]),
-          ],
-        };
+        const message = (
+          await this.deps.sessions.native.messages.validate([
+            {
+              ...privateMessage,
+              id: messageId,
+              metadata,
+              parts: [
+                ...privateMessage.parts.filter(
+                  (part) =>
+                    part.type !== 'data-notice' ||
+                    part.id !== 'execution-status',
+                ),
+                notice,
+              ],
+            },
+          ])
+        )[0];
+        snapshot = { message };
       }
       const call: OnlineAgentCall = {
         actorId: context.user.id,
@@ -689,15 +552,5 @@ export class NativeOnlineAgent {
       });
       await this.deps.uiStreams.close(id, output);
     }
-  }
-  private toolName(message: UIMessage, id: string): string {
-    const part = message.parts.find(
-      (part) => isToolUIPart(part) && part.toolCallId === id,
-    );
-    return part && isToolUIPart(part)
-      ? part.type === 'dynamic-tool'
-        ? part.toolName
-        : part.type.slice(5)
-      : '';
   }
 }

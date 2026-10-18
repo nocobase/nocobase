@@ -262,9 +262,7 @@ export async function updateMessageRun(
 export function metadataOf(record: MessageRecord): MessageMetadata {
   const {
     runnerContext: _private,
-    nativeEvidence: _nativeEvidence,
     nativeOutcome: _nativeOutcome,
-    nativeCanonicalCalls: _nativeCanonicalCalls,
     ...metadata
   } = jsonObject(record.metadata);
   return metadata;

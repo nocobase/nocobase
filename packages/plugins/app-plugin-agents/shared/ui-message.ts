@@ -174,7 +174,7 @@ export type AppUIMessage = UIMessage<
 >;
 
 /**
- * Validate trusted server history/public output before persistence or SDK conversion.
+ * Validate already-projected public output, never complete internal native storage.
  * This is structural validation, not authorization or a browser-history write API.
  */
 export async function validateAppUIMessages(

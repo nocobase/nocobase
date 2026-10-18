@@ -1,15 +1,6 @@
 import { publicUIPageContext } from '../../shared/ui-message.js';
 import { isDeepStrictEqual } from 'node:util';
-import {
-  convertToModelMessages,
-  validateUIMessages,
-  jsonSchema,
-  isToolUIPart,
-  type ModelMessage,
-  type UIMessage,
-  type ToolSet,
-  type ToolResultPart,
-} from 'ai';
+import { isToolUIPart, type ModelMessage, type UIMessage } from 'ai';
 import type { DatabaseConnection } from '@nocobase/db';
 import {
   appUIMessageText,
@@ -39,15 +30,12 @@ import {
 import { conflict, invalid, notFound } from '../kernel/errors.js';
 import { asJson, jsonObject } from '../kernel/values.js';
 import type { Tx, TxRunner } from '../kernel/tx.js';
-import type { OnlineAgentConfig } from './config.js';
+import { OnlineAgentConfigurer, type OnlineAgentConfig } from './config.js';
 import type { OnlineAgentCall } from './sessions.js';
-import { jsonSafe } from './codec.js';
-
+import { NativeMessages, type NativeMessage } from './messages.js';
 export type NativeApproval = AppUIToolApprovalInput;
 export type NativeSnapshot = {
-  message: AppUIMessage;
-  evidence: UIMessage;
-  canonicalCalls?: string[];
+  message: NativeMessage;
 };
 export type NativeHistoryQuery = {
   ids?: string[];
@@ -63,6 +51,7 @@ export type NativeHistoryPage = {
 };
 
 export class NativeSessionStore {
+  messages: NativeMessages = new NativeMessages(new OnlineAgentConfigurer());
   constructor(
     private deps: {
       tx: TxRunner;
@@ -96,7 +85,7 @@ export class NativeSessionStore {
     work: (
       conn: DatabaseConnection,
       row: ConversationRecord,
-      changed: (message: AppUIMessage) => void,
+      changed: (message: NativeMessage) => void,
     ) => Promise<T>,
     outer?: { unit: Tx; row: ConversationRecord },
   ): Promise<T> {
@@ -244,18 +233,14 @@ export class NativeSessionStore {
       'The server stopped before this execution finished. Some actions may have completed; check their results before repeating them.';
     const previous = existing
       ? (
-          await validateAppUIMessages([jsonObject(existing.content).original])
+          await this.messages.validate([jsonObject(existing.content).original])
         )[0]
       : undefined;
-    const evidence: UIMessage = existing
-      ? (
-          await validateUIMessages({
-            messages: [
-              jsonObject(existing.metadata).nativeEvidence ?? previous,
-            ],
-          })
-        )[0]
-      : { id: call.messageId!, role: 'assistant', parts: [] };
+    const evidence: NativeMessage = previous ?? {
+      id: call.messageId!,
+      role: 'assistant',
+      parts: [],
+    };
     for (const part of evidence.parts) {
       if (
         isToolUIPart(part) &&
@@ -269,7 +254,7 @@ export class NativeSessionStore {
             'Tool result unknown. The action may have completed; check its result before repeating it.',
         });
     }
-    const message: AppUIMessage = {
+    const message: NativeMessage = {
       id: call.messageId!,
       role: 'assistant',
       metadata: {
@@ -283,7 +268,7 @@ export class NativeSessionStore {
           : {}),
       },
       parts: [
-        ...(previous?.parts.filter(
+        ...(evidence.parts.filter(
           (part) =>
             part.type !== 'data-notice' || part.id !== 'execution-status',
         ) ?? []),
@@ -294,18 +279,17 @@ export class NativeSessionStore {
         },
       ],
     };
-    await validateAppUIMessages([message]);
-    evidence.id = message.id;
+    await this.messages.validate([message]);
+    const publicMessage = (await this.messages.public([message]))[0];
     const values = {
       content: asJson({
         type: 'text',
-        content: appUIMessageText(message),
+        content: appUIMessageText(publicMessage),
         original: message,
       }),
-      searchText: appUIMessageText(message),
+      searchText: appUIMessageText(publicMessage),
       metadata: asJson({
         ...jsonObject(existing?.metadata),
-        nativeEvidence: jsonSafe(evidence),
         nativeOutcome: 'failed',
       }),
       updatedAt: this.deps.now(),
@@ -354,8 +338,10 @@ export class NativeSessionStore {
     });
     const selected = rows;
     if (!selected.length) return [];
-    return validateAppUIMessages(
-      selected.map((row) => jsonObject(row.content).original),
+    return this.messages.public(
+      await this.messages.validate(
+        selected.map((row) => jsonObject(row.content).original),
+      ),
     );
   }
   async page(
@@ -389,8 +375,10 @@ export class NativeSessionStore {
     if (query.after === undefined && !query.ids) selected.reverse();
     return {
       items: selected.length
-        ? await validateAppUIMessages(
-            selected.map((row) => jsonObject(row.content).original),
+        ? await this.messages.public(
+            await this.messages.validate(
+              selected.map((row) => jsonObject(row.content).original),
+            ),
           )
         : [],
       hasMore,
@@ -412,16 +400,10 @@ export class NativeSessionStore {
       sort: (s) => s.field('seq').asc(),
     });
     if (!rows.length) return { ui: [], model: [] };
-    await validateAppUIMessages(
+    const original = await this.messages.validate(
       rows.map((row) => jsonObject(row.content).original),
     );
-    const ui = await validateUIMessages({
-      messages: rows.map(
-        (row) =>
-          jsonObject(row.metadata).nativeEvidence ??
-          jsonObject(row.content).original,
-      ),
-    });
+    const ui = structuredClone(original);
     for (const message of ui) {
       const row = rows.find((row) => row.id === message.id)!;
       if (
@@ -460,30 +442,7 @@ export class NativeSessionStore {
         part.url = `data:${file.mimeType};base64,${bytes.toString('base64')}`;
       }
     }
-    // Persisted tool outputs are already the SDK's canonical ModelMessage output.
-    const tools: ToolSet = {};
-    for (const message of ui)
-      for (const part of message.parts) {
-        if (isToolUIPart(part))
-          tools[
-            part.type === 'dynamic-tool' ? part.toolName : part.type.slice(5)
-          ] = {
-            inputSchema: jsonSchema({ type: 'object' }),
-            toModelOutput: ({ output }: { output: unknown }) =>
-              output as ToolResultPart['output'],
-          };
-      }
-    const model = await convertToModelMessages(
-      ui.filter(
-        (message) =>
-          message.role !== 'system' ||
-          message.parts.some((part) => part.type === 'text'),
-      ),
-      {
-        tools,
-        ignoreIncompleteToolCalls: true,
-      },
-    );
+    const model = await this.messages.model(ui);
     const current =
       page && this.deps.contextKinds
         ? await historicalPageContext(
@@ -498,7 +457,7 @@ export class NativeSessionStore {
       ? { role: 'user', content: current }
       : undefined;
     if (historical) model.push(historical);
-    return { ui, model, page: historical };
+    return { ui: original, model, page: historical };
   }
   accept(
     userId: string,
@@ -639,7 +598,7 @@ export class NativeSessionStore {
     userId: string,
     id: string,
     input: NativeApproval,
-  ): Promise<{ message: AppUIMessage; evidence: UIMessage; waiting: boolean }> {
+  ): Promise<{ message: NativeMessage; waiting: boolean }> {
     return this.write(
       userId,
       id,
@@ -663,17 +622,12 @@ export class NativeSessionStore {
         });
         if (!record) throw conflict('The approval message is unavailable.');
         const publicMessage = (
-          await validateAppUIMessages([jsonObject(record.content).original])
+          await this.messages.validate([jsonObject(record.content).original])
         )[0];
         if (publicMessage.metadata?.executionId !== input.executionId)
           throw conflict('The approval belongs to another execution.');
-        const evidence = (
-          await validateUIMessages({
-            messages: [jsonObject(record.metadata).nativeEvidence],
-          })
-        )[0];
         let found = 0;
-        for (const message of [publicMessage, evidence])
+        for (const message of [publicMessage])
           for (const part of message.parts) {
             if (
               (part.type.startsWith('tool-') || part.type === 'dynamic-tool') &&
@@ -688,9 +642,9 @@ export class NativeSessionStore {
               found += 1;
             }
           }
-        if (found !== 2)
+        if (found !== 1)
           throw conflict('The requested tool approval is not pending.');
-        const waiting = evidence.parts.some(
+        const waiting = publicMessage.parts.some(
           (part) => isToolUIPart(part) && part.state === 'approval-requested',
         );
         publicMessage.metadata.revision += 1;
@@ -706,10 +660,6 @@ export class NativeSessionStore {
               ...jsonObject(record.content),
               original: publicMessage,
             }),
-            metadata: asJson({
-              ...jsonObject(record.metadata),
-              nativeEvidence: evidence,
-            }),
             updatedAt: this.deps.now(),
           },
         });
@@ -719,7 +669,7 @@ export class NativeSessionStore {
           revision: publicMessage.metadata.revision,
         });
         changed(publicMessage);
-        return { message: publicMessage, evidence, waiting };
+        return { message: publicMessage, waiting };
       },
     );
   }
@@ -738,14 +688,9 @@ export class NativeSessionStore {
         });
         if (!record) throw conflict('The approval message is unavailable.');
         const publicMessage = (
-          await validateAppUIMessages([jsonObject(record.content).original])
+          await this.messages.validate([jsonObject(record.content).original])
         )[0];
-        const evidence = (
-          await validateUIMessages({
-            messages: [jsonObject(record.metadata).nativeEvidence],
-          })
-        )[0];
-        for (const message of [publicMessage, evidence])
+        for (const message of [publicMessage])
           for (const part of message.parts) {
             if (
               'approval' in part &&
@@ -776,7 +721,7 @@ export class NativeSessionStore {
             }),
             metadata: asJson({
               ...jsonObject(record.metadata),
-              nativeEvidence: jsonSafe(evidence),
+              nativeOutcome: 'cancelled',
             }),
             updatedAt: this.deps.now(),
           },
@@ -807,14 +752,14 @@ export class NativeSessionStore {
         ? Number(existing.seq)
         : Number(row.lastSeq) + 1;
       message.metadata!.revision = revision + 1;
-      await validateAppUIMessages([message]);
-      jsonSafe(snapshot.evidence);
+      await this.messages.validate([message]);
+      const publicMessage = (await this.messages.public([message]))[0];
       const current = existing
         ? jsonObject(jsonObject(existing.content).original).metadata
         : null;
       if (existing && jsonObject(current).revision !== revision) {
         if (isDeepStrictEqual(jsonObject(existing.content).original, message))
-          return message;
+          return publicMessage;
         // Only trusted approval/continuation writes can advance this same native message and execution.
         // A newer revision therefore acknowledges an earlier commit whose response was lost.
         if (
@@ -825,7 +770,11 @@ export class NativeSessionStore {
           jsonObject(current).conversationId === id
         )
           return (
-            await validateAppUIMessages([jsonObject(existing.content).original])
+            await this.messages.public(
+              await this.messages.validate([
+                jsonObject(existing.content).original,
+              ]),
+            )
           )[0];
         throw conflict('The message revision has changed.');
       }
@@ -841,14 +790,12 @@ export class NativeSessionStore {
       const values = {
         content: asJson({
           type: 'text',
-          content: appUIMessageText(message),
+          content: appUIMessageText(publicMessage),
           original: message,
         }),
-        searchText: appUIMessageText(message),
+        searchText: appUIMessageText(publicMessage),
         metadata: asJson({
-          nativeEvidence: snapshot.evidence,
           nativeOutcome: call.outcome,
-          nativeCanonicalCalls: snapshot.canonicalCalls ?? [],
         }),
         updatedAt: this.deps.now(),
       };
@@ -873,7 +820,7 @@ export class NativeSessionStore {
             createdAt: message.metadata!.createdAt,
           },
         });
-      const visible = message.parts.some((part) =>
+      const visible = publicMessage.parts.some((part) =>
         part.type === 'text'
           ? part.text.trim().length > 0
           : part.type === 'file' ||
@@ -891,7 +838,7 @@ export class NativeSessionStore {
         },
       );
       changed(message);
-      return message;
+      return publicMessage;
     });
   }
 }
