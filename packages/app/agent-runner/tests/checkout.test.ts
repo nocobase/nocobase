@@ -624,9 +624,11 @@ describe('checkout', () => {
       expect(
         requests.some((url) => url.includes('service=git-upload-pack')),
       ).toBe(true);
+      // A failed lookup is not an absent branch and must not trigger a push.
+      expect(report?.failure).toBeDefined();
       expect(
         requests.some((url) => url.includes('service=git-receive-pack')),
-      ).toBe(true);
+      ).toBe(false);
       expect(existsSync(marker)).toBe(false);
       const hostMarker = path.join(root, 'trusted-host-helper-executed');
       git(

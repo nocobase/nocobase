@@ -280,6 +280,12 @@ export interface CheckedOutRepo {
   localBranch?: string;
   continuation?: string;
   warnings?: string[];
+  /** This attempt's starting commit; independent of the shared default branch. */
+  startSha?: string;
+  /** Last confirmed delivery, or the original continuation's starting commit. */
+  deliveryBaseSha?: string;
+  /** Only a successful remote query can establish absence for local cleanup. */
+  remoteMissing?: boolean;
   primary: boolean;
   /** Absolute. */
   dir: string;
@@ -330,7 +336,7 @@ export interface WorkspaceRepo {
   branch: string;
   localBranch?: string;
   continuation?: string;
-  /** Where the checkout started when the runner created it; nothing past it was committed while HEAD is here. */
+  /** Starting commit (empty for an unborn checkout); continuation records retain the original starting point. */
   startSha?: string;
   /** What the runner last saw the remote task branch hold after it pushed (or found it already pushed). */
   pushedSha?: string;
@@ -440,7 +446,9 @@ function believable(
         ...(!legacy && isText(repo.continuation)
           ? { continuation: repo.continuation }
           : {}),
-        ...(!legacy && isText(repo.startSha) && SHA.test(repo.startSha)
+        ...(!legacy &&
+        typeof repo.startSha === 'string' &&
+        (repo.startSha === '' || SHA.test(repo.startSha))
           ? { startSha: repo.startSha }
           : {}),
         ...(!legacy && isText(repo.pushedSha) && SHA.test(repo.pushedSha)
@@ -1131,10 +1139,12 @@ export async function prepareDirs(
           ]).catch(() => '')
         : (known?.startSha ?? '');
       shas.set(dir, {
-        ...(startSha === '' ? {} : { startSha }),
-        ...(!created && known?.pushedSha !== undefined
-          ? { pushedSha: known.pushedSha }
-          : {}),
+        startSha,
+        ...(runTree?.pushedSha !== undefined
+          ? { pushedSha: runTree.pushedSha }
+          : !created && known?.pushedSha !== undefined
+            ? { pushedSha: known.pushedSha }
+            : {}),
       });
       // Refresh hooks on resumed clones too, so none keeps the push guard an earlier runner installed.
       if (isInside(dir, gitDir))
@@ -1150,6 +1160,10 @@ export async function prepareDirs(
               continuation: runTree.continuation,
               warnings: runTree.warnings,
             }),
+        ...shas.get(dir),
+        ...(runTree?.deliveryBaseSha === undefined
+          ? {}
+          : { deliveryBaseSha: runTree.deliveryBaseSha }),
         primary,
         dir,
         cache,
@@ -1338,7 +1352,11 @@ export async function reportRepos(
       ...(options.onAbort === undefined ? {} : { onAbort: options.onAbort }),
     });
     const remoteSha = async (): Promise<string> => {
-      if (options.active?.() === false) return '';
+      if (options.active?.() === false)
+        throw new RepoAccessFailure(
+          'leaseLost',
+          'The run ended before querying the remote.',
+        );
       return (
         (
           await withRepoAuth(options.auth, repo.url, (auth) => {
@@ -1353,19 +1371,57 @@ export async function reportRepos(
               {},
               networkOptions(auth),
             );
-          }).catch(() => '')
+          })
         ).split(/\s+/)[0] ?? ''
       );
     };
-    const remote = await remoteSha();
-    let pushed = headSha !== '' && remote === headSha;
+    repo.remoteMissing = undefined;
+    let remote: string | undefined;
     let failure: RepoReport['failure'];
-    // Work to push: commits on top of the default branch, or a branch the remote already has and HEAD moved past.
-    const base = await taskGit(repo, [
-      'rev-parse',
-      `origin/${repo.defaultBranch}`,
-    ]).catch(() => '');
-    const hasWork = headSha !== '' && (headSha !== base || remote !== '');
+    try {
+      remote = await remoteSha();
+      repo.remoteMissing = remote === '';
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      failure = {
+        reason: pushFailureOf(error),
+        message: message.slice(0, 2000),
+      };
+      options.log?.(`report: ${repo.url}: ${message}`);
+    }
+    let pushed = headSha !== '' && remote === headSha;
+    const base = repo.deliveryBaseSha;
+    const pending =
+      base !== undefined &&
+      headSha !== base &&
+      (base === '' ||
+        (await taskGitOk(repo, [
+          'merge-base',
+          '--is-ancestor',
+          base,
+          headSha,
+        ])));
+    const contained =
+      remote === '' &&
+      (await taskGitOk(repo, [
+        'merge-base',
+        '--is-ancestor',
+        headSha,
+        `origin/${repo.defaultBranch}`,
+      ]));
+    const delivered =
+      remote === '' &&
+      base !== undefined &&
+      base !== '' &&
+      (await taskGitOk(repo, ['merge-base', '--is-ancestor', headSha, base]));
+    // Existing branches still use ordinary push semantics. Absent branches require new or known pending work.
+    const hasWork =
+      remote !== undefined &&
+      headSha !== '' &&
+      (remote !== '' ||
+        (!contained &&
+          !delivered &&
+          (headSha !== (repo.startSha ?? '') || pending)));
     if (
       options.push &&
       !switched &&
@@ -1393,7 +1449,9 @@ export async function reportRepos(
             networkOptions(auth),
           );
         });
-        pushed = (await remoteSha()) === headSha;
+        const confirmed = await remoteSha();
+        repo.remoteMissing = confirmed === '';
+        pushed = confirmed === headSha;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         failure = {
@@ -1404,12 +1462,14 @@ export async function reportRepos(
       }
     }
     // Direct URL pushes leave origin's tracking ref behind; workspace cleanup needs the confirmed remote head.
-    if (pushed)
+    if (pushed) {
+      repo.deliveryBaseSha = headSha;
       await taskGitOk(repo, [
         'update-ref',
         `refs/remotes/origin/${repo.branch}`,
         headSha,
       ]).catch(() => false);
+    }
     reports.push({
       url: repo.url,
       branch: repo.branch,
@@ -1462,6 +1522,27 @@ export async function markWorkspaceEnded(
   const meta = await readWorkspaceMeta(paths, workDir);
   if (meta === undefined) return;
   const now = new Date().toISOString();
+  if (
+    meta.runWorktrees === true &&
+    meta.readOnly !== true &&
+    meta.appKey !== undefined
+  )
+    await updateContinuationState(
+      paths,
+      meta.appKey,
+      meta.subjectKey,
+      (state) => ({
+        ...state,
+        repos: state.repos.map((repo) => {
+          const report = reports.find(
+            (item) => item.url === repo.url && item.branch === repo.branch,
+          );
+          return report?.pushed === true && SHA.test(report.headSha ?? '')
+            ? { ...repo, pushedSha: report.headSha }
+            : repo;
+        }),
+      }),
+    );
   await writeWorkspaceMeta(paths, workDir, {
     ...meta,
     repos: meta.repos.map((repo) => {

@@ -25,6 +25,7 @@ import {
   continuationWorkDir,
   retryWorkspaceRemoval,
   updateContinuationState,
+  readContinuationState,
 } from '../src/core/run-worktrees.ts';
 import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
 
@@ -131,6 +132,294 @@ describe('per-attempt worktrees', () => {
     });
     return { workDir, repo: prepared.dirs[0]!.repo!, prepared };
   }
+  function commitFile(dir: string, name = 'work.txt') {
+    writeFileSync(path.join(dir, name), name);
+    git(['add', name], dir);
+    git([...COMMIT, 'commit', '-q', '-m', name], dir);
+    return git(['rev-parse', 'HEAD'], dir);
+  }
+  const remoteBranch = 'refs/heads/agent/PM-300';
+  const resumeRef = (repo: { continuation?: string }) =>
+    `refs/runner/resume/${repo.continuation}`;
+  const remoteHead = () =>
+    git(['ls-remote', remote, remoteBranch], root).split(/\s/)[0];
+  async function finish(a: Awaited<ReturnType<typeof start>>, push = true) {
+    const reports = await reportRepos([a.repo], { push });
+    await markWorkspaceEnded(paths, a.workDir, reports);
+    expect(
+      (
+        await finalizeRunWorktrees(paths, a.workDir, () => {}, {
+          repos: [a.repo],
+        })
+      )[0].saved,
+    ).toBe(true);
+    return reports[0];
+  }
+  it('does not push an untouched checkout when another run advances the shared default ref', async () => {
+    const a = await start('shared-cache');
+    const original = git(['rev-parse', 'HEAD'], a.repo.dir);
+    const seed = path.join(root, 'origin-repo-seed');
+    const upstream = commitFile(seed, 'upstream.txt');
+    git(
+      ['fetch', seed, '+refs/heads/main:refs/remotes/origin/main'],
+      a.repo.cache,
+    );
+    expect(upstream).not.toBe(original);
+    expect((await finish(a)).pushed).toBe(false);
+    expect(remoteHead()).toBe('');
+    expect(
+      git(
+        ['for-each-ref', '--format=%(refname)', resumeRef(a.repo)],
+        a.repo.cache,
+      ),
+    ).toBe('');
+  });
+  it.each(['deleted', 'squashed'] as const)(
+    'does not recreate a %s branch across two further runs',
+    async (kind) => {
+      const a = await start('delivered');
+      const delivered = commitFile(a.repo.dir);
+      expect((await finish(a)).pushed).toBe(true);
+      expect(
+        (await readContinuationState(paths, 'app', 'PM-300'))?.repos[0]
+          .pushedSha,
+      ).toBe(delivered);
+      if (kind === 'squashed') {
+        const seed = path.join(root, 'origin-repo-seed');
+        git(['fetch', remote, remoteBranch], seed);
+        git(['merge', '--squash', 'FETCH_HEAD'], seed);
+        git([...COMMIT, 'commit', '-m', 'Squashed work'], seed);
+        git(['push', remote, 'main'], seed);
+        expect(git(['rev-parse', 'HEAD'], seed)).not.toBe(delivered);
+      }
+      git(
+        ['update-ref', '-d', remoteBranch],
+        path.join(root, 'origin-repo.git'),
+      );
+      for (const id of ['next', 'again']) {
+        const b = await start(id);
+        expect(git(['rev-parse', 'HEAD'], b.repo.dir)).toBe(
+          git(
+            ['rev-parse', 'refs/heads/main'],
+            path.join(root, 'origin-repo.git'),
+          ),
+        );
+        expect(
+          git(
+            ['for-each-ref', '--format=%(refname)', resumeRef(b.repo)],
+            b.repo.cache,
+          ),
+        ).toBe('');
+        expect((await finish(b)).pushed).toBe(false);
+        expect(remoteHead()).toBe('');
+        expect(
+          git(
+            ['for-each-ref', '--format=%(refname)', resumeRef(b.repo)],
+            b.repo.cache,
+          ),
+        ).toBe('');
+      }
+    },
+  );
+  it('clears a branch deleted during a run without saving the stale head again', async () => {
+    const a = await start('published');
+    commitFile(a.repo.dir);
+    await finish(a);
+    const b = await start('delete-during-run');
+    git(['update-ref', '-d', remoteBranch], path.join(root, 'origin-repo.git'));
+    expect((await finish(b)).pushed).toBe(false);
+    expect(remoteHead()).toBe('');
+    expect(
+      git(
+        ['for-each-ref', '--format=%(refname)', resumeRef(b.repo)],
+        b.repo.cache,
+      ),
+    ).toBe('');
+    const c = await start('after-delete');
+    expect((await finish(c)).pushed).toBe(false);
+    expect(remoteHead()).toBe('');
+  });
+  it('retries known pending commits after a rejected first push without another edit', async () => {
+    const a = await start('rejected');
+    const head = commitFile(a.repo.dir);
+    const hook = path.join(root, 'origin-repo.git/hooks/pre-receive');
+    writeFileSync(hook, '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+    expect((await finish(a)).failure).toBeDefined();
+    const state = await readContinuationState(paths, 'app', 'PM-300');
+    expect(state?.repos[0].startSha).not.toBe(head);
+    expect(state?.repos[0].pushedSha).toBeUndefined();
+    rmSync(hook);
+    const b = await start('retry');
+    expect(git(['rev-parse', 'HEAD'], b.repo.dir)).toBe(head);
+    expect((await finish(b)).pushed).toBe(true);
+    expect(remoteHead()).toBe(head);
+  });
+  it('keeps new commits beyond a delivered head when the remote branch is deleted', async () => {
+    const a = await start('first-delivery');
+    commitFile(a.repo.dir);
+    await finish(a);
+    const b = await start('pending');
+    const pending = commitFile(b.repo.dir, 'pending.txt');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+    git(['update-ref', '-d', remoteBranch], path.join(root, 'origin-repo.git'));
+    const c = await start('deliver-pending');
+    expect(git(['rev-parse', 'HEAD'], c.repo.dir)).toBe(pending);
+    expect((await finish(c)).pushed).toBe(true);
+    expect(remoteHead()).toBe(pending);
+  });
+  it('retains continuation evidence when the remote query fails', async () => {
+    const a = await start('before-offline');
+    const head = commitFile(a.repo.dir);
+    await finish(a);
+    const b = await start('offline');
+    const bare = path.join(root, 'origin-repo.git');
+    await fsPromises.rename(bare, `${bare}.offline`);
+    const report = await finish(b);
+    expect(report.failure).toBeDefined();
+    expect(b.repo.remoteMissing).toBeUndefined();
+    expect(git(['rev-parse', resumeRef(b.repo)], b.repo.cache)).toBe(head);
+    expect(
+      (await readContinuationState(paths, 'app', 'PM-300'))?.repos[0].pushedSha,
+    ).toBe(head);
+    await fsPromises.rename(`${bare}.offline`, bare);
+  });
+  it('preserves unknown historical continuations without republishing until new work is added', async () => {
+    const a = await start('historical');
+    const old = commitFile(a.repo.dir);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    await updateContinuationState(paths, 'app', 'PM-300', (state) => ({
+      ...state,
+      repos: state.repos.map((repo) => {
+        const identity = { ...repo };
+        delete identity.startSha;
+        delete identity.pushedSha;
+        return identity;
+      }),
+    }));
+    const b = await start('unknown-no-edit');
+    expect((await finish(b)).pushed).toBe(false);
+    expect(remoteHead()).toBe('');
+    expect(git(['rev-parse', resumeRef(b.repo)], b.repo.cache)).toBe(old);
+    const c = await start('unknown-new-work');
+    const head = commitFile(c.repo.dir, 'new.txt');
+    expect((await finish(c)).pushed).toBe(true);
+    expect(remoteHead()).toBe(head);
+  });
+  it.each(['dev', 'v3-develop'])(
+    'delivers first and subsequent real commits for %s repositories',
+    async (defaultBranch) => {
+      const bare = path.join(root, 'origin-repo.git');
+      git(['branch', '-m', 'main', defaultBranch], bare);
+      const open = async (id: string) => {
+        const workDir = runWorkDir(paths, 'app', 'normal', id, 1);
+        const prepared = await prepareDirs({
+          paths,
+          workDir,
+          appKey: 'app',
+          subjectKey: 'normal',
+          runId: id,
+          perRun: true,
+          dirs: [
+            {
+              kind: 'repo',
+              url: remote,
+              path: 'repo',
+              branch: 'agent/PM-300',
+              defaultBranch,
+            },
+          ],
+        });
+        return { workDir, prepared, repo: prepared.dirs[0].repo! };
+      };
+      const a = await open('first');
+      const first = commitFile(a.repo.dir);
+      expect((await finish(a)).pushed).toBe(true);
+      expect(remoteHead()).toBe(first);
+      const b = await open('second');
+      const second = commitFile(b.repo.dir, 'second.txt');
+      expect((await finish(b)).pushed).toBe(true);
+      expect(remoteHead()).toBe(second);
+    },
+  );
+
+  it('does not publish historical work already included in the default branch', async () => {
+    const a = await start('included');
+    const head = commitFile(a.repo.dir);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    git(
+      ['fetch', a.repo.cache, `${resumeRef(a.repo)}:refs/heads/main`],
+      path.join(root, 'origin-repo.git'),
+    );
+    const b = await start('default-includes-work');
+    expect(git(['rev-parse', 'HEAD'], b.repo.dir)).toBe(head);
+    expect(
+      git(
+        ['for-each-ref', '--format=%(refname)', resumeRef(b.repo)],
+        b.repo.cache,
+      ),
+    ).toBe('');
+    expect((await finish(b)).pushed).toBe(false);
+    expect(remoteHead()).toBe('');
+  });
+  it('records a baseline for new work added to an unknown resume so a failed push can retry', async () => {
+    const a = await start('old-unknown');
+    commitFile(a.repo.dir);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    await updateContinuationState(paths, 'app', 'PM-300', (state) => ({
+      ...state,
+      repos: state.repos.map((repo) => {
+        const identity = { ...repo };
+        delete identity.startSha;
+        delete identity.pushedSha;
+        return identity;
+      }),
+    }));
+    const b = await start('unknown-add-work');
+    const head = commitFile(b.repo.dir, 'new-pending.txt');
+    const hook = path.join(root, 'origin-repo.git/hooks/pre-receive');
+    writeFileSync(hook, '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+    expect((await finish(b)).failure).toBeDefined();
+    rmSync(hook);
+    const c = await start('unknown-retry');
+    expect((await finish(c)).pushed).toBe(true);
+    expect(remoteHead()).toBe(head);
+  });
+  it('retains the unborn starting point across runs until the first real commit is delivered', async () => {
+    const empty = path.join(root, 'initial.git');
+    git(['init', '--bare', '--initial-branch=main', empty], root);
+    const open = async (id: string) => {
+      const workDir = runWorkDir(paths, 'app', 'initial', id, 1);
+      const prepared = await prepareDirs({
+        paths,
+        workDir,
+        appKey: 'app',
+        subjectKey: 'initial',
+        runId: id,
+        perRun: true,
+        dirs: [
+          {
+            kind: 'repo',
+            url: `file://${empty}`,
+            path: 'repo',
+            branch: 'main',
+            defaultBranch: 'main',
+            initial: true,
+          },
+        ],
+      });
+      return { workDir, prepared, repo: prepared.dirs[0].repo! };
+    };
+    const a = await open('first-root');
+    const head = commitFile(a.repo.dir);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(
+      (await readContinuationState(paths, 'app', 'initial'))?.repos[0].startSha,
+    ).toBe('');
+    const b = await open('deliver-root');
+    expect((await finish(b)).pushed).toBe(true);
+    expect(git(['rev-parse', 'refs/heads/main'], empty)).toBe(head);
+  });
+
   async function pushedRemoval(id: string) {
     const a = await start(id);
     git(['push', a.repo.url, 'HEAD:refs/heads/agent/PM-300'], a.repo.dir);
