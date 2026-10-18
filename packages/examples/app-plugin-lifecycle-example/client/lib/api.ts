@@ -19,8 +19,7 @@ export type {
 } from '@nocobase/lifecycle/react';
 
 export type Plain = Record<string, unknown>;
-export type LifecycleName =
-  'tickets' | 'expenses' | 'reviewerDemo' | 'reviewerLiveDemo' | DurableFlow;
+export type LifecycleName = 'tickets' | 'expenses' | DurableFlow;
 
 /** The transition name of the log entry that records a creation. */
 export const CREATE_TRANSITION = '$create';

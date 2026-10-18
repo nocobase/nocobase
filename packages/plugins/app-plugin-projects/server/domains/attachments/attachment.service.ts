@@ -19,6 +19,8 @@ import {
   ATTACHMENTS_PER_REQUEST_MAX,
   ATTACHMENT_SIZE_MAX,
   ORPHAN_HOURS,
+  ISSUE_SCREENSHOTS_LIMIT,
+  type IssueScreenshots,
   isInlinePreviewable,
   type Attachment,
 } from '../../../shared/attachments.js';
@@ -40,6 +42,7 @@ import {
 import type { AttachmentStorage } from './attachment.storage.js';
 import {
   attachRows,
+  agentCommentImages,
   commentAttachments,
   deleteAttachment,
   deleteIfUnattached,
@@ -62,6 +65,8 @@ export interface AttachmentContent {
 }
 
 export interface AttachmentService {
+  /** Latest bounded batch of live Agent comment images, with comment provenance. */
+  screenshots(viewer: Viewer, issueIdOrKey: string): Promise<IssueScreenshots>;
   /** An upload of the viewer's, attached to nothing yet. */
   upload(viewer: Viewer, file: File): Promise<Attachment>;
   /** Uploads a file straight onto the issue (its own files). */
@@ -310,6 +315,47 @@ export function createAttachmentService(deps: AttachmentDeps): {
   };
 
   const service: AttachmentService = {
+    async screenshots(viewer, issueIdOrKey) {
+      const conn = deps.tx.read();
+      const issue = await requireVisible(conn, viewer, issueIdOrKey);
+      const found = await agentCommentImages(
+        conn,
+        issue.id,
+        ISSUE_SCREENSHOTS_LIMIT + 1,
+      );
+      const rows = found.slice(0, ISSUE_SCREENSHOTS_LIMIT);
+      const name = await deps.kinds.nameAll(
+        conn,
+        rows.map(({ comment }) => ({
+          type: comment.authorType,
+          id: comment.authorId,
+        })),
+      );
+      return {
+        data: rows.map((row) => ({
+          id: row.id,
+          filename: row.filename,
+          ext: row.ext,
+          mimeType: row.mimeType,
+          size: Number(row.size),
+          contentUrl: contentPath(row.id),
+          downloadUrl: `${contentPath(row.id)}?download=true`,
+          comment: {
+            id: row.comment.id,
+            author: {
+              type: row.comment.authorType,
+              id: row.comment.authorId ?? '',
+              name: name(row.comment.authorType, row.comment.authorId),
+            },
+            createdAt: iso(row.comment.createdAt),
+          },
+        })),
+        meta: {
+          limit: ISSUE_SCREENSHOTS_LIMIT,
+          truncated: found.length > ISSUE_SCREENSHOTS_LIMIT,
+        },
+      };
+    },
     async upload(viewer, file) {
       const id = await store(viewer, file);
       const conn = deps.tx.read();

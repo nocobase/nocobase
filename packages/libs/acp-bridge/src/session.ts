@@ -37,6 +37,10 @@ import {
 } from './protocol.js';
 
 export interface SessionContext {
+  /** Must authorize before opening an agent or sending a prompt; transport failures keep the head waiting. */
+  readonly claim?:
+    | ((promptId: string, seq: number | undefined) => Promise<boolean>)
+    | undefined;
   readonly client: acp.Implementation;
   readonly env: NodeJS.ProcessEnv;
   /** The directories sessions may work in. */
@@ -106,8 +110,19 @@ export class BridgeSession {
   #warm: Promise<WarmAgent | undefined> | undefined;
   readonly #queue: {
     readonly promptId: string;
+    readonly seq?: number | undefined;
     readonly content: readonly PromptContent[];
   }[] = [];
+  readonly #seen = new Set<string>();
+  #pumping = false;
+  #pending:
+    | {
+        readonly promptId: string;
+        readonly seq: number | undefined;
+        removed: boolean;
+        cancelled: boolean;
+      }
+    | undefined;
   #turn: string | undefined;
   /** The running turn was cancelled; until its prompt reaches the agent, only this remembers it. */
   #turnCancelled = false;
@@ -184,8 +199,11 @@ export class BridgeSession {
     this.#target = command.session;
     switch (command.type) {
       case 'prompt':
+        if (this.#seen.has(command.promptId)) return;
+        this.#seen.add(command.promptId);
         this.#queue.push({
           promptId: command.promptId,
+          seq: command.seq,
           content: command.content,
         });
         void this.#pump();
@@ -205,6 +223,16 @@ export class BridgeSession {
     }
   }
 
+  /** Removes one waiting prompt, including a head waiting for authorization; never cancels a running turn. */
+  withdraw(promptId: string): boolean {
+    if (this.#turn === promptId) return false;
+    this.#seen.add(promptId);
+    const index = this.#queue.findIndex((item) => item.promptId === promptId);
+    if (index >= 0) this.#queue.splice(index, 1);
+    if (this.#pending?.promptId === promptId) this.#pending.removed = true;
+    return true;
+  }
+
   async close(): Promise<void> {
     this.#closed = true;
     this.#cancel();
@@ -217,9 +245,38 @@ export class BridgeSession {
   }
 
   async #pump(): Promise<void> {
-    if (this.#turn !== undefined || this.#closed) return;
+    if (this.#pumping || this.#closed) return;
     const next = this.#queue.shift();
     if (!next) return;
+    this.#pumping = true;
+    const pending = {
+      promptId: next.promptId,
+      seq: next.seq,
+      removed: false,
+      cancelled: false,
+    };
+    this.#pending = pending;
+    const execute = this.#context.claim
+      ? await this.#context.claim(next.promptId, next.seq)
+      : true;
+    this.#pending = undefined;
+    if (!execute || pending.removed || pending.cancelled || this.#closed) {
+      // A declined retry may follow a committed claim whose response was lost (for example after archive).
+      // Terminal reports are idempotent and the server ignores them for a withdrawn or already ended identity.
+      if (!execute && !pending.removed && !pending.cancelled)
+        this.#emit({
+          kind: 'turnEnded',
+          seq: next.seq,
+          at: now(),
+          promptId: next.promptId,
+          stopReason: 'cancelled',
+          usage: null,
+          error: null,
+        });
+      this.#pumping = false;
+      void this.#pump();
+      return;
+    }
     this.#turn = next.promptId;
     this.#turnCancelled = false;
     this.#emit({ kind: 'turnStarted', at: now(), promptId: next.promptId });
@@ -262,22 +319,39 @@ export class BridgeSession {
     } finally {
       this.#resolvePermissions('cancelled');
       this.#turn = undefined;
+      this.#pumping = false;
+      this.#emit({
+        kind: 'turnEnded',
+        seq: next.seq,
+        at: now(),
+        promptId: next.promptId,
+        stopReason,
+        usage,
+        error,
+      });
+      void this.#pump();
     }
-    this.#emit({
-      kind: 'turnEnded',
-      at: now(),
-      promptId: next.promptId,
-      stopReason,
-      usage,
-      error,
-    });
-    void this.#pump();
   }
 
   #cancel(): void {
+    if (this.#pending && !this.#pending.cancelled) {
+      // The server may already have committed this claim even when its response was lost. Settle by identity now;
+      // the same session mutex either ends that claim or prevents a delayed claim from starting the cancelled item.
+      this.#pending.cancelled = true;
+      this.#emit({
+        kind: 'turnEnded',
+        seq: this.#pending.seq,
+        at: now(),
+        promptId: this.#pending.promptId,
+        stopReason: 'cancelled',
+        usage: null,
+        error: null,
+      });
+    }
     for (const dropped of this.#queue.splice(0)) {
       this.#emit({
         kind: 'turnEnded',
+        seq: dropped.seq,
         at: now(),
         promptId: dropped.promptId,
         stopReason: 'cancelled',

@@ -250,6 +250,8 @@ Use the hook from any plugin page rendered below the Provider. Test the Provider
 
 ## URL-controlled Tabs with child access
 
+This is a plugin-owned business page for browsing audit events, with Overview and Activity views. Administration such as retention configuration belongs to settings items and APIs, with any editor owned by the application; see [system settings](system-settings.md).
+
 Generate `tabs` into this plugin before using the next page:
 
 ```bash
@@ -268,26 +270,26 @@ const routes = defineAppRoutes([
     name: 'audit-log',
     path: '/audit-log',
     navigation: { title: 'navigation.auditLog' },
-    authz: { resource: { type: 'audit.settings', id: 'page' }, action: 'read' },
-    componentLoader: () => import('./pages/settings/index.js'),
+    authz: { resource: { type: 'page', id: 'audit-log' }, action: 'access' },
+    componentLoader: () => import('./pages/audit-log/index.js'),
     children: [
       {
-        name: 'general',
-        path: 'general',
+        name: 'overview',
+        path: 'overview',
         authz: {
-          resource: { type: 'audit.settings', id: 'general' },
-          action: 'read',
+          resource: { type: 'page', id: 'audit-log-overview' },
+          action: 'access',
         },
-        componentLoader: () => import('./pages/settings/general.js'),
+        componentLoader: () => import('./pages/audit-log/overview.js'),
       },
       {
-        name: 'retention',
-        path: 'retention',
+        name: 'activity',
+        path: 'activity',
         authz: {
-          resource: { type: 'audit.settings', id: 'retention' },
-          action: 'read',
+          resource: { type: 'page', id: 'audit-log-activity' },
+          action: 'access',
         },
-        componentLoader: () => import('./pages/settings/retention.js'),
+        componentLoader: () => import('./pages/audit-log/activity.js'),
       },
     ],
   },
@@ -299,7 +301,7 @@ export default routes;
 The parent asks the current authorization Client for the same resource/action pairs declared on its children. `useAuthorizationRevision()` causes permission invalidation to reload visibility. Opening the exact parent URL redirects only after access is ready; direct child and unknown URLs are never rewritten.
 
 ```tsx
-// client/pages/settings/index.tsx
+// client/pages/audit-log/index.tsx
 import { useService } from '@nocobase/app-client';
 import {
   authorizationClientToken,
@@ -319,27 +321,27 @@ import {
 
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs.js';
 
-type AuditSettingsTab = 'general' | 'retention';
+type AuditLogTab = 'overview' | 'activity';
 
-interface AuditSettingsTabDefinition {
-  readonly value: AuditSettingsTab;
+interface AuditLogTabDefinition {
+  readonly value: AuditLogTab;
   readonly labelKey: string;
   readonly resource: { readonly type: string; readonly id: string };
   readonly action: string;
 }
 
-const SETTINGS_TABS: readonly AuditSettingsTabDefinition[] = [
+const AUDIT_LOG_TABS: readonly AuditLogTabDefinition[] = [
   {
-    value: 'general',
-    labelKey: 'settings.tabs.general',
-    resource: { type: 'audit.settings', id: 'general' },
-    action: 'read',
+    value: 'overview',
+    labelKey: 'auditLog.tabs.overview',
+    resource: { type: 'page', id: 'audit-log-overview' },
+    action: 'access',
   },
   {
-    value: 'retention',
-    labelKey: 'settings.tabs.retention',
-    resource: { type: 'audit.settings', id: 'retention' },
-    action: 'read',
+    value: 'activity',
+    labelKey: 'auditLog.tabs.activity',
+    resource: { type: 'page', id: 'audit-log-activity' },
+    action: 'access',
   },
 ];
 
@@ -348,19 +350,19 @@ type TabsAccessState =
   | {
       readonly revision: number;
       readonly status: 'ready';
-      readonly tabs: readonly AuditSettingsTabDefinition[];
+      readonly tabs: readonly AuditLogTabDefinition[];
     }
   | { readonly revision: number; readonly status: 'error' };
 
 async function loadAccessibleTabs(
   authorization: Pick<AuthorizationClient, 'can'>,
-): Promise<readonly AuditSettingsTabDefinition[]> {
+): Promise<readonly AuditLogTabDefinition[]> {
   const allowed = await Promise.all(
-    SETTINGS_TABS.map((tab) =>
+    AUDIT_LOG_TABS.map((tab) =>
       authorization.can({ resource: tab.resource, action: tab.action }),
     ),
   );
-  return SETTINGS_TABS.filter((_tab, index) => allowed[index] === true);
+  return AUDIT_LOG_TABS.filter((_tab, index) => allowed[index] === true);
 }
 
 function useAccessibleTabs(): TabsAccessState {
@@ -390,13 +392,14 @@ function useAccessibleTabs(): TabsAccessState {
   return state.revision === revision ? state : { revision, status: 'loading' };
 }
 
-function isAuditSettingsTab(value: unknown): value is AuditSettingsTab {
-  return value === 'general' || value === 'retention';
+function isAuditLogTab(value: unknown): value is AuditLogTab {
+  return value === 'overview' || value === 'activity';
 }
 
-export default function AuditLogSettingsPage(): ReactElement {
+export default function AuditLogPage(): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-audit-log');
   const access = useAccessibleTabs();
+  const [navigationFailed, setNavigationFailed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const parentPath = useResolvedPath('.');
@@ -407,18 +410,18 @@ export default function AuditLogSettingsPage(): ReactElement {
     { path: `${parentPath.pathname}/:tab`, end: true },
     location.pathname,
   );
-  const activeTab = isAuditSettingsTab(childMatch?.params.tab)
+  const activeTab = isAuditLogTab(childMatch?.params.tab)
     ? childMatch.params.tab
     : null;
 
   if (access.status === 'loading') {
-    return <p>{t('settings.loading')}</p>;
+    return <p>{t('auditLog.loading')}</p>;
   }
-  if (access.status === 'error') {
-    return <p role='alert'>{t('settings.accessError')}</p>;
+  if (access.status === 'error' || navigationFailed) {
+    return <p role='alert'>{t('auditLog.accessError')}</p>;
   }
   if (access.tabs.length === 0) {
-    return <p>{t('settings.noAccess')}</p>;
+    return <p>{t('auditLog.noAccess')}</p>;
   }
   if (isParentEntry) {
     return (
@@ -429,19 +432,21 @@ export default function AuditLogSettingsPage(): ReactElement {
     );
   }
 
-  const selectTab = async (value: unknown): Promise<void> => {
-    if (!isAuditSettingsTab(value)) return;
+  const selectTab = (value: unknown): void => {
+    if (!isAuditLogTab(value)) return;
     if (!access.tabs.some((tab) => tab.value === value)) return;
-    await navigate({ pathname: value, search: location.search });
+    Promise.resolve(navigate({ pathname: value, search: location.search })).catch(
+      () => setNavigationFailed(true),
+    );
   };
 
   return (
     <section className='space-y-6'>
       <header>
-        <h1 className='text-2xl font-semibold'>{t('settings.title')}</h1>
+        <h1 className='text-2xl font-semibold'>{t('auditLog.title')}</h1>
       </header>
       <Tabs value={activeTab} onValueChange={selectTab}>
-        <TabsList aria-label={t('settings.tabs.label')}>
+        <TabsList aria-label={t('auditLog.tabs.label')}>
           {access.tabs.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>
               {t(tab.labelKey)}
@@ -459,9 +464,9 @@ The child modules default-export their content and do not add a second Tabs root
 
 ## Behavior test for redirect, query, and access fallback
 
-Render the page with `renderWithApp()` from `@nocobase/app-testing/client`, declared in `devDependencies` together with `@testing-library/react`, in a Vitest project that runs `tests/client/` under jsdom (`createReactVitestConfig()` from `@nocobase/dev-config/vitest/react`). It starts a real client application around the page, so `useService()`, the API client and `useTranslation()` are the real implementations rather than a `vi.mock('@nocobase/app-client')`. Translations are strict: a misspelt key, or one the locale file lacks, fails the render instead of showing the key.
+Render the page with `renderWithApp()` from `@nocobase/app-testing/client`, declared in `devDependencies` together with `@testing-library/react` and `@testing-library/user-event`, in a Vitest project that runs `tests/client/` under jsdom (`createReactVitestConfig()` from `@nocobase/dev-config/vitest/react`). It starts a real client application around the page, so `useService()`, the API client and `useTranslation()` are the real implementations rather than a `vi.mock('@nocobase/app-client')`. Translations are strict: a misspelt key, or one the locale file lacks, fails the render instead of showing the key.
 
-The page's `t()` calls need these keys. This is the `en-US.ts` from [internationalization](i18n.md) with a `settings` group added:
+The page's `t()` calls need these keys. This is the `en-US.ts` from [internationalization](i18n.md) with an `auditLog` group added:
 
 ```ts
 // client/locales/en-US.ts
@@ -470,12 +475,12 @@ import type { LocaleResource } from '@nocobase/i18n';
 const enUS = {
   navigation: { auditLog: 'Audit logs' },
   errors: { notFound: 'Audit log {{id}} was not found' },
-  settings: {
-    title: 'Audit log settings',
-    loading: 'Loading settings…',
-    accessError: 'The settings could not be loaded.',
-    noAccess: 'You cannot open any audit log settings.',
-    tabs: { label: 'Settings', general: 'General', retention: 'Retention' },
+  auditLog: {
+    title: 'Audit logs',
+    loading: 'Loading audit logs…',
+    accessError: 'The audit logs could not be loaded.',
+    noAccess: 'You cannot open any audit log views.',
+    tabs: { label: 'Audit logs', overview: 'Overview', activity: 'Activity' },
   },
 };
 
@@ -486,7 +491,7 @@ export default enUS;
 Nothing in the test is mocked. `services` registers the authorization plugin's real `AuthorizationClient`, and `answerApi()` answers the one request it sends, `GET authorization/permissions`:
 
 ```tsx
-// tests/client/audit-log-settings-page.test.tsx
+// tests/client/audit-log-page.test.tsx
 import { apiClientToken } from '@nocobase/app-client';
 import {
   AuthorizationClient,
@@ -499,12 +504,13 @@ import {
   type ApiCall,
 } from '@nocobase/app-testing/client';
 import { screen } from '@testing-library/react';
+import { userEvent } from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { Outlet, Route, Routes, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../client/locales/en-US.js';
-import AuditLogSettingsPage from '../../client/pages/settings/index.js';
+import AuditLogPage from '../../client/pages/audit-log/index.js';
 
 const NAMESPACE = '@nocobase/app-plugin-audit-log';
 
@@ -516,10 +522,10 @@ const api = vi.fn((call: ApiCall) =>
     : new Response(null, { status: 404 }),
 );
 
-function settingsPermission(
+function pagePermission(
   id: string,
 ): AuthorizationSnapshot['permissions'][number] {
-  return { resource: { type: 'audit.settings', id }, actions: ['read'] };
+  return { resource: { type: 'page', id: `audit-log-${id}` }, actions: ['access'] };
 }
 
 function LocationProbe(): ReactElement {
@@ -532,7 +538,7 @@ function LocationProbe(): ReactElement {
   );
 }
 
-function SettingsRoutes(): ReactElement {
+function AuditRoutes(): ReactElement {
   return (
     <Routes>
       <Route
@@ -543,9 +549,9 @@ function SettingsRoutes(): ReactElement {
           </>
         }
       >
-        <Route path='/audit-log' element={<AuditLogSettingsPage />}>
-          <Route path='general' element={<p>General panel</p>} />
-          <Route path='retention' element={<p>Retention panel</p>} />
+        <Route path='/audit-log' element={<AuditLogPage />}>
+          <Route path='overview' element={<p>Overview panel</p>} />
+          <Route path='activity' element={<p>Activity panel</p>} />
         </Route>
       </Route>
     </Routes>
@@ -553,7 +559,7 @@ function SettingsRoutes(): ReactElement {
 }
 
 async function renderAt(route: string): Promise<void> {
-  await renderWithApp(<SettingsRoutes />, {
+  await renderWithApp(<AuditRoutes />, {
     route,
     namespace: NAMESPACE,
     // The plugin's own locale file, read strictly: a key it lacks fails the render.
@@ -568,7 +574,7 @@ async function renderAt(route: string): Promise<void> {
   });
 }
 
-describe('AuditLogSettingsPage', () => {
+describe('AuditLogPage', () => {
   beforeEach(() => {
     api.mockClear();
     snapshot = { unrestricted: true, permissions: [] };
@@ -577,38 +583,51 @@ describe('AuditLogSettingsPage', () => {
   it('redirects the exact parent to the first accessible Tab and preserves its query', async () => {
     snapshot = {
       unrestricted: false,
-      permissions: [settingsPermission('retention')],
+      permissions: [pagePermission('activity')],
     };
 
     await renderAt('/audit-log?source=menu');
 
-    expect(await screen.findByText('Retention panel')).toBeInTheDocument();
+    expect(await screen.findByText('Activity panel')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/audit-log/retention?source=menu',
+      '/audit-log/activity?source=menu',
     );
     expect(
-      screen.queryByRole('tab', { name: enUS.settings.tabs.general }),
+      screen.queryByRole('tab', { name: enUS.auditLog.tabs.overview }),
     ).not.toBeInTheDocument();
   });
 
   it('keeps an explicit child URL instead of redirecting it to the preferred Tab', async () => {
-    await renderAt('/audit-log/retention?source=link');
+    await renderAt('/audit-log/activity?source=link');
 
-    expect(await screen.findByText('Retention panel')).toBeInTheDocument();
+    expect(await screen.findByText('Activity panel')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/audit-log/retention?source=link',
+      '/audit-log/activity?source=link',
     );
     expect(
-      screen.getByRole('tab', { name: enUS.settings.tabs.retention }),
+      screen.getByRole('tab', { name: enUS.auditLog.tabs.activity }),
     ).toHaveAttribute('data-active');
   });
 
-  it('says so when no settings Tab is accessible', async () => {
+  it('changes Tabs through navigation and preserves the query', async () => {
+    const user = userEvent.setup();
+    await renderAt('/audit-log/overview?source=menu');
+    await screen.findByText('Overview panel');
+
+    await user.click(screen.getByRole('tab', { name: enUS.auditLog.tabs.activity }));
+
+    expect(await screen.findByText('Activity panel')).toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/audit-log/activity?source=menu',
+    );
+  });
+
+  it('says so when no audit log Tab is accessible', async () => {
     snapshot = { unrestricted: false, permissions: [] };
 
     await renderAt('/audit-log');
 
-    expect(await screen.findByText(enUS.settings.noAccess)).toBeInTheDocument();
+    expect(await screen.findByText(enUS.auditLog.noAccess)).toBeInTheDocument();
     expect(api).toHaveBeenCalledWith(
       expect.objectContaining({
         method: 'GET',

@@ -1,5 +1,15 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.11
+
+### Minor Changes
+
+- 8286a8a: Add a bounded screenshot endpoint for live Agent comments with stable comment provenance and existing issue visibility checks.
+
+### Patch Changes
+
+- 44bc7a7: Cancel invitation link copy feedback timers when the component unmounts, preventing stale updates after the dialog closes.
+
 ## 0.1.0-beta.10
 
 ### Minor Changes

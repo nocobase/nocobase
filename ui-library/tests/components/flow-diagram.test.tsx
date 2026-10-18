@@ -155,7 +155,9 @@ describe('FlowDiagram', () => {
     );
     await screen.findByTestId('rf__node-a');
     const actualSize = screen.getByRole('button', { name: 'Actual size' });
-    fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
+    const zoomOut = screen.getByRole('button', { name: 'Zoom out' });
+    await waitFor(() => expect(zoomOut).toBeEnabled());
+    fireEvent.click(zoomOut);
     await waitFor(() => expect(actualSize).not.toHaveTextContent('100%'));
     fireEvent.click(actualSize);
     await waitFor(() => expect(actualSize).toHaveTextContent('100%'));
