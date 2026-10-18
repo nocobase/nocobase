@@ -303,6 +303,7 @@ function renderApplication(
     config: createAppClientConfig({ rawConfig: {} }),
     services: {
       has: (token: unknown) => registered.has(token),
+      resolveIfCreated: (token: unknown) => registered.get(token),
       resolve: (token: unknown) => {
         if (registered.has(token)) return registered.get(token);
         throw new Error(`Unexpected service token: ${String(token)}`);
@@ -331,7 +332,7 @@ function createTestAuthClient(authenticated: boolean) {
     getSession: vi.fn().mockResolvedValue({
       data: authenticated
         ? {
-            session: null,
+            session: { id: 'session-1' },
             user: {
               email: 'alice@example.com',
               id: '1',

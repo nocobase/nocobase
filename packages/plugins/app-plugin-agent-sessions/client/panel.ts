@@ -7,4 +7,4 @@ export {
   type AgentSessionsPanelView,
 } from './components/sessions-panel.js';
 export type { Attachment } from './lib/attachments.js';
-export { useLinkedSessions } from './api.js';
+export { useLinkedSessions, useAgentSessionAvailability } from './api.js';

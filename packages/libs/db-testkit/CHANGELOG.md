@@ -1,5 +1,17 @@
 # @nocobase/db-testkit
 
+## 0.1.0-beta.4
+
+### Patch Changes
+
+- 525ace4: Declare the workspace packages the tests read as devDependencies instead of reaching into their directories, and add a test to each application template that checks `config.example.yml` still has what `nocobase config init` relies on.
+- Updated dependencies [98b3862]
+- Updated dependencies [b22d999]
+- Updated dependencies [0037dd2]
+- Updated dependencies [14b7aec]
+- Updated dependencies [0037dd2]
+  - @nocobase/db@1.0.0-beta.21
+
 ## 0.1.0-beta.3
 
 ### Patch Changes

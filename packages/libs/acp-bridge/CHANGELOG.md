@@ -1,5 +1,21 @@
 # @nocobase/acp-bridge
 
+## 1.0.0-beta.2
+
+### Major Changes
+
+- 55fcee1: Replace the built-in agent session MCP endpoint and tool registration API with the Studio CLI and shared Skill. Bridge protocol 3 requires a matching CLI upgrade. Session agents use the bridge-selected login profile, validate session ownership before creating linked tasks, default to the session project and Backlog, and read linked work and issue progress through CLI routes. Prepare the shared Skill before starting or restoring sessions and explain unsupported agents or installation failures. Teach both bundled Skill copies to discuss and search before recording work and combine related requirements into as few tasks as practical.
+
+### Minor Changes
+
+- f584e87: The bridge manages the ACP adapters for Codex and Claude Code instead of fetching them with npx for every session: the first time one is needed it installs the pinned version (`@agentclientprotocol/codex-acp@2.2.2`, `@agentclientprotocol/claude-agent-acp@0.89.1`) once, with the `npm` on PATH and without optional dependencies, into `adapters/` beside the bridge's state file, and from then on runs it with the Node.js running the bridge against the `codex` or `claude` installed on the computer (`CODEX_PATH`, `CLAUDE_CODE_EXECUTABLE`), so a session no longer waits seconds for npx. Nothing of either adapter ships inside this package. The install starts in the background when the bridge first looks for agents; a session starting meanwhile waits up to 90 seconds for it. A managed adapter needs Codex 0.160.1 or Claude Code 2.1.200 or newer; with an older agent, a Claude Code that is a Windows batch file, no npm or a failed install, the bridge falls back to an adapter installed on PATH, then to npx with the same pinned version. `NOCOBASE_ACP_ADAPTERS=installed` prefers an adapter installed on PATH over the managed one. `BridgeOptions.adapters` names another directory for the managed adapters. `resolveAgent` takes an optional fourth argument, `ResolveOptions`, which installs and runs managed adapters only when it names their directory (`adapters`); a `ResolvedAgent` may carry the environment its launcher adds and whether it is a managed adapter (`managed`), and an `AgentLauncher` describes a managed adapter in `managed`.
+- c272997: A new session's first message takes over the agent its choices were discovered with, instead of starting another. The new-session page chooses the session's id with the draft and names it in `discoverChoices` (`sessionId`); the bridge runs that discovery's agent with the session's environment and keeps it, with its open ACP session, for up to five minutes and at most one per computer, and the session created with that id applies its own choices to it and prompts it. While a session's agent opens, the bridge reports what it is doing (`startup`: starting the agent, opening its session, applying settings), stored as `agentSessions.startup` and shown on the session page. Both protocol fields are optional, so older bridges and applications keep working as before.
+
+### Patch Changes
+
+- 846e75f: Allow all compatible ACP agents to open My Agent sessions by supplying the shared CLI Skill as prompt instructions when native installation is unavailable. Preserve Claude Code and Codex installation, session identity and permission behavior.
+- 00c5970: Return agent settings before process cleanup, preserve editable drafts and model selections during discovery, display confirmed messages immediately, and bound realtime refresh rates with recovery reads and optional timing diagnostics.
+
 ## 0.1.0-beta.1
 
 ### Minor Changes

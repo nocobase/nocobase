@@ -260,6 +260,7 @@ describe('runBridge', () => {
           : {},
     });
     const prepared: string[] = [];
+    const instructed: string[] = [];
     const { runBridge } = await import('../src/bridge.js');
     const stop = new AbortController();
     commands.push({
@@ -279,6 +280,10 @@ describe('runBridge', () => {
       prepareSession: async (_agentId, sessionId) => {
         prepared.push(sessionId);
         return {};
+      },
+      sessionInstructions: async (agentId, sessionId) => {
+        instructed.push(`${agentId}:${sessionId}`);
+        return 'Shared CLI instructions';
       },
       signal: stop.signal,
       log: () => undefined,
@@ -310,6 +315,7 @@ describe('runBridge', () => {
       );
       expect(started).toBe(1);
       expect(prepared).toEqual(['s1']);
+      expect(instructed).toEqual(['opencode:s1']);
       expect(
         reports()
           .map((body) => body.startup)

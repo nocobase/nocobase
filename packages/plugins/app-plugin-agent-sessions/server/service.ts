@@ -153,6 +153,15 @@ export interface SessionPage {
   readonly nextPageToken?: string;
 }
 
+/** Only committed transcript identities; no message body or permission input leaves the service. */
+export interface CommittedSessionEvent {
+  readonly userId: string;
+  readonly sessionId: string;
+  readonly title: string;
+  readonly seq: number;
+  readonly reason: 'turnEnded' | 'turnFailed' | 'permissionRequested';
+}
+
 /** How often a waiting poll looks for commands another instance queued. */
 const POLL_CHECK_MS = 1_000;
 /** How long a request waits for the bridge's reply, and how often it looks for one another instance took. */
@@ -170,6 +179,7 @@ export class AgentSessionsService {
   readonly #diagnose: AgentSessionsServiceOptions['diagnose'];
   readonly #waiters = new Map<string, Set<() => void>>();
   readonly #linkKinds = new Map<string, LinkResolver>();
+  readonly #eventListeners = new Set<(event: CommittedSessionEvent) => void>();
   #projects: ProjectSource | undefined;
   #instructions: string | ((viewer: Viewer) => string) | undefined;
   #notices: SessionNotices | undefined;
@@ -196,6 +206,16 @@ export class AgentSessionsService {
   /** Tells owners of what happens in their sessions while they are not looking, and settles it (`notices.ts`). */
   registerNotices(notices: SessionNotices): void {
     this.#notices = notices;
+  }
+
+  /** Observe immediate reminder events after commit; listeners must schedule their own asynchronous work. */
+  onCommittedEvent(
+    listener: (event: CommittedSessionEvent) => void,
+  ): () => void {
+    this.#eventListeners.add(listener);
+    return () => {
+      this.#eventListeners.delete(listener);
+    };
   }
 
   /**
@@ -1584,6 +1604,46 @@ export class AgentSessionsService {
       filter: { id: session.id },
       values: written,
     });
+    if (this.#eventListeners.size > 0) {
+      // Streaming updates may coalesce into the prior sequence; reminder events are always appended.
+      const base = lastSeq - added.length;
+      const committed = added.flatMap(
+        (event, index): CommittedSessionEvent[] => {
+          const reason =
+            event.kind === 'permissionRequested'
+              ? 'permissionRequested'
+              : event.kind === 'turnEnded' && event.stopReason !== 'cancelled'
+                ? event.error
+                  ? 'turnFailed'
+                  : 'turnEnded'
+                : null;
+          return reason
+            ? [
+                {
+                  userId: session.userId,
+                  sessionId: session.id,
+                  title:
+                    session.title ??
+                    (session.state?.title?.trim() || session.firstMessage),
+                  seq: base + index + 1,
+                  reason,
+                },
+              ]
+            : [];
+        },
+      );
+      if (committed.length)
+        conn.afterCommit(() => {
+          for (const event of committed)
+            for (const listener of this.#eventListeners) {
+              try {
+                listener(event);
+              } catch {
+                /* Observers cannot change an already committed transcript. */
+              }
+            }
+        });
+    }
     return { session: { ...session, ...written }, lastSeq };
   }
 
