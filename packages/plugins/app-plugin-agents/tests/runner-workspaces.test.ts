@@ -7,7 +7,7 @@ import {
   RUNNER_ROUTES,
   WORKSPACE_REPORT_INTERVAL_MS,
 } from '@nocobase/agent-protocol';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   api,
@@ -300,7 +300,24 @@ describe("a runner's working directories", () => {
       user: 'owner',
     });
     expect(shown.body.data.variables).toEqual(['OTHER_KEY']);
-    expect(shown.body.data.workspaceUsage).toEqual(before.workspaceUsage);
+    const summary = {
+      totalBytes: 0,
+      sizeUnknownCount: 1,
+      counts: { all: 1, active: 0, retained: 1, ended: 0 },
+    };
+    expect(shown.body.data.workspaceUsage).toEqual({
+      ...before.workspaceUsage,
+      ...summary,
+      workspaces: [],
+    });
+    const directories = await h.request(
+      'GET',
+      `/agents/runners/${runner.runnerId}/workspaces`,
+      { user: 'owner' },
+    );
+    const { workspaces: originalRows, ...totals } = before.workspaceUsage!;
+    expect(directories.body.meta.usage).toEqual({ ...totals, ...summary });
+    expect(directories.body.data).toEqual(originalRows);
   });
 
   it('keeps the report on the runner, most recently used first, with each subject, what was decided and the disk', async () => {
@@ -316,10 +333,17 @@ describe("a runner's working directories", () => {
       ],
       disk,
     });
-    const shown = await h.request('GET', `/agents/runners/${runner.runnerId}`, {
-      user: 'owner',
-    });
-    expect(shown.body.data.workspaceUsage).toMatchObject({
+    const shown = await h.request(
+      'GET',
+      `/agents/runners/${runner.runnerId}/workspaces`,
+      {
+        user: 'owner',
+      },
+    );
+    expect({
+      ...shown.body.meta.usage,
+      workspaces: shown.body.data,
+    }).toMatchObject({
       disk,
       count: 2,
       unpushedCount: 1,
@@ -362,6 +386,35 @@ describe("a runner's working directories", () => {
     });
   });
 
+  it('preserves aggregate size and category counts while hiding machine directories', async () => {
+    h = await createHarness();
+    const { runner, runIds } = await runnerWithRuns(['1']);
+    await report(runner, { workspaces: [workspace(runIds[0])], disk });
+    const invoke = vi
+      .spyOn(h.services.agents, 'mayInvoke')
+      .mockReturnValue(false);
+    try {
+      const shown = await h.request(
+        'GET',
+        `/agents/runners/${runner.runnerId}/workspaces`,
+        { user: 'viewer', can: ['agents.runners/read'] },
+      );
+      expect(shown.status).toBe(200);
+      expect({
+        ...shown.body.meta.usage,
+        workspaces: shown.body.data,
+      }).toMatchObject({
+        count: 1,
+        totalBytes: 0,
+        sizeUnknownCount: 1,
+        counts: { all: 1, active: 0, retained: 1, ended: 0 },
+        workspaces: [],
+      });
+    } finally {
+      invoke.mockRestore();
+    }
+  });
+
   it('decides nothing for a subject kind whose binding cannot say', async () => {
     h = await createHarness();
     const { runner, runIds } = await runnerWithRuns(['1']);
@@ -369,10 +422,17 @@ describe("a runner's working directories", () => {
       workspaces: [workspace(runIds[0])],
     });
     expect(response.body.data).toEqual({ remove: [], keep: [] });
-    const shown = await h.request('GET', `/agents/runners/${runner.runnerId}`, {
-      user: 'owner',
-    });
-    expect(shown.body.data.workspaceUsage).toMatchObject({
+    const shown = await h.request(
+      'GET',
+      `/agents/runners/${runner.runnerId}/workspaces`,
+      {
+        user: 'owner',
+      },
+    );
+    expect({
+      ...shown.body.meta.usage,
+      workspaces: shown.body.data,
+    }).toMatchObject({
       disk: null,
       workspaces: [{ runId: runIds[0], settled: null }],
     });

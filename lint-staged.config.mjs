@@ -1,15 +1,16 @@
 import path from 'node:path';
 
-const CODE = /\.(?:[cm]?[jt]sx?)$/u;
+const CODE = /\.(?:[cm]?[jt]sx?|astro)$/u;
 const FORMATTABLE =
-  /\.(?:[cm]?[jt]sx?|json5?|jsonc|mdx?|ya?ml|css|scss|less|html)$/u;
+  /\.(?:[cm]?[jt]sx?|json5?|jsonc|mdx?|ya?ml|css|scss|less|html|astro)$/u;
 
 /**
  * Directories that lint themselves rather than being covered by the root ESLint configuration, given as
  * repository-relative prefixes. A directory belongs here when it has its own `eslint.config.*` AND its own ESLint
  * dependency, because both halves matter: the root configuration enumerates the package roots it applies to and
  * matches nothing under such a directory, so linting its files from the root silently succeeds without running a
- * single rule, and `docs` is on ESLint 9 while the root is on ESLint 10, so the binary has to come from there too.
+ * single rule, and its configuration loads plugins only it depends on (`docs` lints `.astro` components with
+ * `eslint-plugin-astro`), so the binary has to come from there too.
  *
  * Everything under `packages/` is covered by the root configuration and must not be listed.
  */

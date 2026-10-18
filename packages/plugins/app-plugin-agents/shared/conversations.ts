@@ -56,6 +56,8 @@
  * no content (`ConversationChanged`). A page that hears one fetches through the API. Pages also poll while a run is
  * open, because announcements reach only the browsers connected to the instance that made the change.
  */
+import type { QuotaLocation } from './quota.js';
+
 import type { FailureReason, RunStatus } from '@nocobase/agent-protocol';
 
 import type { I18nText } from './i18n.js';
@@ -631,6 +633,8 @@ export interface SendMessageResult {
  * `CreateConversationRequest`). The text is at most `MESSAGE_CONTENT_MAX` characters: 400 `INVALID_REQUEST` otherwise.
  */
 export interface StartConversationRequest {
+  /** The caller's own unattached chat uploads for the first message. */
+  readonly attachmentIds?: readonly string[];
   readonly source: Exclude<ConversationSource, 'panel'>;
   readonly text: string;
   readonly agentId?: string;
@@ -641,6 +645,9 @@ export interface StartConversationRequest {
 
 /** An agent the person may chat with (`GET agents`). */
 export interface ChatAgent {
+  readonly quota?: readonly QuotaLocation[];
+  /** Viewer-visible eligible runtimes, for partial quota availability. */
+  readonly runnerNames: readonly string[];
   readonly id: string;
   readonly name: string;
   readonly description: string | null;

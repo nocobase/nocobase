@@ -1,6 +1,8 @@
 /**
  * Runs as the browser and the server's admin API exchange them.
  */
+import type { QuotaReport } from '@nocobase/agent-protocol';
+
 import type {
   ActorKind,
   AgentTool,
@@ -29,6 +31,7 @@ export interface RunEffortReport {
 }
 
 export interface RunExecutionSnapshot {
+  readonly quota?: QuotaReport;
   readonly selection?: {
     readonly reason: 'preferredQueued' | 'preferredUnavailable';
     readonly preferredTool: string;
@@ -62,6 +65,37 @@ export interface RunExecutionSnapshot {
   readonly dispatchedAt: string;
   readonly finishedAt: string | null;
   readonly failureReason: string | null;
+  /** Set only by the server sweep; runner reports never supply this history marker. */
+  readonly failureSource?: 'sweeper';
+}
+
+/** Maximum consecutive server-reclaimed pre-start attempts, independent of the real failure budget. */
+export const PRE_START_INTERRUPTION_LIMIT = 10;
+
+/** Only server-reclaimed pre-start attempts are exempt from the real failure budget. */
+export function isPreStartInterruption(
+  execution: RunExecutionSnapshot,
+): boolean {
+  return (
+    execution.finishedAt !== null &&
+    execution.failureSource === 'sweeper' &&
+    (execution.failureReason === 'startTimeout' ||
+      execution.failureReason === 'runnerOfflineBeforeStart')
+  );
+}
+
+/** Both pre-start causes share one streak; every other ended attempt breaks it. */
+export function consecutivePreStartInterruptions(
+  executions: readonly RunExecutionSnapshot[],
+): number {
+  let count = 0;
+  for (let index = executions.length - 1; index >= 0; index--) {
+    const execution = executions[index];
+    if (execution.finishedAt === null) continue;
+    if (!isPreStartInterruption(execution)) break;
+    count++;
+  }
+  return count;
 }
 
 export type ModelWaitReason =

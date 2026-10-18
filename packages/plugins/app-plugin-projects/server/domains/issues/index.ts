@@ -15,11 +15,13 @@ export {
   issuesOfProject,
   liveChildren,
   touchIssueActivity,
+  unfinishedStagedChildren,
   updateIssue,
 } from './issue.store.js';
 export {
   canSee,
   issueVisibleTo,
+  visibleIssueIds,
   managesIssue,
   requireEditor,
   requireVisible,

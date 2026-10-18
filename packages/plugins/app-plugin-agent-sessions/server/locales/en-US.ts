@@ -2,6 +2,15 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   errors: {
+    promptNotFound: 'No message with this identity exists in the session.',
+    promptStarted:
+      'The message has started processing and cannot be withdrawn.',
+    withdrawalUnsupported:
+      'This older message cannot be safely withdrawn. Update the command line and restart the computer connection.',
+    bridgeReplaced:
+      'Another bridge has registered this computer. Restart this connection.',
+    submissionConflict:
+      'This submission ID is already used for another request.',
     authenticationRequired: 'Sign in to use agent sessions.',
     computerNotFound: 'No computer with this id is connected to your account.',
     sessionNotFound: 'No session with this id is yours.',

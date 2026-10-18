@@ -1,0 +1,72 @@
+---
+/**
+ * The page the CDN serves for a path that does not exist. It is served at whatever URL was requested, so every link
+ * in it is absolute.
+ */
+import { getLanguage } from '../../shared/languages.ts';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+interface Props {
+  language: string;
+}
+
+const { language } = Astro.props;
+const cn = language === 'cn';
+---
+
+<BaseLayout
+  language={language}
+  route='/404'
+  title='404'
+  description={getLanguage(language).siteDescription}
+  translations={[language]}
+  noindex
+  footer={false}
+  layout='not-found'
+>
+  <main class='not-found'>
+    <p class='not-found__code'>404</p>
+    <h1 class='not-found__title'>{cn ? '页面未找到' : 'PAGE NOT FOUND'}</h1>
+    <div class='not-found__divider'></div>
+    <a class='not-found__home' href={getLanguage(language).base}>
+      {cn ? '返回首页' : 'Take me home'}
+    </a>
+  </main>
+</BaseLayout>
+
+<style>
+  .not-found {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 96px 24px;
+    text-align: center;
+  }
+  .not-found__code {
+    font-size: 64px;
+    font-weight: 600;
+  }
+  .not-found__title {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 2px;
+  }
+  .not-found__divider {
+    width: 64px;
+    height: 1px;
+    margin: 24px 0 18px;
+    background: var(--docs-line);
+  }
+  .not-found__home {
+    padding: 6px 16px;
+    border: 1px solid var(--docs-brand);
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--docs-brand);
+  }
+  .not-found__home:hover {
+    color: var(--docs-paper);
+    background: var(--docs-brand);
+  }
+</style>

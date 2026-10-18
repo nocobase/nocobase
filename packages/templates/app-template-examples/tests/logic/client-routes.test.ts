@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 import { lifecycleRoutes } from '@nocobase/app-plugin-lifecycle-example/client';
 import applicationRoutes from '../../client/routes.ts';
+import { buildRouteNavigation } from '../../client/routing/route-navigation.ts';
 
 describe('app client routes', () => {
   it('keeps the landing page and the authentication pages', () => {
@@ -51,6 +52,24 @@ describe('app client routes', () => {
     ).not.toHaveProperty('navigation');
   });
 
+  it('keeps workflow, user and role management in one system navigation group', () => {
+    const navigation = buildRouteNavigation(resolveRoutes().routes, new Set());
+    expect(navigation.some(({ route }) => route.name === 'settings')).toBe(
+      false,
+    );
+    const management = navigation.find(
+      ({ route }) => route.name === 'systemManagement',
+    );
+    expect(management?.children.map(({ route }) => route.name)).toEqual([
+      'workflows',
+      'settingsUsers',
+      'settingsRoles',
+    ]);
+    expect(
+      management?.children.every(({ children }) => children.length === 0),
+    ).toBe(true);
+  });
+
   it('pins the page authorization of every signed-in page', () => {
     // A stored page grant records the page's `authz` resource id (`authorizedAs`), not its route `name`: changing an
     // id is a data change that has to migrate the grants that reference it, not a refactor — so changing this list
@@ -77,11 +96,43 @@ describe('app client routes', () => {
       { name: 'numeric-examples', authorizedAs: 'numeric-examples' },
       { name: 'i18n-examples', authorizedAs: 'i18n-examples' },
       { name: 'external-crm', authorizedAs: 'external-crm' },
-      { name: 'workflows', authorizedAs: null },
-      { name: 'workflowDefinitions', authorizedAs: null },
-      { name: 'workflowDefinition', authorizedAs: null },
-      { name: 'workflowExecutions', authorizedAs: null },
-      { name: 'workflowExecution', authorizedAs: null },
+      { name: 'workflows', authorizedAs: 'settings:workflow-management' },
+      {
+        name: 'workflowDefinitions',
+        authorizedAs: 'settings:workflow-management',
+      },
+      {
+        name: 'workflowDefinition',
+        authorizedAs: 'settings:workflow-management',
+      },
+      {
+        name: 'workflowParameters',
+        authorizedAs: 'settings:workflow-management',
+      },
+      {
+        name: 'workflowExecutions',
+        authorizedAs: 'settings:workflow-management',
+      },
+      {
+        name: 'workflowExecution',
+        authorizedAs: 'settings:workflow-management',
+      },
+      { name: 'settingsUsers', authorizedAs: 'user:*' },
+      { name: 'settingsUserCreate', authorizedAs: 'user:*' },
+      { name: 'settingsUser', authorizedAs: 'user:*' },
+      { name: 'settingsUserEdit', authorizedAs: 'user:*' },
+      {
+        name: 'settingsRoles',
+        authorizedAs: 'settings:authorization.permission-sets',
+      },
+      {
+        name: 'settingsRoleCreate',
+        authorizedAs: 'settings:authorization.permission-sets',
+      },
+      {
+        name: 'settingsRoleEdit',
+        authorizedAs: 'settings:authorization.permission-sets',
+      },
     ]);
   });
 });

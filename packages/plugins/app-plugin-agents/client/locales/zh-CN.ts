@@ -474,6 +474,7 @@ const zhCN: AgentsResource = {
   failures: {
     runnerUpgrade: '因执行机升级中断，运行将继续。',
     runnerDiskFull: '执行机磁盘空间不足。',
+    runnerOfflineBeforeStart: '运行环境在启动前离线。',
     runnerOffline: '运行环境已离线。',
     leaseExpired: '运行环境停止了上报。',
     startTimeout: '运行环境没有及时开始运行。',

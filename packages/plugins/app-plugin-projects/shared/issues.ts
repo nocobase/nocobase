@@ -39,6 +39,8 @@ export interface Issue {
   readonly needsYou: string | null;
   /** The next step; independent of comments. */
   readonly next: string | null;
+  /** The delivery report, Markdown; kept across status changes until the next delivery replaces it. */
+  readonly acceptance: string | null;
   readonly priority: Priority;
   /** The accountable person; never empty. */
   readonly ownerUserId: string;
@@ -102,6 +104,7 @@ export interface Activity {
 }
 
 export interface IssueDetail extends IssueListItem {
+  readonly progress?: Record<string, unknown> | null;
   readonly parent: IssueRef | null;
   /** The fixed statuses, in order. */
   readonly statuses: readonly StatusDefinition[];
@@ -153,12 +156,22 @@ export const ISSUE_SORTS = [
 ] as const;
 export type IssueSort = (typeof ISSUE_SORTS)[number];
 
+/** The most issues one list request names by id (`IssueListQuery.issueIds`). */
+export const ISSUE_IDS_MAX = 100;
+
 /**
  * The issues a service lists. `GET /api/projects/issues` takes the same filters, `deleted=true`, `orderBy` (such as
  * `updatedAt desc`; see `server/routes/schemas.ts`) for `sort` and `direction`, and `pageSize` and `pageToken` for
  * `limit` and `cursor`. `GET /api/projects/issues/board` takes the filters and `pageSize` per column.
  */
 export interface IssueListQuery {
+  /**
+   * Only these issues (at most `ISSUE_IDS_MAX`), still within the other filters: a page refreshes the rows an
+   * announcement named without reading the whole list. `issueIds` on the API, comma-separated.
+   */
+  readonly issueIds?: readonly string[];
+  /** Owned by this person or executed by them as a user, each issue once. */
+  readonly involvesUserId?: string;
   readonly statusKey?: string;
   readonly projectId?: string;
   readonly ownerUserId?: string;
@@ -179,6 +192,8 @@ export interface IssueListQuery {
 }
 
 export interface CreateIssueRequest {
+  /** The creator's unattached uploads, bound before work starts. */
+  readonly attachmentIds?: readonly string[];
   readonly title: string;
   readonly description?: string;
   /** `in_progress` (start now) or `backlog` (later, the default; `START_STATUSES`). */
@@ -217,6 +232,8 @@ export interface UpdateIssueRequest {
   readonly needsYou?: string | null;
   /** Omitted: keep; null or whitespace: clear. Terminal statuses always clear it. */
   readonly next?: string | null;
+  /** The delivery report, Markdown: omit to retain; null or whitespace clears it. Kept across status changes. */
+  readonly acceptance?: string | null;
   readonly priority?: Priority;
   readonly ownerUserId?: string;
   readonly executor?: Executor | null;
@@ -236,5 +253,8 @@ export interface UpdateIssueRequest {
 export const ISSUE_TITLE_MAX = 500;
 export const ISSUE_DESCRIPTION_MAX = 200_000;
 export const ISSUE_PROGRESS_MAX = 2_000;
+
+/** The longest delivery report an issue keeps. */
+export const ISSUE_ACCEPTANCE_MAX = 20_000;
 export const ISSUE_PAGE_LIMIT = { default: 50, max: 100 } as const;
 export const ACTIVITY_PAGE_LIMIT = { default: 50, max: 200 } as const;

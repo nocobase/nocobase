@@ -85,6 +85,53 @@ function operation(method: string, path: string): OpenAPIV3_1.OperationObject {
 }
 
 describe('agents API document', () => {
+  it('retains SKILL.md front matter rules in skill create and update help', () => {
+    const commands = deriveAllCliCommands(document);
+    for (const id of ['skill:create', 'skill:update']) {
+      const command = commands.find((entry) => entry.id === id);
+      const content = command?.parameters.find(
+        (entry) => entry.field === 'content',
+      );
+      expect(content?.description).toContain('YAML front matter');
+      expect(content?.description).toContain(
+        '1–64 lower-case letters, digits and single hyphens',
+      );
+      expect(content?.description).toContain('1–1024 characters');
+      for (const key of [
+        'name',
+        'description',
+        'license',
+        'compatibility',
+        'metadata',
+        'allowed-tools',
+      ])
+        expect(content?.description).toContain(`\`${key}\``);
+    }
+  });
+
+  it('derives the runtime token list command with pagination from the production routes', () => {
+    const command = deriveAllCliCommands(document).find(
+      (entry) => entry.id === 'runtime:token:list',
+    );
+    expect(command).toMatchObject({
+      method: 'GET',
+      path: '/api/agents/runners/registrationTokens',
+    });
+    expect(command?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: 'page',
+          in: 'query',
+          type: 'integer',
+        }),
+        expect.objectContaining({
+          field: 'pageSize',
+          in: 'query',
+          type: 'integer',
+        }),
+      ]),
+    );
+  });
   it('declares every route and hides none', () => {
     expect(findUndeclaredApiRoutes(api)).toEqual([]);
     const routes = inspectApiRoutes(api);

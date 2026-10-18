@@ -1,5 +1,12 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- 616561b: Give dispatched agent runs five minutes to start while their runtime stays online. Immediately requeue server-reclaimed pre-start runtime interruptions without consuming failure attempts or losing unhandled input, stopping after ten consecutive interruptions. Count runner-reported worker startup failures against the normal failure budget with backoff, and distinguish terminal runtime failures from agent failures. Count and list only inbox decisions whose in-app messages still exist, filtering before pagination.
+- 83e3609: Once the application says a task's work is over, routine collection removes its working directories and Codex session directories whatever they hold — untracked files, uncommitted changes, unpushed commits, recovery worktrees and local continuation refs — without `--force` and without waiting for disk pressure. Only a run holding a directory's lock, or using it since it was reported, keeps it. Directories whose work goes on, or whose status is unknown, keep their unpushed-work protection.
+
 ## 0.1.0-beta.8
 
 ### Patch Changes

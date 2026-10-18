@@ -73,6 +73,7 @@ interface PostgresCollectionRow {
   readonly relkind: string;
   readonly comment: string | null;
   readonly view_definition: string | null;
+  readonly has_inherited_children?: boolean;
   readonly columns: PostgresColumnRow[];
   readonly constraints: PostgresConstraintRow[];
   readonly indexes: PostgresIndexRow[];
@@ -81,6 +82,7 @@ interface PostgresCollectionRow {
 interface PostgresColumnRow {
   readonly collation: string | null;
   readonly collation_schema: string | null;
+  readonly collation_oid: number;
   readonly character_set: string | null;
   readonly attnum: number;
   readonly column_name: string;
@@ -112,6 +114,7 @@ interface PostgresIndexRow {
   readonly index_oid: string | number;
   readonly index_name: string;
   readonly unique: boolean;
+  readonly valid: boolean;
   readonly primary: boolean;
   readonly method: string;
   readonly predicate: string | null;
@@ -119,6 +122,8 @@ interface PostgresIndexRow {
   readonly attribute_count: number;
   readonly attribute_numbers: string;
   readonly options: string;
+  readonly collation_oids: string;
+  readonly column_equalities: boolean[];
   readonly constraint_name: string | null;
   readonly constraint_type: 'p' | 'u' | null;
   readonly definitions: (string | null)[];
@@ -178,6 +183,7 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
       schema: collection.schema,
       tableName: collection.table_name,
       kind: postgresKind(collection.relkind),
+      hasInheritedChildren: collection.has_inherited_children || undefined,
       comment: optionalString(collection.comment),
       viewDefinition: optionalString(collection.view_definition),
       columns: rawColumns.map((column) => {
@@ -230,6 +236,8 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
         ? {
             name: primary.constraint_name,
             columns: primary.columns,
+            deferrable: primary.deferrable,
+            initiallyDeferred: primary.initially_deferred,
           }
         : undefined,
       uniqueConstraints: constraints
@@ -372,6 +380,12 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
             n.nspname as schema,
             c.relname as table_name,
             c.relkind,
+            exists (
+              select 1
+              from pg_catalog.pg_inherits i
+              join pg_catalog.pg_class child on child.oid = i.inhrelid
+              where i.inhparent = c.oid and not child.relispartition
+            ) as has_inherited_children,
             pg_catalog.obj_description(c.oid, 'pg_class') as comment,
             case when c.relkind in ('v', 'm')
               then pg_catalog.pg_get_viewdef(c.oid, true)
@@ -410,6 +424,7 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
             tn.nspname as native_type_schema,
             co.collname as collation,
             cn.nspname as collation_schema,
+            a.attcollation as collation_oid,
             case when t.typcategory = 'S' then current_setting('server_encoding') end as character_set,
             not a.attnotnull as nullable,
             pg_catalog.pg_get_expr(ad.adbin, ad.adrelid) as default_expression,
@@ -480,6 +495,7 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
             i.indexrelid as index_oid,
             ic.relname as index_name,
             i.indisunique as unique,
+            (i.indisvalid and i.indisready) as valid,
             i.indisprimary as primary,
             am.amname as method,
             pg_catalog.pg_get_expr(i.indpred, i.indrelid) as predicate,
@@ -487,6 +503,21 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
             i.indnatts as attribute_count,
             i.indkey::text as attribute_numbers,
             i.indoption::text as options,
+            i.indcollation::text as collation_oids,
+            array(
+              select coalesce(opc.opcdefault and (
+                opc.opcintype = a.atttypid or (
+                  a.atttypid = 'pg_catalog.varchar'::regtype and
+                  opc.opcintype = 'pg_catalog.text'::regtype
+                )
+              ), false)
+              from unnest(i.indclass) with ordinality as classes(oid, position)
+              join pg_catalog.pg_opclass opc on opc.oid = classes.oid
+              left join pg_catalog.pg_attribute a
+                on a.attrelid = i.indrelid
+                and a.attnum = i.indkey[(classes.position - 1)::integer]
+              order by classes.position
+            ) as column_equalities,
             con.conname as constraint_name,
             con.contype as constraint_type,
             array(
@@ -514,10 +545,14 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
     const columnNames = new Map(
       columns.map((column) => [column.attnum, column.column_name]),
     );
+    const columnCollations = new Map(
+      columns.map((column) => [column.attnum, Number(column.collation_oid)]),
+    );
     const indexes: PhysicalIndexSchema[] = [];
     for (const row of rows) {
       const attributeNumbers = parsePostgresVector(row.attribute_numbers);
       const indexOptions = parsePostgresVector(row.options);
+      const indexCollations = parsePostgresVector(row.collation_oids);
       const keyCount = Number(row.key_count);
       const keys: PhysicalIndexKey[] = [];
       const includeColumns: string[] = [];
@@ -539,7 +574,17 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
         const nulls = (option & 2) === 2 ? 'first' : 'last';
         const columnName = columnNames.get(attributeNumber);
         if (attributeNumber !== 0 && columnName) {
-          keys.push({ columnName, order, nulls });
+          keys.push({
+            columnName,
+            order,
+            nulls,
+            // A default class for a different type (e.g. text_ops on citext)
+            // does not prove compatibility with the column's equality.
+            ...(row.column_equalities[position] === true &&
+            indexCollations[position] === columnCollations.get(attributeNumber)
+              ? {}
+              : { columnEquality: false }),
+          });
           continue;
         }
         const definition = row.definitions[position];
@@ -554,6 +599,7 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
         keys,
         includeColumns: includeColumns.length > 0 ? includeColumns : undefined,
         unique: row.unique,
+        valid: row.valid,
         backsConstraint:
           row.constraint_type === 'p' || row.constraint_type === 'u'
             ? {

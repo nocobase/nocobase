@@ -1,5 +1,32 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- Updated dependencies [b322dcf]
+  - @nocobase/app-cli-client@0.1.0-beta.9
+
+## 0.1.0-beta.10
+
+### Patch Changes
+
+- b02f078: Persist revoked runner registrations and stop serving them until successful registration. Add optional revocation details to status JSON, stop system services on authentication failure while preserving self-update restarts, bound rapid startup retries, and rotate daemon logs at 5 MiB with two backups. Manual updates explicitly restart installed services. Stopping also cancels a launcher waiting to retry, and duplicate starts are refused while that launcher is alive. Existing installations must run `nocobase-runner service install` with the new version to replace their old unconditional restart definitions; service definitions are not migrated automatically.
+- b7e1719: A read-only step's notes now say what read-only means: change no tracked file, commit and push nothing. The agent may still prepare its checkout to run things there, such as initializing submodules, installing dependencies, building and running checks, which agents had read the old "change nothing" as forbidding.
+- 83e3609: Once the application says a task's work is over, routine collection removes its working directories and Codex session directories whatever they hold — untracked files, uncommitted changes, unpushed commits, recovery worktrees and local continuation refs — without `--force` and without waiting for disk pressure. Only a run holding a directory's lock, or using it since it was reported, keeps it. Directories whose work goes on, or whose status is unknown, keep their unpushed-work protection.
+- b887c55: A workspace's Codex home now links the real `~/.codex` plugin bundles (`plugins/`) and plugin catalog (`cache/`), so a new workspace no longer downloads them again.
+- b887c55: The runner no longer initializes a repository's submodules while preparing a checkout, so a new checkout no longer downloads every submodule in full. A prepared checkout leaves its submodules uninitialized; a project whose repository has submodules should tell its agents how to initialize them, for example `git submodule update --init --reference <local copy>` or a shallow `--depth 1` update. Submodules an agent initialized are still checked for unpushed commits before a checkout is removed.
+- 9656875: Read piped environment values only once so delayed and split input is preserved.
+- Updated dependencies [846e75f]
+- Updated dependencies [d34b6eb]
+- Updated dependencies [5fe8773]
+- Updated dependencies [616561b]
+- Updated dependencies [83e3609]
+- Updated dependencies [55fcee1]
+- Updated dependencies [49f61b9]
+  - @nocobase/app-cli-client@0.1.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.9
+
 ## 0.1.0-beta.9
 
 ### Patch Changes

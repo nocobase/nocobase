@@ -36,6 +36,8 @@ import {
 import { readIntakeTexts, type ExtractOffice } from './intake.text.js';
 
 export interface IntakeService {
+  /** The caller's selected PNG/JPEG uploads, validated together before reading any bytes. */
+  images(userId: string, ids: readonly string[]): Promise<File[]>;
   upload(viewer: Viewer, file: File): Promise<IntakeFile>;
   removeFile(viewer: Viewer, id: string): Promise<void>;
   split(viewer: Viewer, input: IntakeSplitRequest): Promise<IntakeSplitResult>;
@@ -141,6 +143,31 @@ function rehearsalOf(error: unknown): PlanRehearsal | null {
 
 export function createIntakeService(deps: IntakeDeps): IntakeService {
   return {
+    async images(userId, ids) {
+      const files = await deps.files.owned(userId, ids);
+      for (const file of files) {
+        const type = file.mimeType.split(';')[0].trim().toLowerCase();
+        if (!(
+          (type === 'image/png' && file.ext.toLowerCase() === 'png') ||
+          (type === 'image/jpeg' &&
+            ['jpg', 'jpeg'].includes(file.ext.toLowerCase()))
+        ))
+          throw invalid(
+            'INVALID_FILE',
+            `Image ${file.filename} must be PNG or JPEG.`,
+          );
+      }
+      const images: File[] = [];
+      for (const file of files)
+        images.push(
+          new File(
+            [new Uint8Array(await deps.files.bytes(file))],
+            file.filename,
+            { type: file.mimeType },
+          ),
+        );
+      return images;
+    },
     upload: (viewer, file) => deps.files.upload(viewer.userId, file),
 
     removeFile: (viewer, id) => deps.files.remove(viewer.userId, id),

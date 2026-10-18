@@ -1066,7 +1066,13 @@ function applyAlterMetadata(
 
   let indexes = [...(current.indexes ?? []), ...(changes.addIndexes ?? [])];
   indexes = indexes.filter(
-    (index) => !index.name || !(changes.dropIndexes ?? []).includes(index.name),
+    (index) =>
+      !index.name ||
+      (!(changes.dropIndexes ?? []).includes(index.name) &&
+        !(
+          index.db?.unique === true &&
+          (changes.dropConstraints ?? []).includes(index.name)
+        )),
   );
 
   let constraints = [

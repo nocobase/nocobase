@@ -4,7 +4,14 @@
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { MermaidDiagram, mermaidSource } from '@nocobase/markdown-mermaid';
-import { createElement, type ReactElement, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useMemo,
+  createElement,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import Markdown, { type Components, type ExtraProps } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -40,14 +47,17 @@ function marked(
     : { 'data-line': start };
 }
 
-function heading(
-  level: 1 | 2 | 3 | 4 | 5 | 6,
-  anchors: ReadonlyMap<number, string>,
-  className: string,
-  hiddenLine: number | null,
-  lines: Lines,
-) {
-  return ({ node, children, ...props }: HeadingProps): ReactNode => {
+function heading(level: 1 | 2 | 3 | 4 | 5 | 6, className: string) {
+  return function Heading({
+    node,
+    children,
+    ...props
+  }: HeadingProps): ReactNode {
+    const {
+      anchors,
+      hiddenLine,
+      highlight: lines,
+    } = useContext(MarkdownContext);
     if (node?.position?.start.line === hiddenLine) return null;
     const mark = marked(node, lines);
     return createElement(
@@ -63,6 +73,128 @@ function heading(
   };
 }
 
+const MarkdownContext = createContext<{
+  anchors: ReadonlyMap<number, string>;
+  hiddenLine: number | null;
+  highlight: Lines;
+}>({ anchors: new Map(), hiddenLine: null, highlight: null });
+
+const components: Components = {
+  h1: heading(1, 'mt-6 mb-3 font-heading text-2xl font-semibold first:mt-0'),
+  h2: heading(
+    2,
+    'mt-6 mb-2 border-b pb-1 font-heading text-xl font-semibold first:mt-0',
+  ),
+  h3: heading(3, 'mt-5 mb-2 text-lg font-semibold first:mt-0'),
+  h4: heading(4, 'mt-4 mb-2 font-semibold first:mt-0'),
+  h5: heading(5, 'mt-4 mb-2 font-semibold first:mt-0'),
+  h6: heading(6, 'mt-4 mb-2 font-semibold first:mt-0'),
+  p: function MarkdownP({ node, ...props }) {
+    const { highlight } = useContext(MarkdownContext);
+    const mark = marked(node, highlight);
+    return (
+      <p
+        {...props}
+        {...mark}
+        className={cn('leading-7 not-first:mt-3', mark.className)}
+      />
+    );
+  },
+  a: ({ node: _node, ...props }) => (
+    <a
+      className='font-medium text-primary underline underline-offset-4'
+      {...props}
+    />
+  ),
+  ul: function MarkdownUl({ node, ...props }) {
+    const { highlight } = useContext(MarkdownContext);
+    const mark = marked(node, highlight);
+    return (
+      <ul
+        {...props}
+        {...mark}
+        className={cn('my-3 ml-6 list-disc space-y-1', mark.className)}
+      />
+    );
+  },
+  ol: function MarkdownOl({ node, ...props }) {
+    const { highlight } = useContext(MarkdownContext);
+    const mark = marked(node, highlight);
+    return (
+      <ol
+        {...props}
+        {...mark}
+        className={cn('my-3 ml-6 list-decimal space-y-1', mark.className)}
+      />
+    );
+  },
+  blockquote: function MarkdownBlockquote({ node, ...props }) {
+    const { highlight } = useContext(MarkdownContext);
+    const mark = marked(node, highlight);
+    return (
+      <blockquote
+        {...props}
+        {...mark}
+        className={cn(
+          'my-3 border-l-2 pl-4 text-muted-foreground italic',
+          mark.className,
+        )}
+      />
+    );
+  },
+  code: ({ node: _node, className: name, ...props }) => (
+    <code
+      className={cn(
+        'rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]',
+        name,
+      )}
+      {...props}
+    />
+  ),
+  pre: function MarkdownPre({ node, ...props }) {
+    const { highlight } = useContext(MarkdownContext);
+    const mark = marked(node, highlight);
+    const block = (
+      <pre
+        {...props}
+        {...mark}
+        className={cn(
+          'my-3 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-sm [&>code]:bg-transparent [&>code]:p-0',
+          mark.className,
+        )}
+      />
+    );
+    const source = mermaidSource(node);
+    return source === undefined ? (
+      block
+    ) : (
+      <MermaidDiagram
+        source={source}
+        fallback={block}
+        className='my-3 overflow-x-auto [&_svg]:mx-auto'
+      />
+    );
+  },
+  table: function MarkdownTable({ node, ...props }) {
+    const { highlight } = useContext(MarkdownContext);
+    const mark = marked(node, highlight);
+    return (
+      <div
+        {...mark}
+        className={cn('my-3 w-full overflow-x-auto', mark.className)}
+      >
+        <table className='w-full text-sm' {...props} />
+      </div>
+    );
+  },
+  th: ({ node: _node, ...props }) => (
+    <th className='border px-2 py-1 text-left font-medium' {...props} />
+  ),
+  td: ({ node: _node, ...props }) => (
+    <td className='border px-2 py-1 align-top' {...props} />
+  ),
+};
+
 export function KnowledgeMarkdown({
   content,
   className,
@@ -76,163 +208,29 @@ export function KnowledgeMarkdown({
   /** Lines whose blocks are highlighted (1-based, inclusive), such as a section's. */
   readonly highlight?: Lines;
 }): ReactElement {
-  const anchors = new Map(
-    markdownHeadings(content).map((item) => [item.line, item.anchor]),
+  const anchors = useMemo(
+    () =>
+      new Map(
+        markdownHeadings(content).map((item) => [item.line, item.anchor]),
+      ),
+    [content],
   );
-  const components: Components = {
-    h1: heading(
-      1,
-      anchors,
-      'mt-6 mb-3 font-heading text-2xl font-semibold first:mt-0',
-      hiddenHeadingLine,
-      highlight,
-    ),
-    h2: heading(
-      2,
-      anchors,
-      'mt-6 mb-2 border-b pb-1 font-heading text-xl font-semibold first:mt-0',
-      hiddenHeadingLine,
-      highlight,
-    ),
-    h3: heading(
-      3,
-      anchors,
-      'mt-5 mb-2 text-lg font-semibold first:mt-0',
-      hiddenHeadingLine,
-      highlight,
-    ),
-    h4: heading(
-      4,
-      anchors,
-      'mt-4 mb-2 font-semibold first:mt-0',
-      hiddenHeadingLine,
-      highlight,
-    ),
-    h5: heading(
-      5,
-      anchors,
-      'mt-4 mb-2 font-semibold first:mt-0',
-      hiddenHeadingLine,
-      highlight,
-    ),
-    h6: heading(
-      6,
-      anchors,
-      'mt-4 mb-2 font-semibold first:mt-0',
-      hiddenHeadingLine,
-      highlight,
-    ),
-    p: ({ node, ...props }) => {
-      const mark = marked(node, highlight);
-      return (
-        <p
-          {...props}
-          {...mark}
-          className={cn('leading-7 not-first:mt-3', mark.className)}
-        />
-      );
-    },
-    a: ({ node: _node, ...props }) => (
-      <a
-        className='font-medium text-primary underline underline-offset-4'
-        {...props}
-      />
-    ),
-    ul: ({ node, ...props }) => {
-      const mark = marked(node, highlight);
-      return (
-        <ul
-          {...props}
-          {...mark}
-          className={cn('my-3 ml-6 list-disc space-y-1', mark.className)}
-        />
-      );
-    },
-    ol: ({ node, ...props }) => {
-      const mark = marked(node, highlight);
-      return (
-        <ol
-          {...props}
-          {...mark}
-          className={cn('my-3 ml-6 list-decimal space-y-1', mark.className)}
-        />
-      );
-    },
-    blockquote: ({ node, ...props }) => {
-      const mark = marked(node, highlight);
-      return (
-        <blockquote
-          {...props}
-          {...mark}
-          className={cn(
-            'my-3 border-l-2 pl-4 text-muted-foreground italic',
-            mark.className,
-          )}
-        />
-      );
-    },
-    code: ({ node: _node, className: name, ...props }) => (
-      <code
-        className={cn(
-          'rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]',
-          name,
-        )}
-        {...props}
-      />
-    ),
-    pre: ({ node, ...props }) => {
-      const mark = marked(node, highlight);
-      const block = (
-        <pre
-          {...props}
-          {...mark}
-          className={cn(
-            'my-3 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-sm [&>code]:bg-transparent [&>code]:p-0',
-            mark.className,
-          )}
-        />
-      );
-      const source = mermaidSource(node);
-      return source === undefined ? (
-        block
-      ) : (
-        <MermaidDiagram
-          source={source}
-          fallback={block}
-          className='my-3 overflow-x-auto [&_svg]:mx-auto'
-        />
-      );
-    },
-    table: ({ node, ...props }) => {
-      const mark = marked(node, highlight);
-      return (
-        <div
-          {...mark}
-          className={cn('my-3 w-full overflow-x-auto', mark.className)}
-        >
-          <table className='w-full text-sm' {...props} />
-        </div>
-      );
-    },
-    th: ({ node: _node, ...props }) => (
-      <th className='border px-2 py-1 text-left font-medium' {...props} />
-    ),
-    td: ({ node: _node, ...props }) => (
-      <td className='border px-2 py-1 align-top' {...props} />
-    ),
-  };
   return (
-    <div
-      className={cn(
-        'min-w-0 text-sm wrap-break-word text-foreground',
-        className,
-      )}
-      data-testid='knowledge-markdown'
+    <MarkdownContext
+      value={{ anchors, hiddenLine: hiddenHeadingLine, highlight }}
     >
-      <Markdown remarkPlugins={[remarkGfm]} components={components}>
-        {content}
-      </Markdown>
-    </div>
+      <div
+        className={cn(
+          'min-w-0 text-sm wrap-break-word text-foreground',
+          className,
+        )}
+        data-testid='knowledge-markdown'
+      >
+        <Markdown remarkPlugins={[remarkGfm]} components={components}>
+          {content}
+        </Markdown>
+      </div>
+    </MarkdownContext>
   );
 }
 

@@ -126,7 +126,11 @@ export default class Register extends RunnerCommand {
     const existing = (await readConnections(this.paths)).find(
       (connection) => connection.registration.server === server,
     );
-    if (existing !== undefined && !flags.force) {
+    if (
+      existing !== undefined &&
+      existing.registration.revoked === undefined &&
+      !flags.force
+    ) {
       throw new UsageError(
         `This runner is already registered with ${server} as runner ${existing.registration.runnerId}. Pass --force to replace it.`,
         EXIT_CODES.conflict,
@@ -179,6 +183,7 @@ export default class Register extends RunnerCommand {
     if (
       previous !== undefined &&
       previous.registration.server !== server &&
+      previous.registration.revoked === undefined &&
       !flags.force
     )
       throw new UsageError(

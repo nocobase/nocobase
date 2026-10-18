@@ -21,6 +21,11 @@ export const AGENT_SESSIONS_NAMESPACE = '@nocobase/app-plugin-agent-sessions';
 export type AgentSessionsErrorKey = keyof (typeof enUS)['errors'];
 
 const STATUS: Readonly<Record<AgentSessionsErrorKey, ApiErrorStatus>> = {
+  promptNotFound: 'NOT_FOUND',
+  promptStarted: 'FAILED_PRECONDITION',
+  withdrawalUnsupported: 'FAILED_PRECONDITION',
+  bridgeReplaced: 'FAILED_PRECONDITION',
+  submissionConflict: 'ALREADY_EXISTS',
   authenticationRequired: 'UNAUTHENTICATED',
   computerNotFound: 'NOT_FOUND',
   sessionNotFound: 'NOT_FOUND',

@@ -14,6 +14,18 @@ const COLLECTIONS = [
   'agentSessionLinks',
 ];
 
+describeMigration('202610180001_agent_sessions_bridge_protocol', {
+  sources: migrations,
+  up: async ({ expectCollection }) => {
+    await expectCollection('agentSessionComputers').toHaveField('protocol', {
+      nullable: true,
+    });
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('agentSessionComputers').not.toHaveField('protocol');
+  },
+});
+
 describe('@nocobase/app-plugin-agent-sessions', () => {
   it('loads its migrations', async () => {
     const { directory } = migrations[0]!;
@@ -114,5 +126,17 @@ describeMigration('202610150003_agent_sessions_seen', {
     const sessions = expectCollection('agentSessions');
     await sessions.not.toHaveField('seenSeq');
     await sessions.not.toHaveField('noticedSeq');
+  },
+});
+
+describeMigration('202610160001_agent_sessions_startup', {
+  sources: migrations,
+  up: async ({ expectCollection }) => {
+    await expectCollection('agentSessions').toHaveField('startup', {
+      nullable: true,
+    });
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('agentSessions').not.toHaveField('startup');
   },
 });

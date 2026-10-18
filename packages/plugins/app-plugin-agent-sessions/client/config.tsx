@@ -29,8 +29,8 @@ export interface LinkPanelProps {
 export interface AgentSessionsRouteOptions {
   /** The application's command line, whose `acp start` connects a computer, such as `nb-studio`. */
   readonly cli: string;
-  /** How people install that command line, such as `npm install -g @nocobase/studio-cli`; left out when unknown. */
-  readonly install?: string;
+  /** Application-owned setup trigger and dialog; omitted to show the default command checklist. */
+  readonly connectPrompt?: ComponentType;
   /**
    * The panel each kind of record opens in, by kind. A record of a kind with a panel opens beside the conversation,
    * named in the address as `?<kind>=<refId>`; any other opens where its application shows it (`href`).
@@ -40,7 +40,7 @@ export interface AgentSessionsRouteOptions {
 
 export interface AgentSessionsSettings {
   readonly cli: string;
-  readonly install: string | null;
+  readonly connectPrompt: ComponentType | null;
   readonly linkPanels: Readonly<Record<string, ComponentType<LinkPanelProps>>>;
 }
 
@@ -61,6 +61,34 @@ export const LinkOpenContext: React.Context<
 export function useLinkOpen():
   ((link: Pick<SessionLink, 'kind' | 'refId' | 'href'>) => boolean) | null {
   return useContext(LinkOpenContext);
+}
+
+/**
+ * Where the plugin's views are drawn. `page` is the plugin's own page; `panel` is beside another page of the
+ * application (`AgentSessionsPanel`), which draws them narrow, without a way back, with the application's buttons in
+ * their header, opening records at their own address and telling the application which session to show.
+ */
+export interface SessionSurface {
+  readonly placeholder?: string | undefined;
+  readonly panel: boolean;
+  readonly activeLink?: Pick<SessionLink, 'kind' | 'refId'> | null | undefined;
+  /** At the end of a view's header, such as the panel's own buttons. */
+  readonly actions?: ReactNode;
+  /** A new session was created: show it. Left out, the page opens its address. */
+  readonly onCreated?: ((sessionId: string) => void) | undefined;
+  /** A session was picked in the list: show it. Left out, the list links to its address. */
+  readonly onOpenSession?: ((sessionId: string) => void) | undefined;
+  /** The project a new session starts with, over the one last used. */
+  readonly projectId?: string | null | undefined;
+}
+
+const PAGE: SessionSurface = { panel: false };
+
+export const SessionSurfaceContext: React.Context<SessionSurface> =
+  createContext<SessionSurface>(PAGE);
+
+export function useSessionSurface(): SessionSurface {
+  return useContext(SessionSurfaceContext);
 }
 
 export const AgentSessionsConfigContext: React.Context<AgentSessionsSettings | null> =

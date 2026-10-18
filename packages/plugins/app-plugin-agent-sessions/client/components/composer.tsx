@@ -2,12 +2,14 @@
  * Where a person writes to the agent. Enter sends, Shift+Enter breaks the line, and while the agent is answering a
  * message waits for the turn to end unless sent with ⌘↩ (Ctrl+Enter), which stops the turn first. Pasted, dropped or
  * picked images go with the message. A message that starts with `/` offers the agent's own commands, and `#` offers
- * what the message can mention, such as an issue, which then goes with it.
+ * what the message can mention, such as an issue, which then goes with it. What the host attached, such as the page
+ * it was opened from, shows above the message until removed and goes with the next message sent.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {
   ArrowUpIcon,
+  FileTextIcon,
   HashIcon,
   ImageIcon,
   Maximize2Icon,
@@ -29,6 +31,13 @@ import {
 
 import type { PromptContent, Reference } from '../../shared/api.js';
 import { useMentions, type Mention } from '../api.js';
+import {
+  attachedKey,
+  stopAutomaticAttachment,
+  type Attachment,
+} from '../lib/attachments.js';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSessionMemory } from '../use-session-memory.js';
 import { StatusPill } from './status-pill.js';
 
 type Image = Extract<PromptContent, { type: 'image' }>;
@@ -36,8 +45,12 @@ type Image = Extract<PromptContent, { type: 'image' }>;
 type Pending = Image & { readonly id: string };
 
 export interface ComposerProps {
+  readonly initialContent?: readonly PromptContent[];
   readonly placeholder: string;
+  readonly draftKey?: string;
   readonly disabled?: boolean;
+  /** Settings may still be loading while the draft remains editable. */
+  readonly sendDisabled?: boolean;
   /** The agent is answering: Enter queues the message, ⌘↩ interrupts. */
   readonly busy?: boolean;
   readonly sending?: boolean;
@@ -60,6 +73,8 @@ export interface ComposerProps {
   /** The keys it takes, under the box. */
   readonly hints?: boolean;
   readonly autoFocus?: boolean;
+  /** A deliberate draft edit, including adding an image before its asynchronous read. */
+  readonly onEdit?: () => void;
   readonly onSend: (
     content: PromptContent[],
     interrupt: boolean,
@@ -90,7 +105,9 @@ const mentionText = (reference: Reference): string =>
 
 export function Composer({
   placeholder,
+  draftKey,
   disabled,
+  sendDisabled,
   busy,
   sending,
   commands = [],
@@ -103,13 +120,33 @@ export function Composer({
   hints,
   autoFocus,
   onSend,
+  onEdit,
+  initialContent = [],
 }: ComposerProps): ReactElement {
   const { t } = useTranslation();
-  const [text, setText] = useState('');
+  const client = useQueryClient();
+  const [text, setText] = useSessionMemory(
+    draftKey && `text:${draftKey}`,
+    initialContent
+      .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+      .join('\n\n'),
+  );
   const [expanded, setExpanded] = useState(false);
   const [caret, setCaret] = useState(0);
-  const [images, setImages] = useState<Pending[]>([]);
-  const [mentioned, setMentioned] = useState<Reference[]>([]);
+  const [images, setImages] = useSessionMemory<Pending[]>(
+    draftKey && `images:${draftKey}`,
+    initialContent
+      .filter((part): part is Image => part.type === 'image')
+      .map((part, index) => ({ ...part, id: `original-${index}` })),
+  );
+  const [mentioned, setMentioned] = useSessionMemory<Reference[]>(
+    draftKey && `mentions:${draftKey}`,
+    [],
+  );
+  const [attached, setAttached] = useSessionMemory<Attachment[]>(
+    draftKey && attachedKey(draftKey),
+    [],
+  );
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
@@ -164,6 +201,7 @@ export function Composer({
   const empty = !text.trim() && images.length === 0;
 
   const type = (next: string, at: number): void => {
+    onEdit?.();
     setText(next);
     setCaret(at);
     setHighlight(0);
@@ -201,48 +239,66 @@ export function Composer({
     );
   };
 
+  const sendingRef = useRef(false);
   const send = async (interrupt: boolean): Promise<void> => {
-    if (empty || disabled || sending) return;
+    if (empty || disabled || sendDisabled || sending || sendingRef.current)
+      return;
+    sendingRef.current = true;
+    stopAutomaticAttachment(client, draftKey);
     const content: PromptContent[] = [
       ...(text.trim() ? [{ type: 'text' as const, text: text.trim() }] : []),
+      ...attached.flatMap(({ text: said }) =>
+        said ? [{ type: 'text' as const, text: said }] : [],
+      ),
       ...images.map(({ mimeType, data }) => ({
         type: 'image' as const,
         mimeType,
         data,
       })),
     ];
-    // What was mentioned and is still in the message.
-    const kept = mentioned
-      .filter((reference) => text.includes(mentionText(reference)))
-      .map(({ kind, refId }) => ({ kind, refId }));
+    // What was mentioned and is still in the message, and what was attached, each once.
+    const kept = [
+      ...mentioned.filter((reference) => text.includes(mentionText(reference))),
+      ...attached.flatMap(({ reference }) => (reference ? [reference] : [])),
+    ]
+      .map(({ kind, refId }) => ({ kind, refId }))
+      .filter(
+        (reference, index, all) =>
+          all.findIndex(
+            (other) =>
+              other.kind === reference.kind && other.refId === reference.refId,
+          ) === index,
+      );
     try {
       await onSend(content, interrupt, kept);
     } catch {
       // The caller said what went wrong; the draft stays for another try.
+      sendingRef.current = false;
       return;
     }
+    sendingRef.current = false;
     setText('');
     setCaret(0);
     setImages([]);
     setMentioned([]);
+    setAttached([]);
   };
 
   const addFiles = async (list: Iterable<File>): Promise<void> => {
-    const read = await Promise.all(
-      [...list]
-        .filter(
-          (file) =>
-            file.type.startsWith('image/') && file.size <= MAX_IMAGE_BYTES,
-        )
-        .map(async (file): Promise<Pending> => ({
-          id: crypto.randomUUID(),
-          type: 'image',
-          mimeType: file.type,
-          data: await base64(file),
-        })),
+    const files = [...list].filter(
+      (file) => file.type.startsWith('image/') && file.size <= MAX_IMAGE_BYTES,
     );
-    if (read.length > 0)
-      setImages((current) => [...current, ...read].slice(0, 10));
+    if (files.length === 0) return;
+    onEdit?.();
+    const read = await Promise.all(
+      files.map(async (file): Promise<Pending> => ({
+        id: crypto.randomUUID(),
+        type: 'image',
+        mimeType: file.type,
+        data: await base64(file),
+      })),
+    );
+    setImages((current) => [...current, ...read].slice(0, 10));
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
@@ -329,7 +385,7 @@ export function Composer({
         className={cn(
           'bg-card focus-within:border-primary flex flex-col rounded-[10px] border shadow-xs transition-colors',
           compact &&
-            'max-md:max-h-[calc(var(--agent-session-height,100dvh)*0.55)] max-md:overflow-y-auto max-md:overscroll-y-contain',
+            '@max-md/agent-session:max-h-[calc(var(--agent-session-height,100dvh)*0.55)] @max-md/agent-session:overflow-y-auto @max-md/agent-session:overscroll-y-contain',
           disabled && 'opacity-60',
         )}
         onDragOver={(event) => event.preventDefault()}
@@ -340,12 +396,49 @@ export function Composer({
             {header}
           </div>
         )}
+        {attached.length > 0 && (
+          <ul
+            aria-label={t('composer.attached')}
+            className='flex min-w-0 flex-wrap gap-1.5 px-3 pt-3'
+          >
+            {attached.map((attachment) => (
+              <li
+                key={attachment.id}
+                className='bg-muted text-foreground flex max-w-full min-w-0 items-center gap-1 rounded-md py-0.5 pr-0.5 pl-1.5 text-xs'
+              >
+                {attachment.reference ? (
+                  <HashIcon className='text-muted-foreground size-3 shrink-0' />
+                ) : (
+                  <FileTextIcon className='text-muted-foreground size-3 shrink-0' />
+                )}
+                <span className='truncate'>{attachment.label}</span>
+                <button
+                  type='button'
+                  aria-label={t('composer.removeAttached', {
+                    name: attachment.label,
+                  })}
+                  onClick={() => {
+                    onEdit?.();
+                    if (attachment.automatic)
+                      stopAutomaticAttachment(client, draftKey);
+                    setAttached((current) =>
+                      current.filter((other) => other.id !== attachment.id),
+                    );
+                  }}
+                  className='text-muted-foreground hover:text-foreground rounded p-0.5'
+                >
+                  <XIcon className='size-3' />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         {images.length > 0 && (
           <div
             className={cn(
               'flex gap-2 px-3.5 pt-3',
               compact
-                ? 'max-md:max-h-20 max-md:flex-nowrap max-md:overflow-x-auto md:flex-wrap'
+                ? '@max-md/agent-session:max-h-20 @max-md/agent-session:flex-nowrap @max-md/agent-session:overflow-x-auto @md/agent-session:flex-wrap'
                 : 'flex-wrap',
             )}
           >
@@ -359,11 +452,12 @@ export function Composer({
                 <button
                   type='button'
                   aria-label={t('composer.removeImage')}
-                  onClick={() =>
+                  onClick={() => {
+                    onEdit?.();
                     setImages((current) =>
                       current.filter((other) => other.id !== image.id),
-                    )
-                  }
+                    );
+                  }}
                   className='bg-card text-muted-foreground hover:text-foreground absolute -top-1.5 -right-1.5 rounded-full border p-0.5'
                 >
                   <XIcon className='size-3.5' />
@@ -377,10 +471,11 @@ export function Composer({
           value={text}
           rows={large ? 4 : compact ? 1 : 2}
           autoFocus={autoFocus}
-          disabled={disabled}
+          disabled={disabled || sending}
           placeholder={placeholder}
           aria-label={placeholder}
           onChange={(event) => {
+            onEdit?.();
             setText(event.target.value);
             setCaret(event.target.selectionStart);
             setHighlight(0);
@@ -390,38 +485,39 @@ export function Composer({
           onPaste={onPaste}
           className={cn(
             // 16px on a phone, so that focusing it does not zoom the page.
-            'field-sizing-content resize-none bg-transparent px-3.5 pb-1 text-base leading-relaxed outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed sm:text-sm',
+            'field-sizing-content resize-none bg-transparent px-3.5 pb-1 text-base leading-relaxed outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed @md/agent-session:text-sm',
             compact
-              ? 'max-h-[min(calc(var(--agent-session-height,100dvh)*0.3),12rem)] md:max-h-80'
+              ? 'max-h-[min(calc(var(--agent-session-height,100dvh)*0.3),12rem)] @md/agent-session:max-h-80'
               : 'max-h-80',
             large
               ? 'min-h-30 pt-3.5'
               : compact
                 ? expanded
-                  ? 'min-h-[min(calc(var(--agent-session-height,100dvh)*0.2),10rem)] pt-2 md:min-h-14'
-                  : 'min-h-10 pt-2 md:min-h-14 md:pt-3'
+                  ? 'min-h-[min(calc(var(--agent-session-height,100dvh)*0.2),10rem)] pt-2 @md/agent-session:min-h-14'
+                  : 'min-h-10 pt-2 @md/agent-session:min-h-14 @md/agent-session:pt-3'
                 : 'min-h-14 pt-3',
           )}
         />
         {/* On a phone the agent's choices take a row of their own above the buttons, swiped when they do not fit. */}
         <div
           className={cn(
-            'flex flex-wrap items-center gap-0.5 px-2 pb-2 sm:flex-nowrap',
-            compact && 'max-md:sticky max-md:bottom-0 max-md:bg-card',
+            'flex flex-wrap items-center gap-0.5 px-2 pb-2 @md/agent-session:flex-nowrap',
+            compact &&
+              '@max-md/agent-session:sticky @max-md/agent-session:bottom-0 @max-md/agent-session:bg-card',
           )}
         >
           <ToolButton
             label={t('composer.addImage')}
-            disabled={disabled}
+            disabled={disabled || sending}
             onClick={() => filesRef.current?.click()}
           >
             <ImageIcon className='size-4' />
           </ToolButton>
           {compact && (
-            <span className='md:hidden'>
+            <span className='@md/agent-session:hidden'>
               <ToolButton
                 label={expanded ? t('composer.collapse') : t('composer.expand')}
-                disabled={disabled}
+                disabled={disabled || sending}
                 onClick={() => {
                   setExpanded(!expanded);
                   inputRef.current?.focus();
@@ -449,7 +545,7 @@ export function Composer({
           {mentions && (
             <ToolButton
               label={t('composer.mentions')}
-              disabled={disabled}
+              disabled={disabled || sending}
               onClick={() => insert('#')}
             >
               <HashIcon className='size-4' />
@@ -458,14 +554,19 @@ export function Composer({
           {commands.length > 0 && (
             <ToolButton
               label={t('composer.commands')}
-              disabled={disabled}
+              disabled={disabled || sending}
               onClick={() => type('/', 1)}
             >
               <SlashSquareIcon className='size-4' />
             </ToolButton>
           )}
-          <div className='order-first flex w-full min-w-0 items-center gap-0.5 overflow-x-auto pb-1 [scrollbar-width:none] empty:hidden sm:order-none sm:ml-0.5 sm:w-auto sm:flex-1 sm:flex-wrap sm:overflow-visible sm:border-l sm:pb-0 sm:pl-1'>
+          <div className='order-first flex w-full min-w-0 items-center gap-0.5 overflow-x-auto pb-1 [scrollbar-width:none] empty:hidden @md/agent-session:order-none @md/agent-session:ml-0.5 @md/agent-session:w-auto @md/agent-session:flex-1 @md/agent-session:flex-wrap @md/agent-session:overflow-visible @md/agent-session:border-l @md/agent-session:pb-0 @md/agent-session:pl-1'>
             {toolbar}
+            {sending && (
+              <span role='status' className='text-muted-foreground text-xs'>
+                {t('composer.sending')}
+              </span>
+            )}
           </div>
           <div className='ml-auto flex shrink-0 items-center gap-0.5'>
             {trailing}
@@ -473,7 +574,7 @@ export function Composer({
               type='button'
               aria-label={busy ? t('composer.queue') : t('composer.send')}
               title={busy ? t('composer.queue') : t('composer.send')}
-              disabled={empty || disabled || sending}
+              disabled={empty || disabled || sendDisabled || sending}
               onClick={() => void send(false)}
               className={cn(
                 'inline-flex size-9 shrink-0 items-center justify-center rounded-full transition-colors',
@@ -489,7 +590,7 @@ export function Composer({
         </div>
       </div>
       {hints && (
-        <p className='text-muted-foreground mt-2 hidden flex-wrap gap-x-4 gap-y-1 px-1 text-[11px] sm:flex'>
+        <p className='text-muted-foreground mt-2 hidden flex-wrap gap-x-4 gap-y-1 px-1 text-[11px] @md/agent-session:flex'>
           {keys.map(([combo, label]) => (
             <span key={label} className='inline-flex items-center gap-1'>
               {combo.map((key, index) => (

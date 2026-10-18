@@ -2,6 +2,9 @@
  * The browser API of `/api/agents/runners`, typed with the `shared/` view models: one method per endpoint, answers
  * unwrapped from `{ data }`. Failures throw `ApiClientError` (`status`, `reason`, `domain`).
  */
+import type { QuotaMarkTarget } from '../../shared/quota.js';
+import type { RunnerWorkspacePage } from '../../shared/runners.js';
+
 import type { ApiClient } from '@nocobase/app-client';
 
 import type {
@@ -35,6 +38,20 @@ export class RunnersApi {
     return this.list('');
   }
 
+  public clearQuota(runnerId: string, target: QuotaMarkTarget): Promise<void> {
+    return this.send(`${id(runnerId)}/quota/clear`, 'POST', target);
+  }
+  public runnerWorkspaces(
+    runnerId: string,
+    status = 'all',
+    page = 1,
+  ): Promise<RunnerWorkspacePage> {
+    return this.api.request<RunnerWorkspacePage>({
+      path: pathOf(`${id(runnerId)}/workspaces`),
+      query: { status, page, pageSize: 50 },
+    });
+  }
+
   public runner(runnerId: string): Promise<RunnerSummary> {
     return this.get(id(runnerId));
   }
@@ -55,15 +72,22 @@ export class RunnersApi {
     return this.send('registrationTokens', 'POST', input);
   }
 
-  public updateRunner(runnerId: string, patch: RunnerPatch): Promise<Runner> {
+  public updateRunner(
+    runnerId: string,
+    patch: RunnerPatch,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
     return this.send(id(runnerId), 'PATCH', patch);
   }
 
-  public refreshRunnerStatus(runnerId: string): Promise<Runner> {
+  public refreshRunnerStatus(
+    runnerId: string,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
     return this.send(`${id(runnerId)}/refreshStatus`, 'POST');
   }
 
-  public revokeRunner(runnerId: string): Promise<Runner> {
+  public revokeRunner(
+    runnerId: string,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
     return this.send(`${id(runnerId)}/revoke`, 'POST');
   }
 

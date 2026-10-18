@@ -57,11 +57,6 @@ export function templateTargets(root = repositoryRoot) {
   ];
 }
 
-/** The product applications under `packages/apps` this repository checks, by name. */
-export function applicationTargets(root = repositoryRoot) {
-  return [{ name: 'studio', appDir: path.join(root, 'packages/apps/studio') }];
-}
-
 /**
  * The security schemes of credentials a run carries: a route that accepts one acts for someone else within the actions
  * the run was given, so it names the business action it performs.
@@ -311,7 +306,7 @@ export async function runOpenApiCheck(
 }
 
 async function main(argv) {
-  const all = [...templateTargets(), ...applicationTargets()];
+  const all = templateTargets();
   const names = argv.filter((argument) => !argument.startsWith('-'));
   const unknown = names.filter(
     (name) => !all.some((target) => target.name === name),

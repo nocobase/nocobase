@@ -89,6 +89,7 @@ import {
   type CredentialServer,
 } from './git-credentials.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
+import { QuotaReportSchema, type QuotaReport } from '@nocobase/agent-protocol';
 import { EventSpool } from '../core/events.ts';
 import { isDiskFull } from '../lib/disk-full.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
@@ -186,7 +187,7 @@ export function workspaceNotes(options: {
         dir.repo === undefined
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
           : options.readOnly === true
-            ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a read-only copy: change, commit and push nothing).`
+            ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a read-only copy: change no tracked file, commit and push nothing).`
             : `- ${dir.dir}${name}: ${dir.repo.url}, starting target branch ${dir.repo.branch} from ${dir.repo.defaultBranch}, local branch ${dir.repo.localBranch ?? dir.repo.branch}. You may switch or create branches and push any branch of this repository with git push origin HEAD:refs/heads/<branch> (initial target: git push origin HEAD:refs/heads/${dir.repo.branch}). Never rewrite already-pushed history or force push. Use ${options.cli} pr open --head <branch>, pr link and pr unlink to manage pull requests; check their --help for arguments.`,
       );
     }
@@ -194,7 +195,7 @@ export function workspaceNotes(options: {
       for (const warning of dir.repo?.warnings ?? []) lines.push(warning);
     if (options.readOnly === true)
       lines.push(
-        'This step only reads: another run may be changing the same branch in its own checkout at the same time. Read and run checks here, but change, commit and push nothing; the runner pushes nothing from this checkout.',
+        'This step only reads: another run may be changing the same branch in its own checkout at the same time. Change no tracked file, commit and push nothing; the runner pushes nothing from this checkout. You may still prepare the checkout to run things here: initialize submodules, install dependencies, build, start the application and run checks.',
       );
     for (const dir of dirs) {
       if (dir.repo?.initializing)
@@ -515,7 +516,24 @@ export class RunWorker {
   }
 
   /** Spools an adapter event, noting the inputs it reports as picked up. */
+  private quota: QuotaReport | undefined;
   private recordEvent(event: AdapterEvent): void {
+    const quota = QuotaReportSchema.safeParse(event.meta?.quota);
+    if (quota.success) {
+      const windows = new Map(
+        (this.quota?.windows ?? []).map((window) => [
+          JSON.stringify([window.scope, window.target, window.window]),
+          window,
+        ]),
+      );
+      for (const window of quota.data.windows)
+        if (window.exhausted)
+          windows.set(
+            JSON.stringify([window.scope, window.target, window.window]),
+            window,
+          );
+      if (windows.size) this.quota = { windows: [...windows.values()] };
+    }
     if (event.type === 'status' && event.content === 'sessionRecovery') {
       this.sessionId = undefined;
       this.confirmedSessionId = undefined;
@@ -912,6 +930,23 @@ export class RunWorker {
       if (this.ending !== undefined) return this.finishEnding();
       if (result.exit === 'error') {
         const { reason, detail } = failureReason(result);
+        if (
+          reason === 'toolQuota' &&
+          (payload.tool.kind === 'opencode' || payload.tool.kind === 'pi') &&
+          payload.tool.model?.includes('/')
+        ) {
+          this.quota = {
+            windows: [
+              {
+                window: 'provider',
+                scope: 'provider',
+                target: payload.tool.model.split('/')[0],
+                resetsAt: null,
+                exhausted: true,
+              },
+            ],
+          };
+        }
         this.spool.push({ type: 'error', content: detail, meta: { reason } });
         return this.finishFailed(reason, detail);
       }
@@ -1058,6 +1093,9 @@ export class RunWorker {
       this.deps.log,
       {
         remove,
+        repos: (this.prepared?.dirs ?? []).flatMap((dir) =>
+          dir.repo === undefined ? [] : [dir.repo],
+        ),
         ...(this.writerStopFailure === undefined
           ? {}
           : { unsafeReason: this.writerStopFailure }),
@@ -1192,6 +1230,7 @@ Local save event could not be recorded: ${failure}`;
     try {
       await this.report(routePath(RUNNER_ROUTES.fail, { runId: this.runId }), {
         reason,
+        ...(reason === 'toolQuota' && this.quota ? { quota: this.quota } : {}),
         detail: saved === '' ? detail : `${detail}\n\n${saved}`,
         handledInputIds: [...this.delivered],
         usage: this.usage,

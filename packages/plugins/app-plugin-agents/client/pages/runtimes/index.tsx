@@ -83,7 +83,9 @@ export default function RuntimesPage(): ReactElement {
   const api = useAgentsApi();
   const notify = useNotify();
   const queryClient = useQueryClient();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(() =>
+    new URLSearchParams(window.location.search).get('runtime'),
+  );
   const [confirming, setConfirming] = useState<Confirming | null>(null);
 
   const runners = useQuery({

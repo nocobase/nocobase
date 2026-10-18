@@ -35,8 +35,10 @@ import {
   SeenInput,
   SessionParams,
   SessionSchema,
+  SessionWorkSchema,
   TranscriptEventSchema,
   UpdateSessionInput,
+  WithdrawInput,
 } from './schemas.js';
 
 const tags = ['AgentSessions'];
@@ -45,7 +47,10 @@ const tags = ['AgentSessions'];
 const pageOnly = cliRoute(false);
 const own =
   "Every signed-in person has their own computers and sessions and reaches only those; anyone else's answers 404.";
-const errors = { 401: apiErrorResponse(401), 500: apiErrorResponse(500) };
+const errors = {
+  401: apiErrorResponse(401),
+  500: apiErrorResponse(500),
+};
 const computerNotFound = apiErrorResponse(
   404,
   'No computer with this id is yours (`AGENT_SESSIONS_COMPUTER_NOT_FOUND`).',
@@ -62,6 +67,35 @@ const notWritable = apiErrorResponse(
 /** The signed-in person's computers and sessions, under `/agentSessions`. */
 export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
   const router = new Hono<AuthEnv>();
+
+  router.get(
+    '/sessions/:sessionId/work',
+    describeRoute({
+      tags,
+      summary: 'Get the work tied to a session',
+      operationId: 'agentSessionsGetSessionWork',
+      ...cliRoute({
+        command: 'session work',
+        flags: {
+          sessionId: { name: 'session', env: ['NB_STUDIO_AGENT_SESSION'] },
+        },
+      }),
+      description: `Lists visible linked work and its progress. ${own}`,
+      responses: {
+        200: dataResponse(z.array(SessionWorkSchema)),
+        ...errors,
+        404: sessionNotFound,
+      },
+    }),
+    apiValidator('param', SessionParams),
+    async (context) =>
+      context.json({
+        data: await service.sessionWork(
+          viewerOf(context),
+          context.req.valid('param').sessionId,
+        ),
+      }),
+  );
 
   router.post(
     '/computers/:computerId/discoverChoices',
@@ -90,6 +124,7 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           userId(context),
           context.req.valid('param').computerId,
           context.req.valid('json'),
+          context.req.raw.signal,
         ),
       }),
   );
@@ -262,7 +297,7 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
       ...pageOnly,
       summary: 'List your sessions',
       operationId: 'agentSessionsListSessions',
-      description: `Your sessions, the most recently active first; \`archived=true\` lists the archived ones. Pages by \`pageToken\`. ${own}`,
+      description: `Your sessions, the most recently active first; \`archived=true\` lists the archived ones, and \`linked=<kind>:<refId>\` only those tied to that record. Pages by \`pageToken\`. ${own}`,
       responses: {
         200: listResponse(SessionSchema),
         ...errors,
@@ -300,6 +335,10 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           'The session, its first message sent.',
         ),
         ...errors,
+        409: apiErrorResponse(
+          409,
+          'The submission ID belongs to another request.',
+        ),
         400: apiErrorResponse(
           400,
           'The computer is offline (`AGENT_SESSIONS_COMPUTER_OFFLINE`) or not yours (`AGENT_SESSIONS_COMPUTER_NOT_FOUND`), cannot run the agent (`AGENT_SESSIONS_AGENT_UNAVAILABLE`), or does not allow the directory (`AGENT_SESSIONS_DIRECTORY_NOT_ALLOWED`).',
@@ -461,6 +500,10 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           'The message as it entered the transcript.',
         ),
         ...errors,
+        409: apiErrorResponse(
+          409,
+          'The submission ID belongs to another request.',
+        ),
         400: notWritable,
         404: sessionNotFound,
       },
@@ -474,6 +517,7 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           context.req.valid('param').sessionId,
           context.req.valid('json').content,
           context.req.valid('json').mentions,
+          context.req.valid('json').submissionId,
         ),
       }),
   );
@@ -498,6 +542,36 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
       await service.cancel(
         userId(context),
         context.req.valid('param').sessionId,
+      );
+      return context.body(null, 204);
+    },
+  );
+
+  router.post(
+    '/sessions/:sessionId/withdraw',
+    describeRoute({
+      tags,
+      ...pageOnly,
+      summary: 'Withdraw one queued message',
+      operationId: 'agentSessionsWithdrawPrompt',
+      description: `Prevents one queued message from starting. Completion waits for computer confirmation, including while offline. ${own}`,
+      responses: {
+        204: emptyResponse('Withdrawal requested or already confirmed.'),
+        ...errors,
+        400: apiErrorResponse(
+          400,
+          'The message has started processing, was delivered to an older bridge, or the session is archived.',
+        ),
+        404: sessionNotFound,
+      },
+    }),
+    apiValidator('param', SessionParams),
+    apiValidator('json', WithdrawInput),
+    async (context) => {
+      await service.withdraw(
+        userId(context),
+        context.req.valid('param').sessionId,
+        context.req.valid('json').seq,
       );
       return context.body(null, 204);
     },

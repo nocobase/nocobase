@@ -105,45 +105,130 @@ const ProviderSchema = z.enum(
 
 export const CreateServiceSchema: z.ZodType<CreateModelServiceRequest> =
   z.strictObject({
-    title: z.string().trim().min(1).max(100),
-    provider: ProviderSchema,
-    baseUrl: z.string().trim().max(500).nullable().optional(),
-    apiKey: z.string().max(4000).nullable().optional(),
-    models: ModelsSchema.optional(),
-    enabled: z.boolean().optional(),
+    title: z.string().trim().min(1).max(100).describe('The display title.'),
+    provider: ProviderSchema.describe('The provider implementation to use.'),
+    baseUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .nullable()
+      .optional()
+      .describe('The provider’s API base URL.'),
+    apiKey: z
+      .string()
+      .max(4000)
+      .nullable()
+      .optional()
+      .describe('The provider API key.'),
+    models: ModelsSchema.optional().describe('The models this service offers.'),
+    enabled: z.boolean().optional().describe('Whether the service is enabled.'),
   });
 
 export const UpdateServiceSchema: z.ZodType<UpdateModelServiceRequest> =
   z.strictObject({
-    title: z.string().trim().min(1).max(100).optional(),
-    baseUrl: z.string().trim().max(500).nullable().optional(),
-    apiKey: z.string().max(4000).nullable().optional(),
-    models: ModelsSchema.optional(),
-    enabled: z.boolean().optional(),
+    title: z
+      .string()
+      .trim()
+      .min(1)
+      .max(100)
+      .optional()
+      .describe('The display title.'),
+    baseUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .nullable()
+      .optional()
+      .describe('The provider’s API base URL.'),
+    apiKey: z
+      .string()
+      .max(4000)
+      .nullable()
+      .optional()
+      .describe('The provider API key.'),
+    models: ModelsSchema.optional().describe('The models this service offers.'),
+    enabled: z.boolean().optional().describe('Whether the service is enabled.'),
   });
 
 export const ModelRefSchema: z.ZodType<ModelRef> = z.strictObject({
-  modelService: z.string().trim().min(1).max(64),
-  model: z.string().trim().min(1).max(200),
+  modelService: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .describe('The model service to use.'),
+  model: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .describe('The provider’s model identifier.'),
 });
 
 export const ConnectionSchema: z.ZodType<ModelConnectionRequest> =
   z.strictObject({
-    service: z.string().trim().min(1).max(64).optional(),
-    provider: ProviderSchema.optional(),
-    baseUrl: z.string().trim().max(500).nullable().optional(),
-    apiKey: z.string().max(4000).nullable().optional(),
+    service: z
+      .string()
+      .trim()
+      .min(1)
+      .max(64)
+      .optional()
+      .describe('The configured model service name.'),
+    provider: ProviderSchema.optional().describe(
+      'The provider implementation to use.',
+    ),
+    baseUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .nullable()
+      .optional()
+      .describe('The provider’s API base URL.'),
+    apiKey: z
+      .string()
+      .max(4000)
+      .nullable()
+      .optional()
+      .describe('The provider API key.'),
   });
 
 export const ConnectionCheckSchema: z.ZodType<ModelConnectionCheckRequest> =
   z.strictObject({
-    service: z.string().trim().min(1).max(64).optional(),
-    provider: ProviderSchema.optional(),
-    baseUrl: z.string().trim().max(500).nullable().optional(),
-    apiKey: z.string().max(4000).nullable().optional(),
-    model: z.string().trim().min(1).max(200),
-    kind: KindSchema.optional(),
-    dimensions: DimensionsSchema.optional(),
+    service: z
+      .string()
+      .trim()
+      .min(1)
+      .max(64)
+      .optional()
+      .describe('The configured model service name.'),
+    provider: ProviderSchema.optional().describe(
+      'The provider implementation to use.',
+    ),
+    baseUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .nullable()
+      .optional()
+      .describe('The provider’s API base URL.'),
+    apiKey: z
+      .string()
+      .max(4000)
+      .nullable()
+      .optional()
+      .describe('The provider API key.'),
+    model: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200)
+      .describe('The provider’s model identifier.'),
+    kind: KindSchema.optional().describe(
+      'The model capability: chat, embedding, or rerank.',
+    ),
+    dimensions: DimensionsSchema.optional().describe(
+      'The embedding vector dimensions.',
+    ),
   });
 
 export interface ModelServices extends ModelSource {

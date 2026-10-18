@@ -1,0 +1,49 @@
+{
+  "name": "@example/app-plugin-reading-list",
+  "private": true,
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "exports": {
+    "./server": "./server/index.ts",
+    "./client": "./client/index.ts",
+    "./cli": "./cli/index.ts",
+    "./config": "./server/config.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@nocobase/app-cli": "workspace:*",
+    "@nocobase/app-client": "workspace:*",
+    "@nocobase/app-plugin-authentication": "workspace:*",
+    "@nocobase/app-plugin-authorization": "workspace:*",
+    "@nocobase/app-server": "workspace:*",
+    "@nocobase/app-testing": "workspace:*",
+    "@nocobase/authorization": "workspace:*",
+    "@nocobase/db": "workspace:*",
+    "@nocobase/db-sqlite": "workspace:*",
+    "@nocobase/dev-config": "workspace:*",
+    "@nocobase/i18n": "workspace:*",
+    "@nocobase/service-provider": "workspace:*",
+    "@oclif/core": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "eslint": "catalog:",
+    "hono": "catalog:",
+    "jsdom": "catalog:",
+    "prettier": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "zod": "catalog:"
+  }
+}

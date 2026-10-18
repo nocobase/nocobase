@@ -14,8 +14,11 @@ import path from 'node:path';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
 import { COMMANDS, defineCommands } from '../src/commands.ts';
+import { AGENTS } from '@nocobase/acp-bridge';
 import {
   installSkills,
+  prepareSessionSkill,
+  sessionSkillInstructions,
   skillsStatus,
   syncInstalledSkills,
   type SkillsEnvironment,
@@ -705,3 +708,76 @@ describe('Skill synchronization and filesystem boundaries', () => {
     );
   });
 });
+
+it.each(['claude', 'codex'])(
+  'prepares missing or stale native session Skills for %s',
+  async (agentId) => {
+    const environment = fixture();
+    await prepareSessionSkill(environment, agentId);
+    let status = await skillsStatus(environment);
+    expect(
+      status.targets.some(
+        (target) => target.tool === agentId && target.upToDate,
+      ),
+    ).toBe(true);
+    writeFileSync(
+      path.join(environment.packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+      'updated session instructions',
+    );
+    await prepareSessionSkill(environment, agentId);
+    status = await skillsStatus(environment);
+    expect(
+      status.targets.some(
+        (target) => target.tool === agentId && target.upToDate,
+      ),
+    ).toBe(true);
+    expect(
+      await sessionSkillInstructions(environment, agentId),
+    ).toBeUndefined();
+  },
+);
+
+it.each([
+  ...AGENTS.map((agent) => agent.id).filter(
+    (id) => !['claude', 'codex'].includes(id),
+  ),
+  'future-compatible-agent',
+])(
+  'supplies the current shared instructions for %s without installing files',
+  async (agentId) => {
+    const environment = fixture();
+    await prepareSessionSkill(environment, agentId);
+    const instructions = await sessionSkillInstructions(environment, agentId);
+    expect(instructions).toContain('current instructions');
+    expect(instructions).toContain('bridge-selected profile');
+    expect(instructions).toContain(
+      path.join(environment.packageRoot, 'skills/nb-studio-cli'),
+    );
+    writeFileSync(
+      path.join(environment.packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+      'updated instructions',
+    );
+    expect(await sessionSkillInstructions(environment, agentId)).toContain(
+      'updated instructions',
+    );
+    expect(existsSync(environment.home!)).toBe(false);
+    expect(existsSync(environment.stateHome)).toBe(false);
+  },
+);
+
+it.each(['missing', 'empty'])(
+  'explains how to recover when packaged fallback instructions are %s',
+  async (state) => {
+    const environment = fixture();
+    if (state === 'missing')
+      rmSync(path.join(environment.packageRoot, 'skills'), { recursive: true });
+    else
+      writeFileSync(
+        path.join(environment.packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+        '  ',
+      );
+    await expect(
+      sessionSkillInstructions(environment, 'opencode'),
+    ).rejects.toThrow('Update or reinstall acme');
+  },
+);

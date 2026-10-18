@@ -10,10 +10,15 @@
 import { z } from 'zod';
 
 /** Raised on every incompatible change; the server answers a bridge speaking another version with `upgradeRequired`. */
-export const BRIDGE_PROTOCOL_VERSION: number = 2;
+export const BRIDGE_PROTOCOL_VERSION: number = 4;
 
 /** Includes agent initialization and opening a prompt-free session. */
 export const DISCOVERY_TIMEOUT_MS: number = 150_000;
+/**
+ * How long the agent started to discover a new session's choices waits for that session's first message, when the
+ * discovery named the session (`discoverChoices.sessionId`). Matches how long the browser shows those choices.
+ */
+export const WARM_AGENT_MS: number = 5 * 60_000;
 
 /** The bridge's routes, relative to the application's address. */
 export const BRIDGE_ROUTES: {
@@ -21,11 +26,15 @@ export const BRIDGE_ROUTES: {
   readonly poll: string;
   readonly report: string;
   readonly reply: string;
+  readonly claim: string;
+  readonly withdrawn: string;
 } = {
   register: '/api/agentSessions/bridge/register',
   poll: '/api/agentSessions/bridge/poll',
   report: '/api/agentSessions/bridge/report',
   reply: '/api/agentSessions/bridge/reply',
+  claim: '/api/agentSessions/bridge/claim',
+  withdrawn: '/api/agentSessions/bridge/withdrawn',
 };
 
 /** Request headers of the bridge. */
@@ -138,15 +147,6 @@ export interface SessionTarget {
   readonly acpSessionId: string | null;
   /** The choices the person made (`SessionChoice` id to value), applied again whenever the session reopens. */
   readonly settings: Readonly<Record<string, string>>;
-  /**
-   * The application's tools for the agent, an MCP server over HTTP at `path` of the address the bridge talks to, when
-   * the application offers any; the agent sends `token` as its bearer credential.
-   */
-  readonly tools: {
-    readonly name: string;
-    readonly path: string;
-    readonly token: string;
-  } | null;
 }
 
 const SessionTargetSchema: z.ZodType<SessionTarget> = z.object({
@@ -155,13 +155,6 @@ const SessionTargetSchema: z.ZodType<SessionTarget> = z.object({
   cwd: z.string().min(1).max(1000),
   acpSessionId: id.nullable(),
   settings: z.record(id, id),
-  tools: z
-    .object({
-      name: z.string().regex(/^[a-z][a-z0-9_-]{0,63}$/u),
-      path: z.string().regex(/^\/[\w/.-]{0,500}$/u),
-      token: z.string().min(1).max(500),
-    })
-    .nullable(),
 });
 
 /** A part of what a person sends, as ACP content blocks. */
@@ -204,12 +197,25 @@ export type BridgeCommand =
       readonly agentId: string;
       readonly cwd: string;
       readonly settings: Readonly<Record<string, string>>;
+      /**
+       * The session a first message sent with these choices would create. The bridge starts the agent for that
+       * session and keeps it, with the ACP session it opened, for the session's first prompt (`WARM_AGENT_MS`).
+       */
+      readonly sessionId?: string | undefined;
     }
   | {
       readonly type: 'prompt';
       readonly session: SessionTarget;
       readonly promptId: string;
+      /** The original prompt event; required for protocol 4 execution authorization. */
+      readonly seq?: number | undefined;
       readonly content: readonly PromptContent[];
+    }
+  | {
+      readonly type: 'withdrawPrompt';
+      readonly sessionId: string;
+      readonly promptId: string;
+      readonly seq: number;
     }
   | { readonly type: 'cancel'; readonly session: SessionTarget }
   | {
@@ -242,12 +248,20 @@ export const BridgeCommandSchema: z.ZodType<BridgeCommand> =
       agentId: z.string().min(1).max(40),
       cwd: z.string().min(1).max(1000),
       settings: z.record(id, id),
+      sessionId: id.optional(),
     }),
     z.object({
       type: z.literal('prompt'),
       session: SessionTargetSchema,
       promptId: id,
+      seq: z.number().int().positive().optional(),
       content: z.array(PromptContentSchema).min(1).max(20),
+    }),
+    z.object({
+      type: z.literal('withdrawPrompt'),
+      sessionId: id,
+      promptId: id,
+      seq: z.number().int().positive(),
     }),
     z.object({ type: z.literal('cancel'), session: SessionTargetSchema }),
     z.object({
@@ -271,18 +285,44 @@ export const BridgeCommandSchema: z.ZodType<BridgeCommand> =
   ]);
 
 export interface PollRequest {
+  readonly protocol?: number | undefined;
+  readonly bridgeStartedAt?: string | undefined;
   readonly computerId: string;
   /** Wait up to `POLL_WAIT_MS` for a command instead of answering at once. */
   readonly wait: boolean;
 }
 
 export const PollRequestSchema: z.ZodType<PollRequest> = z.object({
+  protocol: z.number().int().positive().optional(),
+  bridgeStartedAt: isoTime.optional(),
   computerId: id,
   wait: z.boolean(),
 });
 
 export interface PollResponse {
   readonly commands: readonly BridgeCommand[];
+}
+
+/** Execution and withdrawal use the same durable prompt identity and registered bridge generation. */
+export interface PromptRequest {
+  readonly computerId: string;
+  readonly protocol: number;
+  readonly bridgeStartedAt: string;
+  readonly sessionId: string;
+  readonly promptId: string;
+  readonly seq: number;
+}
+
+export const PromptRequestSchema: z.ZodType<PromptRequest> = z.object({
+  computerId: id,
+  protocol: z.number().int().positive(),
+  bridgeStartedAt: isoTime,
+  sessionId: id,
+  promptId: id,
+  seq: z.number().int().positive(),
+});
+export interface ClaimResponse {
+  readonly execute: boolean;
 }
 
 /** One option of a permission request, as ACP offers it. */
@@ -333,9 +373,16 @@ const TurnUsageSchema: z.ZodType<TurnUsage> = z.object({
 export type SessionEvent =
   | {
       readonly kind: 'prompt';
+      /** Absent on messages delivered before execution claims were introduced. */
+      readonly withdrawable?: boolean | undefined;
       readonly at: string;
       readonly promptId: string;
       readonly content: readonly PromptPart[];
+    }
+  | {
+      readonly kind: 'withdrawalRequested' | 'promptWithdrawn';
+      readonly at: string;
+      readonly promptId: string;
     }
   | {
       readonly kind: 'update';
@@ -349,6 +396,7 @@ export type SessionEvent =
     }
   | {
       readonly kind: 'turnEnded';
+      readonly seq?: number | undefined;
       readonly at: string;
       readonly promptId: string;
       readonly stopReason: string | null;
@@ -386,7 +434,9 @@ export type SessionEvent =
 /** The events a bridge may report. */
 export type BridgeEvent = Exclude<
   SessionEvent,
-  { readonly kind: 'prompt' } | { readonly kind: 'link' }
+  | { readonly kind: 'prompt' }
+  | { readonly kind: 'link' }
+  | { readonly kind: 'withdrawalRequested' | 'promptWithdrawn' }
 >;
 
 export const BridgeEventSchema: z.ZodType<BridgeEvent> = z.discriminatedUnion(
@@ -403,6 +453,7 @@ export const BridgeEventSchema: z.ZodType<BridgeEvent> = z.discriminatedUnion(
     z.object({ kind: z.literal('turnStarted'), at: isoTime, promptId: id }),
     z.object({
       kind: z.literal('turnEnded'),
+      seq: z.number().int().positive().optional(),
       at: isoTime,
       promptId: id,
       stopReason: z.string().max(40).nullable(),
@@ -476,6 +527,18 @@ export const DiscoveredChoicesSchema: z.ZodType<DiscoveredChoices> = z.object({
   choices: z.array(SessionChoiceSchema).max(20),
 });
 
+/**
+ * What the bridge is doing to open a session's agent: starting its process (`starting`), opening or continuing its ACP
+ * session (`opening`), or applying the session's choices (`configuring`).
+ */
+export type SessionStartup = 'starting' | 'opening' | 'configuring';
+
+export const SessionStartupSchema: z.ZodType<SessionStartup> = z.enum([
+  'starting',
+  'opening',
+  'configuring',
+]);
+
 /** What a session is now: the agent's own id for it, and what it offers. */
 export interface SessionState {
   readonly acpSessionId: string;
@@ -534,6 +597,8 @@ export interface ReportRequest {
   readonly bridgeStartedAt: string;
   readonly events: readonly BridgeEvent[];
   readonly state: SessionState | null;
+  /** What the bridge is doing to open the session's agent, null once it is open; bridges before it leave it out. */
+  readonly startup?: SessionStartup | null | undefined;
 }
 
 export const ReportRequestSchema: z.ZodType<ReportRequest> = z.object({
@@ -543,6 +608,7 @@ export const ReportRequestSchema: z.ZodType<ReportRequest> = z.object({
   bridgeStartedAt: isoTime,
   events: z.array(BridgeEventSchema).max(MAX_EVENTS_PER_REPORT),
   state: SessionStateSchema.nullable(),
+  startup: SessionStartupSchema.nullable().optional(),
 });
 
 export interface ReportResponse {

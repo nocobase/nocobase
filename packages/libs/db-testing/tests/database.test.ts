@@ -1,8 +1,10 @@
 import { InMemoryCollectionMetadataStore } from '@nocobase/db';
 import { describe, expect, it } from 'vitest';
+import type { TestDatabaseProvisioner } from '@nocobase/db/testing';
 import {
   createTestDatabase,
   inspectCollection,
+  loadTestDatabaseProvisioner,
   provisionTestDatabases,
   testDatabaseDialect,
 } from '../src/index.js';
@@ -86,6 +88,96 @@ describe('createTestDatabase', () => {
     await expect(
       provisionTestDatabases({ connections: ['main', 'main'] }),
     ).rejects.toThrow(/distinct names/);
+  });
+});
+
+describe('createTestDatabase with a template', () => {
+  async function counted() {
+    const real = await loadTestDatabaseProvisioner(testDatabaseDialect());
+    const calls = { provision: 0, clone: 0 };
+    const provisioner: TestDatabaseProvisioner = {
+      dialect: real.dialect,
+      capabilities: real.capabilities,
+      provision: (options) => {
+        calls.provision += 1;
+        return real.provision(options);
+      },
+      ...(real.clone
+        ? {
+            clone: (options) => {
+              calls.clone += 1;
+              return real.clone!(options);
+            },
+          }
+        : {}),
+    };
+    return { provisioner, calls, clones: Boolean(real.clone) };
+  }
+
+  it('gives each call an independent migrated and seeded copy, migrating once where the dialect copies', async () => {
+    const { provisioner, calls, clones } = await counted();
+    const first = await createTestDatabase({
+      migrations,
+      seeds,
+      provisioner,
+      template: true,
+    });
+    try {
+      const second = await createTestDatabase({
+        migrations,
+        seeds,
+        provisioner,
+        template: true,
+      });
+      try {
+        for (const database of [first, second])
+          await expect(
+            database.connection
+              .repository('libraryAuthors')
+              .findOne({ filter: { id: 'author-1' } }),
+          ).resolves.toMatchObject({ name: 'Ada' });
+        await first.connection
+          .repository('libraryAuthors')
+          .createOne({ values: { id: 'author-2', name: 'Grace' } });
+        await expect(
+          second.connection
+            .repository('libraryAuthors')
+            .findOne({ filter: { id: 'author-2' } }),
+        ).resolves.toBeUndefined();
+        // The migrations are recorded, so applying them again changes nothing.
+        await second.migrate(migrations);
+        expect(calls).toEqual(
+          clones ? { provision: 1, clone: 2 } : { provision: 2, clone: 0 },
+        );
+      } finally {
+        await second.destroy();
+      }
+    } finally {
+      await first.destroy();
+    }
+  });
+
+  it('migrates separately for different migrations', async () => {
+    const { provisioner, calls, clones } = await counted();
+    const migrated = await createTestDatabase({
+      migrations,
+      provisioner,
+      template: true,
+    });
+    const empty = await createTestDatabase({ provisioner, template: true });
+    try {
+      await expect(
+        inspectCollection(migrated.connection, 'libraryAuthors'),
+      ).resolves.toBeDefined();
+      await expect(
+        inspectCollection(empty.connection, 'libraryAuthors'),
+      ).resolves.toBeUndefined();
+      expect(calls.provision).toBe(2);
+      expect(calls.clone).toBe(clones ? 2 : 0);
+    } finally {
+      await migrated.destroy();
+      await empty.destroy();
+    }
   });
 });
 

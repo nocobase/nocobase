@@ -13,12 +13,12 @@ Every published package lives under `packages/`, grouped into seven directories 
 | `packages/plugins/`   | Application plugins that ship as product features, such as `app-plugin-authentication`                                        |
 | `packages/examples/`  | Application plugins that exist to demonstrate a capability, such as `app-plugin-routes-example`                               |
 | `packages/templates/` | Complete applications that `create-app` scaffolds from: `app-template-default` and `app-template-examples`                    |
-| `packages/apps/`      | Complete product applications this repository builds and deploys itself, such as `studio` (NocoBase Studio)                   |
+| `packages/apps/`      | Complete product applications this repository builds and deploys itself; none at present                                      |
 | `packages/tools/`     | Development and build tooling that never ships inside an application, such as `dev-config`, `create-app`, and `create-plugin` |
 
 `packages/README.md` describes each directory in more detail and is the place to look when a new package does not obviously belong to one of them. `pnpm plugin:create` scaffolds into `packages/plugins/`.
 
-`docs/` and `ui-library/` are the workspace members outside `packages/`, and the exceptions to the table above. `docs/` is the documentation site rather than something an application depends on, so it sits at the repository root rather than under `packages/`, and like `ui-library/` it sets `private: true`. That placement is what keeps both out of `pnpm pack:check`, which discovers publishable packages by descending into `packages/<category>/` and would otherwise reject them for being private. See the "Documentation Site" section below before changing anything under `docs/`.
+`docs/`, `ui-library/` and the private validation fixture at `skills/nocobase-app-plugin-development/assets/testing-example/` are the workspace members outside `packages/`, and the exceptions to the table above. `docs/` is the documentation site rather than something an application depends on, so it sits at the repository root rather than under `packages/`, and like `ui-library/` and the Skill fixture it sets `private: true`. That placement keeps them out of `pnpm pack:check`, which discovers publishable packages by descending into `packages/<category>/` and would otherwise reject them for being private. The Skill fixture declares its test dependencies so workspace CI can check its executable examples; it is not a publishable plugin. See the "Documentation Site" section below before changing anything under `docs/`.
 
 ## Repository Skills
 

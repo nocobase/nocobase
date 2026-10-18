@@ -14,6 +14,58 @@ const zhCN: LifecycleExampleResource = {
     subscriptions: '订阅续费',
   },
   parameters: {
+    fields: {
+      paymentWindowMinutes: {
+        title: '付款等待时限（分钟）',
+        description:
+          '订单进入待付款状态后，超过此时长仍未付款将自动取消。修改用于新安排的付款计时，已安排的计时不变。',
+      },
+      escalateAfterMinutes: {
+        title: '主管审批超时时长（分钟）',
+        description:
+          '等待主管审批超过此时长后，自动升级审批处理。修改用于新安排的审批计时，已安排的计时不变。',
+      },
+      waitMinutes: {
+        title: '客户回复等待时限（分钟）',
+        description:
+          '工单等待客户回复超过此时长后自动关闭。修改用于新安排的等待计时，已安排的计时不变。',
+      },
+      querySeconds: {
+        title: '开票结果查询等待时长（秒）',
+        description:
+          '提交开票后，等待平台回调超过此时长便主动查询开票结果。修改用于新安排的查询，已安排的查询时间不变。',
+      },
+      pollSeconds: {
+        title: '导出进度查询间隔（秒）',
+        description:
+          '导出处理中，等待此时长后查询任务进度。修改用于新安排的查询，已安排的查询时间不变。',
+      },
+      maxMinutes: {
+        title: '导出最长等待时长（分钟）',
+        description:
+          '导出任务提交成功时，按此时长确定超时截止时间；到期仍未完成则标记为超时。修改不改变已有任务的截止时间。',
+      },
+      periodMinutes: {
+        title: '订阅续费周期（分钟）',
+        description:
+          '每次扣款成功后，按此时长计算新的订阅到期时间。修改在下次扣款成功时使用，当前到期时间不变。',
+      },
+      dunningMinutes: {
+        title: '续费扣款失败重试间隔（分钟）',
+        description:
+          '续费扣款失败后，等待此时长再自动尝试扣款。修改用于新安排的重试，已安排的重试时间不变。',
+      },
+      maxDunning: {
+        title: '续费扣款失败次数上限',
+        description:
+          '自动重试时，若累计扣款失败次数已达到此值，将取消订阅，不再扣款。修改在下次自动重试判断时生效。',
+      },
+      reopenDays: {
+        title: '工单关闭后可重开天数',
+        description:
+          '工单关闭后，在此天数内允许重新打开；超过期限需新建工单。每次申请重开时使用最新配置。',
+      },
+    },
     loading: '正在加载参数…',
     title: '运行时参数',
     description:
@@ -35,7 +87,7 @@ const zhCN: LifecycleExampleResource = {
     codeDefaults: '代码默认值',
     databaseVersion: '已保存的配置',
     snapshotEffect: '快照：首次提交固定，退回与撤回重提沿用',
-    liveEffect: '实时：每次执行和重试重新读取',
+    liveEffect: '后续使用时读取最新配置；已确定的计时或截止时间保持不变。',
     yes: '是',
     no: '否',
     invalidObject: '请输入有效的 JSON 对象。',
@@ -54,13 +106,6 @@ const zhCN: LifecycleExampleResource = {
     effectivePreview: '此记录当前的有效参数',
     firstSnapshot: '首次提交快照',
     notRecorded: '未记录',
-    reviewerDemo: '任一候选人可决定的审批演示',
-    candidateBoundary:
-      '首位合格候选人的决定结束审批。快照固定选择条件，不固定组织成员；已有候选列表保持不变。',
-    demoWorkflow: '代码预定义的演示流程',
-    snapshotDemo: '快照选人规则',
-    liveDemo: '实时选人规则',
-    createReview: '以当前身份创建审批',
     diagramEntry: '可选的流程图入口',
     diagramHint:
       '点击绑定的节点或连线打开共用编辑器；无绑定的入口显示原详情。点击不会执行流程转换。',
@@ -315,6 +360,20 @@ const zhCN: LifecycleExampleResource = {
     withdraw: '撤回',
   },
   flowDiagram: {
+    overview: '流程缩略导航',
+    actualSize: '实际大小',
+    states: '状态',
+    transitions: '转移',
+    configurable: '可配置参数',
+    current: '当前',
+    visited: '已经过',
+    initial: '初始状态',
+    final: '终止状态',
+    state: '状态',
+    zoomOut: '缩小',
+    zoomIn: '放大',
+    fit: '适应画布',
+
     empty: '暂无可展示的状态。',
     loading: '正在布局流程图…',
     failed: '无法布局此流程图。',

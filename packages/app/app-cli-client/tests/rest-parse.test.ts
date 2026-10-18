@@ -144,3 +144,81 @@ describe('a json content file', () => {
     ).rejects.toThrow('not valid JSON');
   });
 });
+
+describe('nonempty secret content files', () => {
+  let dir: string;
+  beforeEach(async () => {
+    dir = await mkdtemp(path.join(os.tmpdir(), 'cli-secret-'));
+  });
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+  const secret = {
+    ...command([
+      {
+        name: 'token',
+        field: 'token',
+        in: 'body',
+        type: 'string',
+        required: false,
+        contentFile: true,
+        contentFileNonEmpty: true,
+      },
+    ]),
+    body: { media: 'application/json', file: 'file' },
+  } satisfies CliCommand;
+
+  it('rejects empty, whitespace-only and unreadable files with the flag and path', async () => {
+    for (const text of ['', ' \t\r\n']) {
+      await writeFile(path.join(dir, 'secret.txt'), text);
+      await expect(
+        parseRestCall(secret, ['--token-file', 'secret.txt'], dir),
+      ).rejects.toThrow(
+        '--token-file: secret.txt must not be empty or whitespace-only.',
+      );
+    }
+    await expect(
+      parseRestCall(secret, ['--token-file', 'missing.txt'], dir),
+    ).rejects.toThrow('--token-file: cannot read missing.txt.');
+  });
+
+  it('preserves nonempty contents and leaves ordinary text files unchanged', async () => {
+    await writeFile(path.join(dir, 'secret.txt'), '  secret\n');
+    expect(
+      valueOf(
+        await parseRestCall(secret, ['--token-file', 'secret.txt'], dir),
+        'token',
+      ),
+    ).toBe('  secret\n');
+    await writeFile(path.join(dir, 'secret.txt'), '');
+    const ordinary = command(
+      secret.parameters.map((p) => ({ ...p, contentFileNonEmpty: false })),
+    );
+    expect(
+      valueOf(
+        await parseRestCall(ordinary, ['--token-file', 'secret.txt'], dir),
+        'token',
+      ),
+    ).toBe('');
+  });
+
+  it('requires a clear in the body file to be exclusive with assigning the same credential', async () => {
+    await writeFile(
+      path.join(dir, 'clear.json'),
+      JSON.stringify({ token: null }),
+    );
+    await writeFile(path.join(dir, 'secret.txt'), 'do-not-echo-this');
+    for (const assignment of [
+      ['--token', 'do-not-echo-this'],
+      ['--token-file', 'secret.txt'],
+    ]) {
+      await expect(
+        parseRestCall(secret, ['--file', 'clear.json', ...assignment], dir),
+      ).rejects.toThrow(
+        'Cannot clear token in --file and also give --token or --token-file.',
+      );
+    }
+    const clear = await parseRestCall(secret, ['--file', 'clear.json'], dir);
+    expect(clear.bodyFile).toEqual({ token: null });
+  });
+});

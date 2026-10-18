@@ -1,7 +1,7 @@
 /**
  * The viewer's sessions, newest activity first, grouped by day. A row says what a person needs to know at a glance:
  * the session's title, the work it produced and how that stands, and whether it waits for them. Hovering a row (or
- * pressing E on it) archives it, with a toast to undo.
+ * pressing E on it) archives it, with a toast to undo. In a panel it fills the panel, and a row shows its session there.
  */
 import { useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -10,6 +10,7 @@ import { cn } from 'cn';
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
+  ArrowLeftIcon,
   ChevronDownIcon,
   LaptopIcon,
   PanelLeftOpenIcon,
@@ -38,6 +39,7 @@ import { Skeleton } from './ui/skeleton.js';
 
 import type { Session } from '../../shared/api.js';
 import { useSessions } from '../api.js';
+import { useSessionSurface } from '../config.js';
 import { dayGroup, shortTime, type DayGroup } from '../lib/format.js';
 import { sessionFacts, type SessionFacts } from '../lib/facts.js';
 import { ComputersDialog } from './computers-dialog.js';
@@ -107,6 +109,7 @@ function FullSessionList({
   const [project, setProject] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [computersOpen, setComputersOpen] = useState(false);
+  const surface = useSessionSurface();
   const query = useSessions(archived);
   const archive = useArchive();
 
@@ -136,24 +139,46 @@ function FullSessionList({
   return (
     <section
       className={cn(
-        'flex h-full min-h-0 w-full shrink-0 flex-col md:w-[264px] md:border-r',
+        '@container/session-list flex h-full min-h-0 w-full shrink-0 flex-col',
+        !surface.panel && 'md:w-[264px] md:border-r',
         className,
       )}
       aria-label={t('list.label')}
     >
       <div className='flex flex-col gap-2.5 px-3.5 pt-3.5 pb-2'>
         <div className='flex items-center gap-2'>
-          <h1 className='flex-1 text-base font-semibold'>
+          {archived && (
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              className='shrink-0'
+              aria-label={t('list.back')}
+              title={t('list.back')}
+              onClick={() => setArchived(false)}
+            >
+              <ArrowLeftIcon />
+            </Button>
+          )}
+          <h1
+            className='min-w-0 flex-1 truncate text-base font-semibold'
+            title={archived ? t('list.archived') : t('list.title')}
+          >
             {archived ? t('list.archived') : t('list.title')}
           </h1>
-          {/* The application's primary button, as "New issue" is: its default size and text. */}
-          <Button
-            nativeButton={false}
-            render={<Link to='/agent-sessions?new' />}
-          >
-            <PlusIcon data-icon='inline-start' />
-            {t('list.new')}
-          </Button>
+          {/* The application's primary button, as "New issue" is: its default size and text. A panel has its own. */}
+          {surface.panel ? (
+            surface.actions
+          ) : (
+            <Button
+              className='min-w-0 shrink'
+              title={t('list.new')}
+              nativeButton={false}
+              render={<Link to='/agent-sessions?new' />}
+            >
+              <PlusIcon data-icon='inline-start' />
+              <span className='truncate'>{t('list.new')}</span>
+            </Button>
+          )}
         </div>
         <div className='relative'>
           <SearchIcon className='text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2' />
@@ -176,9 +201,14 @@ function FullSessionList({
                 key={value}
                 type='button'
                 aria-pressed={filter === value}
+                title={
+                  value === 'all'
+                    ? t('list.filters.all')
+                    : t(`list.filters.${value}`, { count: counts[value] })
+                }
                 onClick={() => setFilter(value)}
                 className={cn(
-                  'h-7.5 rounded-full border px-2.5 text-xs',
+                  'h-7.5 max-w-full truncate rounded-full border px-2.5 text-xs whitespace-nowrap',
                   filter === value
                     ? 'bg-accent text-accent-foreground border-transparent font-medium'
                     : 'text-muted-foreground hover:text-foreground',
@@ -256,27 +286,30 @@ function FullSessionList({
         )}
       </div>
 
-      <div className='flex items-center justify-between gap-2 border-t px-2 py-2'>
-        <FooterButton onClick={() => setComputersOpen(true)}>
-          <LaptopIcon className='size-4' />
-          {t('computers.title')}
+      <div className='flex items-center gap-1 border-t px-2 py-2'>
+        <FooterButton
+          title={t('computers.title')}
+          onClick={() => setComputersOpen(true)}
+        >
+          <LaptopIcon className='size-4 shrink-0' />
+          <span className='truncate'>{t('computers.title')}</span>
+        </FooterButton>
+        <FooterButton
+          title={t('list.archived')}
+          onClick={() => setArchived(true)}
+          pressed={archived}
+        >
+          <ArchiveIcon className='size-4 shrink-0' />
+          <span className='truncate'>{t('list.archived')}</span>
         </FooterButton>
         {!archived && (
-          <span className='text-muted-foreground inline-flex items-center gap-1 text-xs'>
+          <span className='text-muted-foreground ml-auto hidden shrink-0 items-center gap-1 text-xs whitespace-nowrap @min-[360px]/session-list:inline-flex'>
             <kbd className='bg-card rounded-[3px] border px-1 font-sans text-[10.5px]'>
               E
             </kbd>
             {t('list.archive')}
           </span>
         )}
-        <FooterButton onClick={() => setArchived(!archived)} pressed={archived}>
-          {archived ? (
-            <ArchiveRestoreIcon className='size-4' />
-          ) : (
-            <ArchiveIcon className='size-4' />
-          )}
-          {archived ? t('list.back') : t('list.archived')}
-        </FooterButton>
       </div>
       <ComputersDialog open={computersOpen} onOpenChange={setComputersOpen} />
     </section>
@@ -298,9 +331,14 @@ function SessionRow({
 }): ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { onOpenSession } = useSessionSurface();
+  const open = (): void => {
+    if (onOpenSession) onOpenSession(session.id);
+    else void navigate(`/agent-sessions/${session.id}`);
+  };
   const restoring = session.archivedAt !== null;
   const onKeyDown = (event: KeyboardEvent): void => {
-    if (event.key === 'Enter') void navigate(`/agent-sessions/${session.id}`);
+    if (event.key === 'Enter') open();
     if (
       (event.key === 'e' || event.key === 'E') &&
       !event.metaKey &&
@@ -313,7 +351,7 @@ function SessionRow({
       role='link'
       tabIndex={0}
       aria-current={active ? 'page' : undefined}
-      onClick={() => void navigate(`/agent-sessions/${session.id}`)}
+      onClick={open}
       onKeyDown={onKeyDown}
       className={cn(
         'group relative flex cursor-pointer flex-col gap-1.5 rounded-lg px-2.5 pt-2.5 pb-3 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
@@ -321,16 +359,22 @@ function SessionRow({
       )}
     >
       <div className='flex items-baseline gap-2'>
-        <span className='min-w-0 flex-1 truncate text-sm font-medium'>
+        <span
+          className='min-w-0 flex-1 truncate text-sm font-medium'
+          title={session.title}
+        >
           {session.title}
         </span>
-        <span className='text-muted-foreground shrink-0 text-xs tabular-nums group-hover:invisible group-focus-within:invisible'>
+        <span className='text-muted-foreground shrink-0 text-xs whitespace-nowrap tabular-nums group-hover:invisible group-focus-within:invisible'>
           {shortTime(session.lastActivityAt, locale)}
         </span>
       </div>
       <div className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs'>
         {facts.group && (
-          <span className='text-foreground shrink-0 font-medium'>
+          <span
+            className='text-foreground max-w-[30%] truncate font-medium'
+            title={facts.group}
+          >
             {facts.group}
           </span>
         )}
@@ -340,7 +384,9 @@ function SessionRow({
             ? t('links.count', { count: session.links.length })
             : t('links.none')}
         </span>
-        {session.links.length > 0 && <LinkBar links={session.links} />}
+        {session.links.length > 0 && (
+          <LinkBar links={session.links} className='min-w-4 shrink' />
+        )}
         <span className='ml-auto flex shrink-0 items-center gap-1.5'>
           {facts.waitingLinks > 0 && facts.online ? (
             <WaitingCount count={facts.waitingLinks} />
@@ -451,10 +497,12 @@ function ProjectFilter({
 }
 
 function FooterButton({
+  title,
   pressed,
   onClick,
   children,
 }: {
+  readonly title: string;
   readonly pressed?: boolean;
   readonly onClick: () => void;
   readonly children: ReactNode;
@@ -462,9 +510,10 @@ function FooterButton({
   return (
     <button
       type='button'
+      title={title}
       aria-pressed={pressed}
       onClick={onClick}
-      className='text-muted-foreground hover:bg-muted hover:text-foreground inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-xs transition-colors'
+      className='text-muted-foreground hover:bg-muted hover:text-foreground inline-flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-xs whitespace-nowrap transition-colors'
     >
       {children}
     </button>

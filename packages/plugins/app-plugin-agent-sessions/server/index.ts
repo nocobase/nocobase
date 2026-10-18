@@ -6,6 +6,7 @@ export {
   AgentSessionsService,
   type LinkResolver,
   type LinkView,
+  type CommittedSessionEvent,
 } from './service.js';
 export type {
   SessionNotice,
@@ -13,8 +14,4 @@ export type {
   SessionNoticeSettle,
   SessionNoticeType,
 } from './notices.js';
-export {
-  defineSessionTool,
-  type SessionTool,
-  type SessionToolContext,
-} from './tools.js';
+export { AgentSessionsError } from './errors.js';

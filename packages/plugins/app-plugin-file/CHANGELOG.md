@@ -1,5 +1,24 @@
 # @nocobase/app-plugin-file
 
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 00c5970: Allow explicit retries of unconfirmed agent messages without duplicating sessions, messages, commands or images. Commit a new session and its first message together, retain immutable browser submission input, and support file uploads within the caller's transaction.
+- Updated dependencies [98b3862]
+- Updated dependencies [1cdbaf4]
+- Updated dependencies [5fe8773]
+- Updated dependencies [b22d999]
+- Updated dependencies [0037dd2]
+- Updated dependencies [14b7aec]
+- Updated dependencies [49f61b9]
+- Updated dependencies [0037dd2]
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/app-client@3.0.0-beta.2
+  - @nocobase/app-server@2.0.0-beta.8
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 1.0.0-beta.23
 
 ### Patch Changes

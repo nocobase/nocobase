@@ -1,6 +1,8 @@
 /**
  * Runners as the browser and the server's admin API exchange them.
  */
+import type { QuotaLocation } from './quota.js';
+
 import {
   AGENT_TOOLS,
   policyAllowsAgent,
@@ -122,13 +124,51 @@ export interface Runner {
    * tool's models differently. Null or absent for none.
    */
   readonly unavailableModels?: readonly UnavailableModel[] | null;
+  readonly quotaRevision: number;
+  readonly quotaUsage?: readonly RunnerQuotaUsage[] | null;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
 
+export interface RunnerQuotaUsage {
+  readonly tool: AgentTool;
+  readonly window: string;
+  readonly scope: 'tool' | 'provider' | 'model';
+  readonly target: string;
+  readonly usedPercent?: number;
+  readonly resetsAt: string | null;
+  readonly observedAt: string;
+  /** Whether this observation exhausted its window. */
+  readonly exhausted?: boolean;
+}
+
+/** Active quota blocks for a candidate; default models still obey tool blocks. */
+export function quotaBlocks(
+  runner: Pick<Runner, 'unavailableModels'>,
+  entry: Pick<RunnerModelEntry, 'tool' | 'model'>,
+  now: number,
+): UnavailableModel[] {
+  const model = entry.model ? normalizeModel(entry.tool, entry.model) : '';
+  return (runner.unavailableModels ?? []).filter(
+    (mark) =>
+      mark.reason === 'toolQuota' &&
+      mark.tool === entry.tool &&
+      (!mark.resetsAt || Date.parse(mark.resetsAt) > now) &&
+      (mark.scope === 'tool' ||
+        (model !== '' &&
+          (mark.scope === 'provider'
+            ? model.split('/')[0] === mark.model
+            : model === mark.model))),
+  );
+}
+
 /** A tool and model a run failed `modelUnavailable` with on a runner (`Runner.unavailableModels`). */
 export interface UnavailableModel {
+  readonly reason?: 'modelUnavailable' | 'toolQuota';
+  readonly scope?: 'tool' | 'provider' | 'model';
+  readonly window?: string;
+  readonly resetsAt?: string | null;
   readonly tool: AgentTool;
   /** Normalized (`normalizeModel`). */
   readonly model: string;
@@ -139,6 +179,12 @@ export interface UnavailableModel {
 
 /** A runner's working directories, as it last reported them (`Runner.workspaceUsage`). */
 export interface RunnerWorkspaceUsage {
+  /** Computed from reported directory sizes; not a new runner protocol field. */
+  readonly totalBytes?: number;
+  readonly sizeUnknownCount?: number;
+  readonly counts?: Readonly<
+    Record<'all' | 'active' | 'retained' | 'ended', number>
+  >;
   readonly diskMeasuredAt?: string;
   readonly intervalMs?: number;
   /** The disk holding the runner's working directories; null when it did not say. */
@@ -181,6 +227,20 @@ export interface RunnerWorkspace {
   readonly settled: boolean | null;
 }
 
+/** A directory's display category; subject completion alone does not mean it can be removed. */
+export function workspaceCategory(
+  workspace: RunnerWorkspace,
+): 'active' | 'retained' | 'ended' {
+  if (workspace.settled === false) return 'active';
+  if (
+    workspace.settled === true &&
+    !workspace.unpushed &&
+    (!workspace.cleanup || workspace.cleanup.reason === 'allowed')
+  )
+    return 'ended';
+  return 'retained';
+}
+
 /** What a runner takes work for, as the kind of work it serves names it: an agent, for agent runs. */
 export interface RunnerWorkTarget {
   readonly id: string;
@@ -201,6 +261,8 @@ export interface RunnerHeldItem {
 
 /** One of a runner's latest runs, for its page. */
 export interface RunnerRecentRun {
+  readonly subjectLabel?: string | null;
+  readonly failureReason?: string | null;
   readonly id: string;
   /** The agent that ran. */
   readonly title: string;
@@ -217,7 +279,10 @@ export interface RunnerRecentRun {
  * executable paths) is shown only to its owner, the managers of runners and anyone who may wake an agent: `hostname`
  * is null and the tools carry no `path` for everyone else.
  */
-export interface RunnerSummary extends Omit<Runner, 'hostname'> {
+export interface RunnerSummary extends Omit<
+  Runner,
+  'hostname' | 'quotaRevision'
+> {
   readonly canSeeMachine?: boolean;
   /** Null when the viewer may not manage it. */
   readonly hostname: string | null;
@@ -244,6 +309,9 @@ export interface RunnerSummary extends Omit<Runner, 'hostname'> {
   readonly canChangeTrust: boolean;
   /** The viewer may revoke it, and delete it once revoked: its owner, or a manager of runners in an emergency. */
   readonly canRevoke: boolean;
+  readonly canClearQuota: boolean;
+  /** Count of the recent (at most ten) run rows, without loading their details. */
+  readonly recentRunsCount: number;
   /**
    * A newer runner version the application serves for its platform, which the runner installs on its own between
    * runs; null when it is up to date or the application serves none.
@@ -259,8 +327,76 @@ export interface RunnerSummary extends Omit<Runner, 'hostname'> {
 }
 
 /** The list carries totals only; fetch a single runner for directory diagnostics. */
-export interface RunnerListItem extends Omit<RunnerSummary, 'workspaceUsage'> {
+export const RUNNER_LIST_FIELDS = {
+  id: true,
+  name: true,
+  hostname: true,
+  os: true,
+  arch: true,
+  version: true,
+  product: true,
+  tools: true,
+  enabledTools: true,
+  trust: true,
+  ownerUserId: true,
+  ownerName: true,
+  status: true,
+  slots: true,
+  toolSlots: true,
+  activeRuns: true,
+  activeJobs: true,
+  activeByTool: true,
+  lastSeenAt: true,
+  draining: true,
+  canManage: true,
+  canChangeTrust: true,
+  canRevoke: true,
+  takes: true,
+  updateVersion: true,
+} as const;
+
+export interface RunnerListItem extends Pick<
+  RunnerSummary,
+  keyof typeof RUNNER_LIST_FIELDS
+> {
+  readonly takesCount: number;
   readonly workspaceUsage?: Omit<RunnerWorkspaceUsage, 'workspaces'> | null;
+}
+
+/** The single public runtime-list projection; schema and type use the same field set. */
+export function runnerListItem(
+  summary: Omit<RunnerSummary, 'recentRunsCount'>,
+): RunnerListItem {
+  const selected = Object.fromEntries(
+    Object.keys(RUNNER_LIST_FIELDS).map((key) => [
+      key,
+      summary[key as keyof typeof RUNNER_LIST_FIELDS],
+    ]),
+  ) as Pick<RunnerSummary, keyof typeof RUNNER_LIST_FIELDS>;
+  const totals = summary.workspaceUsage
+    ? (({ workspaces: _rows, ...rest }) => rest)(summary.workspaceUsage)
+    : null;
+  return {
+    ...selected,
+    tools: summary.tools.map(({ kind, version, authenticated }) => ({
+      kind,
+      version,
+      authenticated,
+    })),
+    takes: summary.takes.slice(0, 3),
+    takesCount: summary.takes.length,
+    workspaceUsage: summary.workspaceUsage ? totals : null,
+  };
+}
+
+export interface RunnerWorkspacePage {
+  readonly data: readonly RunnerWorkspace[];
+  readonly meta: {
+    readonly total: number;
+    readonly page: number;
+    readonly pageSize: number;
+    readonly usage: Omit<RunnerWorkspaceUsage, 'workspaces'> | null;
+  };
 }
 
 /** What people change about a runner after it registered. */
@@ -302,6 +438,15 @@ export interface RegistrationToken {
   /** Absent from tokens made before limits per tool, or built by other code: none. */
   readonly toolSlots?: ToolSlots | null;
   readonly expiresAt: string;
+}
+
+/** Usable token metadata; the secret and its hash are never returned by a list. */
+export interface RegistrationTokenSummary extends Omit<
+  RegistrationToken,
+  'token'
+> {
+  readonly createdById: string | null;
+  readonly createdAt: string;
 }
 
 /**
@@ -360,14 +505,22 @@ export function reportedModels(
 export function runsEntry(
   runner: Pick<Runner, 'enabledTools' | 'tools' | 'unavailableModels'>,
   entry: Pick<RunnerModelEntry, 'tool' | 'model'>,
+  now: number,
 ): boolean {
-  if (!runsTool(runner, entry.tool)) return false;
+  if (
+    !runsTool(runner, entry.tool) ||
+    quotaBlocks(runner, entry, now).length > 0
+  )
+    return false;
   if (!entry.model) return true;
   const model = normalizeModel(entry.tool, entry.model);
   return (
     reportedModels(runner, entry.tool).includes(model) &&
     !(runner.unavailableModels ?? []).some(
-      (mark) => mark.tool === entry.tool && mark.model === model,
+      (mark) =>
+        mark.reason !== 'toolQuota' &&
+        mark.tool === entry.tool &&
+        mark.model === model,
     )
   );
 }
@@ -509,10 +662,78 @@ export function runnerTakesAgent(
     | 'workspaceUsage'
   >,
   agent: RunnerAgentFit,
+  now: number,
 ): boolean {
   return (
     !runnerLowOnDisk(runner) &&
-    agent.modelEntries.some((entry) => runsEntry(runner, entry)) &&
+    agent.modelEntries.some((entry) => runsEntry(runner, entry, now)) &&
     policyAllowsAgent(runner.policy, agent)
   );
+}
+
+/** Quota information for runtimes that otherwise fit; unrelated personal machines stay private. */
+export function quotaForAgent(
+  runners: readonly Runner[],
+  agent: RunnerAgentFit,
+  actorUserId: string | undefined,
+  now: number,
+): QuotaLocation[] {
+  return runners.flatMap((runner) => {
+    if (
+      !(runner.unavailableModels ?? []).some(
+        (mark) =>
+          mark.reason === 'toolQuota' &&
+          (!mark.resetsAt || Date.parse(mark.resetsAt) > now),
+      )
+    )
+      return [];
+    if (
+      runner.trust !== 'team' &&
+      actorUserId !== undefined &&
+      runner.ownerUserId !== actorUserId
+    )
+      return [];
+    const compatible = {
+      ...runner,
+      unavailableModels: (runner.unavailableModels ?? []).filter(
+        (mark) => mark.reason !== 'toolQuota',
+      ),
+    };
+    if (!runnerTakesAgent(compatible, agent, now)) return [];
+    const blocks = agent.modelEntries
+      .filter((entry) => runsEntry(compatible, entry, now))
+      .map((entry) => quotaBlocks(runner, entry, now));
+    if (blocks.some((list) => !list.length)) return [];
+    const resets = blocks.map((list) =>
+      list.some((mark) => !mark.resetsAt)
+        ? null
+        : new Date(
+            Math.max(...list.map((mark) => Date.parse(mark.resetsAt!))),
+          ).toISOString(),
+    );
+    return [
+      {
+        runnerId: runner.id,
+        runnerName: runner.name,
+        resetsAt:
+          resets.filter((reset): reset is string => reset !== null).sort()[0] ??
+          null,
+      },
+    ];
+  });
+}
+
+/** Reuse the directory snapshot already read for detail; list reads keep their small JSON projection. */
+export function workspaceSummary(
+  usage: RunnerWorkspaceUsage,
+): RunnerWorkspaceUsage {
+  const counts = { all: usage.count, active: 0, retained: 0, ended: 0 };
+  let totalBytes = 0,
+    sizeUnknownCount = 0;
+  for (const workspace of usage.workspaces) {
+    counts[workspaceCategory(workspace)]++;
+    if (workspace.sizeBytes === undefined) sizeUnknownCount++;
+    else totalBytes += workspace.sizeBytes;
+  }
+  return { ...usage, totalBytes, sizeUnknownCount, counts };
 }

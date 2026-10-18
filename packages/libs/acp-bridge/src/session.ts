@@ -6,14 +6,21 @@
  * The agent process starts with the first command that needs it and keeps the session until the session closes or the
  * process dies; the next command then starts a new process and continues the agent's own session (`session/resume`,
  * or `session/load` without reporting the history it replays). The person's choices (`SessionTarget.settings`) and
- * the agent's full-access mode (`AgentSpec.modes`) are applied every time the session opens.
+ * the agent's full-access mode (`AgentSpec.modes`) are applied every time the session opens. A new session may instead
+ * take over the agent that discovering its choices started (`SessionContext.warm`), already initialized with an open
+ * ACP session, and only apply its choices. While the agent opens, `startup` says what the bridge is doing.
  */
 import { randomUUID } from 'node:crypto';
 import { stat } from 'node:fs/promises';
 
 import * as acp from '@agentclientprotocol/sdk';
 
-import { AgentProcess, errorMessage, isAuthRequired } from './agent-process.js';
+import {
+  AgentProcess,
+  errorMessage,
+  isAuthRequired,
+  type AgentClientHandlers,
+} from './agent-process.js';
 import { allowedDir } from './folders.js';
 import type { ResolvedAgent } from './agents.js';
 import {
@@ -23,15 +30,18 @@ import {
   type BridgeEvent,
   type PromptContent,
   type SessionChoice,
+  type SessionStartup,
   type SessionState,
   type SessionTarget,
   type TurnUsage,
 } from './protocol.js';
 
 export interface SessionContext {
+  /** Must authorize before opening an agent or sending a prompt; transport failures keep the head waiting. */
+  readonly claim?:
+    | ((promptId: string, seq: number | undefined) => Promise<boolean>)
+    | undefined;
   readonly client: acp.Implementation;
-  /** The application's address, with any base path, that the application's tools are reached under. */
-  readonly server: string;
   readonly env: NodeJS.ProcessEnv;
   /** The directories sessions may work in. */
   readonly roots: readonly string[];
@@ -41,6 +51,30 @@ export interface SessionContext {
   readonly stateChanged: () => void;
   /** Discovery cannot grant tool permissions and is bounded by the bridge's shutdown/timeout signal. */
   readonly discoverySignal?: AbortSignal | undefined;
+  readonly prepareSession?:
+    | ((agentId: string, sessionId: string) => Promise<NodeJS.ProcessEnv>)
+    | undefined;
+  /** Local instructions prepended to each ACP prompt, including after resume or discovery takeover. */
+  readonly sessionInstructions?:
+    | ((agentId: string, sessionId: string) => Promise<string | undefined>)
+    | undefined;
+  /** The agent discovering this new session's choices started for it, to take over instead of starting another. */
+  readonly warm?: Promise<WarmAgent | undefined> | undefined;
+}
+
+/**
+ * An agent that discovering a new session's choices started for that session (`BridgeSession.release`): its process,
+ * with the session's environment, and the ACP session it opened, waiting for the session's first prompt.
+ */
+export interface WarmAgent {
+  readonly agentId: string;
+  readonly process: AgentProcess;
+  readonly acpSessionId: string;
+  readonly choices: readonly SessionChoice[];
+  readonly modesOnly: boolean;
+  readonly configurationSupported: boolean;
+  /** What the agent said about its session since the discovery answered, for the session that takes it over. */
+  readonly updates: readonly acp.SessionNotification[];
 }
 
 /** How long a permission request waits for a person before it is declined. */
@@ -72,10 +106,23 @@ export class BridgeSession {
   #title: string | null = null;
   #usage: SessionState['context'] = null;
   #configurationSupported = false;
+  #startup: SessionStartup | null = null;
+  #warm: Promise<WarmAgent | undefined> | undefined;
   readonly #queue: {
     readonly promptId: string;
+    readonly seq?: number | undefined;
     readonly content: readonly PromptContent[];
   }[] = [];
+  readonly #seen = new Set<string>();
+  #pumping = false;
+  #pending:
+    | {
+        readonly promptId: string;
+        readonly seq: number | undefined;
+        removed: boolean;
+        cancelled: boolean;
+      }
+    | undefined;
   #turn: string | undefined;
   /** The running turn was cancelled; until its prompt reaches the agent, only this remembers it. */
   #turnCancelled = false;
@@ -88,6 +135,7 @@ export class BridgeSession {
     this.#target = target;
     this.#acpSessionId = target.acpSessionId;
     this.#context = context;
+    this.#warm = context.warm;
   }
 
   /** Opens an isolated ACP session without a prompt; the caller always closes this disposable session. */
@@ -97,6 +145,39 @@ export class BridgeSession {
       status: this.#configurationSupported ? 'available' : 'unsupported',
       choices: this.#choices,
     };
+  }
+
+  /**
+   * Hands the agent this discovery opened to the session it was started for, instead of stopping it: the process keeps
+   * its open ACP session and remembers what the agent says until a session takes it over. Undefined when there is no
+   * agent to hand over; after it, closing this discovery leaves the agent running.
+   */
+  release(): WarmAgent | undefined {
+    const agent = this.#process;
+    if (!this.#initialized || !this.#acpSessionId || !agent?.alive)
+      return undefined;
+    this.#process = undefined;
+    this.#initialized = false;
+    const updates: acp.SessionNotification[] = [];
+    agent.handOver({
+      update: (notification) => updates.push(notification),
+      // No one can answer for the agent before its session takes it over.
+      permission: () => Promise.resolve({ outcome: { outcome: 'cancelled' } }),
+    });
+    return {
+      agentId: this.#target.agentId,
+      process: agent,
+      acpSessionId: this.#acpSessionId,
+      choices: this.#choices,
+      modesOnly: this.#modesOnly,
+      configurationSupported: this.#configurationSupported,
+      updates,
+    };
+  }
+
+  /** What the bridge is doing to open the agent, null when it is open or not opening. */
+  get startup(): SessionStartup | null {
+    return this.#startup;
   }
 
   /** Null until the agent's session is open and its explicit settings have been validated. */
@@ -118,8 +199,11 @@ export class BridgeSession {
     this.#target = command.session;
     switch (command.type) {
       case 'prompt':
+        if (this.#seen.has(command.promptId)) return;
+        this.#seen.add(command.promptId);
         this.#queue.push({
           promptId: command.promptId,
+          seq: command.seq,
           content: command.content,
         });
         void this.#pump();
@@ -139,17 +223,60 @@ export class BridgeSession {
     }
   }
 
+  /** Removes one waiting prompt, including a head waiting for authorization; never cancels a running turn. */
+  withdraw(promptId: string): boolean {
+    if (this.#turn === promptId) return false;
+    this.#seen.add(promptId);
+    const index = this.#queue.findIndex((item) => item.promptId === promptId);
+    if (index >= 0) this.#queue.splice(index, 1);
+    if (this.#pending?.promptId === promptId) this.#pending.removed = true;
+    return true;
+  }
+
   async close(): Promise<void> {
     this.#closed = true;
     this.#cancel();
     await (this.#opening?.catch(() => undefined) ?? Promise.resolve());
     await this.#process?.stop();
+    // Closed before its first prompt took over the agent started for it.
+    const warm = this.#warm;
+    this.#warm = undefined;
+    await (await warm?.catch(() => undefined))?.process.stop();
   }
 
   async #pump(): Promise<void> {
-    if (this.#turn !== undefined || this.#closed) return;
+    if (this.#pumping || this.#closed) return;
     const next = this.#queue.shift();
     if (!next) return;
+    this.#pumping = true;
+    const pending = {
+      promptId: next.promptId,
+      seq: next.seq,
+      removed: false,
+      cancelled: false,
+    };
+    this.#pending = pending;
+    const execute = this.#context.claim
+      ? await this.#context.claim(next.promptId, next.seq)
+      : true;
+    this.#pending = undefined;
+    if (!execute || pending.removed || pending.cancelled || this.#closed) {
+      // A declined retry may follow a committed claim whose response was lost (for example after archive).
+      // Terminal reports are idempotent and the server ignores them for a withdrawn or already ended identity.
+      if (!execute && !pending.removed && !pending.cancelled)
+        this.#emit({
+          kind: 'turnEnded',
+          seq: next.seq,
+          at: now(),
+          promptId: next.promptId,
+          stopReason: 'cancelled',
+          usage: null,
+          error: null,
+        });
+      this.#pumping = false;
+      void this.#pump();
+      return;
+    }
     this.#turn = next.promptId;
     this.#turnCancelled = false;
     this.#emit({ kind: 'turnStarted', at: now(), promptId: next.promptId });
@@ -158,6 +285,10 @@ export class BridgeSession {
     let error: string | null = null;
     try {
       const agent = await this.#open();
+      const instructions = await this.#context.sessionInstructions?.(
+        this.#target.agentId,
+        this.#target.id,
+      );
       // Cancelled while the agent was starting, which it never heard: the prompt is not sent at all.
       if (this.#turnCancelled) {
         stopReason = 'cancelled';
@@ -166,7 +297,12 @@ export class BridgeSession {
           acp.methods.agent.session.prompt,
           {
             sessionId: this.#acpSessionId!,
-            prompt: next.content.map(toContentBlock),
+            prompt: [
+              ...(instructions
+                ? [{ type: 'text' as const, text: instructions }]
+                : []),
+              ...next.content.map(toContentBlock),
+            ],
           },
         );
         stopReason = response.stopReason;
@@ -183,22 +319,39 @@ export class BridgeSession {
     } finally {
       this.#resolvePermissions('cancelled');
       this.#turn = undefined;
+      this.#pumping = false;
+      this.#emit({
+        kind: 'turnEnded',
+        seq: next.seq,
+        at: now(),
+        promptId: next.promptId,
+        stopReason,
+        usage,
+        error,
+      });
+      void this.#pump();
     }
-    this.#emit({
-      kind: 'turnEnded',
-      at: now(),
-      promptId: next.promptId,
-      stopReason,
-      usage,
-      error,
-    });
-    void this.#pump();
   }
 
   #cancel(): void {
+    if (this.#pending && !this.#pending.cancelled) {
+      // The server may already have committed this claim even when its response was lost. Settle by identity now;
+      // the same session mutex either ends that claim or prevents a delayed claim from starting the cancelled item.
+      this.#pending.cancelled = true;
+      this.#emit({
+        kind: 'turnEnded',
+        seq: this.#pending.seq,
+        at: now(),
+        promptId: this.#pending.promptId,
+        stopReason: 'cancelled',
+        usage: null,
+        error: null,
+      });
+    }
     for (const dropped of this.#queue.splice(0)) {
       this.#emit({
         kind: 'turnEnded',
+        seq: dropped.seq,
         at: now(),
         promptId: dropped.promptId,
         stopReason: 'cancelled',
@@ -253,61 +406,75 @@ export class BridgeSession {
     await this.#process?.stop();
     this.#process = undefined;
     const target = this.#target;
-    const resolved = await this.#context.resolve(target.agentId);
-    const cwd = await this.#workDir(target.cwd);
-    const agent = await AgentProcess.start(resolved, {
-      cwd,
-      env: this.#context.env,
-      client: this.#context.client,
-      handlers: {
-        update: (notification) => this.#update(notification),
-        permission: (request, signal) => this.#permission(request, signal),
-      },
-      signal: this.#context.discoverySignal,
-    });
+    const warm = await this.#takeWarm(target);
+    this.#phase(warm ? 'configuring' : 'starting');
+    let agent: AgentProcess;
+    let resolved: ResolvedAgent;
     try {
-      const mcpServers: acp.McpServer[] =
-        target.tools &&
-        agent.initialize.agentCapabilities?.mcpCapabilities?.http
-          ? [
-              {
-                type: 'http',
-                name: target.tools.name,
-                url: `${this.#context.server.replace(/\/+$/u, '')}${target.tools.path}`,
-                headers: [
-                  {
-                    name: 'authorization',
-                    value: `Bearer ${target.tools.token}`,
-                  },
-                ],
-              },
-            ]
-          : [];
-      let opened = this.#acpSessionId
-        ? await this.#continue(agent, this.#acpSessionId, cwd, mcpServers)
-        : undefined;
-      if (!opened) {
-        const created = await agent.agent.request(
-          acp.methods.agent.session.new,
-          { cwd, mcpServers },
-        );
-        this.#acpSessionId = created.sessionId;
-        opened = created;
+      resolved = await this.#context.resolve(target.agentId);
+      if (warm) {
+        agent = warm.process;
+      } else {
+        const cwd = await this.#workDir(target.cwd);
+        // A discovery prepares a session only when it was started for one, which may take its agent over.
+        const sessionEnv = this.#context.prepareSession
+          ? await this.#context.prepareSession(target.agentId, target.id)
+          : {};
+        agent = await AgentProcess.start(resolved, {
+          cwd,
+          env: { ...this.#context.env, ...sessionEnv },
+          client: this.#context.client,
+          handlers: this.#handlers(),
+          signal: this.#context.discoverySignal,
+        });
       }
-      this.#process = agent;
-      this.#configurationSupported =
-        opened.configOptions != null || opened.modes != null;
-      this.#readChoices(opened.configOptions, opened.modes);
+    } catch (cause) {
+      await warm?.process.stop();
+      this.#phase(null);
+      throw cause;
+    }
+    try {
+      if (warm) {
+        agent.handOver(this.#handlers());
+        this.#acpSessionId = warm.acpSessionId;
+        this.#configurationSupported = warm.configurationSupported;
+        this.#choices = [...warm.choices];
+        this.#modesOnly = warm.modesOnly;
+        this.#process = agent;
+        for (const notification of warm.updates) this.#update(notification);
+      } else {
+        this.#phase('opening');
+        const cwd = await this.#workDir(target.cwd);
+        const mcpServers: acp.McpServer[] = [];
+        let opened = this.#acpSessionId
+          ? await this.#continue(agent, this.#acpSessionId, cwd, mcpServers)
+          : undefined;
+        if (!opened) {
+          const created = await agent.agent.request(
+            acp.methods.agent.session.new,
+            { cwd, mcpServers },
+          );
+          this.#acpSessionId = created.sessionId;
+          opened = created;
+        }
+        this.#process = agent;
+        this.#configurationSupported =
+          opened.configOptions != null || opened.modes != null;
+        this.#readChoices(opened.configOptions, opened.modes);
+      }
       this.#allowAll = resolved.spec.allowAll === true;
+      this.#phase('configuring');
       await this.#applySettings(
         agent,
         resolved.spec.modes ?? [],
         target.settings,
       );
       this.#initialized = true;
+      this.#startup = null;
       this.#context.stateChanged();
       return agent;
     } catch (cause) {
+      this.#phase(null);
       await agent.stop();
       this.#process = undefined;
       // A failed opening must retry initialization and explicit settings before any later prompt.
@@ -320,6 +487,41 @@ export class BridgeSession {
       }
       throw new Error(agent.explain(cause), { cause });
     }
+  }
+
+  /**
+   * The agent started for this session while its choices were discovered, once: when it is still running and the
+   * session has not opened an ACP session of its own. One it cannot use is stopped.
+   */
+  async #takeWarm(target: SessionTarget): Promise<WarmAgent | undefined> {
+    const pending = this.#warm;
+    this.#warm = undefined;
+    if (!pending) return undefined;
+    this.#phase('starting');
+    const warm = await pending.catch(() => undefined);
+    if (!warm) return undefined;
+    if (
+      warm.process.alive &&
+      warm.agentId === target.agentId &&
+      this.#acpSessionId === null &&
+      !this.#closed
+    )
+      return warm;
+    await warm.process.stop();
+    return undefined;
+  }
+
+  #handlers(): AgentClientHandlers {
+    return {
+      update: (notification) => this.#update(notification),
+      permission: (request, signal) => this.#permission(request, signal),
+    };
+  }
+
+  #phase(startup: SessionStartup | null): void {
+    if (this.#startup === startup) return;
+    this.#startup = startup;
+    this.#context.stateChanged();
   }
 
   /** Continues the agent's earlier session, or says why it cannot and returns undefined. */

@@ -31,6 +31,7 @@ export interface AgentsNotice {
   readonly type:
     | 'runner_upgrade_required'
     | 'run_secrets_not_allowed'
+    | 'runner_quota'
     | 'runner_revoked'
     | 'run_request_expired';
   readonly userIds: readonly string[];
@@ -141,7 +142,9 @@ export type AgentsEvent =
    */
   | {
       readonly type: 'notice.cleared';
-      readonly notice: Pick<AgentsNotice, 'type' | 'subject'>;
+      readonly notice: Pick<AgentsNotice, 'type' | 'subject'> & {
+        readonly key?: string;
+      };
     };
 
 export type AgentsEventType = AgentsEvent['type'];

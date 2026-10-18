@@ -207,6 +207,28 @@ describe('CollectionBuilder alterCollection', () => {
     });
   });
 
+  it.each([{ partial: true }, { valid: false }])(
+    'drops a unique index that cannot serve as an identity: %j',
+    async (facts) => {
+      const builder = new CollectionBuilder();
+      await builder.createCollection('jobs', {
+        fields: [{ name: 'code', type: 'string' }],
+        indexes: [
+          {
+            name: 'jobs_code_unique',
+            fields: ['code'],
+            db: { unique: true, ...facts },
+          },
+        ],
+      });
+      const result = await builder.dropConstraint('jobs', 'jobs_code_unique');
+      expect(result.schemaOperations?.[0]).toMatchObject({
+        operations: [{ type: 'dropIndex', name: 'jobs_code_unique' }],
+      });
+      expect((await builder.getCollection('jobs'))?.indexes).toEqual([]);
+    },
+  );
+
   it('resolves relation keys through fields added in the same alter operation', async () => {
     const builder = new CollectionBuilder();
 

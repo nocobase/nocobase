@@ -112,6 +112,8 @@ export async function endExecution(
   run: RunRecord,
   finishedAt: string,
   failureReason: string | null,
+  failureSource?: 'sweeper',
+  quota?: import('@nocobase/agent-protocol').QuotaReport,
 ): Promise<void> {
   const current = await findRunRecord(conn, run.id);
   if (!current) return;
@@ -121,7 +123,13 @@ export async function endExecution(
   );
   const execution = executions[index];
   if (!execution || execution.runnerId !== run.runnerId) return;
-  executions[index] = { ...execution, finishedAt, failureReason };
+  executions[index] = {
+    ...execution,
+    finishedAt,
+    failureReason,
+    ...(quota ? { quota } : {}),
+    ...(failureSource ? { failureSource } : {}),
+  };
   await runsRepo(conn).updateMany({
     filter: { id: run.id },
     values: { executionHistory: executions },

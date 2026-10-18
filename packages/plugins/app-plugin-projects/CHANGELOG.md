@@ -1,5 +1,64 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.11
+
+### Minor Changes
+
+- 8286a8a: Add a bounded screenshot endpoint for live Agent comments with stable comment provenance and existing issue visibility checks.
+
+### Patch Changes
+
+- 44bc7a7: Cancel invitation link copy feedback timers when the component unmounts, preventing stale updates after the dialog closes.
+
+## 0.1.0-beta.10
+
+### Minor Changes
+
+- 55fcee1: Replace the built-in agent session MCP endpoint and tool registration API with the Studio CLI and shared Skill. Bridge protocol 3 requires a matching CLI upgrade. Session agents use the bridge-selected login profile, validate session ownership before creating linked tasks, default to the session project and Backlog, and read linked work and issue progress through CLI routes. Prepare the shared Skill before starting or restoring sessions and explain unsupported agents or installation failures. Teach both bundled Skill copies to discuss and search before recording work and combine related requirements into as few tasks as practical.
+
+### Patch Changes
+
+- 56251bc: Reuse issue context, previous summaries, comment deltas and initialization reads for matching parameters within a transaction, reducing repeated work during runner claims.
+- d34b6eb: Reject explicit issue start requests that would save into Backlog before allocating an issue number or writing the issue. Keep the validation message client-neutral and explain the required In progress flags in command help and recovery suggestions. Preserve validated application suggestions from API error metadata in CLI errors without changing the JSON envelope shape.
+- f1f3bd7: Read the dashboard, usage and metrics reports with a fixed number of queries whatever the number of issues, runs and usage records: runs, usage and issues are read in one query each with only the columns the figures use, model usage outside runs is summed in the database, and issue facts are read in three queries instead of two per 200 issues. The Studio dashboard now loads each panel from its own route, `GET /api/reports/delivery`, `GET /api/reports/agents` and `GET /api/reports/projects` (CLI `report delivery`, `report agents`, `report projects`), each loading, failing and refreshing on its own; `GET /api/reports/dashboard` and `report dashboard` are removed.
+- f963c9b: Merge owned and executed tasks, preserve split list placement after status changes, unify agent working marks, and open embedded task run transcripts without leaving the current page.
+
+  Keep the selected split-view task and its updated status visible after cancellation or when its new group lies beyond the loaded page, until another task or query scope is selected.
+
+- bc1facd: The issue board reads a fixed number of queries whatever the number of issues: each column's ids are read in its order, then every column's rows and what they show beside them at once (16 queries instead of about 54). `GET /api/projects/issues` takes `issueIds` (comma-separated, at most 100) to read only some issues within the other filters. On Studio's issue pages the board and the trash now stay current through the app-wide refresh: a change naming issues reads only the rows shown, and the list is read again when one of them left it or changed column, or for a change naming no issues.
+- c28f719: Read the authorized issue hierarchy in a fixed number of queries whatever the number of issues: which issues wait for unfinished ones takes two queries instead of several per hundred issues, exact list filters are matched on the issues already read, and `hierarchyItems` hydrates up to 500 issues at once and accepts the readable ids its caller has already read. A change of an issue's project, parent or executor is now announced as one that moves lists, and the projects list is refreshed only for announcements that name no issues, the only ones that can change its counts. Saving an issue no longer refreshes its detail twice when the page reads it by id.
+- 89d5165: Issues gain `acceptance`, the issue's Markdown delivery report ending with the acceptance criteria the owner checks, written with the move to In review (`nb-studio issue update <issue> --status in_review --acceptance-file report.md`), kept across status changes — including Done, Cancelled and a move back to In progress — until the next delivery replaces it, at most 20,000 characters. The blocked status is named 阻塞中 in Chinese, replacing 待确定; threads have the wording to fold earlier replies; New issue shows its plus alone on a phone.
+- de0861a: Add permission-safe issue hierarchy reads (`issueQueries.hierarchy` and `hierarchyItems`) so an application can show an issue's ancestors and page through its children.
+- ab5c0fc: Support pasting protected images into new issue descriptions and retain them when editing. Bind uploaded attachments before starting work so agents can read them from their first run.
+- 7abd72b: Allow administrators to configure global and new-project skill defaults in the attachment section, and show visible attachment targets by name with project settings links. Align new-project defaults CLI access with the existing settings permissions.
+- e94b470: Send selected PNG and JPEG images through the existing conversation attachment flow when organizing requirements. Keep the source requirements and files in memory across navigation, with a manual return to edit or choose another agent after a reading failure.
+- 49f61b9: Show optional settings permissions separately from business actions in CLI identity output, and explain run-token-only permissions. Add available-command typo suggestions, a hint for truncated text, and clean shutdown when a pipe closes early. Describe route schema inputs so generated CLI help and reference tables explain their parameters. The manifest identity and whoami JSON result gain an optional settings list; command admission and authorization are unchanged.
+- 2972218: Align intake project and agent controls, and keep long plan confirmations scrollable with visible action buttons.
+- Updated dependencies [98b3862]
+- Updated dependencies [1cdbaf4]
+- Updated dependencies [5fe8773]
+- Updated dependencies [b22d999]
+- Updated dependencies [00c5970]
+- Updated dependencies [0037dd2]
+- Updated dependencies [c0b7537]
+- Updated dependencies [eb4b081]
+- Updated dependencies [14b7aec]
+- Updated dependencies [49f61b9]
+- Updated dependencies [0037dd2]
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/app-client@3.0.0-beta.2
+  - @nocobase/app-server@2.0.0-beta.8
+  - @nocobase/app-plugin-file@1.0.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.10
+  - @nocobase/app-plugin-users@2.0.0-beta.5
+  - @nocobase/app-plugin-authorization@1.0.0-beta.28
+  - @nocobase/authorization@1.0.0-beta.14
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/markdown-mermaid@0.1.0-beta.2
+  - @nocobase/repository-input@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-notification@1.0.0-beta.27
+
 ## 0.1.0-beta.9
 
 ### Minor Changes

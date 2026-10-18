@@ -62,6 +62,7 @@ const session: Session = {
   title: 'Improve the session start',
   titleSource: 'owner',
   state: null,
+  startup: null,
   settings: {},
   running: false,
   waiting: false,
@@ -193,7 +194,7 @@ describe('link panels', () => {
         <AgentSessionsConfigContext.Provider
           value={{
             cli: 'nb-studio',
-            install: null,
+            connectPrompt: null,
             linkPanels: { issue: Panel },
           }}
         >

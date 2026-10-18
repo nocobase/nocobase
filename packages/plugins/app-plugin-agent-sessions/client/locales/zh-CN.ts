@@ -25,8 +25,8 @@ const zhCN: AgentSessionsResource = {
     filter: '显示',
     filters: {
       all: '全部',
-      waiting_one: '等我确认 {{count}}',
-      waiting_other: '等我确认 {{count}}',
+      waiting_one: '等你确认 {{count}}',
+      waiting_other: '等你确认 {{count}}',
       active_one: '进行中 {{count}}',
       active_other: '进行中 {{count}}',
     },
@@ -65,11 +65,13 @@ const zhCN: AgentSessionsResource = {
     unknown: '未知',
   },
   newSession: {
+    sendUnconfirmed: '发送尚未确认。请使用“重试原提交”恢复发送确认。',
     settingsOutdated:
       '这台电脑上的命令行版本过旧，请按“我的电脑”里的提示在那台电脑上更新。',
     settingsOffline: '此电脑已离线。请重新连接桥接程序以加载设置和发送消息。',
     settingsLoading: '正在加载设置…',
     settingsFailed: '无法加载智能体设置。',
+    settingsReset: '使用 Agent 默认设置',
     settingsRetry: '重试设置',
     settingsUnsupported: '此智能体不提供设置，将使用默认值。',
     settingsEmpty: '此智能体没有可配置的设置，将使用默认值。',
@@ -89,7 +91,7 @@ const zhCN: AgentSessionsResource = {
     offlineHint: '在电脑上运行下面的命令，之后开机就会自动连接。',
     noAgentTitle: '这台电脑上还没有可用的 Agent',
     noAgentHint:
-      '在这台电脑上装好任意一个，并用它自己的命令登录；一分钟内会出现在这里，不用重新连接。',
+      '在这台电脑上装好任意一个，并用它自己的命令登录。桥会每分钟检测，完成适配器安装并成功启动后会出现在这里，不用重新连接。',
     supported: '支持：{{names}}',
     failedAgent: '{{name}} 无法启动：{{detail}}',
     modelHint: '建议选你能用的最强模型：分析和拆解任务会更准确。',
@@ -98,7 +100,7 @@ const zhCN: AgentSessionsResource = {
     agents: '这台电脑上的 Agent',
     availableAgents: '可用的 Agent',
     agentsHint:
-      '只列出这台电脑上已安装的 Agent；之后再装好并登录的，一分钟内会出现。',
+      '只列出这台电脑上已安装的 Agent。桥会每分钟检测，完成适配器安装并成功启动后即可使用。',
     alsoSupported: '还支持：{{names}}',
     thisComputer: '这台电脑',
     recentFolders: '最近用过',
@@ -120,6 +122,11 @@ const zhCN: AgentSessionsResource = {
     offlineBody:
       '对话记录和任务都保存在这里，可以照常查看。电脑重新上线后，会自动接上原来的会话。',
     working: 'Agent 正在工作…',
+    startup: {
+      starting: '正在你的电脑上启动 Agent…',
+      opening: '正在打开会话…',
+      configuring: '正在应用设置…',
+    },
     answering: '回复中',
     asking: '等你审批',
     stop: '停止',
@@ -145,6 +152,12 @@ const zhCN: AgentSessionsResource = {
     recordBody: '完整记录保存在这里，只有你能看到。',
   },
   composer: {
+    unconfirmed:
+      '发送结果尚未确认。可重试原提交，或编辑为新消息（原消息可能已送达）。',
+    retrySubmission: '重试原提交',
+    editAsNew: '编辑为新消息',
+    sendUnconfirmed: '发送尚未确认。请使用“重试原提交”恢复发送确认。',
+    sending: '正在发送…',
     expand: '展开输入',
     collapse: '收起输入',
     placeholder: '回复，或者说下一件事…',
@@ -156,6 +169,8 @@ const zhCN: AgentSessionsResource = {
     queue: '这一轮结束后发送',
     addImage: '添加图片',
     removeImage: '移除图片',
+    attached: '随消息一起发送',
+    removeAttached: '移除 {{name}}',
     commands: 'Agent 的命令',
     mentions: '引用任务',
     keys: {
@@ -166,6 +181,7 @@ const zhCN: AgentSessionsResource = {
     },
   },
   choices: { more: '更多选项' },
+  panel: { fullScreen: '全屏打开' },
   transcript: {
     image: {
       open: '打开图片预览',
@@ -177,6 +193,16 @@ const zhCN: AgentSessionsResource = {
     thought: '思考',
     plan: '计划 {{done}}/{{total}}',
     prompt: {
+      withdrawing: '撤回中，等待电脑确认',
+      withdrawn: '已撤回',
+      withdraw: '撤回',
+      retry: '重试',
+      copy: '复制',
+      edit: '重新编辑发送',
+      editBody: '在独立草稿中编辑这条消息，当前输入框的草稿会保留。',
+      attachmentError: '无法读取原附件，请重试后再编辑。',
+      loading: '正在读取消息和附件…',
+      unsupported: '这条旧消息无法安全撤回，请升级命令行并重启电脑连接。',
       queued: '排队中，这一轮结束后发出',
       cancelled: '已取消',
       failed: '没有得到回复',
@@ -255,6 +281,7 @@ const zhCN: AgentSessionsResource = {
     remove: '移除',
     confirmRemove: '确认移除',
     problems: { notInstalled: '未安装', failed: '无法启动' },
+    recheckHint: '保持连接时，桥会每分钟自动重新检测 Agent。',
     ready: '可用',
     name: '名称',
     system: '系统',
@@ -275,7 +302,6 @@ const zhCN: AgentSessionsResource = {
       agent: '装好一个编程 Agent 并登录',
       agentHint:
         'Codex、Claude Code、Gemini CLI、GitHub Copilot、Cursor、Qwen Code、Kimi CLI 等都可以，用它自己的命令登录。建议使用你能用的最强模型。',
-      install: '安装命令行',
       login: '用你的账号登录',
       start: '让这台电脑保持在线',
       startHint: '在后台运行，以后开机自动连接；断网或休眠后会自己重连。',

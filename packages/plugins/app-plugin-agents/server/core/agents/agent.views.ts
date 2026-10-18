@@ -78,6 +78,7 @@ export async function agentViews(
       efforts: agent.source === 'runner' && entry ? effortsFor(entry) : [],
       reported: isReported(agent, options.now),
       runners: load?.runners ?? { team: 0, personal: 0, mine: 0, names: [] },
+      quota: load?.quota ?? [],
       personalOnly: load?.personalOnly ?? false,
       unusable: unusableReason(agent, load, options.now),
       busy: load?.busy ?? 0,
@@ -123,6 +124,7 @@ export async function availableAgents(
       model: agent.model,
       online: load?.online ?? false,
       runners: load?.runners ?? { team: 0, personal: 0, mine: 0, names: [] },
+      quota: load?.quota ?? [],
       personalOnly: load?.personalOnly ?? false,
       busy: load?.busy ?? 0,
     };

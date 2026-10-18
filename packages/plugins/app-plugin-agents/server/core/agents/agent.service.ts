@@ -71,7 +71,11 @@ export const AgentPatchSchema: z.ZodType<AgentPatch> = z.strictObject({
     .boolean()
     .optional()
     .meta({ description: 'Offer it work, or stop offering it.' }),
-  expectedRevision: z.number().int().min(1),
+  expectedRevision: z
+    .number()
+    .int()
+    .min(1)
+    .describe('The revision last read; reject if the record has changed.'),
 });
 
 /** What every agent discovered from runners is: the application's instructions and business actions. */

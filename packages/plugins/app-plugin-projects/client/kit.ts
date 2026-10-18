@@ -139,3 +139,17 @@ export {
 } from './api/changed-issues.js';
 export { usePmApi } from './hooks/use-pm-api.js';
 export { useApiKeyActors } from './hooks/use-api-key-actors.js';
+
+export { PmDescriptionImage } from './components/pm-description-image.js';
+
+export {
+  IntakeDraftProvider,
+  useIntakeDraft,
+  emptyIntakeDraft,
+} from './kit/intake-draft.js';
+
+export {
+  ExecutorPresentationContext,
+  type ExecutorPresentation,
+  type ExecutorPresentationProps,
+} from './kit/executor-presentation.js';

@@ -69,7 +69,9 @@ grants from before roles moved to the App; the App converts them (for example, `
   People move an issue between any two statuses; a principal of another kind only along its kind's `moves`, and only
   when its `mayMove` agrees; anything else is 400 `TRANSITION_NOT_ALLOWED`. Entering `blocked` or `in_review` records
   `owner_notified` and sends an `owner_notified` notice, unless the owner moved it. `PATCH /api/projects/issues/{issueId}`
-  answers 200 `{ data: { issue } }`.
+  answers 200 `{ data: { issue } }`. An issue's nullable Markdown `acceptance` is its delivery report, ending with the
+  acceptance criteria; it is written with the move to `in_review`, kept across later status changes, and replaced by the
+  next delivery.
 - Another plugin registers status events through `projectsStatusEventsToken` (`StatusEventTypes.add({ key, from, to })`,
   a dotted key such as `acme.merged`, the statuses it moves an issue out of and the one it moves it to) and fires one
   with `projects.statusEvents.fire({ event, issueIds, actor?, note?, details? }, tx?)`. Each issue in one of `from`
@@ -90,6 +92,7 @@ grants from before roles moved to the App; the App converts them (for example, `
   `INVALID_ATTACHMENT` otherwise). Whoever sees the issue reads its files (`GET /api/projects/attachments/{attachmentId}/content`: safe
   images inline, everything else as a download); the uploader or a comment moderator removes an issue's file, and a
   comment's files go with the comment. Uploads attached to nothing are purged after 24 hours.
+- `GET /api/projects/issues/{issueId}/screenshots` returns the latest 100 images from undeleted Agent comments, with comment author and time, newest comments first. It shares comment visibility and works independently of comment pagination. `meta.truncated` indicates more images; all displayed counts and versions describe only the returned batch, including older filename versions.
 - Roles, members' roles and the default role for new members are the App's (for example, `/api/acme/roles`,
   `/api/acme/members`, `/api/acme/access/settings`).
 
@@ -101,3 +104,5 @@ Work handlers receive the original optional `actor` on `onOwnerChanged`, `onUnbl
 with an identifier such as `PM-1`.
 
 Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.
+
+Applications can fill `ExecutorPresentationContext` from the client kit with `{ kind, Component }`. The component receives `{ id, name, place: 'trigger' | 'menu' }` in new-task and subtask executor selects; candidates and permissions still come from the server. This lets a runtime integration show scoped quota without Projects depending on that integration.

@@ -1,27 +1,50 @@
 import {
-  realtimeClientToken,
   useApiClient,
   useService,
+  realtimeClientToken,
 } from '@nocobase/app-client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
+import { useSessionMemory, sessionMemoryKey } from './use-session-memory.js';
+
 import {
-  AGENT_SESSIONS_TOPIC,
-  type AgentSessionsChange,
-  type DiscoveredChoices,
-} from '../shared/api.js';
+  cancelChoiceDiscoveries,
+  trackChoiceDiscovery,
+} from './discovery-requests.js';
+
+import { type DiscoveredChoices } from '../shared/api.js';
 
 const EMPTY: Readonly<Record<string, string>> = {};
+export const DISCOVERY_CACHE_MS: number = 5 * 60_000;
+export const DISCOVERY_WAIT_MS: number = 30_000;
+export const discoveryKey: readonly ['agentSessions', 'discovery'] = [
+  'agentSessions',
+  'discovery',
+];
+
+function discoveryQueryKey(
+  key: string,
+  settings: Readonly<Record<string, string>>,
+  sessionId: string | undefined,
+): readonly unknown[] {
+  return [...discoveryKey, key, settings, ...(sessionId ? [sessionId] : [])];
+}
 
 export interface ChoiceDiscovery {
   readonly loading: boolean;
+  /** Only a fresh answer for the final selection can be used to send. */
   readonly result: DiscoveredChoices | undefined;
+  /** Previous choices in this target, for display while dependent settings load. */
+  readonly displayed: DiscoveredChoices | undefined;
+  readonly settings: Readonly<Record<string, string>>;
   readonly error: Error | undefined;
+  readonly isCurrent: () => boolean;
   readonly retry: () => void;
+  readonly reset: () => void;
   readonly choose: (id: string, value: string) => void;
 }
 
-/** Each effect is a request generation, including A → B → A and retries of the same selection. */
 export function useChoiceDiscovery(
   key: string,
   target: {
@@ -29,102 +52,192 @@ export function useChoiceDiscovery(
     readonly agentId: string;
     readonly cwd: string;
     readonly enabled: boolean;
+    /** Wait for new-session intent without invalidating cache or cancelling shared work. */
+    readonly deferred?: boolean;
+    /**
+     * The id the new session will be created with: its computer keeps the agent it starts to discover the choices for
+     * that session's first message. Each id discovers on its own.
+     */
+    readonly sessionId?: string | undefined;
   },
 ): ChoiceDiscovery {
   const api = useApiClient();
   const realtime = useService(realtimeClientToken);
-  const [selection, setSelection] = useState<{
+  const connection = useQuery<boolean>({
+    queryKey: ['agentSessions', 'discoveryConnection'],
+    queryFn: () => realtime.connected,
+    enabled: false,
+  });
+  const connected = connection.data !== false && realtime.connected;
+  const client = useQueryClient();
+  const [settings, setSettings] = useSessionMemory<
+    Readonly<Record<string, string>>
+  >(`settings:${key}`, EMPTY);
+  const [previous, setPrevious] = useState<{
     key: string;
-    settings: Readonly<Record<string, string>>;
-  }>({ key: '', settings: EMPTY });
-  const [attempt, setAttempt] = useState(0);
-  const settings = selection.key === key ? selection.settings : EMPTY;
-  const [answer, setAnswer] = useState<{
-    key: string;
-    settings: Readonly<Record<string, string>>;
-    attempt: number;
-    result?: DiscoveredChoices;
-    error?: Error;
+    result: DiscoveredChoices;
   }>();
-  const { computerId, agentId, cwd, enabled } = target;
-  if (selection.key !== key) {
-    setSelection({ key, settings: EMPTY });
-    setAnswer(undefined);
-  }
+  const { computerId, agentId, cwd, enabled, deferred = false } = target;
+  const sessionId = target.sessionId;
+  const queryKey = discoveryQueryKey(key, settings, sessionId);
+  const query = useQuery({
+    queryKey,
+    enabled: enabled && connected && !deferred,
+    staleTime: DISCOVERY_CACHE_MS,
+    retry: false,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const { controller, release } = trackChoiceDiscovery(client, queryKey);
+      let stopCancellation = () => {};
+      const cancellation = new Promise<never>((_, reject) => {
+        const cancelled = () =>
+          reject(new Error('Agent settings discovery was cancelled.'));
+        controller.signal.addEventListener('abort', cancelled, { once: true });
+        stopCancellation = () =>
+          controller.signal.removeEventListener('abort', cancelled);
+      });
+      // Navigation must not cancel shared discovery; the explicit timeout bounds its lifetime.
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        // The explicit race also bounds a transport that fails to settle on abort.
+        return await Promise.race([
+          cancellation,
+          api
+            .request<{ data: DiscoveredChoices }>({
+              path: `agentSessions/computers/${encodeURIComponent(computerId)}/discoverChoices`,
+              method: 'POST',
+              json: {
+                agentId,
+                cwd,
+                settings,
+                ...(sessionId ? { sessionId } : {}),
+              },
+              signal: controller.signal,
+            })
+            .then(({ data }) => data),
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => {
+              reject(
+                new Error(
+                  'Agent settings discovery timed out. Retry settings.',
+                ),
+              );
+              controller.abort();
+            }, DISCOVERY_WAIT_MS);
+          }),
+        ]);
+      } finally {
+        clearTimeout(timer);
+        stopCancellation();
+        release();
+      }
+    },
+  });
+  if (query.data && (previous?.key !== key || previous.result !== query.data))
+    setPrevious({ key, result: query.data });
+
   useEffect(() => {
-    const invalidate = (): void => {
-      setSelection((current) => ({ key: current.key, settings: EMPTY }));
-      setAttempt((current) => current + 1);
-    };
-    const unsubscribe = realtime.subscribe<AgentSessionsChange>(
-      AGENT_SESSIONS_TOPIC,
-      ({ payload }) => {
-        if (payload.kind === 'computers') invalidate();
+    if (!enabled) {
+      void cancelChoiceDiscoveries(client, [...discoveryKey, key]);
+      void client.invalidateQueries({
+        queryKey: [...discoveryKey, key],
+        refetchType: 'none',
+      });
+    }
+  }, [client, enabled, key]);
+  useEffect(() => {
+    if (!enabled || !query.dataUpdatedAt || query.isError) return;
+    const timer = setTimeout(
+      () => {
+        void client.invalidateQueries({
+          queryKey: discoveryQueryKey(key, settings, sessionId),
+          exact: true,
+        });
       },
+      Math.max(1, query.dataUpdatedAt + DISCOVERY_CACHE_MS - Date.now()),
     );
-    const unsubscribeOpen = realtime.onOpen(invalidate);
-    return () => {
-      unsubscribe();
-      unsubscribeOpen();
-    };
-  }, [realtime]);
-  useEffect(() => {
-    if (!enabled) return;
-    let current = true;
-    api
-      .request<{ data: DiscoveredChoices }>({
-        path: `agentSessions/computers/${encodeURIComponent(computerId)}/discoverChoices`,
-        method: 'POST',
-        json: { agentId, cwd, settings },
-      })
-      .then(
-        ({ data: result }) => {
-          if (current) setAnswer({ key, settings, attempt, result });
-        },
-        (error: unknown) => {
-          if (current)
-            setAnswer({
-              key,
-              settings,
-              attempt,
-              error: error instanceof Error ? error : new Error(String(error)),
-            });
-        },
-      );
-    return () => {
-      current = false;
-    };
-  }, [api, key, computerId, agentId, cwd, enabled, settings, attempt]);
+    return () => clearTimeout(timer);
+  }, [
+    client,
+    enabled,
+    key,
+    settings,
+    sessionId,
+    query.dataUpdatedAt,
+    query.isError,
+  ]);
+
   const fresh =
-    selection.key === key &&
-    answer?.key === key &&
-    answer.settings === settings &&
-    answer.attempt === attempt;
-  const result = fresh && enabled ? answer.result : undefined;
+    !deferred &&
+    enabled &&
+    connected &&
+    !query.isFetching &&
+    !query.isStale &&
+    !query.isError;
+  const displayed =
+    enabled && previous?.key === key ? previous.result : undefined;
   return {
-    loading: enabled && !fresh,
-    result,
-    error: fresh && enabled ? answer.error : undefined,
+    loading:
+      enabled && connected && (deferred || query.isPending || query.isFetching),
+    result: fresh ? query.data : undefined,
+    displayed,
+    settings,
+    error:
+      enabled && !connected
+        ? new Error(
+            'The live connection is unavailable. Reconnect to refresh agent settings.',
+          )
+        : enabled && query.isError
+          ? query.error
+          : undefined,
+    isCurrent: () => {
+      const state = client.getQueryState<DiscoveredChoices>(queryKey);
+      return Boolean(
+        !deferred &&
+        enabled &&
+        realtime.connected &&
+        // Cache writes precede React Query's batched render notifications.
+        client.getQueryData(sessionMemoryKey(`settings:${key}`)) === settings &&
+        client.getQueryData(['agentSessions', 'discoveryConnection']) !==
+          false &&
+        state?.data &&
+        state.data === query.data &&
+        state.status === 'success' &&
+        !state.isInvalidated &&
+        state.fetchStatus === 'idle' &&
+        Date.now() - state.dataUpdatedAt < DISCOVERY_CACHE_MS,
+      );
+    },
     retry: () => {
-      setSelection({ key, settings: EMPTY });
-      setAttempt((value) => value + 1);
+      if (!connected) {
+        realtime.reconnect();
+        return;
+      }
+      void query.refetch();
+    },
+    reset: () => {
+      void cancelChoiceDiscoveries(client, [...discoveryKey, key]);
+      void client.invalidateQueries({
+        queryKey: [...discoveryKey, key],
+        refetchType: 'none',
+      });
+      setSettings(EMPTY);
     },
     choose: (id, value) => {
-      // A different model can replace dependent choices; rediscover their defaults instead of carrying stale values.
       const model =
-        result?.choices.find((choice) => choice.id === id)?.category ===
+        displayed?.choices.find((choice) => choice.id === id)?.category ===
         'model';
       const kept = model
         ? Object.fromEntries(
             Object.entries(settings).filter(([choiceId]) =>
-              result?.choices.some(
+              displayed?.choices.some(
                 (choice) =>
                   choice.id === choiceId && choice.category === 'mode',
               ),
             ),
           )
         : settings;
-      setSelection({ key, settings: { ...kept, [id]: value } });
+      setSettings({ ...kept, [id]: value });
     },
   };
 }

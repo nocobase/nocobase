@@ -14,6 +14,10 @@ const sources: readonly MigrationSource[] = [
 describeMigration('202610260003_ag_add_runner_tool_refresh', {
   sources,
   up: async ({ expectCollection }) => {
+    await expectCollection('agRunners').toHaveField('quotaRevision', {
+      type: 'integer',
+      nullable: false,
+    });
     await expectCollection('agRunEvents').toHaveIndex(['runId', 'type', 'seq']);
     await expectCollection('agRuns').toHaveField('revision', {
       type: 'integer',
@@ -28,6 +32,10 @@ describeMigration('202610260003_ag_add_runner_tool_refresh', {
     });
   },
   down: async ({ expectCollection }) => {
+    await expectCollection('agRunners').toHaveField('quotaRevision', {
+      type: 'integer',
+      nullable: false,
+    });
     await expectCollection('agRunEvents').toHaveIndex(['runId', 'type', 'seq']);
     await expectCollection('agRuns').toHaveField('revision', {
       type: 'integer',

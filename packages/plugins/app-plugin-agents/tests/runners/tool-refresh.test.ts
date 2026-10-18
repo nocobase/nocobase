@@ -15,6 +15,7 @@ describe('runner tool status refresh', () => {
     const path = `/agents/runners/${r.runnerId}/refreshStatus`;
     const first = await h.request('POST', path, { user: 'owner' });
     expect(first.status).toBe(202);
+    expect(first.body.data).not.toHaveProperty('quotaRevision');
     const requestId = first.body.data.toolsRefreshRequestId;
     expect(requestId).toEqual(expect.any(String));
     expect(

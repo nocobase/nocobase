@@ -141,6 +141,28 @@ const artifactKeyMigration = {
   tests: 'tests/artifact-key-migration.test.ts',
 };
 
+const withdrawalConcurrency = ['postgres', 'mysql'].map((dialect) => ({
+  dialect,
+  filter: '@nocobase/app-plugin-agent-sessions',
+  tests: 'tests/server/withdrawals.test.ts',
+}));
+
+test('execution arbitration selects real row-lock regressions without charging UI changes', () => {
+  for (const file of [
+    'packages/plugins/app-plugin-agent-sessions/server/service.ts',
+    'packages/plugins/app-plugin-agent-sessions/server/store.ts',
+    'packages/plugins/app-plugin-agent-sessions/tests/server/withdrawals.test.ts',
+    'packages/libs/acp-bridge/src/protocol.ts',
+  ])
+    assert.deepEqual(selectPackageSuites([file]), withdrawalConcurrency, file);
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-agent-sessions/client/transcript.ts',
+    ]),
+    [],
+  );
+});
+
 test('release migration changes select the SQL Server upgrade regression', () => {
   for (const file of [
     'packages/plugins/app-plugin-releases/database/migrations/202610020001_rel_create_tables.ts',
@@ -258,7 +280,11 @@ test('missing or unavailable comparison commits conservatively select every data
   for (const baseSha of [undefined, '', '0'.repeat(40), 'f'.repeat(40)]) {
     const plan = planDbIntegration({ ...repo, baseSha, headSha });
     assert.deepEqual(plan.databases, databases);
-    assert.deepEqual(plan.suites, [claimConcurrency, artifactKeyMigration]);
+    assert.deepEqual(plan.suites, [
+      ...withdrawalConcurrency,
+      claimConcurrency,
+      artifactKeyMigration,
+    ]);
   }
   assert.deepEqual(
     planDbIntegration({ ...repo, baseSha: headSha }).databases,

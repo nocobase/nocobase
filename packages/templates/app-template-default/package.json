@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-default",
   "displayName": "Default Template",
-  "version": "1.0.0-beta.68",
+  "version": "1.0.0-beta.70",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,13 +10,12 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.68"
+    "defaultTemplateVersion": "1.0.0-beta.70"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
     "@base-ui/react": "catalog:",
     "@dicebear/core": "^9.4.3",
-    "@gchust/agent-annotations": "0.1.9",
     "@hookform/resolvers": "^5.0.1",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-template-print": "workspace:*",
@@ -37,6 +36,7 @@
     "@tailwindcss/postcss": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/react-table": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
@@ -84,7 +84,9 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "tar": "catalog:"
+    "tar": "catalog:",
+    "@xyflow/react": "^12.11.5",
+    "elkjs": "^0.10.2"
   },
   "files": [
     ".prettierignore",
@@ -196,6 +198,7 @@
     "#hooks/*": "./client/hooks/*.js",
     "#lib/*": "./client/lib/*.js",
     "#extensions/*": "./client/extensions/*.js",
-    "#pages/*": "./client/pages/*.js"
+    "#pages/*": "./client/pages/*.js",
+    "#components/data-table": "./client/components/data-table/index.js"
   }
 }
