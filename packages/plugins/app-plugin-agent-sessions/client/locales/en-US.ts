@@ -286,6 +286,8 @@ const enUS = {
     remove: 'Remove',
     confirmRemove: 'Remove it',
     problems: { notInstalled: 'not installed', failed: 'could not start' },
+    recheckHint:
+      'While connected, the bridge automatically checks agents again every minute.',
     ready: 'Ready',
     name: 'Name',
     system: 'System',

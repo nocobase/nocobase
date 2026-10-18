@@ -7,8 +7,7 @@
  *
  * The adapters for Codex and Claude Code are managed by the bridge: installed from npm once for each version pinned
  * here (`./managed-adapters.ts`) and run with the Node.js running the bridge against the agent installed here, so a
- * session does not wait for npx. An adapter installed on PATH comes after them unless `NOCOBASE_ACP_ADAPTERS` is
- * `installed`, and npx fetches the same pinned version only when neither can run.
+ * session does not depend on npx. An adapter installed on PATH always takes precedence.
  */
 import { execFile } from 'node:child_process';
 import { stat } from 'node:fs/promises';
@@ -21,7 +20,8 @@ import {
   installedAdapter,
   type AdapterPackage,
 } from './managed-adapters.js';
-import { findProgram, variable } from './programs.js';
+import { findProgram } from './programs.js';
+import { startupDetail } from './startup-detail.js';
 
 export { findProgram, variable } from './programs.js';
 
@@ -75,12 +75,7 @@ function program(
   return { command, args, ...(dirs.length > 0 ? { dirs } : {}) };
 }
 
-/** An ACP adapter published on npm, fetched by npx on first use, for people who installed only the agent `requires`. */
-function npx(pkg: string, requires: string): AgentLauncher {
-  return { command: 'npx', args: ['--yes', pkg], requires };
-}
-
-/** The adapter versions the bridge runs: what it installs, and what npx fetches when that cannot run. */
+/** The adapter versions the bridge installs. */
 const CODEX_ACP = { name: '@agentclientprotocol/codex-acp', version: '2.2.2' };
 const CLAUDE_AGENT_ACP = {
   name: '@agentclientprotocol/claude-agent-acp',
@@ -89,7 +84,7 @@ const CLAUDE_AGENT_ACP = {
 
 /**
  * The ACP adapter `adapter`, whose program `bin` runs the agent `requires` that it finds in `variable`: managed by the
- * bridge, else installed on PATH, else fetched by npx. The adapter is built against `minVersion` of the agent and may
+ * bridge, unless installed on PATH. The adapter is built against `minVersion` of the agent and may
  * not drive an older one.
  */
 function adapter(
@@ -99,14 +94,13 @@ function adapter(
   agent: Omit<NonNullable<AgentLauncher['managed']>, 'package' | 'version'>,
 ): AgentLauncher[] {
   return [
+    program(bin),
     {
       command: bin,
       args: [],
       requires,
       managed: { package: pkg.name, version: pkg.version, ...agent },
     },
-    program(bin),
-    npx(`${pkg.name}@${pkg.version}`, requires),
   ];
 }
 
@@ -281,8 +275,8 @@ export interface ResolveOptions {
    */
   readonly adapters?: string;
   /**
-   * Whether to wait for a managed adapter that is not installed yet: `true` for up to 90 seconds, or a number of
-   * milliseconds. By default, and once the wait is over, the agent is started another way while it installs.
+   * False starts installation in the background and reports that it is in progress, so the initial connection does
+   * not wait for npm. Other values await the installation (bounded by its timeout).
    */
   readonly waitForInstall?: boolean | number;
   /** The Node.js that runs a managed adapter: the one running the bridge by default. */
@@ -298,9 +292,7 @@ export async function resolveAgent(
   platform: NodeJS.Platform = process.platform,
   options: ResolveOptions = {},
 ): Promise<ResolvedAgent | undefined> {
-  const preferInstalled =
-    variable(env, 'NOCOBASE_ACP_ADAPTERS', platform) === 'installed';
-  for (const launcher of ordered(spec.launchers, preferInstalled)) {
+  for (const launcher of ordered(spec.launchers)) {
     const requires = launcher.requires
       ? await findProgram(launcher.requires, [], env, platform)
       : undefined;
@@ -329,12 +321,10 @@ export async function resolveAgent(
   return undefined;
 }
 
-/** The launchers to try, with an adapter installed on PATH before the managed one when the person prefers it. */
+/** An existing adapter always comes before a managed installation. */
 function ordered(
   launchers: readonly AgentLauncher[],
-  preferInstalled: boolean,
 ): readonly AgentLauncher[] {
-  if (!preferInstalled) return launchers;
   const rank = (launcher: AgentLauncher): number =>
     launcher.managed ? 1 : launcher.requires ? 2 : 0;
   return [...launchers].sort((a, b) => rank(a) - rank(b));
@@ -351,16 +341,23 @@ async function resolveManaged(
 ): Promise<ResolvedAgent | undefined> {
   if (options.adapters === undefined) return undefined;
   const batch = platform === 'win32' && BATCH_FILE.test(agent);
-  if (batch && !managed.batchFiles) return undefined;
+  if (batch && !managed.batchFiles)
+    throw new Error(
+      startupDetail(
+        agent,
+        [],
+        `${spec.name}'s managed ACP adapter cannot start the batch file ${agent}. Install a native agent executable or an ACP adapter on PATH.`,
+      ),
+    );
   const version = await agentVersion(agent, batch);
   if (!version || compareVersions(version, managed.minVersion) < 0) {
-    const note = `${spec.name} at ${agent} ${version ? `is version ${version}` : 'did not report its version'}; the ACP adapter ${managed.package}@${managed.version} needs ${managed.minVersion} or newer, so ${spec.name} starts another way.`;
-    // The bridge looks for agents every minute: say it once for each version found.
-    if (!noted.has(note)) {
-      noted.add(note);
-      options.log?.(note);
-    }
-    return undefined;
+    throw new Error(
+      startupDetail(
+        agent,
+        ['--version'],
+        `${spec.name} at ${agent} ${version ? `is version ${version}` : 'did not report its version'}; the ACP adapter ${managed.package}@${managed.version} needs ${managed.minVersion} or newer. Update the agent or install an ACP adapter on PATH.`,
+      ),
+    );
   }
   const pkg: AdapterPackage = {
     name: managed.package,
@@ -375,20 +372,22 @@ async function resolveManaged(
       platform,
       log: options.log,
     });
-    const wait =
-      options.waitForInstall === true
-        ? INSTALL_WAIT_MS
-        : options.waitForInstall || 0;
-    if (wait <= 0) return undefined;
-    let timer: NodeJS.Timeout | undefined;
-    file = await Promise.race([
-      install,
-      new Promise<undefined>((resolve) => {
-        timer = setTimeout(() => resolve(undefined), wait);
-      }),
-    ]);
-    clearTimeout(timer);
-    if (!file) return undefined;
+    if (options.waitForInstall === false) {
+      void install.catch(() => undefined);
+      throw new Error(
+        startupDetail(
+          'npm',
+          [
+            'install',
+            '--prefix',
+            adapterDir(options.adapters, pkg),
+            `${pkg.name}@${pkg.version}`,
+          ],
+          'ACP adapter installation is in progress. The bridge will check again automatically.',
+        ),
+      );
+    }
+    file = await install;
   }
   return {
     spec,
@@ -400,10 +399,7 @@ async function resolveManaged(
 }
 
 const BATCH_FILE = /\.(?:cmd|bat)$/iu;
-/** How long a session waits for its managed adapter to install before starting the agent another way. */
-const INSTALL_WAIT_MS = 90_000;
 const VERSION_TIMEOUT_MS = 10_000;
-const noted = new Set<string>();
 /** Versions already read, by program, while the program is unchanged; one that could not be read is asked again. */
 const versions = new Map<
   string,

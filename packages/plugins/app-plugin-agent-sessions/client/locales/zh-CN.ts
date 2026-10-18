@@ -271,6 +271,7 @@ const zhCN: AgentSessionsResource = {
     remove: '移除',
     confirmRemove: '确认移除',
     problems: { notInstalled: '未安装', failed: '无法启动' },
+    recheckHint: '保持连接时，桥会每分钟自动重新检测 Agent。',
     ready: '可用',
     name: '名称',
     system: '系统',

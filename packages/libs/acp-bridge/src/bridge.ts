@@ -11,6 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { AgentProcess } from './agent-process.js';
+import { startupDetail } from './startup-detail.js';
 import {
   AGENTS,
   resolveAgent,
@@ -156,25 +157,33 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       path.join(path.dirname(options.stateFile), 'adapters'),
     log,
   };
-  /**
-   * Resolves every agent. A managed adapter not installed yet starts installing, and the agent is found another way
-   * meanwhile, unless `waitForInstall`: the scan before the bridge connects does not wait, the later ones do.
-   */
+  /** Resolves every agent independently, retaining installation failures for registration. */
   const scan = async (waitForInstall: boolean): Promise<void> => {
-    for (const spec of AGENTS) {
-      const resolved = await resolveAgent(spec, env, process.platform, {
-        ...resolveOptions,
-        waitForInstall,
-      });
-      if (signal.aborted) return;
-      found.set(spec.id, resolved);
-      agents.set(
-        spec.id,
-        resolved
-          ? agentInfo(spec)
-          : { ...agentInfo(spec), problem: 'notInstalled' },
-      );
-    }
+    await Promise.all(
+      AGENTS.map(async (spec) => {
+        try {
+          const resolved = await resolveAgent(spec, env, process.platform, {
+            ...resolveOptions,
+            waitForInstall,
+          });
+          if (signal.aborted) return;
+          found.set(spec.id, resolved);
+          agents.set(
+            spec.id,
+            resolved
+              ? agentInfo(spec)
+              : { ...agentInfo(spec), problem: 'notInstalled' },
+          );
+        } catch (error) {
+          found.set(spec.id, undefined);
+          agents.set(spec.id, {
+            ...agentInfo(spec),
+            problem: 'failed',
+            detail: message(error).slice(0, 2000),
+          });
+        }
+      }),
+    );
   };
   const computer = (): ComputerInfo => ({
     name: options.name ?? os.hostname(),
@@ -258,7 +267,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     probing = (async () => {
       await scan(true);
       const infos = await probeAgents(
-        AGENTS,
+        AGENTS.filter((spec) => agents.get(spec.id)?.problem !== 'failed'),
         found,
         env,
         options.client,
@@ -637,11 +646,11 @@ async function probeAgents(
         const version = agent.initialize.agentInfo?.version ?? null;
         await agent.stop();
         return { ...info, version };
-      } catch {
+      } catch (error) {
         return {
           ...info,
           problem: 'failed',
-          detail: 'Agent initialization failed or timed out.',
+          detail: startupDetail(resolved.command, resolved.args, error),
         };
       }
     }),

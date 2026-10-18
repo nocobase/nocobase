@@ -111,6 +111,83 @@ const registers = (): Seen[] =>
   seen.filter((request) => request.path.endsWith('/register'));
 
 describe('runBridge', () => {
+  it('registers installation failures and recovers on the next minute without blocking other agents', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    let broken = true;
+    vi.spyOn(agents, 'resolveAgent').mockImplementation(async (spec) => {
+      if (spec.id === 'claude' && broken)
+        throw new Error(
+          'Command: npm install pinned-adapter\nnpm error registry unavailable',
+        );
+      return spec.id === 'claude' || spec.id === 'codex'
+        ? {
+            spec,
+            command: process.execPath,
+            args: [path.join(import.meta.dirname, 'fixtures/fake-agent.mjs')],
+          }
+        : undefined;
+    });
+    answer = () => ({ data: { computerId: 'c1', key: 'k1' } });
+    const { done, stop } = await run();
+    const latest = () =>
+      (
+        registers().at(-1)?.body.computer as {
+          agents: { id: string; problem?: string; detail?: string }[];
+        }
+      ).agents;
+    try {
+      await until(() => registers().length >= 2);
+      expect(latest().find((info) => info.id === 'claude')).toMatchObject({
+        problem: 'failed',
+        detail: expect.stringContaining('npm error registry unavailable'),
+      });
+      expect(
+        latest().find((info) => info.id === 'codex')?.problem,
+      ).toBeUndefined();
+      broken = false;
+      const before = registers().length;
+      await vi.advanceTimersByTimeAsync(60_000);
+      await until(() => registers().length > before);
+      expect(
+        latest().find((info) => info.id === 'claude')?.problem,
+      ).toBeUndefined();
+    } finally {
+      stop();
+      await done;
+    }
+  });
+
+  it('registers the actual startup command and stderr tail within the protocol limit', async () => {
+    const script =
+      'process.stderr.write("first line\\nlast failure line\\n"); process.exit(1)';
+    vi.spyOn(agents, 'resolveAgent').mockImplementation(async (spec) =>
+      spec.id === 'claude'
+        ? {
+            spec,
+            command: process.execPath,
+            args: ['-e', script],
+          }
+        : undefined,
+    );
+    answer = () => ({ data: { computerId: 'c1', key: 'k1' } });
+    const { done, stop } = await run();
+    try {
+      await until(() => registers().length >= 2);
+      const info = (
+        registers().at(-1)?.body.computer as {
+          agents: { id: string; detail?: string; problem?: string }[];
+        }
+      ).agents.find((one) => one.id === 'claude')!;
+      expect(info.problem).toBe('failed');
+      expect(info.detail).toContain(`Command: ${process.execPath} -e `);
+      expect(info.detail).toContain('first line\nlast failure line');
+      expect(info.detail!.length).toBeLessThanOrEqual(2000);
+    } finally {
+      stop();
+      await done;
+    }
+  });
+
   it('delivers discovered choices before slow cleanup and awaits cleanup during shutdown', async () => {
     let release: (() => void) | undefined;
     vi.spyOn(BridgeSession.prototype, 'discover').mockResolvedValue({
@@ -375,7 +452,12 @@ describe('runBridge', () => {
       const latest = () =>
         (
           registers().at(-1)?.body.computer as {
-            agents: { id: string; version: string | null; problem?: string }[];
+            agents: {
+              id: string;
+              version: string | null;
+              problem?: string;
+              detail?: string;
+            }[];
           }
         ).agents.find((info) => info.id === 'opencode');
       expect(latest()?.problem).toBe('notInstalled');
@@ -417,6 +499,9 @@ describe('runBridge', () => {
       failProbe = true;
       await refresh();
       expect(latest()?.problem).toBe('failed');
+      expect(latest()?.detail).toBe(
+        'Command: /second/opencode acp\nProbe failed',
+      );
       failProbe = false;
       registerFails = true;
       await refresh();

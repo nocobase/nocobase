@@ -1,3 +1,5 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import {
   chmod,
   mkdir,
@@ -145,7 +147,7 @@ describe('resolveAgent', () => {
             minVersion: '2.1.0',
           },
         },
-        ...ADAPTER.launchers,
+        ADAPTER.launchers[0]!,
       ],
     };
     let adapters: string;
@@ -204,7 +206,6 @@ describe('resolveAgent', () => {
 
     it('installs it once, without optional dependencies, and runs it with Node.js against the agent installed here', async () => {
       const installed = await agent('bin/agent', '2.1.3');
-      await file('bin/adapter-acp');
       const log: string[] = [];
       const options = {
         adapters,
@@ -238,6 +239,9 @@ describe('resolveAgent', () => {
         '--no-fund',
         '--no-save',
         '--ignore-scripts',
+        '--cache',
+        path.join(adapters, 'npm-cache'),
+        '--prefer-offline',
         '--loglevel=error',
         '@scope/adapter@1.0.0',
       ]);
@@ -249,37 +253,58 @@ describe('resolveAgent', () => {
       );
     });
 
-    it('starts the agent another way while it installs in the background', async () => {
+    it('installs before resolving even without a wait option', async () => {
       await agent('bin/agent', '2.1.3');
-      const npx = await file('bin/npx');
+      await file('bin/npx');
       await expect(
         resolveAgent(MANAGED, env, 'linux', { adapters }),
-      ).resolves.toMatchObject({ command: npx });
-      // The install already running is joined, not started again.
-      await expect(
-        installAdapter(PACKAGE, { dir: adapters, env, platform: 'linux' }),
-      ).resolves.toBe(entry());
+      ).resolves.toMatchObject({
+        command: process.execPath,
+        args: [entry()],
+        managed: true,
+      });
       expect(await npmRuns()).toHaveLength(1);
-      await expect(
-        resolveAgent(MANAGED, env, 'linux', { adapters }),
-      ).resolves.toMatchObject({ args: [entry()], managed: true });
     });
 
-    it('waits for it only so long, then starts the agent another way while it goes on installing', async () => {
+    it('reports background installation while the initial connection proceeds and joins that install', async () => {
       await agent('bin/agent', '2.1.3');
-      const npx = await file('bin/npx');
-      const slow = { ...env, NPM_SLEEP: '1' };
       await expect(
-        resolveAgent(MANAGED, slow, 'linux', { adapters, waitForInstall: 100 }),
-      ).resolves.toMatchObject({ command: npx });
-      await expect(
-        installAdapter(PACKAGE, {
-          dir: adapters,
-          env: slow,
-          platform: 'linux',
+        resolveAgent(MANAGED, env, 'linux', {
+          adapters,
+          waitForInstall: false,
         }),
-      ).resolves.toBe(entry());
+      ).rejects.toThrow('installation is in progress');
+      await expect(
+        resolveAgent(MANAGED, env, 'linux', { adapters, waitForInstall: true }),
+      ).resolves.toMatchObject({ args: [entry()] });
       expect(await npmRuns()).toHaveLength(1);
+    });
+
+    it('runs a non-executable entry and repairs deleted files and wrong versions on the next resolution', async () => {
+      await agent('bin/agent', '2.1.3');
+      const resolve = () => resolveAgent(MANAGED, env, 'linux', { adapters });
+      await resolve();
+      await chmod(entry(), 0o644);
+      await expect(resolve()).resolves.toMatchObject({ args: [entry()] });
+      await expect(
+        promisify(execFile)(process.execPath, [entry()]),
+      ).resolves.toMatchObject({ stderr: '' });
+      expect(await npmRuns()).toHaveLength(1);
+      await rm(entry());
+      await expect(resolve()).resolves.toMatchObject({ args: [entry()] });
+      const manifest = path.join(
+        path.dirname(path.dirname(entry())),
+        'package.json',
+      );
+      const original = JSON.parse(await readFile(manifest, 'utf8'));
+      await writeFile(
+        manifest,
+        JSON.stringify({ ...original, version: '0.0.1' }),
+      );
+      await expect(resolve()).resolves.toMatchObject({ args: [entry()] });
+      await rm(path.join(adapters, '@scope'), { recursive: true });
+      await expect(resolve()).resolves.toMatchObject({ args: [entry()] });
+      expect(await npmRuns()).toHaveLength(4);
     });
 
     it('installs it once for sessions waiting for it at the same time', async () => {
@@ -325,108 +350,67 @@ describe('resolveAgent', () => {
       ]);
     });
 
-    it('falls back when it cannot be installed, saying so once and not trying again at once', async () => {
+    it('reports an installation failure with its command and stderr and retries next time', async () => {
       await agent('bin/agent', '2.1.3');
-      const npx = await file('bin/npx');
-      const own = await file('bin/adapter-acp');
-      const log: string[] = [];
-      const options = {
-        adapters,
-        waitForInstall: true,
-        log: (line: string) => log.push(line),
-      };
       const failing = { ...env, NPM_FAIL: '404 Not Found' };
       await expect(
-        resolveAgent(MANAGED, failing, 'linux', options),
-      ).resolves.toMatchObject({ command: own });
-      await rm(own);
+        resolveAgent(MANAGED, failing, 'linux', { adapters }),
+      ).rejects.toThrow(/Command: .*npm install.*\n.*npm error 404 Not Found/u);
       await expect(
-        resolveAgent(MANAGED, failing, 'linux', options),
-      ).resolves.toMatchObject({ command: npx });
-      expect(await npmRuns()).toHaveLength(1);
-      const failures = log.filter((line) =>
-        line.startsWith('Could not install'),
-      );
-      expect(failures).toHaveLength(1);
-      expect(failures[0]).toContain('npm error 404 Not Found');
-      await expect(readdir(path.join(adapters, '@scope'))).resolves.toEqual([]);
+        resolveAgent(MANAGED, env, 'linux', { adapters }),
+      ).resolves.toMatchObject({ args: [entry()] });
+      expect(await npmRuns()).toHaveLength(2);
     });
 
-    it('falls back when npm is not installed', async () => {
+    it('reports missing npm instead of fetching with npx', async () => {
       await agent('bin/agent', '2.1.3');
       await rm(path.join(root, 'bin', 'npm'));
-      const npx = await file('bin/npx');
-      const log: string[] = [];
+      await file('bin/npx');
       await expect(
-        resolveAgent(MANAGED, env, 'linux', {
-          adapters,
-          waitForInstall: true,
-          log: (line) => log.push(line),
-        }),
-      ).resolves.toMatchObject({ command: npx });
-      expect(log.join('\n')).toContain('npm was not found on PATH');
+        resolveAgent(MANAGED, env, 'linux', { adapters }),
+      ).rejects.toThrow('npm was not found on PATH');
     });
 
     it('gives up on an install that takes too long', async () => {
-      const log: string[] = [];
-      const started = Date.now();
       await expect(
         installAdapter(PACKAGE, {
           dir: adapters,
           env: { ...env, NPM_SLEEP: '5' },
           platform: 'linux',
           timeoutMs: 200,
-          log: (line) => log.push(line),
         }),
-      ).resolves.toBeUndefined();
-      expect(Date.now() - started).toBeLessThan(4_000);
-      expect(log.join('\n')).toContain('npm did not finish within 0.2s');
+      ).rejects.toThrow('npm did not finish within 0.2s');
       await expect(readdir(path.join(adapters, '@scope'))).resolves.toEqual([]);
     });
 
-    it('passes over it for an agent older than it needs, saying so once, without installing it', async () => {
+    it('reports the minimum agent version when the managed adapter cannot drive it', async () => {
       await agent('bin/agent', '2.0.9');
-      const npx = await file('bin/npx');
-      const log: string[] = [];
-      const options = {
-        adapters,
-        waitForInstall: true,
-        log: (line: string) => log.push(line),
-      };
-      for (let round = 0; round < 2; round += 1)
-        await expect(
-          resolveAgent(MANAGED, env, 'linux', options),
-        ).resolves.toEqual({
-          spec: MANAGED,
-          command: npx,
-          args: ['--yes', 'adapter@1'],
-        });
-      expect(log).toHaveLength(1);
-      expect(log[0]).toContain('is version 2.0.9');
+      await file('bin/npx');
+      await expect(
+        resolveAgent(MANAGED, env, 'linux', { adapters }),
+      ).rejects.toThrow('needs 2.1.0 or newer');
       expect(await npmRuns()).toEqual([]);
     });
 
     it('is not used without a directory to install it in', async () => {
       await agent('bin/agent', '2.1.3');
-      const npx = await file('bin/npx');
+      await file('bin/npx');
       await expect(
         resolveAgent(MANAGED, env, 'linux', { waitForInstall: true }),
-      ).resolves.toMatchObject({ command: npx });
+      ).resolves.toBeUndefined();
       expect(await npmRuns()).toEqual([]);
     });
 
-    it('comes after an installed adapter when the person prefers theirs, and before npx', async () => {
+    it('always prefers an installed adapter without installing a managed copy', async () => {
       await agent('bin/agent', '2.1.3');
       await file('bin/npx');
-      const preferring = { ...env, NOCOBASE_ACP_ADAPTERS: 'installed' };
+      const preferring = env;
       const options = { adapters, node: '/opt/node', waitForInstall: true };
-      await expect(
-        resolveAgent(MANAGED, preferring, 'linux', options),
-      ).resolves.toMatchObject({ command: '/opt/node' });
       const own = await file('bin/adapter-acp');
       await expect(
         resolveAgent(MANAGED, preferring, 'linux', options),
       ).resolves.toMatchObject({ command: own });
+      expect(await npmRuns()).toEqual([]);
     });
 
     it('on Windows, passes over it for an agent that is a batch file it cannot start', async () => {
@@ -441,29 +425,20 @@ describe('resolveAgent', () => {
             adapters,
             waitForInstall: true,
           }),
-        ).resolves.toMatchObject({ command: 'bin\\npx.cmd' });
+        ).rejects.toThrow('cannot start the batch file');
       } finally {
         process.chdir(cwd);
       }
     });
   });
 
-  it('fetches with npx the same adapter version it installs, when the installed one cannot run', () => {
-    const managed = AGENTS.filter((spec) =>
-      spec.launchers.some((launcher) => launcher.managed),
-    );
-    expect(managed.map((spec) => spec.id)).toEqual(['codex', 'claude']);
-    for (const spec of managed) {
-      const installed = spec.launchers.find(
-        (launcher) => launcher.managed,
-      )!.managed!;
-      const fetched = spec.launchers.find(
-        (launcher) => launcher.command === 'npx',
-      );
-      expect(fetched?.args).toEqual([
-        '--yes',
-        `${installed.package}@${installed.version}`,
-      ]);
+  it('never falls back to npx for Codex or Claude', () => {
+    for (const id of ['codex', 'claude']) {
+      const spec = AGENTS.find((candidate) => candidate.id === id)!;
+      expect(spec.launchers.some((launcher) => launcher.managed)).toBe(true);
+      expect(
+        spec.launchers.some((launcher) => launcher.command === 'npx'),
+      ).toBe(false);
     }
   });
 

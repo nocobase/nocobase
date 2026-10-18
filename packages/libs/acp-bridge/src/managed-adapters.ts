@@ -19,6 +19,7 @@ import {
 import path from 'node:path';
 
 import { findProgram } from './programs.js';
+import { startupDetail } from './startup-detail.js';
 
 /** An adapter on npm, at the version the bridge pins, and the program of its package the bridge runs. */
 export interface AdapterPackage {
@@ -40,15 +41,11 @@ export interface AdapterInstallOptions {
 
 /** Long enough for npm to download an adapter with a cold cache over a slow connection: about a minute on a fast one. */
 const INSTALL_TIMEOUT_MS = 300_000;
-/** After a failed install, how long the bridge starts the agent another way before trying again. */
-const RETRY_MS = 10 * 60_000;
 /** A temporary directory this old is left over from an install that did not finish. */
 const STALE_MS = 60 * 60_000;
 const BATCH_FILE = /\.(?:cmd|bat)$/iu;
 
-const installs = new Map<string, Promise<string | undefined>>();
-const failures = new Map<string, number>();
-const reported = new Set<string>();
+const installs = new Map<string, Promise<string>>();
 
 /** The directory `pkg` is installed in, under `dir`. */
 export function adapterDir(dir: string, pkg: AdapterPackage): string {
@@ -79,20 +76,16 @@ export async function installedAdapter(
 }
 
 /**
- * Installs `pkg` under `options.dir` unless it is there already, and answers its program's file; undefined when it
- * cannot be installed, which is said once. An install already running is joined, and one that failed is not tried
- * again for ten minutes. It never rejects.
+ * Installs `pkg` under `options.dir` unless it is there already, and answers its program's file. An install already
+ * running is joined. Failures reject with the install command and stderr; the next scan can try again.
  */
 export function installAdapter(
   pkg: AdapterPackage,
   options: AdapterInstallOptions,
-): Promise<string | undefined> {
+): Promise<string> {
   const target = adapterDir(options.dir, pkg);
   const running = installs.get(target);
   if (running) return running;
-  const failed = failures.get(target);
-  if (failed !== undefined && Date.now() - failed < RETRY_MS)
-    return Promise.resolve(undefined);
   const install = runInstall(pkg, target, options).finally(() => {
     installs.delete(target);
   });
@@ -104,36 +97,39 @@ async function runInstall(
   pkg: AdapterPackage,
   target: string,
   options: AdapterInstallOptions,
-): Promise<string | undefined> {
+): Promise<string> {
   const label = `${pkg.name}@${pkg.version}`;
   let temp: string | undefined;
+  let npm = 'npm';
+  let args = ['install', '--prefix', target, label];
   try {
     const existing = await installedAdapter(target, pkg);
     if (existing) return existing;
-    const npm = await findProgram('npm', [], options.env, options.platform);
-    if (!npm) throw new Error('npm was not found on PATH');
+    const program = await findProgram('npm', [], options.env, options.platform);
+    if (!program) throw new Error('npm was not found on PATH');
+    npm = program;
     const parent = path.dirname(target);
     await mkdir(parent, { recursive: true });
     await removeStale(parent, `.${path.basename(target)}-`);
     temp = await mkdtemp(path.join(parent, `.${path.basename(target)}-`));
     const started = Date.now();
     options.log?.(`Installing the ACP adapter ${label} into ${target}.`);
-    await run(
-      npm,
-      [
-        'install',
-        '--prefix',
-        temp,
-        '--omit=optional',
-        '--no-audit',
-        '--no-fund',
-        '--no-save',
-        '--ignore-scripts',
-        '--loglevel=error',
-        label,
-      ],
-      options,
-    );
+    args = [
+      'install',
+      '--prefix',
+      temp,
+      '--omit=optional',
+      '--no-audit',
+      '--no-fund',
+      '--no-save',
+      '--ignore-scripts',
+      '--cache',
+      path.join(options.dir, 'npm-cache'),
+      '--prefer-offline',
+      '--loglevel=error',
+      label,
+    ];
+    await run(npm, args, options);
     if (!(await installedAdapter(temp, pkg)))
       throw new Error(`npm did not install its ${pkg.bin} program`);
     try {
@@ -153,14 +149,14 @@ async function runInstall(
     );
     return installed;
   } catch (error) {
-    failures.set(target, Date.now());
-    if (!reported.has(target)) {
-      reported.add(target);
-      options.log?.(
-        `Could not install the ACP adapter ${label} (${error instanceof Error ? error.message : String(error)}); the agent starts another way until it can be installed.`,
-      );
-    }
-    return undefined;
+    throw new Error(
+      startupDetail(
+        npm,
+        args,
+        `Could not install the ACP adapter ${label}: ${error instanceof Error ? error.message : String(error)}`,
+      ),
+      { cause: error },
+    );
   } finally {
     if (temp) await rm(temp, { recursive: true, force: true }).catch(() => {});
   }

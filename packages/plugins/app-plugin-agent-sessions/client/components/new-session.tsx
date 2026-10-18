@@ -952,13 +952,19 @@ function NoAgent({ computer }: { readonly computer: Computer }): ReactElement {
     <div className='flex flex-col gap-1.5 rounded-[10px] border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-[13px]'>
       <p className='font-medium'>{t('newSession.noAgentTitle')}</p>
       {failed.map((agent) => (
-        <p key={agent.id} className='text-muted-foreground text-xs break-words'>
+        <p
+          key={agent.id}
+          className='text-muted-foreground text-xs whitespace-pre-wrap [overflow-wrap:anywhere]'
+        >
           {t('newSession.failedAgent', {
             name: agent.name,
             detail: agent.detail ?? t('computers.problems.failed'),
           })}
         </p>
       ))}
+      <p className='text-muted-foreground text-xs'>
+        {t('computers.recheckHint')}
+      </p>
       <p className='text-muted-foreground text-xs'>
         {t('newSession.noAgentHint')}
       </p>
