@@ -58,7 +58,6 @@ function setup() {
     status: vi.fn(async () => 'idle' as 'running' | 'idle'),
     get: vi.fn(async () => ({ name: 'Ada' })),
     abort: vi.fn(async () => {}),
-    receive: vi.fn(async () => null),
     history: vi.fn(async () => []),
     send: vi.fn(async () => 1),
     retryFinalization: vi.fn(async () => {}),
@@ -98,7 +97,6 @@ it('waits beyond admission with bounded status polling, then reads only the succ
   expect(await pending).toEqual({ name: 'Ada' });
   expect(session.get).toHaveBeenCalledOnce();
   expect(session.history).not.toHaveBeenCalled();
-  expect(session.receive).not.toHaveBeenCalled();
   expect(session.abort).not.toHaveBeenCalled();
   expect(deps.onlineAgent.background).toHaveBeenCalledWith(
     actor,
