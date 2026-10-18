@@ -223,6 +223,7 @@ it('positions using the committed child measurement instead of the initial comme
     useIssueTimeline(detail, [], 'measured');
     const [measured, setMeasured] = useState(false);
     // A child measurement schedules a commit after passive effects from the initial render have run.
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- Reproduces a child's synchronous mount measurement, not a production effect.
     useLayoutEffect(() => setMeasured(true), []);
     return (
       <div
