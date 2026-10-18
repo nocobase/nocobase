@@ -1,5 +1,6 @@
 import { validateUIMessages, type UIMessage } from 'ai';
 import { z } from 'zod';
+import type { ResolvedPageContext } from './conversations.js';
 
 /** JSON persisted without a tagged codec or lossy serialization. */
 export type AppUIJson =
@@ -55,6 +56,37 @@ export const appUIJsonSchema: z.ZodType<AppUIJson> = z.custom<AppUIJson>(
 
 const identity = z.string().min(1);
 
+/** Only the authorized display snapshot; provider-private fields are not public metadata. */
+const contextItemSchema = z.object({
+  kind: z.string(),
+  id: z.string(),
+  title: z.string(),
+  key: z.string().nullable(),
+  url: z.string().nullable(),
+});
+export const appUIPageContextSchema: z.ZodType<ResolvedPageContext> = z.object({
+  route: z.string(),
+  items: z.array(contextItemSchema),
+  dropped: z.number().int().nonnegative(),
+  filter: z
+    .object({
+      page: z.string(),
+      params: z.record(z.string(), z.string()),
+      label: z.string().optional(),
+    })
+    .optional(),
+  selection: z
+    .object({ text: z.string(), source: contextItemSchema.optional() })
+    .optional(),
+});
+export function publicUIPageContext(
+  context: ResolvedPageContext,
+): ResolvedPageContext {
+  return JSON.parse(
+    JSON.stringify(appUIPageContextSchema.parse(context)),
+  ) as ResolvedPageContext;
+}
+
 /** Public identity and ordering only; configuration and credentials are private. */
 export interface AppUIMessageMetadata {
   conversationId: string;
@@ -68,12 +100,14 @@ export interface AppUIMessageMetadata {
   seq?: number;
   /** Zero before saving; increases when the same message is updated. */
   revision: number;
+  context?: ResolvedPageContext;
   sourceRecords?: {
     recordId: string;
     seq: number;
     partId: string;
     /** Index in ordered parts; SDK text parts do not retain their stream ID. */
     partIndex: number;
+    createdAt?: string;
   }[];
 }
 
@@ -89,6 +123,7 @@ export const appUIMessageMetadataSchema: z.ZodType<AppUIMessageMetadata> =
     seq: z.number().int().positive().optional(),
     /** Zero before saving; increases when the same message is updated. */
     revision: z.number().int().nonnegative(),
+    context: appUIPageContextSchema.optional(),
     /** Runner aggregation keeps distinct database records and stable part identities. */
     sourceRecords: z
       .array(
@@ -97,6 +132,7 @@ export const appUIMessageMetadataSchema: z.ZodType<AppUIMessageMetadata> =
           seq: z.number().int().positive(),
           partId: identity,
           partIndex: z.number().int().nonnegative(),
+          createdAt: z.iso.datetime({ offset: true }).optional(),
         }),
       )
       .optional(),

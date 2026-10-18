@@ -1,3 +1,4 @@
+import { publicUIPageContext } from '../../shared/ui-message.js';
 import type { ConversationMessage } from '../../shared/conversations.js';
 import {
   validateAppUIMessages,
@@ -36,6 +37,9 @@ export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
           ...(row.metadata.agentId ? { agentId: row.metadata.agentId } : {}),
           ...(row.runId ? { executionId: row.runId, turnId: row.runId } : {}),
           sourceRecords: [],
+          ...(row.workContext
+            ? { context: publicUIPageContext(row.workContext) }
+            : {}),
         },
         parts: [],
       };
@@ -79,6 +83,7 @@ export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
       seq: row.seq,
       partId,
       partIndex: index,
+      createdAt: row.createdAt,
     });
     for (const file of row.attachments ?? []) {
       message.parts.push({
@@ -92,6 +97,7 @@ export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
         seq: row.seq,
         partId: `file:${file.id}`,
         partIndex: message.parts.length - 1,
+        createdAt: row.createdAt,
       });
     }
     message.metadata!.revision = Math.max(message.metadata!.revision, row.seq);

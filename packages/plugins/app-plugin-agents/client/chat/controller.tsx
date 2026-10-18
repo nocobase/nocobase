@@ -1,143 +1,296 @@
-import { CancelledError } from '@tanstack/react-query';
 /* eslint-disable react-refresh/only-export-components -- shared controller provider and hooks */
+import { CancelledError } from '@tanstack/react-query';
+import { isToolUIPart } from 'ai';
+import { Chat, useChat as useSDKChat } from '@ai-sdk/react';
 import {
   createContext,
   useContext,
   useEffect,
-  useState,
+  useLayoutEffect,
+  useMemo,
   useRef,
   useSyncExternalStore,
   type ReactElement,
   type ReactNode,
 } from 'react';
 import { useApiClient } from '@nocobase/app-client';
+import type { ConversationDetail } from '../../shared/conversations.js';
 import type {
-  ConversationMessage,
-  ConversationDetail,
-} from '../../shared/conversations.js';
+  AppUIMessage,
+  AppUIToolApprovalInput,
+} from '../../shared/online-agent.js';
 import { ChatApi } from './api.js';
-import { ChatSubmissions } from './submissions.js';
+import { ChatSubmissions, type SubmissionSend } from './submissions.js';
 import { agentsQueryClient } from '../query.js';
 import { chatKeys } from './keys.js';
 import {
   EMPTY_MESSAGES,
   messagesReducer,
-  fetchCursor,
+  mergeUIMessages,
   type MessagesAction,
   type MessagesState,
 } from './message-model.js';
 
-import type { OnlineAgentStreamEvent } from '../../shared/online-agent.js';
+/** SDK transport state is presentation only. Business completion always comes from saved execution/history. */
 export type StreamState = {
-  phase: 'connecting' | 'streaming' | 'saved' | 'interrupted';
-  items: ConversationMessage[];
-  lastSeq?: number;
-  outcome?: import('../../shared/online-agent.js').OnlineAgentOutcome;
+  readonly status: Chat<AppUIMessage>['status'];
+  readonly error?: Error;
 };
-/** One application-owned sender and stream consumer, shared across all mounted chat views. */
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason: unknown) => void;
+} {
+  let resolve!: (value: T) => void, reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
+  return { promise, resolve, reject };
+}
+type History = {
+  page: Omit<MessagesState, 'items' | 'pending'>;
+  error?: unknown;
+  loadingOlder: boolean;
+  loadedThrough: number;
+};
+/** Application coordination around one SDK Chat per conversation, shared by every surface. */
 export class ChatController {
   readonly submissions: ChatSubmissions;
-  private histories = new Map<
-    string,
-    {
-      state: MessagesState;
-      error?: unknown;
-      loadingOlder: boolean;
-      loadedThrough: number;
-    }
-  >();
+  private chats = new Map<string, Chat<AppUIMessage>>();
+  private histories = new Map<string, History>();
   private loads = new Map<string, Promise<void>>();
   private refreshAgain = new Set<string>();
+  private resumed = new Set<string>();
+  private resuming = new Map<string, Promise<void>>();
+  private recoveryErrors = new Map<string, Error>();
+  private admissions = new Map<
+    string,
+    { clientId: string; gate: ReturnType<typeof deferred<void>> }
+  >();
+  private watches = new Map<
+    string,
+    { refs: number; timer: ReturnType<typeof setInterval>; last: number }
+  >();
+  private messageVersions = new Map<string, number>();
+  private revisionQueue = new Map<
+    string,
+    { pending: Set<string>; task: Promise<void> }
+  >();
+  private deferredReads = new Map<string, Set<string>>();
+  private completionReads = new Set<string>();
+  private stopRequests = new Set<string>();
+  private approvalRequests = new Set<string>();
+  private listeners = new Set<() => void>();
+  private revision = 0;
+  private disposed = false;
+  private generation = 0;
+  private detailVersions = new Map<string, number>();
+  private commandVersions = new Map<string, number>();
+  constructor(readonly api: ChatApi) {
+    this.submissions = new ChatSubmissions(
+      {
+        createConversation: (input) => api.createConversation(input),
+        messages: (id, query) => api.messages(id, query),
+        sendMessage: (id, input) =>
+          this.command(
+            id,
+            () => this.sendInput(id, input),
+            (result) => result.conversation,
+          ),
+      },
+      (detail, _record, created) => {
+        if (created) this.remember(detail);
+      },
+      undefined,
+      (id, message) => this.dispatch(id, { type: 'confirmed', message }),
+    );
+    this.submissions.subscribe(() => this.publish());
+  }
+  chat(id: string): Chat<AppUIMessage> {
+    let chat = this.chats.get(id);
+    if (!chat) {
+      chat = new Chat<AppUIMessage>({
+        id,
+        transport: this.api.transport(id, (clientId) => {
+          const admission = this.admissions.get(id);
+          if (!this.disposed && admission?.clientId === clientId)
+            admission.gate.resolve();
+        }),
+        onFinish: () => {
+          if (!this.disposed && this.chats.get(id) === chat)
+            this.scheduleRefresh(id);
+        },
+        onError: () => {
+          if (this.disposed || this.chats.get(id) !== chat) return;
+          this.scheduleRefresh(id);
+        },
+      });
+      this.chats.set(id, chat);
+    }
+    return chat;
+  }
+  private renewChat(id: string, messages: AppUIMessage[]): Chat<AppUIMessage> {
+    const previous = this.chats.get(id);
+    this.chats.delete(id);
+    const chat = this.chat(id);
+    chat.messages = messages;
+    void previous?.stop();
+    this.publish();
+    return chat;
+  }
   history(id: string): {
     state: MessagesState;
     error?: unknown;
     loadingOlder: boolean;
     loadedThrough: number;
   } {
-    return (
-      this.histories.get(id) ?? {
-        state: EMPTY_MESSAGES,
-        loadingOlder: false,
-        loadedThrough: 0,
-      }
-    );
+    const current = this.histories.get(id);
+    return {
+      state: {
+        ...(current?.page ?? EMPTY_MESSAGES),
+        items: this.chat(id).messages,
+        pending: [],
+      },
+      error: current?.error,
+      loadingOlder: current?.loadingOlder ?? false,
+      loadedThrough: current?.loadedThrough ?? 0,
+    };
+  }
+  private historyMeta(id: string): History {
+    const previous = this.histories.get(id);
+    if (previous) return previous;
+    const { items: _items, pending: _pending, ...page } = EMPTY_MESSAGES;
+    const created = { page, loadingOlder: false, loadedThrough: 0 };
+    this.histories.set(id, created);
+    return created;
   }
   dispatch(id: string, action: MessagesAction): void {
-    const previous = this.history(id);
+    if (this.disposed) return;
+    if (action.type === 'discard') {
+      const record = this.submissions
+        .snapshot()
+        .find((item) => item.clientId === action.clientId);
+      if (record && ['notSubmitted', 'rejected'].includes(record.status)) {
+        const chat = this.chat(id);
+        chat.messages = chat.messages.filter(
+          (message) =>
+            message.id !== action.clientId ||
+            message.metadata?.seq !== undefined,
+        );
+        chat.clearError();
+      }
+      this.submissions.editRejected(action.clientId);
+      return;
+    }
+    const current = this.historyMeta(id);
+    const before = this.history(id).state;
+    const next = messagesReducer(before, action);
+    const chat = this.chat(id);
+    const streaming =
+      chat.status === 'submitted' || chat.status === 'streaming';
+    const activeId =
+      streaming && chat.messages.at(-1)?.role === 'assistant'
+        ? chat.messages.at(-1)!.id
+        : undefined;
+    if (action.type === 'page' || action.type === 'confirmed') {
+      const incoming =
+        action.type === 'page' ? action.page.items : [action.message];
+      const lastUser = Math.max(
+        0,
+        ...[...chat.messages, ...incoming]
+          .filter((message) => message.role === 'user')
+          .map((message) => message.metadata?.seq ?? 0),
+      );
+      const batch = incoming.filter((message) => {
+        const allowed =
+          !streaming ||
+          Boolean(activeId) ||
+          message.role !== 'assistant' ||
+          (message.metadata?.seq ?? Infinity) <= lastUser;
+        if (!allowed) {
+          const pending = this.deferredReads.get(id) ?? new Set<string>();
+          pending.add(message.id);
+          this.deferredReads.set(id, pending);
+        }
+        return allowed;
+      });
+      chat.messages = mergeUIMessages(chat.messages, batch, activeId);
+    }
+    const { items: _items, pending: _pending, ...page } = next;
     this.histories.set(id, {
-      ...previous,
-      state: messagesReducer(previous.state, action),
-      // A confirmed single message does not cover any intervening history.
+      ...current,
+      page,
       loadedThrough:
-        action.type === 'page' && !action.older
+        action.type === 'page' && !action.older && !action.reread
           ? Math.max(
-              previous.loadedThrough,
-              ...action.page.items.map((item) => item.seq),
+              current.loadedThrough,
+              action.page.nextAfter ?? action.page.lastSeq,
             )
-          : previous.loadedThrough,
+          : current.loadedThrough,
     });
     this.publish();
   }
   async loadHistory(id: string, older = false, fresh = false): Promise<void> {
     if (this.disposed) return;
-    const loading = this.loads.get(id);
-    if (loading) {
+    const pending = this.loads.get(id);
+    if (pending) {
       if (fresh) this.refreshAgain.add(id);
-      return loading;
+      return pending;
     }
     const active = this.lifetime();
     const initial = this.history(id);
     if (older && !initial.state.olderToken) return;
-    this.histories.set(id, { ...initial, loadingOlder: older });
+    this.historyMeta(id).loadingOlder = older;
     this.publish();
     const task = (async () => {
       try {
+        let after = initial.state.loaded ? initial.loadedThrough : undefined;
+        const seen = new Set<number>();
         while (active()) {
-          const before = this.history(id).state;
           const page = await this.api.messages(
             id,
             older
-              ? { pageToken: before.olderToken! }
-              : before.loaded
-                ? {
-                    after: Math.min(
-                      fetchCursor(before),
-                      this.history(id).loadedThrough,
-                    ),
-                  }
-                : {},
+              ? { pageToken: this.history(id).state.olderToken! }
+              : after === undefined
+                ? {}
+                : { after },
           );
           if (!active()) return;
           this.dispatch(id, { type: 'page', page, older });
           this.submissions.observe(id, page.items);
-          if (this.refreshAgain.delete(id)) {
-            older = false;
+          const metadata = this.historyMeta(id);
+          if (!older) metadata.loadedThrough = page.nextAfter ?? page.lastSeq;
+          if (!older && page.nextAfter !== undefined) {
+            if (seen.has(page.nextAfter))
+              throw new Error('History pagination did not advance.');
+            seen.add(page.nextAfter);
+            after = page.nextAfter;
             continue;
           }
-          if (
-            older ||
-            !page.items.length ||
-            !before.loaded ||
-            this.history(id).loadedThrough >= page.lastSeq
-          )
-            break;
+          if (this.refreshAgain.delete(id)) {
+            older = false;
+            after = this.history(id).loadedThrough;
+            continue;
+          }
+          break;
         }
-        if (!active()) return;
-        const current = this.history(id);
-        this.histories.set(id, {
-          ...current,
-          error: undefined,
-          loadingOlder: false,
-        });
+        if (active()) {
+          const pending = [...(this.deferredReads.get(id) ?? [])];
+          const owner = this.chat(id);
+          if (
+            pending.length &&
+            owner.status !== 'submitted' &&
+            owner.status !== 'streaming'
+          )
+            await this.reread(id, pending);
+          if (active()) this.historyMeta(id).error = undefined;
+        }
       } catch (error) {
-        if (active())
-          this.histories.set(id, {
-            ...this.history(id),
-            error,
-            loadingOlder: false,
-          });
+        if (active()) this.historyMeta(id).error = error;
       } finally {
         if (active()) {
+          this.historyMeta(id).loadingOlder = false;
           this.loads.delete(id);
           this.publish();
         }
@@ -146,19 +299,400 @@ export class ChatController {
     this.loads.set(id, task);
     return task;
   }
-  private streams = new Map<string, StreamState>();
-  private stopRequests = new Set<string>();
-  observeDetail(detail: ConversationDetail): void {
+  async reread(id: string, ids: readonly string[]): Promise<AppUIMessage[]> {
+    if (this.disposed) return [];
+    const found: AppUIMessage[] = [];
+    const active = this.lifetime();
+    for (let offset = 0; offset < ids.length; offset += 100) {
+      const page = await this.api.messages(id, {
+        ids: ids.slice(offset, offset + 100).join(','),
+      });
+      if (!active()) return [];
+      found.push(...page.items);
+      const pending = this.deferredReads.get(id);
+      for (const message of page.items) {
+        if (
+          (message.metadata?.revision ?? 0) >=
+          (this.messageVersions.get(`${id}:${message.id}`) ?? 0)
+        )
+          pending?.delete(message.id);
+      }
+      if (pending?.size === 0) this.deferredReads.delete(id);
+      this.dispatch(id, { type: 'page', page, reread: true });
+      this.submissions.observe(id, page.items);
+    }
+    return found;
+  }
+  watch(id: string): () => void {
+    let watch = this.watches.get(id);
+    if (!watch) {
+      const active = this.lifetime();
+      const timer = setInterval(() => {
+        if (!active() || document.visibilityState === 'hidden') return;
+        const detail = agentsQueryClient().getQueryData<ConversationDetail>(
+          chatKeys.conversation(id),
+        );
+        const current = this.watches.get(id)!;
+        const interval = detail?.execution?.status === 'running' ? 5000 : 30000;
+        if (Date.now() - current.last < interval) return;
+        current.last = Date.now();
+        void this.loadHistory(id, false, true);
+      }, 5000);
+      watch = { refs: 0, timer, last: Date.now() };
+      this.watches.set(id, watch);
+    }
+    watch.refs++;
+    return () => {
+      const current = this.watches.get(id);
+      if (current && --current.refs === 0) {
+        clearInterval(current.timer);
+        this.watches.delete(id);
+      }
+    };
+  }
+  reconnect(): void {
+    for (const id of this.watches.keys()) void this.resume(id);
+  }
+  messageUpdated(id: string, messageId: string, revision: number): void {
+    const key = `${id}:${messageId}`;
     if (
-      detail.execution?.status === 'idle' &&
-      this.stopRequests.delete(detail.id)
+      ((this.messageVersions.get(key) ?? -1) >= revision &&
+        !this.deferredReads.get(id)?.has(messageId)) ||
+      this.disposed
     )
+      return;
+    this.messageVersions.set(
+      key,
+      Math.max(this.messageVersions.get(key) ?? -1, revision),
+    );
+    const previous = this.revisionQueue.get(id);
+    if (previous) {
+      previous.pending.add(messageId);
+      return;
+    }
+    const queue = { pending: new Set([messageId]), task: Promise.resolve() };
+    this.revisionQueue.set(id, queue);
+    const active = this.lifetime();
+    queue.task = (async () => {
+      const attempted = new Set<string>();
+      try {
+        while (active() && queue.pending.size) {
+          const ids = [...queue.pending];
+          queue.pending.clear();
+          ids.forEach((id) => attempted.add(id));
+          await this.reread(id, ids);
+        }
+      } catch (error) {
+        if (active()) {
+          const retry = this.deferredReads.get(id) ?? new Set<string>();
+          for (const messageId of [...attempted, ...queue.pending]) {
+            retry.add(messageId);
+          }
+          this.deferredReads.set(id, retry);
+          this.historyMeta(id).error = error;
+          this.publish();
+        }
+      } finally {
+        if (active()) this.revisionQueue.delete(id);
+      }
+    })();
+  }
+  private async sendInput(
+    id: string,
+    input: SubmissionSend,
+  ): Promise<{ message: AppUIMessage; conversation: ConversationDetail }> {
+    if (this.disposed) throw new CancelledError({ silent: true });
+    const chat = this.chat(id);
+    if (chat.status === 'submitted' || chat.status === 'streaming')
+      throw new Error('This conversation is already receiving a response.');
+    const admitted = deferred<void>();
+    this.admissions.set(id, { clientId: input.clientId, gate: admitted });
+    this.recoveryErrors.delete(id);
+    const active = this.lifetime();
+    const sending = chat.sendMessage(
+      {
+        id: input.clientId,
+        role: 'user',
+        metadata: {
+          conversationId: id,
+          createdAt: new Date().toISOString(),
+          revision: 0,
+        },
+        parts: [{ type: 'text', text: input.content }],
+      },
+      {
+        body: {
+          ...(input.context ? { context: input.context } : {}),
+          ...(input.attachmentIds?.length
+            ? { attachmentIds: input.attachmentIds }
+            : {}),
+        },
+      },
+    );
+    void sending.then(
+      () =>
+        admitted.reject(
+          chat.error ??
+            new Error(
+              'The response ended before input admission was confirmed.',
+            ),
+        ),
+      (error) => admitted.reject(error),
+    );
+    try {
+      await admitted.promise;
+    } finally {
+      if (this.admissions.get(id)?.gate === admitted)
+        this.admissions.delete(id);
+    }
+    if (!active()) throw new CancelledError({ silent: true });
+    await this.loadHistory(id, false, true);
+    const conversation = await this.api.conversation(id);
+    if (!active()) throw new CancelledError({ silent: true });
+    const message = this.chat(id).messages.find(
+      (message) =>
+        message.role === 'user' &&
+        message.metadata?.seq !== undefined &&
+        (message.metadata?.clientId ?? message.id) === input.clientId,
+    );
+    if (!message)
+      throw new Error(
+        'Input was accepted; reconcile its saved message before sending again.',
+      );
+    return { message, conversation };
+  }
+  state(id: string): StreamState | undefined {
+    const chat = this.chats.get(id);
+    return chat
+      ? {
+          status: chat.status,
+          error: chat.error ?? this.recoveryErrors.get(id),
+        }
+      : undefined;
+  }
+  receive(id: string, known?: ConversationDetail): void {
+    if (this.disposed || this.resumed.has(id)) return;
+    const detail =
+      known ??
+      agentsQueryClient().getQueryData<ConversationDetail>(
+        chatKeys.conversation(id),
+      );
+    if (!detail?.execution) return;
+    this.resumed.add(id);
+    if (
+      detail?.execution?.status === 'idle' ||
+      detail?.execution?.waitingApproval
+    )
+      return;
+    void this.resume(id);
+  }
+  async resume(id: string): Promise<void> {
+    if (this.disposed) return;
+    const pending = this.resuming.get(id);
+    if (pending) return pending;
+    let chat = this.chat(id);
+    if (chat.status === 'submitted' || chat.status === 'streaming') return;
+    const active = this.lifetime();
+    const task = (async () => {
+      let interrupted: AppUIMessage | undefined;
+      try {
+        await this.loadHistory(id);
+        if (!active()) return;
+        if (chat.error) {
+          const previous = chat;
+          interrupted = [...previous.messages]
+            .reverse()
+            .find((message) => message.role === 'assistant');
+          // Shared recovery replays this response's full prefix. SDK disconnect state expects deltas instead.
+          // Recreate its one shared owner using public state, never the SDK's private resumable cache.
+          if (
+            interrupted?.parts.some(
+              (part) =>
+                isToolUIPart(part) &&
+                (part.state === 'input-streaming' ||
+                  part.state === 'approval-responded'),
+            )
+          ) {
+            const saved = await this.reread(id, [interrupted.id]);
+            if (!active()) return;
+            if (!saved.some((message) => message.id === interrupted!.id))
+              previous.messages = previous.messages.filter(
+                (message) => message.id !== interrupted!.id,
+              );
+          }
+          chat = this.renewChat(id, previous.messages);
+          if (!active()) return;
+        }
+        this.recoveryErrors.delete(id);
+        chat.clearError();
+        const response = [...chat.messages]
+          .reverse()
+          .find((message) => message.role === 'assistant');
+        if (response)
+          chat.messages = mergeUIMessages(chat.messages, [], response.id);
+        await chat.resumeStream();
+        if (active()) await this.refresh(id);
+      } catch (error) {
+        if (active())
+          this.recoveryErrors.set(
+            id,
+            error instanceof Error
+              ? error
+              : new Error('Stream recovery failed.'),
+          );
+      } finally {
+        if (active()) {
+          const display = interrupted;
+          if (
+            display &&
+            !chat.messages.some((message) => message.id === display.id)
+          )
+            chat.messages = mergeUIMessages(chat.messages, [display]);
+          this.resuming.delete(id);
+          this.publish();
+        }
+      }
+    })();
+    this.resuming.set(id, task);
+    return task;
+  }
+  async approve(id: string, input: AppUIToolApprovalInput): Promise<void> {
+    const active = this.lifetime();
+    if (!active()) throw new CancelledError({ silent: true });
+    const chat = this.chat(id);
+    if (
+      this.approvalRequests.has(id) ||
+      chat.status === 'submitted' ||
+      chat.status === 'streaming'
+    )
+      throw new Error('This conversation is busy.');
+    this.approvalRequests.add(id);
+    this.commandVersions.set(id, (this.commandVersions.get(id) ?? 0) + 1);
+    this.nextDetailVersion(id);
+    try {
+      await agentsQueryClient().cancelQueries({
+        queryKey: chatKeys.conversation(id),
+        exact: true,
+      });
+      if (!active()) throw new CancelledError({ silent: true });
+      chat.messages = mergeUIMessages(chat.messages, [], input.messageId);
+      await chat.addToolApprovalResponse(input.approval);
+      if (!active()) throw new CancelledError({ silent: true });
+      await chat.sendMessage(undefined, { body: { approvalInput: input } });
+      if (!active()) return;
+      if (chat.error) throw chat.error;
+      await this.refresh(id);
+    } finally {
+      if (active()) this.approvalRequests.delete(id);
+    }
+  }
+  async finalize(id: string): Promise<void> {
+    const active = this.lifetime();
+    await this.command(
+      id,
+      () => this.api.finalize(id),
+      (detail) => detail,
+    );
+    if (active()) await this.refresh(id);
+  }
+  async refresh(id: string): Promise<void> {
+    if (this.disposed) return;
+    const active = this.lifetime(),
+      ordered = this.detailRequest(id);
+    const detail = await this.api.conversation(id);
+    if (!active() || !ordered()) return;
+    await this.loadHistory(id, false, true);
+    if (!active() || !ordered()) return;
+    const history = this.history(id);
+    if (history.error)
+      throw history.error instanceof Error
+        ? history.error
+        : new Error('Saved history could not be read.');
+    // Same-sequence approval revisions cannot be discovered by the insertion cursor.
+    const latest = [...this.chat(id).messages]
+      .reverse()
+      .find((message) => message.role === 'assistant');
+    const revisable = [
+      ...new Set([
+        ...(this.deferredReads.get(id) ?? []),
+        ...(detail.execution?.messageId
+          ? [detail.execution.messageId]
+          : latest
+            ? [latest.id]
+            : []),
+      ]),
+    ];
+    const saved = revisable.length ? await this.reread(id, revisable) : [];
+    if (!active() || !ordered()) return;
+    const owner = this.chat(id),
+      receiving = owner.messages.at(-1);
+    if (
+      owner.status === 'streaming' &&
+      receiving?.role === 'assistant' &&
+      (detail.execution?.status === 'idle' ||
+        detail.execution?.waitingApproval) &&
+      saved.some(
+        (message) =>
+          message.id === receiving.id &&
+          message.metadata?.seq !== undefined &&
+          message.metadata?.executionId === receiving.metadata?.executionId &&
+          message.metadata.revision >= (detail.execution?.revision ?? 0),
+      )
+    ) {
+      // Durable completion can release a lost subscriber; this never calls business Stop.
+      await owner.stop();
+      if (!active() || !ordered()) return;
+      owner.messages = mergeUIMessages(owner.messages, saved);
+    }
+    if (!active() || !ordered()) return;
+    this.remember(detail);
+    const chat = this.chat(id);
+    if (detail.execution?.status === 'idle') {
+      this.recoveryErrors.delete(id);
+      if (
+        chat.error &&
+        saved.some(
+          (message) =>
+            message.id === chat.messages.at(-1)?.id &&
+            message.metadata?.seq !== undefined,
+        )
+      )
+        this.renewChat(id, chat.messages);
+    } else if (
+      detail.execution?.status === 'running' &&
+      !detail.execution.waitingApproval &&
+      chat.status !== 'submitted' &&
+      chat.status !== 'streaming'
+    )
+      this.recoveryErrors.set(
+        id,
+        new Error(
+          'Execution remains active; reconcile saved history or resume its stream.',
+        ),
+      );
+    this.publish();
+  }
+  private scheduleRefresh(id: string): void {
+    if (this.completionReads.has(id)) return;
+    this.completionReads.add(id);
+    queueMicrotask(() => {
+      this.completionReads.delete(id);
+      if (!this.disposed) void this.refresh(id).catch(() => {});
+    });
+  }
+  observeDetail(detail: ConversationDetail): void {
+    if (detail.execution?.status === 'running') this.receive(detail.id, detail);
+    if (detail.execution?.status === 'idle') {
+      if (this.chats.get(detail.id)?.status === 'streaming')
+        this.scheduleRefresh(detail.id);
+      this.stopRequests.delete(detail.id);
+      this.recoveryErrors.delete(detail.id);
       this.publish();
+    }
   }
   isStopping(id: string): boolean {
     return this.stopRequests.has(id);
   }
-  /** A processed cancellation request stays pending until execution actually becomes idle. */
   async stop(id: string): Promise<ConversationDetail> {
     const active = this.lifetime();
     this.stopRequests.add(id);
@@ -177,15 +711,6 @@ export class ChatController {
       throw error;
     }
   }
-
-  private aborts = new Map<string, AbortController>();
-  private listeners = new Set<() => void>();
-  private revision = 0;
-  private disposed = false;
-  private generation = 0;
-  private detailVersions = new Map<string, number>();
-  private commandVersions = new Map<string, number>();
-  /** A callback belongs to this Provider lifetime, rather than to a history row. */
   lifetime(): () => boolean {
     const generation = this.generation;
     return () => !this.disposed && this.generation === generation;
@@ -196,26 +721,23 @@ export class ChatController {
     return version;
   }
   detailRequest(id: string): () => boolean {
-    const active = this.lifetime();
-    const version = this.nextDetailVersion(id);
+    const active = this.lifetime(),
+      version = this.nextDetailVersion(id);
     return () => active() && this.detailVersions.get(id) === version;
   }
   private remember(detail: ConversationDetail): void {
     this.nextDetailVersion(detail.id);
-    if (detail.execution?.status === 'idle')
-      this.stopRequests.delete(detail.id);
-    this.publish();
+    this.observeDetail(detail);
     agentsQueryClient().setQueryData(chatKeys.conversation(detail.id), detail);
     void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
   }
-  /** Order cache commits without blocking Stop behind an uncertain send response. */
   async command<T>(
     id: string,
     request: () => Promise<T>,
     detail: (result: T) => ConversationDetail,
   ): Promise<T> {
-    const active = this.lifetime();
-    const version = (this.commandVersions.get(id) ?? 0) + 1;
+    const active = this.lifetime(),
+      version = (this.commandVersions.get(id) ?? 0) + 1;
     this.commandVersions.set(id, version);
     this.nextDetailVersion(id);
     await agentsQueryClient().cancelQueries({
@@ -228,197 +750,14 @@ export class ChatController {
       this.remember(detail(result));
     return result;
   }
-  constructor(readonly api: ChatApi) {
-    this.submissions = new ChatSubmissions(
-      {
-        createConversation: (input) => api.createConversation(input),
-        sendMessage: (id, input) =>
-          this.command(
-            id,
-            () => api.sendMessage(id, input),
-            (result) => result.conversation,
-          ),
-        messages: (id, query) => api.messages(id, query),
-      },
-      (detail, _record, created) => {
-        if (created) this.remember(detail);
-        if (!created) this.receive(detail.id, true);
-      },
-      undefined,
-      (id, message) => this.dispatch(id, { type: 'confirmed', message }),
-    );
-    this.submissions.subscribe(() => this.publish());
-  }
   subscribe = (callback: () => void): (() => void) => {
     this.listeners.add(callback);
     return () => this.listeners.delete(callback);
   };
   snapshot = (): number => this.revision;
-  state(id: string): StreamState | undefined {
-    return this.streams.get(id);
-  }
-  private publish() {
+  private publish(): void {
     this.revision++;
     for (const callback of this.listeners) callback();
-  }
-  receive(id: string, newInput = false): void {
-    if (this.disposed || (!newInput && this.streams.has(id))) return;
-    this.aborts.get(id)?.abort();
-    const abort = new AbortController();
-    this.aborts.set(id, abort);
-    this.streams.set(id, { phase: 'connecting', items: [] });
-    this.publish();
-    const current = () =>
-      !this.disposed && this.aborts.get(id) === abort && !abort.signal.aborted;
-    void (async () => {
-      try {
-        const stream = await this.api.events(id, abort.signal);
-        if (!current()) {
-          await stream?.cancel();
-          return;
-        }
-        if (!stream) {
-          await this.refresh(id);
-          if (!current()) return;
-          if (
-            agentsQueryClient().getQueryData<ConversationDetail>(
-              chatKeys.conversation(id),
-            )?.execution?.status === 'running'
-          )
-            throw new Error(
-              'Execution is still running; refresh saved history to confirm the result.',
-            );
-          this.streams.set(id, { phase: 'saved', items: [] });
-          this.publish();
-          return;
-        }
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let saved = false;
-        const at = new Date().toISOString();
-        try {
-          while (current()) {
-            const next = await reader.read();
-            if (next.done) break;
-            buffer += decoder
-              .decode(next.value, { stream: true })
-              .replace(/\r\n/g, '\n');
-            let end: number;
-            while ((end = buffer.indexOf('\n\n')) >= 0) {
-              const block = buffer.slice(0, end);
-              buffer = buffer.slice(end + 2);
-              const data = block
-                .split('\n')
-                .filter((line) => line.startsWith('data:'))
-                .map((line) => line.slice(5).trimStart())
-                .join('\n');
-              if (!data || !current()) continue;
-              const event = JSON.parse(data) as OnlineAgentStreamEvent;
-              const state = this.streams.get(id)!;
-              if (event.type === 'saved') {
-                saved = true;
-                this.streams.set(id, {
-                  ...state,
-                  phase: 'saved',
-                  lastSeq: event.lastSeq,
-                  outcome: event.outcome,
-                });
-                await this.refresh(id);
-              } else if (event.type === 'message') {
-                this.streams.set(id, {
-                  phase: 'streaming',
-                  items: [
-                    ...state.items.filter(
-                      (item) => item.id !== event.message.id,
-                    ),
-                    event.message,
-                  ].sort((a, b) => a.seq - b.seq),
-                });
-              } else if (
-                event.type === 'delta' ||
-                (event.type === 'part' && event.item.role === 'assistant')
-              ) {
-                const seq = event.boundary.afterSeq + event.messageIndex + 1;
-                const message: ConversationMessage = {
-                  id: `stream:${id}:${event.boundary.afterSeq}:${event.messageIndex}`,
-                  conversationId: id,
-                  seq,
-                  role: 'assistant',
-                  content: {
-                    type: 'text',
-                    content:
-                      event.type === 'part'
-                        ? event.item.parts.map((part) => part.text).join('')
-                        : (state.items.find((item) => item.seq === seq)?.content
-                            .content ?? '') + event.text,
-                  },
-                  toolCalls: null,
-                  attachments: null,
-                  workContext: null,
-                  metadata: { streaming: true },
-                  runId: null,
-                  createdAt: at,
-                };
-                this.streams.set(id, {
-                  phase: 'streaming',
-                  items: [
-                    ...state.items.filter((item) => item.seq !== seq),
-                    message,
-                  ].sort((a, b) => a.seq - b.seq),
-                });
-              }
-              this.publish();
-            }
-          }
-        } finally {
-          await reader.cancel();
-        }
-        if (current() && !saved)
-          throw new Error(
-            'The connection ended before the result was confirmed.',
-          );
-      } catch {
-        if (current()) {
-          const state = this.streams.get(id)!;
-          this.streams.set(id, { ...state, phase: 'interrupted' });
-          this.publish();
-        }
-      }
-    })();
-  }
-  /** Explicit history refresh never reopens a stream or repeats input. */
-  async refresh(id: string): Promise<void> {
-    const subscription = this.aborts.get(id);
-    const current = () =>
-      !this.disposed &&
-      this.aborts.get(id) === subscription &&
-      !subscription?.signal.aborted;
-    const ordered = this.detailRequest(id);
-    const detail = await this.api.conversation(id);
-    if (!current() || !ordered()) return;
-    await this.loadHistory(id, false, true);
-    const loaded = this.history(id);
-    if (loaded.error)
-      throw loaded.error instanceof Error
-        ? loaded.error
-        : new Error('Saved history could not be loaded.');
-    const page = loaded.state;
-    if (!current() || !ordered()) return;
-    agentsQueryClient().setQueryData(chatKeys.conversation(id), detail);
-    this.submissions.observe(id, page.items);
-    if (detail.execution?.status === 'idle') {
-      this.stopRequests.delete(id);
-      const stream = this.streams.get(id);
-      if (stream)
-        this.streams.set(id, {
-          ...stream,
-          phase: 'saved',
-          lastSeq: page.lastSeq,
-          ...(stream.lastSeq !== page.lastSeq ? { outcome: undefined } : {}),
-        });
-    }
-    this.publish();
   }
   activate(): void {
     this.disposed = false;
@@ -427,19 +766,30 @@ export class ChatController {
     if (this.disposed) return;
     this.disposed = true;
     this.generation++;
+    for (const chat of this.chats.values()) void chat.stop();
+    for (const admission of this.admissions.values())
+      admission.gate.reject(new CancelledError({ silent: true }));
+    for (const watch of this.watches.values()) clearInterval(watch.timer);
+    this.watches.clear();
+    this.messageVersions.clear();
+    this.revisionQueue.clear();
+    this.deferredReads.clear();
+    this.completionReads.clear();
+    this.admissions.clear();
     this.loads.clear();
     this.refreshAgain.clear();
     this.commandVersions.clear();
     this.stopRequests.clear();
+    this.approvalRequests.clear();
+    this.resuming.clear();
+    this.resumed.clear();
     this.submissions.invalidate();
-    for (const abort of this.aborts.values()) abort.abort();
     agentsQueryClient().removeQueries({ queryKey: chatKeys.all });
   }
   dispose(): void {
     this.invalidate();
     this.submissions.dispose();
-    for (const abort of this.aborts.values()) abort.abort();
-    this.streams.clear();
+    this.chats.clear();
     this.histories.clear();
     this.listeners.clear();
   }
@@ -451,16 +801,26 @@ export function ChatClientProvider({
   children?: ReactNode;
 }): ReactElement {
   const host = useApiClient();
-  const [controller] = useState(() => new ChatController(new ChatApi(host)));
-  const lifetimeRef = useRef(0);
-  useEffect(() => {
+  const controller = useMemo(
+    () => new ChatController(new ChatApi(host)),
+    [host],
+  );
+  const lifetimesRef = useRef(new Map<ChatController, number>());
+  useLayoutEffect(() => {
     controller.activate();
-    const lifetime = lifetimeRef;
-    const generation = ++lifetime.current;
+    const lifetimes = lifetimesRef.current;
+    lifetimes.set(controller, (lifetimes.get(controller) ?? 0) + 1);
+    const reconnect = () => controller.reconnect();
+    window.addEventListener('online', reconnect);
     return () => {
+      window.removeEventListener('online', reconnect);
       controller.invalidate();
+      lifetimes.set(controller, (lifetimes.get(controller) ?? 1) - 1);
       queueMicrotask(() => {
-        if (lifetime.current === generation) controller.dispose();
+        if (lifetimes.get(controller) === 0) {
+          controller.dispose();
+          lifetimes.delete(controller);
+        }
       });
     };
   }, [controller]);
@@ -476,27 +836,25 @@ export function useChatController(): ChatController {
   return controller;
 }
 export function useChatStream(id: string | null): StreamState | undefined {
-  const controller = useContext(ControllerContext);
+  const controller = useChatController();
+  useSDKChat({ chat: controller.chat(id ?? 'draft') });
   useSyncExternalStore(
-    controller?.subscribe ?? noSubscribe,
-    controller?.snapshot ?? zero,
-    controller?.snapshot ?? zero,
+    controller.subscribe,
+    controller.snapshot,
+    controller.snapshot,
   );
   useEffect(() => {
-    if (id) controller?.receive(id);
+    if (id) controller.receive(id);
   }, [controller, id]);
-  return id ? controller?.state(id) : undefined;
+  return id ? controller.state(id) : undefined;
 }
-
-const noSubscribe = (): (() => void) => () => {};
-const zero = (): number => 0;
-
 export function useChatStreamState(id: string | null): StreamState | undefined {
-  const controller = useContext(ControllerContext);
+  const controller = useChatController();
+  useSDKChat({ chat: controller.chat(id ?? 'draft') });
   useSyncExternalStore(
-    controller?.subscribe ?? noSubscribe,
-    controller?.snapshot ?? zero,
-    controller?.snapshot ?? zero,
+    controller.subscribe,
+    controller.snapshot,
+    controller.snapshot,
   );
-  return id ? controller?.state(id) : undefined;
+  return id ? controller.state(id) : undefined;
 }

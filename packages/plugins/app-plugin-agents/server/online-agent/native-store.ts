@@ -1,3 +1,4 @@
+import { publicUIPageContext } from '../../shared/ui-message.js';
 import { isDeepStrictEqual } from 'node:util';
 import {
   convertToModelMessages,
@@ -453,6 +454,9 @@ export class NativeSessionStore {
             seq,
             executionId,
             turnId: executionId,
+            ...(input.workContext
+              ? { context: publicUIPageContext(input.workContext) }
+              : {}),
           },
           parts: [
             ...input.parts,

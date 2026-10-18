@@ -1,3 +1,4 @@
+import { measureUIReadCost } from './ui-read-cost.js';
 import { createServer, connect, type Socket } from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { Redis } from 'ioredis';
@@ -232,6 +233,14 @@ describe('native SDK transport, persistence and approval', () => {
     const history = (await (await f.request(`${f.base}/messages`)).json()).data;
     expect(history.at(-1)).toEqual(jsonSafe(chat.messages.at(-1)));
     expect(history[0]).toMatchObject(jsonSafe(chat.messages[0]));
+    await measureUIReadCost(h, 'native', {
+      history: () => f.request(`${f.base}/messages`),
+      forward: () => f.request(`${f.base}/messages?after=2`),
+      revision: () =>
+        f.request(`${f.base}/messages?ids=${String(history[1].id)}`),
+      detail: () => f.request(f.base),
+    });
+
     expect(history[1]).toMatchObject({
       role: 'assistant',
       metadata: { revision: 1, seq: 2 },

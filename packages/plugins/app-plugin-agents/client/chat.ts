@@ -51,7 +51,6 @@ export {
 } from './chat/provider.js';
 export {
   CHAT_POLL_MS,
-  CHAT_STREAM_POLL_MS,
   useChatAgents,
   useChatModels,
   useChatApi,
@@ -88,6 +87,7 @@ export {
   ChatExtensionsContext,
   type ChatExtensions,
   type ChatTimelineItem,
+  type ChatDataPart,
 } from './chat/extensions.js';
 export {
   buildPageContext,
@@ -103,6 +103,9 @@ export {
   type ChatSelection,
 } from './chat/context-model.js';
 export {
+  chatMessageSegments,
+  type ChatMessageSegment,
+  type UIMessagePage,
   liveStepsView,
   newConversationAgent,
   noticeText,

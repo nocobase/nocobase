@@ -1,5 +1,13 @@
 export interface AgentChatLocale {
   readonly chat: {
+    readonly retrySaving: string;
+    readonly approval: {
+      readonly request: string;
+      readonly approve: string;
+      readonly deny: string;
+      readonly denied: string;
+      readonly failed: string;
+    };
     readonly feedback: {
       readonly sending: string;
       readonly waiting: string;
@@ -238,6 +246,15 @@ export interface AgentChatLocale {
 
 const agentChatEnUS: AgentChatLocale = {
   chat: {
+    retrySaving: 'Retry saving',
+    approval: {
+      request: 'This tool needs your approval before it runs.',
+      approve: 'Approve',
+      deny: 'Deny',
+      denied: 'Tool execution was denied.',
+      failed:
+        'Approval was not confirmed. Refresh the saved message before trying again.',
+    },
     feedback: {
       sending: 'Sending…',
       waiting: 'Waiting for the agent…',

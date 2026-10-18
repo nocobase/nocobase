@@ -1,3 +1,4 @@
+import { measureUIReadCost } from './ui-read-cost.js';
 import { appendFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -235,6 +236,17 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
       ).toHaveLength(1);
       expect(chatB.messages.at(-1)).toEqual(assistant);
       expect(await remote.status()).toBe('idle');
+      await measureUIReadCost(h, 'runner', {
+        history: () => appB.request(`/agents/conversations/${id}/messages`),
+        forward: () =>
+          appB.request(`/agents/conversations/${id}/messages?after=4`),
+        revision: () =>
+          appB.request(
+            `/agents/conversations/${id}/messages?ids=${encodeURIComponent(assistant.id)}`,
+          ),
+        detail: () => appB.request(`/agents/conversations/${id}`),
+      });
+
       expect(timeline(await remote.history()).map((item) => item.text)).toEqual(
         [
           'Two source blocks',

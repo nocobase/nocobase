@@ -424,7 +424,7 @@ export function createChatRoutes(
           conversationId: { name: 'conversation' },
           pageSize: { name: 'limit' },
         },
-        columns: ['seq', 'role', 'content.content', 'createdAt'],
+        columns: ['metadata.seq', 'role', 'parts', 'metadata.createdAt'],
       }),
       description:
         'Newest page first, each page in order; after reads newly inserted sequences and pageToken reads older pages. Native ids rereads current messages after revision notifications, including updates at unchanged sequences.',
@@ -484,12 +484,13 @@ export function createChatRoutes(
       operationId: 'agentsSendConversationMessage',
       ...cliRoute({
         command: 'conversation message send',
+        bodyFile: 'file',
         args: ['conversationId'],
         flags: {
           conversationId: { name: 'conversation' },
-          content: { contentFile: true, alias: 'm' },
+          message: { alias: 'm' },
           context: { hidden: true },
-          clientId: { hidden: true },
+          selectedModel: { hidden: true },
         },
         uploads: {
           attach: {
@@ -501,8 +502,8 @@ export function createChatRoutes(
           },
         },
         examples: [
-          'conversation message send <conversation> -m "What is left on PM-12?"',
-          'conversation message send <conversation> -m "See the log" --attach build.log',
+          'conversation message send <conversation> --file current-user-message.json',
+          'conversation message send <conversation> --file current-user-message.json --attach build.log',
         ],
       }),
       description:

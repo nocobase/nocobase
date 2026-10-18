@@ -10,6 +10,10 @@ import {
   type AppUIMessageMetadata,
   type AppUITools,
 } from '@nocobase/app-plugin-agents/shared/online-agent';
+import type {
+  useConversationMessages,
+  ChatDataPart,
+} from '@nocobase/app-plugin-agents/client/chat';
 import type { AppUIMessage as ClientMessage } from '@nocobase/app-plugin-agents/client/chat';
 import type { AppUIMessage as ServerMessage } from '@nocobase/app-plugin-agents/server/online-agent';
 import type { useChat } from '@ai-sdk/react';
@@ -87,6 +91,12 @@ describe('public SDK UI message contract', () => {
       UIMessage<AppUIMessageMetadata, AppUIData, AppUITools>
     >();
     expectTypeOf<ClientMessage>().toEqualTypeOf<ServerMessage>();
+    expectTypeOf<
+      ReturnType<typeof useConversationMessages>['items']
+    >().toEqualTypeOf<readonly AppUIMessage[]>();
+    expectTypeOf<ChatDataPart['type']>().toEqualTypeOf<
+      'data-notice' | 'data-business'
+    >();
     expectTypeOf<
       ReturnType<typeof useChat<AppUIMessage>>['messages']
     >().toEqualTypeOf<AppUIMessage[]>();
@@ -240,4 +250,50 @@ describe('public SDK UI message contract', () => {
     const shared = { title: 'Public' };
     expect(isAppUIJson({ first: shared, second: shared })).toBe(true);
   });
+});
+
+it('publishes only the authorized display context and source timestamps through the formal schema', async () => {
+  const { publicUIPageContext } = await import('../shared/ui-message.js');
+  const source = {
+    route: '/issues',
+    items: [
+      {
+        kind: 'issue',
+        id: '1',
+        title: 'Visible',
+        key: 'PM-1',
+        url: '/issues/1',
+        privateEvidence: { secret: 'hidden' },
+      },
+    ],
+    dropped: 0,
+    credentials: { secret: 'hidden' },
+  };
+  const context = publicUIPageContext(source);
+  const saved = {
+    ...message,
+    metadata: {
+      ...metadata,
+      context,
+      sourceRecords: metadata.sourceRecords!.map((record) => ({
+        ...record,
+        createdAt: '2026-10-18T03:00:00Z',
+      })),
+    },
+  };
+  expect(await validateAppUIMessages([saved])).toEqual([saved]);
+  expect(context).toEqual({
+    route: '/issues',
+    items: [
+      {
+        kind: 'issue',
+        id: '1',
+        title: 'Visible',
+        key: 'PM-1',
+        url: '/issues/1',
+      },
+    ],
+    dropped: 0,
+  });
+  expect(JSON.stringify(saved)).not.toContain('hidden');
 });

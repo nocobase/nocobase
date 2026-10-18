@@ -2,6 +2,14 @@ import type { AgentChatLocale } from './en-US.js';
 
 const agentChatZhCN: AgentChatLocale = {
   chat: {
+    retrySaving: '重试保存',
+    approval: {
+      request: '此工具需要您批准后才能执行。',
+      approve: '批准',
+      deny: '拒绝',
+      denied: '已拒绝执行工具。',
+      failed: '审批结果尚未确认，请刷新已保存消息后再试。',
+    },
     feedback: {
       sending: '正在发送…',
       waiting: '等待 Agent 响应…',

@@ -388,6 +388,10 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
           });
           execution.started = true;
         }
+        execution.writer.write({
+          type: 'message-metadata',
+          messageMetadata: message.metadata!,
+        });
         for (const source of message.metadata!.sourceRecords!) {
           if (execution.published.has(source.partId)) continue;
           const part = message.parts[source.partIndex];
@@ -408,10 +412,6 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentRunnerBackend {
             });
           execution.published.add(source.partId);
         }
-        execution.writer.write({
-          type: 'message-metadata',
-          messageMetadata: message.metadata!,
-        });
         execution.snapshot = message;
       }
       execution.cursor = Number(row.lastSeq);

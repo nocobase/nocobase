@@ -34,8 +34,8 @@ import { cn } from 'cn';
 export interface AttachmentFile {
   readonly id: string;
   readonly name: string;
-  /** In bytes. */
-  readonly size: number;
+  /** In bytes, when the source provides it. */
+  readonly size?: number;
   /** Shown inline for an image. */
   readonly url: string;
   readonly downloadUrl: string;
@@ -88,7 +88,8 @@ function fill(text: string, values: Readonly<Record<string, string>>): string {
   );
 }
 
-function bytes(size: number, locale: string | undefined): string {
+function bytes(size: number | undefined, locale: string | undefined): string {
+  if (size === undefined) return '';
   const units = ['B', 'KB', 'MB', 'GB'] as const;
   let value = size;
   let unit = 0;
@@ -172,7 +173,11 @@ export function AttachmentList({
                 type='button'
                 className='block size-20 overflow-hidden rounded-md border bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:size-24'
                 aria-label={fill(labels.preview, { name: file.name })}
-                title={`${file.name} · ${bytes(file.size, locale)}`}
+                title={
+                  file.size === undefined
+                    ? file.name
+                    : `${file.name} · ${bytes(file.size, locale)}`
+                }
                 onClick={() => open(file)}
               >
                 <img

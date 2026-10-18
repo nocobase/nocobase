@@ -133,6 +133,9 @@ it.each(['direct', 'signed-out', 'pending'] as const)(
   'isolates A → B via %s, aborts old streams and ignores late history',
   async (transition) => {
     let resolve!: (value: unknown) => void;
+    host.api.request
+      .mockResolvedValueOnce({ data: [], meta: { lastSeq: 0 } })
+      .mockResolvedValueOnce({ data: [], meta: { lastSeq: 0 } });
     host.api.request.mockImplementation(
       () =>
         new Promise((done) => {
@@ -147,10 +150,19 @@ it.each(['direct', 'signed-out', 'pending'] as const)(
     const { rerender } = render(<Tree />);
     fireEvent.click(await screen.findByText('Open private chat'));
     const first = controller;
+    await act(async () => {
+      await first.loadHistory('A-private');
+    });
+    act(() =>
+      first.receive('A-private', {
+        id: 'A-private',
+        execution: { status: 'running' },
+      } as never),
+    );
+    await waitFor(() => expect(signal).toBeDefined());
     let history!: Promise<void>;
     act(() => {
       history = first.loadHistory('A-private');
-      first.receive('A-private');
     });
     agentsQueryClient().setQueryData(chatKeys.agents, [{ id: 'A-secret' }]);
     if (transition !== 'direct') {
@@ -178,6 +190,12 @@ it.each(['direct', 'signed-out', 'pending'] as const)(
     expect(controller.history('A-private').state.items).toEqual([]);
     expect(first.history('A-private').state.items).toEqual([]);
     expect(screen.queryByText('A draft')).not.toBeInTheDocument();
+    const second = controller;
+    host.identity = 'A';
+    rerender(<Tree />);
+    await waitFor(() => expect(controller).not.toBe(second));
+    expect(controller).not.toBe(first);
+    expect(controller.history('A-private').state.items).toEqual([]);
   },
 );
 
