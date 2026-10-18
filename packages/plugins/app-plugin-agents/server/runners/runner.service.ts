@@ -57,7 +57,7 @@ import {
   credentialPrefix,
   hashCredential,
 } from '../kernel/crypto.js';
-import { conflict, notFound, precondition } from '../kernel/errors.js';
+import { notFound, precondition } from '../kernel/errors.js';
 import type { AgentsNotice } from '../kernel/events.js';
 import type { IdSource } from '../kernel/ids.js';
 import type { People } from '../kernel/people.js';
@@ -653,7 +653,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           },
         });
         if (heartbeatUpdate.updatedCount !== 1)
-          throw conflict('Quota changed during heartbeat; report again.');
+          throw new ProtocolError(
+            'REVISION_CONFLICT',
+            'Quota changed during heartbeat; report again.',
+          );
         if (changed) emit({ type: 'runner.changed', runnerId: runner.id });
         const reported = await require(conn, runner.id);
         await deps.onReport?.(unit, reported);
@@ -1034,7 +1037,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         },
       });
       if (changed.updatedCount !== 1)
-        throw conflict('Quota changed; report again.');
+        throw new ProtocolError(
+          'REVISION_CONFLICT',
+          'Quota changed; report again.',
+        );
       unit.emit({ type: 'runner.changed', runnerId });
     },
   };
