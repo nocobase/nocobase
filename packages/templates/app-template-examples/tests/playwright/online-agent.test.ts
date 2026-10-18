@@ -241,6 +241,7 @@ test('keeps partial approvals pending and renders advisory uncertainty and insta
     ).toHaveCount(1);
     expect(fixture.streams).toHaveLength(1);
     expect((await detail()).execution.waitingApproval).toBe(true);
+    await expect(panel.getByTestId('chat-consultation')).toHaveCount(0);
     // Examples resets the panel on reload; restore it through the public conversation link.
     await page.goto(app + '/?chat=' + encodeURIComponent(id));
     await expect(
@@ -257,8 +258,9 @@ test('keeps partial approvals pending and renders advisory uncertainty and insta
       });
     await panel.getByRole('button', { name: 'Approve', exact: true }).click();
     await expect.poll(() => fixture.streams.length).toBe(2);
+    // SDK continuation sees the actual exception; the next saved turn uses the canonical unknown fact below.
     expect(JSON.stringify(fixture.requests.at(-1)?.messages)).toContain(
-      'Tool result unknown',
+      'Fixture outcome unknown',
     );
     fixture.append(1, 'The approved actions have been reconciled.');
     fixture.complete(1);
