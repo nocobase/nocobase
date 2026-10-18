@@ -23,6 +23,8 @@ Tests never go beside the source. Vitest discovers `tests/**/*.test.{ts,tsx}` an
 
 ## Building the test harness
 
+Also run `tests/logic/page-permission-titles.test.ts` when adding or changing routes. It requires translated names for every application page permission, including overlays without navigation/breadcrumbs, and preserves the complete resource/action identity list. See [permission display names](page.md#permission-display-names).
+
 **For a page, copy `tests/components/page-harness.test.tsx`.** It renders a small list page with a child-route `RouteDialog` in a memory router inside the real, strict i18n runtime (next section), and mocks only what the page reaches outside itself for: `useApiClient` (keeping the real `ApiClientError`), `useCan` and `useToaster`, all created with `vi.hoisted`. Its tests are the shapes to repeat: the request the page sends, a 403 without "Retry", a 401 that offers "Sign in again", an action shown with permission and hidden without it, and a child route opened from its URL and closed back to the list. It also mocks `useAuthentication` for the 401 case. Replace its inline page with your page and its child routes, drop the `copy` the harness defines for its inline page, since your page's keys are in `client/locales/`, keep the setup, and put the file in `tests/components/` (the template's own overlay test happens to sit in `tests/logic/`).
 
 For anything else, start from the test that already sets it up:
