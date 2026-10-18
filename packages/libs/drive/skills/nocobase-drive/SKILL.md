@@ -7,12 +7,12 @@ description: Configure and use file storage with @nocobase/drive in NocoBase 3 a
 
 Use `@nocobase/drive` for storage operations. It wraps Flydrive with application configuration and a native Aliyun OSS driver. Choose the relevant reference before changing a disk:
 
-| Storage                                               | Driver           | Read                                                                                |
-| ----------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------- |
-| A local or mounted filesystem                         | `fs`             | [Filesystem configuration, paths, and URLs](references/fs.md)                       |
-| Amazon S3 or an S3-compatible service                 | `s3`             | [S3 configuration, credentials, and ACLs](references/s3.md)                         |
-| Native Aliyun OSS with access keys or an ECS RAM role | `oss`            | [OSS configuration, credentials, and networking](references/aliyun-ecs-ram-role.md) |
-| An application-owned or third-party Flydrive driver   | Factory function | [Custom driver factories](references/custom-drivers.md)                             |
+| Storage                                               | Driver           | Read                                                                |
+| ----------------------------------------------------- | ---------------- | ------------------------------------------------------------------- |
+| A local or mounted filesystem                         | `fs`             | [Filesystem configuration, paths, and URLs](references/fs.md)       |
+| Amazon S3 or an S3-compatible service                 | `s3`             | [S3 configuration, credentials, and ACLs](references/s3.md)         |
+| Native Aliyun OSS with access keys or an ECS RAM role | `oss`            | [OSS configuration, credentials, and networking](references/oss.md) |
+| An application-owned or third-party Flydrive driver   | Factory function | [Custom driver factories](references/custom-drivers.md)             |
 
 ## Configuration and application integration
 

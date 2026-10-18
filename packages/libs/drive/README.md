@@ -8,5 +8,5 @@ The package ships the [NocoBase Drive Skill](skills/nocobase-drive/SKILL.md). Ap
 
 - [Filesystem storage (`fs`)](skills/nocobase-drive/references/fs.md)
 - [S3 and compatible storage (`s3`)](skills/nocobase-drive/references/s3.md)
-- [Native Aliyun OSS and ECS RAM roles (`oss`)](skills/nocobase-drive/references/aliyun-ecs-ram-role.md)
+- [Native Aliyun OSS and ECS RAM roles (`oss`)](skills/nocobase-drive/references/oss.md)
 - [Custom driver factories in `disks`](skills/nocobase-drive/references/custom-drivers.md)
