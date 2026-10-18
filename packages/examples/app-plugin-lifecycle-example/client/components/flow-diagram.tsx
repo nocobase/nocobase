@@ -305,15 +305,25 @@ export function FlowDiagram({
 }: FlowDiagramProps): ReactElement {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(0);
+  const [size, setSize] = useState({
+    width: 0,
+    height: 0,
+  });
+  const { width, height: canvasHeight } = size;
   useEffect(() => {
-    if (!autoHeight || !containerRef.current) return;
+    if (!containerRef.current) return;
     const observer = new ResizeObserver(([entry]) => {
-      if (entry) setWidth(entry.contentRect.width);
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      setSize((previous) =>
+        previous.width === width && previous.height === height
+          ? previous
+          : { width, height },
+      );
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [autoHeight]);
+  }, []);
   // Layout only structural changes; polling a record or highlighting a node preserves the viewport.
   const structure = JSON.stringify({
     nodes: nodes.map(({ id, width, height }) => ({
@@ -450,6 +460,16 @@ export function FlowDiagram({
       : 1;
   // Reserve room above and below the graph for the canvas chrome.
   const height = layout ? Math.max(320, layout.height * zoom + 144) : 320;
+  // ELK bounds include routed edges and labels, unlike a node-only fitView.
+  const fittedZoom =
+    layout && width > 0 && canvasHeight > 0
+      ? Math.min(
+          1,
+          Math.max(1, width - 48) / Math.max(1, layout.width),
+          Math.max(1, canvasHeight - 48) / Math.max(1, layout.height),
+        )
+      : 1;
+  const viewportZoom = autoHeight ? zoom : fittedZoom;
   return (
     <div
       ref={containerRef}
@@ -494,30 +514,23 @@ export function FlowDiagram({
         </p>
       ) : (
         <ReactFlow<DiagramNode, DiagramEdge>
-          key={autoHeight ? `${structure}:${width}` : structure}
+          key={`${structure}:${width}:${autoHeight ? 'auto' : canvasHeight}`}
           nodes={placedNodes}
           edges={placedEdges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
-          fitView={!autoHeight}
-          fitViewOptions={{
-            padding: 0.2,
-            minZoom: initialMinZoom,
-            maxZoom: 1,
+          defaultViewport={{
+            x: (width - layout.width * viewportZoom) / 2,
+            y:
+              ((autoHeight ? height : canvasHeight) -
+                layout.height * viewportZoom) /
+              2,
+            zoom: viewportZoom,
           }}
-          defaultViewport={
-            autoHeight
-              ? {
-                  x: (width - layout.width * zoom) / 2,
-                  y: (height - layout.height * zoom) / 2,
-                  zoom,
-                }
-              : undefined
-          }
+          minZoom={Math.min(0.1, viewportZoom)}
           // A full-height process is read by scrolling the page, not wheel-zooming the canvas.
           zoomOnScroll={!autoHeight}
           preventScrolling={!autoHeight}
-          minZoom={0.1}
           maxZoom={2}
           nodesDraggable={false}
           nodesConnectable={false}

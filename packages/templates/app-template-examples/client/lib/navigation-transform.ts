@@ -10,7 +10,7 @@ export function groupWorkflowNavigation(
     '@nocobase/app-plugin-office-flows-example',
   ]);
   const isWorkflow = (item: RouteNavigationItem) =>
-    owners.has(item.route.packageName) || item.route.name === 'workflows';
+    owners.has(item.route.packageName);
   const roots = items.filter(isWorkflow);
   if (!roots.length) return items;
   const flatten = (
@@ -54,24 +54,21 @@ export function groupWorkflowNavigation(
     },
     children,
   });
-  const sections = [
-    group(
-      'workflowBusiness',
-      'workflows.businessGroup',
-      pages.filter((item) => !management.has(item.route.name)),
-      true,
-    ),
-    group(
-      'workflowManagement',
-      'workflows.managementGroup',
-      pages.filter((item) => management.has(item.route.name)),
-      true,
-    ),
-  ].filter((item) => item.children.length);
-  const combined = group('workflowNavigation', 'workflows.group', sections);
+  const business = pages.filter((item) => !management.has(item.route.name));
+  const combined = group(
+    'workflowNavigation',
+    'workflows.businessGroup',
+    business,
+  );
   const first = items.findIndex(isWorkflow);
   return items.flatMap((item, index) =>
-    index === first ? [combined] : isWorkflow(item) ? [] : [item],
+    index === first
+      ? business.length
+        ? [combined]
+        : []
+      : isWorkflow(item)
+        ? []
+        : [item],
   );
 }
 

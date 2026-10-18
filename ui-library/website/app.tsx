@@ -84,6 +84,7 @@ import { IssueCardDemo } from './demo/projects/issue-card';
 import { PlanCardDemo } from './demo/projects/plan-card';
 import { IssueTableDemo } from './demo/projects/issue-table';
 import { FlowDiagramDemo } from './demo/components/flow-diagram';
+import { WorkflowManagementDemo } from './demo/lifecycle/workflow-management';
 import { LifecycleDiagramDemo } from './demo/lifecycle/lifecycle-diagram';
 import { KanbanDemo } from './demo/components/kanban';
 import { ApprovalDemo } from './demo/approval';
@@ -170,6 +171,10 @@ const itemPreviews: Record<string, ItemPreview> = {
     icon: ToggleRight,
   },
   'flow-diagram': { path: '/demo/components/flow-diagram', icon: Layers },
+  'workflow-management': {
+    path: '/demo/lifecycle/workflow-management',
+    icon: Layers,
+  },
   'lifecycle-diagram': {
     path: '/demo/lifecycle/lifecycle-diagram',
     icon: Layers,
@@ -283,6 +288,8 @@ function AppContent(): ReactElement {
   }
   if (pathname.startsWith('/demo/components/flow-diagram'))
     return <FlowDiagramDemo />;
+  if (pathname.startsWith('/demo/lifecycle/workflow-management'))
+    return <WorkflowManagementDemo />;
   if (pathname.startsWith('/demo/lifecycle/lifecycle-diagram'))
     return <LifecycleDiagramDemo />;
   if (pathname.startsWith('/demo/components/kanban')) {

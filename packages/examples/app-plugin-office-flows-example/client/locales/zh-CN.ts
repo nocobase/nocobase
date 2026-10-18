@@ -96,6 +96,7 @@ const zhCN: OfficeFlowsExampleResource = {
     remove: '移除 {{name}}',
   },
   rows: {
+    assignees: '办理人',
     department: '分发部门',
     clerks: '办事人员',
     heads: '抄送人员（部门主管及其他）',
