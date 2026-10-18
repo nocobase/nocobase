@@ -84,6 +84,9 @@ if (process.env.PM481_STARTUP_PHASE === 'prepare') {
                     state: id === 'approval' ? 'waitingApproval' : 'running',
                     messageId: `${id}-answer`,
                     executionId: `${id}-execution`,
+                    ...(id !== 'background'
+                      ? { revision: id === 'unfinished' ? 0 : 1 }
+                      : {}),
                     ...(id === 'saved'
                       ? { outcome: 'completed', closing: true }
                       : {}),
