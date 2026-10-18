@@ -600,19 +600,19 @@ function DiagramToolbar({
     {
       label: t('flowDiagram.zoomOut', { defaultValue: 'Zoom out' }),
       icon: MinusIcon,
-      disabled: zoom <= 0.1,
+      disabled: !flow.viewportInitialized || zoom <= 0.1,
       run: () => void flow.zoomOut(),
     },
     {
       label: t('flowDiagram.zoomIn', { defaultValue: 'Zoom in' }),
       icon: PlusIcon,
-      disabled: zoom >= 2,
+      disabled: !flow.viewportInitialized || zoom >= 2,
       run: () => void flow.zoomIn(),
     },
     {
       label: t('flowDiagram.fit', { defaultValue: 'Fit to view' }),
       icon: MaximizeIcon,
-      disabled: false,
+      disabled: !flow.viewportInitialized,
       run: () => void flow.fitView({ padding: 0.2, maxZoom: 1 }),
     },
   ];
@@ -651,6 +651,7 @@ function DiagramToolbar({
                 aria-label={t('flowDiagram.actualSize', {
                   defaultValue: 'Actual size',
                 })}
+                disabled={!flow.viewportInitialized}
                 onClick={() => void flow.zoomTo(1)}
               />
             }
