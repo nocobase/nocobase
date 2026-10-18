@@ -91,6 +91,7 @@ describe('authorized realtime service', () => {
       eventId: expect.any(String),
       topic: topic.name,
     });
+    await realtime.flush();
     expect(first.messages).toHaveLength(1);
     expect(second.messages).toEqual([]);
     await expect(realtime.publish(topic.name, {})).rejects.toMatchObject({
@@ -122,8 +123,10 @@ describe('authorized realtime service', () => {
       'subscription-1',
     );
     await family.publish({ runId: '42' }, { lastSeq: 1 });
+    await realtime.flush();
     allowed = false;
     await family.publish({ runId: '42' }, { lastSeq: 2 });
+    await realtime.flush();
     expect(ws.messages).toEqual([
       expect.objectContaining({ type: 'event', payload: { lastSeq: 1 } }),
       expect.objectContaining({
@@ -226,6 +229,7 @@ describe('authorized realtime service', () => {
     const publication = topic.publish(payload);
     payload.value = 2;
     await publication;
+    await realtime.flush();
     expect(ws.messages[0]).toMatchObject({ payload: { value: 1 } });
   });
 
@@ -243,6 +247,7 @@ describe('authorized realtime service', () => {
     for (const ws of [failed, slow, healthy])
       await realtime.subscribe(realtime.connect(ws), topic.name);
     await topic.publish({ changed: true });
+    await realtime.flush();
     expect(healthy.messages).toHaveLength(1);
     expect(failed.close).toHaveBeenCalled();
     expect(slow.close).toHaveBeenCalled();
@@ -265,6 +270,7 @@ describe('authorized realtime service', () => {
     valid = false;
     await vi.advanceTimersByTimeAsync(51);
     await topic.publishFor('user', {});
+    await realtime.flush();
     expect(ws.messages).toEqual([]);
     expect(ws.close).toHaveBeenCalled();
     expect(realtime.diagnostics().connections).toBe(0);
@@ -278,6 +284,122 @@ describe('authorized realtime service', () => {
     const ws = socket();
     await second.subscribe(second.connect(ws), topic.name);
     await topic.publish({ changed: true });
+    await first.flush();
     expect(ws.messages).toEqual([]);
   });
+});
+
+it('admits publications without waiting for a slow topic and preserves each topic order', async () => {
+  const realtime = service();
+  let blocked = false;
+  const gate = Promise.withResolvers<boolean>();
+  const slow = realtime.defineTopic('fair:slow', {
+    audience: 'public',
+    authorize: () => (blocked ? gate.promise : true),
+  });
+  const fast = realtime.defineTopic('fair:fast', { audience: 'public' });
+  const ws = socket();
+  const connection = realtime.connect(ws);
+  await realtime.subscribe(connection, slow.name);
+  await realtime.subscribe(connection, fast.name);
+  blocked = true;
+  await slow.publish({ seq: 1 });
+  await slow.publish({ seq: 2 });
+  await fast.publish({ seq: 3 });
+  await vi.waitFor(() => expect(ws.messages).toHaveLength(1));
+  expect(ws.messages[0]).toMatchObject({ topic: fast.name });
+  gate.resolve(true);
+  await realtime.flush();
+  expect(
+    ws.messages.map((message) => message.type === 'event' && message.payload),
+  ).toEqual([{ seq: 3 }, { seq: 1 }, { seq: 2 }]);
+  expect(realtime.diagnostics()).toMatchObject({
+    published: 3,
+    received: 3,
+    delivered: 3,
+    queuedDeliveries: 0,
+  });
+});
+
+it('bounds authorization work even when timed-out callbacks ignore cancellation', async () => {
+  vi.useFakeTimers();
+  const realtime = service({
+    maxConcurrentAuthorizations: 1,
+    maxPendingAuthorizations: 1,
+    authorizationTimeoutMs: 50,
+  });
+  const gate = Promise.withResolvers<boolean>();
+  const authorize = vi.fn(() => gate.promise);
+  realtime.defineTopicFamily('bounded:{id}', { audience: 'public', authorize });
+  const connection = realtime.connect(socket());
+  const first = realtime
+    .subscribe(connection, 'bounded:first')
+    .catch((error: unknown) => error);
+  await vi.advanceTimersByTimeAsync(1);
+  const second = realtime
+    .subscribe(connection, 'bounded:second')
+    .catch((error: unknown) => error);
+  await vi.advanceTimersByTimeAsync(1);
+  await expect(
+    realtime.subscribe(connection, 'bounded:third'),
+  ).rejects.toMatchObject({ code: 'AUTHORIZATION_BUSY' });
+  await vi.advanceTimersByTimeAsync(60);
+  expect(await first).toMatchObject({ code: 'AUTHORIZATION_TIMEOUT' });
+  expect(await second).toMatchObject({ code: 'AUTHORIZATION_TIMEOUT' });
+  expect(authorize).toHaveBeenCalledOnce();
+  expect(realtime.diagnostics()).toMatchObject({
+    activeAuthorizations: 1,
+    waitingAuthorizations: 0,
+    authorizationTimeouts: 2,
+  });
+  gate.resolve(true);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(realtime.diagnostics().activeAuthorizations).toBe(0);
+});
+
+it('bounds a burst backlog and cleans up deliveries after disconnect', async () => {
+  const realtime = service({ maxPendingMessagesPerConnection: 2 });
+  const gate = Promise.withResolvers<boolean>();
+  let blocked = false;
+  const topic = realtime.defineTopic('burst:events', {
+    audience: 'public',
+    authorize: () => (blocked ? gate.promise : true),
+  });
+  const ws = socket();
+  await realtime.subscribe(realtime.connect(ws), topic.name);
+  blocked = true;
+  await Promise.all(
+    Array.from({ length: 100 }, (_, seq) => topic.publish({ seq })),
+  );
+  await realtime.flush();
+  expect(ws.close).toHaveBeenCalledWith(1013, 'realtime delivery backlog');
+  expect(realtime.diagnostics()).toMatchObject({
+    connections: 0,
+    subscriptions: 0,
+    queuedDeliveries: 0,
+  });
+  gate.resolve(true);
+});
+
+it('coalesces explicitly replaceable snapshots without overflowing a slow topic', async () => {
+  const realtime = service({ maxPendingMessagesPerConnection: 2 });
+  const gate = Promise.withResolvers<boolean>();
+  let blocked = false;
+  const topic = realtime.defineTopic('snapshot:latest', {
+    audience: 'public',
+    delivery: 'latest',
+    authorize: () => (blocked ? gate.promise : true),
+  });
+  const ws = socket();
+  await realtime.subscribe(realtime.connect(ws), topic.name);
+  blocked = true;
+  await topic.publish({ seq: 0 });
+  await Promise.all(
+    Array.from({ length: 100 }, (_, seq) => topic.publish({ seq: seq + 1 })),
+  );
+  expect(ws.close).not.toHaveBeenCalled();
+  expect(realtime.diagnostics().coalesced).toBe(99);
+  gate.resolve(true);
+  await realtime.flush();
+  expect(ws.messages.at(-1)).toMatchObject({ payload: { seq: 100 } });
 });

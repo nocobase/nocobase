@@ -5,10 +5,11 @@ export function createInMemoryBroker(): RealtimeBroker {
   let receive: ((event: RealtimeBrokerEvent) => Promise<void>) | undefined;
   let closed = false;
   return {
-    setup(listener) {
+    setup(listener, callbacks) {
       if (closed)
         return Promise.reject(new Error('Realtime broker is closed.'));
       receive = listener;
+      callbacks?.onStateChange('ready');
       return Promise.resolve();
     },
     async publish(event) {

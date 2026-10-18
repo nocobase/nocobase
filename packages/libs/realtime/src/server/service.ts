@@ -6,6 +6,7 @@ import {
   validateRealtimeTopic,
   type RealtimeServerMessage,
 } from '../protocol.js';
+import { createAuthorizationGate } from './authorization.js';
 import { createInMemoryBroker } from './broker.js';
 import {
   compileTopic,
@@ -22,6 +23,8 @@ import {
 import type {
   DefinedRealtimeTopic,
   RealtimeBroker,
+  RealtimeBrokerState,
+  RealtimeBrokerControl,
   RealtimeBrokerEvent,
   RealtimeConnection,
   RealtimePublishOptions,
@@ -46,6 +49,9 @@ export interface RealtimeServiceOptions {
   readonly maxPendingMessagesPerConnection?: number;
   readonly authorizationTimeoutMs?: number;
   readonly sessionCheckIntervalMs?: number;
+  readonly maxConcurrentAuthorizations?: number;
+  readonly maxPendingAuthorizations?: number;
+  readonly maxRecentEventIds?: number;
 }
 
 interface PendingSubscription {
@@ -58,11 +64,13 @@ interface ConnectionState {
   readonly connection: RealtimeConnection;
   readonly controller: AbortController;
   readonly pending: Map<string, PendingSubscription>;
-  delivery: Promise<void>;
+  nextSessionCheck: number;
   queued: number;
 }
 
 interface SubscriptionState {
+  pendingEvent?: { encoded: string };
+  delivery: Promise<void>;
   readonly subscription: RealtimeSubscription;
   readonly definition: TopicDefinition;
   readonly controller: AbortController;
@@ -73,6 +81,12 @@ export function createRealtimeService(
   options: RealtimeServiceOptions = {},
 ): RealtimeService {
   const limits = {
+    authorizations: positiveLimit(options.maxConcurrentAuthorizations, 256),
+    pendingAuthorizations: positiveLimit(
+      options.maxPendingAuthorizations,
+      2048,
+    ),
+    recentEventIds: positiveLimit(options.maxRecentEventIds, 10_000),
     connections: positiveLimit(options.maxConnections, 10_000),
     subscriptions: positiveLimit(options.maxSubscriptionsPerConnection, 64),
     messageBytes: positiveLimit(
@@ -99,6 +113,24 @@ export function createRealtimeService(
   const byTopic = new Map<string, Set<string>>();
   const listeners = new Map<string, Set<(count: number) => void>>();
   const definitions = new Map<string, TopicDefinition>();
+  const gate = createAuthorizationGate(
+    limits.authorizations,
+    limits.pendingAuthorizations,
+  );
+  const deliveries = new Set<Promise<void>>();
+  const recentEvents = new Set<string>();
+  const metrics = {
+    published: 0,
+    publishFailures: 0,
+    received: 0,
+    duplicates: 0,
+    coalesced: 0,
+    delivered: 0,
+    authorizationFailures: 0,
+    authorizationTimeouts: 0,
+    authorizationDurationMs: 0,
+  };
+  let brokerState: RealtimeBrokerState = 'connecting';
   let closed = false;
   let setup: Promise<void> | undefined;
   let closing: Promise<void> | undefined;
@@ -111,7 +143,29 @@ export function createRealtimeService(
         return Promise.reject(
           failure('SERVICE_CLOSED', 'Realtime service is closed.'),
         );
-      setup ??= broker.setup(receive);
+      setup ??= broker
+        .setup(receive, {
+          onStateChange(state) {
+            brokerState = state;
+          },
+          onRecovery() {
+            if (closed) return;
+            for (const { connection } of connections.values())
+              send(connection, { type: 'resync' });
+          },
+          onControl(control) {
+            if (
+              !closed &&
+              control.namespace === namespace &&
+              control.origin !== origin
+            )
+              disconnectMatching(control);
+          },
+        })
+        .catch((error: unknown) => {
+          setup = undefined;
+          throw error;
+        });
       return setup;
     },
     connect(ws, context = {}) {
@@ -134,12 +188,15 @@ export function createRealtimeService(
         connection,
         controller: new AbortController(),
         pending: new Map(),
-        delivery: Promise.resolve(),
+        nextSessionCheck: nextSessionCheck(),
         queued: 0,
       });
-      sessionTimer ??= setInterval(() => {
-        void checkSessions();
-      }, limits.sessionCheckInterval);
+      sessionTimer ??= setInterval(
+        () => {
+          void checkSessions();
+        },
+        Math.min(1_000, limits.sessionCheckInterval),
+      );
       return connection;
     },
     disconnect(connection) {
@@ -157,13 +214,13 @@ export function createRealtimeService(
       }
     },
     disconnectUser(userId) {
-      let count = 0;
-      for (const state of connections.values()) {
-        if (state.connection.principal?.userId !== userId) continue;
-        terminate(state.connection, 1001, 'account session revoked');
-        count += 1;
-      }
-      return Promise.resolve(count);
+      return revoke('disconnect-user', userId);
+    },
+    disconnectSession(sessionId) {
+      return revoke('disconnect-session', sessionId);
+    },
+    async flush() {
+      await Promise.all([...deliveries]);
     },
     async subscribe(connection, topic, requestId) {
       const state = requireConnection(connection);
@@ -203,6 +260,7 @@ export function createRealtimeService(
           createdAt: new Date(),
         };
         subscriptions.set(subscription.id, {
+          delivery: Promise.resolve(),
           subscription,
           definition,
           controller,
@@ -387,6 +445,11 @@ export function createRealtimeService(
     },
     diagnostics() {
       return {
+        ...metrics,
+        brokerState,
+        activeAuthorizations: gate.active,
+        waitingAuthorizations: gate.waiting,
+        queuedDeliveries: deliveries.size,
         connections: connections.size,
         subscriptions: subscriptions.size,
         pendingSubscriptions: [...connections.values()].reduce(
@@ -398,6 +461,8 @@ export function createRealtimeService(
     close() {
       if (closing) return closing;
       closed = true;
+      brokerState = 'closed';
+      recentEvents.clear();
       for (const state of connections.values())
         terminate(state.connection, 1001, 'realtime service closed');
       definitions.clear();
@@ -506,12 +571,19 @@ export function createRealtimeService(
     await service.setup();
     if (closed || definitions.get(definition.pattern) !== definition)
       throw failure('TOPIC_CLOSED', 'Realtime topic is closed.');
-    await broker.publish(event);
+    try {
+      await broker.publish(event);
+      metrics.published += 1;
+    } catch (error) {
+      metrics.publishFailures += 1;
+      throw error;
+    }
     return { eventId: event.eventId, topic };
   }
   function encodeEvent(event: RealtimeBrokerEvent): string {
     const encoded = encodeRealtimeServerMessage({
       type: 'event',
+      eventId: event.eventId,
       topic: event.topic,
       payload: event.payload,
       publishedAt: event.publishedAt,
@@ -520,11 +592,25 @@ export function createRealtimeService(
       throw failure('MESSAGE_TOO_LARGE', 'Realtime message is too large.');
     return encoded;
   }
-  async function receive(event: RealtimeBrokerEvent): Promise<void> {
-    if (closed || event.namespace !== namespace) return;
-    const definition = requireTopic(event.topic);
+  function receive(event: RealtimeBrokerEvent): Promise<void> {
+    if (closed || event.namespace !== namespace) return Promise.resolve();
+    if (recentEvents.has(event.eventId)) {
+      metrics.duplicates += 1;
+      return Promise.resolve();
+    }
+    recentEvents.add(event.eventId);
+    if (recentEvents.size > limits.recentEventIds)
+      recentEvents.delete(recentEvents.values().next().value!);
+    metrics.received += 1;
+    const definition = [...definitions.values()].find((entry) =>
+      matchTopic(entry, event.topic),
+    );
+    if (
+      !definition ||
+      (definition.options.audience === 'public' && event.userId)
+    )
+      return Promise.resolve();
     const encoded = encodeEvent(event);
-    const deliveries: Promise<void>[] = [];
     for (const id of [...(byTopic.get(event.topic) ?? [])]) {
       const entry = subscriptions.get(id);
       const state = entry
@@ -538,13 +624,23 @@ export function createRealtimeService(
           entry.subscription.userId !== event.userId)
       )
         continue;
+      if (definition.options.delivery === 'latest' && entry.pendingEvent) {
+        entry.pendingEvent.encoded = encoded;
+        metrics.coalesced += 1;
+        continue;
+      }
       if (state.queued >= limits.pendingMessages) {
         terminate(state.connection, 1013, 'realtime delivery backlog');
         continue;
       }
+      const queuedEvent = { encoded };
+      if (definition.options.delivery === 'latest')
+        entry.pendingEvent = queuedEvent;
       state.queued += 1;
-      const delivery = state.delivery
+      const delivery = entry.delivery
         .then(async () => {
+          if (entry.pendingEvent === queuedEvent)
+            entry.pendingEvent = undefined;
           if (!subscriptions.has(id) || closed) return;
           try {
             await authorize(
@@ -561,7 +657,8 @@ export function createRealtimeService(
               definitions.get(definition.pattern) !== definition
             )
               return;
-            sendEncoded(state.connection, encoded);
+            if (sendEncoded(state.connection, queuedEvent.encoded))
+              metrics.delivered += 1;
           } catch (error) {
             if (!subscriptions.has(id)) return;
             removeSubscription(id);
@@ -571,11 +668,12 @@ export function createRealtimeService(
         .catch((error: unknown) => report(error, 'Realtime delivery failed.'))
         .finally(() => {
           state.queued -= 1;
+          deliveries.delete(delivery);
         });
-      state.delivery = delivery;
-      deliveries.push(delivery);
+      entry.delivery = delivery;
+      deliveries.add(delivery);
     }
-    await Promise.all(deliveries);
+    return Promise.resolve();
   }
   async function authorize(
     connection: RealtimeConnection,
@@ -593,11 +691,7 @@ export function createRealtimeService(
     if (
       connection.principal &&
       connection.validatePrincipal &&
-      !(await authorizeWithin(
-        connection.validatePrincipal,
-        signal,
-        limits.authorizationTimeout,
-      ))
+      !(await checkAuthorization(connection.validatePrincipal, signal))
     ) {
       terminate(connection, 1008, 'account session expired');
       throw failure(
@@ -607,7 +701,7 @@ export function createRealtimeService(
     }
     if (
       policy.authorize &&
-      !(await authorizeWithin(
+      !(await checkAuthorization(
         (authorizationSignal) =>
           policy.authorize!({
             principal: connection.principal,
@@ -616,7 +710,6 @@ export function createRealtimeService(
             signal: authorizationSignal,
           }),
         signal,
-        limits.authorizationTimeout,
       ))
     ) {
       throw failure('FORBIDDEN', 'Realtime subscription is not allowed.');
@@ -630,13 +723,14 @@ export function createRealtimeService(
       await Promise.all(
         [...connections.values()].map(async (state) => {
           const { connection } = state;
+          if (state.nextSessionCheck > Date.now()) return;
+          state.nextSessionCheck = nextSessionCheck();
           if (!connection.principal || !connection.validatePrincipal) return;
           try {
             if (
-              !(await authorizeWithin(
+              !(await checkAuthorization(
                 connection.validatePrincipal,
                 state.controller.signal,
-                limits.authorizationTimeout,
               ))
             )
               terminate(connection, 1008, 'account session expired');
@@ -648,6 +742,64 @@ export function createRealtimeService(
     } finally {
       checkingSessions = false;
     }
+  }
+  function nextSessionCheck(): number {
+    return (
+      Date.now() + limits.sessionCheckInterval * (0.5 + Math.random() * 0.5)
+    );
+  }
+  async function checkAuthorization(
+    callback: (signal: AbortSignal) => boolean | Promise<boolean>,
+    signal: AbortSignal,
+  ): Promise<boolean> {
+    const started = Date.now();
+    try {
+      const result = await authorizeWithin(
+        (inner) => gate.run(() => callback(inner), inner),
+        signal,
+        limits.authorizationTimeout,
+      );
+      if (!result) metrics.authorizationFailures += 1;
+      return result;
+    } catch (error) {
+      metrics.authorizationFailures += 1;
+      if (
+        error instanceof RealtimeProtocolError &&
+        error.code === 'AUTHORIZATION_TIMEOUT'
+      )
+        metrics.authorizationTimeouts += 1;
+      throw error;
+    } finally {
+      metrics.authorizationDurationMs += Date.now() - started;
+    }
+  }
+  function disconnectMatching(control: RealtimeBrokerControl): number {
+    let count = 0;
+    for (const { connection } of connections.values()) {
+      const identity = connection.principal;
+      if (
+        (control.kind === 'disconnect-user'
+          ? identity?.userId
+          : identity?.sessionId) !== control.subjectId
+      )
+        continue;
+      terminate(connection, 1001, 'account session revoked');
+      count += 1;
+    }
+    return count;
+  }
+  async function revoke(
+    kind: RealtimeBrokerControl['kind'],
+    subjectId: string,
+  ): Promise<number> {
+    assertOpen();
+    const control = { kind, subjectId, namespace, origin };
+    const count = disconnectMatching(control);
+    if (broker.publishControl) {
+      await service.setup();
+      await broker.publishControl(control);
+    }
+    return count;
   }
   function findSubscription(
     connection: RealtimeConnection,
@@ -685,11 +837,14 @@ export function createRealtimeService(
   ): void {
     sendEncoded(connection, encodeRealtimeServerMessage(message));
   }
-  function sendEncoded(connection: RealtimeConnection, message: string): void {
-    if (!connections.has(connection.id)) return;
+  function sendEncoded(
+    connection: RealtimeConnection,
+    message: string,
+  ): boolean {
+    if (!connections.has(connection.id)) return false;
     if (connection.ws.readyState !== 1) {
       service.disconnect(connection);
-      return;
+      return false;
     }
     if (
       (connection.ws.bufferedAmount ?? 0) +
@@ -697,13 +852,15 @@ export function createRealtimeService(
       limits.bufferedBytes
     ) {
       terminate(connection, 1013, 'realtime send buffer limit');
-      return;
+      return false;
     }
     try {
       connection.ws.send(message);
+      return true;
     } catch (error) {
       report(error, 'Realtime socket send failed.');
       terminate(connection, 1011, 'realtime send failed');
+      return false;
     }
   }
   function terminate(

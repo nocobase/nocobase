@@ -359,6 +359,11 @@ export function createRealtimeClient(
         });
         return;
       }
+      if (message.type === 'resync') {
+        disposeSocket();
+        if (!manuallyClosed && topics.size) scheduleReconnect();
+        return;
+      }
       if (message.type === 'pong') {
         if (message.id !== pingId) return;
         clearTimeout(pongTimer);
@@ -558,6 +563,7 @@ function isTransient(error: RealtimeErrorEvent): boolean {
   return [
     'SUBSCRIPTION_TIMEOUT',
     'AUTHORIZATION_TIMEOUT',
+    'AUTHORIZATION_BUSY',
     'REALTIME_ERROR',
     'SERVICE_CLOSED',
   ].includes(error.code);

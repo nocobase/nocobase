@@ -386,3 +386,22 @@ it('cancels transient retries when the last watcher leaves', () => {
   ).toHaveLength(1);
   expect(sockets).toHaveLength(1);
 });
+
+it('reconnects and acknowledges again when the broker reports a missed-event window', async () => {
+  const client = setup({ reconnectMaxInterval: 10 });
+  const onReady = vi.fn();
+  client.watch('test:one', { onReady });
+  const first = sockets[0]!;
+  first.open();
+  first.ack();
+  first.message({ type: 'resync' });
+  expect(first.readyState).toBe(3);
+  expect(client.ready).toBe(false);
+  await vi.advanceTimersByTimeAsync(20);
+  const second = sockets.at(-1)!;
+  expect(second).not.toBe(first);
+  second.open();
+  expect(onReady).toHaveBeenCalledOnce();
+  second.ack();
+  expect(onReady).toHaveBeenCalledTimes(2);
+});

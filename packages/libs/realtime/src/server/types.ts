@@ -57,6 +57,8 @@ export interface RealtimeTopicOptions<
 > {
   readonly audience: RealtimeTopicAudience;
   readonly authenticated?: boolean;
+  /** Opt in only for invalidations or replaceable snapshots, never ordered logs or deltas. */
+  readonly delivery?: 'all' | 'latest';
   /** Checked on subscription and before each protected delivery. Errors deny access. */
   readonly authorize?: (
     context: RealtimeAuthorizationContext<Params>,
@@ -107,9 +109,29 @@ export interface RealtimeBrokerEvent {
   readonly publishedAt: string;
 }
 
+export type RealtimeBrokerState =
+  'connecting' | 'ready' | 'recovering' | 'closed';
+
+export interface RealtimeBrokerControl {
+  readonly origin: string;
+  readonly namespace: string;
+  readonly kind: 'disconnect-user' | 'disconnect-session';
+  readonly subjectId: string;
+}
+
+export interface RealtimeBrokerCallbacks {
+  onStateChange(state: RealtimeBrokerState): void;
+  onRecovery(): void;
+  onControl(control: RealtimeBrokerControl): void;
+}
+
 /** Each service owns one adapter; implementations must not retry ambiguous publishes. */
 export interface RealtimeBroker {
-  setup(receive: (event: RealtimeBrokerEvent) => Promise<void>): Promise<void>;
+  setup(
+    receive: (event: RealtimeBrokerEvent) => Promise<void>,
+    callbacks?: RealtimeBrokerCallbacks,
+  ): Promise<void>;
+  publishControl?(control: RealtimeBrokerControl): Promise<void>;
   publish(event: RealtimeBrokerEvent): Promise<void>;
   shutdown(): Promise<void>;
 }
@@ -118,6 +140,19 @@ export interface RealtimeDiagnostics {
   readonly connections: number;
   readonly subscriptions: number;
   readonly pendingSubscriptions: number;
+  readonly queuedDeliveries: number;
+  readonly activeAuthorizations: number;
+  readonly waitingAuthorizations: number;
+  readonly authorizationTimeouts: number;
+  readonly authorizationFailures: number;
+  readonly authorizationDurationMs: number;
+  readonly published: number;
+  readonly publishFailures: number;
+  readonly received: number;
+  readonly duplicates: number;
+  readonly coalesced: number;
+  readonly delivered: number;
+  readonly brokerState: RealtimeBrokerState;
 }
 
 export interface RealtimeService {
@@ -127,7 +162,11 @@ export interface RealtimeService {
     context?: RealtimeConnectionContext,
   ): RealtimeConnection;
   disconnect(connection: RealtimeConnection): void;
+  /** Returns the local count; distributed adapters also broadcast the revocation. */
   disconnectUser(userId: string): Promise<number>;
+  disconnectSession(sessionId: string): Promise<number>;
+  /** Wait for the current local delivery queues, never a remote/browser acknowledgement. */
+  flush(): Promise<void>;
   subscribe(
     connection: RealtimeConnection,
     topic: string,

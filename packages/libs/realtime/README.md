@@ -6,7 +6,7 @@ Realtime protocol, browser client and transport-independent server service. Impo
 
 Events are transient invalidations. Reconnect does not replay missed events: read authoritative state through an authorized API after each successful subscription. Publishing resolves to `{ eventId, topic }` when the broker operation finishes; this is neither a durable receipt nor proof that a browser processed the event. Publication failures reject the promise. Business operations that already committed must handle these failures separately. Counts and diagnostics describe this service's local connections only.
 
-The included `inMemory` broker isolates each service instance. Redis transport, cross-process delivery and cross-process user disconnection are future work. A namespace alone does not connect multiple instances. Do not suppress publication based on a local subscriber count when implementing a distributed adapter.
+The default `inMemory` broker isolates each service instance. Use the optional Redis Pub/Sub broker for multiple processes with the same namespace. A namespace alone does not connect memory brokers. Never suppress publication based on a local subscriber count: subscribers may be connected to another process. See [distributed delivery](docs/distributed.md).
 
 ## Server lifecycle and declared topics
 
@@ -82,7 +82,7 @@ await realtime.disconnectUser(session.user.id);
 
 A transport exposes `readyState`, `send`, `close` and optionally `bufferedAmount`. Adapters own origin checks, transport message limits and native ping/pong. The NocoBase adapter uses `@nocobase/app-websocket`, rejects other browser origins, preserves the original session identity, rechecks stored session state without cookie caching or extending expiry, and closes failed connections without recreating them on later messages. Idle authenticated connections are periodically checked too. A slow or failing socket cannot prevent other sockets from receiving an event.
 
-Defaults: 10,000 local connections, 64 subscriptions including pending subscriptions per connection, 64 KiB messages, 1 MiB buffered output, 64 queued deliveries per connection, a 5 second authorization deadline and a 30 second idle session check. Positive integer options on `createRealtimeService` can tighten these limits. `diagnostics()` returns local connection, subscription and pending subscription counts. Close is idempotent and cancels pending operations.
+Defaults: 10,000 local connections, 64 subscriptions including pending subscriptions per connection, 64 KiB messages, 1 MiB buffered output, 64 queued deliveries per connection, a 5 second authorization deadline and staggered idle session checks within about 30 seconds. Global authorization work is limited to 256 active callbacks and 2,048 queued callbacks; timed-out callbacks retain their slot until their underlying operation settles. Positive integer options on `createRealtimeService` can tighten these limits. `diagnostics()` exposes local queue and authorization occupancy, lifetime publication/delivery/failure/coalescing counters, authorization duration totals, duplicate counts and Broker state. It contains no user IDs or payloads. `flush()` waits for the current local delivery queues; use it in local tests or controlled shutdown coordination, never as a browser acknowledgement. Close is idempotent and cancels pending operations. Deliveries are ordered per subscription; a slow policy cannot block unrelated topics on the same connection. Topic declarations may opt into `delivery: 'latest'` for replaceable snapshots or invalidations. The default delivers every admitted event; keep it for logs, deltas and business events whose intermediate values matter.
 
 ## Browser subscription, errors and recovery
 
@@ -159,3 +159,7 @@ The hooks keep callbacks current without resubscribing on each render and releas
 - Recover cached data from a watch's `onReady`, and keep transport `onOpen` only for transport or identity lifecycle work.
 - Reconnect after sign-in, sign-out or session replacement. Do not reuse the former account's socket or caches.
 - Update transport/test doubles to return publication promises and emit correlated subscription acknowledgements.
+
+## Integration Skill and polling inventory
+
+The package includes `skills/nocobase-realtime/SKILL.md`. Applications with a direct dependency receive it through `pnpm nocobase skills sync`. See [polling and reconciliation](docs/polling.md) for the consumer inventory and retained polling boundaries.

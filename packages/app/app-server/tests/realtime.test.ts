@@ -24,11 +24,13 @@ describe('realtime', () => {
       JSON.stringify({ type: 'subscribe', topic: topic.name }),
     );
     await topic.publish('tick');
+    await realtime.flush();
     await realtime.handleClientMessage(
       connection,
       JSON.stringify({ type: 'unsubscribe', topic: topic.name }),
     );
     await topic.publish('after unsubscribe');
+    await realtime.flush();
 
     expect(websocket.messages).toEqual([
       expect.objectContaining({
@@ -69,6 +71,7 @@ describe('realtime', () => {
       );
     }
     await topic.publishFor('user-1', { kind: 'inbox.changed' });
+    await realtime.flush();
 
     expect(first.messages.at(-1)).toMatchObject({ type: 'event' });
     expect(second.messages).toHaveLength(1);
@@ -114,6 +117,7 @@ describe('realtime', () => {
       /requires authentication/u,
     );
     await topic.publish({ ids: ['a'] });
+    await realtime.flush();
     for (const socket of [first, second])
       expect(socket.messages.at(-1)).toMatchObject({
         type: 'event',
@@ -129,6 +133,7 @@ describe('realtime', () => {
       JSON.stringify({ type: 'subscribe', topic: open.name }),
     );
     await open.publish('tick');
+    await realtime.flush();
     expect(anonymous.messages.at(-1)).toMatchObject({
       type: 'event',
       payload: 'tick',
