@@ -1,11 +1,11 @@
 import { agentsKeys } from '../api/keys.js';
-import { useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 import { agentsQueryClient } from '../query.js';
 
 interface Subscription {
   readonly times: readonly number[];
   now: number;
-  update: () => void;
+  readonly update: (now: number) => void;
 }
 const subscriptions = new Set<Subscription>();
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -48,8 +48,38 @@ function schedule(): void {
       },
     });
     for (const subscriber of due)
-      if (subscriptions.has(subscriber)) subscriber.update();
+      if (subscriptions.has(subscriber)) subscriber.update(now);
   }
+}
+
+/** A hook-local external snapshot, refreshed only by subscription changes or expiry. */
+function createClock(signature: string): {
+  readonly snapshot: () => number;
+  readonly observe: (signature: string) => number;
+  readonly advance: (now: number) => void;
+} {
+  let now = Date.now();
+  let observed = signature;
+  return {
+    snapshot: () => now,
+    observe: (signature) => {
+      if (observed !== signature) {
+        observed = signature;
+        const at = Date.now();
+        // A new future deadline needs no extra render; only missed boundaries advance the snapshot.
+        if (
+          signature
+            .split(',')
+            .some((time) => Number(time) > now && Number(time) <= at)
+        )
+          now = at;
+      }
+      return now;
+    },
+    advance: (at) => {
+      now = at;
+    },
+  };
 }
 
 export function useQuotaClock(
@@ -64,18 +94,17 @@ export function useQuotaClock(
   ]
     .sort((a, b) => a - b)
     .join(',');
-  // New reset data needs a fresh snapshot without advancing unrelated rows.
-  const subscription = useMemo<Subscription>(
-    () => ({
-      times: signature ? signature.split(',').map(Number) : [],
-      now: Date.now(),
-      update: () => {},
-    }),
-    [signature],
-  );
+  const [clock] = useState(() => createClock(signature));
   const subscribe = useCallback(
     (changed: () => void) => {
-      subscription.update = changed;
+      const subscription = {
+        times: signature ? signature.split(',').map(Number) : [],
+        now: clock.observe(signature),
+        update: (now: number) => {
+          clock.advance(now);
+          changed();
+        },
+      };
       subscriptions.add(subscription);
       schedule();
       return () => {
@@ -83,9 +112,9 @@ export function useQuotaClock(
         schedule();
       };
     },
-    [subscription],
+    [clock, signature],
   );
-  const snapshot = useCallback(() => subscription.now, [subscription]);
+  const snapshot = clock.snapshot;
   return useSyncExternalStore(subscribe, snapshot, snapshot);
 }
 
