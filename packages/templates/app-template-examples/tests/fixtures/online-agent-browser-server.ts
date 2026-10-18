@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { startNodeAppServer } from '@nocobase/app-server/node';
-import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
+const { agentsToken } = (await import(
+  import.meta.resolve(
+    '@nocobase/app-plugin-agents/server/tokens',
+    new URL('../../dist/package.json', import.meta.url).href,
+  )
+)) as typeof import('@nocobase/app-plugin-agents/server/tokens');
 const { createStandaloneServer } = (await import(
   new URL('../../dist/server/standalone.js', import.meta.url).href
 )) as typeof import('../../server/standalone.js');
