@@ -12,6 +12,8 @@ import { ChatClientProvider } from '../../client/chat/controller.js';
 import { useConversationActions } from '../../client/chat/use-chat.js';
 import { agentsQueryClient } from '../../client/query.js';
 import { chatKeys } from '../../client/chat/keys.js';
+import type * as AppClient from '@nocobase/app-client';
+import type * as I18nClient from '@nocobase/i18n/client';
 const host = vi.hoisted(() => ({
   request: vi.fn(),
   show: vi.fn(),
@@ -19,12 +21,12 @@ const host = vi.hoisted(() => ({
 }));
 const api = { request: host.request };
 vi.mock('@nocobase/app-client', async (original) => ({
-  ...(await original<typeof import('@nocobase/app-client')>()),
+  ...(await original<typeof AppClient>()),
   useApiClient: () => api,
   useToaster: () => host,
 }));
 vi.mock('@nocobase/i18n/client', async (original) => ({
-  ...(await original<typeof import('@nocobase/i18n/client')>()),
+  ...(await original<typeof I18nClient>()),
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 function Row() {

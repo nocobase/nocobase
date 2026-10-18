@@ -1,4 +1,7 @@
-import { publicUIPageContext } from '../../shared/ui-message.js';
+import {
+  publicUIPageContext,
+  type AppUIJson,
+} from '../../shared/ui-message.js';
 import type { ConversationMessage } from '../../shared/conversations.js';
 import {
   validateAppUIMessages,
@@ -66,9 +69,7 @@ export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
               data: {
                 kind: notice.code,
                 id: row.id,
-                payload: JSON.parse(
-                  JSON.stringify(notice),
-                ) as import('../../shared/ui-message.js').AppUIJson,
+                payload: JSON.parse(JSON.stringify(notice)) as AppUIJson,
               },
             },
       );

@@ -40,6 +40,10 @@ import type {
 } from '../server/tokens.js';
 import type { RunRepo, RunWait } from '../shared/runs.js';
 import type { Variable } from '../shared/variables.js';
+import type {
+  ConversationSummary,
+  CreateConversationRequest,
+} from '../shared/conversations.js';
 
 it('exports typed chat model catalog and optional native selection through the public client entry', () => {
   expectTypeOf<ReturnType<ChatApi['models']>>().toEqualTypeOf<
@@ -250,11 +254,11 @@ it('exports typed result observation through the public server entry', () => {
 
 it('exposes conversation visibility without a background visibility override', () => {
   expectTypeOf<
-    import('../shared/conversations.js').ConversationSummary['showInChatList']
+    ConversationSummary['showInChatList']
   >().toEqualTypeOf<boolean>();
-  expectTypeOf<
-    import('../shared/conversations.js').CreateConversationRequest['showInChatList']
-  >().toEqualTypeOf<boolean | undefined>();
+  expectTypeOf<CreateConversationRequest['showInChatList']>().toEqualTypeOf<
+    boolean | undefined
+  >();
   expectTypeOf<
     Extract<
       keyof NonNullable<Parameters<OnlineAgentRuntime['background']>[1]>,

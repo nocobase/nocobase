@@ -15,6 +15,7 @@ import {
   appUIMessageMetadataSchema,
   type AppUIMessage,
   type AppUIMessageMetadata,
+  type AppUIData,
 } from '../../shared/online-agent.js';
 import {
   MESSAGE_CONTENT_MAX,
@@ -34,10 +35,7 @@ import type {
 import type { OnlineAgentSessionManager, OnlineAgentCall } from './sessions.js';
 import type { NativeApproval, NativeSnapshot } from './native-store.js';
 
-export type NativeUIChunk = UIMessageChunk<
-  AppUIMessageMetadata,
-  import('../../shared/online-agent.js').AppUIData
->;
+export type NativeUIChunk = UIMessageChunk<AppUIMessageMetadata, AppUIData>;
 export type NativeExecution = {
   abort: AbortController;
   task?: Promise<void>;

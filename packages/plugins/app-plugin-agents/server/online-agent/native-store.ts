@@ -15,6 +15,7 @@ import {
   appUIMessageText,
   validateAppUIMessages,
   type AppUIMessage,
+  type AppUIToolApprovalInput,
 } from '../../shared/online-agent.js';
 import type { ResolvedPageContext } from '../../shared/conversations.js';
 import {
@@ -42,8 +43,7 @@ import type { OnlineAgentConfig } from './config.js';
 import type { OnlineAgentCall } from './sessions.js';
 import { jsonSafe } from './codec.js';
 
-export type NativeApproval =
-  import('../../shared/online-agent.js').AppUIToolApprovalInput;
+export type NativeApproval = AppUIToolApprovalInput;
 export type NativeSnapshot = {
   message: AppUIMessage;
   evidence: UIMessage;

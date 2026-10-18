@@ -121,6 +121,7 @@ import {
   VariableValueInput,
   WorkspaceParams,
 } from './schemas.js';
+import type { OnlineAgentContext } from '../online-agent/config.js';
 
 /** A multipart body of one file, as `file`. */
 const skillUploadBody: OpenAPIV3_1.RequestBodyObject = {
@@ -168,7 +169,7 @@ const revisionConflict = (what: string): ApiResponseObject =>
 
 /** Who is asking, what the settings items allow them, and how far their business actions reach. */
 export interface AdminCaller {
-  readonly onlineContext?: import('../online-agent/config.js').OnlineAgentContext;
+  readonly onlineContext?: OnlineAgentContext;
   readonly userId: string;
   readonly keyScope?: KeyScope;
   can(item: SettingsItem, action: SettingsAction): Promise<boolean>;

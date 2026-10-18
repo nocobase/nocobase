@@ -40,6 +40,11 @@ import type {
   OnlineAgentSession,
   OnlineAgentSessionManager,
 } from './sessions.js';
+import type {
+  ResolvedPageContext,
+  ChatAgent,
+} from '../../shared/conversations.js';
+import type { AppUIMessage } from '../../shared/online-agent.js';
 
 type OnlineAgentAcceptance = {
   promise: Promise<number>;
@@ -104,7 +109,7 @@ export interface OnlineAgent {
       attachmentIds?: string[][];
       clientId?: string;
       messageId?: string;
-      workContext?: import('../../shared/conversations.js').ResolvedPageContext;
+      workContext?: ResolvedPageContext;
       overrides?: OnlineAgentOptions;
       selectedModel?: ModelRef;
     },
@@ -130,9 +135,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     private deps: {
       sessions: OnlineAgentSessionManager;
       runner?: OnlineAgentRunnerBackend;
-      chatAgents?(
-        userId: string,
-      ): Promise<import('../../shared/conversations.js').ChatAgent[]>;
+      chatAgents?(userId: string): Promise<ChatAgent[]>;
       ids: IdSource;
       resolver?: ServiceResolver;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
@@ -190,9 +193,9 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     id: string,
     input: {
       id: string;
-      parts: import('../../shared/online-agent.js').AppUIMessage['parts'];
+      parts: AppUIMessage['parts'];
     },
-  ): Promise<import('../../shared/online-agent.js').AppUIMessage> {
+  ): Promise<AppUIMessage> {
     this.trusted(context);
     if (!input.id || input.id.length > 64)
       throw invalid('A valid notification ID is required.');
@@ -215,11 +218,9 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       (persistedRunning && (await this.uiStreams.producerAvailable(id)))
     );
   }
-  async chatAgents(
-    userId: string,
-  ): Promise<import('../../shared/conversations.js').ChatAgent[]> {
+  async chatAgents(userId: string): Promise<ChatAgent[]> {
     if (this.deps.chatAgents) return this.deps.chatAgents(userId);
-    const agents: import('../../shared/conversations.js').ChatAgent[] = [];
+    const agents: ChatAgent[] = [];
     const model = await this.deps.defaultModel().catch(() => null);
     return [
       ...agents,
@@ -399,7 +400,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
           attachmentIds?: string[][];
           clientId?: string;
           messageId?: string;
-          workContext?: import('../../shared/conversations.js').ResolvedPageContext;
+          workContext?: ResolvedPageContext;
           overrides?: OnlineAgentOptions;
           selectedModel?: ModelRef;
         },
@@ -872,7 +873,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       attachmentIds?: string[][];
       clientId?: string;
       messageId?: string;
-      workContext?: import('../../shared/conversations.js').ResolvedPageContext;
+      workContext?: ResolvedPageContext;
       overrides?: OnlineAgentOptions;
       selectedModel?: ModelRef;
     },
@@ -929,7 +930,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
           attachmentIds?: string[][];
           clientId?: string;
           messageId?: string;
-          workContext?: import('../../shared/conversations.js').ResolvedPageContext;
+          workContext?: ResolvedPageContext;
           overrides?: OnlineAgentOptions;
           selectedModel?: ModelRef;
         }

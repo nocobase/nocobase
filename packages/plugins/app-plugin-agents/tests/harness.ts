@@ -91,6 +91,7 @@ import {
 } from '../server/routes/runners/admin.js';
 import { createDistRoutes } from '../server/routes/runners/dist.js';
 import { createRunnerRoutes } from '../server/routes/runners/runner.js';
+import type { OnlineAgentRecoveryConfig } from '../server/online-agent/ui-streams.js';
 
 const MIGRATIONS = path.resolve(import.meta.dirname, '../database/migrations');
 const PACKAGE = '@nocobase/app-plugin-agents';
@@ -297,7 +298,7 @@ export function testSecrets(
 export async function createHarness(
   options: {
     /** `null` for an application without secrets keys. */
-    readonly uiRecovery?: import('../server/online-agent/ui-streams.js').OnlineAgentRecoveryConfig;
+    readonly uiRecovery?: OnlineAgentRecoveryConfig;
     readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;

@@ -31,6 +31,7 @@ import {
   restore,
 } from '../server/online-agent/codec.js';
 import { appUIMessageText, type AppUIMessage } from '../shared/online-agent.js';
+import type { NativeUIChunk } from '../server/online-agent/native.js';
 
 const ref = { modelService: 'fixture', model: 'chat' };
 const context = (id = 'alice'): OnlineAgentContext => ({
@@ -293,9 +294,7 @@ describe('OnlineAgent service slice', () => {
     const firstResponse = await agent.receive();
     let snapshot;
     for await (const current of readUIMessageStream({
-      stream: firstResponse as ReadableStream<
-        import('../server/online-agent/native.js').NativeUIChunk
-      >,
+      stream: firstResponse as ReadableStream<NativeUIChunk>,
     }))
       snapshot = current;
     expect(snapshot.id).toBe(stored[1].id);
@@ -1002,7 +1001,7 @@ it('caches a shared factory while binding distinct users to streaming tool execu
       {
         context: actor,
       }: {
-        context: import('../server/online-agent/config.js').OnlineAgentToolContext;
+        context: OnlineAgentToolContext;
       },
     ) {
       actors.push(actor.user.id);

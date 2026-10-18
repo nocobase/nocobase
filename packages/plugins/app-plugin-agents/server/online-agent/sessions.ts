@@ -26,9 +26,13 @@ import {
   settingsRepo,
   type ConversationRecord,
 } from '../core/conversations/conversation.store.js';
-import type { ChatAttachmentLinks } from '../core/conversations/attachments.js';
+import type {
+  ChatAttachmentLinks,
+  ChatAttachmentService,
+} from '../core/conversations/attachments.js';
 import type { ModelRef } from '../../shared/models.js';
 import { NativeSessionStore } from './native-store.js';
+import type { ResolvedPageContext } from '../../shared/conversations.js';
 
 export type OnlineAgentCall = {
   actorId: string;
@@ -105,7 +109,7 @@ export interface OnlineAgentSessionManager {
   executionHistory(
     userId: string,
     id: string,
-    current?: import('../../shared/conversations.js').ResolvedPageContext,
+    current?: ResolvedPageContext,
   ): Promise<ModelMessage[]>;
   accept(
     userId: string,
@@ -117,7 +121,7 @@ export interface OnlineAgentSessionManager {
       message: ModelMessage;
       attachments?: string[];
       clientId?: string;
-      workContext?: import('../../shared/conversations.js').ResolvedPageContext;
+      workContext?: ResolvedPageContext;
     }[],
   ): Promise<number>;
   save(
@@ -140,10 +144,7 @@ export function createSessionManager(deps: {
   basePath?: () => string;
   ids: IdSource;
   attachments: ChatAttachmentLinks;
-  files?: Pick<
-    import('../core/conversations/attachments.js').ChatAttachmentService,
-    'content'
-  >;
+  files?: Pick<ChatAttachmentService, 'content'>;
   now(): string;
   measure?: (phase: string, durationMs: number) => void;
 }): OnlineAgentSessionManager {
@@ -217,7 +218,7 @@ export function createSessionManager(deps: {
       partial?: string;
       attachments?: string[];
       clientId?: string;
-      workContext?: import('../../shared/conversations.js').ResolvedPageContext;
+      workContext?: ResolvedPageContext;
     }[],
     outcome: OnlineAgentOutcome,
   ) => {
@@ -264,7 +265,7 @@ export function createSessionManager(deps: {
   async function history(
     userId: string,
     id: string,
-    current?: import('../../shared/conversations.js').ResolvedPageContext,
+    current?: ResolvedPageContext,
     replay = false,
   ): Promise<ModelMessage[]> {
     const row = await owned(deps.tx.read(), userId, id);
@@ -502,7 +503,7 @@ export function createSessionManager(deps: {
         message: ModelMessage;
         attachments?: string[];
         clientId?: string;
-        workContext?: import('../../shared/conversations.js').ResolvedPageContext;
+        workContext?: ResolvedPageContext;
       }[],
     ) {
       return write(

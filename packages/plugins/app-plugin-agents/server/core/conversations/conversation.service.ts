@@ -123,6 +123,7 @@ import {
   type HistoryLine,
 } from './prompt.js';
 import { autoTitle, cleanTitle } from './titles.js';
+import type { AppUIMessage, AppUIJson } from '../../../shared/online-agent.js';
 
 /** Events read per page while turning a run's events into messages. */
 const SYNC_PAGE = 500;
@@ -132,7 +133,7 @@ export interface ConversationServiceDeps {
     unit: Tx,
     record: ConversationRecord,
     id: string,
-    parts: import('../../../shared/online-agent.js').AppUIMessage['parts'],
+    parts: AppUIMessage['parts'],
   ) => Promise<unknown>;
   readonly tx: TxRunner;
   readonly measure?: (phase: string, durationMs: number) => void;
@@ -587,9 +588,7 @@ export function createConversationService(
               data: {
                 kind: value.code,
                 id,
-                payload: JSON.parse(
-                  JSON.stringify(value),
-                ) as import('../../../shared/online-agent.js').AppUIJson,
+                payload: JSON.parse(JSON.stringify(value)) as AppUIJson,
               },
             },
       ]);

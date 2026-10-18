@@ -24,11 +24,14 @@ import type {
   SendMessageRequest,
   SendMessageResult,
   StartConversationRequest,
+  ResolvedPageContext,
 } from '../../../shared/conversations.js';
 import type { Run } from '../../../shared/runs.js';
 import type { Tx } from '../../kernel/tx.js';
 import type { NewInput, SubjectBinding } from '../runs/index.js';
 import type { PageContextKinds } from './page-context.js';
+import type { OnlineAgentConfig } from '../../online-agent/config.js';
+import type { OnlineAgentJson } from '../../online-agent/codec.js';
 
 /** A conversation as the application sees the one a run works on. */
 export interface ConversationRef {
@@ -108,7 +111,7 @@ export interface ConversationService {
   create(
     userId: string,
     request: CreateConversationRequest,
-    runnerConfig?: import('../../online-agent/config.js').OnlineAgentConfig,
+    runnerConfig?: OnlineAgentConfig,
   ): Promise<ConversationDetail>;
   get(userId: string, id: string): Promise<ConversationDetail>;
   /** Rename (the title becomes the owner's) and archive or unarchive. */
@@ -134,10 +137,10 @@ export interface ConversationService {
     id: string,
     request: SendMessageRequest,
     input: {
-      config: import('../../online-agent/config.js').OnlineAgentConfig;
-      expectedConfig: import('../../online-agent/config.js').OnlineAgentConfig;
-      workContext?: import('../../../shared/conversations.js').ResolvedPageContext;
-      business?: import('../../online-agent/codec.js').OnlineAgentJson;
+      config: OnlineAgentConfig;
+      expectedConfig: OnlineAgentConfig;
+      workContext?: ResolvedPageContext;
+      business?: OnlineAgentJson;
     },
   ): Promise<SendMessageResult>;
   /** A new conversation and its first message (`StartConversationRequest`): the application pages' buttons. */

@@ -6,12 +6,13 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 import { sdkController } from './sdk-controller.js';
 import { sdkResponse } from './sdk-chat.js';
+import type * as AppClient from '@nocobase/app-client';
 const host = vi.hoisted(() => ({
   api: undefined as unknown as ApiClient,
   realtime: { subscribe: () => () => {}, onOpen: () => () => {} },
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
-  ...(await original<typeof import('@nocobase/app-client')>()),
+  ...(await original<typeof AppClient>()),
   useApiClient: () => host.api,
   useService: () => host.realtime,
 }));

@@ -1,5 +1,8 @@
 import type { ModelMessage } from 'ai';
-import type { ResolvedPageContext } from '../../shared/conversations.js';
+import type {
+  ResolvedPageContext,
+  ChatAgent,
+} from '../../shared/conversations.js';
 import type { ModelRef } from '../../shared/models.js';
 import type { AppUIMessage } from '../../shared/online-agent.js';
 import type { NativeUIChunk } from './native.js';
@@ -9,7 +12,9 @@ import type {
   OnlineAgentOptions,
   OnlineAgentConfig,
   OnlineAgentContext,
+  OnlineAgentConfigurer,
 } from './config.js';
+import type { OnlineAgent } from './service.js';
 
 export type OnlineAgentSendOptions = {
   attachmentIds?: string[][];
@@ -81,9 +86,7 @@ export interface OnlineAgentRealtimeService {
     selectedModel?: ModelRef,
     boundary?: 'http',
   ): Promise<OnlineAgentConfig & { selectedModel: ModelRef | null }>;
-  chatAgents(
-    userId: string,
-  ): Promise<import('../../shared/conversations.js').ChatAgent[]>;
+  chatAgents(userId: string): Promise<ChatAgent[]>;
 }
 
 /** Application runtime; native background execution remains a separate capability. */
@@ -96,10 +99,10 @@ export interface OnlineAgentRuntime extends OnlineAgentRealtimeService {
   ): Promise<AppUIMessage>;
   /** Internal server boot hook, before accepting requests. */
   recoverAtStartup(): Promise<void>;
-  readonly configurer: import('./config.js').OnlineAgentConfigurer;
+  readonly configurer: OnlineAgentConfigurer;
   background(
     context: OnlineAgentContext,
     options?: Omit<OnlineAgentRealtimeOptions, 'showInChatList'>,
-  ): Promise<import('./service.js').OnlineAgent>;
+  ): Promise<OnlineAgent>;
   shutdown(): Promise<void>;
 }

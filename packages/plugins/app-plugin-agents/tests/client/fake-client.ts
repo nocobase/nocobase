@@ -5,6 +5,7 @@
  * asked to show.
  */
 import { vi } from 'vitest';
+import type * as AppClient from '@nocobase/app-client';
 
 export interface ApiRequest {
   readonly path: string;
@@ -143,7 +144,7 @@ function interpolate(key: string, options?: Record<string, unknown>): string {
 export const clientMocks = {
   /** The client runtime's fakes, with its real unsaved-changes guard (dialogs ask before discarding input). */
   appClient: async () => {
-    const actual = await vi.importActual<typeof import('@nocobase/app-client')>(
+    const actual = await vi.importActual<typeof AppClient>(
       '@nocobase/app-client',
     );
     return {
