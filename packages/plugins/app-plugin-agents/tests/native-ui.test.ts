@@ -724,7 +724,9 @@ describe('native SDK transport, persistence and approval', () => {
         ).toBeNull();
         expect(changed).not.toHaveBeenCalled();
       });
-    await deliver('Committed');
+    await measureUIOperationCost(h, 'native.transactionNotice', () =>
+      deliver('Committed'),
+    );
     expect(changed).toHaveBeenCalled();
     changed.mockClear();
     await deliver('With ignored input', true);
@@ -775,7 +777,9 @@ describe('native SDK transport, persistence and approval', () => {
     await chat.sendMessage({ text: 'Act after approval' });
     const before = await f.agent.history();
     const call = (await f.sessions.load('alice', f.agent.sessionId)).call;
-    await f.service.recoverAtStartup();
+    await measureUIOperationCost(h, 'native.sameProcessStartup', () =>
+      f.service.recoverAtStartup(),
+    );
     await f.reopen().recoverAtStartup();
     expect(await f.agent.history()).toEqual(before);
     expect((await f.sessions.load('alice', f.agent.sessionId)).call).toEqual(
