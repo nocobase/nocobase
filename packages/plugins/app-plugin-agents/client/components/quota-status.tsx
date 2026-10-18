@@ -6,6 +6,11 @@ import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import { compactDateTime } from '../lib/format.js';
 import { Badge } from './ui/badge.js';
 
+const FOCUSED_AMBER_QUOTA_TEXT =
+  '[[data-slot=select-item]:focus_&]:text-amber-700 dark:[[data-slot=select-item]:focus_&]:text-amber-300 [[data-slot=dropdown-menu-item]:focus_&]:text-amber-700 dark:[[data-slot=dropdown-menu-item]:focus_&]:text-amber-300';
+const FOCUSED_EXHAUSTED_QUOTA_TEXT =
+  '[[data-slot=select-item]:focus_&]:text-destructive [[data-slot=dropdown-menu-item]:focus_&]:text-destructive';
+
 export function QuotaLabel({
   resetsAt,
   near = false,
@@ -25,8 +30,8 @@ export function QuotaLabel({
       data-quota-hint
       className={
         near
-          ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
-          : 'bg-destructive/10 text-destructive'
+          ? `bg-amber-500/10 text-amber-700 dark:text-amber-300 ${FOCUSED_AMBER_QUOTA_TEXT}`
+          : `bg-destructive/10 text-destructive ${FOCUSED_EXHAUSTED_QUOTA_TEXT}`
       }
     >
       {t(
@@ -58,7 +63,7 @@ export function AgentQuotaHint({
     return (
       <span
         data-quota-hint
-        className='block truncate text-xs text-amber-700 dark:text-amber-300'
+        className={`block truncate text-xs text-amber-700 dark:text-amber-300 ${FOCUSED_AMBER_QUOTA_TEXT}`}
       >
         {t('runtimes.quota.partial', {
           available:
