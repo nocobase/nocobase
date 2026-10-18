@@ -91,7 +91,7 @@ const zhCN: AgentSessionsResource = {
     offlineHint: '在电脑上运行下面的命令，之后开机就会自动连接。',
     noAgentTitle: '这台电脑上还没有可用的 Agent',
     noAgentHint:
-      '在这台电脑上装好任意一个，并用它自己的命令登录；一分钟内会出现在这里，不用重新连接。',
+      '在这台电脑上装好任意一个，并用它自己的命令登录。桥会每分钟检测，完成适配器安装并成功启动后会出现在这里，不用重新连接。',
     supported: '支持：{{names}}',
     failedAgent: '{{name}} 无法启动：{{detail}}',
     modelHint: '建议选你能用的最强模型：分析和拆解任务会更准确。',
@@ -100,7 +100,7 @@ const zhCN: AgentSessionsResource = {
     agents: '这台电脑上的 Agent',
     availableAgents: '可用的 Agent',
     agentsHint:
-      '只列出这台电脑上已安装的 Agent；之后再装好并登录的，一分钟内会出现。',
+      '只列出这台电脑上已安装的 Agent。桥会每分钟检测，完成适配器安装并成功启动后即可使用。',
     alsoSupported: '还支持：{{names}}',
     thisComputer: '这台电脑',
     recentFolders: '最近用过',
@@ -281,6 +281,7 @@ const zhCN: AgentSessionsResource = {
     remove: '移除',
     confirmRemove: '确认移除',
     problems: { notInstalled: '未安装', failed: '无法启动' },
+    recheckHint: '保持连接时，桥会每分钟自动重新检测 Agent。',
     ready: '可用',
     name: '名称',
     system: '系统',
