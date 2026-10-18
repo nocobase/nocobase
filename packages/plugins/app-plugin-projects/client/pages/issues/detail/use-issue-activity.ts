@@ -60,8 +60,13 @@ export function useIssueTimeline(
   const olderActivities = useOlderActivities(
     detail.id,
     detail.activitiesNextCursor,
+    detail.activities[0]?.id ?? null,
   );
-  const olderThreads = useOlderThreads(detail.id, detail.threadsNextCursor);
+  const olderThreads = useOlderThreads(
+    detail.id,
+    detail.threadsNextCursor,
+    detail.threads[0]?.root.id ?? null,
+  );
   const threads = useMemo(
     () => mergeThreads(olderThreads.threads, detail.threads),
     [olderThreads.threads, detail.threads],

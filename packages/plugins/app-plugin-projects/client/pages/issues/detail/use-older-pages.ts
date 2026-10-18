@@ -10,8 +10,6 @@ import { pmKeys } from '../../../api/keys.js';
 interface HistoryPage<T> {
   readonly data: readonly T[];
   readonly nextCursor: string | null;
-  /** Newest page boundary covered by the first history page. */
-  readonly headCursor?: string | null;
 }
 
 interface OlderPages<T> {
@@ -26,6 +24,7 @@ export function useOlderPages<T>(
   issueId: string,
   kind: 'threads' | 'activities',
   firstCursor: string | null,
+  newestBoundaryId: string | null,
   read: (cursor?: string) => Promise<HistoryPage<T>>,
   idOf: (item: T) => string,
 ): OlderPages<T> {
@@ -43,7 +42,6 @@ export function useOlderPages<T>(
         client.getQueryData<InfiniteData<HistoryPage<T>>>(key)?.pages[0];
       const boundary = previous?.data[0];
       let page = await read();
-      const headCursor = page.nextCursor;
       let items = [...page.data];
       // The first load includes an older page. On refresh, keep reaching at least the old boundary.
       while (
@@ -64,14 +62,14 @@ export function useOlderPages<T>(
         return {
           data: loaded.slice(boundaryIndex),
           nextCursor: previous.nextCursor,
-          headCursor,
         };
-      return { data: loaded, nextCursor: page.nextCursor, headCursor };
+      return { data: loaded, nextCursor: page.nextCursor };
     },
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     enabled: requested && !!firstCursor,
   });
   // A detail refresh can finish after the history refresh; bridge that new boundary too.
+  // Compare the boundary record, not cursors: history may be ahead of the detail snapshot.
   const previousCursorRef = useRef(firstCursor);
   useEffect(() => {
     if (query.isFetching) return;
@@ -81,13 +79,25 @@ export function useOlderPages<T>(
       changed &&
       requested &&
       firstCursor &&
-      query.data?.pages[0]?.headCursor !== firstCursor
+      newestBoundaryId &&
+      !query.data?.pages[0]?.data.some(
+        (item) => idOf(item) === newestBoundaryId,
+      )
     )
       void client.invalidateQueries({
         queryKey: key,
         exact: true,
       });
-  }, [client, key, firstCursor, requested, query.isFetching, query.data]);
+  }, [
+    client,
+    key,
+    firstCursor,
+    newestBoundaryId,
+    idOf,
+    requested,
+    query.isFetching,
+    query.data,
+  ]);
   const { fetchNextPage } = query;
   const loadMore = useCallback(() => {
     if (!requested) setRequestedIssue(issueId);

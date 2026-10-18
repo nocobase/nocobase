@@ -11,13 +11,15 @@ afterEach(() => {
 });
 
 it.each([
-  ['threads', false],
-  ['threads', true],
-  ['activities', false],
-  ['activities', true],
+  ['threads', 'detail-first'],
+  ['threads', 'history-first'],
+  ['threads', 'history-ahead'],
+  ['activities', 'detail-first'],
+  ['activities', 'history-first'],
+  ['activities', 'history-ahead'],
 ] as const)(
-  'retains loaded %s across a multi-page burst (history finishes first: %s)',
-  async (kind, historyFirst) => {
+  'retains loaded %s across a multi-page burst (%s)',
+  async (kind, order) => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -42,10 +44,10 @@ it.each([
       );
     }
     const { result, rerender } = renderHook(
-      ({ issue, cursor }) =>
-        useOlderPages(issue, kind, cursor, read, (row) => row.id),
+      ({ issue, cursor, boundary }) =>
+        useOlderPages(issue, kind, cursor, boundary, read, (row) => row.id),
       {
-        initialProps: { issue: 'issue-one', cursor: '9' },
+        initialProps: { issue: 'issue-one', cursor: '9', boundary: '9' },
         wrapper: Wrapper,
       },
     );
@@ -63,7 +65,7 @@ it.each([
     await waitFor(() => expect(result.current.items[0]?.id).toBe('5'));
     const loadMore = result.current.loadMore;
     const items = result.current.items;
-    rerender({ issue: 'issue-one', cursor: '9' });
+    rerender({ issue: 'issue-one', cursor: '9', boundary: '9' });
     expect(result.current.items).toBe(items);
     read.mockClear();
     rows = [
@@ -73,17 +75,19 @@ it.each([
         text: 'new',
       })),
     ];
-    if (historyFirst) {
+    // History can even include a newer comment than the detail snapshot has seen.
+    if (order === 'history-ahead') rows.push({ id: '18', text: 'ahead' });
+    if (order !== 'detail-first') {
       await act(async () => {
         await client.invalidateQueries({
           queryKey: ['pm', 'issue', 'issue-one'],
         });
       });
     }
-    rerender({ issue: 'issue-one', cursor: '16' });
+    rerender({ issue: 'issue-one', cursor: '16', boundary: '16' });
     await waitFor(() =>
       expect(result.current.items.map((row) => row.id)).toEqual(
-        Array.from({ length: 13 }, (_, i) => String(i + 5)),
+        Array.from({ length: rows.length - 4 }, (_, i) => String(i + 5)),
       ),
     );
     expect(result.current.items.find((row) => row.id === '7')?.text).toBe(
@@ -99,10 +103,11 @@ it.each([
     expect(result.current.items.map((row) => row.id)).toEqual(
       rows.map((row) => row.id),
     );
-    rerender({ issue: 'issue-two', cursor: '16' });
+    rerender({ issue: 'issue-two', cursor: '16', boundary: '16' });
     expect(result.current.items).toEqual([]);
-    rows = [...rows, { id: '18', text: 'after navigation' }];
-    rerender({ issue: 'issue-one', cursor: '17' });
+    rows = [...rows, { id: String(rows.length + 1), text: 'after navigation' }];
+    const boundary = rows.at(-2)!.id;
+    rerender({ issue: 'issue-one', cursor: boundary, boundary });
     await waitFor(() =>
       expect(result.current.items.map((row) => row.id)).toEqual(
         rows.map((row) => row.id),

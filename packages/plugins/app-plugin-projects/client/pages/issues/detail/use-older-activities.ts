@@ -17,12 +17,14 @@ export interface OlderActivities {
 export function useOlderActivities(
   issueId: string,
   firstCursor: string | null,
+  newestBoundaryId: string | null,
 ): OlderActivities {
   const api = usePmApi();
   const history = useOlderPages(
     issueId,
     'activities',
     firstCursor,
+    newestBoundaryId,
     (cursor) => api.activities(issueId, cursor),
     (activity) => activity.id,
   );

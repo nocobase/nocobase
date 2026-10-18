@@ -16,12 +16,14 @@ export interface OlderThreads {
 export function useOlderThreads(
   issueId: string,
   firstCursor: string | null,
+  newestBoundaryId: string | null,
 ): OlderThreads {
   const api = usePmApi();
   const history = useOlderPages(
     issueId,
     'threads',
     firstCursor,
+    newestBoundaryId,
     (cursor) => api.threads(issueId, cursor),
     (thread) => thread.root.id,
   );
