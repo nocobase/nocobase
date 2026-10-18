@@ -1058,6 +1058,9 @@ export class RunWorker {
       this.deps.log,
       {
         remove,
+        repos: (this.prepared?.dirs ?? []).flatMap((dir) =>
+          dir.repo === undefined ? [] : [dir.repo],
+        ),
         ...(this.writerStopFailure === undefined
           ? {}
           : { unsafeReason: this.writerStopFailure }),
