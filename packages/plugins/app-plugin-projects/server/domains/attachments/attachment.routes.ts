@@ -285,7 +285,7 @@ export function createIssueAttachmentRoutes(
       operationId: 'projectsListIssueScreenshots',
       ...cliRoute(false),
       description:
-        'The latest 100 safe raster images on live Agent comments, including older filename versions. Ordered by comment time and id descending, then attachment time and id ascending. Requires visibility of the issue, like reading comments. Metadata comes from the comment, independently of comment pagination. A truncated batch has no task-wide total.',
+        'The latest 100 images from undeleted Agent comments, with comment author and time, newest comments first. Requires visibility of the issue. Independent of comment pagination; a truncated batch does not include the task-wide total.',
       responses: {
         200: listResponse(IssueScreenshotSchema, IssueScreenshotsMeta),
         ...apiErrorResponses,

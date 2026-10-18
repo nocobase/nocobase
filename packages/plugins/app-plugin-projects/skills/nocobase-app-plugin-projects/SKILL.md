@@ -92,7 +92,7 @@ grants from before roles moved to the App; the App converts them (for example, `
   `INVALID_ATTACHMENT` otherwise). Whoever sees the issue reads its files (`GET /api/projects/attachments/{attachmentId}/content`: safe
   images inline, everything else as a download); the uploader or a comment moderator removes an issue's file, and a
   comment's files go with the comment. Uploads attached to nothing are purged after 24 hours.
-- `GET /api/projects/issues/{issueId}/screenshots` reads at most the latest 100 safe raster images on live Agent comments, independently of comment pagination, under the same issue visibility check. The database filters before limiting, fetching one extra row only to determine `meta.truncated`. Images include comment author and time and follow comment time/id descending, then attachment time/id ascending. `meta.limit` and `meta.truncated` describe this batch; there is no task-wide total. Consumers retain old filename versions for preview and must scope version counts and overflow counts to the returned batch.
+- `GET /api/projects/issues/{issueId}/screenshots` returns the latest 100 images from undeleted Agent comments, with comment author and time, newest comments first. It shares comment visibility and works independently of comment pagination. `meta.truncated` indicates more images; all displayed counts and versions describe only the returned batch, including older filename versions.
 - Roles, members' roles and the default role for new members are the App's (for example, `/api/acme/roles`,
   `/api/acme/members`, `/api/acme/access/settings`).
 
