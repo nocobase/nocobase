@@ -233,8 +233,8 @@ export class AgentSessionsService {
 
   /**
    * How the application wants the agents in sessions to work, such as what they do themselves and what they hand on,
-   * in English: each session's agent is told it in its first message, again whenever it changes, and when its session
-   * opens. A resolver uses the current viewer, including the interface locale supplied with their message.
+   * in English: each queued message carries it independently so withdrawing an earlier message cannot remove it.
+   * A resolver uses the current viewer, including the interface locale supplied with their message.
    */
   registerInstructions(
     instructions: string | ((viewer: Viewer) => string),
@@ -654,7 +654,7 @@ export class AgentSessionsService {
     userId: string,
     request: ReportRequest,
   ): Promise<ReportResponse> {
-    const computer = await this.#computer(userId, request.computerId);
+    let computer = await this.#computer(userId, request.computerId);
     const changed = await this.#transaction(async (conn, now) => {
       const session = await lockSession(conn, request.sessionId, now);
       if (
@@ -664,6 +664,12 @@ export class AgentSessionsService {
       ) {
         throw new AgentSessionsError('sessionNotFound');
       }
+      // Registration can replace the bridge while this report waits for the session mutex.
+      const current = await computers(conn).findOne({
+        filter: { id: computer.id, userId },
+      });
+      if (!current) throw new AgentSessionsError('computerNotFound');
+      computer = current;
       if (computer.bridgeStartedAt !== request.bridgeStartedAt)
         throw new AgentSessionsError('bridgeReplaced');
       const repeated =

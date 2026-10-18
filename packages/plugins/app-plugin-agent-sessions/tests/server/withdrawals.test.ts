@@ -2,7 +2,7 @@ import {
   BRIDGE_PROTOCOL_VERSION,
   type PromptRequest,
 } from '@nocobase/acp-bridge/protocol';
-import { describe, expect } from 'vitest';
+import { describe, expect, vi } from 'vitest';
 import { AgentSessionsService } from '../../server/service.js';
 import {
   computers,
@@ -22,6 +22,109 @@ const generation = {
 };
 
 describe('queued message withdrawal', () => {
+  test('rejects a stale report that waited while a replacement bridge claimed the next message', async ({
+    database,
+  }) => {
+    const service = new AgentSessionsService({ database });
+    const registration = {
+      ...generation,
+      computerId: null,
+      computer: {
+        name: 'Test',
+        platform: 'linux',
+        arch: 'x64',
+        host: 'test',
+        roots: ['/work'],
+        agents: [{ id: 'fake', name: 'Fake', version: null }],
+      },
+    };
+    const { computerId } = await service.register(owner.userId, registration);
+    const session = await service.createSession(owner, {
+      computerId,
+      agentId: 'fake',
+      cwd: '/work',
+      content: text('A'),
+    });
+    const first = (
+      await service.listEvents(owner.userId, session.id, {
+        after: 0,
+        limit: 10,
+      })
+    )[0]!;
+    if (first.kind !== 'prompt') throw new Error('Expected prompt');
+    await service.claim(owner.userId, {
+      ...generation,
+      computerId,
+      sessionId: session.id,
+      seq: first.seq,
+      promptId: first.promptId,
+    });
+    const next = await service.prompt(owner, session.id, text('B'));
+    if (next.kind !== 'prompt') throw new Error('Expected prompt');
+    let enter!: () => void;
+    let release!: () => void;
+    const entered = new Promise<void>((resolve) => {
+      enter = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const transaction = database.transaction.bind(database);
+    const blocked = vi
+      .spyOn(database, 'transaction')
+      .mockImplementationOnce(async (work, options) => {
+        enter();
+        await gate;
+        return transaction(work, options);
+      });
+    const pending = service.report(owner.userId, {
+      computerId,
+      sessionId: session.id,
+      bridgeStartedAt: 'one',
+      batch: 1,
+      events: [],
+      state: {
+        acpSessionId: 'stale-acp',
+        agent: 'Fake',
+        choices: [],
+        commands: [],
+        title: 'Stale state',
+        context: null,
+      },
+    });
+    const outcome = pending.then(
+      () => undefined,
+      (error: unknown) => error,
+    );
+    try {
+      await entered;
+      await service.register(
+        owner.userId,
+        { ...registration, computerId, bridgeStartedAt: 'two' },
+        true,
+      );
+      expect(
+        await service.claim(owner.userId, {
+          ...generation,
+          bridgeStartedAt: 'two',
+          computerId,
+          sessionId: session.id,
+          seq: next.seq,
+          promptId: next.promptId,
+        }),
+      ).toEqual({ execute: true });
+      release();
+      expect(await outcome).toMatchObject({ key: 'bridgeReplaced' });
+      const current = await service.getSession(owner, session.id);
+      expect(current.running).toBe(true);
+      expect(current.state).toBeNull();
+      expect(current.title).not.toBe('Stale state');
+    } finally {
+      release();
+      await outcome;
+      blocked.mockRestore();
+    }
+  });
   test('does not let retained withdrawals starve ordinary commands', async ({
     database,
   }) => {
@@ -102,6 +205,8 @@ describe('queued message withdrawal', () => {
     expect(
       await service.claim(owner.userId, request(a.seq, a.promptId)),
     ).toEqual({ execute: true });
+    // A never received these instructions. Withdrawing their first carrier B must leave C self-contained.
+    service.registerInstructions('Required context introduced with B.');
     const image = {
       type: 'image' as const,
       mimeType: 'image/png',
@@ -112,7 +217,7 @@ describe('queued message withdrawal', () => {
     if (b.kind !== 'prompt' || c.kind !== 'prompt')
       throw new Error('Expected prompts');
     // The bridge already received B; withdrawal must still veto its later claim.
-    await service.poll(
+    const dispatched = await service.poll(
       owner.userId,
       { ...generation, computerId, wait: false },
       signal,
@@ -126,6 +231,13 @@ describe('queued message withdrawal', () => {
     time += 70_000;
     await service.withdraw(owner.userId, session.id, b.seq);
     await service.withdraw(owner.userId, session.id, b.seq);
+    const following = dispatched.commands.find(
+      (command) => command.type === 'prompt' && command.promptId === c.promptId,
+    );
+    expect(following?.type === 'prompt' && following.content).toContainEqual({
+      type: 'text',
+      text: 'How to work in this session:\nRequired context introduced with B.',
+    });
     expect(
       await service.claim(owner.userId, request(b.seq, b.promptId)),
     ).toEqual({ execute: false });
