@@ -771,6 +771,69 @@ describe('native SDK transport, persistence and approval', () => {
     release();
   });
 
+  it('announces one repaired message revision and accepts a new native turn without rerunning lost work', async () => {
+    const f = await fixture(false);
+    const saved = await f.sessions.load('alice', f.agent.sessionId);
+    await f.sessions.native.accept(
+      'alice',
+      f.agent.sessionId,
+      {
+        id: 'crash-input',
+        parts: [{ type: 'text', text: 'Previously accepted' }],
+        attachments: [],
+      },
+      saved.config,
+      ref,
+      'lost-execution',
+      'lost-answer',
+      { config: saved.config, model: ref },
+    );
+    await h.services.tx
+      .read()
+      .repository('agConversations')
+      .updateMany({
+        filter: { id: f.agent.sessionId },
+        values: {
+          createdAt: new Date(0).toISOString(),
+          updatedAt: new Date(0).toISOString(),
+        },
+      });
+    const changed = vi.fn();
+    const release = h.services.events.on('conversation.changed', (event) => {
+      if (event.messageId === 'lost-answer') changed(event);
+    });
+    await f.service.recoverAtStartup();
+    expect(changed).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ messageId: 'lost-answer', revision: 1 }),
+    );
+    const history = await f.agent.history();
+    expect(history.map((message) => message.id)).toEqual([
+      'crash-input',
+      'lost-answer',
+    ]);
+    expect(history[1].metadata).toMatchObject({
+      seq: 2,
+      revision: 1,
+      executionId: 'lost-execution',
+    });
+    await f.service.recoverAtStartup();
+    expect(changed).toHaveBeenCalledOnce();
+    expect(await f.agent.history()).toEqual(history);
+    expect(f.model.doStreamCalls).toHaveLength(0);
+    expect(await f.agent.status()).toBe('idle');
+    await f.agent.send([{ role: 'user', content: 'New explicit input' }]);
+    await vi.waitFor(() =>
+      expect(f.service.isActive(f.agent.sessionId)).toBe(false),
+    );
+    expect(f.model.doStreamCalls).toHaveLength(1);
+    expect(
+      (await f.agent.history()).filter(
+        (message) => message.id === 'lost-answer',
+      ),
+    ).toHaveLength(1);
+    release();
+  });
+
   it('preserves a current-process approval and its revision through repeated startup hooks and new facades', async () => {
     const f = await fixture(true, true);
     const chat = f.chatFor();
