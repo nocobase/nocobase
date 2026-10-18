@@ -135,6 +135,82 @@ describe('brief', () => {
     ).toBe('');
   });
 
+  it.each([
+    { cli: 'nb-studio', appName: 'NocoBase Studio' },
+    { cli: 'acme', appName: 'Acme' },
+  ])(
+    'scopes $cli restrictions to management while allowing authorized tests',
+    (brand) => {
+      const brief = renderBrief({
+        ...brand,
+        agentName: 'Coder',
+        subject: { noun: 'issue', key: 'TEST-1' },
+        task: 'Verify the independent preview.',
+        context: 'The preview is a separate test instance.',
+        instructions: null,
+      });
+      const prompt = joinBrief(brief);
+      expect(prompt).toContain(
+        `Use the \`${brand.cli}\` command line for all operations on the management ${brand.appName} instance hosting this task`,
+      );
+      expect(prompt).toContain(
+        `Identify that instance by the server URL shown by \`${brand.cli} --help\`; do not read credential files to identify it.`,
+      );
+      expect(prompt).toContain(
+        "For that management instance, the offered CLI commands are all the operations you may perform, limited to the requesting person's identity and permissions.",
+      );
+      expect(prompt).toContain(
+        'A refused command (exit code 3) must not be bypassed through a browser, HTTP, another identity or a test environment.',
+      );
+      expect(prompt).toContain(
+        "This restriction does not prohibit local builds or tests within the task's authorized scope.",
+      );
+      expect(prompt).toContain(
+        `For a PR preview or independent test instance explicitly authorized by the task and identified separately from the management instance, you may use Playwright, a browser and test HTTP requests, even when the tested product is also named ${brand.appName}.`,
+      );
+      expect(prompt).toContain(
+        "Use only that test instance's authorized native authentication; never read or reuse management run credentials or use this exception to access the production management instance.",
+      );
+      expect(prompt).toContain(
+        'Existing credential-file protections, workspace restrictions and tool permissions still apply.',
+      );
+      expect(prompt).toContain(
+        "If the target's identity is unclear, clarify it before accessing it outside the CLI.",
+      );
+      expect(prompt).toContain(
+        `Never read, print or copy the run's credentials file of \`${brand.cli}\` or any other credential file, and never pass credentials on the command line.`,
+      );
+    },
+  );
+
+  it('keeps online agents within their sandbox tools', () => {
+    const brief = renderBrief({
+      cli: 'nb-studio',
+      appName: 'NocoBase Studio',
+      dialect: 'tools',
+      agentName: 'Online helper',
+      subject: { noun: 'issue', key: 'TEST-1' },
+      task: 'Report the preview status.',
+      context: 'Context',
+      instructions: null,
+    });
+    const prompt = joinBrief(brief);
+    expect(prompt).toContain(
+      'Your tools are `bash`, a sandboxed shell, and `skill`.',
+    );
+    expect(prompt).toContain(
+      'Reach NocoBase Studio only through the `nb-studio` command in that shell',
+    );
+    expect(prompt).toContain(
+      'A refused command (exit code 3, or its error) is an answer, not a problem to work around.',
+    );
+    expect(prompt).toContain(
+      'You have no working directory and nothing runs for real in the shell',
+    );
+    expect(prompt).not.toContain('you may use Playwright');
+    expect(prompt).not.toContain('does not prohibit local builds');
+  });
+
   it('tells an agent to check the environment the way each directory says', () => {
     const { system } = renderBrief({
       cli: 'acme',

@@ -640,16 +640,40 @@ export async function installSkills(
     : lock(path.join(environment.stateHome, '.skills.lock'), perform);
 }
 
-/** A session must load the same shared Skill before its first prompt or its restoration. */
+/** Preserve native Skill installation for the tools with a managed destination. */
 export async function prepareSessionSkill(
   environment: SkillsEnvironment,
   agentId: string,
 ): Promise<void> {
-  if (agentId !== 'claude' && agentId !== 'codex')
+  if (TOOLS.some((tool) => tool === agentId))
+    await installSkills(environment, [agentId]);
+}
+
+/** ACP text is the common fallback; it needs no agent-specific install directory. */
+export async function sessionSkillInstructions(
+  environment: SkillsEnvironment,
+  agentId: string,
+): Promise<string | undefined> {
+  if (TOOLS.some((tool) => tool === agentId)) return undefined;
+  try {
+    const source = await bundled(environment);
+    const skill = source.entries.find((entry) => entry.name === 'SKILL.md')!;
+    const text = skill.bytes!.toString('utf8');
+    if (!text.trim()) throw new Error('The packaged Skill is empty.');
+    return [
+      '# Studio session instructions',
+      'The shared nb-studio-cli Skill is supplied below for this session. Follow it directly; no Skill installation is needed.',
+      `Resolve any relative Skill references from ${sourceOf(environment)}.`,
+      'Keep the bridge-selected profile and agent session environment. Do not switch identity or remove session context to bypass a refusal.',
+      text,
+      '# Current message',
+    ].join('\n\n');
+  } catch (cause) {
     throw new Error(
-      `Automatic Skill setup is not supported for ${agentId}. Choose Claude Code or Codex to use agent sessions with the shared Skill.`,
+      `Could not load the packaged nb-studio-cli instructions. Update or reinstall ${environment.bin}, then restart the bridge and resend the message.`,
+      { cause },
     );
-  await installSkills(environment, [agentId]);
+  }
 }
 
 /** Called after CLI activation, reading the new package. Failures are warnings, never CLI update failures. */

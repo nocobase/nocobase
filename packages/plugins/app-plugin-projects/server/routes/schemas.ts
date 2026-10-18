@@ -16,6 +16,8 @@ import {
   ATTACHMENTS_PER_REQUEST_MAX,
   type Attachment,
   type DiscardAttachmentsRequest,
+  type IssueScreenshot,
+  type IssueScreenshots,
 } from '../../shared/attachments.js';
 import {
   REACTION_EMOJIS,
@@ -945,6 +947,36 @@ export const WorkspaceSettingsSchema: z.ZodType<WorkspaceSettings> = z.object({
 });
 
 // Attachments and comments
+
+export const IssueScreenshotSchema: z.ZodType<IssueScreenshot> = z
+  .object({
+    id: z.string(),
+    filename: z.string(),
+    ext: z.string(),
+    mimeType: z.string(),
+    size: z.number().int(),
+    contentUrl: z.string(),
+    downloadUrl: z.string(),
+    comment: z.object({
+      id: z.string(),
+      createdAt: dateTime,
+      author: z.object({
+        type: z.string(),
+        id: z.string(),
+        name: z.string().nullable(),
+      }),
+    }),
+  })
+  .meta({ ref: 'ProjectsIssueScreenshot' });
+
+export const IssueScreenshotsMeta: z.ZodType<IssueScreenshots['meta']> =
+  z.object({
+    limit: z.number().int(),
+    truncated: z.boolean().meta({
+      description:
+        'More images exist. All counts describe only the returned batch.',
+    }),
+  });
 
 export const AttachmentSchema: z.ZodType<Attachment> = z
   .object({

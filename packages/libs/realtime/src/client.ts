@@ -20,6 +20,8 @@ export type RealtimeListener<Payload> = (event: RealtimeEvent<Payload>) => void;
 
 export interface RealtimeClient {
   readonly connected: boolean;
+  /** Whether any topic is subscribed, without opening a connection. */
+  readonly active: boolean;
   subscribe<Payload>(
     topic: string,
     listener: RealtimeListener<Payload>,
@@ -51,6 +53,10 @@ export function createRealtimeClient(
   const topicListeners = new Map<string, Set<UntypedRealtimeListener>>();
 
   const client: RealtimeClient = {
+    get active(): boolean {
+      return topicListeners.size > 0;
+    },
+
     get connected(): boolean {
       return socket?.readyState === WebSocket.OPEN;
     },

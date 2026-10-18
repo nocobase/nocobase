@@ -28,7 +28,7 @@ The person installs the application's command line, signs in (`<cli> login`) and
 
 The first registration is signed in as the person and gives the computer its own key, which the bridge keeps beside the computer's id in a file only its owner reads, and sends from then on (`x-nocobase-computer-key`). The key does not expire, so a computer stays connected however long the person's sign-in lasts; it acts for its owner on the bridge's routes alone, and only for its own computer. Removing the computer in the application revokes it, and so does registering the computer signed in again. A bridge the person starts themselves connects such a computer again as them; the service instead stops, and stays stopped until the person starts it again. A service does not read the person's shell configuration, so installing it writes in the shell's PATH (where it finds the agents), the command line's own variables, proxy and CA variables, and the names given with `--pass-env`, such as an agent's API key kept in the shell. One bridge runs per profile on a computer: a second one, in a terminal or as the service, refuses to start.
 
-The bridge retries what fails for a while, such as a lost connection while the computer slept, and looks for agents again every minute, so an agent installed and signed in while it runs is offered within a minute.
+The bridge retries what fails for a while, such as a lost connection while the computer slept, and starts looking for agents again every minute. Each agent is inspected independently; downloading one adapter does not hold up another agent. Availability follows installation, initialization, registration and the page refresh, so the one-minute scan interval does not promise readiness within a minute. Both My computers and the new-session form show a failed agent’s startup command and error output, including when another agent on the same computer remains usable.
 
 ## Using it in an application
 
@@ -88,7 +88,7 @@ The open record is in the address as `?<kind>=<refId>`; J and K move among the s
 
 ### In a panel beside other pages
 
-`@nocobase/app-plugin-agent-sessions/client/panel` puts the sessions in a panel the application draws itself, beside whatever page is open. `AgentSessionsPanel` takes the options `agentSessionsRoute` takes, `view` (`{ kind: 'session', sessionId }`, `{ kind: 'new' }` or `{ kind: 'list' }`) with `onViewChange`, the application's own buttons in `actions`, and `onFullScreen`, which opens `/agent-sessions` at the same view and navigates there when left out. The session, the new session and the list are laid out by the panel's width rather than the screen's: below 448 pixels they look as they do on a phone. In the panel a new session starts in place, a session picked in the list opens in place, a session's details open over the conversation, and a record tied to a session opens at its own `href`.
+`@nocobase/app-plugin-agent-sessions/client/panel` puts the sessions in a panel the application draws itself, beside whatever page is open. `AgentSessionsPanel` takes the options `agentSessionsRoute` takes, `view` (`{ kind: 'session', sessionId }`, `{ kind: 'new' }` or `{ kind: 'list' }`) with `onViewChange`, the application's own buttons in `actions`, and `onFullScreen`, which opens `/agent-sessions` at the same view and navigates there when left out. The session, the new session and the list are laid out by the panel's width rather than the screen's: below 448 pixels they look as they do on a phone. In the panel a new session starts in place, a session picked in the list opens in place, a session's details expand inside the panel without a page overlay, and a record tied to a session opens at its own `href`.
 
 ```tsx
 <AgentSessionsPanel
@@ -110,7 +110,11 @@ The open record is in the address as `?<kind>=<refId>`; J and K move among the s
 />
 ```
 
-`attach` puts what the panel was opened beside in the shown draft, once for each `id`: it shows above the message, where the person can remove it, and goes with the next message sent. An attachment with a `reference` is sent as a `#` mention of that record; one with `text` adds that text to the message, for what cannot be mentioned. `projectId` is the project a new session starts with. `useLinkedSessions(kind, refId)` lists the viewer's sessions tied to a record, the latest activity first (`GET /api/agentSessions/sessions?linked=<kind>:<refId>`), so the application can open the latest one from that record.
+`attach` puts what the panel was opened beside in the shown draft, once for each `id`: it shows above the message, where the person can remove it, and goes with the next message sent. An attachment with a `reference` is sent as a `#` mention of that record; one with `text` adds that text to the message, for what cannot be mentioned. `projectId` is the project a new session starts with. `useLinkedSessions(kind, refId)` lists the viewer's sessions tied to a record, the latest activity first (`GET /api/agentSessions/sessions?linked=<kind>:<refId>`), so the application can offer an explicit continuation entry on that record.
+
+For automatic page context, pass `mode: 'replace'` and a `scope` for the current entry intent. Keep `scope` stable while the page changes and give each update a fresh `id`; start another scope for an explicit new session, which clears the previous message text and typed mentions. Replacement applies only to a new draft, preserves manual attachments, and stops following after the person removes automatic context or sends (including an unconfirmed submission). Send an empty attachment array to clear the previous automatic object. The project follows the applied context, too. An optional `attach.placeholder` customizes the new draft's hint without inserting message text. Pass `activeLink: { kind, refId }` to mark the record shown in the main page; clicking a sidebar task keeps the internal list open. The full-page task panels and phone sheets keep their existing behavior.
+
+`useAgentSessionAvailability()` from `client/panel` returns an asynchronous check of the owner's current computers. Call it at an entry action and await its boolean result: true means at least one computer is online with an Agent reporting no problem. It shares the plugin's owner-scoped cache, fetches fresh availability each time and adds no polling; request failures reject so the host can choose its fallback.
 
 ### What the agent knows of the session's work
 
@@ -188,6 +192,8 @@ Messages sent while the agent works wait their turn; stopping the turn (`POST ..
 Removing a computer leaves its sessions readable; they take no more messages.
 
 ## Verification
+
+Applications may call `service.onCommittedEvent(listener)` to observe immediate `turnEnded`, `turnFailed` and `permissionRequested` reminder identities after the transcript transaction commits. The callback receives only owner/session/title/sequence/reason, without transcript bodies or permission input. It runs independently of delayed notices and seen settlement, adds no SQL, and returns an unsubscribe function. Schedule asynchronous work from the listener and handle its failures in the application; observer failures cannot roll back a committed transcript. No event is emitted for cancelled turns or a transaction that rolls back.
 
 ```bash
 pnpm --filter @nocobase/app-plugin-agent-sessions lint

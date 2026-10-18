@@ -150,7 +150,7 @@ function flowRoutes<Body>(
           page,
           pageSize,
           total: result.total,
-          parameters: flows.parameters(spec.flow) as Readonly<
+          parameters: (await flows.parameters(spec.flow)) as Readonly<
             Record<string, unknown>
           >,
         },

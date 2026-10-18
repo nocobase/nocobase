@@ -1568,6 +1568,19 @@ describe('comments over HTTP', () => {
 });
 
 describe('attachments over HTTP', () => {
+  it('authenticates screenshot reads, checks visibility and documents the bounded response', async () => {
+    expect((await call('/issues/PM-1/screenshots')).status).toBe(401);
+    await h.services.issues.create(h.viewer('alice'), { title: 'Images' });
+    expect(
+      (await call('/issues/PM-1/screenshots', { role: 'none' })).status,
+    ).toBe(404);
+    const response = await call('/issues/PM-1/screenshots', { role: 'member' });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      data: [],
+      meta: { limit: 100, truncated: false },
+    });
+  });
   const upload = (path: string, file: File, role = 'member') => {
     const body = new FormData();
     body.append('file', file);

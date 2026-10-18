@@ -132,6 +132,12 @@ export function NewSession({
       ? remembered()
       : { ...remembered(), projectId: surface.projectId ?? '' },
   );
+  const [contextProject, setContextProject] = useState(surface.projectId);
+  if (contextProject !== surface.projectId) {
+    setContextProject(surface.projectId);
+    if (surface.projectId !== undefined)
+      setChoice({ ...choice, projectId: surface.projectId ?? '' });
+  }
   const sendingRef = useRef(false);
 
   const all = computers.data ?? [];
@@ -331,7 +337,7 @@ export function NewSession({
             draftKey='new-session'
             onEdit={begin}
             autoFocus
-            placeholder={t('newSession.placeholder')}
+            placeholder={surface.placeholder ?? t('newSession.placeholder')}
             sendDisabled={!ready}
             sending={creating}
             commands={computer && agent ? computer.commands[agent.id] : []}
@@ -547,7 +553,11 @@ export function NewSession({
               }
             }}
           />
-          {computer && agents.length === 0 && <NoAgent computer={computer} />}
+          {computer &&
+            (agents.length === 0 ||
+              computer.agents.some((agent) => agent.problem === 'failed')) && (
+              <AgentProblems computer={computer} />
+            )}
           <p className='text-muted-foreground text-center text-xs'>
             {t('newSession.accessHint')}
             <br />
@@ -937,16 +947,26 @@ function remembered(): Choice {
   }
 }
 
-/** Why no agent can start a session on the computer, and how one comes to: installed and signed in there. */
-function NoAgent({ computer }: { readonly computer: Computer }): ReactElement {
+/** Startup failures remain visible even while another agent can start a session on this computer. */
+function AgentProblems({
+  computer,
+}: {
+  readonly computer: Computer;
+}): ReactElement {
   const { t, i18n } = useTranslation();
   const failed = installedAgents(computer).filter((agent) => agent.problem);
   const others = otherAgentNames(computer, i18n.language);
+  const noneAvailable = !computer.agents.some((agent) => !agent.problem);
   return (
     <div className='flex flex-col gap-1.5 rounded-[10px] border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-[13px]'>
-      <p className='font-medium'>{t('newSession.noAgentTitle')}</p>
+      {noneAvailable && (
+        <p className='font-medium'>{t('newSession.noAgentTitle')}</p>
+      )}
       {failed.map((agent) => (
-        <p key={agent.id} className='text-muted-foreground text-xs break-words'>
+        <p
+          key={agent.id}
+          className='text-muted-foreground text-xs whitespace-pre-wrap [overflow-wrap:anywhere]'
+        >
           {t('newSession.failedAgent', {
             name: agent.name,
             detail: agent.detail ?? t('computers.problems.failed'),
@@ -954,9 +974,14 @@ function NoAgent({ computer }: { readonly computer: Computer }): ReactElement {
         </p>
       ))}
       <p className='text-muted-foreground text-xs'>
-        {t('newSession.noAgentHint')}
+        {t('computers.recheckHint')}
       </p>
-      {others && (
+      {noneAvailable && (
+        <p className='text-muted-foreground text-xs'>
+          {t('newSession.noAgentHint')}
+        </p>
+      )}
+      {noneAvailable && others && (
         <p className='text-muted-foreground text-xs'>
           {t('newSession.supported', { names: others })}
         </p>
