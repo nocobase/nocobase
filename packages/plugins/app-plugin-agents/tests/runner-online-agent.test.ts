@@ -589,7 +589,7 @@ it('preserves directory defaults, personal eligibility and offline reasons, and 
   await h.registerRunner({ tools: [{ kind: 'codex', authenticated: true }] });
   await h.services.chat.updateSettings('alice', { defaultAgentId: first });
   await h.services.chat.updatePreferences('alice', { defaultAgentId: second });
-  const alice = await h.services.onlineAgent.chatAgents('alice');
+  const alice = await h.services.conversations.chatAgents('alice');
   expect(alice.find((agent) => agent.id === first)).toMatchObject({
     isSystemDefault: true,
     personalOnly: true,
@@ -603,7 +603,7 @@ it('preserves directory defaults, personal eligibility and offline reasons, and 
     availability: { online: false, reason: 'noModel' },
   });
   expect(alice.some((agent) => agent.id === hidden)).toBe(false);
-  const bob = await h.services.onlineAgent.chatAgents('bob');
+  const bob = await h.services.conversations.chatAgents('bob');
   expect(bob.find((agent) => agent.id === first)?.availability).toMatchObject({
     online: false,
     reason: 'othersPersonal',
@@ -632,12 +632,19 @@ it('preserves directory defaults, personal eligibility and offline reasons, and 
       ).status,
     ).not.toBe(201);
   }
+  const directory = vi.spyOn(h.services.conversations, 'chatAgents');
   const catalog = await h.request('GET', '/agents/chatAgents', {
     user: 'alice',
   });
-  expect(catalog.body.data.map((agent: { id: string }) => agent.id)).toEqual(
-    alice.map((agent) => agent.id),
-  );
+  expect(catalog.status).toBe(200);
+  expect(catalog.body).toEqual({ data: alice, meta: { total: alice.length } });
+  expect(directory).toHaveBeenCalledExactlyOnceWith('alice');
+  const bobCatalog = await h.request('GET', '/agents/chatAgents', {
+    user: 'bob',
+  });
+  expect(bobCatalog.status).toBe(200);
+  expect(bobCatalog.body).toEqual({ data: bob, meta: { total: bob.length } });
+  expect(directory).toHaveBeenLastCalledWith('bob');
 });
 
 it('maps server context, prompt and variables into Runner input while keeping context out of public messages', async () => {
@@ -770,7 +777,7 @@ it('accepts Native personal and team defaults without a Runner row and preserves
     defaultAgentId: 'online',
   });
   expect(
-    (await h.services.onlineAgent.chatAgents('alice')).find(
+    (await h.services.conversations.chatAgents('alice')).find(
       (item) => item.id === 'online',
     ),
   ).toMatchObject({
@@ -792,7 +799,7 @@ it('accepts Native personal and team defaults without a Runner row and preserves
     }),
   ).rejects.toThrow();
   expect(
-    (await h.services.onlineAgent.chatAgents('alice')).find(
+    (await h.services.conversations.chatAgents('alice')).find(
       (item) => item.id === agentId,
     )?.isMyDefault,
   ).toBe(true);

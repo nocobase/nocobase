@@ -252,6 +252,12 @@ it('exports typed result observation through the public server entry', () => {
   expect(failure.reason).toBe('failed');
 });
 
+it('keeps the chat directory outside the OnlineAgent runtime contract', () => {
+  expectTypeOf<
+    Extract<keyof OnlineAgentRuntime, 'chatAgents'>
+  >().toEqualTypeOf<never>();
+});
+
 it('exposes conversation visibility without a background visibility override', () => {
   expectTypeOf<
     ConversationSummary['showInChatList']

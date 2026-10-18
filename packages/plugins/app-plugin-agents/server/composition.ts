@@ -589,7 +589,6 @@ export function createAgents(deps: AgentsDeps): Agents {
   const onlineAgent = new OnlineAgentService({
     runner: runnerOnlineAgent,
     uiStreams,
-    chatAgents: (userId) => conversations.chatAgents(userId),
     sessions,
     ids,
     resolver: deps.resolver,

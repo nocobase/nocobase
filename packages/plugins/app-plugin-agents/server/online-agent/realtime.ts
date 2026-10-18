@@ -1,8 +1,5 @@
 import type { ModelMessage } from 'ai';
-import type {
-  ResolvedPageContext,
-  ChatAgent,
-} from '../../shared/conversations.js';
+import type { ResolvedPageContext } from '../../shared/conversations.js';
 import type { ModelRef } from '../../shared/models.js';
 import type { AppUIMessage } from '../../shared/online-agent.js';
 import type { NativeUIChunk } from './native.js';
@@ -86,7 +83,6 @@ export interface OnlineAgentRealtimeService {
     selectedModel?: ModelRef,
     boundary?: 'http',
   ): Promise<OnlineAgentConfig & { selectedModel: ModelRef | null }>;
-  chatAgents(userId: string): Promise<ChatAgent[]>;
 }
 
 /** Application runtime; native background execution remains a separate capability. */

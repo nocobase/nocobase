@@ -40,10 +40,7 @@ import type {
   OnlineAgentSession,
   OnlineAgentSessionManager,
 } from './sessions.js';
-import type {
-  ResolvedPageContext,
-  ChatAgent,
-} from '../../shared/conversations.js';
+import type { ResolvedPageContext } from '../../shared/conversations.js';
 import type { AppUIMessage } from '../../shared/online-agent.js';
 
 type OnlineAgentAcceptance = {
@@ -135,7 +132,6 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
     private deps: {
       sessions: OnlineAgentSessionManager;
       runner?: OnlineAgentRunnerBackend;
-      chatAgents?(userId: string): Promise<ChatAgent[]>;
       ids: IdSource;
       resolver?: ServiceResolver;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
@@ -217,30 +213,6 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       this.isActive(id) ||
       (persistedRunning && (await this.uiStreams.producerAvailable(id)))
     );
-  }
-  async chatAgents(userId: string): Promise<ChatAgent[]> {
-    if (this.deps.chatAgents) return this.deps.chatAgents(userId);
-    const agents: ChatAgent[] = [];
-    const model = await this.deps.defaultModel().catch(() => null);
-    return [
-      ...agents,
-      {
-        id: 'online',
-        name: 'Online agent',
-        description: 'Chat with a configured model and registered tools.',
-        nameText: null,
-        descriptionText: null,
-        avatar: null,
-        isSystemDefault: !agents.some((agent) => agent.isSystemDefault),
-        isMyDefault: false,
-        personalOnly: false,
-        availability: {
-          online: Boolean(model),
-          reason: model ? null : 'noModel',
-          onlineRunners: 0,
-        },
-      },
-    ];
   }
   private async gate<T>(id: string, work: () => Promise<T>): Promise<T> {
     const previous = this.gates.get(id) ?? Promise.resolve();

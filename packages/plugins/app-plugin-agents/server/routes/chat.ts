@@ -818,7 +818,7 @@ export function createChatRoutes(
       },
     }),
     async (context) => {
-      const data = await services.onlineAgent.chatAgents(me(context));
+      const data = await services.conversations.chatAgents(me(context));
       return context.json({ data, meta: { total: data.length } });
     },
   );
