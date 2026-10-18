@@ -1,11 +1,8 @@
-import type { ModelMessage } from 'ai';
 import type { DatabaseConnection } from '@nocobase/db';
-import type { OnlineAgentConfig } from './config.js';
-import type { OnlineAgentJson, OnlineAgentOutcome } from './codec.js';
-import type { Tx, TxRunner } from '../kernel/tx.js';
-import type { IdSource } from '../kernel/ids.js';
-import { asJson, jsonObject } from '../kernel/values.js';
-import { conflict, invalid, notFound } from '../kernel/errors.js';
+import type { Tx, TxRunner } from '../../../kernel/tx.js';
+import type { IdSource } from '../../../kernel/ids.js';
+import { asJson, jsonObject } from '../../../kernel/values.js';
+import { conflict, invalid, notFound } from '../../../kernel/errors.js';
 import {
   lockConversation,
   conversationsRepo,
@@ -13,81 +10,19 @@ import {
   preferencesRepo,
   settingsRepo,
   type ConversationRecord,
-} from '../core/conversations/conversation.store.js';
+} from '../../../core/conversations/conversation.store.js';
 import type {
   ChatAttachmentLinks,
   ChatAttachmentService,
-} from '../core/conversations/attachments.js';
-import type { ModelRef } from '../../shared/models.js';
-import { NativeSessionStore } from './native-store.js';
-import type { ResolvedPageContext } from '../../shared/conversations.js';
-import type { PageContextKinds } from '../core/conversations/page-context.js';
+} from '../../../core/conversations/attachments.js';
+import { NativeSessionStore } from './store.js';
+import type { PageContextKinds } from '../../../core/conversations/page-context.js';
+import type { OnlineAgentSessionManager } from '../contracts.js';
+import type { OnlineAgentSession, OnlineAgentMetadata } from './types.js';
+import { sessionIdentity } from './state.js';
 
-export type OnlineAgentCall = {
-  actorId: string;
-  state: 'running' | 'idle' | 'waitingApproval';
-  executionId?: string;
-  messageId?: string;
-  revision?: number;
-  approvalExpiresAt?: string;
-  outcome?: OnlineAgentOutcome;
-  closing?: boolean;
-  result?: OnlineAgentJson;
-  error?: string;
-  /** Legacy hint only; never an admission condition. Removed after finalization. */
-  requiresEffectReview?: boolean;
-};
-export type OnlineAgentSession = {
-  id: string;
-  kind: 'realtime' | 'background';
-  config: OnlineAgentConfig;
-  model: ModelRef;
-  call: OnlineAgentCall | null;
-  lastSeq: number;
-};
-export type OnlineAgentSessionIdentity =
-  | { backend: 'native'; kind: OnlineAgentSession['kind'] }
-  | { backend: 'runner'; kind: 'realtime' };
-
-/** Classify persisted bindings without reading configuration through either execution backend. */
-function identity(row: ConversationRecord): OnlineAgentSessionIdentity {
-  const bindings = jsonObject(row.metadata);
-  if ('onlineAgent' in bindings && 'runnerOnlineAgent' in bindings)
-    throw invalid('Conflicting OnlineAgent backend bindings.');
-  const native = jsonObject(bindings.onlineAgent);
-  const nativeConfig = jsonObject(native.config);
-  if (
-    row.mode === 'online' &&
-    native === bindings.onlineAgent &&
-    native.version === 1 &&
-    nativeConfig === native.config &&
-    (nativeConfig.agentId === undefined || nativeConfig.agentId === 'online') &&
-    (native.kind === 'realtime' || native.kind === 'background')
-  )
-    return { backend: 'native', kind: native.kind };
-  const runner = jsonObject(bindings.runnerOnlineAgent);
-  const runnerConfig = jsonObject(runner.config);
-  if (
-    row.mode === 'runner' &&
-    runner === bindings.runnerOnlineAgent &&
-    runner.version === 1 &&
-    runnerConfig === runner.config &&
-    typeof runnerConfig.agentId === 'string' &&
-    runnerConfig.agentId.length > 0 &&
-    runnerConfig.agentId !== 'online' &&
-    runnerConfig.agentId === row.agentId
-  )
-    return { backend: 'runner', kind: 'realtime' };
-  throw invalid('This conversation has no valid OnlineAgent backend binding.');
-}
-type OnlineAgentMetadata = {
-  version: 1;
-  kind: OnlineAgentSession['kind'];
-  config: OnlineAgentConfig;
-  call: OnlineAgentCall | null;
-};
 function metadata(row: ConversationRecord): OnlineAgentMetadata {
-  if (identity(row).backend !== 'native')
+  if (sessionIdentity(row).backend !== 'native')
     throw invalid('A native OnlineAgent conversation is required.');
   const found = jsonObject(row.metadata).onlineAgent as OnlineAgentMetadata;
   if ('permissions' in found.config)
@@ -104,35 +39,6 @@ function session(row: ConversationRecord): OnlineAgentSession {
     lastSeq: Number(row.lastSeq),
     model: { model: row.model, modelService: row.modelService },
   };
-}
-
-export interface OnlineAgentSessionManager {
-  readonly native: NativeSessionStore;
-  recoverAtStartup(): Promise<void>;
-  defaults(userId: string): Promise<{ scope?: string[]; model?: ModelRef }>;
-  create(
-    userId: string,
-    kind: OnlineAgentSession['kind'],
-    config: OnlineAgentConfig,
-    model: ModelRef,
-    info?: { source?: string; title?: string; showInChatList?: boolean },
-  ): Promise<string>;
-  identify(userId: string, id: string): Promise<OnlineAgentSessionIdentity>;
-  load(userId: string, id: string): Promise<OnlineAgentSession>;
-  configure(
-    userId: string,
-    id: string,
-    config: OnlineAgentConfig,
-    model: ModelRef,
-  ): Promise<void>;
-  /** Private model projection; public facades expose safe UI messages instead. */
-  history(userId: string, id: string): Promise<ModelMessage[]>;
-  executionHistory(
-    userId: string,
-    id: string,
-    current?: ResolvedPageContext,
-  ): Promise<ModelMessage[]>;
-  finish(userId: string, id: string): Promise<void>;
 }
 
 export function createSessionManager(deps: {
@@ -322,7 +228,7 @@ export function createSessionManager(deps: {
       return id;
     },
     async identify(userId, id) {
-      return identity(await owned(deps.tx.read(), userId, id));
+      return sessionIdentity(await owned(deps.tx.read(), userId, id));
     },
     async load(userId, id) {
       return session(await owned(deps.tx.read(), userId, id));

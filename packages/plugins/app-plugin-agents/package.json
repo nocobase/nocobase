@@ -120,8 +120,8 @@
     },
     "./package.json": "./package.json",
     "./server/online-agent": {
-      "types": "./server/online-agent/index.ts",
-      "import": "./server/online-agent/index.ts"
+      "types": "./server/online/agent/index.ts",
+      "import": "./server/online/agent/index.ts"
     }
   },
   "files": [
@@ -244,8 +244,8 @@
       },
       "./package.json": "./package.json",
       "./server/online-agent": {
-        "types": "./dist/server/online-agent/index.d.ts",
-        "import": "./dist/server/online-agent/index.js"
+        "types": "./dist/server/online/agent/index.d.ts",
+        "import": "./dist/server/online/agent/index.js"
       }
     }
   },

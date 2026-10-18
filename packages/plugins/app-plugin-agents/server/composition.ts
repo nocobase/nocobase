@@ -1,12 +1,10 @@
-import {
-  OnlineAgentUIStreams,
-  type OnlineAgentRecoveryConfig,
-} from './online-agent/ui-streams.js';
-import { OnlineAgentConfigurator } from './online-agent/config.js';
-import { RunnerOnlineAgentAdapter } from './online-agent/runner.js';
+import { OnlineAgentUIStreams } from './online/agent/transport/streams.js';
+import type { OnlineAgentRecoveryConfig } from './online/agent/types.js';
+import { OnlineAgentConfigurator } from './online/agent/configuration.js';
+import { RunnerOnlineAgentAdapter } from './online/agent/runner/backend.js';
 import type { ServiceResolver } from '@nocobase/service-provider';
-import { OnlineAgentService } from './online-agent/service.js';
-import { createSessionManager } from './online-agent/sessions.js';
+import { OnlineAgentService } from './online/agent/service.js';
+import { createSessionManager } from './online/agent/persistence/manager.js';
 import { languageModel } from './online/providers.js';
 /**
  * The one place the plugin's services are assembled from their dependencies. The provider binds the result to

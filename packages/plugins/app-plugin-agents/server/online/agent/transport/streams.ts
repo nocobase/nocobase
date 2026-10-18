@@ -10,22 +10,16 @@ import {
   conversationsRepo,
   findConversation,
   lockConversation,
-} from '../core/conversations/conversation.store.js';
-import { conflict, notFound } from '../kernel/errors.js';
-import { asJson, jsonObject } from '../kernel/values.js';
-import type { TxRunner } from '../kernel/tx.js';
-import type { NativeUIChunk } from './native.js';
+} from '../../../core/conversations/conversation.store.js';
+import { conflict, notFound } from '../../../kernel/errors.js';
+import { asJson, jsonObject } from '../../../kernel/values.js';
+import type { TxRunner } from '../../../kernel/tx.js';
+import type {
+  NativeUIChunk,
+  OnlineAgentRecoveryConfig,
+  UIStreamAssociation,
+} from '../types.js';
 
-/** Plugin-owned connections: the host cache interface does not expose Redis pub/sub. */
-export type OnlineAgentRecoveryConfig = {
-  redis: RedisOptions;
-  namespace: string;
-};
-type Association = {
-  streamId: string;
-  executionId: string;
-  backend: 'native' | 'runner';
-};
 const LEASE_MS = 30_000;
 const MAX_BYTES = 8 * 1024 * 1024;
 
@@ -38,7 +32,7 @@ export class UIStreamChannel {
   private initial?: ReadableStream<string>;
   readonly source: ReadableStream<NativeUIChunk>;
   constructor(
-    readonly association: Association,
+    readonly association: UIStreamAssociation,
     private onError: (error: unknown) => void,
   ) {
     this.source = new ReadableStream(
@@ -226,13 +220,14 @@ export class OnlineAgentUIStreams {
   private async association(
     userId: string,
     id: string,
-    value?: Association,
+    value?: UIStreamAssociation,
     clear?: string,
-  ): Promise<Association | undefined> {
+  ): Promise<UIStreamAssociation | undefined> {
     if (!value && !clear) {
       const row = await findConversation(this.deps.tx!.read(), id);
       if (!row || row.userId !== userId) throw notFound('Conversation');
-      return jsonObject(row.metadata).onlineUIStream as Association | undefined;
+      return jsonObject(row.metadata).onlineUIStream as
+        UIStreamAssociation | undefined;
     }
     const started = performance.now();
     try {
@@ -242,8 +237,8 @@ export class OnlineAgentUIStreams {
         const metadata = { ...jsonObject(row.metadata) };
         if (
           clear &&
-          (metadata.onlineUIStream as Association | undefined)?.streamId !==
-            clear
+          (metadata.onlineUIStream as UIStreamAssociation | undefined)
+            ?.streamId !== clear
         )
           return;
         if (value) metadata.onlineUIStream = value;
@@ -261,7 +256,7 @@ export class OnlineAgentUIStreams {
     userId: string,
     id: string,
     executionId: string,
-    backend: Association['backend'],
+    backend: UIStreamAssociation['backend'],
     stop?: () => void,
   ): Promise<UIStreamChannel> {
     await this.preflight();

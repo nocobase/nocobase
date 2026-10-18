@@ -1,4 +1,4 @@
-import { publicUIPageContext } from '../../shared/ui-message.js';
+import { publicUIPageContext } from '../../../../shared/ui-message.js';
 import { isDeepStrictEqual } from 'node:util';
 import { isToolUIPart, type ModelMessage, type UIMessage } from 'ai';
 import type { DatabaseConnection } from '@nocobase/db';
@@ -6,58 +6,41 @@ import {
   appUIMessageText,
   validateAppUIMessages,
   type AppUIMessage,
-  type AppUIToolApprovalInput,
-} from '../../shared/online-agent.js';
-import type { ResolvedPageContext } from '../../shared/conversations.js';
+} from '../../../../shared/online-agent.js';
+import type { ResolvedPageContext } from '../../../../shared/conversations.js';
 import {
   chatAttachmentUrl,
   type ChatAttachmentService,
   type ChatAttachmentLinks,
   storedAttachments,
-} from '../core/conversations/attachments.js';
+} from '../../../core/conversations/attachments.js';
 import {
   historicalPageContext,
   latestPageContext,
   type PageContextKinds,
-} from '../core/conversations/page-context.js';
+} from '../../../core/conversations/page-context.js';
 import {
   conversationsRepo,
   findConversation,
   lockConversation,
   messagesRepo,
   type ConversationRecord,
-} from '../core/conversations/conversation.store.js';
-import { conflict, invalid, notFound } from '../kernel/errors.js';
-import { asJson, jsonObject } from '../kernel/values.js';
-import type { Tx, TxRunner } from '../kernel/tx.js';
-import { OnlineAgentConfigurator, type OnlineAgentConfig } from './config.js';
-import type { OnlineAgentCall } from './sessions.js';
-import { NativeMessages, type NativeMessage } from './messages.js';
-export type NativeApproval = AppUIToolApprovalInput;
-export type NativeSnapshot = {
-  message: NativeMessage;
-};
-export type NativeHistoryQuery = {
-  ids?: string[];
-  before?: number;
-  after?: number;
-  limit: number;
-};
-export type NativeHistoryPage = {
-  items: AppUIMessage[];
-  lastSeq: number;
-  hasMore: boolean;
-  nextAfter?: number;
-};
-
-export type NativeInput = {
-  id: string;
-  parts: NativeMessage['parts'];
-  attachments: string[];
-  clientId?: string;
-  workContext?: ResolvedPageContext;
-  providerOptions?: ModelMessage['providerOptions'];
-};
+} from '../../../core/conversations/conversation.store.js';
+import { conflict, invalid, notFound } from '../../../kernel/errors.js';
+import { asJson, jsonObject } from '../../../kernel/values.js';
+import type { Tx, TxRunner } from '../../../kernel/tx.js';
+import { OnlineAgentConfigurator } from '../configuration.js';
+import type {
+  OnlineAgentConfig,
+  NativeMessage,
+  NativeApproval,
+  NativeSnapshot,
+  NativeHistoryQuery,
+  NativeHistoryPage,
+  NativeInput,
+} from '../types.js';
+import type { OnlineAgentCall } from './types.js';
+import { NativeMessages } from '../messages/projection.js';
 
 export class NativeSessionStore {
   messages: NativeMessages = new NativeMessages(new OnlineAgentConfigurator());

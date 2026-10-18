@@ -1,48 +1,43 @@
-import { nativeInputParts } from './input.js';
+import { nativeInputParts } from '../messages/validation.js';
 import {
   NativeRealtimeOnlineAgent,
   NativeBackgroundOnlineAgent,
-  type NativeSessionHost,
-} from './native-session.js';
-import type { OnlineAgentUIStreams } from './ui-streams.js';
-import { NativeMessages } from './messages.js';
-import { NativeOnlineAgent } from './native.js';
-import type { NativeApproval } from './native-store.js';
-import type { Schema, LanguageModel, ModelMessage } from 'ai';
-import type { ServiceResolver } from '@nocobase/service-provider';
-import type { OnlineAgentRealtimeOptions } from './realtime.js';
+} from './session.js';
 import type {
+  NativeSessionHost,
   OnlineAgentBackend,
+  OnlineAgentSessionManager,
+} from '../contracts.js';
+import type { OnlineAgentUIStreams } from '../transport/streams.js';
+import { NativeMessages } from '../messages/projection.js';
+import { NativeOnlineAgent } from './execution.js';
+import type {
+  NativeApproval,
+  OnlineAgentRealtimeOptions,
   OnlineAgentBoundary,
   OnlineAgentInitialConfiguration,
   OnlineAgentConfiguration,
-} from './backend.js';
-import type { OnlineAgentResult } from './result.js';
-import { conflict, invalid } from '../kernel/errors.js';
-import type { IdSource } from '../kernel/ids.js';
-import type { ModelRef } from '../../shared/models.js';
-import {
-  type OnlineAgentConfigurator,
-  type OnlineAgentContext,
-  type OnlineAgentConfig,
-  type OnlineAgentOptions,
-} from './config.js';
-import {
-  jsonSafe,
-  type OnlineAgentJson,
-  type OnlineAgentOutcome,
-} from './codec.js';
+  OnlineAgentResult,
+  OnlineAgentContext,
+  OnlineAgentConfig,
+  OnlineAgentOptions,
+  OnlineAgentJson,
+  OnlineAgentOutcome,
+} from '../types.js';
+import type { Schema, LanguageModel, ModelMessage } from 'ai';
+import type { ServiceResolver } from '@nocobase/service-provider';
+import { conflict, invalid } from '../../../kernel/errors.js';
+import type { IdSource } from '../../../kernel/ids.js';
+import type { ModelRef } from '../../../../shared/models.js';
+import type { OnlineAgentConfigurator } from '../configuration.js';
+import { jsonSafe } from '../messages/json.js';
+import type { OnlineAgentSession } from '../persistence/types.js';
+import type { ResolvedPageContext } from '../../../../shared/conversations.js';
 import type {
-  OnlineAgentSession,
-  OnlineAgentSessionManager,
-} from './sessions.js';
-import type { ResolvedPageContext } from '../../shared/conversations.js';
-
-type OnlineAgentAcceptance = {
-  promise: Promise<number>;
-  resolve(seq: number): void;
-  reject(error: unknown): void;
-};
+  Observation,
+  OnlineAgentExecution,
+  OnlineAgentAcceptance,
+} from './types.js';
 
 function acceptance(): OnlineAgentAcceptance {
   let resolve!: (seq: number) => void;
@@ -53,17 +48,6 @@ function acceptance(): OnlineAgentAcceptance {
   });
   return { promise, resolve, reject };
 }
-
-type Observation = { result: OnlineAgentResult } | { error: unknown };
-export type OnlineAgentExecution = {
-  admitted?: boolean;
-  observation?: Observation;
-  observers: Set<(value: Observation) => void>;
-  abort: AbortController;
-  task?: Promise<void>;
-  finalize?: () => Promise<void>;
-  finalizing?: Promise<void>;
-};
 
 export class NativeOnlineAgentBackend implements OnlineAgentBackend {
   readonly kind = 'native' as const;

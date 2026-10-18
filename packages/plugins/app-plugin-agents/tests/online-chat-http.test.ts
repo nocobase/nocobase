@@ -10,8 +10,8 @@ import { z } from 'zod';
 import { claim, createHarness, type Harness } from './harness.js';
 import { createChatRoutes } from '../server/routes/chat.js';
 import type { AdminEnv } from '../server/routes/admin.js';
-import { OnlineAgentService } from '../server/online-agent/service.js';
-import { createSessionManager } from '../server/online-agent/sessions.js';
+import { OnlineAgentService } from '../server/online/agent/service.js';
+import { createSessionManager } from '../server/online/agent/persistence/manager.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
 import { ProtocolError } from '../server/kernel/errors.js';
 

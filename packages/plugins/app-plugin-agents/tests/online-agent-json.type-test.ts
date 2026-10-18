@@ -1,11 +1,11 @@
 import { expectTypeOf } from 'vitest';
 import { z } from 'zod';
-import {
-  OnlineAgentConfigurator,
-  type OnlineAgentToolContext,
-  type OnlineAgentToolDefinition,
-} from '../server/online-agent/config.js';
-import type { OnlineAgentJson } from '../server/online-agent/codec.js';
+import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js';
+import type {
+  OnlineAgentToolContext,
+  OnlineAgentToolDefinition,
+  OnlineAgentJson,
+} from '../server/online/agent/types.js';
 
 // Compile-only checks: this file is included by tsconfig.type-tests.json, not Vitest.
 function checkContract(configurator: OnlineAgentConfigurator): void {

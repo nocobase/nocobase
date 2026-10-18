@@ -23,9 +23,9 @@ export {
   NativeOnlineAgentBackend,
   NativeRealtimeOnlineAgent,
   NativeBackgroundOnlineAgent,
-} from './online-agent/index.js';
+} from './online/agent/index.js';
 
 export type {
   OnlineAgentRealtimeOptions,
   OnlineAgentSendOptions,
-} from './online-agent/realtime.js';
+} from './online/agent/types.js';

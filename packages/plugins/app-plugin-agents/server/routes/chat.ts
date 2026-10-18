@@ -16,14 +16,13 @@ import {
   type OpenAPIV3_1,
 } from '@nocobase/app-server/router';
 import type { Context, Hono, MiddlewareHandler } from 'hono';
-import type { UserModelMessage } from 'ai';
-import { createUIMessageStreamResponse } from 'ai';
+import { type UserModelMessage, createUIMessageStreamResponse } from 'ai';
 import {
   appUIMessageMetadataSchema,
   appUIToolApprovalInputSchema,
 } from '../../shared/online-agent.js';
 import { cleanTitle } from '../core/conversations/titles.js';
-import { jsonSafe } from '../online-agent/codec.js';
+import { jsonSafe } from '../online/agent/messages/json.js';
 import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
 

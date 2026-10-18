@@ -1,18 +1,18 @@
 import {
   publicUIPageContext,
   type AppUIJson,
-} from '../../shared/ui-message.js';
-import type { ConversationMessage } from '../../shared/conversations.js';
+} from '../../../../shared/ui-message.js';
+import type { ConversationMessage } from '../../../../shared/conversations.js';
 import {
   validateAppUIMessages,
   type AppUIMessage,
-} from '../../shared/online-agent.js';
+} from '../../../../shared/online-agent.js';
 import {
   messagesRepo,
   toMessage,
-} from '../core/conversations/conversation.store.js';
-import type { TxRunner } from '../kernel/tx.js';
-import type { NativeHistoryQuery, NativeHistoryPage } from './native-store.js';
+} from '../../../core/conversations/conversation.store.js';
+import type { TxRunner } from '../../../kernel/tx.js';
+import type { NativeHistoryQuery, NativeHistoryPage } from '../types.js';
 
 export const runnerMessageId = (runId: string): string => `runner:${runId}`;
 /** Pure projection: no Run inference from prose and no invented tools or approvals. */

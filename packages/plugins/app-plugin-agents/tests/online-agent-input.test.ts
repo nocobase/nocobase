@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ModelMessage } from 'ai';
-import { nativeInputParts } from '../server/online-agent/input.js';
+import { nativeInputParts } from '../server/online/agent/messages/validation.js';
 
 describe('background SDK input normalization', () => {
   type FilePart = Extract<

@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { Output, streamText, generateText } from 'ai';
-import { createOutputSchema } from '../server/online-agent/output.js';
+import { createOutputSchema } from '../server/online/agent/messages/validation.js';
 import { languageModel } from '../server/online/providers.js';
 import {
   classify,

@@ -3,22 +3,20 @@ import { MockLanguageModelV4 } from 'ai/test';
 import type { ModelMessage } from 'ai';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { createHarness, type Harness } from './harness.js';
-import { OnlineAgentService } from '../server/online-agent/service.js';
-import { NativeOnlineAgentBackend } from '../server/online-agent/native-backend.js';
+import { OnlineAgentService } from '../server/online/agent/service.js';
+import { NativeOnlineAgentBackend } from '../server/online/agent/native/backend.js';
 import {
   NativeBackgroundOnlineAgent,
   NativeRealtimeOnlineAgent,
-} from '../server/online-agent/native-session.js';
-import {
-  OnlineAgentConfigurator,
-  type OnlineAgentContext,
-} from '../server/online-agent/config.js';
-import { createSessionManager } from '../server/online-agent/sessions.js';
+} from '../server/online/agent/native/session.js';
+import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js';
+import type { OnlineAgentContext } from '../server/online/agent/types.js';
+import { createSessionManager } from '../server/online/agent/persistence/manager.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
 import type {
   BackgroundOnlineAgent,
   RealtimeOnlineAgent,
-} from '../server/online-agent/agent.js';
+} from '../server/online/agent/contracts.js';
 
 const ref = { modelService: 'fixture', model: 'chat' };
 const alternate = { modelService: 'fixture', model: 'alternate' };

@@ -7,11 +7,9 @@ import {
   type UIMessageChunk,
 } from 'ai';
 import { ServiceContainer } from '@nocobase/service-provider';
-import { OnlineAgentConfigurator } from '../server/online-agent/config.js';
-import {
-  NativeMessages,
-  type NativeMessage,
-} from '../server/online-agent/messages.js';
+import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js';
+import { NativeMessages } from '../server/online/agent/messages/projection.js';
+import type { NativeMessage } from '../server/online/agent/types.js';
 
 const metadata = {
   conversationId: 'conversation',

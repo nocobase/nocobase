@@ -2,13 +2,13 @@ import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import type { Tool } from 'ai';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { z } from 'zod';
-import {
-  OnlineAgentConfigurator,
-  type OnlineAgentToolContext,
-  type OnlineAgentToolDefinition,
-} from '../server/online-agent/config.js';
-import type { OnlineAgentJson } from '../server/online-agent/codec.js';
-import { strictJson } from '../server/online-agent/strict-json.js';
+import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js';
+import type {
+  OnlineAgentToolContext,
+  OnlineAgentToolDefinition,
+  OnlineAgentJson,
+} from '../server/online/agent/types.js';
+import { strictJson } from '../server/online/agent/messages/json.js';
 
 const context: OnlineAgentToolContext = {
   user: { id: 'alice' },

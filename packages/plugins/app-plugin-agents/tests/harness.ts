@@ -18,18 +18,16 @@ import {
   PROTOCOL_VERSION,
   ProtocolError,
   RUNNER_ROUTES,
-} from '@nocobase/agent-protocol';
-import type {
-  ClaimRequest,
-  RegisterRequest,
-  RunnerFeature,
-  AgentTool,
-  ToolInfo,
+  type ClaimRequest,
+  type RegisterRequest,
+  type RunnerFeature,
+  type AgentTool,
+  type ToolInfo,
+  type ToolPolicy,
 } from '@nocobase/agent-protocol';
 import { createTestDatabase } from '@nocobase/app-testing/server';
 import type { DatabaseManager } from '@nocobase/db';
-import type { MiddlewareHandler } from 'hono';
-import { Hono } from 'hono';
+import { type MiddlewareHandler, Hono } from 'hono';
 
 import type {
   BusinessKey,
@@ -43,7 +41,6 @@ import type {
   ConfirmChanges,
   RunnerModelEntry,
 } from '../shared/agents.js';
-import type { ToolPolicy } from '@nocobase/agent-protocol';
 import { agentsRepo } from '../server/core/agents/agent.store.js';
 import { replaceAttachments } from '../server/core/skills/skill.store.js';
 
@@ -91,7 +88,7 @@ import {
 } from '../server/routes/runners/admin.js';
 import { createDistRoutes } from '../server/routes/runners/dist.js';
 import { createRunnerRoutes } from '../server/routes/runners/runner.js';
-import type { OnlineAgentRecoveryConfig } from '../server/online-agent/ui-streams.js';
+import type { OnlineAgentRecoveryConfig } from '../server/online/agent/types.js';
 
 const MIGRATIONS = path.resolve(import.meta.dirname, '../database/migrations');
 const PACKAGE = '@nocobase/app-plugin-agents';

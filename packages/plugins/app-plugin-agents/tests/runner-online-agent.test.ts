@@ -1,8 +1,10 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
-import type { OnlineAgentContext } from '../server/online-agent/config.js';
+import type {
+  OnlineAgentContext,
+  NativeUIChunk,
+} from '../server/online/agent/types.js';
 import { appUIMessageText } from '../shared/online-agent.js';
-import type { NativeUIChunk } from '../server/online-agent/native.js';
 import { claim, createHarness, type Harness } from './harness.js';
 import { appendFile } from 'node:fs/promises';
 import type { Knex } from 'knex';

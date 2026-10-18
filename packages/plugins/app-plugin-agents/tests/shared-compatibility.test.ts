@@ -1,19 +1,19 @@
-import type {
-  OnlineAgentToolContext as PublicToolContext,
-  RealtimeOnlineAgent,
-  OnlineAgent,
-  BackgroundOnlineAgent,
-  OnlineAgentJson,
-  OnlineAgentResult,
-  OnlineAgentSafeError,
+import {
+  type OnlineAgentToolContext as PublicToolContext,
+  type RealtimeOnlineAgent,
+  type OnlineAgent,
+  type BackgroundOnlineAgent,
+  type OnlineAgentJson,
+  type OnlineAgentResult,
+  type OnlineAgentSafeError,
+  OnlineAgentConfigurator as OnlineAgentEntryConfigurator,
 } from '@nocobase/app-plugin-agents/server/online-agent';
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
-import { OnlineAgentConfigurator as OnlineAgentEntryConfigurator } from '@nocobase/app-plugin-agents/server/online-agent';
-import {
-  OnlineAgentConfigurator,
-  type OnlineAgentToolDefinition,
-  type OnlineAgentToolContext,
-} from '../server/online-agent/config.js';
+import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js';
+import type {
+  OnlineAgentToolDefinition,
+  OnlineAgentToolContext,
+} from '../server/online/agent/types.js';
 import { expect, expectTypeOf, it } from 'vitest';
 import {
   OnlineAgentService as PublicOnlineAgentService,

@@ -1,5 +1,13 @@
-import { historicalPageContext } from './page-context.js';
-import { nativeExecutionStatus } from '../../online-agent/execution.js';
+import {
+  historicalPageContext,
+  hasContent,
+  renderPageContext,
+  type PageContextKinds,
+} from './page-context.js';
+import {
+  nativeExecutionStatus,
+  runnerBinding,
+} from '../../online/agent/persistence/state.js';
 /**
  * Conversations over this plugin's own tables. Everything people and other plugins do with conversations goes through
  * `ConversationService` (`ports.ts`); a later move to a shared platform conversation layer, or to the AI employee's
@@ -15,7 +23,6 @@ import { nativeExecutionStatus } from '../../online-agent/execution.js';
  * - Switching to the system default and back moves the queued work and the unanswered messages to the other agent,
  *   and bumps `thread`, so every switch starts a new session.
  */
-import { runnerBinding } from '../../online-agent/runner-metadata.js';
 import { isDeepStrictEqual } from 'node:util';
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -61,8 +68,7 @@ import type { IdSource } from '../../kernel/ids.js';
 import { asJson, jsonObject } from '../../kernel/values.js';
 import type { People } from '../../kernel/people.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
-import type { AgentService } from '../agents/index.js';
-import { findAgent } from '../agents/index.js';
+import { type AgentService, findAgent } from '../agents/index.js';
 import { agentNamesOf } from '../agents/agent.store.js';
 import type { RunnerService } from '../../runners/index.js';
 import {
@@ -100,11 +106,6 @@ import {
   type MessageRecord,
   type NewMessage,
 } from './conversation.store.js';
-import {
-  hasContent,
-  renderPageContext,
-  type PageContextKinds,
-} from './page-context.js';
 import type {
   ConversationRef,
   ConversationRules,

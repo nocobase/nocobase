@@ -1,9 +1,20 @@
+import { jsonSafe } from '../messages/json.js';
+import type {
+  OnlineAgentJson,
+  OnlineAgentOutcome,
+  OnlineAgentContext,
+  OnlineAgentOptions,
+  OnlineAgentToolContext,
+  NativeApproval,
+  NativeSnapshot,
+  NativeInput,
+  NativeMessage,
+  NativeUIChunk,
+} from '../types.js';
 import {
-  jsonSafe,
-  type OnlineAgentJson,
-  type OnlineAgentOutcome,
-} from './codec.js';
-import { OnlineAgentUIStreams, type UIStreamChannel } from './ui-streams.js';
+  OnlineAgentUIStreams,
+  type UIStreamChannel,
+} from '../transport/streams.js';
 import {
   streamText,
   Output,
@@ -12,7 +23,6 @@ import {
   stepCountIs,
   isToolUIPart,
   type UIMessage,
-  type UIMessageChunk,
   type ModelMessage,
   type LanguageModel,
 } from 'ai';
@@ -20,39 +30,22 @@ import type { ServiceResolver } from '@nocobase/service-provider';
 import {
   appUIMessageMetadataSchema,
   type AppUIMessageMetadata,
-  type AppUIData,
-} from '../../shared/online-agent.js';
+} from '../../../../shared/online-agent.js';
 import {
   MESSAGE_CONTENT_MAX,
   type ResolvedPageContext,
-} from '../../shared/conversations.js';
-import type { ModelRef } from '../../shared/models.js';
-import { conflict, invalid } from '../kernel/errors.js';
-import type { IdSource } from '../kernel/ids.js';
-import { reasoningOf } from '../online/gateway.js';
+} from '../../../../shared/conversations.js';
+import type { ModelRef } from '../../../../shared/models.js';
+import { conflict, invalid } from '../../../kernel/errors.js';
+import type { IdSource } from '../../../kernel/ids.js';
+import { reasoningOf } from '../../gateway.js';
+import type { OnlineAgentConfigurator } from '../configuration.js';
+import type { OnlineAgentSessionManager } from '../contracts.js';
+import type { OnlineAgentCall } from '../persistence/types.js';
 import type {
-  OnlineAgentConfigurator,
-  OnlineAgentContext,
-  OnlineAgentOptions,
-  OnlineAgentToolContext,
-} from './config.js';
-import type { OnlineAgentSessionManager, OnlineAgentCall } from './sessions.js';
-import type {
-  NativeApproval,
-  NativeSnapshot,
-  NativeInput,
-} from './native-store.js';
-import type { NativeMessage } from './messages.js';
-
-export type NativeUIChunk = UIMessageChunk<AppUIMessageMetadata, AppUIData>;
-export type NativeExecution = {
-  admitted?: boolean;
-  abort: AbortController;
-  task?: Promise<void>;
-  finalize?: () => Promise<void>;
-  finalizing?: Promise<void>;
-};
-type Acceptance = { resolve(seq: number): void; reject(error: unknown): void };
+  NativeExecution,
+  NativeAcceptance as Acceptance,
+} from './types.js';
 
 export class NativeOnlineAgent {
   private responses = new Map<string, UIStreamChannel>();

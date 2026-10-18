@@ -1,66 +1,29 @@
-import type { JSONSchema7, ModelMessage, Schema } from 'ai';
+import type { JSONSchema7, ModelMessage } from 'ai';
 import type {
   BackgroundOnlineAgent,
   OnlineAgent,
   RealtimeOnlineAgent,
-} from './agent.js';
-import type { OnlineAgentContext, OnlineAgentOptions } from './config.js';
-import type { ModelRef } from '../../shared/models.js';
-import type { OnlineAgentJson } from './codec.js';
-import type { NativeOnlineAgent } from './native.js';
-import type { OnlineAgentUIStreams } from './ui-streams.js';
+  NativeSessionHost,
+} from '../contracts.js';
 import type {
+  OnlineAgentContext,
+  OnlineAgentOptions,
+  OnlineAgentJson,
   NativeApproval,
   NativeHistoryPage,
   NativeHistoryQuery,
-} from './native-store.js';
-import type {
   OnlineAgentRealtimeOptions,
   OnlineAgentSendOptions,
-} from './realtime.js';
-import type {
-  OnlineAgentSession,
-  OnlineAgentSessionManager,
-} from './sessions.js';
-import type { OnlineAgentExecution } from './native-backend.js';
-import type { OnlineAgentBoundary } from './backend.js';
-import { OnlineAgentResultError, type OnlineAgentResult } from './result.js';
-import { nativeExecutionStatus } from './execution.js';
-import { createOutputSchema } from './output.js';
-import { conflict, invalid } from '../kernel/errors.js';
-
-/** Internal execution capabilities, shared by all facades of the application's one service. */
-export type NativeSessionHost = {
-  sessions: OnlineAgentSessionManager;
-  native: NativeOnlineAgent;
-  uiStreams: OnlineAgentUIStreams;
-  isActive(id: string): boolean;
-  abort(
-    context: OnlineAgentContext,
-    id: string,
-    kind: OnlineAgentSession['kind'],
-  ): Promise<void>;
-  retryFinalization(context: OnlineAgentContext, id: string): Promise<void>;
-  start(
-    context: OnlineAgentContext,
-    id: string,
-    messages: ModelMessage[],
-    input?: OnlineAgentSendOptions & { boundary?: OnlineAgentBoundary },
-    schema?: Schema<OnlineAgentJson>,
-    onExecution?: (execution: OnlineAgentExecution) => void,
-  ): Promise<number>;
-  approve(
-    context: OnlineAgentContext,
-    id: string,
-    input: NativeApproval,
-    onExecution?: (execution: OnlineAgentExecution) => void,
-  ): Promise<number>;
-  observe(
-    userId: string,
-    id: string,
-    wait?: number,
-  ): Promise<OnlineAgentResult>;
-};
+  OnlineAgentBoundary,
+  OnlineAgentResult,
+} from '../types.js';
+import type { ModelRef } from '../../../../shared/models.js';
+import type { OnlineAgentSession } from '../persistence/types.js';
+import type { OnlineAgentExecution } from './types.js';
+import { OnlineAgentResultError } from '../errors.js';
+import { nativeExecutionStatus } from '../persistence/state.js';
+import { createOutputSchema } from '../messages/validation.js';
+import { conflict, invalid } from '../../../kernel/errors.js';
 
 abstract class NativeAgentSession implements OnlineAgent {
   readonly sessionId: string;

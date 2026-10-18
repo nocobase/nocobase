@@ -3,11 +3,11 @@ import type { DatabaseConnection } from '@nocobase/db';
 import type { RedisOptions } from 'ioredis';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TxRunner } from '../server/kernel/tx.js';
-import type { NativeUIChunk } from '../server/online-agent/native.js';
-import {
-  OnlineAgentUIStreams,
-  type OnlineAgentRecoveryConfig,
-} from '../server/online-agent/ui-streams.js';
+import type {
+  NativeUIChunk,
+  OnlineAgentRecoveryConfig,
+} from '../server/online/agent/types.js';
+import { OnlineAgentUIStreams } from '../server/online/agent/transport/streams.js';
 
 // Keep the real resumable-stream engine and SDK framing in deterministic tests.
 // Only Redis I/O is replaced; explicitly configured integration tests use the real client.

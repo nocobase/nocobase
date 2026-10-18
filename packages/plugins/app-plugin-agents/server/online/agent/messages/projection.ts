@@ -16,22 +16,16 @@ import {
   appUIMessageMetadataSchema,
   validateAppUIMessages,
   type AppUIMessage,
-  type AppUIMessageMetadata,
-} from '../../shared/online-agent.js';
-import type { OnlineAgentConfigurator } from './config.js';
-import { jsonSafe } from './codec.js';
-import { strictJson } from './strict-json.js';
-import type { NativeUIChunk } from './native.js';
+} from '../../../../shared/online-agent.js';
+import type { OnlineAgentConfigurator } from '../configuration.js';
+import { jsonSafe, strictJson } from './json.js';
+import type {
+  NativeUIChunk,
+  NativeMessage,
+  NativeToolPart as ToolPart,
+  NativePublicPart as PublicPart,
+} from '../types.js';
 
-/** The one persisted SDK message: raw tool results and provider/approval evidence stay here. */
-export type NativeMessage = UIMessage<
-  AppUIMessageMetadata & {
-    inputProviderOptions?: ModelMessage['providerOptions'];
-    inputFiles?: number[];
-  }
->;
-type ToolPart = Extract<UIMessage['parts'][number], { toolCallId: string }>;
-type PublicPart = AppUIMessage['parts'][number];
 const toolError = 'The tool could not complete.';
 const conversionError =
   'The saved tool result could not be converted for the model.';

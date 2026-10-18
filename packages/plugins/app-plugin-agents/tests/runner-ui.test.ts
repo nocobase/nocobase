@@ -7,10 +7,10 @@ import { DefaultChatTransport } from 'ai';
 import { Hono, type MiddlewareHandler } from 'hono';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { createAgents, type Agents } from '../server/composition.js';
-import type { OnlineAgentContext } from '../server/online-agent/config.js';
+import type { OnlineAgentContext } from '../server/online/agent/types.js';
 import type { AdminEnv } from '../server/routes/admin.js';
 import { createChatRoutes } from '../server/routes/chat.js';
-import { OnlineAgentUIStreams } from '../server/online-agent/ui-streams.js';
+import { OnlineAgentUIStreams } from '../server/online/agent/transport/streams.js';
 import { appUIMessageText, type AppUIMessage } from '../shared/online-agent.js';
 import { createHarness, claim, type Harness } from './harness.js';
 

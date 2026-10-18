@@ -1,18 +1,18 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
-import {
-  OnlineAgentConfigurator,
-  type OnlineAgentContext,
-  type OnlineAgentConfig,
-} from '../server/online-agent/config.js';
-import type { OnlineAgentBackend } from '../server/online-agent/backend.js';
+import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js';
+import type {
+  OnlineAgentContext,
+  OnlineAgentConfig,
+  NativeUIChunk,
+} from '../server/online/agent/types.js';
+import type { OnlineAgentBackend } from '../server/online/agent/contracts.js';
 import {
   RunnerOnlineAgentAdapter,
   RunnerRealtimeOnlineAgent,
-} from '../server/online-agent/runner.js';
-import { OnlineAgentUIStreams } from '../server/online-agent/ui-streams.js';
-import type { NativeUIChunk } from '../server/online-agent/native.js';
+} from '../server/online/agent/runner/backend.js';
+import { OnlineAgentUIStreams } from '../server/online/agent/transport/streams.js';
 import { appUIMessageText } from '../shared/online-agent.js';
 import { claim, createHarness, type Harness } from './harness.js';
 

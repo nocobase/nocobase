@@ -5,15 +5,15 @@ import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { createHarness, type Harness } from './harness.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
 import { conversationsRepo } from '../server/core/conversations/conversation.store.js';
-import {
-  OnlineAgentConfigurator,
-  type OnlineAgentConfig,
-  type OnlineAgentContext,
-} from '../server/online-agent/config.js';
-import { createSessionManager } from '../server/online-agent/sessions.js';
-import { OnlineAgentService } from '../server/online-agent/service.js';
-import { RunnerOnlineAgentAdapter } from '../server/online-agent/runner.js';
-import { OnlineAgentUIStreams } from '../server/online-agent/ui-streams.js';
+import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js';
+import type {
+  OnlineAgentConfig,
+  OnlineAgentContext,
+} from '../server/online/agent/types.js';
+import { createSessionManager } from '../server/online/agent/persistence/manager.js';
+import { OnlineAgentService } from '../server/online/agent/service.js';
+import { RunnerOnlineAgentAdapter } from '../server/online/agent/runner/backend.js';
+import { OnlineAgentUIStreams } from '../server/online/agent/transport/streams.js';
 import { asJson } from '../server/kernel/values.js';
 
 const model = { modelService: 'fixture', model: 'chat' };

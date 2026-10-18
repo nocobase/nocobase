@@ -1,87 +1,55 @@
-import type { BackgroundOnlineAgent, RealtimeOnlineAgent } from './agent.js';
+import type {
+  BackgroundOnlineAgent,
+  RealtimeOnlineAgent,
+  OnlineAgentBackend,
+} from '../contracts.js';
 import {
   runnerUIMessages,
   runnerUIPage,
   runnerMessageId,
-} from './runner-ui.js';
-import { OnlineAgentUIStreams, type UIStreamChannel } from './ui-streams.js';
-import type { AppUIMessage } from '../../shared/online-agent.js';
+} from './projection.js';
+import type { UIStreamChannel } from '../transport/streams.js';
+import type { AppUIMessage } from '../../../../shared/online-agent.js';
 import { isDeepStrictEqual } from 'node:util';
 import type { ModelMessage } from 'ai';
-import type { Run } from '../../shared/runs.js';
-import type { ModelRef } from '../../shared/models.js';
-import type { ConversationService } from '../core/conversations/ports.js';
+import type { Run } from '../../../../shared/runs.js';
+import type { ModelRef } from '../../../../shared/models.js';
 import {
   conversationsRepo,
   findConversation,
   lockConversation,
   messagesRepo,
   toMessage,
-} from '../core/conversations/conversation.store.js';
-import { openRunsOnEach } from '../core/runs/index.js';
-import { findRunRecord, toRun } from '../core/runs/run.store.js';
-import { conflict, forbidden, invalid, notFound } from '../kernel/errors.js';
-import type { TxRunner } from '../kernel/tx.js';
-import { asJson, jsonObject } from '../kernel/values.js';
+} from '../../../core/conversations/conversation.store.js';
+import { openRunsOnEach } from '../../../core/runs/index.js';
+import { findRunRecord, toRun } from '../../../core/runs/run.store.js';
+import {
+  conflict,
+  forbidden,
+  invalid,
+  notFound,
+} from '../../../kernel/errors.js';
+import { asJson, jsonObject } from '../../../kernel/values.js';
 import type {
   OnlineAgentConfig,
-  OnlineAgentConfigurator,
   OnlineAgentContext,
   OnlineAgentOptions,
-} from './config.js';
-import type {
   OnlineAgentRealtimeOptions,
   OnlineAgentSendOptions,
-} from './realtime.js';
-import type { NativeApproval, NativeHistoryQuery } from './native-store.js';
-import {
-  unsupportedCapability,
-  type OnlineAgentBackend,
-  type OnlineAgentBoundary,
-  type OnlineAgentConfiguration,
-  type OnlineAgentInitialConfiguration,
-} from './backend.js';
-import { runnerBinding } from './runner-metadata.js';
-
-type Execution = {
-  id: string;
-  userId: string;
-  runId?: string;
-  cursor: number;
-  writer: UIStreamChannel;
-  published: Set<string>;
-  ready: boolean;
-  started: boolean;
-  snapshot?: AppUIMessage;
-  pending?: Promise<void>;
-  again: boolean;
-  timer?: ReturnType<typeof setTimeout>;
-  cleared?: boolean;
-};
-
-type RunnerDependencies = {
-  tx: TxRunner;
-  conversations: ConversationService;
-  streams: OnlineAgentUIStreams;
-  configurator: OnlineAgentConfigurator;
-  now(): string;
-  basePath(): string;
-  onError(error: unknown): void;
-  measure?(phase: string, durationMs: number): void;
-};
-type RunnerState = {
-  active: Map<string, Execution>;
-  admitting: Set<string>;
-  admissions: Set<Promise<unknown>>;
-  stopping: boolean;
-  detaching: boolean;
-};
-type RunnerSessionHost = {
-  deps: RunnerDependencies;
-  state: RunnerState;
-  refresh(execution: Execution): Promise<void>;
-  finalizeSavedRun(userId: string, id: string, runId: string): Promise<void>;
-};
+  NativeApproval,
+  NativeHistoryQuery,
+  OnlineAgentBoundary,
+  OnlineAgentConfiguration,
+  OnlineAgentInitialConfiguration,
+} from '../types.js';
+import { unsupportedCapability } from '../errors.js';
+import { runnerBinding } from '../persistence/state.js';
+import type {
+  Execution,
+  RunnerDependencies,
+  RunnerState,
+  RunnerSessionHost,
+} from './types.js';
 
 function credentials(context: OnlineAgentContext): void {
   if (

@@ -1,35 +1,25 @@
 import type { LanguageModel } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
-import type { BackgroundOnlineAgent, RealtimeOnlineAgent } from './agent.js';
 import type {
+  BackgroundOnlineAgent,
+  RealtimeOnlineAgent,
   OnlineAgentBackend,
+  OnlineAgentSessionManager,
+} from './contracts.js';
+import type {
   OnlineAgentBoundary,
   OnlineAgentConfiguration,
   OnlineAgentInitialConfiguration,
-} from './backend.js';
-import { NativeOnlineAgentBackend } from './native-backend.js';
-import { OnlineAgentUIStreams } from './ui-streams.js';
-import {
-  OnlineAgentConfigurator,
-  type OnlineAgentContext,
-  type OnlineAgentOptions,
-} from './config.js';
-import type { OnlineAgentRealtimeOptions } from './realtime.js';
-import type { OnlineAgentSessionManager } from './sessions.js';
-import type { IdSource } from '../kernel/ids.js';
-import { conflict, invalid } from '../kernel/errors.js';
-import type { ModelRef } from '../../shared/models.js';
-
-export type {
-  OnlineAgent,
-  RealtimeOnlineAgent,
-  BackgroundOnlineAgent,
-} from './agent.js';
-export {
-  OnlineAgentResultError,
-  type OnlineAgentResult,
-  type OnlineAgentSafeError,
-} from './result.js';
+  OnlineAgentContext,
+  OnlineAgentOptions,
+  OnlineAgentRealtimeOptions,
+} from './types.js';
+import { NativeOnlineAgentBackend } from './native/backend.js';
+import { OnlineAgentUIStreams } from './transport/streams.js';
+import { OnlineAgentConfigurator } from './configuration.js';
+import type { IdSource } from '../../kernel/ids.js';
+import { conflict, invalid } from '../../kernel/errors.js';
+import type { ModelRef } from '../../../shared/models.js';
 
 /** Trusted application entry and backend orchestration; executions belong to their backend. */
 export class OnlineAgentService {

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { JSONSchema7 } from 'ai';
-import { createOutputSchema } from '../server/online-agent/output.js';
+import { createOutputSchema } from '../server/online/agent/messages/validation.js';
 
 it('snapshots a serializable schema and validates local references and formats', async () => {
   const schema: JSONSchema7 = {

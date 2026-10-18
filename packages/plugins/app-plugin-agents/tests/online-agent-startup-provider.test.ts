@@ -1,7 +1,7 @@
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { expect, it, vi } from 'vitest';
-import { createSessionManager } from '../server/online-agent/sessions.js';
+import { createSessionManager } from '../server/online/agent/persistence/manager.js';
 import { AgentsProvider } from '../server/providers/agents.js';
 import { agentsToken } from '../server/tokens.js';
 import { createHarness } from './harness.js';

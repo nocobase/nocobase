@@ -15,21 +15,19 @@ import { z } from 'zod';
 import type { Knex } from 'knex';
 import { appendFile } from 'node:fs/promises';
 import { createHarness, type Harness } from './harness.js';
-import {
-  OnlineAgentService,
-  type OnlineAgent,
-} from '../server/online-agent/service.js';
-import { OnlineAgentUIStreams } from '../server/online-agent/ui-streams.js';
-import { createSessionManager } from '../server/online-agent/sessions.js';
-import {
-  OnlineAgentConfigurator,
-  type OnlineAgentContext,
-  type OnlineAgentToolContext,
-} from '../server/online-agent/config.js';
+import { OnlineAgentService } from '../server/online/agent/service.js';
+import type { OnlineAgent } from '../server/online/agent/contracts.js';
+import { OnlineAgentUIStreams } from '../server/online/agent/transport/streams.js';
+import { createSessionManager } from '../server/online/agent/persistence/manager.js';
+import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js';
+import type {
+  OnlineAgentContext,
+  OnlineAgentToolContext,
+  NativeUIChunk,
+  NativeMessage,
+} from '../server/online/agent/types.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
 import { appUIMessageText } from '../shared/online-agent.js';
-import type { NativeUIChunk } from '../server/online-agent/native.js';
-import type { NativeMessage } from '../server/online-agent/messages.js';
 
 const ref = { modelService: 'fixture', model: 'chat' };
 const context = (id = 'alice'): OnlineAgentContext => ({

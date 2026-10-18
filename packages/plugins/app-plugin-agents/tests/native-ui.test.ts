@@ -2,10 +2,12 @@ import { measureUIReadCost, measureUIOperationCost } from './ui-read-cost.js';
 import { createServer, connect, type Socket } from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { Redis } from 'ioredis';
-import {
-  OnlineAgentUIStreams,
-  type OnlineAgentRecoveryConfig,
-} from '../server/online-agent/ui-streams.js';
+import { OnlineAgentUIStreams } from '../server/online/agent/transport/streams.js';
+import type {
+  OnlineAgentRecoveryConfig,
+  OnlineAgentContext,
+  OnlineAgentToolContext,
+} from '../server/online/agent/types.js';
 import { appendFile } from 'node:fs/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Chat } from '@ai-sdk/react';
@@ -15,17 +17,13 @@ import { Hono, type MiddlewareHandler } from 'hono';
 import { z } from 'zod';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { createHarness, type Harness } from './harness.js';
-import { OnlineAgentService } from '../server/online-agent/service.js';
-import { createSessionManager } from '../server/online-agent/sessions.js';
+import { OnlineAgentService } from '../server/online/agent/service.js';
+import { createSessionManager } from '../server/online/agent/persistence/manager.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
 import { createChatRoutes } from '../server/routes/chat.js';
 import { ProtocolError } from '../server/kernel/errors.js';
-import { jsonSafe } from '../server/online-agent/codec.js';
+import { jsonSafe } from '../server/online/agent/messages/json.js';
 import type { AdminEnv } from '../server/routes/admin.js';
-import type {
-  OnlineAgentContext,
-  OnlineAgentToolContext,
-} from '../server/online-agent/config.js';
 import type { AppUIMessage } from '../shared/online-agent.js';
 
 const ref = { modelService: 'fixture', model: 'chat' };

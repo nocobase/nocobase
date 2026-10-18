@@ -2,29 +2,27 @@ import { expectTypeOf } from 'vitest';
 import type {
   BackgroundOnlineAgent,
   RealtimeOnlineAgent,
-} from '../server/online-agent/agent.js';
-import type {
   OnlineAgentBackend,
+} from '../server/online/agent/contracts.js';
+import type {
   OnlineAgentBoundary,
   OnlineAgentConfiguration,
   OnlineAgentInitialConfiguration,
-} from '../server/online-agent/backend.js';
-import type {
   OnlineAgentContext,
   OnlineAgentOptions,
-} from '../server/online-agent/config.js';
-import type { NativeOnlineAgentBackend } from '../server/online-agent/native-backend.js';
-import type {
+  NativeApproval,
+  OnlineAgentRealtimeOptions,
+} from '../server/online/agent/types.js';
+import { NativeOnlineAgentBackend } from '../server/online/agent/native/backend.js';
+import {
   NativeBackgroundOnlineAgent,
   NativeRealtimeOnlineAgent,
-} from '../server/online-agent/native-session.js';
-import type { NativeApproval } from '../server/online-agent/native-store.js';
-import type { OnlineAgentRealtimeOptions } from '../server/online-agent/realtime.js';
-import type {
+} from '../server/online/agent/native/session.js';
+import {
   RunnerOnlineAgentAdapter,
   RunnerRealtimeOnlineAgent,
-} from '../server/online-agent/runner.js';
-import type { OnlineAgentService } from '../server/online-agent/service.js';
+} from '../server/online/agent/runner/backend.js';
+import { OnlineAgentService } from '../server/online/agent/service.js';
 import type { ModelRef } from '../shared/models.js';
 
 interface ExpectedBackend {

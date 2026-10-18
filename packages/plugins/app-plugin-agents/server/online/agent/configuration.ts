@@ -1,77 +1,18 @@
 import type { Tool } from 'ai';
-import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { ServiceResolver } from '@nocobase/service-provider';
-import type { ZodObject } from 'zod';
-import { invalid } from '../kernel/errors.js';
-import { jsonSafe, type OnlineAgentJson } from './codec.js';
-import { strictJson } from './strict-json.js';
-
-export type OnlineAgentContext = Readonly<{
-  user: { id: string };
-  authorization: AuthorizationContext;
-  /** Full entry credentials remain in memory and are passed to the business service unchanged. */
-  credentials: unknown;
-  business?: OnlineAgentJson;
-  variable?: OnlineAgentJson;
-  systemPrompt?: string;
-}>;
-export type OnlineAgentToolContext = OnlineAgentContext & {
-  /** The executing session, supplied by the runtime rather than model or page input. */
-  readonly sessionId: string;
-  readonly signal: AbortSignal;
-};
-export type OnlineAgentScope = {
-  agentId?: string;
-  systemPromptTemplate?:
-    | string
-    | {
-        variableSchema?: ZodObject;
-        template(context: OnlineAgentContext): string;
-      };
-  context?: { variable?: OnlineAgentJson; systemPrompt?: string };
-  tool?: string[];
-  model?: string[];
-  thinking?: string;
-  permissions?: never;
-};
-export type OnlineAgentScopeProvider = (
-  context: OnlineAgentContext,
-) => OnlineAgentScope | Promise<OnlineAgentScope>;
-export type OnlineAgentOptions = OnlineAgentScope & { scope?: string[] };
-export type OnlineAgentConfig = {
-  agentId?: string;
-  scope: string[];
-  systemPrompt: string;
-  variable?: OnlineAgentJson;
-  tool: string[];
-  toolVersions: Record<string, string>;
-  model: string[];
-  thinking?: string;
-};
-export type OnlineAgentToolDefinition<
-  I,
-  O extends OnlineAgentJson,
-  C = OnlineAgentToolContext,
-> = Tool<I, O, C> & {
-  execute: NonNullable<Tool<I, O, C>['execute']>;
-  permissions?: never;
-  /** Explicit public projections; omitted tools remain private model evidence. */
-  public?: {
-    input(value: I): OnlineAgentJson;
-    output(value: O): OnlineAgentJson;
-  };
-};
-
-type OnlineAgentRegisteredTool = {
-  version: string;
-  resolve(
-    resolver?: ServiceResolver,
-  ): OnlineAgentToolDefinition<
-    unknown,
-    OnlineAgentJson,
-    OnlineAgentToolContext
-  >;
-};
+import { invalid } from '../../kernel/errors.js';
+import { jsonSafe, strictJson } from './messages/json.js';
+import type {
+  OnlineAgentJson,
+  OnlineAgentContext,
+  OnlineAgentToolContext,
+  OnlineAgentScope,
+  OnlineAgentScopeProvider,
+  OnlineAgentOptions,
+  OnlineAgentConfig,
+  OnlineAgentToolDefinition,
+  OnlineAgentRegisteredTool,
+} from './types.js';
 
 /** Detect SDK result protocols without accidentally executing an accessor on a raw result. */
 function resultMethod(value: unknown, key: string | symbol): boolean {

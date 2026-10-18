@@ -30,8 +30,10 @@ import type { Run } from '../../../shared/runs.js';
 import type { Tx } from '../../kernel/tx.js';
 import type { NewInput, SubjectBinding } from '../runs/index.js';
 import type { PageContextKinds } from './page-context.js';
-import type { OnlineAgentConfig } from '../../online-agent/config.js';
-import type { OnlineAgentJson } from '../../online-agent/codec.js';
+import type {
+  OnlineAgentConfig,
+  OnlineAgentJson,
+} from '../../online/agent/types.js';
 
 /** A conversation as the application sees the one a run works on. */
 export interface ConversationRef {

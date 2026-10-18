@@ -4,9 +4,9 @@ import { MockLanguageModelV4 } from 'ai/test';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { appendFile } from 'node:fs/promises';
 import { createHarness, type Harness } from './harness.js';
-import { OnlineAgentService } from '../server/online-agent/service.js';
-import { createSessionManager } from '../server/online-agent/sessions.js';
-import type { OnlineAgentContext } from '../server/online-agent/config.js';
+import { OnlineAgentService } from '../server/online/agent/service.js';
+import { createSessionManager } from '../server/online/agent/persistence/manager.js';
+import type { OnlineAgentContext } from '../server/online/agent/types.js';
 import type { ResolvedPageContext } from '../shared/conversations.js';
 
 let h: Harness;

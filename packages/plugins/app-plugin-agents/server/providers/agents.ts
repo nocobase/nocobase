@@ -1,4 +1,4 @@
-import type { OnlineAgentRecoveryConfig } from '../online-agent/ui-streams.js';
+import type { OnlineAgentRecoveryConfig } from '../online/agent/types.js';
 /**
  * Binds the plugin's services, and at boot connects them to the platform: realtime announcements of runs and
  * conversations, and the vector queue's worker. The runners' side (their announcements, the sweeper and the wake-ups of

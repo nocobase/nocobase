@@ -121,7 +121,7 @@ import {
   VariableValueInput,
   WorkspaceParams,
 } from './schemas.js';
-import type { OnlineAgentContext } from '../online-agent/config.js';
+import type { OnlineAgentContext } from '../online/agent/types.js';
 
 /** A multipart body of one file, as `file`. */
 const skillUploadBody: OpenAPIV3_1.RequestBodyObject = {
