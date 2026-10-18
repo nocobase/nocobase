@@ -37,6 +37,8 @@ import {
   AttachmentSchema,
   BoundedListMeta,
   IssueParams,
+  IssueScreenshotSchema,
+  IssueScreenshotsMeta,
   singleFileBody,
 } from '../../routes/schemas.js';
 import type { AttachmentService } from './attachment.service.js';
@@ -275,6 +277,30 @@ export function createIssueAttachmentRoutes(
   attachments: AttachmentService,
 ): Hono<ViewerEnv> {
   const routes = domainRouter<ViewerEnv>();
+  routes.get(
+    '/:issueId/screenshots',
+    describeRoute({
+      tags,
+      summary: 'List the latest issue screenshots',
+      operationId: 'projectsListIssueScreenshots',
+      ...cliRoute(false),
+      description:
+        'The latest 100 safe raster images on live Agent comments, including older filename versions. Ordered by comment time and id descending, then attachment time and id ascending. Requires visibility of the issue, like reading comments. Metadata comes from the comment, independently of comment pagination. A truncated batch has no task-wide total.',
+      responses: {
+        200: listResponse(IssueScreenshotSchema, IssueScreenshotsMeta),
+        ...apiErrorResponses,
+        404: apiErrorResponse(404),
+      },
+    }),
+    apiValidator('param', IssueParams),
+    async (context) =>
+      context.json(
+        await attachments.screenshots(
+          viewerOf(context),
+          context.req.valid('param').issueId,
+        ),
+      ),
+  );
   routes.get(
     '/:issueId/attachments',
     describeRoute({
