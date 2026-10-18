@@ -45,6 +45,8 @@ Browser checks belong to a running target App that registers the plugin. Use its
 
 ### Find complete examples in the workspace
 
+Start with the self-contained [complete plugin example](testing-example.md) for one plugin spanning a migration, service, configuration factory, protected API, translated Client component and CLI command. Its source and fixture App travel with this Skill under `assets/testing-example/`; the accompanying verifier runs lint, typecheck and both test environments against an installed NocoBase 3 application's dependencies.
+
 The application Skill's complete examples live under `packages/app/app-skills/skills/nocobase-app-development/references/testing/`: `database/repository.md`, `database/migration.md`, `server/routes.md`, `client/page.md`, `cli/command.md`, `cli/files.md` and `playwright/login.md`. Read them from the source workspace when a complete fixture is needed. Adapt application-owned imports to the production plugin and explicitly register it in the fixture; do not copy an application composition unchanged and assume it includes the plugin. Those paths are repository lookup locations, not relative dependencies of this globally distributed Skill.
 
 Maintained executable fixtures also live in `packages/tools/app-testing/tests/`, with its minimal App in `tests/fixtures/app/`, and scaffold tests in `packages/tools/create-plugin/template/tests/`. Inspect the current exports and fixture configuration before borrowing code; keep tests focused on the plugin's behavior rather than copying the harness's own tests.

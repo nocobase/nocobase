@@ -1,0 +1,11 @@
+{
+  "name": "@example/app-plugin-reading-list",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./server": "./server/index.ts",
+    "./client": "./client/index.ts",
+    "./cli": "./cli/index.ts",
+    "./config": "./server/config.ts"
+  }
+}

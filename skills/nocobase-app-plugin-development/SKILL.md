@@ -16,8 +16,9 @@ These English references adapt the plugin development guide into task-specific i
 | Create a plugin, choose capabilities, change declarations, exports, dependencies, or public contracts | [Scaffolding and package contracts](references/plugin-foundation.md) |
 | Register, configure, upgrade, disable, unregister, or diagnose plugin integration                     | [Registration and lifecycle](references/registration.md)             |
 | Choose Client components, ServiceProviders, React Providers, configuration, or API access             | [Client architecture](references/client.md)                          |
+| Define Server configuration defaults, environment mappings, validation, or browser-visible fields    | [Plugin configuration](references/configuration.md)                  |
 | Build or change any plugin UI                                                                         | [shadcn components and styling](references/client-components.md)     |
-| Add pages, Settings, Dev routes, menus, Tabs, route dialogs/drawers, child routes, or page overrides  | [Client routing](references/client-routing.md)                       |
+| Add business pages, menus, Tabs, route dialogs/drawers, child routes, or page overrides                 | [Client routing](references/client-routing.md)                       |
 | Design configuration entities, settings permissions, routed editors and safe saves                    | [System settings](references/system-settings.md)                     |
 | Define service contracts, Tokens, dependency injection, or lifecycle                                  | [Services and Providers](references/services.md)                     |
 | Add HTTP endpoints, authorization, Repository operations, background jobs, or queues                  | [Server development](references/server.md)                           |
@@ -28,6 +29,7 @@ These English references adapt the plugin development guide into task-specific i
 | Expose a plugin's capabilities to the App Agent                                                       | [Plugin Skills](references/plugin-skills.md)                         |
 | Add commands, CLI exports, or CLI registration                                                        | [CLI plugins](references/cli.md)                                     |
 | Use `@nocobase/app-testing` for database, Server, Client or CLI tests and verify App integration       | [Testing and delivery](references/testing.md)                        |
+| Follow one executable plugin through migrations, protected API, Client, configuration and CLI tests | [Complete testing example](references/testing-example.md)            |
 
 For worked implementations and tests, read the matching [Server Route examples](references/server-route-examples.md), [ServiceToken and Provider examples](references/service-examples.md), [Client examples](references/client-examples.md), or [Repository examples](references/repository-examples.md). These supplement the topic references with concrete code and point to maintained source fixtures; adapt their explicit example access policies to the requested product.
 
