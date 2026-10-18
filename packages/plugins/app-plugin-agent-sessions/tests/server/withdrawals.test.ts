@@ -9,6 +9,7 @@ import {
   events,
   enqueue,
   takeCommands,
+  commands,
 } from '../../server/store.js';
 import { test } from '../helpers/database.js';
 
@@ -26,19 +27,18 @@ describe('queued message withdrawal', () => {
   }) => {
     const connection = database.connection();
     const at = new Date().toISOString();
-    for (let index = 0; index < 51; index += 1)
-      await enqueue(
-        connection,
-        'computer',
-        {
-          type: 'withdrawPrompt',
-          sessionId: 'session',
-          promptId: `p${index}`,
-          seq: index + 1,
-        },
-        at,
-        `withdraw:${String(index).padStart(27, '0')}`,
-      );
+    const [head, ...tail] = Array.from({ length: 51 }, (_, index) => ({
+      id: `withdraw:${String(index).padStart(27, '0')}`,
+      computerId: 'computer',
+      command: {
+        type: 'withdrawPrompt' as const,
+        sessionId: 'session',
+        promptId: `p${index}`,
+        seq: index + 1,
+      },
+      createdAt: at,
+    }));
+    await commands(connection).createMany({ values: [head!, ...tail] });
     await enqueue(
       connection,
       'computer',

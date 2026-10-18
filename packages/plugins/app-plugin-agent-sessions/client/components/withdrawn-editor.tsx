@@ -58,7 +58,8 @@ export function WithdrawnEditor({
             };
           // Re-read through the owner's API client: removed or inaccessible files fail the whole edit visibly.
           const stream = await api.stream({
-            path: imagePath(session.id, image.file!),
+            // The API client already supplies /api; imagePath also serves browser image URLs.
+            path: imagePath(session.id, image.file!).replace(/^\/api\//u, ''),
             signal,
           });
           const blob = await new Response(stream).blob();

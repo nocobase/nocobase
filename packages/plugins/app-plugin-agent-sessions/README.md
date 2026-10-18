@@ -188,6 +188,8 @@ Bridge protocol 4 adds `/bridge/claim` and `/bridge/withdrawn`, identifies promp
 
 Upgrade and restart the computer connection. Older bridges cannot poll new commands; already delivered legacy prompts have no withdrawal capability, even after the computer upgrades. Their transcript explains that they cannot be safely withdrawn. A network outage leaves the current turn running but prevents the next prompt from starting until a claim succeeds. Every new prompt carries complete application instructions and its work snapshot, avoiding a dependency on a preceding queued prompt that may be withdrawn. Roll out the server and bundled CLI together; no fallback executes a prompt before authorization.
 
+An unsequenced command left on the server from before the upgrade cannot obtain a safe execution claim. The bridge records a warning asking the owner to copy it into a new message, rather than silently dropping it or executing it without authorization. Messages already received by an older bridge may still run there; upgrading never presents them as safely withdrawn.
+
 Each new start adds one HTTP round trip and one session transaction, replacing the reported start event. Withdrawal and acknowledgement each take one session transaction. Only a full batch dominated by retained withdrawals adds a second bounded read, reserving up to 25 slots each for ordinary and retained commands so a lost acknowledgement cannot starve other commands. Empty polls retain their original reads and take no session lock. A poll containing withdrawals waits one second before repeating. There are no leases, automatic reruns or additional background sweepers.
 
 ## Data

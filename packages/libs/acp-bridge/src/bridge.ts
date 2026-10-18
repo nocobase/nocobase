@@ -253,7 +253,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     `This computer is connected to ${options.server} as "${computer().name}".`,
   );
   let probing: Promise<void> | undefined;
-  let refused: BridgeUpgradeRequired | undefined;
+  let refused: BridgeStopped | undefined;
   const refresh = (): void => {
     if (probing || signal.aborted) return;
     probing = (async () => {
@@ -540,7 +540,16 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       if (kept && diagnostics) timing('agentTakenOver');
       session = new BridgeSession(command.session, {
         claim: async (promptId, seq) => {
-          if (seq === undefined) return false;
+          if (seq === undefined) {
+            reporter.add(sessionId, {
+              kind: 'notice',
+              at: new Date().toISOString(),
+              level: 'warning',
+              message:
+                'A message queued before the bridge upgrade cannot start safely. Copy it into a new message to send it again; messages already received by an older bridge may still run there.',
+            });
+            return false;
+          }
           for (let attempt = 1; !signal.aborted; attempt += 1) {
             try {
               const answer = await post<ClaimResponse>(
@@ -567,6 +576,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
                 log(
                   `The application refused to start a message: ${message(error)}`,
                 );
+                refused = stopped ?? new BridgeStopped(message(error));
                 stopping.abort();
                 return false;
               }
@@ -896,7 +906,8 @@ function refusal(error: unknown): BridgeStopped | undefined {
       'This computer was removed in the application. Start the bridge again to connect it anew.',
     );
   }
-  if (error.reason === 'AGENT_SESSIONS_BRIDGE_REPLACED') return new BridgeStopped(error.message);
+  if (error.reason === 'AGENT_SESSIONS_BRIDGE_REPLACED')
+    return new BridgeStopped(error.message);
   if (error.reason === 'AGENT_SESSIONS_UPGRADE_REQUIRED') {
     const protocol = error.metadata?.protocol;
     return new BridgeUpgradeRequired(

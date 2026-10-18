@@ -311,7 +311,7 @@ export async function enqueue(
   });
 }
 
-/** Takes the computer's waiting commands away, oldest first. */
+/** Delivers waiting commands, retaining withdrawals until their removal acknowledgement. */
 export async function takeCommands(
   conn: DatabaseConnection,
   computerId: string,

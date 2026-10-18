@@ -116,11 +116,15 @@ export function bridgeRoutes(service: AgentSessionsService): Hono<AuthEnv> {
       operationId: 'agentSessionsPoll',
       ...cliRoute(false),
       security,
-      description: `Answers with the commands waiting for the computer and takes them away; with \`wait\`, waits up to 25 seconds for one. ${bridgeOnly}`,
+      description: `Answers with the commands waiting for the computer. Withdrawals remain until removal is acknowledged; other commands are taken away. With \`wait\`, waits up to 25 seconds for one. ${bridgeOnly}`,
       responses: {
         200: dataResponse(z.object({ commands: z.array(BridgeCommandSchema) })),
         ...errors,
         404: computerNotFound,
+        400: apiErrorResponse(
+          400,
+          'Upgrade the bridge or restart a replaced connection.',
+        ),
       },
     }),
     apiValidator('json', PollRequestSchema),
@@ -148,6 +152,10 @@ export function bridgeRoutes(service: AgentSessionsService): Hono<AuthEnv> {
       responses: {
         200: dataResponse(z.object({ open: z.boolean() })),
         ...errors,
+        400: apiErrorResponse(
+          400,
+          'The registered bridge generation no longer matches this report.',
+        ),
         404: apiErrorResponse(
           404,
           'The computer or the session is not yours, or the session runs elsewhere.',

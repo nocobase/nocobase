@@ -29,6 +29,7 @@ let root: string;
 let server: Server;
 let seen: Seen[];
 let answer: (request: Seen) => Answer;
+let claimAnswer: ((request: Seen) => Answer) | undefined;
 let commands: BridgeCommand[];
 
 beforeEach(async () => {
@@ -37,6 +38,7 @@ beforeEach(async () => {
   vi.stubEnv('HOME', root);
   seen = [];
   commands = [];
+  claimAnswer = undefined;
   server = createServer((request, response) => {
     let text = '';
     request.on('data', (chunk: Buffer) => (text += chunk.toString()));
@@ -55,7 +57,7 @@ beforeEach(async () => {
       }: Answer = one.path.endsWith('/poll')
         ? { data: { commands: commands.splice(0) } }
         : one.path.endsWith('/claim')
-          ? { data: { execute: true } }
+          ? (claimAnswer?.(one) ?? { data: { execute: true } })
           : answer(one);
       const body = JSON.stringify(
         status === 200
@@ -113,6 +115,75 @@ const registers = (): Seen[] =>
   seen.filter((request) => request.path.endsWith('/register'));
 
 describe('runBridge', () => {
+  it('explains an unsequenced pre-upgrade command instead of silently dropping or executing it', async () => {
+    answer = () => ({ data: { computerId: 'c1', key: 'k1', open: true } });
+    commands.push({
+      type: 'prompt',
+      session: {
+        id: 'legacy',
+        agentId: 'opencode',
+        cwd: root,
+        acpSessionId: null,
+        settings: {},
+      },
+      promptId: 'old',
+      content: [{ type: 'text', text: 'Legacy' }],
+    });
+    const { done, stop } = await run();
+    try {
+      await until(() =>
+        seen.some(
+          (one) =>
+            one.path.endsWith('/report') &&
+            (one.body.events as { kind: string }[]).some(
+              (event) => event.kind === 'notice',
+            ),
+        ),
+      );
+    } finally {
+      stop();
+      await done;
+    }
+    expect(seen.some((one) => one.path.endsWith('/claim'))).toBe(false);
+  });
+  it('propagates a claim protocol refusal so the CLI can upgrade and restart', async () => {
+    const { BridgeUpgradeRequired } = await import('../src/bridge.js');
+    answer = () => ({ data: { computerId: 'c1', key: 'k1' } });
+    claimAnswer = () => ({
+      status: 400,
+      error: {
+        reason: 'AGENT_SESSIONS_UPGRADE_REQUIRED',
+        message: 'Upgrade the bridge.',
+        metadata: { protocol: BRIDGE_PROTOCOL_VERSION + 1 },
+      },
+    });
+    commands.push({
+      type: 'prompt',
+      session: {
+        id: 'session',
+        agentId: 'opencode',
+        cwd: root,
+        acpSessionId: null,
+        settings: {},
+      },
+      promptId: 'p1',
+      seq: 1,
+      content: [{ type: 'text', text: 'Must not execute' }],
+    });
+    const { done, stop } = await run();
+    try {
+      await expect(done).rejects.toBeInstanceOf(BridgeUpgradeRequired);
+    } finally {
+      stop();
+    }
+    expect(
+      seen.some(
+        (one) =>
+          one.path.endsWith('/report') &&
+          (one.body.events as unknown[]).length > 0,
+      ),
+    ).toBe(false);
+  });
   it('delivers discovered choices before slow cleanup and awaits cleanup during shutdown', async () => {
     let release: (() => void) | undefined;
     vi.spyOn(BridgeSession.prototype, 'discover').mockResolvedValue({

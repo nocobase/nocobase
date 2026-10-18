@@ -48,6 +48,50 @@ const prompt: Extract<TranscriptItem, { type: 'prompt' }> = {
 };
 
 describe('withdrawing a queued message', () => {
+  it('rechecks stored image access through the API client and lets an unreadable attachment retry', async () => {
+    const requests = vi.fn(() =>
+      Response.json(
+        { error: { message: 'Image not found.' } },
+        { status: 404 },
+      ),
+    );
+    const seen: string[] = [];
+    await renderWithApp(
+      <QueryClientProvider client={new QueryClient()}>
+        <WithdrawnEditor
+          session={session}
+          item={{
+            ...prompt,
+            images: [
+              {
+                type: 'image',
+                id: 'stored',
+                mimeType: 'image/png',
+                file: 'stored',
+              },
+            ],
+          }}
+          draftKey='stored-editor'
+          close={vi.fn()}
+        />
+      </QueryClientProvider>,
+      {
+        plugins: [plugin({ routes: false })],
+        namespace: '@nocobase/app-plugin-agent-sessions',
+        fetch: answerApi((call) => {
+          seen.push(call.path);
+          return requests();
+        }),
+      },
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Could not load the original attachments',
+    );
+    expect(seen).toEqual(['agentSessions/sessions/session/images/stored']);
+    fireEvent.click(screen.getByRole('button', { name: 'Retry', exact: true }));
+    await waitFor(() => expect(requests).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('textbox')).toBeNull();
+  });
   it('offers retry after failure, including while offline, and explains the legacy boundary', async () => {
     const withdraw = vi
       .fn()
