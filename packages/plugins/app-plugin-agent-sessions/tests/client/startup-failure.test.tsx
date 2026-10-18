@@ -39,9 +39,14 @@ const computer: Computer = {
 
 beforeEach(() => localStorage.clear());
 
-it.each(['en-US', 'zh-CN'])(
-  'shows failure output and the automatic retry hint in both views (%s)',
-  async (locale) => {
+it.each([
+  { locale: 'en-US', mixed: false },
+  { locale: 'zh-CN', mixed: false },
+  { locale: 'en-US', mixed: true },
+  { locale: 'zh-CN', mixed: true },
+])(
+  'shows failure output in both views with a usable agent: $mixed ($locale)',
+  async ({ locale, mixed }) => {
     const shown = await renderWithApp(
       <QueryClientProvider client={new QueryClient()}>
         <AgentSessionsConfigContext.Provider
@@ -57,7 +62,20 @@ it.each(['en-US', 'zh-CN'])(
         locale,
         fetch: answerApi(({ path }) =>
           path === 'agentSessions/computers'
-            ? { data: [computer], meta: { total: 1 } }
+            ? {
+                data: [
+                  {
+                    ...computer,
+                    agents: [
+                      ...computer.agents,
+                      ...(mixed
+                        ? [{ id: 'codex', name: 'Codex', version: 'test' }]
+                        : []),
+                    ],
+                  },
+                ],
+                meta: { total: 1 },
+              }
             : { data: [], meta: {} },
         ),
       },
@@ -77,6 +95,16 @@ it.each(['en-US', 'zh-CN'])(
           : 'While connected, the bridge automatically checks agents again every minute.',
       ),
     ).toHaveLength(2);
+    if (mixed) {
+      expect(screen.getByRole('textbox', { hidden: true })).toBeInTheDocument();
+      expect(
+        screen.queryByText(
+          locale === 'zh-CN'
+            ? '这台电脑上还没有可用的 Agent'
+            : 'No agent is ready on this computer',
+        ),
+      ).not.toBeInTheDocument();
+    }
     shown.unmount();
   },
 );

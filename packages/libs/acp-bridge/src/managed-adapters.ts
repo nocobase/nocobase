@@ -8,6 +8,7 @@
  */
 import { execFile } from 'node:child_process';
 import {
+  lstat,
   mkdir,
   mkdtemp,
   readFile,
@@ -15,6 +16,7 @@ import {
   rename,
   rm,
   stat,
+  writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -37,6 +39,8 @@ export interface AdapterInstallOptions {
   readonly log?: ((message: string) => void) | undefined;
   /** How long npm may take; five minutes by default. */
   readonly timeoutMs?: number;
+  /** Stops npm when its owning bridge shuts down. */
+  readonly signal?: AbortSignal | undefined;
 }
 
 /** Long enough for npm to download an adapter with a cold cache over a slow connection: about a minute on a fast one. */
@@ -46,6 +50,8 @@ const STALE_MS = 60 * 60_000;
 const BATCH_FILE = /\.(?:cmd|bat)$/iu;
 
 const installs = new Map<string, Promise<string>>();
+const INVENTORY = 'bridge-files.json';
+type InstalledFile = { readonly path: string; readonly link: boolean };
 
 /** The directory `pkg` is installed in, under `dir`. */
 export function adapterDir(dir: string, pkg: AdapterPackage): string {
@@ -69,7 +75,31 @@ export async function installedAdapter(
         : (manifest.bin as Record<string, unknown> | undefined)?.[pkg.bin];
     if (typeof bin !== 'string') return undefined;
     const file = path.join(packageDir, bin);
-    return (await stat(file)).isFile() ? file : undefined;
+    if (!(await stat(file)).isFile()) return undefined;
+    const files = JSON.parse(
+      await readFile(path.join(root, INVENTORY), 'utf8'),
+    ) as InstalledFile[];
+    if (!Array.isArray(files) || files.length === 0) return undefined;
+    // Bound filesystem concurrency without loading package contents on every scan.
+    for (let offset = 0; offset < files.length; offset += 32) {
+      const valid = await Promise.all(
+        files.slice(offset, offset + 32).map(async (entry) => {
+          if (
+            typeof entry.path !== 'string' ||
+            path.isAbsolute(entry.path) ||
+            entry.path.split(/[\\/]/u).includes('..')
+          )
+            return false;
+          const full = path.join(root, entry.path);
+          const info = await lstat(full);
+          return entry.link
+            ? info.isSymbolicLink() && (await stat(full)).isFile()
+            : info.isFile();
+        }),
+      );
+      if (valid.includes(false)) return undefined;
+    }
+    return file;
   } catch {
     return undefined;
   }
@@ -130,6 +160,10 @@ async function runInstall(
       label,
     ];
     await run(npm, args, options);
+    await writeFile(
+      path.join(temp, INVENTORY),
+      JSON.stringify(await inventory(temp)),
+    );
     if (!(await installedAdapter(temp, pkg)))
       throw new Error(`npm did not install its ${pkg.bin} program`);
     try {
@@ -162,6 +196,24 @@ async function runInstall(
   }
 }
 
+/** Records the files npm actually installed, including dependency files and bin link targets. */
+async function inventory(root: string): Promise<InstalledFile[]> {
+  const files: InstalledFile[] = [];
+  const visit = async (dir: string): Promise<void> => {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) await visit(full);
+      else if (entry.isFile() || entry.isSymbolicLink())
+        files.push({
+          path: path.relative(root, full),
+          link: entry.isSymbolicLink(),
+        });
+    }
+  };
+  await visit(path.join(root, 'node_modules'));
+  return files;
+}
+
 /** Removes the temporary directories starting with `prefix` in `dir` that installs left behind. */
 async function removeStale(dir: string, prefix: string): Promise<void> {
   for (const name of await readdir(dir)) {
@@ -191,6 +243,7 @@ function run(
         env: { ...options.env, npm_config_update_notifier: 'false' },
         shell: batch,
         timeout: options.timeoutMs ?? INSTALL_TIMEOUT_MS,
+        signal: options.signal,
         windowsHide: true,
         maxBuffer: 16 * 1024 * 1024,
       },
@@ -200,7 +253,7 @@ function run(
         reject(
           new Error(
             error.killed
-              ? `npm did not finish within ${(options.timeoutMs ?? INSTALL_TIMEOUT_MS) / 1000}s`
+              ? `npm did not finish within ${(options.timeoutMs ?? INSTALL_TIMEOUT_MS) / 1000}s${output ? `\n${output}` : ''}`
               : output || error.message,
           ),
         );

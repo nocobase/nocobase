@@ -23,6 +23,7 @@ type Answer = {
   readonly status?: number;
   readonly data?: unknown;
   readonly error?: Record<string, unknown>;
+  readonly delay?: number;
 };
 
 let root: string;
@@ -30,6 +31,8 @@ let server: Server;
 let seen: Seen[];
 let answer: (request: Seen) => Answer;
 let commands: BridgeCommand[];
+let activeRegistrations: number;
+let maxRegistrations: number;
 
 beforeEach(async () => {
   root = await mkdtemp(path.join(os.tmpdir(), 'acp-bridge-run-'));
@@ -37,6 +40,8 @@ beforeEach(async () => {
   vi.stubEnv('HOME', root);
   seen = [];
   commands = [];
+  activeRegistrations = 0;
+  maxRegistrations = 0;
   server = createServer((request, response) => {
     let text = '';
     request.on('data', (chunk: Buffer) => (text += chunk.toString()));
@@ -52,6 +57,7 @@ beforeEach(async () => {
         status = 200,
         data,
         error,
+        delay,
       }: Answer = one.path.endsWith('/poll')
         ? { data: { commands: commands.splice(0) } }
         : answer(one);
@@ -63,9 +69,17 @@ beforeEach(async () => {
             },
       );
       // A poll waits a little, as the application's does.
+      const registration = one.path.endsWith('/register');
+      if (registration) {
+        activeRegistrations++;
+        maxRegistrations = Math.max(maxRegistrations, activeRegistrations);
+      }
       setTimeout(
-        () => response.writeHead(status).end(body),
-        one.path.endsWith('/poll') ? 30 : 0,
+        () => {
+          if (registration) activeRegistrations--;
+          response.writeHead(status).end(body);
+        },
+        delay ?? (one.path.endsWith('/poll') ? 30 : 0),
       );
     });
   });
@@ -111,6 +125,185 @@ const registers = (): Seen[] =>
   seen.filter((request) => request.path.endsWith('/register'));
 
 describe('runBridge', () => {
+  it.each([
+    { damageAt: 1, installationMs: 15_000, budgetMs: 180_000 },
+    { damageAt: 59_999, installationMs: 15_000, budgetMs: 180_000 },
+    { damageAt: 1, installationMs: 300_000, budgetMs: 480_000 },
+    { damageAt: 59_999, installationMs: 300_000, budgetMs: 480_000 },
+  ])(
+    'detects damage at $damageAt ms and resumes immediately after a $installationMs ms installation',
+    async ({ damageAt, installationMs, budgetMs }) => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+      let damaged = false;
+      let release: (() => void) | undefined;
+      let detectedAt = 0;
+      vi.spyOn(agents, 'resolveAgent').mockImplementation(
+        async (spec, _env, _platform, options) => {
+          if (spec.id !== 'claude') return undefined;
+          if (damaged) {
+            detectedAt = Date.now();
+            options?.installing?.(
+              'Command: npm install adapter\nInstallation in progress',
+            );
+            await new Promise<void>((resolve) => {
+              release = resolve;
+            });
+            damaged = false;
+          }
+          return { spec, command: process.execPath, args: [] };
+        },
+      );
+      vi.spyOn(AgentProcess, 'start').mockImplementation(
+        async () =>
+          ({
+            initialize: { agentInfo: { version: 'ready' } },
+            stop: async () => {},
+          }) as unknown as AgentProcess,
+      );
+      answer = () => ({ data: { computerId: 'c1', key: 'k1' } });
+      const isReady = () =>
+        (
+          registers().at(-1)?.body.computer as
+            | { agents: { id: string; problem?: string; version: string }[] }
+            | undefined
+        )?.agents.some(
+          (a) => a.id === 'claude' && !a.problem && a.version === 'ready',
+        );
+      const { done, stop } = await run();
+      try {
+        await until(isReady);
+        await vi.advanceTimersByTimeAsync(damageAt);
+        damaged = true;
+        const brokenAt = Date.now();
+        await vi.advanceTimersByTimeAsync(60_000 - damageAt);
+        await until(() => release !== undefined);
+        expect(detectedAt - brokenAt).toBeLessThanOrEqual(60_000);
+        await until(() => !isReady());
+        await vi.advanceTimersByTimeAsync(installationMs);
+        const installedAt = Date.now();
+        release!();
+        await until(isReady);
+        // No extra scan is needed after installation; reserve the full documented probe/report/page budgets.
+        expect(Date.now()).toBe(installedAt);
+        expect(
+          Date.now() - brokenAt + 33_000 + 30_150 + 30_000 + 10_000,
+        ).toBeLessThanOrEqual(budgetMs);
+      } finally {
+        release?.();
+        stop();
+        await done;
+      }
+    },
+  );
+
+  it('serializes registrations and merges agent results that finish during a request', async () => {
+    const releases = new Map<string, () => void>();
+    vi.spyOn(agents, 'resolveAgent').mockImplementation(async (spec) =>
+      ['codex', 'claude', 'gemini', 'opencode'].includes(spec.id)
+        ? { spec, command: process.execPath, args: [] }
+        : undefined,
+    );
+    vi.spyOn(AgentProcess, 'start').mockImplementation(
+      (resolved) =>
+        new Promise((resolve) =>
+          releases.set(resolved.spec.id, () =>
+            resolve({
+              initialize: { agentInfo: { version: 'complete' } },
+              stop: async () => {},
+            } as unknown as AgentProcess),
+          ),
+        ),
+    );
+    answer = () => ({ data: { computerId: 'c1', key: 'k1' }, delay: 300 });
+    const { done, stop } = await run();
+    try {
+      await until(() => releases.size === 4);
+      releases.get('codex')!();
+      await until(() => activeRegistrations === 1 && registers().length >= 2);
+      for (const id of ['claude', 'gemini', 'opencode']) releases.get(id)!();
+      await until(
+        () =>
+          (
+            registers().at(-1)?.body.computer as
+              { agents: { version: string }[] } | undefined
+          )?.agents.filter((info) => info.version === 'complete').length === 4,
+      );
+      expect(maxRegistrations).toBe(1);
+      expect(registers()).toHaveLength(3);
+    } finally {
+      for (const release of releases.values()) release();
+      stop();
+      await done;
+    }
+  });
+  it('keeps probing and reporting other agents across ticks while one install remains pending', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    let release: (() => void) | undefined;
+    const installation = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let claudeInspections = 0;
+    let version = 'ready-1';
+    vi.spyOn(agents, 'resolveAgent').mockImplementation(
+      async (spec, _env, _platform, options) => {
+        if (spec.id === 'claude') {
+          if (options?.waitForInstall === false)
+            throw new Error('installation pending');
+          claudeInspections++;
+          options?.installing?.(
+            'Command: npm install claude-adapter\nInstallation in progress',
+          );
+          await installation;
+        } else if (spec.id !== 'codex') return undefined;
+        return { spec, command: process.execPath, args: [] };
+      },
+    );
+    const probes = vi.spyOn(AgentProcess, 'start').mockImplementation(
+      async () =>
+        ({
+          initialize: { agentInfo: { version } },
+          stop: async () => {},
+        }) as unknown as AgentProcess,
+    );
+    answer = () => ({ data: { computerId: 'c1', key: 'k1' } });
+    const latest = (id: string) =>
+      (
+        registers().at(-1)?.body.computer as
+          | {
+              agents: {
+                id: string;
+                version: string;
+                problem?: string;
+                detail?: string;
+              }[];
+            }
+          | undefined
+      )?.agents.find((one) => one.id === id);
+    const { done, stop } = await run();
+    try {
+      await until(() => latest('codex')?.version === 'ready-1');
+      expect(latest('claude')?.detail).toContain('Installation in progress');
+      version = 'ready-2';
+      await vi.advanceTimersByTimeAsync(120_000);
+      await until(() => latest('codex')?.version === 'ready-2');
+      expect(claudeInspections).toBe(1);
+      expect(
+        probes.mock.calls.filter(([resolved]) => resolved.spec.id === 'codex'),
+      ).toHaveLength(3);
+      expect(
+        probes.mock.calls.some(([resolved]) => resolved.spec.id === 'claude'),
+      ).toBe(false);
+      release!();
+      await until(() => latest('claude')?.version === 'ready-2');
+      expect(latest('claude')?.problem).toBeUndefined();
+      expect(claudeInspections).toBe(1);
+    } finally {
+      release!();
+      stop();
+      await done;
+    }
+  });
+
   it('registers installation failures and recovers on the next minute without blocking other agents', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     let broken = true;
@@ -148,6 +341,10 @@ describe('runBridge', () => {
       const before = registers().length;
       await vi.advanceTimersByTimeAsync(60_000);
       await until(() => registers().length > before);
+      await until(
+        () =>
+          latest().find((info) => info.id === 'claude')?.problem === undefined,
+      );
       expect(
         latest().find((info) => info.id === 'claude')?.problem,
       ).toBeUndefined();
@@ -274,7 +471,9 @@ describe('runBridge', () => {
     try {
       await until(
         () =>
-          registers().length >= 2 && processes.some((entry) => !entry.probe),
+          registers().length >= 2 &&
+          processes.some((entry) => !entry.probe) &&
+          processes.some((entry) => entry.probe && !entry.process.alive),
       );
       const active = processes.find((entry) => !entry.probe)!.process;
       const polls = seen.filter((request) =>
@@ -288,6 +487,12 @@ describe('runBridge', () => {
       const before = registers().length;
       await vi.advanceTimersByTimeAsync(60_000);
       await until(() => registers().length > before);
+      await until(() => processes.filter((entry) => entry.probe).length === 2);
+      await until(() =>
+        processes
+          .filter((entry) => entry.probe)
+          .every((entry) => !entry.process.alive),
+      );
       expect(processes.filter((entry) => entry.probe)).toHaveLength(2);
       expect(
         processes

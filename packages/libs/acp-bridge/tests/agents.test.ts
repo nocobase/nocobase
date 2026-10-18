@@ -169,6 +169,7 @@ describe('resolveAgent', () => {
           '#!/bin/sh',
           'echo "$@" >> "$NPM_LOG"',
           'if [ -n "$NPM_FAIL" ]; then echo "npm error $NPM_FAIL" >&2; exit 1; fi',
+          'if [ -n "$NPM_WAIT_OUTPUT" ]; then echo "$NPM_WAIT_OUTPUT" >&2; fi',
           'if [ -n "$NPM_SLEEP" ]; then /bin/sleep "$NPM_SLEEP"; fi',
           'prefix=""; spec=""',
           'while [ $# -gt 0 ]; do',
@@ -179,7 +180,11 @@ describe('resolveAgent', () => {
           '  dir="$1/node_modules/${spec%@*}"',
           '  /bin/mkdir -p "$dir/dist"',
           `  printf '{"name":"%s","version":"%s","bin":{"adapter-acp":"dist/index.js"}}' "\${spec%@*}" "\${spec##*@}" > "$dir/package.json"`,
-          '  : > "$dir/dist/index.js"',
+          `  printf "import './required.js'; import 'fixture-dependency';" > "$dir/dist/index.js"`,
+          '  : > "$dir/dist/required.js"',
+          '  /bin/mkdir -p "$1/node_modules/fixture-dependency"',
+          `  printf '{"name":"fixture-dependency","main":"index.js"}' > "$1/node_modules/fixture-dependency/package.json"`,
+          '  : > "$1/node_modules/fixture-dependency/index.js"',
           '}',
           // Another bridge finishes installing the same version first.
           'if [ -n "$NPM_RACE" ]; then install "$NPM_RACE"; fi',
@@ -321,6 +326,42 @@ describe('resolveAgent', () => {
       expect(await npmRuns()).toHaveLength(1);
     });
 
+    it.each([
+      'node_modules/@scope/adapter/dist/required.js',
+      'node_modules/fixture-dependency/index.js',
+      'node_modules/fixture-dependency',
+      'bridge-files.json',
+    ])(
+      'repairs a deleted installation file or dependency: %s',
+      async (relative) => {
+        await agent('bin/agent', '2.1.3');
+        const resolve = () => resolveAgent(MANAGED, env, 'linux', { adapters });
+        await resolve();
+        const target = path.join(adapters, '@scope/adapter@1.0.0');
+        await rm(path.join(target, relative), { recursive: true });
+        await expect(resolve()).resolves.toMatchObject({ args: [entry()] });
+        await expect(
+          promisify(execFile)(process.execPath, [entry()]),
+        ).resolves.toMatchObject({ stderr: '' });
+        expect(await npmRuns()).toHaveLength(2);
+      },
+    );
+
+    it('does not reinstall a complete adapter whose process fails for another reason', async () => {
+      await agent('bin/agent', '2.1.3');
+      const resolve = () => resolveAgent(MANAGED, env, 'linux', { adapters });
+      await resolve();
+      await writeFile(
+        entry(),
+        'process.stderr.write("authentication unavailable"); process.exit(1);',
+      );
+      await expect(
+        promisify(execFile)(process.execPath, [entry()]),
+      ).rejects.toMatchObject({ stderr: 'authentication unavailable' });
+      await resolve();
+      expect(await npmRuns()).toHaveLength(1);
+    });
+
     it('uses the installation another bridge finished first and discards its own', async () => {
       await agent('bin/agent', '2.1.3');
       const target = path.join(adapters, '@scope', 'adapter@1.0.0');
@@ -375,12 +416,24 @@ describe('resolveAgent', () => {
       await expect(
         installAdapter(PACKAGE, {
           dir: adapters,
-          env: { ...env, NPM_SLEEP: '5' },
+          env: {
+            ...env,
+            NPM_SLEEP: '5',
+            NPM_WAIT_OUTPUT: 'last download error',
+          },
           platform: 'linux',
           timeoutMs: 200,
         }),
-      ).rejects.toThrow('npm did not finish within 0.2s');
+      ).rejects.toThrow('npm did not finish within 0.2s\nlast download error');
       await expect(readdir(path.join(adapters, '@scope'))).resolves.toEqual([]);
+      await expect(
+        installAdapter(PACKAGE, {
+          dir: adapters,
+          env,
+          platform: 'linux',
+        }),
+      ).resolves.toBe(entry());
+      expect(await npmRuns()).toHaveLength(2);
     });
 
     it('reports the minimum agent version when the managed adapter cannot drive it', async () => {

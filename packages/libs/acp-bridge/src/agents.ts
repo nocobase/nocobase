@@ -283,6 +283,10 @@ export interface ResolveOptions {
   readonly node?: string;
   /** Told about installing a managed adapter, and why one is passed over for an agent it cannot drive. */
   readonly log?: (message: string) => void;
+  /** Reports a managed installation before waiting for it, so other agents can be offered meanwhile. */
+  readonly installing?: (detail: string) => void;
+  /** Stops an installation started by this resolution when the bridge shuts down. */
+  readonly signal?: AbortSignal;
 }
 
 /** How to start `spec` here, or undefined when none of its launchers can run. */
@@ -366,11 +370,24 @@ async function resolveManaged(
   };
   let file = await installedAdapter(adapterDir(options.adapters, pkg), pkg);
   if (!file) {
+    options.installing?.(
+      startupDetail(
+        'npm',
+        [
+          'install',
+          '--prefix',
+          adapterDir(options.adapters, pkg),
+          `${pkg.name}@${pkg.version}`,
+        ],
+        'ACP adapter installation is in progress. The bridge will check again automatically.',
+      ),
+    );
     const install = installAdapter(pkg, {
       dir: options.adapters,
       env,
       platform,
       log: options.log,
+      signal: options.signal,
     });
     if (options.waitForInstall === false) {
       void install.catch(() => undefined);

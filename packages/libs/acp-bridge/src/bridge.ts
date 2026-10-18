@@ -156,6 +156,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       options.adapters ??
       path.join(path.dirname(options.stateFile), 'adapters'),
     log,
+    signal,
   };
   /** Resolves every agent independently, retaining installation failures for registration. */
   const scan = async (waitForInstall: boolean): Promise<void> => {
@@ -192,7 +193,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     host: `${options.client.name} ${options.client.version}`,
     home: os.homedir(),
     roots,
-    agents: [...agents.values()],
+    agents: AGENTS.flatMap((spec) => agents.get(spec.id) ?? []),
   });
   /**
    * Registers the computer with its key; signed in as the person when it has none or the application refused it,
@@ -260,38 +261,86 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
   log(
     `This computer is connected to ${options.server} as "${computer().name}".`,
   );
-  let probing: Promise<void> | undefined;
+  const probing = new Map<string, Promise<void>>();
   let refused: BridgeUpgradeRequired | undefined;
-  const refresh = (): void => {
-    if (probing || signal.aborted) return;
-    probing = (async () => {
-      await scan(true);
-      const infos = await probeAgents(
-        AGENTS.filter((spec) => agents.get(spec.id)?.problem !== 'failed'),
-        found,
-        env,
-        options.client,
-        signal,
-      );
-      if (signal.aborted) return;
-      for (const info of infos) agents.set(info.id, info);
-      // Registration also negotiates protocol upgrades; polls do not carry that handshake.
-      await register();
+  let registering: Promise<void> | undefined;
+  let registrationTimer: NodeJS.Timeout | undefined;
+  let registrationNeeded = false;
+  const failedRefresh = (error: unknown): void => {
+    if (signal.aborted) return;
+    const stopped = refusal(error);
+    if (stopped instanceof BridgeUpgradeRequired) {
+      refused = stopped;
+      stopping.abort();
+    } else log(`Could not check the agents: ${message(error)}`);
+  };
+  /** Serial full snapshots: changes during a request are merged into its next send. */
+  const sendRegistration = (): void => {
+    registrationTimer = undefined;
+    if (registering || signal.aborted) return;
+    registering = (async () => {
+      while (registrationNeeded && !signal.aborted) {
+        registrationNeeded = false;
+        await register();
+      }
     })()
-      .catch((error: unknown) => {
-        if (signal.aborted) return;
-        // The application was updated under a running bridge: it cannot go on, as when refused at start.
-        const stopped = refusal(error);
-        if (stopped instanceof BridgeUpgradeRequired) {
-          refused = stopped;
-          stopping.abort();
-          return;
-        }
-        log(`Could not check the agents: ${message(error)}`);
-      })
+      .catch(failedRefresh)
       .finally(() => {
-        probing = undefined;
+        registering = undefined;
       });
+  };
+  const scheduleRegistration = (): void => {
+    if (signal.aborted) return;
+    registrationNeeded = true;
+    if (!registering && !registrationTimer) {
+      registrationTimer = setTimeout(sendRegistration, REPORT_DELAY_MS);
+      registrationTimer.unref();
+    }
+  };
+  const updateAgent = (info: AgentInfo): void => {
+    if (signal.aborted) return;
+    if (JSON.stringify(agents.get(info.id)) === JSON.stringify(info)) return;
+    agents.set(info.id, info);
+    scheduleRegistration();
+  };
+  const refresh = (): void => {
+    if (signal.aborted) return;
+    for (const spec of AGENTS) {
+      if (probing.has(spec.id)) continue;
+      const inspection = (async () => {
+        try {
+          const resolved = await resolveAgent(spec, env, process.platform, {
+            ...resolveOptions,
+            waitForInstall: true,
+            installing: (detail) => {
+              found.set(spec.id, undefined);
+              updateAgent({ ...agentInfo(spec), problem: 'failed', detail });
+            },
+          });
+          if (signal.aborted) return;
+          found.set(spec.id, resolved);
+          const [info] = await probeAgents(
+            [spec],
+            found,
+            env,
+            options.client,
+            signal,
+          );
+          updateAgent(info);
+        } catch (error) {
+          if (signal.aborted) return;
+          found.set(spec.id, undefined);
+          updateAgent({
+            ...agentInfo(spec),
+            problem: 'failed',
+            detail: message(error).slice(0, 2000),
+          });
+        }
+      })().finally(() => probing.delete(spec.id));
+      probing.set(spec.id, inspection);
+    }
+    // Also retry registration after failures, and retain the periodic protocol handshake.
+    scheduleRegistration();
   };
   refresh();
   const rescan = setInterval(refresh, RESCAN_MS);
@@ -596,8 +645,10 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     }
   } finally {
     clearInterval(rescan);
+    clearTimeout(registrationTimer);
     stopping.abort();
-    await probing;
+    await Promise.all(probing.values());
+    await registering;
     discoveryShutdown.abort();
     await Promise.all(discoveries);
     dropWarm();
