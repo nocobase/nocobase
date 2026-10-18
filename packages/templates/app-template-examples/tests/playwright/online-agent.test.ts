@@ -241,7 +241,8 @@ test('keeps partial approvals pending and renders advisory uncertainty and insta
     ).toHaveCount(1);
     expect(fixture.streams).toHaveLength(1);
     expect((await detail()).execution.waitingApproval).toBe(true);
-    await page.reload();
+    // Examples resets the panel on reload; restore it through the public conversation link.
+    await page.goto(app + '/?chat=' + encodeURIComponent(id));
     await expect(
       panel.getByRole('button', { name: 'Approve', exact: true }),
     ).toHaveCount(1);
