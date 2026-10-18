@@ -273,12 +273,14 @@ export function createRealtimeService(
             return;
           }
           case 'unsubscribe': {
-            service.unsubscribe(connection, message);
+            const removed = service.unsubscribe(connection, message);
             send(connection, {
               type: 'unsubscribed',
               id: message.id,
-              topic: message.topic,
-              subscriptionId: message.subscriptionId,
+              topic: message.topic ?? removed[0]?.topic,
+              subscriptionId:
+                message.subscriptionId ??
+                (removed.length === 1 ? removed[0]?.id : undefined),
             });
             return;
           }
