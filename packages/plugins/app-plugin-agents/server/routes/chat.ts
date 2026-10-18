@@ -150,20 +150,22 @@ const PatchSchema: z.ZodType<ConversationPatch> = z.strictObject({
 });
 
 const NativeSendSchema = z.strictObject({
-  message: z.strictObject({
-    id: z.string().min(1).max(64),
-    role: z.literal('user'),
-    parts: z
-      .array(
-        z.strictObject({
-          type: z.literal('text'),
-          text: z.string().max(MESSAGE_CONTENT_MAX * 2),
-        }),
-      )
-      .max(20),
-  }).describe(
-    'The current SDK user message with id, role user and text parts.',
-  ),
+  message: z
+    .strictObject({
+      id: z.string().min(1).max(64),
+      role: z.literal('user'),
+      parts: z
+        .array(
+          z.strictObject({
+            type: z.literal('text'),
+            text: z.string().max(MESSAGE_CONTENT_MAX * 2),
+          }),
+        )
+        .max(20),
+    })
+    .describe(
+      'The current SDK user message with id, role user and text parts.',
+    ),
   attachmentIds: z
     .array(z.string().min(1).max(64))
     .max(CHAT_ATTACHMENTS_PER_MESSAGE_MAX)
