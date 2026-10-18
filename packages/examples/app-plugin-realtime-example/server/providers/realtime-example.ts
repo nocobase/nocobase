@@ -3,6 +3,10 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { ServiceProvider } from '@nocobase/service-provider';
 
 import { CLOCK_TOPIC, startClockPublisher } from '../publishers/clock.js';
+import {
+  RealtimeExampleService,
+  realtimeExampleServiceToken,
+} from '../demo-service.js';
 
 export type RealtimeExampleProviderApplication = AppPluginApplication;
 
@@ -11,7 +15,18 @@ export class RealtimeExampleProvider extends ServiceProvider<RealtimeExampleProv
 
   private closeTopic: (() => void) | undefined;
 
+  public override register(): void {
+    this.app.container.singleton(
+      realtimeExampleServiceToken,
+      () =>
+        new RealtimeExampleService(
+          this.app.container.resolve(realtimeServiceToken),
+        ),
+    );
+  }
+
   public override boot(): Promise<void> {
+    this.app.container.resolve(realtimeExampleServiceToken);
     this.closeTopic = this.app.container
       .resolve(realtimeServiceToken)
       .registerTopic(CLOCK_TOPIC, { audience: 'public' });
@@ -31,6 +46,7 @@ export class RealtimeExampleProvider extends ServiceProvider<RealtimeExampleProv
     this.stopClockPublisher = undefined;
     this.closeTopic?.();
     this.closeTopic = undefined;
+    this.app.container.resolveIfCreated(realtimeExampleServiceToken)?.close();
     return Promise.resolve();
   }
 }
