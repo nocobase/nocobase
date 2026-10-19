@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Blocker, InputProblem } from './errors.js';
 import type { RecordView } from './runtime.js';
@@ -21,6 +21,7 @@ export interface LifecycleRequest {
   readonly path: string;
   readonly query?: Record<string, string>;
   readonly json?: unknown;
+  readonly signal?: AbortSignal;
 }
 
 /**
@@ -30,6 +31,10 @@ export interface LifecycleRequest {
  */
 export interface LifecycleTransport {
   request<T>(request: LifecycleRequest): Promise<T>;
+}
+
+export interface LifecycleReadOptions {
+  readonly signal?: AbortSignal;
 }
 
 export interface LifecycleClientOptions {
@@ -70,7 +75,11 @@ export interface RetryRequest {
  */
 export interface LifecycleClient {
   describe(lifecycle: string): Promise<LifecycleDescriptionView>;
-  view(lifecycle: string, id: string): Promise<RecordView>;
+  view(
+    lifecycle: string,
+    id: string,
+    options?: LifecycleReadOptions,
+  ): Promise<RecordView>;
   fire(
     lifecycle: string,
     id: string,
@@ -103,6 +112,7 @@ export class LifecycleRequestError extends Error {
     public readonly reason: string,
     public readonly blockers: readonly Blocker[],
     public readonly problems: readonly InputProblem[],
+    public readonly status?: number,
   ) {
     super(message);
     this.name = 'LifecycleRequestError';
@@ -133,6 +143,7 @@ function refusalOf(cause: unknown): unknown {
     Array.isArray(metadata.problems)
       ? (metadata.problems as InputProblem[])
       : [],
+    typeof cause.status === 'number' ? cause.status : undefined,
   );
 }
 
@@ -181,7 +192,8 @@ export function createLifecycleClient(
   return {
     describe: (lifecycle) =>
       send({ path: `${base}/${segment(lifecycle)}/lifecycle` }),
-    view: (lifecycle, id) => send({ path: record(lifecycle, id) }),
+    view: (lifecycle, id, options) =>
+      send({ path: record(lifecycle, id), signal: options?.signal }),
     fire: (lifecycle, id, transition, request = {}) =>
       send({
         method: 'POST',
@@ -217,6 +229,8 @@ export function createLifecycleClient(
 export interface UseLifecycleOptions {
   /** How often an open record refreshes, for effects finishing in the background. Defaults to 4 s; 0 turns it off. */
   readonly refreshMs?: number;
+  /** Defaults to true. Disable when a refresh scheduler owns the initial snapshot. */
+  readonly loadOnMount?: boolean;
 }
 
 export interface UseLifecycleResult {
@@ -247,7 +261,10 @@ export interface UseLifecycleResult {
    */
   readonly continueRun: (runId: string) => Promise<void>;
   readonly cancelRun: (runId: string) => Promise<void>;
+  /** Reloads and records errors without rejecting, for existing callers. */
   readonly reload: () => Promise<void>;
+  /** A cancellable snapshot read that rejects on failure, for refresh schedulers. */
+  readonly refresh: (signal?: AbortSignal) => Promise<void>;
 }
 
 /**
@@ -261,33 +278,100 @@ export function useLifecycle(
   options: UseLifecycleOptions = {},
 ): UseLifecycleResult {
   const refreshMs = options.refreshMs ?? 4_000;
-  const [description, setDescription] = useState<
-    LifecycleDescriptionView | undefined
-  >();
-  // Kept with the record and client it belongs to, so switching never shows
-  // the previous record.
-  const [loaded, setLoaded] = useState<
-    { client: LifecycleClient; id: string; view: RecordView } | undefined
-  >();
-  const [error, setError] = useState<Error | undefined>();
-  const [busy, setBusy] = useState(false);
+  const loadOnMount = options.loadOnMount !== false;
+  // A new identity prevents responses for another record, lifecycle or transport
+  // (including an account switch) from entering the current view.
+  const scope = useMemo(
+    () => ({ client, lifecycle, id }),
+    [client, lifecycle, id],
+  );
+  const lifetimeRef = useRef({
+    scope,
+    active: true,
+    revision: 0,
+    controllers: new Set<AbortController>(),
+  });
+  const [described, setDescribed] = useState<{
+    client: LifecycleClient;
+    lifecycle: string;
+    value: LifecycleDescriptionView;
+  }>();
+  const [loaded, setLoaded] = useState<{
+    scope: typeof scope;
+    view: RecordView;
+  }>();
+  const [failure, setFailure] = useState<{
+    scope: typeof scope;
+    error: Error;
+  }>();
+  const [acting, setActing] = useState<typeof scope>();
 
-  const reload = useCallback(async (): Promise<void> => {
-    if (id === undefined) return;
-    try {
-      const view = await client.view(lifecycle, id);
-      setLoaded({ client, id, view });
-      setError(undefined);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause : new Error(String(cause)));
-    }
-  }, [client, lifecycle, id]);
+  useEffect(() => {
+    const lifetime = {
+      scope,
+      active: true,
+      revision: 0,
+      controllers: new Set<AbortController>(),
+    };
+    lifetimeRef.current = lifetime;
+    return () => {
+      lifetime.active = false;
+      lifetime.revision += 1;
+      for (const controller of lifetime.controllers) controller.abort();
+    };
+  }, [scope]);
+
+  const refresh = useCallback(
+    async (signal?: AbortSignal): Promise<void> => {
+      const lifetime = lifetimeRef.current;
+      if (id === undefined || !lifetime.active || lifetime.scope !== scope)
+        return;
+      const revision = ++lifetime.revision;
+      const controller = new AbortController();
+      const abort = (): void => controller.abort(signal?.reason);
+      if (signal?.aborted) abort();
+      else signal?.addEventListener('abort', abort, { once: true });
+      lifetime.controllers.add(controller);
+      const current = (): boolean =>
+        lifetime.active &&
+        lifetime.revision === revision &&
+        !controller.signal.aborted;
+      try {
+        controller.signal.throwIfAborted();
+        const view = await client.view(lifecycle, id, {
+          signal: controller.signal,
+        });
+        if (current()) {
+          setLoaded({ scope, view });
+          setFailure(undefined);
+        }
+      } catch (cause) {
+        if (current()) {
+          const error =
+            cause instanceof Error ? cause : new Error(String(cause));
+          setFailure({ scope, error });
+          if (isObject(cause) && (cause.status === 401 || cause.status === 403))
+            setLoaded(undefined);
+        }
+        throw cause;
+      } finally {
+        lifetime.controllers.delete(controller);
+        signal?.removeEventListener('abort', abort);
+      }
+    },
+    [client, lifecycle, id, scope],
+  );
+
+  const reload = useCallback(
+    (): Promise<void> => refresh().catch(() => {}),
+    [refresh],
+  );
 
   useEffect(() => {
     let active = true;
     void client.describe(lifecycle).then(
       (value) => {
-        if (active) setDescription(value);
+        if (active) setDescribed({ client, lifecycle, value });
       },
       () => undefined,
     );
@@ -298,34 +382,44 @@ export function useLifecycle(
 
   useEffect(() => {
     if (id === undefined) return undefined;
-    // Every load comes from a timer, the first one included.
-    const first = setTimeout(() => void reload(), 0);
+    const first = loadOnMount ? setTimeout(() => void reload(), 0) : undefined;
     const timer =
       refreshMs > 0 ? setInterval(() => void reload(), refreshMs) : undefined;
     return () => {
       clearTimeout(first);
       if (timer) clearInterval(timer);
     };
-  }, [reload, refreshMs, id]);
+  }, [reload, refreshMs, loadOnMount, id]);
 
-  const view =
-    loaded && loaded.client === client && loaded.id === id
-      ? loaded.view
+  const view = loaded?.scope === scope ? loaded.view : undefined;
+  const error = failure?.scope === scope ? failure.error : undefined;
+  const busy = acting === scope;
+  const description =
+    described?.client === client && described.lifecycle === lifecycle
+      ? described.value
       : undefined;
 
   const act = useCallback(
     async <T extends RecordView>(work: () => Promise<T>): Promise<T> => {
-      if (id === undefined) throw new Error('No record is selected.');
-      setBusy(true);
+      const lifetime = lifetimeRef.current;
+      if (id === undefined || lifetime.scope !== scope || !lifetime.active)
+        throw new Error('No record is selected.');
+      lifetime.revision += 1;
+      setActing(scope);
       try {
         const next = await work();
-        setLoaded({ client, id, view: next });
+        if (lifetime.active) {
+          // Reads started before or during this mutation cannot replace its result.
+          lifetime.revision += 1;
+          setLoaded({ scope, view: next });
+          setFailure(undefined);
+        }
         return next;
       } finally {
-        setBusy(false);
+        if (lifetime.active) setActing(undefined);
       }
     },
-    [client, id],
+    [id, scope],
   );
 
   return useMemo(
@@ -352,8 +446,20 @@ export function useLifecycle(
         await act(() => client.cancelRun(lifecycle, id ?? '', runId));
       },
       reload,
+      refresh,
     }),
-    [description, view, error, busy, act, client, lifecycle, id, reload],
+    [
+      description,
+      view,
+      error,
+      busy,
+      act,
+      client,
+      lifecycle,
+      id,
+      reload,
+      refresh,
+    ],
   );
 }
 
@@ -368,6 +474,8 @@ export interface LifecycleHookOptions {
   readonly basePath: string;
   /** How often an open record refreshes. Defaults to 4 s; 0 turns it off. */
   readonly refreshMs?: number;
+  /** Defaults to true. Disable when a refresh scheduler owns the initial snapshot. */
+  readonly loadOnMount?: boolean;
 }
 
 /** The hook `createLifecycleHook()` returns: one record of one lifecycle. */
@@ -397,8 +505,10 @@ export type UseRecordLifecycle = (
 export function createLifecycleHook(
   options: LifecycleHookOptions,
 ): UseRecordLifecycle {
-  const refresh: UseLifecycleOptions =
-    options.refreshMs === undefined ? {} : { refreshMs: options.refreshMs };
+  const refresh: UseLifecycleOptions = {
+    refreshMs: options.refreshMs,
+    loadOnMount: options.loadOnMount,
+  };
   return function useRecordLifecycle(lifecycle, id, query) {
     const transport = options.useTransport();
     // An inline query is a new object every render; key the client by its content.

@@ -1,6 +1,6 @@
 // The hook against the real routes: a page's view of one record.
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createLifecycleClient,
@@ -188,5 +188,145 @@ describe('createLifecycleHook', () => {
     });
     expect(result.current.view?.state).toBe('awaitingCustomer');
     expect(sent).toEqual(['a@example.com']);
+  });
+});
+
+describe('scheduled snapshot refreshes', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('propagates refresh errors and HTTP status while keeping reload compatible', async () => {
+    const { client, id } = setup('agent');
+    const view = vi.spyOn(client, 'view');
+    const { result } = renderHook(() =>
+      useLifecycle(client, 'tickets', id, { refreshMs: 0 }),
+    );
+    await waitFor(() => expect(result.current.view).toBeDefined());
+    const failure = Object.assign(new Error('Forbidden'), { status: 403 });
+    view.mockRejectedValue(failure);
+    await act(async () => {
+      await expect(result.current.refresh()).rejects.toBe(failure);
+    });
+    expect(result.current.error).toBe(failure);
+    expect(result.current.view).toBeUndefined();
+    await act(async () => {
+      await expect(result.current.reload()).resolves.toBeUndefined();
+    });
+
+    const transport = {
+      request: async <T,>(): Promise<T> => {
+        throw Object.assign(new Error('Forbidden'), {
+          status: 403,
+          payload: { error: { message: 'Forbidden', reason: 'FORBIDDEN' } },
+        });
+      },
+    };
+    await expect(
+      createLifecycleClient({ transport, basePath: '/' }).view('tickets', id),
+    ).rejects.toMatchObject({ status: 403, reason: 'FORBIDDEN' });
+  });
+
+  it('forwards cancellation and ignores responses after a record or account switch', async () => {
+    const { client, id } = setup('agent');
+    const snapshot = await client.view('tickets', id);
+    const pending: {
+      resolve: (value: typeof snapshot) => void;
+      signal?: AbortSignal;
+    }[] = [];
+    vi.spyOn(client, 'view').mockImplementation(
+      (_name, _id, options) =>
+        new Promise((resolve) => {
+          pending.push({ resolve, signal: options?.signal });
+        }),
+    );
+    const { result, rerender, unmount } = renderHook(
+      ({ name }) => useLifecycle(client, name, id, { refreshMs: 0 }),
+      { initialProps: { name: 'tickets' } },
+    );
+    await waitFor(() => expect(pending).toHaveLength(1));
+    rerender({ name: 'other' });
+    await waitFor(() => expect(pending).toHaveLength(2));
+    expect(pending[0].signal?.aborted).toBe(true);
+    await act(async () => {
+      pending[1].resolve({ ...snapshot, state: 'new' });
+    });
+    await act(async () => {
+      pending[0].resolve(snapshot);
+    });
+    expect(result.current.view?.state).toBe('new');
+    const controller = new AbortController();
+    let reading!: Promise<void>;
+    act(() => {
+      reading = result.current.refresh(controller.signal);
+    });
+    controller.abort();
+    expect(pending[2].signal?.aborted).toBe(true);
+    await act(async () => {
+      pending[2].resolve(snapshot);
+      await reading;
+    });
+    expect(result.current.view?.state).toBe('new');
+    act(() => {
+      reading = result.current.refresh();
+    });
+    unmount();
+    expect(pending[3].signal?.aborted).toBe(true);
+    pending[3].resolve(snapshot);
+    await reading;
+  });
+
+  it('does not let an older snapshot replace a completed action', async () => {
+    const { client, id } = setup('agent');
+    const { result } = renderHook(() =>
+      useLifecycle(client, 'tickets', id, { refreshMs: 0 }),
+    );
+    await waitFor(() => expect(result.current.view).toBeDefined());
+    const before = result.current.view!;
+    let finish!: (value: typeof before) => void;
+    vi.spyOn(client, 'view').mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    let reading!: Promise<void>;
+    act(() => {
+      reading = result.current.refresh();
+    });
+    await act(async () => {
+      await result.current.fire('replyToCustomer', { message: 'Hello' });
+    });
+    await act(async () => {
+      finish(before);
+      await reading;
+    });
+    expect(result.current.view?.state).toBe('awaitingCustomer');
+  });
+
+  it('keeps the default four-second interval and allows opting out', async () => {
+    vi.useFakeTimers();
+    const { client, id } = setup('agent');
+    const view = vi.spyOn(client, 'view');
+    const { rerender } = renderHook(
+      ({ refreshMs }: { refreshMs?: number }) =>
+        useLifecycle(client, 'tickets', id, { refreshMs }),
+      { initialProps: {} as { refreshMs?: number } },
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(view).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4_000);
+    });
+    expect(view).toHaveBeenCalledTimes(2);
+    rerender({ refreshMs: 0 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    view.mockClear();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(view).not.toHaveBeenCalled();
   });
 });
