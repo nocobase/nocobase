@@ -186,21 +186,42 @@ describe('FlowDiagram', () => {
     }
   });
 
-  it('restores a readable actual-size viewport after zooming out', async () => {
-    render(
-      <TestI18nProvider runtime={runtime}>
-        <FlowDiagram {...graph} ariaLabel='Zoomable process' />
-      </TestI18nProvider>,
-    );
-    await screen.findByTestId('rf__node-a');
-    const actualSize = screen.getByRole('button', { name: 'Actual size' });
-    const zoomOut = screen.getByRole('button', { name: 'Zoom out' });
-    await waitFor(() => expect(zoomOut).toBeEnabled());
-    fireEvent.click(zoomOut);
-    await waitFor(() => expect(actualSize).not.toHaveTextContent('100%'));
-    fireEvent.click(actualSize);
-    await waitFor(() => expect(actualSize).toHaveTextContent('100%'));
-  });
+  it.each([false, true])(
+    'restores a readable actual-size viewport after zooming out (autoHeight: %s)',
+    async (autoHeight) => {
+      render(
+        <TestI18nProvider runtime={runtime}>
+          <FlowDiagram
+            {...graph}
+            autoHeight={autoHeight}
+            ariaLabel='Zoomable process'
+          />
+        </TestI18nProvider>,
+      );
+      await screen.findByTestId('rf__node-a');
+      const actualSize = screen.getByRole('button', { name: 'Actual size' });
+      const zoomOut = screen.getByRole('button', { name: 'Zoom out' });
+      await waitFor(() => expect(zoomOut).toBeEnabled());
+      const initialZoom = Number.parseFloat(actualSize.textContent!);
+      const viewport = screen
+        .getByLabelText('Zoomable process')
+        .querySelector('.react-flow__viewport')!;
+      const initialTransform = (viewport as HTMLElement).style.transform;
+      fireEvent.click(zoomOut);
+      await waitFor(() =>
+        expect(Number.parseFloat(actualSize.textContent!)).toBeLessThan(
+          initialZoom,
+        ),
+      );
+      expect(Number.parseFloat(actualSize.textContent!)).toBeGreaterThan(0);
+      expect((viewport as HTMLElement).style.transform).not.toBe(
+        initialTransform,
+      );
+      fireEvent.click(actualSize);
+      await waitFor(() => expect(actualSize).toHaveTextContent('100%'));
+      expect((viewport as HTMLElement).style.transform).toContain('scale(1)');
+    },
+  );
 
   it.each([
     { minZoom: 0.1, expected: '900px' },
