@@ -27,7 +27,13 @@ function deferred<T = void>() {
   return { promise, resolve };
 }
 
-function setup(options: { continuation?: boolean; attempts?: number } = {}) {
+function setup(
+  options: {
+    continuation?: boolean;
+    attempts?: number;
+    timeoutMs?: number;
+  } = {},
+) {
   const store = new MemoryLifecycleStore();
   let now = new Date('2026-10-01T09:00:00Z');
   let broken = false;
@@ -55,6 +61,7 @@ function setup(options: { continuation?: boolean; attempts?: number } = {}) {
           effects: [
             defineEffect<TaskTypes>({
               name: 'tasks.work',
+              timeoutMs: options.timeoutMs,
               retry: { attempts: options.attempts ?? 1, backoffMs: 1_000 },
               ...(options.continuation ? { onSuccess: 'finish' } : {}),
               run: ({ signal }) => execute(signal),
@@ -296,6 +303,93 @@ describe('committed record changes', () => {
       release.resolve();
       await Promise.all([running, cancelling]);
     }
+  });
+
+  it.each(['expired', 'replaced', 'dead'] as const)(
+    'does not start an attempt marked %s after its running notification settles',
+    async (state) => {
+      const { runtime, store, execute, start, advance } = setup({
+        attempts: state === 'dead' ? 1 : 2,
+        timeoutMs: 100,
+      });
+      const runId = await start();
+      const notifying = deferred();
+      const release = deferred();
+      let waiting = false;
+      runtime.onChange({}, async (change) => {
+        if (change.runId !== runId || waiting) return;
+        if ((await store.findEffectRun(runId))?.status !== 'running') return;
+        waiting = true;
+        notifying.resolve();
+        await release.promise;
+      });
+      const original = runtime.runEffect(runId);
+      try {
+        await notifying.promise;
+        advance();
+        if (state !== 'expired') {
+          await runtime.reclaim();
+          await runtime.runEffect(runId);
+        }
+      } finally {
+        release.resolve();
+        await original;
+      }
+      expect(execute).toHaveBeenCalledTimes(state === 'replaced' ? 1 : 0);
+      expect((await store.findEffectRun(runId))?.status).toBe(
+        state === 'expired'
+          ? 'running'
+          : state === 'dead'
+            ? 'dead'
+            : 'succeeded',
+      );
+      if (state === 'expired') {
+        await runtime.reclaim();
+        expect((await runtime.runEffect(runId))?.status).toBe('succeeded');
+        expect(execute).toHaveBeenCalledTimes(1);
+      }
+    },
+  );
+
+  it('keeps replacement cancellation active when an expired notification settles', async () => {
+    const { runtime, store, execute, start, advance } = setup({ attempts: 2 });
+    const runId = await start();
+    const notifying = deferred();
+    const release = deferred();
+    let waiting = false;
+    runtime.onChange({}, async (change) => {
+      if (change.runId !== runId || waiting) return;
+      if ((await store.findEffectRun(runId))?.status !== 'running') return;
+      waiting = true;
+      notifying.resolve();
+      await release.promise;
+    });
+    const began = deferred<AbortSignal>();
+    const finish = deferred();
+    execute.mockImplementationOnce(async (signal) => {
+      began.resolve(signal);
+      await finish.promise;
+      signal.throwIfAborted();
+    });
+    const original = runtime.runEffect(runId);
+    let replacement: Promise<EffectRun | undefined> | undefined;
+    try {
+      await notifying.promise;
+      advance();
+      await runtime.reclaim();
+      replacement = runtime.runEffect(runId);
+      const signal = await began.promise;
+      release.resolve();
+      await original;
+      await runtime.cancelRun(runId);
+      expect(signal.aborted).toBe(true);
+      expect(execute).toHaveBeenCalledTimes(1);
+    } finally {
+      release.resolve();
+      finish.resolve();
+      await Promise.all([original, replacement]);
+    }
+    expect((await store.findEffectRun(runId))?.status).toBe('cancelled');
   });
 
   it('announces a reclaimed lease and its exhausted attempt budget', async () => {

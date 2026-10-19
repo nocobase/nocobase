@@ -1748,6 +1748,17 @@ export class LifecycleRuntime {
           attempt,
           resolution,
         );
+      // Notifications and preparation can outlive this claim. Check the
+      // persisted owner and lease before making any external effect call;
+      // an expired claim is left for the next recovery sweep.
+      const current = await this.store.findEffectRun(runId);
+      if (
+        current?.status !== 'running' ||
+        current.attempts !== attempt ||
+        current.claimedAt !== startedAt ||
+        new Date(startedAt).getTime() < this.clock().getTime() - this.leaseMs
+      )
+        return current;
       controller.signal.throwIfAborted();
       const work = Promise.resolve(
         effect.run({
@@ -1786,7 +1797,7 @@ export class LifecycleRuntime {
     } finally {
       clearTimeout(timer);
       signal.removeEventListener('abort', forward);
-      this.attempts.delete(runId);
+      if (this.attempts.get(runId) === controller) this.attempts.delete(runId);
     }
 
     const finishedAt = this.clock().toISOString();
