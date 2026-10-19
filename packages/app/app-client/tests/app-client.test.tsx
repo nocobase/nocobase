@@ -2,8 +2,9 @@ import { ServiceProvider } from '@nocobase/service-provider';
 import { render, renderHook, screen, within } from '@testing-library/react';
 import {
   keepPreviousData,
+  QueryClient,
+  QueryClientProvider,
   useQueryClient,
-  type QueryClient,
 } from '@tanstack/react-query';
 import { type ReactElement, type ReactNode } from 'react';
 import { MemoryRouter, useLocation } from 'react-router';
@@ -150,32 +151,52 @@ describe('app client', () => {
     expect(normalizeAppClientBasename('/portal/')).toBe('/portal');
   });
 
-  it('provides the application query cache to its pages and React providers', async () => {
+  it('provides the application query cache to its pages', async () => {
     const read: QueryClient[] = [];
     function ReadCache(): null {
       read.push(useQueryClient());
       return null;
     }
-    function Provided({ children }: { readonly children?: ReactNode }) {
+    const app = await createTestApplication(() =>
+      defineAppClientRenderConfig({ routes: <ReadCache /> }),
+    );
+
+    render(<AppClientRoot app={app} />);
+
+    expect(read).toHaveLength(1);
+    expect(read[0]).toBe(app.queryClient);
+    expect(app.services.resolve(queryClientToken)).toBe(app.queryClient);
+    await app.shutdown();
+  });
+
+  it('keeps the application query cache for pages under a React provider that mounts a cache of its own', async () => {
+    const providerCache = new QueryClient();
+    const read: { readonly where: string; readonly client: QueryClient }[] = [];
+    function ReadCache({ where }: { readonly where: string }): null {
+      read.push({ where, client: useQueryClient() });
+      return null;
+    }
+    function OwnCache({ children }: { readonly children?: ReactNode }) {
       return (
-        <>
-          <ReadCache />
+        <QueryClientProvider client={providerCache}>
+          <ReadCache where='provider' />
           {children}
-        </>
+        </QueryClientProvider>
       );
     }
     const app = await createTestApplication(() =>
       defineAppClientRenderConfig({
-        routes: <ReadCache />,
-        reactProviders: [Provided],
+        routes: <ReadCache where='page' />,
+        reactProviders: [OwnCache],
       }),
     );
 
     render(<AppClientRoot app={app} />);
 
-    expect(read).toHaveLength(2);
-    expect(read.every((client) => client === app.queryClient)).toBe(true);
-    expect(app.services.resolve(queryClientToken)).toBe(app.queryClient);
+    expect(read).toEqual([
+      { where: 'provider', client: providerCache },
+      { where: 'page', client: app.queryClient },
+    ]);
     await app.shutdown();
   });
 

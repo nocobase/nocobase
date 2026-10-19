@@ -77,13 +77,9 @@ await app.start();
 root.render(<AppClientRoot app={app} />);
 ```
 
-`app.start()` performs the complete ServiceProvider lifecycle and finalizes the
-render configuration. The Browser host owns the React root and
-renders `AppClientRoot` only after startup succeeds. During disposal, the host
-unmounts its React root and `app.shutdown()` shuts down providers in reverse
-order.
+`app.start()` performs the complete ServiceProvider lifecycle and finalizes the render configuration. The Browser host owns the React root and renders `AppClientRoot` only after startup succeeds. During disposal, the host unmounts its React root and `app.shutdown()` shuts down providers in reverse order.
 
-`AppClientRoot` is a `BrowserRouter` around `AppClientProviders`, which mounts the application, its query cache and its React providers around the routes. A test renders a page in `AppClientProviders` under a router of its own; `renderWithApp()` from `@nocobase/app-testing/client` does that for a started test application.
+`AppClientRoot` is a `BrowserRouter` around `AppClientProviders`, which mounts the application and its React providers around the routes, and the query cache directly around the routes, inside every React provider. A test renders a page in `AppClientProviders` under a router of its own; `renderWithApp()` from `@nocobase/app-testing/client` does that for a started test application.
 
 `new ClientApplication({ runtime, createRenderConfig, fetch })` sends the API client's requests through `fetch` instead of the global one. Production leaves it out; a test passes a server it runs in process. `resolveAppRuntime(definition, { i18n })` likewise runs the application on the i18n runtime it is given instead of building one from the locales; a test passes a strict one.
 
@@ -185,7 +181,7 @@ Startup failure triggers reverse cleanup for providers that entered lifecycle.
 
 ## Query cache
 
-`AppClientProviders` provides `app.queryClient` through TanStack Query's `QueryClientProvider`, outside the React providers, so pages, plugins and React providers that call `useQueryClient()`, `useQuery()` or `useMutation()` share one cache per application without mounting a provider of their own. Code outside React resolves it as `queryClientToken`, for example to invalidate queries when a realtime event announces a change. The cache does not refetch when the window regains focus, and a query whose key changes keeps showing the previous data until the new data arrives. `app.shutdown()` clears it. `@tanstack/react-query` is a peer dependency: a plugin that uses it declares it as a peer too, so it reads the application's copy and therefore its cache.
+`AppClientProviders` provides `app.queryClient` through TanStack Query's `QueryClientProvider` directly around the routes, inside every React provider, where Refine's cache used to sit. Pages, route components and the plugin components they render that call `useQueryClient()`, `useQuery()` or `useMutation()` therefore share one cache per application without mounting a provider of their own, and a React provider that mounts a `QueryClientProvider` of its own does not change what the pages read. React providers themselves render outside it and do not see the application cache through `useQueryClient()`; one that needs it resolves `queryClientToken` with `useService()`. Code outside React resolves it as `queryClientToken`, for example to invalidate queries when a realtime event announces a change. The cache does not refetch when the window regains focus, and a query whose key changes keeps showing the previous data until the new data arrives. `app.shutdown()` clears it. `@tanstack/react-query` is a peer dependency: a plugin that uses it declares it as a peer too, so it reads the application's copy and therefore its cache.
 
 React components and custom Hooks can obtain the application's HTTP client with `useApiClient()`:
 
@@ -302,12 +298,7 @@ const reactProviders: readonly AppClientReactProviderDefinition[] =
 export default reactProviders;
 ```
 
-React Providers are ordered outer-to-inner by layer and explicit `before`/`after`
-constraints. Their components render only when the Browser host renders
-`AppClientRoot` for a started application. Use a
-Wrapper for React Context or tree-local UI behavior; use a ServiceProvider for
-application services, Container bindings, connections, listeners,
-and lifecycle cleanup.
+React Providers are ordered outer-to-inner by layer and explicit `before`/`after` constraints. Their components render only when the Browser host renders `AppClientRoot` for a started application, around the application query cache rather than inside it. Use a Wrapper for React Context or tree-local UI behavior; use a ServiceProvider for application services, Container bindings, connections, listeners, and lifecycle cleanup.
 
 ## Routes and locale resources
 

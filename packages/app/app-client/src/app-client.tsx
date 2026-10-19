@@ -28,28 +28,28 @@ export interface AppClientProvidersProps {
 }
 
 /**
- * Everything `AppClientRoot` mounts inside its router: the application, its query cache and its React providers, around
- * `children` in place of the routes. It needs a router above it. A test renders a page in it under a router of its own,
- * so the page reads the services, translations and toaster it reads in the running application.
+ * Everything `AppClientRoot` mounts inside its router: the application, its React providers and, innermost, its query
+ * cache, around `children` in place of the routes. It needs a router above it. A test renders a page in it under a
+ * router of its own, so the page reads the services, translations, toaster and query cache it reads in the running
+ * application.
  */
 export function AppClientProviders({
   app,
   children,
 }: AppClientProvidersProps): ReactElement {
   const reactProviders = app.renderConfig.reactProviders ?? [];
+  // The query cache sits where Refine's did, innermost around the routes: pages read the application cache even when a
+  // React provider mounts a cache of its own, and the React providers themselves do not see it.
   const content = reactProviders.reduceRight<ReactNode>(
     (inner, ReactProvider) => <ReactProvider>{inner}</ReactProvider>,
-    children,
+    <QueryClientProvider client={app.queryClient}>
+      {children}
+    </QueryClientProvider>,
   );
 
-  // The query cache sits outside the React providers so that they, and not only the pages, can read it.
   return (
     <ClientApplicationContext.Provider value={app}>
-      <NavigationGuardProvider>
-        <QueryClientProvider client={app.queryClient}>
-          {content}
-        </QueryClientProvider>
-      </NavigationGuardProvider>
+      <NavigationGuardProvider>{content}</NavigationGuardProvider>
     </ClientApplicationContext.Provider>
   );
 }
