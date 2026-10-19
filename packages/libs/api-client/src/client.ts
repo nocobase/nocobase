@@ -78,7 +78,7 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
       const payload = await readPayload(executed.response);
       throwResponseError(executed, payload);
     }
-    if (!executed.response.body) {
+    if (executed.response.status === 204 || !executed.response.body) {
       throw new ApiClientError('API streaming response has no body.', {
         status: executed.response.status,
         method: executed.method,

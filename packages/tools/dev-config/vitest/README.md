@@ -33,7 +33,7 @@ The React factory installs the React Vite plugin, uses JSDOM, loads
 `@testing-library/jest-dom/vitest`, and runs Testing Library `cleanup` after
 every test. Local setup files are merged with the shared setup.
 
-The React factory resolves package exports using Node 24's `node` and `module-sync` conditions and keeps `react-router` external. Installed test helpers, the application navigation guard, Refine, and plugin consumers then share the native Router and application contexts. Inlining the application runtime separately would create duplicate service tokens and application contexts for installed plugins. The Node/server preset is unchanged.
+The React factory resolves package exports using Node 24's `node` and `module-sync` conditions and keeps `react-router` external. Installed test helpers, the application navigation guard, and plugin consumers then share the native Router and application contexts. Inlining the application runtime separately would create duplicate service tokens and application contexts for installed plugins. The Node/server preset is unchanged.
 
 Both factories set `testTimeout` and `hookTimeout` to 30 seconds, well above
 Vitest's 5-second default. CI runs every package's suite in parallel on one

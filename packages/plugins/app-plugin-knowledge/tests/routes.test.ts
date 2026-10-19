@@ -49,6 +49,59 @@ describe('knowledge routes', () => {
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
 
+  it('reports indexer notification coverage without changing snapshot data or permissions', async () => {
+    const created = await call('lead', 'POST', '/docs', {
+      scope: 'project',
+      scopeId: 'p1',
+      title: 'Index',
+      content: '# Index',
+    });
+    const { data: doc } = (await created.json()) as { data: { id: string } };
+    const off = await (
+      await call('lead', 'GET', `/docs/${doc.id}/index`)
+    ).json();
+    expect(off).toMatchObject({
+      data: { enabled: false },
+      meta: { notifications: 'none' },
+    });
+    const unregister = h.knowledge.registerIndexer({
+      notifications: 'complete',
+      onChange: () => () => {},
+      states: async () => new Map(),
+      unfinished: async () => [],
+      reindex: async () => {},
+    });
+    expect(
+      await (await call('lead', 'GET', `/docs/${doc.id}/index`)).json(),
+    ).toMatchObject({
+      data: { enabled: true, pending: 1 },
+      meta: { notifications: 'complete' },
+    });
+    expect(
+      await (
+        await call('lead', 'GET', '/indexing?scope=project&scopeId=p1')
+      ).json(),
+    ).toMatchObject({
+      data: [],
+      meta: { enabled: true, notifications: 'complete' },
+    });
+    expect(
+      await (await call('lead', 'POST', `/docs/${doc.id}/reindex`)).json(),
+    ).toMatchObject({ meta: { notifications: 'complete' } });
+    expect((await call('nobody', 'GET', `/docs/${doc.id}/index`)).status).toBe(
+      404,
+    );
+    unregister();
+    expect(
+      await (
+        await call('lead', 'GET', '/indexing?scope=project&scopeId=p1')
+      ).json(),
+    ).toMatchObject({
+      data: [],
+      meta: { enabled: false, notifications: 'none' },
+    });
+  });
+
   it('creates, reads and edits under the version read', async () => {
     const created = await call('lead', 'POST', '/docs', {
       scope: 'project',
@@ -148,7 +201,10 @@ describe('knowledge routes', () => {
       'GET',
       '/indexing?scope=project&scopeId=p1',
     );
-    expect(await list.json()).toEqual({ data: [], meta: { enabled: false } });
+    expect(await list.json()).toEqual({
+      data: [],
+      meta: { enabled: false, notifications: 'none' },
+    });
 
     const explained = await call(
       'lead',

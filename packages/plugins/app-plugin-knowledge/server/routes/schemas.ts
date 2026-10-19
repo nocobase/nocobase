@@ -13,6 +13,7 @@ import type {
   KnowledgeChunkingConfig,
   KnowledgeDoc,
   KnowledgeDocIndex,
+  KnowledgeIndexRefreshMeta,
   KnowledgeDocSummary,
   KnowledgeEffectiveAccess,
   KnowledgeFileInfo,
@@ -725,13 +726,37 @@ export const KnowledgeUnindexedDocSchema: z.ZodType<KnowledgeUnindexedDoc> = z
   })
   .meta({ ref: 'KnowledgeUnindexedDoc' });
 
-export interface KnowledgeIndexingMeta {
+export const KnowledgeIndexRefreshMetaSchema: z.ZodType<KnowledgeIndexRefreshMeta> =
+  z
+    .object({
+      notifications: z.enum(['none', 'partial', 'complete']).optional().meta({
+        description:
+          'Committed indexer notification coverage. Only complete coverage with an acknowledged topic permits infrequent reconciliation; absent metadata requires polling.',
+      }),
+    })
+    .meta({ ref: 'KnowledgeIndexRefreshMeta' });
+
+export const KnowledgeDocIndexResponseSchema: z.ZodType<{
+  data: KnowledgeDocIndex;
+  meta: KnowledgeIndexRefreshMeta;
+}> = z
+  .object({
+    data: KnowledgeDocIndexSchema,
+    meta: KnowledgeIndexRefreshMetaSchema,
+  })
+  .meta({ ref: 'KnowledgeDocIndexResponse' });
+
+export interface KnowledgeIndexingMeta extends KnowledgeIndexRefreshMeta {
   readonly enabled: boolean;
 }
 export const KnowledgeIndexingMetaSchema: z.ZodType<KnowledgeIndexingMeta> =
   z.object({
     enabled: z.boolean().meta({
       description: 'Whether semantic search is on; the list is empty without.',
+    }),
+    notifications: z.enum(['none', 'partial', 'complete']).optional().meta({
+      description:
+        'Committed indexer notification coverage; absent metadata requires polling.',
     }),
   });
 

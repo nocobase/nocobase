@@ -211,8 +211,6 @@ export interface CreateIssueRequest {
   readonly startDate?: string | null;
   readonly dueDate?: string | null;
   readonly labelIds?: readonly string[];
-  /** False: an executor of another kind (an agent) is set, but asked not to start work now. */
-  readonly start?: boolean;
   /**
    * True: the issue sets its project up (`Project.setupIssueId`), so every issue created in the project after it waits
    * for it until it is finished. Only in a project the creator manages that has no unfinished setup issue.
@@ -249,8 +247,6 @@ export interface UpdateIssueRequest {
   readonly dueDate?: string | null;
   /** Replaces the whole set. */
   readonly labelIds?: readonly string[];
-  /** False: a new executor of another kind (an agent) is set, but asked not to start work now. */
-  readonly start?: boolean;
 }
 
 export const ISSUE_TITLE_MAX = 500;

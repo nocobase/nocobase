@@ -55,14 +55,14 @@ export interface StatusService {
 }
 
 export interface IssueChange {
+  /** The already authorized caller for a service write; absent for automatic status events. */
+  readonly viewer?: Viewer;
   /** A person explicitly assigned the issue to themselves, including an unchanged owner field. */
   readonly ownerClaimed?: boolean;
   /** Null for a new issue. */
   readonly before: Issue | null;
   readonly after: Issue;
   readonly actor: Actor;
-  /** False when the person asked not to start work now. */
-  readonly start: boolean;
 }
 
 /** The attachments domain, as a new issue takes the files added to it before it existed (`domains/attachments`). */

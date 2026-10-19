@@ -153,12 +153,12 @@ export function createIssueRoutes(deps: {
         },
         action: 'pm.issues/create',
         examples: [
-          'issue create --file issue.json --status in_progress --start',
+          'issue create --file issue.json --status in_progress',
           'issue create --file issue.json --attach screenshot.png',
         ],
       }),
       description:
-        'Needs `create` on `pm.issues` for the issue’s project. A session context header must identify an active session owned by the caller; its project is the default and successful creation is linked to it. The issue starts in `backlog` unless `statusKey` is `in_progress`; explicit `start: true` with backlog or an omitted status is refused before saving (`ISSUE_START_REQUIRES_IN_PROGRESS`). Use `--status in_progress --start` to request work. The caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.',
+        'Needs `create` on `pm.issues` for the issue’s project. A session context header must identify an active session owned by the caller; its project is the default and successful creation is linked to it. The issue starts in `backlog` unless `statusKey` is `in_progress`. Moving into `in_progress` starts work; there is no separate start option. The caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.',
       responses: {
         201: dataResponse(IssueSchema),
         ...apiErrorResponses,

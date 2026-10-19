@@ -66,7 +66,7 @@ import {
   supportsWorkspaceKey,
   type Runner,
 } from '../../../shared/runners.js';
-import { queueStart } from './selection.js';
+import { queueStart, type ModelSelectionPolicies } from './selection.js';
 import type { DatabaseConnection } from '@nocobase/db';
 import type { Slots } from '../../runners/slots.js';
 import { createHash } from 'node:crypto';
@@ -153,9 +153,7 @@ export interface ClaimService {
   reconcileCommentConsent(unit: Tx, runId: string): Promise<void>;
   reconcileCommentQueue(): Promise<void>;
   /** Structured ordered-model diagnostics; machine visibility is enforced by the caller. */
-  selectionWait(
-    runId: string,
-  ): Promise<import('../../../shared/runs.js').ModelSelectionWait | null>;
+  selectionWait(runId: string): Promise<ModelSelectionWait | null>;
   /** Read-only capacity and compatibility for a real subject and candidate agent, as the run's actor. */
   diagnose(
     conn: DatabaseConnection,
@@ -176,7 +174,7 @@ export interface ClaimService {
 }
 
 export interface ClaimDeps extends TransitionDeps {
-  readonly selectionPolicies?: import('./selection.js').ModelSelectionPolicies;
+  readonly selectionPolicies?: ModelSelectionPolicies;
   readonly runners?: {
     online(conn: DatabaseConnection): Promise<Runner[]>;
     all(conn: DatabaseConnection): Promise<Runner[]>;

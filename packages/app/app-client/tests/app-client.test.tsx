@@ -1,13 +1,18 @@
-import { useGo } from '@refinedev/core';
 import { ServiceProvider } from '@nocobase/service-provider';
 import {
-  fireEvent,
+  act,
   render,
   renderHook,
   screen,
   within,
 } from '@testing-library/react';
-import { type ReactElement, type ReactNode } from 'react';
+import {
+  keepPreviousData,
+  QueryClient,
+  QueryClientProvider,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { Fragment, useState, type ReactElement, type ReactNode } from 'react';
 import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -28,29 +33,13 @@ import {
 import { defineClientPlugins } from '../src/plugins.js';
 import { defineAppRuntime, resolveAppRuntime } from '../src/runtime/index.js';
 
-function RouterConsumer(): ReactElement {
-  const go = useGo();
-  return <button onClick={() => go({ to: '/configured' })}>Navigate</button>;
-}
-
 async function createTestApplication(
   createRenderConfig: ClientApplicationRenderConfigFactory,
-  refine?: (app: ClientApplication) => void,
 ): Promise<ClientApplication> {
-  class TestProvider extends ServiceProvider<ClientApplication> {
-    public readonly name: string = '@example/test';
-
-    public override boot(): Promise<void> {
-      refine?.(this.app);
-      return Promise.resolve();
-    }
-  }
-
   const runtime = await resolveAppRuntime(
     defineAppRuntime({
       packageName: '@example/app',
       createAppConfig: createAppClientConfig,
-      serviceProviders: [TestProvider],
       plugins: defineClientPlugins([]),
     }),
     // What the server renders into the page: without it the API client has no mount path to resolve against.
@@ -168,42 +157,146 @@ describe('app client', () => {
     expect(normalizeAppClientBasename('/portal/')).toBe('/portal');
   });
 
-  it('uses a configured Refine router provider', async () => {
-    const go = vi.fn();
-    const app = await createTestApplication(
-      () =>
-        defineAppClientRenderConfig({
-          routes: <RouterConsumer />,
-        }),
-      (current) => current.refine.setRouterProvider({ go: () => go }),
+  it('gives the pages a query cache with the defaults Refine gave it', async () => {
+    let pageRead: QueryClient | undefined;
+    function PageReader(): null {
+      pageRead = useQueryClient();
+      return null;
+    }
+    const app = await createTestApplication(() =>
+      defineAppClientRenderConfig({ routes: <PageReader /> }),
     );
 
     render(<AppClientRoot app={app} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Navigate' }));
 
-    expect(go).toHaveBeenCalledExactlyOnceWith({ to: '/configured' });
+    expect(pageRead).toBeInstanceOf(QueryClient);
+    expect(pageRead!.getDefaultOptions().queries).toMatchObject({
+      refetchOnWindowFocus: false,
+      placeholderData: keepPreviousData,
+    });
     await app.shutdown();
   });
 
-  it('uses configured Refine children instead of default routes', async () => {
-    const app = await createTestApplication(
-      () =>
-        defineAppClientRenderConfig({
-          routes: 'Default application routes',
-        }),
-      (current) => {
-        current.refine.setChildren('Configured Refine content');
-        current.refine.setRouterProvider({});
-      },
+  it('keeps its query cache for pages under a React provider that mounts a cache of its own', async () => {
+    const providerCache = new QueryClient();
+    let providerRead: QueryClient | undefined;
+    let pageRead: QueryClient | undefined;
+    function ProviderReader(): null {
+      providerRead = useQueryClient();
+      return null;
+    }
+    function PageReader(): null {
+      pageRead = useQueryClient();
+      return null;
+    }
+    function OwnCache({ children }: { readonly children?: ReactNode }) {
+      return (
+        <QueryClientProvider client={providerCache}>
+          <ProviderReader />
+          {children}
+        </QueryClientProvider>
+      );
+    }
+    const app = await createTestApplication(() =>
+      defineAppClientRenderConfig({
+        routes: <PageReader />,
+        reactProviders: [OwnCache],
+      }),
     );
 
     render(<AppClientRoot app={app} />);
 
-    expect(screen.getByText('Configured Refine content')).toBeInTheDocument();
-    expect(
-      screen.queryByText('Default application routes'),
-    ).not.toBeInTheDocument();
+    expect(providerRead).toBe(providerCache);
+    expect(pageRead).toBeInstanceOf(QueryClient);
+    expect(pageRead).not.toBe(providerCache);
     await app.shutdown();
+  });
+
+  it('gives the routes a new query cache each time a React provider remounts them, as for a new session', async () => {
+    let remount: (() => void) | undefined;
+    function Session({ children }: { readonly children?: ReactNode }) {
+      const [key, setKey] = useState(0);
+      remount = () => setKey((value) => value + 1);
+      return <Fragment key={key}>{children}</Fragment>;
+    }
+    const read: QueryClient[] = [];
+    function PageReader(): null {
+      read.push(useQueryClient());
+      return null;
+    }
+    const app = await createTestApplication(() =>
+      defineAppClientRenderConfig({
+        routes: <PageReader />,
+        reactProviders: [Session],
+      }),
+    );
+    render(<AppClientRoot app={app} />);
+    const first = read.at(-1)!;
+    first.setQueryData(['orders'], ['first session']);
+
+    act(() => remount!());
+
+    const second = read.at(-1)!;
+    expect(second).not.toBe(first);
+    expect(second.getQueryData(['orders'])).toBeUndefined();
+    await app.shutdown();
+  });
+
+  it('keeps the query cache across renders of the same mount', async () => {
+    const read: QueryClient[] = [];
+    function PageReader({ label }: { readonly label: string }): ReactElement {
+      read.push(useQueryClient());
+      return <p>{label}</p>;
+    }
+    const app = await createTestApplication(() =>
+      defineAppClientRenderConfig({ routes: null }),
+    );
+    const view = render(
+      <MemoryRouter>
+        <AppClientProviders app={app}>
+          <PageReader label='first' />
+        </AppClientProviders>
+      </MemoryRouter>,
+    );
+
+    view.rerender(
+      <MemoryRouter>
+        <AppClientProviders app={app}>
+          <PageReader label='second' />
+        </AppClientProviders>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('second')).toBeInTheDocument();
+    expect(read).toHaveLength(2);
+    expect(read[1]).toBe(read[0]);
+    await app.shutdown();
+  });
+
+  it('gives each application its own query cache', async () => {
+    const read: QueryClient[] = [];
+    function PageReader(): null {
+      read.push(useQueryClient());
+      return null;
+    }
+    const first = await createTestApplication(() =>
+      defineAppClientRenderConfig({ routes: <PageReader /> }),
+    );
+    const second = await createTestApplication(() =>
+      defineAppClientRenderConfig({ routes: <PageReader /> }),
+    );
+
+    render(
+      <>
+        <AppClientRoot app={first} />
+        <AppClientRoot app={second} />
+      </>,
+    );
+
+    expect(read).toHaveLength(2);
+    expect(read[0]).not.toBe(read[1]);
+    await first.shutdown();
+    await second.shutdown();
   });
 
   it('provides the application and its React providers around other children under a router of the caller', async () => {
@@ -246,9 +339,8 @@ describe('app client', () => {
   });
 
   it('leaves React DOM root ownership to the host', async () => {
-    const app = await createTestApplication(
-      () => defineAppClientRenderConfig({ routes: 'Hosted application' }),
-      (current) => current.refine.setRouterProvider({}),
+    const app = await createTestApplication(() =>
+      defineAppClientRenderConfig({ routes: 'Hosted application' }),
     );
 
     expect(app).not.toHaveProperty('mount');

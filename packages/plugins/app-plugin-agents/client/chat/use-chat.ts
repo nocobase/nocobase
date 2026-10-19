@@ -11,6 +11,7 @@
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
+  CancelledError,
   keepPreviousData,
   useInfiniteQuery,
   useMutation,
@@ -23,17 +24,17 @@ import {
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
-  useState,
+  useSyncExternalStore,
   type Dispatch,
 } from 'react';
 
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import {
   CONVERSATIONS_TOPIC,
-  MESSAGE_PAGE_DEFAULT,
   type ChatAgent,
   type ConversationChanged,
   type ConversationDetail,
@@ -42,30 +43,25 @@ import {
   type ConversationSource,
   type MessageAttachment,
   type PageContext,
-  type SendMessageResult,
 } from '../../shared/conversations.js';
+import type { ModelRef, ModelService } from '../../shared/models.js';
 import { useRealtimeTopic } from '../hooks/use-realtime-topic.js';
 import { useQuotaExpiry } from '../hooks/use-quota-expiry.js';
 import { RUNNERS_TOPIC } from '../../shared/realtime.js';
 import { errorText } from '../hooks/use-notify.js';
 import { agentsQueryClient } from '../query.js';
+import { useChatController, useChatStream } from './controller.js';
 import { ChatApi } from './api.js';
 import { chatKeys } from './keys.js';
 import {
   EMPTY_MESSAGES,
-  fetchCursor,
-  lastLoadedSeq,
-  streamingSeq,
   messagesReducer,
-  newClientId,
   type MessagesAction,
   type MessagesState,
 } from './message-model.js';
 
 /** How often an open conversation with a run is fetched when no announcement comes. */
 export const CHAT_POLL_MS = 60_000;
-/** Reconcile an interrupted stream; realtime announces persisted message revisions promptly. */
-export const CHAT_STREAM_POLL_MS = 60_000;
 
 export function useChatApi(): ChatApi {
   const api = useApiClient();
@@ -86,23 +82,67 @@ export function isChatPayload(
 ): payload is ConversationChanged {
   if (!payload || typeof payload !== 'object') return false;
   const kind = (payload as { kind?: unknown }).kind;
-  return kind === 'conversation.messages' || kind === 'conversation.changed';
+  return (
+    kind === 'conversation.messages' ||
+    kind === 'conversation.changed' ||
+    kind === 'conversation.messageUpdated'
+  );
 }
 
 /** The agents the viewer may chat with, with whether each can answer now. */
 export function useChatAgents(enabled = true): UseQueryResult<ChatAgent[]> {
   const api = useChatApi();
-  const result = useQuery(
+  const query = useQuery(
     {
       queryKey: chatKeys.agents,
       queryFn: () => api.agents(),
       enabled,
       staleTime: 15_000,
+      retry: notRetriedOnClientErrors,
     },
     agentsQueryClient(),
   );
-  useQuotaExpiry(result.data ?? []);
-  return result;
+  useQuotaExpiry(query.data ?? []);
+  const { refetch } = query;
+  useEffect(() => {
+    if (enabled) void refetch({ cancelRefetch: false });
+  }, [enabled, refetch]);
+  return query;
+}
+
+/** Public native chat models; revalidated while open, without turning a failed read into an empty catalog. */
+export function useChatModels(enabled = true): UseQueryResult<ModelService[]> {
+  const api = useChatApi();
+  const client = agentsQueryClient();
+  const query = useQuery(
+    {
+      queryKey: chatKeys.models,
+      queryFn: ({ signal }) => api.models(signal),
+      enabled,
+      staleTime: 15_000,
+      retry: false,
+      refetchOnWindowFocus: 'always',
+    },
+    client,
+  );
+  const { refetch } = query;
+  useEffect(() => {
+    if (!enabled) {
+      // Closing the last consumer abandons stale revalidation; active consumers keep their request.
+      void client.cancelQueries({
+        queryKey: chatKeys.models,
+        exact: true,
+        type: 'inactive',
+      });
+      return;
+    }
+    // Multiple mounted consumers share any in-flight open/focus refresh instead of restarting it.
+    void refetch({ cancelRefetch: false });
+    const refresh = () => void refetch({ cancelRefetch: false });
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [client, enabled, refetch]);
+  return query;
 }
 
 /** One conversation; polled while its run is open. */
@@ -110,15 +150,26 @@ export function useConversation(
   conversationId: string | null,
 ): UseQueryResult<ConversationDetail> {
   const api = useChatApi();
+  const controller = useChatController();
   return useQuery(
     {
       queryKey: chatKeys.conversation(conversationId ?? ''),
-      queryFn: () => api.conversation(conversationId ?? ''),
+      queryFn: async () => {
+        const current = controller.detailRequest(conversationId ?? '');
+        if (!current()) throw new CancelledError({ silent: true });
+        const detail = await api.conversation(conversationId ?? '');
+        if (!current()) throw new CancelledError({ silent: true });
+        controller.observeDetail(detail);
+        return detail;
+      },
       enabled: conversationId !== null,
       placeholderData: noPlaceholder,
       retry: notRetriedOnClientErrors,
       refetchInterval: (query) =>
-        query.state.data?.run ? CHAT_POLL_MS : false,
+        query.state.data?.run ||
+        query.state.data?.execution?.status === 'running'
+          ? CHAT_POLL_MS
+          : false,
     },
     agentsQueryClient(),
   );
@@ -183,149 +234,103 @@ export interface ConversationMessages extends MessagesState {
   readonly dispatch: Dispatch<MessagesAction>;
 }
 
-interface Loader {
-  inflight: boolean;
-  again: boolean;
-  loadingOlder: boolean;
-}
-
-/**
- * A conversation's messages: the newest page first, older pages on demand, newer ones when the topic announces them
- * (or the poll finds them while `polling`). A null conversation is a new one: only optimistic messages, kept when
- * its first message creates it (`conversationId` going from null to an id).
- */
+/** Canonical pages and the initial stream live in one controller, independent of mounted views. */
 export function useConversationMessages(
   conversationId: string | null,
-  polling: boolean,
 ): ConversationMessages {
-  const api = useChatApi();
-  const [state, dispatch] = useReducer(messagesReducer, EMPTY_MESSAGES);
-  const [loadingOlder, setLoadingOlder] = useState(false);
-  const [error, setError] = useState<unknown>(undefined);
-  const stateRef = useRef(state);
+  const controller = useChatController();
+  useChatStream(conversationId);
+  useSyncExternalStore(
+    controller.subscribe,
+    controller.snapshot,
+    controller.snapshot,
+  );
+  const [draft, draftDispatch] = useReducer(messagesReducer, EMPTY_MESSAGES);
   useEffect(() => {
-    stateRef.current = state;
-  });
-  const idRef = useRef(conversationId);
-  const loaderRef = useRef<Loader>({
-    inflight: false,
-    again: false,
-    loadingOlder: false,
-  });
-
-  const fetchNewer = useCallback((): void => {
-    const id = idRef.current;
-    if (!id) return;
-    const loader = loaderRef.current;
-    if (loader.inflight) {
-      loader.again = true;
-      return;
-    }
-    loader.inflight = true;
-    const run = async (): Promise<void> => {
-      try {
-        let full = false;
-        do {
-          loader.again = false;
-          const after = fetchCursor(stateRef.current);
-          const page = await api.messages(
-            id,
-            stateRef.current.loaded ? { after } : {},
-          );
-          if (idRef.current !== id) return;
-          // From before a reply still being written, a full page may hold nothing new: do not ask again.
-          full =
-            stateRef.current.loaded &&
-            after === lastLoadedSeq(stateRef.current) &&
-            page.items.length >= MESSAGE_PAGE_DEFAULT;
-          dispatch({ type: 'page', page });
-          stateRef.current = messagesReducer(stateRef.current, {
-            type: 'page',
-            page,
-          });
-          setError(undefined);
-        } while (loader.again || full);
-      } catch (failure: unknown) {
-        if (idRef.current === id) setError(failure);
-      } finally {
-        loader.inflight = false;
-      }
-    };
-    void run();
-  }, [api]);
-
-  // A new id: start over, unless it is the conversation a new one's first message just created.
-  const previousRef = useRef(conversationId);
-  useEffect(() => {
-    const previous = previousRef.current;
-    previousRef.current = conversationId;
-    idRef.current = conversationId;
-    if (previous !== conversationId && previous !== null) {
-      loaderRef.current = {
-        inflight: false,
-        again: false,
-        loadingOlder: false,
-      };
-      stateRef.current = EMPTY_MESSAGES;
-      dispatch({ type: 'reset' });
-      setError(undefined);
-    }
-    if (conversationId) fetchNewer();
-  }, [conversationId, fetchNewer]);
-
+    if (conversationId) void controller.loadHistory(conversationId);
+  }, [controller, conversationId]);
+  const fetchNewer = useCallback(() => {
+    if (conversationId)
+      void controller.loadHistory(conversationId, false, true);
+  }, [controller, conversationId]);
   useRealtimeTopic(conversationId ? CONVERSATIONS_TOPIC : null, (payload) => {
+    if (!conversationId) return;
     if (payload === undefined) {
-      fetchNewer();
+      void controller
+        .refresh(conversationId)
+        .then(() => controller.resume(conversationId))
+        .catch(() => {});
       return;
     }
-    if (
-      isChatPayload(payload) &&
+    if (!isChatPayload(payload) || payload.conversationId !== conversationId)
+      return;
+    if (payload.kind === 'conversation.messageUpdated')
+      controller.messageUpdated(
+        conversationId,
+        payload.messageId,
+        payload.revision,
+      );
+    else if (
       payload.kind === 'conversation.messages' &&
-      payload.conversationId === idRef.current &&
-      (payload.lastSeq > lastLoadedSeq(stateRef.current) ||
-        streamingSeq(stateRef.current) !== null)
+      payload.lastSeq > controller.history(conversationId).loadedThrough
     )
       fetchNewer();
   });
-
-  const streaming = streamingSeq(state) !== null;
-  useEffect(() => {
-    if (!(polling || streaming) || !conversationId) return undefined;
-    const timer = window.setInterval(
-      () => {
-        if (!document.hidden) fetchNewer();
-      },
-      streaming ? CHAT_STREAM_POLL_MS : CHAT_POLL_MS,
+  // One durable subscription/poll owner regardless of how many surfaces display this conversation.
+  useEffect(
+    () => (conversationId ? controller.watch(conversationId) : undefined),
+    [controller, conversationId],
+  );
+  const loaded = conversationId
+    ? controller.history(conversationId)
+    : { state: draft, loadingOlder: false, error: undefined };
+  const records = controller.submissions
+    .snapshot()
+    .filter(
+      (record) =>
+        record.conversationId === conversationId &&
+        !record.message &&
+        !['rejected', 'confirmed'].includes(record.status),
     );
-    return () => window.clearInterval(timer);
-  }, [polling, streaming, conversationId, fetchNewer]);
-
-  const loadOlder = useCallback((): void => {
-    const id = idRef.current;
-    const loader = loaderRef.current;
-    const pageToken = stateRef.current.olderToken;
-    if (!id || !pageToken || loader.loadingOlder) return;
-    loader.loadingOlder = true;
-    setLoadingOlder(true);
-    void api
-      .messages(id, { pageToken })
-      .then((page) => {
-        if (idRef.current === id) dispatch({ type: 'page', page, older: true });
-      })
-      .catch((failure: unknown) => setError(failure))
-      .finally(() => {
-        loader.loadingOlder = false;
-        setLoadingOlder(false);
-      });
-  }, [api]);
-
+  const pending = conversationId
+    ? records.map((record) => ({
+        clientId: record.clientId,
+        content: record.content,
+        context: record.context,
+        attachments: record.attachments,
+        createdAt: record.createdAt,
+        status:
+          record.status === 'notSubmitted'
+            ? ('failed' as const)
+            : record.status === 'unknown' || record.status === 'creationUnknown'
+              ? ('unknown' as const)
+              : ('sending' as const),
+      }))
+    : loaded.state.pending;
   return {
-    ...state,
-    loadingOlder,
-    error,
-    loadOlder,
+    ...loaded.state,
+    pending,
+    // The SDK owns optimistic user messages; recovery controls replace their presentation until admission is reconciled.
+    items: loaded.state.items.filter(
+      (message) =>
+        !records.some(
+          (record) =>
+            message.id === record.clientId &&
+            message.metadata?.seq === undefined,
+        ),
+    ),
+    loadingOlder: loaded.loadingOlder,
+    error: loaded.error,
     fetchNewer,
-    dispatch,
+    loadOlder: () => {
+      if (conversationId) void controller.loadHistory(conversationId, true);
+    },
+    dispatch: (action) => {
+      if (action.type === 'discard')
+        controller.submissions.editRejected(action.clientId);
+      if (conversationId) controller.dispatch(conversationId, action);
+      else draftDispatch(action);
+    },
   };
 }
 
@@ -339,90 +344,124 @@ export interface SendInput {
 }
 
 /**
- * Sends a message, showing it at once and replacing it with the server's copy (matched by `clientId`). A new
+ * Returns synchronous client acceptance (not server confirmation), showing it at once and replacing it with the server's copy (matched by `clientId`). A new
  * conversation (`conversationId` null) is created first, with `agentId` and `source`.
  */
 export function useSendMessage({
   conversationId,
   agentId,
   source,
+  selectedModel,
   dispatch,
   onCreated,
 }: {
   readonly conversationId: string | null;
   readonly agentId: string | null;
   readonly source: ConversationSource;
+  /** Snapshotted for a new, explicitly native conversation only; Runner and continuation ignore it. */
+  readonly selectedModel?: ModelRef;
   readonly dispatch: Dispatch<MessagesAction>;
   readonly onCreated: (conversation: ConversationDetail) => void;
-}): (input: SendInput) => Promise<SendMessageResult | null> {
-  const api = useChatApi();
-  const queryClient = agentsQueryClient();
-  const toaster = useToaster();
-  const { t } = useTranslation(ACCESS_NAMESPACE);
-  const createdRef = useRef<string | null>(null);
+}): (input: SendInput) => boolean {
+  const controller = useChatController();
+  const editorKey = `registry:${source}:${conversationId ?? 'new'}`;
+  const editorRef = useRef(editorKey);
+  const observersRef = useRef(new Set<() => void>());
+  useLayoutEffect(() => {
+    editorRef.current = editorKey;
+    const observers = observersRef.current;
+    return () => {
+      for (const cleanup of observers) cleanup();
+      observers.clear();
+    };
+  }, [controller, editorKey]);
   return useCallback(
-    async (input: SendInput) => {
-      const clientId = input.clientId ?? newClientId();
-      if (input.clientId) dispatch({ type: 'discard', clientId });
+    (input: SendInput) => {
+      if (input.clientId) {
+        if (!controller.submissions.editRejected(input.clientId)) return false;
+        dispatch({ type: 'discard', clientId: input.clientId });
+      }
+      const submission = { clientId: undefined as string | undefined };
+      const active = controller.lifetime();
+      const visible = () =>
+        active() &&
+        editorRef.current === editorKey &&
+        observersRef.current.has(cleanup);
+      const cleanup = () => {
+        off();
+        stop();
+        observersRef.current.delete(cleanup);
+      };
+      const off = controller.submissions.onUpdated(
+        (detail, record, created) => {
+          if (record.clientId !== submission.clientId || !visible()) return;
+          if (created) onCreated(detail);
+        },
+      );
+      const stop = controller.submissions.subscribe(() => {
+        const record = controller.submissions
+          .snapshot()
+          .find((record) => record.clientId === submission.clientId);
+        if (!record || !visible()) return;
+        if (record.status === 'confirmed') {
+          if (record.message)
+            dispatch({ type: 'confirmed', message: record.message });
+          cleanup();
+        } else if (
+          ['unknown', 'creationUnknown', 'notSubmitted', 'rejected'].includes(
+            record.status,
+          )
+        ) {
+          dispatch({
+            type: record.status === 'notSubmitted' ? 'failed' : 'unknown',
+            clientId: record.clientId,
+          });
+          cleanup();
+        }
+      });
+      observersRef.current.add(cleanup);
+      const submitted = controller.submissions.submit({
+        content: input.content,
+        context: input.context,
+        attachments: input.attachments ?? [],
+        conversationId,
+        editorKey,
+        create: {
+          ...(agentId ? { agentId } : {}),
+          source,
+          ...(!conversationId && agentId === 'online' && selectedModel
+            ? { selectedModel }
+            : {}),
+        },
+      });
+      if (!submitted) {
+        cleanup();
+        return false;
+      }
+      const record = controller.submissions.snapshot().at(-1)!;
+      submission.clientId = record.clientId;
       dispatch({
         type: 'sending',
         message: {
-          clientId,
-          content: input.content,
-          context: input.context,
-          ...(input.attachments?.length
-            ? { attachments: input.attachments }
-            : {}),
-          createdAt: new Date().toISOString(),
+          clientId: record.clientId,
+          content: record.content,
+          context: record.context,
+          attachments: record.attachments,
+          createdAt: record.createdAt,
           status: 'sending',
         },
       });
-      try {
-        let id = conversationId ?? createdRef.current;
-        if (!id) {
-          const created = await api.createConversation({
-            ...(agentId ? { agentId } : {}),
-            source,
-          });
-          id = created.id;
-          createdRef.current = id;
-          queryClient.setQueryData(chatKeys.conversation(id), created);
-          onCreated(created);
-        }
-        const result = await api.sendMessage(id, {
-          content: input.content,
-          clientId,
-          ...(input.context ? { context: input.context } : {}),
-          ...(input.attachments?.length
-            ? { attachmentIds: input.attachments.map((file) => file.id) }
-            : {}),
-        });
-        dispatch({ type: 'confirmed', message: result.message });
-        queryClient.setQueryData(
-          chatKeys.conversation(id),
-          result.conversation,
-        );
-        void queryClient.invalidateQueries({ queryKey: chatKeys.lists });
-        return result;
-      } catch (error: unknown) {
-        dispatch({ type: 'failed', clientId });
-        toaster.show({
-          type: 'error',
-          title: errorText(t, error, t('chat.sendFailed')),
-        });
-        return null;
-      }
+      return true;
     },
     [
-      api,
+      controller,
       conversationId,
       agentId,
       source,
+      selectedModel,
+      editorKey,
       dispatch,
       onCreated,
-      queryClient,
-      toaster,
-      t,
     ],
   );
 }
@@ -459,8 +498,6 @@ export interface ConversationActions {
     { readonly id: string; readonly archived: boolean }
   >;
   readonly stop: UseMutationResult<ConversationDetail, unknown, string>;
-  readonly fallback: UseMutationResult<ConversationDetail, unknown, string>;
-  readonly restore: UseMutationResult<ConversationDetail, unknown, string>;
   readonly markRead: (id: string) => void;
 }
 
@@ -470,25 +507,32 @@ export function useConversationActions(): ConversationActions {
   const toaster = useToaster();
   const { t } = useTranslation(ACCESS_NAMESPACE);
 
-  const remember = useCallback(
-    (detail: ConversationDetail): void => {
-      queryClient.setQueryData(chatKeys.conversation(detail.id), detail);
-      void queryClient.invalidateQueries({ queryKey: chatKeys.lists });
-    },
-    [queryClient],
-  );
-  const failed = (error: unknown): void =>
+  const controller = useChatController();
+  type Scope = { active: () => boolean };
+  const scope = (): Scope => ({ active: controller.lifetime() });
+  const failed = (
+    error: unknown,
+    _input: unknown,
+    lifetime: Scope | undefined,
+  ): void => {
+    if (!lifetime?.active()) return;
     void toaster.show({
       type: 'error',
       title: errorText(t, error, t('common.requestFailed')),
     });
+  };
 
   const rename = useMutation(
     {
       mutationFn: (input: { readonly id: string; readonly title: string }) =>
-        api.updateConversation(input.id, { title: input.title }),
-      onSuccess: (detail) => {
-        remember(detail);
+        controller.command(
+          input.id,
+          () => api.updateConversation(input.id, { title: input.title }),
+          (detail) => detail,
+        ),
+      onMutate: scope,
+      onSuccess: (_detail, _input, lifetime) => {
+        if (!lifetime.active()) return;
         toaster.show({ type: 'success', title: t('chat.renamed') });
       },
       onError: failed,
@@ -501,9 +545,15 @@ export function useConversationActions(): ConversationActions {
       mutationFn: (input: {
         readonly id: string;
         readonly archived: boolean;
-      }) => api.updateConversation(input.id, { archived: input.archived }),
-      onSuccess: (detail, input) => {
-        remember(detail);
+      }) =>
+        controller.command(
+          input.id,
+          () => api.updateConversation(input.id, { archived: input.archived }),
+          (detail) => detail,
+        ),
+      onMutate: scope,
+      onSuccess: (detail, input, lifetime) => {
+        if (!lifetime.active()) return;
         if (!input.archived) {
           toaster.show({ type: 'success', title: t('chat.unarchived') });
           return;
@@ -516,6 +566,7 @@ export function useConversationActions(): ConversationActions {
           action: {
             label: t('chat.undo'),
             onClick: () => {
+              if (!lifetime.active()) return;
               toaster.close(toastId);
               archive.mutate({ id: input.id, archived: false });
             },
@@ -529,40 +580,8 @@ export function useConversationActions(): ConversationActions {
 
   const stop = useMutation(
     {
-      mutationFn: (id: string) => api.stop(id),
-      onSuccess: remember,
-      onError: failed,
-    },
-    queryClient,
-  );
-
-  const fallback = useMutation(
-    {
-      mutationFn: (id: string) => api.fallback(id),
-      onSuccess: (detail) => {
-        remember(detail);
-        toaster.show({
-          type: 'success',
-          title: t('chat.offline.fallbackDone'),
-          description: t('chat.offline.newSession'),
-        });
-      },
-      onError: failed,
-    },
-    queryClient,
-  );
-
-  const restore = useMutation(
-    {
-      mutationFn: (id: string) => api.restore(id),
-      onSuccess: (detail) => {
-        remember(detail);
-        toaster.show({
-          type: 'success',
-          title: t('chat.offline.restoreDone'),
-          description: t('chat.offline.newSession'),
-        });
-      },
+      mutationFn: (id: string) => controller.stop(id),
+      onMutate: scope,
       onError: failed,
     },
     queryClient,
@@ -570,13 +589,16 @@ export function useConversationActions(): ConversationActions {
 
   const markRead = useCallback(
     (id: string) => {
-      void api
-        .markRead(id)
-        .then((detail) => remember(detail))
+      void controller
+        .command(
+          id,
+          () => api.markRead(id),
+          (detail) => detail,
+        )
         .catch(() => undefined);
     },
-    [api, remember],
+    [api, controller],
   );
 
-  return { rename, archive, stop, fallback, restore, markRead };
+  return { rename, archive, stop, markRead };
 }

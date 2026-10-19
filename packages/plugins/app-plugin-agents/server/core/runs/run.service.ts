@@ -99,6 +99,7 @@ import {
   commentConsent,
   commentFromOwner,
 } from './comment-consent.js';
+import type { ClaimService } from './claim.js';
 
 export const DEFAULT_THREAD = 'main';
 
@@ -354,7 +355,7 @@ export interface RunService {
 }
 
 export interface RunServiceDeps extends TransitionDeps {
-  readonly diagnose?: import('./claim.js').ClaimService['diagnose'];
+  readonly diagnose?: ClaimService['diagnose'];
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;

@@ -352,3 +352,75 @@ describe('tuning the knowledge base', () => {
     expect(indexChanged).toBeUndefined();
   });
 });
+
+describe('indexer notification coverage', () => {
+  it('requires an explicit complete contract and releases replaced listeners', async () => {
+    const h = await createKnowledgeHarness();
+    try {
+      const readers = {
+        states: async () => null,
+        unfinished: async () => null,
+        reindex: async () => {},
+      };
+      const released: string[] = [];
+      let oldChange: ((id: string) => void) | undefined;
+      const releaseOld = h.knowledge.registerIndexer({
+        ...readers,
+        onChange(listener) {
+          oldChange = listener;
+          return () => {
+            released.push('old');
+          };
+        },
+      });
+      expect(h.knowledge.indexing.notifications()).toBe('partial');
+      const releaseNext = h.knowledge.registerIndexer({
+        ...readers,
+        notifications: 'complete',
+        onChange: () => () => {
+          released.push('next');
+        },
+      });
+      expect(released).toEqual(['old']);
+      expect(h.knowledge.indexing.notifications()).toBe('complete');
+      releaseOld();
+      const before = h.events.length;
+      oldChange?.('stale');
+      expect(h.events).toHaveLength(before);
+      releaseNext();
+      expect(released).toEqual(['old', 'next']);
+      expect(h.knowledge.indexing.notifications()).toBe('none');
+      h.knowledge.registerIndexer({ ...readers, notifications: 'complete' });
+      expect(h.knowledge.indexing.notifications()).toBe('none');
+      expect(h.events).toContainEqual({ type: 'indexer.changed' });
+      const reusable = {
+        ...readers,
+        notifications: 'complete' as const,
+        onChange: () => () => {},
+      };
+      const staleRelease = h.knowledge.registerIndexer(reusable);
+      const activeRelease = h.knowledge.registerIndexer(reusable);
+      staleRelease();
+      expect(h.knowledge.indexing.notifications()).toBe('complete');
+      activeRelease();
+      expect(h.knowledge.indexing.notifications()).toBe('none');
+      let failedChange: ((id: string) => void) | undefined;
+      expect(() =>
+        h.knowledge.registerIndexer({
+          ...readers,
+          notifications: 'complete',
+          onChange: (listener) => {
+            failedChange = listener;
+            throw new Error('Unavailable');
+          },
+        }),
+      ).toThrow('Unavailable');
+      expect(h.knowledge.indexing.notifications()).toBe('none');
+      const afterFailure = h.events.length;
+      failedChange?.('stale');
+      expect(h.events).toHaveLength(afterFailure);
+    } finally {
+      await h.close();
+    }
+  });
+});

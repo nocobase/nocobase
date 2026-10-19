@@ -75,6 +75,31 @@ Search asks every registered `KnowledgeSearchProvider` — `search(spaces, query
 
 The file previews are the file plugin's preview components (its Registry item `component-ui`), installed under `client/extensions/file-preview` as this plugin's own source; DOCX, XLSX and PPTX render in the browser through `@silurus/ooxml`.
 
+## Index notifications and refresh
+
+An indexer may declare `notifications: 'complete'`, `'partial'` or `'none'` alongside `onChange(listener)`. `complete` is an application-owned promise that **every** queue, progress, success, failure, cancellation and reindex change is announced after it is durably visible to `states()` and `unfinished()`, including empty/error outcomes and changes made by other workers. An `onChange` implementation without an explicit declaration is partial; without `onChange`, coverage is always none. Use the application's Realtime broker across processes when workers and browsers are served by different instances. Do not declare complete coverage solely because a WebSocket connects.
+
+```ts
+const unregister = knowledge.registerIndexer({
+  notifications: 'complete',
+  onChange: (listener) => committedIndexChanges.onDocument(listener),
+  states: (sections) => index.states(sections),
+  unfinished: (spaceId, limit) => index.unfinished(spaceId, limit),
+  reindex: (docId) => index.reindex(docId),
+});
+// Call unregister when the owning integration stops.
+```
+
+Registration, replacement and removal announce `indexer.changed` so open pages reload the capabilities. Old listeners and unregister callbacks cannot affect a newer registration, even when it uses the same indexer object. Reindexing also announces the queued change after the indexer's operation resolves. The adapter remains responsible for subsequent progress and terminal outcomes.
+
+Index responses add optional `meta.notifications`; `GET /docs/{docId}/index`, `POST /docs/{docId}/reindex` and `GET /indexing` retain their existing `data` fields and the list's `meta.enabled`. `KnowledgeApi.docIndex()` and `unindexed()` keep their return shapes; `docIndexSnapshot()` and `unindexedSnapshot()` additionally expose metadata. Older servers without metadata take the conservative fallback.
+
+The document and space index hooks share one refresh scheduler per cached query. Complete coverage plus an acknowledged subscription uses events and 60-second reconciliation while the page is visible. Otherwise, pending work is checked after 5, 10, 20 and at most 30 seconds without progress. Progress, events and a local reindex reset the fallback; completion or disabled indexing stops fast polling. `useKnowledgeDocIndex(id, { maxPollMs: 15_000 })` and `useKnowledgeUnindexed(space, { maxPollMs: 15_000 })` can adjust the ceiling, within a five-to-sixty-second range. When several observers share a query, the shortest requested ceiling wins.
+
+Events, acknowledgement and fallback timers schedule serialized reads, with one trailing read when a change arrives during an older request. General Knowledge refreshes exclude these managed queries, whose own scheduler also handles ancestor permission changes. Transient failures retry up to three times without another event; 401/403 and inaccessible-document 404 responses clear the protected snapshot and stop automatic reads until explicit recovery. Hidden pages pause reads. Removing the cached query or releasing its last observer closes the subscription and timers immediately. Indexer completeness is not automatically verified by the plugin: an adapter that misses events must declare partial coverage and retain polling.
+
+The document badge, sections panel and space home show a status-refresh failure and a **Retry refresh** action when an index read fails, instead of presenting the cached pending state as current. This action only refetches the authorized snapshot and is available to readers; it does not reindex content. A successful refetch resumes the shared scheduler. Applications rendering the public hooks themselves should also display `error` and expose `refetch()`; new events alone do not reset exhausted retries.
+
 ## Verification
 
 ```bash
