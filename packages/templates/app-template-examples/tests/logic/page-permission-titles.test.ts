@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   resolveAppClientContributions,
+  defineAppRoutes,
   type AppClientRegisteredRoute,
 } from '@nocobase/app-client/plugins';
 import applicationRoutes from '../../client/routes.js';
@@ -70,7 +71,7 @@ describe('page permission labels', () => {
       expect(names.has(name), `Stale permission title: ${name}`).toBe(true);
   });
 
-  it('preserves the complete application page-resource identity list', () => {
+  it('preserves each unique application page-resource identity', () => {
     const expected = pages.map((route) => {
       if (typeof route.authz !== 'object')
         throw new Error('Expected page authorization');
@@ -86,7 +87,9 @@ describe('page permission labels', () => {
         id,
         actions: actions.map((action) => action.name),
       })),
-    ).toEqual(expected);
+    ).toEqual([
+      ...new Map(expected.map((resource) => [resource.id, resource])).values(),
+    ]);
   });
 
   const fixture = () =>
@@ -220,4 +223,81 @@ describe('page permission labels', () => {
       ),
     ).toEqual([]);
   });
+});
+
+it('lists inherited and repeated page resources once while retaining independent child grants', () => {
+  const input = resolveAppClientContributions([
+    {
+      packageName: 'shared-pages',
+      source: 'application',
+      routes: defineAppRoutes([
+        {
+          name: 'repairs',
+          path: '/repairs',
+          authz: {
+            resource: { type: 'page', id: 'repairs' },
+            action: 'access',
+          },
+          navigation: { title: 'repairs.mine' },
+          componentLoader: async () => ({ default: () => null }),
+          children: [
+            {
+              name: 'repairCreate',
+              path: 'create',
+              componentLoader: async () => ({ default: () => null }),
+            },
+            {
+              name: 'repairDetail',
+              path: ':id',
+              componentLoader: async () => ({ default: () => null }),
+              children: [
+                {
+                  name: 'repairConfirm',
+                  path: 'confirm',
+                  componentLoader: async () => ({ default: () => null }),
+                },
+              ],
+            },
+            {
+              name: 'repairAudit',
+              path: 'audit',
+              authz: {
+                resource: { type: 'page', id: 'repair-audit' },
+                action: 'access',
+              },
+              navigation: { title: 'repairs.audit' },
+              componentLoader: async () => ({ default: () => null }),
+            },
+          ],
+        },
+        {
+          name: 'repairsAlias',
+          path: '/repairs-alias',
+          authz: {
+            resource: { type: 'page', id: 'repairs' },
+            action: 'access',
+          },
+          componentLoader: async () => ({ default: () => null }),
+        },
+      ]),
+    },
+  ]);
+  const before = flatten(input.routes).map(({ id, name, authz }) => ({
+    id,
+    name,
+    authz,
+  }));
+  const result = pagePermissionResources(
+    input.routes,
+    {},
+    (path) => `Unnamed (${path})`,
+  );
+  expect(result.map(({ id }) => id)).toEqual(['repairs', 'repair-audit']);
+  expect(result[0]!.title).toEqual({ key: 'repairs.mine', ns: 'shared-pages' });
+  expect(
+    flatten(input.routes).map(({ id, name, authz }) => ({ id, name, authz })),
+  ).toEqual(before);
+  expect(
+    pagePermissionResources(input.routes, {}, (path) => `Unnamed (${path})`),
+  ).toEqual(result);
 });

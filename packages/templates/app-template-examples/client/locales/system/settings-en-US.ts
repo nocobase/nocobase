@@ -97,6 +97,7 @@ const settings = {
   selectAllPermissions: 'All',
   selectVisiblePermissions: 'Select visible permissions in {{name}}',
   permissionSummary: '{{enabled}} of {{total}} enabled',
+  preservedRecordScope: 'Keep existing configuration',
   noRecordScope: 'No records (not authorized)',
   permissionFilter: {
     limit: 'Up to 20 conditions',
