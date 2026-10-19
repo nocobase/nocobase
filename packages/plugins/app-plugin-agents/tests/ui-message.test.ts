@@ -13,6 +13,11 @@ import {
 import type {
   useConversationMessages,
   ChatDataPart,
+  ChatUIContextSource,
+  ChatSourcesValue,
+  PageUIItem,
+  PageUIContext,
+  snapshotUIContext,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type { AppUIMessage as ClientMessage } from '@nocobase/app-plugin-agents/client/chat';
 import type { AppUIMessage as ServerMessage } from '@nocobase/app-plugin-agents/server/online-agent';
@@ -23,6 +28,20 @@ import {
   readUIMessageStream,
   type UIMessage,
 } from 'ai';
+
+it('exports precise open UI source and asynchronous snapshot contracts', () => {
+  expectTypeOf<PageUIItem['kind']>().toEqualTypeOf<string>();
+  expectTypeOf<PageUIItem['id']>().toEqualTypeOf<string>();
+  expectTypeOf<ReturnType<typeof snapshotUIContext>>().toEqualTypeOf<
+    Promise<PageUIContext | undefined>
+  >();
+  expectTypeOf<ReturnType<ChatSourcesValue['snapshotUI']>>().toEqualTypeOf<
+    Promise<PageUIContext | undefined>
+  >();
+  expectTypeOf<ReturnType<ChatUIContextSource['getSnapshot']>>().toEqualTypeOf<
+    PageUIItem | Promise<PageUIItem>
+  >();
+});
 
 const metadata: AppUIMessageMetadata = {
   conversationId: 'conversation',

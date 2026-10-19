@@ -1,6 +1,7 @@
 export interface AgentChatLocale {
   readonly chat: {
     readonly retrySaving: string;
+    readonly contextFailed: string;
     readonly approval: {
       readonly request: string;
       readonly approve: string;
@@ -245,6 +246,8 @@ export interface AgentChatLocale {
 const agentChatEnUS: AgentChatLocale = {
   chat: {
     retrySaving: 'Retry saving',
+    contextFailed:
+      'Could not read the selected context or send the message. Check the current page and try again.',
     approval: {
       request: 'This tool needs your approval before it runs.',
       approve: 'Approve',

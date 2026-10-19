@@ -418,6 +418,18 @@ export class ChatController {
           conversationId: id,
           createdAt: new Date().toISOString(),
           revision: 0,
+          ...(input.context
+            ? {
+                context: {
+                  route: input.context.route,
+                  items: [],
+                  dropped: 0,
+                  ...(input.context.ui
+                    ? { ui: structuredClone(input.context.ui) }
+                    : {}),
+                },
+              }
+            : {}),
         },
         parts: [{ type: 'text', text: input.content }],
       },

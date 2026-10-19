@@ -210,6 +210,47 @@ it.each(['revoked', 'deleted', 'inaccessible'] as const)(
   },
 );
 
+it('carries open UI snapshots as untrusted user model data and retains them across native history and restoration', async () => {
+  const f = await fixture();
+  const ui = {
+    version: 1 as const,
+    items: [
+      {
+        kind: 'unknown.application-widget',
+        id: 'widget',
+        extra: { nested: [false, 0, '', null] },
+      },
+    ],
+  };
+  const agent = await f.service.realtime(actor());
+  await agent.send([{ role: 'user', content: 'Use this UI snapshot' }], {
+    messageId: 'ui-source-message',
+    workContext: { route: '/widget', items: [], dropped: 0, ui },
+  });
+  await vi.waitFor(async () => expect(await agent.status()).toBe('idle'));
+  const prompt = f.inputs[0] as { role: string; content: unknown }[];
+  const uiMessages = prompt.filter((message) =>
+    JSON.stringify(message.content).includes('unknown.application-widget'),
+  );
+  expect(uiMessages.length).toBeGreaterThan(0);
+  expect(uiMessages.every((message) => message.role === 'user')).toBe(true);
+  expect(JSON.stringify(uiMessages)).toContain('untrusted browser data');
+  const history = await agent.history();
+  expect(
+    history.find((message) => message.role === 'user')?.metadata?.context?.ui,
+  ).toEqual(ui);
+  expect(
+    history.find((message) => message.role === 'assistant')?.metadata
+      ?.sourceUserMessageId,
+  ).toBe('ui-source-message');
+  const restored = await f.service.realtime(actor(), {
+    sessionId: agent.sessionId,
+  });
+  expect(await restored.history()).toEqual(history);
+  expect(f.resolve).not.toHaveBeenCalled();
+  await f.service.shutdown();
+});
+
 it('omits missing history without resolver work', async () => {
   const f = await fixture();
   const a = await f.turn(undefined);

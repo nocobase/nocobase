@@ -1,11 +1,19 @@
 import { createServer, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import {
+  EXAMPLES_FORM_TOOL,
+  type FormProposal,
+} from '../../shared/ai-form-fill.js';
 
 /** A real, local OpenAI-compatible HTTP endpoint; no provider credentials or external traffic. */
 export async function createOnlineAgentModelFixture(
-  options: { initialText?: string } = {},
+  options: { initialText?: string; scene?: 'chat' | 'form' } = {},
 ) {
-  const requests: { messages: unknown[]; stream?: boolean }[] = [];
+  const requests: {
+    messages: unknown[];
+    stream?: boolean;
+    tools?: { type: string; function: { name: string } }[];
+  }[] = [];
   const streams: ServerResponse[] = [];
   const chunk = (
     response: ServerResponse,
@@ -15,6 +23,29 @@ export async function createOnlineAgentModelFixture(
     response.write(
       `data: ${JSON.stringify({ id: 'fixture', object: 'chat.completion.chunk', created: 0, model: 'fixture-chat', choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`,
     );
+  };
+  const toolCalls = (
+    index: number,
+    calls: { id: string; name: string; input: unknown }[],
+  ) => {
+    const response = streams[index]!;
+    calls.forEach((call, toolIndex) =>
+      chunk(response, {
+        tool_calls: [
+          {
+            index: toolIndex,
+            id: call.id,
+            type: 'function',
+            function: {
+              name: call.name,
+              arguments: JSON.stringify(call.input),
+            },
+          },
+        ],
+      }),
+    );
+    chunk(response, {}, 'tool_calls');
+    response.end('data: [DONE]\n\n');
   };
   const server = createServer(async (request, response) => {
     if (request.method === 'GET' && request.url === '/v1/models') {
@@ -61,7 +92,9 @@ export async function createOnlineAgentModelFixture(
     streams.push(response);
     chunk(response, { role: 'assistant', content: '' });
     chunk(response, {
-      content: options.initialText ?? 'Hello from the local model fixture.',
+      content:
+        options.initialText ??
+        (options.scene === 'form' ? '' : 'Hello from the local model fixture.'),
     });
     // The test explicitly completes or stops each stream; there is no timing-dependent fast completion.
   });
@@ -77,24 +110,21 @@ export async function createOnlineAgentModelFixture(
       chunk(streams[index]!, { content: text });
     },
     tools(index: number, calls: { id: string; value: string }[]) {
-      const response = streams[index]!;
-      calls.forEach((call, toolIndex) =>
-        chunk(response, {
-          tool_calls: [
-            {
-              index: toolIndex,
-              id: call.id,
-              type: 'function',
-              function: {
-                name: 'fixture_action',
-                arguments: JSON.stringify({ value: call.value }),
-              },
-            },
-          ],
-        }),
+      toolCalls(
+        index,
+        calls.map(({ id, value }) => ({
+          id,
+          name: 'fixture_action',
+          input: { value },
+        })),
       );
-      chunk(response, {}, 'tool_calls');
-      response.end('data: [DONE]\n\n');
+    },
+    formProposal(index: number, proposal: FormProposal, id = 'form-proposal') {
+      if (options.scene !== 'form')
+        throw new Error(
+          'Enable the explicit form scene before proposing values.',
+        );
+      toolCalls(index, [{ id, name: EXAMPLES_FORM_TOOL, input: proposal }]);
     },
     complete(index: number) {
       const response = streams[index]!;

@@ -9,6 +9,25 @@ import {
 } from 'ai';
 import { appUIMessageText } from '../../../../packages/plugins/app-plugin-agents/shared/ui-message.js';
 export { appUIMessageText };
+import {
+  AIToolRendererProvider as ToolRendererProvider,
+  useAIToolRenderer as useToolRenderer,
+  getAIToolSourceMessage as toolSourceMessage,
+} from '../../../../packages/plugins/app-plugin-agents/client/chat/tool-renderer.js';
+export type {
+  AIToolPart,
+  AIToolRendererContext,
+  AIToolRendererMap,
+  AIToolRendererProps,
+  AIToolRendererProviderProps,
+} from '@nocobase/app-plugin-agents/client/chat';
+
+// Use the real context implementation so preview nesting and exact-name dispatch cannot drift.
+export const AIToolRendererProvider: typeof Chat.AIToolRendererProvider =
+  ToolRendererProvider;
+export const useAIToolRenderer: typeof Chat.useAIToolRenderer = useToolRenderer;
+export const getAIToolSourceMessage: typeof Chat.getAIToolSourceMessage =
+  toolSourceMessage;
 export { chatMessageSegments } from '../../../../packages/plugins/app-plugin-agents/client/chat/message-model.js';
 import type {
   ChatAgent,
@@ -25,6 +44,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -32,6 +52,13 @@ import {
 import { useNavigate } from 'react-router';
 
 import { cn } from 'cn';
+import {
+  contextChips as realContextChips,
+  buildPageContext as realBuildPageContext,
+  uiItemKey as realUIItemKey,
+  snapshotUIContext as realSnapshotUIContext,
+} from '../../../../packages/plugins/app-plugin-agents/client/chat/context-model.js';
+import { clonePageUIContext } from '../../../../packages/plugins/app-plugin-agents/shared/page-ui-context.js';
 
 // The preview's stand-in for @nocobase/app-plugin-agents/client/chat, aliased in vite.config.ts and mocked with it in
 // the tests: the panel's state as the plugin keeps it, and the conversations in memory. A message is answered after a
@@ -629,33 +656,12 @@ export const selectionPreview: typeof Chat.selectionPreview = (
   return line.length > max ? `${line.slice(0, max - 1)}…` : line;
 };
 
-export const contextChips: typeof Chat.contextChips = (input) => {
-  const chips: Chat.ChatContextChip[] = [];
-  const seen = new Set<string>();
-  const pinned = new Set(input.pinned.map(itemKey));
-  for (const item of [...input.pinned, ...input.sources]) {
-    const key = itemKey(item);
-    if (seen.has(key) || input.removed.has(key)) continue;
-    seen.add(key);
-    chips.push({ key, kind: 'item', item, pinned: pinned.has(key) });
-  }
-  if (input.filter && !input.removed.has('filter'))
-    chips.push({ key: 'filter', kind: 'filter', filter: input.filter });
-  if (input.selection && !input.removed.has('selection'))
-    chips.push({
-      key: 'selection',
-      kind: 'selection',
-      selection: input.selection,
-    });
-  return chips;
-};
-
-export const buildPageContext: typeof Chat.buildPageContext = (input) => ({
-  route: input.route,
-  items: contextChips(input).flatMap((chip) =>
-    chip.kind === 'item' ? [{ kind: chip.item.kind, id: chip.item.id }] : [],
-  ),
-});
+export const contextChips: typeof Chat.contextChips = realContextChips;
+export const buildPageContext: typeof Chat.buildPageContext =
+  realBuildPageContext;
+export const uiItemKey: typeof Chat.uiItemKey = realUIItemKey;
+export const snapshotUIContext: typeof Chat.snapshotUIContext =
+  realSnapshotUIContext;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Names, avatars and times
@@ -752,6 +758,11 @@ export const useChatPanel: typeof Chat.useChatPanel = () =>
   useContext(PanelContext) ?? unavailable;
 
 const noSources: Chat.ChatSourcesValue = {
+  uiSources: [],
+  selectedUIKeys: new Set(),
+  registerUI: () => noop,
+  selectUI: noop,
+  snapshotUI: async () => undefined,
   items: [],
   filter: null,
   selection: null,
@@ -781,6 +792,34 @@ export const useChatContextSource: typeof Chat.useChatContextSource = (
     const current = itemRef.current;
     return key && current ? registerItem(current) : undefined;
   }, [registerItem, key]);
+};
+
+export const useChatUIContextSource: typeof Chat.useChatUIContextSource = (
+  source,
+) => {
+  const { registerUI } = useChatSources();
+  const latestRef = useRef(source);
+  useLayoutEffect(() => {
+    latestRef.current = source;
+  });
+  const kind = source?.kind;
+  const id = source?.id;
+  useEffect(() => {
+    if (kind === undefined || id === undefined) return;
+    return registerUI({
+      kind,
+      id,
+      get label() {
+        return latestRef.current?.label ?? id;
+      },
+      getSnapshot: () => {
+        const current = latestRef.current;
+        if (!current || current.kind !== kind || current.id !== id)
+          throw new Error('UI context source is no longer available.');
+        return current.getSnapshot();
+      },
+    });
+  }, [registerUI, kind, id]);
 };
 
 export const ChatProvider: typeof Chat.ChatProvider = ({
@@ -912,6 +951,74 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
     ],
   );
 
+  const uiRegistryRef = useRef(new Map<string, Chat.ChatUIContextSource>());
+  const [uiSources, setUISources] = useState<
+    readonly Chat.ChatUIContextSource[]
+  >([]);
+  const [selectedUIKeys, setSelectedUIKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const selectedUIRef = useRef(selectedUIKeys);
+  const registerUI = useCallback((source: Chat.ChatUIContextSource) => {
+    const key = uiItemKey(source);
+    if (uiRegistryRef.current.has(key))
+      throw new Error(`UI context source already registered: ${key}`);
+    clonePageUIContext({
+      version: 1,
+      items: [{ kind: source.kind, id: source.id }],
+    });
+    const registered: Chat.ChatUIContextSource = {
+      kind: source.kind,
+      id: source.id,
+      get label() {
+        return source.label;
+      },
+      getSnapshot: () => source.getSnapshot(),
+    };
+    uiRegistryRef.current.set(key, registered);
+    setUISources([...uiRegistryRef.current.values()]);
+    return () => {
+      if (uiRegistryRef.current.get(key) !== registered) return;
+      uiRegistryRef.current.delete(key);
+      setUISources([...uiRegistryRef.current.values()]);
+      const next = new Set(selectedUIRef.current);
+      next.delete(key);
+      selectedUIRef.current = next;
+      setSelectedUIKeys(next);
+    };
+  }, []);
+  const selectUI = useCallback<Chat.ChatSourcesValue['selectUI']>(
+    (source, selected = true) => {
+      const key = uiItemKey(source);
+      if (selected && !uiRegistryRef.current.has(key))
+        throw new Error('UI context source is no longer registered.');
+      const next = new Set(selectedUIRef.current);
+      if (selected) next.add(key);
+      else next.delete(key);
+      selectedUIRef.current = next;
+      setSelectedUIKeys(next);
+    },
+    [],
+  );
+  const snapshotUI = useCallback<
+    Chat.ChatSourcesValue['snapshotUI']
+  >(async () => {
+    const selected = selectedUIRef.current;
+    const entries = [...uiRegistryRef.current.entries()].filter(([key]) =>
+      selected.has(key),
+    );
+    const snapshot = await snapshotUIContext(
+      entries.map(([, source]) => source),
+    );
+    if (
+      selected !== selectedUIRef.current ||
+      entries.some(([key, source]) => uiRegistryRef.current.get(key) !== source)
+    )
+      throw new Error(
+        'UI context selection or source changed while reading its snapshot.',
+      );
+    return snapshot;
+  }, []);
   const registerItem = useCallback((item: Chat.ChatContextItem) => {
     setItems((current) => [...current, item]);
     return () =>
@@ -919,15 +1026,33 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
   }, []);
   const sources = useMemo<Chat.ChatSourcesValue>(
     () => ({
+      uiSources,
+      selectedUIKeys,
+      registerUI,
+      selectUI,
+      snapshotUI,
       items,
       filter: null,
       selection: null,
       removed,
       registerItem,
       registerFilter: () => noop,
-      remove: (key) => setRemoved((current) => new Set([...current, key])),
+      remove: (key) => {
+        const source = uiRegistryRef.current.get(key);
+        if (source) selectUI(source, false);
+        else setRemoved((current) => new Set([...current, key]));
+      },
     }),
-    [items, removed, registerItem],
+    [
+      uiSources,
+      selectedUIKeys,
+      registerUI,
+      selectUI,
+      snapshotUI,
+      items,
+      removed,
+      registerItem,
+    ],
   );
 
   const tracking = useMemo<Chat.ChatPageTracking>(

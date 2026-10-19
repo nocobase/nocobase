@@ -9,6 +9,7 @@ import {
   Hash,
   Languages,
   FileText,
+  FilePenLine,
   FolderOpen,
   ShoppingCart,
   PanelsTopLeft,
@@ -22,6 +23,7 @@ import { Link } from 'react-router';
 import { Button } from '#components/ui/button';
 
 const examples = [
+  { key: 'aiFormFill', path: '/ai-form-fill', icon: FilePenLine },
   { key: 'routeOverlays', path: '/route-overlays', icon: PanelsTopLeft },
   { key: 'articles', path: '/articles', icon: FileText },
   { key: 'numbers', path: '/numeric-examples', icon: Hash },

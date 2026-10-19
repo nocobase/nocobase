@@ -9,6 +9,7 @@
 import {
   buildPageContext,
   contextChips,
+  uiItemKey,
   useChatAttachments,
   useChatPanel,
   useChatSources,
@@ -99,14 +100,38 @@ export function Composer({
     route: `${location.pathname}${location.search}`,
     pinned: panel.pinned,
     sources: sources.items,
+    uiSources: sources.uiSources.filter((source) =>
+      sources.selectedUIKeys.has(uiItemKey(source)),
+    ),
     filter: sources.filter,
     selection: sources.selection,
     removed: sources.removed,
   };
+  const inputRef = useRef(input);
+  useLayoutEffect(() => {
+    inputRef.current = input;
+  });
   const context: AgentComposerContext = {
     chips: contextChips(input),
     onRemove: sources.remove,
-    build: () => buildPageContext(input),
+    build: () => {
+      if (sources.selectedUIKeys.size === 0) return buildPageContext(input);
+      return sources.snapshotUI().then((ui) => {
+        const latest = inputRef.current;
+        if (
+          latest.route !== input.route ||
+          latest.pinned !== input.pinned ||
+          latest.sources !== input.sources ||
+          latest.filter !== input.filter ||
+          latest.selection !== input.selection ||
+          latest.removed !== input.removed
+        )
+          throw new Error(
+            'Page context changed while reading the UI snapshot.',
+          );
+        return buildPageContext({ ...input, ui });
+      });
+    },
   };
 
   return (

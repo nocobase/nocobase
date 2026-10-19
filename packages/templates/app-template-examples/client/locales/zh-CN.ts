@@ -7,6 +7,47 @@ const zhCN: AppResource = {
   // The template's own copy; see `./en-US.ts`.
   ...systemZhCN,
   ...agentChatZhCN,
+  aiFormFill: {
+    title: 'AI 辅助填表',
+    description: '在共享聊天中生成提案，检查后明确确认，仅填入浏览器草稿。',
+    draftTitle: '申请草稿',
+    draftOnly: '仅更新浏览器草稿，不会提交或保存。',
+    target: '本地草稿目标',
+    record: '只读记录 ID',
+    recordA: '记录 A',
+    recordB: '记录 B',
+    switchHint: '切换记录会让旧提案失效，切回原记录也不会恢复有效。',
+    name: '申请名称',
+    priority: '优先级',
+    budget: '预算',
+    subscribe: '接收更新',
+    low: '低',
+    normal: '普通',
+    high: '高',
+    yes: '是',
+    no: '否',
+    openChat: '打开此表单的 AI 对话',
+    retry: '重试',
+    prompt:
+      '请为所选申请表单生成填写提案，不要保存任何内容。我会检查并自行确认填入浏览器草稿。',
+    askFailed: '无法打开聊天，请检查网络后重试。',
+    proposalTitle: '建议填写内容',
+    apply: '应用到草稿',
+    dismiss: '取消提案',
+    proposalPending: '正在准备填写提案…',
+    proposalFailed: '提案未完成，请重新发送需求。',
+    invalidProposal: '提案格式无效，请重新生成。',
+    invalidName: '请输入 1 至 120 个字符的名称。',
+    invalidBudget: '请输入 0 至 1,000,000 之间的预算。',
+    invalidDraft: '请先填写有效的数字预算，再将草稿纳入消息。',
+    applied: '已填入浏览器草稿，尚未保存。',
+    dismissed: '已取消，草稿未变化。',
+    stale: '表单或草稿已变化，请纳入当前表单并重新生成提案。',
+    missingSource:
+      '来源消息的所选表单缺失或不匹配，请加载来源历史或重新生成提案。',
+    failed: '无法确认草稿更新结果，请检查草稿后再操作。',
+    partial: '草稿可能仅部分更新，请检查后重新生成提案。',
+  },
   structuredExtraction: {
     title: 'AI 提取结构化信息',
     description:
@@ -478,6 +519,11 @@ const zhCN: AppResource = {
     },
   },
   examples: {
+    aiFormFill: {
+      title: 'AI 辅助填表',
+      description:
+        '检查应用自有工具的提案，明确确认后填写本地草稿，不保存业务记录。',
+    },
     onlineAgent: {
       title: 'Online Agent',
       description: '配置聊天模型，通过全局入口与 Online Agent 实时对话。',

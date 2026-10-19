@@ -57,6 +57,7 @@ describe('app client routes', () => {
       'models',
       'ai-translation',
       'ai-structured-extraction',
+      'ai-form-fill',
     ]);
     for (const name of ['agents', 'runtimes']) {
       expect(
@@ -159,6 +160,7 @@ describe('app client routes', () => {
       { name: 'models', authorizedAs: 'settings:agents.services' },
       { name: 'ai-translation', authorizedAs: null },
       { name: 'ai-structured-extraction', authorizedAs: null },
+      { name: 'ai-form-fill', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'routeOverlays', authorizedAs: 'routeOverlays' },
       // Overlay children are nested under a page, so the parent's check is the only one.

@@ -117,8 +117,88 @@ References are re-resolved through the existing page-kind resolver for the curre
 
 Resolvers remain responsible for business authorization and their own database reads. One batched resolver invocation does not imply one SQL query: Studio currently resolves each issue through its authorized detail service. There is no extra Native history query, new table, lock, persistent idempotency, automatic resend or reconnect. Runner protocol and lifecycle remain unchanged; existing Runner session memory and previously generated answers are not erased by this policy.
 
+## Selected UI snapshots
+
+`useChatUIContextSource` makes an application-owned source available; it does not select it or upload its values. Select it separately through `useChatSources().selectUI(source)`. For example, an unknown UI kind can supply open JSON without registering a business resource resolver:
+
+```tsx
+import {
+  uiItemKey,
+  useChatSources,
+  useChatUIContextSource,
+} from '@nocobase/app-plugin-agents/client/chat';
+import { Button } from '#components/ui/button';
+
+function CanvasContext({ selectedIds }: { selectedIds: string[] }) {
+  const source = {
+    kind: 'application.canvas',
+    id: 'planning-canvas',
+    label: 'Planning canvas',
+    getSnapshot: () => ({
+      kind: 'application.canvas',
+      id: 'planning-canvas',
+      title: 'Planning canvas',
+      selection: { selectedIds },
+    }),
+  };
+  useChatUIContextSource(source);
+  const { selectUI, selectedUIKeys } = useChatSources();
+  const included = selectedUIKeys.has(uiItemKey(source));
+  return (
+    <Button onClick={() => selectUI(source, !included)}>
+      {included ? 'Remove canvas context' : 'Include canvas context'}
+    </Button>
+  );
+}
+```
+
+The application supplies translated labels in production and explicitly excludes sensitive values. `Composer` shows only selected UI sources as removable chips, awaits their latest `getSnapshot()` values immediately before sending, validates and detaches the snapshot, and includes it in `context.ui.items`. It checks current sending readiness after asynchronous reads. A changed source, selection or page context rejects the send with a localized error and preserves the draft; duplicate clicks cannot submit twice. `AgentComposerContext.build` accepts either a synchronous context or a Promise, so non-UI consumers retain their existing synchronous behavior. Sent chips show UI identity/title, not arbitrary snapshot values.
+
+UI snapshots are untrusted browser data, not business references or server permissions. The envelope is versioned and budgeted; custom item fields and unknown kinds survive as JSON. Tool cards must authorize local actions against their own exact originating source message, not all registered sources or the latest composer selection. Form registration and checked draft updates belong to the plugin's form helpers and the application adapter, not this display block.
+
 ## UIMessage extensions and approval
 
 Messages are `AppUIMessage` values from the SDK: render ordered text, file, tool, `data-notice` and `data-business` parts. `ChatExtensionsContext` receives the original UIMessage; `renderMessageExtra` runs once on its final source segment. `renderDataPart` can supply a card, while null preserves the built-in renderer. A null `renderNews` falls back to localized `newsText`, then the saved title. Timeline hooks retain stable business keys and their own authorized queries/subscriptions. Composer `toolbar` and `notice` remain child props. This does not restore missing Studio producers or the old ask_agent chain.
+
+### Application tool renderers
+
+Register application-owned cards with `AIToolRendererProvider` from `@nocobase/app-plugin-agents/client/chat`, inside the authenticated identity boundary and around both business pages and the shared panel. Keep the existing single `ChatProvider`; this registry creates neither a chat owner nor a tool continuation. A provider accepts `renderers: AIToolRendererMap`. Keys are exact SDK tool names, resolved with `getToolName` after `isToolUIPart` for both static `tool-*` and `dynamic-tool` parts. Nested providers inherit the parent map and override matching own keys only; unmounting an override restores the parent, and no registrations are global. Keep the map and component identities stable to preserve card-local state.
+
+```tsx
+import {
+  AIToolRendererProvider,
+  type AIToolRendererMap,
+  type AIToolRendererProps,
+} from '@nocobase/app-plugin-agents/client/chat';
+
+function ProposalCard({ part, context }: AIToolRendererProps) {
+  // These are the existing safe public SDK parts, not private raw tool results.
+  // An application validates its own output schema before enabling local actions.
+  if (part.state === 'output-error')
+    return <p role='alert'>{part.errorText}</p>;
+  if (part.state === 'output-denied') return <p>Proposal denied</p>;
+  if (part.state !== 'output-available') return <p>Preparing proposal…</p>;
+  return (
+    <ApplicationProposal
+      output={part.output}
+      disabled={context.readOnly || !context.sourceContext}
+      source={context.sourceContext}
+    />
+  );
+}
+
+const renderers: AIToolRendererMap = { 'application.propose': ProposalCard };
+
+// Inside the account-keyed boundary; children contain the existing ChatProvider.
+<AIToolRendererProvider renderers={renderers}>
+  {children}
+</AIToolRendererProvider>;
+```
+
+`AIToolRendererProps` contains `toolName`, the readonly public SDK `part`, its readonly owning `message`, and `context`. The readonly context exposes `readOnly`, `streaming`, `sourceMessage`, `sourceContext`, and `approval` (`disabled`, `pending`, `error`, `respond(approved, reason?)`). `approval.respond` is bound to this part's genuine pending approval and the existing saved message/execution; renderers never supply arbitrary approval IDs. It does nothing when approval is unavailable, disabled or already pending. Display every relevant SDK state, including input streaming, waiting input, approval requested/responded, successful output, error and denial; do not assume a partial input or unknown output is a valid business proposal.
+
+`ConversationView` calls `getAIToolSourceMessage(message, loadedMessages)` using the durable, server-owned `metadata.sourceUserMessageId`, and `MessageItem` verifies that exact link again before exposing the source. No nearest-user search, current composer context or tool-reported allowed IDs can supply authorization. Missing source history, mismatched conversation or ambiguous IDs yields null; actions must remain unavailable until the exact source is loaded. `sourceContext.ui.items` is the snapshot selected for that originating user message, not a live form registry or a permission grant. Applications still validate target identity, instance generation, declared editable fields and draft revision through their form helpers.
+
+Registered cards replace only that tool part's display in its existing position. Unregistered tools retain the JSON, error, denial and approval fallback unchanged; notice/business/data extensions and message-extra rendering remain independent. Cards must never execute business actions on mount, in effects, during history reads, reconnect or restoration. A user's explicit local “apply draft” action is not SDK tool approval: validate the complete public output and user-edited proposal, then update browser draft only, without `addToolOutput`, synthetic messages or business save requests. Local action outcomes must not claim durable server completion.
 
 Approval buttons bind the saved message, execution and genuine tool approval ID. Denial does not execute the tool. Waiting approval and actually executing tools retain business occupancy. Advisory effect-review feedback does not lock a finished conversation. Refresh rereads revisions by ID; pagination drains `nextAfter` before advancing its watermark. Independent notifications arrive by durable history polling (5 seconds running, 30 seconds idle) or business announcements after the model response has closed.

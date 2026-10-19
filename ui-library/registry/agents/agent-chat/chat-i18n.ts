@@ -75,6 +75,7 @@ export function useComposerLabels(): AgentComposerLabels {
       send: t('chat.composer.send'),
       stop: t('chat.composer.stop'),
       stopping: t('chat.composer.stopping'),
+      contextFailed: t('chat.contextFailed'),
       contextLabel: t('chat.context.label'),
       contextFilter: t('chat.context.filter', { filter: '{filter}' }),
       contextSelection: t('chat.context.selection', { text: '{text}' }),

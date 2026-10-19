@@ -3,6 +3,7 @@ import type { AgentChatLocale } from './en-US.js';
 const agentChatZhCN: AgentChatLocale = {
   chat: {
     retrySaving: '重试保存',
+    contextFailed: '无法读取所选上下文或发送消息，请检查当前页面后重试。',
     approval: {
       request: '此工具需要您批准后才能执行。',
       approve: '批准',

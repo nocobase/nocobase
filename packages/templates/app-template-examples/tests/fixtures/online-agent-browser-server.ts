@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { startNodeAppServer } from '@nocobase/app-server/node';
+import { EXAMPLES_FORM_TOOL } from '../../shared/ai-form-fill.js';
 const { agentsToken } = (await import(
   import.meta.resolve(
     '@nocobase/app-plugin-agents/server/tokens',
@@ -14,6 +15,11 @@ const { createStandaloneServer } = (await import(
 // Run only against disposable smoke configuration; this fixture never changes installed application source.
 const server = await createStandaloneServer({ viteDevUrl: false });
 const online = server.application.container.resolve(agentsToken).onlineAgent;
+// Fail fast on a stale build: the form scene must use the application's real provider, never a fixture substitute.
+if (!online.configurator.toolDefinition(EXAMPLES_FORM_TOOL))
+  throw new Error(
+    'Build the application-owned form proposal provider before starting this fixture.',
+  );
 let effects = 0;
 online.configurator.registerTool('fixture_action', {
   version: '1',

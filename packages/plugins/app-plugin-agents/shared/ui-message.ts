@@ -1,6 +1,7 @@
 import { validateUIMessages, type UIMessage } from 'ai';
 import { z } from 'zod';
 import type { ResolvedPageContext } from './conversations.js';
+import { pageUIContextSchema } from './page-ui-context.js';
 
 /** JSON persisted without a tagged codec or lossy serialization. */
 export type AppUIJson =
@@ -68,6 +69,7 @@ export const appUIPageContextSchema: z.ZodType<ResolvedPageContext> = z.object({
   route: z.string(),
   items: z.array(contextItemSchema),
   dropped: z.number().int().nonnegative(),
+  ui: pageUIContextSchema.optional(),
   filter: z
     .object({
       page: z.string(),
@@ -93,6 +95,8 @@ export interface AppUIMessageMetadata {
   createdAt: string;
   agentId?: string;
   turnId?: string;
+  /** Exact user message that originated this assistant response; absent means local UI actions are unavailable. */
+  sourceUserMessageId?: string;
   /** Accepted browser input correlation; never a database primary key. */
   clientId?: string;
   executionId?: string;
@@ -117,6 +121,7 @@ export const appUIMessageMetadataSchema: z.ZodType<AppUIMessageMetadata> =
     createdAt: z.iso.datetime({ offset: true }),
     agentId: identity.optional(),
     turnId: identity.optional(),
+    sourceUserMessageId: identity.optional(),
     clientId: identity.optional(),
     executionId: identity.optional(),
     /** Absent before the first save. Never used as an update cursor. */

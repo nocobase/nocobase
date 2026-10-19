@@ -34,11 +34,51 @@ export type {
 export { appUIMessageText } from '../shared/online-agent.js';
 
 export {
+  AIToolRendererProvider,
+  useAIToolRenderer,
+  getAIToolSourceMessage,
+  type AIToolPart,
+  type AIToolRendererContext,
+  type AIToolRendererMap,
+  type AIToolRendererProps,
+  type AIToolRendererProviderProps,
+} from './chat/tool-renderer.js';
+export {
+  AIFormRegistry,
+  AIFormRegistryError,
+  type AIFormValues,
+  type AIFormFieldType,
+  type AIFormField,
+  type AIFormOperationContext,
+  type AIFormSetResult,
+  type AIFormRegistration,
+  type AIFormDescriptor,
+  type AIFormSnapshot,
+  type AIFormRegistrationHandle,
+  type AIFormApplyStatus,
+  type AIFormApplyResult,
+  type AIFormApplyRequest,
+} from './chat/form-registry.js';
+export {
+  AIFormRegistryProvider,
+  useAIFormRegistry,
+  useAIForm,
+  type AIFormRegistryProviderProps,
+} from './chat/ai-form.js';
+export {
+  clonePageUIContext,
+  PAGE_UI_CONTEXT_LIMITS,
+  pageUIContextSchema,
+  type PageUIItem,
+  type PageUIContext,
+} from '../shared/page-ui-context.js';
+export {
   CHAT_PANEL_ATTRIBUTE,
   CHAT_PANEL_ID,
   ChatPanelScope,
   ChatProvider,
   useChatContextSource,
+  useChatUIContextSource,
   useChatFilterSource,
   useChatPageTracking,
   useChatPanel,
@@ -94,6 +134,9 @@ export {
   contextChips,
   filterText,
   itemKey,
+  uiItemKey,
+  snapshotUIContext,
+  type ChatUIContextSource,
   selectionPreview,
   SOURCE_ATTRIBUTE,
   type ChatContextChip,

@@ -4,15 +4,25 @@ import {
   ChatExtensionsContext,
   noticeText,
   useFormatters,
+  useAIToolRenderer,
+  getAIToolSourceMessage,
+  type AIToolRendererContext,
+  type AIToolPart,
   type PendingMessage,
   type AppUIMessage,
   type AppUIToolApprovalInput,
   type ChatMessageSegment,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type { ConversationNotice } from '@nocobase/app-plugin-agents/shared/conversations';
-import { isToolUIPart } from 'ai';
+import { getToolName, isToolUIPart } from 'ai';
 import { AlertCircleIcon, RotateCcwIcon } from 'lucide-react';
-import { useContext, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useContext,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { Button } from '#components/ui/button';
 import { cn } from 'cn';
 import { ChatMarkdown } from './chat-markdown.js';
@@ -39,6 +49,35 @@ function Time({
     </time>
   );
 }
+/* eslint-disable @eslint-react/static-components, react-hooks/static-components -- The registry selects existing component identities; it never creates a component during render. */
+function ToolPart({
+  part,
+  message,
+  context,
+  fallback,
+}: {
+  readonly part: AIToolPart;
+  readonly message: AppUIMessage;
+  readonly context: AIToolRendererContext;
+  readonly fallback: ReactNode;
+}): ReactNode {
+  const toolName = getToolName(part);
+  const Renderer = useAIToolRenderer(toolName);
+  return Renderer ? (
+    <div data-chat-part='tool' data-tool-call={part.toolCallId}>
+      <Renderer
+        toolName={toolName}
+        part={part}
+        message={message}
+        context={context}
+      />
+    </div>
+  ) : (
+    fallback
+  );
+}
+/* eslint-enable @eslint-react/static-components, react-hooks/static-components */
+
 export interface MessageItemProps {
   readonly message: AppUIMessage;
   readonly segment?: ChatMessageSegment;
@@ -46,6 +85,9 @@ export interface MessageItemProps {
   readonly extra?: ReactNode;
   readonly onApproval?: (input: AppUIToolApprovalInput) => Promise<void>;
   readonly approvalDisabled?: boolean;
+  readonly readOnly?: boolean;
+  /** Exact originating user message resolved from durable server metadata, never nearest-user inference. */
+  readonly sourceMessage?: AppUIMessage | null;
   /** Only the message owning the current SDK response may display a writing indicator. */
   readonly streaming?: boolean;
 }
@@ -56,11 +98,18 @@ export function MessageItem({
   extra,
   onApproval,
   approvalDisabled,
+  readOnly = false,
+  sourceMessage = null,
   streaming = false,
 }: MessageItemProps): ReactElement {
   const { t } = useChatTranslation();
   const extensions = useContext(ChatExtensionsContext);
   const [approving, setApproving] = useState(false);
+  const approvingRef = useRef(false);
+  const origin = getAIToolSourceMessage(
+    message,
+    sourceMessage ? [sourceMessage] : [],
+  );
   const [approvalError, setApprovalError] = useState(false);
   const parts = (
     segment?.partIndexes ?? message.parts.map((_part, index) => index)
@@ -72,8 +121,20 @@ export function MessageItem({
       ({ part }) => part.type === 'text' && part.state === 'streaming',
     );
   const at = segment?.at || message.metadata?.createdAt;
-  const approve = async (approval: { id: string; approved: boolean }) => {
-    if (!onApproval || !message.metadata?.executionId || approving) return;
+  const approve = async (approval: {
+    id: string;
+    approved: boolean;
+    reason?: string;
+  }) => {
+    if (
+      !onApproval ||
+      !message.metadata?.executionId ||
+      approvingRef.current ||
+      approvalDisabled ||
+      readOnly
+    )
+      return;
+    approvingRef.current = true;
     setApproving(true);
     setApprovalError(false);
     try {
@@ -85,6 +146,7 @@ export function MessageItem({
     } catch {
       setApprovalError(true);
     } finally {
+      approvingRef.current = false;
       setApproving(false);
     }
   };
@@ -152,9 +214,8 @@ export function MessageItem({
       );
     }
     if (isToolUIPart(part)) {
-      const name =
-        part.type === 'dynamic-tool' ? part.toolName : part.type.slice(5);
-      return (
+      const name = getToolName(part);
+      const fallback = (
         <div
           key={part.toolCallId}
           className='my-1 space-y-2 rounded-md border bg-background/60 p-3 text-sm'
@@ -173,7 +234,9 @@ export function MessageItem({
               <div className='flex gap-2'>
                 <Button
                   size='sm'
-                  disabled={approvalDisabled || approving || !onApproval}
+                  disabled={
+                    readOnly || approvalDisabled || approving || !onApproval
+                  }
                   onClick={() =>
                     void approve({ id: part.approval.id, approved: true })
                   }
@@ -183,7 +246,9 @@ export function MessageItem({
                 <Button
                   size='sm'
                   variant='outline'
-                  disabled={approvalDisabled || approving || !onApproval}
+                  disabled={
+                    readOnly || approvalDisabled || approving || !onApproval
+                  }
                   onClick={() =>
                     void approve({ id: part.approval.id, approved: false })
                   }
@@ -205,6 +270,39 @@ export function MessageItem({
             <p role='alert'>{part.errorText}</p>
           ) : null}
         </div>
+      );
+      return (
+        <ToolPart
+          key={part.toolCallId}
+          part={part}
+          message={message}
+          context={{
+            readOnly,
+            streaming,
+            sourceMessage: origin,
+            sourceContext: origin?.metadata?.context ?? null,
+            approval: {
+              disabled:
+                readOnly ||
+                Boolean(approvalDisabled) ||
+                approving ||
+                !onApproval ||
+                !message.metadata?.executionId ||
+                part.state !== 'approval-requested',
+              pending: approving,
+              error: approvalError,
+              respond: async (approved, reason) => {
+                if (part.state !== 'approval-requested') return;
+                await approve({
+                  id: part.approval.id,
+                  approved,
+                  ...(reason === undefined ? {} : { reason }),
+                });
+              },
+            },
+          }}
+          fallback={fallback}
+        />
       );
     }
     return null;

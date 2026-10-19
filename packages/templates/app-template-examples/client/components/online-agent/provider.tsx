@@ -1,6 +1,9 @@
 import {
   agentsQueryClient,
   CHAT_PANEL_STORAGE_KEY,
+  AIFormRegistryProvider,
+  AIToolRendererProvider,
+  type AIToolRendererMap,
   ChatProvider,
 } from '@nocobase/app-plugin-agents/client/chat';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
@@ -13,6 +16,12 @@ import {
 
 import { OnlineAgentIdentityScope } from './identity-scope.js';
 
+import { FormProposalRenderer } from './form-proposal-card.js';
+import { EXAMPLES_FORM_TOOL } from '../../../shared/ai-form-fill.js';
+
+const toolRenderers: AIToolRendererMap = {
+  [EXAMPLES_FORM_TOOL]: FormProposalRenderer,
+};
 /** Examples offers one chat controller per authenticated identity, never per page. */
 export function OnlineAgentProvider({
   children,
@@ -58,7 +67,11 @@ function IdentityChat({
   }, []);
   return ready ? (
     <OnlineAgentIdentityScope>
-      <ChatProvider>{children}</ChatProvider>
+      <AIFormRegistryProvider>
+        <AIToolRendererProvider renderers={toolRenderers}>
+          <ChatProvider>{children}</ChatProvider>
+        </AIToolRendererProvider>
+      </AIFormRegistryProvider>
     </OnlineAgentIdentityScope>
   ) : null;
 }

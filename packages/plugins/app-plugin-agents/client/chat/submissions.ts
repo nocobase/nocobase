@@ -5,8 +5,10 @@ import {
   type MessageAttachment,
   type PageContext,
 } from '../../shared/conversations.js';
+import { clonePageUIContext } from '../../shared/page-ui-context.js';
 import type { ChatApi } from './api.js';
 import type { AppUIMessage } from '../../shared/online-agent.js';
+import { createClientId } from './client-id.js';
 export interface SubmissionSend {
   readonly content: string;
   readonly clientId: string;
@@ -21,23 +23,6 @@ export interface ChatSubmissionApi extends Pick<
     id: string,
     input: SubmissionSend,
   ): Promise<{ message: AppUIMessage; conversation: ConversationDetail }>;
-}
-
-/** UUID v4 correlation IDs also work on LAN HTTP origins, where randomUUID is unavailable. */
-function createClientId(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = [...bytes]
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
-  return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    hex.slice(12, 16),
-    hex.slice(16, 20),
-    hex.slice(20),
-  ].join('-');
 }
 
 export interface SubmissionInput {
@@ -134,8 +119,20 @@ export class ChatSubmissions {
       this.blocked(input.conversationId, input.editorKey)
     )
       return false;
+    // Validate before structuredClone can normalize prototypes or preserve non-JSON values.
+    const ui = input.context?.ui
+      ? clonePageUIContext(input.context.ui)
+      : undefined;
     const record: ChatSubmission = {
       ...structuredClone(input),
+      ...(input.context
+        ? {
+            context: {
+              ...structuredClone(input.context),
+              ...(ui ? { ui } : {}),
+            },
+          }
+        : {}),
       clientId: createClientId(),
       createdAt: new Date().toISOString(),
       operation: 0,

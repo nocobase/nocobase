@@ -10,6 +10,8 @@
 import type { FailureReason, RunStatus } from '@nocobase/agent-protocol';
 
 import type { I18nText } from './i18n.js';
+import type { PageUIContext } from './page-ui-context.js';
+export type { PageUIContext, PageUIItem } from './page-ui-context.js';
 
 /** The run subject kind of a conversation. */
 export const CONVERSATION_SUBJECT = 'conversation';
@@ -119,10 +121,12 @@ export interface PageContextRef {
 }
 
 /**
- * What the person's page shows when they send a message, as the browser sends it: ids and the visible filter, never
- * content. Data, not instructions.
+ * What the person's page shows when they send a message: authorized business ids, visible filters and explicitly
+ * selected browser UI snapshots. All browser-supplied values are untrusted data, never instructions.
  */
 export interface PageContext {
+  /** Explicitly selected, untrusted browser UI snapshots; never resolved as business resources. */
+  readonly ui?: PageUIContext;
   /** The page's route (path and query), at most `PAGE_CONTEXT_LIMITS.route` characters. */
   readonly route: string;
   /** The objects the page shows or the person pinned, at most `PAGE_CONTEXT_LIMITS.items`. */
@@ -156,6 +160,8 @@ export interface ResolvedPageContextItem extends PageContextRef {
 
 /** A page context stored with the message. Follow-ups may reauthorize only its references, never replay its stale page parameters. */
 export interface ResolvedPageContext {
+  /** Detached browser data; its presence grants no resource or tool access. */
+  readonly ui?: PageUIContext;
   readonly route: string;
   readonly items: readonly ResolvedPageContextItem[];
   readonly filter?: PageContext['filter'];

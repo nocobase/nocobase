@@ -150,7 +150,7 @@ it.each(['agents', 'runtimes', 'agents.services', null])(
       ).toHaveAttribute('href', `/example/${name}`);
     }
     await waitFor(() => {
-      expect(screen.queryAllByRole('link')).toHaveLength(allowed ? 3 : 2);
+      expect(screen.queryAllByRole('link')).toHaveLength(allowed ? 4 : 3);
     });
     for (const name of ['agents', 'runtimes', 'models']) {
       const resource = name === 'models' ? 'agents.services' : name;
@@ -160,7 +160,11 @@ it.each(['agents', 'runtimes', 'agents.services', null])(
         ).not.toBeInTheDocument();
     }
     expect(screen.getByText('onlineAgent.group')).toBeInTheDocument();
-    for (const name of ['structuredExtraction', 'aiTranslation']) {
+    for (const name of [
+      'structuredExtraction',
+      'aiTranslation',
+      'aiFormFill',
+    ]) {
       expect(
         screen.getByRole('link', { name: `${name}.title` }),
       ).toBeInTheDocument();

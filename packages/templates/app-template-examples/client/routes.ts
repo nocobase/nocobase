@@ -11,6 +11,7 @@ import {
   Server,
   ScanText,
   FileText,
+  FilePenLine,
   Home,
   Hash,
   Languages,
@@ -135,6 +136,16 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
         breadcrumb: { title: 'structuredExtraction.title' },
         componentLoader: () =>
           import('./pages/ai-structured-extraction/index.js'),
+      },
+      {
+        name: 'ai-form-fill',
+        path: '/ai-form-fill',
+        auth: 'required',
+        // This browser-only demonstration has no business persistence or page grant.
+        authz: 'skip',
+        navigation: { title: 'aiFormFill.title', icon: FilePenLine },
+        breadcrumb: { title: 'aiFormFill.title' },
+        componentLoader: () => import('./pages/ai-form-fill/index.js'),
       },
     ],
   },

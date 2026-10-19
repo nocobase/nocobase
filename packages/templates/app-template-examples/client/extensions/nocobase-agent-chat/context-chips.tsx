@@ -1,5 +1,6 @@
 import {
   filterText,
+  uiItemKey,
   selectionPreview,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type { ResolvedPageContext } from '@nocobase/app-plugin-agents/shared/conversations';
@@ -20,6 +21,14 @@ export function SentContext({
       key: `${item.kind}:${item.id}`,
       label: item.key ? `${item.key} ${item.title}` : item.title,
     }));
+  for (const item of context.ui?.items ?? [])
+    tags.push({
+      key: uiItemKey(item),
+      label:
+        typeof item.title === 'string'
+          ? item.title
+          : `${item.kind}: ${item.id}`,
+    });
   if (context.filter)
     tags.push({
       key: 'filter',

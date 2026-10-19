@@ -5,6 +5,53 @@ import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
+  aiFormFill: {
+    title: 'AI form assistance',
+    description:
+      'Generate a proposal in shared chat, review it, then explicitly apply it to a browser draft.',
+    draftTitle: 'Request draft',
+    draftOnly: 'Browser draft only. Nothing is submitted or saved.',
+    target: 'Local draft target',
+    record: 'Read-only record ID',
+    recordA: 'Record A',
+    recordB: 'Record B',
+    switchHint:
+      'Switching records invalidates previous proposals, even when switching back.',
+    name: 'Request name',
+    priority: 'Priority',
+    budget: 'Budget',
+    subscribe: 'Receive updates',
+    low: 'Low',
+    normal: 'Normal',
+    high: 'High',
+    yes: 'Yes',
+    no: 'No',
+    openChat: 'Open AI chat for this form',
+    retry: 'Retry',
+    prompt:
+      'Propose values for the selected request form. Do not save anything. I will review and apply the browser draft myself.',
+    askFailed: 'Could not open chat. Check your connection and try again.',
+    proposalTitle: 'Suggested draft values',
+    apply: 'Apply to draft',
+    dismiss: 'Dismiss',
+    proposalPending: 'Preparing a draft proposal…',
+    proposalFailed: 'The proposal could not be completed. Send a new request.',
+    invalidProposal: 'The proposal is invalid. Request a new proposal.',
+    invalidName: 'Enter a name between 1 and 120 characters.',
+    invalidBudget: 'Enter a budget from 0 to 1,000,000.',
+    invalidDraft:
+      'Complete a valid numeric budget before including the draft in a message.',
+    applied: 'Applied to the browser draft. Nothing was saved.',
+    dismissed: 'Dismissed. The draft was not changed.',
+    stale:
+      'The form or draft has changed. Include the current form and generate a new proposal.',
+    missingSource:
+      'The selected source form is missing or does not match this proposal. Open the source history or generate a new proposal.',
+    failed:
+      'The draft update could not be confirmed. Review the draft before trying again.',
+    partial:
+      'Only part of the draft may have changed. Review the draft and generate a new proposal.',
+  },
   structuredExtraction: {
     title: 'AI structured extraction',
     description:
@@ -505,6 +552,11 @@ const enUS = {
     },
   },
   examples: {
+    aiFormFill: {
+      title: 'AI form assistance',
+      description:
+        'Review an application-owned tool proposal and explicitly fill a local draft without saving records.',
+    },
     onlineAgent: {
       title: 'Online Agent',
       description:

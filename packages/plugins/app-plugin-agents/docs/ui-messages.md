@@ -26,6 +26,50 @@ Tools use standard SDK tool parts, including approval states and real tool call 
 
 `appUIMessageText()` joins text parts in order for search and message extensions. It does not flatten files, tools or cards into text. Ordered parts remain authoritative. `convertToModelMessages()` ignores these data parts by default; a server that needs business data in model context must explicitly convert authorized data. See the SDK's [metadata guide](https://ai-sdk.dev/docs/ai-sdk-ui/message-metadata) and [message persistence guide](https://ai-sdk.dev/docs/ai-sdk-ui/chatbot-message-persistence).
 
+## Open page UI snapshots
+
+`PageContext` and the public `ResolvedPageContext` optionally carry `ui: { version: 1, items: PageUIItem[] }`. A `PageUIItem` requires string `kind` and `id`; every other property is arbitrary `AppUIJson`. Unknown kinds, nested application properties, `false`, `0`, empty strings and `null` are preserved. The envelope is strict; item fields are open. This is a separate channel from `context.items`: business references still go through their existing server resolvers and authorization, whereas UI data never grants access to a record, route, tool or permission. Applications must minimize snapshots and explicitly exclude credentials, password fields and other sensitive values.
+
+`PAGE_UI_CONTEXT_LIMITS` centralizes rejection budgets: 10 items, depth 12 (root envelope at depth zero), 64 KiB of UTF-8 JSON, 4,096 JSON values, 64 characters per kind, 200 per id or property key, and 16,384 per string. Duplicate `(kind, id)` pairs are rejected rather than deduplicated. Browser snapshotting, HTTP validation and public metadata use the same validator and detached clone. It rejects cycles, sparse/extended arrays, non-finite numbers, undefined, functions, BigInt, symbols, accessors, hidden properties, non-plain objects and the property names `__proto__`, `prototype` and `constructor` at any depth. There is no silent truncation or JSON serialization coercion.
+
+Registering a source is not selecting it. `useChatUIContextSource({ kind, id, label, getSnapshot })` makes a source available under the existing authenticated `ChatProvider`; `getSnapshot` may return a value or Promise and must be side-effect free. `useChatSources().selectUI({ kind, id }, true)` is a separate explicit action. `uiSources` lists the registered descriptors and `selectedUIKeys` identifies the selected ones using `uiItemKey()`. Registration validates identity without reading form values; JSON payload validation happens at the snapshot boundary. A source unmount removes its selection, old cleanup cannot remove a replacement, and a route change clears UI selections. Source/form registration alone never uploads all forms.
+
+```tsx
+const source = {
+  kind: 'application-widget',
+  id: 'planning-draft',
+  label: 'Planning draft',
+  getSnapshot: async () => ({
+    kind: 'application-widget',
+    id: 'planning-draft',
+    capabilities: ['summarize'],
+    data: { approved: false, estimate: 0, note: '', optional: null },
+  }),
+};
+useChatUIContextSource(source);
+const sources = useChatSources();
+// Call from an explicit user action, not from source registration:
+sources.selectUI(source);
+// The existing composer's asynchronous context builder, immediately before submission:
+const ui = await sources.snapshotUI();
+const context = buildPageContext({
+  route: location.pathname + location.search,
+  pinned: panel.pinned,
+  sources: sources.items,
+  uiSources: sources.uiSources.filter((item) =>
+    sources.selectedUIKeys.has(uiItemKey(item)),
+  ),
+  ui,
+  filter: sources.filter,
+  selection: sources.selection,
+  removed: sources.removed,
+});
+```
+
+`buildPageContext` remains synchronous for legacy callers: its `ui` input is an already-read envelope and is cloned again. Its optional `uiSources` input contributes UI chips only; it does not read callbacks. Await `snapshotUI()` once at send time, not when rendering chips. Snapshot reads use current callbacks, validate returned identities, reject selection changes or source replacement/unmount while awaiting, and clone accepted data. A read error prevents submission and must be shown by the composer. This source API is independent of `useAIForm` and its registry; a form is one application convention for an open UI item, not a core schema requirement.
+
+Native model conversion places saved UI snapshots into their originating user message as explicitly untrusted data, never system instructions. Runner uses the existing user-message page-context rendering with the same warning. Admission, native originals, public metadata projection, Runner projection and saved-history recovery retain accepted custom fields. Public assistant metadata `sourceUserMessageId` identifies the exact originating user message for Native responses and survives approval revisions and restoration; a renderer must resolve that ID in trusted conversation history. It must disable local application when that source message or association is absent, rather than guessing from the nearest user message. An association is not authorization: applications still validate their allowed target, active instance, field capability and revision before applying any draft changes. History and reconnect never execute a browser setter.
+
 ## Consumers and background execution
 
 The plugin client controller coordinates the SDK owner, trusted history reconciliation, submissions and public extensions. Registry agent-chat, its typed website demo, Examples component copies and the generated CLI send request mapper consume this contract. See [UI message clients](./ui-message-clients.md) for rendering, identity isolation, polling costs and application integration. Private Studio consumers require their own source merge and verification; updating a published plugin does not replace installed Registry source.

@@ -1,6 +1,7 @@
 import { useConversationActions } from './conversation-actions.js';
 import {
   ChatExtensionsContext,
+  getAIToolSourceMessage,
   appUIMessageText,
   chatMessageSegments,
   chatFeedback,
@@ -321,6 +322,11 @@ function ConversationBody({
         <MessageItem
           key={`m-${segment.key}`}
           message={segment.message}
+          sourceMessage={getAIToolSourceMessage(
+            segment.message,
+            messages.items,
+          )}
+          readOnly={!conversationId || Boolean(conversation?.archivedAt)}
           segment={segment}
           streaming={
             receiving && segment.message.id === messages.items.at(-1)?.id

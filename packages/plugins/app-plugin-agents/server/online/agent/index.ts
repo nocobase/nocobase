@@ -47,4 +47,9 @@ export {
   type AppUIMessage,
   type AppUIMessageMetadata,
   type AppUITools,
+  clonePageUIContext,
+  pageUIContextSchema,
+  PAGE_UI_CONTEXT_LIMITS,
+  type PageUIItem,
+  type PageUIContext,
 } from '../../../shared/online-agent.js';

@@ -649,6 +649,70 @@ it('filters visibility before pagination for HTTP and its derived CLI, preservin
   expect((await cliCreated.json()).data.showInChatList).toBe(false);
 });
 
+it('admits open UI JSON through HTTP and public history, while rejecting invalid UI envelopes before admission', async () => {
+  const f = await fixture();
+  f.release();
+  const created = await f.request('/conversations', 'POST', {});
+  const id = (await created.json()).data.id;
+  const ui = {
+    version: 1,
+    items: [
+      {
+        kind: 'unknown.widget',
+        id: 'one',
+        extra: { values: [false, 0, '', null] },
+      },
+    ],
+  };
+  const message = {
+    id: 'browser-ui-input',
+    role: 'user',
+    parts: [{ type: 'text', text: 'Explain the selected UI' }],
+  };
+  for (const bad of [
+    { ...ui, items: [...ui.items, ...ui.items] },
+    { ...ui, extra: true },
+    {
+      ...ui,
+      items: [
+        { ...ui.items[0], nested: JSON.parse('{"__proto__":{"x":true}}') },
+      ],
+    },
+  ]) {
+    expect(
+      (
+        await f.request(`/conversations/${id}/messages`, 'POST', {
+          message,
+          context: { route: '/', items: [], ui: bad },
+        })
+      ).status,
+    ).toBe(400);
+  }
+  expect(
+    (await (await f.request(`/conversations/${id}/messages`)).json()).data,
+  ).toHaveLength(0);
+  const sent = await f.request(`/conversations/${id}/messages`, 'POST', {
+    message,
+    context: { route: '/', items: [], ui },
+  });
+  expect(sent.status).toBe(200);
+  await sent.text();
+  const history = (
+    await (await f.request(`/conversations/${id}/messages`)).json()
+  ).data;
+  expect(
+    history.find((entry: { role: string }) => entry.role === 'user').metadata
+      .context.ui,
+  ).toEqual(ui);
+  const modelUI = f.model.doStreamCalls
+    .flatMap((call) => call.prompt)
+    .filter((entry) =>
+      JSON.stringify(entry.content).includes('unknown.widget'),
+    );
+  expect(modelUI.length).toBeGreaterThan(0);
+  expect(modelUI.every((entry) => entry.role === 'user')).toBe(true);
+});
+
 it('exposes create then send without the removed start or executor-switch routes and commands', async () => {
   const f = await fixture();
   const created = await f.request('/conversations', 'POST', {});
