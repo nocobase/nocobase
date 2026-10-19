@@ -4,6 +4,8 @@ The agents' chat as the application's own source: the panel beside the content a
 
 Everything that has to stay consistent across upgrades stays in the agents plugin and is reached through `@nocobase/app-plugin-agents/client/chat`: the panel's state and keyboard shortcut (`ChatProvider`, `useChatPanel`), the page context (`useChatContextSource`, `useChatFilterSource`), the conversation hooks and their realtime refresh, the models of the timeline and the chips, and `chatLinkRoutes`. This block renders them and holds no state of its own beyond what a view needs.
 
+Empty SDK assistant placeholders and framework-only successful-execution notices do not produce message bubbles. The plugin's `chatMessageSegments` and `chatFeedback` provide these shared display decisions without deleting or changing persisted SDK parts. The transcript has no horizontal scrollbar; oversized Markdown code blocks and tables remain scrollable inside their own bounded content. Updates to an application's installed source should preserve its readiness, mobile dialog, approvals and custom message extras while applying these presentation changes.
+
 | File                      | Exports                                                                                          |
 | ------------------------- | ------------------------------------------------------------------------------------------------ |
 | `chat-panel.tsx`          | `ChatPanel`                                                                                      |

@@ -48,7 +48,9 @@ export function chatFeedback(input: {
       ? 'thinking'
       : 'waiting';
   }
-  return input.execution?.outcome ?? null;
+  return input.execution?.outcome === 'completed'
+    ? null
+    : (input.execution?.outcome ?? null);
 }
 
 /** A scroller follows output until the person chooses to read further up. */

@@ -22,6 +22,8 @@ History APIs return `AppUIMessage[]`. During a live response the SDK working arr
 
 `chatMessageSegments(messages)` creates rendering descriptors referencing the original SDK object. It does not create additional logical messages. Each Runner source record carries its actual sequence, creation time, source record ID and stable part ID in `metadata.sourceRecords`. Render the descriptor's part indexes at its source time; independent notifications retain their own identity between source blocks. A complete logical message remains intact in history pagination. Render `renderMessageExtra` once, on the final segment.
 
+The shared presentation omits empty text, SDK step/reasoning bookkeeping, and only the framework's `execution-status` success notice; the original SDK messages and their durable execution outcomes remain unchanged. Thinking is shown at the next response position rather than as an empty assistant bubble. Successful turns add no generic completion banner, while failure, cancellation, approval and uncertain-effect feedback remain available. An application's `renderMessageExtra` still renders once even when the message has no visible standard parts. The Registry transcript scrolls vertically; long code blocks and tables keep their bounded, local scrolling rather than widening the conversation.
+
 Native messages generally have one segment. The server places the authorized display snapshot in `metadata.context`, stripping provider-private fields. Input context remains IDs-only and is reauthorized on the server. File parts use their authorized URL and media type; the installed attachment list retains image previews without inventing a size the SDK file part does not contain.
 
 ## Extensions

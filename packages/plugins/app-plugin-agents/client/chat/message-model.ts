@@ -194,13 +194,24 @@ export function chatMessageSegments(
 ): ChatMessageSegment[] {
   return messages
     .flatMap((message) => {
+      const partIndexes = message.parts.flatMap((part, index) =>
+        (part.type === 'text' && !part.text.trim()) ||
+        part.type === 'step-start' ||
+        part.type === 'reasoning' ||
+        (part.type === 'data-notice' &&
+          part.id === 'execution-status' &&
+          part.data.type === 'completed')
+          ? []
+          : [index],
+      );
+      if (!partIndexes.length && message.role !== 'user') return [];
       const sources = message.metadata?.sourceRecords;
-      if (!sources?.length)
+      if (!sources?.length || !partIndexes.length)
         return [
           {
             key: message.id,
             message,
-            partIndexes: message.parts.map((_part, index) => index),
+            partIndexes,
             seq: message.metadata?.seq,
             at: message.metadata?.createdAt ?? '',
             first: true,
@@ -211,6 +222,7 @@ export function chatMessageSegments(
         string,
         { indexes: number[]; seq: number; at: string }
       >();
+      const visibleIndexes = new Set(partIndexes);
       for (const source of sources) {
         if (!message.parts[source.partIndex]) continue;
         const group = groups.get(source.recordId) ?? {
@@ -218,10 +230,11 @@ export function chatMessageSegments(
           seq: source.seq,
           at: source.createdAt ?? message.metadata!.createdAt,
         };
-        group.indexes.push(source.partIndex);
+        if (visibleIndexes.has(source.partIndex))
+          group.indexes.push(source.partIndex);
         groups.set(source.recordId, group);
       }
-      const entries = [...groups];
+      const entries = [...groups].filter(([, group]) => group.indexes.length);
       return entries.map(([recordId, group], index) => ({
         key: `${message.id}:${recordId}`,
         message,

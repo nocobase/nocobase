@@ -933,15 +933,17 @@ it.each([
     await waitFor(() => expect(output).toBeDefined());
     expect(thinking).toBeVisible();
     const emit = (event: UIMessageChunk) => output.enqueue(event);
-    act(() => {
+    await act(async () => {
       emit({
         type: 'start',
         messageId: 'answer',
         messageMetadata: reply.metadata,
       });
       emit({ type: 'text-start', id: 'text' });
-      emit({ type: 'text-delta', id: 'text', delta: 'First body' });
     });
+    expect(document.querySelector('[data-message-id="answer"]')).toBeNull();
+    expect(thinking).toBeVisible();
+    act(() => emit({ type: 'text-delta', id: 'text', delta: 'First body' }));
     expect(await screen.findByText('First body')).toBeVisible();
     expect(
       document.querySelector('[data-chat-feedback="thinking"]'),
@@ -952,9 +954,13 @@ it.each([
       emit({ type: 'finish', messageMetadata: reply.metadata });
       output.close();
     });
+    await waitFor(() => expect(screen.queryByTestId('chat-stop')).toBeNull());
     expect(
-      await screen.findByText(locale === 'zh-CN' ? '已完成。' : 'Completed.'),
-    ).toBeVisible();
+      screen.queryByText(locale === 'zh-CN' ? '已完成。' : 'Completed.'),
+    ).toBeNull();
+    expect(
+      document.querySelector('[data-chat-feedback="completed"]'),
+    ).toBeNull();
     expect(
       document.querySelector('[data-chat-feedback] [data-slot="spinner"]'),
     ).toBeNull();
@@ -1334,5 +1340,47 @@ it.each(['en-US', 'zh-CN'])(
     expect(
       screen.queryByText(/Proposed .*plans|提出了.*计划/u),
     ).not.toBeInTheDocument();
+  },
+);
+
+it.each(['assistant', 'system'] as const)(
+  'keeps application-only extras for invisible %s messages in history',
+  async (role) => {
+    const hidden: AppUIMessage = {
+      ...message,
+      id: 'application-only',
+      role,
+      metadata: { ...message.metadata!, seq: 2 },
+      parts: [
+        {
+          type: 'data-notice',
+          id: 'execution-status',
+          data: { type: 'completed', title: 'Completed' },
+        },
+      ],
+    };
+    const original = host.request.getMockImplementation()!;
+    host.request.mockImplementation(async (input) =>
+      input.path.endsWith('/messages')
+        ? { data: [message, hidden], meta: { lastSeq: 2 } }
+        : original(input),
+    );
+    await setup('en-US', {
+      renderMessageExtra: (row) =>
+        row.id === hidden.id ? <article>Application-only card</article> : null,
+    });
+    act(() => panel.openChat({ conversationId: 'saved' }));
+    expect(await screen.findByText('Application-only card')).toBeVisible();
+    expect(screen.getAllByText('Application-only card')).toHaveLength(1);
+    expect(screen.queryByText('Completed', { exact: true })).toBeNull();
+    expect(
+      document.querySelector(
+        '[data-message-id="application-only"] .rounded-lg',
+      ),
+    ).toBeNull();
+    expect(
+      document.querySelector('[data-message-id="application-only"]')
+        ?.previousElementSibling,
+    ).toHaveAttribute('data-message-id', message.id);
   },
 );

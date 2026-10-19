@@ -112,7 +112,7 @@ function MountedPanel({
               hidden={!open}
               id={CHAT_PANEL_ID}
               {...marker}
-              className='fixed inset-0 z-50 flex h-dvh max-h-dvh w-full flex-col bg-background text-foreground outline-none'
+              className='fixed inset-0 z-50 flex h-dvh min-w-0 max-h-dvh w-full flex-col bg-background text-foreground outline-none'
               data-testid='chat-panel'
               data-mode='mobile'
             >
@@ -132,7 +132,7 @@ function MountedPanel({
           data-mode={expanded ? 'expanded' : wide ? 'docked' : 'floating'}
           data-testid='chat-panel'
           className={cn(
-            'flex min-h-0 flex-col bg-background',
+            'flex min-h-0 min-w-0 flex-col bg-background',
             expanded
               ? 'absolute inset-0 z-30'
               : wide
@@ -158,7 +158,7 @@ function PanelBody({
   return (
     <div
       className={cn(
-        'flex min-h-0 flex-1 flex-col p-3',
+        'flex min-h-0 min-w-0 flex-1 flex-col p-3',
         expanded && 'mx-auto w-full max-w-3xl',
       )}
     >

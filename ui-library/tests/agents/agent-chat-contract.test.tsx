@@ -359,3 +359,153 @@ it('updates a genuine consultation part in the same logical message without losi
   );
   expect(screen.getByText('Ready for review')).toBeVisible();
 });
+
+it.each(
+  (
+    [
+      [],
+      [{ type: 'text', text: '', state: 'streaming' }],
+      [{ type: 'text', text: ' \n\t' }],
+      [{ type: 'step-start' }],
+      [{ type: 'reasoning', text: 'Private reasoning', state: 'streaming' }],
+      [
+        {
+          type: 'data-notice',
+          id: 'execution-status',
+          data: { type: 'completed', title: 'Completed' },
+        },
+      ],
+    ] satisfies AppUIMessage['parts'][]
+  ).map((parts) => ({ parts })),
+)(
+  'does not render an empty assistant row or bubble for bookkeeping parts %j',
+  ({ parts }) => {
+    const message: AppUIMessage = {
+      id: 'empty',
+      role: 'assistant',
+      metadata,
+      parts,
+    };
+    const { container } = render(
+      <ol>
+        <MessageItem message={message} agentName={() => 'Agent'} streaming />
+      </ol>,
+      { wrapper },
+    );
+    expect(container.querySelector('[data-chat-message]')).toBeNull();
+    expect(screen.queryByLabelText(enUS.chat.reply.writing)).toBeNull();
+    expect(message.parts).toEqual(parts);
+  },
+);
+
+it('hides only the framework success notice and preserves ordinary success text and application notices', () => {
+  const message: AppUIMessage = {
+    id: 'success',
+    role: 'assistant',
+    metadata,
+    parts: [
+      { type: 'text', text: 'Completed' },
+      {
+        type: 'data-notice',
+        id: 'execution-status',
+        data: { type: 'completed', title: 'Completed' },
+      },
+      {
+        type: 'data-notice',
+        id: 'application-success',
+        data: { type: 'completed', title: 'Application task completed' },
+      },
+    ],
+  };
+  render(
+    <ol>
+      <MessageItem message={message} agentName={() => 'Agent'} />
+    </ol>,
+    { wrapper },
+  );
+  expect(screen.getAllByText('Completed', { exact: true })).toHaveLength(1);
+  expect(screen.getByText('Application task completed')).toBeVisible();
+  expect(message.parts).toHaveLength(3);
+});
+
+it('keeps application extras for an otherwise invisible message without an avatar or bubble', () => {
+  const message: AppUIMessage = {
+    id: 'extra-only',
+    role: 'assistant',
+    metadata,
+    parts: [],
+  };
+  const { container } = render(
+    <ol>
+      <MessageItem
+        message={message}
+        agentName={() => 'Agent'}
+        extra={<article>Application extra</article>}
+      />
+    </ol>,
+    { wrapper },
+  );
+  expect(screen.getByText('Application extra')).toBeVisible();
+  expect(
+    container.querySelector('[data-chat-message="assistant"]'),
+  ).toHaveAttribute('data-message-id', 'extra-only');
+  expect(container.querySelector('.rounded-lg')).toBeNull();
+});
+
+it.each(['assistant', 'system'] as const)(
+  'bounds wide application extras on a visible %s message',
+  (role) => {
+    const message: AppUIMessage = {
+      id: 'wide-extra',
+      role,
+      metadata,
+      parts: [{ type: 'text', text: 'Visible response' }],
+    };
+    render(
+      <ol>
+        <MessageItem
+          message={message}
+          agentName={() => 'Agent'}
+          extra={
+            <article style={{ minWidth: 1200 }}>Wide application extra</article>
+          }
+        />
+      </ol>,
+      { wrapper },
+    );
+    expect(
+      screen.getByText('Wide application extra').parentElement,
+    ).toHaveClass('min-w-0', 'max-w-full', 'overflow-x-auto', 'wrap-anywhere');
+  },
+);
+
+it('bounds custom business cards without imposing layout requirements on their renderer', () => {
+  const message: AppUIMessage = {
+    id: 'wide-business',
+    role: 'assistant',
+    metadata,
+    parts: [
+      {
+        type: 'data-business',
+        data: { kind: 'business-card', id: 'wide', payload: {} },
+      },
+    ],
+  };
+  render(
+    <ChatExtensionsContext.Provider
+      value={{
+        renderDataPart: () => (
+          <article style={{ minWidth: 1200 }}>Wide business card</article>
+        ),
+      }}
+    >
+      <ol>
+        <MessageItem message={message} agentName={() => 'Agent'} />
+      </ol>
+    </ChatExtensionsContext.Provider>,
+    { wrapper },
+  );
+  expect(
+    screen.getByText('Wide business card').closest('.rounded-lg'),
+  ).toHaveClass('min-w-0', 'max-w-full', 'overflow-x-auto');
+});

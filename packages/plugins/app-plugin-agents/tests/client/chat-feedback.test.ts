@@ -34,7 +34,7 @@ it('closes waiting after first body for Native and Runner and reports safe termi
         running: false,
         execution: { status: 'idle', outcome },
       }),
-    ).toBe(outcome);
+    ).toBe(outcome === 'completed' ? null : outcome);
   }
   expect(
     chatFeedback({
@@ -124,9 +124,63 @@ it.each(['completed', 'cancelled', 'failed'] as const)(
         lastSeq: 2,
         stream: { status: 'ready' },
       }),
-    ).toBe(outcome);
+    ).toBe(outcome === 'completed' ? null : outcome);
   },
 );
+
+it('keeps successful completion quiet without hiding higher-priority execution feedback', () => {
+  const completed = {
+    running: false,
+    stopping: false,
+    hasOutput: true,
+    execution: { status: 'idle' as const, outcome: 'completed' as const },
+  };
+  for (const hasOutput of [false, true]) {
+    expect(chatFeedback({ ...completed, hasOutput })).toBeNull();
+    expect(
+      chatFeedback({ ...completed, hasOutput, stopping: true }),
+    ).toBeNull();
+  }
+  expect(
+    chatFeedback({
+      ...completed,
+      execution: { ...completed.execution, requiresEffectReview: true },
+    }),
+  ).toBe('effectReview');
+  expect(
+    chatFeedback({
+      ...completed,
+      stream: { status: 'error', error: new Error('Disconnected') },
+    }),
+  ).toBe('unknown');
+  for (const status of ['unknown', 'creationUnknown'] as const)
+    expect(chatFeedback({ ...completed, submission: { status } })).toBe(
+      'unknown',
+    );
+  for (const status of ['sending', 'creating'] as const)
+    expect(chatFeedback({ ...completed, submission: { status } })).toBe(
+      'sending',
+    );
+  expect(
+    chatFeedback({ ...completed, submission: { status: 'notSubmitted' } }),
+  ).toBe('failed');
+  expect(
+    chatFeedback({
+      ...completed,
+      running: true,
+      stopping: true,
+      execution: { status: 'running' },
+    }),
+  ).toBe('stopping');
+  expect(
+    chatFeedback({
+      ...completed,
+      running: true,
+      hasOutput: false,
+      execution: { status: 'running' },
+    }),
+  ).toBe('thinking');
+});
 
 it('never applies a previous saved outcome to a newer canonical turn', () => {
   expect(

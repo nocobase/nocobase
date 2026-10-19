@@ -1,6 +1,7 @@
 /** Ordered SDK parts, with source segments retaining one logical message and independent notices. */
 import {
   AgentAvatar,
+  chatMessageSegments,
   ChatExtensionsContext,
   noticeText,
   useFormatters,
@@ -101,7 +102,7 @@ export function MessageItem({
   readOnly = false,
   sourceMessage = null,
   streaming = false,
-}: MessageItemProps): ReactElement {
+}: MessageItemProps): ReactElement | null {
   const { t } = useChatTranslation();
   const extensions = useContext(ChatExtensionsContext);
   const [approving, setApproving] = useState(false);
@@ -112,7 +113,8 @@ export function MessageItem({
   );
   const [approvalError, setApprovalError] = useState(false);
   const parts = (
-    segment?.partIndexes ?? message.parts.map((_part, index) => index)
+    segment?.partIndexes ??
+    chatMessageSegments([message]).flatMap((item) => item.partIndexes)
   ).map((index) => ({ part: message.parts[index], index }));
   const fromAgent = message.role === 'assistant';
   const writing =
@@ -307,10 +309,25 @@ export function MessageItem({
     }
     return null;
   });
+  if (content.every((part) => part == null)) {
+    const context = message.role === 'user' ? message.metadata?.context : null;
+    if (extra == null && !context) return null;
+    return (
+      <li
+        className='min-w-0 max-w-full overflow-x-auto wrap-anywhere'
+        data-chat-message={message.role}
+        data-message-id={message.id}
+        data-seq={segment?.seq ?? message.metadata?.seq}
+      >
+        {context ? <SentContext context={context} /> : null}
+        {extra ?? null}
+      </li>
+    );
+  }
   if (message.role === 'system')
     return (
       <li
-        className='space-y-2 px-1'
+        className='min-w-0 max-w-full space-y-2 overflow-x-auto px-1 wrap-anywhere'
         data-chat-message='system'
         data-message-id={message.id}
         data-seq={segment?.seq ?? message.metadata?.seq}
@@ -322,7 +339,10 @@ export function MessageItem({
   const name = fromAgent ? agentName(message.metadata?.agentId) : null;
   return (
     <li
-      className={cn('group/message flex gap-2', !fromAgent && 'justify-end')}
+      className={cn(
+        'group/message flex min-w-0 max-w-full gap-2',
+        !fromAgent && 'justify-end',
+      )}
       data-chat-message={message.role}
       data-message-id={message.id}
       data-seq={segment?.seq ?? message.metadata?.seq}
@@ -348,7 +368,7 @@ export function MessageItem({
         )}
         <div
           className={cn(
-            'max-w-full min-w-0 space-y-1 rounded-lg px-3 py-2 text-sm',
+            'max-w-full min-w-0 space-y-1 overflow-x-auto rounded-lg px-3 py-2 text-sm wrap-anywhere [&_table]:wrap-normal',
             fromAgent ? 'bg-muted' : 'bg-primary/10',
           )}
         >
@@ -375,7 +395,11 @@ export function MessageItem({
             {t('chat.approval.failed')}
           </p>
         ) : null}
-        {extra ?? null}
+        {extra == null ? null : (
+          <div className='min-w-0 max-w-full overflow-x-auto wrap-anywhere'>
+            {extra}
+          </div>
+        )}
       </div>
     </li>
   );

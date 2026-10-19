@@ -312,7 +312,34 @@ function ConversationBody({
     (conversation ? t('chat.agentGone') : t('chat.anyAgent'));
 
   const segments = chatMessageSegments(messages.items);
+  const segmented = new Set(segments.map((segment) => segment.message));
+  const extraEntries: Entry[] = extensions.renderMessageExtra
+    ? messages.items.flatMap((message): Entry[] => {
+        if (segmented.has(message)) return [];
+        const extra = extensions.renderMessageExtra?.(message);
+        if (extra == null) return [];
+        const source = message.metadata?.sourceRecords?.at(-1);
+        return [
+          {
+            key: `extra-${message.id}`,
+            at: source?.createdAt ?? message.metadata?.createdAt ?? '',
+            seq: source?.seq ?? message.metadata?.seq,
+            rank: 0,
+            node: (
+              <li
+                key={`extra-${message.id}`}
+                className='min-w-0 max-w-full overflow-x-auto wrap-anywhere'
+                data-message-id={message.id}
+              >
+                {extra}
+              </li>
+            ),
+          },
+        ];
+      })
+    : [];
   const entries: Entry[] = timelineOrder([
+    ...extraEntries,
     ...segments.map((segment): Entry => ({
       key: `m-${segment.key}`,
       at: segment.at,
@@ -351,7 +378,11 @@ function ConversationBody({
       at: item.at,
       rank: 1,
       node: (
-        <li key={`x-${item.key}`} data-chat-item={item.key}>
+        <li
+          key={`x-${item.key}`}
+          data-chat-item={item.key}
+          className='min-w-0 max-w-full overflow-x-auto wrap-anywhere'
+        >
           {item.node}
         </li>
       ),
@@ -442,7 +473,7 @@ function ConversationBody({
   return (
     <section
       className={cn(
-        'relative flex h-full min-h-0 flex-col',
+        'relative flex h-full min-h-0 min-w-0 flex-col',
         page ? 'gap-0' : 'gap-3',
         className,
       )}
@@ -485,14 +516,15 @@ function ConversationBody({
       {/* Positioned so absolutely placed content (sr-only text, live regions) stays inside the scroller instead of growing the page. */}
       <div
         ref={listRef}
+        data-testid='chat-message-scroll'
         role='log'
         aria-label={t('chat.messages')}
         tabIndex={0}
-        className='relative min-h-0 flex-1 overflow-y-auto'
+        className='relative min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto'
       >
         <div
           className={cn(
-            'flex min-h-full flex-col',
+            'flex min-h-full min-w-0 flex-col',
             page && cn(PAGE_COLUMN, 'py-6'),
           )}
         >
@@ -536,7 +568,7 @@ function ConversationBody({
               ) : null}
               <ol
                 aria-label={t('chat.messages')}
-                className='flex flex-col gap-4 py-1'
+                className='flex min-w-0 flex-col gap-4 py-1'
               >
                 {entries.map((entry) => entry.node)}
                 {messages.pending.map((message) => (
