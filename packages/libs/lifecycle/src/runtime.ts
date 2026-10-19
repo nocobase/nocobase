@@ -342,6 +342,24 @@ export interface LifecycleEvent {
   readonly actor: LifecycleActor;
 }
 
+/** A committed change that can invalidate a record view; read an authorized snapshot for its contents. */
+export interface LifecycleRecordChange {
+  readonly lifecycle: string;
+  readonly recordId: RecordId;
+  readonly kind: 'transition' | 'effect';
+  readonly runId?: string;
+}
+
+export interface RecordChangeFilter {
+  readonly lifecycle?: string;
+  readonly recordId?: RecordId;
+}
+
+interface ChangeSubscription {
+  readonly filter: RecordChangeFilter;
+  readonly listener: LifecycleListener<LifecycleRecordChange>;
+}
+
 /** A transition the record's new state now allows, before any guard is asked. */
 export interface AnnounceEvent extends LifecycleEvent {
   readonly next: string;
@@ -631,6 +649,7 @@ export class LifecycleRuntime {
   private readonly continuations: Required<ContinuationSweepOptions>;
   private readonly lifecycles = new Map<string, Registered>();
   private readonly subscriptions: Subscription[] = [];
+  private readonly changeSubscriptions: ChangeSubscription[] = [];
   /** Attempts running in this process, so `cancelRun()` can abort them. */
   private readonly attempts = new Map<string, AbortController>();
   /**
@@ -1294,6 +1313,25 @@ export class LifecycleRuntime {
   }
 
   /**
+   * Invalidates record views after committed transitions and effect changes,
+   * including attempts, retries, cancellation and pending continuations.
+   * Delivery is best effort and process-local, as with on(): bridge to the
+   * application's authorized topics and periodically reconcile snapshots.
+   * Direct store writes and pruning do not notify. Returns an unsubscribe.
+   */
+  public onChange(
+    filter: RecordChangeFilter,
+    listener: LifecycleListener<LifecycleRecordChange>,
+  ): () => void {
+    const subscription = { filter, listener };
+    this.changeSubscriptions.push(subscription);
+    return (): void => {
+      const index = this.changeSubscriptions.indexOf(subscription);
+      if (index >= 0) this.changeSubscriptions.splice(index, 1);
+    };
+  }
+
+  /**
    * The transitions the record's state allows, each with whether `actor`
    * may fire it now and, if not, every reason why.
    */
@@ -1630,8 +1668,8 @@ export class LifecycleRuntime {
     // Every attempt was claimed and none came back: the process running it
     // stopped each time. Running it again could stop this one too.
     if (run.attempts >= run.maxAttempts) {
-      await this.store.updateEffectRun(
-        runId,
+      await this.updateRun(
+        run,
         { status: 'queued', attempts: run.attempts },
         {
           status: 'dead',
@@ -1669,6 +1707,10 @@ export class LifecycleRuntime {
     this.attempts.set(runId, controller);
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
+      // Listeners may await external publication or cancel this claimed run.
+      // Register cancellation before notifying, and do not start cancelled work.
+      await this.effectChanged(run);
+      controller.signal.throwIfAborted();
       const entry = await this.store.findTransition(run.transitionId);
       const record = await this.store.findRecord(
         lifecycle.collection,
@@ -1706,6 +1748,18 @@ export class LifecycleRuntime {
           attempt,
           resolution,
         );
+      // Notifications and preparation can outlive this claim. Check the
+      // persisted owner and lease before making any external effect call;
+      // an expired claim is left for the next recovery sweep.
+      const current = await this.store.findEffectRun(runId);
+      if (
+        current?.status !== 'running' ||
+        current.attempts !== attempt ||
+        current.claimedAt !== startedAt ||
+        new Date(startedAt).getTime() < this.clock().getTime() - this.leaseMs
+      )
+        return current;
+      controller.signal.throwIfAborted();
       const work = Promise.resolve(
         effect.run({
           record,
@@ -1743,7 +1797,7 @@ export class LifecycleRuntime {
     } finally {
       clearTimeout(timer);
       signal.removeEventListener('abort', forward);
-      this.attempts.delete(runId);
+      if (this.attempts.get(runId) === controller) this.attempts.delete(runId);
     }
 
     const finishedAt = this.clock().toISOString();
@@ -1761,8 +1815,8 @@ export class LifecycleRuntime {
       const runAfter = new Date(
         this.clock().getTime() + backoffMs(effect.retry, attempt),
       ).toISOString();
-      const requeued = await this.store.updateEffectRun(
-        runId,
+      const requeued = await this.updateRun(
+        run,
         { status: 'running', attempts: attempt },
         {
           status: 'queued',
@@ -1820,6 +1874,7 @@ export class LifecycleRuntime {
           changes,
         );
         if (!recorded) return undefined;
+        store.afterCommit(() => this.effectChanged(run));
         if (next === undefined) return null;
         const continued: { decided?: Decision } = {};
         // Registered before deciding, as fire() does, so after the commit
@@ -1910,8 +1965,8 @@ export class LifecycleRuntime {
       const runAfter = new Date(
         this.clock().getTime() + backoffMs(effect.retry, attempt),
       ).toISOString();
-      const requeued = await this.store.updateEffectRun(
-        runId,
+      const requeued = await this.updateRun(
+        run,
         { status: 'running', attempts: attempt },
         {
           status: 'queued',
@@ -2029,8 +2084,8 @@ export class LifecycleRuntime {
         `Effect run "${runId}" is retried by force; the continuation "${continuation.transition}" it owed had not run and is dropped.`,
         { runId, reason: options.reason ?? null },
       );
-    const reset = await this.store.updateEffectRun(
-      runId,
+    const reset = await this.updateRun(
+      run,
       {
         status: run.status,
         attempts: run.attempts,
@@ -2125,8 +2180,10 @@ export class LifecycleRuntime {
         updatedAt: this.clock().toISOString(),
       },
     );
-    if (cancelled)
+    if (cancelled) {
       this.attempts.get(runId)?.abort(new Error('The run was cancelled.'));
+      await this.effectChanged(run);
+    }
     return this.store.findEffectRun(runId);
   }
 
@@ -2380,8 +2437,8 @@ export class LifecycleRuntime {
   ): Promise<void> {
     const at = this.clock().toISOString();
     try {
-      await this.store.updateEffectRun(
-        run.id,
+      await this.updateRun(
+        run,
         {
           status: run.status,
           attempts: run.attempts,
@@ -2437,6 +2494,7 @@ export class LifecycleRuntime {
             updatedAt: at,
           });
           if (!cleared) return { kind: 'changed' };
+          store.afterCommit(() => this.effectChanged(run));
           if (
             await store.findTransitionByRequest(
               run.lifecycle,
@@ -2512,7 +2570,7 @@ export class LifecycleRuntime {
       );
       let recorded: boolean;
       try {
-        recorded = await this.store.updateEffectRun(run.id, read, {
+        recorded = await this.updateRun(run, read, {
           continuation,
           updatedAt: at,
         });
@@ -2683,8 +2741,8 @@ export class LifecycleRuntime {
     const taken: EffectRun[] = [];
     for (const run of stale)
       if (
-        await this.store.updateEffectRun(
-          run.id,
+        await this.updateRun(
+          run,
           { status: 'running', attempts: run.attempts },
           {
             status: 'queued',
@@ -3024,6 +3082,11 @@ export class LifecycleRuntime {
     actor: LifecycleActor,
   ): Promise<void> {
     await this.emit(registered, committed, actor);
+    await this.changed({
+      lifecycle: registered.lifecycle.name,
+      recordId: committed.result.entry.recordId,
+      kind: 'transition',
+    });
     for (const run of committed.result.effectRuns)
       await this.handOver(run.id, null);
   }
@@ -3089,6 +3152,51 @@ export class LifecycleRuntime {
           );
         }
       }
+  }
+
+  /** A root-store conditional write has committed when it resolves. */
+  private async updateRun(
+    run: EffectRun,
+    condition: EffectRunCondition,
+    changes: EffectRunChanges,
+  ): Promise<boolean> {
+    const updated = await this.store.updateEffectRun(
+      run.id,
+      condition,
+      changes,
+    );
+    if (updated) await this.effectChanged(run);
+    return updated;
+  }
+
+  private effectChanged(run: EffectRun): Promise<void> {
+    return this.changed({
+      lifecycle: run.lifecycle,
+      recordId: run.recordId,
+      kind: 'effect',
+      runId: run.id,
+    });
+  }
+
+  private async changed(change: LifecycleRecordChange): Promise<void> {
+    const payload = Object.freeze(change);
+    for (const { filter, listener } of [...this.changeSubscriptions]) {
+      if (
+        (filter.lifecycle !== undefined &&
+          filter.lifecycle !== change.lifecycle) ||
+        (filter.recordId !== undefined &&
+          String(filter.recordId) !== String(change.recordId))
+      )
+        continue;
+      try {
+        await listener(payload);
+      } catch (error) {
+        this.logger.error(
+          `A record change listener failed on ${change.lifecycle} record "${change.recordId}"`,
+          { error },
+        );
+      }
+    }
   }
 
   /** Writes a queued run for each effect a log entry owes. */
