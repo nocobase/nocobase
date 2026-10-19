@@ -2,7 +2,7 @@
 // subject's long-lived worktree on the run's branch); a directory used in place must exist and
 // is held for this run alone. Each gets a `checkout` event saying whether it was prepared fresh for the subject.
 //
-// Cloning, fetching and the submodules' update are retried on this runner when they fail for a passing cause, each
+// Cloning and fetching are retried on this runner when they fail for a passing cause, each
 // retry a `status` event. One that keeps failing fails the run `prepareNetwork`, which the application queues again,
 // or `checkoutFailed` for an application that does not announce it (`RunHeader.acceptedFailures`). Any failure that
 // comes after a retry, such as credentials refused once the network came back, records how many retries were made and

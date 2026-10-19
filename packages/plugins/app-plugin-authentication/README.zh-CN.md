@@ -33,6 +33,12 @@
 
 ## 认证页面归应用所有
 
+### Client session preparation
+
+`useAuthentication()` exposes `preparation` (`preparing`, `ready`, or `failed`) and `retryPreparation()`, separately from the session query's `isPending` and `refresh()`. For every new user/session pair, including cookie startup, the provider reconnects an already-created realtime client with active subscriptions. It publishes readiness after the synchronous open notification finishes, so authorization invalidation precedes the first page permission check. No realtime client or no subscriptions means immediate readiness without creating a connection. Initialization times out after ten seconds; a late open cannot release the failed attempt. Retry creates a fresh handshake, and logout or a new session cancels the old attempt. Superseded session queries cannot restore an old session.
+
+The Default and Examples templates place `SessionPreparation` inside `RequiredAuthentication` and outside the application layout. The whole signed-in region waits automatically, including routes that skip page authorization; guest and optional routes keep their existing behavior. Failed initialization offers retry and sign-out, including feedback when sign-out fails. Custom applications using only `RequiredAuthentication` must explicitly consume preparation if they need this first-page guarantee. Runtime reconnects and permission notifications continue to invalidate authorization and unmount protected pages and their portals; preparation does not retain hidden content or replace server authorization. A custom application that starts subscriptions only after mounting pages remains subject to that runtime revalidation.
+
 插件不发布 `/login` 等路由，也不提供路由覆盖契约。认证守卫会跳转到 `/login`，因此
 使用本插件的应用必须在自己的 `client/routes.ts` 中声明 `/login`、`/register`、
 `/forgot-password` 和 `/reset-password` 四条 `auth: 'guest'` 路由。仓库内的三个模板

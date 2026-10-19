@@ -75,7 +75,7 @@ Public entry   package export, API path, UI entry, CLI command, or Registry item
 Do not bypass  private modules, internal tables, or synchronized Skill copies
 ```
 
-An importable Client subpath is not automatically a Client Runtime contribution. If an App imports `@nocobase/app-plugin-example/client/components/notice`, that alone does not justify adding the package to `client/plugins.ts`. Runtime registration requires a real `exports["./client"]` declaration that contributes config, ServiceProviders, React Providers, Routes, or locales. Write this distinction explicitly so an App Agent does not infer composition from a source path.
+An importable Client subpath is not automatically a Client Runtime contribution. If an App imports `@nocobase/app-plugin-example/client/components/notice`, that alone does not justify adding the package to `client/plugins.ts`. Runtime registration requires a real `exports["./client"]` declaration that contributes ServiceProviders, React Providers, Routes, or locales. Write this distinction explicitly so an App Agent does not infer composition from a source path.
 
 Likewise, tell Server consumers to import the original owner-created `ServiceToken`; recreating a Token with the same name produces a different identity.
 

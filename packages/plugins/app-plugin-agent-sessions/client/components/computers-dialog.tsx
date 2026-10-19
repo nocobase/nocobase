@@ -242,6 +242,26 @@ function ComputerCard({
           </span>
         ))}
       </div>
+      {installedAgents(computer)
+        .filter((agent) => agent.problem)
+        .map((agent) => (
+          <div
+            key={agent.id}
+            className='bg-muted flex min-w-0 flex-col gap-1 rounded-md p-2.5 text-xs'
+          >
+            <p className='font-medium'>
+              {agent.name} · {t(`computers.problems.${agent.problem}`)}
+            </p>
+            {agent.detail && (
+              <p className='text-muted-foreground whitespace-pre-wrap [overflow-wrap:anywhere]'>
+                {agent.detail}
+              </p>
+            )}
+          </div>
+        ))}
+      <p className='text-muted-foreground text-xs'>
+        {t('computers.recheckHint')}
+      </p>
       {others && (
         <p className='text-muted-foreground text-xs'>
           {t('newSession.alsoSupported', { names: others })}

@@ -3,6 +3,29 @@ import type { LifecycleDescription } from '@nocobase/lifecycle';
 import { LifecycleDiagram } from '#components/lifecycle-diagram';
 
 const description: LifecycleDescription = {
+  parameterConfiguration: {
+    readMode: 'snapshot',
+    groups: [
+      {
+        key: 'approval',
+        title: 'Approval policy',
+        schemaVersion: 1,
+        fields: {
+          reviewers: {
+            type: 'reviewers',
+            title: 'Reviewers',
+            bindings: [{ state: 'review' }],
+          },
+          threshold: {
+            type: 'number',
+            title: 'Finance threshold',
+            minimum: 0,
+            bindings: [{ transition: 'decide' }],
+          },
+        },
+      },
+    ],
+  },
   name: 'expenses',
   initial: 'draft',
   initialStates: ['draft'],
@@ -75,7 +98,7 @@ export function LifecycleDiagramDemo(): ReactElement {
     'Record is in review. Select a state or transition.',
   );
   return (
-    <div className='flex h-svh flex-col gap-3 bg-background p-6 text-foreground'>
+    <div className='flex min-h-svh flex-col gap-3 bg-background p-6 text-foreground'>
       <p className='text-sm' aria-live='polite'>
         {detail}
       </p>
@@ -89,7 +112,15 @@ export function LifecycleDiagramDemo(): ReactElement {
         }
         availableTransitions={['withdraw', 'reassign', 'decide']}
         ariaLabel='Expense lifecycle'
-        className='min-h-0 flex-1'
+        configuration={{
+          label: () => 'Configure',
+          // This isolated demo previews selection; a real application checks API permissions.
+          canConfigure: () => true,
+          onConfigure: ({ target, groups }) =>
+            setDetail(
+              `Configuration for ${target.name}: ${groups.flatMap((group) => Object.values(group.fields).map((field) => field.title)).join(', ')}. Connect the application parameter editor and authenticated API here.`,
+            ),
+        }}
         onStateClick={(state) =>
           setDetail(
             `${state.title}: ${description.onEnter[state.name]?.join(', ') ?? '—'}`,

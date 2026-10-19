@@ -449,6 +449,30 @@ describe('scoped keys and API key identities', () => {
 });
 
 describe('errors', () => {
+  it('maps the refused start to an HTTP error with a CLI suggestion', async () => {
+    const response = await call('/issues', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Must not be saved',
+        start: true,
+      }),
+    });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: {
+        status: 'INVALID_ARGUMENT',
+        reason: 'ISSUE_START_REQUIRES_IN_PROGRESS',
+        message: 'An issue must be In progress to start work.',
+        metadata: {
+          suggestions: [
+            { message: expect.stringContaining('--status in_progress') },
+          ],
+        },
+      },
+    });
+  });
+
   it('answers 403, 400, 404 and 409 in the standard error body', async () => {
     const forbidden = await call('/labels', {
       role: 'member',
@@ -1544,6 +1568,19 @@ describe('comments over HTTP', () => {
 });
 
 describe('attachments over HTTP', () => {
+  it('authenticates screenshot reads, checks visibility and documents the bounded response', async () => {
+    expect((await call('/issues/PM-1/screenshots')).status).toBe(401);
+    await h.services.issues.create(h.viewer('alice'), { title: 'Images' });
+    expect(
+      (await call('/issues/PM-1/screenshots', { role: 'none' })).status,
+    ).toBe(404);
+    const response = await call('/issues/PM-1/screenshots', { role: 'member' });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      data: [],
+      meta: { limit: 100, truncated: false },
+    });
+  });
   const upload = (path: string, file: File, role = 'member') => {
     const body = new FormData();
     body.append('file', file);

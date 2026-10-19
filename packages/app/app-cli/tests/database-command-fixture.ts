@@ -23,7 +23,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { vi } from 'vitest';
-import { ServiceProvider } from '../../../libs/service-provider/src/index.ts';
+import { ServiceProvider } from '@nocobase/service-provider';
 import type { AppCommand, AppCommandContext } from '../src/context.ts';
 import { bindAppCommand } from './app-command.ts';
 

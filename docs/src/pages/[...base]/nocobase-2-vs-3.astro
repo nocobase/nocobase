@@ -1,0 +1,33 @@
+---
+/** The NocoBase 2 vs 3 comparison of each language. */
+import type { GetStaticPaths } from 'astro';
+import ArchitecturePitch from '../../components/ArchitecturePitch/index.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  getPages,
+  staticPathsOf,
+  translationsOf,
+  type DocPage,
+} from '../../lib/pages.ts';
+
+export const getStaticPaths = (() =>
+  staticPathsOf('comparison')) satisfies GetStaticPaths;
+
+interface Props {
+  page: DocPage;
+}
+
+const { page } = Astro.props;
+---
+
+<BaseLayout
+  language={page.language}
+  route={page.route}
+  title={page.title}
+  description={page.description}
+  keywords={page.keywords}
+  translations={translationsOf(await getPages(), page.route)}
+  layout='comparison'
+>
+  <ArchitecturePitch language={page.language} />
+</BaseLayout>

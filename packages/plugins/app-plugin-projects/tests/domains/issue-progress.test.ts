@@ -56,52 +56,62 @@ describe('structured issue progress', () => {
     },
   );
 
-  it('keeps an acceptance list while In review only, and clears it on leaving', async () => {
+  it('keeps the delivery report across status changes until the next one replaces it', async () => {
     const viewer = h.viewer('alice');
     let issue = await h.services.issues.create(viewer, {
-      title: 'Acceptance',
+      title: 'Delivery report',
       statusKey: 'in_progress',
     });
-    const list = '### Acceptance criteria\n\n- [ ] Export only Studio\n';
-    // Outside In review an acceptance list is not kept.
-    issue = await h.services.issues.update(viewer, issue.id, {
-      revision: issue.revision,
-      acceptance: list,
-    });
-    expect(issue.acceptance).toBeNull();
+    const report =
+      '## What changed\n\nExport filter.\n\n### Acceptance criteria\n\n- [ ] Export only Studio\n';
     issue = await h.services.issues.update(viewer, issue.id, {
       revision: issue.revision,
       statusKey: 'in_review',
       needsYou: 'Check the export and accept it.',
-      acceptance: list,
+      acceptance: report,
     });
-    expect(issue.acceptance).toBe(list);
-    // Omitted, it stays; whitespace clears it.
+    expect(issue.acceptance).toBe(report);
+    // Sent back, the report stays as the previous delivery.
     issue = await h.services.issues.update(viewer, issue.id, {
       revision: issue.revision,
-      next: 'Await acceptance.',
+      statusKey: 'in_progress',
     });
-    expect(issue.acceptance).toBe(list);
+    expect(issue.acceptance).toBe(report);
+    // The next delivery replaces it.
+    const second = '## What changed\n\nExport filter, second round.\n';
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      statusKey: 'in_review',
+      needsYou: 'Check it again.',
+      acceptance: second,
+    });
+    expect(issue.acceptance).toBe(second);
+    // Accepted, it stays on the closed issue.
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      statusKey: 'done',
+    });
+    expect(issue.acceptance).toBe(second);
+    // Omitted, it is retained; written in any status, it is kept.
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      title: 'Delivery report, renamed',
+    });
+    expect(issue.acceptance).toBe(second);
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      acceptance: report,
+    });
+    expect(issue.acceptance).toBe(report);
+    // Blank clears it.
     issue = await h.services.issues.update(viewer, issue.id, {
       revision: issue.revision,
       acceptance: '  ',
     });
     expect(issue.acceptance).toBeNull();
-    issue = await h.services.issues.update(viewer, issue.id, {
-      revision: issue.revision,
-      acceptance: list,
-    });
-    // Sent back, the list goes with the status.
-    issue = await h.services.issues.update(viewer, issue.id, {
-      revision: issue.revision,
-      statusKey: 'in_progress',
-    });
-    expect(issue.acceptance).toBeNull();
     await expect(
       h.services.issues.update(viewer, issue.id, {
         revision: issue.revision,
-        statusKey: 'in_review',
-        needsYou: 'Accept it.',
         acceptance: 'x'.repeat(20_001),
       }),
     ).rejects.toThrow();

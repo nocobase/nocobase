@@ -1,5 +1,7 @@
 import type { ConversationListQuery } from '../../shared/conversations.js';
 
+import { agentsKeys } from '../api/keys.js';
+
 /** Query keys of the chat, all under `['agents', 'chat']`, so invalidating the prefix refreshes every chat view. */
 export const chatKeys: {
   readonly all: readonly ['agents', 'chat'];
@@ -19,7 +21,7 @@ export const chatKeys: {
   lists: ['agents', 'chat', 'conversations'],
   list: (query) => ['agents', 'chat', 'conversations', query],
   conversation: (id) => ['agents', 'chat', 'conversation', id],
-  agents: ['agents', 'chat', 'agents'],
+  agents: agentsKeys.chatAgents,
   preferences: ['agents', 'chat', 'preferences'],
   settings: ['agents', 'chat', 'settings'],
   presets: ['agents', 'chat', 'presets'],

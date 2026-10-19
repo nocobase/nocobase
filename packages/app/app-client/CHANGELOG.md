@@ -2,6 +2,16 @@
 
 ## 4.0.0-beta
 
+## 3.0.0-beta.2
+
+### Patch Changes
+
+- 1cdbaf4: Wait for asynchronous navigation confirmations and ask before leaving unsaved role edits in Studio. Keep cancelled and failed-save edits, and clear the saved baseline immediately after a successful save.
+- Updated dependencies [c0b7537]
+  - @nocobase/realtime@0.1.0-beta.2
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 3.0.0-beta.1
 
 ### Patch Changes

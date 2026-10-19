@@ -52,3 +52,6 @@ describe('the model catalog', () => {
     expect(catalogEntry('claude', 'claude-unknown')).toBeUndefined();
   });
 });
+it('uses readable Gemini display names without changing model identity', () => {
+  expect(modelLabel('pi', 'google/gemini-3.1-pro')).toBe('Gemini 3.1 Pro');
+});

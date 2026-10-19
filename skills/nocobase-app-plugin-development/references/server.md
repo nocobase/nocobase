@@ -2,6 +2,8 @@
 
 Use this reference when a plugin needs HTTP routes, background jobs, queues, or a Server declaration. Read [services.md](./services.md) for reusable domain services and lifecycle ownership, and [database.md](./database.md) for database structure, initial data, and Repository APIs.
 
+For deployment values, export a typed configuration factory and register it in the target App's `defaultAppConfigs()`. The [configuration reference](configuration.md) covers defaults, environment overrides, validation and a minimal browser contract; the [complete testing example](testing-example.md) verifies them with an explicitly registered plugin.
+
 ## Choose the owning module
 
 | Requirement                                                    | Owner                                                           |
@@ -145,7 +147,7 @@ export default routes;
 
 Call the real contribution's `createRouter()` with an isolated `ServiceContainer`; this exercises the same dependency resolution, middleware installation, and handler factory used in production. Do not replace this with a test-only registration helper.
 
-The [complete production contribution test](server-route-examples.md#test-the-production-contributions) creates a real `Auth` against an in-memory SQLite connection, controls its session lookup, binds the original service Tokens, and constructs a fully typed `AppPluginApplication`. It calls `createRouter()` directly and tests the mounted endpoints without partial `Auth` casts or an undefined test helper.
+The [complete production contribution test](server-route-examples.md#test-the-production-contributions) creates a real `Auth` against an isolated database on the selected test dialect, controls its session lookup, binds the original service Tokens, and constructs a fully typed `AppPluginApplication`. It calls `createRouter()` directly and tests the mounted endpoints without partial `Auth` casts or an undefined test helper.
 
 Also compose a later unrelated route and verify the plugin middleware does not leak into it. Contribution tests do not prove final mount prefixes, public base paths, interaction among multiple contributions, or real authentication; cover those in a target App integration test.
 

@@ -41,6 +41,8 @@ import { detectionEnv, providedNames } from '../agent/env.ts';
 import type { loadAdapters } from '../agent/adapters/registry.ts';
 import {
   readConnection,
+  markRevoked,
+  type RevocationReason,
   passEnvNames,
   dropWorkspaceLimit,
   artifactPatterns,
@@ -60,6 +62,7 @@ import {
 } from '../lib/home.ts';
 import { backoff, delay, ApiError, type ApiClient } from '../lib/http.ts';
 import {
+  EXIT_CODES,
   ClaimResponseSchema,
   type ClaimResponse,
   HeartbeatResponseSchema,
@@ -263,6 +266,8 @@ export class RunnerDaemon {
   private readonly protocolNoticed = new Map<string, number>();
   /** The version the daemon installed before it stopped, if it did. */
   updatedTo: string | undefined;
+  private revocationFailed = false;
+  private readonly revocations = new Set<Promise<void>>();
 
   constructor(options: DaemonOptions) {
     this.options = options;
@@ -272,7 +277,7 @@ export class RunnerDaemon {
       client:
         options.clients?.get(connection.registration.key) ??
         runnerClient(connection),
-      revoked: false,
+      revoked: connection.registration.revoked !== undefined,
       upgradeRequired: false,
     }));
     this.timings = options.timings ?? {};
@@ -291,8 +296,10 @@ export class RunnerDaemon {
     });
   }
 
-  /** How the process exits once the daemon has stopped: `RESTART_EXIT_CODE` when it updated itself, 0 otherwise. */
+  /** Authentication stops permanently; an update asks the service to restart. */
   get exitCode(): number {
+    if (this.revocationFailed) return EXIT_CODES.general;
+    if (this.live.length === 0) return EXIT_CODES.auth;
     return this.updatedTo === undefined ? 0 : RESTART_EXIT_CODE;
   }
 
@@ -360,6 +367,10 @@ export class RunnerDaemon {
       pid: process.pid,
       startedAt: new Date().toISOString(),
     } satisfies DaemonPid);
+    if (this.live.length === 0) {
+      await this.stop('RUNNER_REVOKED');
+      return;
+    }
     await installGitHooks(paths.hooksDir);
     log(
       `runner ${this.options.settings.name} starting for ${this.links
@@ -386,8 +397,10 @@ export class RunnerDaemon {
       log(
         `recovered ${recovered.length} orphaned run(s): ${recovered.join(', ')}`,
       );
-    for (const link of this.links) {
+    for (const link of this.live) {
       await this.heartbeat(link);
+      if (this.stopping.signal.aborted) return;
+      if (link.revoked) continue;
       link.heartbeatTimer = setInterval(
         () => void this.heartbeat(link),
         this.timings.heartbeatIntervalMs ??
@@ -426,6 +439,7 @@ export class RunnerDaemon {
           clearInterval(link.heartbeatTimer);
       if (this.gcTimer !== undefined) clearInterval(this.gcTimer);
       await this.claimLoop?.catch(() => undefined);
+      await Promise.all(this.revocations);
       await this.supervisor.stopAll();
       await this.collecting;
       const pid = await readJson<DaemonPid>(this.options.paths.daemonPid).catch(
@@ -671,11 +685,28 @@ export class RunnerDaemon {
   }
 
   /** The application's key was refused: stop serving it, and stop the daemon when none is left. */
-  private revoke(link: AppLink, code: string, message: string): void {
+  private async revoke(
+    link: AppLink,
+    code: string,
+    message: string,
+  ): Promise<void> {
     if (link.revoked) return;
     link.revoked = true;
     if (link.heartbeatTimer !== undefined) clearInterval(link.heartbeatTimer);
     this.options.log(`${link.key}: ${code}: ${message}`);
+    const saving = markRevoked(
+      link.connection.registration,
+      code as RevocationReason,
+      this.options.paths,
+    ).catch((error: unknown) => {
+      this.revocationFailed = true;
+      this.options.log(
+        `${link.key}: failed to save revocation: ${String(error)}`,
+      );
+    });
+    this.revocations.add(saving);
+    await saving;
+    this.revocations.delete(saving);
     if (this.live.length === 0) void this.stop(code);
   }
 
@@ -792,7 +823,7 @@ export class RunnerDaemon {
         void this.supervisor.release(jobRecordKey(jobId));
     } catch (error) {
       if (error instanceof ApiError && REVOKED.has(error.reason)) {
-        this.revoke(link, error.reason, error.message);
+        await this.revoke(link, error.reason, error.message);
         return;
       }
       if (error instanceof ApiError && error.reason === UNSUPPORTED) {
@@ -1107,7 +1138,7 @@ export class RunnerDaemon {
         } catch (error) {
           if (this.stopping.signal.aborted) break;
           if (error instanceof ApiError && REVOKED.has(error.reason)) {
-            this.revoke(link, error.reason, error.message);
+            await this.revoke(link, error.reason, error.message);
             continue;
           }
           if (error instanceof ApiError && error.reason === UNSUPPORTED) {

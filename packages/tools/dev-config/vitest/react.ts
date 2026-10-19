@@ -10,12 +10,20 @@ const reactSetupFile: string = fileURLToPath(
 );
 const reactConfig: ViteUserConfig = {
   plugins: [react()],
+  // Match native Node 24 package exports instead of selecting a separate module entry.
+  resolve: { conditions: ['node', 'module-sync'] },
   test: {
     environment: 'jsdom',
     exclude: ['**/node_modules/**', '**/dist/**', '**/build/**'],
     setupFiles: [reactSetupFile],
     testTimeout: sharedTestTimeout,
     hookTimeout: sharedHookTimeout,
+    server: {
+      deps: {
+        // Router contexts must keep one identity across installed runtime and test helpers.
+        external: [/react-router(?:\/|$)/u],
+      },
+    },
   },
 };
 

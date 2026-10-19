@@ -136,14 +136,14 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 
 ### permission-editor
 
-A role's permissions as collapsible sections of switch rows under optional subheadings, each row reaching a level picked in a fixed right column. Use it for a role editor. Presentational: map the business actions and levels @nocobase/app-plugin-authorization registers to sections of rows.
+A compact resource permission workspace with horizontal action checkboxes, adjacent data scopes and atomic visible selection.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/permission-editor`
-- Installs to: `client/components/permission-editor.tsx`
+- Installs to: `client/components/permission-editor.tsx`, `client/components/permission-filter.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/permission-editor-demo` (`pnpm exec shadcn view @nocobase/permission-editor-demo`)
-- After installing: Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default.
+- After installing: Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default. Resource groups render as compact rows with wrapping action checkboxes. Optional row.scopes bind independent scope selectors to their owning action. Pass onEnabledBatchChange to enable atomic group selection of visible toggleable permissions; omit it to keep single-action controls. Filtering never mutates the draft. Pass labels.selectVisible for the localized group checkbox name. Use group.accessOnly for a page with a single access action to show one title checkbox without redundant action text. Provide scope.configuration for parameterized scopes; PermissionFilter edits validated condition drafts and keeps role saving in the host form. Never save customFilter as a bare key: bind its native params.filter object.
 
 ## Data display
 
@@ -239,7 +239,7 @@ Read-only React Flow canvas with ELK orthogonal routing for directed graphs, inc
 - Installs to: `client/components/flow-diagram.tsx`, `client/components/flow-layout.ts`, `client/components/flow-diagram-css.d.ts`
 - Plugin dependencies: none
 - Example: `@nocobase/flow-diagram-demo` (`pnpm exec shadcn view @nocobase/flow-diagram-demo`)
-- After installing: Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 200×64 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable.
+- After installing: Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 232×104 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. nodeDescription and nodeActions add supporting summaries and configuration controls. For bounded canvases, initialMinZoom=0.8 preserves initial readability and showMiniMap provides overview navigation; Fit still shows the whole graph. Translate flowDiagram.overview when using the minimap. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable.
 
 ### lifecycle-diagram
 
@@ -251,7 +251,7 @@ Theme-aware, read-only lifecycle diagram using React Flow and ELK. Shows the cur
 - Plugin dependencies: none
 - Also installs: `@nocobase/flow-diagram`
 - Example: `@nocobase/lifecycle-diagram-demo` (`pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`)
-- After installing: Pass description.description from useLifecycle/createLifecycleHook, currentState from view.record, availableTransitions filtered from view.available, and history from view.history.transitions. History matches the exact transition/source/destination; current state alone never implies a visited path. Pass a translated endLabel for separate decorative markers on explicit final states. For detailed page diagrams use direction DOWN and autoHeight. Translate ariaLabel, stateLabel and transitionLabel; append a gear to automatic transition labels if needed. Edges are solid with inline labels and subdued neutral strokes; current/visited/available highlights use the application primary theme token. Current nodes have a stronger fill and ring, visited nodes a light fill, with no extra visited label. onStateClick/onTransitionClick open details and never fire transitions. Keep toMermaid for documentation/export.
+- After installing: Pass description.description from useLifecycle/createLifecycleHook, currentState from view.record, availableTransitions filtered from view.available, and history from view.history.transitions. History matches the exact transition/source/destination; current state alone never implies a visited path. Pass a translated endLabel for separate decorative markers on explicit final states. Defaults to direction DOWN, autoHeight and initialMinZoom 0.7 for readable vertical page reading. The Fit control still shows the entire graph; an explicit initialMinZoom overrides the default. Override direction and autoHeight explicitly for compact canvases. stateActions supplies explicit configuration buttons; nodeDescription displays real policy summaries. Translate ariaLabel, stateLabel and transitionLabel; append a gear to automatic transition labels if needed. Edges are solid with inline labels and subdued neutral strokes; current/visited/available highlights use the application primary theme token. Current nodes have a stronger border and ring; icons, top accents and status footers distinguish current, visited and configurable nodes using theme tokens. onStateClick/onTransitionClick open details and never fire transitions. Keep toMermaid for documentation/export. Pass configuration={label, canConfigure, onConfigure} for automatic Configure buttons on authorized bound states and configuration selection on bound transitions. onConfigure receives the exact target and permitted bound fields grouped by native parameter key; connect the existing real editor and API. canConfigure is required and is only a UI affordance. Explicit direction/style overrides are reserved for user-requested customization; Mermaid is documentation/export only.
 
 ## Inbox
 
@@ -277,6 +277,19 @@ A header button linking to the inbox, with an amber badge for what waits on the 
 - Plugin dependencies: none
 - Example: `@nocobase/inbox-button-demo` (`pnpm exec shadcn view @nocobase/inbox-button-demo`)
 - After installing: Render <InboxButton badge={inboxBadge(waiting, unread)} /> inside a TooltipProvider, with inboxBadge from #components/inbox-badge, waiting what your inbox counts as waiting (0 without decisions) and unread from useInboxUnreadCount() of @nocobase/app-plugin-notification-in-app/client/inbox; useDocumentTitleBadge(badge?.text ?? null) prefixes the tab title. Add the inboxButton.* keys its README lists to client/locales/.
+
+## Other
+
+### data-table
+
+Standard TanStack Table v8 table with controlled server pagination and sorting, selection and column visibility.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/data-table`
+- Installs to: `client/components/data-table/column-header.tsx`, `client/components/data-table/data-table.tsx`, `client/components/data-table/index.ts`, `client/components/data-table/pagination.tsx`, `client/components/data-table/view-options.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/data-table-demo` (`pnpm exec shadcn view @nocobase/data-table-demo`)
+- After installing: Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.
 
 ## Page layout
 
@@ -408,3 +421,17 @@ A child route presented as a non-modal page covering the content area, keeping t
 - Plugin dependencies: none
 - Example: `@nocobase/route-child-page-demo` (`pnpm exec shadcn view @nocobase/route-child-page-demo`)
 - After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole.
+
+## Workflows
+
+### workflow-management
+
+Workflow administration as presentational parts: one management page with Definitions and Executions tabs, a categorized definition list, a filtered execution list, definition diagram and parameter layout, and execution history inspection beside a diagram. Wire it to application-owned routes, data and permissions.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/workflow-management`
+- Installs to: `client/extensions/nocobase-workflow-management/`
+- Plugin dependencies: none
+- Also installs: `@nocobase/page-container`, `@nocobase/page-header`, `@nocobase/data-table`
+- Example: `@nocobase/workflow-management-demo` (`pnpm exec shadcn view @nocobase/workflow-management-demo`)
+- After installing: Install @nocobase/workflow-management and read @nocobase/workflow-management-demo. Render WorkflowManagementLayout around the application Outlet with URL-controlled Definitions and Executions tabs; declare sidebar navigation only on the Workflow management parent. Pass adapted rows, translated labels, search/category controls, status/empty content and callbacks to WorkflowDefinitionList and WorkflowExecutionList. WorkflowDefinitionDetail places the diagram beside an application-owned parameter form. WorkflowExecutionDetail takes transition/effect records and a renderDiagram callback receiving the selected history prefix and current state; render with @nocobase/lifecycle-diagram or an existing compatible diagram. It never executes transitions or saves configuration. Keep API fetching, URL query state, permissions, parameter persistence, recovery actions and breadcrumbs in the application. All wording comes from props; no example plugin or backend is installed. Lifecycle diagrams are preinstalled in current app templates. Omit parameters to give a node-configured diagram full width, and open the same editor from LifecycleDiagram.configuration; supplying parameters retains the existing two-column layout.

@@ -20,8 +20,12 @@ import {
   type UseMutationResult,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useCallback, useContext, useEffect, useRef } from 'react';
 import { cancelChoiceDiscoveries } from './discovery-requests.js';
+import {
+  ApplicationCacheContext,
+  agentSessionsQueryClient,
+} from './query-cache.js';
 
 import {
   AGENT_SESSIONS_TOPIC,
@@ -78,6 +82,24 @@ export function useComputers(): UseQueryResult<Computer[]> {
   });
 }
 
+/** Check the owner's current computers on demand, without adding a background poll to the host page. */
+export function useAgentSessionAvailability(): () => Promise<boolean> {
+  const api = useApiClient();
+  const cache =
+    useContext(ApplicationCacheContext) ?? agentSessionsQueryClient();
+  return useCallback(async () => {
+    const computers = await cache.fetchQuery({
+      queryKey: keys.computers,
+      queryFn: () => data<Computer[]>(api, { path: path('computers') }),
+      staleTime: 0,
+    });
+    return computers.some(
+      (computer) =>
+        computer.online && computer.agents.some((agent) => !agent.problem),
+    );
+  }, [api, cache]);
+}
+
 export function useSessions(
   archived: boolean,
 ): UseInfiniteQueryResult<InfiniteData<ListAnswer<Session>>> {
@@ -98,6 +120,35 @@ export function useSessions(
     refetchInterval: 30_000,
     refetchOnWindowFocus: true,
   });
+}
+
+/**
+ * The viewer's open sessions tied to one record (`kind`, `refId`), the most recently active first: those that created
+ * it or mentioned it. It reads this plugin's cache, so a page of the application calls it outside the plugin's pages.
+ */
+export function useLinkedSessions(
+  kind: string,
+  refId: string | null | undefined,
+): UseQueryResult<Session[]> {
+  const api = useApiClient();
+  const cache = useContext(ApplicationCacheContext);
+  const linked = `${kind}:${refId ?? ''}`;
+  return useQuery(
+    {
+      queryKey: ['agentSessions', 'sessions', 'linked', linked],
+      enabled: Boolean(refId),
+      queryFn: () =>
+        api
+          .request<ListAnswer<Session>>({
+            path: path('sessions'),
+            query: { archived: 'false', pageSize: 20, linked },
+          })
+          .then((answer) => answer.data),
+      staleTime: 30_000,
+      refetchOnWindowFocus: true,
+    },
+    cache ?? agentSessionsQueryClient(),
+  );
 }
 
 export function useSession(sessionId: string): UseQueryResult<Session> {
@@ -481,6 +532,16 @@ export function useCancel(sessionId: string): Mutation<void> {
     await api.request({
       path: path('sessions', sessionId, 'cancel'),
       method: 'POST',
+    });
+  });
+}
+
+export function useWithdraw(sessionId: string): Mutation<number> {
+  return useSessionWrite(sessionId, async (api, seq: number) => {
+    await api.request({
+      path: path('sessions', sessionId, 'withdraw'),
+      method: 'POST',
+      json: { seq },
     });
   });
 }

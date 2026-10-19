@@ -118,6 +118,7 @@ export interface CliManifest {
     readonly runId?: string | undefined;
     /** Absent from a server older than manifest version 4. */
     readonly actions?: readonly string[] | undefined;
+    readonly settings?: readonly string[] | undefined;
   };
   readonly commands: readonly CliCommand[];
   /** Absent from a server older than manifest version 4. */

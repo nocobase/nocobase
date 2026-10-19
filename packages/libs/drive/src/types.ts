@@ -28,11 +28,42 @@ export interface S3DriveDiskConfig {
   visibility: DriveVisibility;
 }
 
-export type AppDriveDiskConfig = FsDriveDiskConfig | S3DriveDiskConfig;
+export interface OssDriveDiskConfig {
+  driver: 'oss';
+  region: string;
+  bucket: string;
+  internal?: boolean;
+  domain?: string;
+  /** OSS request timeout in milliseconds; defaults to 600000 (10 minutes). */
+  timeout?: number;
+  visibility: DriveVisibility;
+  supportsACL?: boolean;
+  credentials:
+    | {
+        accessKeyId: string;
+        accessKeySecret: string;
+        provider?: never;
+        roleName?: never;
+      }
+    | {
+        provider: 'aliyun-ecs-ram-role';
+        roleName?: string;
+        accessKeyId?: never;
+        accessKeySecret?: never;
+      };
+}
+
+export type AppDriveDiskConfig =
+  FsDriveDiskConfig | S3DriveDiskConfig | OssDriveDiskConfig;
+
+/** Creates a driver synchronously on first use, without a bound receiver. */
+export type DriveDriverFactory = (this: void) => DriverContract;
+
+export type AppDriveDiskDefinition = AppDriveDiskConfig | DriveDriverFactory;
 
 export interface AppDriveConfig {
   default: string;
-  disks: Record<string, AppDriveDiskConfig>;
+  disks: Record<string, AppDriveDiskDefinition>;
 }
 
 export type NocoBaseDriveDisk = Disk;

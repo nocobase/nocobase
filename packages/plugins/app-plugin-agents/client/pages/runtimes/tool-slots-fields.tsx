@@ -39,7 +39,7 @@ export function ToolLimitInput({
     <Input
       id={id}
       inputMode='numeric'
-      className='h-8 w-20'
+      className='h-8 w-24 max-w-full'
       placeholder={t('runtimes.toolSlots.none')}
       aria-label={t('runtimes.toolSlots.inputLabel', {
         tool: t(`tools.${tool}`),

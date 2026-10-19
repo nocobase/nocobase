@@ -104,6 +104,17 @@ class DefaultUserManagementService implements UserManagementService {
   onInvitationAccepted: InvitationManager['onInvitationAccepted'] = (handler) =>
     this.invitations.onInvitationAccepted(handler);
 
+  async get(userId: string): Promise<ManagedUser> {
+    const user = await this.services.users.get(userId);
+    if (!user)
+      throw new UserManagementError(
+        'USER_NOT_FOUND',
+        `Unknown user: ${userId}`,
+        404,
+      );
+    return this.withRoleScopes(user, this.services.database.connection());
+  }
+
   async options(): Promise<UserManagementOptions> {
     return {
       roleScopes: await Promise.all(
@@ -143,6 +154,8 @@ class DefaultUserManagementService implements UserManagementService {
       page: input.page,
       pageSize: input.pageSize,
       search: input.search,
+      sort: input.sort,
+      order: input.order,
       status: input.status,
       userIds,
     });

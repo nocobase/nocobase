@@ -3,6 +3,7 @@
  * report first checks that the runner still holds the run; a runner that lost it (the sweeper took it back, or it
  * ended) is told `LEASE_LOST` and must stop.
  */
+import { QuotaReportSchema, type QuotaReport } from '@nocobase/agent-protocol';
 import {
   isRetryable,
   MAX_EVENT_CONTENT_BYTES,
@@ -111,6 +112,18 @@ export interface RunnerReportsDeps extends TransitionDeps, InputGateDeps {
    * patterns before they are stored, whatever the runner did (`kernel/redaction.ts`).
    */
   readonly secrets?: SecretMemory;
+  readonly onQuota?: (
+    unit: Tx,
+    runnerId: string,
+    tool: AgentTool,
+    model: string | null,
+    quota: QuotaReport,
+    observation: {
+      runId: string;
+      agentId: string;
+      subject: { kind: string; id: string };
+    },
+  ) => Promise<void>;
   /**
    * A run failed `modelUnavailable` on `runnerId` with its tool and model: the runner's mark that the model is not
    * offered there (`RunnerService.markModelUnavailable`), in the failure's transaction.
@@ -373,6 +386,33 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
                   ]),
               });
         const stored = new Set(existing.map((event) => Number(event.seq)));
+        const quotaReports = request.events
+          .filter((event) => !stored.has(event.seq))
+          .map((event) => QuotaReportSchema.safeParse(event.meta?.quota))
+          .filter((parsed) => parsed.success);
+        if (run.tool && quotaReports.length) {
+          const latest = new Map<string, QuotaReport['windows'][number]>();
+          for (const parsed of quotaReports)
+            if (parsed.success)
+              for (const window of parsed.data.windows)
+                latest.set(
+                  JSON.stringify([window.scope, window.target, window.window]),
+                  window,
+                );
+          await deps.onQuota?.(
+            unit,
+            runner.id,
+            run.tool as AgentTool,
+            run.model ?? null,
+            { windows: [...latest.values()] },
+            {
+              runId: run.id,
+              agentId: run.agentId,
+              subject: { kind: run.subjectKind, id: run.subjectId },
+            },
+          );
+        }
+
         const now = clock.now().toISOString();
         const redact = redactorOf(run.id);
         let accepted = 0;
@@ -574,12 +614,59 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             ? { ...request, handledInputIds: [] }
             : request,
         );
+        if (request.quota && run.tool && request.reason === 'toolQuota') {
+          // A final failure repeats quota observations already accepted through events.
+          // Read their existing record so a late fail cannot undo an owner's clear.
+          // A new event sequence is still processed by events(), even with identical values.
+          const observations = await eventsRepo(unit.conn).findMany({
+            filter: (f) =>
+              f.and([
+                f.string('runId').eq(run.id),
+                f.json('meta').path(['quota', 'windows']).isNotEmpty(),
+              ]),
+            select: (s) => s.fields('meta'),
+          });
+          const identity = (window: QuotaReport['windows'][number]): string =>
+            JSON.stringify([
+              window.scope,
+              window.target,
+              window.window,
+              window.resetsAt,
+              window.usedPercent ?? null,
+              window.exhausted,
+            ]);
+          const seen = new Set<string>();
+          for (const observation of observations) {
+            const parsed = QuotaReportSchema.safeParse(
+              jsonObject(observation.meta).quota,
+            );
+            if (parsed.success)
+              for (const window of parsed.data.windows)
+                seen.add(identity(window));
+          }
+          const windows = request.quota.windows.filter(
+            (window) => !seen.has(identity(window)),
+          );
+          if (windows.length)
+            await deps.onQuota?.(
+              unit,
+              runner.id,
+              run.tool as AgentTool,
+              run.model ?? null,
+              { windows },
+              {
+                runId: run.id,
+                agentId: run.agentId,
+                subject: { kind: run.subjectKind, id: run.subjectId },
+              },
+            );
+        }
         if (request.reason === 'modelUnavailable' && run.tool && run.model)
           await deps.onModelUnavailable?.(
             unit,
             runner.id,
             run.tool as AgentTool,
-            run.model,
+            run.model ?? null,
           );
         await rememberSession(
           unit,
@@ -605,6 +692,9 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           };
         }
         const ended = await finishRun(unit, deps, run, {
+          ...(request.reason === 'toolQuota' && request.quota
+            ? { quota: request.quota }
+            : {}),
           status: run.cancelRequestedAt === null ? 'failed' : 'cancelled',
           reason: run.cancelRequestedAt === null ? request.reason : 'cancelled',
           ...(request.detail === undefined ? {} : { detail: request.detail }),

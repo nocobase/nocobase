@@ -13,7 +13,6 @@ export function useSessionMemory<T>(
   initial: T,
 ): readonly [T, Dispatch<SetStateAction<T>>] {
   const client = useQueryClient();
-  const [local, setLocal] = useState(initial);
   const queryKey = sessionMemoryKey(key);
   const query = useQuery({
     queryKey,
@@ -23,17 +22,41 @@ export function useSessionMemory<T>(
     staleTime: Infinity,
     gcTime: 30 * 60_000,
   });
-  const value = key === undefined ? local : (query.data ?? initial);
+  const [local, setLocal] = useState({
+    key,
+    value: key === undefined ? initial : (query.data ?? initial),
+    cached: query.data,
+  });
+  // Restore a different draft and observe cache edits such as submission recovery.
+  // Local edits render synchronously, without waiting for Query's scheduled notification.
+  if (local.key !== key || !Object.is(local.cached, query.data)) {
+    setLocal({
+      key,
+      value: key === undefined ? initial : (query.data ?? initial),
+      cached: query.data,
+    });
+  }
   return [
-    value,
-    key === undefined
-      ? setLocal
-      : (next) => {
-          client.setQueryData<T>(queryKey, (held) =>
+    local.value,
+    (next) => {
+      if (key === undefined) {
+        setLocal((current) => ({
+          ...current,
+          value:
             typeof next === 'function'
-              ? (next as (value: T) => T)(held ?? initial)
+              ? (next as (value: T) => T)(current.value)
               : next,
-          );
-        },
+        }));
+        return;
+      }
+      const value = client.setQueryData<T>(queryKey, (held) =>
+        typeof next === 'function'
+          ? (next as (value: T) => T)(held ?? initial)
+          : next,
+      );
+      setLocal((current) =>
+        current.key === key ? { ...current, value: value ?? initial } : current,
+      );
+    },
   ];
 }

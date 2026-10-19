@@ -1,0 +1,44 @@
+---
+/** The overview of each capability module. Its markup carries its own header and footer. */
+import type { GetStaticPaths } from 'astro';
+import { localizePath } from '../../../../shared/languages.ts';
+import CapabilityOverview from '../../../components/CapabilityOverview/index.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import {
+  getPages,
+  staticPathsOf,
+  translationsOf,
+  type DocPage,
+} from '../../../lib/pages.ts';
+
+export const getStaticPaths = (() =>
+  staticPathsOf('capability-overview')) satisfies GetStaticPaths;
+
+interface Props {
+  page: DocPage;
+}
+
+const { page } = Astro.props;
+const translations = translationsOf(await getPages(), page.route);
+---
+
+<BaseLayout
+  language={page.language}
+  route={page.route}
+  title={page.title}
+  description={page.description}
+  keywords={page.keywords}
+  translations={translations}
+  header={false}
+  footer={false}
+  layout='capability-overview'
+>
+  <CapabilityOverview
+    language={page.language}
+    module={page.module!}
+    languageLinks={translations.map((language) => ({
+      language,
+      href: localizePath(language, page.route),
+    }))}
+  />
+</BaseLayout>

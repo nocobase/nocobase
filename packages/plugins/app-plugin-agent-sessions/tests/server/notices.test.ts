@@ -9,6 +9,7 @@ import type {
 } from '../../server/notices.js';
 import { AgentSessionsService } from '../../server/service.js';
 import { test } from '../helpers/database.js';
+import { bridgeReport } from '../helpers/bridge-report.js';
 
 const T0 = Date.parse('2026-10-13T08:00:00.000Z');
 const at = '2026-10-13T08:00:01.000Z';
@@ -59,8 +60,20 @@ function setup(database: DatabaseManager) {
       cwd: '/home/zhou/code',
       content: [{ type: 'text', text: 'Fix the board' }],
     });
+    const prompt = (
+      await service.listEvents('u1', session.id, { after: 0, limit: 10 })
+    )[0]!;
+    if (prompt.kind !== 'prompt') throw new Error('Expected prompt');
+    await service.claim('u1', {
+      protocol: BRIDGE_PROTOCOL_VERSION,
+      bridgeStartedAt: 'bridge-1',
+      computerId,
+      sessionId: session.id,
+      seq: prompt.seq,
+      promptId: prompt.promptId,
+    });
     const report = (events: BridgeEvent[]) =>
-      service.report('u1', {
+      bridgeReport(service, 'u1', {
         computerId,
         sessionId: session.id,
         batch: ++batch,
@@ -94,6 +107,30 @@ const asked: BridgeEvent = {
 };
 
 describe('AgentSessionsService notices', () => {
+  test('observes committed reminder identities immediately and unregisters listeners', async ({
+    database,
+  }) => {
+    const { service, sent, started } = setup(database);
+    const observed: { sessionId: string; seq: number; reason: string }[] = [];
+    const stop = service.onCommittedEvent((event) => {
+      observed.push(event);
+    });
+    const { session, report } = await started();
+    await report([ended(), asked]);
+    await vi.waitFor(() => expect(observed).toHaveLength(2));
+    const actual = await service.listEvents(owner.userId, session.id, {
+      after: 0,
+      limit: 200,
+    });
+    for (const event of observed)
+      expect(actual.find((stored) => stored.seq === event.seq)?.kind).toBe(
+        event.reason === 'turnFailed' ? 'turnEnded' : event.reason,
+      );
+    expect(sent).toEqual([]);
+    stop();
+    await report([ended()]);
+    expect(observed).toHaveLength(2);
+  });
   test('tells the owner of a reply they did not see, a little later, once', async ({
     database,
   }) => {
@@ -202,15 +239,21 @@ describe('AgentSessionsService notices', () => {
     await later();
     await service.markSeen('u1', session.id, 1);
     expect(settled).toEqual([]);
-    await service.markSeen('u1', session.id, 2);
+    await service.markSeen('u1', session.id, 3);
     expect(settled).toEqual([
       { userId: 'u1', sessionId: session.id, outcome: 'seen' },
     ]);
     // Seen again, nothing more to settle.
-    await service.markSeen('u1', session.id, 2);
+    await service.markSeen('u1', session.id, 3);
     expect(settled).toHaveLength(1);
 
-    await report([ended()]);
+    await service.prompt(owner, session.id, [
+      { type: 'text', text: 'Continue' },
+    ]);
+    await report([
+      { kind: 'turnStarted', at, promptId: 'p2' },
+      ended({ promptId: 'p2' }),
+    ]);
     await later();
     await service.updateSession(owner, session.id, { archived: true });
     expect(settled.at(-1)).toEqual({

@@ -144,6 +144,8 @@ import {
 
 export interface AgentsDeps {
   readonly runRetentionDays?: () => number;
+  /** The first back-off of a failed run attempt (`agents.runs.retryBaseDelayMs`); 30 seconds when left out. */
+  readonly retryBaseDelayMs?: number;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   readonly idGenerator: { generateString(): string };
   /**
@@ -319,7 +321,13 @@ export function createAgents(deps: AgentsDeps): Agents {
   const clock = deps.clock ?? systemClock;
   const subjects = createSubjectRegistry();
   const signal = createWorkSignal();
-  const transitions = { clock, subjects };
+  const transitions = {
+    clock,
+    subjects,
+    ...(deps.retryBaseDelayMs === undefined
+      ? {}
+      : { retryBaseDelayMs: deps.retryBaseDelayMs }),
+  };
   const app = deps.app ?? defaultRunApp(deps.cli);
   const cli = resolveAgentCli(deps.cli, app);
 
@@ -327,6 +335,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   const dist = createDistService(deps.dist);
   const slots = createSlots(runsHeldSnapshot);
   const runners = createRunnerService({
+    quotaAgents: (unit) => agents.listActive(unit.conn),
     tx,
     ids,
     clock,
@@ -415,10 +424,12 @@ export function createAgents(deps: AgentsDeps): Agents {
     },
   });
   const eligibility = createClaimEligibility({
+    clock,
     runners,
     variables,
   });
   const availability = createAvailability({
+    clock,
     runners,
     eligibility,
     openRuns: openCounts,
@@ -476,6 +487,8 @@ export function createAgents(deps: AgentsDeps): Agents {
     secrets,
     cliName: cli.name,
     appName: app.name,
+    onQuota: (unit, runnerId, tool, model, quota, observation) =>
+      runners.reportQuota(unit, runnerId, tool, model, quota, observation),
     onModelUnavailable: (unit, runnerId, tool, model) =>
       runners.markModelUnavailable(unit, runnerId, tool, model),
   });
@@ -595,7 +608,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     app,
     cli,
     runners,
-    runnerView: createRunnerView({ agents, subjects, tx }),
+    runnerView: createRunnerView({ agents, subjects, tx, clock }),
     workspaces: createRunnerWorkspaces({ tx, clock, subjects }),
     jobs,
     slots,
