@@ -694,9 +694,6 @@ importers:
       '@nocobase/service-provider':
         specifier: workspace:*
         version: link:../../libs/service-provider
-      '@tanstack/react-query':
-        specifier: 'catalog:'
-        version: 5.101.4(react@19.2.8)
       '@testing-library/jest-dom':
         specifier: 'catalog:'
         version: 7.0.1(@testing-library/dom@10.4.1)(vitest@4.1.10)

@@ -56,7 +56,6 @@
   "peerDependencies": {
     "@tanstack/react-query": "catalog:",
     "@nocobase/i18n": "workspace:^",
-    "@tanstack/react-query": "^5.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^17.0.0",
@@ -71,7 +70,6 @@
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/i18n": "workspace:*",
     "@nocobase/service-provider": "workspace:*",
-    "@tanstack/react-query": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
