@@ -72,6 +72,7 @@ const runtimesEnUS = {
       clearMark: 'Clear mark',
       confirm: 'Clear this mark? {{target}} gets work again.',
       observed: 'Last reported {{time}}',
+      usedPercent: '{{percent}}% used',
       ok: 'OK',
       hint: 'Known reset times restore eligibility automatically. For unknown resets, restore the quota and clear the mark. Only the runtime owner and administrators can clear marks.',
     },
