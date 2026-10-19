@@ -322,23 +322,78 @@ for (const viewport of [
           data: { type: 'completed', title: 'Completed' },
         });
         const transcript = panel.getByTestId('chat-message-scroll');
-        const dimensions = await transcript.evaluate((element) => ({
-          scroll: 'scrollWidth' in element ? Number(element.scrollWidth) : 0,
-          client: 'clientWidth' in element ? Number(element.clientWidth) : 0,
-        }));
-        expect(dimensions.client).toBeGreaterThan(0);
-        expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.client + 1);
-        const bounds = await transcript.boundingBox();
+        // Read layout and scrolling in one DOM task while restored messages may still be replaced.
+        const readGeometry = () =>
+          transcript.evaluate((element) => {
+            // This test also typechecks in the Node-only project.
+            type LayoutElement = {
+              querySelector(selector: string): LayoutElement | null;
+              getClientRects(): ArrayLike<unknown>;
+              getBoundingClientRect(): { x: number; width: number };
+              readonly parentElement: LayoutElement | null;
+              readonly isConnected: boolean;
+              readonly scrollWidth: number;
+              readonly clientWidth: number;
+              scrollLeft: number;
+            };
+            const root = element as unknown as LayoutElement;
+            const reply = root.querySelector('[data-chat-message=assistant]');
+            const code = reply?.querySelector('pre') ?? null;
+            const table = reply?.querySelector('table')?.parentElement ?? null;
+            const boundsOf = (node: LayoutElement | null) => {
+              if (!node || node.getClientRects().length === 0) return null;
+              const { x, width } = node.getBoundingClientRect();
+              return { x, width };
+            };
+            const scrollOf = (node: LayoutElement | null) => {
+              if (!node) return 0;
+              node.scrollLeft = node.scrollWidth;
+              const left = node.scrollLeft;
+              node.scrollLeft = 0;
+              return left;
+            };
+            const contents = [
+              reply,
+              reply?.querySelector(':scope > div > div') ?? null,
+              code,
+              table,
+            ].map(boundsOf);
+            return {
+              ready:
+                root.isConnected &&
+                root.clientWidth > 0 &&
+                (code?.clientWidth ?? 0) > 0 &&
+                contents.every((box) => box !== null),
+              dimensions: {
+                scroll: root.scrollWidth,
+                client: root.clientWidth,
+              },
+              bounds: boundsOf(root),
+              contents,
+              codeDimensions: {
+                scroll: code?.scrollWidth ?? 0,
+                client: code?.clientWidth ?? 0,
+              },
+              codeScrollLeft: scrollOf(code),
+              tableScrollLeft: scrollOf(table),
+            };
+          });
+        let geometry: Awaited<ReturnType<typeof readGeometry>> | undefined;
+        await expect
+          .poll(async () => {
+            geometry = await readGeometry();
+            return geometry.ready;
+          })
+          .toBe(true);
+        const snapshot = geometry!;
+        expect(snapshot.dimensions.client).toBeGreaterThan(0);
+        expect(snapshot.dimensions.scroll).toBeLessThanOrEqual(
+          snapshot.dimensions.client + 1,
+        );
+        const bounds = snapshot.bounds;
         expect(bounds).not.toBeNull();
         // Check the bubble and nested scroll containers, not only a clipped transcript.
-        const bubble = assistant.locator(':scope > div > div').first();
-        for (const content of [
-          assistant,
-          bubble,
-          assistant.locator('pre'),
-          assistant.locator('table').locator('..'),
-        ]) {
-          const box = await content.boundingBox();
+        for (const box of snapshot.contents) {
           expect(box).not.toBeNull();
           expect(box!.width).toBeGreaterThan(0);
           expect(box!.x).toBeGreaterThanOrEqual(bounds!.x - 1);
@@ -346,39 +401,11 @@ for (const viewport of [
             bounds!.x + bounds!.width + 1,
           );
         }
-        const codeDimensions = await assistant
-          .locator('pre')
-          .evaluate((element) => ({
-            scroll: 'scrollWidth' in element ? Number(element.scrollWidth) : 0,
-            client: 'clientWidth' in element ? Number(element.clientWidth) : 0,
-          }));
-        expect(codeDimensions.scroll).toBeGreaterThan(codeDimensions.client);
-        const codeScrollLeft = await assistant
-          .locator('pre')
-          .evaluate((element) => {
-            if ('scrollLeft' in element && 'scrollWidth' in element) {
-              element.scrollLeft = Number(element.scrollWidth);
-              return Number(element.scrollLeft);
-            }
-            return 0;
-          });
-        expect(codeScrollLeft).toBeGreaterThan(0);
-        await assistant.locator('pre').evaluate((element) => {
-          if ('scrollLeft' in element) element.scrollLeft = 0;
-        });
-        const tableScrollLeft = await assistant
-          .locator('table')
-          .locator('..')
-          .evaluate((element) => {
-            if ('scrollLeft' in element && 'scrollWidth' in element) {
-              element.scrollLeft = Number(element.scrollWidth);
-              const left = Number(element.scrollLeft);
-              element.scrollLeft = 0;
-              return left;
-            }
-            return 0;
-          });
-        expect(tableScrollLeft).toBeGreaterThan(0);
+        expect(snapshot.codeDimensions.scroll).toBeGreaterThan(
+          snapshot.codeDimensions.client,
+        );
+        expect(snapshot.codeScrollLeft).toBeGreaterThan(0);
+        expect(snapshot.tableScrollLeft).toBeGreaterThan(0);
         return saved.map((message) => message.id);
       };
       const savedIds = await assertCompletedReply();
@@ -386,6 +413,7 @@ for (const viewport of [
       // Examples resets the panel on reload; its public link restores saved history.
       await page.goto(app + '/?chat=' + encodeURIComponent(conversationId));
       await expect(panel).toBeVisible();
+      await expect(panel).toHaveAttribute('data-mode', viewport.mode);
       expect(await assertCompletedReply()).toEqual(savedIds);
       await screenshot('history');
       expect(fixture.streams).toHaveLength(1);
