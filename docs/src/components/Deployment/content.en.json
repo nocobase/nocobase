@@ -413,7 +413,26 @@
           "title": "Update an application on Studio",
           "blocks": [
             {
-              "text": "Back up application data before an update and preserve existing configuration and storage. Repeat steps 4–7 using the newly uploaded release ID. Use the nocobase-deployment Skill for advanced operations such as data migration and rollback."
+              "text": "Keep the existing application ID, configuration, and storage. Back up the database and uploaded files before updating."
+            },
+            {
+              "text": "Rebuild and upload the archive, replacing <commit-sha> with the full commit SHA used for this build:"
+            },
+            {
+              "context": "Local · app project root · Bash",
+              "code": "pnpm install --frozen-lockfile\npnpm build --target linux-x64 --node-version 24 --tar\n\nnb-studio --profile studio release upload \\\n  --app purchase \\\n  --sha '<commit-sha>' \\\n  --file storage/exports/dist.tar.gz \\\n  --json",
+              "language": "bash"
+            },
+            {
+              "text": "Replace <release-id> with result.data.release.id from the upload response. Check and complete the new release’s required configuration as in step 6, then deploy:"
+            },
+            {
+              "context": "Local · app project root · Bash",
+              "code": "nb-studio --profile studio app deploy purchase \\\n  --release '<release-id>' --wait true --json",
+              "language": "bash"
+            },
+            {
+              "text": "If approval is required, submit a deployment request as in step 6. After deployment, follow step 7 to confirm that this deployment succeeded and check error logs, sign-in, and the main workflows."
             }
           ]
         }

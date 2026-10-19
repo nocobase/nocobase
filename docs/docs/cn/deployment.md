@@ -426,4 +426,30 @@ nb-studio --profile studio app logs purchase --level error --json
 
 ### 更新 Studio 中的应用 {#studio-update}
 
-更新前备份应用数据，保留现有配置和存储。重复第 4–7 步，部署新上传的 Release ID。数据迁移和回滚等进阶操作交给 nocobase-deployment Skill。
+更新时沿用原应用 ID、配置和存储，先备份数据库与上传文件。
+
+重新打包并上传，将 <commit-sha> 替换为本次构建对应的完整提交 SHA：
+
+**本地 · app 项目根目录 · Bash**
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build --target linux-x64 --node-version 24 --tar
+
+nb-studio --profile studio release upload \
+  --app purchase \
+  --sha '<commit-sha>' \
+  --file storage/exports/dist.tar.gz \
+  --json
+```
+
+将返回的 result.data.release.id 填入 <release-id>。按第 6 步检查并补齐新版本的必填配置，再部署：
+
+**本地 · app 项目根目录 · Bash**
+
+```bash
+nb-studio --profile studio app deploy purchase \
+  --release '<release-id>' --wait true --json
+```
+
+需要审批时，按第 6 步提交部署申请。部署后按第 7 步确认本次部署成功，并检查错误日志、登录和主要功能。
