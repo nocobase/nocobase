@@ -1,4 +1,4 @@
-# @nocobase/app-plugin-web-push
+# @nocobase/app-plugin-notification-web-push
 
 ## 0.0.1
 

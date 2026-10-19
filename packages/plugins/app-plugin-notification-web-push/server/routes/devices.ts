@@ -19,13 +19,7 @@ import { vapidKeys } from '../keys.js';
 import { SubscriptionInput, PushError } from '../subscriptions.js';
 import { webPushServiceToken } from '../tokens.js';
 
-export function createDeviceRoutes(
-  options: {
-    path?: string;
-    operationPrefix?: string;
-    subscribed?: (userId: string) => Promise<void>;
-  } = {},
-): AppApiRouteContribution<Application> {
+export function createDeviceRoutes(): AppApiRouteContribution<Application> {
   return defineApiRoutes((app) => {
     const router = new Hono();
     router.onError((error, context) => {
@@ -73,7 +67,7 @@ export function createDeviceRoutes(
       schema: z.ZodType,
     ) =>
       describeRoute({
-        operationId: `${options.operationPrefix ?? 'webPush'}${operationId.slice(6)}`,
+        operationId,
         summary,
         tags: ['WebPush'],
         ...cliRoute(false),
@@ -88,7 +82,7 @@ export function createDeviceRoutes(
     router.get(
       '/key',
       describe(
-        'studioReadPushKey',
+        'webPushReadPushKey',
         'Read the Web Push public key',
         z.object({ publicKey: z.string().nullable() }),
       ),
@@ -107,7 +101,7 @@ export function createDeviceRoutes(
     router.get(
       '/subscriptions',
       describe(
-        'studioListPushSubscriptions',
+        'webPushListPushSubscriptions',
         'List the caller’s subscribed devices',
         z.array(Device),
       ),
@@ -119,7 +113,7 @@ export function createDeviceRoutes(
     router.post(
       '/subscriptions',
       describe(
-        'studioSavePushSubscription',
+        'webPushSavePushSubscription',
         'Subscribe this browser for the caller',
         Device,
       ),
@@ -127,18 +121,17 @@ export function createDeviceRoutes(
       async (context) => {
         if (!app.config.get<PushConfig>('push')?.privateKey)
           throw new PushError('unavailable');
-        const device = await service().subscriptions.save(
+        const device = await service().subscribe(
           owner(context),
           context.req.valid('json'),
         );
-        await options.subscribed?.(owner(context));
         return context.json({ data: device });
       },
     );
     router.patch(
       '/subscriptions/:id',
       describe(
-        'studioUpdatePushSubscription',
+        'webPushUpdatePushSubscription',
         'Enable or disable the caller’s device',
         Done,
       ),
@@ -156,7 +149,7 @@ export function createDeviceRoutes(
     router.delete(
       '/subscriptions/:id',
       describe(
-        'studioDeletePushSubscription',
+        'webPushDeletePushSubscription',
         'Remove the caller’s device',
         Done,
       ),
@@ -172,7 +165,7 @@ export function createDeviceRoutes(
     router.post(
       '/subscriptions/:id/test',
       describe(
-        'studioTestPushSubscription',
+        'webPushTestPushSubscription',
         'Send a test notification to the caller’s device',
         Done,
       ),
@@ -182,6 +175,6 @@ export function createDeviceRoutes(
         return context.json({ data: { ok: true } });
       },
     );
-    return new Hono().route(options.path ?? '/webPush', router);
+    return new Hono().route('/webPush', router);
   });
 }

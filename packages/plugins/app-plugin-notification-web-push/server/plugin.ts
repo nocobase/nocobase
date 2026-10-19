@@ -14,7 +14,7 @@ export function defineWebPushPlugin(
 ): AppServerPlugin {
   return defineServerPlugin({
     baseDir: path.resolve(import.meta.dirname, '..'),
-    packageName: '@nocobase/app-plugin-web-push',
+    packageName: '@nocobase/app-plugin-notification-web-push',
     serviceProviders,
     routes: [createDeviceRoutes(), createWorkerRoutes(worker)],
     database: {

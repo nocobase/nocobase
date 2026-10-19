@@ -10,24 +10,11 @@ export interface PushDevice {
 }
 export const pushBase = (base: string): string =>
   `${base.replace(/\/+$/u, '')}/`;
-export interface PushBrowserOptions {
-  namespace?: string;
-  apiPath?: string;
-  logoutKind?: string;
-}
-export const deviceKey = (
-  base: string,
-  userId: string,
-  options: PushBrowserOptions = {},
-): string =>
-  `${options.namespace ?? 'nocobase'}:push:${pushBase(base)}:${userId}`;
-export function currentDevice(
-  base: string,
-  userId: string,
-  options: PushBrowserOptions = {},
-): string | null {
+export const deviceKey = (base: string, userId: string): string =>
+  `nocobase:push:${pushBase(base)}:${userId}`;
+export function currentDevice(base: string, userId: string): string | null {
   try {
-    return localStorage.getItem(deviceKey(base, userId, options));
+    return localStorage.getItem(deviceKey(base, userId));
   } catch {
     return null;
   }
@@ -36,17 +23,14 @@ export function rememberDevice(
   base: string,
   userId: string,
   id: string | null,
-  options: PushBrowserOptions = {},
 ): void {
   try {
-    if (id) localStorage.setItem(deviceKey(base, userId, options), id);
-    else localStorage.removeItem(deviceKey(base, userId, options));
+    if (id) localStorage.setItem(deviceKey(base, userId), id);
+    else localStorage.removeItem(deviceKey(base, userId));
   } catch {
     /* Preferences still work when browser storage is unavailable. */
   }
-  window.dispatchEvent(
-    new Event(`${options.namespace ?? 'nocobase'}:push-device`),
-  );
+  window.dispatchEvent(new Event('nocobase:push-device'));
 }
 export function registerWorker(
   base: string,
@@ -61,13 +45,12 @@ export async function unsubscribeDevice(
   api: Pick<ApiClient, 'request'>,
   base: string,
   userId: string,
-  options: PushBrowserOptions = {},
 ): Promise<void> {
-  const id = currentDevice(base, userId, options);
+  const id = currentDevice(base, userId);
   if (id)
     await api.request({
       method: 'DELETE',
-      path: `${options.apiPath ?? 'webPush'}/subscriptions/${encodeURIComponent(id)}`,
+      path: `webPush/subscriptions/${encodeURIComponent(id)}`,
     });
   if ('serviceWorker' in navigator) {
     const registration = await navigator.serviceWorker.getRegistration(
@@ -75,10 +58,10 @@ export async function unsubscribeDevice(
     );
     await (await registration?.pushManager?.getSubscription())?.unsubscribe();
     registration?.active?.postMessage({
-      kind: options.logoutKind ?? 'webPush.logout',
+      kind: 'webPush.logout',
     });
     for (const notification of (await registration?.getNotifications?.()) ?? [])
       notification.close();
   }
-  rememberDevice(base, userId, null, options);
+  rememberDevice(base, userId, null);
 }

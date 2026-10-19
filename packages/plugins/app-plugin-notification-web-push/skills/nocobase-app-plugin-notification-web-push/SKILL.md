@@ -1,5 +1,5 @@
 ---
-name: nocobase-app-plugin-web-push
+name: nocobase-app-plugin-notification-web-push
 description: Integrate encrypted browser push subscriptions and the Web Push notification channel in a NocoBase 3 application.
 ---
 
@@ -9,4 +9,4 @@ Read this package's README before integration. Register its server plugin after 
 
 Send `title/body/url/dedupeKey` with explicit device and user recipients using the existing notification service. URLs include the application's public base path. Business authorization and foreground takeover belong to the application; use the optional named `beforeSend` hook on every attempt and never put business state into the generic channel. A missing named hook refuses delivery.
 
-An existing application's upgrade must preserve worker URL/scope and keys, reencrypt existing subscriptions with the new purpose and the same record/owner binding, verify targets before deleting the old collection, and retain the original channel/provider for already queued messages. Do not replace VAPID keys or copy bound ciphertext directly. The README documents compatibility options and the device API.
+The device API is fixed at `/api/webPush`; browser storage and logout use the framework defaults. `defineWebPushPlugin({ title, icon })` accepts application branding, and the worker remains at `<publicBasePath>/push-worker.js`. Register named `afterSubscribe` hooks on the service for application initialization after a device is saved; do not mount aliases or customize browser protocols.

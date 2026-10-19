@@ -5,18 +5,13 @@ import {
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { Hono } from 'hono';
 export interface PushWorkerOptions {
-  namespace?: string;
-  recordPrefix?: string;
   title?: string;
   icon?: string;
-  logoutKind?: string;
 }
 export function workerSource(input: PushWorkerOptions = {}): string {
   const options = {
-    namespace: 'nocobase',
-    title: 'Notification',
-    logoutKind: 'webPush.logout',
-    ...input,
+    title: input.title ?? 'Notification',
+    icon: input.icon,
   };
   return (
     `const options = ${JSON.stringify(options)};\n` +
@@ -40,7 +35,7 @@ function target(path) {
 function record(data) {
   return new Promise((resolve) => {
     const base = new URL(self.registration.scope).pathname;
-    const opening = indexedDB.open(\`\${options.namespace}:push:\${base}\`, 1);
+    const opening = indexedDB.open(\`nocobase:push:\${base}\`, 1);
     opening.onupgradeneeded = () =>
       opening.result.createObjectStore('events', { keyPath: 'id' });
     opening.onerror = () => resolve();
@@ -49,7 +44,7 @@ function record(data) {
       const tx = db.transaction('events', 'readwrite');
       const store = tx.objectStore('events');
       store.put({
-        id: \`\${options.recordPrefix}:\${base}:\${data.userId}:\${data.eventKey || data.dedupeKey}\`,
+        id: String(data.dedupeKey),
         at: Date.now(),
       });
       const request = store.getAll();
@@ -74,13 +69,13 @@ self.addEventListener('push', (event) => {
       } catch {
         /* Display a safe fallback. */
       }
-      if (options.recordPrefix) await record(data);
+      if (data.dedupeKey) await record(data);
       // WebKit requires a user-visible notification for every Push, including a foreground race.
       await self.registration.showNotification(String(data.title || options.title), {
-        tag: String(data.dedupeKey || data.eventKey || 'web-push'),
+        tag: String(data.dedupeKey || 'web-push'),
         body: String(data.body || ''),
         ...(options.icon ? { icon: new URL(options.icon, self.registration.scope).href } : {}),
-        data: { url: target(data.url || data.path) },
+        data: { url: target(data.url) },
       });
     })(),
   );
@@ -106,7 +101,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data?.kind === options.logoutKind)
+  if (event.data?.kind === 'webPush.logout')
     event.waitUntil(
       (async () => {
         await (

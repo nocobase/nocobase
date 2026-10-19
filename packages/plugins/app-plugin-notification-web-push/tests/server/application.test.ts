@@ -4,6 +4,8 @@ import { expect, vi } from 'vitest';
 import { createAppTest } from '@nocobase/app-testing/server';
 import { signIn } from '@nocobase/app-plugin-authentication/testing';
 import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
+import { webPushServiceToken } from '../../server/tokens.js';
+import type { AfterSubscribe } from '../../server/service.js';
 
 const transport = vi.hoisted(() => ({ requests: [] as string[] }));
 vi.mock('node:https', () => ({
@@ -29,8 +31,15 @@ const test = createAppTest({
 
 test('subscribes, manages and queues an encrypted test push in an application without Studio', async ({
   testApp,
+  app,
   expectCollection,
 }) => {
+  const subscribed = vi.fn<AfterSubscribe>(async () => undefined);
+  const service = app.container.resolve(webPushServiceToken);
+  const stop = service.afterSubscribe('application-baseline', subscribed);
+  expect(() =>
+    service.afterSubscribe('application-baseline', subscribed),
+  ).toThrow();
   await expectCollection('webPushSubscriptions').toHaveField(
     'subscriptionSealed',
   );
@@ -74,6 +83,10 @@ test('subscribes, manages and queues an encrypted test push in an application wi
   });
   expect(result.status).toBe(200);
   const device = (await result.json()).data;
+  expect(subscribed).toHaveBeenCalledExactlyOnceWith(
+    expect.any(String),
+    device,
+  );
   expect(JSON.stringify(device)).not.toContain(endpoint);
   const list = await (await browser.fetch('/webPush/subscriptions')).json();
   expect(list.data).toHaveLength(1);
@@ -128,6 +141,39 @@ test('subscribes, manages and queues an encrypted test push in an application wi
   expect(
     (await (await browser.fetch('/webPush/subscriptions')).json()).data,
   ).toHaveLength(1);
+  // Reidentification preserves device identity and invokes the same application initialization.
+  const subscription = {
+    endpoint,
+    keys: {
+      p256dh: pair.getPublicKey().toString('base64url'),
+      auth: randomBytes(16).toString('base64url'),
+    },
+  };
+  const ownerId = subscribed.mock.calls[0]![0];
+  expect(
+    (
+      await service.subscribe(ownerId, {
+        name: 'Test browser',
+        locale: 'en-US',
+        subscription,
+      })
+    ).id,
+  ).toBe(device.id);
+  expect(subscribed).toHaveBeenCalledTimes(2);
+  stop();
+  const saved = await service.subscribe(ownerId, {
+    name: 'Test browser',
+    locale: 'en-US',
+    subscription: {
+      endpoint,
+      keys: {
+        p256dh: pair.getPublicKey().toString('base64url'),
+        auth: randomBytes(16).toString('base64url'),
+      },
+    },
+  });
+  expect(saved.id).toBe(device.id);
+  expect(subscribed).toHaveBeenCalledTimes(2);
   const post = () =>
     browser.fetch(`/webPush/subscriptions/${device.id}/test`, {
       method: 'POST',

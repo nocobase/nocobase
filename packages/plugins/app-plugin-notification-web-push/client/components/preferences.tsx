@@ -51,21 +51,15 @@ import {
   registerWorker,
   unsubscribeDevice,
   type PushDevice,
-  type PushBrowserOptions,
 } from '../browser.js';
 
-export function PushPreferences({
-  browser = {},
-}: {
-  browser?: PushBrowserOptions;
-}): React.ReactElement | null {
-  const apiPath = browser.apiPath ?? 'webPush';
+export function PushPreferences(): React.ReactElement | null {
   const api = useApiClient();
   const { session } = useAuthentication();
   const userId = session!.user.id;
   const base = pushBase(useHref('/'));
   const { locale } = useAppLocale();
-  const { t } = useTranslation('@nocobase/app-plugin-web-push');
+  const { t } = useTranslation('@nocobase/app-plugin-notification-web-push');
   const toaster = useToaster();
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -79,7 +73,7 @@ export function PushPreferences({
     queryFn: async () =>
       (
         await api.request<{ data: PushDevice[] }>({
-          path: `${apiPath}/subscriptions`,
+          path: `webPush/subscriptions`,
         })
       ).data,
   });
@@ -88,7 +82,7 @@ export function PushPreferences({
     queryFn: async () =>
       (
         await api.request<{ data: { publicKey: string | null } }>({
-          path: `${apiPath}/key`,
+          path: `webPush/key`,
         })
       ).data.publicKey,
   });
@@ -105,7 +99,7 @@ export function PushPreferences({
       window.matchMedia('(display-mode: standalone)').matches ||
       (navigator as Navigator & { standalone?: boolean }).standalone,
   );
-  const current = currentDevice(base, userId, browser);
+  const current = currentDevice(base, userId);
   const registered = devices.data?.some((row) => row.id === current);
   async function act(work: () => Promise<void>, message: string) {
     setBusy(true);
@@ -140,7 +134,7 @@ export function PushPreferences({
         }));
       const result = await api.request<{ data: PushDevice }>({
         method: 'POST',
-        path: `${apiPath}/subscriptions`,
+        path: `webPush/subscriptions`,
         json: {
           name:
             name.trim() ||
@@ -149,7 +143,7 @@ export function PushPreferences({
           subscription: subscription.toJSON(),
         },
       });
-      rememberDevice(base, userId, result.data.id, browser);
+      rememberDevice(base, userId, result.data.id);
       await devices.refetch();
       toaster.show({ type: 'success', title: t('push.saved') });
     } catch {
@@ -255,12 +249,10 @@ export function PushPreferences({
                 void act(async () => {
                   await api.request({
                     method: 'PATCH',
-                    path: `${apiPath}/subscriptions/${device.id}`,
+                    path: `webPush/subscriptions/${device.id}`,
                     json: { enabled },
                   });
-                  window.dispatchEvent(
-                    new Event(`${browser.namespace ?? 'nocobase'}:push-device`),
-                  );
+                  window.dispatchEvent(new Event('nocobase:push-device'));
                 }, 'push.saved')
               }
             />
@@ -285,7 +277,7 @@ export function PushPreferences({
                       void act(async () => {
                         await api.request({
                           method: 'POST',
-                          path: `${apiPath}/subscriptions/${device.id}/test`,
+                          path: `webPush/subscriptions/${device.id}/test`,
                         });
                       }, 'push.testSent')
                     }
@@ -334,11 +326,11 @@ export function PushPreferences({
                 event.preventDefault();
                 void act(async () => {
                   if (remove?.id === current)
-                    await unsubscribeDevice(api, base, userId, browser);
+                    await unsubscribeDevice(api, base, userId);
                   else
                     await api.request({
                       method: 'DELETE',
-                      path: `${apiPath}/subscriptions/${remove!.id}`,
+                      path: `webPush/subscriptions/${remove!.id}`,
                     });
                   setConfirm(false);
                 }, 'push.saved');

@@ -18,7 +18,7 @@ import { PushError } from '../subscriptions.js';
 import type { PushConfig } from '../config.js';
 
 export default class WebPushProvider extends ServiceProvider<AppPluginApplication> {
-  public readonly name = '@nocobase/app-plugin-web-push';
+  public readonly name = '@nocobase/app-plugin-notification-web-push';
   public override register(): void {
     const { container } = this.app;
     container.singleton(webPushServiceToken, (resolver) =>

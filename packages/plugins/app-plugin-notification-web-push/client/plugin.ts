@@ -6,7 +6,7 @@ import {
 import locales from './locales/index.js';
 
 const webPush: AppClientPluginFactory = defineClientPlugin({
-  packageName: '@nocobase/app-plugin-web-push',
+  packageName: '@nocobase/app-plugin-notification-web-push',
   locales,
 });
 

@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/app-plugin-web-push",
+  "name": "@nocobase/app-plugin-notification-web-push",
   "displayName": "Web Push App Plugin",
   "description": "Web Push App Plugin.",
   "version": "0.0.1",

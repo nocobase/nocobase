@@ -4,7 +4,7 @@ import { describeMigration } from '@nocobase/app-testing/server';
 describeMigration('202610240051_web_push_subscriptions', {
   sources: [
     {
-      packageName: '@nocobase/app-plugin-web-push',
+      packageName: '@nocobase/app-plugin-notification-web-push',
       directory: fileURLToPath(
         new URL('../../database/migrations', import.meta.url),
       ),

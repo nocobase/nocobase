@@ -8,6 +8,8 @@ import {
   PushError,
   type Subscriptions,
   type SubscriptionRow,
+  type SubscriptionInputValue,
+  type Device,
 } from './subscriptions.js';
 
 export interface WebPushMessage {
@@ -35,10 +37,9 @@ export type BeforePush = (
   input: PreparedPush,
   device: SubscriptionRow,
   signal: AbortSignal,
-) => Promise<
-  | false
-  | (Partial<Omit<WebPushMessage, 'to' | 'beforeSend'>> & { payload?: object })
->;
+) => Promise<false | Partial<Omit<WebPushMessage, 'to' | 'beforeSend'>>>;
+/** Runs after an authenticated device subscription has been saved. */
+export type AfterSubscribe = (userId: string, device: Device) => Promise<void>;
 export interface WebPushDependencies {
   subscriptions: Subscriptions;
   notifications: () => NotificationService;
@@ -62,6 +63,8 @@ export function pushTarget(value: string, base: string): string {
 export interface WebPushService {
   readonly subscriptions: Subscriptions;
   beforeSend(name: string, hook: BeforePush): () => void;
+  afterSubscribe(name: string, hook: AfterSubscribe): () => void;
+  subscribe(userId: string, input: SubscriptionInputValue): Promise<Device>;
   test(userId: string, id: string): Promise<void>;
   deliver(
     input: PreparedPush,
@@ -72,9 +75,26 @@ export function createWebPushService(
   deps: WebPushDependencies,
 ): WebPushService {
   const hooks = new Map<string, BeforePush>();
+  const subscribed = new Map<string, AfterSubscribe>();
   const testing = new Map<string, number>();
   return {
     subscriptions: deps.subscriptions,
+    afterSubscribe(name: string, hook: AfterSubscribe): () => void {
+      if (subscribed.has(name))
+        throw new Error('Duplicate Web Push subscription hook.');
+      subscribed.set(name, hook);
+      return () => {
+        subscribed.delete(name);
+      };
+    },
+    async subscribe(
+      userId: string,
+      input: SubscriptionInputValue,
+    ): Promise<Device> {
+      const device = await deps.subscriptions.save(userId, input);
+      for (const hook of subscribed.values()) await hook(userId, device);
+      return device;
+    },
     beforeSend(name: string, hook: BeforePush): () => void {
       if (hooks.has(name)) throw new Error('Duplicate Web Push hook.');
       hooks.set(name, hook);
@@ -115,7 +135,6 @@ export function createWebPushService(
       );
       if (!row?.enabled) return { status: 'accepted' };
       let message = input.message;
-      let extra: object = {};
       if (message.beforeSend) {
         const hook = hooks.get(message.beforeSend.name);
         if (!hook)
@@ -129,7 +148,6 @@ export function createWebPushService(
           };
         const prepared = await hook(input, row, signal);
         if (prepared === false) return { status: 'accepted' };
-        extra = prepared.payload ?? {};
         message = { ...message, ...prepared };
       }
       if (signal.aborted)
@@ -143,7 +161,6 @@ export function createWebPushService(
         const status = await deps.transport(
           deps.subscriptions.open(row),
           {
-            ...extra,
             title: message.title,
             body: message.body ?? '',
             url,
