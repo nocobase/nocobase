@@ -24,7 +24,7 @@ Projects, issues, fixed statuses, labels and members for a NocoBase application.
   also do work (`work`, an `IssueWorkHandler`, `server/kernel/work.ts`): unless a plugin binds `projectsTriggersToken`,
   every change, comment and release is handed, in its transaction, to the work handler of each kind it concerns (the
   executor before and after, the kinds a comment mentions or answers), which answers what it started (`RunAttempt[]`;
-  `collectRunAttempts` gathers them around a call). A handler asks `projects.subtasks.blockersOf` whether the issue
+  `collectRunAttempts` gathers them around a call). A handler that opts into `observesIssueChanges` also receives creations and updates with an empty or different executor kind, once per change. Service writes pass their already authorized viewer to the observer, so nested routing need not acquire a second connection for permission reads. Issue responses and update events use the final snapshot after these transactional handlers. Creation in `in_progress` or a transition into it starts work; there is no separate start option. A handler asks `projects.subtasks.blockersOf` whether the issue
   waits for unfinished issues and then starts nothing (`skipped: 'blocked'`); it starts nothing either for an issue in
   backlog (`BACKLOG_STATUS`, `skipped: 'dormant'`), or for a principal's comment past a limit the kind keeps
   (`skipped: 'limited'`). A comment of anyone but the system reaches the handlers, with the person it

@@ -56,23 +56,15 @@ import {
   type IssueTriggers,
 } from './ports.js';
 
-/** Whether a change may start work now; the client asks when it would. */
-interface StartOption {
-  readonly start?: boolean;
-}
-
 /** The issue after an update. */
 export type IssueUpdateOutcome = Issue;
 
 export interface IssueService {
-  create(
-    viewer: Viewer,
-    input: CreateIssueRequest & StartOption,
-  ): Promise<Issue>;
+  create(viewer: Viewer, input: CreateIssueRequest): Promise<Issue>;
   update(
     viewer: Viewer,
     idOrKey: string,
-    patch: UpdateIssueRequest & StartOption,
+    patch: UpdateIssueRequest,
   ): Promise<IssueUpdateOutcome>;
   remove(viewer: Viewer, idOrKey: string): Promise<void>;
   /**
@@ -214,12 +206,14 @@ export function createIssueService(deps: IssueDeps): IssueService {
     before: Issue,
     after: Issue,
     actor: Actor,
-    start: boolean,
     ownerClaimed = false,
-  ): Promise<void> {
+    viewer?: Viewer,
+  ): Promise<Issue> {
     await deps
       .triggers()
-      .onIssueChanged(tx, { before, after, actor, start, ownerClaimed });
+      .onIssueChanged(tx, { before, after, actor, ownerClaimed, viewer });
+    // Work handlers can route the issue again in this transaction. Publish only its final state.
+    after = await reload(tx, after.id);
     await deps.relations().changed(tx, { before, after, actor });
     const moved =
       before.projectId !== after.projectId ||
@@ -242,6 +236,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
         changes,
         revision: after.revision,
       });
+    return after;
   }
 
   const service: IssueService = {
@@ -329,9 +324,9 @@ export function createIssueService(deps: IssueDeps): IssueService {
         await deps.relations().created(tx, issue, values.blockedBy, viewer);
         await deps.triggers().onIssueChanged(tx, {
           before: null,
+          viewer,
           after: issue,
           actor: viewer.actor,
-          start: input.start !== false,
         });
         tx.emit({ type: 'issue.changed', issueId: id });
         tx.emit({
@@ -340,7 +335,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
           actor: eventActor(viewer.actor),
           mentions: mentions(values.description),
         });
-        return issue;
+        return reload(tx, id);
       });
     },
 
@@ -414,16 +409,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
         if (!written) return before;
         const after = await reload(tx, before.id);
         if (placed) await deps.relations().placed(tx, after);
-        await announce(
-          tx,
-          before,
-          after,
-          viewer.actor,
-          patch.start !== false,
-          ownerClaimed,
-        );
-        // Work hooks may update the issue again within this transaction.
-        return reload(tx, before.id);
+        return announce(tx, before, after, viewer.actor, ownerClaimed, viewer);
       });
     },
 
@@ -499,7 +485,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
           message: error.message,
         };
       }
-      await announce(tx, issue, await reload(tx, issue.id), recorded, true);
+      await announce(tx, issue, await reload(tx, issue.id), recorded);
       return { issueId: issue.id, outcome: 'moved', from: issue.statusKey, to };
     },
 
@@ -526,13 +512,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
             reason: 'executorRemoved',
             name: cause.name,
           });
-          await announce(
-            tx,
-            before,
-            await reload(tx, before.id),
-            cause.actor,
-            false,
-          );
+          await announce(tx, before, await reload(tx, before.id), cause.actor);
           released.push(before.id);
         }
         return released;

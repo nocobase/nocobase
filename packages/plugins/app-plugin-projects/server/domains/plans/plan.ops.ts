@@ -264,12 +264,10 @@ const SHAPES = {
     ...ISSUE_FIELDS,
     title: req('string'),
     blockedBy: opt('targets'),
-    start: opt('boolean'),
   },
   'issue.update': {
     issue: req('target'),
     set: req('object'),
-    start: opt('boolean'),
   },
   'comment.create': {
     issue: req('target'),
@@ -474,7 +472,6 @@ const issueUpdate: OpDefinition = {
       ...rest,
       ...(parent === undefined ? {} : { parentIssueId: parent }),
       ...(project === undefined ? {} : { projectId: project }),
-      ...(params.start === undefined ? {} : { start: params.start }),
       revision: before.revision,
     });
     const flags: PlanRiskFlag[] = [];
