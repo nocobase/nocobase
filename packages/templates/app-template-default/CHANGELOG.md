@@ -1,5 +1,13 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.71
+
+### Patch Changes
+
+- 6fffa85: Improve permission workspace alignment and responsive density, clarify Chinese data scope labels, and preserve existing policies and unrecognized scope configurations during editing. Deduplicate inherited page permissions by resource identity so one grant is displayed and counted once.
+- Updated dependencies [22717d7]
+  - @nocobase/app-server@2.0.0-beta.9
+
 ## 1.0.0-beta.70
 
 ### Patch Changes
