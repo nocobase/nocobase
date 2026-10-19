@@ -349,7 +349,7 @@ const enUS = {
   },
   aiTranslation: {
     title: 'AI Translation',
-    description: 'Translate text with OnlineAgent.background.',
+    description: 'Translate naturally. Keep the meaning.',
     model: 'Language model',
     selectModel: 'Select a model',
     translate: 'Translate',
@@ -376,6 +376,27 @@ const enUS = {
     signIn: 'Sign in again',
     retry: 'Retry',
     success: 'Translation complete',
+    workspace: 'Translation workspace',
+    swap: 'Swap languages',
+    clear: 'Clear',
+    copy: 'Copy',
+    copied: 'Translation copied',
+    copyFailed: 'Could not copy. Select the translation and copy it manually.',
+    tryExample: 'Try an example',
+    examples: {
+      product: {
+        title: 'Product introduction',
+        text: 'NocoBase is an extensible application development platform that helps teams build and deliver business applications faster.',
+      },
+      email: {
+        title: 'Business email',
+        text: 'Hello, thank you for your interest in our product. We would like to invite you to an online demo next Wednesday to explore how it can help your team work more efficiently. We look forward to hearing from you.',
+      },
+      notice: {
+        title: 'Event announcement',
+        text: 'Join us this Friday at 3 p.m. for a product discussion. Bring your ideas and explore new possibilities with the team.',
+      },
+    },
     languages: {
       auto: 'Detect language',
       'zh-CN': 'Simplified Chinese',

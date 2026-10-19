@@ -121,7 +121,7 @@ const zhCN: AppResource = {
   },
   aiTranslation: {
     title: 'AI 翻译',
-    description: '使用 OnlineAgent.background 将文本翻译为指定语言。',
+    description: '跨越语言，保留原意。',
     model: '大语言模型',
     selectModel: '选择模型',
     translate: '翻译',
@@ -145,6 +145,27 @@ const zhCN: AppResource = {
     signIn: '重新登录',
     retry: '重试',
     success: '翻译完成',
+    workspace: '翻译工作区',
+    swap: '交换语言',
+    clear: '清空',
+    copy: '复制',
+    copied: '译文已复制',
+    copyFailed: '复制失败，请选中译文后复制。',
+    tryExample: '试试示例',
+    examples: {
+      product: {
+        title: '产品介绍',
+        text: 'NocoBase 是一个可扩展的应用开发平台，让团队更快地构建和交付业务应用。',
+      },
+      email: {
+        title: '商务邮件',
+        text: '您好，感谢您对我们产品的关注。我们想邀请您在下周三参加一次线上演示，了解产品如何帮助您的团队提高工作效率。期待您的回复。',
+      },
+      notice: {
+        title: '活动通知',
+        text: '本周五下午三点，我们将举办产品交流会。欢迎带上您的想法，与团队一起探索更多可能。',
+      },
+    },
     languages: {
       auto: '自动检测',
       'zh-CN': '简体中文',
