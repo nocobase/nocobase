@@ -63,9 +63,9 @@ import {
 } from './message-model.js';
 
 /** How often an open conversation with a run is fetched when no announcement comes. */
-export const CHAT_POLL_MS = 5000;
-/** How often while an online agent's reply is being written, so it grows even without announcements. */
-export const CHAT_STREAM_POLL_MS = 1000;
+export const CHAT_POLL_MS = 60_000;
+/** Reconcile an interrupted stream; realtime announces persisted message revisions promptly. */
+export const CHAT_STREAM_POLL_MS = 60_000;
 
 export function useChatApi(): ChatApi {
   const api = useApiClient();
@@ -292,7 +292,9 @@ export function useConversationMessages(
   useEffect(() => {
     if (!(polling || streaming) || !conversationId) return undefined;
     const timer = window.setInterval(
-      fetchNewer,
+      () => {
+        if (!document.hidden) fetchNewer();
+      },
       streaming ? CHAT_STREAM_POLL_MS : CHAT_POLL_MS,
     );
     return () => window.clearInterval(timer);

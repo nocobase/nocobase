@@ -123,7 +123,11 @@ export class DefaultJobExampleService implements JobExampleService {
   }
 
   private publish(owned: OwnedTask): void {
-    this.topic()?.publishFor(owned.userId, owned.task);
+    void this.topic()
+      ?.publishFor(owned.userId, owned.task)
+      .catch((error: unknown) =>
+        console.error('Realtime announcement failed.', error),
+      );
   }
 }
 

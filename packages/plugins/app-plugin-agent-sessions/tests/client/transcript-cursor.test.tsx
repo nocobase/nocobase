@@ -288,7 +288,7 @@ it('recovers a preceding streamed tail through the actual compensation polling c
     expect(client.getQueryData<TranscriptEvent[]>(key)?.at(-1)?.seq).toBe(3),
   );
   const poll = intervals.mock.calls
-    .filter(([, ms]) => ms === 15000)
+    .filter(([, ms]) => ms === 60_000)
     .at(-1)?.[0];
   expect(typeof poll).toBe('function');
   await act(async () => {
@@ -310,7 +310,10 @@ it('reconnect re-reads a preceding streamed event after a confirmation', async (
   const opened = new Set<() => void>();
   const afters: number[] = [];
   let complete = false;
-  const realtime: RealtimeClient = {
+  const realtime: Pick<
+    RealtimeClient,
+    'subscribe' | 'onOpen' | 'onError' | 'connected' | 'reconnect' | 'close'
+  > = {
     connected: true,
     subscribe: () => () => {},
     onOpen: (listener) => {
@@ -335,8 +338,21 @@ it('reconnect re-reads a preceding streamed event after a confirmation', async (
       services: (app) => {
         const actual = app.container.resolve(realtimeClientToken);
         vi.spyOn(actual, 'connected', 'get').mockReturnValue(true);
-        vi.spyOn(actual, 'subscribe').mockImplementation(realtime.subscribe);
-        vi.spyOn(actual, 'onOpen').mockImplementation(realtime.onOpen);
+        vi.spyOn(actual, 'watch').mockImplementation((topic, options) => {
+          const stop = realtime.subscribe(topic, (event) =>
+            options?.onEvent?.(event),
+          );
+          const stopReady = realtime.onOpen(() => options?.onReady?.());
+          return {
+            state: 'subscribed',
+            error: undefined,
+            retry: () => {},
+            close: () => {
+              stop();
+              stopReady();
+            },
+          };
+        });
       },
       fetch: answerApi(({ method, query }) => {
         if (method === 'POST') {

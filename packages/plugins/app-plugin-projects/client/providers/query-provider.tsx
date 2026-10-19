@@ -1,5 +1,7 @@
 import {
   ApiClientError,
+  createRealtimeRefresh,
+  refreshRealtimeQueries,
   realtimeClientToken,
   useService,
 } from '@nocobase/app-client';
@@ -50,41 +52,79 @@ function RealtimeRefresh(): null {
   const realtime = useService(realtimeClientToken);
   const queryClient = useQueryClient();
   useEffect(() => {
-    const refreshAll = () =>
-      void queryClient.invalidateQueries({ queryKey: pmKeys.all });
-    const unsubscribeOpen = realtime.onOpen(refreshAll);
-    const unsubscribeTopic = realtime.subscribe<unknown>(
-      PM_REALTIME_TOPIC,
-      ({ payload }) => {
-        if (!isChange(payload)) return;
-        if (payload.domain === 'labels') {
-          void queryClient.invalidateQueries({ queryKey: pmKeys.labels });
+    let full = false;
+    let pending: PmChangeEvent[] = [];
+    const scheduled = createRealtimeRefresh(async (signal) => {
+      const all = full;
+      const changes = pending;
+      full = false;
+      pending = [];
+      try {
+        if (all || changes.length === 0) {
+          await refreshRealtimeQueries(
+            queryClient,
+            { queryKey: pmKeys.all },
+            signal,
+          );
           return;
         }
-        // Plan cards and lists; executing or undoing a plan changes issues too, which the issues' own events announce.
-        if (payload.domain === 'plans') {
-          void queryClient.invalidateQueries({ queryKey: ['pm', 'plans'] });
-          return;
+        const requests: Promise<void>[] = [];
+        const invalidate = (queryKey: readonly unknown[]) => {
+          requests.push(
+            refreshRealtimeQueries(queryClient, { queryKey }, signal),
+          );
+        };
+        if (changes.some((change) => change.domain === 'labels'))
+          invalidate(pmKeys.labels);
+        if (changes.some((change) => change.domain === 'plans'))
+          invalidate(['pm', 'plans']);
+        const issues = changes.filter((change) => change.domain === 'issues');
+        if (issues.length) {
+          invalidate(pmKeys.issues);
+          const named = issues.map(announcedIssueIds);
+          if (named.some((ids) => !ids)) {
+            invalidate(pmKeys.projects);
+            invalidate(['pm', 'issue']);
+          } else {
+            const ids = new Set(named.flatMap((ids) => (ids ? [...ids] : [])));
+            const segments = changedIssueSegments(queryClient, ids);
+            requests.push(
+              refreshRealtimeQueries(
+                queryClient,
+                {
+                  queryKey: ['pm', 'issue'],
+                  predicate: (query) => isIssueRead(query.queryKey, segments),
+                },
+                signal,
+              ),
+            );
+          }
         }
-        // Issue changes also move lists; an issue's own reads refresh only for the issues named. Projects count their
-        // issues by status, which only an announcement that names no issues can change (`PmChangeEvent.issueIds`).
-        void queryClient.invalidateQueries({ queryKey: pmKeys.issues });
-        const named = announcedIssueIds(payload);
-        if (!named) {
-          void queryClient.invalidateQueries({ queryKey: pmKeys.projects });
-          void queryClient.invalidateQueries({ queryKey: ['pm', 'issue'] });
-          return;
-        }
-        const segments = changedIssueSegments(queryClient, named);
-        void queryClient.invalidateQueries({
-          queryKey: ['pm', 'issue'],
-          predicate: (query) => isIssueRead(query.queryKey, segments),
-        });
+        await Promise.all(requests);
+      } catch (error) {
+        // A later event must not replace the snapshots that still need recovery.
+        full = true;
+        throw error;
+      }
+    });
+    const subscription = realtime.watch<unknown>(PM_REALTIME_TOPIC, {
+      onReady: () => {
+        full = true;
+        scheduled.retry();
       },
-    );
+      onEvent: ({ payload }) => {
+        if (!isChange(payload)) return;
+        if (pending.length < 100) pending.push(payload);
+        else {
+          full = true;
+          pending = [];
+        }
+        scheduled.request();
+      },
+    });
     return () => {
-      unsubscribeTopic?.();
-      unsubscribeOpen?.();
+      subscription.close();
+      scheduled.close();
     };
   }, [realtime, queryClient]);
   return null;

@@ -1,5 +1,19 @@
 # @nocobase/app-server
 
+## 3.0.0-beta
+
+### Major Changes
+
+- Require declared realtime topics and asynchronous publication, subscription authorization and shutdown. Extract the core into `@nocobase/realtime/server`; retain the application service tokens and adapter entry points. Publication receipts contain an event ID instead of a local subscriber count.
+
+## 2.0.0-beta.9
+
+### Patch Changes
+
+- 22717d7: Support synchronous custom driver factories alongside existing configuration objects in `drive.disks`. Create drivers lazily through the shared application Drive provider, preserve Flydrive caching and fakes, and reject factory references where release artifacts require serializable Host configuration. Ship the `nocobase-drive` Skill with filesystem, S3, native Aliyun OSS, and custom driver guides, and direct application guidance to that shared documentation. Consumers reading disk configuration fields must narrow out factory functions first.
+- Updated dependencies [22717d7]
+  - @nocobase/drive@0.1.0-beta.7
+
 ## 2.0.0-beta.8
 
 ### Patch Changes

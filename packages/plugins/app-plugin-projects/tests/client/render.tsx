@@ -12,11 +12,11 @@ export function renderAt(
   routes: { readonly path: string; readonly element: ReactElement }[],
   /** Pages visited before `path`, oldest first; with them, `history-back` goes back like the browser. */
   history: readonly string[] = [],
-): RenderResult {
+): RenderResult & { queryClient: QueryClient } {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  const view = render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[...history, path]}>
         <Routes>
@@ -29,4 +29,5 @@ export function renderAt(
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return { ...view, queryClient: client };
 }

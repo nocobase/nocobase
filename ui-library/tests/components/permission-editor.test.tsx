@@ -475,3 +475,65 @@ it('aligns semantic actions across resources without dropping special or filtere
     view.container.querySelectorAll('[data-slot=permission-row]'),
   ).toHaveLength(1);
 });
+
+it('keeps scope captions consistent in a category with multiple data ranges, including when filtered', async () => {
+  const level = [{ value: 'all', label: 'All records' }];
+  render(
+    <PermissionEditor
+      sections={[
+        {
+          id: 'business',
+          title: 'Business',
+          groups: [
+            {
+              id: 'quotes',
+              title: 'Quotes',
+              rows: [
+                {
+                  id: 'view',
+                  label: 'View quotes',
+                  enabled: true,
+                  scopes: [
+                    {
+                      id: 'view-records',
+                      label: 'Visible quotes',
+                      level: 'all',
+                      levels: level,
+                    },
+                  ],
+                },
+                {
+                  id: 'submit',
+                  label: 'Submit quote',
+                  enabled: true,
+                  scopes: [
+                    {
+                      id: 'submit-projects',
+                      label: 'Linked projects',
+                      level: 'all',
+                      levels: level,
+                    },
+                    {
+                      id: 'submit-quotes',
+                      label: 'Allowed quotes',
+                      level: 'all',
+                      levels: level,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ]}
+      onEnabledChange={vi.fn()}
+      onLevelChange={vi.fn()}
+    />,
+  );
+  expect(screen.getByText('Visible quotes')).toBeVisible();
+  expect(screen.getByText('Linked projects')).toBeVisible();
+  expect(screen.getByText('Allowed quotes')).toBeVisible();
+  await userEvent.type(screen.getByRole('textbox'), 'View quotes');
+  expect(screen.queryByText('Linked projects')).not.toBeInTheDocument();
+  expect(screen.getByText('Visible quotes')).toBeVisible();
+});

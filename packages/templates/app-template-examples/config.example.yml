@@ -22,6 +22,26 @@
 #     max: 600
 #     window: 1m
 
+# Realtime events are transient and local to this process. Clients refetch after subscription acknowledgement.
+# realtime:
+#   adapter: inMemory # Use redis for multiple application processes.
+#   redis:
+#     connection:
+#       host: 127.0.0.1
+#       port: 6379
+#   namespace: my-app # Defaults to the application name; keep applications isolated.
+#   authorizationTimeoutMs: 5000
+#   sessionCheckIntervalMs: 30000
+#   limits:
+#     maxConcurrentAuthorizations: 256
+#     maxPendingAuthorizations: 2048
+#     maxRecentEventIds: 10000
+#     maxConnections: 10000
+#     maxMessageBytes: 65536
+#     maxSubscriptionsPerConnection: 64
+#     maxBufferedBytesPerConnection: 1048576
+#     maxPendingMessagesPerConnection: 64
+
 # Values under client are public and embedded in the SPA HTML.
 client:
   app:
