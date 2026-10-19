@@ -1,0 +1,6 @@
+---
+"@nocobase/lifecycle": minor
+"@nocobase/app-plugin-lifecycle-example": patch
+---
+
+Add committed record-change notifications for effect and continuation updates, a cancellable snapshot refresh API, and event-driven Lifecycle examples with serialized retries and periodic reconciliation. Preserve existing transition events and the React hook's default polling behavior.

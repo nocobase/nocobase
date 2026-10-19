@@ -80,6 +80,7 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
   private flows: DurableFlowService | undefined;
   private sandboxInstance: Sandbox | undefined;
   private changes: RealtimePublicTopic<LifecycleChange> | undefined;
+  private releaseChanges: (() => void) | undefined;
 
   public override register(): void {
     this.app.container.singleton(parameterConfigurationServiceToken, () => {
@@ -126,8 +127,7 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
 
   public override async start(): Promise<void> {
     // The pages reload when told a record changed instead of asking every
-    // few seconds. An application without realtime still works; its pages
-    // then reload only after their own actions.
+    // few seconds. A periodic snapshot also recovers missed notifications.
     if (this.app.container.has(realtimeServiceToken))
       this.changes = this.app.container
         .resolve(realtimeServiceToken)
@@ -135,12 +135,20 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
           audience: 'public',
         });
     const runtime = this.lifecycleRuntime();
+    this.releaseChanges = runtime.onChange({}, (change) => {
+      this.publishChange({
+        lifecycle: change.lifecycle,
+        recordId: String(change.recordId),
+      });
+    });
     await this.effectJobs().start(runtime);
   }
 
   public override async shutdown(): Promise<void> {
     await this.jobs?.shutdown();
     this.jobs = undefined;
+    this.releaseChanges?.();
+    this.releaseChanges = undefined;
     this.changes?.close();
     this.changes = undefined;
   }
@@ -243,10 +251,6 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
     // Another plugin would subscribe the same way, to refresh a page, keep a
     // to-do list or feed a search index; work that must happen is an effect.
     runtime.on('completed', {}, (event) => {
-      this.publishChange({
-        lifecycle: event.lifecycle,
-        recordId: String(event.entry.recordId),
-      });
       logger.info(
         {
           lifecycle: event.lifecycle,
