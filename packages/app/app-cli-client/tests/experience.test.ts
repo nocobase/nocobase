@@ -43,8 +43,7 @@ describe('CLI experience', () => {
       },
     },
     {
-      message:
-        'Create the issue with --status in_progress to start work.',
+      message: 'Create the issue with --status in_progress to start work.',
     },
   ])(
     'preserves API advice in JSON and terminal output: $message',
