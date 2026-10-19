@@ -7,9 +7,10 @@
  * with it) or by a download token (`HEADERS.downloadToken`: the CLI for one platform, a few downloads within 30
  * minutes), or a signed-in person. Nothing here is public: the install script itself is, from `install.ts`.
  *
- * `POST /downloadTokens` mints a download token for any signed-in person (a session or a personal API key; scoped
- * keys are refused): it reaches nothing the person could not download themselves, and lets a machine where nobody is
- * signed in yet install the CLI, after which `acme login` signs it in as that person.
+ * `POST /downloadTokens` (`acme install-token create`) mints a download token for any signed-in person (a session or a
+ * personal API key; scoped keys are refused): it reaches nothing the person could not download themselves, and lets a
+ * machine where nobody is signed in yet install the CLI. It is no sign-in: that machine then signs in or uses an API
+ * key of its own.
  */
 import { Readable } from 'node:stream';
 
@@ -183,10 +184,13 @@ export function createDistRoutes(
         tags,
         summary: 'Create a CLI download token',
         operationId: 'agentsCreateDistDownloadToken',
-        // Minted by the page that shows the install prompt; a signed-in CLI has no use for one.
-        ...cliRoute(false),
+        // A signed-in CLI hands one to another machine that has no browser, as the install prompt's page does.
+        ...cliRoute({
+          command: 'install-token create',
+          examples: ['install-token create --json'],
+        }),
         description:
-          'A short-lived token the install script downloads the application CLI with (`curl -fsSL <server>/api/agents/dist/installScript | sh -s -- --token <token>`) on a machine where nobody is signed in yet; it is shown only in this answer. It downloads only the CLI, for the platform of its first request, a few times within 30 minutes, and registers no runner. Any signed-in person may create one: it reaches nothing they could not download themselves. Scoped API keys are refused (`SCOPED_KEY_FORBIDDEN`).',
+          'A short-lived download token the install script downloads the application CLI with (`curl -fsSL <server>/api/agents/dist/installScript | sh -s -- --token <token>`) on another machine where nobody is signed in, such as a server without a browser; it is shown only in this answer and is never cached. It downloads only the CLI: for the platform of its first request, at most three tarball downloads (retries included) within 30 minutes. It does not sign anyone in, calls no other route and registers no runner, so the machine still needs a credential of its own, such as an API key, to use the CLI. Any signed-in person may create one, from a session or a personal API key: it reaches nothing they could not download themselves. Scoped API keys, service-account keys and run tokens are refused (`SCOPED_KEY_FORBIDDEN`).',
         responses: {
           201: dataResponse(DownloadTokenSchema, 'Created.'),
           ...apiErrorResponses,
@@ -197,6 +201,7 @@ export function createDistRoutes(
         return context.json(
           { data: await services.downloadTokens.create(caller.userId) },
           201,
+          { 'cache-control': 'no-store' },
         );
       },
     );
