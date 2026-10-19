@@ -1650,7 +1650,7 @@ describe('attachments over HTTP', () => {
     expect(h.stored.size).toBe(1);
   });
 
-  it('keeps uploads after a refused start and attaches them on retry', async () => {
+  it('keeps uploads after a refused initial status and attaches them on retry', async () => {
     const shot = await upload(
       '/attachments',
       new File([new Uint8Array([137, 80])], 'screenshot.png', {
@@ -1663,13 +1663,13 @@ describe('attachments over HTTP', () => {
       method: 'POST',
       body: JSON.stringify({
         title: 'Broken',
-        start: true,
+        statusKey: 'blocked',
         attachmentIds: [file.id],
       }),
     });
     expect(refused.status).toBe(400);
     expect(await refused.json()).toMatchObject({
-      error: { reason: 'ISSUE_START_REQUIRES_IN_PROGRESS' },
+      error: { reason: 'INVALID_STATUS' },
     });
     const created = await call('/issues', {
       role: 'member',
@@ -1677,7 +1677,6 @@ describe('attachments over HTTP', () => {
       body: JSON.stringify({
         title: 'Broken',
         statusKey: 'in_progress',
-        start: true,
         attachmentIds: [file.id],
       }),
     });
