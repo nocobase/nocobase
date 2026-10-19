@@ -819,3 +819,55 @@ it('continues approval on its stable assistant while later independent notificat
   expect(f.controller.state('c1')?.error).toBeUndefined();
   expect(f.stream).toHaveBeenCalledOnce();
 });
+
+it('does not attach recovery after a new send starts during the history read', async () => {
+  const f = fixture();
+  let release!: (page: Awaited<ReturnType<typeof f.api.messages>>) => void;
+  const history = vi.spyOn(f.api, 'messages').mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+  );
+  const transport = f.stream.getMockImplementation()!;
+  f.stream.mockImplementation(async (options) =>
+    (options as { method?: string }).method === 'GET'
+      ? sdkResponse().body!
+      : transport(options),
+  );
+  const recovering = f.controller.resume('c1');
+  await vi.waitFor(() => expect(history).toHaveBeenCalledOnce());
+  const output = f.output();
+  const sending = f.controller.chat('c1').sendMessage({
+    id: 'new-input',
+    role: 'user',
+    parts: [{ type: 'text', text: 'Continue' }],
+  });
+  await vi.waitFor(() => expect(output.attached).toBe(true));
+  output.emit({
+    type: 'start',
+    messageId: 'new-answer',
+    messageMetadata: metadata,
+  });
+  output.emit({ type: 'text-start', id: 'part' });
+  output.emit({ type: 'text-delta', id: 'part', delta: 'A' });
+  await vi.waitFor(() =>
+    expect(f.controller.chat('c1').status).toBe('streaming'),
+  );
+  release({ items: [], lastSeq: 0, nextCursor: null, hasMore: false });
+  await recovering;
+  expect(
+    f.stream.mock.calls.map((call) => (call[0] as { method: string }).method),
+  ).toEqual(['POST']);
+  expect(f.controller.chat('c1').status).toBe('streaming');
+  output.emit({ type: 'text-delta', id: 'part', delta: 'B' });
+  await vi.waitFor(() =>
+    expect(appUIMessageText(f.controller.chat('c1').messages.at(-1)!)).toBe(
+      'AB',
+    ),
+  );
+  output.emit({ type: 'text-end', id: 'part' });
+  output.emit({ type: 'finish' });
+  output.close();
+  await sending;
+});

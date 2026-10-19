@@ -506,11 +506,17 @@ export class ChatController {
     let chat = this.chat(id);
     if (chat.status === 'submitted' || chat.status === 'streaming') return;
     const active = this.lifetime();
+    const canResume = () =>
+      active() &&
+      this.chats.get(id) === chat &&
+      chat.status !== 'submitted' &&
+      chat.status !== 'streaming';
     const task = (async () => {
       let interrupted: AppUIMessage | undefined;
       try {
         await this.loadHistory(id);
-        if (!active()) return;
+        // A new input can begin while the recovery snapshot is still being read.
+        if (!canResume()) return;
         if (chat.error) {
           const previous = chat;
           interrupted = [...previous.messages]
@@ -527,7 +533,7 @@ export class ChatController {
             )
           ) {
             const saved = await this.reread(id, [interrupted.id]);
-            if (!active()) return;
+            if (!canResume()) return;
             if (!saved.some((message) => message.id === interrupted!.id))
               previous.messages = previous.messages.filter(
                 (message) => message.id !== interrupted!.id,
@@ -546,7 +552,7 @@ export class ChatController {
         await chat.resumeStream();
         if (active()) await this.refresh(id);
       } catch (error) {
-        if (active())
+        if (canResume())
           this.recoveryErrors.set(
             id,
             error instanceof Error
@@ -558,6 +564,7 @@ export class ChatController {
           const display = interrupted;
           if (
             display &&
+            canResume() &&
             !chat.messages.some((message) => message.id === display.id)
           )
             chat.messages = mergeUIMessages(chat.messages, [display]);
