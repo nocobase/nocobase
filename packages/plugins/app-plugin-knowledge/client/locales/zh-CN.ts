@@ -279,6 +279,7 @@ const zhCN: KnowledgeClientResource = {
       reload: '重新加载',
     },
     history: {
+      by: '由 {{name}}',
       title: '历史',
       current: '当前',
       fromProposal: '来自提议',

@@ -225,7 +225,11 @@ export class DefaultScheduleExampleService implements ScheduleExampleService {
   }
 
   private publish(name: string): void {
-    this.topic()?.publish({ name });
+    void this.topic()
+      ?.publish({ name })
+      .catch((error: unknown) =>
+        console.error('Realtime announcement failed.', error),
+      );
   }
 
   private upsertRun(

@@ -56,6 +56,17 @@ describe('@nocobase/app-plugin-authorization client', () => {
     });
     const realtime = {
       connected: false,
+      active: false,
+      ready: false,
+      state: 'idle',
+      onReady: vi.fn(() => vi.fn()),
+      onStateChange: vi.fn(() => vi.fn()),
+      watch: vi.fn(() => ({
+        state: 'pending' as const,
+        error: undefined,
+        retry: vi.fn(),
+        close: vi.fn(),
+      })),
       subscribe: vi.fn(() => vi.fn()),
       onOpen: vi.fn(() => vi.fn()),
       onError: vi.fn(() => vi.fn()),
@@ -76,7 +87,7 @@ describe('@nocobase/app-plugin-authorization client', () => {
     expect(container.resolve(authorizationClientToken)).toBeInstanceOf(
       AuthorizationClient,
     );
-    expect(realtime.subscribe).toHaveBeenCalledTimes(2);
+    expect(realtime.watch).toHaveBeenCalledTimes(2);
     expect(realtime.onOpen).toHaveBeenCalledOnce();
 
     const can = (check: AuthorizationCheck) =>

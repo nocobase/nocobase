@@ -34,6 +34,8 @@ export interface KnowledgeSectionState {
 
 /** The application's semantic index, as the knowledge base asks it about its sections. */
 export interface KnowledgeIndexer {
+  /** Optional committed progress/completion notifications; return an unsubscribe callback. */
+  onChange?(listener: (docId: string) => void): () => void;
   /** The state of each section that has one, keyed `<docId>:<ordinal>`; null while semantic search is off. */
   states(
     sections: readonly { readonly docId: string; readonly ordinal: number }[],

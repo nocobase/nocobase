@@ -989,9 +989,9 @@ describe('pushes instead of polling', () => {
       defineTopic: (topic: string) => {
         topics.push(topic);
         return {
-          publish: (payload: unknown) => {
+          publish: async (payload: unknown) => {
             published.push(payload);
-            return { topic, subscriberCount: 1 };
+            return { topic, eventId: 'event-1' };
           },
           close: () => {},
         };

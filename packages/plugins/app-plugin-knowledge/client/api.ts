@@ -5,9 +5,9 @@
  * application composes these hooks into pages of its own as well as the plugin's.
  */
 import {
-  realtimeClientToken,
+  useRealtimeRefresh,
+  refreshRealtimeQueries,
   useApiClient,
-  useService,
   type ApiClient,
 } from '@nocobase/app-client';
 import {
@@ -15,7 +15,7 @@ import {
   useQueryClient,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import {
   KNOWLEDGE_TOPIC,
@@ -532,14 +532,14 @@ export function useKnowledgeApi(): KnowledgeApi {
 
 /** Refetches open knowledge views when the server announces a change. */
 export function useKnowledgeRefresh(): void {
-  const realtime = useService(realtimeClientToken);
   const queryClient = useQueryClient();
-  useEffect(() => {
-    const stop = realtime.subscribe<unknown>(KNOWLEDGE_TOPIC, () => {
-      void queryClient.invalidateQueries({ queryKey: knowledgeKeys.all });
-    });
-    return () => stop?.();
-  }, [realtime, queryClient]);
+  useRealtimeRefresh(KNOWLEDGE_TOPIC, (signal) =>
+    refreshRealtimeQueries(
+      queryClient,
+      { queryKey: knowledgeKeys.all },
+      signal,
+    ),
+  );
 }
 
 export function useKnowledgeTree(
@@ -617,7 +617,7 @@ export function useKnowledgeDocIndex(
     enabled: Boolean(id),
     retry: false,
     refetchInterval: (query) =>
-      query.state.data?.state === 'pending' ? INDEX_POLL_MS : false,
+      (query.state.data?.pending ?? 0) > 0 ? INDEX_POLL_MS : false,
   });
 }
 
@@ -645,7 +645,8 @@ export function useKnowledgeChunking(
     enabled: space !== null,
     retry: false,
     refetchInterval: (query) =>
-      query.state.data?.rechunking ? INDEX_POLL_MS : false,
+      // Chunking announces start and completion; retain low-frequency reconciliation.
+      query.state.data?.rechunking ? 60_000 : false,
   });
 }
 

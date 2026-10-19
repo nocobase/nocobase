@@ -190,7 +190,8 @@
     "@nocobase/i18n": "workspace:^",
     "@nocobase/caching": "workspace:^",
     "@nocobase/repository-input": "workspace:^",
-    "@nocobase/app-cli": "workspace:^"
+    "@nocobase/app-cli": "workspace:^",
+    "@nocobase/realtime": "workspace:^"
   },
   "description": "NocoBase 3 application template with the standard product capabilities.",
   "imports": {

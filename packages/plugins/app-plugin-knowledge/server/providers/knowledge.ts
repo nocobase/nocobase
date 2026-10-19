@@ -171,6 +171,7 @@ export class KnowledgeProvider extends ServiceProvider<AppPluginApplication> {
       .resolve(realtimeServiceToken)
       .defineTopic<KnowledgeChanged, 'public'>(KNOWLEDGE_TOPIC, {
         audience: 'public',
+        authenticated: true,
       });
     this.release = container.resolve(knowledgeToken).events.on((event) => {
       const payload: KnowledgeChanged =
@@ -180,12 +181,12 @@ export class KnowledgeProvider extends ServiceProvider<AppPluginApplication> {
               proposalId: event.proposal.id,
               ...(event.proposal.docId ? { docId: event.proposal.docId } : {}),
             }
-          : { kind: 'knowledge.changed', docId: event.docId };
-      try {
-        void this.topic?.publish(payload);
-      } catch (error) {
+          : event.type === 'space.changed'
+            ? { kind: 'knowledge.changed', spaceId: event.spaceId }
+            : { kind: 'knowledge.changed', docId: event.docId };
+      void this.topic?.publish(payload).catch((error: unknown) => {
         this.onError('Could not announce a knowledge change.', error);
-      }
+      });
     });
     return Promise.resolve();
   }

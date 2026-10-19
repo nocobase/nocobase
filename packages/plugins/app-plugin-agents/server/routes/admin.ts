@@ -1,3 +1,4 @@
+import { involvesRun as involves, mayAccessRun } from '../core/runs/access.js';
 /**
  * The people-facing API, mounted at `/api/agents`: agents and their brief preview, variables, the skill library, runs,
  * usage and prices; runners and registration tokens are in `runners/admin.ts`. Every route is behind the guard the
@@ -216,10 +217,6 @@ async function mayEdit(
   return reaches(await who.scope('agents.agents/edit'), relatedTo);
 }
 
-function involves(run: Run, userId: string): boolean {
-  return run.actorUserId === userId || run.ownerUserId === userId;
-}
-
 const RunPosition = z.object({ createdAt: z.string(), id: z.string() });
 const AuditPosition = z.object({ at: z.string(), id: z.string() });
 const ChangePosition = z.object({
@@ -254,10 +251,14 @@ export function createAdminRoutes(
   ): Promise<Run> => {
     const who = caller(context);
     const run = await services.runs.get(context.req.param('runId') ?? '');
-    if (involves(run, who.userId)) return run;
+    if (
+      await mayAccessRun(run, who.userId, isPrivate(run), () =>
+        who.can('agents.agents', action),
+      )
+    )
+      return run;
     // A private subject's runs (a conversation) belong to the people they involve, whatever the caller manages.
     if (isPrivate(run)) throw notFound('Run');
-    if (await who.can('agents.agents', action)) return run;
     if (action === 'manage' && (await who.can('agents.agents', 'read')))
       throw forbidden('This needs agents.agents manage permission.');
     throw notFound('Run');

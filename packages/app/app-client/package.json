@@ -54,6 +54,7 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "peerDependencies": {
+    "@tanstack/react-query": "catalog:",
     "@nocobase/i18n": "workspace:^",
     "@refinedev/core": "^5.0.0",
     "@refinedev/react-router": "^2.0.0",

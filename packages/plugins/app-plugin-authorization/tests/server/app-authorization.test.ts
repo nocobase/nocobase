@@ -175,8 +175,8 @@ describe('the authorization provider', () => {
     await migratePlugins(database, 'app-plugin-authorization');
     const container = new ServiceContainer();
     container.instance(databaseManagerToken, database);
-    const publishFor = vi.fn();
-    const publish = vi.fn();
+    const publishFor = vi.fn().mockResolvedValue({ eventId: 'event-1' });
+    const publish = vi.fn().mockResolvedValue({ eventId: 'event-1' });
     const closeUser = vi.fn();
     const closeGlobal = vi.fn();
     const defineTopic = vi

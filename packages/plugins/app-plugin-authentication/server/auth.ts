@@ -91,6 +91,8 @@ export interface GetSessionOptions {
    * deciding whether a request may read the API documentation, passes `true`.
    */
   readonly disableRefresh?: boolean;
+  /** Check stored session state even when the browser carries a cached session. */
+  readonly disableCookieCache?: boolean;
 }
 
 /** One operation of Better Auth's OpenAPI description, as its generator writes it. */
@@ -401,7 +403,10 @@ export class Auth {
     }
     const session = await this.auth.api.getSession({
       headers,
-      ...(options.disableRefresh ? { query: { disableRefresh: true } } : {}),
+      query: {
+        disableRefresh: options.disableRefresh,
+        disableCookieCache: options.disableCookieCache,
+      },
     });
     if (!session) return null;
     const user = await this.connection.query

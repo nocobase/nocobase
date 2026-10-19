@@ -70,11 +70,11 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
     if (!container.has(realtimeServiceToken)) return;
     const realtime = container.resolve(realtimeServiceToken);
     const publish = (topic: string, payload: RunnersChanged) => {
-      try {
-        realtime.publish(topic, payload);
-      } catch (error) {
-        console.error('Runners realtime announcement failed.', error);
-      }
+      void realtime
+        .publish(topic, payload)
+        .catch((error: unknown) =>
+          console.error('Runners realtime announcement failed.', error),
+        );
     };
     try {
       // Announcements name the runner by id: signed-in connections only.

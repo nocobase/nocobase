@@ -16,6 +16,7 @@ import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
 import notificationExample from '@nocobase/app-plugin-notification-example/client';
 import jobsExample from '@nocobase/app-plugin-jobs-example/client';
+import realtimeExample from '@nocobase/app-plugin-realtime-example/client';
 import lifecycleExample from '@nocobase/app-plugin-lifecycle-example/client';
 import officeFlowsExample from '@nocobase/app-plugin-office-flows-example/client';
 import routesExample from '@nocobase/app-plugin-routes-example/client';
@@ -44,6 +45,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   notificationInApp(),
   notificationExample(),
   jobsExample(),
+  realtimeExample(),
   lifecycleExample(),
   officeFlowsExample(),
   routesExample(),

@@ -31,6 +31,8 @@ These English references adapt the plugin development guide into task-specific i
 | Use `@nocobase/app-testing` for database, Server, Client or CLI tests and verify App integration       | [Testing and delivery](references/testing.md)                        |
 | Follow one executable plugin through migrations, protected API, Client, configuration and CLI tests | [Complete testing example](references/testing-example.md)            |
 
+For Realtime changes, check whether the target workspace or application provides a version-matched `nocobase-realtime` Skill from `@nocobase/realtime`; read it alongside the installed API declarations. Package integration guidance must match the target runtime version.
+
 For worked implementations and tests, read the matching [Server Route examples](references/server-route-examples.md), [ServiceToken and Provider examples](references/service-examples.md), [Client examples](references/client-examples.md), or [Repository examples](references/repository-examples.md). These supplement the topic references with concrete code and point to maintained source fixtures; adapt their explicit example access policies to the requested product.
 
 ## Rules that apply before implementation
