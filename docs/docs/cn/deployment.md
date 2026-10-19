@@ -280,7 +280,7 @@ docker rm purchase
 
 ## 部署到 NocoBase Studio {#studio}
 
-按以下步骤将本地应用打包、上传并部署到已有的 NocoBase Studio。所有命令均在本地电脑执行，目标环境需支持部署包。
+按以下步骤将本地应用打包、上传并部署到已有的 NocoBase Studio。所有命令均在本地电脑执行。目标环境需支持部署包；本流程要求 Studio 能根据目标应用确定源码仓库并校验提交。
 
 ### 让 Agent 协助部署到 Studio {#studio-skill}
 
@@ -323,7 +323,7 @@ nb-studio --version
 
 ### 2. 登录 Studio {#studio-login}
 
-将地址替换为自己的 Studio 地址，保留 /studio 等实际部署路径。以下用 studio 作为本地连接名称：
+将地址替换为自己的 Studio 地址，保留 /studio 等实际部署路径。以下用 studio 作为本地连接名称。已有目标 Studio 的有效登录时，直接用 whoami 检查即可。
 
 **本地 · Bash 终端**
 
@@ -350,7 +350,7 @@ nb-studio --profile studio whoami --json
 nb-studio --profile studio app list --json
 ```
 
-后续命令以 purchase 为例，请替换为选中的应用 ID。若还没有应用，先在 Studio 的「发布管理 → 应用」中新建，并选择支持部署包的环境。
+后续命令以 purchase 为例，请替换为选中的应用 ID。若还没有应用，先在 Studio 的「发布管理 → 应用」中新建，选择支持部署包的环境，并完成上传所需的源码关联。
 
 ### 4. 本地打包 {#studio-build}
 
@@ -379,7 +379,7 @@ nb-studio --profile studio release upload \
   --json
 ```
 
-上传成功后，复制响应中的 result.data.release.id，作为下一步的 Release ID。上传不会自动部署应用。
+确认 result.data.superseded 为 false 且 result.data.release 有值，再复制 result.data.release.id，作为下一步的 Release ID。上传不会自动部署应用。
 
 ### 6. 部署 {#studio-deploy}
 
@@ -392,7 +392,7 @@ nb-studio --profile studio app env list purchase \
   --release '<release-id>' --json
 ```
 
-若有 missing: true，在 Studio 应用的「变量」页补齐，再执行部署：
+若有 missing: true，在 Studio 应用的「变量」页补齐。非受保护环境执行下面的部署命令：
 
 **本地 · Bash 终端**
 
@@ -410,6 +410,8 @@ nb-studio --profile studio deploy request purchase \
   --release '<release-id>' --json
 ```
 
+--wait true 最多等待约 100 秒；仍在排队、部署中或等待审批时，按第 7 步继续检查。
+
 ### 7. 检查状态和错误日志 {#studio-verify}
 
 查看本次部署记录、应用状态和错误日志：
@@ -422,13 +424,15 @@ nb-studio --profile studio app get purchase --json
 nb-studio --profile studio app logs purchase --level error --json
 ```
 
-确认本次部署状态为 succeeded、应用 runtime.state 为 running。打开 app get 返回的 result.data.url，验证登录和主要功能；初始管理员账号可在 Studio 应用「概览」中查看。仍在排队、部署或待审批时，稍后继续检查。
+按 releaseId 找到本次部署，确认 status 为 succeeded，并核对 app get 返回的 app.currentDeploymentId 与其 id 一致。打开 result.data.url 验证登录和主要功能；按需启动或休眠的应用先访问唤醒，再确认 runtime.state 为 running。
+
+首次由 Studio 生成的管理员凭据，如仍在保留期且未被清除，可在应用「概览」中查看。
 
 ### 更新 Studio 中的应用 {#studio-update}
 
 更新时沿用原应用 ID、配置和存储，先备份数据库与上传文件。
 
-重新打包并上传，将 <commit-sha> 替换为本次构建对应的完整提交 SHA：
+重新打包并上传，将 <commit-sha> 替换为新代码对应的完整提交 SHA。同一应用、同一 SHA 再次上传会复用已有 Release，不能用旧 SHA 发布新的构建内容：
 
 **本地 · app 项目根目录 · Bash**
 
@@ -443,7 +447,7 @@ nb-studio --profile studio release upload \
   --json
 ```
 
-将返回的 result.data.release.id 填入 <release-id>。按第 6 步检查并补齐新版本的必填配置，再部署：
+确认本次上传返回有效 Release 后，将 result.data.release.id 填入 <release-id>。按第 6 步补齐必填配置；非受保护环境执行以下命令，需要审批时改为提交部署申请。
 
 **本地 · app 项目根目录 · Bash**
 
@@ -452,4 +456,4 @@ nb-studio --profile studio app deploy purchase \
   --release '<release-id>' --wait true --json
 ```
 
-需要审批时，按第 6 步提交部署申请。部署后按第 7 步确认本次部署成功，并检查错误日志、登录和主要功能。
+部署后按第 7 步确认本次部署成功，并检查错误日志、登录和主要功能。
