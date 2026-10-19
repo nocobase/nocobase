@@ -659,10 +659,12 @@ export async function packCli(options: CliPackOptions): Promise<CliPackResult> {
       await chmod(path.join(top, 'bin', bin), 0o755);
       const name = `${bin}-v${version}-${target}.tar.gz`;
       const file = path.join(versionDir, name);
-      await runCommand('tar', ['-czf', file, '-C', tree, bin], {
-        cwd: tree,
-        log,
-      });
+      // macOS tar writes LIBARCHIVE.xattr headers that GNU tar warns about for every file. These packages need
+      // contents, executable modes and links, not the build machine's extended attributes or ownership.
+      const { create } = await import('tar');
+      create({ cwd: tree, file, gzip: true, portable: true, sync: true }, [
+        bin,
+      ]);
       targets[target] = {
         file: `${version}/${name}`,
         sha256: await sha256Of(file),

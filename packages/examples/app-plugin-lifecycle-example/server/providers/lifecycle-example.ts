@@ -1,13 +1,5 @@
-import { StoredLifecycleParameters } from '@nocobase/lifecycle';
-import {
-  PARAMETER_COLLECTIONS,
-  exampleParameterRegistration,
-} from '../configuration/store.js';
-import { reviewerServices } from '../configuration/reviewers.js';
-import {
-  reviewerDemoLifecycle,
-  reviewerLiveDemoLifecycle,
-} from '../lifecycles/reviewer-demo.js';
+import { WorkflowParameterStore } from '../configuration/workflow-parameter-store.js';
+import { exampleParameterRegistration } from '../configuration/store.js';
 import { ParameterConfigurationService } from '../services/parameter-configuration.js';
 import { parameterConfigurationServiceToken } from '../tokens.js';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
@@ -84,7 +76,7 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
   public readonly name: string = LIFECYCLE_EXAMPLE_SCOPE;
   private jobs: LifecycleJobs | undefined;
   private runtime: LifecycleRuntime | undefined;
-  private parameterStore: StoredLifecycleParameters | undefined;
+  private parameterStore: WorkflowParameterStore | undefined;
   private flows: DurableFlowService | undefined;
   private sandboxInstance: Sandbox | undefined;
   private changes: RealtimePublicTopic<LifecycleChange> | undefined;
@@ -173,10 +165,7 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
         },
       },
     );
-    const parameterStore = new StoredLifecycleParameters(
-      store,
-      PARAMETER_COLLECTIONS,
-    );
+    const parameterStore = new WorkflowParameterStore(store);
     this.parameterStore = parameterStore;
     const runtime = new LifecycleRuntime({
       store,
@@ -203,18 +192,6 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
         'expenses',
       ),
     });
-    for (const lifecycle of [reviewerDemoLifecycle, reviewerLiveDemoLifecycle])
-      runtime.register(lifecycle, {
-        services: (handle) =>
-          reviewerServices(
-            this.app.container.resolve(databaseManagerToken),
-            handle,
-          ),
-        parameterConfiguration: exampleParameterRegistration(
-          parameterStore,
-          lifecycle.name,
-        ),
-      });
     // The durable flows call the sandbox standing in for the outside
     // systems, and may fire a transition themselves when what follows
     // depends on what they found.
@@ -229,12 +206,36 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
         });
       },
     };
-    runtime.register(orderLifecycle, { services: flowServices });
-    runtime.register(invoiceLifecycle, { services: flowServices });
-    runtime.register(exportLifecycle, { services: flowServices });
+    runtime.register(orderLifecycle, {
+      services: flowServices,
+      parameterConfiguration: exampleParameterRegistration(
+        parameterStore,
+        'orders',
+      ),
+    });
+    runtime.register(invoiceLifecycle, {
+      services: flowServices,
+      parameterConfiguration: exampleParameterRegistration(
+        parameterStore,
+        'invoices',
+      ),
+    });
+    runtime.register(exportLifecycle, {
+      services: flowServices,
+      parameterConfiguration: exampleParameterRegistration(
+        parameterStore,
+        'exports',
+      ),
+    });
     runtime.register(purchaseLifecycle, { services: flowServices });
     runtime.register(fulfilmentLifecycle, { services: flowServices });
-    runtime.register(subscriptionLifecycle, { services: flowServices });
+    runtime.register(subscriptionLifecycle, {
+      services: flowServices,
+      parameterConfiguration: exampleParameterRegistration(
+        parameterStore,
+        'subscriptions',
+      ),
+    });
     // Another plugin would subscribe the same way, to refresh a page, keep a
     // to-do list or feed a search index; work that must happen is an effect.
     runtime.on('completed', {}, (event) => {

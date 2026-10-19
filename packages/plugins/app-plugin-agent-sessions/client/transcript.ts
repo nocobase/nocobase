@@ -41,7 +41,13 @@ export interface ToolCall {
 }
 
 export type PromptState =
-  'queued' | 'running' | 'done' | 'cancelled' | 'failed';
+  | 'queued'
+  | 'running'
+  | 'done'
+  | 'cancelled'
+  | 'failed'
+  | 'withdrawing'
+  | 'withdrawn';
 
 export type TranscriptItem =
   | {
@@ -53,6 +59,7 @@ export type TranscriptItem =
         readonly id: string;
       })[];
       readonly state: PromptState;
+      readonly withdrawable: boolean;
     }
   | { readonly type: 'message'; readonly key: string; readonly text: string }
   | { readonly type: 'thought'; readonly key: string; readonly text: string }
@@ -168,6 +175,7 @@ export function foldTranscript(
             )
             .map((image, index) => ({ ...image, id: `${key}:${index}` })),
           state: 'queued' as PromptState,
+          withdrawable: event.withdrawable === true,
         };
         prompts.set(event.promptId, item);
         items.push(item);
@@ -175,6 +183,8 @@ export function foldTranscript(
       }
       case 'turnStarted': {
         const prompt = prompts.get(event.promptId);
+        if (prompt?.state === 'withdrawing' || prompt?.state === 'withdrawn')
+          break;
         if (prompt) prompt.state = 'running';
         started = { promptId: event.promptId, at: Date.parse(event.at) };
         messageId = undefined;
@@ -182,6 +192,8 @@ export function foldTranscript(
       }
       case 'turnEnded': {
         const prompt = prompts.get(event.promptId);
+        if (prompt?.state === 'withdrawing' || prompt?.state === 'withdrawn')
+          break;
         const ran = started?.promptId === event.promptId;
         if (prompt)
           prompt.state = event.error
@@ -207,6 +219,14 @@ export function foldTranscript(
           started = undefined;
         }
         messageId = undefined;
+        break;
+      }
+      case 'withdrawalRequested':
+      case 'promptWithdrawn': {
+        const prompt = prompts.get(event.promptId);
+        if (prompt)
+          prompt.state =
+            event.kind === 'promptWithdrawn' ? 'withdrawn' : 'withdrawing';
         break;
       }
       case 'update':

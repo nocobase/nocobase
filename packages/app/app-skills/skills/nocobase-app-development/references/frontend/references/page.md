@@ -204,6 +204,12 @@ A page and the endpoints it calls must agree: the example's `/api/projects` is o
 
 **The resource id is the permission identifier**: the permission set page lists every route whose `authz` checks `page` `access`, keyed by `authz.resource.id` (deduplicated), under the Pages entry with its navigation groups in menu order. Stored grants reference that id, so changing it requires migrating them; renaming the route alone does not.
 
+### Permission display names
+
+Every application route that resolves to a `page` permission needs a non-empty, translated display name, including URL-addressable forms, dialogs, drawers and detail pages. Navigation/breadcrumb titles provide it where already appropriate. For a page that intentionally has neither (especially an overlay), add its existing application route `name` and a static application translation key to `client/pages/settings/page-permission-titles.ts`. This mapping labels permissions only; do not add a menu/breadcrumb or change a route name, `authz.resource.id`, inheritance, `'skip'` or stored grants to repair copy. Plugin routes retain their owning namespace and are not overridden by an application's same-named route.
+
+Provide English and Chinese text without unresolved interpolation placeholders. The permission catalog uses `pagePermissionResources()` and a localized unnamed-page/path fallback instead of exposing technical ids. That fallback is a diagnostic, not successful delivery: `tests/logic/page-permission-titles.test.ts` must pass against the application's actual resolved routes and locales; it rejects missing labels, stale mapping keys and untranslated keys. When fixing an existing app, preserve the complete resource/action identity list and grants, and verify display labels without rewriting authorization data.
+
 ## 5. Settings pages
 
 There is one kind of client route, `defineAppRoutes()`. The application has no separate settings area and no `/settings` or `/dev` prefix, and plugins contribute no settings pages: a page that configures something is an ordinary App page in the main navigation. Put such pages under a navigation group of their own, such as a Settings group at the end of the sidebar, and add the icons to the `lucide-react` import at the top of the file (here `Settings` and `SlidersHorizontal`):

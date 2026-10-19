@@ -2,6 +2,11 @@ import type { UsageQuery } from '../../shared/reports.js';
 
 /** Query keys of this plugin's cache, all under `['agents']`. */
 export const agentsKeys: {
+  readonly available: readonly ['agents', 'available'];
+  readonly chatAgents: readonly ['agents', 'chat', 'agents'];
+  readonly runner: (
+    id: string,
+  ) => readonly ['agents', 'runners', 'detail', string];
   readonly all: readonly ['agents'];
   readonly agents: readonly ['agents', 'agents'];
   readonly agentNames: readonly ['agents', 'agent-names'];
@@ -59,6 +64,9 @@ export const agentsKeys: {
     scenario: string | null,
   ) => readonly ['agents', 'brief-preview', string, string | null];
 } = {
+  available: ['agents', 'available'],
+  chatAgents: ['agents', 'chat', 'agents'],
+  runner: (id) => ['agents', 'runners', 'detail', id],
   all: ['agents'],
   agents: ['agents', 'agents'],
   agentNames: ['agents', 'agent-names'],

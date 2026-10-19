@@ -11,6 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { AgentProcess } from './agent-process.js';
+import { startupDetail } from './startup-detail.js';
 import {
   AGENTS,
   resolveAgent,
@@ -31,6 +32,7 @@ import {
   type BridgeEvent,
   type ComputerInfo,
   type PollResponse,
+  type ClaimResponse,
   type RegisterRequest,
   type RegisterResponse,
   type ReplyRequest,
@@ -155,26 +157,35 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       options.adapters ??
       path.join(path.dirname(options.stateFile), 'adapters'),
     log,
+    signal,
   };
-  /**
-   * Resolves every agent. A managed adapter not installed yet starts installing, and the agent is found another way
-   * meanwhile, unless `waitForInstall`: the scan before the bridge connects does not wait, the later ones do.
-   */
+  /** Resolves every agent independently, retaining installation failures for registration. */
   const scan = async (waitForInstall: boolean): Promise<void> => {
-    for (const spec of AGENTS) {
-      const resolved = await resolveAgent(spec, env, process.platform, {
-        ...resolveOptions,
-        waitForInstall,
-      });
-      if (signal.aborted) return;
-      found.set(spec.id, resolved);
-      agents.set(
-        spec.id,
-        resolved
-          ? agentInfo(spec)
-          : { ...agentInfo(spec), problem: 'notInstalled' },
-      );
-    }
+    await Promise.all(
+      AGENTS.map(async (spec) => {
+        try {
+          const resolved = await resolveAgent(spec, env, process.platform, {
+            ...resolveOptions,
+            waitForInstall,
+          });
+          if (signal.aborted) return;
+          found.set(spec.id, resolved);
+          agents.set(
+            spec.id,
+            resolved
+              ? agentInfo(spec)
+              : { ...agentInfo(spec), problem: 'notInstalled' },
+          );
+        } catch (error) {
+          found.set(spec.id, undefined);
+          agents.set(spec.id, {
+            ...agentInfo(spec),
+            problem: 'failed',
+            detail: message(error).slice(0, 2000),
+          });
+        }
+      }),
+    );
   };
   const computer = (): ComputerInfo => ({
     name: options.name ?? os.hostname(),
@@ -183,7 +194,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     host: `${options.client.name} ${options.client.version}`,
     home: os.homedir(),
     roots,
-    agents: [...agents.values()],
+    agents: AGENTS.flatMap((spec) => agents.get(spec.id) ?? []),
   });
   /**
    * Registers the computer with its key; signed in as the person when it has none or the application refused it,
@@ -251,38 +262,86 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
   log(
     `This computer is connected to ${options.server} as "${computer().name}".`,
   );
-  let probing: Promise<void> | undefined;
-  let refused: BridgeUpgradeRequired | undefined;
-  const refresh = (): void => {
-    if (probing || signal.aborted) return;
-    probing = (async () => {
-      await scan(true);
-      const infos = await probeAgents(
-        AGENTS,
-        found,
-        env,
-        options.client,
-        signal,
-      );
-      if (signal.aborted) return;
-      for (const info of infos) agents.set(info.id, info);
-      // Registration also negotiates protocol upgrades; polls do not carry that handshake.
-      await register();
+  const probing = new Map<string, Promise<void>>();
+  let refused: BridgeStopped | undefined;
+  let registering: Promise<void> | undefined;
+  let registrationTimer: NodeJS.Timeout | undefined;
+  let registrationNeeded = false;
+  const failedRefresh = (error: unknown): void => {
+    if (signal.aborted) return;
+    const stopped = refusal(error);
+    if (stopped instanceof BridgeUpgradeRequired) {
+      refused = stopped;
+      stopping.abort();
+    } else log(`Could not check the agents: ${message(error)}`);
+  };
+  /** Serial full snapshots: changes during a request are merged into its next send. */
+  const sendRegistration = (): void => {
+    registrationTimer = undefined;
+    if (registering || signal.aborted) return;
+    registering = (async () => {
+      while (registrationNeeded && !signal.aborted) {
+        registrationNeeded = false;
+        await register();
+      }
     })()
-      .catch((error: unknown) => {
-        if (signal.aborted) return;
-        // The application was updated under a running bridge: it cannot go on, as when refused at start.
-        const stopped = refusal(error);
-        if (stopped instanceof BridgeUpgradeRequired) {
-          refused = stopped;
-          stopping.abort();
-          return;
-        }
-        log(`Could not check the agents: ${message(error)}`);
-      })
+      .catch(failedRefresh)
       .finally(() => {
-        probing = undefined;
+        registering = undefined;
       });
+  };
+  const scheduleRegistration = (): void => {
+    if (signal.aborted) return;
+    registrationNeeded = true;
+    if (!registering && !registrationTimer) {
+      registrationTimer = setTimeout(sendRegistration, REPORT_DELAY_MS);
+      registrationTimer.unref();
+    }
+  };
+  const updateAgent = (info: AgentInfo): void => {
+    if (signal.aborted) return;
+    if (JSON.stringify(agents.get(info.id)) === JSON.stringify(info)) return;
+    agents.set(info.id, info);
+    scheduleRegistration();
+  };
+  const refresh = (): void => {
+    if (signal.aborted) return;
+    for (const spec of AGENTS) {
+      if (probing.has(spec.id)) continue;
+      const inspection = (async () => {
+        try {
+          const resolved = await resolveAgent(spec, env, process.platform, {
+            ...resolveOptions,
+            waitForInstall: true,
+            installing: (detail) => {
+              found.set(spec.id, undefined);
+              updateAgent({ ...agentInfo(spec), problem: 'failed', detail });
+            },
+          });
+          if (signal.aborted) return;
+          found.set(spec.id, resolved);
+          const [info] = await probeAgents(
+            [spec],
+            found,
+            env,
+            options.client,
+            signal,
+          );
+          updateAgent(info);
+        } catch (error) {
+          if (signal.aborted) return;
+          found.set(spec.id, undefined);
+          updateAgent({
+            ...agentInfo(spec),
+            problem: 'failed',
+            detail: message(error).slice(0, 2000),
+          });
+        }
+      })().finally(() => probing.delete(spec.id));
+      probing.set(spec.id, inspection);
+    }
+    // Also retry registration after failures, and retain the periodic protocol handshake.
+    scheduleRegistration();
   };
   refresh();
   const rescan = setInterval(refresh, RESCAN_MS);
@@ -494,6 +553,20 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     );
   };
   const dispatch = (command: BridgeCommand): void => {
+    if (command.type === 'withdrawPrompt') {
+      const removed =
+        sessions.get(command.sessionId)?.withdraw(command.promptId) ?? true;
+      if (removed)
+        void post(BRIDGE_ROUTES.withdrawn, {
+          ...command,
+          computerId,
+          protocol: BRIDGE_PROTOCOL_VERSION,
+          bridgeStartedAt: startedAt,
+        }).catch((error: unknown) =>
+          log(`Could not confirm message withdrawal: ${message(error)}`),
+        );
+      return;
+    }
     if (command.type === 'discoverChoices') {
       const pending = discover(command);
       discoveries.add(pending);
@@ -524,6 +597,59 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       const kept = takeWarm(command.session);
       if (kept && diagnostics) timing('agentTakenOver');
       session = new BridgeSession(command.session, {
+        claim: async (promptId, seq) => {
+          if (seq === undefined) {
+            reporter.add(sessionId, {
+              kind: 'notice',
+              at: new Date().toISOString(),
+              level: 'warning',
+              message:
+                'A message queued before the bridge upgrade cannot start safely. Copy it into a new message to send it again; messages already received by an older bridge may still run there.',
+            });
+            return false;
+          }
+          // Claims use a separate request channel. Commit the previous turn's reports before its successor starts.
+          await reporter.flush(sessionId);
+          if (!sessions.has(sessionId)) return false;
+          for (let attempt = 1; !signal.aborted; attempt += 1) {
+            try {
+              const answer = await post<ClaimResponse>(
+                BRIDGE_ROUTES.claim,
+                {
+                  computerId,
+                  protocol: BRIDGE_PROTOCOL_VERSION,
+                  bridgeStartedAt: startedAt,
+                  sessionId,
+                  promptId,
+                  seq,
+                },
+                AbortSignal.any([signal, AbortSignal.timeout(30_000)]),
+              );
+              return answer.execute;
+            } catch (error) {
+              const stopped = refusal(error);
+              if (
+                stopped ||
+                (error instanceof BridgeHttpError &&
+                  error.status < 500 &&
+                  error.status !== 429)
+              ) {
+                log(
+                  `The application refused to start a message: ${message(error)}`,
+                );
+                refused = stopped ?? new BridgeStopped(message(error));
+                stopping.abort();
+                return false;
+              }
+              if (attempt === 1)
+                log(
+                  `Waiting for permission to start the next message: ${message(error)}`,
+                );
+              await sleep(backoff(attempt), signal);
+            }
+          }
+          return false;
+        },
         prepareSession: options.prepareSession,
         sessionInstructions: options.sessionInstructions,
         warm: kept,
@@ -550,7 +676,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
               promptId = undefined;
             }
           }
-          reporter.add(sessionId, event);
+          if (event.kind !== 'turnStarted') reporter.add(sessionId, event);
         },
         stateChanged: () => reporter.touch(sessionId),
       });
@@ -566,7 +692,12 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       try {
         const answer = await post<PollResponse>(
           BRIDGE_ROUTES.poll,
-          { computerId, wait: true },
+          {
+            computerId,
+            wait: true,
+            protocol: BRIDGE_PROTOCOL_VERSION,
+            bridgeStartedAt: startedAt,
+          },
           AbortSignal.any([signal, AbortSignal.timeout(POLL_WAIT_MS + 30_000)]),
         );
         commands = answer.commands;
@@ -584,11 +715,16 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         continue;
       }
       for (const command of commands) dispatch(command);
+      // Retained withdrawals are retried until acknowledged, without a busy poll loop after a lost acknowledgement.
+      if (commands.some((command) => command.type === 'withdrawPrompt'))
+        await sleep(1000, signal);
     }
   } finally {
     clearInterval(rescan);
+    clearTimeout(registrationTimer);
     stopping.abort();
-    await probing;
+    await Promise.all(probing.values());
+    await registering;
     discoveryShutdown.abort();
     await Promise.all(discoveries);
     dropWarm();
@@ -637,11 +773,11 @@ async function probeAgents(
         const version = agent.initialize.agentInfo?.version ?? null;
         await agent.stop();
         return { ...info, version };
-      } catch {
+      } catch (error) {
         return {
           ...info,
           problem: 'failed',
-          detail: 'Agent initialization failed or timed out.',
+          detail: startupDetail(resolved.command, resolved.args, error),
         };
       }
     }),
@@ -686,6 +822,15 @@ class Reporter {
   touch(sessionId: string): void {
     this.#entry(sessionId).state = true;
     this.#schedule(sessionId);
+  }
+
+  /** A claim must not overtake buffered events or a report still retrying on another request channel. */
+  async flush(sessionId: string): Promise<void> {
+    const entry = this.#pending.get(sessionId);
+    if (!entry) return;
+    do {
+      await this.#send(sessionId);
+    } while (entry.events.length > 0 || entry.state);
   }
 
   /** Sends what is left, giving up on a session the application does not answer for. */
@@ -761,6 +906,7 @@ class Reporter {
             this.#options.log(
               `The application refused a report of session ${sessionId}: ${error.message}`,
             );
+            this.#options.closed(sessionId);
             break;
           }
           await new Promise((resolve) => setTimeout(resolve, backoff(attempt)));
@@ -833,6 +979,8 @@ function refusal(error: unknown): BridgeStopped | undefined {
       'This computer was removed in the application. Start the bridge again to connect it anew.',
     );
   }
+  if (error.reason === 'AGENT_SESSIONS_BRIDGE_REPLACED')
+    return new BridgeStopped(error.message);
   if (error.reason === 'AGENT_SESSIONS_UPGRADE_REQUIRED') {
     const protocol = error.metadata?.protocol;
     return new BridgeUpgradeRequired(

@@ -12,7 +12,7 @@ Astro and its integrations are pinned to exact versions that had been published 
 
 Markdown pages live in `docs/docs/<lang>/`, with `_meta.json` (sidebar) and `_nav.json` (top navigation entries used to group `llms.txt`) beside them. Only `en` and `cn` exist. `shared/languages.ts` lists the built languages: `en` is served from `/`, `cn` from `/zh-CN/`. Keep source directories and translation keys as `cn`. A language is built only when it is listed there and has a directory. `cn` is the baseline the structural checks in `check.sh` compare every other language against, so a page added to another language without its `cn` counterpart fails the tree and meta alignment checks. There are no `/cn/*` redirect pages; Chinese lives only under `/zh-CN/`.
 
-The public site contains the homepage, the `nocobase-2-vs-3` comparison and the `capabilities/` documentation in each language. Application development, plugin development and deployment instructions belong in the relevant Skills and application guidance. `docs/docs/<lang>/public/` holds downloads the capability pages refer to; the build copies it to that language's base (`/downloads/…`, `/zh-CN/downloads/…`). Screenshots live in `docs/docs/<lang>/capabilities/assets/` (the same files in both languages), are referenced from Markdown with a relative path and are published under `/_astro/` with a hashed name; the capability overviews read the `cn` copy of that directory.
+The public site contains the homepage, the `nocobase-2-vs-3` comparison, the application deployment guide and the `capabilities/` documentation in each language. Detailed application development, plugin development and advanced deployment procedures belong in the relevant Skills and application guidance. `docs/docs/<lang>/public/` holds downloads the capability pages refer to; the build copies it to that language's base (`/downloads/…`, `/zh-CN/downloads/…`). Screenshots live in `docs/docs/<lang>/capabilities/assets/` (the same files in both languages), are referenced from Markdown with a relative path and are published under `/_astro/` with a hashed name; the capability overviews read the `cn` copy of that directory.
 
 ### URLs
 
@@ -42,21 +42,21 @@ The build fails on a link to a page, file or heading that does not exist. It che
 
 ## Code layout
 
-| Path                                                             | What it is                                                                                                                   |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `astro.config.ts`                                                | Markdown pipeline (remark/rehype plugins), output format, the site integration                                               |
-| `shared/site.ts`                                                 | `SITE_ORIGIN`: `DOCS_SITE_ORIGIN`, default `https://docs.nocobase.com`; every absolute URL the site emits is built on it     |
-| `shared/languages.ts`, `shared/routes.ts`                        | Languages and URL rules                                                                                                      |
-| `src/content.config.ts`                                          | The `docs` content collection (glob loader over `docs/<lang>/`)                                                              |
-| `src/lib/pages.ts`                                               | The page model: route, title, description, kind (`doc`, `home`, `comparison`, `capability-overview`)                         |
-| `src/lib/sidebar.ts`                                             | Sidebars from `_meta.json`, previous/next order                                                                              |
-| `src/lib/llms.ts`                                                | `llms.txt`, `llms-full.txt`, per-page `.md` copies                                                                           |
-| `src/markdown/`                                                  | Remark/rehype plugins: callouts, link rewriting, heading anchors, table wrapper                                              |
-| `src/layouts/BaseLayout.astro`                                   | `<html>`, the SEO head (`src/components/SeoHead.astro`), header, footer                                                      |
-| `src/layouts/DocLayout.astro`                                    | Markdown pages: sidebar, title and page actions, TOC, previous/next, JSON-LD                                                 |
-| `src/components/{FullHome,ArchitecturePitch,CapabilityOverview}` | The hand-built pages: static markup in JSON, their styles and scripts                                                        |
-| `src/pages/`                                                     | Routes: `[...slug].astro` (Markdown pages), `[...base]/…` (hand-built pages, llms files), `[...path].md.ts`, `robots.txt.ts` |
-| `src/integrations/`                                              | After the build: copy `public/`, localized 404, link check, `sitemap.xml`, Pagefind index                                    |
+| Path                                                                        | What it is                                                                                                                   |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `astro.config.ts`                                                           | Markdown pipeline (remark/rehype plugins), output format, the site integration                                               |
+| `shared/site.ts`                                                            | `SITE_ORIGIN`: `DOCS_SITE_ORIGIN`, default `https://docs.nocobase.com`; every absolute URL the site emits is built on it     |
+| `shared/languages.ts`, `shared/routes.ts`                                   | Languages and URL rules                                                                                                      |
+| `src/content.config.ts`                                                     | The `docs` content collection (glob loader over `docs/<lang>/`)                                                              |
+| `src/lib/pages.ts`                                                          | The page model: route, title, description, kind (`doc`, `home`, `comparison`, `capability-overview`, `deployment`)           |
+| `src/lib/sidebar.ts`                                                        | Sidebars from `_meta.json`, previous/next order                                                                              |
+| `src/lib/llms.ts`                                                           | `llms.txt`, `llms-full.txt`, per-page `.md` copies                                                                           |
+| `src/markdown/`                                                             | Remark/rehype plugins: callouts, link rewriting, heading anchors, table wrapper                                              |
+| `src/layouts/BaseLayout.astro`                                              | `<html>`, the SEO head (`src/components/SeoHead.astro`), header, footer                                                      |
+| `src/layouts/DocLayout.astro`                                               | Markdown pages: sidebar, title and page actions, TOC, previous/next, JSON-LD                                                 |
+| `src/components/{FullHome,ArchitecturePitch,CapabilityOverview,Deployment}` | The hand-built pages: static markup in JSON, their styles and scripts                                                        |
+| `src/pages/`                                                                | Routes: `[...slug].astro` (Markdown pages), `[...base]/…` (hand-built pages, llms files), `[...path].md.ts`, `robots.txt.ts` |
+| `src/integrations/`                                                         | After the build: copy `public/`, localized 404, link check, `sitemap.xml`, Pagefind index                                    |
 
 Each kind of page has its own route file because Astro bundles the styles of every component a route file imports into every page that route builds.
 
@@ -65,6 +65,8 @@ Each kind of page has its own route file because Astro bundles the styles of eve
 The home page, the comparison and the capability overviews render HTML stored as JSON strings. In `FullHome/markup*.json`, `FullHome/data*.json`, `ArchitecturePitch/markup*.json` and `CapabilityOverview/pages*.json`, the file without a suffix is Chinese and `.en.json` is English; the header names both, `SiteHeader/header.cn.json` and `header.en.json`. The header JSON is used on every page except the home page, whose top bar is part of its markup; `SiteFooter/index.astro` is the footer of Markdown pages, the comparison and hand-written pages, while the home page and the overviews carry their footer in their markup. `FullHome/data*.json` also holds the prompt library the overviews' scenario pickers use.
 
 Each of these pages keeps a Markdown twin (`docs/<lang>/index.md`, `nocobase-2-vs-3.mdx`, `capabilities/<module>/index.md(x)` or `capabilities/<module>.md`). Its body is never rendered: the twin's frontmatter supplies the page's title, description and keywords, and its body supplies the `.md` copy and `llms.txt`. A change to the visible copy goes into the JSON, and the twin is updated to match.
+
+Place the deployment entry below the homepage conversation example. The deployment page uses `pageName: deployment` and the `deployment` page kind to render `src/components/Deployment` through its own Astro route. Keep its localized `content*.json`, command blocks and anchors aligned with `docs/<lang>/deployment.md`, which supplies search and LLM-readable content. Preserve the homepage’s light palette, grid illustration, blue Agent panels and centered accessible PM2/Docker tabs. Show the shared example environment once above the tabs, collapsed by default; keep the optional Agent prompt first in each tab and expanded by default. Section links must activate their tab and reveal containing disclosures, including legacy anchors. Keep first deployment, verification and updates visible, label where commands run, and leave advanced recovery and CI/CD to the relevant Skills.
 
 ## Adding a page
 

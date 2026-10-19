@@ -14,6 +14,8 @@ import {
   writeWorkspaceMeta,
   workspaceRecordPath,
   type WorkspaceMeta,
+  type WorkspaceRepo,
+  type CheckedOutRepo,
   subjectWorkDir,
   CheckoutError,
   git,
@@ -186,6 +188,32 @@ async function ref(cache: string, name: string): Promise<string | undefined> {
   ).split('\n');
   if (!refs.includes(name)) return undefined;
   return git(['rev-parse', '--verify', `${name}^{commit}`], cache);
+}
+
+/** No pending work, or commits already in the default history, need no task branch. */
+async function canDiscardContinuation(
+  cache: string,
+  head: string,
+  record: WorkspaceRepo | undefined,
+  defaultBranch: string,
+): Promise<boolean> {
+  return (
+    head === record?.startSha ||
+    (record?.pushedSha !== undefined &&
+      (await gitOk(
+        ['merge-base', '--is-ancestor', head, record.pushedSha],
+        cache,
+      ))) ||
+    (await gitOk(
+      [
+        'merge-base',
+        '--is-ancestor',
+        head,
+        `refs/remotes/origin/${defaultBranch}`,
+      ],
+      cache,
+    ))
+  );
 }
 
 async function assertWorktreeIdentity(
@@ -413,6 +441,8 @@ export async function addRunWorktree(options: {
   branch: string;
   continuation: string;
   warnings: string[];
+  deliveryBaseSha?: string;
+  pushedSha?: string;
 }> {
   const { paths, workDir, appKey, subjectKey, cache, repo } = options;
   const dir = path.resolve(workDir, repo.path);
@@ -420,6 +450,7 @@ export async function addRunWorktree(options: {
   const key = continuationKey(appKey, subjectKey, repo.url, repo.branch);
   const warnings: string[] = [];
   const state = await readContinuationState(paths, appKey, subjectKey);
+  let record: WorkspaceRepo | undefined;
   for (const previous of state?.activeWorkDirs ?? []) {
     await retryWorkspaceRemoval(paths, previous, () => {});
     const record = await readWorkspaceMeta(paths, previous);
@@ -431,7 +462,11 @@ export async function addRunWorktree(options: {
       );
   }
   await mkdir(path.dirname(dir), { recursive: true });
+  // Register ownership before cache/worktree preparation can fail, so recovery can find a partial attempt.
+  // The delivery baseline is chosen later under the cache lock and saved in a separate update below.
   await updateContinuationState(paths, appKey, subjectKey, (state) => {
+    // Preserve delivery confirmed while preparation was waiting for this lock.
+    record = state.repos.find((item) => item.continuation === key);
     return {
       ...state,
       lastRunId: options.runId,
@@ -445,6 +480,12 @@ export async function addRunWorktree(options: {
           cache,
           branch: repo.branch,
           continuation: key,
+          ...(record?.startSha === undefined
+            ? {}
+            : { startSha: record.startSha }),
+          ...(record?.pushedSha === undefined
+            ? {}
+            : { pushedSha: record.pushedSha }),
         },
       ],
     };
@@ -453,7 +494,18 @@ export async function addRunWorktree(options: {
   const lock = await lockCache(cache);
   try {
     const remote = await ref(cache, `refs/remotes/origin/${repo.branch}`);
-    const local = await ref(cache, resume);
+    let local = await ref(cache, resume);
+    if (
+      !options.readOnly &&
+      !options.clean &&
+      local &&
+      !remote &&
+      (await canDiscardContinuation(cache, local, record, repo.defaultBranch))
+    ) {
+      await git(['update-ref', '-d', resume, local], cache);
+      local = undefined;
+      record = undefined;
+    }
     let base =
       (options.readOnly || options.clean ? undefined : local) ??
       remote ??
@@ -473,6 +525,32 @@ export async function addRunWorktree(options: {
         warnings.push(
           `Remote ${repo.branch} diverged from local continuation. Integrate it manually before pushing; no automatic merge was performed.`,
         );
+    }
+    if (!options.readOnly && !options.clean) {
+      // An unknown historical resume retains unknown provenance until this run adds work.
+      record = {
+        url: repo.url,
+        path: key,
+        cache,
+        branch: repo.branch,
+        continuation: key,
+        ...(local === undefined
+          ? { startSha: base ?? '' }
+          : record?.startSha === undefined
+            ? {}
+            : { startSha: record.startSha }),
+        ...(remote !== undefined
+          ? { pushedSha: remote }
+          : record?.pushedSha === undefined
+            ? {}
+            : { pushedSha: record.pushedSha }),
+      };
+      await updateContinuationState(paths, appKey, subjectKey, (state) => ({
+        ...state,
+        repos: state.repos.map((item) =>
+          item.continuation === key ? record! : item,
+        ),
+      }));
     }
     const existing = await readWorkspaceMeta(paths, workDir);
     await writeWorkspaceMeta(paths, workDir, {
@@ -571,6 +649,10 @@ export async function addRunWorktree(options: {
     branch,
     continuation: key,
     warnings,
+    ...(record?.pushedSha === undefined ? {} : { pushedSha: record.pushedSha }),
+    ...((record?.pushedSha ?? record?.startSha) === undefined
+      ? {}
+      : { deliveryBaseSha: record?.pushedSha ?? record?.startSha }),
   };
 }
 
@@ -586,7 +668,11 @@ export async function finalizeRunWorktrees(
   paths: RunnerPaths,
   workDir: string,
   log: (message: string) => void,
-  options: { remove?: boolean; unsafeReason?: string } = {},
+  options: {
+    remove?: boolean;
+    unsafeReason?: string;
+    repos?: readonly CheckedOutRepo[];
+  } = {},
 ): Promise<SaveResult[]> {
   const meta = await readWorkspaceMeta(paths, workDir);
   if (options.unsafeReason !== undefined) {
@@ -747,6 +833,22 @@ export async function finalizeRunWorktrees(
           const lock = await lockCache(repo.cache);
           try {
             const previous = await ref(repo.cache, resume);
+            const reported = options.repos?.find((item) => item.dir === dir);
+            const continuation = (
+              await readContinuationState(
+                paths,
+                meta.appKey ?? '',
+                meta.subjectKey,
+              )
+            )?.repos.find((item) => item.continuation === repo.continuation);
+            const discard =
+              reported?.remoteMissing === true &&
+              (await canDiscardContinuation(
+                repo.cache,
+                head,
+                continuation,
+                reported.defaultBranch,
+              ));
             if (
               currentBranch !== undefined &&
               currentBranch !== repo.localBranch
@@ -774,6 +876,38 @@ export async function finalizeRunWorktrees(
               );
             } else if (
               currentBranch === repo.localBranch &&
+              discard &&
+              (previous === undefined ||
+                (await gitOk(
+                  ['merge-base', '--is-ancestor', previous, head],
+                  repo.cache,
+                )))
+            ) {
+              if (previous !== undefined)
+                await git(['update-ref', '-d', resume, previous], repo.cache);
+              await updateContinuationState(
+                paths,
+                meta.appKey ?? '',
+                meta.subjectKey,
+                (state) => ({
+                  ...state,
+                  repos: state.repos.map((item) => {
+                    if (item.continuation !== repo.continuation) return item;
+                    const identity = { ...item };
+                    delete identity.startSha;
+                    delete identity.pushedSha;
+                    return identity;
+                  }),
+                }),
+              );
+            } else if (
+              currentBranch === repo.localBranch &&
+              previous === undefined &&
+              head === repo.startSha
+            ) {
+              // Do not create a resume for an untouched checkout (including one cleared during preparation).
+            } else if (
+              currentBranch === repo.localBranch &&
               (previous === undefined ||
                 (await gitOk(
                   ['merge-base', '--is-ancestor', previous, head],
@@ -781,6 +915,29 @@ export async function finalizeRunWorktrees(
                 )))
             ) {
               await git(['update-ref', resume, head], repo.cache);
+              // Adopt this attempt's start only after it adds work, allowing failed pushes to retry.
+              // Returning to that adopted start intentionally counts as no pending work, even if it
+              // contains unpublished historical commits of unknown provenance; an absent remote may
+              // then allow the continuation to be cleared.
+              if (
+                continuation?.startSha === undefined &&
+                repo.startSha !== undefined &&
+                head !== repo.startSha
+              )
+                await updateContinuationState(
+                  paths,
+                  meta.appKey ?? '',
+                  meta.subjectKey,
+                  (state) => ({
+                    ...state,
+                    repos: state.repos.map((item) =>
+                      item.continuation === repo.continuation &&
+                      item.startSha === undefined
+                        ? { ...item, startSha: repo.startSha }
+                        : item,
+                    ),
+                  }),
+                );
             } else {
               const saved = `refs/runner/saved/${repo.continuation}/${randomUUID()}`;
               await git(['update-ref', saved, head], repo.cache);

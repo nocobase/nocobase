@@ -397,6 +397,48 @@
         }
       ],
       "registryDependencies": ["button", "tooltip"]
+    },
+    {
+      "name": "data-table",
+      "type": "registry:component",
+      "title": "Data Table",
+      "description": "Standard TanStack Table v8 table with controlled server pagination and sorting, selection and column visibility.",
+      "categories": ["data-display"],
+      "dependencies": [
+        "@tanstack/react-table@^8.21.3",
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["table", "button", "select", "dropdown-menu"],
+      "docs": "Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.",
+      "files": [
+        {
+          "path": "data-table/column-header.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/column-header.tsx"
+        },
+        {
+          "path": "data-table/data-table.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/data-table.tsx"
+        },
+        {
+          "path": "data-table/index.ts",
+          "type": "registry:component",
+          "target": "client/components/data-table/index.ts"
+        },
+        {
+          "path": "data-table/pagination.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/pagination.tsx"
+        },
+        {
+          "path": "data-table/view-options.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/view-options.tsx"
+        }
+      ]
     }
   ]
 }

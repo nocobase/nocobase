@@ -32,6 +32,7 @@ import {
 export const redactor: Redactor = createRedactor();
 
 export interface ComputerRecord {
+  readonly protocol: number | null;
   readonly id: string;
   readonly userId: string;
   readonly name: string;
@@ -121,7 +122,7 @@ export const sessions = (conn: DatabaseConnection): Repository<SessionRecord> =>
   conn.repository<SessionRecord>('agentSessions');
 export const events = (conn: DatabaseConnection): Repository<EventRecord> =>
   conn.repository<EventRecord>('agentSessionEvents');
-const commands = (conn: DatabaseConnection): Repository<CommandRecord> =>
+export const commands = (conn: DatabaseConnection): Repository<CommandRecord> =>
   conn.repository<CommandRecord>('agentSessionCommands');
 export const links = (conn: DatabaseConnection): Repository<LinkRecord> =>
   conn.repository<LinkRecord>('agentSessionLinks');
@@ -290,7 +291,7 @@ export async function readEvents(
 
 /** Internal submission metadata never enters public transcripts or bridge commands. */
 export function eventView(row: EventRecord): TranscriptEvent {
-  const { _submission: _internal, ...data } = row.data;
+  const { _submission: _internal, _execution: _decision, ...data } = row.data;
   return {
     ...data,
     kind: row.kind,
@@ -303,26 +304,48 @@ export async function enqueue(
   computerId: string,
   command: BridgeCommand,
   now: string,
+  id: string = randomUUID(),
 ): Promise<void> {
-  await commands(conn).createOne({
-    values: { id: randomUUID(), computerId, command, createdAt: now },
+  // No returned row is needed, especially not a large JSON OUT bind on Oracle.
+  await commands(conn).createMany({
+    values: [{ id, computerId, command, createdAt: now }],
   });
 }
 
-/** Takes the computer's waiting commands away, oldest first. */
+/** Delivers waiting commands, retaining withdrawals until their removal acknowledgement. */
 export async function takeCommands(
   conn: DatabaseConnection,
   computerId: string,
 ): Promise<BridgeCommand[]> {
-  const waiting = await commands(conn).findMany({
+  let waiting = await commands(conn).findMany({
     filter: { computerId },
     sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
     limit: 50,
   });
+  const retained = waiting.filter(
+    (row) => row.command.type === 'withdrawPrompt',
+  );
+  // Only an overfull retained backlog needs a second read. Empty polls retain their original cost.
+  if (waiting.length === 50 && retained.length > 25) {
+    const ordinary = await commands(conn).findMany({
+      filter: (f) =>
+        f.and([
+          f.string('computerId').eq(computerId),
+          f.string('id').notIncludes('withdraw:'),
+        ]),
+      sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
+      limit: 25,
+    });
+    waiting = [...ordinary, ...retained.slice(0, 25)];
+  }
   if (waiting.length === 0) return [];
-  await commands(conn).deleteMany({
-    filter: (f) => f.or(waiting.map((row) => f.string('id').eq(row.id))),
-  });
+  const disposable = waiting.filter(
+    (row) => row.command.type !== 'withdrawPrompt',
+  );
+  if (disposable.length > 0)
+    await commands(conn).deleteMany({
+      filter: (f) => f.or(disposable.map((row) => f.string('id').eq(row.id))),
+    });
   return waiting.map((row) => row.command);
 }
 

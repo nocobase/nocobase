@@ -263,3 +263,15 @@ Each batch selects up to 200 runs with events or briefs, ordered by finish time 
 Multi-instance deployments must set `jobs.default: redis` with a shared Redis connection and namespace so the existing jobs scheduler claims each firing on one instance. Memory jobs and the in-process timer fallback when no jobs service is installed serve single-instance deployments. No additional distributed lock or exactly-once ledger is introduced.
 
 Studio publishes `agents.runs.retentionDays` through its existing public configuration. The process view displays a retention notice only for an expired terminal run with a complete empty transcript and no brief. This uses the current retention rule, rather than a historical cleanup marker; changing or disabling the policy changes the inferred notice. Run, event and brief API contracts are unchanged.
+
+## Runtime quotas and detail tabs
+
+Runtime quota marks share `unavailableModels` with model availability marks and use internal `quotaRevision` conditional writes. Known reset times restore eligibility automatically and cannot be cleared manually. Unknown limits remain until the owner or a runtime administrator clears the selected mark. Expiry and clearing never revive terminal runs or extend queue deadlines.
+
+Usage snapshots are saved when usage changes by at least five percentage points, crosses the near-limit threshold, or changes window state. Only mark changes broadcast `runner.changed`. Quota reports use the existing events/fail transaction; ordinary heartbeats and claims add no queries, writes or locks. Final failures read only accepted quota-event metadata for deduplication, retaining the complete failure snapshot. New event sequences and new runs can mark exhaustion again.
+
+The runtime list omits model catalogs, policy, variables, quota details and load; `takes` contains at most three entries with `takesCount`. Runtime get returns Overview and workspace totals without directory rows. Its recent-run count uses a bounded ten-row read. Workspace sizes and category counts reuse the directory snapshot already read. `GET /agents/runners/:runnerId/workspaces` accepts `status`, `page` and `pageSize` and returns directory rows in `data`, with totals and paging in `meta`. Recent runs load from `/runs` only when that tab opens.
+
+`POST /agents/runners/:runnerId/quota/clear` takes structured `tool`, `scope`, `target` and `window` fields, without a client revision. The server rereads state transactionally and removes only that target, idempotently. A known reset returns `409 CONFLICT`; a concurrent conditional-write race returns `409 REVISION_CONFLICT`. Only revision races are retryable. Clear checks ownership or `agents.runners/manage` independently of edit permission. Owner notices include the triggering run and issue identifiers; `notice.cleared` names the selected quota key so applications settle only that notice group.
+
+Applications can call `useAgentOption(id)` from the client kit for a system executor's viewer-scoped availability, rather than listing only discovered runner agents. The shared cache refreshes at quota reset or runtime changes.

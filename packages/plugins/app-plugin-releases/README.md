@@ -65,6 +65,8 @@ The plugin copies referenced disk configuration without changing `drive.disks`. 
 
 Applications composing services directly with `createReleases({ config, drive, ... })` pass the final `AppDriveConfig` as the optional `drive` argument when `config.artifact` references a named disk. Existing callers with a complete artifact disk configuration need no changes.
 
+Drive also accepts synchronous driver factories in `drive.disks`, but release artifact references require serializable disk configuration objects for the Hosts. Referencing a factory fails before Host initialization without invoking the factory. Configure an object disk for release artifacts; factories remain available for application file storage.
+
 ## CI and API keys with a scope
 
 The plugin has no keys of its own. The API is authenticated by the application, which accepts a person's session or an API key, and opts into scoped keys (`auth.required({ scopedKeys: true })`). A request made with a scoped key (or any key of a service account) carries the key's `KeyScope` on its identity, and `callerOf` turns it into a `key` caller: its permissions are cut down to what the scope covers, and the Apps it reaches to the ones the scope picked (`keyScope.objects('rel.apps')`), for listing as well as every App check.

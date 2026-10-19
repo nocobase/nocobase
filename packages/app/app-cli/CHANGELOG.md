@@ -1,5 +1,29 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 00b85da: Pack CLI and runner distribution archives without host extended attributes, preventing repeated LIBARCHIVE warnings during installation with GNU tar while preserving extraction errors.
+
+## 1.0.0-beta.23
+
+### Patch Changes
+
+- 98b3862: Identify Dameng, KingbaseES and OceanBase as NocoBase Pro commercial drivers when selecting or initializing a database. Report commercial license and private registry requirements before configuration, including JSON warnings and missing-driver errors.
+- 525ace4: Declare the workspace packages the tests read as devDependencies instead of reaching into their directories, and add a test to each application template that checks `config.example.yml` still has what `nocobase config init` relies on.
+- Updated dependencies [98b3862]
+- Updated dependencies [5fe8773]
+- Updated dependencies [b22d999]
+- Updated dependencies [0037dd2]
+- Updated dependencies [eb4b081]
+- Updated dependencies [14b7aec]
+- Updated dependencies [49f61b9]
+- Updated dependencies [0037dd2]
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/app-server@2.0.0-beta.8
+  - @nocobase/dev-config@0.1.0-beta.23
+
 ## 1.0.0-beta.22
 
 ### Patch Changes

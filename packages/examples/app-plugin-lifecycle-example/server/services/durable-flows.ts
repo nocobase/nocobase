@@ -123,8 +123,12 @@ export class DurableFlowService {
     return { records: rows.map(plain), total: await repository.count() };
   }
 
-  public parameters(flow: DurableFlow): object {
-    return this.runtime.parameters(flow);
+  public async parameters(flow: DurableFlow): Promise<object> {
+    return this.runtime.resolveParameters(flow, {
+      record: null,
+      purpose: 'preview',
+      transactionHandle: undefined,
+    });
   }
 
   public async createInvoice(

@@ -598,10 +598,29 @@ describe('checkout', () => {
     );
     const marker = path.join(root, 'credential-helper-executed');
     const requests: string[] = [];
+    const advertisement = Buffer.concat([
+      Buffer.from('001e# service=git-upload-pack\n0000'),
+      execFileSync('git', [
+        'upload-pack',
+        '--stateless-rpc',
+        '--advertise-refs',
+        path.join(root, 'origin-repo.git'),
+      ]),
+    ]);
     const server = createServer((request, response) => {
       requests.push(request.url ?? '');
-      response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="fixture"' });
-      response.end();
+      if (request.url?.includes('service=git-upload-pack')) {
+        response.writeHead(200, {
+          'Content-Type': 'application/x-git-upload-pack-advertisement',
+        });
+        response.end(advertisement);
+      } else {
+        // Ref discovery succeeds; authentication is required only when Git attempts the push.
+        response.writeHead(401, {
+          'WWW-Authenticate': 'Basic realm="fixture"',
+        });
+        response.end();
+      }
     });
     await new Promise<void>((resolve) =>
       server.listen(0, '127.0.0.1', resolve),
@@ -624,6 +643,7 @@ describe('checkout', () => {
       expect(
         requests.some((url) => url.includes('service=git-upload-pack')),
       ).toBe(true);
+      expect(report?.failure).toBeDefined();
       expect(
         requests.some((url) => url.includes('service=git-receive-pack')),
       ).toBe(true);

@@ -3,6 +3,9 @@
  * unwrapped from `{ data }`. Failures throw `ApiClientError` (`status`, `reason`, `domain`). Runners and registration
  * tokens go through the runners' API (`RunnersApi`, `/api/agents/runners`).
  */
+import type { QuotaMarkTarget } from '../../shared/quota.js';
+import type { RunnerWorkspacePage } from '../../shared/runners.js';
+
 import type { ApiClient } from '@nocobase/app-client';
 import type { RunStatus } from '@nocobase/agent-protocol';
 
@@ -228,6 +231,16 @@ export class AgentsApi {
     return this.runnersApi.runners();
   }
 
+  public clearQuota(runnerId: string, target: QuotaMarkTarget): Promise<void> {
+    return this.runnersApi.clearQuota(runnerId, target);
+  }
+  public runnerWorkspaces(
+    runnerId: string,
+    status = 'all',
+    page = 1,
+  ): Promise<RunnerWorkspacePage> {
+    return this.runnersApi.runnerWorkspaces(runnerId, status, page);
+  }
   public runner(runnerId: string): Promise<RunnerSummary> {
     return this.runnersApi.runner(runnerId);
   }
@@ -243,11 +256,16 @@ export class AgentsApi {
     return this.runnersApi.createRegistrationToken(input);
   }
 
-  public updateRunner(runnerId: string, patch: RunnerPatch): Promise<Runner> {
+  public updateRunner(
+    runnerId: string,
+    patch: RunnerPatch,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
     return this.runnersApi.updateRunner(runnerId, patch);
   }
 
-  public revokeRunner(runnerId: string): Promise<Runner> {
+  public revokeRunner(
+    runnerId: string,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
     return this.runnersApi.revokeRunner(runnerId);
   }
 

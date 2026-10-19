@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "1.0.0-beta.50",
+  "version": "1.0.0-beta.52",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.50"
+    "defaultTemplateVersion": "1.0.0-beta.52"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
@@ -85,7 +85,9 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "tar": "catalog:"
+    "tar": "catalog:",
+    "@xyflow/react": "^12.11.5",
+    "elkjs": "^0.10.2"
   },
   "files": [
     ".prettierignore",

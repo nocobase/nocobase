@@ -103,25 +103,49 @@ The command tree is assembled for `--help` too, so every command module is impor
 
 ### Test
 
-`@nocobase/app-cli/testing` runs a command without the runner:
+Use `@nocobase/app-testing/cli` from the plugin's `devDependencies`. It re-exports the command helpers so plugin tests share the same testing entry as their Server, database and Client fixtures. Save the `DemoGreet` command below as `cli/greet.ts`, and place this test in `tests/cli/greet.test.ts` under the Node Vitest project:
 
 ```ts
-import { bindAppCommand, runAppCommand } from '@nocobase/app-cli/testing';
+import { fileURLToPath } from 'node:url';
 
-const Bound = bindAppCommand(OrdersExport, {
-  rootDir: fixtureRoot,
-  id: 'app:orders:export',
+import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
+import { expect, it } from 'vitest';
+
+import DemoGreet from '../../cli/greet.js';
+
+const Bound = bindAppCommand(DemoGreet, {
+  rootDir: fileURLToPath(new URL('../../', import.meta.url)),
+  id: 'demo:greet',
 });
-const run = await runAppCommand(Bound, ['--dry-run', '--json']);
 
-expect(run.json()).toMatchObject({
-  ok: true,
-  command: 'app orders export',
-  status: 'success-noop',
+it.each([
+  { args: ['world'], message: 'Hello, world.' },
+  { args: ['world', '--loud'], message: 'HELLO, WORLD!' },
+])('returns the greeting for $args', async ({ args, message }) => {
+  const run = await runAppCommand(Bound, [...args, '--json']);
+
+  expect(run.exitCode ?? 0).toBe(0);
+  expect(run.json()).toMatchObject({
+    ok: true,
+    command: 'demo greet',
+    status: 'success',
+    result: { message },
+  });
+});
+
+it('rejects a missing target', async () => {
+  const run = await runAppCommand(Bound, ['--json']);
+
+  expect(run.exitCode).toBe(2);
+  expect(run.json()).toMatchObject({ ok: false, status: 'failure' });
 });
 ```
 
 `bindAppCommand()` pins the command to a fixture application, the way the runner would point it at the one it located; `id` is the id the runner would give it, colon-separated, so the document names the command. Pass `loadRuntime` and `createApp` as well to replace the application with a stub. `runAppCommand()` returns what `run()` returned as `result`, what escaped it as `error`, the `exitCode`, the captured `stdout` and `stderr`, and `json()` for the `--json` document. Assert on those rather than on printed text.
+
+A successful run leaves `exitCode` undefined, meaning zero; normalize it with `run.exitCode ?? 0`. Under `--json`, a handled failure is represented by its nonzero exit code and JSON error envelope, so checking `run.error` alone can miss it.
+
+This command only parses arguments and returns a greeting, so it needs neither a started App nor a database. A command that writes files needs a temporary fixture root and assertions on the resulting files; a dry run must leave them unchanged. A command that opens an App uses `createTestAppConfig()` and `bindTestAppCommand()` from the same entry, a fixture App that registers the real Server plugin and loads the test configuration, and `await config.dispose()` in `finally`. See [fixture ownership](testing.md#own-the-fixture-and-register-the-real-plugin). Keep command tests sequential because output capture modifies process streams. Binding a class does not prove CLI registration: verify the target App discovers its plugin topic separately when registration changes.
 
 ## Example command
 

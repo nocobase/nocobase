@@ -119,8 +119,11 @@ function DiagramState({ data, id }: NodeProps<DiagramNode>): ReactElement {
             : 'pending'
       }
       className={cn(
-        'group relative flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-sm text-card-foreground shadow-md transition-[box-shadow,border-color] hover:border-primary/50 hover:shadow-lg motion-reduce:transition-none [.selected_&]:ring-2 [.selected_&]:ring-ring [.selected_&]:ring-offset-2 [.selected_&]:ring-offset-background',
+        'group relative flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-linear-to-b from-card to-muted/20 text-sm text-card-foreground shadow-md transition-[box-shadow,border-color] hover:border-primary/50 hover:shadow-lg motion-reduce:transition-none [.selected_&]:ring-2 [.selected_&]:ring-ring [.selected_&]:ring-offset-2 [.selected_&]:ring-offset-background',
         data.item.highlighted && 'border-primary ring-4 ring-primary/10',
+        !data.item.highlighted &&
+          (data.item.kind === 'initial' || data.item.configurable) &&
+          'border-primary/25',
         data.item.visited && !data.item.highlighted && 'border-primary/40',
         data.item.className,
       )}
@@ -129,10 +132,12 @@ function DiagramState({ data, id }: NodeProps<DiagramNode>): ReactElement {
         <div
           aria-hidden
           className={cn(
-            'absolute inset-x-0 top-0 h-1 bg-border',
-            data.item.kind === 'initial' && 'bg-primary/45',
-            data.item.kind === 'final' && 'bg-foreground/35',
-            (data.item.highlighted || data.item.visited) && 'bg-primary',
+            'absolute inset-x-0 top-0 h-1 bg-linear-to-r from-border to-border/40',
+            data.item.kind === 'initial' && 'from-primary/70 to-primary/20',
+            data.item.kind === 'final' && 'from-foreground/50 to-foreground/15',
+            data.item.configurable && 'from-primary/60 to-primary/15',
+            (data.item.highlighted || data.item.visited) &&
+              'from-primary to-primary/50',
           )}
         />
       )}
@@ -154,6 +159,7 @@ function DiagramState({ data, id }: NodeProps<DiagramNode>): ReactElement {
               className={cn(
                 'flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-linear-to-br from-muted to-card text-muted-foreground shadow-xs',
                 (data.item.kind === 'initial' ||
+                  data.item.configurable ||
                   data.item.visited ||
                   data.item.highlighted) &&
                   'border-primary/15 from-primary/15 to-primary/5 text-primary',
@@ -185,7 +191,7 @@ function DiagramState({ data, id }: NodeProps<DiagramNode>): ReactElement {
             </span>
             {data.actions ??
               (data.item.configurable && (
-                <span className='inline-flex items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-card-foreground'>
+                <span className='inline-flex items-center gap-1 rounded-md border border-primary/15 bg-primary/5 px-1.5 py-0.5 text-primary'>
                   <Settings2Icon className='size-3' aria-hidden />
                   {t('flowDiagram.configurable', {
                     defaultValue: 'Parameters',
@@ -631,7 +637,7 @@ function DiagramToolbar({
                 className='size-7 p-0'
                 variant='ghost'
                 aria-label={label}
-                disabled={disabled}
+                disabled={disabled || !flow.viewportInitialized}
                 onClick={run}
               >
                 <Icon />
