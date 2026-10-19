@@ -92,6 +92,7 @@ const settings = {
   noPermissions: '暂无可配置权限',
   permissionCategories: '权限分类',
   selectAllPermissions: '全选',
+  dataRanges: '数据范围（{{count}}）',
   selectVisiblePermissions: '选择“{{name}}”中显示的权限',
   permissionSummary: '已授权 {{enabled}} / {{total}}',
   noRecordScope: '不允许访问数据',

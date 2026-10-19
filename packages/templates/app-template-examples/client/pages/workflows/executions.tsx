@@ -80,7 +80,7 @@ export default function ExecutionsPage(): ReactElement {
           workflow: (
             <>
               <Link
-                className='hover:underline'
+                className='underline-offset-4 hover:underline'
                 to={{
                   pathname: `/workflows/definitions/${execution.workflowId}`,
                   search: location.search,

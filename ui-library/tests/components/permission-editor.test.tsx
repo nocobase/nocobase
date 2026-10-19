@@ -325,7 +325,7 @@ it('shows a single page access checkbox without a duplicate access action or res
   expect(onEnabledBatchChange).not.toHaveBeenCalled();
 });
 
-it('keeps multiple inline scopes independently named and editable', async () => {
+it('reveals multiple scopes without changing their independent saved selections', async () => {
   const change = vi.fn();
   render(
     <PermissionEditor
@@ -361,6 +361,9 @@ it('keeps multiple inline scopes independently named and editable', async () => 
       onLevelChange={change}
     />,
   );
+  expect(screen.getByText('Records')).not.toBeVisible();
+  await userEvent.click(screen.getByText('Data ranges (2)'));
+  expect(change).not.toHaveBeenCalled();
   expect(screen.getByText('Records')).toBeVisible();
   expect(screen.getByText('Attachments')).toBeVisible();
   await userEvent.click(
@@ -531,9 +534,105 @@ it('keeps scope captions consistent in a category with multiple data ranges, inc
     />,
   );
   expect(screen.getByText('Visible quotes')).toBeVisible();
+  await userEvent.click(screen.getByText('Data ranges (2)'));
   expect(screen.getByText('Linked projects')).toBeVisible();
   expect(screen.getByText('Allowed quotes')).toBeVisible();
   await userEvent.type(screen.getByRole('textbox'), 'View quotes');
   expect(screen.queryByText('Linked projects')).not.toBeInTheDocument();
   expect(screen.getByText('Visible quotes')).toBeVisible();
+});
+
+it('keeps administration actions ordered and independently editable with unrelated special actions', async () => {
+  const enabled = vi.fn();
+  render(
+    <PermissionEditor
+      sections={[
+        {
+          id: 'admin',
+          title: 'Administration',
+          groups: [
+            {
+              id: 'roles',
+              title: 'Roles',
+              rows: [
+                {
+                  id: 'grants',
+                  actionKey: 'grants',
+                  label: 'Manage grants',
+                  enabled: false,
+                },
+                {
+                  id: 'delete',
+                  actionKey: 'delete',
+                  label: 'Delete',
+                  enabled: false,
+                },
+                { id: 'read', actionKey: 'read', label: 'View', enabled: true },
+                {
+                  id: 'update',
+                  actionKey: 'update',
+                  label: 'Edit',
+                  enabled: false,
+                },
+                {
+                  id: 'create',
+                  actionKey: 'create',
+                  label: 'Create',
+                  enabled: false,
+                },
+              ],
+            },
+            {
+              id: 'checker',
+              title: 'Checker',
+              rows: [
+                {
+                  id: 'check',
+                  actionKey: 'check',
+                  label: 'Check permissions',
+                  enabled: false,
+                },
+              ],
+            },
+            {
+              id: 'scheduler',
+              title: 'Scheduler',
+              rows: [
+                {
+                  id: 'run',
+                  actionKey: 'run',
+                  label: 'Start and stop rules',
+                  enabled: false,
+                },
+              ],
+            },
+          ],
+        },
+      ]}
+      onEnabledChange={enabled}
+      onLevelChange={vi.fn()}
+    />,
+  );
+  const controls = screen.getAllByRole('checkbox');
+  for (const [index, name] of [
+    'View',
+    'Create',
+    'Edit',
+    'Delete',
+    'Manage grants',
+    'Check permissions',
+    'Start and stop rules',
+  ].entries()) {
+    expect(controls[index]).toHaveAccessibleName(name);
+  }
+  expect(
+    screen.getByRole('checkbox', { name: 'View', exact: true }),
+  ).toBeChecked();
+  expect(enabled).not.toHaveBeenCalled();
+  await userEvent.type(screen.getByRole('textbox'), 'Manage grants');
+  expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+  await userEvent.click(
+    screen.getByRole('checkbox', { name: 'Manage grants' }),
+  );
+  expect(enabled).toHaveBeenCalledExactlyOnceWith('grants', true);
 });

@@ -32,6 +32,27 @@
           "target": "client/components/permission-filter.tsx"
         }
       ]
+    },
+    {
+      "name": "role-list",
+      "type": "registry:component",
+      "title": "Role List",
+      "description": "A compact role content list with aligned names, identifiers and protected/custom labels. Use it on role administration pages backed by the Authorization plugin; the host supplies authorized data and edit destinations. Preinstalled in both application templates.",
+      "categories": ["authorization"],
+      "meta": {
+        "group": "Authorization",
+        "iframeHeight": 480
+      },
+      "dependencies": ["react-router@^7.0.2", "lucide-react@^0.487.0"],
+      "registryDependencies": ["badge"],
+      "docs": "Render inside a React Router with roles containing key, localized title, edit destination (to) and protected state. Pass localized protected/custom labels and an optional ariaLabel. The host owns loading, empty/error states, filtering, sorting and authorization. Rows use body-sized text and compact spacing; identifiers move under the name on narrow containers. Publishing the Registry does not replace installed source; existing apps merge role-list.tsx and the roles page integration through a template source upgrade.",
+      "files": [
+        {
+          "path": "role-list.tsx",
+          "type": "registry:component",
+          "target": "client/components/role-list.tsx"
+        }
+      ]
     }
   ]
 }

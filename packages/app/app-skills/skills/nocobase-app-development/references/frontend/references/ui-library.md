@@ -145,6 +145,17 @@ A compact resource permission workspace with horizontal action checkboxes, adjac
 - Example: `@nocobase/permission-editor-demo` (`pnpm exec shadcn view @nocobase/permission-editor-demo`)
 - After installing: Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default. Resource groups render as compact rows with wrapping action checkboxes. Optional row.scopes bind independent scope selectors to their owning action. Pass onEnabledBatchChange to enable atomic group selection of visible toggleable permissions; omit it to keep single-action controls. Filtering never mutates the draft. Pass labels.selectVisible for the localized group checkbox name. Use group.accessOnly for a page with a single access action to show one title checkbox without redundant action text. Provide scope.configuration for parameterized scopes; PermissionFilter edits validated condition drafts and keeps role saving in the host form. Never save customFilter as a bare key: bind its native params.filter object.
 
+### role-list
+
+A compact role content list with aligned names, identifiers and protected/custom labels. Use it on role administration pages backed by the Authorization plugin; the host supplies authorized data and edit destinations. Preinstalled in both application templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/role-list`
+- Installs to: `client/components/role-list.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/role-list-demo` (`pnpm exec shadcn view @nocobase/role-list-demo`)
+- After installing: Render inside a React Router with roles containing key, localized title, edit destination (to) and protected state. Pass localized protected/custom labels and an optional ariaLabel. The host owns loading, empty/error states, filtering, sorting and authorization. Rows use body-sized text and compact spacing; identifiers move under the name on narrow containers. Publishing the Registry does not replace installed source; existing apps merge role-list.tsx and the roles page integration through a template source upgrade.
+
 ## Data display
 
 ### kanban

@@ -4,6 +4,7 @@ import {
   PermissionEditor,
   type PermissionEditorLevel,
   type PermissionEditorSection,
+  type PermissionEditorScope,
 } from '#components/permission-editor';
 
 const OWN_OR_ALL: readonly PermissionEditorLevel[] = [
@@ -26,6 +27,7 @@ interface DemoRow {
   readonly actionKey?: string | undefined;
   readonly hint?: string;
   readonly levels?: readonly PermissionEditorLevel[];
+  readonly scopes?: readonly PermissionEditorScope[];
   /** A hint per level, for a settings item whose levels mean different things. */
   readonly hints?: Readonly<Record<string, string>>;
 }
@@ -76,6 +78,31 @@ const CATALOG: readonly {
         ],
       },
       {
+        id: 'quotes',
+        title: 'Quotes',
+        rows: [
+          {
+            id: 'quotes-submit',
+            actionKey: 'submit',
+            label: 'Submit quote',
+            scopes: [
+              {
+                id: 'quote-projects',
+                label: 'Linked projects',
+                levels: OWN_OR_ALL,
+                level: 'own',
+              },
+              {
+                id: 'quote-records',
+                label: 'Quotes allowed for submission',
+                levels: OWN_OR_ALL,
+                level: 'all',
+              },
+            ],
+          },
+        ],
+      },
+      {
         id: 'contacts',
         title: 'Contacts',
         rows: [
@@ -121,6 +148,63 @@ const CATALOG: readonly {
     ],
   },
   {
+    id: 'administration',
+    title: 'Administration',
+    groups: [
+      {
+        id: 'roles',
+        title: 'Roles',
+        rows: [
+          { id: 'roles-read', actionKey: 'read', label: 'View' },
+          { id: 'roles-create', actionKey: 'create', label: 'Create' },
+          { id: 'roles-update', actionKey: 'update', label: 'Edit' },
+          { id: 'roles-delete', actionKey: 'delete', label: 'Delete' },
+          { id: 'roles-grants', actionKey: 'grants', label: 'Manage grants' },
+        ],
+      },
+      ...['Default data scope', 'Sharing rules', 'Restriction rules'].map(
+        (title, index) => ({
+          id: `policy-${index}`,
+          title,
+          rows: [
+            { id: `policy-${index}-read`, actionKey: 'read', label: 'View' },
+            {
+              id: `policy-${index}-create`,
+              actionKey: 'create',
+              label: 'Create',
+            },
+            {
+              id: `policy-${index}-update`,
+              actionKey: 'update',
+              label: 'Edit',
+            },
+            {
+              id: `policy-${index}-delete`,
+              actionKey: 'delete',
+              label: 'Delete',
+            },
+          ],
+        }),
+      ),
+      {
+        id: 'checker',
+        title: 'Permission checker',
+        rows: [{ id: 'check', actionKey: 'check', label: 'Check permissions' }],
+      },
+      {
+        id: 'scheduler',
+        title: 'Scheduler',
+        rows: [
+          {
+            id: 'scheduler-run',
+            actionKey: 'run',
+            label: 'Start and stop rules',
+          },
+        ],
+      },
+    ],
+  },
+  {
     id: 'settings',
     title: 'Settings',
     footer: 'Only people who can define roles may change this page.',
@@ -154,6 +238,7 @@ const CATALOG: readonly {
 
 const INITIAL_ENABLED: Readonly<Record<string, boolean>> = {
   'deals-view': true,
+  'quotes-submit': true,
   'deals-edit': true,
   'contacts-view': true,
   'page-dashboard': true,
@@ -187,6 +272,10 @@ export function PermissionEditorDemo(): ReactElement {
             hint: row.hints && level ? row.hints[level] : row.hint,
             enabled: enabled[row.id] ?? false,
             levels: row.levels,
+            scopes: row.scopes?.map((scope) => ({
+              ...scope,
+              level: levels[scope.id] ?? scope.level,
+            })),
             level,
           };
         }),

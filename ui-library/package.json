@@ -206,6 +206,7 @@
     "#extensions/nocobase-workflow-management/execution-list": "./registry/lifecycle/workflow-management/execution-list.tsx",
     "#components/permission-filter": "./registry/authorization/permission-filter.tsx",
     "#components/data-table/data-table": "./registry/components/data-table/data-table.tsx",
-    "#components/data-table/column-header": "./registry/components/data-table/column-header.tsx"
+    "#components/data-table/column-header": "./registry/components/data-table/column-header.tsx",
+    "#components/role-list": "./registry/authorization/role-list.tsx"
   }
 }

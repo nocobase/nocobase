@@ -93,6 +93,7 @@ import { AuthenticationDemo } from './demo/auth';
 import { DeviceApprovalDemo } from './demo/auth/device-approval';
 import { PageContainerDemo } from './demo/components/page-container';
 import { PageHeaderDemo } from './demo/components/page-header';
+import { RoleListDemo } from './demo/authorization/role-list.js';
 import { PermissionEditorDemo } from './demo/authorization/permission-editor';
 import { RouteOverlaysDemo } from './demo/components/route-overlays';
 import { IssueDetailDemo } from './demo/projects/issue-detail';
@@ -167,6 +168,7 @@ const itemPreviews: Record<string, ItemPreview> = {
     path: '/demo/components/route-overlays/report',
     icon: Layers,
   },
+  'role-list': { path: '/demo/authorization/role-list', icon: ToggleRight },
   'permission-editor': {
     path: '/demo/authorization/permission-editor',
     icon: ToggleRight,
@@ -282,6 +284,8 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/components/page-header')) {
     return <PageHeaderDemo />;
   }
+  if (pathname.startsWith('/demo/authorization/role-list'))
+    return <RoleListDemo />;
   if (pathname.startsWith('/demo/authorization/permission-editor')) {
     return <PermissionEditorDemo />;
   }

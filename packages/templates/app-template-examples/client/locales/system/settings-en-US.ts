@@ -95,6 +95,7 @@ const settings = {
   noPermissions: 'No permissions to configure',
   permissionCategories: 'Permission categories',
   selectAllPermissions: 'All',
+  dataRanges: 'Data ranges ({{count}})',
   selectVisiblePermissions: 'Select visible permissions in {{name}}',
   permissionSummary: '{{enabled}} of {{total}} enabled',
   preservedRecordScope: 'Keep existing configuration',

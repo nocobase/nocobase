@@ -11,7 +11,7 @@ import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { Input } from '#components/ui/input';
 import { Button } from '#components/ui/button';
-import { Badge } from '#components/ui/badge';
+import { RoleList } from '#components/role-list';
 import {
   Empty,
   EmptyTitle,
@@ -95,39 +95,22 @@ export default function RolesPage(): ReactElement {
         ) : (
           !request.error &&
           (rows.length ? (
-            <div className='divide-y overflow-hidden rounded-xl border bg-card'>
-              {rows.map((role) => (
-                <Link
-                  key={role.key}
-                  to={{
-                    pathname: `${encodeURIComponent(role.key)}/edit`,
-                    search: location.search,
-                  }}
-                  className='flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring'
-                >
-                  <div className='flex min-w-0 items-center gap-3'>
-                    <div className='rounded-lg bg-primary/10 p-2 text-primary'>
-                      <ShieldCheckIcon className='size-4' />
-                    </div>
-                    <div className='min-w-0'>
-                      <p className='font-medium'>
-                        {text(role.title ?? role.key)}
-                      </p>
-                      <p className='text-xs text-muted-foreground'>
-                        {role.key}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant='secondary'>
-                    {t(
-                      role.protection
-                        ? 'settings.protected'
-                        : 'settings.custom',
-                    )}
-                  </Badge>
-                </Link>
-              ))}
-            </div>
+            <RoleList
+              ariaLabel={t('settings.roles')}
+              roles={rows.map((role) => ({
+                key: role.key,
+                title: text(role.title ?? role.key),
+                to: {
+                  pathname: `${encodeURIComponent(role.key)}/edit`,
+                  search: location.search,
+                },
+                protected: Boolean(role.protection),
+              }))}
+              labels={{
+                protected: t('settings.protected'),
+                custom: t('settings.custom'),
+              }}
+            />
           ) : (
             <Empty className='min-h-48 border border-dashed'>
               <EmptyMedia variant='icon'>

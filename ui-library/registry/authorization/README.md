@@ -1,9 +1,10 @@
 # Authorization
 
-What a role or a member may do, presented: the `permission-editor` component.
+Role administration presentation: the compact `role-list` and the `permission-editor` workspace.
 
 | Item                | Installs                                  | Exports            |
 | ------------------- | ----------------------------------------- | ------------------ |
+| `role-list`         | `client/components/role-list.tsx`         | `RoleList`         |
 | `permission-editor` | `client/components/permission-editor.tsx` | `PermissionEditor` |
 
 ## Permission editor
@@ -18,8 +19,18 @@ The registry copies source; an already installed component does not change when 
 
 For a page resource with one access action, set `group.accessOnly` to render its title as a single checkbox, without a duplicate access label or per-resource counter. Single-action groups omit bulk selection; multi-action groups retain wrapping actions and group selection. Use localized navigation or breadcrumb titles for page resources rather than route identifiers.
 
-Scope selectors sit beside their owning action on narrow screens and below its label on wider screens. Action grids reserve enough width for labels and scopes; compatible catalogs align semantic action columns only when there is sufficient room. When a category includes actions with multiple scopes, every scope shows its caption above its control so the first controls align across actions; otherwise single scopes keep the compact caption-free layout. All selectors retain action-and-scope accessible names. Group counts sit alongside the resource name. Keep scope labels localized and avoid raw collection names.
+Scope selectors remain in their owning action cell, sitting beside the label when the cell has room and below it when narrow. Action grids reserve enough width for labels and scopes; compatible catalogs align semantic action columns only when there is sufficient room. When a category includes actions with multiple scopes, every scope shows its caption above its control when the controls are shown; otherwise single scopes keep the compact caption-free layout. All selectors retain action-and-scope accessible names. Group counts sit alongside the resource name. Keep scope labels localized and avoid raw collection names.
 
 Parameterized record access must edit and persist real native parameters. The item also installs `permission-filter.tsx`, a controlled temporary input with field/operator/typed-value conditions, All/Any logic, validation and explicit Apply/Cancel. Attach it through `scope.configuration`. Selecting custom filtering should open configuration while retaining the previous selection until Apply; then put `{ type: 'recordAccess', key: 'customFilter', params: { filter } }` in the owning composite scope. An empty string grants no records; do not silently turn it into All records. The role form still owns the final save, revision check and error handling. Existing advanced filters are preserved unless explicitly reconfigured.
 
 The host must preserve policies that are absent from the current catalog. Display an existing, unrecognized scope as a localized retained-configuration option rather than an empty selection, keep its original value until explicitly replaced, and treat selecting an already enabled permission or the current scope as a no-op. The official templates bind this behavior in their permission draft model.
+
+Permission actions use regular body text and compact resource rows. Categories without data ranges align up to six semantic action columns when the container has room, leaving gaps for missing actions. Unrelated special actions share trailing slots instead of widening every resource; a resource with one action uses the available row width. Scoped actions retain wider columns. An enabled action with several scopes exposes them through an expandable summary; `labels.dataRanges(count)` customizes its text (English: `Data ranges (2)`, Chinese: `数据范围（2）`). Expanding or collapsing only changes presentation and never changes the saved grants or scope values.
+
+## Role list
+
+`role-list` presents roles as compact content rows with body-sized names, muted identifiers, small state badges and a plain shield icon. Wide containers align name, identifier and state in three columns; narrow containers put the identifier below its name. Long names and identifiers truncate visually and retain their full text in the DOM and native title. Rows stay keyboard-accessible links.
+
+Render `RoleList` inside React Router. Supply `roles` with stable `key`, localized `title`, a `to` destination and a `protected` boolean; pass localized `labels.protected` and `labels.custom`, and an optional `ariaLabel` for the list. The component owns no loading, search, sort, authorization, persistence or empty state; the host role page keeps those responsibilities. It introduces no translation keys.
+
+Both templates preinstall the source and use it in `client/pages/settings/roles.tsx`. New applications receive it when created from the updated template. Existing applications receive both the new component and the role-page integration through a template source upgrade; Registry publication or dependency updates alone do not replace installed source. Preserve application-owned role fields, routes, grants and page behavior when reconciling an existing application.
