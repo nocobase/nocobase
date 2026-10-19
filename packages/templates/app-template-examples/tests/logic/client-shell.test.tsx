@@ -294,7 +294,11 @@ function renderApplication(
     [apiClientToken, apiClient],
     [
       realtimeClientToken,
-      { subscribe: vi.fn(() => vi.fn()), onOpen: vi.fn(() => vi.fn()) },
+      {
+        subscribe: vi.fn(() => vi.fn()),
+        onOpen: vi.fn(() => vi.fn()),
+        watch: vi.fn(() => ({ close: vi.fn() })),
+      },
     ],
     [authenticationClientToken, authClient],
     [authorizationClientToken, authorizationClient],
