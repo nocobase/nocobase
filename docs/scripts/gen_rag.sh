@@ -20,7 +20,7 @@ DOCS_DIR="$DOCS_ROOT/docs"
 DIST_DIR="$DOCS_ROOT/dist/static"
 
 # Domain mapping (override the site origin with DOCS_SITE_ORIGIN)
-EN_DOMAIN="${DOCS_SITE_ORIGIN:-https://v2.docs.nocobase.com}"
+EN_DOMAIN="${DOCS_SITE_ORIGIN:-https://nocode.docs.nocobase.com}"
 EN_DOMAIN="${EN_DOMAIN%/}"
 CN_DOMAIN="$EN_DOMAIN/cn"
 

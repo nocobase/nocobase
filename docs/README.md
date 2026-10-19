@@ -17,7 +17,7 @@ yarn docs build --lang=en --check-dead-links
 
 ## `DOCS_SITE_ORIGIN`
 
-The site's public origin defaults to `https://v2.docs.nocobase.com`. It is used for canonical links, hreflang alternates, `sitemap.xml`, `robots.txt`, JSON-LD and the documentation assistant. Set `DOCS_SITE_ORIGIN` at build time to serve the site from another origin:
+The site's public origin defaults to `https://nocode.docs.nocobase.com`. It is used for canonical links, hreflang alternates, `sitemap.xml`, `robots.txt`, JSON-LD and the documentation assistant. Set `DOCS_SITE_ORIGIN` at build time to serve the site from another origin:
 
 ```bash
 DOCS_SITE_ORIGIN=https://example.com yarn docs build --lang=en
