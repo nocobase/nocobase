@@ -10,15 +10,15 @@ import {
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { BotMessageSquare } from 'lucide-react';
+import { BotMessageSquare, Check, Info } from 'lucide-react';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
-import { ModelsLink } from '#components/online-agent/models-link';
 import { useModelCatalog } from '#components/online-agent/use-model-catalog';
 import { useOnlineAgentIdentityActive } from '#components/online-agent/identity-context';
 import { FormValuesEditor } from '#components/online-agent/form-values-editor';
 import {
   parseEditorValues,
+  toEditorValues,
   type FormEditorValues,
 } from '#components/online-agent/form-editor-values';
 import { Button } from '#components/ui/button';
@@ -27,19 +27,10 @@ import {
   CardAction,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '#components/ui/card';
-import { Field, FieldDescription, FieldLabel } from '#components/ui/field';
-import { Input } from '#components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#components/ui/select';
 import { Spinner } from '#components/ui/spinner';
 import {
   Tooltip,
@@ -49,14 +40,13 @@ import {
 } from '#components/ui/tooltip';
 import {
   EXAMPLES_FORM_SCOPE,
-  formProposalValuesSchema,
+  PROCUREMENT_DEPARTMENTS,
+  procurementFieldsSchema,
+  procurementProposalValuesSchema,
 } from '../../../shared/ai-form-fill.js';
 
 const FORM_ID = 'example-request';
 const sourceRef = { kind: 'form', id: FORM_ID };
-function emptyDraft(): FormEditorValues {
-  return { name: '', priority: 'normal', budget: '0', subscribe: false };
-}
 
 export default function AIFormFillPage(): ReactElement {
   const { t } = useTranslation();
@@ -67,10 +57,14 @@ export default function AIFormFillPage(): ReactElement {
   const api = useChatApi();
   const catalog = useModelCatalog(true);
   const identityActive = useOnlineAgentIdentityActive();
-  const [record, setRecord] = useState('record-a');
-  const [values, setValues] = useState<FormEditorValues>(emptyDraft);
+  const [values, setValues] = useState<FormEditorValues>({});
   const draftRef = useRef(values);
   const revisionRef = useRef(0);
+  const [completion, setCompletion] = useState<{
+    previous: FormEditorValues;
+    count: number;
+  } | null>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState(false);
   const mountedRef = useRef(true);
@@ -80,11 +74,15 @@ export default function AIFormFillPage(): ReactElement {
       mountedRef.current = false;
     };
   }, []);
-  const identity = `${session?.user.id ?? 'anonymous'}:${record}`;
-  const updateDraft = (next: FormEditorValues) => {
+  const identity = `${session?.user.id ?? 'anonymous'}:procurement`;
+  const commitDraft = (next: FormEditorValues) => {
     revisionRef.current += 1;
     draftRef.current = next;
     setValues(next);
+  };
+  const updateDraft = (next: FormEditorValues) => {
+    commitDraft(next);
+    setCompletion(null);
   };
   const fields: readonly AIFormField[] = useMemo(
     () => [
@@ -95,10 +93,16 @@ export default function AIFormFillPage(): ReactElement {
         editable: true,
       },
       {
-        name: 'priority',
-        title: t('aiFormFill.priority'),
+        name: 'department',
+        title: t('aiFormFill.department'),
         type: 'string',
-        enum: ['low', 'normal', 'high'],
+        enum: [...PROCUREMENT_DEPARTMENTS],
+        editable: true,
+      },
+      {
+        name: 'quantity',
+        title: t('aiFormFill.quantity'),
+        type: 'number',
         editable: true,
       },
       {
@@ -108,16 +112,16 @@ export default function AIFormFillPage(): ReactElement {
         editable: true,
       },
       {
-        name: 'subscribe',
-        title: t('aiFormFill.subscribe'),
-        type: 'boolean',
+        name: 'arrival',
+        title: t('aiFormFill.arrival'),
+        type: 'string',
         editable: true,
       },
       {
-        name: 'recordId',
-        title: t('aiFormFill.record'),
+        name: 'purpose',
+        title: t('aiFormFill.purpose'),
         type: 'string',
-        editable: false,
+        editable: true,
       },
     ],
     [t],
@@ -129,34 +133,30 @@ export default function AIFormFillPage(): ReactElement {
     fields,
     getRevision: () => String(revisionRef.current),
     getValues: () => {
-      const snapshot = parseEditorValues(draftRef.current);
-      if (
-        typeof snapshot.budget !== 'number' ||
-        !Number.isFinite(snapshot.budget)
-      )
-        throw new Error(t('aiFormFill.invalidDraft'));
-      return { ...snapshot, recordId: record };
+      // Blank optional fields are absent, not zero/NaN; nonempty invalid drafts must not enter chat context.
+      const nonempty = Object.fromEntries(
+        Object.entries(draftRef.current).filter(
+          ([, value]) => typeof value !== 'string' || value.trim() !== '',
+        ),
+      );
+      const snapshot = procurementFieldsSchema.safeParse(
+        parseEditorValues(nonempty),
+      );
+      if (!snapshot.success) throw new Error(t('aiFormFill.invalidDraft'));
+      return snapshot.data;
     },
     validate: (patch) =>
-      formProposalValuesSchema.safeParse(patch).success
+      procurementProposalValuesSchema.safeParse(patch).success
         ? undefined
         : t('aiFormFill.invalidProposal'),
     setValues: (patch, operation) => {
       if (operation.signal.aborted || !operation.isCurrent())
         throw new Error(t('aiFormFill.stale'));
-      const parsed = formProposalValuesSchema.parse(patch);
-      // This synchronous adapter commits one local patch; it never submits or saves a business record.
-      updateDraft({
-        ...draftRef.current,
-        ...(parsed.name === undefined ? {} : { name: parsed.name }),
-        ...(parsed.priority === undefined ? {} : { priority: parsed.priority }),
-        ...(parsed.subscribe === undefined
-          ? {}
-          : { subscribe: parsed.subscribe }),
-        ...(parsed.budget === undefined
-          ? {}
-          : { budget: String(parsed.budget) }),
-      });
+      const parsed = procurementProposalValuesSchema.parse(patch);
+      const previous = { ...draftRef.current };
+      // Commit one local patch; never submit or save a business record.
+      commitDraft({ ...previous, ...toEditorValues(parsed) });
+      setCompletion({ previous, count: Object.keys(parsed).length });
     },
   });
   const source = useMemo(
@@ -173,13 +173,10 @@ export default function AIFormFillPage(): ReactElement {
     [registry, t, identity],
   );
   useChatUIContextSource(source);
-  const records = [
-    { value: 'record-a', label: t('aiFormFill.recordA') },
-    { value: 'record-b', label: t('aiFormFill.recordB') },
-  ];
 
   const ask = async () => {
-    if (busy || !catalog.canSend || !identityActive()) return;
+    if (busy || !catalog.canSend || !panel.available || !identityActive())
+      return;
     setBusy(true);
     setFailure(false);
     try {
@@ -205,114 +202,116 @@ export default function AIFormFillPage(): ReactElement {
       if (mountedRef.current && identityActive()) setBusy(false);
     }
   };
+  const unavailable = !catalog.canSend || !panel.available;
   return (
-    <PageContainer data-testid='ai-form-fill'>
+    <PageContainer className='mx-auto max-w-3xl' data-testid='ai-form-fill'>
       <PageHeader
         title={t('aiFormFill.title')}
         description={t('aiFormFill.description')}
       />
-      {failure ? <p role='alert'>{t('aiFormFill.askFailed')}</p> : null}
-      {catalog.phase === 'loading' ? (
-        <p role='status'>{t('onlineAgent.checkingModels')}</p>
-      ) : !catalog.canSend ? (
-        <div className='flex flex-col gap-2'>
-          <p role={catalog.phase === 'error' ? 'alert' : undefined}>
-            {t(
-              catalog.phase === 'error'
-                ? 'onlineAgent.catalogFailed'
-                : 'onlineAgent.noModels.description',
-            )}
-          </p>
-          <ModelsLink explain />
-          {catalog.phase === 'error' ? (
-            <Button variant='outline' onClick={catalog.refresh}>
-              {t('aiFormFill.retry')}
-            </Button>
-          ) : null}
+      {failure ? (
+        <p role='alert' className='text-sm text-destructive'>
+          {t('aiFormFill.askFailed')}
+        </p>
+      ) : null}
+      {completion ? (
+        <div
+          className='flex flex-wrap items-center gap-2 rounded-lg bg-accent p-3 text-sm text-accent-foreground'
+          data-testid='form-fill-completion'
+        >
+          <Check aria-hidden='true' className='size-4 shrink-0' />
+          <span role='status'>
+            {t('aiFormFill.completed', { count: completion.count })}
+          </span>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='ml-auto'
+            onClick={() => {
+              updateDraft(completion.previous);
+              nameRef.current?.focus();
+            }}
+          >
+            {t('aiFormFill.undo')}
+          </Button>
         </div>
       ) : null}
-      <Card className='w-full max-w-2xl'>
-        <CardHeader>
-          <CardTitle>{t('aiFormFill.draftTitle')}</CardTitle>
-          <CardAction>
+      <Card className='w-full'>
+        <CardHeader className='border-b'>
+          <CardTitle>
+            <h2>{t('aiFormFill.draftTitle')}</h2>
+          </CardTitle>
+          <CardDescription>{t('aiFormFill.formDescription')}</CardDescription>
+          <CardAction className='self-center'>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger
                   render={
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='icon'
-                      data-testid='open-form-chat'
-                      aria-label={t('aiFormFill.openChat')}
-                      disabled={busy || !catalog.canSend || !panel.available}
-                      onClick={() => void ask()}
-                    >
-                      {busy ? (
-                        <Spinner />
-                      ) : (
-                        <BotMessageSquare aria-hidden='true' />
-                      )}
-                    </Button>
+                    <span
+                      className='inline-flex'
+                      tabIndex={unavailable ? 0 : undefined}
+                    />
                   }
-                />
-                <TooltipContent>{t('aiFormFill.openChat')}</TooltipContent>
+                >
+                  <Button
+                    type='button'
+                    data-testid='open-form-chat'
+                    disabled={busy || unavailable}
+                    onClick={() => void ask()}
+                  >
+                    {busy ? (
+                      <Spinner />
+                    ) : (
+                      <BotMessageSquare
+                        aria-hidden='true'
+                        data-icon='inline-start'
+                      />
+                    )}
+                    {t('aiFormFill.openChat')}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t(
+                    catalog.phase === 'loading'
+                      ? 'onlineAgent.checkingModels'
+                      : unavailable
+                        ? 'aiFormFill.unavailable'
+                        : 'aiFormFill.chatHint',
+                  )}
+                </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </CardAction>
-          <CardDescription>{t('aiFormFill.draftOnly')}</CardDescription>
         </CardHeader>
-        <CardContent className='flex flex-col gap-6'>
-          <Field>
-            <FieldLabel htmlFor='draft-record'>
-              {t('aiFormFill.target')}
-            </FieldLabel>
-            <Select
-              items={records}
-              value={record}
-              onValueChange={(value) => {
-                if (value !== 'record-a' && value !== 'record-b') return;
-                setRecord(value);
-                updateDraft(emptyDraft());
-              }}
-            >
-              <SelectTrigger
-                id='draft-record'
-                data-testid='draft-record'
-                className='w-full'
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-                <SelectGroup>
-                  {records.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <FieldDescription>{t('aiFormFill.switchHint')}</FieldDescription>
-          </Field>
-          <form
-            ref={ref}
-            onSubmit={(event) => event.preventDefault()}
-            className='flex flex-col gap-6'
-          >
+        <CardContent>
+          <form ref={ref} onSubmit={(event) => event.preventDefault()}>
             <FormValuesEditor
               prefix='draft'
+              showAllFields
+              nameRef={nameRef}
               values={values}
               onChange={updateDraft}
             />
-            <Field>
-              <FieldLabel htmlFor='draft-record-id'>
-                {t('aiFormFill.record')}
-              </FieldLabel>
-              <Input id='draft-record-id' readOnly value={record} />
-            </Field>
           </form>
         </CardContent>
+        <CardFooter className='flex-wrap justify-between gap-2'>
+          <p className='flex items-center gap-2 text-xs text-muted-foreground'>
+            <Info aria-hidden='true' className='size-4 shrink-0' />
+            {t('aiFormFill.hint')}
+          </p>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            onClick={() => {
+              updateDraft({});
+              nameRef.current?.focus();
+            }}
+          >
+            {t('aiFormFill.clear')}
+          </Button>
+        </CardFooter>
       </Card>
     </PageContainer>
   );

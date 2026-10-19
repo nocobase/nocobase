@@ -219,6 +219,8 @@ it.each(['en-US', 'zh-CN'])(
         locale === 'zh-CN' ? '尚未配置聊天模型' : 'No chat model configured',
       ),
     ).toBeVisible();
+    const notice = screen.getByRole('alert');
+    expect(notice.parentElement).toHaveClass('mb-3');
     const links = screen.getAllByRole('button', {
       name: locale === 'zh-CN' ? '打开模型配置' : 'Open models',
     });

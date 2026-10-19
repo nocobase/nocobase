@@ -693,7 +693,9 @@ function ConversationBody({
       {busyFeedback ? null : feedbackNotice}
       <TurnAnnouncer running={running} />
       <div className={page ? cn(PAGE_COLUMN, 'pt-2 pb-4') : undefined}>
-        {sendAvailability?.notice}
+        {sendAvailability?.notice ? (
+          <div className='mb-3'>{sendAvailability.notice}</div>
+        ) : null}
         {saveError ? (
           <LoadError
             title={t('chat.loadFailed')}
