@@ -4,7 +4,7 @@ Realtime notifications invalidate authoritative API snapshots. They are transien
 
 ## Audited business reads
 
-The audit covered 22 business read loops in 15 source files: 19 production entries and three examples. UI clocks, debounce timers, server heartbeats and worker leases are excluded. Fourteen entries now use event-driven refresh with one-minute reconciliation or have reduced their existing fallback to one minute. Eight retain their original timing for the specific reasons below.
+The audit covered 22 business read loops in 15 source files: 19 production entries and three examples. UI clocks, debounce timers, server heartbeats and worker leases are excluded. Fifteen entries now use event-driven refresh with one-minute reconciliation or have reduced their existing fallback to one minute. Seven retain their original timing for the specific reasons below.
 
 | Entry                                | Current strategy                                                                                   | Why a periodic read remains                                                                        |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -29,7 +29,7 @@ The audit covered 22 business read loops in 15 source files: 19 production entri
 | Releases app summary                 | Existing 1.5-second busy / 5-second normal health reads, with failure backoff and hidden-tab pause | Runtime health is observed from an external host; database events cannot report all host failures. |
 | Office Flows example loader          | Committed lifecycle events plus 60-second reconciliation                                           | Parameter edits and effect bookkeeping can occur outside lifecycle transitions.                    |
 | Mail example initial synchronization | Existing bounded 500-ms wait                                                                       | This waits for initialization with a deadline; it is not a permanent page refresh loop.            |
-| Lifecycle example follow-up          | Existing conditional read based on effect state / `runAfter`                                       | Waiting effects can become due without a transition event.                                         |
+| Lifecycle example snapshots          | Committed record/effect changes plus 60-second reconciliation                                      | Recover lost publications and direct store writes without per-effect polling.                      |
 
 The shared lifecycle React hook still offers configurable `refreshMs` (four seconds by default); callers with event coverage can set it to zero. Agent choice discovery retains its five-minute TTL because it describes remote capabilities rather than database mutations. Authentication `onOpen` listeners remain identity lifecycle hooks.
 
