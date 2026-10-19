@@ -210,7 +210,8 @@
     "@nocobase/caching": "workspace:^",
     "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-plugin-mail": "workspace:^",
-    "@nocobase/app-plugin-mail-example": "workspace:^"
+    "@nocobase/app-plugin-mail-example": "workspace:^",
+    "@nocobase/realtime": "workspace:^"
   },
   "description": "Runnable NocoBase 3 examples for application development.",
   "license": "Apache-2.0",

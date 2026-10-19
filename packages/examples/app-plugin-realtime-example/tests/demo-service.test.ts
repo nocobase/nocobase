@@ -47,6 +47,7 @@ describe('isolated realtime demonstrations', () => {
     for (const tab of [first, second, other])
       await realtime.subscribe(tab.connection, PERSONAL_TOPIC);
     const receipt = await demo.sendPersonal('alice');
+    await realtime.flush();
     expect(receipt).toMatchObject({
       topic: PERSONAL_TOPIC,
       eventId: expect.any(String),
@@ -77,8 +78,10 @@ describe('isolated realtime demonstrations', () => {
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await realtime.subscribe(alice.connection, topic, 'allowed');
     await demo.sendRoom('alice', room.id);
+    await realtime.flush();
     expect(demo.readRoom('alice', room.id).value).toBe(1);
     await demo.setAccess('alice', room.id, false);
+    await realtime.flush();
     expect(alice.messages.filter((m) => m.type === 'event')).toHaveLength(1);
     expect(alice.messages).toContainEqual(
       expect.objectContaining({
@@ -94,6 +97,7 @@ describe('isolated realtime demonstrations', () => {
     await demo.setAccess('alice', room.id, true);
     await realtime.subscribe(alice.connection, topic, 'retry');
     await demo.sendRoom('alice', room.id);
+    await realtime.flush();
     expect(demo.readRoom('alice', room.id).value).toBe(2);
   });
 
@@ -103,11 +107,13 @@ describe('isolated realtime demonstrations', () => {
     const bob = connect('bob');
     await realtime.subscribe(alice.connection, COUNTER_TOPIC);
     await demo.burst('alice', 5);
+    await realtime.flush();
     expect(alice.messages.filter((m) => m.type === 'event')).toHaveLength(5);
     expect(await demo.disconnect('alice')).toBe(1);
     expect(alice.close).toHaveBeenCalledOnce();
     expect(bob.close).not.toHaveBeenCalled();
     await demo.burst('alice', 5);
+    await realtime.flush();
     expect(demo.counter('alice').value).toBe(10);
     expect(demo.counter('bob').value).toBe(0);
   });

@@ -29,7 +29,10 @@ export function RefreshExample({
   const snapshot = useDemoSnapshot<CounterSnapshot>('/realtimeExample/counter');
   // The observer and refresh hook share one server subscription. Pausing the latter leaves event counting active.
   const watch = useDemoWatch(COUNTER_TOPIC);
-  useRealtimeRefresh(COUNTER_TOPIC, snapshot.reload, { enabled, delayMs: 100 });
+  const refresh = useRealtimeRefresh(COUNTER_TOPIC, snapshot.reload, {
+    enabled,
+    delayMs: 100,
+  });
   return (
     <DemoPanel name='counter'>
       <Topic>{COUNTER_TOPIC}</Topic>
@@ -54,7 +57,8 @@ export function RefreshExample({
       <Failure
         error={snapshot.error}
         retry={() => {
-          void snapshot.reload();
+          if (enabled) refresh.retry();
+          else void snapshot.reload();
         }}
         reload={reload}
       />

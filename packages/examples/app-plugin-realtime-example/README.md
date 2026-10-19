@@ -63,16 +63,16 @@ Every page requires authentication and intentionally skips page permission resou
 
 ## Read the business implementation
 
-| Source                                                                       | Responsibility                                                                     |
-| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `client/pages/business/tasks.tsx`, `task-create.tsx`, `task-detail.tsx`      | URL-addressable board, create form and detail drawer over the task API             |
-| `client/pages/business/inbox.tsx`                                            | Reuses the in-app notification package's public query, mutation and refresh hooks  |
-| `client/pages/business/exports.tsx`                                          | Follows durable export history and downloads an authorized CSV                     |
-| `client/pages/business/use-business-data.ts`                                 | Authoritative reads, stale-request cancellation and `useRealtimeRefresh`           |
-| `server/export-service.ts`, `providers/task-exports.ts`, `routes/exports.ts` | Real jobs, persistent progress/results, owner-only endpoints and OpenAPI contracts |
-| `database/migrations/202610180001_create_realtime_example_exports.ts`        | Export persistence and the active-user uniqueness constraint                       |
-| `@nocobase/app-plugin-notification-example/realtime`                         | Public task invalidation topic and task types                                      |
-| `@nocobase/app-plugin-notification-example/server`                           | Owner-filtered task snapshot contract used by the export job                       |
+| Source                                                                       | Responsibility                                                                                |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `client/pages/business/tasks.tsx`, `task-create.tsx`, `task-detail.tsx`      | URL-addressable board, create form and detail drawer over the task API                        |
+| `client/pages/business/inbox.tsx`                                            | Reuses the in-app notification package's public query, mutation and refresh hooks             |
+| `client/pages/business/exports.tsx`                                          | Follows durable export history and downloads an authorized CSV                                |
+| `client/pages/business/use-business-data.ts`                                 | Serialized authoritative reads, transient retry and event/readiness/reconciliation scheduling |
+| `server/export-service.ts`, `providers/task-exports.ts`, `routes/exports.ts` | Real jobs, persistent progress/results, owner-only endpoints and OpenAPI contracts            |
+| `database/migrations/202610180001_create_realtime_example_exports.ts`        | Export persistence and the active-user uniqueness constraint                                  |
+| `@nocobase/app-plugin-notification-example/realtime`                         | Public task invalidation topic and task types                                                 |
+| `@nocobase/app-plugin-notification-example/server`                           | Owner-filtered task snapshot contract used by the export job                                  |
 
 ## Read the capability lab implementation
 
@@ -93,3 +93,9 @@ Every page requires authentication and intentionally skips page permission resou
 ```bash
 pnpm --filter @nocobase/app-plugin-realtime-example check
 ```
+
+## Recovery and integration reference
+
+Read the version-matched `nocobase-realtime` Skill shipped by `@nocobase/realtime` for server topics, query races, retry policy and distributed configuration. The business views serialize initial, manual and event reads, retry transient HTTP failures without a subsequent event, and reconcile once a minute while visible. A failed history read preserves an already accepted export and its recovery action. The capability lab forwards read errors to the same shared scheduler.
+
+The core supports optional Redis fan-out and resubscription recovery; this demo still uses its application configuration and local jobs backend. See the core package’s distributed tests for namespace isolation, remote revocation and broker recovery. Do not present local example state or CSV jobs as coordinated multi-process execution.

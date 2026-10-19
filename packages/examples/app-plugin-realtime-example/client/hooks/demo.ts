@@ -133,6 +133,8 @@ export function useDemoSnapshot<T>(path: string): DemoSnapshot<T> {
           type: 'error',
           title: t(errorKey(failure)),
         });
+        // Scheduled refreshes must observe failure; direct UI reloads keep their feedback contract.
+        if (signal) throw failure;
       } finally {
         if (current === generationRef.current && !requestSignal.aborted)
           setLoading(false);

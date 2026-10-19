@@ -114,3 +114,33 @@ it.runIf(port > 0)(
     expect(service.diagnostics().brokerState).toBe('ready');
   },
 );
+
+it.runIf(port > 0)(
+  'rejects an ambiguous publish timeout without automatically sending the event again',
+  async () => {
+    const namespace = `test-${crypto.randomUUID()}`;
+    const broker = createRedisRealtimeBroker({
+      namespace,
+      connection: { host: '127.0.0.1', port, commandTimeout: 50 },
+      onError: vi.fn(),
+    });
+    const service = createRealtimeService({ namespace, broker });
+    services.push(service);
+    const topic = service.defineTopic('test:ambiguous', { audience: 'public' });
+    const ws = socket();
+    await service.subscribe(service.connect(ws), topic.name);
+    const admin = new Redis({ host: '127.0.0.1', port });
+    clients.push(admin);
+    await admin.client('PAUSE', 200, 'ALL');
+    await expect(topic.publish({ changed: true })).rejects.toThrow(/timed out/);
+    // Redis can process the original publication after the caller times out.
+    await vi.waitFor(() => expect(ws.send).toHaveBeenCalledOnce(), {
+      timeout: 2_000,
+    });
+    expect(service.diagnostics()).toMatchObject({
+      publishFailures: 1,
+      published: 0,
+      received: 1,
+    });
+  },
+);

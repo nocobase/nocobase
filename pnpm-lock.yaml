@@ -5094,6 +5094,9 @@ importers:
       '@nocobase/queue':
         specifier: workspace:^
         version: link:../../libs/queue
+      '@nocobase/realtime':
+        specifier: workspace:^
+        version: link:../../libs/realtime
       '@nocobase/repository-input':
         specifier: workspace:^
         version: link:../../libs/repository-input
@@ -5467,6 +5470,9 @@ importers:
       '@nocobase/queue':
         specifier: workspace:^
         version: link:../../libs/queue
+      '@nocobase/realtime':
+        specifier: workspace:^
+        version: link:../../libs/realtime
       '@nocobase/repository-input':
         specifier: workspace:^
         version: link:../../libs/repository-input
