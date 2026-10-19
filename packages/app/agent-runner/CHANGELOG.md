@@ -1,5 +1,24 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.12
+
+### Minor Changes
+
+- 32ed5e2: Report coding account quota windows, filter scoped exhausted tools before claims, and restore eligibility at known reset times or after an authorized manual clear. Show quota status and usage in runtime tabs and agent availability, and batch page reads independently of the catalog size.
+
+  Runtime API and CLI: runtime get returns directory totals without directory rows; runtime list omits models, policy, variables, quota details and load, and caps takes at three with takesCount. Use the paginated runtime workspaces command for directory rows. Runtime quota clear takes structured tool/scope/target/window fields and no client revision; only unknown-reset marks may be cleared.
+
+  Classify quota revision races as retryable REVISION_CONFLICT while known-reset clears fail with QUOTA_RESET_KNOWN / FAILED_PRECONDITION.
+
+  Batch related-task visibility and missing blocker reads with the existing issue visibility filter, preserving per-request permissions and hidden blocker counts as task and project counts grow.
+
+### Patch Changes
+
+- 91390b0: Avoid publishing untouched repository checkouts or recreating deleted task branches. Preserve continuation delivery evidence across runs so pending commits can still be delivered after a failed push.
+- Updated dependencies [32ed5e2]
+  - @nocobase/agent-protocol@0.1.0-beta.10
+  - @nocobase/app-cli-client@0.1.0-beta.10
+
 ## 0.1.0-beta.11
 
 ### Patch Changes

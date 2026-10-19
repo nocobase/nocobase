@@ -157,11 +157,12 @@ describe('bridge execution lifecycle', () => {
       ),
       'tests/fixtures/fake-agent.mjs',
     );
+    // Copilot resolves only from PATH; home-directory launchers could select a developer's installed agent.
     const bin = path.join(root, 'bin');
     await mkdir(bin);
     const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
     await writeFile(
-      path.join(bin, 'opencode'),
+      path.join(bin, 'copilot'),
       `#!/bin/sh\nexec ${quote(process.execPath)} ${quote(fixture)} "$@"\n`,
       { mode: 0o755 },
     );
@@ -184,7 +185,7 @@ describe('bridge execution lifecycle', () => {
       const computerId = await registered.promise;
       const session = await service.createSession(owner, {
         computerId,
-        agentId: 'opencode',
+        agentId: 'copilot',
         cwd: root,
         content: text('first'),
       });

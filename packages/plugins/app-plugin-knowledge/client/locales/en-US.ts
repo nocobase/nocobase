@@ -294,6 +294,7 @@ const enUS = {
       reload: 'Reload',
     },
     history: {
+      by: 'by {{name}}',
       title: 'History',
       current: 'Current',
       fromProposal: 'From a proposal',

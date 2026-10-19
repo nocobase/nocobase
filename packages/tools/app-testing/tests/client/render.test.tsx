@@ -317,3 +317,12 @@ describe('renderWithApp', () => {
     expect(api).not.toHaveBeenCalled();
   });
 });
+
+it('preserves application services and providers when a page rerenders', async () => {
+  const view = await renderWithApp(<GreetingPage />, {
+    plugins: [examplePlugin()],
+  });
+  expect(screen.getByText('Hello, Ada')).toBeInTheDocument();
+  view.rerender(<GreetingPage />);
+  expect(screen.getByText('Hello, Ada')).toBeInTheDocument();
+});

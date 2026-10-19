@@ -1,5 +1,17 @@
 # @nocobase/app-plugin-agent-sessions
 
+## 1.0.0-beta.4
+
+### Patch Changes
+
+- e897e4f: Keep Markdown nodes mounted while session records and knowledge documents refresh or their rendering options change.
+- Updated dependencies [22717d7]
+- Updated dependencies [32ed5e2]
+  - @nocobase/app-server@2.0.0-beta.9
+  - @nocobase/agent-protocol@0.1.0-beta.10
+  - @nocobase/app-plugin-file@1.0.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.10
+
 ## 1.0.0-beta.3
 
 ### Minor Changes

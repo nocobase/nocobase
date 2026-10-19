@@ -239,6 +239,7 @@ describe('tuning the knowledge base', () => {
     const saved = await h.knowledge.chunking.set(h.user('lead'), project, own);
     expect(saved).toMatchObject({ override: own, effective: own });
     await h.knowledge.chunking.idle();
+    expect(h.events.some((event) => event.type === 'space.changed')).toBe(true);
     expect(await count(deep.id)).toBe(1);
     // Only the document whose sections changed is rewritten, and says so.
     expect(
@@ -287,7 +288,14 @@ describe('tuning the knowledge base', () => {
     ).toBeNull();
 
     const reindexed: string[] = [];
+    let indexChanged: ((docId: string) => void) | undefined;
     const indexer: KnowledgeIndexer = {
+      onChange(listener) {
+        indexChanged = listener;
+        return () => {
+          indexChanged = undefined;
+        };
+      },
       states: () =>
         Promise.resolve(
           new Map([
@@ -306,7 +314,9 @@ describe('tuning the knowledge base', () => {
         return Promise.resolve();
       },
     };
-    h.knowledge.registerIndexer(indexer);
+    const releaseIndexer = h.knowledge.registerIndexer(indexer);
+    indexChanged?.(doc.id);
+    expect(h.events).toContainEqual({ type: 'index.changed', docId: doc.id });
     const on = await h.knowledge.indexing.doc(h.user('reader'), doc.id);
     expect(on).toMatchObject({
       enabled: true,
@@ -338,5 +348,7 @@ describe('tuning the knowledge base', () => {
     ).rejects.toMatchObject({ status: 403 });
     await h.knowledge.indexing.reindex(h.user('lead'), doc.id);
     expect(reindexed).toEqual([doc.id]);
+    releaseIndexer();
+    expect(indexChanged).toBeUndefined();
   });
 });

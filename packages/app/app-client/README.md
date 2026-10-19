@@ -107,12 +107,7 @@ An application owns:
 - finalized `app.refineConfig` after startup;
 - finalized React render configuration consumed by `AppClientRoot`.
 
-The application owns a separate lazy realtime service under `realtimeClientToken`. By default,
-its WebSocket endpoint is the `/ws` sibling of `api.baseURL`; deployments with
-a different topology can set `api.realtimeURL` explicitly. Consumers that keep
-durable state should use `onOpen()` to refetch after the initial connection and
-reconnection. Topic events remain lightweight invalidation signals rather than
-authoritative state.
+The application owns a separate lazy realtime service under `realtimeClientToken`. Its default WebSocket endpoint is the `/ws` sibling of `api.baseURL`; deployments can set `api.realtimeURL` explicitly. Use a topic watch's `onReady` to refetch after the server acknowledges the initial subscription and each reconnection. Topic events remain lightweight invalidations; the API supplies authoritative state.
 
 Create an application directly when the default helper is sufficient:
 
@@ -424,3 +419,9 @@ plugins that consume the changed fields.
 Application authorization is provided by `@nocobase/app-plugin-authorization/client`. Use `useCan` for reactive visibility checks and `useAuthorizationClient` or `authorizationClientToken` for the current application client. `AppClientRefineConfig` excludes `accessControlProvider`, and the Refine registry has no `setAccessControlProvider` setter.
 
 Client route authentication uses `auth: 'required' | 'guest' | 'optional'`. Authorization uses `authz: 'skip' | 'unrestricted' | { resource: { type, id }, action }`. Declare it on the first page of every path. A nested page that omits it inherits the effective value of its nearest ancestor page, through any number of groups and levels, and a child that declares its own value overrides it for its subtree. A first page that omits it never stops the application: protected pages (`auth: 'required'`) default to `'unrestricted'`, which admits only identities with unrestricted access such as root and hides the page from everyone else's menus, while `guest` and `optional` pages default to `'skip'`. Development builds log one warning per defaulted page naming its id, path and default; production logs nothing. `'unrestricted'` may also be declared explicitly for a root-only page, and it is never offered as a grant. `'skip'` applies only to the current page and does not bypass parent guards. Route groups cannot declare `authz`. Malformed values, the removed `access` field and string resource declarations are rejected.
+
+## Acknowledged realtime subscriptions
+
+Use `useRealtimeTopic(topic, onEvent, { onReady, onError, enabled })` for payload-driven updates, `useRealtimeRefresh(topic, refresh, { enabled, delayMs })` for coalesced API refreshes, and `useRealtimeConnectionState()` to observe the transport. A null topic or `enabled: false` releases the component's subscription. `onReady` runs after the server acknowledges this topic, including reconnects; transport `onOpen` alone does not prove subscription success. Return the refresh promise so events arriving during that read schedule a follow-up instead of cancelling it. The non-React `createRealtimeRefresh(refresh)` helper exposes `request()` and `close()` with the same burst and visibility handling.
+
+The host's client also exposes `watch(topic, callbacks)`, which returns a handle with `state`, `error`, `retry()` and `close()`. The existing `subscribe()` cleanup API remains available. See the [Realtime usage and migration guide](../../libs/realtime/README.md) for server declarations, personal and resource-authorized topics, identity changes, failure handling and delivery limits.

@@ -20,7 +20,11 @@ vi.mock('@nocobase/app-plugin-authentication/client', () => ({
 vi.mock('@nocobase/app-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/app-client')>();
   const client = { request: mocks.request };
-  const realtime = { subscribe: () => vi.fn(), onOpen: () => vi.fn() };
+  const realtime = {
+    watch: () => ({ close: vi.fn() }),
+    subscribe: () => vi.fn(),
+    onOpen: () => vi.fn(),
+  };
   return {
     ...actual,
     useApiClient: () => client,

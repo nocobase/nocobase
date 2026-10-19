@@ -24,19 +24,28 @@ export function pagePermissionResources(
   titles: PagePermissionTitles,
   unnamed: (path: string) => string,
 ): CatalogResource[] {
-  return routes.flatMap((route) => [
-    ...(route.componentLoader &&
-    typeof route.authz === 'object' &&
-    route.authz.resource.type === 'page'
-      ? [
-          {
+  const resources = new Map<string, CatalogResource>();
+  const visit = (items: readonly AppClientRegisteredRoute[]): void => {
+    for (const route of items) {
+      if (
+        route.componentLoader &&
+        typeof route.authz === 'object' &&
+        route.authz.resource.type === 'page'
+      ) {
+        const id = route.authz.resource.id;
+        // Resolved child routes may inherit the parent's authorization resource.
+        // They share one grant, so showing independent checkboxes is misleading.
+        if (!resources.has(id))
+          resources.set(id, {
             type: 'page',
-            id: route.authz.resource.id,
+            id,
             title: pagePermissionTitle(route, titles) ?? unnamed(route.path),
             actions: [{ name: 'access', title: { key: 'settings.access' } }],
-          },
-        ]
-      : []),
-    ...pagePermissionResources(route.children ?? [], titles, unnamed),
-  ]);
+          });
+      }
+      visit(route.children ?? []);
+    }
+  };
+  visit(routes);
+  return [...resources.values()];
 }

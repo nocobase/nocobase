@@ -147,7 +147,11 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
 
   /** Tells the pages that a record changed; they read it back themselves. */
   private publishChange(change: LifecycleChange): void {
-    this.changes?.publish(change);
+    void this.changes
+      ?.publish(change)
+      .catch((error: unknown) =>
+        console.error('Realtime announcement failed.', error),
+      );
   }
 
   /** One runtime for the service and the executors, created on first use. */
