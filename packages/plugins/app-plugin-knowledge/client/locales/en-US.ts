@@ -93,6 +93,8 @@ const enUS = {
       failedHint: 'Some sections failed to embed after every attempt.',
       reason: 'Reason: {{reason}}',
       retry: 'Index again',
+      refreshFailed: 'Unable to refresh indexing status',
+      retryRefresh: 'Retry refresh',
       queued: 'Queued for indexing again',
     },
     chunks: {

@@ -40,6 +40,7 @@ import type { EntryActions } from '../lib/entry-actions.js';
 import { relativeTime } from '../lib/format.js';
 import { EntryIcon } from './file-pane.js';
 import { ProposalKindBadge } from './proposal-view.js';
+import { IndexRefreshError } from './index-refresh-error.js';
 
 /** A document not verified for this long is worth verifying again. */
 const STALE_DAYS = 180;
@@ -123,7 +124,8 @@ export function SpaceHome({
 }): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const [now] = useState(() => Date.now());
-  const unindexed = useKnowledgeUnindexed(space).data ?? [];
+  const index = useKnowledgeUnindexed(space);
+  const unindexed = index.data ?? [];
   const edit = !!actions?.access.edit;
   const propose = !edit && !!actions?.access.propose;
   const start = edit ? (
@@ -240,30 +242,39 @@ export function SpaceHome({
           ))}
         </Section>
       ) : null}
-      {unindexed.length > 0 ? (
+      {index.isError || unindexed.length > 0 ? (
         <Section
           icon={<ScanSearchIcon />}
           title={t('knowledge.home.unindexed')}
         >
-          {unindexed.slice(0, LISTED * 2).map((doc) => (
-            <Row
-              key={doc.docId}
-              onClick={() => onOpen(doc.docId)}
-              aside={
-                doc.failed > 0
-                  ? t('knowledge.home.unindexedFailed', {
-                      failed: doc.failed,
-                      pending: doc.pending,
-                    })
-                  : t('knowledge.home.unindexedPending', {
-                      count: doc.pending,
-                    })
-              }
-            >
-              <EntryIcon entry={{ kind: doc.kind, file: null }} />
-              <span className='truncate'>{doc.title}</span>
-            </Row>
-          ))}
+          {index.isError ? (
+            <li className='px-3 py-2'>
+              <IndexRefreshError
+                fetching={index.isFetching}
+                onRetry={() => void index.refetch()}
+              />
+            </li>
+          ) : (
+            unindexed.slice(0, LISTED * 2).map((doc) => (
+              <Row
+                key={doc.docId}
+                onClick={() => onOpen(doc.docId)}
+                aside={
+                  doc.failed > 0
+                    ? t('knowledge.home.unindexedFailed', {
+                        failed: doc.failed,
+                        pending: doc.pending,
+                      })
+                    : t('knowledge.home.unindexedPending', {
+                        count: doc.pending,
+                      })
+                }
+              >
+                <EntryIcon entry={{ kind: doc.kind, file: null }} />
+                <span className='truncate'>{doc.title}</span>
+              </Row>
+            ))
+          )}
         </Section>
       ) : null}
       {unverified.length > 0 ? (
