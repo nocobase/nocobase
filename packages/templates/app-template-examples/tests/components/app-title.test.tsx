@@ -17,9 +17,6 @@ describe('application title', () => {
 
     await app.start();
 
-    expect(app.refineConfig.options?.title).toEqual({
-      text: 'Configured application',
-    });
     expect(document.title).toBe('Configured application');
 
     await app.shutdown();
@@ -33,7 +30,6 @@ describe('application title', () => {
 
     await app.start();
 
-    expect(app.refineConfig.options?.title).toEqual({ text: 'NocoBase' });
     expect(document.title).toBe('NocoBase');
 
     await app.shutdown();

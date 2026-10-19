@@ -1,5 +1,74 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.54
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- 1952789: Add realistic realtime workflows for collaborative task boards, personal inbox synchronization, and durable background CSV exports. Reuse participant-authorized task data and existing in-app notifications, expose task invalidation and export-read contracts, and retain the technical capability lab as a secondary view.
+
+  Store CSV export content as LONGTEXT on MySQL so files larger than 64 KiB can be saved without truncation, while retaining the existing text mapping on other databases.
+
+- 1952789: Ship a dedicated versioned Realtime integration Skill and references for authorization, snapshot recovery, distributed delivery, polling decisions and business verification. Include it in both application templates' direct dependencies so Skills synchronization discovers it, and document optional Redis configuration in both templates.
+
+  Use one refresh scheduler for the Realtime business examples' initial, manual and event reads. Retry transient snapshot failures without another event, preserve trailing reads and provide low-frequency reconciliation. Forward capability-lab read failures to the shared retry policy.
+
+- 1952789: Add an authenticated Realtime demonstration page covering public and personal topics, dynamic resource authorization, acknowledged retries, coalesced snapshot refresh, subscription errors, and connection recovery. Register the page in the examples application and retain the public native WebSocket clock.
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-cli@1.0.0-beta.25
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.29
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.17
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.14
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.13
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.14
+  - @nocobase/app-plugin-database-example@0.1.0-beta.9
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.16
+  - @nocobase/app-plugin-file@1.0.0-beta.25
+  - @nocobase/app-plugin-file-example@1.0.0-beta.20
+  - @nocobase/app-plugin-i18n@1.0.0-beta.17
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.7
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.8
+  - @nocobase/app-plugin-mail@1.0.0-beta.15
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.7
+  - @nocobase/app-plugin-notification@1.0.0-beta.28
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.9
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.26
+  - @nocobase/app-plugin-notification-providers@0.2.0-beta.13
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.6
+  - @nocobase/app-plugin-queue-example@1.0.0-beta.12
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.9
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.0
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.21
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.18
+  - @nocobase/app-plugin-service-provider-example@1.0.0-beta.9
+  - @nocobase/app-plugin-skills-example@1.0.0-beta.8
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.7
+  - @nocobase/app-plugin-users@2.0.0-beta.6
+  - @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/realtime@0.1.0-beta.3
+  - @nocobase/i18n@2.0.0-beta.0
+
 ## 1.0.0-beta.53
 
 ### Patch Changes

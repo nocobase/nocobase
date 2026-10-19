@@ -31,7 +31,6 @@ catalog:
   '@hono/node-server': ^2.1.1
   '@oclif/core': ^4.14.0
   '@playwright/test': ^1.62.1
-  '@refinedev/core': ^5.0.8
   '@sinclair/typebox': ^0.34.52
   '@tailwindcss/postcss': ^4.1.4
   '@tailwindcss/vite': ^4.1.8

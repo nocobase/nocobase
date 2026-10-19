@@ -1,5 +1,4 @@
 import type { AppRuntimeContext } from './runtime/index.js';
-import type { RefineProps } from '@refinedev/core';
 import type { ComponentType, PropsWithChildren, ReactNode } from 'react';
 import type { PublicConfigPath, PublicConfigValue } from './public-config.js';
 
@@ -58,8 +57,6 @@ export type AppClientConfigFactory = (
 ) => AppClientConfig | Promise<AppClientConfig>;
 
 export type AppClientReactProvider = ComponentType<PropsWithChildren>;
-
-export type AppClientRefineConfig = Omit<RefineProps, 'accessControlProvider'>;
 
 export interface AppClientRenderConfig {
   readonly basename?: string;
