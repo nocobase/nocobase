@@ -19,6 +19,14 @@ function setup(actor: string) {
   return { ...app, client };
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
 describe('useLifecycle', () => {
   it('loads the record and its description, and nothing while none is selected', async () => {
     const { client, id } = setup('agent');
@@ -317,6 +325,145 @@ describe('scheduled snapshot refreshes', () => {
     await act(() => vi.advanceTimersByTimeAsync(8_000));
     expect(result.current.view?.version).toBe(2);
     expect(view).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['before', 'during'] as const)(
+    'keeps a newer commit when a refresh starts %s a delayed action response',
+    async (timing) => {
+      const { client, id, runtime } = setup('agent');
+      const { result } = renderHook(() =>
+        useLifecycle(client, 'tickets', id, {
+          refreshMs: 0,
+          loadOnMount: false,
+        }),
+      );
+      await act(() => result.current.refresh());
+      const before = result.current.view!;
+      const mutationReady = deferred<void>();
+      const releaseMutation = deferred<void>();
+      const fire = client.fire.bind(client);
+      vi.spyOn(client, 'fire').mockImplementation(async (...args) => {
+        const response = await fire(...args);
+        mutationReady.resolve();
+        await releaseMutation.promise;
+        return response;
+      });
+      const releaseRead = deferred<typeof before>();
+      const view = vi.spyOn(client, 'view');
+      let reading!: Promise<void>;
+      if (timing === 'before') {
+        view.mockImplementationOnce(() => releaseRead.promise);
+        act(() => {
+          reading = result.current.refresh();
+        });
+      }
+      let action!: Promise<unknown>;
+      act(() => {
+        action = result.current.fire('replyToCustomer', { message: 'Hello' });
+      });
+      await mutationReady.promise;
+      await runtime.fire('tickets', id, 'customerReplied', {
+        actor: { id: 'agent' },
+      });
+      if (timing === 'during') {
+        act(() => {
+          reading = result.current.refresh();
+        });
+      }
+      await act(async () => {
+        releaseMutation.resolve();
+        await action;
+        releaseRead.resolve(before);
+        await reading;
+      });
+      expect(result.current.view?.version).toBe(2);
+      expect(result.current.view?.state).toBe('open');
+    },
+  );
+
+  it.each([503, 403])(
+    'propagates a trailing refresh failure (%s) after an action',
+    async (status) => {
+      const { client, id } = setup('agent');
+      const { result } = renderHook(() =>
+        useLifecycle(client, 'tickets', id, { refreshMs: 0 }),
+      );
+      await waitFor(() => expect(result.current.view).toBeDefined());
+      const before = result.current.view!;
+      const release = deferred<typeof before>();
+      const failure = Object.assign(new Error('Read failed'), { status });
+      vi.spyOn(client, 'view')
+        .mockImplementationOnce(() => release.promise)
+        .mockRejectedValue(failure);
+      let reading!: Promise<void>;
+      act(() => {
+        reading = result.current.refresh();
+      });
+      await act(async () => {
+        await result.current.fire('replyToCustomer', { message: 'Hello' });
+      });
+      await act(async () => {
+        release.resolve(before);
+        await expect(reading).rejects.toBe(failure);
+      });
+      expect(result.current.error).toBe(failure);
+      if (status === 403) expect(result.current.view).toBeUndefined();
+      else expect(result.current.view?.version).toBe(1);
+    },
+  );
+
+  it('cancels a refresh waiting for an action without sending another read', async () => {
+    const { client, id } = setup('agent');
+    const { result } = renderHook(() =>
+      useLifecycle(client, 'tickets', id, { refreshMs: 0 }),
+    );
+    await waitFor(() => expect(result.current.view).toBeDefined());
+    const release = deferred<void>();
+    const fire = client.fire.bind(client);
+    vi.spyOn(client, 'fire').mockImplementation(async (...args) => {
+      await release.promise;
+      return fire(...args);
+    });
+    const view = vi.spyOn(client, 'view');
+    const controller = new AbortController();
+    let action!: Promise<unknown>;
+    let reading!: Promise<void>;
+    act(() => {
+      action = result.current.fire('replyToCustomer', { message: 'Hello' });
+      reading = result.current.refresh(controller.signal);
+    });
+    await act(async () => {
+      controller.abort();
+      await reading;
+    });
+    expect(view).not.toHaveBeenCalled();
+    await act(async () => {
+      release.resolve();
+      await action;
+    });
+    expect(view).not.toHaveBeenCalled();
+    expect(result.current.view?.version).toBe(1);
+  });
+
+  it('releases a waiting refresh when the action is refused', async () => {
+    const { client, id } = setup('stranger');
+    const { result } = renderHook(() =>
+      useLifecycle(client, 'tickets', id, { refreshMs: 0 }),
+    );
+    await waitFor(() => expect(result.current.view).toBeDefined());
+    let action!: Promise<unknown>;
+    let reading!: Promise<void>;
+    act(() => {
+      action = result.current.fire('close').catch((error: unknown) => error);
+      reading = result.current.refresh();
+    });
+    await act(async () => {
+      expect(await action).toMatchObject({ reason: 'GUARD_REJECTED' });
+      await reading;
+    });
+    expect(result.current.view?.version).toBe(0);
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.busy).toBe(false);
   });
 
   it('keeps the default four-second interval and allows opting out', async () => {

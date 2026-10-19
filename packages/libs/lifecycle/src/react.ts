@@ -289,6 +289,8 @@ export function useLifecycle(
     scope,
     active: true,
     revision: 0,
+    actionRevision: 0,
+    actions: new Set<Promise<void>>(),
     controllers: new Set<AbortController>(),
   });
   const [described, setDescribed] = useState<{
@@ -311,6 +313,8 @@ export function useLifecycle(
       scope,
       active: true,
       revision: 0,
+      actionRevision: 0,
+      actions: new Set<Promise<void>>(),
       controllers: new Set<AbortController>(),
     };
     lifetimeRef.current = lifetime;
@@ -336,14 +340,36 @@ export function useLifecycle(
         lifetime.active &&
         lifetime.revision === revision &&
         !controller.signal.aborted;
+      let stopWaiting!: () => void;
+      const aborted = new Promise<void>((resolve) => {
+        stopWaiting = resolve;
+      });
+      controller.signal.addEventListener('abort', stopWaiting, { once: true });
       try {
         controller.signal.throwIfAborted();
-        const view = await client.view(lifecycle, id, {
-          signal: controller.signal,
-        });
-        if (current()) {
-          setLoaded({ scope, view });
-          setFailure(undefined);
+        while (current()) {
+          // A committed action can still have an older response in transit.
+          // Read after it settles so an invalidation cannot be lost to that response.
+          if (lifetime.actions.size > 0) {
+            await Promise.race([Promise.all(lifetime.actions), aborted]);
+            continue;
+          }
+          const actionRevision = lifetime.actionRevision;
+          try {
+            const view = await client.view(lifecycle, id, {
+              signal: controller.signal,
+            });
+            if (actionRevision !== lifetime.actionRevision) continue;
+            if (current()) {
+              setLoaded({ scope, view });
+              setFailure(undefined);
+            }
+            return;
+          } catch (cause) {
+            if (current() && actionRevision !== lifetime.actionRevision)
+              continue;
+            throw cause;
+          }
         }
       } catch (cause) {
         if (current()) {
@@ -357,6 +383,7 @@ export function useLifecycle(
       } finally {
         lifetime.controllers.delete(controller);
         signal?.removeEventListener('abort', abort);
+        controller.signal.removeEventListener('abort', stopWaiting);
       }
     },
     [client, lifecycle, id, scope],
@@ -412,19 +439,25 @@ export function useLifecycle(
       const lifetime = lifetimeRef.current;
       if (id === undefined || lifetime.scope !== scope || !lifetime.active)
         throw new Error('No record is selected.');
-      lifetime.revision += 1;
+      lifetime.actionRevision += 1;
+      let finish!: () => void;
+      const finished = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      lifetime.actions.add(finished);
       setActing(scope);
       try {
         const next = await work();
         if (lifetime.active) {
-          // Reads started before or during this mutation cannot replace its result.
-          lifetime.revision += 1;
           setLoaded({ scope, view: next });
           setFailure(undefined);
         }
         return next;
       } finally {
-        if (lifetime.active) setActing(undefined);
+        lifetime.actions.delete(finished);
+        finish();
+        if (lifetime.active)
+          setActing(lifetime.actions.size > 0 ? scope : undefined);
       }
     },
     [id, scope],
