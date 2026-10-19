@@ -1,12 +1,12 @@
 ---
 pageType: home
 pageName: home
-title: NocoBase ドキュメント
-description: NocoBase オープンソースノーコード/ローコードプラットフォームドキュメント：クイックスタート、データソース、インターフェースビルダー、AI 員工、ワークフロー、ユーザー権限、認証、プラグイン開発。
+title: NocoBase 2 ドキュメント
+description: NocoBase 2 オープンソースノーコード/ローコードプラットフォームドキュメント：クイックスタート、データソース、インターフェースビルダー、AI 員工、ワークフロー、ユーザー権限、認証、プラグイン開発。
 keywords: 'NocoBase,ノーコード,ローコード,ドキュメント,オープンソース'
 hero:
-  name: NocoBase ドキュメント
-  text: NocoBase を素早く学び、マスターしましょう
+  name: NocoBase 2 ドキュメント
+  text: NocoBase 2 を素早く学び、マスターしましょう
   actions:
     - theme: brand
       text: クイックスタート

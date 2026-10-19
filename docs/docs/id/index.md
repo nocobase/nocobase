@@ -1,12 +1,12 @@
 ---
 pageType: home
 pageName: home
-title: Dokumentasi NocoBase
-description: 'Dokumentasi platform no-code/low-code open-source NocoBase: panduan memulai, sumber data, pembuatan antarmuka, Karyawan AI, workflow, izin pengguna, autentikasi & verifikasi, pengembangan plugin.'
+title: Dokumentasi NocoBase 2
+description: 'Dokumentasi platform no-code/low-code open-source NocoBase 2: panduan memulai, sumber data, pembuatan antarmuka, Karyawan AI, workflow, izin pengguna, autentikasi & verifikasi, pengembangan plugin.'
 keywords: 'NocoBase,no-code,low-code,dokumentasi,open-source'
 hero:
-  name: Dokumentasi NocoBase
-  text: Pelajari dan kuasai NocoBase dengan cepat
+  name: Dokumentasi NocoBase 2
+  text: Pelajari dan kuasai NocoBase 2 dengan cepat
   actions:
     - theme: brand
       text: Mulai Cepat

@@ -1,12 +1,12 @@
 ---
 pageType: home
 pageName: home
-title: "NocoBase Documentation"
-description: "NocoBase open-source no-code/low-code platform documentation: getting started, data sources, UI building, AI employees, workflows, user permissions, authentication, plugin development."
+title: "NocoBase 2 Documentation"
+description: "NocoBase 2 open-source no-code/low-code platform documentation: getting started, data sources, UI building, AI employees, workflows, user permissions, authentication, plugin development."
 keywords: "NocoBase,no-code,low-code,documentation,open-source"
 hero:
-  name: NocoBase Documentation
-  text: Learn and master NocoBase quickly
+  name: NocoBase 2 Documentation
+  text: Learn and master NocoBase 2 quickly
   # tagline: Learn how to get started and implement NocoBase
   actions:
     - theme: brand

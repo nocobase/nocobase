@@ -1,12 +1,12 @@
 ---
 pageType: home
 pageName: home
-title: Tài liệu NocoBase
-description: 'Tài liệu nền tảng no-code/low-code mã nguồn mở NocoBase: bắt đầu nhanh, nguồn dữ liệu, xây dựng giao diện, AI Employee, Workflow, quyền người dùng, xác thực, phát triển Plugin.'
+title: Tài liệu NocoBase 2
+description: 'Tài liệu nền tảng no-code/low-code mã nguồn mở NocoBase 2: bắt đầu nhanh, nguồn dữ liệu, xây dựng giao diện, AI Employee, Workflow, quyền người dùng, xác thực, phát triển Plugin.'
 keywords: 'NocoBase,no-code,low-code,tài liệu,mã nguồn mở'
 hero:
-  name: Tài liệu NocoBase
-  text: Học và làm chủ NocoBase một cách nhanh chóng
+  name: Tài liệu NocoBase 2
+  text: Học và làm chủ NocoBase 2 một cách nhanh chóng
   actions:
     - theme: brand
       text: Bắt đầu nhanh
