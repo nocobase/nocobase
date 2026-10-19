@@ -132,6 +132,8 @@ export { IntakeAgentSlot, PageContextProvider } from './kit/page-slots.js';
 export { useViewer } from './hooks/use-viewer.js';
 export { canManageProject, canUseSetting } from './lib/permissions.js';
 export { pmKeys } from './api/keys.js';
+/** Use the same history pagination protection in an application's own query cache. */
+export { PmQueryClient } from './api/invalidate-queries.js';
 export {
   announcedIssueIds,
   changedIssueSegments,
