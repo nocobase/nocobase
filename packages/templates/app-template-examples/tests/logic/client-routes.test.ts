@@ -154,13 +154,6 @@ describe('app client routes', () => {
     expect(pageAuthorizations(resolved.routes)).toEqual([
       // The landing page opted out of page authorization, so it is reachable by every signed-in user.
       { name: 'home', authorizedAs: null },
-      { name: 'agents', authorizedAs: 'agents' },
-      { name: 'runtimes', authorizedAs: 'runtimes' },
-      { name: 'runtimes-connect', authorizedAs: 'runtimes' },
-      { name: 'models', authorizedAs: 'settings:agents.services' },
-      { name: 'ai-translation', authorizedAs: null },
-      { name: 'ai-structured-extraction', authorizedAs: null },
-      { name: 'ai-form-fill', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'routeOverlays', authorizedAs: 'routeOverlays' },
       // Overlay children are nested under a page, so the parent's check is the only one.
@@ -177,6 +170,13 @@ describe('app client routes', () => {
       { name: 'numeric-examples', authorizedAs: 'numeric-examples' },
       { name: 'i18n-examples', authorizedAs: 'i18n-examples' },
       { name: 'external-crm', authorizedAs: 'external-crm' },
+      { name: 'agents', authorizedAs: 'agents' },
+      { name: 'runtimes', authorizedAs: 'runtimes' },
+      { name: 'runtimes-connect', authorizedAs: 'runtimes' },
+      { name: 'models', authorizedAs: 'settings:agents.services' },
+      { name: 'ai-translation', authorizedAs: null },
+      { name: 'ai-structured-extraction', authorizedAs: null },
+      { name: 'ai-form-fill', authorizedAs: null },
       { name: 'workflows', authorizedAs: 'settings:workflow-management' },
       {
         name: 'workflowDefinitions',

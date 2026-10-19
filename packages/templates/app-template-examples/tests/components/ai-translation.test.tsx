@@ -9,6 +9,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
@@ -117,6 +118,150 @@ beforeEach(() => {
 });
 
 describe('AI Translation demo', () => {
+  it('groups models by service and shows only the selected model name', async () => {
+    const catalog = {
+      data: [
+        models.data[0],
+        { ...models.data[0], name: 'remote', title: 'Remote' },
+        {
+          ...models.data[0],
+          name: 'empty',
+          title: 'No chat models',
+          models: [],
+        },
+      ],
+    };
+    host.api.request.mockImplementation(async ({ method }) =>
+      method === 'POST' ? { data: { translation: 'Translated' } } : catalog,
+    );
+    const user = userEvent.setup();
+    await mount();
+    await ready();
+    const trigger = screen.getByRole('combobox', { name: 'Language model' });
+    expect(trigger).toHaveTextContent('First');
+    expect(trigger).not.toHaveTextContent('Local');
+    await user.click(trigger);
+    const local = await screen.findByRole('group', { name: 'Local' });
+    const remote = screen.getByRole('group', { name: 'Remote' });
+    expect(
+      within(local).getByRole('option', { name: 'First', exact: true }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('group', { name: 'No chat models' }),
+    ).not.toBeInTheDocument();
+    await user.click(
+      within(remote).getByRole('option', { name: 'First', exact: true }),
+    );
+    expect(trigger).toHaveTextContent('First');
+    expect(trigger).not.toHaveTextContent('Remote');
+    fireEvent.change(screen.getByRole('textbox', { name: 'Original' }), {
+      target: { value: 'Hello' },
+    });
+    await user.click(
+      screen.getByRole('button', { name: 'Translate', exact: true }),
+    );
+    expect(submissions()[0][0].json.model).toEqual({
+      modelService: 'remote',
+      model: 'first',
+    });
+  });
+
+  it('uses the same title and action row heights in both columns', async () => {
+    await mount();
+    await ready();
+    const sourceLabel = screen.getByText('Original', { selector: 'label' });
+    const targetLabel = screen.getByText('Translation', { selector: 'label' });
+    expect(sourceLabel.parentElement).toHaveClass('min-h-8', 'items-center');
+    expect(targetLabel.parentElement).toHaveClass('min-h-8', 'items-center');
+    expect(
+      screen.getByRole('button', { name: 'Clear', exact: true }).parentElement,
+    ).toHaveClass('min-h-8', 'items-center');
+    expect(
+      screen.getByRole('button', { name: 'Copy', exact: true }).parentElement,
+    ).toHaveClass('min-h-8', 'items-center');
+  });
+
+  it('fills examples without sending, copies the result and clears with focus restored', async () => {
+    const user = userEvent.setup();
+    const clipboard = vi
+      .spyOn(navigator.clipboard, 'writeText')
+      .mockResolvedValue();
+    await mount();
+    await ready();
+    expect(
+      screen.getByRole('button', { name: 'Copy', exact: true }),
+    ).toBeDisabled();
+    await user.click(
+      screen.getByRole('button', { name: 'Product introduction' }),
+    );
+    const original = screen.getByRole('textbox', { name: 'Original' });
+    expect(original).toHaveValue(enUS.aiTranslation.examples.product.text);
+    expect(original).toHaveFocus();
+    expect(submissions()).toHaveLength(0);
+    await user.click(
+      screen.getByRole('button', { name: 'Translate', exact: true }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Copy', exact: true }),
+      ).toBeEnabled(),
+    );
+    await user.click(screen.getByRole('button', { name: 'Copy', exact: true }));
+    expect(clipboard).toHaveBeenCalledWith('Hello, world!');
+    expect(host.toaster.show).toHaveBeenCalledWith(
+      expect.objectContaining({ title: enUS.aiTranslation.copied }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Clear', exact: true }),
+    );
+    expect(original).toHaveValue('');
+    expect(original).toHaveFocus();
+    expect(
+      screen.getByRole('textbox', { name: 'Translation', exact: true }),
+    ).toHaveValue('');
+    clipboard.mockRestore();
+  });
+
+  it('swaps explicit languages and translated text without another request', async () => {
+    const user = userEvent.setup();
+    await mount();
+    await ready();
+    expect(
+      screen.getByRole('button', { name: 'Swap languages' }),
+    ).toBeDisabled();
+    await user.click(screen.getByRole('combobox', { name: 'Source language' }));
+    await user.click(
+      await screen.findByRole('option', {
+        name: 'Simplified Chinese',
+        exact: true,
+      }),
+    );
+    fireEvent.change(screen.getByRole('textbox', { name: 'Original' }), {
+      target: { value: '你好' },
+    });
+    await user.click(
+      screen.getByRole('button', { name: 'Translate', exact: true }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('textbox', { name: 'Translation', exact: true }),
+      ).toHaveValue('Hello, world!'),
+    );
+    await user.click(screen.getByRole('button', { name: 'Swap languages' }));
+    expect(
+      screen.getByRole('combobox', { name: 'Source language' }),
+    ).toHaveTextContent('English');
+    expect(
+      screen.getByRole('combobox', { name: 'Target language' }),
+    ).toHaveTextContent('Simplified Chinese');
+    expect(screen.getByRole('textbox', { name: 'Original' })).toHaveValue(
+      'Hello, world!',
+    );
+    expect(
+      screen.getByRole('textbox', { name: 'Translation', exact: true }),
+    ).toHaveValue('你好');
+    expect(submissions()).toHaveLength(1);
+  });
   it('selects model and languages, submits once while loading and shows a plain read-only result', async () => {
     const result = deferred<{ data: { translation: string } }>();
     host.api.request.mockImplementation(async ({ method }) =>
@@ -137,9 +282,7 @@ describe('AI Translation demo', () => {
     modelSelect.focus();
     await user.keyboard('[ArrowDown]');
     expect(modelSelect).toHaveAttribute('aria-expanded', 'true');
-    await user.click(
-      await screen.findByRole('option', { name: 'Local / Second' }),
-    );
+    await user.click(await screen.findByRole('option', { name: 'Second' }));
     fireEvent.keyDown(
       screen.getByRole('combobox', { name: 'Target language' }),
       { key: 'ArrowDown' },
@@ -253,25 +396,25 @@ describe('AI Translation demo', () => {
     );
   });
 
-  it.each([true, false])(
-    'shows a permission-aware model prerequisite, manage access=%s',
-    async (canRead) => {
-      host.canRead = canRead;
-      host.api.request.mockResolvedValue({ data: [] });
-      await mount();
+  it('keeps the workspace quiet when no model is configured', async () => {
+    host.api.request.mockResolvedValue({ data: [] });
+    await mount();
+    await waitFor(() =>
       expect(
-        await screen.findByText(enUS.aiTranslation.noModels),
-      ).toBeVisible();
-      expect(screen.getByRole('button', { name: 'Translate' })).toBeDisabled();
-      expect(
-        Boolean(screen.queryByRole('button', { name: 'Open models' })),
-      ).toBe(canRead);
-      if (!canRead)
-        expect(
-          screen.getByText(enUS.onlineAgent.noModels.readOnly),
-        ).toBeVisible();
-    },
-  );
+        screen.queryByRole('status', { name: 'Loading' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole('button', { name: 'Translate' })).toBeDisabled();
+    expect(
+      screen.queryByText(enUS.aiTranslation.noModels),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Open models' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('region', { name: 'Translation workspace' }),
+    ).toBeVisible();
+  });
 
   it('does not offer Retry for a missing catalog endpoint', async () => {
     host.api.request.mockRejectedValue(apiError(404));
