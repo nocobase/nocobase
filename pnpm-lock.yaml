@@ -16051,27 +16051,15 @@ packages:
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
-  "@bramus/specificity@2.4.3":
-    resolution:
-      integrity: sha512-0GEz8qJWokkUVYQYRukmkSHIFNoBH8QTreeHrAFbvz1XFYc3Y+puhMs8PQ5x8GNugiC2l5jvDBXKLbBIByeSBw==
-    hasBin: true
   "@types/web-push@3.6.4":
     resolution:
       integrity: sha512-GnJmSr40H3RAnj0s34FNTcJi1hmWFV5KXugE0mYWnYhgTAHLJ/dJKAwDmvPJYMke0RplY2XE9LnM4hqSqKIjhQ==
   asn1.js@5.4.1:
     resolution:
       integrity: sha512-+I//4cYPccV8LdmBLiX8CYvf9Sp3vQsrqu2QNXRcrbiWvcx/UdlFiqUJJzxRQxgsZmvhXhn4cSKeSmoFjVdupA==
-  bidi-js@1.1.0:
-    resolution:
-      integrity: sha512-fX1Onk0tdVPC7obPWB5EbJ1z7NVhLq4m2xZLq2YXBkxzMXIGRpNMU88n0EPgWseKl12J7zXs7qrDxPK4sRs2fg==
   bn.js@4.12.5:
     resolution:
       integrity: sha512-3aRg6/JxfffFD+OlOjOFR3Vo79l39ooBTFucxx+MT3dhCtzn3EmiUPQo+6/OZuI2jbXi3YKgmiTFBgChQMwIRQ==
-  bundle-name@4.1.1:
-    resolution:
-      integrity: sha512-DdH81/zPLVS11EUgWq3tEu/xn+EzljlMYooDNdzWEnFha3R3NBMpMV1UqYIpjYHV/SgpFKMIX1Oh7o06SjM/oA==
-    engines:
-      node: ">=18"
   http_ece@1.2.0:
     resolution:
       integrity: sha512-JrF8SSLVmcvc5NducxgyOrKXe3EsyHMgBFgSaIUGmArKe+rwr0uphRkRXvwiom3I+fpIfoItveHrfudL8/rxuA==
@@ -16080,24 +16068,6 @@ packages:
   minimalistic-assert@1.0.1:
     resolution:
       integrity: sha512-UtJcAD4yEaGtjPezWuO9wC4nwUnVH/8/Im3yEHQP4b67cXlD/Qr9hdITCU1xDbSEXg2XKNaP8jsReV7vQd00/A==
-  negotiator@1.1.0:
-    resolution:
-      integrity: sha512-NMPBRMJgiQHjbd8phG3Vebdx4kZ1H121rbl5IkMqeOsahptB9BKo/d7oJ3zTXqTgagn2bWlNSXkh0QUGM31RYg==
-    engines:
-      node: ">=18"
-  proxy-addr@2.0.8:
-    resolution:
-      integrity: sha512-5nnx0yGyVUcY6t9RnWcARWtwT9F1D8O9rt08htPvnd49W1IgZtmLkhu9WfMzQj1cFxjHIO6connUNVW5k7AVyQ==
-    engines:
-      node: ">= 0.10"
-  sonic-boom@5.0.2:
-    resolution:
-      integrity: sha512-/JEruzo6yhNVhsLblTRchgTQHIt7SsdJP0YyrfWaNKjIOQDfrdZv9gwYraYCAsmKV39/LAdV31FLL5NCDpoL/A==
-  sync-child-process@1.1.0:
-    resolution:
-      integrity: sha512-1LMf/x0kU0CKFSesh5DfYktvj1KhiqYi5LAh5HU2G4SkKk1TGDhsMFBOL47g/E+mNfYpgs365pVNlIYOIHPvlQ==
-    engines:
-      node: ">=16.0.0"
   web-push@3.6.7:
     resolution:
       integrity: sha512-OpiIUe8cuGjrj3mMBFWY+e4MMIkW3SVT+7vEIjvD9kejGUypv8GPDf84JdPWskK8zMRIJ6xYGm+Kxr8YkPyA0A==
@@ -26841,15 +26811,6 @@ snapshots:
 
   zwitch@2.0.4: {}
 
-  "@alicloud/tea-typescript@1.8.0(supports-color@8.1.1)":
-    dependencies:
-      "@types/node": 12.20.55
-      httpx: 2.3.3(supports-color@8.1.1)
-    transitivePeerDependencies:
-      - supports-color
-  "@bramus/specificity@2.4.3":
-    dependencies:
-      css-tree: 3.2.1
   "@types/web-push@3.6.4":
     dependencies:
       "@types/node": 24.13.3
@@ -26859,35 +26820,9 @@ snapshots:
       inherits: 2.0.4
       minimalistic-assert: 1.0.1
       safer-buffer: 2.1.2
-  bidi-js@1.1.0:
-    dependencies:
-      require-from-string: 2.0.2
   bn.js@4.12.5: {}
-  bundle-name@4.1.1:
-    dependencies:
-      run-applescript: 7.1.0
   http_ece@1.2.0: {}
-  httpx@2.3.3(supports-color@8.1.1):
-    dependencies:
-      "@types/node": 20.19.43
-      debug: 4.4.3(supports-color@8.1.1)
-    transitivePeerDependencies:
-      - supports-color
   minimalistic-assert@1.0.1: {}
-  negotiator@1.1.0:
-    dependencies:
-      content-type: 2.1.0
-  proxy-addr@2.0.8:
-    dependencies:
-      forwarded: 0.2.0
-      ipaddr.js: 1.9.1
-  sonic-boom@5.0.2:
-    dependencies:
-      atomic-sleep: 1.0.0
-  sync-child-process@1.1.0:
-    dependencies:
-      sync-message-port: 1.2.0
-    optional: true
   web-push@3.6.7:
     dependencies:
       asn1.js: 5.4.1
@@ -26897,6 +26832,3 @@ snapshots:
       minimist: 1.2.8
     transitivePeerDependencies:
       - supports-color
-  zod-validation-error@4.0.2(zod@4.6.5):
-    dependencies:
-      zod: 4.6.5
