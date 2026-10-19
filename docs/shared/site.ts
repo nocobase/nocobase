@@ -7,7 +7,7 @@
  * `rspress.config.ts` injects at build time.
  */
 export const siteOrigin = (
-  process.env.DOCS_SITE_ORIGIN || 'https://v2.docs.nocobase.com'
+  process.env.DOCS_SITE_ORIGIN || 'https://nocode.docs.nocobase.com'
 ).replace(/\/+$/, '');
 
 export const siteHost = new URL(siteOrigin).host;
