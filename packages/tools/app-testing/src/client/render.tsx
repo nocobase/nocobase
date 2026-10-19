@@ -188,17 +188,18 @@ export async function renderWithApp(
   });
   await app.start();
 
-  const view = render(
+  const Wrapper = ({ children }: PropsWithChildren): ReactElement => (
     <MemoryRouter initialEntries={[options.route ?? '/']}>
       <AppClientProviders app={app}>
         {options.namespace ? (
-          <NamespaceScope ns={options.namespace}>{ui}</NamespaceScope>
+          <NamespaceScope ns={options.namespace}>{children}</NamespaceScope>
         ) : (
-          ui
+          children
         )}
       </AppClientProviders>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
+  const view = render(ui, { wrapper: Wrapper });
   return Object.assign(view, {
     app,
     toasts: (): readonly TestToast[] => toaster.list(),

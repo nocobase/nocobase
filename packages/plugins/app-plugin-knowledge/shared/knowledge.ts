@@ -487,6 +487,7 @@ export interface KnowledgeSearchProviderRank {
 export const KNOWLEDGE_TOPIC = 'knowledge';
 
 export interface KnowledgeChanged {
+  readonly spaceId?: string;
   readonly kind: 'knowledge.changed';
   readonly docId?: string;
   readonly proposalId?: string;

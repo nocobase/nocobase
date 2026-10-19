@@ -96,6 +96,8 @@ diff -rq "$WORK/$BASE" "$WORK/$TARGET"
 
 When the upgrade changes application migrations or registered plugins that supply migrations, read [database upgrades](references/database-upgrades.md) during planning, before starting the target application. Review the affected packages' upgrade notes as well as the template diff: a dependency update can change database behavior without adding a migration file to the application. Include any documented checksum correction, data prerequisite, and irreversible migration in the upgrade and recovery plan. A Git branch protects source, not the database.
 
+When BASE → TARGET changes Realtime contracts, read [Realtime upgrades](references/realtime-upgrade.md) during planning and include application-owned consumers, custom plugins, workers and transport/test adapters in step 5. Topic authorization, ignored publication promises and recovery gaps can survive type checking; use the actual package contracts and project usage to decide which migration steps apply.
+
 Then ask the project which of those files it has also touched:
 
 ```bash
@@ -158,6 +160,8 @@ pnpm typecheck && pnpm test && pnpm lint && pnpm build
 `pnpm install` can retain older transitive dependencies in `pnpm-lock.yaml` even after the template raises a direct dependency. Run `pnpm dedupe` to refresh compatible resolutions before synchronizing Skills from the final `node_modules`. Review and include the resulting lockfile changes in the upgrade. If type checking still reports incompatible types from two versions of the same package, follow [dependency resolution conflicts](references/edge-cases.md#dependency-resolution-conflicts) before changing application code.
 
 `typecheck` is doing real work here — it catches the broken import a removal left behind. Before starting the application against retained data, complete the applicable [database upgrade checks](references/database-upgrades.md); startup may apply migrations automatically. Then run the application and check what the delta touched: sign-in, the user's pages, navigation, locale switching, any new migration. Passing commands are not evidence the application still behaves. For a theme or shell change, also complete the [theme upgrade checks](references/theme-upgrade.md); token changes alone do not verify the application-owned consumers.
+
+For a Realtime contract change, complete the applicable [Realtime acceptance checks](references/realtime-upgrade.md#verify-the-migrated-application), including access denial, reconnect catch-up and publication failure; a connected socket alone is insufficient evidence.
 
 Report the range merged, how each contested file was decided, any manual actions and their validation, and how to roll back.
 

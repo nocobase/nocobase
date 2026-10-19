@@ -57,8 +57,8 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
   private missingMailConfigWarningLogged = false;
   private productionOAuthReturnWarningLogged = false;
   private readonly messageChangeNotifier: MailMessageChangeNotifier = {
-    notify: (userId) => {
-      this.realtimeTopic?.publishFor(userId, { kind: 'mail.changed' });
+    notify: async (userId) => {
+      await this.realtimeTopic?.publishFor(userId, { kind: 'mail.changed' });
     },
   };
 

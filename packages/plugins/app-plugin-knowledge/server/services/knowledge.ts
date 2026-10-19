@@ -152,6 +152,7 @@ export function createKnowledge(deps: KnowledgeDeps): Knowledge {
   ];
   const rerankers: KnowledgeSearchReranker[] = [];
   let indexer: KnowledgeIndexer | null = null;
+  let releaseIndexer: (() => void) | undefined;
   const docs = createDocumentService(
     context,
     () => providers,
@@ -176,9 +177,18 @@ export function createKnowledge(deps: KnowledgeDeps): Knowledge {
     bindSettings: (source) => context.bindSettings(source),
     indexing: createIndexingService(context, () => indexer),
     registerIndexer(next) {
+      releaseIndexer?.();
       indexer = next;
+      const release = next.onChange?.((docId) => {
+        if (indexer === next)
+          context.announce({ type: 'index.changed', docId });
+      });
+      releaseIndexer = release;
       return () => {
-        if (indexer === next) indexer = null;
+        if (indexer !== next) return;
+        release?.();
+        releaseIndexer = undefined;
+        indexer = null;
       };
     },
     registerSubjectProvider: (provider) => context.subjects.register(provider),

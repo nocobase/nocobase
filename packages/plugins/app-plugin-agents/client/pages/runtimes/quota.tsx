@@ -98,7 +98,7 @@ export function QuotaCell({
           {usage.map((u) => (
             <span
               key={u.window}
-              className='inline-flex items-center gap-1'
+              className='inline-flex items-center gap-1 whitespace-nowrap'
               title={t('runtimes.quota.observed', {
                 time: compactDateTime(u.observedAt, i18n.language, now),
               })}
@@ -116,7 +116,9 @@ export function QuotaCell({
                   style={{ width: `${u.usedPercent}%` }}
                 />
               </span>
-              {Math.round(u.usedPercent ?? 0)}%
+              {t('runtimes.quota.usedPercent', {
+                percent: Math.round(u.usedPercent ?? 0),
+              })}
             </span>
           ))}
           {near ? <QuotaLabel near /> : null}

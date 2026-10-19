@@ -1,0 +1,50 @@
+---
+"@nocobase/app-cli": patch
+"@nocobase/app-client": minor
+"@nocobase/app-host": patch
+"@nocobase/app-host-docker": patch
+"@nocobase/app-plugin-agent-sessions": patch
+"@nocobase/app-plugin-agents": patch
+"@nocobase/app-plugin-api-keys": patch
+"@nocobase/app-plugin-authentication": patch
+"@nocobase/app-plugin-authorization": patch
+"@nocobase/app-plugin-authorization-example": patch
+"@nocobase/app-plugin-authz-default-access": patch
+"@nocobase/app-plugin-authz-restriction-rules": patch
+"@nocobase/app-plugin-authz-sharing-rules": patch
+"@nocobase/app-plugin-database-example": patch
+"@nocobase/app-plugin-database-explorer": patch
+"@nocobase/app-plugin-file": patch
+"@nocobase/app-plugin-file-example": patch
+"@nocobase/app-plugin-i18n": patch
+"@nocobase/app-plugin-jobs-example": patch
+"@nocobase/app-plugin-knowledge": patch
+"@nocobase/app-plugin-lifecycle-example": patch
+"@nocobase/app-plugin-mail": patch
+"@nocobase/app-plugin-mail-example": patch
+"@nocobase/app-plugin-notification": patch
+"@nocobase/app-plugin-notification-example": patch
+"@nocobase/app-plugin-notification-in-app": patch
+"@nocobase/app-plugin-notification-providers": patch
+"@nocobase/app-plugin-office-flows-example": patch
+"@nocobase/app-plugin-projects": patch
+"@nocobase/app-plugin-queue-example": patch
+"@nocobase/app-plugin-realtime-example": patch
+"@nocobase/app-plugin-releases": patch
+"@nocobase/app-plugin-repository-example": patch
+"@nocobase/app-plugin-routes-example": patch
+"@nocobase/app-plugin-scheduler": patch
+"@nocobase/app-plugin-service-provider-example": patch
+"@nocobase/app-plugin-skills-example": patch
+"@nocobase/app-plugin-template-print-example": patch
+"@nocobase/app-plugin-users": patch
+"@nocobase/app-server": patch
+"@nocobase/app-skills": patch
+"@nocobase/app-template-default": patch
+"@nocobase/app-template-examples": patch
+"@nocobase/app-testing": patch
+"@nocobase/app-websocket": minor
+"@nocobase/realtime": minor
+---
+
+Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
