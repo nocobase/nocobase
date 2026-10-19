@@ -471,7 +471,9 @@ export function PermissionEditor({
                   aria-label={section.title}
                   className='flex flex-col gap-2 p-3'
                 >
-                  <h2 className='text-sm font-semibold'>{section.title}</h2>
+                  {filtering && (
+                    <h2 className='text-sm font-semibold'>{section.title}</h2>
+                  )}
                   <div className='divide-y rounded-lg border'>
                     {section.groups.map((group) => {
                       const selectable = group.rows.filter(

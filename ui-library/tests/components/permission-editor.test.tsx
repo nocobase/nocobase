@@ -375,7 +375,7 @@ it('reveals multiple scopes without changing their independent saved selections'
   expect(change).toHaveBeenCalledExactlyOnceWith('attachments', 'all');
 });
 
-it('keeps the category heading consistent for a single resource and labels bulk selection explicitly', async () => {
+it('uses the category navigation without a duplicate heading and identifies filtered results', async () => {
   const batch = vi.fn();
   render(
     <PermissionEditor
@@ -411,8 +411,14 @@ it('keeps the category heading consistent for a single resource and labels bulk 
     />,
   );
   expect(
+    screen.queryByRole('heading', { level: 2, name: 'Users' }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Users' })).toBeInTheDocument();
+  await userEvent.type(screen.getByRole('textbox'), 'users');
+  expect(
     screen.getByRole('heading', { level: 2, name: 'Users' }),
-  ).toBeInTheDocument();
+  ).toBeVisible();
+  expect(batch).not.toHaveBeenCalled();
   expect(screen.getAllByText('1/2')).toHaveLength(1);
   expect(
     screen.getByRole('checkbox', {
