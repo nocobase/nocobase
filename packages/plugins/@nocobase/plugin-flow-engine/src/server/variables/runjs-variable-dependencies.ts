@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Liquid } from 'liquidjs';
 import { isAstFunctionLike, unwrapAstChainExpression } from '../flow-surfaces/runjs-authoring/ast/bindings';
 import { maskJavaScriptComments } from '../flow-surfaces/runjs-authoring/ast/source';
 import {
@@ -102,6 +103,26 @@ export const MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH = 256 * 1024;
 export const MAX_FLOW_MODEL_VARIABLE_TOTAL_STRING_LENGTH = 1024 * 1024;
 const MAX_RUNJS_STATIC_BINDING_WORK = 100_000;
 const STATIC_BINDING_BUDGET_EXHAUSTED = Symbol('static binding budget exhausted');
+
+const markdownLiquid = new Liquid();
+
+function prepareMarkdownVariableSource(content: string): string {
+  try {
+    // Match the translation placeholders handled before Liquid parsing by the client.
+    const template = content.replace(
+      /\{\{\s*t\s*\(\s*(['"])([\s\S]*?)\1\s*(?:,\s*\{\s*ns\s*:\s*(['"])([\s\S]*?)\3\s*\}\s*)?\)\s*\}\}/g,
+      '',
+    );
+    return markdownLiquid
+      .globalFullVariablesSync(template, { partials: false })
+      .filter((path) => path.startsWith('ctx.'))
+      .map((path) => `{{${path}}}`)
+      .join(' ');
+  } catch {
+    // Invalid Liquid cannot be rendered, so it must not grant variable access.
+    return '';
+  }
+}
 
 function getEnumerableDataEntries(value: object) {
   const descriptors = Object.getOwnPropertyDescriptors(value);
@@ -619,10 +640,14 @@ export function prepareFlowModelVariableSource(
             return { ok: false };
           }
         }
-        const prepared =
-          typeof input === 'string' && !options.isRunJsValuePath && isPersistedRunJsStringPath(pathTail)
-            ? prepareRunJsCode(input, undefined, true)
-            : input;
+        let prepared = input;
+        if (typeof input === 'string' && !options.isRunJsValuePath) {
+          if (pathTail.join('.') === 'stepParams.markdownBlockSettings.editMarkdown.content') {
+            prepared = prepareMarkdownVariableSource(input);
+          } else if (isPersistedRunJsStringPath(pathTail)) {
+            prepared = prepareRunJsCode(input, undefined, true);
+          }
+        }
         defineTraversalValue(parent, key, prepared);
         continue;
       }
