@@ -93,7 +93,6 @@ An application owns:
 - ServiceProvider instances and lifecycle state;
 - the HTTP API client binding under `apiClientToken`;
 - the WebSocket client binding under `realtimeClientToken`;
-- the TanStack Query caches its routes read, one per mount of the routes, the current one being `app.queryClient` and `queryClientToken` resolving to an `AppQueryCache` whose `current` is that cache;
 - finalized React render configuration consumed by `AppClientRoot`.
 
 The application owns a separate lazy realtime service under `realtimeClientToken`. By default,
@@ -181,7 +180,7 @@ Startup failure triggers reverse cleanup for providers that entered lifecycle.
 
 ## Query cache
 
-`AppClientProviders` provides a TanStack Query cache through `QueryClientProvider` directly around the routes, inside every React provider, where Refine's cache used to sit. Pages, route components and the plugin components they render that call `useQueryClient()`, `useQuery()` or `useMutation()` therefore share one cache without mounting a provider of their own, and a React provider that mounts a `QueryClientProvider` of its own does not change what the pages read. As with Refine, each mount of the routes gets a new, empty cache, and the one it replaces is cancelled and emptied when it unmounts: the authorization provider remounts the routes for every session, so a person never reads what the previous one loaded. React providers render outside the cache and do not see it through `useQueryClient()`. A React provider, and code outside React such as a realtime listener that invalidates what pages loaded, resolve `queryClientToken` to an `AppQueryCache` and read its `current` each time they need the cache, rather than keeping the `QueryClient` it returned: after the next sign-in, a kept one is an emptied cache that nothing renders. `app.queryClient` is the same current cache. The cache does not refetch when the window regains focus, and a query whose key changes keeps showing the previous data until the new data arrives. `app.shutdown()` empties every cache the application created. `@tanstack/react-query` is a peer dependency: a plugin that uses it declares it as a peer too, so it reads the application's copy and therefore its cache.
+`AppClientProviders` mounts a TanStack Query cache where Refine's used to be: directly around the routes, inside every React provider. Pages, route components and the plugin components they render that call `useQueryClient()`, `useQuery()` or `useMutation()` share it without mounting a provider of their own, and a React provider that mounts a `QueryClientProvider` of its own does not change what the pages read. As Refine's was, the cache is created for each mount of the routes: the authorization provider remounts them for every session, so each session starts with an empty cache. It keeps Refine's defaults: no refetch when the window regains focus, and a query whose key changes keeps showing the previous data until the new data arrives. React providers render outside it, and nothing outside React reaches it. `@tanstack/react-query` is a peer dependency: a plugin that uses it declares it as a peer too, so it reads the application's copy and therefore the routes' cache.
 
 React components and custom Hooks can obtain the application's HTTP client with `useApiClient()`:
 

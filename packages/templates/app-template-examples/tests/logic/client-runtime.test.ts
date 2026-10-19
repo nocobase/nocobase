@@ -2,11 +2,7 @@ import { createApp } from '../../client/app.js';
 import { ServiceProvider } from '@nocobase/service-provider';
 import { describe, expect, it } from 'vitest';
 
-import {
-  ClientApplication,
-  queryClientToken,
-  toasterToken,
-} from '@nocobase/app-client';
+import { ClientApplication, toasterToken } from '@nocobase/app-client';
 import {
   createAppClientConfig,
   defineAppClientRenderConfig,
@@ -51,13 +47,18 @@ describe('app client runtime', () => {
     expect(calls).toEqual([]);
   });
 
-  it('runs provider lifecycle with the application query cache registered', async () => {
-    const seen: unknown[] = [];
+  it('runs provider lifecycle through ClientApplication', async () => {
+    const calls: string[] = [];
     class Provider extends ServiceProvider<ClientApplicationType> {
       public readonly name: string = '@example/provider';
 
       public override boot(): Promise<void> {
-        seen.push(this.app.services.resolve(queryClientToken).current);
+        calls.push('boot');
+        return Promise.resolve();
+      }
+
+      public override shutdown(): Promise<void> {
+        calls.push('shutdown');
         return Promise.resolve();
       }
     }
@@ -75,9 +76,9 @@ describe('app client runtime', () => {
     });
 
     await app.start();
-    expect(seen).toHaveLength(1);
-    expect(seen[0]).toBe(app.queryClient);
+    expect(calls).toEqual(['boot']);
     await app.shutdown();
+    expect(calls).toEqual(['boot', 'shutdown']);
   });
 
   it('uses the default template Application and static plugin declarations', async () => {

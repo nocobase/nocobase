@@ -13,12 +13,9 @@ import {
   type ServiceToken,
 } from '@nocobase/service-provider';
 
-import type { QueryClient } from '@tanstack/react-query';
-
 import { resolveAppUrl } from './client.js';
 import type { AppClientConfig, AppClientRenderConfig } from './config.js';
 import type { AppClientRegisteredServiceProvider } from './plugins.js';
-import { AppQueryClients, queryClientToken } from './query-client.js';
 import type { AppRuntimeContext } from './runtime/index.js';
 
 export const apiClientToken: ServiceToken<ApiClient> =
@@ -58,7 +55,6 @@ class CoreClientServiceProvider extends ServiceProvider<ClientApplication> {
     applyDocumentLocale(this.app.runtime.i18n);
 
   public override register(): void {
-    this.app.container.instance(queryClientToken, this.app.queryClients);
     this.app.container.singleton(apiClientToken, (): ApiClient => {
       const baseURL = this.app.config.get<string>('api.baseURL');
       const i18n = this.app.runtime.i18n;
@@ -98,7 +94,6 @@ class CoreClientServiceProvider extends ServiceProvider<ClientApplication> {
       this.synchronizeDocumentLocale,
     );
     this.app.container.resolveIfCreated(realtimeClientToken)?.close();
-    this.app.queryClients.releaseAll();
     return Promise.resolve();
   }
 }
@@ -108,11 +103,6 @@ export class ClientApplication {
   public readonly config: AppClientConfig;
   public readonly container: ServiceContainer;
   public readonly services: ServiceResolver;
-  /**
-   * The query caches `AppClientProviders` provides to the routes, one for each mount. Registered as `queryClientToken`;
-   * `app.queryClient` is the current one.
-   */
-  public readonly queryClients: AppQueryClients = new AppQueryClients();
   private readonly providerRegistry = new ServiceProviderRegistry();
   private readonly createRenderConfig: ClientApplicationRenderConfigFactory;
   private resolvedRenderConfig: AppClientRenderConfig | undefined;
@@ -131,11 +121,6 @@ export class ClientApplication {
       new CoreClientServiceProvider(this, options.fetch),
     );
     this.addServiceProviders(options.runtime.serviceProviders);
-  }
-
-  /** The query cache the routes read now; see `AppQueryCache.current`. */
-  public get queryClient(): QueryClient {
-    return this.queryClients.current;
   }
 
   public get renderConfig(): AppClientRenderConfig {

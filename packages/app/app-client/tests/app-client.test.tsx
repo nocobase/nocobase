@@ -12,13 +12,7 @@ import {
   QueryClientProvider,
   useQueryClient,
 } from '@tanstack/react-query';
-import {
-  Fragment,
-  StrictMode,
-  useState,
-  type ReactElement,
-  type ReactNode,
-} from 'react';
+import { Fragment, useState, type ReactElement, type ReactNode } from 'react';
 import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -28,7 +22,7 @@ import {
   realtimeClientToken,
   type ClientApplicationRenderConfigFactory,
 } from '../src/application.js';
-import { queryClientToken, useApiClient } from '../src/index.js';
+import { useApiClient } from '../src/index.js';
 import { ClientApplicationContext } from '../src/application-context.js';
 import { AppClientProviders, AppClientRoot } from '../src/app-client.js';
 import {
@@ -163,25 +157,27 @@ describe('app client', () => {
     expect(normalizeAppClientBasename('/portal/')).toBe('/portal');
   });
 
-  it('provides the application query cache to its pages', async () => {
-    const read: QueryClient[] = [];
-    function ReadCache(): null {
-      read.push(useQueryClient());
+  it('gives the pages a query cache with the defaults Refine gave it', async () => {
+    let pageRead: QueryClient | undefined;
+    function PageReader(): null {
+      pageRead = useQueryClient();
       return null;
     }
     const app = await createTestApplication(() =>
-      defineAppClientRenderConfig({ routes: <ReadCache /> }),
+      defineAppClientRenderConfig({ routes: <PageReader /> }),
     );
 
     render(<AppClientRoot app={app} />);
 
-    expect(read).toHaveLength(1);
-    expect(read[0]).toBe(app.queryClient);
-    expect(app.services.resolve(queryClientToken).current).toBe(read[0]);
+    expect(pageRead).toBeInstanceOf(QueryClient);
+    expect(pageRead!.getDefaultOptions().queries).toMatchObject({
+      refetchOnWindowFocus: false,
+      placeholderData: keepPreviousData,
+    });
     await app.shutdown();
   });
 
-  it('keeps the application query cache for pages under a React provider that mounts a cache of its own', async () => {
+  it('keeps its query cache for pages under a React provider that mounts a cache of its own', async () => {
     const providerCache = new QueryClient();
     let providerRead: QueryClient | undefined;
     let pageRead: QueryClient | undefined;
@@ -211,12 +207,12 @@ describe('app client', () => {
     render(<AppClientRoot app={app} />);
 
     expect(providerRead).toBe(providerCache);
-    expect(pageRead).toBe(app.queryClient);
+    expect(pageRead).toBeInstanceOf(QueryClient);
     expect(pageRead).not.toBe(providerCache);
     await app.shutdown();
   });
 
-  it('gives the routes an empty query cache each time a React provider remounts them, as for a new session', async () => {
+  it('gives the routes a new query cache each time a React provider remounts them, as for a new session', async () => {
     let remount: (() => void) | undefined;
     function Session({ children }: { readonly children?: ReactNode }) {
       const [key, setKey] = useState(0);
@@ -239,85 +235,67 @@ describe('app client', () => {
     first.setQueryData(['orders'], ['first session']);
 
     act(() => remount!());
-    await Promise.resolve();
 
     const second = read.at(-1)!;
     expect(second).not.toBe(first);
     expect(second.getQueryData(['orders'])).toBeUndefined();
-    expect(first.getQueryData(['orders'])).toBeUndefined();
-    expect(app.queryClient).toBe(second);
-    expect(app.services.resolve(queryClientToken).current).toBe(second);
     await app.shutdown();
   });
 
-  it('keeps the query cache through the development double mount of Strict Mode', async () => {
+  it('keeps the query cache across renders of the same mount', async () => {
+    const read: QueryClient[] = [];
+    function PageReader({ label }: { readonly label: string }): ReactElement {
+      read.push(useQueryClient());
+      return <p>{label}</p>;
+    }
+    const app = await createTestApplication(() =>
+      defineAppClientRenderConfig({ routes: null }),
+    );
+    const view = render(
+      <MemoryRouter>
+        <AppClientProviders app={app}>
+          <PageReader label='first' />
+        </AppClientProviders>
+      </MemoryRouter>,
+    );
+
+    view.rerender(
+      <MemoryRouter>
+        <AppClientProviders app={app}>
+          <PageReader label='second' />
+        </AppClientProviders>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('second')).toBeInTheDocument();
+    expect(read).toHaveLength(2);
+    expect(read[1]).toBe(read[0]);
+    await app.shutdown();
+  });
+
+  it('gives each application its own query cache', async () => {
     const read: QueryClient[] = [];
     function PageReader(): null {
       read.push(useQueryClient());
       return null;
     }
-    const app = await createTestApplication(() =>
+    const first = await createTestApplication(() =>
+      defineAppClientRenderConfig({ routes: <PageReader /> }),
+    );
+    const second = await createTestApplication(() =>
       defineAppClientRenderConfig({ routes: <PageReader /> }),
     );
 
     render(
-      <StrictMode>
-        <AppClientRoot app={app} />
-      </StrictMode>,
-    );
-    const client = read.at(-1)!;
-    client.setQueryData(['orders'], ['kept']);
-    await Promise.resolve();
-
-    expect(app.queryClient).toBe(client);
-    expect(client.getQueryData(['orders'])).toEqual(['kept']);
-    await app.shutdown();
-  });
-
-  it('hands the first mount the cache code read before rendering', async () => {
-    const read: QueryClient[] = [];
-    function PageReader(): null {
-      read.push(useQueryClient());
-      return null;
-    }
-    const app = await createTestApplication(() =>
-      defineAppClientRenderConfig({ routes: <PageReader /> }),
-    );
-    const before = app.services.resolve(queryClientToken).current;
-
-    render(<AppClientRoot app={app} />);
-
-    expect(read.at(-1)).toBe(before);
-    await app.shutdown();
-  });
-
-  it('keeps the query defaults the application had under Refine', async () => {
-    const app = await createTestApplication(() =>
-      defineAppClientRenderConfig({ routes: null }),
+      <>
+        <AppClientRoot app={first} />
+        <AppClientRoot app={second} />
+      </>,
     );
 
-    expect(app.queryClient.getDefaultOptions().queries).toMatchObject({
-      refetchOnWindowFocus: false,
-      placeholderData: keepPreviousData,
-    });
-    await app.shutdown();
-  });
-
-  it('gives each application its own query cache and empties it on shutdown', async () => {
-    const first = await createTestApplication(() =>
-      defineAppClientRenderConfig({ routes: null }),
-    );
-    const second = await createTestApplication(() =>
-      defineAppClientRenderConfig({ routes: null }),
-    );
-    const cache = first.queryClient;
-    cache.setQueryData(['orders'], ['first']);
-
-    expect(second.queryClient).not.toBe(cache);
-    expect(second.queryClient.getQueryData(['orders'])).toBeUndefined();
-
+    expect(read).toHaveLength(2);
+    expect(read[0]).not.toBe(read[1]);
     await first.shutdown();
-    expect(cache.getQueryData(['orders'])).toBeUndefined();
     await second.shutdown();
   });
 

@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { BrowserRouter } from 'react-router';
 
 import { NavigationGuardProvider } from './navigation-guard-provider.js';
@@ -7,6 +7,7 @@ import { NavigationGuardProvider } from './navigation-guard-provider.js';
 import type { ClientApplication } from './application.js';
 import { ClientApplicationContext } from './application-context.js';
 import { normalizeAppClientBasename } from './config.js';
+import { createAppQueryClient } from './query-client.js';
 
 export interface AppClientRootProps {
   readonly app: ClientApplication;
@@ -38,11 +39,11 @@ export function AppClientProviders({
   children,
 }: AppClientProvidersProps): ReactElement {
   const reactProviders = app.renderConfig.reactProviders ?? [];
-  // The query cache sits where Refine's did, innermost around the routes: pages read the application cache even when a
-  // React provider mounts a cache of its own, and the React providers themselves do not see it.
+  // The query cache sits where Refine's did, innermost around the routes: pages read it even when a React provider
+  // mounts a cache of its own, and the React providers themselves do not see it.
   const content = reactProviders.reduceRight<ReactNode>(
     (inner, ReactProvider) => <ReactProvider>{inner}</ReactProvider>,
-    <AppQueryClientProvider app={app}>{children}</AppQueryClientProvider>,
+    <RoutesQueryClientProvider>{children}</RoutesQueryClientProvider>,
   );
 
   return (
@@ -53,20 +54,15 @@ export function AppClientProviders({
 }
 
 /**
- * A new cache for each mount, emptied on unmount, as Refine's was. A React provider that remounts the routes, as the
- * authorization provider does for each session, therefore gives the pages an empty cache.
+ * The query cache Refine used to create for the routes: a new one for each mount, with Refine's defaults. A React
+ * provider that remounts the routes, as the authorization provider does for each session, therefore gives the pages an
+ * empty cache.
  */
-function AppQueryClientProvider({
-  app,
+function RoutesQueryClientProvider({
   children,
 }: {
-  readonly app: ClientApplication;
   readonly children?: ReactNode;
 }): ReactElement {
-  const [client] = useState(() => app.queryClients.forMount());
-  useEffect(() => {
-    app.queryClients.attach(client);
-    return () => app.queryClients.detach(client);
-  }, [app, client]);
+  const [client] = useState(createAppQueryClient);
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
