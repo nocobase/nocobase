@@ -126,7 +126,7 @@ function LevelControl({
   if (levels.length === 0) return null;
   if (levels.length === 1)
     return (
-      <span className='block min-w-0 px-2 text-xs text-muted-foreground'>
+      <span className='flex min-h-7 min-w-0 items-center px-2 text-xs text-muted-foreground'>
         {levels[0]?.label}
       </span>
     );
@@ -141,7 +141,7 @@ function LevelControl({
     >
       <SelectTrigger
         size='sm'
-        className='h-7 w-auto max-w-full gap-1 border-0 bg-muted/50 px-2 text-xs shadow-none'
+        className='h-7 w-full min-w-0 max-w-full flex-1 gap-1 border-0 bg-muted/50 px-2 text-xs shadow-none'
         aria-label={label}
       >
         <SelectValue />
@@ -162,6 +162,7 @@ function LevelControl({
 function PermissionRow({
   row,
   controlId,
+  showScopeLabels = false,
   readOnly,
   labels,
   onEnabledChange,
@@ -169,6 +170,7 @@ function PermissionRow({
 }: {
   readonly row: PermissionEditorRow;
   readonly controlId: string;
+  readonly showScopeLabels?: boolean;
   readonly readOnly: boolean;
   readonly labels: PermissionEditorLabels;
   readonly onEnabledChange: (rowId: string, enabled: boolean) => void;
@@ -189,7 +191,7 @@ function PermissionRow({
         />
         <label
           htmlFor={controlId}
-          className='min-w-0 max-w-36 cursor-pointer text-sm leading-5 font-medium break-words @2xl:max-w-none'
+          className='min-h-6 min-w-0 max-w-36 cursor-pointer text-sm leading-6 font-medium break-words @2xl:max-w-none'
         >
           {row.label}
         </label>
@@ -208,21 +210,26 @@ function PermissionRow({
           row.scopes?.map((scope) => (
             <div
               key={scope.id}
-              className='col-start-3 flex min-w-0 flex-wrap items-center gap-1 @2xl:col-start-2'
+              className={cn(
+                'col-start-3 grid min-w-0 gap-1 @2xl:col-start-2',
+                showScopeLabels && 'col-span-2 col-start-2 @2xl:col-span-1',
+              )}
             >
-              {row.scopes && row.scopes.length > 1 && (
-                <span className='text-xs text-muted-foreground'>
+              {(showScopeLabels || (row.scopes && row.scopes.length > 1)) && (
+                <span className='text-xs leading-5 text-muted-foreground'>
                   {scope.label}
                 </span>
               )}
-              <LevelControl
-                label={labels.levelFor(`${row.label} · ${scope.label}`)}
-                levels={scope.levels}
-                value={scope.level ?? ''}
-                disabled={readOnly}
-                onChange={(level) => onLevelChange(scope.id, level)}
-              />
-              {scope.configuration}
+              <div className='flex min-h-7 min-w-0 items-center gap-1'>
+                <LevelControl
+                  label={labels.levelFor(`${row.label} · ${scope.label}`)}
+                  levels={scope.levels}
+                  value={scope.level ?? ''}
+                  disabled={readOnly}
+                  onChange={(level) => onLevelChange(scope.id, level)}
+                />
+                {scope.configuration}
+              </div>
             </div>
           ))}
       </div>
@@ -367,6 +374,9 @@ export function PermissionEditor({
               const original =
                 sections.find((item) => item.id === section.id) ?? section;
               const singleResource = original.groups.length === 1;
+              const showScopeLabels = original.groups.some((group) =>
+                group.rows.some((row) => (row.scopes?.length ?? 0) > 1),
+              );
               const keys = [
                 ...new Set(
                   original.groups
@@ -458,7 +468,7 @@ export function PermissionEditor({
                           data-slot='permission-resource'
                         >
                           <div className='flex min-w-0 flex-col gap-1 py-1.5'>
-                            <h3 className='text-sm font-medium break-words'>
+                            <h3 className='min-h-6 text-sm leading-6 font-medium break-words'>
                               {group.title ?? section.title}
                             </h3>
                             {group.hint && (
@@ -466,7 +476,12 @@ export function PermissionEditor({
                                 {group.hint}
                               </p>
                             )}
-                            <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                            <div
+                              className={cn(
+                                'flex min-h-7 items-center gap-2 text-xs text-muted-foreground',
+                                showScopeLabels && '@3xl:mt-6',
+                              )}
+                            >
                               {onEnabledBatchChange &&
                                 totalRows.length > 1 &&
                                 selectable.length > 0 && (
@@ -571,6 +586,7 @@ export function PermissionEditor({
                                   <PermissionRow
                                     controlId={`${id}-${row.id}`}
                                     row={row}
+                                    showScopeLabels={showScopeLabels}
                                     readOnly={readOnly}
                                     labels={words}
                                     onEnabledChange={(rowId, on) => {
