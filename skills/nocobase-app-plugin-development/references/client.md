@@ -111,7 +111,7 @@ export default serviceProviders;
 
 The startup sequence is `register all → boot all → finalize render configuration → validate Runtime → start all → ready all`. Startup failure and `app.shutdown()` clean up Providers in reverse order.
 
-React code resolves application services with `useService(token)` or the HTTP client with `useApiClient()`. Non-React code resolves a token from the application Container or receives the service explicitly. The application's TanStack Query cache is `useQueryClient()` in pages and route components, and `queryClientToken` in React providers, which render outside it, and in non-React code, for example to invalidate cached queries when a realtime event announces a change; declare `@tanstack/react-query` as a peer dependency to use it. Read the shared [Client API reference](client-api.md) for configured base paths, requests, uploads, cancellation, errors, and remote Repository operations.
+React code resolves application services with `useService(token)` or the HTTP client with `useApiClient()`. Non-React code resolves a token from the application Container or receives the service explicitly. The application's TanStack Query cache is `useQueryClient()` in pages and route components. React providers, which render outside it, and non-React code, for example a realtime listener that invalidates cached queries, resolve `queryClientToken` and read its `current` cache each time, because the routes get a new cache for every session; declare `@tanstack/react-query` as a peer dependency to use it. Read the shared [Client API reference](client-api.md) for configured base paths, requests, uploads, cancellation, errors, and remote Repository operations.
 
 ## React Providers
 

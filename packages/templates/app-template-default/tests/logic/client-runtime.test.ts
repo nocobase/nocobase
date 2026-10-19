@@ -57,7 +57,7 @@ describe('app client runtime', () => {
       public readonly name: string = '@example/provider';
 
       public override boot(): Promise<void> {
-        seen.push(this.app.services.resolve(queryClientToken));
+        seen.push(this.app.services.resolve(queryClientToken).current);
         return Promise.resolve();
       }
     }
@@ -75,7 +75,8 @@ describe('app client runtime', () => {
     });
 
     await app.start();
-    expect(seen).toEqual([app.queryClient]);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toBe(app.queryClient);
     await app.shutdown();
   });
 
