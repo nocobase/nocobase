@@ -59,7 +59,11 @@ import type { AgentsVocabulary } from '../../shared/vocabulary.js';
 import type { Agents } from '../composition.js';
 import { AgentPatchSchema, agentViews } from '../core/agents/index.js';
 import { ModelPricesSchema } from '../core/reports/index.js';
-import { runForViewer, type RunMachineViewer } from '../core/runs/index.js';
+import {
+  runMachineViewerFor,
+  runForViewer,
+  type RunMachineViewer,
+} from '../core/runs/index.js';
 import {
   SkillIdsSchema,
   SkillImportSchema,
@@ -1383,13 +1387,11 @@ export function createAdminRoutes(
       manage ||
       (await who.can('agents.runners', 'read')) ||
       (await who.can('agents.agents', 'read'));
-    const uses =
-      see &&
-      !manage &&
-      (await services.agents.list()).some((agent) =>
-        services.agents.mayInvoke(agent, who.userId),
-      );
-    return { userId: who.userId, seesMachines: manage || uses };
+    return runMachineViewerFor(services.agents, {
+      userId: who.userId,
+      manage,
+      read: see,
+    });
   };
   /** Only a caller who may see the run of the path (or, with `manage`, act on it) goes on. */
   const runAccess =

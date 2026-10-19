@@ -5,11 +5,7 @@ import {
   realtimeClientToken,
   useService,
 } from '@nocobase/app-client';
-import {
-  QueryClient,
-  QueryClientProvider,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import {
   useEffect,
   useState,
@@ -26,6 +22,7 @@ import {
   changedIssueSegments,
   isIssueRead,
 } from '../api/changed-issues.js';
+import { PmQueryClient } from '../api/invalidate-queries.js';
 import { pmKeys } from '../api/keys.js';
 
 /** A refusal (4xx) will not change on a retry; anything else gets one more try. */
@@ -131,7 +128,7 @@ function RealtimeRefresh(): null {
 export function PmQueryProvider({ children }: PropsWithChildren): ReactElement {
   const [client] = useState(
     () =>
-      new QueryClient({
+      new PmQueryClient({
         defaultOptions: {
           queries: { retry, staleTime: 10_000, refetchOnWindowFocus: false },
         },

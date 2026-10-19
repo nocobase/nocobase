@@ -5,13 +5,16 @@
  * agent offers "Fill in and enable", an enabled or disabled one "Edit" (`agent-dialog.tsx`), for someone who manages
  * agents; everyone else reads. Under the table, how to add an agent: connect a runner whose tool has the model.
  */
+import { AgentQuotaHint, QuotaLabel } from '../../components/quota-status.js';
+import { modelLabel, TOOL_LABELS } from '../../../shared/model-catalog.js';
+
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDownIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
-import { discoveryKey, TOOL_LABELS } from '../../../shared/model-catalog.js';
+import { discoveryKey } from '../../../shared/model-catalog.js';
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -38,6 +41,7 @@ import {
 } from '../../components/ui/table.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useFormatters } from '../../lib/format.js';
+import { useQuotaExpiry } from '../../hooks/use-quota-expiry.js';
 import { AgentDialog } from './agent-dialog.js';
 import { ordered, stateOf, type AgentState } from './agent-state.js';
 
@@ -76,6 +80,7 @@ export function RunnerAgentsSection(): ReactElement {
     queryKey: agentsKeys.agents,
     queryFn: () => api.agents(),
   });
+  useQuotaExpiry(agents.data ?? []);
   const groups = groupDiscoveries(agents.data ?? []);
   const discovered = groups
     .filter((group) => !group.some((agent) => agent.status === 'enabled'))
@@ -227,7 +232,13 @@ export function RunnerAgentsSection(): ReactElement {
                     <div className='min-w-0 flex-1'>
                       <div className='font-medium'>{agent.name}</div>
                       <div className='break-all text-xs text-muted-foreground'>
-                        {group.map((candidate) => candidate.model).join(', ')}
+                        {group
+                          .map((candidate) =>
+                            candidate.tool && candidate.model
+                              ? modelLabel(candidate.tool, candidate.model)
+                              : t('agents.effort.default'),
+                          )
+                          .join(', ')}
                       </div>
                     </div>
                     {agent.canEdit ? (
@@ -272,7 +283,10 @@ export function RunnerAgentsSection(): ReactElement {
     ? groups.find((group) => group.some((agent) => agent.id === editing.id))
     : undefined;
   return (
-    <section className='space-y-3' aria-labelledby='agents-runner-heading'>
+    <section
+      className='min-w-0 space-y-3'
+      aria-labelledby='agents-runner-heading'
+    >
       <SectionHeading
         id='agents-runner-heading'
         title={t('agents.fromRunners')}
@@ -352,8 +366,8 @@ function AgentTable({
 }): ReactElement {
   const { t } = useTranslation();
   return (
-    <div className='rounded-lg border'>
-      <Table>
+    <div className='min-w-0 max-w-full overflow-hidden rounded-lg border'>
+      <Table className='min-w-[48rem]'>
         <TableHeader>
           <TableRow>
             <TableHead>{t('agents.columns.agent')}</TableHead>
@@ -361,6 +375,9 @@ function AgentTable({
             <TableHead>{t('agents.columns.where')}</TableHead>
             <TableHead>{t('agents.columns.effort')}</TableHead>
             <TableHead>{t('agents.columns.state')}</TableHead>
+            <TableHead>
+              <span className='sr-only'>{t('agents.edit.button')}</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -383,6 +400,10 @@ function AgentRow({
   const { t } = useTranslation();
   const format = useFormatters();
   const state = stateOf(agent);
+  const quotaBlocked =
+    agent.status === 'enabled' &&
+    !!agent.quota?.length &&
+    ['noRunner', 'othersPersonal'].includes(agent.unusable ?? '');
   const { runners } = agent;
   const where =
     runners.team + runners.personal === 0
@@ -407,13 +428,14 @@ function AgentRow({
           ? t('agents.where.names', { names: runners.names.join(', ') })
           : '';
   return (
-    <TableRow data-testid={`agent-${agent.id}`} data-state={state}>
+    <TableRow
+      data-testid={`agent-${agent.id}`}
+      data-state={state}
+      className={quotaBlocked ? 'bg-destructive/5' : undefined}
+    >
       <TableCell>
         <div className='min-w-0 leading-tight'>
           <div className='truncate font-medium'>{agent.name}</div>
-          <div className='truncate font-mono text-xs text-muted-foreground'>
-            {agent.tool} / {agent.model}
-          </div>
         </div>
       </TableCell>
       <TableCell className='max-w-80 whitespace-normal'>
@@ -427,8 +449,17 @@ function AgentRow({
       </TableCell>
       <TableCell>
         <div className='leading-tight'>
-          <div>{where}</div>
-          {whereNote ? (
+          <div>
+            {quotaBlocked
+              ? agent.quota?.map((q) => q.runnerName).join(', ')
+              : where}
+          </div>
+          <AgentQuotaHint
+            quota={agent.quota}
+            online={!quotaBlocked}
+            names={runners.names}
+          />
+          {!quotaBlocked && !agent.quota?.length && whereNote ? (
             <div className='text-xs text-muted-foreground'>{whereNote}</div>
           ) : null}
         </div>
@@ -440,30 +471,36 @@ function AgentRow({
       </TableCell>
       <TableCell>
         <div className='flex items-center gap-2'>
-          <AgTag tone={STATE_TONE[state]} dot>
-            {t(`agents.state.${state}`)}
-          </AgTag>
-          {agent.canEdit ? (
-            <Button
-              variant={agent.status === 'pending' ? 'default' : 'ghost'}
-              size='sm'
-              onClick={() => onEdit(agent)}
-              aria-label={t(
-                agent.status === 'pending'
-                  ? 'agents.enable.buttonFor'
-                  : 'agents.edit.buttonFor',
-                { name: agent.name },
-              )}
-              data-testid={`agent-edit-${agent.id}`}
-            >
-              {t(
-                agent.status === 'pending'
-                  ? 'agents.enable.button'
-                  : 'agents.edit.button',
-              )}
-            </Button>
-          ) : null}
+          {quotaBlocked ? (
+            <QuotaLabel />
+          ) : (
+            <AgTag tone={STATE_TONE[state]} dot>
+              {t(`agents.state.${state}`)}
+            </AgTag>
+          )}
         </div>
+      </TableCell>
+      <TableCell className='text-right'>
+        {agent.canEdit ? (
+          <Button
+            variant={agent.status === 'pending' ? 'default' : 'ghost'}
+            size='sm'
+            onClick={() => onEdit(agent)}
+            aria-label={t(
+              agent.status === 'pending'
+                ? 'agents.enable.buttonFor'
+                : 'agents.edit.buttonFor',
+              { name: agent.name },
+            )}
+            data-testid={`agent-edit-${agent.id}`}
+          >
+            {t(
+              agent.status === 'pending'
+                ? 'agents.enable.button'
+                : 'agents.edit.button',
+            )}
+          </Button>
+        ) : null}
       </TableCell>
     </TableRow>
   );

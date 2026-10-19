@@ -147,3 +147,9 @@ export {
   useIntakeDraft,
   emptyIntakeDraft,
 } from './kit/intake-draft.js';
+
+export {
+  ExecutorPresentationContext,
+  type ExecutorPresentation,
+  type ExecutorPresentationProps,
+} from './kit/executor-presentation.js';

@@ -47,6 +47,7 @@ NocoBase packages may publish Skills under `.agents/skills/`. Current applicatio
 | Roles, permissions, per-user or per-record access              | `@nocobase/app-plugin-authorization`       |
 | Sign-in, registration, sessions                                | `@nocobase/app-plugin-authentication`      |
 | File upload and metadata through Repository                    | `@nocobase/app-plugin-file`                |
+| File storage, disk configuration, or custom drivers            | `@nocobase/drive`                          |
 | Translated text and language switching                         | `@nocobase/app-plugin-i18n`                |
 | User administration and application-owned role assignment      | `@nocobase/app-plugin-users`               |
 | Live updates, snapshot recovery and replacing business polling | `@nocobase/realtime` (`nocobase-realtime`) |
@@ -226,6 +227,8 @@ Deployed releases carry their own runtime and logging packages: an old release k
 Authentication diagnostics use the application `auth` logger unless an explicit authentication logger is configured. A missing Better Auth base URL is a configuration warning, not a logging error: configure `app.publicOrigin` with the externally reachable origin in the application deployment configuration. Do not substitute the internal Host bind address or suppress the warning to make startup appear clean.
 
 ## Storage
+
+For file storage configuration and custom driver factories in `drive.disks`, read `.agents/skills/nocobase-drive/SKILL.md`, supplied by the installed `@nocobase/drive` package. Keep the application's shared Drive provider and token when adding a custom disk. [File storage](references/app-structure.md#file-storage) identifies the application configuration entry point.
 
 Standalone source and compiled entries share the deployment directory's storage; `APP_STORAGE_DIR` selects another storage directory, and explicit storage paths take precedence over it. Embedded applications use Host-provided paths. Expanded releases live at `appRevisionsDir/<appId>/<sha256>` and restart recovery requires their installed metadata. Build archives use `storage/exports/dist.tar.gz`.
 

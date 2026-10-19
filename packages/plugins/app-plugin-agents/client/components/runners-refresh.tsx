@@ -9,6 +9,7 @@ export function RunnersRefresh(): null {
   const queryClient = useQueryClient();
   useRealtimeTopic(RUNNERS_TOPIC, () => {
     void queryClient.invalidateQueries({ queryKey: agentsKeys.runners });
+    void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
   });
   return null;
 }
