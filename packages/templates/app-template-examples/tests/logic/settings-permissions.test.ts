@@ -166,3 +166,80 @@ it('replaces a raw collection scope caption with localized data-range text', () 
     'Record scope',
   );
 });
+
+it('preserves an existing policy when enabling the same permission again', () => {
+  const original = [
+    {
+      resource: { type: 'composite', id: 'orders' },
+      actions: [
+        {
+          action: 'edit',
+          policy: {
+            type: 'composite',
+            scopes: {
+              records: {
+                type: 'recordAccess',
+                key: 'mine',
+                params: { ownerField: 'assignee' },
+              },
+            },
+            extra: true,
+          },
+        },
+      ],
+    },
+  ];
+  expect(setPermission(original, resource, 'edit', true)).toBe(original);
+  expect(
+    setScope(
+      original,
+      JSON.stringify(['composite', 'orders', 'edit', 'records']),
+      'mine',
+    ),
+  ).toBe(original);
+});
+
+it.each(['retiredScope', { type: 'legacyPolicy', filter: { owner: 'me' } }])(
+  'shows a preserved selection for an unrecognized scope without rewriting it: %j',
+  (value) => {
+    const catalog = {
+      sections: [
+        {
+          name: 'business',
+          title: 'Business',
+          subsections: [
+            { name: 'orders', title: 'Orders', resources: [resource] },
+          ],
+        },
+      ],
+      recordAccess: [
+        { key: 'mine', title: 'Mine' },
+        { key: 'all', title: 'All' },
+      ],
+    } as unknown as Parameters<typeof permissionSections>[0];
+    const original = [
+      {
+        resource: { type: 'composite', id: 'orders' },
+        actions: [
+          {
+            action: 'edit',
+            policy: { type: 'composite', scopes: { records: value } },
+          },
+        ],
+      },
+    ];
+    const before = JSON.stringify(original);
+    const sections = permissionSections(catalog, original, (text) =>
+      typeof text === 'string' ? text : text.key,
+    );
+    const scope = sections[0]!.groups[0]!.rows[0]!.scopes![0]!;
+    expect(
+      scope.levels.find((level) => level.value === scope.level)?.label,
+    ).toBe('settings.preservedRecordScope');
+    expect(setScope(original, scope.id, scope.level!)).toBe(original);
+    expect(JSON.stringify(original)).toBe(before);
+    expect(
+      setScope(original, scope.id, 'all')[0]!.actions[0]!.policy!.scopes,
+    ).toEqual({ records: 'all' });
+  },
+);
