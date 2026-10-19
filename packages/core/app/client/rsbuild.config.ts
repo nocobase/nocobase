@@ -57,7 +57,7 @@ function createRuntimeHeadScript(appPublicPath: string, isBuild: boolean) {
       `window['__nocobase_public_path__'] = ${JSON.stringify(appPublicPath)};`,
       `window['__nocobase_modern_client_prefix__'] = ${JSON.stringify(modernClientPrefix)};`,
       `window['__nocobase_app_client_entry_mode__'] = ${JSON.stringify(appClientEntryMode)};`,
-      `window['__nocobase_dev_public_path__'] = "/";`,
+      `window['__nocobase_dev_public_path__'] = ${JSON.stringify(appPublicPath)};`,
       `window['__nocobase_app_dev__'] = ${JSON.stringify(process.env.NOCOBASE_APP_DEV === 'true')};`,
       `window['__esm_cdn_base_url__'] = ${JSON.stringify(process.env.ESM_CDN_BASE_URL || '')};`,
       `window['__esm_cdn_suffix__'] = ${JSON.stringify(process.env.ESM_CDN_SUFFIX || '')};`,
@@ -103,7 +103,6 @@ export default defineConfig(({ command }) => {
   const isDev = !isBuild;
   const resolvedAppPublicPath = ensurePublicPath(process.env.APP_PUBLIC_PATH, '/');
   const appPublicPath = isBuild ? APP_PUBLIC_PATH_TEMPLATE : resolvedAppPublicPath;
-  const htmlPublicPath = isDev ? '/' : appPublicPath;
   const apiBasePath = ensurePublicPath(process.env.API_BASE_PATH, '/api/');
   const fileBasePath = ensurePublicPath(`${resolvedAppPublicPath}files/`, '/files/');
   const localStorageBasePath = ensurePublicPath(`${resolvedAppPublicPath}storage/uploads/`, '/storage/uploads/');
@@ -148,7 +147,7 @@ export default defineConfig(({ command }) => {
           tag: 'link',
           attrs: {
             rel: 'stylesheet',
-            href: `${htmlPublicPath}global.css`,
+            href: `${appPublicPath}global.css`,
           },
           publicPath: false,
           head: true,
@@ -163,7 +162,7 @@ export default defineConfig(({ command }) => {
         {
           tag: 'script',
           attrs: {
-            src: `${htmlPublicPath}browser-checker.js?v=1`,
+            src: `${appPublicPath}browser-checker.js?v=1`,
           },
           publicPath: false,
           head: true,
