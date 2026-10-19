@@ -213,7 +213,7 @@ See the maintained relation mutation examples (`packages/examples/app-plugin-rep
 
 ## Test real HTTP behavior
 
-The following test belongs in the existing Repository example plugin's `tests/` directory. It imports that package's real fixture (`packages/examples/app-plugin-repository-example/tests/helpers.ts`), which creates an in-memory SQLite database, runs migrations, binds the real `Auth` with a controlled session lookup, mounts the production contribution under `/main/api`, and connects an API Client to `router.fetch`. Creating this isolated transport is appropriate in a test; product components still use the host Client.
+The following test belongs in the existing Repository example plugin's `tests/` directory. It imports that package's real fixture (`packages/examples/app-plugin-repository-example/tests/helpers.ts`), which provisions a database on the selected test dialect, runs migrations, binds the real `Auth` with a controlled session lookup, mounts the production contribution under `/main/api`, and connects an API Client to `router.fetch`. Creating this isolated transport is appropriate in a test; product components still use the host Client.
 
 ```ts
 // @vitest-environment node
@@ -256,7 +256,7 @@ it('protects customer writes and executes CRUD through the production router', a
       await customers.findOne({ filter: { id: created.record.id } }),
     ).toBeUndefined();
   } finally {
-    await fixture.database.destroy();
+    await fixture.destroy();
   }
 });
 ```

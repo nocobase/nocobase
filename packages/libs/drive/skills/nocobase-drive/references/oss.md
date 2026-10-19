@@ -1,10 +1,10 @@
 # Aliyun OSS storage
 
-The native `oss` driver uses the official `ali-oss` server SDK over HTTPS with V4 authorization. It supports uploads (including streams), downloads, metadata, existence checks, deletion, copy/move, paginated recursive or directory listings, public URLs, signed upload/download URLs and object ACLs. Existing `fs` and `s3` configuration is unchanged; the AWS default credential chain applies only to S3.
+The native `oss` driver uses the official `ali-oss` server SDK over HTTPS with V4 authorization. It supports uploads (including streams), downloads, metadata, existence checks, deletion, copy/move, paginated recursive or directory listings, public URLs, signed upload/download URLs and object ACLs. The AWS default credential chain applies only to the separate [S3 driver](s3.md).
 
 ## Configure a disk
 
-Bind a RAM role to the ECS instance and replace the bucket and region below:
+In the application's `config.yml`, configure `drive.disks.oss` and select it as the default. Bind a RAM role to the ECS instance and replace the bucket and region below:
 
 ```yaml
 drive:
@@ -35,7 +35,18 @@ credentials:
 
 Exactly one credentials source is required. Mixing keys with a provider, unknown providers, empty keys or an empty explicit role name fails when the disk is created. There is no fallback. The secret field for OSS is `accessKeySecret`; S3 retains `secretAccessKey`.
 
-For a standalone Host, put the same disk object (the contents of `oss` above) under `host.artifact`; for the releases plugin, use `releases.artifact`. No new environment variable mappings are added.
+For a standalone Host, put the same disk object (the contents of `oss` above) under `host.artifact`; for the releases plugin, put the complete object directly under `releases.artifact`. The named-reference form `releases.artifact: { disk: 'oss' }` currently uses `parseDriveDiskConfig()`, which accepts only `fs` and `s3` objects. Keep artifact storage private. No OSS-specific environment variable mappings are provided by the default Drive configuration.
+
+| Field              | Meaning                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| `driver`           | Required literal `oss`.                                                              |
+| `region`, `bucket` | Required OSS region with the `oss-` prefix and bucket name.                          |
+| `credentials`      | Required access key pair or ECS RAM role provider, as shown above.                   |
+| `visibility`       | Required `private` or `public`.                                                      |
+| `supportsACL`      | Whether object ACL operations are used; defaults to `true`.                          |
+| `internal`         | Use the region's internal OSS network for operations and links; defaults to `false`. |
+| `domain`           | Optional bucket-bound HTTPS origin for operations and links.                         |
+| `timeout`          | Optional request timeout in milliseconds; defaults to `600000`.                      |
 
 ## Transfer timeout
 

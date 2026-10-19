@@ -15,7 +15,8 @@ Choose a lowercase kebab-case short name, check the destination and npm name for
 | Business collections the App must supply | App source, with prerequisites in Plugin Skills           |
 | Shared in-process behavior               | Plugin Service contract and original ServiceToken         |
 | Browser-to-server calls                  | Public API Route                                          |
-| Pages, Settings, or development tools    | Plugin `client/routes.ts`                                 |
+| Business pages                           | Plugin `client/routes.ts`                                 |
+| Administration                           | Plugin settings items and APIs; App-owned pages           |
 | Reusable runtime UI                      | Plugin `client/components/` and deliberate public exports |
 | Shared React context                     | Client React Provider                                     |
 | Client service or startup initialization | Client ServiceProvider                                    |

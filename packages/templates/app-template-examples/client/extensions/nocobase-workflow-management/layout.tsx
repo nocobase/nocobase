@@ -51,7 +51,7 @@ export function WorkflowManagementLayout({
 
 export interface WorkflowDefinitionDetailProps {
   diagram: ReactNode;
-  parameters: ReactNode;
+  parameters?: ReactNode;
   diagramTitle: string;
   parametersTitle: string;
 }
@@ -64,7 +64,13 @@ export function WorkflowDefinitionDetail({
 }: WorkflowDefinitionDetailProps): ReactElement {
   return (
     <div className='flex flex-col gap-4'>
-      <div className='grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-2'>
+      <div
+        className={
+          parameters == null
+            ? 'min-w-0'
+            : 'grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-2'
+        }
+      >
         <Card className='min-w-0' role='region' aria-label={diagramTitle}>
           <CardHeader>
             <CardTitle>
@@ -73,14 +79,16 @@ export function WorkflowDefinitionDetail({
           </CardHeader>
           <CardContent className='flex flex-1 flex-col'>{diagram}</CardContent>
         </Card>
-        <Card className='min-w-0' role='region' aria-label={parametersTitle}>
-          <CardHeader>
-            <CardTitle>
-              <h2>{parametersTitle}</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>{parameters}</CardContent>
-        </Card>
+        {parameters != null && (
+          <Card className='min-w-0' role='region' aria-label={parametersTitle}>
+            <CardHeader>
+              <CardTitle>
+                <h2>{parametersTitle}</h2>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>{parameters}</CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

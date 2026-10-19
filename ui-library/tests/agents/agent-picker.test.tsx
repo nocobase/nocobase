@@ -36,6 +36,7 @@ function agent(overrides: Partial<ChatAgent> & Pick<ChatAgent, 'id'>) {
     isMyDefault: false,
     availability: online,
     personalOnly: false,
+    runnerNames: [],
     ...overrides,
   } satisfies ChatAgent;
 }

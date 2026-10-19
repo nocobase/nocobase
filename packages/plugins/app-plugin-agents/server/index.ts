@@ -29,3 +29,5 @@ export type {
   OnlineAgentRealtimeOptions,
   OnlineAgentSendOptions,
 } from './online/agent/types.js';
+export { RunSchema } from './routes/schemas.js';
+export { runMachineViewerFor } from './core/runs/execution-view.js';

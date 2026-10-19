@@ -2,7 +2,7 @@ import { ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { CheckIcon, CopyIcon } from 'lucide-react';
-import { type FormEvent, type ReactElement, useState } from 'react';
+import { type FormEvent, type ReactElement, useEffect, useState } from 'react';
 
 import { PmMultiSelect } from '../../../components/pm-multi-select.js';
 import { PmTag } from '../../../components/pm-tag.js';
@@ -279,11 +279,16 @@ function CopyLink({ url }: { readonly url: string }): ReactElement {
   const { t } = useTranslation();
   const notify = useNotify();
   const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const timeout = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(timeout);
+  }, [copied]);
+
   async function copy(): Promise<void> {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
     } catch {
       notify.error(null, t('connect.copyFailed'));
     }
