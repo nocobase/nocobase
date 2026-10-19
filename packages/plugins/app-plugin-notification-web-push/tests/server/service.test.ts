@@ -83,3 +83,34 @@ it('rejects external, traversal and sibling-base click destinations', () => {
     '/main/tasks?a=1#details',
   );
 });
+
+it.each(['fr-FR', 'zh-CN', 'de-DE-u-co-phonebk'])(
+  'uses a supported test title or English fallback for %s',
+  async (locale) => {
+    const send = vi.fn(async () => ({}));
+    const service = createWebPushService({
+      subscriptions: { get: async () => ({ enabled: true, locale }) } as never,
+      notifications: () => ({ send }) as never,
+      transport: async () => 201,
+      base: '/',
+    });
+    await service.test('alice', 'device');
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: {
+          webPush: expect.objectContaining({
+            title: locale === 'zh-CN' ? '测试通知' : 'Test notification',
+          }),
+        },
+      }),
+    );
+  },
+);
+it('rejects hook-produced oversized payloads without transport or retries', async () => {
+  const f = fixture();
+  f.service.beforeSend('policy', async () => ({ body: '中'.repeat(1400) }));
+  expect(
+    await f.service.deliver(input, new AbortController().signal),
+  ).toMatchObject({ status: 'failed', disposition: 'never' });
+  expect(f.transport).not.toHaveBeenCalled();
+});

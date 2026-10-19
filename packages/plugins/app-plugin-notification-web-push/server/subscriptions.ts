@@ -6,20 +6,21 @@ import { z } from 'zod';
 export const PUSH_SECRET_PURPOSE = 'web-push/subscription';
 export interface SubscriptionInputValue {
   name: string;
-  locale: 'en-US' | 'zh-CN';
+  locale: string;
   subscription: { endpoint: string; keys: { p256dh: string; auth: string } };
 }
-export const SubscriptionInput: z.ZodType<SubscriptionInputValue> = z.object({
-  name: z.string().trim().min(1).max(100),
-  locale: z.enum(['en-US', 'zh-CN']),
-  subscription: z.object({
-    endpoint: z.string().url().max(4096),
-    keys: z.object({
-      p256dh: z.string().regex(/^[\w-]{87}$/u),
-      auth: z.string().regex(/^[\w-]{22}$/u),
+export const SubscriptionInput: z.ZodType<SubscriptionInputValue> =
+  z.strictObject({
+    name: z.string().trim().min(1).max(100),
+    locale: z.string().trim().min(1).max(100),
+    subscription: z.strictObject({
+      endpoint: z.string().url().max(4096),
+      keys: z.strictObject({
+        p256dh: z.string().regex(/^[\w-]{87}$/u),
+        auth: z.string().regex(/^[\w-]{22}$/u),
+      }),
     }),
-  }),
-});
+  });
 export interface SubscriptionRow {
   id: string;
   userId: string;
@@ -38,7 +39,7 @@ export type Device = Pick<
 export class PushError extends Error {
   constructor(
     public readonly code:
-      'unavailable' | 'endpoint' | 'owned' | 'missing' | 'limited',
+      'unavailable' | 'endpoint' | 'owned' | 'missing' | 'limited' | 'payload',
   ) {
     super(`Web Push ${code}.`);
   }
@@ -78,8 +79,8 @@ export interface Subscriptions {
   forUser(userId: string): Promise<SubscriptionRow[]>;
   get(userId: string, id: string): Promise<SubscriptionRow | null>;
   save(userId: string, input: SubscriptionInputValue): Promise<Device>;
-  update(userId: string, id: string, enabled: boolean): Promise<void>;
-  remove(userId: string, id: string): Promise<void>;
+  update(userId: string, id: string, enabled: boolean): Promise<Device>;
+  remove(userId: string, id: string): Promise<boolean>;
   open(row: SubscriptionRow): SubscriptionInputValue['subscription'];
 }
 export function createSubscriptions(
@@ -123,7 +124,7 @@ export function createSubscriptions(
       const values = {
         name: input.name,
         locale: input.locale,
-        enabled: true,
+        enabled: previous?.enabled ?? true,
         updatedAt: now,
         subscriptionSealed: secrets.seal(JSON.stringify(subscription), {
           purpose: PUSH_SECRET_PURPOSE,
@@ -143,15 +144,30 @@ export function createSubscriptions(
         ...values,
       });
     },
-    async update(userId: string, id: string, enabled: boolean): Promise<void> {
+    async update(
+      userId: string,
+      id: string,
+      enabled: boolean,
+    ): Promise<Device> {
       const changed = await rows().updateMany({
         filter: { id, userId },
         values: { enabled, updatedAt: new Date().toISOString() },
+        select: (select) =>
+          select.fields(
+            'id',
+            'name',
+            'locale',
+            'enabled',
+            'createdAt',
+            'updatedAt',
+          ),
       });
       if (!changed.updatedCount) throw new PushError('missing');
+      return changed.records[0];
     },
-    async remove(userId: string, id: string): Promise<void> {
-      await rows().deleteMany({ filter: { id, userId } });
+    async remove(userId: string, id: string): Promise<boolean> {
+      const deleted = await rows().deleteMany({ filter: { id, userId } });
+      return deleted.deletedCount > 0;
     },
     open(
       row: SubscriptionRow,

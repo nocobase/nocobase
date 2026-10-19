@@ -9,7 +9,7 @@ const migration: MigrationDefinition = defineMigration({
       c.string('endpointHash', { length: 64 }).notNull().unique();
       c.text('subscriptionSealed').notNull();
       c.string('name', { length: 100 }).notNull();
-      c.string('locale', { length: 16 }).notNull();
+      c.string('locale', { length: 100 }).notNull();
       c.boolean('enabled').notNull().defaultTo(true);
       c.datetimeTz('createdAt').notNull();
       c.datetimeTz('updatedAt').notNull();

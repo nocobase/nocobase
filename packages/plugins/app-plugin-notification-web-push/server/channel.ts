@@ -16,7 +16,7 @@ export function registerWebPushChannel(
         return {
           type: 'web-push',
           validateMessage(input) {
-            const message = PushMessage.parse(input);
+            const message = service().validateMessage(input);
             return { message, recipients: message.to };
           },
           async prepare({ recipient, message }) {

@@ -6,7 +6,8 @@ import {
   cliRoute,
   apiValidator,
   dataResponse,
-  apiErrorResponses,
+  listResponse,
+  emptyResponse,
   apiErrorResponse,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
@@ -64,7 +65,9 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
     const describe = (
       operationId: string,
       summary: string,
-      schema: z.ZodType,
+      response: ReturnType<typeof dataResponse>,
+      errors: Parameters<typeof apiErrorResponse>[0][] = [],
+      status: number = 200,
     ) =>
       describeRoute({
         operationId,
@@ -72,11 +75,12 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
         tags: ['WebPush'],
         ...cliRoute(false),
         responses: {
-          200: dataResponse(schema),
-          ...apiErrorResponses,
-          404: apiErrorResponse(404),
-          429: apiErrorResponse(429),
-          503: apiErrorResponse(503),
+          [status]: response,
+          401: apiErrorResponse(401),
+          500: apiErrorResponse(500),
+          ...Object.fromEntries(
+            errors.map((code) => [code, apiErrorResponse(code)]),
+          ),
         },
       });
     router.get(
@@ -84,7 +88,7 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
       describe(
         'webPushReadPushKey',
         'Read the Web Push public key',
-        z.object({ publicKey: z.string().nullable() }),
+        dataResponse(z.object({ publicKey: z.string().nullable() })),
       ),
       (context) => {
         const config = app.config.get<PushConfig>('push');
@@ -103,19 +107,23 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
       describe(
         'webPushListPushSubscriptions',
         'List the caller’s subscribed devices',
-        z.array(Device),
+        listResponse(
+          Device,
+          z.object({ total: z.number().int().nonnegative() }),
+        ),
       ),
-      async (context) =>
-        context.json({
-          data: await service().subscriptions.list(owner(context)),
-        }),
+      async (context) => {
+        const data = await service().subscriptions.list(owner(context));
+        return context.json({ data, meta: { total: data.length } });
+      },
     );
     router.post(
       '/subscriptions',
       describe(
         'webPushSavePushSubscription',
         'Subscribe this browser for the caller',
-        Device,
+        dataResponse(Device),
+        [400, 403, 503],
       ),
       apiValidator('json', SubscriptionInput),
       async (context) => {
@@ -133,17 +141,18 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
       describe(
         'webPushUpdatePushSubscription',
         'Enable or disable the caller’s device',
-        Done,
+        dataResponse(Device),
+        [404],
       ),
       apiValidator('param', Id),
       apiValidator('json', Changed),
       async (context) => {
-        await service().subscriptions.update(
+        const device = await service().subscriptions.update(
           owner(context),
           context.req.valid('param').id,
           context.req.valid('json').enabled,
         );
-        return context.json({ data: { ok: true } });
+        return context.json({ data: device });
       },
     );
     router.delete(
@@ -151,15 +160,18 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
       describe(
         'webPushDeletePushSubscription',
         'Remove the caller’s device',
-        Done,
+        emptyResponse(),
+        [404],
+        204,
       ),
       apiValidator('param', Id),
       async (context) => {
-        await service().subscriptions.remove(
+        const removed = await service().subscriptions.remove(
           owner(context),
           context.req.valid('param').id,
         );
-        return context.json({ data: { ok: true } });
+        if (!removed) throw new PushError('missing');
+        return context.body(null, 204);
       },
     );
     router.post(
@@ -167,12 +179,14 @@ export function createDeviceRoutes(): AppApiRouteContribution<Application> {
       describe(
         'webPushTestPushSubscription',
         'Send a test notification to the caller’s device',
-        Done,
+        dataResponse(Done),
+        [404, 429, 503],
+        202,
       ),
       apiValidator('param', Id),
       async (context) => {
         await service().test(owner(context), context.req.valid('param').id);
-        return context.json({ data: { ok: true } });
+        return context.json({ data: { ok: true } }, 202);
       },
     );
     return new Hono().route('/webPush', router);

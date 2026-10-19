@@ -23,7 +23,7 @@ export interface WebPushMessage {
 export const PushMessage: z.ZodType<WebPushMessage> = z.object({
   to: z.array(z.object({ id: z.string(), userId: z.string() })).min(1),
   title: z.string().max(200),
-  body: z.string().max(2000).optional(),
+  body: z.string().optional(),
   url: z.string().max(4096),
   dedupeKey: z.string().max(512),
   beforeSend: z.object({ name: z.string(), context: z.unknown() }).optional(),
@@ -55,13 +55,48 @@ export interface WebPushDependencies {
 export function pushTarget(value: string, base: string): string {
   const scope = `${base.replace(/\/+$/u, '')}/`;
   const origin = 'https://web-push.invalid';
+  if (
+    !value.startsWith('/') ||
+    value.startsWith('//') ||
+    [...value].some(
+      (character) =>
+        character <= ' ' || character === '\x7f' || character === '\\',
+    )
+  )
+    throw new PushError('endpoint');
   const url = new URL(value, origin + scope);
   if (url.origin !== origin || !url.pathname.startsWith(scope))
     throw new PushError('endpoint');
   return url.pathname + url.search + url.hash;
 }
+/** RFC 8291 aes128gcm adds an 86-byte header and 17-byte record overhead to the 4096-byte body. */
+export const MAX_WEB_PUSH_PAYLOAD_BYTES = 3993;
+export interface WebPushPayload {
+  title: string;
+  body: string;
+  url: string;
+  dedupeKey: string;
+}
+export function pushPayload(
+  message: Omit<WebPushMessage, 'to'>,
+  base: string,
+): WebPushPayload {
+  const payload = {
+    title: message.title,
+    body: message.body ?? '',
+    url: pushTarget(message.url, base),
+    dedupeKey: message.dedupeKey,
+  };
+  if (
+    Buffer.byteLength(JSON.stringify(payload), 'utf8') >
+    MAX_WEB_PUSH_PAYLOAD_BYTES
+  )
+    throw new PushError('payload');
+  return payload;
+}
 export interface WebPushService {
   readonly subscriptions: Subscriptions;
+  validateMessage(input: unknown): WebPushMessage;
   beforeSend(name: string, hook: BeforePush): () => void;
   afterSubscribe(name: string, hook: AfterSubscribe): () => void;
   subscribe(userId: string, input: SubscriptionInputValue): Promise<Device>;
@@ -79,6 +114,10 @@ export function createWebPushService(
   const testing = new Map<string, number>();
   return {
     subscriptions: deps.subscriptions,
+    validateMessage(input: unknown): WebPushMessage {
+      const message = PushMessage.parse(input);
+      return { ...message, ...pushPayload(message, deps.base) };
+    },
     afterSubscribe(name: string, hook: AfterSubscribe): () => void {
       if (subscribed.has(name))
         throw new Error('Duplicate Web Push subscription hook.');
@@ -156,16 +195,23 @@ export function createWebPushService(
           disposition: 'never',
           error: { category: 'timeout', message: 'Web Push send cancelled.' },
         };
-      const url = pushTarget(message.url, deps.base);
+      let payload: WebPushPayload;
+      try {
+        payload = pushPayload(message, deps.base);
+      } catch {
+        return {
+          status: 'failed',
+          disposition: 'never',
+          error: {
+            category: 'provider',
+            message: 'Web Push payload or click URL is invalid.',
+          },
+        };
+      }
       try {
         const status = await deps.transport(
           deps.subscriptions.open(row),
-          {
-            title: message.title,
-            body: message.body ?? '',
-            url,
-            dedupeKey: message.dedupeKey,
-          },
+          payload,
           signal,
         );
         if (status === 404 || status === 410)

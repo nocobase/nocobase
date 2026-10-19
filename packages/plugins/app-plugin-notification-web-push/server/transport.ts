@@ -16,6 +16,7 @@ export async function sendPush(
     subscription,
     JSON.stringify(payload),
     {
+      contentEncoding: 'aes128gcm',
       TTL: 300,
       urgency: 'normal',
       vapidDetails: {

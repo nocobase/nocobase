@@ -35,6 +35,8 @@ Applications that need permission rechecks or foreground takeover register `webP
 
 Applications that need initialization after a successful subscription register `webPushServiceToken.afterSubscribe(name, hook)` during provider registration. The hook receives the authenticated user ID and the saved public device summary. It runs after persistence (including reidentification of an existing endpoint), and errors fail the request so the caller can retry. The returned function unregisters the hook. Server callers use `service.subscribe(userId, input)` to invoke the same hooks. Direct `service.subscriptions.save()` is storage-only.
 
+Messages are rejected during channel validation, before queueing, if the final serialized `title/body/url/dedupeKey` JSON exceeds **3993 UTF-8 bytes**. This reserves 103 bytes of aes128gcm encryption overhead within a 4096-byte push-service body; multibyte text and JSON escaping count toward the limit. Content is never silently truncated. Click URLs must be root-relative paths inside the application's public base path; external origins, traversal outside that path, backslashes and control characters are rejected at the same stage. Queue-only recipients and hook context are not sent to the browser and do not count toward the payload. Hooks that change fields are checked again before transport; invalid results fail permanently without network submission.
+
 ## Device API
 
 All endpoints under `/api/webPush` require native application authentication; owner identity is read from the session. API keys and other authentication types follow the host's authentication policy. Responses never contain endpoints, subscription keys or ciphertext.
@@ -42,16 +44,16 @@ All endpoints under `/api/webPush` require native application authentication; ow
 | Method | Path                      | Result                                                            |
 | ------ | ------------------------- | ----------------------------------------------------------------- |
 | GET    | `/key`                    | Public VAPID key, or null when unavailable                        |
-| GET    | `/subscriptions`          | Caller-owned device summaries                                     |
+| GET    | `/subscriptions`          | Caller-owned device summaries and `meta.total`                    |
 | POST   | `/subscriptions`          | Save `{name, locale, subscription:{endpoint,keys:{p256dh,auth}}}` |
-| PATCH  | `/subscriptions/:id`      | Change `{enabled}` on an owned device                             |
-| DELETE | `/subscriptions/:id`      | Remove an owned device                                            |
-| POST   | `/subscriptions/:id/test` | Queue a test, limited to once per person per 30 seconds           |
+| PATCH  | `/subscriptions/:id`      | Change `{enabled}` and return the updated device                  |
+| DELETE | `/subscriptions/:id`      | Remove an owned device (`204`, or `404` if missing/not owned)     |
+| POST   | `/subscriptions/:id/test` | Queue a test (`202`), limited to once per person per 30 seconds   |
 
-Locale is `en-US` or `zh-CN`. Endpoints accept HTTPS services of Google, Mozilla, Apple and Windows only. Transport follows no redirects, encrypts the payload with the browser's keys and uses VAPID authentication. HTTP 404/410 removes the subscription; rate limits and server errors use the notification runtime's finite retries. Subscription ownership cannot be reassigned by registering an existing endpoint under another user.
+Any nonempty language identifier up to 100 characters is accepted. Device test messages use Chinese for `zh-CN` and fall back to English for other identifiers. Endpoints accept HTTPS services of Google, Mozilla, Apple and Windows only. Transport follows no redirects, encrypts the payload with the browser's keys and uses VAPID authentication. HTTP 404/410 removes the subscription; rate limits and server errors use the notification runtime's finite retries. Repeating a subscription preserves the device ID and enabled/disabled state. JSON request bodies reject unknown fields, including nested subscription/key fields. Subscription ownership cannot be reassigned by registering an existing endpoint under another user.
 
 ## Cost and validation
 
 No work is added to ordinary requests, polls, runner claims or heartbeats. Device list is one read; registration looks up the endpoint hash and writes one device; enable and removal each write only the caller-owned row. Delivery reads one device before optional application authorization. Expiry adds one delete. Test throttling is bounded, process-local memory; queue operations remain owned by the notification runtime.
 
-Tests apply and reverse the schema on the selected test database, start a non-Studio application with native sign-up/sign-in and run subscription, device management and test delivery through the real notification queue. The HTTPS socket is substituted in this fixture; real browser vendor delivery and physical Android/iOS devices require separate release verification.
+Tests apply and reverse the schema on the selected test database, start a standalone application with native sign-up/sign-in and run subscription, device management and test delivery through the real notification queue. The HTTPS socket is substituted in this fixture; real browser vendor delivery and physical Android/iOS devices require separate release verification.
