@@ -6178,6 +6178,9 @@ importers:
       '@nocobase/app-template-default':
         specifier: workspace:*
         version: link:../packages/templates/app-template-default
+      '@nocobase/app-template-examples':
+        specifier: workspace:*
+        version: link:../packages/templates/app-template-examples
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../packages/tools/dev-config

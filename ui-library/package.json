@@ -61,6 +61,7 @@
     "@nocobase/app-plugin-notification-in-app": "workspace:^",
     "@nocobase/app-plugin-projects": "workspace:^",
     "@nocobase/app-template-default": "workspace:*",
+    "@nocobase/app-template-examples": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/lifecycle": "workspace:^",
     "@tailwindcss/vite": "catalog:",
