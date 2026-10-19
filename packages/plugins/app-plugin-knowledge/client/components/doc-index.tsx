@@ -1,3 +1,4 @@
+import { resetIndexRefresh } from '../index-refresh.js';
 /**
  * A document's sections in the semantic index: the badge its header shows while semantic search is on (indexed,
  * indexing with how many of how many, or failed with the reason on hover and, for someone who may edit, "Index again"),
@@ -73,6 +74,7 @@ export function DocIndexBadge({
   const again = useMutation({
     mutationFn: () => api.reindex(docId),
     onSuccess: (data) => {
+      resetIndexRefresh(queryClient, knowledgeKeys.docIndex(docId));
       queryClient.setQueryData(knowledgeKeys.docIndex(docId), data);
       notify.success(t('knowledge.index.queued'));
     },
