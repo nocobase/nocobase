@@ -648,6 +648,14 @@ export interface KnowledgeChunkInfo {
   readonly error: string | null;
 }
 
+/** How completely the indexer reports committed queue, progress and terminal state changes. */
+export type KnowledgeIndexNotifications = 'none' | 'partial' | 'complete';
+
+/** Optional response metadata: old servers and undeclared indexers require polling. */
+export interface KnowledgeIndexRefreshMeta {
+  readonly notifications?: KnowledgeIndexNotifications;
+}
+
 /** A document's sections and where they stand in the semantic index. */
 export interface KnowledgeDocIndex {
   readonly docId: string;

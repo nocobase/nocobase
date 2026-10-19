@@ -23,6 +23,7 @@ import { DEFAULT_SETTINGS, type KnowledgeSettingsSource } from './tuning.js';
 export type KnowledgeEvent =
   | { readonly type: 'space.changed'; readonly spaceId: string }
   | { readonly type: 'index.changed'; readonly docId: string }
+  | { readonly type: 'indexer.changed' }
   /** A document has a new version (created, edited, or a proposal accepted). */
   | {
       readonly type: 'doc.versioned';

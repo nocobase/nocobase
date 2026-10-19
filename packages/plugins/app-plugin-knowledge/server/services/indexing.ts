@@ -9,6 +9,7 @@ import type {
   KnowledgeChunkInfo,
   KnowledgeDocIndex,
   KnowledgeIndexState,
+  KnowledgeIndexNotifications,
   KnowledgeUnindexedDoc,
   SpaceRef,
 } from '../../shared/knowledge.js';
@@ -34,6 +35,12 @@ export interface KnowledgeSectionState {
 
 /** The application's semantic index, as the knowledge base asks it about its sections. */
 export interface KnowledgeIndexer {
+  /**
+   * `complete` promises committed notifications for queueing, progress, success,
+   * failure, cancellation and reindexing from every worker. Requires onChange.
+   * An undeclared onChange is partial; absent onChange always means none.
+   */
+  readonly notifications?: KnowledgeIndexNotifications;
   /** Optional committed progress/completion notifications; return an unsubscribe callback. */
   onChange?(listener: (docId: string) => void): () => void;
   /** The state of each section that has one, keyed `<docId>:<ordinal>`; null while semantic search is off. */
@@ -56,6 +63,8 @@ export interface KnowledgeIndexer {
 }
 
 export interface IndexingService {
+  /** Notification coverage of the currently registered indexer. */
+  notifications(): KnowledgeIndexNotifications;
   /** A document's sections at its current version and their state (`read`). */
   doc(viewer: KnowledgeReader, docId: string): Promise<KnowledgeDocIndex>;
   /** Queues a document's sections again (`edit`), and answers where they stand. */
@@ -130,6 +139,10 @@ export function createIndexingService(
   }
 
   return {
+    notifications() {
+      const current = indexer();
+      return current?.onChange ? (current.notifications ?? 'partial') : 'none';
+    },
     async doc(viewer, docId) {
       const { doc } = await readableDoc(
         context,
@@ -145,6 +158,7 @@ export function createIndexingService(
       if (!doc) throw docNotFound();
       await access.requireDoc(doc, 'edit');
       await indexer()?.reindex(docId);
+      context.announce({ type: 'index.changed', docId });
       return indexOf(doc);
     },
 
