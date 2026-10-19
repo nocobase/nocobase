@@ -33,6 +33,10 @@ Every `/api` route the application writes declares itself for the API document t
 
 Business lists reuse the template's standard `DataTable` and companions from `#components/data-table`. The template declares the compatible TanStack Table v8 dependency and provides controlled server pagination/sorting; application agents should not generate an independent table engine. See the [table guide](.agents/skills/nocobase-app-development/references/frontend/references/table.md).
 
+## OnlineAgent example
+
+Open **Agents → Models** to configure a service and enable a chat model, then open the header chat button, press Cmd/Ctrl+J or use the homepage Online Agent card. [OnlineAgent usage and verification](online-agent.md) explains model configuration, permissions, saved history and the distinction between the local HTTP fixture and a real model service.
+
 ## Internationalization example
 
 Open **Internationalization** from the homepage or sidebar (`/i18n-examples`, relative to the application's mount path). Like the other protected examples, this page requires sign-in and its page permission; administrators can explore it directly.

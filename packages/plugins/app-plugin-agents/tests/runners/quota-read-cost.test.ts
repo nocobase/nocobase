@@ -11,7 +11,8 @@ it.each([1, 10, 50])(
     const counts = new Map<string, number>([
       ['/agents', 6],
       ['/agents/available', 5],
-      ['/agents/chatAgents', 6],
+      // Native chat also reads model services and the configured default once per catalog.
+      ['/agents/chatAgents', 8],
       ['/agents/runners', 4],
       ['/agents/runners/:id', 5],
       ['/agents/runners/:id/runs', 2],

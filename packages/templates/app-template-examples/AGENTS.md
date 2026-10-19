@@ -123,6 +123,6 @@ When the built-in mechanism genuinely cannot express what is being asked, changi
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | [.agents/rules/components.md](.agents/rules/components.md)             | Adding or changing a component, a shadcn primitive, a UI Library item, or the visual design                  |
 | [.agents/rules/database.md](.agents/rules/database.md)                 | Working with the `externalCrm` connection or another `external` connection's metadata                        |
-| [.agents/rules/plugins.md](.agents/rules/plugins.md)                   | Working with the Mail and Mail Example demonstration                                                         |
+| [.agents/rules/plugins.md](.agents/rules/plugins.md)                   | Working with the Mail, Mail Example or OnlineAgent demonstrations                                            |
 | [.agents/rules/shell.md](.agents/rules/shell.md)                       | Changing layouts, the header, sidebar, breadcrumbs, the account menu or loading indicators                   |
 | [.agents/rules/build-and-deploy.md](.agents/rules/build-and-deploy.md) | Changing the build, packing a deployment, the Docker image, `CDN_BASE_URL`, or building for another platform |

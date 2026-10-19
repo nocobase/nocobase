@@ -1,3 +1,4 @@
+import type { OnlineAgentRecoveryConfig } from '../online/agent/types.js';
 import { mayAccessRun } from '../core/runs/access.js';
 /**
  * Binds the plugin's services, and at boot connects them to the platform: realtime announcements of runs and
@@ -41,6 +42,7 @@ import { agentsToken } from '../tokens.js';
 
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
+  readonly uiRecovery?: OnlineAgentRecoveryConfig;
   /**
    * Completed runs' events and prompt snapshots are kept `retentionDays`: 14 days by default, 0 disables cleanup. A
    * failed attempt waits `retryBaseDelayMs` before the next, doubling up to ten minutes: 30 seconds by default.
@@ -99,6 +101,7 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
+        resolver,
         retryBaseDelayMs: retryBaseDelayMs(config?.runs?.retryBaseDelayMs),
         runRetentionDays: () =>
           runRetentionDays(
@@ -117,6 +120,7 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
           ? { secrets: resolver.resolve(secretsServiceToken) }
           : {}),
         ...(config?.cli ? { cli: config.cli } : {}),
+        uiRecovery: config?.uiRecovery,
         manifestUrl: `${this.app.publicBasePath}/api/cli/manifest`,
         ...(config?.vectors ? { vectors: config.vectors } : {}),
         paths: {
@@ -175,10 +179,15 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       secrets.registerStore(store);
   }
 
-  public override boot(): Promise<void> {
-    if (this.releases.length > 0) return Promise.resolve();
+  public override async boot(): Promise<void> {
+    if (this.releases.length > 0) return;
     const { container } = this.app;
     const services = container.resolve(agentsToken);
+    // Command hosts also start Providers, but do not replace the serving process. Detected by
+    // `consoleLogStream`, which `app-cli` sets to `stderr` for a command and leaves unset for
+    // `start`/`dev`; a host that changes this logging configuration would need another signal.
+    if (this.app.consoleLogStream !== 'stderr')
+      await services.onlineAgent.recoverAtStartup();
     this.announce(services);
     // The run token, runner key and registration token as security schemes of the API document.
     if (container.has(apiDocsToken))
@@ -237,9 +246,15 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   public override async shutdown(): Promise<void> {
-    for (const release of this.releases.splice(0)) release();
-    await this.stoppingVectors;
-    this.stoppingVectors = undefined;
+    try {
+      await this.app.container
+        .resolveIfCreated(agentsToken)
+        ?.onlineAgent.shutdown();
+    } finally {
+      for (const release of this.releases.splice(0)) release();
+      await this.stoppingVectors;
+      this.stoppingVectors = undefined;
+    }
   }
 
   /** Tells open pages what changed; they fetch the details through the API, which checks access. */
@@ -313,16 +328,23 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
           case 'conversation.changed':
             announceConversation(
               event.userId,
-              event.lastSeq === undefined
+              event.messageId !== undefined && event.revision !== undefined
                 ? {
-                    kind: 'conversation.changed',
+                    kind: 'conversation.messageUpdated',
                     conversationId: event.conversationId,
+                    messageId: event.messageId,
+                    revision: event.revision,
                   }
-                : {
-                    kind: 'conversation.messages',
-                    conversationId: event.conversationId,
-                    lastSeq: event.lastSeq,
-                  },
+                : event.lastSeq === undefined
+                  ? {
+                      kind: 'conversation.changed',
+                      conversationId: event.conversationId,
+                    }
+                  : {
+                      kind: 'conversation.messages',
+                      conversationId: event.conversationId,
+                      lastSeq: event.lastSeq,
+                    },
             );
             return;
           case 'run.changed':

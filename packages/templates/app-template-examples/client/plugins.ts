@@ -27,6 +27,7 @@ import scheduler from '@nocobase/app-plugin-scheduler/client';
 import file from '@nocobase/app-plugin-file/client';
 import fileExample from '@nocobase/app-plugin-file-example/client';
 import apiKeys from '@nocobase/app-plugin-api-keys/client';
+import agents from '@nocobase/app-plugin-agents/client';
 
 // Array order is contribution order. A plugin is enabled by appearing in this
 // list; removing its entry and its import disables it.
@@ -56,6 +57,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   scheduler(),
   mail(),
   mailExample(),
+  agents(),
 ]);
 
 export default clientPlugins;

@@ -61,7 +61,8 @@ catalog:
   '@vitejs/plugin-react': ^4.4.1
   '@vitest/coverage-v8': ^4.1.10
   '@vitest/eslint-plugin': ^1.6.27
-  ai: ^7.0.127
+  ai: 7.0.128
+  '@ai-sdk/react': 4.0.131
   ajv: ^8.20.0
   better-auth: 1.7.5
   better-sqlite3: ^13.0.3

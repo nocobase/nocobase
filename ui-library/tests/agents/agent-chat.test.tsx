@@ -1,3 +1,4 @@
+import { ConsultationCard } from '../../registry/agents/agent-chat/consultation-card';
 import {
   ChatProvider,
   useChatContextSource,
@@ -150,11 +151,37 @@ describe('ChatPanel', () => {
   it('sends a message and shows the agent at work', async () => {
     renderPanel('release-plan');
     const box = await screen.findByLabelText('Message to the agent');
-    fireEvent.change(box, { target: { value: 'And the docs?' } });
-    fireEvent.keyDown(box, { key: 'Enter' });
-    expect(await screen.findByText('And the docs?')).toBeVisible();
-    expect(await screen.findByTestId('chat-live-steps')).toBeVisible();
-    expect(box).toHaveValue('');
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.change(box, { target: { value: 'And the docs?' } });
+        fireEvent.keyDown(box, { key: 'Enter' });
+      });
+      expect(screen.getByText('And the docs?')).toBeVisible();
+      expect(
+        screen.getByRole('button', { name: 'Stop', exact: true }),
+      ).toBeVisible();
+      expect(screen.queryByTestId('chat-live-steps')).toBeNull();
+      const thinking = screen.getByText('Thinking…');
+      const log = screen.getByRole('log', { name: 'Messages' });
+      expect(log).toContainElement(thinking);
+      const row = thinking.closest('li');
+      expect(row?.parentElement?.lastElementChild).toBe(row);
+      expect(row?.previousElementSibling).toHaveTextContent('And the docs?');
+      expect(
+        thinking
+          .closest('[data-chat-feedback]')
+          ?.querySelector('[data-slot="spinner"]'),
+      ).toBeVisible();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1100);
+      });
+      expect(screen.getByText(/Here is what I would do/u)).toBeVisible();
+      expect(screen.queryByText('Thinking…')).not.toBeInTheDocument();
+      expect(box).toHaveValue('');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('drops a reply still on its way when the demo is reset', async () => {
@@ -172,7 +199,9 @@ describe('ChatPanel', () => {
       act(() => resetChatDemo());
       fireEvent.change(box, { target: { value: 'Again' } });
       fireEvent.keyDown(box, { key: 'Enter' });
-      act(() => vi.advanceTimersByTime(5000));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
       expect(screen.getByText('Again')).toBeVisible();
       expect(screen.getAllByText(/Here is what I would do/u)).toHaveLength(1);
     } finally {
@@ -180,17 +209,26 @@ describe('ChatPanel', () => {
     }
   });
 
-  it('sums up a runner’s steps in one line that expands to them', async () => {
+  it('uses shared Stop controls for managed Runner execution without a legacy steps panel', async () => {
     renderPanel('flaky-test');
-    const line = await screen.findByTestId('chat-step-line');
-    expect(line).toHaveTextContent(
-      'Working on pnpm test:e2e sign-in --repeat-each 20',
-    );
-    expect(line).toHaveTextContent('4 steps');
-    fireEvent.click(line);
+    const stop = await screen.findByRole('button', {
+      name: 'Stop',
+      exact: true,
+    });
+    expect(screen.queryByTestId('chat-step-line')).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Steps' })).toBeNull();
     expect(
-      await screen.findByRole('list', { name: 'Steps' }),
-    ).toHaveTextContent('Bash');
+      screen.getByText(
+        'The sign-in test fails about once in ten runs. Can you find out why?',
+      ),
+    ).toBeVisible();
+    fireEvent.click(stop);
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Stop', exact: true }),
+      ).toBeNull(),
+    );
+    expect(screen.getByLabelText('Message to the agent')).toBeEnabled();
   });
 
   it('shows the page’s context as chips in the composer, each removable', async () => {
@@ -446,3 +484,46 @@ describe('ChatConversationPage', () => {
     expect(onOpen).toHaveBeenCalledWith('release-plan');
   });
 });
+
+it.each(['en-US', 'zh-CN'])(
+  'renders a historical consultation with plans in %s without a quantity prompt',
+  async (locale) => {
+    const cardRuntime = await createTestI18nRuntime({
+      application: {
+        namespace: 'consultation-test',
+        resources: {
+          'en-US': () => Promise.resolve({ default: enUS }),
+          'zh-CN': () => Promise.resolve({ default: zhCN }),
+        },
+      },
+    });
+    await cardRuntime.changeLanguage(locale);
+    render(
+      <TestI18nProvider runtime={cardRuntime}>
+        <ConsultationCard
+          notice={{
+            code: 'consultation',
+            callId: 'historic',
+            agentId: 'agent',
+            agentName: 'Review agent',
+            runId: null,
+            question: 'Review this change',
+            answer: 'The change is ready.',
+            state: 'completed',
+            error: null,
+            usage: { inputTokens: 1840, outputTokens: 212 },
+            plans: 3,
+          }}
+        />
+      </TestI18nProvider>,
+    );
+    fireEvent.click(
+      screen.getByTestId('chat-consultation').querySelector('button')!,
+    );
+    expect(await screen.findByText('The change is ready.')).toBeVisible();
+    expect(screen.getByText(/1,840/)).toBeVisible();
+    expect(
+      screen.queryByText(/Proposed .*plans|提出了.*计划/u),
+    ).not.toBeInTheDocument();
+  },
+);

@@ -80,6 +80,7 @@ export interface AgentComposerLabels {
   readonly contextSelection: string;
   /** A chip's remove button; `{label}` is the chip's text. */
   readonly contextRemove: string;
+  readonly contextFailed?: string;
   /** The attach button. */
   readonly attach: string;
   /** The files' accessible name. */
@@ -111,6 +112,8 @@ const defaultAgentComposerLabels: AgentComposerLabels = {
   contextFilter: 'Filter: {filter}',
   contextSelection: 'Selected text: “{text}”',
   contextRemove: 'Remove context: {label}',
+  contextFailed:
+    'Could not read the selected context or send the message. Check the current page and try again.',
   attach: 'Attach files',
   attachmentsLabel: 'Files the next message carries',
   attachmentRemove: 'Remove {name}',
@@ -175,7 +178,8 @@ export interface AgentComposerContext {
   readonly chips: readonly ChatContextChip[];
   readonly onRemove: (key: string) => void;
   /** The context a message sent now carries; called on send. */
-  readonly build: () => PageContext | undefined;
+  readonly build: () =>
+    PageContext | undefined | Promise<PageContext | undefined>;
 }
 
 /** Text put in the box from elsewhere, such as an "Ask agent" button; each new `nonce` fills it once. */
@@ -226,7 +230,7 @@ export interface AgentComposerProps {
 function ChipIcon({ chip }: { readonly chip: ChatContextChip }): ReactElement {
   if (chip.kind === 'filter') return <FilterIcon aria-hidden='true' />;
   if (chip.kind === 'selection') return <QuoteIcon aria-hidden='true' />;
-  return chip.pinned ? (
+  return chip.kind === 'item' && chip.pinned ? (
     <PinIcon aria-hidden='true' />
   ) : (
     <SquareDashedMousePointerIcon aria-hidden='true' />
@@ -250,15 +254,17 @@ export function ComposerContextChips({
     : defaultAgentComposerLabels;
   if (chips.length === 0) return null;
   const text = (chip: ChatContextChip): string =>
-    chip.kind === 'item'
-      ? chip.item.label
-      : chip.kind === 'filter'
-        ? format(words.contextFilter, {
-            filter: chip.filter.label ?? filterText(chip.filter),
-          })
-        : format(words.contextSelection, {
-            text: selectionPreview(chip.selection.text),
-          });
+    chip.kind === 'ui'
+      ? chip.source.label
+      : chip.kind === 'item'
+        ? chip.item.label
+        : chip.kind === 'filter'
+          ? format(words.contextFilter, {
+              filter: chip.filter.label ?? filterText(chip.filter),
+            })
+          : format(words.contextSelection, {
+              text: selectionPreview(chip.selection.text),
+            });
   return (
     <ul
       className='flex w-full min-w-0 flex-wrap items-center gap-1'
@@ -447,6 +453,20 @@ export function AgentComposer({
   const inputId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = useState('');
+  const [preparing, setPreparing] = useState(false);
+  const [contextError, setContextError] = useState(false);
+  const submissionRef = useRef(false);
+  const mountedRef = useRef(false);
+  const latestRef = useRef({ disabled, sending, onSend, context });
+  useLayoutEffect(() => {
+    latestRef.current = { disabled, sending, onSend, context };
+  });
+  useLayoutEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   // The box registers how to focus it as it mounts, and undoes that as it unmounts.
   const attach = useCallback(
     (node: HTMLTextAreaElement | null) => {
@@ -594,12 +614,17 @@ export function AgentComposer({
     !blocked &&
     !disabled &&
     !sending &&
-    !waiting;
+    !waiting &&
+    !preparing;
   const showStop =
-    running && empty && files.length === 0 && onStop !== undefined;
+    running &&
+    (disabled || (empty && files.length === 0)) &&
+    onStop !== undefined;
 
   function submit(): void {
-    if (!canSend) return;
+    if (!canSend || submissionRef.current) return;
+    submissionRef.current = true;
+    setContextError(false);
     const carried = filesRef.current;
     if (!uploading) {
       send(
@@ -617,8 +642,10 @@ export function AgentComposer({
           : (uploadsRef.current.get(file.key) ?? Promise.resolve(null)),
       ),
     ).then((uploaded) => {
+      if (!mountedRef.current) return;
       setWaiting(false);
       if (uploaded.every((file) => file !== null)) send(uploaded, carried);
+      else submissionRef.current = false;
     });
   }
 
@@ -627,8 +654,14 @@ export function AgentComposer({
     carried: readonly ComposerFile[],
   ): void {
     const sent = content;
-    const taken = onSend(sent, context?.build(), uploaded);
-    const clear = (): void => {
+    setPreparing(true);
+    const finish = (ok: boolean, failed = false): void => {
+      submissionRef.current = false;
+      if (!mountedRef.current) return;
+      setPreparing(false);
+      setContextError(failed);
+      if (!ok) return;
+      setContent((current) => (current === sent ? '' : current));
       for (const file of carried) {
         if (file.preview) URL.revokeObjectURL(file.preview);
         uploadsRef.current.delete(file.key);
@@ -637,18 +670,35 @@ export function AgentComposer({
       setFiles((current) => current.filter((file) => !sentKeys.has(file.key)));
       setTooMany(false);
     };
-    if (taken === true) {
-      setContent('');
-      clear();
-    } else if (taken !== false)
-      void taken.then(
-        (ok) => {
-          if (!ok) return;
-          setContent((current) => (current === sent ? '' : current));
-          clear();
-        },
-        () => undefined,
-      );
+    const dispatch = (snapshot: PageContext | undefined): void => {
+      if (
+        !mountedRef.current ||
+        latestRef.current.disabled ||
+        latestRef.current.sending
+      ) {
+        finish(false);
+        return;
+      }
+      try {
+        const taken = latestRef.current.onSend(sent, snapshot, uploaded);
+        if (typeof taken === 'boolean') finish(taken);
+        else
+          void taken.then(
+            (ok) => finish(ok),
+            () => finish(false, true),
+          );
+      } catch {
+        finish(false, true);
+      }
+    };
+    try {
+      const built = latestRef.current.context?.build();
+      if (built instanceof Promise)
+        void built.then(dispatch, () => finish(false, true));
+      else dispatch(built);
+    } catch {
+      finish(false, true);
+    }
   }
 
   function onPaste(event: ClipboardEvent<HTMLTextAreaElement>): void {
@@ -781,7 +831,7 @@ export function AgentComposer({
       title={words.send}
       data-testid='chat-send'
     >
-      {sending || waiting ? <Spinner /> : <ArrowUpIcon />}
+      {sending || waiting || preparing ? <Spinner /> : <ArrowUpIcon />}
     </Button>
   );
 
@@ -864,6 +914,11 @@ export function AgentComposer({
       </InputGroup>
       {tooLongNote}
       {fileNote}
+      {contextError ? (
+        <p role='alert' className='text-xs text-destructive'>
+          {words.contextFailed ?? defaultAgentComposerLabels.contextFailed}
+        </p>
+      ) : null}
     </div>
   );
 }

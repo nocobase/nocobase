@@ -45,6 +45,80 @@ describe('app client routes', () => {
     }
   });
 
+  it('groups the public Agents settings pages without weakening their authorization', () => {
+    const group = resolveRoutes().routes.find(
+      (route) => route.name === 'agentsNavigation',
+    )!;
+    expect(group.componentLoader).toBeUndefined();
+    expect(group.navigation?.title).toBe('onlineAgent.group');
+    expect(group.children?.map((route) => route.name)).toEqual([
+      'agents',
+      'runtimes',
+      'models',
+      'ai-translation',
+      'ai-structured-extraction',
+      'ai-form-fill',
+    ]);
+    for (const name of ['agents', 'runtimes']) {
+      expect(
+        group.children?.find((route) => route.name === name),
+      ).toMatchObject({
+        name,
+        path: `/${name}`,
+        auth: 'required',
+        navigation: { title: `onlineAgent.${name}` },
+        breadcrumb: { title: `onlineAgent.${name}` },
+        authz: { resource: { type: 'page', id: name }, action: 'access' },
+      });
+    }
+    expect(
+      group.children?.find((route) => route.name === 'runtimes')?.children,
+    ).toEqual([
+      expect.objectContaining({
+        name: 'runtimes-connect',
+        path: '/runtimes/connect',
+        auth: 'required',
+        componentLoader: expect.any(Function),
+      }),
+    ]);
+    expect(
+      group.children?.find((route) => route.name === 'models'),
+    ).toMatchObject({
+      name: 'models',
+      path: '/models',
+      auth: 'required',
+      navigation: { title: 'onlineAgent.models' },
+      breadcrumb: { title: 'onlineAgent.models' },
+      authz: {
+        resource: { type: 'settings', id: 'agents.services' },
+        action: 'read',
+      },
+    });
+    expect(
+      group.children?.find((route) => route.name === 'ai-translation'),
+    ).toMatchObject({
+      path: '/ai-translation',
+      auth: 'required',
+      authz: 'skip',
+      navigation: { title: 'aiTranslation.title', icon: expect.any(Object) },
+      breadcrumb: { title: 'aiTranslation.title' },
+      componentLoader: expect.any(Function),
+    });
+    expect(
+      group.children?.find(
+        (route) => route.name === 'ai-structured-extraction',
+      ),
+    ).toMatchObject({
+      path: '/ai-structured-extraction',
+      auth: 'required',
+      authz: 'skip',
+      navigation: {
+        title: 'structuredExtraction.title',
+        icon: expect.anything(),
+      },
+      componentLoader: expect.any(Function),
+    });
+  });
   it('keeps the inbox out of the application navigation', () => {
     // The inbox is reached from the header's inbox button, so it deliberately declares no menu entry.
     expect(
@@ -80,6 +154,13 @@ describe('app client routes', () => {
     expect(pageAuthorizations(resolved.routes)).toEqual([
       // The landing page opted out of page authorization, so it is reachable by every signed-in user.
       { name: 'home', authorizedAs: null },
+      { name: 'agents', authorizedAs: 'agents' },
+      { name: 'runtimes', authorizedAs: 'runtimes' },
+      { name: 'runtimes-connect', authorizedAs: 'runtimes' },
+      { name: 'models', authorizedAs: 'settings:agents.services' },
+      { name: 'ai-translation', authorizedAs: null },
+      { name: 'ai-structured-extraction', authorizedAs: null },
+      { name: 'ai-form-fill', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'routeOverlays', authorizedAs: 'routeOverlays' },
       // Overlay children are nested under a page, so the parent's check is the only one.

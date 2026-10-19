@@ -1,3 +1,4 @@
+import { OnlineAgentExample } from '#components/online-agent/example';
 import { PageContainer } from '#components/page-container';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
@@ -8,6 +9,7 @@ import {
   Hash,
   Languages,
   FileText,
+  FilePenLine,
   FolderOpen,
   ShoppingCart,
   PanelsTopLeft,
@@ -21,6 +23,7 @@ import { Link } from 'react-router';
 import { Button } from '#components/ui/button';
 
 const examples = [
+  { key: 'aiFormFill', path: '/ai-form-fill', icon: FilePenLine },
   { key: 'routeOverlays', path: '/route-overlays', icon: PanelsTopLeft },
   { key: 'articles', path: '/articles', icon: FileText },
   { key: 'numbers', path: '/numeric-examples', icon: Hash },
@@ -64,6 +67,7 @@ export default function ExamplesHomePage(): ReactElement {
         </Button>
       </header>
       <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
+        <OnlineAgentExample />
         {examples.map(({ key, path, icon: Icon }) => (
           <Link
             key={key}

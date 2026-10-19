@@ -169,7 +169,7 @@ When a script starts spawning something new, add it here and declare it. Nothing
 
 ### The application's own CLI: `cli build` and `cli link`
 
-An application may have a command line of its own for people and agents, besides this one: `@nocobase/app-cli-client` branded with the application's name, which signs in to its server and runs the business commands the server's command manifest publishes. Templates declare none. An application opts in under `nocobase.cli` in its own `package.json` and adds `@nocobase/app-cli-client` to its `devDependencies` (and `@nocobase/agent-runner` to pack the runner). This is not the `nocobase.cli.entry` of a dependency described under "Packages that contribute commands by being a dependency": that names commands of this CLI, read from a dependency, while an application's `nocobase.cli` names a CLI of its own.
+An application may have a command line of its own for people and agents, besides this one: `@nocobase/app-cli-client` branded with the application's name, which signs in to its server and runs the business commands the server's command manifest publishes. Examples declares `nocobase-examples` for its Runner chat demonstration; Default leaves this optional. An application opts in under `nocobase.cli` in its own `package.json` and adds `@nocobase/app-cli-client` to its `devDependencies` (and `@nocobase/agent-runner` to pack the runner). This is not the `nocobase.cli.entry` of a dependency described under "Packages that contribute commands by being a dependency": that names commands of this CLI, read from a dependency, while an application's `nocobase.cli` names a CLI of its own.
 
 ```json
 "nocobase": {
