@@ -6,10 +6,15 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 import { sdkController } from './sdk-controller.js';
 import { sdkResponse } from './sdk-chat.js';
+import { CONVERSATIONS_TOPIC } from '../../shared/conversations.js';
 import type * as AppClient from '@nocobase/app-client';
 const host = vi.hoisted(() => ({
   api: undefined as unknown as ApiClient,
-  realtime: { subscribe: () => () => {}, onOpen: () => () => {} },
+  realtime: {
+    watch: vi.fn((_topic: string, _options?: { onReady?: () => void }) => ({
+      close: vi.fn(),
+    })),
+  },
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof AppClient>()),
@@ -30,8 +35,9 @@ afterEach(() => {
   cleanup();
   fixture?.controller.dispose();
   agentsQueryClient().clear();
+  host.realtime.watch.mockClear();
 });
-it('moves every mounted surface to one fresh SDK owner for a full-prefix replay after network failure', async () => {
+it('moves every mounted surface to one fresh SDK owner for a full-prefix replay after acknowledged realtime recovery', async () => {
   fixture = sdkController();
   host.api = fixture.host;
   const output = fixture.output(),
@@ -106,8 +112,13 @@ it('moves every mounted surface to one fresh SDK owner for a full-prefix replay 
       { type: 'finish' },
     ]),
   );
+  expect(fixture.stream.mock.calls).toHaveLength(1);
+  const conversationWatches = host.realtime.watch.mock.calls.filter(
+    ([topic]) => topic === CONVERSATIONS_TOPIC,
+  );
+  expect(conversationWatches).toHaveLength(3);
   await act(async () => {
-    await owners[0].resume('c1');
+    for (const [, options] of conversationWatches) options?.onReady?.();
   });
   await waitFor(() =>
     screen.getAllByTestId('surface').forEach((surface) => {

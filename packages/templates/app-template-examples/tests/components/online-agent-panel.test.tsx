@@ -45,7 +45,7 @@ const host = vi.hoisted(() => ({
   catalog: vi.fn(),
   stream: vi.fn(),
   canRead: true,
-  realtime: { subscribe: vi.fn(() => vi.fn()), onOpen: vi.fn(() => vi.fn()) },
+  realtime: { watch: vi.fn(() => ({ close: vi.fn() })) },
   toaster: { show: vi.fn() },
 }));
 const api = { request: host.request, stream: host.stream };
@@ -1268,15 +1268,15 @@ it('uses formal extensions with one segmented logical message, independent notic
     { ...reply, metadata: { ...reply.metadata!, revision: 2 } },
     notice,
   ];
-  const callbacks = host.realtime.subscribe.mock.calls as unknown as [
+  const callbacks = host.realtime.watch.mock.calls as unknown as [
     string,
-    (event: { payload: unknown }) => void,
+    { onEvent: (event: { payload: unknown }) => void },
   ][];
   act(() =>
     callbacks
       .filter(([topic]) => topic === 'agents:conversations')
       .forEach(([, listener]) =>
-        listener({
+        listener.onEvent({
           payload: {
             kind: 'conversation.messageUpdated',
             conversationId: 'saved',

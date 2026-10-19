@@ -22,7 +22,7 @@ import enUS from '../../client/locales/en-US.js';
 const host = vi.hoisted(() => ({
   request: vi.fn(),
   toaster: { show: vi.fn(), close: vi.fn() },
-  realtime: { subscribe: () => () => {}, onOpen: () => () => {} },
+  realtime: { watch: () => ({ close: () => {} }) },
 }));
 const api = { request: host.request };
 vi.mock('@nocobase/app-client', async (original) => ({

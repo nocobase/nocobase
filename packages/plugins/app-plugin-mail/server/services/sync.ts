@@ -1,3 +1,4 @@
+import { notifyMailMessageChange } from '../realtime.js';
 import { MailSyncScheduler } from '../operations/schedule-sync.js';
 import {
   type MailOperationContext,
@@ -24,7 +25,7 @@ export class MailSyncService {
       | 'getSyncCursor'
       | 'getSyncRun'
       | 'listSyncRuns',
-      'outbox'
+      'outbox' | 'messageChangeNotifier' | 'logger'
     >,
     syncBatchSize: number,
   ) {
@@ -46,6 +47,11 @@ export class MailSyncService {
       input,
     );
     this.dependencies.outbox.kick();
+    notifyMailMessageChange(
+      this.dependencies.messageChangeNotifier,
+      account.userId,
+      this.dependencies.logger,
+    );
     return toSyncRunView(run);
   }
 
@@ -125,6 +131,11 @@ export class MailSyncService {
         'MAIL_SYNC_RUN_STATE_INVALID',
         'Mail sync run is no longer active.',
       );
+    notifyMailMessageChange(
+      this.dependencies.messageChangeNotifier,
+      context.actorId,
+      this.dependencies.logger,
+    );
     return toSyncRunView(cancelled);
   }
 

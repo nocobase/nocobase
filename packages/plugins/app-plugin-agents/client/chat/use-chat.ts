@@ -61,7 +61,7 @@ import {
 } from './message-model.js';
 
 /** How often an open conversation with a run is fetched when no announcement comes. */
-export const CHAT_POLL_MS = 5000;
+export const CHAT_POLL_MS = 60_000;
 
 export function useChatApi(): ChatApi {
   const api = useApiClient();

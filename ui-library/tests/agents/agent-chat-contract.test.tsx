@@ -57,7 +57,7 @@ it('shows writing only for the active response, even when saved partial parts re
 
 const host = vi.hoisted(() => ({
   api: { request: vi.fn(), stream: vi.fn() },
-  realtime: { subscribe: () => () => {}, onOpen: () => () => {} },
+  realtime: { watch: () => ({ close: () => {} }) },
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),

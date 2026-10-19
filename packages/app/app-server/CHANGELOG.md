@@ -1,5 +1,11 @@
 # @nocobase/app-server
 
+## 3.0.0-beta
+
+### Major Changes
+
+- Require declared realtime topics and asynchronous publication, subscription authorization and shutdown. Extract the core into `@nocobase/realtime/server`; retain the application service tokens and adapter entry points. Publication receipts contain an event ID instead of a local subscriber count.
+
 ## 2.0.0-beta.9
 
 ### Patch Changes

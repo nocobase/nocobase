@@ -19,7 +19,7 @@ const host = vi.hoisted(() => ({
   send: undefined as AgentComposerProps['onSend'] | undefined,
   close: undefined as (() => void) | undefined,
   api: { request: vi.fn() },
-  realtime: { subscribe: vi.fn(() => vi.fn()), onOpen: vi.fn(() => vi.fn()) },
+  realtime: { watch: vi.fn(() => ({ close: vi.fn() })) },
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),

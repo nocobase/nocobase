@@ -151,7 +151,7 @@ export function ToolTable({
             <div className='flex items-center gap-2 p-3'>
               <span className='min-w-0 font-medium'>{t(`tools.${tool}`)}</span>
               {state(tool)}
-              <span className='ml-auto'>{toggle(tool)}</span>
+              <span className='ml-auto flex items-center'>{toggle(tool)}</span>
             </div>
             <div
               className={
@@ -250,16 +250,26 @@ export function ToolTable({
                     </span>
                   ) : null}
                 </TableCell>
-                <TableCell>{toggle(tool)}</TableCell>
-                <TableCell>{state(tool)}</TableCell>
+                <TableCell>
+                  <div className='flex items-center'>{toggle(tool)}</div>
+                </TableCell>
+                <TableCell>
+                  <div className='flex items-center'>{state(tool)}</div>
+                </TableCell>
                 {confirming(tool, '') ? (
                   <TableCell colSpan={3}>{confirmation(tool, '')}</TableCell>
                 ) : (
                   <>
-                    <TableCell>{quota(tool)}</TableCell>
-                    <TableCell>{limit(tool)}</TableCell>
+                    <TableCell>
+                      <div className='flex items-center'>{quota(tool)}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className='flex items-center'>{limit(tool)}</div>
+                    </TableCell>
                     <TableCell className='text-right tabular-nums'>
-                      {runner.activeByTool?.[tool] ?? 0}
+                      <div className='flex items-center justify-end'>
+                        {runner.activeByTool?.[tool] ?? 0}
+                      </div>
                     </TableCell>
                   </>
                 )}
@@ -277,12 +287,16 @@ export function ToolTable({
                     colSpan={3}
                     className='pl-6 text-xs text-muted-foreground'
                   >
-                    {nameOf(tool, target)}
+                    <div className='flex items-center'>
+                      {nameOf(tool, target)}
+                    </div>
                   </TableCell>
                   <TableCell colSpan={3}>
-                    {confirming(tool, target)
-                      ? confirmation(tool, target)
-                      : quota(tool, target)}
+                    <div className='flex items-center'>
+                      {confirming(tool, target)
+                        ? confirmation(tool, target)
+                        : quota(tool, target)}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

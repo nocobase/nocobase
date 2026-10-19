@@ -22,7 +22,7 @@ const host = vi.hoisted(() => ({
   identity: 'A' as string | null,
   pending: false,
   api: { request: vi.fn(), stream: vi.fn() },
-  realtime: { subscribe: vi.fn(() => vi.fn()), onOpen: vi.fn(() => vi.fn()) },
+  realtime: { watch: vi.fn(() => ({ close: vi.fn() })) },
 }));
 vi.mock('@nocobase/app-plugin-authentication/client', () => ({
   useAuthentication: () => ({
@@ -85,8 +85,7 @@ beforeEach(() => {
   host.pending = false;
   host.api.request.mockReset();
   host.api.stream.mockReset();
-  host.realtime.subscribe.mockClear();
-  host.realtime.onOpen.mockClear();
+  host.realtime.watch.mockClear();
   sessionStorage.clear();
   agentsQueryClient().clear();
 });
@@ -206,6 +205,6 @@ it('mounts no controller/subscription while signed out or pending', () => {
   host.pending = true;
   rerender(<Tree />);
   expect(screen.getByText('Chat unavailable')).toBeInTheDocument();
-  expect(host.realtime.subscribe).not.toHaveBeenCalled();
+  expect(host.realtime.watch).not.toHaveBeenCalled();
   expect(host.api.request).not.toHaveBeenCalled();
 });

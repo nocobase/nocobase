@@ -1,4 +1,5 @@
 import type { OnlineAgentRecoveryConfig } from '../online/agent/types.js';
+import { mayAccessRun } from '../core/runs/access.js';
 /**
  * Binds the plugin's services, and at boot connects them to the platform: realtime announcements of runs and
  * conversations, and the vector queue's worker. The runners' side (their announcements, the sweeper and the wake-ups of
@@ -262,12 +263,42 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     if (!container.has(realtimeServiceToken)) return;
     const realtime = container.resolve(realtimeServiceToken);
     const publish = (topic: string, payload: RunChanged) => {
-      try {
-        realtime.publish(topic, payload);
-      } catch (error) {
-        console.error('Agents realtime announcement failed.', error);
-      }
+      void realtime
+        .publish(topic, payload)
+        .catch((error: unknown) =>
+          console.error('Agents realtime announcement failed.', error),
+        );
     };
+    const runsTopic = realtime.defineTopicFamily<{ runId: string }, RunChanged>(
+      'agents:runs:{runId}',
+      {
+        audience: 'public',
+        authenticated: true,
+        authorize: async ({ principal, params }) => {
+          if (!principal) return false;
+          const run = await services.runs.get(params.runId);
+          return mayAccessRun(
+            run,
+            principal.userId,
+            services.subjects.get(run.subject.kind)?.private === true,
+            async () => {
+              if (!container.has(authorizationToken)) return false;
+              const authorization = container.resolve(authorizationToken);
+              const identity = { type: 'user', id: principal.userId };
+              const subjects = [
+                { type: 'authenticated', id: '*' },
+                ...(await authorization.subjects.resolveFor(identity)),
+              ];
+              return authorization.for({ principal: identity, subjects }).can({
+                resource: { type: 'settings', id: 'agents.agents' },
+                action: 'read',
+              });
+            },
+          );
+        },
+      },
+    );
+    this.releases.push(() => runsTopic.close());
     let conversationsTopic = false;
     try {
       this.releases.push(
@@ -285,11 +316,11 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       payload: ConversationChanged,
     ) => {
       if (!conversationsTopic) return;
-      try {
-        realtime.publish(CONVERSATIONS_TOPIC, payload, { userId });
-      } catch (error) {
-        console.error('Agents realtime announcement failed.', error);
-      }
+      void realtime
+        .publish(CONVERSATIONS_TOPIC, payload, { userId })
+        .catch((error: unknown) =>
+          console.error('Agents realtime announcement failed.', error),
+        );
     };
     this.releases.push(
       services.events.onAny((event) => {

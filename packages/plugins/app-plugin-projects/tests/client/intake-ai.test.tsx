@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   screen,
@@ -201,7 +202,7 @@ describe('AI on the AI draft tab', () => {
         }),
       }),
     });
-    renderTab('?tab=ai&job=j1');
+    const view = renderTab('?tab=ai&job=j1');
     const dialog = await screen.findByRole('dialog');
     expect(
       await within(dialog).findByTestId('intake-ai-progress'),
@@ -211,9 +212,11 @@ describe('AI on the AI draft tab', () => {
       within(dialog).getByText('intakeAi.lastActivity(text=Reading the notes)'),
     ).toBeTruthy();
 
-    expect(
-      await within(dialog).findByTestId('plan-editor', {}, { timeout: 5000 }),
-    ).toBeTruthy();
+    // The project notification invalidates the plans prefix, including this job.
+    await act(() =>
+      view.queryClient.invalidateQueries({ queryKey: ['pm', 'plans'] }),
+    );
+    expect(await within(dialog).findByTestId('plan-editor')).toBeTruthy();
     expect(within(dialog).queryByTestId('intake-ai-progress')).toBeNull();
     expect(within(dialog).getByDisplayValue('导出报表')).toBeTruthy();
     expect(location()).toContain('draft=p-ai');
