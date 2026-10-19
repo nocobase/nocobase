@@ -367,20 +367,19 @@ pnpm build --target linux-x64 --node-version 24 --tar
 
 ### 5. 上传部署包 {#studio-upload}
 
-在 Studio 的「API 密钥」页创建或取得具有该应用上传权限的 Key。替换下面的 <api-key>、Studio 地址和应用 ID，上传刚生成的部署包：
+使用第 2 步登录的连接上传部署包。将 <commit-sha> 替换为本次构建对应、Studio 可校验的完整提交 SHA：
 
 **本地 · app 项目根目录 · Bash**
 
 ```bash
-curl --fail-with-body --silent --show-error \
-  https://studio.example.com/studio/api/releases/apps/purchase/releases \
-  -H 'x-api-key: <api-key>' \
-  -H 'Content-Type: application/gzip' \
-  -H 'X-Release-Deploy: false' \
-  --data-binary @storage/exports/dist.tar.gz
+nb-studio --profile studio release upload \
+  --app purchase \
+  --sha '<commit-sha>' \
+  --file storage/exports/dist.tar.gz \
+  --json
 ```
 
-上传成功后，复制响应中的 data.id，作为下一步的 Release ID。此时只上传，尚未部署。
+上传成功后，复制响应中的 result.data.release.id，作为下一步的 Release ID。上传不会自动部署应用。
 
 ### 6. 部署 {#studio-deploy}
 

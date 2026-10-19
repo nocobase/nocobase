@@ -367,20 +367,19 @@ The deployment archive is generated at storage/exports/dist.tar.gz.
 
 ### 5. Upload the archive {#studio-upload}
 
-Create or obtain a key with upload permission for this application from Studio’s API keys page. Replace <api-key>, the Studio URL, and the application ID below, then upload the archive:
+Upload the archive using the connection from step 2. Replace <commit-sha> with the full commit SHA used for this build, which Studio must be able to verify:
 
 **Local · app project root · Bash**
 
 ```bash
-curl --fail-with-body --silent --show-error \
-  https://studio.example.com/studio/api/releases/apps/purchase/releases \
-  -H 'x-api-key: <api-key>' \
-  -H 'Content-Type: application/gzip' \
-  -H 'X-Release-Deploy: false' \
-  --data-binary @storage/exports/dist.tar.gz
+nb-studio --profile studio release upload \
+  --app purchase \
+  --sha '<commit-sha>' \
+  --file storage/exports/dist.tar.gz \
+  --json
 ```
 
-After the upload succeeds, copy data.id from the response. Use it as the release ID in the next step. Uploading does not deploy the application.
+After the upload succeeds, copy result.data.release.id from the response. Use it as the release ID in the next step. Uploading does not deploy the application.
 
 ### 6. Deploy {#studio-deploy}
 

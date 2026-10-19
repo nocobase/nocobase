@@ -349,15 +349,15 @@
           "title": "5. 上传部署包",
           "blocks": [
             {
-              "text": "在 Studio 的「API 密钥」页创建或取得具有该应用上传权限的 Key。替换下面的 <api-key>、Studio 地址和应用 ID，上传刚生成的部署包："
+              "text": "使用第 2 步登录的连接上传部署包。将 <commit-sha> 替换为本次构建对应、Studio 可校验的完整提交 SHA："
             },
             {
               "context": "本地 · app 项目根目录 · Bash",
-              "code": "curl --fail-with-body --silent --show-error \\\n  https://studio.example.com/studio/api/releases/apps/purchase/releases \\\n  -H 'x-api-key: <api-key>' \\\n  -H 'Content-Type: application/gzip' \\\n  -H 'X-Release-Deploy: false' \\\n  --data-binary @storage/exports/dist.tar.gz",
+              "code": "nb-studio --profile studio release upload \\\n  --app purchase \\\n  --sha '<commit-sha>' \\\n  --file storage/exports/dist.tar.gz \\\n  --json",
               "language": "bash"
             },
             {
-              "text": "上传成功后，复制响应中的 data.id，作为下一步的 Release ID。此时只上传，尚未部署。"
+              "text": "上传成功后，复制响应中的 result.data.release.id，作为下一步的 Release ID。上传不会自动部署应用。"
             }
           ]
         },
