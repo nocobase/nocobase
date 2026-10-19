@@ -538,7 +538,6 @@ const issueFields = {
   startDate: date.optional().describe('The planned start date.'),
   dueDate: date.optional().describe('The planned due date.'),
   labelIds: z.array(id).optional().describe('Label identifiers to assign.'),
-  start: z.boolean().optional().describe('Start work after saving the issue.'),
 };
 
 export const CreateIssueBody: z.ZodType<CreateIssueRequest> = z.strictObject({
@@ -548,12 +547,6 @@ export const CreateIssueBody: z.ZodType<CreateIssueRequest> = z.strictObject({
       "The caller's unattached uploads; requires attachment upload permission. Bound before work starts.",
   }),
   ...issueFields,
-  start: z
-    .boolean()
-    .optional()
-    .describe(
-      'Start work after saving. Requires --status in_progress (statusKey: in_progress in JSON); explicit true with backlog or no status is rejected before saving.',
-    ),
   blockedBy: z
     .array(id)
     .optional()
@@ -1352,7 +1345,6 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
         title: z.string(),
         ...issueFieldChanges,
         blockedBy: z.array(issueTarget).optional(),
-        start: z.boolean().optional(),
       }),
     }),
     z.object({
@@ -1369,7 +1361,6 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
           needsYou: z.string().nullable().optional(),
           next: z.string().nullable().optional(),
         }),
-        start: z.boolean().optional(),
       }),
     }),
     z.object({

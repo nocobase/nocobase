@@ -41,7 +41,6 @@ import type { KindRegistry } from '../../kernel/kinds.js';
 import type { IssueValues } from './issue.store.js';
 import { findIssue, parentOf } from './issue.store.js';
 import {
-  BACKLOG_STATUS,
   DEFAULT_START_STATUS,
   START_STATUSES,
 } from '../../../shared/statuses.js';
@@ -291,19 +290,6 @@ export async function resolveCreate(
     throw invalid(
       'INVALID_STATUS',
       `A new issue starts in ${START_STATUSES.join(' or ')}.`,
-    );
-  if (input.start === true && statusKey === BACKLOG_STATUS)
-    throw invalid(
-      'ISSUE_START_REQUIRES_IN_PROGRESS',
-      'An issue must be In progress to start work.',
-      {
-        suggestions: [
-          {
-            message:
-              'To start work when creating an issue, add --status in_progress with --start (statusKey: in_progress in JSON).',
-          },
-        ],
-      },
     );
   const setup = await setupOf(ctx, projectId);
   const projectSetup = input.projectSetup === true;
