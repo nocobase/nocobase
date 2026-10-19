@@ -59,47 +59,53 @@ function RealtimeRefresh(): null {
       const changes = pending;
       full = false;
       pending = [];
-      if (all || changes.length === 0) {
-        await refreshRealtimeQueries(
-          queryClient,
-          { queryKey: pmKeys.all },
-          signal,
-        );
-        return;
-      }
-      const requests: Promise<void>[] = [];
-      const invalidate = (queryKey: readonly unknown[]) => {
-        requests.push(
-          refreshRealtimeQueries(queryClient, { queryKey }, signal),
-        );
-      };
-      if (changes.some((change) => change.domain === 'labels'))
-        invalidate(pmKeys.labels);
-      if (changes.some((change) => change.domain === 'plans'))
-        invalidate(['pm', 'plans']);
-      const issues = changes.filter((change) => change.domain === 'issues');
-      if (issues.length) {
-        invalidate(pmKeys.issues);
-        const named = issues.map(announcedIssueIds);
-        if (named.some((ids) => !ids)) {
-          invalidate(pmKeys.projects);
-          invalidate(['pm', 'issue']);
-        } else {
-          const ids = new Set(named.flatMap((ids) => (ids ? [...ids] : [])));
-          const segments = changedIssueSegments(queryClient, ids);
-          requests.push(
-            refreshRealtimeQueries(
-              queryClient,
-              {
-                queryKey: ['pm', 'issue'],
-                predicate: (query) => isIssueRead(query.queryKey, segments),
-              },
-              signal,
-            ),
+      try {
+        if (all || changes.length === 0) {
+          await refreshRealtimeQueries(
+            queryClient,
+            { queryKey: pmKeys.all },
+            signal,
           );
+          return;
         }
+        const requests: Promise<void>[] = [];
+        const invalidate = (queryKey: readonly unknown[]) => {
+          requests.push(
+            refreshRealtimeQueries(queryClient, { queryKey }, signal),
+          );
+        };
+        if (changes.some((change) => change.domain === 'labels'))
+          invalidate(pmKeys.labels);
+        if (changes.some((change) => change.domain === 'plans'))
+          invalidate(['pm', 'plans']);
+        const issues = changes.filter((change) => change.domain === 'issues');
+        if (issues.length) {
+          invalidate(pmKeys.issues);
+          const named = issues.map(announcedIssueIds);
+          if (named.some((ids) => !ids)) {
+            invalidate(pmKeys.projects);
+            invalidate(['pm', 'issue']);
+          } else {
+            const ids = new Set(named.flatMap((ids) => (ids ? [...ids] : [])));
+            const segments = changedIssueSegments(queryClient, ids);
+            requests.push(
+              refreshRealtimeQueries(
+                queryClient,
+                {
+                  queryKey: ['pm', 'issue'],
+                  predicate: (query) => isIssueRead(query.queryKey, segments),
+                },
+                signal,
+              ),
+            );
+          }
+        }
+        await Promise.all(requests);
+      } catch (error) {
+        // A later event must not replace the snapshots that still need recovery.
+        full = true;
+        throw error;
       }
-      await Promise.all(requests);
     });
     const subscription = realtime.watch<unknown>(PM_REALTIME_TOPIC, {
       onReady: () => {
