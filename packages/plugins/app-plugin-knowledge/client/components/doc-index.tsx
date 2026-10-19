@@ -35,6 +35,7 @@ import {
   useKnowledgeDocIndex,
 } from '../api.js';
 import { useNotify } from '../hooks/use-notify.js';
+import { IndexRefreshError } from './index-refresh-error.js';
 
 /** A section's or a document's state as a badge. */
 function StateBadge({
@@ -81,6 +82,13 @@ export function DocIndexBadge({
     onError: (error) => notify.error(error),
   });
   const data = index.data;
+  if (index.isError)
+    return (
+      <IndexRefreshError
+        fetching={index.isFetching}
+        onRetry={() => void index.refetch()}
+      />
+    );
   if (!data?.enabled || data.state === null) return null;
   if (data.state === 'done')
     return (
@@ -220,9 +228,10 @@ export function ChunksSheet({
               aria-label={t('knowledge.loading')}
             />
           ) : index.isError ? (
-            <p className='text-sm text-muted-foreground'>
-              {t('knowledge.loadFailed')}
-            </p>
+            <IndexRefreshError
+              fetching={index.isFetching}
+              onRetry={() => void index.refetch()}
+            />
           ) : !data || data.chunks.length === 0 ? (
             <p className='text-sm text-muted-foreground'>
               {t('knowledge.chunks.empty')}
