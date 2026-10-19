@@ -16,6 +16,7 @@ import {
 import { resetIndexRefresh } from '../client/index-refresh.js';
 import {
   KNOWLEDGE_TOPIC,
+  type KnowledgeChanged,
   type KnowledgeDocIndex,
   type KnowledgeIndexNotifications,
 } from '../shared/knowledge.js';
@@ -133,12 +134,12 @@ async function setup(
     ready: () => {
       for (const watch of watches) watch.onReady?.();
     },
-    changed: () => {
+    changed: (payload: Partial<KnowledgeChanged> = {}) => {
       for (const watch of watches)
         watch.onEvent?.({
           type: 'event',
           topic: KNOWLEDGE_TOPIC,
-          payload: {},
+          payload,
           publishedAt: new Date().toISOString(),
         });
     },
@@ -328,3 +329,51 @@ it('rebinds after the query cache is replaced during an identity change', async 
   expect(h.request).toHaveBeenCalledTimes(count + 1);
   expect(h.close).toHaveBeenCalledTimes(1);
 });
+
+it('refreshes completed child indexes when an ancestor permission changes', async () => {
+  vi.useFakeTimers();
+  const h = await setup('partial');
+  h.request.mockResolvedValue({
+    data: { ...pending, pending: 0, indexed: 2, state: 'done' },
+    meta: { notifications: 'partial' },
+  });
+  act(h.ready);
+  await act(() => vi.advanceTimersByTimeAsync(200));
+  expect(screen.getByText('2 indexed')).toBeInTheDocument();
+  const count = h.request.mock.calls.length;
+  h.request.mockRejectedValue(
+    Object.assign(new Error('Document not found'), { status: 404 }),
+  );
+  act(() => h.changed({ kind: 'knowledge.changed', docId: 'parent-folder' }));
+  await act(() => vi.advanceTimersByTimeAsync(200));
+  expect(h.request).toHaveBeenCalledTimes(count + 1);
+  expect(screen.getByText('empty')).toBeInTheDocument();
+  expect(h.client.getQueryState(knowledgeKeys.docIndex('one'))?.status).toBe(
+    'error',
+  );
+  await act(() => vi.advanceTimersByTimeAsync(120_000));
+  expect(h.request).toHaveBeenCalledTimes(count + 1);
+});
+
+it.each(['clear', 'remove'] as const)(
+  'releases removed index queries immediately after cache %s without a rerender',
+  async (operation) => {
+    vi.useFakeTimers();
+    const h = await setup('partial');
+    act(() => {
+      if (operation === 'clear') h.client.clear();
+      else
+        h.client.removeQueries({
+          queryKey: knowledgeKeys.docIndex('one'),
+          exact: true,
+        });
+    });
+    expect(h.close).toHaveBeenCalledTimes(1);
+    const lookup = vi.spyOn(h.client.getQueryCache(), 'get');
+    await act(() => vi.advanceTimersByTimeAsync(120_000));
+    expect(lookup).not.toHaveBeenCalled();
+    expect(h.request).toHaveBeenCalledTimes(1);
+    h.view.unmount();
+    expect(h.close).toHaveBeenCalledTimes(2);
+  },
+);

@@ -75,9 +75,19 @@ class IndexRefresh {
     this.unchanged = 0;
   }
 
+  private dispose(): void {
+    const stop = this.stop;
+    this.stop = undefined;
+    stop?.();
+  }
+
   private plan(): void {
     clearTimeout(this.timer);
     this.timer = undefined;
+    if (this.client.getQueryCache().get(this.query.queryHash) !== this.query) {
+      this.dispose();
+      return;
+    }
     const { data, error, fetchStatus } = this.query.state;
     if (
       !this.scheduled ||
@@ -120,7 +130,8 @@ class IndexRefresh {
     if (status === 'error') {
       clearTimeout(this.timer);
       if (
-        (statusOf(error) === 401 || statusOf(error) === 403) &&
+        // Knowledge also hides inaccessible documents behind a 404 response.
+        [401, 403, 404].includes(statusOf(error) ?? 0) &&
         data !== undefined
       )
         this.query.setState({ data: undefined, dataUpdatedAt: 0 });
@@ -152,8 +163,10 @@ class IndexRefresh {
         (signal) => {
           if (
             this.client.getQueryCache().get(this.query.queryHash) !== this.query
-          )
+          ) {
+            this.dispose();
             return;
+          }
           const error = this.query.state.error;
           if (error && !transient(error) && !this.allowRetry) throw error;
           this.allowRetry = false;
@@ -172,13 +185,8 @@ class IndexRefresh {
         },
       );
       const subscription = realtime.watch<KnowledgeChanged>(KNOWLEDGE_TOPIC, {
-        onEvent: ({ payload }) => {
-          if (
-            payload.docId &&
-            this.query.queryKey[1] === 'index' &&
-            payload.docId !== this.query.queryKey[2]
-          )
-            return;
+        onEvent: () => {
+          // A hint can name an ancestor whose permissions affect this document.
           this.reset();
           this.scheduled?.request();
         },
@@ -197,15 +205,18 @@ class IndexRefresh {
         },
       });
       const release = this.client.getQueryCache().subscribe((event) => {
-        if (event.type === 'updated' && event.query === this.query)
-          this.observe();
+        if (event.query !== this.query) return;
+        if (event.type === 'removed') this.dispose();
+        else if (event.type === 'updated') this.observe();
       });
       this.stop = () => {
-        release();
-        subscription.close();
-        this.scheduled?.close();
+        const scheduled = this.scheduled;
         this.scheduled = undefined;
         clearTimeout(this.timer);
+        this.timer = undefined;
+        release();
+        subscription.close();
+        scheduled?.close();
       };
       this.observe();
     }
@@ -216,10 +227,7 @@ class IndexRefresh {
       retained = false;
       this.limits.splice(this.limits.indexOf(maxPollMs), 1);
       this.references -= 1;
-      if (this.references === 0) {
-        this.stop?.();
-        this.stop = undefined;
-      }
+      if (this.references === 0) this.dispose();
     };
   }
 }
