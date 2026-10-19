@@ -121,7 +121,7 @@ export default function MailAccountsPage({
     void Promise.resolve().then(refresh);
   }, [refresh]);
 
-  useRealtimeRefresh(
+  const syncRefresh = useRealtimeRefresh(
     MAIL_REALTIME_TOPIC,
     async (signal) => {
       const activeRuns = Object.values(syncRuns).filter(
@@ -187,7 +187,7 @@ export default function MailAccountsPage({
   const hasRemovingAccounts = accounts.some(
     (account) => account.status === 'removing',
   );
-  useRealtimeRefresh(
+  const removalRefresh = useRealtimeRefresh(
     MAIL_REALTIME_TOPIC,
     async (signal) => {
       const next = await mail.listAccounts();
@@ -425,7 +425,15 @@ export default function MailAccountsPage({
               <Tag aria-hidden='true' className='size-4' />
               {t('dev.labelManagement', { defaultValue: 'Labels' })}
             </Button>
-            <Button disabled={loading} onClick={refresh} variant='outline'>
+            <Button
+              disabled={loading}
+              onClick={() => {
+                refresh();
+                syncRefresh.retry();
+                removalRefresh.retry();
+              }}
+              variant='outline'
+            >
               <RefreshCw
                 aria-hidden='true'
                 className={`size-4 ${loading ? 'animate-spin' : ''}`}

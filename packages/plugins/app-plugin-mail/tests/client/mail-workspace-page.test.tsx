@@ -2470,6 +2470,41 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     }
   });
 
+  it('retries sync progress from the error action after automatic retries are exhausted', async () => {
+    mail.getSyncRun.mockRejectedValue(new Error('Temporary status outage'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const app = await renderPage(<MailWorkspacePage />);
+    const sync = await screen.findByRole('button', {
+      name: 'Sync all mailboxes',
+    });
+    await waitFor(() => expect(sync).toBeEnabled());
+    await user.click(sync);
+    await waitFor(() => expect(mail.startSync).toHaveBeenCalledTimes(1));
+    const subscription = realtime.watch.mock.calls.at(-1)![1]!;
+    vi.useFakeTimers();
+    try {
+      act(() => subscription.onReady?.());
+      await act(async () => vi.advanceTimersByTimeAsync(30_000));
+      expect(mail.getSyncRun).toHaveBeenCalledTimes(4);
+      expect(sync).toBeDisabled();
+      expect(screen.getByText('Temporary status outage')).toBeVisible();
+
+      mail.getSyncRun.mockResolvedValue({
+        ...(await mail.startSync.mock.results[0]!.value),
+        status: 'completed',
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+      await act(async () => vi.advanceTimersByTimeAsync(1_000));
+      expect(sync).toBeEnabled();
+      expect(screen.queryByText('Temporary status outage')).toBeNull();
+      expect(mail.startSync).toHaveBeenCalledTimes(1);
+    } finally {
+      await app.unmount();
+      vi.useRealTimers();
+      log.mockRestore();
+    }
+  });
+
   it('syncs the current all-account scope by default', async () => {
     await renderPage(<MailWorkspacePage />);
 

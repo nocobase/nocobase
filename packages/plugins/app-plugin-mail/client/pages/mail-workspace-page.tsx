@@ -371,7 +371,7 @@ export default function MailWorkspacePage({
     void Promise.resolve().then(() => loadAccounts());
   }, [loadAccounts]);
 
-  useRealtimeRefresh(
+  const syncRefresh = useRealtimeRefresh(
     MAIL_REALTIME_TOPIC,
     async (signal) => {
       if (syncPollInFlightRef.current) return;
@@ -992,6 +992,7 @@ export default function MailWorkspacePage({
               onClick={() => {
                 loadAccounts();
                 setReloadVersion((version) => version + 1);
+                syncRefresh.retry();
               }}
               variant='ghost'
             >

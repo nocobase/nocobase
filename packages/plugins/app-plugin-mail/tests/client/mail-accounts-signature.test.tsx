@@ -126,6 +126,100 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     });
   });
 
+  it('refreshes sync progress after transient errors exhaust automatic retries', async () => {
+    const run = {
+      id: 'run-1',
+      accountId: 'account-1',
+      status: 'running',
+      phase: 'incremental',
+      processedMessages: 0,
+      processedPages: 0,
+    };
+    mail.startSync.mockResolvedValue(run);
+    mail.getSyncRun.mockRejectedValue(new Error('Temporary status outage'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const app = await renderPage(<MailAccountsPage />);
+    const sync = await screen.findByRole('button', { name: 'Sync' });
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(sync);
+      await act(async () => {});
+      act(() => {
+        for (const subscription of subscriptions) subscription.onReady?.();
+      });
+      await act(async () => vi.advanceTimersByTimeAsync(30_000));
+      expect(mail.getSyncRun).toHaveBeenCalledTimes(4);
+      expect(sync).toBeDisabled();
+      expect(screen.getByText('Temporary status outage')).toBeVisible();
+
+      mail.getSyncRun.mockResolvedValue({ ...run, status: 'completed' });
+      act(() => {
+        for (const subscription of subscriptions)
+          subscription.onEvent?.({
+            type: 'event',
+            topic: 'mail',
+            payload: { kind: 'mail.changed' },
+            publishedAt: new Date().toISOString(),
+          });
+      });
+      await act(async () => vi.advanceTimersByTimeAsync(120_000));
+      expect(mail.getSyncRun).toHaveBeenCalledTimes(4);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+      await act(async () => vi.advanceTimersByTimeAsync(1_000));
+      expect(screen.getByRole('button', { name: 'Sync' })).toBeEnabled();
+      expect(screen.queryByText('Temporary status outage')).toBeNull();
+      expect(mail.startSync).toHaveBeenCalledTimes(1);
+    } finally {
+      await app.unmount();
+      vi.useRealTimers();
+      log.mockRestore();
+    }
+  });
+
+  it('resumes removal notifications after manually refreshing an exhausted reader', async () => {
+    const accounts = (await mail.listAccounts()).map(
+      (account: { id: string }) => ({ ...account, status: 'removing' }),
+    );
+    mail.listAccounts.mockResolvedValue(accounts);
+    const app = await renderPage(<MailAccountsPage />);
+    await screen.findByRole('button', { name: 'Removing…' });
+    mail.listAccounts
+      .mockClear()
+      .mockRejectedValue(new Error('Temporary account outage'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.useFakeTimers();
+    try {
+      act(() => {
+        for (const subscription of subscriptions) subscription.onReady?.();
+      });
+      await act(async () => vi.advanceTimersByTimeAsync(30_000));
+      expect(mail.listAccounts).toHaveBeenCalledTimes(4);
+
+      mail.listAccounts.mockResolvedValue(accounts);
+      fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+      await act(async () => vi.advanceTimersByTimeAsync(1_000));
+      expect(screen.getByRole('button', { name: 'Removing…' })).toBeDisabled();
+
+      mail.listAccounts.mockResolvedValue([]);
+      act(() => {
+        for (const subscription of subscriptions)
+          subscription.onEvent?.({
+            type: 'event',
+            topic: 'mail',
+            payload: { kind: 'mail.changed' },
+            publishedAt: new Date().toISOString(),
+          });
+      });
+      await act(async () => vi.advanceTimersByTimeAsync(1_000));
+      expect(screen.getByText('No accounts connected')).toBeVisible();
+    } finally {
+      await app.unmount();
+      vi.useRealTimers();
+      log.mockRestore();
+    }
+  });
+
   it('shows durable removal failure, disables account actions, and refreshes after the removal notification', async () => {
     const accounts = await mail.listAccounts();
     mail.listAccounts.mockResolvedValue(
