@@ -125,7 +125,7 @@ curl --fail --silent --show-error \
   https://purchase.example.com/main/api/healthz
 ```
 
-确认 status 的 result.health.ok 为 true、result.pending 为 null，健康接口返回 ok: true，再打开应用验证登录。
+确认 status 的 result.health.ok 为 true、result.pending 为 null，健康接口返回 ok: true，再打开应用验证登录。同时检查页面刷新、登录权限和一项主要业务操作；使用文件存储时检查上传与下载，涉及存储变更时验证重启后的持久化。
 
 ### 更新 PM2 应用 {#pm2-update}
 
@@ -250,7 +250,7 @@ curl --fail --silent --show-error \
   https://purchase.example.com/main/api/healthz
 ```
 
-等待容器状态变为 healthy，确认健康接口返回 ok: true，再打开应用验证登录。需要排查时执行 docker logs --tail 100 purchase。
+等待容器状态变为 healthy，确认健康接口返回 ok: true，再打开应用验证登录。需要排查时执行 docker logs --tail 100 purchase。同时检查页面刷新、登录权限和一项主要业务操作；涉及持久化配置变更时，确认容器重建后数据库和上传文件仍可用。
 
 ### 更新 Docker 应用 {#docker-update}
 
@@ -280,36 +280,36 @@ docker rm purchase
 
 ## 部署到 NocoBase Studio {#studio}
 
-将本地应用部署到已有的 NocoBase Studio：安装 CLI、登录 Studio、选择应用、本地打包，再通过 nb-studio 上传、部署和验证。以下以支持部署包的进程内环境、已关联源码仓库的应用为例。
+将本地应用部署到已有的 NocoBase Studio，由 Studio 管理应用的配置、运行和发布。下面的手动步骤采用支持部署包的进程内环境，且 Studio 能确定应用关联的源码仓库。Studio 管理地址与部署后应用的访问地址不同。
 
 ### 让 Agent 协助部署到 Studio {#studio-skill}
 
-首次使用时，登录目标 Studio，在头像菜单中打开「在 agent 中使用 Studio」，把完整配置指令交给本地 Coding Agent。Agent 会安装 CLI，并引导你在浏览器中核对验证码、确认登录。也可以按下方步骤手动准备。
+在本地应用项目目录中打开 Coding Agent，使用项目中的 nocobase-deployment Skill。该 Skill 已包含部署到已有 Studio 的流程；Agent 会读取项目的构建说明，并查询目标 Studio 的 CLI 命令说明。
 
-完成连接后，在应用项目目录发送以下需求，使用你实际登录的 profile、应用和环境。Agent 核对应用关联的仓库与提交，完成本地构建，再使用 nb-studio 上传、部署和验证。
+首次连接时，在目标 Studio 的头像菜单中打开「在 agent 中使用 Studio」，把完整配置指令交给 Agent，并由你在浏览器中核对验证码、批准登录。已有 CLI 和登录连接时直接复用，确认连接的是目标 Studio。
+
+替换下面的 Studio 地址、应用 ID 和环境 ID 后发送。首次部署的数据来源、更新时需要保留的数据，以及外部数据库等特殊要求，可一并说明。
 
 **发送给本地 Coding Agent**
 
 ```text
-使用 nb-studio CLI，协助我将当前应用部署到 NocoBase Studio。
+使用 nocobase-deployment Skill，将当前项目部署到已有的 NocoBase Studio。
+
 Studio 地址：https://studio.example.com/studio
-CLI profile：studio
 应用 ID：purchase
 环境 ID：preview
 
-先确认 CLI 登录身份、目标应用和部署环境；应用不存在时创建。
-确认 Studio 能从目标应用确定源码仓库，待部署改动已提交并推送，工作区干净。
-记录构建所用的完整提交 SHA，按目标平台构建 storage/exports/dist.tar.gz。
-使用 release upload，明确传入 --app、--sha 和 --file 上传部署包。
-从 result.data.release.id 取得 Release ID，检查并补齐必填变量。
-使用 app deploy 部署该 Release；受保护环境改为提交部署申请。
-检查部署状态、应用状态和错误日志，验证访问和登录。
-返回应用地址、Release ID 和验证结果；待审批时明确标注。
+复用对应 Studio 的 CLI 连接，核对当前项目、目标应用和环境。
+按目标环境构建部署包，使用 nb-studio 上传并部署本次构建的版本。
+更新已有应用时保留现有配置、数据库和上传文件，先确认备份与恢复安排。
+先从项目和 Studio 查询所需信息；数据来源、必填配置或 CLI 上传条件仍不明确时，列出需要我补充的内容。
+需要审批时，提交部署申请并返回审批链接和当前状态。
+实际部署成功后，验证应用访问、登录和主要功能，返回应用地址、部署版本和验证结果，注明尚未完成的检查。
 ```
 
 ### 1. 安装 CLI {#studio-cli}
 
-以下命令在本地电脑的 Bash 终端执行，适用于 macOS、Linux 或 Windows WSL。在浏览器中登录目标 Studio，打开头像菜单中的「在 agent 中使用 Studio」，复制配置指令里的 CLI 安装命令，在本地终端执行。安装命令带有 30 分钟内有效的下载令牌，过期后重新生成。下面仅展示命令格式，请使用自己 Studio 生成的完整命令：
+以下命令在本地电脑的 Bash 终端执行，适用于 macOS、Linux 或 Windows WSL。已能运行 nb-studio 时可直接进入登录步骤。首次安装时，登录目标 Studio，在头像菜单中打开「在 agent 中使用 Studio」，复制其中的 CLI 安装命令。下载令牌有效期为 30 分钟；下面仅展示格式，请使用自己 Studio 生成的完整命令。
 
 **本地 · Bash 终端**
 
@@ -331,7 +331,7 @@ nb-studio --version
 
 ### 2. 登录 Studio {#studio-login}
 
-以下以 profile studio 为例，直接把命令中的地址和 profile 换成自己的值。Studio 地址应包含实际部署路径（如 /studio）。profile 是这个实例在本地的名称；连接多个实例时，分别使用不同的 profile。
+以下使用 profile studio 保存这个实例的连接；连接多个 Studio 时，为每个实例使用不同的 profile。替换示例地址，并保留实际部署路径（如 /studio）。已有有效连接时，直接用 whoami 核对地址、身份和权限；仅在首次连接或登录失效时执行 login。
 
 **本地 · Bash 终端**
 
@@ -341,20 +341,23 @@ nb-studio --profile studio login \
 nb-studio --profile studio whoami --json
 ```
 
-login 会显示登录地址和验证码。打开该地址，在浏览器中核对并批准，然后用 whoami 确认连接的实例、身份和权限。
+login 会显示登录地址和验证码，由你在浏览器中核对并批准。CLI 的业务命令由目标 Studio 提供；遇到命令或参数差异时，先通过 nb-studio --profile studio docs 查看该实例的说明。
 
 ### 3. 选择应用 {#studio-app}
 
-以下以应用 purchase、环境 preview 为例，替换为自己的应用和环境 ID。先查询可用环境与目标应用：
+以下以应用 purchase、环境 preview 为例，替换为自己的 ID。先查询环境和应用，确认现有应用所属的环境与部署目标一致：
 
 **本地 · Bash 终端**
 
 ```bash
 nb-studio --profile studio env list --json
+nb-studio --profile studio env get preview --json
 nb-studio --profile studio app get purchase --json
 ```
 
-确认目标环境支持部署包，账号有查看、上传、配置、部署和查看日志的权限。仅当应用不存在时，使用环境列表中实际存在的 ID 创建应用：
+确认环境接受部署包，并了解目标系统、CPU 架构、Node.js 版本及审批要求。接收镜像的环境需要使用镜像发布流程。Studio 或 App Host 本身运行在 Docker 中，并不代表环境只能接收镜像。
+
+首次部署时，仅在确认应用不存在、环境正确且账号有创建权限后创建应用：
 
 **本地 · Bash 终端**
 
@@ -363,27 +366,48 @@ nb-studio --profile studio app create purchase \
   --name "Purchase" --env preview --json
 ```
 
-本例由 Studio 从目标应用确定源码仓库。确认应用已在 Studio 中关联仓库，Studio 能访问该仓库并校验提交；新建应用后也需完成这一关联。
+检查应用已关联的源码仓库：
+
+**本地 · Bash 终端**
+
+```bash
+nb-studio --profile studio build repo list --app-id purchase --json
+```
+
+后续 CLI 上传要求 Studio 能确定仓库并校验提交。新建应用不会自动建立仓库关联；列表为空时也可能是当前身份看不到关联项目，需先核实。未接入仓库的部署包需使用 Skill 中的网页或应用上传 API 流程，不适用下面的 CLI 上传示例。
 
 ### 4. 本地打包 {#studio-build}
 
-进入应用项目根目录，先确认待部署改动已提交并推送。git status --short 应无输出，记录 git rev-parse HEAD 返回的完整提交 SHA，再安装依赖并构建。下面以 Linux x64、Node.js 24 为目标；如果 Studio 的运行平台或 Node.js 版本不同，调整对应参数。
+在应用项目根目录，按项目声明的 pnpm 版本和构建说明操作。检查工作区改动，确保本次构建的源码对应已推送且 Studio 可校验的提交，并记录完整 SHA。更新已有应用前，先检查迁移与配置变化，完成数据库和文件备份并确认恢复方式。
 
 **本地 · app 项目根目录 · Bash**
 
 ```bash
 git status --short
 git rev-parse HEAD
-
 pnpm install --frozen-lockfile
-pnpm build --target linux-x64 --node-version 24 --tar
 ```
 
-部署包生成在 storage/exports/dist.tar.gz，包含代码、生产依赖和配置模板。本地数据库、上传文件等业务数据需另行迁移。
+先运行项目定义的类型检查、测试和 lint，再按目标平台构建。下面以 Linux x64、Node.js 24 为例，实际参数以目标环境为准：
+
+**本地 · app 项目根目录 · Bash**
+
+```bash
+pnpm build --target linux-x64 --node-version 24 --tar
+tar -tzf storage/exports/dist.tar.gz | head -30
+```
+
+部署包位于 storage/exports/dist.tar.gz，包含 dist/ 和 config.example.yml。核对应用名称、版本、目标平台和包的 SHA256。包不包含本地数据库、密钥或上传文件；首次使用新数据库和迁移已有业务数据应分别处理。
 
 ### 5. 上传部署包 {#studio-upload}
 
-使用已登录的 profile，通过 nb-studio release upload 上传部署包，Studio 会使用目标应用关联的仓库。将 --sha 后的占位内容换成上一步构建所用的完整提交 SHA。该提交必须已推送到远程仓库，并能由 Studio 校验。
+使用已登录的 profile 上传，仓库由 Studio 根据目标应用的关联确定。将 --sha 后的占位内容替换为本次构建所用的完整提交 SHA。可以先读取目标 Studio 提供的上传命令说明：
+
+**本地 · app 项目根目录 · Bash**
+
+```bash
+nb-studio --profile studio docs release upload
+```
 
 **本地 · app 项目根目录 · Bash**
 
@@ -395,9 +419,9 @@ nb-studio --profile studio release upload \
   --json
 ```
 
-CLI 会自动申请上传凭证并上传文件。成功后，从返回 JSON 的 result.data.release.id 取得 Release ID，下一步使用这个 ID 部署。上传本身不会启动应用。若 release 为 null 或 superseded 为 true，说明构建已被更新的提交取代，应重新构建上传。
+CLI 会申请上传凭证并传输文件。确认命令成功且 result.data.release 有值，记录 result.data.release.id，后续配置检查和部署均使用这个 Release ID。上传完成不会自动启动应用；若 superseded 为 true，应基于最新目标提交重新构建。
 
-需要核对上传结果时，查询应用的版本列表：
+上传响应不确定时，先查询版本列表，核对记录的源码提交与部署包校验和，再决定是否重试：
 
 **本地 · app 项目根目录 · Bash**
 
@@ -407,7 +431,7 @@ nb-studio --profile studio release list purchase --json
 
 ### 6. 部署 {#studio-deploy}
 
-将下方各条命令中 --release 后的占位内容替换为上一步确认的 Release ID，再检查这个版本需要的变量。存在 missing: true 时，先在 Studio 应用的「变量」页补齐：
+将命令中的 Release ID 替换为本次上传的版本。先查看该版本的必填配置，沿用已有的应用或环境配置；存在 missing: true 时，通过 Studio 的「变量」页补齐能确定的值，无法确定的配置需由应用负责人提供。
 
 **本地 · app 项目根目录 · Bash**
 
@@ -416,7 +440,7 @@ nb-studio --profile studio app env list purchase \
   --release '<release-id>' --json
 ```
 
-非受保护环境执行下面的命令，部署刚才上传得到的 Release：
+保留已有数据库、文件存储和密钥。首次管理员配置只用于初始化账号，不会重置已有账号密码；示例数据是否启用按应用的实际用途设置。非受保护环境部署本次上传的版本：
 
 **本地 · app 项目根目录 · Bash**
 
@@ -426,7 +450,7 @@ nb-studio --profile studio app deploy purchase \
   --wait true --json
 ```
 
---wait true 最多等待约 100 秒；返回时仍在排队或部署中，需要继续检查状态。受保护环境使用下面的申请命令，由审批人批准后部署：
+--wait true 最多等待约 100 秒。返回时仍在排队或部署中，继续查询本次部署状态；响应不确定时先查部署记录。受保护环境使用下面的申请命令，等待审批人批准：
 
 **本地 · app 项目根目录 · Bash**
 
@@ -435,22 +459,35 @@ nb-studio --profile studio deploy request purchase \
   --release '<release-id>' --json
 ```
 
+记录申请 ID、审批链接和当前状态。待审批表示部署尚未完成，批准并实际部署成功后再验证新版本。
+
 ### 7. 检查状态和错误日志 {#studio-verify}
+
+核对本次 Release 对应的部署记录，确认状态为 succeeded，再检查应用状态和运行日志：
 
 **本地 · app 项目根目录 · Bash**
 
 ```bash
-nb-studio --profile studio app get purchase --json
 nb-studio --profile studio deploy list purchase --limit 5 --json
+nb-studio --profile studio app get purchase --json
 nb-studio --profile studio app logs purchase --level error --json
 ```
 
-确认本次部署状态为 succeeded，核对应用的 currentVersion 和 runtime.state。打开 app get 返回的 result.data.url，验证页面、登录和主要业务操作。首次生成的管理员账号可在 Studio 应用「概览」中的「初始管理员」查看并保存。
+将列表中本次部署的 ID 填入下面的命令，可以查看准确状态和部署日志。deploy logs 是发布过程的日志，app logs 是应用运行日志：
 
-部署失败时，在 Studio 的「部署记录」中查看本次部署日志；app logs 查询的是应用运行日志。没有错误日志并不代表部署成功，需同时检查部署状态和实际访问。
+**本地 · app 项目根目录 · Bash**
+
+```bash
+nb-studio --profile studio deploy get purchase '<deployment-id>' --json
+nb-studio --profile studio deploy logs purchase '<deployment-id>' --json
+```
+
+确认应用的 currentVersion 对应本次 Release 的版本，runtime.state 为 running。使用 app get 返回的 result.data.url 作为应用访问地址，在其路径下检查 /api/healthz 返回的 ok 和应用身份，再验证页面刷新、静态资源、登录权限及一项主要业务操作。需要文件存储时，还应检查上传和下载。
+
+首次生成的管理员账号由你在 Studio 应用「概览」的「初始管理员」中查看。记录访问地址、源码提交、Release ID、Deployment ID 和检查结果。涉及存储变更时，重启该应用验证数据与文件仍可用；未完成的验证需明确标注。
 
 ### 更新 Studio 中的应用 {#studio-update}
 
-更新前备份数据库和上传文件。将代码改动提交并推送，按新提交重新打包、上传，使用这一次返回的 Release ID 部署并重复检查。只修改变量时，可重新部署当前 Release；更新代码后需上传新包。
+更新前检查迁移与配置差异，备份该应用的数据库和上传文件，并确认恢复方式。保留原有配置、密钥和存储，重新构建、上传，再部署新的 Release ID。只修改变量时可重新部署当前 Release。切换回旧版本不会自动恢复数据库或业务数据，回退前需确认兼容性。
 
 部署到多个 Studio 实例时，为每个实例设置各自的地址和 profile，分别上传、部署、验证。Release ID 属于上传目标实例，不能把一个实例返回的 ID 用在另一个实例。Studio 地址改变后，需要使用新地址重新登录。

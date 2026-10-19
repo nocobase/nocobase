@@ -125,7 +125,7 @@ curl --fail --silent --show-error \
   https://purchase.example.com/main/api/healthz
 ```
 
-Confirm that status reports result.health.ok as true and result.pending as null, and that the health endpoint returns ok: true. Open the application and verify sign-in.
+Confirm that status reports result.health.ok as true and result.pending as null, and that the health endpoint returns ok: true. Open the application and verify sign-in. Also check page refresh, sign-in and permissions, and a main business operation. Verify uploads and downloads when file storage is used, and persistence after restart when storage changes.
 
 ### Update the PM2 application {#pm2-update}
 
@@ -250,7 +250,7 @@ curl --fail --silent --show-error \
   https://purchase.example.com/main/api/healthz
 ```
 
-Wait for the container to become healthy, confirm that the health endpoint returns ok: true, and verify sign-in in the application. To investigate failures, run docker logs --tail 100 purchase.
+Wait for the container to become healthy, confirm that the health endpoint returns ok: true, and verify sign-in in the application. To investigate failures, run docker logs --tail 100 purchase. Also check page refresh, sign-in and permissions, and a main business operation. For persistence configuration changes, confirm that the database and uploaded files survive container recreation.
 
 ### Update the Docker application {#docker-update}
 
@@ -280,39 +280,36 @@ Repeat the start command with release-002, keeping the same configuration, data 
 
 ## Deploy to NocoBase Studio {#studio}
 
-Deploy your local application to an existing NocoBase Studio instance: install the CLI, sign in, select the application, build locally, then upload, deploy, and verify with nb-studio. This example uses an in-process environment that accepts archives and an application already associated with its source repository in Studio.
+Deploy your local application to an existing NocoBase Studio instance, which manages its configuration, runtime, and releases. The manual steps below use an in-process environment that accepts archives and an application whose source repository Studio can determine. The Studio management URL and the deployed application’s public URL are different.
 
 ### Deploy to Studio with an Agent {#studio-skill}
 
-For first-time setup, sign in to the target Studio instance, open Use Studio in your agent from the avatar menu, and send the complete setup instructions to your local coding agent. It installs the CLI and guides you through checking the verification code and approving sign-in in your browser. You can also prepare the CLI manually using the steps below.
+Open your coding agent in the local application project directory and use the project’s nocobase-deployment Skill. It includes deployment to an existing Studio instance. The agent reads the project’s build instructions and the command documentation provided by the target Studio.
 
-Once connected, send the request below from your application project directory using your actual signed-in profile, application, and environment. The agent checks the application’s associated repository and commit, builds locally, then uploads, deploys, and verifies with nb-studio.
+For the first connection, open Use Studio in your agent from the target Studio’s avatar menu and give the agent the complete setup instructions. Check the verification code and approve sign-in yourself in the browser. Reuse an existing CLI installation and authenticated connection after confirming that it points to the target Studio.
+
+Replace the Studio URL, application ID, and environment ID below before sending. Include any requirements for initial data, data to preserve during an update, or external services such as a database.
 
 **Send to your local coding agent**
 
 ```text
-Use the nb-studio CLI to help me deploy this application to Studio.
+Use the nocobase-deployment Skill to deploy the current project to an existing NocoBase Studio instance.
+
 Studio URL: https://studio.example.com/studio
-CLI profile: studio
 Application ID: purchase
 Environment ID: preview
 
-Check the CLI identity, application, and deployment environment first.
-Create the application if it does not exist.
-Confirm that Studio can determine the source repository from the target application, the changes are committed and pushed, and the working tree is clean.
-Record the full commit SHA and build storage/exports/dist.tar.gz for the target platform.
-Upload with release upload, passing --app, --sha, and --file explicitly.
-Take the release ID from result.data.release.id.
-Check required variables and resolve missing values before deployment.
-Use app deploy for that release, or request deployment if protected.
-Check deployment status, application status, error logs, access, and sign-in.
-Return the application URL, release ID, and verification results.
-Clearly state when approval is still pending.
+Reuse the CLI connection for this Studio and verify the current project, target application, and environment.
+Build for the target runtime, then use nb-studio to upload and deploy that build.
+For an update, preserve existing configuration, the database, and uploaded files, and establish the backup and restore plan first.
+Read the project and Studio for the information you need. If the data source, required configuration, or CLI upload prerequisites remain unclear, list what you need from me.
+If approval is required, submit a deployment request and return its approval link and current status.
+After deployment succeeds, verify application access, sign-in, and main workflows. Return the application URL, deployed version, and verification results, noting any incomplete checks.
 ```
 
 ### 1. Install the CLI {#studio-cli}
 
-Run the following commands in a Bash terminal on your local computer, using macOS, Linux, or Windows WSL. Sign in to the target Studio instance in your browser. Open Use Studio in your agent from the avatar menu, copy the CLI installation command from the setup instructions, and run it locally. The command includes a download token valid for 30 minutes; generate a new one if it expires. The example below shows the format only. Use the complete command generated by your Studio instance:
+Run the commands below in a Bash terminal on your local computer, using macOS, Linux, or Windows WSL. If nb-studio already runs, continue to sign-in. Otherwise, sign in to the target Studio, open Use Studio in your agent from the avatar menu, and copy its CLI installation command. The download token is valid for 30 minutes. The example below shows the format only; use the complete command generated by your Studio.
 
 **Local · Bash terminal**
 
@@ -334,7 +331,7 @@ If a new terminal cannot find nb-studio, add the PATH setting above to your shel
 
 ### 2. Sign in to Studio {#studio-login}
 
-This example uses the studio profile. Replace the server URL and profile directly in the commands. The Studio URL must include its deployment path, such as /studio. A profile is the local name for this instance; use a different profile for each instance.
+The examples use the studio profile to store this instance’s connection. Use a different profile for each Studio instance. Replace the URL while preserving its deployment path, such as /studio. For an existing authenticated connection, use whoami to check the server, identity, and permissions. Run login only for the first connection or after the session expires.
 
 **Local · Bash terminal**
 
@@ -344,20 +341,23 @@ nb-studio --profile studio login \
 nb-studio --profile studio whoami --json
 ```
 
-login displays a sign-in URL and verification code. Open the URL, check and approve the code in your browser, then use whoami to confirm the instance, identity, and permissions.
+login displays a sign-in URL and verification code for you to check and approve in your browser. Business commands come from the target Studio instance. If a command or flag differs, consult that instance’s documentation with nb-studio --profile studio docs.
 
 ### 3. Select the application {#studio-app}
 
-This example uses the purchase application and preview environment. Replace them with your application and environment IDs. Start by checking the available environments and target application:
+This example uses the purchase application and preview environment; replace them with your IDs. Inspect both and confirm that any existing application belongs to the intended deployment environment:
 
 **Local · Bash terminal**
 
 ```bash
 nb-studio --profile studio env list --json
+nb-studio --profile studio env get preview --json
 nb-studio --profile studio app get purchase --json
 ```
 
-Confirm that the target environment accepts archives and that your account can view, upload, configure, deploy, and read application logs. Only if the application does not exist, create it using an ID from the environment list:
+Confirm that the environment accepts archives and identify its operating system, CPU architecture, Node.js version, and approval requirements. An environment that accepts images needs the image release workflow. Studio or App Host running inside Docker does not by itself mean that the environment requires an image.
+
+For a first deployment, create the application only after confirming that it does not exist, the environment is correct, and your account has permission to create it:
 
 **Local · Bash terminal**
 
@@ -366,27 +366,48 @@ nb-studio --profile studio app create purchase \
   --name "Purchase" --env preview --json
 ```
 
-In this example, Studio determines the source repository from the target application. Confirm that the application is associated with its repository in Studio and that Studio can access it to verify commits. Newly created applications also need this association.
+Check the source repositories associated with the application:
+
+**Local · Bash terminal**
+
+```bash
+nb-studio --profile studio build repo list --app-id purchase --json
+```
+
+The CLI upload below requires Studio to determine the repository and verify the commit. Creating an application does not establish that association. An empty list can also mean that the current identity cannot see the associated project; check this before continuing. Archives without a connected repository use the web or application upload API workflow described in the Skill, rather than the CLI upload example below.
 
 ### 4. Build locally {#studio-build}
 
-From the application project root, confirm that the changes to deploy are committed and pushed. git status --short should produce no output. Record the full commit SHA returned by git rev-parse HEAD, then install dependencies and build. This example targets Linux x64 with Node.js 24. Adjust these options if the Studio environment uses a different platform or Node.js version.
+Work from the application project root, following its declared pnpm version and build instructions. Review working-tree changes and ensure that the source being built matches a pushed commit that Studio can verify; record its full SHA. Before updating an existing application, review migration and configuration changes, back up the database and files, and confirm how to restore them.
 
 **Local · app project root · Bash**
 
 ```bash
 git status --short
 git rev-parse HEAD
-
 pnpm install --frozen-lockfile
-pnpm build --target linux-x64 --node-version 24 --tar
 ```
 
-The archive is generated at storage/exports/dist.tar.gz and contains code, production dependencies, and a configuration template. Migrate your local database, uploaded files, and other business data separately.
+Run the type checks, tests, and lint scripts that the project defines before building for the target platform. This example uses Linux x64 and Node.js 24; use the settings required by the actual environment:
+
+**Local · app project root · Bash**
+
+```bash
+pnpm build --target linux-x64 --node-version 24 --tar
+tar -tzf storage/exports/dist.tar.gz | head -30
+```
+
+The archive is storage/exports/dist.tar.gz and contains dist/ and config.example.yml. Check the application name, version, target platform, and archive SHA256. It does not carry the local database, secrets, or uploaded files. Starting with a new database and migrating existing business data are separate operations.
 
 ### 5. Upload the archive {#studio-upload}
 
-Use nb-studio release upload with your signed-in profile to upload the archive. Studio uses the repository associated with the target application. Replace the placeholder after --sha with the full commit SHA used for the build above. The commit must be pushed to the remote repository and verifiable by Studio.
+Upload with your signed-in profile; Studio determines the repository from the target application’s association. Replace the placeholder after --sha with the full commit SHA used for this build. Start by reading the upload command documentation from the target Studio:
+
+**Local · app project root · Bash**
+
+```bash
+nb-studio --profile studio docs release upload
+```
 
 **Local · app project root · Bash**
 
@@ -398,9 +419,9 @@ nb-studio --profile studio release upload \
   --json
 ```
 
-The CLI obtains an upload ticket and uploads the file automatically. After success, take the release ID from result.data.release.id in the JSON response and use it in the next step. Uploading alone does not start the application. If release is null or superseded is true, a newer commit has superseded the build; build and upload again.
+The CLI obtains an upload ticket and transfers the file. Confirm that the command succeeded and result.data.release is present, then record result.data.release.id. Use that release ID for both configuration checks and deployment. Uploading does not start the application. If superseded is true, rebuild from the latest intended commit.
 
-To check the uploaded release, list the application’s releases:
+If the upload response is uncertain, list the releases and compare their source revision and archive checksum before deciding whether to retry:
 
 **Local · app project root · Bash**
 
@@ -410,7 +431,7 @@ nb-studio --profile studio release list purchase --json
 
 ### 6. Deploy {#studio-deploy}
 
-In each command below, replace the placeholder after --release with the release ID you identified above. Check its required variables first. If any report missing: true, set them in the application’s Variables tab in Studio before deploying:
+Replace the release ID in the commands with the version uploaded in this run. Check its required configuration and reuse existing application or environment values. Resolve missing: true entries through the Variables page in Studio. Values that cannot be determined need to come from the application owner.
 
 **Local · app project root · Bash**
 
@@ -419,7 +440,7 @@ nb-studio --profile studio app env list purchase \
   --release '<release-id>' --json
 ```
 
-For an unprotected environment, run this command to deploy the release you just uploaded:
+Preserve the existing database, file storage, and secrets. Initial administrator settings initialize an account; they do not reset an existing account’s password. Enable sample data only when appropriate for the application. For an unprotected environment, deploy the uploaded version:
 
 **Local · app project root · Bash**
 
@@ -429,7 +450,7 @@ nb-studio --profile studio app deploy purchase \
   --wait true --json
 ```
 
---wait true waits for up to about 100 seconds. If the response still shows queued or deploying, continue checking its status. For a protected environment, use the request command below and wait for an approver to authorize deployment:
+--wait true waits for up to about 100 seconds. If the deployment remains queued or deploying, continue checking that deployment. Inspect deployment records before retrying an uncertain response. For a protected environment, submit the request below and wait for an approver:
 
 **Local · app project root · Bash**
 
@@ -438,22 +459,35 @@ nb-studio --profile studio deploy request purchase \
   --release '<release-id>' --json
 ```
 
+Record the request ID, approval link, and current status. Pending approval means deployment is incomplete; verify the new version after approval and successful deployment.
+
 ### 7. Check status and error logs {#studio-verify}
+
+Find the deployment record for this release and confirm that its status is succeeded, then check the application state and runtime logs:
 
 **Local · app project root · Bash**
 
 ```bash
-nb-studio --profile studio app get purchase --json
 nb-studio --profile studio deploy list purchase --limit 5 --json
+nb-studio --profile studio app get purchase --json
 nb-studio --profile studio app logs purchase --level error --json
 ```
 
-Confirm that this deployment has status succeeded, and check the application’s currentVersion and runtime.state. Open result.data.url from app get and verify the page, sign-in, and main workflows. If Studio generated initial administrator credentials, view and save them under Initial administrator on the application’s Overview tab.
+Use the deployment ID returned by deploy list to inspect its exact status and deployment logs. deploy logs covers the deployment process; app logs covers the running application:
 
-If deployment fails, inspect its deployment logs in Studio. app logs reads application runtime logs. An empty error log does not establish success; also check deployment status and access the application.
+**Local · app project root · Bash**
+
+```bash
+nb-studio --profile studio deploy get purchase '<deployment-id>' --json
+nb-studio --profile studio deploy logs purchase '<deployment-id>' --json
+```
+
+Confirm that currentVersion matches the uploaded release’s version and runtime.state is running. Use result.data.url from app get as the application’s public URL. Check ok and the application identity at /api/healthz under that URL’s base path, then verify page refresh, static assets, sign-in and permissions, and a main business operation. Check uploads and downloads when the application uses file storage.
+
+View any generated initial administrator credentials yourself under Initial administrator on the application’s Overview tab in Studio. Record the public URL, source revision, release ID, deployment ID, and check results. For storage changes, restart that application and verify that records and files remain available. Clearly mark any verification that is incomplete.
 
 ### Update an application on Studio {#studio-update}
 
-Back up the database and uploaded files before updating. Commit and push the code changes, then build and upload the new commit. Deploy using the release ID returned by this upload and repeat verification. To apply variable changes alone, redeploy the current release. Code changes require a new archive.
+Before an update, review migration and configuration changes, back up this application’s database and uploaded files, and confirm the restore procedure. Preserve its configuration, secrets, and storage, then build, upload, and deploy the new release ID. Variable-only changes can redeploy the current release. Switching to an older release does not restore the database or business data; check compatibility before rolling back.
 
 When deploying to several Studio instances, set each instance’s address and profile, then upload, deploy, and verify separately. Release IDs belong to the instance receiving the upload and cannot be reused on another instance. Sign in again with the new URL if a Studio address changes.
