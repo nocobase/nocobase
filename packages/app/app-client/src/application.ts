@@ -1,7 +1,4 @@
-import {
-  applyDocumentLocale,
-  createRefineI18nProvider,
-} from '@nocobase/i18n/client';
+import { applyDocumentLocale } from '@nocobase/i18n/client';
 import { createApiClient, type ApiClient } from '@nocobase/api-client';
 import {
   createRealtimeClient,
@@ -12,27 +9,14 @@ import {
   ServiceContainer,
   ServiceProvider,
   ServiceProviderRegistry,
-  type ServiceProviderLifecycle,
   type ServiceResolver,
   type ServiceToken,
 } from '@nocobase/service-provider';
 
 import { resolveAppUrl } from './client.js';
-import type {
-  AppClientConfig,
-  AppClientRefineConfig,
-  AppClientRenderConfig,
-} from './config.js';
-import type {
-  AppClientRefineRegistry,
-  AppClientRegisteredServiceProvider,
-  ClientServiceProviderContext,
-} from './plugins.js';
+import type { AppClientConfig, AppClientRenderConfig } from './config.js';
+import type { AppClientRegisteredServiceProvider } from './plugins.js';
 import type { AppRuntimeContext } from './runtime/index.js';
-import {
-  createRefineConfigCollector,
-  type AppClientRefineConfigCollector,
-} from './runtime/refine-config-collector.js';
 
 export const apiClientToken: ServiceToken<ApiClient> =
   createServiceToken<ApiClient>('@nocobase/app-client/api-client');
@@ -114,62 +98,13 @@ class CoreClientServiceProvider extends ServiceProvider<ClientApplication> {
   }
 }
 
-class ContextualServiceProvider implements ServiceProviderLifecycle {
-  public readonly name: string;
-
-  public constructor(
-    private readonly app: ClientApplication,
-    private readonly provider: ServiceProviderLifecycle,
-    private readonly context: ClientServiceProviderContext,
-  ) {
-    this.name = provider.name;
-  }
-
-  public register(): void {
-    this.app.runWithProviderContext(this.context, (): void =>
-      this.provider.register(),
-    );
-  }
-
-  public boot(): Promise<void> {
-    return this.app.runWithProviderContextAsync(
-      this.context,
-      (): Promise<void> => this.provider.boot(),
-    );
-  }
-
-  public start(): Promise<void> {
-    return this.app.runWithProviderContextAsync(
-      this.context,
-      (): Promise<void> => this.provider.start(),
-    );
-  }
-
-  public ready(): Promise<void> {
-    return this.app.runWithProviderContextAsync(
-      this.context,
-      (): Promise<void> => this.provider.ready(),
-    );
-  }
-
-  public shutdown(): Promise<void> {
-    return this.app.runWithProviderContextAsync(
-      this.context,
-      (): Promise<void> => this.provider.shutdown(),
-    );
-  }
-}
-
 export class ClientApplication {
   public readonly runtime: AppRuntimeContext;
   public readonly config: AppClientConfig;
   public readonly container: ServiceContainer;
   public readonly services: ServiceResolver;
   private readonly providerRegistry = new ServiceProviderRegistry();
-  private readonly refineCollector: AppClientRefineConfigCollector;
   private readonly createRenderConfig: ClientApplicationRenderConfigFactory;
-  private currentProviderContext: ClientServiceProviderContext | undefined;
-  private resolvedRefine: Readonly<AppClientRefineConfig> | undefined;
   private resolvedRenderConfig: AppClientRenderConfig | undefined;
   private state: ClientApplicationState = 'created';
   private startPromise: Promise<void> | undefined;
@@ -181,33 +116,11 @@ export class ClientApplication {
     this.container = new ServiceContainer();
     this.services = this.container;
     this.createRenderConfig = options.createRenderConfig;
-    this.refineCollector = createRefineConfigCollector({
-      i18nProvider: createRefineI18nProvider(options.runtime.i18n),
-    });
 
     this.providerRegistry.add(
       new CoreClientServiceProvider(this, options.fetch),
     );
     this.addServiceProviders(options.runtime.serviceProviders);
-  }
-
-  public get refine(): AppClientRefineRegistry {
-    const context = this.currentProviderContext;
-    if (!context) {
-      throw new Error(
-        'Client Refine configuration can only be changed from a ServiceProvider lifecycle method.',
-      );
-    }
-    return this.refineCollector.forContribution(context.packageName);
-  }
-
-  public get refineConfig(): Readonly<AppClientRefineConfig> {
-    if (!this.resolvedRefine) {
-      throw new Error(
-        'Client Application has not finalized Refine configuration.',
-      );
-    }
-    return this.resolvedRefine;
   }
 
   public get renderConfig(): AppClientRenderConfig {
@@ -225,9 +138,8 @@ export class ClientApplication {
         'Client ServiceProviders can only be added before Application startup.',
       );
     }
-    const provider = new contribution.Provider(this, contribution.context);
     this.providerRegistry.add(
-      new ContextualServiceProvider(this, provider, contribution.context),
+      new contribution.Provider(this, contribution.context),
     );
   }
 
@@ -249,32 +161,6 @@ export class ClientApplication {
     return this.shutdownPromise;
   }
 
-  public runWithProviderContext<TResult>(
-    context: ClientServiceProviderContext,
-    run: () => TResult,
-  ): TResult {
-    const previous = this.currentProviderContext;
-    this.currentProviderContext = context;
-    try {
-      return run();
-    } finally {
-      this.currentProviderContext = previous;
-    }
-  }
-
-  public async runWithProviderContextAsync<TResult>(
-    context: ClientServiceProviderContext,
-    run: () => Promise<TResult>,
-  ): Promise<TResult> {
-    const previous = this.currentProviderContext;
-    this.currentProviderContext = context;
-    try {
-      return await run();
-    } finally {
-      this.currentProviderContext = previous;
-    }
-  }
-
   private async startApplication(): Promise<void> {
     if (this.state !== 'created') {
       throw new Error(
@@ -285,7 +171,6 @@ export class ClientApplication {
     try {
       this.providerRegistry.registerAll();
       await this.providerRegistry.bootAll();
-      this.resolvedRefine = this.refineCollector.finalize();
       this.resolvedRenderConfig = Object.freeze(this.createRenderConfig(this));
       await this.runtime.validate?.(this);
       await this.providerRegistry.startAll();

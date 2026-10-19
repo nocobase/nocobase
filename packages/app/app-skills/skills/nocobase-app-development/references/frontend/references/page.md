@@ -278,7 +278,7 @@ Write `navigation` on the route. The application sidebar reads its menu entries 
 - Pages that should not appear in the menu (details, tab content and so on) have no `navigation`. When such a page is open, the menu highlights the nearest ancestor that has a menu entry.
 - **A path with a parameter (`:projectId`) cannot have `navigation`**; registration raises an error, because a menu entry must point to a fixed URL (wildcards are rejected on every route, [section 1](#1-declare-the-route)).
 - Navigation group: write only `name`, `navigation` and `children`, without `componentLoader`. For groups and clickable parents, see [`child-routes.md`](child-routes.md).
-- Do not change the shell (`client/layouts/`) or the ServiceProvider to add a menu entry, and do not add a Refine resource for a menu. Refine resources produce no menu entries (see ["Loading data in a component" in `api.md`](api.md#loading-data-in-a-component) for what they are for); the home page entry is declared in the routes as well.
+- Do not change the shell (`client/layouts/`) or the ServiceProvider to add a menu entry; the home page entry is declared in the routes as well.
 - A new page with a menu entry usually touches four places: `client/routes.ts`, the page component, `client/locales/` and, for an App page that requires sign-in, the page grant list in `tests/logic/client-routes.test.ts` ([section 12](#12-update-the-route-test)).
 
 ### A count beside an entry
@@ -403,7 +403,7 @@ export function ExportProjectsButton({
 - Use it for page permissions too, for example for an entry on the home page that points to a page: `useCan({ resource: { type: 'page', id: 'projects' }, action: 'access' })`. A route's `authz` uses the same `{ resource: { type, id }, action }`.
 - **`useCan` answers "does this user have this feature", not "can this record be acted on"**. For actions that depend on record state or data scope, the server returns the actions available for each record in the list or detail response, and the UI shows them accordingly; the endpoint checks again when it executes.
 - Hide actions the user has no permission for; disable actions that are temporarily unavailable and explain why in a tooltip (guideline I7).
-- In a component, get the authorization client with `useAuthorizationClient()`; outside React, resolve `authorizationClientToken` from the application container and call `client.can({ resource, action })`. When state you maintain yourself must reload after permissions change, use `useAuthorizationRevision()`. Do not use Refine's permission configuration or a global authorization client, and do not store permission results in module-level variables (they linger after switching accounts).
+- In a component, get the authorization client with `useAuthorizationClient()`; outside React, resolve `authorizationClientToken` from the application container and call `client.can({ resource, action })`. When state you maintain yourself must reload after permissions change, use `useAuthorizationRevision()`. Do not use a global authorization client, and do not store permission results in module-level variables (they linger after switching accounts).
 - **Hiding something in the UI does not replace endpoint authorization.**
 - When the business has different job responsibilities, data scopes or field permissions, read the `nocobase-app-plugin-authorization` Skill first, then design the pages, business actions and record scopes.
 

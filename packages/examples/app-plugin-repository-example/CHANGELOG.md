@@ -1,5 +1,7 @@
 # @nocobase/app-plugin-repository-example
 
+## 2.0.0-beta
+
 ## 1.0.0-beta.21
 
 ### Patch Changes

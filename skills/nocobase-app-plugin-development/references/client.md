@@ -8,7 +8,7 @@ Use this reference when a plugin needs browser services, application-wide React 
 | ------------------------------------------------------------------ | ---------------------- |
 | Add an App page                                                     | Client Route           |
 | Share React Context across several Client surfaces                 | React Provider         |
-| Register an application-scoped browser service or configure Refine | Client ServiceProvider |
+| Register an application-scoped browser service | Client ServiceProvider |
 | Export reusable UI or Hooks                                        | Component export       |
 | Declare translations owned by the plugin                           | Client locale manifest |
 | Configure one plugin registration with typed, stable values        | Plugin options         |
@@ -75,7 +75,7 @@ Client-owned configuration belongs to the target App's `client/config/*.ts` and 
 
 ## Client ServiceProviders
 
-Use a Client ServiceProvider for Container registrations, Refine configuration, connections, listeners, timers, and cleanup that belongs to the application lifecycle. Keep page-local loading and state in React.
+Use a Client ServiceProvider for Container registrations, connections, listeners, timers, and cleanup that belongs to the application lifecycle. Keep page-local loading and state in React.
 
 ```ts
 import { ClientApplication } from '@nocobase/app-client';
@@ -86,11 +86,6 @@ export class AuditLogServiceProvider extends ServiceProvider<ClientApplication> 
 
   public override register(): void {
     this.app.container.singleton(auditLogToken, () => createAuditLogService());
-  }
-
-  public override boot(): Promise<void> {
-    this.app.refine.addResources([{ name: 'audit-logs', list: '/audit-logs' }]);
-    return Promise.resolve();
   }
 
   public override shutdown(): Promise<void> {
@@ -114,7 +109,7 @@ const serviceProviders: readonly ClientServiceProviderConstructor[] = [
 export default serviceProviders;
 ```
 
-The startup sequence is `register all → boot all → finalize Refine and render configuration → validate Runtime → start all → ready all`. Startup failure and `app.shutdown()` clean up Providers in reverse order. `app.refine` is valid only inside the owning lifecycle hook; code outside lifecycle reads the finalized `app.refineConfig`.
+The startup sequence is `register all → boot all → finalize render configuration → validate Runtime → start all → ready all`. Startup failure and `app.shutdown()` clean up Providers in reverse order.
 
 React code resolves application services with `useService(token)` or the HTTP client with `useApiClient()`. Non-React code resolves a token from the application Container or receives the service explicitly. Read the shared [Client API reference](client-api.md) for configured base paths, requests, uploads, cancellation, errors, and remote Repository operations.
 
@@ -160,7 +155,7 @@ Published ESM code must use explicit relative `.js` specifiers for internal impo
 Verify each changed layer at the layer that owns the behavior:
 
 - Test declaration factories with representative plugin options and assert stable names, layers, ordering, routes, and locale manifests.
-- Test ServiceProvider registration, lifecycle order, failure cleanup, and finalized Refine configuration through `ClientApplication`.
+- Test ServiceProvider registration, lifecycle order, and failure cleanup through `ClientApplication`.
 - Render React Providers around a consumer and test Context, loading, error, cleanup, and repeat mounts.
 - Run the plugin's focused `lint`, `typecheck`, `test`, and `build`, then run the target App checks when registration or composition changes.
 

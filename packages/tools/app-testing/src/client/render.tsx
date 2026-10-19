@@ -91,7 +91,7 @@ const TEST_ORIGIN = 'http://localhost';
 
 /**
  * Starts a client application with `plugins` and renders `ui` inside it the way the application renders a page: the
- * same `ClientApplication`, its services, translations, React providers and Refine, under a `MemoryRouter`. The page
+ * same `ClientApplication`, its services, translations and React providers, under a `MemoryRouter`. The page
  * reads `useApiClient()`, `useService()`, `useToaster()` and `useTranslation()` from the real implementations rather
  * than mocks of `@nocobase/app-client`; the API client talks to `server` or `fetch`. Call it inside a test: the
  * application shuts down when the test finishes.
