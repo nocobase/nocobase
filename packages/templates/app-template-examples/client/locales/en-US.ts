@@ -55,7 +55,7 @@ const enUS = {
   structuredExtraction: {
     title: 'AI structured extraction',
     description:
-      'Two forms share one endpoint and constrain OnlineAgent.background() output with frontend JSON Schema.',
+      'Extract key information from text and organize it into an editable form.',
     contactTitle: 'Contact profile',
     contactDescription:
       'Extract contact details, a nested address and a list of skills.',
@@ -69,10 +69,12 @@ const enUS = {
     model: 'Language model',
     selectModel: 'Select a model',
     source: 'Source text',
+    result: 'Extracted information',
+    extracted: 'Extracted',
+    scenarios: 'Extraction examples',
     extract: 'Extract',
     extracting: 'Extracting…',
-    localOnly:
-      "Demo only: form edits aren't saved and are lost on leaving this page. Extracting again replaces this form.",
+    localOnly: 'Edit the result directly. Nothing is saved.',
     success: 'Extracted information filled into the form',
     noModels: 'No chat models are available.',
     missingInput: 'Select a model and enter source text.',

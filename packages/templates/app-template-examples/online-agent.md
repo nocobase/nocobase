@@ -131,7 +131,7 @@ Native text increments display immediately. Runner text displays one completed b
 
 ## Structured extraction
 
-Open **Agents → Structured Extraction** (`/ai-structured-extraction`). Submit source text and a JSON Schema to inspect a validated result. The application-owned `server/providers/structured-extraction-service.ts` uses background execution and awaits its saved result, with a deadline and request-disconnect handling. Invalid input/schema errors are separate from execution, generated-output validation, storage and cleanup errors. Timeout can end the HTTP request before a tool terminates; the service requests cancellation without automatically resending work.
+Open **Agents → Structured Extraction** (`/ai-structured-extraction`). Switch between Contact profile and Purchase order examples: source text stays on the left and editable extracted fields on the right, stacking on narrow screens. Each tab retains its local text, model selection and result. Completed extraction fills the result directly; there is no confirmation step or no-model configuration callout. The application-owned `server/providers/structured-extraction-service.ts` uses background execution and awaits its saved result, with a deadline and request-disconnect handling. Invalid input/schema errors are separate from execution, generated-output validation, storage and cleanup errors. Timeout can end the HTTP request before a tool terminates; the service requests cancellation without automatically resending work.
 
 Run its focused checks from this application's directory:
 

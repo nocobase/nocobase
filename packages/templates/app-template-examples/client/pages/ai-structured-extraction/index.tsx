@@ -6,7 +6,15 @@ import { Controller, useForm, useWatch } from 'react-hook-form';
 import type { z } from 'zod';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
-import { ModelsLink } from '#components/online-agent/models-link';
+import { StatusBadge } from '#components/status-badge';
+import {
+  FileTextIcon,
+  ScanTextIcon,
+  SparklesIcon,
+  UserRoundIcon,
+  ShoppingBagIcon,
+} from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '#components/ui/tabs';
 import { useModelCatalog } from '#components/online-agent/use-model-catalog';
 import { useOnlineAgentIdentityActive } from '#components/online-agent/identity-context';
 import { Alert, AlertDescription, AlertTitle } from '#components/ui/alert';
@@ -25,14 +33,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from '#components/ui/field';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#components/ui/select';
+import { ChatModelSelect } from '#components/chat-model-select';
 import { Skeleton } from '#components/ui/skeleton';
 import { Spinner } from '#components/ui/spinner';
 import { Textarea } from '#components/ui/textarea';
@@ -117,11 +118,17 @@ function ExtractionDemo<T>({
       .filter((model) => model.kind === 'chat')
       .map((model) => ({
         value: JSON.stringify([service.name, model.value]),
-        label: `${service.title} / ${model.label}`,
+        label: model.label,
         ref: { modelService: service.name, model: model.value },
       })),
   );
   const selectedModel = models.find((model) => model.value === selected);
+  const firstModel = models[0]?.value;
+  useEffect(() => {
+    if (catalog.phase === 'ready' && !selected && firstModel) {
+      form.setValue('model', firstModel);
+    }
+  }, [catalog.phase, selected, firstModel, form]);
   const ready =
     catalog.phase === 'ready' && Boolean(selectedModel) && Boolean(text.trim());
   useEffect(() => () => inFlightRef.current?.abort(), []);
@@ -218,97 +225,70 @@ function ExtractionDemo<T>({
   };
 
   return (
-    <Card role='region' aria-labelledby={`${id}-title`}>
-      <CardHeader>
+    <Card
+      role='region'
+      aria-labelledby={`${id}-title`}
+      className='gap-0 overflow-hidden py-0'
+    >
+      <CardHeader className='sr-only'>
         <CardTitle>
           <h2 id={`${id}-title`}>{title}</h2>
         </CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent className='flex flex-col gap-4'>
-        {failure ? (
-          <Alert variant='destructive'>
-            <AlertTitle>{t('structuredExtraction.errorTitle')}</AlertTitle>
-            <AlertDescription>
-              <p>{t(`structuredExtraction.${failure}`)}</p>
-              {failure === 'sessionExpired' ? <SignInAgain /> : null}
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        <div className='grid min-w-0 gap-6 lg:grid-cols-2'>
-          {children(result, busy)}
+      <CardContent className='p-0'>
+        <div className='grid min-w-0 lg:grid-cols-2'>
           <form
             noValidate
             aria-label={title}
             onSubmit={(event) => void form.handleSubmit(extract)(event)}
-            className='min-w-0'
+            className='flex min-w-0 flex-col gap-6 border-b bg-muted/20 p-6 lg:border-r lg:border-b-0'
           >
-            <FieldGroup>
-              <div className='flex flex-wrap items-end gap-2'>
-                <Controller
-                  control={form.control}
-                  name='model'
-                  rules={{ required: t('structuredExtraction.missingInput') }}
-                  render={({ field, fieldState }) => (
-                    <Field
-                      className='min-w-0 flex-1'
-                      data-invalid={fieldState.invalid}
-                      data-disabled={busy}
-                    >
-                      <FieldLabel htmlFor={`${id}-model`}>
-                        {t('structuredExtraction.model')}
+            {failure ? (
+              <Alert variant='destructive'>
+                <AlertTitle>{t('structuredExtraction.errorTitle')}</AlertTitle>
+                <AlertDescription>
+                  <p>{t(`structuredExtraction.${failure}`)}</p>
+                  {failure === 'sessionExpired' ? <SignInAgain /> : null}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            <FieldGroup className='flex-1'>
+              <Controller
+                control={form.control}
+                name='text'
+                rules={{
+                  required: t('structuredExtraction.missingInput'),
+                  maxLength: {
+                    value: 20_000,
+                    message: t('structuredExtraction.textTooLong'),
+                  },
+                }}
+                render={({ field, fieldState }) => (
+                  <Field
+                    data-invalid={fieldState.invalid}
+                    data-disabled={busy}
+                    className='h-full'
+                  >
+                    <div className='flex items-center justify-between gap-2'>
+                      <FieldLabel htmlFor={`${id}-source`}>
+                        <FileTextIcon className='size-4 text-muted-foreground' />
+                        {t('structuredExtraction.source')}
                         <RequiredMark />
                       </FieldLabel>
-                      <Select
-                        items={models}
-                        value={field.value || null}
-                        onValueChange={(value) => field.onChange(value ?? '')}
-                        disabled={
-                          busy ||
-                          catalog.phase !== 'ready' ||
-                          models.length === 0
-                        }
-                      >
-                        <SelectTrigger
-                          id={`${id}-model`}
-                          ref={(element) => {
-                            field.ref(element);
-                            modelTriggerRef.current = element;
-                          }}
-                          onBlur={field.onBlur}
-                          aria-required='true'
-                          aria-invalid={fieldState.invalid}
-                          className='w-full min-w-0'
-                        >
-                          <SelectValue
-                            placeholder={t('structuredExtraction.selectModel')}
-                          />
-                        </SelectTrigger>
-                        <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-                          <SelectGroup>
-                            {models.map((model) => (
-                              <SelectItem key={model.value} value={model.value}>
-                                {model.label}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      <FieldError errors={[fieldState.error]} />
-                    </Field>
-                  )}
-                />
-                <Button
-                  type='submit'
-                  variant='outline'
-                  disabled={busy || !ready}
-                >
-                  {busy ? <Spinner data-icon='inline-start' /> : null}
-                  {busy
-                    ? t('structuredExtraction.extracting')
-                    : t('structuredExtraction.extract')}
-                </Button>
-              </div>
+                    </div>
+                    <Textarea
+                      {...field}
+                      id={`${id}-source`}
+                      disabled={busy}
+                      aria-required='true'
+                      aria-invalid={fieldState.invalid}
+                      className='min-h-64 flex-1'
+                    />
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
               {catalog.phase === 'loading' && models.length === 0 ? (
                 <Skeleton
                   role='status'
@@ -346,51 +326,82 @@ function ExtractionDemo<T>({
                   </AlertDescription>
                 </Alert>
               ) : null}
-              {catalog.phase === 'ready' && models.length === 0 ? (
-                <div className='flex flex-col items-start gap-2 text-sm text-muted-foreground'>
-                  <p>{t('structuredExtraction.noModels')}</p>
-                  <ModelsLink explain />
-                </div>
-              ) : null}
-              <Controller
-                control={form.control}
-                name='text'
-                rules={{
-                  required: t('structuredExtraction.missingInput'),
-                  maxLength: {
-                    value: 20_000,
-                    message: t('structuredExtraction.textTooLong'),
-                  },
-                }}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid} data-disabled={busy}>
-                    <FieldLabel htmlFor={`${id}-source`}>
-                      {t('structuredExtraction.source')}
-                      <RequiredMark />
-                    </FieldLabel>
-                    <Textarea
-                      {...field}
-                      id={`${id}-source`}
-                      disabled={busy}
-                      aria-required='true'
-                      aria-invalid={fieldState.invalid}
-                      aria-describedby={`${id}-hint`}
-                      className='min-h-64'
-                    />
-                    <FieldError errors={[fieldState.error]} />
-                    <FieldDescription id={`${id}-hint`}>
-                      {t('structuredExtraction.localOnly')}
-                    </FieldDescription>
-                  </Field>
-                )}
-              />
-              {!ready && !busy ? (
-                <p className='text-sm text-muted-foreground'>
-                  {t('structuredExtraction.missingInput')}
-                </p>
-              ) : null}
+              <div className='flex flex-wrap items-end justify-end gap-3'>
+                <Controller
+                  control={form.control}
+                  name='model'
+                  rules={{ required: t('structuredExtraction.missingInput') }}
+                  render={({ field, fieldState }) => (
+                    <Field
+                      orientation='horizontal'
+                      className='w-auto min-w-0'
+                      data-invalid={fieldState.invalid}
+                      data-disabled={busy}
+                    >
+                      <FieldLabel htmlFor={`${id}-model`} className='sr-only'>
+                        {t('structuredExtraction.model')}
+                      </FieldLabel>
+                      <div className='w-48 min-w-0'>
+                        <ChatModelSelect
+                          services={catalog.services}
+                          value={field.value || null}
+                          onValueChange={(value) => field.onChange(value ?? '')}
+                          disabled={
+                            busy ||
+                            catalog.phase !== 'ready' ||
+                            models.length === 0
+                          }
+                          id={`${id}-model`}
+                          ref={(element) => {
+                            field.ref(element);
+                            modelTriggerRef.current = element;
+                          }}
+                          onBlur={field.onBlur}
+                          aria-required='true'
+                          aria-invalid={fieldState.invalid}
+                          placeholder={t('structuredExtraction.selectModel')}
+                        />
+                      </div>
+                      <FieldError errors={[fieldState.error]} />
+                    </Field>
+                  )}
+                />
+                <Button type='submit' disabled={busy || !ready}>
+                  {busy ? (
+                    <Spinner data-icon='inline-start' />
+                  ) : (
+                    <SparklesIcon data-icon='inline-start' />
+                  )}
+                  {busy
+                    ? t('structuredExtraction.extracting')
+                    : t('structuredExtraction.extract')}
+                </Button>
+              </div>
             </FieldGroup>
           </form>
+          <section
+            className='flex min-w-0 flex-col gap-6 p-6'
+            aria-labelledby={`${id}-result-title`}
+          >
+            <div className='flex items-center justify-between gap-2'>
+              <h3
+                id={`${id}-result-title`}
+                className='flex items-center gap-2 text-sm font-medium'
+              >
+                <ScanTextIcon className='size-4 text-muted-foreground' />
+                {t('structuredExtraction.result')}
+              </h3>
+              {result !== empty ? (
+                <StatusBadge tone='success' size='sm'>
+                  {t('structuredExtraction.extracted')}
+                </StatusBadge>
+              ) : null}
+            </div>
+            {children(result, busy)}
+            <FieldDescription>
+              {t('structuredExtraction.localOnly')}
+            </FieldDescription>
+          </section>
         </div>
       </CardContent>
     </Card>
@@ -401,37 +412,54 @@ export default function StructuredExtractionPage() {
   const { t } = useTranslation();
   const catalog = useModelCatalog(true);
   return (
-    <PageContainer>
+    <PageContainer className='mx-auto max-w-7xl'>
       <PageHeader
         title={t('structuredExtraction.title')}
         description={t('structuredExtraction.description')}
       />
-      <div className='flex max-w-6xl flex-col gap-6'>
-        <ExtractionDemo
-          id='contact'
-          title={t('structuredExtraction.contactTitle')}
-          description={t('structuredExtraction.contactDescription')}
-          sample={t('structuredExtraction.contactSample')}
-          schema={contactSchema}
-          jsonSchema={contactJsonSchema}
-          empty={emptyContact}
-          catalog={catalog}
+      <Tabs defaultValue='contact' className='gap-6'>
+        <TabsList
+          variant='line'
+          aria-label={t('structuredExtraction.scenarios')}
         >
-          {(data, busy) => <ContactFields data={data} disabled={busy} />}
-        </ExtractionDemo>
-        <ExtractionDemo
-          id='order'
-          title={t('structuredExtraction.orderTitle')}
-          description={t('structuredExtraction.orderDescription')}
-          sample={t('structuredExtraction.orderSample')}
-          schema={orderSchema}
-          jsonSchema={orderJsonSchema}
-          empty={emptyOrder}
-          catalog={catalog}
-        >
-          {(data, busy) => <OrderFields data={data} disabled={busy} />}
-        </ExtractionDemo>
-      </div>
+          <TabsTrigger value='contact'>
+            <UserRoundIcon />
+            {t('structuredExtraction.contactTitle')}
+          </TabsTrigger>
+          <TabsTrigger value='order'>
+            <ShoppingBagIcon />
+            {t('structuredExtraction.orderTitle')}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value='contact' keepMounted>
+          <ExtractionDemo
+            id='contact'
+            title={t('structuredExtraction.contactTitle')}
+            description={t('structuredExtraction.contactDescription')}
+            sample={t('structuredExtraction.contactSample')}
+            schema={contactSchema}
+            jsonSchema={contactJsonSchema}
+            empty={emptyContact}
+            catalog={catalog}
+          >
+            {(data, busy) => <ContactFields data={data} disabled={busy} />}
+          </ExtractionDemo>
+        </TabsContent>
+        <TabsContent value='order' keepMounted>
+          <ExtractionDemo
+            id='order'
+            title={t('structuredExtraction.orderTitle')}
+            description={t('structuredExtraction.orderDescription')}
+            sample={t('structuredExtraction.orderSample')}
+            schema={orderSchema}
+            jsonSchema={orderJsonSchema}
+            empty={emptyOrder}
+            catalog={catalog}
+          >
+            {(data, busy) => <OrderFields data={data} disabled={busy} />}
+          </ExtractionDemo>
+        </TabsContent>
+      </Tabs>
     </PageContainer>
   );
 }

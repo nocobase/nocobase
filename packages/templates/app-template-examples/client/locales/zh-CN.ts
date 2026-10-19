@@ -50,8 +50,7 @@ const zhCN: AppResource = {
   },
   structuredExtraction: {
     title: 'AI 提取结构化信息',
-    description:
-      '两个表单共用一个接口，通过前端 JSON Schema 约束 OnlineAgent.background() 的输出。',
+    description: '从自然语言中提取关键信息，自动整理为可编辑表单。',
     contactTitle: '联系人资料',
     contactDescription: '提取联系人信息、嵌套地址和技能列表。',
     orderTitle: '采购单',
@@ -63,10 +62,12 @@ const zhCN: AppResource = {
     model: '大语言模型',
     selectModel: '请选择模型',
     source: '原始文本',
+    result: '提取结果',
+    extracted: '已提取',
+    scenarios: '提取场景',
     extract: '提取',
     extracting: '提取中…',
-    localOnly:
-      '仅作演示：表单修改不会保存，离开页面后丢失；再次提取会替换当前表单。',
+    localOnly: '提取后的内容可直接编辑，不会自动保存。',
     success: '已提取并填入表单',
     noModels: '暂无可用的聊天模型。',
     missingInput: '请选择模型并输入原始文本。',

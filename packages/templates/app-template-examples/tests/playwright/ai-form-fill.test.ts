@@ -57,6 +57,7 @@ async function startScene(page: Page) {
     await page.screenshot({
       path: path.join(process.env.E2E_SCREENSHOT_DIR, name),
       fullPage: true,
+      animations: 'disabled',
     });
   };
   const close = async () => {
@@ -435,6 +436,147 @@ test('keeps proposal review and explicit draft application usable at a narrow vi
     await scene.capture('form-proposal-mobile-applied.png');
     expect(scene.businessWrites).toEqual([]);
     expect(scene.approvals).toEqual([]);
+    expect(scene.errors).toEqual([]);
+  } finally {
+    await scene.close();
+  }
+});
+
+test('keeps extraction side by side and preserves drafts across scenario tabs', async ({
+  page,
+}) => {
+  const scene = await startScene(page);
+  try {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto(`${applicationUrl!.replace(/\/$/, '')}/ai-translation`);
+    const translationContainer = page
+      .getByRole('heading', { name: 'AI Translation', exact: true })
+      .locator('xpath=ancestor::section[1]');
+    await expect(translationContainer).toBeVisible();
+    const translationBox = await translationContainer.boundingBox();
+    const translationModel = page.getByRole('combobox', {
+      name: 'Language model',
+      exact: true,
+    });
+    await expect(translationModel).toBeVisible();
+    const translationModelBox = await translationModel.boundingBox();
+    await page.goto(
+      `${applicationUrl!.replace(/\/$/, '')}/ai-structured-extraction`,
+    );
+    const contactTab = page.getByRole('tab', {
+      name: 'Contact profile',
+      exact: true,
+    });
+    const orderTab = page.getByRole('tab', {
+      name: 'Purchase order',
+      exact: true,
+    });
+    const contact = page.getByRole('region', {
+      name: 'Contact profile',
+      exact: true,
+    });
+    const source = contact.getByRole('textbox', {
+      name: 'Source text',
+      exact: true,
+    });
+    const result = contact.getByRole('region', {
+      name: 'Extracted information',
+      exact: true,
+    });
+    await expect(contactTab).toHaveAttribute('aria-selected', 'true');
+    const extractionContainer = page
+      .getByRole('heading', { name: 'AI structured extraction', exact: true })
+      .locator('xpath=ancestor::section[1]');
+    const extractionBox = await extractionContainer.boundingBox();
+    expect(extractionBox!.x).toBeCloseTo(translationBox!.x, 0);
+    expect(extractionBox!.width).toBeCloseTo(translationBox!.width, 0);
+    const extractionModel = contact.getByRole('combobox', {
+      name: 'Language model',
+      exact: true,
+    });
+    await expect(extractionModel).toBeVisible();
+    await expect(extractionModel).toContainText('fixture-chat');
+    const extractionModelBox = await extractionModel.boundingBox();
+    expect(extractionModelBox!.width).toBeCloseTo(
+      translationModelBox!.width,
+      0,
+    );
+    const sourceBox = await source.boundingBox();
+    const resultBox = await result.boundingBox();
+    expect(sourceBox!.x + sourceBox!.width).toBeLessThanOrEqual(resultBox!.x);
+    const extractButton = contact.getByRole('button', {
+      name: 'Extract',
+      exact: true,
+    });
+    await expect(extractButton).toBeEnabled();
+    const extractBox = await extractButton.boundingBox();
+    expect(extractBox!.x + extractBox!.width).toBeCloseTo(
+      sourceBox!.x + sourceBox!.width,
+      0,
+    );
+    await expect(
+      page.getByText('No chat models are available.', { exact: true }),
+    ).toHaveCount(0);
+    await source.fill('Text kept while switching scenarios');
+    await contact.getByLabel('Name', { exact: true }).fill('Manual contact');
+    await orderTab.click();
+    await expect(contact).toBeHidden();
+    await contactTab.click();
+    await expect(source).toHaveValue('Text kept while switching scenarios');
+    await expect(contact.getByLabel('Name', { exact: true })).toHaveValue(
+      'Manual contact',
+    );
+    await expect(
+      contact.getByRole('button', { name: 'Use example', exact: true }),
+    ).toHaveCount(0);
+    await scene.capture('structured-extraction-desktop.png');
+    await page.getByRole('button', { name: 'Appearance', exact: true }).hover();
+    await page
+      .getByRole('radiogroup', { name: 'Color mode' })
+      .getByText('Dark', { exact: true })
+      .click();
+    await page
+      .getByRole('radiogroup', { name: 'Theme', exact: true })
+      .getByText('Spacious', { exact: true })
+      .click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('html')).toHaveClass(/dark/);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'default');
+    await scene.capture('structured-extraction-dark-spacious.png');
+    await page.getByRole('button', { name: 'Appearance', exact: true }).hover();
+    await page
+      .getByRole('radiogroup', { name: 'Color mode' })
+      .getByText('Light', { exact: true })
+      .click();
+    await page
+      .getByRole('radiogroup', { name: 'Theme', exact: true })
+      .getByText('Compact', { exact: true })
+      .click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('html')).not.toHaveClass(/dark/);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'compact');
+    await page.setViewportSize({ width: 375, height: 812 });
+    await expect(source).toBeVisible();
+    const narrowSource = await source.boundingBox();
+    const narrowResult = await result.boundingBox();
+    expect(narrowSource!.y + narrowSource!.height).toBeLessThan(
+      narrowResult!.y,
+    );
+    await expect
+      .poll(() =>
+        page.locator('html').evaluate((element) => {
+          if (
+            !('scrollWidth' in element) ||
+            typeof element.scrollWidth !== 'number'
+          )
+            throw new Error('The document width is unavailable.');
+          return element.scrollWidth;
+        }),
+      )
+      .toBeLessThanOrEqual(375);
+    await scene.capture('structured-extraction-mobile.png');
+    expect(scene.fixture.streams).toHaveLength(0);
+    expect(scene.businessWrites).toEqual([]);
     expect(scene.errors).toEqual([]);
   } finally {
     await scene.close();
