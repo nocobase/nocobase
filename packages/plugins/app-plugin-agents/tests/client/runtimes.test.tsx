@@ -462,7 +462,7 @@ describe('runtimes page', () => {
     renderPage(<RuntimesPage />);
     const sheet = await openSheet();
     expect(
-      within(sheet).getByText('runtimes.quota.usedPercent(percent=93)'),
+      within(sheet).getByText(/usedPercent\(percent=93\)/u),
     ).toBeInTheDocument();
     expect(within(sheet).getByText('runtimes.quota.near')).toBeInTheDocument();
     expect(
