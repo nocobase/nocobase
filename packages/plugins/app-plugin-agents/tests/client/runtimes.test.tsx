@@ -461,7 +461,9 @@ describe('runtimes page', () => {
     };
     renderPage(<RuntimesPage />);
     const sheet = await openSheet();
-    expect(within(sheet).getByText(/93%/u)).toBeInTheDocument();
+    expect(
+      within(sheet).getByText('runtimes.quota.usedPercent(percent=93)'),
+    ).toBeInTheDocument();
     expect(within(sheet).getByText('runtimes.quota.near')).toBeInTheDocument();
     expect(
       within(sheet).queryByRole('button', { name: 'runtimes.quota.clear' }),
