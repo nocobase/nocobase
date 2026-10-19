@@ -42,7 +42,7 @@ One build writes every language: English (`docs/en/`) to `dist/`, Simplified Chi
 
 ### Copy of the hand-built pages
 
-The deployment guide lives in `src/components/Deployment/`: edit `content.json` (Chinese) and `content.en.json` (English), then synchronize the commands and anchors in `docs/<lang>/deployment.md`. Its dedicated Astro route renders the PM2/Docker tabs; the Markdown twin supplies the downloadable copy and LLM outputs.
+The deployment guide lives in `src/components/Deployment/`: edit `content.json` (Chinese) and `content.en.json` (English), then synchronize the commands and anchors in `docs/<lang>/deployment.md`. Its dedicated Astro route renders the PM2, Docker and NocoBase Studio tabs; the Markdown twin supplies the downloadable copy and LLM outputs.
 
 The home page, the NocoBase 2 vs 3 comparison and the 14 capability overviews are not rendered from Markdown. Their visible text lives in JSON files next to their components. **Files without a language suffix are Chinese; `.en.json` files are English.** The header is the exception and names both: `header.cn.json` and `header.en.json`.
 
