@@ -1,12 +1,12 @@
 ---
 pageType: home
 pageName: home
-title: "Документация NocoBase"
-description: "Документация открытой no-code/low-code платформы NocoBase: быстрый старт, источники данных, конструктор интерфейсов, ИИ-сотрудники, рабочие процессы, права пользователей, аутентификация и разработка плагинов."
+title: "Документация NocoBase 2"
+description: "Документация открытой no-code/low-code платформы NocoBase 2: быстрый старт, источники данных, конструктор интерфейсов, ИИ-сотрудники, рабочие процессы, права пользователей, аутентификация и разработка плагинов."
 keywords: "NocoBase,no-code,low-code,документация,open-source"
 hero:
-  name: Документация NocoBase
-  text: Быстро освойте NocoBase
+  name: Документация NocoBase 2
+  text: Быстро освойте NocoBase 2
   actions:
     - theme: brand
       text: Начать работу

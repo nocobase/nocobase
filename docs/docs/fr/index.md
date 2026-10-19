@@ -1,12 +1,12 @@
 ---
 pageType: home
 pageName: home
-title: Documentation NocoBase
-description: 'Documentation de la plateforme open source no-code/low-code NocoBase : prise en main, sources de données, construction d''interface, AI Employees, workflows, utilisateurs et autorisations, authentification, développement de plugins.'
+title: Documentation NocoBase 2
+description: 'Documentation de la plateforme open source no-code/low-code NocoBase 2 : prise en main, sources de données, construction d''interface, AI Employees, workflows, utilisateurs et autorisations, authentification, développement de plugins.'
 keywords: 'NocoBase, no-code, low-code, documentation, open source'
 hero:
-  name: Documentation NocoBase
-  text: Apprenez et maîtrisez NocoBase rapidement
+  name: Documentation NocoBase 2
+  text: Apprenez et maîtrisez NocoBase 2 rapidement
   actions:
     - theme: brand
       text: Prise en main
