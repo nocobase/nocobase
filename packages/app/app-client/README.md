@@ -1,6 +1,6 @@
 # @nocobase/app-client
 
-Browser application runtime for NocoBase v3. It provides the stateful `ClientApplication`, application-scoped services, the application's query cache, static Client plugin composition, React tree composition, routes, locale resources, and public runtime configuration.
+Browser application runtime for NocoBase v3. It provides the stateful `ClientApplication`, application-scoped services, static Client plugin composition, React tree composition, routes, locale resources, and public runtime configuration.
 
 ## Architecture
 
@@ -13,7 +13,6 @@ public HTML config + static declarations
           ├── config
           ├── ServiceContainer
           ├── ServiceProviders
-          ├── query cache
           └── React render configuration
                     ↓
           start() → host render()
@@ -79,7 +78,7 @@ root.render(<AppClientRoot app={app} />);
 
 `app.start()` performs the complete ServiceProvider lifecycle and finalizes the render configuration. The Browser host owns the React root and renders `AppClientRoot` only after startup succeeds. During disposal, the host unmounts its React root and `app.shutdown()` shuts down providers in reverse order.
 
-`AppClientRoot` is a `BrowserRouter` around `AppClientProviders`, which mounts the application and its React providers around the routes, and the query cache directly around the routes, inside every React provider. A test renders a page in `AppClientProviders` under a router of its own; `renderWithApp()` from `@nocobase/app-testing/client` does that for a started test application.
+`AppClientRoot` is a `BrowserRouter` around `AppClientProviders`, which mounts the application and its React providers around the routes. A test renders a page in `AppClientProviders` under a router of its own; `renderWithApp()` from `@nocobase/app-testing/client` does that for a started test application.
 
 `new ClientApplication({ runtime, createRenderConfig, fetch })` sends the API client's requests through `fetch` instead of the global one. Production leaves it out; a test passes a server it runs in process. `resolveAppRuntime(definition, { i18n })` likewise runs the application on the i18n runtime it is given instead of building one from the locales; a test passes a strict one.
 
@@ -177,10 +176,6 @@ register all
 ```
 
 Startup failure triggers reverse cleanup for providers that entered lifecycle.
-
-## Query cache
-
-`AppClientProviders` mounts a TanStack Query cache where Refine's used to be: directly around the routes, inside every React provider. Pages, route components and the plugin components they render that call `useQueryClient()`, `useQuery()` or `useMutation()` share it without mounting a provider of their own, and a React provider that mounts a `QueryClientProvider` of its own does not change what the pages read. As Refine's was, the cache is created for each mount of the routes: the authorization provider remounts them for every session, so each session starts with an empty cache. It keeps Refine's defaults: no refetch when the window regains focus, and a query whose key changes keeps showing the previous data until the new data arrives. React providers render outside it, and nothing outside React reaches it. `@tanstack/react-query` is a peer dependency: a plugin that uses it declares it as a peer too, so it reads the application's copy and therefore the routes' cache.
 
 React components and custom Hooks can obtain the application's HTTP client with `useApiClient()`:
 
@@ -297,7 +292,7 @@ const reactProviders: readonly AppClientReactProviderDefinition[] =
 export default reactProviders;
 ```
 
-React Providers are ordered outer-to-inner by layer and explicit `before`/`after` constraints. Their components render only when the Browser host renders `AppClientRoot` for a started application, around the application query cache rather than inside it. Use a Wrapper for React Context or tree-local UI behavior; use a ServiceProvider for application services, Container bindings, connections, listeners, and lifecycle cleanup.
+React Providers are ordered outer-to-inner by layer and explicit `before`/`after` constraints. Their components render only when the Browser host renders `AppClientRoot` for a started application. Use a Wrapper for React Context or tree-local UI behavior; use a ServiceProvider for application services, Container bindings, connections, listeners, and lifecycle cleanup.
 
 ## Routes and locale resources
 
