@@ -46,7 +46,7 @@ const CATALOG: readonly {
 }[] = [
   {
     id: 'actions',
-    title: 'Business actions',
+    title: 'Business operations',
     footer:
       'Their own records are the ones they own or are assigned to; all records include everyone else’s.',
     groups: [
@@ -149,7 +149,7 @@ const CATALOG: readonly {
   },
   {
     id: 'administration',
-    title: 'Administration',
+    title: 'System and tools',
     groups: [
       {
         id: 'roles',

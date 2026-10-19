@@ -1,8 +1,24 @@
 const settings = {
+  scopeHintFor: 'About the data range for {{name}}',
+  scopeExplanation:
+    'Each range applies to its corresponding data. The operation must also pass its authorization checks.',
+  noAdditionalScopeHint:
+    'This action grants no additional record access here. Default access, sharing and restriction rules still determine actual access.',
+  systemToolsHint:
+    'Manage system configuration and tools. Review the capabilities each action includes before granting access.',
+  userAccountsHint:
+    'Manage user information, account security and role assignments. Review each permission separately.',
+  businessOperationsHint:
+    'Choose the operations this role can perform and the data each operation can use.',
+  pageAccessHint:
+    'Controls which pages this role can open. Data and actions on each page require their own permissions.',
+  roleAssignment: 'Role assignment',
+  accountSecurity: 'Account security',
+  userInformation: 'User information',
   unnamedPage: 'Unnamed page ({{path}})',
   revokeRoles: 'Revoke roles',
   keyConflict: 'This role key is already in use.',
-  userPermissions: 'User management',
+  userPermissions: 'Users and accounts',
   readUsers: 'View users',
   createUsers: 'Create users',
   updateUsers: 'Edit users',
@@ -99,7 +115,7 @@ const settings = {
   selectVisiblePermissions: 'Select visible permissions in {{name}}',
   permissionSummary: '{{enabled}} of {{total}} enabled',
   preservedRecordScope: 'Keep existing configuration',
-  noRecordScope: 'No records (not authorized)',
+  noRecordScope: 'No additional record access',
   permissionFilter: {
     limit: 'Up to 20 conditions',
     configure: 'Conditions',

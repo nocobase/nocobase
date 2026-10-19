@@ -6,10 +6,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 const enUS = {
   // Workspace sections this plugin registers through `authz.ui`.
   sections: {
-    pages: 'Page permissions',
+    pages: 'Page access',
     page: 'Pages',
-    business: 'Business permissions',
-    administration: 'Administration',
+    business: 'Business operations',
+    administration: 'System and tools',
     other: 'Other',
   },
   options: {

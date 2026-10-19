@@ -113,14 +113,35 @@ function RoleEditor(): ReactElement {
           title: { key: 'settings.userPermissions' },
           order: 0,
           subsections: [
-            {
-              name: 'users.accounts',
-              title: { key: 'settings.users' },
+            ...[
+              {
+                name: 'users.information',
+                title: 'userInformation',
+                actions: ['read', 'create', 'update', 'invite', 'delete'],
+              },
+              {
+                name: 'users.security',
+                title: 'accountSecurity',
+                actions: [
+                  'reset-password',
+                  'disable',
+                  'enable',
+                  'revoke-sessions',
+                ],
+              },
+              {
+                name: 'users.roles',
+                title: 'roleAssignment',
+                actions: ['assign-role'],
+              },
+            ].map((group) => ({
+              name: group.name,
+              title: { key: `settings.${group.title}` },
               resources: [
                 {
                   type: 'user',
                   id: '*',
-                  title: { key: 'settings.users' },
+                  title: { key: `settings.${group.title}` },
                   actions: [
                     { name: 'read', title: { key: 'settings.readUsers' } },
                     { name: 'create', title: { key: 'settings.createUsers' } },
@@ -141,10 +162,10 @@ function RoleEditor(): ReactElement {
                       name: 'revoke-sessions',
                       title: { key: 'settings.revokeSessions' },
                     },
-                  ],
+                  ].filter((action) => group.actions.includes(action.name)),
                 },
               ],
-            },
+            })),
           ],
         },
         ...source.sections.map((section) => ({
@@ -320,10 +341,9 @@ function RoleEditor(): ReactElement {
                 sections={sections}
                 readOnly={!allowed || busy}
                 labels={{
-                  selectAll: t('settings.selectAllPermissions'),
                   dataRanges: (count) => t('settings.dataRanges', { count }),
-                  selectVisible: (name) =>
-                    t('settings.selectVisiblePermissions', { name }),
+                  scopeExplanation: t('settings.scopeExplanation'),
+                  scopeHintFor: (name) => t('settings.scopeHintFor', { name }),
                   levelFor: (name) => t('settings.levelFor', { name }),
                   search: t('settings.permissionSearch'),
                   enabledOnly: t('settings.enabledOnly'),
@@ -331,8 +351,6 @@ function RoleEditor(): ReactElement {
                   empty: t('settings.noPermissions'),
                   noResults: t('settings.noResults'),
                   navigation: t('settings.permissionCategories'),
-                  summary: (enabled, total) =>
-                    t('settings.permissionSummary', { enabled, total }),
                 }}
                 onEnabledChange={(id, enabled) => {
                   if (!catalog) return;
@@ -340,13 +358,6 @@ function RoleEditor(): ReactElement {
                     setPermissions(current ?? grants, catalog, [
                       { id, enabled },
                     ]),
-                  );
-                  setDirty(true);
-                }}
-                onEnabledBatchChange={(changes) => {
-                  if (!catalog) return;
-                  setGrantsDraft((current) =>
-                    setPermissions(current ?? grants, catalog, changes),
                   );
                   setDirty(true);
                 }}

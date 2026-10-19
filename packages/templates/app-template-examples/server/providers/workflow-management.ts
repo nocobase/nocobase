@@ -1,6 +1,9 @@
 import type { Application } from '@nocobase/app-server/application';
 import { ServiceProvider } from '@nocobase/service-provider';
-import { authorizationToken } from '@nocobase/app-plugin-authorization/server';
+import {
+  authorizationToken,
+  AUTHORIZATION_NAMESPACE,
+} from '@nocobase/app-plugin-authorization/server';
 
 export default class WorkflowManagementProvider extends ServiceProvider<Application> {
   public readonly name = 'examples/workflow-management';
@@ -9,13 +12,16 @@ export default class WorkflowManagementProvider extends ServiceProvider<Applicat
     const authz = this.app.container.resolve(authorizationToken);
     authz.ui.sections.add({
       name: 'workflow-management',
-      title: 'Workflow management',
+      title: { key: 'workflows.title', ns: '@nocobase/app-template-examples' },
       parent: 'administration',
     });
     authz.settings.add({
       id: 'workflow-management',
-      title: 'Workflow management',
-      actions: [{ name: 'read' }, { name: 'update' }],
+      title: { key: 'workflows.title', ns: '@nocobase/app-template-examples' },
+      actions: ['read', 'update'].map((name) => ({
+        name,
+        title: { key: `options.actions.${name}`, ns: AUTHORIZATION_NAMESPACE },
+      })),
     });
     authz.ui.place(
       { type: 'settings', id: 'workflow-management' },

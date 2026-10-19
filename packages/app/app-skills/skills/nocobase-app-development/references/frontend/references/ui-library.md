@@ -136,14 +136,14 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 
 ### permission-editor
 
-A compact resource permission workspace with horizontal action checkboxes, adjacent data scopes and atomic visible selection.
+A compact permission workspace with category navigation, individual action checkboxes, scoped data controls and accessible scope help.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/permission-editor`
 - Installs to: `client/components/permission-editor.tsx`, `client/components/permission-filter.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/permission-editor-demo` (`pnpm exec shadcn view @nocobase/permission-editor-demo`)
-- After installing: Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default. Resource groups render as compact rows with wrapping action checkboxes. Optional row.scopes bind independent scope selectors to their owning action. Pass onEnabledBatchChange to enable atomic group selection of visible toggleable permissions; omit it to keep single-action controls. Filtering never mutates the draft. Pass labels.selectVisible for the localized group checkbox name. Use group.accessOnly for a page with a single access action to show one title checkbox without redundant action text. Provide scope.configuration for parameterized scopes; PermissionFilter edits validated condition drafts and keeps role saving in the host form. Never save customFilter as a bare key: bind its native params.filter object.
+- After installing: Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default. Resource groups render as compact rows with wrapping action checkboxes. Optional row.scopes bind independent scope selectors to their owning action. Actions are configured individually; category names and groups omit authorization counts and bulk selection. Filtering never mutates the draft. Use scope.hint for contextual scope help shown on hover, keyboard focus or tap, and labels.scopeHintFor for the accessible trigger name. Use group.accessOnly for a page with a single access action to show one title checkbox without redundant action text. Provide scope.configuration for parameterized scopes; PermissionFilter edits validated condition drafts and keeps role saving in the host form. Never save customFilter as a bare key: bind its native params.filter object.
 
 ### role-list
 

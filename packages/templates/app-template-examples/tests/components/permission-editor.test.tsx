@@ -82,7 +82,8 @@ describe('permission workspace', () => {
     );
     expect(
       screen.getByRole('button', { name: /Business actions/ }),
-    ).toHaveTextContent('1/2');
+    ).toHaveTextContent('Business actions');
+    expect(screen.queryByText('1/2')).not.toBeInTheDocument();
     await user.clear(screen.getByRole('textbox'));
     expect(
       screen.getByRole('checkbox', { name: 'Read orders' }),
@@ -93,57 +94,6 @@ describe('permission workspace', () => {
 });
 
 describe('compact resource actions', () => {
-  it('batches only visible editable changes and shows a mixed group checkbox', async () => {
-    const user = userEvent.setup();
-    const batch = vi.fn();
-    render(
-      <PermissionEditor
-        sections={[
-          {
-            ...sections[0]!,
-            groups: [
-              {
-                id: 'orders',
-                title: 'Orders',
-                rows: [
-                  ...sections[0]!.groups[0]!.rows,
-                  {
-                    id: 'locked',
-                    label: 'Protected',
-                    enabled: false,
-                    toggleable: false,
-                  },
-                ],
-              },
-            ],
-          },
-        ]}
-        onEnabledChange={vi.fn()}
-        onEnabledBatchChange={batch}
-        onLevelChange={vi.fn()}
-      />,
-    );
-    const group = screen.getByRole('checkbox', {
-      name: 'Select visible permissions in Orders',
-    });
-    expect(group).toHaveAttribute('aria-checked', 'mixed');
-    await user.click(group);
-    expect(batch).toHaveBeenLastCalledWith([
-      { id: 'edit-orders', enabled: true },
-    ]);
-    await user.type(screen.getByRole('textbox'), 'owner');
-    await user.click(
-      screen.getByRole('checkbox', {
-        name: 'Select visible permissions in Orders',
-      }),
-    );
-    expect(batch).toHaveBeenLastCalledWith([
-      { id: 'edit-orders', enabled: true },
-    ]);
-    expect(
-      screen.queryByRole('checkbox', { name: 'Protected' }),
-    ).not.toBeInTheDocument();
-  });
   it('restores stable focus when enabled filtering removes the action or group', async () => {
     const user = userEvent.setup();
     function Draft() {
@@ -177,21 +127,13 @@ describe('compact resource actions', () => {
         />
       );
     }
-    const view = render(<Draft />);
+    render(<Draft />);
     await user.click(screen.getByRole('switch', { name: 'Enabled only' }));
     await user.click(screen.getByRole('checkbox', { name: 'Action' }));
     expect(screen.getByRole('textbox')).toHaveFocus();
     expect(screen.getByRole('status')).toHaveTextContent(
       'No matching permissions',
     );
-    view.unmount();
-    render(<Draft />);
-    await user.click(screen.getByRole('switch', { name: 'Enabled only' }));
-    screen
-      .getByRole('checkbox', { name: 'Select visible permissions in Group' })
-      .focus();
-    await user.keyboard('[Space]');
-    expect(screen.getByRole('textbox')).toHaveFocus();
   });
   it('keeps scopes attached to actions, readonly scopes disabled and control ids instance-local', async () => {
     const scoped = [
@@ -419,16 +361,15 @@ it('uses the category navigation without a duplicate heading and identifies filt
     screen.getByRole('heading', { level: 2, name: 'Users' }),
   ).toBeVisible();
   expect(batch).not.toHaveBeenCalled();
-  expect(screen.getAllByText('1/2')).toHaveLength(1);
+  expect(screen.queryByText('1/2')).not.toBeInTheDocument();
   expect(
-    screen.getByRole('checkbox', {
-      name: 'Select visible permissions in Users',
-    }),
-  ).toHaveAttribute('aria-checked', 'mixed');
-  await userEvent.click(screen.getByText('All', { selector: 'span' }));
-  expect(batch).toHaveBeenCalledExactlyOnceWith([
-    { id: 'edit', enabled: true },
-  ]);
+    screen.queryByRole('checkbox', { name: /Select visible/ }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByText('All', { selector: 'span' }),
+  ).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('checkbox', { name: 'Edit users' }));
+  expect(batch).not.toHaveBeenCalled();
 });
 
 it('aligns semantic actions across resources without dropping special or filtered actions', async () => {
@@ -540,6 +481,11 @@ it('keeps scope captions consistent in a category with multiple data ranges, inc
     />,
   );
   expect(screen.getByText('Visible quotes')).toBeVisible();
+  expect(
+    screen.getByText(
+      'Linked projects: All records; Allowed quotes: All records',
+    ),
+  ).toBeVisible();
   await userEvent.click(screen.getByText('Data ranges (2)'));
   expect(screen.getByText('Linked projects')).toBeVisible();
   expect(screen.getByText('Allowed quotes')).toBeVisible();
@@ -641,4 +587,113 @@ it('keeps administration actions ordered and independently editable with unrelat
     screen.getByRole('checkbox', { name: 'Manage grants' }),
   );
   expect(enabled).toHaveBeenCalledExactlyOnceWith('grants', true);
+});
+
+it('explains categories and allows individual review without bulk selection', async () => {
+  const change = vi.fn();
+  const batch = vi.fn();
+  render(
+    <PermissionEditor
+      sections={[
+        {
+          id: 'accounts',
+          title: 'Users and accounts',
+          description: 'Review account permissions individually.',
+          groups: [
+            {
+              id: 'security',
+              title: 'Account security',
+              rows: [
+                {
+                  id: 'disable',
+                  label: 'Disable account',
+                  enabled: false,
+                  hint: 'Prevent further sign-in.',
+                },
+                { id: 'reset', label: 'Reset password', enabled: false },
+              ],
+            },
+          ],
+        },
+      ]}
+      onEnabledChange={change}
+      onEnabledBatchChange={batch}
+      onLevelChange={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByText('Review account permissions individually.'),
+  ).toBeVisible();
+  expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+  expect(
+    screen.queryByText('All', { selector: 'span' }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByText('Prevent further sign-in.')).toBeVisible();
+  expect(change).not.toHaveBeenCalled();
+  expect(batch).not.toHaveBeenCalled();
+  await userEvent.click(
+    screen.getByRole('checkbox', { name: 'Disable account' }),
+  );
+  expect(change).toHaveBeenCalledExactlyOnceWith('disable', true);
+});
+
+it('shows scope explanations on focus or tap without changing the permission draft', async () => {
+  const user = userEvent.setup();
+  const enabled = vi.fn();
+  const changed = vi.fn();
+  render(
+    <PermissionEditor
+      sections={[
+        {
+          id: 'orders',
+          title: 'Orders',
+          groups: [
+            {
+              id: 'orders',
+              title: 'Orders',
+              rows: [
+                {
+                  id: 'view',
+                  label: 'View orders',
+                  enabled: true,
+                  scopes: [
+                    {
+                      id: 'scope',
+                      label: 'Orders',
+                      level: '',
+                      hint: 'Default access and sharing still apply.',
+                      levels: [
+                        { value: '', label: 'No additional record access' },
+                        { value: 'all', label: 'All records' },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ]}
+      onEnabledChange={enabled}
+      onLevelChange={changed}
+    />,
+  );
+  const help = screen.getByRole('button', {
+    name: 'About the data range for View orders · Orders',
+  });
+  expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+  await user.click(help);
+  expect(await screen.findByRole('tooltip')).toHaveTextContent(
+    'Default access and sharing still apply.',
+  );
+  await user.keyboard('{Escape}');
+  expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+  await user.tab({ shift: true });
+  await user.tab();
+  expect(help).toHaveFocus();
+  expect(await screen.findByRole('tooltip')).toHaveTextContent(
+    'Default access and sharing still apply.',
+  );
+  expect(enabled).not.toHaveBeenCalled();
+  expect(changed).not.toHaveBeenCalled();
 });

@@ -273,3 +273,18 @@ describe('grantBacked', () => {
     ).resolves.toBe(true);
   });
 });
+
+it('preserves localized action descriptions even when an action has no title', () => {
+  const authz = createAuthorization({ plugins: [] });
+  const items = new ResourceItems();
+  const description = { key: 'access.deleteHint', ns: '@example/tools' };
+  items.add({
+    id: 'tools',
+    title: 'Tools',
+    actions: [{ name: 'delete', description }],
+  });
+  authz.resourceTypes.add({ type: 'tools', items });
+  expect(items.get('tools')?.actions).toEqual([
+    { name: 'delete', description },
+  ]);
+});

@@ -243,3 +243,92 @@ it.each(['retiredScope', { type: 'legacyPolicy', filter: { owner: 'me' } }])(
     ).toEqual({ records: 'all' });
   },
 );
+
+it('describes unselected data ranges without claiming that inherited access is denied', () => {
+  const described = {
+    ...resource,
+    actions: [
+      { name: 'edit', title: 'Edit', description: 'Change order information.' },
+    ],
+  };
+  const grants = [
+    {
+      resource: { type: 'composite', id: 'orders' },
+      actions: [
+        {
+          action: 'edit',
+          policy: { type: 'composite', scopes: { records: '' } },
+        },
+      ],
+    },
+  ];
+  const before = structuredClone(grants);
+  const catalog = {
+    sections: [
+      {
+        name: 'business',
+        title: 'Business operations',
+        order: 100,
+        subsections: [
+          { name: 'orders', title: 'Orders', resources: [described] },
+        ],
+      },
+    ],
+    recordAccess: [],
+  } as unknown as Parameters<typeof permissionSections>[0];
+  const result = permissionSections(catalog, grants, (value) =>
+    typeof value === 'string' ? value : value.key,
+  );
+  expect(result[0]?.description).toBe('settings.businessOperationsHint');
+  expect(result[0]?.groups[0]?.rows[0]?.hint).toBe('Change order information.');
+  expect(result[0]?.groups[0]?.rows[0]?.scopes?.[0]).toMatchObject({
+    level: '',
+    hint: 'settings.noAdditionalScopeHint',
+  });
+  expect(grants).toEqual(before);
+});
+
+it('shows a shared plugin action explanation once without duplicating row hints', () => {
+  const catalog = {
+    sections: [
+      {
+        name: 'administration',
+        title: 'System and tools',
+        order: 200,
+        subsections: [
+          {
+            name: 'agents',
+            title: 'Agents',
+            resources: [
+              {
+                type: 'agents',
+                id: 'agents.agents',
+                title: 'Agents and skills',
+                actions: [
+                  {
+                    name: 'edit.related',
+                    title: 'Manage own',
+                    description: 'Includes archiving and deletion.',
+                  },
+                  {
+                    name: 'edit.all',
+                    title: 'Manage all',
+                    description: 'Includes archiving and deletion.',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    recordAccess: [],
+  } as unknown as Parameters<typeof permissionSections>[0];
+  const result = permissionSections(catalog, [], (value) =>
+    typeof value === 'string' ? value : value.key,
+  );
+  expect(result[0]?.groups[0]?.actionHint).toBe(
+    'Includes archiving and deletion.',
+  );
+  expect(result[0]?.groups[0]?.rows.every((row) => !row.hint)).toBe(true);
+});

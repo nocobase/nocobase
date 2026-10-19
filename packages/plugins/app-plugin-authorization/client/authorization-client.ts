@@ -78,6 +78,7 @@ export type LocalizedText =
 interface OptionsActionResponse {
   name: string;
   title: LocalizedText;
+  description?: LocalizedText;
 }
 
 /** What every `options` route answers. */

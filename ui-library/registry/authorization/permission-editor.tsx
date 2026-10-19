@@ -1,5 +1,5 @@
 /** A controlled permission workspace. Filtering never changes the caller's draft. */
-import { SearchIcon, ShieldCheckIcon } from 'lucide-react';
+import { InfoIcon, SearchIcon, ShieldCheckIcon } from 'lucide-react';
 import {
   useId,
   useRef,
@@ -21,6 +21,12 @@ import {
 } from '#components/ui/select';
 import { Checkbox } from '#components/ui/checkbox';
 import { Switch } from '#components/ui/switch';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '#components/ui/tooltip';
 
 export interface PermissionEditorLevel {
   readonly value: string;
@@ -30,6 +36,7 @@ export interface PermissionEditorLevel {
 export interface PermissionEditorScope {
   /** An optional input for parameters of the selected scope. */
   readonly configuration?: ReactNode;
+  readonly hint?: string | undefined;
   readonly id: string;
   readonly label: string;
   readonly levels: readonly PermissionEditorLevel[];
@@ -60,12 +67,15 @@ export interface PermissionEditorGroup {
   readonly hint?: string | undefined;
   /** A page with one access action uses its title as the only checkbox label. */
   readonly accessOnly?: boolean;
+  /** An explanation shared by all actions, shown once across the resource row. */
+  readonly actionHint?: string | undefined;
   readonly rows: readonly PermissionEditorRow[];
 }
 
 export interface PermissionEditorSection {
   readonly id: string;
   readonly title: string;
+  readonly description?: string | undefined;
   readonly groups: readonly PermissionEditorGroup[];
   /** A note under the section's rows. */
   readonly footer?: ReactNode;
@@ -82,6 +92,8 @@ export interface PermissionEditorLabels {
   readonly navigation: string;
   readonly selectAll?: string;
   readonly dataRanges?: (count: number) => string;
+  readonly scopeExplanation?: string;
+  readonly scopeHintFor?: (name: string) => string;
   readonly selectVisible?: (groupName: string) => string;
   readonly summary: (enabled: number, total: number) => string;
 }
@@ -90,7 +102,7 @@ export interface PermissionEditorProps {
   readonly sections: readonly PermissionEditorSection[];
   readonly readOnly?: boolean | undefined;
   readonly onEnabledChange: (rowId: string, enabled: boolean) => void;
-  /** One atomic draft update; when absent, group selection is omitted. */
+  /** Compatibility with existing hosts; the editor now renders individual controls only. */
   readonly onEnabledBatchChange?: (
     changes: readonly { id: string; enabled: boolean }[],
   ) => void;
@@ -108,9 +120,49 @@ const DEFAULT_LABELS: Required<PermissionEditorLabels> = {
   navigation: 'Permission categories',
   selectAll: 'All',
   dataRanges: (count) => `Data ranges (${count})`,
+  scopeExplanation:
+    'Each range applies to its corresponding data. The operation must also pass its authorization checks.',
+  scopeHintFor: (name) => `About the data range for ${name}`,
   selectVisible: (name) => `Select visible permissions in ${name}`,
   summary: (enabled, total) => `${enabled} of ${total} enabled`,
 };
+
+function ScopeHint({
+  label,
+  children,
+}: {
+  readonly label: string;
+  readonly children: string;
+}): ReactElement {
+  const [open, setOpen] = useState(false);
+  const triggerId = useId();
+  return (
+    <TooltipProvider>
+      <Tooltip open={open} onOpenChange={setOpen} triggerId={triggerId}>
+        <TooltipTrigger
+          id={triggerId}
+          closeOnClick={false}
+          render={
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              className='size-6 shrink-0 text-muted-foreground'
+              aria-label={label}
+              aria-describedby={open ? `${triggerId}-content` : undefined}
+              onClick={() => setOpen(true)}
+            />
+          }
+        >
+          <InfoIcon aria-hidden className='size-3.5' />
+        </TooltipTrigger>
+        <TooltipContent role='tooltip' id={`${triggerId}-content`}>
+          {children}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 function LevelControl({
   label,
@@ -194,6 +246,16 @@ function PermissionRow({
           onChange={(level) => onLevelChange(scope.id, level)}
         />
         {scope.configuration}
+        {scope.hint && (
+          <ScopeHint
+            label={
+              labels.scopeHintFor?.(`${row.label} · ${scope.label}`) ??
+              DEFAULT_LABELS.scopeHintFor(`${row.label} · ${scope.label}`)
+            }
+          >
+            {scope.hint}
+          </ScopeHint>
+        )}
       </div>
     </div>
   ));
@@ -229,11 +291,24 @@ function PermissionRow({
         ) : null}
         {row.enabled && row.scopes && row.scopes.length > 1 ? (
           <details className='col-start-2 min-w-0 @xs:col-span-2'>
-            <summary className='w-fit cursor-pointer text-xs leading-5 text-muted-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-ring'>
+            <summary className='cursor-pointer text-xs leading-5 text-muted-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-ring'>
               {labels.dataRanges?.(row.scopes.length) ??
                 DEFAULT_LABELS.dataRanges(row.scopes.length)}
+              <span className='mt-1 block'>
+                {row.scopes
+                  .map(
+                    (scope) =>
+                      `${scope.label}: ${scope.levels.find((level) => level.value === (scope.level ?? ''))?.label ?? ''}`,
+                  )
+                  .join('; ')}
+              </span>
             </summary>
-            <div className='mt-1 grid min-w-0 gap-2'>{scopeControls}</div>
+            <div className='mt-1 grid min-w-0 gap-2'>
+              <p className='text-xs leading-5 text-muted-foreground'>
+                {labels.scopeExplanation ?? DEFAULT_LABELS.scopeExplanation}
+              </p>
+              {scopeControls}
+            </div>
           </details>
         ) : row.enabled && row.scopes?.length === 1 ? (
           <div className='col-start-2 min-w-0 @xs:col-start-3'>
@@ -242,12 +317,12 @@ function PermissionRow({
         ) : null}
       </div>
       {row.hint && (
-        <span
+        <p
           id={`${controlId}-hint`}
-          className='pl-6 text-xs text-muted-foreground'
+          className='pl-6 text-xs leading-5 text-muted-foreground'
         >
           {row.hint}
-        </span>
+        </p>
       )}
     </div>
   );
@@ -258,7 +333,6 @@ export function PermissionEditor({
   sections,
   readOnly = false,
   onEnabledChange,
-  onEnabledBatchChange,
   onLevelChange,
   labels,
 }: PermissionEditorProps): ReactElement {
@@ -288,6 +362,7 @@ export function PermissionEditor({
                   section.title,
                   group.title,
                   group.hint,
+                  group.actionHint,
                   row.label,
                   row.hint,
                   ...(row.scopes?.map((scope) => scope.label) ?? []),
@@ -345,7 +420,6 @@ export function PermissionEditor({
           className='flex shrink-0 gap-1 overflow-x-auto border-b bg-muted/25 p-2 @2xl:sticky @2xl:top-0 @2xl:max-h-128 @2xl:w-52 @2xl:self-start @2xl:flex-col @2xl:border-r @2xl:border-b-0'
         >
           {sections.map((section) => {
-            const rows = section.groups.flatMap((group) => group.rows);
             return (
               <Button
                 type='button'
@@ -369,9 +443,6 @@ export function PermissionEditor({
                 >
                   {section.title}
                 </span>
-                <span className='min-w-10 shrink-0 rounded-md bg-background px-1.5 py-0.5 text-center text-xs tabular-nums'>
-                  {rows.filter((row) => row.enabled).length}/{rows.length}
-                </span>
               </Button>
             );
           })}
@@ -381,7 +452,6 @@ export function PermissionEditor({
             visible.map((section) => {
               const original =
                 sections.find((item) => item.id === section.id) ?? section;
-              const singleResource = original.groups.length === 1;
               const showScopeLabels = original.groups.some((group) =>
                 group.rows.some((row) => (row.scopes?.length ?? 0) > 1),
               );
@@ -474,14 +544,13 @@ export function PermissionEditor({
                   {filtering && (
                     <h2 className='text-sm font-semibold'>{section.title}</h2>
                   )}
+                  {section.description && (
+                    <p className='text-xs leading-5 text-muted-foreground'>
+                      {section.description}
+                    </p>
+                  )}
                   <div className='divide-y rounded-lg border'>
                     {section.groups.map((group) => {
-                      const selectable = group.rows.filter(
-                        (row) => row.toggleable !== false,
-                      );
-                      const enabled = selectable.filter(
-                        (row) => row.enabled,
-                      ).length;
                       const originalGroup = sections
                         .find((item) => item.id === section.id)
                         ?.groups.find((item) => item.id === group.id);
@@ -535,83 +604,6 @@ export function PermissionEditor({
                                 {group.hint}
                               </p>
                             )}
-                            {totalRows.length > 1 &&
-                              (!singleResource ||
-                                (onEnabledBatchChange &&
-                                  selectable.length > 0)) && (
-                                <div className='flex min-h-5 items-center gap-2 text-xs text-muted-foreground'>
-                                  {onEnabledBatchChange &&
-                                    totalRows.length > 1 &&
-                                    selectable.length > 0 && (
-                                      <Checkbox
-                                        aria-label={words.selectVisible(
-                                          group.title ?? section.title,
-                                        )}
-                                        checked={
-                                          selectable.length > 0 &&
-                                          enabled === selectable.length
-                                        }
-                                        indeterminate={
-                                          enabled > 0 &&
-                                          enabled < selectable.length
-                                        }
-                                        disabled={readOnly}
-                                        id={`${id}-${section.id}-${group.id}-all`}
-                                        title={words.selectVisible(
-                                          group.title ?? section.title,
-                                        )}
-                                        onCheckedChange={(checked) => {
-                                          const changes = selectable
-                                            .filter(
-                                              (row) => row.enabled !== checked,
-                                            )
-                                            .map((row) => ({
-                                              id: row.id,
-                                              enabled: checked,
-                                            }));
-                                          if (changes.length) {
-                                            if (enabledOnly && !checked)
-                                              searchRef.current?.focus();
-                                            onEnabledBatchChange(changes);
-                                          }
-                                        }}
-                                      />
-                                    )}
-                                  {onEnabledBatchChange &&
-                                    totalRows.length > 1 &&
-                                    selectable.length > 0 && (
-                                      <label
-                                        htmlFor={`${id}-${section.id}-${group.id}-all`}
-                                        className='cursor-pointer'
-                                      >
-                                        <span aria-hidden>
-                                          {words.selectAll}
-                                        </span>
-                                        <span className='sr-only'>
-                                          {words.selectVisible(
-                                            group.title ?? section.title,
-                                          )}
-                                        </span>
-                                      </label>
-                                    )}
-                                  {!singleResource && totalRows.length > 1 && (
-                                    <span
-                                      className='tabular-nums'
-                                      aria-label={words.summary(
-                                        totalRows.filter((row) => row.enabled)
-                                          .length,
-                                        totalRows.length,
-                                      )}
-                                    >
-                                      {
-                                        totalRows.filter((row) => row.enabled)
-                                          .length
-                                      }
-                                      /{totalRows.length}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
                           </div>
                           <div
                             data-slot='permission-actions'
@@ -668,6 +660,11 @@ export function PermissionEditor({
                                 </div>
                               ))}
                           </div>
+                          {group.actionHint && (
+                            <p className='col-span-full text-xs leading-5 text-muted-foreground'>
+                              {group.actionHint}
+                            </p>
+                          )}
                         </div>
                       );
                     })}

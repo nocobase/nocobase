@@ -1,8 +1,23 @@
 const settings = {
+  scopeHintFor: '关于“{{name}}”的数据范围',
+  scopeExplanation:
+    '每项范围分别约束对应数据，实际操作还需通过相应的权限检查。',
+  noAdditionalScopeHint:
+    '此操作在这里不额外授予数据访问权限，实际可访问范围仍取决于默认数据范围、共享与限制规则。',
+  systemToolsHint: '管理系统配置与工具，授权前请确认每项操作包含的能力。',
+  userAccountsHint:
+    '管理用户资料、账号安全和角色分配，请逐项确认需要授予的权限。',
+  businessOperationsHint:
+    '设置此角色可以执行的业务操作，以及每项操作可使用的数据范围。',
+  pageAccessHint:
+    '控制此角色可以进入哪些页面。页面中的数据和操作仍需单独授权。',
+  roleAssignment: '角色分配',
+  accountSecurity: '账号安全',
+  userInformation: '用户资料',
   unnamedPage: '未命名页面（{{path}}）',
   revokeRoles: '撤销角色',
   keyConflict: '此角色标识已被使用。',
-  userPermissions: '用户管理',
+  userPermissions: '用户与账号',
   readUsers: '查看用户',
   createUsers: '创建用户',
   updateUsers: '编辑用户',
@@ -95,7 +110,7 @@ const settings = {
   dataRanges: '数据范围（{{count}}）',
   selectVisiblePermissions: '选择“{{name}}”中显示的权限',
   permissionSummary: '已授权 {{enabled}} / {{total}}',
-  noRecordScope: '不允许访问数据',
+  noRecordScope: '不额外授权数据范围',
   preservedRecordScope: '保留现有配置',
   permissionFilter: {
     limit: '最多支持 20 个条件',
