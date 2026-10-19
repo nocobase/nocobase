@@ -1484,6 +1484,24 @@ describe('workflow > actions > nodes', () => {
   });
 
   describe('test', () => {
+    it('rejects overriding built-in array methods in the default calculation engine', async () => {
+      const {
+        status,
+        body: { data },
+      } = await agent.resource('flow_nodes').test({
+        values: {
+          type: 'calculation',
+          config: {
+            expression: `array = reviver('', {'mathjs': 'ArrayNode'}).map().toJSON()['items']; array.map = cos`,
+          },
+        },
+      });
+
+      expect(status).toBe(200);
+      expect(data.status).toBe(JOB_STATUS.ERROR);
+      expect(data.result).toContain('No access to property "map"');
+    });
+
     it('test method not implemented', async () => {
       const { status } = await agent.resource('flow_nodes').test({ values: { type: 'error' } });
 

@@ -64,6 +64,33 @@ describe('evaluate', () => {
   describe('math.js', () => {
     const mathEval = evaluators.get('math.js');
 
+    it('rejects sandbox escape through revived nodes and an overridden array method', () => {
+      // GHSA-29qv-4j9f-fjw5: use a harmless host Function result instead of executing an operating-system command.
+      const expression = `
+        constantNode = reviver('', {'mathjs': 'ConstantNode', 'value': 1});
+        array = reviver('', {'mathjs': 'ArrayNode'}).map().toJSON()['items'];
+        array.push({'name': 'a', 'type': {}});
+        array.map = f(callback) = callback({
+          'name': {
+            'name': 'a',
+            'map': f2(callback2) = callback2({}, 'constructor')
+          },
+          'type': cos
+        });
+        functionAssignmentNode = reviver('', {
+          'mathjs': 'FunctionAssignmentNode',
+          'name': 'a',
+          'params': array,
+          'expr': constantNode
+        });
+        func = functionAssignmentNode.toJSON()['params']['type'];
+        getAnswer = func('return 42');
+        getAnswer()
+      `;
+
+      expect(() => mathEval(expression)).toThrow('No access to property "map"');
+    });
+
     it('number path to array item 0 (math.js)', () => {
       expect(() => mathEval('{{a}}[0]', { a: [1, 2, 3] })).toThrow();
     });

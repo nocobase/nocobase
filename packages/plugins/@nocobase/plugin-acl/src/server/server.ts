@@ -30,6 +30,7 @@ import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
 import { setSystemRoleMode } from './actions/union-role';
+import { setSystemSnippet } from './actions/set-system-snippet';
 import { checkAssociationOperate } from './middlewares/check-association-operate';
 import {
   SanitizeAssociationValuesOptions,
@@ -188,6 +189,7 @@ export class PluginACLServer extends Plugin {
     this.app.resourcer.define(roleCollectionsResource);
 
     this.app.resourcer.registerActionHandler('roles:setSystemRoleMode', setSystemRoleMode);
+    this.app.resourcer.registerActionHandler('roles:setSystemSnippet', setSystemSnippet);
     this.app.resourcer.registerActionHandler('roles:applyDataPermissions', applyDataPermissions);
 
     this.app.resourcer.registerActionHandler('roles:check', checkAction);

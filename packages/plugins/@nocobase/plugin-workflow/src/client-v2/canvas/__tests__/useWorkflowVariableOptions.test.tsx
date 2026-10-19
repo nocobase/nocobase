@@ -58,6 +58,8 @@ vi.mock('../contexts', async (importOriginal) => {
 });
 
 import { useWorkflowVariableOptions } from '../useWorkflowVariableOptions';
+import LoopInstruction from '../../../../../plugin-workflow-loop/src/client-v2/nodes/loop';
+import { loadMetaTreeChildren, type MetaTreeNode } from '@nocobase/flow-engine';
 
 /**
  * Build a v1-shaped plugin: `instructions` + `systemVariables` + `triggers`
@@ -320,6 +322,66 @@ describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
     expect(scopes).toBeTruthy();
     expect(scopes?.children?.map((child: any) => child.name)).toEqual(['loop1']);
     expect(scopes?.children?.[0]?.children?.map((child: any) => child.name)).toEqual(['item']);
+  });
+
+  it.each([false, true])('resolves nested loop item fields (lazy: %s)', async (lazy) => {
+    const plugin = makeV1ShapedPlugin();
+    const loop = new LoopInstruction();
+    const originalGet = plugin.instructions.get;
+    plugin.instructions.get = (type: string) => (type === 'loop' ? loop : originalGet(type));
+    const fields = [{ value: 'title', label: 'Title' }];
+    plugin.triggers.get = () => ({
+      useVariables: () => [
+        {
+          value: 'data',
+          label: 'Data',
+          children: [
+            {
+              value: 'posts',
+              label: 'Posts',
+              ...(lazy
+                ? {
+                    loadChildren: (option: { children?: typeof fields }) => {
+                      option.children = fields;
+                    },
+                  }
+                : { children: fields }),
+            },
+          ],
+        },
+      ],
+    });
+    setupEngine(plugin);
+    holder.workflow = { id: 7, type: 'collection', config: {} };
+    const outer = { id: 1, key: 'outer', type: 'loop', config: { target: '{{$context.data}}' } };
+    const inner = {
+      id: 2,
+      key: 'inner',
+      type: 'loop',
+      config: { target: '{{$scopes.outer.item.posts}}' },
+      branchIndex: 0,
+      upstream: outer,
+    };
+    holder.currentNode = { key: 'action', type: 'condition', branchIndex: 0, upstream: inner };
+
+    const { result, rerender } = renderHook(() => useWorkflowVariableOptions());
+    async function findPath(path: string[]): Promise<MetaTreeNode | undefined> {
+      let children = result.current;
+      let node: MetaTreeNode | undefined;
+      for (const segment of path) {
+        node = children.find((child) => child.name === segment);
+        children = node ? await loadMetaTreeChildren(node) : [];
+      }
+      return node;
+    }
+
+    const title = await findPath(['$scopes', 'inner', 'item', 'title']);
+    expect(title).toBeDefined();
+    expect(title?.paths).toEqual(['$scopes', 'inner', 'item', 'title']);
+    expect(await findPath(['$scopes', 'outer', 'item', 'posts', 'title'])).toBeDefined();
+    const tree = result.current;
+    rerender();
+    expect(result.current).toBe(tree);
   });
 
   it('keeps disabled scope and node-result roots when they have no available children', () => {
