@@ -302,6 +302,23 @@ describe('scheduled snapshot refreshes', () => {
     expect(result.current.view?.state).toBe('awaitingCustomer');
   });
 
+  it('keeps displaying slow successful reads with the default polling interval', async () => {
+    const { client, id } = setup('agent');
+    const snapshot = await client.view('tickets', id);
+    vi.useFakeTimers();
+    let version = 0;
+    const view = vi.spyOn(client, 'view').mockImplementation(() => {
+      const next = { ...snapshot, version: ++version };
+      return new Promise((resolve) => setTimeout(() => resolve(next), 6_000));
+    });
+    const { result } = renderHook(() => useLifecycle(client, 'tickets', id));
+    await act(() => vi.advanceTimersByTimeAsync(6_000));
+    expect(result.current.view?.version).toBe(1);
+    await act(() => vi.advanceTimersByTimeAsync(8_000));
+    expect(result.current.view?.version).toBe(2);
+    expect(view).toHaveBeenCalledTimes(2);
+  });
+
   it('keeps the default four-second interval and allows opting out', async () => {
     vi.useFakeTimers();
     const { client, id } = setup('agent');

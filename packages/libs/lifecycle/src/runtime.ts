@@ -1682,8 +1682,8 @@ export class LifecycleRuntime {
       return this.store.findEffectRun(runId);
     }
     const attempt = run.attempts + 1;
-    const claimed = await this.updateRun(
-      run,
+    const claimed = await this.store.updateEffectRun(
+      runId,
       { status: 'queued', attempts: run.attempts },
       {
         status: 'running',
@@ -1707,6 +1707,10 @@ export class LifecycleRuntime {
     this.attempts.set(runId, controller);
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
+      // Listeners may await external publication or cancel this claimed run.
+      // Register cancellation before notifying, and do not start cancelled work.
+      await this.effectChanged(run);
+      controller.signal.throwIfAborted();
       const entry = await this.store.findTransition(run.transitionId);
       const record = await this.store.findRecord(
         lifecycle.collection,
@@ -1744,6 +1748,7 @@ export class LifecycleRuntime {
           attempt,
           resolution,
         );
+      controller.signal.throwIfAborted();
       const work = Promise.resolve(
         effect.run({
           record,
@@ -2154,8 +2159,8 @@ export class LifecycleRuntime {
         'INVALID_STATE',
         `Effect run "${runId}" is ${run.status}; only a queued or running run can be cancelled.`,
       );
-    const cancelled = await this.updateRun(
-      run,
+    const cancelled = await this.store.updateEffectRun(
+      runId,
       { status: run.status, attempts: run.attempts },
       {
         status: 'cancelled',
@@ -2164,8 +2169,10 @@ export class LifecycleRuntime {
         updatedAt: this.clock().toISOString(),
       },
     );
-    if (cancelled)
+    if (cancelled) {
       this.attempts.get(runId)?.abort(new Error('The run was cancelled.'));
+      await this.effectChanged(run);
+    }
     return this.store.findEffectRun(runId);
   }
 

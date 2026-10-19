@@ -382,9 +382,17 @@ export function useLifecycle(
 
   useEffect(() => {
     if (id === undefined) return undefined;
-    const first = loadOnMount ? setTimeout(() => void reload(), 0) : undefined;
-    const timer =
-      refreshMs > 0 ? setInterval(() => void reload(), refreshMs) : undefined;
+    let pending = false;
+    const poll = (): void => {
+      // A slow successful read must settle before another poll supersedes it.
+      if (pending) return;
+      pending = true;
+      void reload().finally(() => {
+        pending = false;
+      });
+    };
+    const first = loadOnMount ? setTimeout(poll, 0) : undefined;
+    const timer = refreshMs > 0 ? setInterval(poll, refreshMs) : undefined;
     return () => {
       clearTimeout(first);
       if (timer) clearInterval(timer);

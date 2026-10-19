@@ -19,13 +19,21 @@ interface TaskTypes {
   state: Task['status'];
 }
 
+function deferred<T = void>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((accept) => {
+    resolve = accept;
+  });
+  return { promise, resolve };
+}
+
 function setup(options: { continuation?: boolean; attempts?: number } = {}) {
   const store = new MemoryLifecycleStore();
   let now = new Date('2026-10-01T09:00:00Z');
   let broken = false;
   let continuationError: Error | undefined;
   const execute = vi
-    .fn<() => Promise<unknown>>()
+    .fn<(signal: AbortSignal) => Promise<unknown>>()
     .mockResolvedValue({ ok: true });
   const logger = { error: vi.fn(), warn: vi.fn() };
   const runtime = new LifecycleRuntime({
@@ -49,7 +57,7 @@ function setup(options: { continuation?: boolean; attempts?: number } = {}) {
               name: 'tasks.work',
               retry: { attempts: options.attempts ?? 1, backoffMs: 1_000 },
               ...(options.continuation ? { onSuccess: 'finish' } : {}),
-              run: () => execute(),
+              run: ({ signal }) => execute(signal),
             }),
           ],
         },
@@ -223,6 +231,71 @@ describe('committed record changes', () => {
       'running',
       'cancelled',
     ]);
+  });
+
+  it('does not start a cancelled effect after its running notification settles', async () => {
+    const { runtime, store, execute, start } = setup();
+    const runId = await start();
+    const notifying = deferred();
+    const release = deferred();
+    runtime.onChange({}, async (change) => {
+      if (
+        change.runId === runId &&
+        (await store.findEffectRun(runId))?.status === 'running'
+      ) {
+        notifying.resolve();
+        await release.promise;
+      }
+    });
+    const running = runtime.runEffect(runId);
+    try {
+      await notifying.promise;
+      expect((await runtime.cancelRun(runId))?.status).toBe('cancelled');
+    } finally {
+      release.resolve();
+      await running;
+    }
+    expect(execute).not.toHaveBeenCalled();
+    expect((await store.findEffectRun(runId))?.status).toBe('cancelled');
+  });
+
+  it('aborts a running effect before awaiting its cancellation notification', async () => {
+    const { runtime, store, execute, start } = setup();
+    const began = deferred<AbortSignal>();
+    const finish = deferred();
+    const externalWrite = vi.fn();
+    execute.mockImplementation(async (signal) => {
+      began.resolve(signal);
+      await finish.promise;
+      signal.throwIfAborted();
+      externalWrite();
+    });
+    const runId = await start();
+    const notifying = deferred();
+    const release = deferred();
+    runtime.onChange({}, async (change) => {
+      if (
+        change.runId === runId &&
+        (await store.findEffectRun(runId))?.status === 'cancelled'
+      ) {
+        notifying.resolve();
+        await release.promise;
+      }
+    });
+    const running = runtime.runEffect(runId);
+    const signal = await began.promise;
+    const cancelling = runtime.cancelRun(runId);
+    try {
+      await notifying.promise;
+      expect(signal.aborted).toBe(true);
+      finish.resolve();
+      await running;
+      expect(externalWrite).not.toHaveBeenCalled();
+    } finally {
+      finish.resolve();
+      release.resolve();
+      await Promise.all([running, cancelling]);
+    }
   });
 
   it('announces a reclaimed lease and its exhausted attempt budget', async () => {
