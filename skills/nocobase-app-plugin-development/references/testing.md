@@ -59,7 +59,7 @@ Maintained executable fixtures also live in `packages/tools/app-testing/tests/`,
 | Routes and Tabs           | Paths, parents, navigation/access, actual lazy loaders, direct URLs, reload, history, parent redirect, query preservation |
 | Components                | Props, interactions, accessibility, public exports, target App rendering and themes                                       |
 | React Providers           | Context values, composition order, cleanup, App-owned consumers                                                           |
-| Client ServiceProviders   | Service/Refine registration, options, lifecycle, startup failure and reverse cleanup                                      |
+| Client ServiceProviders   | Service registration, options, lifecycle, startup failure and reverse cleanup                                             |
 | Server Services/Providers | Original Token, lazy singleton behavior, lifecycle, failure cleanup                                                       |
 | HTTP contributions        | Production router requests, validation, status/body, authentication, allowed and denied authorization paths, and every route declared in the API document (`findUndeclaredApiRoutes`, `findApiDocumentSchemaProblems`) |
 | Migration/Seed            | Real database schema and metadata, `up`, reversible `down`, required records and repeat behavior                          |

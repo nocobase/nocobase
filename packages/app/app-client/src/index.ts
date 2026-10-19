@@ -77,7 +77,6 @@ export {
   type AppClientConfigValue,
   type AppClientPublicConfig,
   type AppClientReactProvider,
-  type AppClientRefineConfig,
   type AppClientRenderConfig,
 } from './config.js';
 export type {
@@ -116,9 +115,6 @@ export type {
   AppClientReactProviderDefinition,
   AppClientReactProviderLayer,
   AppClientReactProviders,
-  AppClientRefineRegistry,
-  AppClientRefineSetterValue,
-  AppClientRefineSetters,
   AppClientRegisteredReactProvider,
   AppClientRegisteredRoute,
   AppClientRegisteredServiceProvider,

@@ -155,12 +155,11 @@ These are optional peers: a deployment does not need them, and every template de
 
 | Package                | Used by                                                                             |
 | ---------------------- | ----------------------------------------------------------------------------------- |
-| `vite`                 | `dev`, and `build` through it                                                       |
+| `vite`                 | `dev`, and `build` for the client                                                   |
 | `tsx`                  | loading the application's TypeScript, and `dev` to run the server                   |
 | `typescript`           | `build` through `pnpm exec tsc`, and parsing `server/plugins.ts` without running it |
 | `prettier`             | formatting the composition roots `plugin register` edits                            |
 | `tar`                  | `build --tar`                                                                       |
-| `@refinedev/cli`       | `build`, which runs `refine build` for the client                                   |
 | `tsc-alias`            | `build`, which rewrites server path aliases                                         |
 | `@nocobase/dev-config` | `build`, for the database manifests                                                 |
 
