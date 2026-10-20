@@ -31,6 +31,8 @@ export interface ListAdministratedUsersInput {
   readonly search?: string;
   readonly status?: 'enabled' | 'disabled';
   readonly userIds?: readonly string[];
+  /** Server-owned management exclusions, never populated from HTTP input. */
+  readonly excludedUserIds?: readonly string[];
   /** Which accounts to list: people (the default), service accounts, or both. */
   readonly kind?: UserKind | 'all';
   readonly sort?: 'name';
@@ -166,6 +168,8 @@ class DefaultUserAdministrationService implements UserAdministrationService {
         ...(input.status === 'disabled'
           ? [builder.date('disabledAt').notEmpty()]
           : []),
+        ...(input.excludedUserIds?.map((id) => builder.string('id').ne(id)) ??
+          []),
         ...(userIds
           ? [builder.or(userIds.map((id) => builder.string('id').eq(id)))]
           : []),

@@ -144,3 +144,9 @@ Invitation emails use `notificationService.sendTransient()` so credentials never
 Batch invitations send at most five emails concurrently with a shared 30-second mail-delivery budget. Links are returned even when the budget is exhausted: `emailSent=false` also covers an unattempted or uncertain delivery. Timed-out providers may still complete delivery; no automatic retry is scheduled. Authorized inviters can copy the returned link or resend the invitation.
 
 Management clients can retrieve the latest account and role scopes with `UsersClient.get(userId)` (`GET /api/users/:userId`), protected by the same authenticated `user/read` boundary as the list. List requests accept `sort: 'name'` and `order: 'asc' | 'desc'`; sorting occurs before pagination and IDs break ties. Omitting sorting preserves the existing creation-time order.
+
+### Application management boundaries
+
+`userManagementPolicyToken` registers one server-owned management policy. Its exclusions apply before pagination and count; its target guard applies to individual reads and writes. It does not change Authentication or the application's sign-in surface. No policy preserves the existing plugin behavior.
+
+`UserRoleMutationContext` carries an authenticated server identity through create and role replacement; invitation acceptance carries its stored inviter and invitation ID, without trusting request body actor fields. Scopes may reject sensitive replacements without context. Options are available with read or assignment permission on at least one target and never require role-definition access. Transaction-bound scopes may declare `notifiesChanges` to publish once through Permission Sets after commit.

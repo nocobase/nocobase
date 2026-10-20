@@ -42,6 +42,13 @@ export interface ReplaceSubjectAssignmentsInput {
   /** The Permission Sets this replacement owns; others are left alone. */
   managedPermissionSets: readonly string[];
   permissionSets: readonly string[];
+  /**
+   * Server-side validation after protection locks and before assignment reads.
+   * Only supported on an API bound with withTransaction; use that same
+   * transaction for validation and propagate failures to its runner to roll
+   * back the entire operation.
+   */
+  beforeReplace?: () => Promise<void>;
 }
 
 export interface PermissionSetsApi<TTransaction = unknown> {
@@ -551,6 +558,8 @@ class PermissionSetService<
   async replaceSubjectAssignments(
     input: ReplaceSubjectAssignmentsInput,
   ): Promise<readonly PermissionSetAssignment[]> {
+    if (input.beforeReplace && this.transaction === undefined)
+      throw new TypeError('beforeReplace requires a caller-owned transaction');
     const result = await this.mutateAssignments((service) =>
       service.replaceAssignments(input),
     );
@@ -565,6 +574,7 @@ class PermissionSetService<
     changed: boolean;
   }> {
     await this.lockProtectedSets();
+    await input.beforeReplace?.();
     const managed = new Set(input.managedPermissionSets);
     const requested = [...new Set(input.permissionSets)];
     if (requested.some((key) => !managed.has(key))) {

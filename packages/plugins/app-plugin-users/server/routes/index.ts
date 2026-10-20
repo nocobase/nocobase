@@ -35,6 +35,7 @@ import {
   UserRoleScopeError,
   userManagementServiceToken,
   userPreferencesServiceToken,
+  type UserRoleMutationContext,
 } from '../tokens.js';
 import {
   CreateUserInput,
@@ -82,15 +83,39 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiErrorHandler(toUsersApiError(error) ?? error, context),
     );
 
-    routes.use('*', authentication.required(), authorization.middleware());
+    routes.use(
+      '*',
+      authentication.required({ scopedKeys: true }),
+      authorization.middleware(),
+    );
 
     // Fixed segments are registered before `/:userId`, which would otherwise match them.
     routes.get(
       '/options',
-      allowed('read', '*'),
+      async (context, next) => {
+        const authz = context.get('authz');
+        const snapshot = await authz.snapshot();
+        const candidates = snapshot.permissions.filter(
+          (permission) => permission.resource.type === 'user',
+        );
+        let permitted = snapshot.unrestricted;
+        for (const permission of candidates) {
+          for (const action of ['read', 'assign-role']) {
+            if (
+              permission.actions.includes(action) &&
+              (await authz.can({ resource: permission.resource, action }))
+            )
+              permitted = true;
+          }
+        }
+        if (!permitted) await requireUserAction(context, '*', 'read');
+        await next();
+      },
       describeRoute({
         tags,
         summary: 'List the role scopes and roles a user can be assigned',
+        description:
+          'Requires user/read or user/assign-role on at least one user; role definition access is not required.',
         operationId: 'usersListUserOptions',
         ...cliRoute({ command: 'user options' }),
         responses: {
@@ -98,7 +123,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ...apiErrorResponses,
         },
       }),
-      async (context) => context.json({ data: await users.options() }),
+      async (context) =>
+        context.json({
+          data: await users.options(mutationContext(context, 'replace')),
+        }),
     );
     // Pending and expired invitations only, a bounded list: accepted and revoked ones drop out.
     routes.get(
@@ -295,7 +323,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         });
         return context.json({
           data: page.items,
-          meta: { page: page.page, pageSize: page.pageSize, total: page.total },
+          meta: {
+            page: page.page,
+            pageSize: page.pageSize,
+            total: page.total,
+            ...(page.systemAdministratorCount === undefined
+              ? {}
+              : {
+                  systemAdministratorCount: page.systemAdministratorCount,
+                  message: page.message,
+                }),
+          },
         });
       },
     );
@@ -333,7 +371,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('json', CreateUserInput),
       async (context) => {
         const input = context.req.valid('json');
-        const user = await users.create(input);
+        const user = await users.create(
+          input,
+          mutationContext(context, 'create'),
+        );
         logSecurityEvent(securityLogger, context, 'user.create', user.id, {
           roleScopes: Object.keys(input.roleScopes ?? {}).sort(),
         });
@@ -391,7 +432,11 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('json', UpdateUserInput),
       async (context) => {
         const { userId } = context.req.valid('param');
-        const user = await users.update(userId, context.req.valid('json'));
+        const user = await users.update(
+          userId,
+          context.req.valid('json'),
+          mutationContext(context, 'replace'),
+        );
         logSecurityEvent(securityLogger, context, 'user.update', userId);
         return context.json({ data: user });
       },
@@ -459,7 +504,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('param', UserParams),
       async (context) => {
         const { userId } = context.req.valid('param');
-        const user = await users.disable(userId);
+        const user = await users.disable(
+          userId,
+          mutationContext(context, 'replace'),
+        );
         logSecurityEvent(securityLogger, context, 'user.disable', userId);
         return context.json({ data: user });
       },
@@ -485,7 +533,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('param', UserParams),
       async (context) => {
         const { userId } = context.req.valid('param');
-        const user = await users.enable(userId);
+        const user = await users.enable(
+          userId,
+          mutationContext(context, 'replace'),
+        );
         logSecurityEvent(securityLogger, context, 'user.enable', userId);
         return context.json({ data: user });
       },
@@ -525,7 +576,12 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       async (context) => {
         const { userId, scope } = context.req.valid('param');
         const { value } = context.req.valid('json');
-        const user = await users.replaceRoleScope(userId, scope, value);
+        const user = await users.replaceRoleScope(
+          userId,
+          scope,
+          value,
+          mutationContext(context, 'replace'),
+        );
         logSecurityEvent(securityLogger, context, 'user.role.update', userId, {
           roleScope: scope,
           roles: typeof value === 'string' ? [value] : [...value],
@@ -559,7 +615,11 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('json', ResetUserPasswordInput),
       async (context) => {
         const { userId } = context.req.valid('param');
-        await users.resetPassword(userId, context.req.valid('json').password);
+        await users.resetPassword(
+          userId,
+          context.req.valid('json').password,
+          mutationContext(context, 'replace'),
+        );
         logSecurityEvent(
           securityLogger,
           context,
@@ -883,7 +943,8 @@ function toInvitationTokenError(error: unknown): ApiError | undefined {
  * `UserManagementError` and `UserRoleScopeError` carry the HTTP-style status a role scope chose. A `409` there means
  * the account's current state forbids the operation, which the standard body reports as `FAILED_PRECONDITION`.
  */
-function statusOf(status: 400 | 404 | 409): ApiErrorStatus {
+function statusOf(status: 400 | 403 | 404 | 409): ApiErrorStatus {
+  if (status === 403) return 'PERMISSION_DENIED';
   if (status === 404) return 'NOT_FOUND';
   if (status === 409) return 'FAILED_PRECONDITION';
   return 'INVALID_ARGUMENT';
@@ -952,3 +1013,29 @@ const routes: readonly AppApiRouteContribution<AppPluginApplication>[] = [
 ];
 
 export default routes;
+
+function mutationContext(
+  context: import('hono').Context<AuthorizationEnv>,
+  operation: UserRoleMutationContext['operation'],
+): UserRoleMutationContext {
+  const principal = context.get('authz').identity.principal;
+  if (principal.type !== 'user')
+    throw new UserRoleScopeError(
+      'INVALID_ACTOR',
+      'A user principal is required',
+      403,
+    );
+  const auth = context.get('auth' as never) as AuthEnv['Variables']['auth'];
+  const credential = auth?.credential
+    ? 'issued'
+    : auth?.session?.token &&
+        [...context.req.raw.headers.values()].includes(auth.session.token)
+      ? 'api-key'
+      : 'session';
+  return {
+    operation,
+    actor: { type: 'user', id: principal.id },
+    credential,
+    identity: context.get('authz').identity,
+  };
+}

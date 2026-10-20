@@ -557,3 +557,5 @@ await database.transaction(async (connection) => {
 ## `@nocobase/authorization`
 
 The root entry re-exports every name of the five subpaths above and adds none of its own.
+
+A transaction-bound `replaceSubjectAssignments` accepts optional `beforeReplace`. It runs after protection locks and before assignment reads or writes, in the caller's transaction. Use it for server-owned actor and target validation; throw to roll back. Calling it on an unbound API is rejected. The callback does not change ordinary callers or introduce additional locks by itself.

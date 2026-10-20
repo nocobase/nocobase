@@ -409,6 +409,57 @@ describe('the Permission Sets service', () => {
 });
 
 describe('Permission Sets that require an active assignment', () => {
+  it('runs bound validation after protection locks and before assignment reads', async () => {
+    const store = new RecordingPermissionSetStore(
+      administratorOptions(['root', 'second']),
+    );
+    const authorization = createProtectedAuthorization({ store });
+    await authorization.permissionSets
+      .withTransaction(transaction)
+      .replaceSubjectAssignments({
+        subject: { type: 'user', id: 'second' },
+        managedPermissionSets: ['administrator', 'viewer'],
+        permissionSets: ['viewer'],
+        beforeReplace: async () => {
+          store.calls.push('validate');
+        },
+      });
+    expect(store.calls.slice(0, 3)).toEqual([
+      'lock:administrator',
+      'validate',
+      'listAssignments:*',
+    ]);
+  });
+
+  it('refuses unbound validation and does not mutate assignments when validation fails', async () => {
+    const store = new RecordingPermissionSetStore(
+      administratorOptions(['root', 'second']),
+    );
+    const authorization = createProtectedAuthorization({ store });
+    const failure = new Error('Target is outside the managed scope');
+    const beforeReplace = vi.fn(async () => {
+      throw failure;
+    });
+    const input = {
+      subject: { type: 'user', id: 'second' },
+      managedPermissionSets: ['administrator', 'viewer'],
+      permissionSets: ['viewer'],
+      beforeReplace,
+    };
+    await expect(
+      authorization.permissionSets.replaceSubjectAssignments(input),
+    ).rejects.toThrow('caller-owned transaction');
+    expect(beforeReplace).not.toHaveBeenCalled();
+    expect(store.calls).toEqual([]);
+    await expect(
+      authorization.permissionSets
+        .withTransaction(transaction)
+        .replaceSubjectAssignments(input),
+    ).rejects.toBe(failure);
+    expect(store.calls).toEqual(['lock:administrator']);
+    expect(await store.listAssignments()).toHaveLength(2);
+  });
+
   it('refuses the revocation that would remove the last assignment', async () => {
     const store = new MockPermissionSetStore(
       administratorOptions(['root', 'second']),

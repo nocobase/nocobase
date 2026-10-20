@@ -25,6 +25,8 @@ import {
   type UserRoleScope,
   type UserRoleScopeRegistry,
   type UserRoleValue,
+  type UserRoleMutationContext,
+  type UserManagementPolicy,
 } from '../tokens.js';
 
 export function createUserRoleScopeRegistry(): UserRoleScopeRegistry {
@@ -48,6 +50,7 @@ export interface CreateUserManagementServiceOptions {
   readonly database: DatabaseManager;
   readonly users: UserAdministrationService;
   readonly roleScopes: UserRoleScopeRegistry;
+  readonly policy?: () => UserManagementPolicy | undefined;
   /**
    * Absent in an application assembled without authorization. When present,
    * disabling an account asks it whether that account is the last one able to
@@ -105,6 +108,8 @@ class DefaultUserManagementService implements UserManagementService {
     this.invitations.onInvitationAccepted(handler);
 
   async get(userId: string): Promise<ManagedUser> {
+    const connection = this.services.database.connection();
+    await this.services.policy?.()?.assertTarget('read', userId, connection);
     const user = await this.services.users.get(userId);
     if (!user)
       throw new UserManagementError(
@@ -112,10 +117,12 @@ class DefaultUserManagementService implements UserManagementService {
         `Unknown user: ${userId}`,
         404,
       );
-    return this.withRoleScopes(user, this.services.database.connection());
+    return this.withRoleScopes(user, connection);
   }
 
-  async options(): Promise<UserManagementOptions> {
+  async options(
+    context?: UserRoleMutationContext,
+  ): Promise<UserManagementOptions> {
     return {
       roleScopes: await Promise.all(
         this.services.roleScopes.list().map(async (scope) => ({
@@ -131,7 +138,7 @@ class DefaultUserManagementService implements UserManagementService {
           requiredOnCreate: scope.requiredOnCreate ?? false,
           hasAuthenticatedDefaultAccess:
             scope.hasAuthenticatedDefaultAccess ?? false,
-          options: await scope.options(),
+          options: await scope.options(context),
         })),
       ),
     };
@@ -150,6 +157,9 @@ class DefaultUserManagementService implements UserManagementService {
       const scope = this.requireScope(input.roleScope, 400);
       userIds = await scope.findUserIds(input.role, connection);
     }
+    const excludedUserIds = await this.services
+      .policy?.()
+      ?.excludedUserIds(connection);
     const page = await this.services.users.list({
       page: input.page,
       pageSize: input.pageSize,
@@ -158,9 +168,18 @@ class DefaultUserManagementService implements UserManagementService {
       order: input.order,
       status: input.status,
       userIds,
+      excludedUserIds,
     });
     return {
       ...page,
+      ...(excludedUserIds
+        ? {
+            systemAdministratorCount: excludedUserIds.length,
+            message:
+              excludedUserIds.length +
+              ' system administrators are listed separately from ordinary users.',
+          }
+        : {}),
       items: await this.withRoleScopesForUsers(page.items, connection),
     };
   }
@@ -177,7 +196,11 @@ class DefaultUserManagementService implements UserManagementService {
     if (changed) connection.afterCommit(() => changed(userId));
   }
 
-  async create(input: CreateManagedUserInput): Promise<ManagedUser> {
+  async create(
+    input: CreateManagedUserInput,
+    context?: UserRoleMutationContext,
+  ): Promise<ManagedUser> {
+    await this.services.policy?.()?.assertAction('create', context);
     const submitted = input.roleScopes ?? {};
     this.validateCreateRoleScopes(submitted);
     const user = await this.services.database.transaction(
@@ -189,9 +212,14 @@ class DefaultUserManagementService implements UserManagementService {
             created.id,
             value,
             connection,
+            context,
           );
         }
-        if (Object.keys(submitted).length > 0) {
+        if (
+          Object.keys(submitted).some(
+            (key) => !this.requireScope(key).notifiesChanges,
+          )
+        ) {
           this.afterRoleScopesCommit(connection, created.id);
         }
         return created;
@@ -203,10 +231,15 @@ class DefaultUserManagementService implements UserManagementService {
   async update(
     userId: string,
     input: Parameters<UserManagementService['update']>[1],
+    context?: UserRoleMutationContext,
   ) {
     const user = await this.services.database.transaction(
       async (connection) => {
         await lockUserForAdministration(connection, userId);
+        await this.services.policy?.()?.assertAction('update', context);
+        await this.services
+          .policy?.()
+          ?.assertTarget('update', userId, connection);
         return this.services.users
           .withConnection(connection)
           .update(userId, input);
@@ -215,7 +248,10 @@ class DefaultUserManagementService implements UserManagementService {
     return this.withRoleScopes(user, this.services.database.connection());
   }
 
-  async disable(userId: string): Promise<ManagedUser> {
+  async disable(
+    userId: string,
+    context?: UserRoleMutationContext,
+  ): Promise<ManagedUser> {
     const user = await this.services.database.transaction(
       async (connection) => {
         for (const scope of this.services.roleScopes.list()) {
@@ -227,6 +263,10 @@ class DefaultUserManagementService implements UserManagementService {
           ?.withTransaction(connection)
           .assertSubjectRemovable({ type: 'user', id: userId });
         await lockUserForAdministration(connection, userId);
+        await this.services.policy?.()?.assertAction('disable', context);
+        await this.services
+          .policy?.()
+          ?.assertTarget('disable', userId, connection);
         return this.services.users.withConnection(connection).disable(userId);
       },
     );
@@ -261,6 +301,9 @@ class DefaultUserManagementService implements UserManagementService {
       await this.services.permissionSets
         ?.withTransaction(connection)
         .assertSubjectRemovable({ type: 'user', id: userId });
+      await this.services
+        .policy?.()
+        ?.assertTarget('delete', userId, connection);
       const users = this.services.users.withConnection(connection);
       if (!(await users.get(userId)))
         throw new UserManagementError(
@@ -275,10 +318,17 @@ class DefaultUserManagementService implements UserManagementService {
     });
   }
 
-  async enable(userId: string): Promise<ManagedUser> {
+  async enable(
+    userId: string,
+    context?: UserRoleMutationContext,
+  ): Promise<ManagedUser> {
     const user = await this.services.database.transaction(
       async (connection) => {
         await lockUserForAdministration(connection, userId);
+        await this.services.policy?.()?.assertAction('enable', context);
+        await this.services
+          .policy?.()
+          ?.assertTarget('enable', userId, connection);
         return this.services.users.withConnection(connection).enable(userId);
       },
     );
@@ -289,22 +339,25 @@ class DefaultUserManagementService implements UserManagementService {
     userId: string,
     scopeKey: string,
     value: UserRoleValue,
+    context?: UserRoleMutationContext,
   ): Promise<ManagedUser> {
     const scope = this.requireScope(scopeKey);
     this.validateRoleScopeValue(scope, value);
     await this.services.database.transaction(async (connection) => {
-      const user = await this.services.users
-        .withConnection(connection)
-        .get(userId);
-      if (!user) {
+      await this.services.policy?.()?.assertAction('assign-role', context);
+      await scope.replace(userId, value, connection, context);
+      await this.services
+        .policy?.()
+        ?.assertTarget('assign-role', userId, connection);
+      if (!(await this.services.users.withConnection(connection).get(userId))) {
         throw new UserManagementError(
           'USER_NOT_FOUND',
-          `Unknown user: ${userId}`,
+          'The user does not exist',
           404,
         );
       }
-      await scope.replace(userId, value, connection);
-      this.afterRoleScopesCommit(connection, userId);
+      if (!scope.notifiesChanges)
+        this.afterRoleScopesCommit(connection, userId);
     });
     const user = await this.services.users.get(userId);
     if (!user) {
@@ -317,16 +370,31 @@ class DefaultUserManagementService implements UserManagementService {
     return this.withRoleScopes(user, this.services.database.connection());
   }
 
-  async resetPassword(userId: string, password: string): Promise<void> {
+  async resetPassword(
+    userId: string,
+    password: string,
+    context?: UserRoleMutationContext,
+  ): Promise<void> {
     await this.services.database.transaction(async (connection) => {
       await lockUserForAdministration(connection, userId);
+      await this.services.policy?.()?.assertAction('reset-password', context);
+      await this.services
+        .policy?.()
+        ?.assertTarget('reset-password', userId, connection);
       await this.services.users
         .withConnection(connection)
         .resetPassword(userId, password);
     });
   }
 
-  revokeSessions(userId: string): Promise<void> {
+  async revokeSessions(userId: string): Promise<void> {
+    await this.services
+      .policy?.()
+      ?.assertTarget(
+        'revoke-sessions',
+        userId,
+        this.services.database.connection(),
+      );
     return this.services.users.revokeSessions(userId);
   }
 
