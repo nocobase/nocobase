@@ -1,6 +1,5 @@
 import type { ReactElement } from 'react';
 import { Link, type To } from 'react-router';
-import { ShieldCheckIcon } from 'lucide-react';
 import { Badge } from '#components/ui/badge';
 
 export interface RoleListRole {
@@ -36,20 +35,14 @@ export function RoleList({
             to={role.to}
             className='group/role grid min-h-10 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-3 py-2 transition-colors hover:bg-muted/30 @xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_6rem]'
           >
-            <span className='flex min-w-0 items-center gap-2'>
-              <ShieldCheckIcon
-                aria-hidden
-                className='size-4 shrink-0 text-muted-foreground'
-              />
-              <span
-                className='truncate text-sm leading-5 font-medium underline-offset-4 group-hover/role:underline'
-                title={role.title}
-              >
-                {role.title}
-              </span>
+            <span
+              className='min-w-0 truncate text-sm leading-5 font-medium underline-offset-4 group-hover/role:underline'
+              title={role.title}
+            >
+              {role.title}
             </span>
             <span
-              className='col-start-1 row-start-2 min-w-0 truncate pl-6 text-xs leading-4 text-muted-foreground @xl:col-start-2 @xl:row-start-1 @xl:pl-0'
+              className='col-start-1 row-start-2 min-w-0 truncate text-xs leading-4 text-muted-foreground @xl:col-start-2 @xl:row-start-1'
               title={role.key}
             >
               {role.key}

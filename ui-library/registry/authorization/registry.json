@@ -44,7 +44,7 @@
         "group": "Authorization",
         "iframeHeight": 480
       },
-      "dependencies": ["react-router@^7.0.2", "lucide-react@^0.487.0"],
+      "dependencies": ["react-router@^7.0.2"],
       "registryDependencies": ["badge"],
       "docs": "Render inside a React Router with roles containing key, localized title, edit destination (to) and protected state. Pass localized protected/custom labels and an optional ariaLabel. The host owns loading, empty/error states, filtering, sorting and authorization. Rows use body-sized text and compact spacing; identifiers move under the name on narrow containers. Publishing the Registry does not replace installed source; existing apps merge role-list.tsx and the roles page integration through a template source upgrade.",
       "files": [
