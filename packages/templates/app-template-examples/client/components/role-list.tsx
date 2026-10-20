@@ -1,5 +1,7 @@
-import type { ReactElement } from 'react';
+import { useMemo, type ReactElement } from 'react';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Link, type To } from 'react-router';
+import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import { Badge } from '#components/ui/badge';
 
 export interface RoleListRole {
@@ -12,50 +14,72 @@ export interface RoleListRole {
 export interface RoleListProps {
   readonly roles: readonly RoleListRole[];
   readonly labels: {
+    readonly name: string;
+    readonly key: string;
+    readonly type: string;
     readonly protected: string;
     readonly custom: string;
   };
   readonly ariaLabel?: string;
 }
 
-/** A compact content list; the host owns authorization, loading and filtering. */
+/** Standard role table; the host owns authorization, loading and filtering. */
 export function RoleList({
   roles,
   labels,
   ariaLabel,
 }: RoleListProps): ReactElement {
-  return (
-    <ul
-      aria-label={ariaLabel}
-      className='@container divide-y rounded-lg border bg-card [&>li:first-child]:rounded-t-lg [&>li:last-child]:rounded-b-lg'
-    >
-      {roles.map((role) => (
-        <li
-          key={role.key}
-          className='group/role grid min-h-10 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-3 py-2 transition-colors hover:bg-muted/50 @xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_6rem]'
-        >
+  const columns = useMemo<ColumnDef<RoleListRole>[]>(
+    () => [
+      {
+        accessorKey: 'title',
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={labels.name} />
+        ),
+        cell: ({ row }) => (
           <Link
-            to={role.to}
-            className='-my-1 w-fit max-w-full min-w-0 truncate py-1 text-sm leading-5 font-medium text-foreground'
-            title={role.title}
+            to={row.original.to}
+            className='inline-block max-w-72 truncate align-middle font-medium text-foreground'
+            title={row.original.title}
           >
-            {role.title}
+            {row.original.title}
           </Link>
+        ),
+      },
+      {
+        accessorKey: 'key',
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={labels.key} />
+        ),
+        cell: ({ row }) => (
           <span
-            className='col-start-1 row-start-2 min-w-0 truncate text-xs leading-4 text-muted-foreground @xl:col-start-2 @xl:row-start-1'
-            title={role.key}
+            className='inline-block max-w-64 truncate align-middle text-muted-foreground'
+            title={row.original.key}
           >
-            {role.key}
+            {row.original.key}
           </span>
-          <Badge
-            variant='secondary'
-            data-size='sm'
-            className='col-start-2 row-span-2 row-start-1 shrink-0 justify-self-end @xl:col-start-3 @xl:row-span-1'
-          >
-            {role.protected ? labels.protected : labels.custom}
+        ),
+      },
+      {
+        accessorKey: 'protected',
+        header: labels.type,
+        cell: ({ row }) => (
+          <Badge variant='secondary'>
+            {row.original.protected ? labels.protected : labels.custom}
           </Badge>
-        </li>
-      ))}
-    </ul>
+        ),
+      },
+    ],
+    [labels],
+  );
+  return (
+    <div role='region' aria-label={ariaLabel}>
+      <DataTable
+        columns={columns}
+        data={roles}
+        getRowId={(role) => role.key}
+        showSelectedCount={false}
+      />
+    </div>
   );
 }

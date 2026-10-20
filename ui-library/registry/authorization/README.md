@@ -1,6 +1,6 @@
 # Authorization
 
-Role administration presentation: the compact `role-list` and the `permission-editor` workspace.
+Role administration presentation: the standard `role-list` table and the `permission-editor` workspace.
 
 | Item                | Installs                                  | Exports            |
 | ------------------- | ----------------------------------------- | ------------------ |
@@ -29,7 +29,7 @@ Permission actions use regular body text and compact resource rows. Categories w
 
 ## Role list
 
-`role-list` presents roles as compact content rows with body-sized names, muted identifiers, small state badges and a plain shield icon. Wide containers align name, identifier and state in three columns; narrow containers put the identifier below its name. Long names and identifiers truncate visually and retain their full text in the DOM and native title. Rows stay keyboard-accessible links.
+`role-list` uses the same `DataTable` component as User management, with sortable role-name and identifier columns, a protected/custom type badge, and standard pagination. Supply localized `labels.name`, `labels.key`, `labels.type`, `labels.protected` and `labels.custom`. Names remain keyboard-accessible edit links without hover underlines; long names and identifiers truncate and retain their full native title. The host owns authorization, loading, errors and search filtering. Existing applications must update the component and caller labels together and install its `@nocobase/data-table` dependency.
 
 Render `RoleList` inside React Router. Supply `roles` with stable `key`, localized `title`, a `to` destination and a `protected` boolean; pass localized `labels.protected` and `labels.custom`, and an optional `ariaLabel` for the list. The component owns no loading, search, sort, authorization, persistence or empty state; the host role page keeps those responsibilities. It introduces no translation keys.
 

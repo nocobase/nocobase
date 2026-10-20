@@ -96,6 +96,7 @@ const settings = {
   username: '用户名',
   email: '邮箱',
   password: '初始密码',
+  roleType: '角色类型',
   roleName: '角色名称',
   key: '标识',
   status: '状态',
