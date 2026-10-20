@@ -12,6 +12,7 @@ const esES: LocaleResource<typeof enUS> = {
     cancel: 'Cancelar',
   },
   status: {
+    permission: 'Esperando tu permiso',
     loading: 'Cargando',
     offline: 'Computadora fuera de línea',
     waiting: 'Te necesita',

@@ -12,6 +12,7 @@ const deDE: LocaleResource<typeof enUS> = {
     cancel: 'Abbrechen',
   },
   status: {
+    permission: 'Wartet auf deine Erlaubnis',
     loading: 'Wird geladen',
     offline: 'Computer offline',
     waiting: 'Braucht dich',

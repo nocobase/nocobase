@@ -12,6 +12,7 @@ const viVN: LocaleResource<typeof enUS> = {
     cancel: 'Hủy',
   },
   status: {
+    permission: 'Đang chờ bạn cho phép',
     loading: 'Đang tải',
     offline: 'Máy tính offline',
     waiting: 'Cần em',

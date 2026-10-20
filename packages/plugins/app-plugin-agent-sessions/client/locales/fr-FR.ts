@@ -12,6 +12,7 @@ const frFR: LocaleResource<typeof enUS> = {
     cancel: 'Annuler',
   },
   status: {
+    permission: 'En attente de votre autorisation',
     loading: 'Chargement',
     offline: 'Ordinateur hors ligne',
     waiting: 'A besoin de toi',

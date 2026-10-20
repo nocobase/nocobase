@@ -12,6 +12,7 @@ const idID: LocaleResource<typeof enUS> = {
     cancel: 'Batal',
   },
   status: {
+    permission: 'Menunggu izin Anda',
     loading: 'Memuat',
     offline: 'Komputer offline',
     waiting: 'Membutuhkanmu',
