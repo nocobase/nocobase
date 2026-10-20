@@ -37,6 +37,10 @@ Repository access providers that mint credentials in `prepare` implement the ide
 - **Chat defaults**: the system default chat agent (`agSettings`, `PATCH /api/agents/chatSettings` by who manages `agents.agents`, or the application), each person's default chat agent (`agChatPreferences`), and each agent's "confirm before changing data" (`confirmChanges`: `always` or only `larger` changes).
 - **No setup scripts.** Preparing a working directory is the agent's job: its brief tells it to follow each directory's own instructions (AGENTS.md, CLAUDE.md, README), to install what is missing inside the directory, and to say so (the way the subject's guidance tells it) when it cannot. A working directory's optional initialization prompt reaches the agent only when the runner prepared that directory fresh. "Clean working directory" (`POST /api/agents/workspaces/:subjectKind/:subjectId/reset`) makes the next run start from a fresh checkout.
 
+## Runner affinity and ordered models
+
+Runner affinity uses the same ordered-model admission decision as actual claims, without loading the full waiting diagnostic. Queue traversal evaluates only candidates it reaches before a successful claim. Capacity comes from the existing batch, while resource metadata is cached by scope within the poll and loaded in batches across relevant machines; known agent scopes share the first metadata read. Preferred-model admission needs a compatible or unknown first choice, even when busy, so it does not read per-machine slot counts. The broader machine inventory is read at most once for this affinity pass. Full diagnostics remain available through the waiting projection. Application context assembly and policy providers may issue their own reads; visiting new subject scopes adds metadata batches, and returned-row budgets do not bound the database's internal scans.
+
 ## Chat integration documentation
 
 - [OnlineAgent service and business tools](skills/nocobase-app-plugin-agents/references/online-agent.md): trusted server configuration, Native/Runner sessions, public browser transport and lifecycle boundaries.

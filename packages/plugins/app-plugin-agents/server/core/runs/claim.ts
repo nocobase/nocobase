@@ -614,15 +614,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     requirePolicy = true,
     trust?: 'team' | 'personal',
     resources = claimResources(conn, run.id),
-    sampledRunners?: readonly Runner[],
   ): Promise<ModelSelectionWait | null> {
     const policy = await deps.selectionPolicies?.forRun(conn, run);
     if ((requirePolicy && !policy) || !deps.runners) return null;
     const now = clock.now();
     const start = queueStart(run);
-    const registered = (
-      sampledRunners ?? (await deps.runners.all(conn))
-    ).filter(
+    const registered = (await deps.runners.all(conn)).filter(
       (runner) =>
         !trust ||
         (trust === 'team' ? runner.trust === 'team' : runner.trust !== 'team'),
@@ -835,40 +832,193 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     };
   }
 
+  /** Metadata only: batch new scopes, reuse common scopes across machines and visited candidates. */
+  function admissionResources(
+    conn: DatabaseConnection,
+    agents: readonly Agent[] = [],
+  ) {
+    const variableScopes = new Set<string>();
+    const skillScopes = new Set<string>();
+    const variables: Awaited<
+      ReturnType<VariableService['admissionMetadata']>
+    >[number][] = [];
+    const skills: Awaited<
+      ReturnType<SkillService['admissionMetadata']>
+    >[number][] = [];
+    function missing<T extends { scope: string; scopeId: string }>(
+      targets: readonly T[],
+      seen: Set<string>,
+    ): T[] {
+      const fresh = new Map<string, T>();
+      for (const target of targets) {
+        const key = JSON.stringify([target.scope, target.scopeId]);
+        if (!seen.has(key)) fresh.set(key, target);
+      }
+      for (const key of fresh.keys()) seen.add(key);
+      return [...fresh.values()];
+    }
+    return {
+      async load(
+        checks: readonly { agent: Agent; assembly: SubjectAssembly }[],
+      ) {
+        const vars = missing(
+          [
+            ...checks.flatMap(({ agent, assembly }) =>
+              variableTargets(agent, assembly),
+            ),
+            ...agents.map((agent) => ({ scope: 'agent', scopeId: agent.id })),
+          ],
+          variableScopes,
+        );
+        const attached = missing(
+          checks.flatMap(({ agent, assembly }) =>
+            skillTargets(agent, assembly),
+          ),
+          skillScopes,
+        );
+        if (vars.length)
+          variables.push(
+            ...(await deps.variables.admissionMetadata(conn, vars)),
+          );
+        if (attached.length)
+          skills.push(...(await deps.skills.admissionMetadata(conn, attached)));
+      },
+      get(agent: Agent, assembly: SubjectAssembly) {
+        const merged = new Map<string, (typeof variables)[number]>();
+        for (const target of variableTargets(agent, assembly))
+          for (const row of variables)
+            if (row.scope === target.scope && row.scopeId === target.scopeId)
+              merged.set(row.name, row);
+        const targets = skillTargets(agent, assembly);
+        return {
+          skills: skills.filter((row) =>
+            targets.some(
+              (target) =>
+                target.scope === row.scope && target.scopeId === row.scopeId,
+            ),
+          ),
+          variables: {
+            names: [...merged.values()]
+              .filter((row) => row.kind === 'value')
+              .map((row) => row.name),
+            teamOnly: [...merged.values()].filter(
+              (row) => row.kind === 'value' && row.teamRunnersOnly,
+            ),
+            passthrough: [...merged.values()]
+              .filter((row) => row.kind === 'runner')
+              .map((row) => row.name),
+          },
+        };
+      },
+    };
+  }
+
+  /** Eligibility needs existence/compatibility, not occupancy, other models or a full wait projection. */
+  async function preferredModelAvailable(
+    conn: DatabaseConnection,
+    run: Run,
+    agent: Agent,
+    inputs: readonly RunInput[],
+    metadata: ReturnType<typeof admissionResources>,
+    inventory: () => Promise<readonly Runner[]>,
+  ): Promise<boolean> {
+    const now = clock.now().getTime();
+    const registered = await inventory();
+    const reserved = upgradeReservation(run.executions ?? [], registered, now);
+    const entry = agent.modelEntries[0];
+    const single = { ...agent, modelEntries: [entry] };
+    const binding = deps.subjects.get(run.subject.kind);
+    if (!binding)
+      throw new Error(`No context provider for ${run.subject.kind}.`);
+    const checks: {
+      agent: Agent;
+      runner: Runner;
+      assembly: SubjectAssembly;
+    }[] = [];
+    for (const runner of registered) {
+      if (
+        (reserved && runner.id !== reserved) ||
+        runner.status !== 'online' ||
+        !runner.lastSeenAt ||
+        Date.parse(runner.lastSeenAt) + TIMINGS.offlineAfterMs <= now ||
+        !isProtocolSupported(runner.protocolVersion) ||
+        !runsEntry(runner, entry, now) ||
+        (runner.trust !== 'team' && runner.ownerUserId !== run.actorUserId)
+      )
+        continue;
+      const assembly = await binding.context
+        .assemble(conn, {
+          run,
+          agent,
+          runner,
+          inputs,
+          cli: deps.cli.name,
+          appName: deps.app.name,
+        })
+        .catch(() => null);
+      // The diagnostic path treats an unreadable context as unknown and waits for the preferred model.
+      if (!assembly) return true;
+      checks.push({ agent: single, runner, assembly });
+    }
+    await metadata.load(checks);
+    for (const { runner, assembly } of checks) {
+      const { skills, variables } = metadata.get(single, assembly);
+      if (skills.some((skill) => skill.hash === null))
+        throw notFound('Skill version');
+      if (
+        compatibleAssembly(
+          run,
+          single,
+          runner,
+          assembly,
+          skills.length,
+          variables,
+        ) !== 'ready'
+      )
+        continue;
+      if (variables.passthrough.length && runner.variables == null) return true;
+      if (
+        variables.passthrough.some((name) => !runner.variables?.includes(name))
+      )
+        continue;
+      return true;
+    }
+    return false;
+  }
+
   /** The same ordered-model decision is used for dispatch and for immediate runner affinity. */
   async function modelAdmission(
     conn: DatabaseConnection,
     run: Run,
     agent: Agent,
     entry: RunnerModelEntry,
-    resources = claimResources(conn, run.id),
-    sampledRunners?: readonly Runner[],
+    inputs: readonly RunInput[],
+    metadata = admissionResources(conn),
+    inventory: () => Promise<readonly Runner[]> = () => deps.runners!.all(conn),
   ): Promise<RunExecutionSnapshot['selection'] | false> {
-    const selection = await selectionFacts(
-      conn,
-      run,
-      agent,
-      true,
-      undefined,
-      resources,
-      sampledRunners,
-    );
-    if (!selection || agent.modelEntries.indexOf(entry) <= 0) return undefined;
+    if (agent.modelEntries.indexOf(entry) <= 0 || !deps.runners)
+      return undefined;
+    const policy = await deps.selectionPolicies?.forRun(conn, run);
+    if (!policy) return undefined;
     const elapsed = Math.max(
       0,
       (clock.now().getTime() - queueStart(run)) / 1000,
     );
-    const preferredAvailable =
-      (selection.entries[0]?.compatibleCount ?? 0) > 0 ||
-      selection.entries[0]?.reason === 'unknown' ||
-      selection.entries[0]?.blockers?.includes('unknown') === true;
-    if (preferredAvailable && elapsed < selection.fallbackAfterSeconds)
+    const preferredAvailable = await preferredModelAvailable(
+      conn,
+      run,
+      agent,
+      inputs,
+      metadata,
+      inventory,
+    );
+    if (preferredAvailable && elapsed < policy.fallbackAfterSeconds)
       return false;
     return {
       reason: preferredAvailable ? 'preferredQueued' : 'preferredUnavailable',
       preferredTool: agent.modelEntries[0].tool,
       preferredModel: agent.modelEntries[0].model,
-      queueEnteredAt: selection.queueEnteredAt,
+      queueEnteredAt: new Date(queueStart(run)).toISOString(),
       waitedSeconds: elapsed,
     };
   }
@@ -1580,7 +1730,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             toRun(current),
             agent,
             entry,
-            resources,
+            pending.map(toInput),
           );
           if (admission === false) throw new NotForThisRunner();
           selectionSnapshot = admission;
@@ -1934,150 +2084,87 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     return true;
   }
 
-  /** Batch metadata reads independently of candidate count. Provider assembly remains outside claim transactions. */
-  async function readyPreferences(
-    queued: readonly RunRecord[],
-    agents: ReadonlyMap<string, Agent>,
+  /** Evaluate only the candidate reached in queue order, reusing this poll's batched capacity and metadata. */
+  async function readyPreference(
+    run: RunRecord,
+    agent: Agent,
     batch: Awaited<ReturnType<typeof affinityBatch>>,
     claimant: Runner,
-  ): Promise<Set<string>> {
+    metadata: ReturnType<typeof admissionResources>,
+    inventory: () => Promise<readonly Runner[]>,
+  ): Promise<boolean> {
     const conn = tx.read();
-    const checks: {
-      run: RunRecord;
-      agent: Agent;
-      runner: Runner;
-      assembly: SubjectAssembly;
-    }[] = [];
-    for (const run of queued) {
-      const preferred = batch.preferred.get(run.id);
-      const agent = agents.get(run.agentId);
+    const runner = batch.preferred.get(run.id);
+    if (
+      !runner ||
+      runner.id === claimant.id ||
+      !fits(claimant, agent, run, clock.now().getTime()) ||
+      upgradeReservation(
+        toExecutions(run.executionHistory),
+        batch.machines,
+        clock.now().getTime(),
+      ) ||
+      !hasImmediateRoom(run, agent, runner, batch)
+    )
+      return false;
+    const binding = deps.subjects.get(run.subjectKind);
+    if (!binding || !(await commentConsentFor(conn, runner, run)).allowed)
+      return false;
+    const assembly = await binding.context
+      .assemble(conn, {
+        run: toRun(run),
+        agent,
+        runner,
+        inputs: [],
+        cli: deps.cli.name,
+        appName: deps.app.name,
+      })
+      .catch(() => null);
+    if (!assembly) return false;
+    await metadata.load([{ agent, assembly }]);
+    const { skills, variables } = metadata.get(agent, assembly);
+    if (
+      !variables.passthrough.every((name) =>
+        runner.variables?.includes(name),
+      ) ||
+      skills.some((row) => row.hash === null) ||
+      compatibleAssembly(
+        toRun(run),
+        agent,
+        runner,
+        assembly,
+        skills.length,
+        variables,
+      ) !== 'ready'
+    )
+      return false;
+    const entry = pickOpenEntry(
+      runner,
+      agent,
+      (tool) =>
+        batch.held
+          .filter((item) => item.runnerId === runner.id && item.tool === tool)
+          .reduce((count, item) => count + Number(item.count), 0) <
+          toolLimit(runner, tool) && (runner.toolLoad?.[tool]?.free ?? 1) > 0,
+      clock.now().getTime(),
+    );
+    if (!entry) return false;
+    if (agent.modelEntries.indexOf(entry) > 0) {
+      const inputs = (await pendingInputs(conn, run.id)).map(toInput);
       if (
-        !agent ||
-        !preferred ||
-        preferred.id === claimant.id ||
-        !fits(claimant, agent, run, clock.now().getTime()) ||
-        upgradeReservation(
-          toExecutions(run.executionHistory),
-          batch.machines,
-          clock.now().getTime(),
-        ) ||
-        !hasImmediateRoom(run, agent, preferred, batch)
+        (await modelAdmission(
+          conn,
+          toRun(run),
+          agent,
+          entry,
+          inputs,
+          metadata,
+          inventory,
+        )) === false
       )
-        continue;
-      const binding = deps.subjects.get(run.subjectKind);
-      if (!binding || !(await commentConsentFor(conn, preferred, run)).allowed)
-        continue;
-      try {
-        const assembly = await binding.context.assemble(conn, {
-          run: toRun(run),
-          agent,
-          runner: preferred,
-          inputs: [],
-          cli: deps.cli.name,
-          appName: deps.app.name,
-        });
-        checks.push({ run, agent, runner: preferred, assembly });
-      } catch {
-        /* An unavailable provider must not hold work on the previous machine. */
-      }
+        return false;
     }
-    if (!checks.length) return new Set();
-    const unique = <T extends { scope: string; scopeId: string }>(
-      targets: readonly T[],
-    ): T[] => [
-      ...new Map(
-        targets.map((target) => [
-          JSON.stringify([target.scope, target.scopeId]),
-          target,
-        ]),
-      ).values(),
-    ];
-    const variableRows = await deps.variables.admissionMetadata(
-      conn,
-      unique(
-        checks.flatMap(({ agent, assembly }) =>
-          variableTargets(agent, assembly),
-        ),
-      ),
-    );
-    const skillRows = await deps.skills.admissionMetadata(
-      conn,
-      unique(
-        checks.flatMap(({ agent, assembly }) => skillTargets(agent, assembly)),
-      ),
-    );
-    const ready = new Set<string>();
-    let modelRunners: readonly Runner[] | undefined;
-    for (const { run, agent, runner, assembly } of checks) {
-      const variables = new Map<string, (typeof variableRows)[number]>();
-      for (const target of variableTargets(agent, assembly))
-        for (const row of variableRows)
-          if (row.scope === target.scope && row.scopeId === target.scopeId)
-            variables.set(row.name, row);
-      const names: string[] = [];
-      const teamOnly: VariableRef[] = [];
-      let provided = true;
-      for (const row of variables.values()) {
-        if (row.kind === 'runner')
-          provided &&= Boolean(runner.variables?.includes(row.name));
-        else {
-          names.push(row.name);
-          if (row.teamRunnersOnly)
-            teamOnly.push({
-              scope: row.scope,
-              scopeId: row.scopeId,
-              name: row.name,
-            });
-        }
-      }
-      const targets = skillTargets(agent, assembly);
-      const skills = skillRows.filter((row) =>
-        targets.some(
-          (target) =>
-            target.scope === row.scope && target.scopeId === row.scopeId,
-        ),
-      );
-      if (
-        provided &&
-        skills.every((row) => row.hash !== null) &&
-        compatibleAssembly(toRun(run), agent, runner, assembly, skills.length, {
-          names,
-          teamOnly,
-        }) === 'ready'
-      ) {
-        const entry = pickOpenEntry(
-          runner,
-          agent,
-          (tool) =>
-            batch.held
-              .filter(
-                (item) => item.runnerId === runner.id && item.tool === tool,
-              )
-              .reduce((count, item) => count + Number(item.count), 0) <
-              toolLimit(runner, tool) &&
-            (runner.toolLoad?.[tool]?.free ?? 1) > 0,
-          clock.now().getTime(),
-        );
-        if (!entry) continue;
-        if (agent.modelEntries.indexOf(entry) > 0) {
-          // Ordered fallback can depend on other machines, sampled once for this batch.
-          modelRunners ??= await deps.runners?.all(conn);
-          if (
-            (await modelAdmission(
-              conn,
-              toRun(run),
-              agent,
-              entry,
-              undefined,
-              modelRunners,
-            )) === false
-          )
-            continue;
-        }
-        ready.add(run.id);
-      }
-    }
-    return ready;
+    return true;
   }
 
   async function claimOne(
@@ -2095,12 +2182,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         .filter((candidate) => !seen.has(candidate.id))
         .map((candidate) => candidate.agentId),
     );
-    const preferredReady = await readyPreferences(
-      queued,
-      agents,
-      affinity,
-      runner,
-    );
+    const metadata = admissionResources(conn, [...agents.values()]);
+    let inventoryRead: Promise<readonly Runner[]> | undefined;
+    const inventory = () =>
+      (inventoryRead ??= deps.runners
+        ? deps.runners.all(conn)
+        : Promise.resolve([runner]));
     const full = new Set<string>();
     for (const candidate of queued) {
       if (seen.has(candidate.id) || full.has(candidate.agentId)) continue;
@@ -2123,7 +2210,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         !reserved &&
         preferred &&
         preferred.id !== runner.id &&
-        preferredReady.has(candidate.id)
+        (await readyPreference(
+          candidate,
+          agent,
+          affinity,
+          runner,
+          metadata,
+          inventory,
+        ))
       )
         continue;
       // None of its tools has room on the runner's side: the runs behind it may still fit.
