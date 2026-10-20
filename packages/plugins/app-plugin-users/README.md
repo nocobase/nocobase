@@ -129,6 +129,8 @@ When the authorization plugin is installed, Users automatically registers the `a
 
 ## User deletion
 
+Application role scopes can implement `assertCanAdminister(userId, actorId, action, connection)` to refuse an actor acting on a protected account, such as anyone but an owner changing an owner's profile or password. The routes call it with the authenticated principal for `update`, `disable`, `enable`, `reset-password`, `revoke-sessions` and `assign-role`, inside the action's transaction and before anything changes; a refusal answers `FAILED_PRECONDITION`. The service methods take the actor as an optional last argument; server-side calls that pass none are not checked.
+
 `DELETE /api/users/:userId?confirm=true` requires the `user/delete` action and the `confirm=true` query parameter, and answers `204`. The service also rejects deleting the acting user. Application role scopes can implement `assertCanDelete(userId, actorId, connection)` and `onDelete(userId, connection)` to protect owned resources and remove credentials in the same transaction. Users does not grant access by default. Failed cleanup rolls back the deletion. Repeating a deletion changes nothing and answers `404 USER_NOT_FOUND`.
 
 Deletion removes the user from management lists, revokes sessions and removes sign-in accounts. Authentication retains a disabled identity with `deletedAt` and `deletedBy` for historical attribution; it cannot be re-enabled through user management. Email and username remain reserved. The authenticated deletion route emits a structured `user.delete` security event without credentials.

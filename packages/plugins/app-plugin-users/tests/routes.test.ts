@@ -786,6 +786,69 @@ describe('@nocobase/app-plugin-users API routes', () => {
     },
   );
 
+  it('hands every account action the authenticated actor', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+    const send = (path: string, method: string, body?: unknown) =>
+      router.request(path, {
+        method,
+        ...(body === undefined
+          ? {}
+          : {
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify(body),
+            }),
+      });
+    await send('/users/user-1', 'PATCH', { name: 'Updated' });
+    await send('/users/user-1/disable', 'POST');
+    await send('/users/user-1/enable', 'POST');
+    await send('/users/user-1/roleScopes/hub', 'PUT', { value: 'hub-viewer' });
+    await send('/users/user-1/resetPassword', 'POST', {
+      password: 'secret123',
+    });
+    await send('/users/user-1/revokeSessions', 'POST');
+    expect(service.update).toHaveBeenCalledWith(
+      'user-1',
+      { name: 'Updated' },
+      'admin-1',
+    );
+    expect(service.disable).toHaveBeenCalledWith('user-1', 'admin-1');
+    expect(service.enable).toHaveBeenCalledWith('user-1', 'admin-1');
+    expect(service.replaceRoleScope).toHaveBeenCalledWith(
+      'user-1',
+      'hub',
+      'hub-viewer',
+      'admin-1',
+    );
+    expect(service.resetPassword).toHaveBeenCalledWith(
+      'user-1',
+      'secret123',
+      'admin-1',
+    );
+    expect(service.revokeSessions).toHaveBeenCalledWith('user-1', 'admin-1');
+  });
+
+  it('answers a role scope refusing the actor as a failed precondition', async () => {
+    const service = userService();
+    vi.mocked(service.resetPassword).mockRejectedValue(
+      new UserRoleScopeError('PROTECTED_ACCOUNT', 'Not yours to change', 409),
+    );
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+    const response = await router.request('/users/user-1/resetPassword', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: 'secret123' }),
+    });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: { status: 'FAILED_PRECONDITION', reason: 'PROTECTED_ACCOUNT' },
+    });
+  });
+
   it('requires explicit deletion confirmation and records the actor after success', async () => {
     const service = userService();
     const logger = { info: vi.fn() };
@@ -829,6 +892,7 @@ describe('@nocobase/app-plugin-users API routes', () => {
       'user-1',
       'teams',
       [],
+      'admin-1',
     );
   });
 

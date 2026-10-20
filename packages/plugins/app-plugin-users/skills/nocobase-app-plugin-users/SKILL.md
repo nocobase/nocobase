@@ -50,6 +50,8 @@ caller-owned transaction used to keep account creation or state changes atomic
 with role assignments. Do not open an unrelated transaction and do not write
 Authentication's internal tables.
 
+Guard who may act on whom with `assertCanAdminister(userId, actorId, action, connection)`: the management API calls it for `update`, `disable`, `enable`, `reset-password`, `revoke-sessions` and `assign-role` with the authenticated actor, in the action's transaction and before anything changes, after authorization of the action itself has passed. Throw a `UserRoleScopeError` to refuse, for example when someone who is not an application owner resets an owner's password; the route answers `FAILED_PRECONDITION` with the scope's reason. Service callers that pass no `actorId` are the application's own server-side work and are not asked. Deletion has its own `assertCanDelete(userId, actorId, connection)`.
+
 For a required single-role scope, set `selection: 'single'` and
 `requiredOnCreate: true`. Reject invalid values in the scope and enforce
 business invariants such as the last-administrator rule on the server.
