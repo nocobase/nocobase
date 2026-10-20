@@ -32,11 +32,11 @@ export function RoleList({
       {roles.map((role) => (
         <li
           key={role.key}
-          className='grid min-h-10 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-3 py-2 transition-colors hover:bg-muted/50 @xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_6rem]'
+          className='group/role grid min-h-10 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-3 py-2 transition-colors hover:bg-muted/50 @xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_6rem]'
         >
           <Link
             to={role.to}
-            className='w-fit max-w-full min-w-0 truncate text-sm leading-5 font-medium text-foreground underline-offset-4 hover:underline'
+            className='w-fit max-w-full min-w-0 truncate text-sm leading-5 font-medium text-foreground underline-offset-4 group-hover/role:underline'
             title={role.title}
           >
             {role.title}
