@@ -316,7 +316,7 @@ export default {
           },
           'x-index': {
             type: 'integer',
-            exmaple: 1,
+            example: 1,
             description: "ui schema's order index",
           },
           'x-async': {
