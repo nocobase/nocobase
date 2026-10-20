@@ -1,5 +1,12 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.13
+
+### Patch Changes
+
+- Updated dependencies [c63a6e8]
+  - @nocobase/app-cli-client@0.1.0-beta.11
+
 ## 0.1.0-beta.12
 
 ### Minor Changes

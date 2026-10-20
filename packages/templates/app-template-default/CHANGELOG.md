@@ -1,5 +1,50 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.74
+
+### Patch Changes
+
+- 06e53be: Clarify that default data scopes combine with role-granted scopes for users who already hold the operation permission, while restriction rules still constrain final access. Preserve all existing authorization configuration.
+- 06e53be: Present roles as compact content rows with consistent body-sized names, aligned identifiers and small state labels. Preinstall the shared RoleList Registry source in both templates and document source reconciliation for existing applications.
+
+  Tighten the permission workspace with regular-weight action labels, narrower category navigation and aligned compact action rows. Avoid repeating the selected category heading in normal browsing while retaining category headings for filtered results and accessible section names. Keep multiple data ranges independently configurable in an expandable area without rewriting existing grants. Synchronize the Registry and both templates, including localized labels and source-upgrade guidance.
+
+  Use neutral foreground text and consistent hover underlines for user and role names, retain the shared keyboard focus treatment, and document the record-link convention.
+
+- 06e53be: Add a protected default data scope administration entry, rule list and controlled editor to the system settings contribution. Synchronize the Registry and both templates, preserve existing selections and filter parameters, and keep unknown catalog configuration read-only without reseeding or changing role grants.
+- 06e53be: Resolve default data scope filter field labels through explicit translation keys so generated applications pass locale coverage checks without changing existing rule configuration.
+- 06e53be: Clarify role permission categories, group account actions for individual review, omit bulk-selection controls and authorization counts, expose registered action descriptions, and place Agent administration under system tools. Show labelled selections for multiple data ranges and correctly describe an empty scope as granting no additional record access while preserving default, sharing and restriction rules. Synchronize the Registry and both templates without changing permission identifiers or existing grants.
+- 06e53be: Present the existing role and default-data-scope administration pages as two tabs behind one Permission management sidebar entry while preserving their routes, authorization requirements and stored configuration. Document the source upgrade without adding new rule editors.
+- 06e53be: Remove repeated decorative icons from role list rows and align names with identifiers on narrow screens, preserving status labels and keyboard navigation.
+
+  Use neutral name links and the same muted row-hover background as the user list. Underline the role name whenever its row is hovered, while keeping only the name as the edit link.
+
+  Keep hover underlines visible for truncated role names, including Chinese labels.
+
+- b7a3083: Keep installed client plugins in custom scopes on the same application contexts and service tokens as template page tests. Update both application templates' page examples to use real application hooks, permissions and notifications through `@nocobase/app-testing`.
+
+  Align application and generated-plugin testing guidance with the shared fixtures, including Node integration tests, database dialect selection, temporary CLI storage and fixture ownership.
+
+- Updated dependencies [1952789]
+- Updated dependencies [06e53be]
+- Updated dependencies [a0ec885]
+  - @nocobase/app-plugin-agents@1.0.0-beta.16
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.15
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.14
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.15
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/app-plugin-i18n@1.0.0-beta.18
+  - @nocobase/app-plugin-mail@1.0.0-beta.16
+  - @nocobase/app-plugin-notification@1.0.0-beta.29
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.27
+  - @nocobase/app-plugin-notification-providers@0.2.0-beta.14
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.19
+  - @nocobase/app-plugin-users@2.0.0-beta.7
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.15
+
 ## 1.0.0-beta.73
 
 ### Patch Changes
