@@ -236,6 +236,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     expect(screen.getByRole('button', { name: 'Removing…' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Deactivate' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Sync' })).toBeDisabled();
+    await waitFor(() => expect(subscriptions.size).toBe(1));
     vi.useFakeTimers();
     try {
       mail.listAccounts.mockResolvedValue([]);
@@ -248,7 +249,8 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
             publishedAt: new Date().toISOString(),
           });
       });
-      await act(async () => vi.advanceTimersByTimeAsync(100));
+      // Complete the notification's debounce without waiting for real time or the 60-second fallback refresh.
+      await act(async () => vi.advanceTimersByTimeAsync(1_000));
       expect(screen.getByText('No accounts connected')).toBeVisible();
     } finally {
       await app.unmount();

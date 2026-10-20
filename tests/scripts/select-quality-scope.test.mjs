@@ -329,6 +329,21 @@ test('a template change selects the template, its path consumers and the smoke t
   assert.equal(createApp.runAppInstaller, false);
 });
 
+for (const template of ['app-template-default', 'app-template-examples']) {
+  for (const file of ['vitest.config.ts', 'tests/setup/client-config.ts']) {
+    test(`${template}'s ${file} selects the installed-client regression`, () => {
+      const result = plan(`packages/templates/${template}/${file}`);
+      assert.equal(result.full, false);
+      assert.ok(result.packages.includes('@nocobase/app-testing'));
+      const otherTemplate =
+        template === 'app-template-default'
+          ? '@nocobase/app-template-examples'
+          : '@nocobase/app-template-default';
+      assert.ok(!result.packages.includes(otherTemplate));
+    });
+  }
+}
+
 test('paths read without a declared dependency select their consumers but not the consumers’ dependents', () => {
   const ui = plan(
     'packages/plugins/app-plugin-agents/client/components/ui/button.tsx',
@@ -376,7 +391,7 @@ test('reads declared as dependencies select their readers through the workspace 
       'packages/templates/app-template-default/client/styles.css',
     ).packages.includes('@nocobase/ui-library'),
   );
-  // Nothing reads the scheduler plugin or the examples template by path any more.
+  // app-cli no longer reads the scheduler plugin by path.
   assert.ok(
     !plan('packages/plugins/app-plugin-scheduler/README.md').packages.includes(
       '@nocobase/app-cli',
