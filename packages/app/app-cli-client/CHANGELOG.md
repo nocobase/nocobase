@@ -1,5 +1,11 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- c63a6e8: Reuse current registered session Skills without filesystem writes and wait for concurrent Skill installation instead of failing immediately. Record each lock owner and safely recover locks belonging to exited local processes, while preserving locks whose owners cannot be verified.
+
 ## 0.1.0-beta.10
 
 ### Patch Changes

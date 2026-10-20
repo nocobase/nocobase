@@ -1,5 +1,27 @@
 # @nocobase/app-plugin-agents
 
+## 1.0.0-beta.16
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- 06e53be: Clarify role permission categories, group account actions for individual review, omit bulk-selection controls and authorization counts, expose registered action descriptions, and place Agent administration under system tools. Show labelled selections for multiple data ranges and correctly describe an empty scope as granting no additional record access while preserving default, sharing and restriction rules. Synchronize the Registry and both templates without changing permission identifiers or existing grants.
+- a0ec885: Compare computer discovery data independently of JSON key order, keep runner event text within MySQL storage limits, and make issue searches case-insensitive across database dialects.
+- Updated dependencies [1952789]
+- Updated dependencies [06e53be]
+- Updated dependencies [c63a6e8]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/app-cli-client@0.1.0-beta.11
+  - @nocobase/app-client@4.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.25
+
 ## 1.0.0-beta.15
 
 ### Major Changes

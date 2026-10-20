@@ -1,5 +1,17 @@
 # @nocobase/app-plugin-notification-providers
 
+## 0.2.0-beta.14
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- Updated dependencies [1952789]
+  - @nocobase/app-plugin-notification@1.0.0-beta.29
+  - @nocobase/i18n@2.0.0-beta.1
+
 ## 0.2.0-beta.13
 
 ### Patch Changes

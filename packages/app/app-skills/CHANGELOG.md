@@ -1,5 +1,26 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.42
+
+### Patch Changes
+
+- 06e53be: Present roles as compact content rows with consistent body-sized names, aligned identifiers and small state labels. Preinstall the shared RoleList Registry source in both templates and document source reconciliation for existing applications.
+
+  Tighten the permission workspace with regular-weight action labels, narrower category navigation and aligned compact action rows. Avoid repeating the selected category heading in normal browsing while retaining category headings for filtered results and accessible section names. Keep multiple data ranges independently configurable in an expandable area without rewriting existing grants. Synchronize the Registry and both templates, including localized labels and source-upgrade guidance.
+
+  Use neutral foreground text and consistent hover underlines for user and role names, retain the shared keyboard focus treatment, and document the record-link convention.
+
+- 06e53be: Add a protected default data scope administration entry, rule list and controlled editor to the system settings contribution. Synchronize the Registry and both templates, preserve existing selections and filter parameters, and keep unknown catalog configuration read-only without reseeding or changing role grants.
+- cec87fc: Guide lifecycle authoring toward precise business transitions and readable diagrams, explaining Cartesian edge expansion and presentation filtering that preserves business paths, configuration access, and execution history.
+
+  Route approval requirements to the commercial approval plugin, explain licensing and installation prerequisites, and distinguish full approval processes from simple lifecycle confirmations.
+
+- 06e53be: Clarify role permission categories, group account actions for individual review, omit bulk-selection controls and authorization counts, expose registered action descriptions, and place Agent administration under system tools. Show labelled selections for multiple data ranges and correctly describe an empty scope as granting no additional record access while preserving default, sharing and restriction rules. Synchronize the Registry and both templates without changing permission identifiers or existing grants.
+- 06e53be: Present the existing role and default-data-scope administration pages as two tabs behind one Permission management sidebar entry while preserving their routes, authorization requirements and stored configuration. Document the source upgrade without adding new rule editors.
+- b7a3083: Keep installed client plugins in custom scopes on the same application contexts and service tokens as template page tests. Update both application templates' page examples to use real application hooks, permissions and notifications through `@nocobase/app-testing`.
+
+  Align application and generated-plugin testing guidance with the shared fixtures, including Node integration tests, database dialect selection, temporary CLI storage and fixture ownership.
+
 ## 0.1.0-beta.41
 
 ### Patch Changes

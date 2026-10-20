@@ -1,5 +1,17 @@
 # @nocobase/create-plugin
 
+## 0.1.0-beta.24
+
+### Minor Changes
+
+- 29f0e7c: Scaffold Client and Server locale resources for all ten supported languages (`en-US`, `zh-CN`, `zh-TW`, `ja-JP`, `es-ES`, `pt-BR`, `fr-FR`, `de-DE`, `vi-VN`, `id-ID`) instead of only English and Simplified Chinese.
+
+### Patch Changes
+
+- b7a3083: Keep installed client plugins in custom scopes on the same application contexts and service tokens as template page tests. Update both application templates' page examples to use real application hooks, permissions and notifications through `@nocobase/app-testing`.
+
+  Align application and generated-plugin testing guidance with the shared fixtures, including Node integration tests, database dialect selection, temporary CLI storage and fixture ownership.
+
 ## 0.1.0-beta.23
 
 ### Patch Changes
