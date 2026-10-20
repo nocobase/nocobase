@@ -95,6 +95,33 @@ it('hides unconfigured native chat, validates only submitted defaults and restor
   ]);
 });
 
+it.each(['embedding-only', 'disabled-chat'])(
+  'rejects conversation creation consistently with an unavailable %s catalog',
+  async (catalog) => {
+    h = await createHarness();
+    await h.services.models.services.create({
+      title: 'Local',
+      provider: 'openai-compatible',
+      baseUrl: 'http://127.0.0.1:1/v1',
+      apiKey: 'test',
+      enabled: catalog !== 'disabled-chat',
+      models:
+        catalog === 'embedding-only'
+          ? [{ value: 'embed', kind: 'embedding' }]
+          : [{ value: 'chat' }],
+    });
+    const refused = await h.request('POST', '/agents/conversations', {
+      user,
+      body: { agentId: 'online' },
+    });
+    expect(refused.status).toBe(400);
+    expect(refused.body.error).toMatchObject(missingModel);
+    expect(
+      (await h.request('GET', '/agents/conversations', { user })).body.data,
+    ).toEqual([]);
+  },
+);
+
 it('creates and answers with a configured model, and keeps its conversation readable after disabling it', async () => {
   h = await createHarness();
   mock = await startMockOpenAI();

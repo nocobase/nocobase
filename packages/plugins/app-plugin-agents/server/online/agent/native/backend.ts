@@ -203,7 +203,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       (config.model?.length
         ? this.firstModel(config.model)
         : (initial.defaultModel ?? (await this.deps.defaultModel())));
-    if (!model) throw invalid('No chat model is configured.');
+    if (!model) throw invalid('No enabled chat model is configured.');
     this.validateModel(config.model, model);
     await this.deps.model(model, '');
     this.available();
