@@ -90,9 +90,7 @@ describe('the Agent page', () => {
     fireEvent.click(await screen.findByTestId('agent-edit-opus'));
     const dialog = await screen.findByTestId('agent-dialog');
     const goodAt = within(dialog).getByTestId('agent-good-at');
-    expect(goodAt).toHaveValue(
-      'Designs, architecture, hard investigations and reviews of important changes.',
-    );
+    expect(goodAt).toHaveValue('modelSuggestions.design');
     fireEvent.change(goodAt, { target: { value: '' } });
     fireEvent.click(within(dialog).getByTestId('agent-dialog-save'));
     expect(

@@ -8,6 +8,15 @@ import runWaitZhCN from './runWait.zh-CN.js';
 import type { AgentsResource } from './en-US.js';
 
 const zhCN: AgentsResource = {
+  modelSuggestions: {
+    design: '方案、架构、疑难排查、重要改动的评审。',
+    routine: '范围清楚的常规实现、小修复、补测试、文案。',
+    small: '小改动、机械性修改，便宜、快。',
+    explanation: '理解需求、写方案和说明。',
+    large: '较大的实现、跨包改动、重构。',
+    review: '代码评审、读 CI 失败。',
+  },
+
   actions: {
     back: '返回',
     cancel: '取消',

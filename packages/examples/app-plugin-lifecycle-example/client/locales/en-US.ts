@@ -470,7 +470,7 @@ const enUS = {
       cancelled: {
         customer: 'Cancelled by the customer.',
         timeout: 'Closed: not paid in time.',
-        refundRequested: 'Refunded at the customer’s request.',
+        refundRequested: 'Refund requested by the customer.',
       },
       refunding: 'Refunding…',
       refundNeedsAttention:
