@@ -219,6 +219,7 @@ export const SessionSchema: z.ZodType<Session> = z
       .meta({ description: 'A permission request waits for its owner.' }),
     computerOnline: z.boolean(),
     lastSeq: z.number().int(),
+    seenSeq: z.number().int(),
     project: ProjectFields.nullable().meta({
       description: 'The project it works for, when its owner chose one.',
     }),

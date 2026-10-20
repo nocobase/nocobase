@@ -58,7 +58,6 @@ import {
   useDecideLinks,
   usePrompt,
   useSession,
-  useMarkSeen,
   useTranscript,
   useUpdateSession,
 } from '../api.js';
@@ -93,7 +92,6 @@ export function SessionView({
   const { t } = useTranslation();
   const session = useSession(sessionId);
   const transcript = useTranscript(sessionId);
-  useMarkSeen(sessionId, transcript.data?.at(-1)?.seq);
   const computers = useComputers();
   const surface = useSessionSurface();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -164,6 +162,7 @@ export function SessionView({
       >
         <Conversation
           session={session.data}
+          readSeq={transcript.data?.at(-1)?.seq}
           computer={computer}
           items={transcript.data ? items : undefined}
           details={showDetails}
@@ -205,6 +204,7 @@ export function SessionView({
 
 function Conversation({
   session,
+  readSeq,
   computer,
   items,
   details,
@@ -212,6 +212,7 @@ function Conversation({
   onSummary,
 }: {
   readonly session: Session;
+  readonly readSeq?: number | undefined;
   readonly computer: Computer | undefined;
   readonly items: readonly TranscriptItem[] | undefined;
   readonly details: boolean;
@@ -407,6 +408,7 @@ function Conversation({
           ) : (
             <TranscriptView
               items={items}
+              readSeq={readSeq}
               session={session}
               agentName={agentName(session, computer)}
               writable={writable}

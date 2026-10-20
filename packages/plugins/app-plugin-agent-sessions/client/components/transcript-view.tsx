@@ -25,7 +25,7 @@ import {
   WrenchIcon,
   XIcon,
 } from 'lucide-react';
-import { Fragment, useState, type ReactElement } from 'react';
+import { Fragment, useRef, useState, type ReactElement } from 'react';
 import { Link } from 'react-router';
 
 import { MarkdownView } from './markdown-view.js';
@@ -48,6 +48,7 @@ import {
   type ToolKind,
   type TranscriptItem,
 } from '../transcript.js';
+import { useMarkSeen } from '../api.js';
 import { useLinkOpen } from '../config.js';
 import { plainClick } from '../lib/clicks.js';
 import { LinkName } from './link-name.js';
@@ -78,17 +79,21 @@ const TERMINAL =
 
 export function TranscriptView({
   items,
+  readSeq,
   session,
   agentName,
   writable,
   actions,
 }: {
   readonly items: readonly TranscriptItem[];
+  readonly readSeq?: number | undefined;
   readonly session: Session;
   readonly agentName: string;
   readonly writable: boolean;
   readonly actions: TranscriptActions;
 }): ReactElement {
+  const endRef = useRef<HTMLLIElement>(null);
+  useMarkSeen(session.id, readSeq, endRef);
   return (
     <ol className='flex flex-col gap-4'>
       {items.map((item) => (
@@ -102,6 +107,7 @@ export function TranscriptView({
           />
         </li>
       ))}
+      <li ref={endRef} aria-hidden className='h-px' />
     </ol>
   );
 }

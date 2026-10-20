@@ -4,6 +4,7 @@ const zhCN: AgentSessionsResource = {
   navigation: { agentSessions: '我的 Agent' },
   actions: { close: '关闭', copy: '复制', cancel: '取消' },
   status: {
+    permission: '等你允许',
     loading: '加载中',
     offline: '电脑离线',
     waiting: '等你确认',
