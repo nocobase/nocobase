@@ -1,4 +1,10 @@
-import { Settings, Users, ShieldCheck, ListFilter } from 'lucide-react';
+import {
+  Settings,
+  Users,
+  ShieldCheck,
+  KeyRound,
+  ListFilter,
+} from 'lucide-react';
 import {
   defineAppRoutes,
   type AppClientRouteContribution,
@@ -11,40 +17,6 @@ const systemSettingsRoutes: AppClientRouteContribution = defineAppRoutes([
     path: '/settings',
     navigation: { title: 'settings.title', icon: Settings, order: 100 },
     children: [
-      {
-        name: 'settingsDefaultAccess',
-        path: '/default-access',
-        auth: 'required',
-        authz: {
-          resource: { type: 'settings', id: 'authorization.default-access' },
-          action: 'read',
-        },
-        navigation: { title: 'settings.defaultAccess.title', icon: ListFilter },
-        breadcrumb: { title: 'settings.defaultAccess.title' },
-        componentLoader: () => import('./default-access.js'),
-        children: [
-          {
-            name: 'settingsDefaultAccessCreate',
-            path: 'create',
-            authz: {
-              resource: {
-                type: 'settings',
-                id: 'authorization.default-access',
-              },
-              action: 'create',
-            },
-            breadcrumb: { title: 'settings.defaultAccess.new' },
-            componentLoader: () => import('./default-access-form.js'),
-          },
-          // Read permission opens the full rule even when the viewer may not update it.
-          {
-            name: 'settingsDefaultAccessEdit',
-            path: ':key/edit',
-            breadcrumb: { title: 'settings.defaultAccess.edit' },
-            componentLoader: () => import('./default-access-form.js'),
-          },
-        ],
-      },
       {
         name: 'settingsUsers',
         path: '/users',
@@ -75,35 +47,88 @@ const systemSettingsRoutes: AppClientRouteContribution = defineAppRoutes([
         ],
       },
       {
-        name: 'settingsRoles',
-        path: '/roles',
-        auth: 'required',
-        authz: {
-          resource: { type: 'settings', id: 'authorization.permission-sets' },
-          action: 'read',
+        name: 'permissionManagement',
+        navigation: {
+          title: 'settings.permissionManagement',
+          icon: ShieldCheck,
         },
-        navigation: { title: 'settings.roles', icon: ShieldCheck },
-        breadcrumb: { title: 'settings.roles' },
-        componentLoader: () => import('./roles.js'),
+        breadcrumb: { title: 'settings.permissionManagement' },
         children: [
           {
-            name: 'settingsRoleCreate',
-            path: 'create',
+            name: 'settingsRoles',
+            path: '/roles',
+            auth: 'required',
             authz: {
               resource: {
                 type: 'settings',
                 id: 'authorization.permission-sets',
               },
-              action: 'create',
+              action: 'read',
             },
-            breadcrumb: { title: 'settings.newRole' },
-            componentLoader: () => import('./role-form.js'),
+            navigation: { title: 'settings.roles', icon: KeyRound },
+            breadcrumb: { title: 'settings.roles' },
+            componentLoader: () => import('./roles.js'),
+            children: [
+              {
+                name: 'settingsRoleCreate',
+                path: 'create',
+                authz: {
+                  resource: {
+                    type: 'settings',
+                    id: 'authorization.permission-sets',
+                  },
+                  action: 'create',
+                },
+                breadcrumb: { title: 'settings.newRole' },
+                componentLoader: () => import('./role-form.js'),
+              },
+              {
+                name: 'settingsRoleEdit',
+                path: ':key/edit',
+                breadcrumb: { title: 'settings.editRole' },
+                componentLoader: () => import('./role-form.js'),
+              },
+            ],
           },
           {
-            name: 'settingsRoleEdit',
-            path: ':key/edit',
-            breadcrumb: { title: 'settings.editRole' },
-            componentLoader: () => import('./role-form.js'),
+            name: 'settingsDefaultAccess',
+            path: '/default-access',
+            auth: 'required',
+            authz: {
+              resource: {
+                type: 'settings',
+                id: 'authorization.default-access',
+              },
+              action: 'read',
+            },
+            navigation: {
+              title: 'settings.defaultAccess.title',
+              icon: ListFilter,
+            },
+            breadcrumb: { title: 'settings.defaultAccess.title' },
+            componentLoader: () => import('./default-access.js'),
+            children: [
+              {
+                name: 'settingsDefaultAccessCreate',
+                path: 'create',
+                authz: {
+                  resource: {
+                    type: 'settings',
+                    id: 'authorization.default-access',
+                  },
+                  action: 'create',
+                },
+                breadcrumb: { title: 'settings.defaultAccess.new' },
+                componentLoader: () => import('./default-access-form.js'),
+              },
+              // Read permission opens the full rule even when the viewer may not update it.
+              {
+                name: 'settingsDefaultAccessEdit',
+                path: ':key/edit',
+                breadcrumb: { title: 'settings.defaultAccess.edit' },
+                componentLoader: () => import('./default-access-form.js'),
+              },
+            ],
           },
         ],
       },

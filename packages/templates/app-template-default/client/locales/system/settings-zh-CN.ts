@@ -1,4 +1,5 @@
 const settings = {
+  permissionManagement: '权限管理',
   defaultAccess: {
     noResourcesShort: '暂无可配置的业务对象',
     scopeInvalid: '请重新选择有效的数据范围或完善筛选条件。',

@@ -165,7 +165,7 @@ Controlled default data scope rule fields with business-object selection, indepe
 - Installs to: `client/components/default-access-editor.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/default-access-editor-demo` (`pnpm exec shadcn view @nocobase/default-access-editor-demo`)
-- After installing: Pass localized labels, a stable rule key, resource choices and scope controls. The host loads authorization/defaultAccess and authorization/defaultAccess/options, enforces settings:authorization.default-access read/create/update/delete, and owns draft preservation, custom filters, validation, confirmation and writes. Existing apps reconcile the editor, default-access pages/model/routes, locales and contextual role-form link from the updated template. No existing rule is seeded or rewritten on upgrade.
+- After installing: Pass localized labels, a stable rule key, resource choices and scope controls. The host loads authorization/defaultAccess and authorization/defaultAccess/options, enforces settings:authorization.default-access read/create/update/delete, and owns draft preservation, custom filters, validation, confirmation and writes. Existing apps reconcile the editor, default-access pages/model/routes, locales and contextual role-form link from the updated template. No existing rule is seeded or rewritten on upgrade. Both templates group the existing Roles and permissions and Default data scopes entry points under Permission management without changing their route ids, URLs, settings guards or stored rules. This navigation organization does not add sharing or restriction editors.
 
 ## Data display
 

@@ -74,14 +74,6 @@ describe('app client routes', () => {
     expect(pageAuthorizations(built.routes)).toEqual([
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
-      ...[
-        'settingsDefaultAccess',
-        'settingsDefaultAccessCreate',
-        'settingsDefaultAccessEdit',
-      ].map((name) => ({
-        name,
-        authorizedAs: 'settings:authorization.default-access',
-      })),
       { name: 'settingsUsers', authorizedAs: 'user:*' },
       { name: 'settingsUserCreate', authorizedAs: 'user:*' },
       { name: 'settingsUser', authorizedAs: 'user:*' },
@@ -98,6 +90,14 @@ describe('app client routes', () => {
         name: 'settingsRoleEdit',
         authorizedAs: 'settings:authorization.permission-sets',
       },
+      ...[
+        'settingsDefaultAccess',
+        'settingsDefaultAccessCreate',
+        'settingsDefaultAccessEdit',
+      ].map((name) => ({
+        name,
+        authorizedAs: 'settings:authorization.default-access',
+      })),
     ]);
     for (const loader of componentLoadersIn(built.routes))
       await expect(loader()).resolves.toMatchObject({

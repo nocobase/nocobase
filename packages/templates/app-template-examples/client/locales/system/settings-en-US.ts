@@ -1,4 +1,5 @@
 const settings = {
+  permissionManagement: 'Permission management',
   defaultAccess: {
     noResourcesShort: 'No configurable objects available',
     scopeInvalid:
