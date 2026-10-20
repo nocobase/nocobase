@@ -25,6 +25,7 @@ const frFR: FoundationResource = {
       'Seuls les administrateurs avec accès illimité peuvent consulter cette page.',
     retry: 'Réessayer',
     undetermined_one: '{{count}} capacité indéterminée',
+    undetermined_many: '{{count}} capacités indéterminées',
     undetermined_other: '{{count}} capacités indéterminées',
     highlightsLabel: 'Chiffres clés',
     unavailable: 'Indisponible',

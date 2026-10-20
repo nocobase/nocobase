@@ -25,6 +25,7 @@ const esES: FoundationResource = {
       'Solo los administradores con acceso ilimitado pueden consultar esta página.',
     retry: 'Reintentar',
     undetermined_one: 'No se ha podido determinar {{count}} capacidad',
+    undetermined_many: 'No se han podido determinar {{count}} capacidades',
     undetermined_other: 'No se han podido determinar {{count}} capacidades',
     highlightsLabel: 'Cifras clave',
     unavailable: 'No disponible',

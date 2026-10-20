@@ -25,6 +25,7 @@ const ptBR: FoundationResource = {
       'Somente administradores com acesso irrestrito podem ver esta página.',
     retry: 'Tentar novamente',
     undetermined_one: 'Não foi possível determinar {{count}} capacidade',
+    undetermined_many: 'Não foi possível determinar {{count}} capacidades',
     undetermined_other: 'Não foi possível determinar {{count}} capacidades',
     highlightsLabel: 'Números principais',
     unavailable: 'Indisponível',
