@@ -227,6 +227,7 @@ export function AgentSessionsPanel({
   cli,
   connectPrompt,
   linkPanels,
+  sessionMarks,
   ...props
 }: AgentSessionsPanelProps): ReactElement {
   const settings = useMemo(
@@ -234,8 +235,9 @@ export function AgentSessionsPanel({
       cli,
       connectPrompt: connectPrompt ?? null,
       linkPanels: linkPanels ?? {},
+      ...(sessionMarks ? { sessionMarks } : {}),
     }),
-    [cli, connectPrompt, linkPanels],
+    [cli, connectPrompt, linkPanels, sessionMarks],
   );
   return (
     <AgentSessionsConfigContext.Provider value={settings}>

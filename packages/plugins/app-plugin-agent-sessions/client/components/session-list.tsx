@@ -18,6 +18,7 @@ import {
   SearchIcon,
 } from 'lucide-react';
 import {
+  useContext,
   useMemo,
   useState,
   type KeyboardEvent,
@@ -39,7 +40,7 @@ import { Skeleton } from './ui/skeleton.js';
 
 import type { Session } from '../../shared/api.js';
 import { useSessions } from '../api.js';
-import { useSessionSurface } from '../config.js';
+import { AgentSessionsConfigContext, useSessionSurface } from '../config.js';
 import { dayGroup, shortTime, type DayGroup } from '../lib/format.js';
 import { sessionFacts, type SessionFacts } from '../lib/facts.js';
 import { ComputersDialog } from './computers-dialog.js';
@@ -332,6 +333,7 @@ function SessionRow({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { onOpenSession } = useSessionSurface();
+  const SessionMark = useContext(AgentSessionsConfigContext)?.sessionMarks;
   const open = (): void => {
     if (onOpenSession) onOpenSession(session.id);
     else void navigate(`/agent-sessions/${session.id}`);
@@ -359,6 +361,7 @@ function SessionRow({
       )}
     >
       <div className='flex items-baseline gap-2'>
+        {SessionMark && <SessionMark sessionId={session.id} />}
         <span
           className='min-w-0 flex-1 truncate text-sm font-medium'
           title={session.title}
@@ -369,6 +372,11 @@ function SessionRow({
           {shortTime(session.lastActivityAt, locale)}
         </span>
       </div>
+      {session.waiting && (
+        <span className='w-fit max-w-full truncate rounded bg-amber-500/15 px-1.5 text-xs font-medium text-amber-800 dark:text-amber-300'>
+          {t('status.permission')}
+        </span>
+      )}
       <div className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs'>
         {facts.group && (
           <span
@@ -390,7 +398,7 @@ function SessionRow({
         <span className='ml-auto flex shrink-0 items-center gap-1.5'>
           {facts.waitingLinks > 0 && facts.online ? (
             <WaitingCount count={facts.waitingLinks} />
-          ) : (
+          ) : session.waiting && facts.online ? null : (
             <StatusChip facts={facts} />
           )}
         </span>

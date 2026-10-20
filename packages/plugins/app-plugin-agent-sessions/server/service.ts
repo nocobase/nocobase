@@ -1191,10 +1191,21 @@ export class AgentSessionsService {
     await sessions(this.#conn()).updateMany({
       filter: (f) =>
         f.and([f.string('id').eq(sessionId), f.number('seenSeq').lt(seen)]),
-      values: { seenSeq: seen, ...(settles ? { noticedSeq: null } : {}) },
+      values: {
+        seenSeq: seen,
+        ...(settles && Number(session.pendingPermissions) === 0
+          ? { noticedSeq: null }
+          : {}),
+      },
     });
     if (settles)
-      await this.#notices?.settle({ userId, sessionId, outcome: 'seen' });
+      await this.#notices?.settle({
+        userId,
+        sessionId,
+        types: ['turnEnded', 'turnFailed'],
+        outcome: 'seen',
+      });
+    this.#changed({ session, lastSeq: Number(session.lastSeq) });
   }
 
   /** An image sent in the session, for its owner: its bytes and type. */
@@ -1398,6 +1409,10 @@ export class AgentSessionsService {
       ],
       now,
       {
+        seenSeq: Number(locked.lastSeq) + 1,
+        ...(Number(locked.pendingPermissions) === 0
+          ? { noticedSeq: null }
+          : {}),
         ...(note ? { toldWork: workSnapshot(work) } : {}),
         ...(instructions ? { toldInstructions } : {}),
         ...(viewer.locale ? { locale: viewer.locale } : {}),
@@ -1464,6 +1479,17 @@ export class AgentSessionsService {
         seq: changed.lastSeq,
         promptId,
       });
+      if (locked.noticedSeq !== null)
+        this.#schedule(
+          () =>
+            this.#notices?.settle({
+              userId: session.userId,
+              sessionId,
+              types: ['turnEnded', 'turnFailed'],
+              outcome: 'seen',
+            }) ?? Promise.resolve(),
+          0,
+        );
       this.#wake(session.computerId);
       this.#changed(changed);
       this.#diagnose?.('promptConfirmed', {
@@ -1861,6 +1887,25 @@ export class AgentSessionsService {
       filter: { id: session.id },
       values: written,
     });
+    // The existing lifecycle already decides whether requests still wait. Only settle its notices here.
+    if (
+      Number(session.pendingPermissions) > 0 &&
+      Number(values.pendingPermissions) === 0 &&
+      session.noticedSeq !== null
+    ) {
+      conn.afterCommit(() =>
+        this.#schedule(
+          () =>
+            this.#notices?.settle({
+              userId: session.userId,
+              sessionId: session.id,
+              types: ['permissionRequested'],
+              outcome: 'answered',
+            }) ?? Promise.resolve(),
+          0,
+        ),
+      );
+    }
     if (this.#eventListeners.size > 0) {
       // Streaming updates may coalesce into the prior sequence; reminder events are always appended.
       const base = lastSeq - added.length;
@@ -1916,21 +1961,6 @@ export class AgentSessionsService {
     const notices = this.#notices;
     if (!notices) return;
     for (const event of added) {
-      if (
-        event.kind === 'permissionResolved' &&
-        event.reason === 'answered' &&
-        session.noticedSeq !== null
-      )
-        this.#schedule(
-          () =>
-            notices.settle({
-              userId: session.userId,
-              sessionId: session.id,
-              types: ['permissionRequested'],
-              outcome: 'answered',
-            }),
-          0,
-        );
       const notice = noticeOf(event);
       if (notice)
         this.#schedule(
@@ -1956,7 +1986,8 @@ export class AgentSessionsService {
       !this.#notices ||
       !session ||
       session.archivedAt ||
-      Number(session.seenSeq) >= seq ||
+      (notice.type !== 'permissionRequested' &&
+        Number(session.seenSeq) >= seq) ||
       (notice.type === 'permissionRequested' &&
         Number(session.pendingPermissions) === 0)
     )

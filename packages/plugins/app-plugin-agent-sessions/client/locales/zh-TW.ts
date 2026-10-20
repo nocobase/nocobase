@@ -12,6 +12,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     cancel: '取消',
   },
   status: {
+    permission: '等你允許',
     loading: '載入中',
     offline: '電腦離線',
     waiting: '需要你',

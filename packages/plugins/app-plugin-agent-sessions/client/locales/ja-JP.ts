@@ -12,6 +12,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     cancel: 'キャンセル',
   },
   status: {
+    permission: '許可を待っています',
     loading: '読み込み中',
     offline: 'コンピューターがオフラインです',
     waiting: 'あなたが必要です',

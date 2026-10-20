@@ -12,6 +12,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     cancel: 'Cancelar',
   },
   status: {
+    permission: 'Aguardando sua permissão',
     loading: 'Carregando',
     offline: 'Computador off-line',
     waiting: 'Precisa de você',

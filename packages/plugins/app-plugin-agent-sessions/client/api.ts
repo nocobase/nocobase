@@ -24,7 +24,13 @@ import {
   type UseMutationResult,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import { useCallback, useContext, useEffect, useRef } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  type RefObject,
+} from 'react';
 import { cancelChoiceDiscoveries } from './discovery-requests.js';
 import {
   ApplicationCacheContext,
@@ -231,21 +237,29 @@ export function useTranscript(
  * Tells the server how far the viewer has seen the session while its page is visible, so that they are not told of it
  * elsewhere: once `seq` grows, and at most once a second.
  */
-export function useMarkSeen(sessionId: string, seq: number | undefined): void {
+export function useMarkSeen(
+  sessionId: string,
+  seq: number | undefined,
+  endRef: RefObject<HTMLElement | null>,
+): void {
   const api = useApiClient();
   const sentRef = useRef<{ sessionId: string; seq: number } | null>(null);
   useEffect(() => {
-    if (!seq) return;
+    const target = endRef.current;
+    if (!seq || !target || typeof IntersectionObserver === 'undefined') return;
+    let intersecting = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const mark = (): void => {
+      clearTimeout(timer);
       const last = sentRef.current;
       if (
+        !intersecting ||
         document.visibilityState !== 'visible' ||
         (last?.sessionId === sessionId && last.seq >= seq)
       )
         return;
-      clearTimeout(timer);
       timer = setTimeout(() => {
+        if (!intersecting || document.visibilityState !== 'visible') return;
         sentRef.current = { sessionId, seq };
         api
           .request({
@@ -259,13 +273,18 @@ export function useMarkSeen(sessionId: string, seq: number | undefined): void {
           });
       }, 1_000);
     };
-    mark();
+    const observer = new IntersectionObserver(([entry]) => {
+      intersecting = Boolean(entry?.isIntersecting);
+      mark();
+    });
+    observer.observe(target);
     document.addEventListener('visibilitychange', mark);
     return () => {
       clearTimeout(timer);
+      observer.disconnect();
       document.removeEventListener('visibilitychange', mark);
     };
-  }, [api, sessionId, seq]);
+  }, [api, sessionId, seq, endRef]);
 }
 
 const liveSubscriptions = new WeakMap<
