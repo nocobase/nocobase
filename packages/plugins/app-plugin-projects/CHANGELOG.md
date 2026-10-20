@@ -1,5 +1,26 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.14
+
+### Minor Changes
+
+- 2c2b137: Remove the issue start option from services, plans, HTTP input and generated commands. Work handlers can observe changes regardless of executor kind, and issue responses and events include the final state after transactional work routing.
+
+### Patch Changes
+
+- baf80fe: Add the OnlineAgent server service foundation with versioned conversation configuration, complete SDK message persistence, injectable business tools, shared execution control, and first-subscription stream caching. Preserve ordinary conversation and message identifiers without persistent request deduplication. Connect the original chat HTTP resources and first-subscription events to one shared browser submission and stream controller for application and Registry chat views. Preserve uploaded attachments, per-view drafts and unknown-outcome feedback without hidden retries or Runner fallback.
+
+  Recognize no-content streaming responses by HTTP status even when a browser exposes an empty body, so completed chats read saved history without a false disconnect warning.
+
+  Resolve Scope/Provider model changes consistently through the configuration API. Let users explicitly permit a new input after an unknown send result, and preserve Registry drafts and files when the shared client refuses a submission.
+
+  Let application-provided Organize entries own their availability feedback while retaining default Runner availability hints.
+
+  Bind the authoritative execution session ID to each business tool context so applications can associate business proposals with the current chat without trusting model-supplied identifiers.
+
+- @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/app-plugin-file@1.0.0-beta.25
+
 ## 0.1.0-beta.13
 
 ### Patch Changes

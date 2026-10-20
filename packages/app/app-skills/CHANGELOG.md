@@ -1,5 +1,12 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.41
+
+### Patch Changes
+
+- baf80fe: Declare the Examples business CLI and configure Runner chat to obtain it from the application's distribution while preserving the existing application registration identity. Document the required CLI build and distinguish it from Runner installation and development-management commands.
+- 30ac4db: Document deploying applications to an existing Studio, including CLI installation and authentication, repository-backed and manual archive uploads, deployment approval, and verification across multiple destinations.
+
 ## 0.1.0-beta.40
 
 ### Patch Changes

@@ -1,5 +1,51 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.73
+
+### Patch Changes
+
+- baf80fe: Transform all published plugin client entry points with AppClient in generated-application tests, preserving shared service tokens during real application startup as well as Router and application contexts in component tests. Keep server modules outside this transformation boundary.
+- 0f5d73f: Include the Agents plugin as a runtime dependency in the default application template.
+- baf80fe: Export validated SDK UI message contracts for OnlineAgent integration and align application SDK dependencies with the matching React client.
+- baf80fe: Keep committed chat messages, execution occupancy, paginated history and command results consistent across views. Confirm uncertain submissions into canonical history without resending or reconnecting, and guard delayed actions and Undo callbacks for the authenticated provider lifetime.
+
+  Keep published client test fixtures, navigation guards and language providers in the same Router and application contexts as application pages, and exercise translation model selection through its keyboard interaction.
+
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [c1ab9d4]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+  - @nocobase/app-plugin-agents@1.0.0-beta.15
+  - @nocobase/lifecycle@0.1.0-beta.3
+
 ## 1.0.0-beta.72
 
 ### Patch Changes

@@ -1,5 +1,99 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.55
+
+### Minor Changes
+
+- baf80fe: Add a compact AI Translation example using OnlineAgent background execution with structured output, model and language selection, and side-by-side source and translation text areas.
+- baf80fe: Add an Examples-only OnlineAgent integration with an Agents → Models navigation group, a shared authenticated chat panel, model-readiness guidance, saved history and streaming cancellation.
+
+  Expose the public Agents and Runtimes configuration pages in the Agents menu, including runtime registration, while preserving the plugin's page and settings permissions.
+
+### Patch Changes
+
+- baf80fe: Avoid empty assistant bubbles while thinking and redundant success notifications in shared Agents chat. Keep chat transcripts within their available width while preserving bounded scrolling for wide code blocks and tables, application-owned message extras, and actionable execution feedback.
+- baf80fe: Add extensible UI context snapshots, application-owned tool renderers, and guarded browser form registries to Agents. Preserve exact originating message linkage through public history and recovery, and demonstrate reviewed, draft-only form proposals in Examples without saving records or continuing completed tools.
+- baf80fe: Reauthorize bounded references from the most recent historical page for follow-up chat input, preserving current context priority and omitting stale parameters or inaccessible records.
+- baf80fe: Add a shared public chat-model catalog hook and explicit model selection when creating Online Agent conversations. Update the Examples chat selector to group models by service alongside Agents, with an online-model-or-runner conversation hint and vertical-only option scrolling, preserving Runner status, metadata, and draft content.
+- baf80fe: Describe Runner cancellation history as a request until termination is confirmed, preserving existing notice identifiers and cancellation behavior.
+- baf80fe: Show shared chat progress and safe outcomes, follow growing replies only near the bottom, and align Native defaults, read state and cancellation confirmation across chat consumers.
+- baf80fe: Read restored chat layout bounds in one browser snapshot while preserving containment and scrolling checks.
+- baf80fe: Transform all published plugin client entry points with AppClient in generated-application tests, preserving shared service tokens during real application startup as well as Router and application contexts in component tests. Keep server modules outside this transformation boundary.
+- 388f21f: Present structured extraction examples in a side-by-side workspace with scenario tabs, the same centered layout and shared model selector as AI Translation, concise copy and no model-configuration callouts or example-reset button. Preserve each scenario's source text and editable extraction result when switching tabs.
+- 388f21f: Redesign AI form assistance as an empty procurement request with a responsive two-column layout, a contextual AI chat shortcut, six business fields, and safe local clear and undo actions. Extend AI proposal validation and rendering for procurement values while keeping older conversation cards readable.
+- baf80fe: Declare the Examples business CLI and configure Runner chat to obtain it from the application's distribution while preserving the existing application registration identity. Document the required CLI build and distinguish it from Runner installation and development-management commands.
+- baf80fe: Name the runtime connection page in page permissions without changing its authorization identity.
+- baf80fe: Add contact and purchase-order demos that extract structured information through a shared OnlineAgent.background endpoint using frontend JSON Schemas, with model selection, loading feedback and editable results.
+- 388f21f: Redesign AI Translation as a unified two-column workspace with provider-grouped model selection, language swapping, sample text, copy and clear actions, and borderless editor focus. Move the Agents navigation group below External CRM while preserving its child order.
+- baf80fe: Keep generated application shell tests compatible with acknowledged realtime subscriptions.
+- baf80fe: Use shared AI SDK Chat owners for public chat clients, render ordered UIMessage parts and Runner source segments, and reconcile durable history, tool approval, recovery and independent Stop across application surfaces.
+- baf80fe: Stream native text increments immediately and support callable Runner agents through the shared OnlineAgent realtime service, atomic conversation admission, canonical block history and unified chat controls. Preserve executor bindings, explicit configuration validation and cancellation confirmation, and exclude server business context from public message metadata.
+- baf80fe: Save notices for native and Runner OnlineAgent conversations in the caller's transaction without waking an execution, including when input is supplied. Preserve active execution results and propagate persistence errors.
+
+  Reject direct HTTP tool, model-list and system-prompt overrides. Validate business variables against schemas declared by the selected scopes, while preserving trusted server SDK configuration and existing thinking handling.
+
+  Add showInChatList with a non-null true default. Filter ordinary chat lists before database pagination, allow explicit visibility at ordinary conversation creation, and always hide new background sessions. Known-session ownership checks and direct reads remain unchanged.
+
+- baf80fe: Wait for the admitted OnlineAgent execution in get(), including validated result persistence, finalization and occupancy release. Add try({ wait }) for bounded observation with distinct pending, failed and cancelled results and safe errors. Preserve run() admission semantics and finalization retries without rerunning model or tools.
+
+  Update translation and structured extraction examples to await results without status polling while preserving deadlines, disconnect handling and cancellation of late admission.
+
+- baf80fe: Remove the old conversation start, fallback and restore HTTP operations and the conversation fallback/restore CLI commands without aliases. Replace start with POST /api/agents/conversations followed by POST /api/agents/conversations/:id/messages, or conversation create followed by conversation message send. These are two non-atomic requests and may leave an empty conversation if sending fails. Fallback and restore have no same-session replacement: explicitly create a new conversation with the desired executor/agent, without automatically copying history or changing an existing binding. Trusted domain start/fallback/restore methods remain available.
+
+  Historical unbound conversations remain read-only, with owner-authorized cancellation of unfinished old runs. Browser callers must use the narrow configuration input: move tool lists, model lists and system-prompt policy into trusted server configuration, and declare business variables through selected-scope schemas. Existing thinking handling remains unchanged. Apply the visibility migration before serving requests; existing ordinary records default to visible and new background sessions are hidden, with known-session authorization preserved.
+
+  Background run still acknowledges admission. Use get to wait for validated, saved and finalized results, or try with a finite observation budget; observation timeout does not cancel execution. Deliver can return null after saving a notice in the caller's transaction without waking a new-bound conversation. Remove proposed-plan quantity hints from consultation cards while retaining historical data and plan mechanisms, and consolidate the framework and application upgrade documentation.
+
+- baf80fe: Use `OnlineAgentService` directly as the application service contract and remove redundant service interfaces. Update application dependencies, tests, and integration guidance to use the complete service type while retaining the shared realtime-session and Runner-backend contracts.
+- baf80fe: Integrate single-instance startup correction, transactional UI notifications and background result observation with standard SDK chat. Preserve approval barriers and actual tool occupancy while making interrupted-effect feedback advisory after finalization.
+- baf80fe: Repair previous-process native conversation occupancy during server startup while preserving saved results. Keep interrupted tool facts in private model history, remove effect-review admission locks, and allow owners to cancel historical runs while keeping historical conversations read-only. Stop continues to wait for actual native tool termination and finalization; cancellation requests for Runner and historical runs still require terminal confirmation.
+- baf80fe: Export validated SDK UI message contracts for OnlineAgent integration and align application SDK dependencies with the matching React client.
+- baf80fe: Show OnlineAgent thinking feedback before the first stream event and place animated waiting feedback directly after the latest chat message in Examples and the Registry block.
+- baf80fe: Remove the unused legacy realtime protocol and process-local replay manager after migrating public chat consumers to SDK UI messages. Keep background structured execution and its private model evidence separate from browser streams, and verify the installed application contract.
+
+  Show writing indicators only for the active SDK response so saved partial replies stay still after cancellation, refresh and subsequent turns.
+
+- baf80fe: Keep committed chat messages, execution occupancy, paginated history and command results consistent across views. Confirm uncertain submissions into canonical history without resending or reconnecting, and guard delayed actions and Undo callbacks for the authenticated provider lifetime.
+
+  Keep published client test fixtures, navigation guards and language providers in the same Router and application contexts as application pages, and exercise translation model selection through its keyboard interaction.
+
+- baf80fe: Unify native realtime and background conversations on complete internal SDK UI messages, deriving safe public UI history and private model replay from the same original. Restore the common `OnlineAgent` interface with `RealtimeOnlineAgent` and `BackgroundOnlineAgent` subinterfaces and concrete session implementations. Background agents expose `run`, `get`, and `try` without `send` or browser-stream dependencies; structured results remain independently validated execution data. Update application consumers to use the background interface. Historical background ModelMessage storage is not supported by the new reader.
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [c1ab9d4]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+  - @nocobase/app-plugin-agents@1.0.0-beta.15
+  - @nocobase/lifecycle@0.1.0-beta.3
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.9
+
 ## 1.0.0-beta.54
 
 ### Patch Changes
