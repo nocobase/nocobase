@@ -24,6 +24,7 @@ import { appCliHome, type AppCliConfig } from './config.ts';
 import { AppCommand } from './lib/command.ts';
 import { findRunCredentials } from './lib/credentials.ts';
 import { CliCommandError } from './lib/envelope.ts';
+import { withSkillLock } from './skills-lock.ts';
 
 const SKILL = 'nb-studio-cli';
 const TOOLS = ['claude', 'codex'] as const;
@@ -325,23 +326,7 @@ async function writeRegistry(
 
 async function lock<T>(file: string, work: () => Promise<T>): Promise<T> {
   await safePath(path.dirname(file));
-  await mkdir(path.dirname(file), { recursive: true });
-  try {
-    await mkdir(file);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'EEXIST')
-      throw new CliCommandError(
-        'SKILLS_BUSY',
-        `Another Skill operation holds ${file}. Retry after it finishes; if it was interrupted, remove this lock directory before retrying.`,
-        { exit: EXIT_CODES.conflict },
-      );
-    throw error;
-  }
-  try {
-    return await work();
-  } finally {
-    await rm(file, { recursive: true, force: true });
-  }
+  return withSkillLock(file, work);
 }
 
 async function statusOf(
@@ -462,10 +447,14 @@ async function replace(
       { exit: EXIT_CODES.validation },
     );
   await safePath(target.path);
+  const ready = await reusable(target, environment, source, registry);
+  if (ready !== undefined) return ready;
   return lock(
     path.join(path.dirname(target.path), '.nb-studio-cli.lock'),
     async () => {
       await safePath(target.path);
+      const ready = await reusable(target, environment, source, registry);
+      if (ready !== undefined) return ready;
       const before = await statusOf(target, environment, source, registry);
       if (before.error)
         throw new CliCommandError('SKILLS_UNSAFE_PATH', before.error, {
@@ -558,6 +547,26 @@ async function replace(
   );
 }
 
+async function reusable(
+  target: Target,
+  environment: SkillsEnvironment,
+  source: Snapshot,
+  registry: Registry,
+): Promise<SkillInstall | undefined> {
+  const record = registry.targets.find(
+    (record) => path.resolve(record.path) === path.resolve(target.path),
+  );
+  if (
+    record?.tool !== target.tool ||
+    record.hash !== source.hash ||
+    record.cliVersion !== environment.cliVersion
+  )
+    return undefined;
+  const status = await statusOf(target, environment, source, registry);
+  if (!status.upToDate || status.error) return undefined;
+  return { ...status, action: 'unchanged' };
+}
+
 /** Replaces only nb-studio-cli and registers successful installations for self-update. */
 export async function installSkills(
   environment: SkillsEnvironment,
@@ -594,6 +603,13 @@ export async function installSkills(
       selected.includes(target.tool),
     ),
   );
+  const result = (targets: SkillInstall[]): SkillsInstallResult => ({
+    skill: SKILL,
+    cliVersion: environment.cliVersion,
+    hash: source.hash,
+    dryRun,
+    targets,
+  });
   const perform = async (): Promise<SkillsInstallResult> => {
     const registry = await readRegistry(environment);
     const conflict = targetConflicts([...targets, ...registry.targets])
@@ -627,14 +643,26 @@ export async function installSkills(
         });
       } else results.push(await replace(target, environment, source, registry));
     }
-    return {
-      skill: SKILL,
-      cliVersion: environment.cliVersion,
-      hash: source.hash,
-      dryRun,
-      targets: results,
-    };
+    return result(results);
   };
+  if (!dryRun) {
+    const registry = await readRegistry(environment);
+    const conflict = targetConflicts([...targets, ...registry.targets])
+      .values()
+      .next().value;
+    if (conflict !== undefined) throw conflict;
+    const ready = await Promise.all(
+      targets.map(async (target) => {
+        if (
+          overlaps(target.path, environment.packageRoot) ||
+          overlaps(target.path, environment.stateHome)
+        )
+          return undefined;
+        return reusable(target, environment, source, registry);
+      }),
+    );
+    if (ready.every((target) => target !== undefined)) return result(ready);
+  }
   return dryRun
     ? perform()
     : lock(path.join(environment.stateHome, '.skills.lock'), perform);
