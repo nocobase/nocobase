@@ -59,6 +59,11 @@ async function inspectLock(file: string): Promise<string> {
   }
   let description =
     'The owner could not be verified; the lock was left unchanged. Stop all CLI and bridge processes before moving this directory aside with your file manager.';
+  // Exactly one record can authorize cleanup. Together with its unique name,
+  // this permits only one outstanding directory removal per lock generation.
+  // In particular, no delayed second removal can reach a later legacy owner
+  // that holds an empty directory without publishing a record.
+  if (entries.length !== 1) return description;
   for (const entry of entries) {
     if (!OWNER_NAME.test(entry)) continue;
     const marker = path.join(file, entry);
@@ -139,7 +144,6 @@ export async function withSkillLock<T>(
         acquired = entries.length === 1 && entries[0] === name;
         if (!acquired) {
           await unlink(marker);
-          await removeEmptyLock(file);
         }
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;

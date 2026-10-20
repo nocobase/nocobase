@@ -243,15 +243,75 @@ describe('Skill lock ownership and recovery', () => {
     await Promise.all([slow, fresh]);
   });
 
-  it('a delayed empty-directory removal cannot delete a published active owner', async () => {
+  it('preserves multiple owner records instead of scheduling multiple directory removals', async () => {
     const file = fixture();
     const pid = await deadPid();
     owner(file, pid);
     owner(file, pid);
+    const records = readdirSync(file);
+    await expect(
+      withSkillLock(file, async () => undefined, 0),
+    ).rejects.toMatchObject({ code: 'SKILLS_BUSY' });
+    expect(readdirSync(file)).toEqual(records);
+    expect(unlink).not.toHaveBeenCalled();
+    expect(rmdir).not.toHaveBeenCalled();
+  });
+
+  it('a delayed losing reaper also preserves a later empty legacy lock', async () => {
+    const file = fixture();
+    owner(file, await deadPid());
     const paused = gate();
     const resume = gate();
-    const held = gate();
-    const release = gate();
+    const legacy = gate();
+    const finishedUnlink = gate();
+    const fs =
+      await vi.importActual<typeof import('node:fs/promises')>(
+        'node:fs/promises',
+      );
+    let firstUnlink = true;
+    let replaced = false;
+    vi.mocked(unlink).mockImplementation(async (marker) => {
+      const delayed = firstUnlink && String(marker).startsWith(file);
+      if (delayed) {
+        firstUnlink = false;
+        paused.resolve();
+        await resume.promise;
+      }
+      try {
+        await fs.unlink(marker);
+      } finally {
+        if (delayed) finishedUnlink.resolve();
+      }
+    });
+    vi.mocked(rmdir).mockImplementation(async (...args) => {
+      await fs.rmdir(...args);
+      if (!replaced && args[0] === file) {
+        replaced = true;
+        mkdirSync(file);
+        legacy.resolve();
+      }
+    });
+    const slow = withSkillLock(file, async () => undefined);
+    await paused.promise;
+    const next = withSkillLock(file, async () => undefined);
+    try {
+      await legacy.promise;
+      resume.resolve();
+      await finishedUnlink.promise;
+      expect(readdirSync(file)).toEqual([]);
+      expect(rmdir).toHaveBeenCalledTimes(1);
+    } finally {
+      resume.resolve();
+      rmdirSync(file);
+      await Promise.all([slow, next]);
+    }
+  });
+
+  it('finishes the sole directory removal before allowing a new holder', async () => {
+    const file = fixture();
+    owner(file, await deadPid());
+    const paused = gate();
+    const resume = gate();
     const fs =
       await vi.importActual<typeof import('node:fs/promises')>(
         'node:fs/promises',
@@ -267,27 +327,19 @@ describe('Skill lock ownership and recovery', () => {
     });
     const slow = withSkillLock(file, async () => undefined);
     await paused.promise;
-    const fresh = withSkillLock(file, async () => {
-      held.resolve();
-      await release.promise;
-    });
-    await held.promise;
-    const records = readdirSync(file);
-    resume.resolve();
-    await vi.waitFor(() =>
-      expect(
-        vi
-          .mocked(rmdir)
-          .mock.settledResults.some(
-            (result) =>
-              result.type === 'rejected' &&
-              (result.value as NodeJS.ErrnoException).code === 'ENOTEMPTY',
-          ),
-      ).toBe(true),
-    );
-    expect(readdirSync(file)).toEqual(records);
-    release.resolve();
-    await Promise.all([slow, fresh]);
+    try {
+      const work = vi.fn();
+      await expect(withSkillLock(file, work, 0)).rejects.toMatchObject({
+        code: 'SKILLS_BUSY',
+      });
+      expect(work).not.toHaveBeenCalled();
+      expect(readdirSync(file)).toEqual([]);
+      expect(rmdir).toHaveBeenCalledTimes(1);
+    } finally {
+      resume.resolve();
+      await slow;
+    }
+    await expect(withSkillLock(file, async () => 'next')).resolves.toBe('next');
   });
 
   it('withdraws a delayed initializer that published into a later active directory', async () => {
