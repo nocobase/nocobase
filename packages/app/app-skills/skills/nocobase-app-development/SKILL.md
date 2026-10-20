@@ -60,7 +60,7 @@ For approval requirements, check `@nocobase/app-plugin-approval` first. If missi
 
 When the stages of a business record are fixed by developers rather than drawn by administrators — an expense report, a ticket, a contract, an order — build it with `@nocobase/lifecycle` as [record lifecycles](references/lifecycle.md) describes: the state stays in the record's own field and changes only through declared transitions. Declare only required business paths with precise sources and destinations; the diagram expands every `from × to` pair rather than analyzing routing logic. Follow [readable process graphs](references/lifecycle-ui.md#keep-process-graphs-readable) before rendering dense definitions.
 
-For notification configuration or sending, follow the notification plugin Skill: `notification.channels` maps each name to one flat Provider configuration, and `send({ idempotencyKey, messages })` supplies a complete message per Channel. Use native addresses; email and in-app arrays create independent deliveries, while Webhooks forbid `to`.
+For notification configuration or sending, follow the notification plugin Skill: `notification.channels` maps each name to one flat channel configuration with `type` (`provider` remains a compatibility alias), and `send({ idempotencyKey, messages })` supplies a complete message per Channel. Use native addresses; email and in-app arrays create independent deliveries, while Webhooks forbid `to`.
 
 Install, update and customize plugins, and remove a direct NocoBase package, as [plugins](references/plugins.md) describes: `pnpm nocobase plugin register`, `plugin update` and `package remove` keep the manifest, the lockfile, the composition roots and the synchronized Skills consistent, so never hand-edit only one of them.
 
