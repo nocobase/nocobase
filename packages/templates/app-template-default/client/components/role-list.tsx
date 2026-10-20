@@ -36,7 +36,7 @@ export function RoleList({
         >
           <Link
             to={role.to}
-            className='w-fit max-w-full min-w-0 truncate text-sm leading-5 font-medium text-foreground underline-offset-4 group-hover/role:underline'
+            className='-my-1 w-fit max-w-full min-w-0 truncate py-1 text-sm leading-5 font-medium text-foreground underline-offset-4 group-hover/role:underline'
             title={role.title}
           >
             {role.title}
