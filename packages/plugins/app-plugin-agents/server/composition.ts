@@ -529,7 +529,14 @@ export function createAgents(deps: AgentsDeps): Agents {
   jobs.provideSecrets({
     open: (conn, refs, delivery) => variables.forJob(conn, refs, delivery),
   });
-  const chat = createChatSettingsService({ tx, clock, agents });
+  const nativeAvailable = async () =>
+    Boolean((await modelServices.defaults()).effectiveChat);
+  const chat = createChatSettingsService({
+    tx,
+    clock,
+    agents,
+    nativeAvailable,
+  });
   const basePath = deps.basePath ?? (() => '');
   const chatAttachments = createChatAttachments({
     tx,
@@ -554,8 +561,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     runs,
     people,
     settings: chat,
-    nativeAvailable: async () =>
-      Boolean((await modelServices.catalog().catch(() => null))?.defaultModel),
+    nativeAvailable,
     nativeNotice: (unit, row, id, parts) =>
       sessions.native.deliver(row.userId, row.id, id, parts, { unit, row }),
     nativeActive: (id, persistedRunning) =>
@@ -710,7 +716,13 @@ export function createAgents(deps: AgentsDeps): Agents {
     subjects,
     gate,
     actions,
-    reporting: createReportService({ tx, clock, people, subjects }),
+    reporting: createReportService({
+      tx,
+      clock,
+      people,
+      subjects,
+      nativeAvailable,
+    }),
     prices: createPriceService({ tx, ids, clock }),
     conversations,
     chatAttachments: chatAttachments.service,

@@ -768,7 +768,6 @@ describe('historical Runner conversation domain', () => {
     expect((await domain().get(ALICE, original.id)).agent?.id).toBe(mine);
     expect((await domain().chatAgents(ALICE)).map((x) => x.name)).toEqual([
       'Team PM',
-      'Online agent',
     ]);
   });
   it('lists the agents a person may give work to, with whether each can take it now', async () => {
