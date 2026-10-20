@@ -1,0 +1,16 @@
+{
+  "File Previewer Pro": "Dosya Önizlemesi Pro",
+  "Configuration": "Yapılandırma",
+  "Preview Type": "Önizleme Türü",
+  "Microsoft Online": "Microsoft Online (varsayılan)",
+  "KKFileView": "KKFileView",
+  "KKFileView URL": "KKFileView URL",
+  "KKFileView server address (e.g., http://localhost:8012)": "KKFileView sunucu adresi (örn. http://localhost:8012)",
+  "Open in new window": "Yeni pencerede aç",
+  "Download": "İndir",
+  "Close": "Kapat",
+  "Save": "Kaydet",
+  "Settings saved successfully": "Ayarlar başarıyla kaydedildi",
+  "Failed to save settings": "Ayarları kaydetme başarısız",
+  "Select preview type": "Önizleme türünü seçin"
+}
