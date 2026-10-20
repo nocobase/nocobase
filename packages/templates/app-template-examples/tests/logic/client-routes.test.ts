@@ -137,11 +137,13 @@ describe('app client routes', () => {
     expect(management?.children.map(({ route }) => route.name)).toEqual([
       'workflows',
       'settingsUsers',
-      'settingsRoles',
+      'permissionManagement',
     ]);
-    expect(
-      management?.children.every(({ children }) => children.length === 0),
-    ).toBe(true);
+    const permissions = management?.children.find(
+      ({ route }) => route.name === 'permissionManagement',
+    );
+    expect(permissions?.children).toEqual([]);
+    expect(permissions?.route.path).toBe('/roles');
   });
 
   it('pins the page authorization of every signed-in page', () => {
@@ -214,6 +216,14 @@ describe('app client routes', () => {
         name: 'settingsRoleEdit',
         authorizedAs: 'settings:authorization.permission-sets',
       },
+      ...[
+        'settingsDefaultAccess',
+        'settingsDefaultAccessCreate',
+        'settingsDefaultAccessEdit',
+      ].map((name) => ({
+        name,
+        authorizedAs: 'settings:authorization.default-access',
+      })),
     ]);
   });
 });

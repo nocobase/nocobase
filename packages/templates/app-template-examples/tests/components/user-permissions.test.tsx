@@ -105,6 +105,18 @@ describe('user permission configuration', () => {
         expect(checkbox).not.toBeChecked();
         await user.click(checkbox);
       }
+      expect(
+        screen.getByRole('heading', { name: words.userInformation }),
+      ).toBeVisible();
+      expect(
+        screen.getByRole('heading', { name: words.accountSecurity }),
+      ).toBeVisible();
+      expect(
+        screen.getByRole('heading', { name: words.roleAssignment }),
+      ).toBeVisible();
+      expect(screen.getAllByRole('checkbox')).toHaveLength(10);
+      const rowIds = screen.getAllByRole('checkbox').map((node) => node.id);
+      expect(new Set(rowIds).size).toBe(10);
       await user.click(
         screen.getByRole('button', { name: words.save, exact: true }),
       );

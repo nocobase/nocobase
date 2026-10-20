@@ -1,5 +1,5 @@
 /** A controlled permission workspace. Filtering never changes the caller's draft. */
-import { SearchIcon, ShieldCheckIcon } from 'lucide-react';
+import { InfoIcon, SearchIcon, ShieldCheckIcon } from 'lucide-react';
 import {
   useId,
   useRef,
@@ -21,6 +21,12 @@ import {
 } from '#components/ui/select';
 import { Checkbox } from '#components/ui/checkbox';
 import { Switch } from '#components/ui/switch';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '#components/ui/tooltip';
 
 export interface PermissionEditorLevel {
   readonly value: string;
@@ -30,6 +36,7 @@ export interface PermissionEditorLevel {
 export interface PermissionEditorScope {
   /** An optional input for parameters of the selected scope. */
   readonly configuration?: ReactNode;
+  readonly hint?: string | undefined;
   readonly id: string;
   readonly label: string;
   readonly levels: readonly PermissionEditorLevel[];
@@ -60,12 +67,15 @@ export interface PermissionEditorGroup {
   readonly hint?: string | undefined;
   /** A page with one access action uses its title as the only checkbox label. */
   readonly accessOnly?: boolean;
+  /** An explanation shared by all actions, shown once across the resource row. */
+  readonly actionHint?: string | undefined;
   readonly rows: readonly PermissionEditorRow[];
 }
 
 export interface PermissionEditorSection {
   readonly id: string;
   readonly title: string;
+  readonly description?: string | undefined;
   readonly groups: readonly PermissionEditorGroup[];
   /** A note under the section's rows. */
   readonly footer?: ReactNode;
@@ -81,6 +91,9 @@ export interface PermissionEditorLabels {
   readonly noResults: string;
   readonly navigation: string;
   readonly selectAll?: string;
+  readonly dataRanges?: (count: number) => string;
+  readonly scopeExplanation?: string;
+  readonly scopeHintFor?: (name: string) => string;
   readonly selectVisible?: (groupName: string) => string;
   readonly summary: (enabled: number, total: number) => string;
 }
@@ -89,7 +102,7 @@ export interface PermissionEditorProps {
   readonly sections: readonly PermissionEditorSection[];
   readonly readOnly?: boolean | undefined;
   readonly onEnabledChange: (rowId: string, enabled: boolean) => void;
-  /** One atomic draft update; when absent, group selection is omitted. */
+  /** Compatibility with existing hosts; the editor now renders individual controls only. */
   readonly onEnabledBatchChange?: (
     changes: readonly { id: string; enabled: boolean }[],
   ) => void;
@@ -106,9 +119,50 @@ const DEFAULT_LABELS: Required<PermissionEditorLabels> = {
   noResults: 'No matching permissions',
   navigation: 'Permission categories',
   selectAll: 'All',
+  dataRanges: (count) => `Data ranges (${count})`,
+  scopeExplanation:
+    'Each range applies to its corresponding data. The operation must also pass its authorization checks.',
+  scopeHintFor: (name) => `About the data range for ${name}`,
   selectVisible: (name) => `Select visible permissions in ${name}`,
   summary: (enabled, total) => `${enabled} of ${total} enabled`,
 };
+
+function ScopeHint({
+  label,
+  children,
+}: {
+  readonly label: string;
+  readonly children: string;
+}): ReactElement {
+  const [open, setOpen] = useState(false);
+  const triggerId = useId();
+  return (
+    <TooltipProvider>
+      <Tooltip open={open} onOpenChange={setOpen} triggerId={triggerId}>
+        <TooltipTrigger
+          id={triggerId}
+          closeOnClick={false}
+          render={
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              className='size-6 shrink-0 text-muted-foreground'
+              aria-label={label}
+              aria-describedby={open ? `${triggerId}-content` : undefined}
+              onClick={() => setOpen(true)}
+            />
+          }
+        >
+          <InfoIcon aria-hidden className='size-3.5' />
+        </TooltipTrigger>
+        <TooltipContent role='tooltip' id={`${triggerId}-content`}>
+          {children}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 function LevelControl({
   label,
@@ -176,12 +230,41 @@ function PermissionRow({
   readonly onEnabledChange: (rowId: string, enabled: boolean) => void;
   readonly onLevelChange: (rowId: string, level: string) => void;
 }): ReactElement {
+  const scopeControls = row.scopes?.map((scope) => (
+    <div key={scope.id} className='grid min-w-0 gap-1'>
+      {(showScopeLabels || (row.scopes?.length ?? 0) > 1) && (
+        <span className='text-xs leading-5 text-muted-foreground'>
+          {scope.label}
+        </span>
+      )}
+      <div className='flex min-h-7 min-w-0 items-center gap-1'>
+        <LevelControl
+          label={labels.levelFor(`${row.label} · ${scope.label}`)}
+          levels={scope.levels}
+          value={scope.level ?? ''}
+          disabled={readOnly}
+          onChange={(level) => onLevelChange(scope.id, level)}
+        />
+        {scope.configuration}
+        {scope.hint && (
+          <ScopeHint
+            label={
+              labels.scopeHintFor?.(`${row.label} · ${scope.label}`) ??
+              DEFAULT_LABELS.scopeHintFor(`${row.label} · ${scope.label}`)
+            }
+          >
+            {scope.hint}
+          </ScopeHint>
+        )}
+      </div>
+    </div>
+  ));
   return (
     <div
       data-slot='permission-row'
-      className='flex min-w-0 flex-col gap-1 rounded-md px-2 py-1.5'
+      className='@container flex min-w-0 flex-col gap-1'
     >
-      <div className='grid min-h-6 min-w-0 grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-x-2 @2xl:grid-cols-[auto_minmax(0,1fr)] gap-y-1'>
+      <div className='grid min-h-5 min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 @xs:grid-cols-[auto_auto_minmax(0,1fr)]'>
         <Checkbox
           id={controlId}
           checked={row.enabled}
@@ -191,12 +274,12 @@ function PermissionRow({
         />
         <label
           htmlFor={controlId}
-          className='min-h-6 min-w-0 max-w-36 cursor-pointer text-sm leading-6 font-medium break-words @2xl:max-w-none'
+          className='min-w-0 cursor-pointer text-sm leading-5 font-normal break-words @xs:max-w-36'
         >
           {row.label}
         </label>
         {row.enabled && row.levels ? (
-          <div className='col-start-3 min-w-0 @2xl:col-start-2'>
+          <div className='col-start-2 min-w-0 @xs:col-start-3'>
             <LevelControl
               label={labels.levelFor(row.label)}
               levels={row.levels}
@@ -206,40 +289,40 @@ function PermissionRow({
             />
           </div>
         ) : null}
-        {row.enabled &&
-          row.scopes?.map((scope) => (
-            <div
-              key={scope.id}
-              className={cn(
-                'col-start-3 grid min-w-0 gap-1 @2xl:col-start-2',
-                showScopeLabels && 'col-span-2 col-start-2 @2xl:col-span-1',
-              )}
-            >
-              {(showScopeLabels || (row.scopes && row.scopes.length > 1)) && (
-                <span className='text-xs leading-5 text-muted-foreground'>
-                  {scope.label}
-                </span>
-              )}
-              <div className='flex min-h-7 min-w-0 items-center gap-1'>
-                <LevelControl
-                  label={labels.levelFor(`${row.label} · ${scope.label}`)}
-                  levels={scope.levels}
-                  value={scope.level ?? ''}
-                  disabled={readOnly}
-                  onChange={(level) => onLevelChange(scope.id, level)}
-                />
-                {scope.configuration}
-              </div>
+        {row.enabled && row.scopes && row.scopes.length > 1 ? (
+          <details className='col-start-2 min-w-0 @xs:col-span-2'>
+            <summary className='cursor-pointer text-xs leading-5 text-muted-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-ring'>
+              {labels.dataRanges?.(row.scopes.length) ??
+                DEFAULT_LABELS.dataRanges(row.scopes.length)}
+              <span className='mt-1 block'>
+                {row.scopes
+                  .map(
+                    (scope) =>
+                      `${scope.label}: ${scope.levels.find((level) => level.value === (scope.level ?? ''))?.label ?? ''}`,
+                  )
+                  .join('; ')}
+              </span>
+            </summary>
+            <div className='mt-1 grid min-w-0 gap-2'>
+              <p className='text-xs leading-5 text-muted-foreground'>
+                {labels.scopeExplanation ?? DEFAULT_LABELS.scopeExplanation}
+              </p>
+              {scopeControls}
             </div>
-          ))}
+          </details>
+        ) : row.enabled && row.scopes?.length === 1 ? (
+          <div className='col-start-2 min-w-0 @xs:col-start-3'>
+            {scopeControls}
+          </div>
+        ) : null}
       </div>
       {row.hint && (
-        <span
+        <p
           id={`${controlId}-hint`}
-          className='pl-6 text-xs text-muted-foreground'
+          className='pl-6 text-xs leading-5 text-muted-foreground'
         >
           {row.hint}
-        </span>
+        </p>
       )}
     </div>
   );
@@ -250,7 +333,6 @@ export function PermissionEditor({
   sections,
   readOnly = false,
   onEnabledChange,
-  onEnabledBatchChange,
   onLevelChange,
   labels,
 }: PermissionEditorProps): ReactElement {
@@ -280,6 +362,7 @@ export function PermissionEditor({
                   section.title,
                   group.title,
                   group.hint,
+                  group.actionHint,
                   row.label,
                   row.hint,
                   ...(row.scopes?.map((scope) => scope.label) ?? []),
@@ -334,10 +417,9 @@ export function PermissionEditor({
       <div className='flex max-h-128 min-w-0 flex-col overflow-auto @2xl:flex-row'>
         <nav
           aria-label={words.navigation}
-          className='flex shrink-0 gap-1 overflow-x-auto border-b bg-muted/25 p-2 @2xl:sticky @2xl:top-0 @2xl:max-h-128 @2xl:w-64 @2xl:self-start @2xl:flex-col @2xl:border-r @2xl:border-b-0'
+          className='flex shrink-0 gap-1 overflow-x-auto border-b bg-muted/25 p-2 @2xl:sticky @2xl:top-0 @2xl:max-h-128 @2xl:w-52 @2xl:self-start @2xl:flex-col @2xl:border-r @2xl:border-b-0'
         >
           {sections.map((section) => {
-            const rows = section.groups.flatMap((group) => group.rows);
             return (
               <Button
                 type='button'
@@ -350,9 +432,9 @@ export function PermissionEditor({
                   setEnabledOnly(false);
                 }}
                 className={cn(
-                  'h-auto shrink-0 justify-between gap-3 px-3 py-2 text-left whitespace-nowrap @2xl:w-full @2xl:min-w-0',
+                  'h-auto min-h-8 shrink-0 justify-between gap-2 px-2 py-1.5 text-left text-sm font-normal whitespace-nowrap @2xl:w-full @2xl:min-w-0',
                   section.id === active &&
-                    'bg-primary/10 text-primary hover:bg-primary/15',
+                    'bg-primary/10 font-medium text-primary hover:bg-primary/15',
                 )}
               >
                 <span
@@ -360,9 +442,6 @@ export function PermissionEditor({
                   title={section.title}
                 >
                   {section.title}
-                </span>
-                <span className='shrink-0 rounded-md bg-background px-1.5 py-0.5 text-xs tabular-nums'>
-                  {rows.filter((row) => row.enabled).length}/{rows.length}
                 </span>
               </Button>
             );
@@ -373,7 +452,6 @@ export function PermissionEditor({
             visible.map((section) => {
               const original =
                 sections.find((item) => item.id === section.id) ?? section;
-              const singleResource = original.groups.length === 1;
               const showScopeLabels = original.groups.some((group) =>
                 group.rows.some((row) => (row.scopes?.length ?? 0) > 1),
               );
@@ -389,9 +467,49 @@ export function PermissionEditor({
                 ...common.filter((key) => keys.includes(key)),
                 ...keys.filter((key) => !common.includes(key)),
               ];
+              const hasRanges = original.groups.some((group) =>
+                group.rows.some(
+                  (row) => row.levels?.length || row.scopes?.length,
+                ),
+              );
+              // Unrelated special actions share trailing slots rather than widening every resource.
+              const commonColumns = common.filter((key) => keys.includes(key));
+              const extraCount = Math.max(
+                0,
+                ...original.groups.map(
+                  (group) =>
+                    group.rows.filter(
+                      (row) => row.actionKey && !common.includes(row.actionKey),
+                    ).length,
+                ),
+              );
+              const columnCount = hasRanges
+                ? columns.length
+                : commonColumns.length + extraCount;
+              const columnFor = (
+                row: PermissionEditorRow,
+                rows: readonly PermissionEditorRow[],
+              ) => {
+                if (hasRanges) return columns.indexOf(row.actionKey ?? '');
+                if (rows.length === 1) return 0;
+                const standard = commonColumns.indexOf(row.actionKey ?? '');
+                if (standard >= 0) return standard;
+                // A resource with only special actions starts at the first column.
+                const offset = rows.some((item) =>
+                  common.includes(item.actionKey ?? ''),
+                )
+                  ? commonColumns.length
+                  : 0;
+                return (
+                  offset +
+                  rows
+                    .filter((item) => !common.includes(item.actionKey ?? ''))
+                    .findIndex((item) => item.id === row.id)
+                );
+              };
               const aligned =
                 columns.length > 0 &&
-                columns.length <= 4 &&
+                columnCount <= (hasRanges ? 4 : 6) &&
                 original.groups.every(
                   (group) =>
                     group.rows.every((row) => row.actionKey) &&
@@ -399,35 +517,40 @@ export function PermissionEditor({
                       group.rows.length,
                 );
               // Keep action columns only when each has room for its label and scope.
-              const alignment = [
-                '',
-                '@3xl:grid-cols-(--permission-columns)',
-                '@3xl:grid-cols-(--permission-columns)',
-                '@5xl:grid-cols-(--permission-columns)',
-                '@7xl:grid-cols-(--permission-columns)',
-              ][columns.length];
-              const placement = [
-                '',
-                '@3xl:col-start-(--permission-column) @3xl:row-start-1',
-                '@3xl:col-start-(--permission-column) @3xl:row-start-1',
-                '@5xl:col-start-(--permission-column) @5xl:row-start-1',
-                '@7xl:col-start-(--permission-column) @7xl:row-start-1',
-              ][columns.length];
+              const alignment = !hasRanges
+                ? '@xl:grid-cols-(--permission-columns)'
+                : [
+                    '',
+                    '@3xl:grid-cols-(--permission-columns)',
+                    '@3xl:grid-cols-(--permission-columns)',
+                    '@5xl:grid-cols-(--permission-columns)',
+                    '@7xl:grid-cols-(--permission-columns)',
+                  ][columns.length];
+              const placement = !hasRanges
+                ? '@xl:col-start-(--permission-column) @xl:row-start-1'
+                : [
+                    '',
+                    '@3xl:col-start-(--permission-column) @3xl:row-start-1',
+                    '@3xl:col-start-(--permission-column) @3xl:row-start-1',
+                    '@5xl:col-start-(--permission-column) @5xl:row-start-1',
+                    '@7xl:col-start-(--permission-column) @7xl:row-start-1',
+                  ][columns.length];
               return (
                 <section
                   key={section.id}
                   aria-label={section.title}
-                  className='flex flex-col gap-3 p-3 @lg:p-4'
+                  className='flex flex-col gap-2 p-3'
                 >
-                  <h2 className='text-sm font-semibold'>{section.title}</h2>
+                  {filtering && (
+                    <h2 className='text-sm font-semibold'>{section.title}</h2>
+                  )}
+                  {section.description && (
+                    <p className='text-xs leading-5 text-muted-foreground'>
+                      {section.description}
+                    </p>
+                  )}
                   <div className='divide-y rounded-lg border'>
                     {section.groups.map((group) => {
-                      const selectable = group.rows.filter(
-                        (row) => row.toggleable !== false,
-                      );
-                      const enabled = selectable.filter(
-                        (row) => row.enabled,
-                      ).length;
                       const originalGroup = sections
                         .find((item) => item.id === section.id)
                         ?.groups.find((item) => item.id === group.id);
@@ -440,7 +563,7 @@ export function PermissionEditor({
                         return (
                           <div
                             key={group.id}
-                            className='p-3'
+                            className='px-3 py-2'
                             data-slot='permission-resource'
                           >
                             <PermissionRow
@@ -464,11 +587,16 @@ export function PermissionEditor({
                       return (
                         <div
                           key={group.id}
-                          className='grid min-w-0 gap-2 p-3 @3xl:grid-cols-[9rem_minmax(0,1fr)]'
+                          className={cn(
+                            'grid min-w-0 gap-x-3 gap-y-2 px-3 py-2',
+                            hasRanges
+                              ? '@3xl:grid-cols-[8rem_minmax(0,1fr)]'
+                              : '@xl:grid-cols-[8rem_minmax(0,1fr)]',
+                          )}
                           data-slot='permission-resource'
                         >
-                          <div className='flex min-w-0 flex-col gap-1 py-1.5'>
-                            <h3 className='min-h-6 text-sm leading-6 font-medium break-words'>
+                          <div className='flex min-w-0 flex-col gap-1'>
+                            <h3 className='text-sm leading-5 font-medium break-words'>
                               {group.title ?? section.title}
                             </h3>
                             {group.hint && (
@@ -476,97 +604,27 @@ export function PermissionEditor({
                                 {group.hint}
                               </p>
                             )}
-                            <div
-                              className={cn(
-                                'flex min-h-7 items-center gap-2 text-xs text-muted-foreground',
-                                showScopeLabels && '@3xl:mt-6',
-                              )}
-                            >
-                              {onEnabledBatchChange &&
-                                totalRows.length > 1 &&
-                                selectable.length > 0 && (
-                                  <Checkbox
-                                    aria-label={words.selectVisible(
-                                      group.title ?? section.title,
-                                    )}
-                                    checked={
-                                      selectable.length > 0 &&
-                                      enabled === selectable.length
-                                    }
-                                    indeterminate={
-                                      enabled > 0 && enabled < selectable.length
-                                    }
-                                    disabled={readOnly}
-                                    id={`${id}-${section.id}-${group.id}-all`}
-                                    title={words.selectVisible(
-                                      group.title ?? section.title,
-                                    )}
-                                    onCheckedChange={(checked) => {
-                                      const changes = selectable
-                                        .filter(
-                                          (row) => row.enabled !== checked,
-                                        )
-                                        .map((row) => ({
-                                          id: row.id,
-                                          enabled: checked,
-                                        }));
-                                      if (changes.length) {
-                                        if (enabledOnly && !checked)
-                                          searchRef.current?.focus();
-                                        onEnabledBatchChange(changes);
-                                      }
-                                    }}
-                                  />
-                                )}
-                              {onEnabledBatchChange &&
-                                totalRows.length > 1 &&
-                                selectable.length > 0 && (
-                                  <label
-                                    htmlFor={`${id}-${section.id}-${group.id}-all`}
-                                    className='cursor-pointer'
-                                  >
-                                    <span aria-hidden>{words.selectAll}</span>
-                                    <span className='sr-only'>
-                                      {words.selectVisible(
-                                        group.title ?? section.title,
-                                      )}
-                                    </span>
-                                  </label>
-                                )}
-                              {!singleResource && totalRows.length > 1 && (
-                                <span
-                                  className='tabular-nums'
-                                  aria-label={words.summary(
-                                    totalRows.filter((row) => row.enabled)
-                                      .length,
-                                    totalRows.length,
-                                  )}
-                                >
-                                  {
-                                    totalRows.filter((row) => row.enabled)
-                                      .length
-                                  }
-                                  /{totalRows.length}
-                                </span>
-                              )}
-                            </div>
                           </div>
                           <div
+                            data-slot='permission-actions'
                             className={cn(
-                              'grid min-w-0 grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] items-start gap-x-2 gap-y-1',
+                              'grid min-w-0 items-start gap-x-3 gap-y-2',
+                              hasRanges
+                                ? 'grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))]'
+                                : 'grid-cols-[repeat(auto-fill,minmax(min(100%,9rem),1fr))]',
                               aligned && alignment,
                             )}
                             style={
                               {
-                                '--permission-columns': `repeat(${columns.length}, minmax(0, 1fr))`,
+                                '--permission-columns': `repeat(${columnCount}, minmax(0, 1fr))`,
                               } as CSSProperties
                             }
                           >
                             {[...group.rows]
                               .sort(
                                 (a, b) =>
-                                  columns.indexOf(a.actionKey ?? '') -
-                                  columns.indexOf(b.actionKey ?? ''),
+                                  columnFor(a, totalRows) -
+                                  columnFor(b, totalRows),
                               )
                               .map((row) => (
                                 <div
@@ -574,12 +632,15 @@ export function PermissionEditor({
                                   className={cn(
                                     'min-w-0',
                                     aligned && placement,
+                                    aligned &&
+                                      !hasRanges &&
+                                      totalRows.length === 1 &&
+                                      '@xl:col-span-full',
                                   )}
                                   style={
                                     {
                                       '--permission-column':
-                                        columns.indexOf(row.actionKey ?? '') +
-                                        1,
+                                        columnFor(row, totalRows) + 1,
                                     } as CSSProperties
                                   }
                                 >
@@ -599,6 +660,11 @@ export function PermissionEditor({
                                 </div>
                               ))}
                           </div>
+                          {group.actionHint && (
+                            <p className='col-span-full text-xs leading-5 text-muted-foreground'>
+                              {group.actionHint}
+                            </p>
+                          )}
                         </div>
                       );
                     })}
