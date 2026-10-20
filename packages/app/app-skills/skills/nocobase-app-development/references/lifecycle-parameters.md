@@ -1,5 +1,7 @@
 # Configurable lifecycle parameters
 
+For approval processes, first follow [approval plugin prerequisites](lifecycle.md#approval-requests-check-the-pro-plugin-first). Reviewer parameters here describe lifecycle configuration, not a substitute for the commercial approval plugin's task and decision model; use that plugin's installed Skill for its configuration and integration contracts.
+
 Apply this by default whenever building or iterating on a process with administrator-owned business policy, including approval departments, reviewers, thresholds or reopening windows. Inspect the business rules and proactively declare suitable configuration even when the user never asks for configurability; follow [system settings delivery](system-settings.md#discover-configurable-business-rules-by-default). Developers keep the workflow structure in source. Read [record lifecycles](lifecycle.md) first. This capability belongs to `@nocobase/lifecycle`; verify that the installed package exports `StoredLifecycleParameters` and `normalizeReviewerSelections` before using it. An older installation needs a compatible release upgrade rather than invented APIs.
 
 ## Code declaration and storage
