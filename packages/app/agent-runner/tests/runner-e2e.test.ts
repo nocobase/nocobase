@@ -812,7 +812,7 @@ describe('runner end to end', () => {
       await new Promise((resolve) => setTimeout(resolve, 1_500));
       expect(runner.protocolHeader).toBe(String(PROTOCOL_VERSION));
       expect(runner.register.features).toEqual(
-        expect.arrayContaining(['npm', 'gitCredentials']),
+        expect.arrayContaining(['npm', 'gitCredentials', 'gitTools']),
       );
       expect(runner.heartbeatsSent).toBeGreaterThan(beats);
       expect(runner.claims).toBe(claims);
