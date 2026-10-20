@@ -512,19 +512,22 @@ describe('repository credentials on demand', () => {
     h = await createHarness();
     repos(APP);
     let aborted = false;
+    const requested = Promise.withResolvers<void>();
+    provide({
+      issue: (request) =>
+        new Promise((resolve) => {
+          request.signal.addEventListener('abort', () => {
+            aborted = true;
+            resolve(null);
+          });
+          requested.resolve();
+        }),
+    });
+    const { runner, payload } = await claimedOnDemand();
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
-      provide({
-        issue: (request) =>
-          new Promise((resolve) => {
-            request.signal.addEventListener('abort', () => {
-              aborted = true;
-              resolve(null);
-            });
-          }),
-      });
-      const { runner, payload } = await claimedOnDemand();
       const pending = ask(runner, payload.run.id, { attempt: 1, url: APP });
+      await requested.promise;
       await vi.advanceTimersByTimeAsync(15_000);
       const answer = await pending;
       expect(answer.status).toBe(503);
