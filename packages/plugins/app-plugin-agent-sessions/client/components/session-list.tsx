@@ -372,12 +372,12 @@ function SessionRow({
           {shortTime(session.lastActivityAt, locale)}
         </span>
       </div>
+      {session.waiting && (
+        <span className='w-fit max-w-full truncate rounded bg-amber-500/15 px-1.5 text-xs font-medium text-amber-800 dark:text-amber-300'>
+          {t('status.permission')}
+        </span>
+      )}
       <div className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs'>
-        {session.waiting && (
-          <span className='rounded bg-amber-500/15 px-1.5 font-medium text-amber-800 dark:text-amber-300'>
-            {t('status.permission')}
-          </span>
-        )}
         {facts.group && (
           <span
             className='text-foreground max-w-[30%] truncate font-medium'
@@ -398,7 +398,7 @@ function SessionRow({
         <span className='ml-auto flex shrink-0 items-center gap-1.5'>
           {facts.waitingLinks > 0 && facts.online ? (
             <WaitingCount count={facts.waitingLinks} />
-          ) : (
+          ) : session.waiting && facts.online ? null : (
             <StatusChip facts={facts} />
           )}
         </span>

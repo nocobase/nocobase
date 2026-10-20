@@ -316,17 +316,24 @@ describe('AgentSessionsService notices', () => {
     }
   });
 
-  test('keeps the session permission notice until the last request is processed', async ({ database }) => {
+  test('keeps the session permission notice until the last request is processed', async ({
+    database,
+  }) => {
     const { service, settled, later, started } = setup(database);
     const { session, report } = await started();
     await report([asked, { ...asked, requestId: 'r2' }]);
     await later();
-    await service.answer('u1', session.id, { requestId: 'r1', optionId: 'allow' });
+    await service.answer('u1', session.id, {
+      requestId: 'r1',
+      optionId: 'allow',
+    });
     await later();
     expect(settled).toEqual([]);
     expect((await service.getSession(owner, session.id)).waiting).toBe(true);
     await service.markSeen('u1', session.id, 99);
-    expect(settled.every((ref) => !ref.types?.includes('permissionRequested'))).toBe(true);
+    expect(
+      settled.every((ref) => !ref.types?.includes('permissionRequested')),
+    ).toBe(true);
     await service.updateSession(owner, session.id, { archived: true });
     expect(settled.at(-1)).toMatchObject({ outcome: 'archived' });
   });
