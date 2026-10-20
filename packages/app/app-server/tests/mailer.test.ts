@@ -84,27 +84,61 @@ describe('host mailer ownership', () => {
     }
   });
 
-  it('rejects conflicting aliases before constructing a transport', async () => {
+  it.each([true, false])(
+    'rejects conflicting aliases before constructing a transport (enabled=%s)',
+    async (enabled) => {
+      const channels = {
+        email: {
+          type: 'smtp',
+          provider: 'resend',
+          enabled,
+          host: 'localhost',
+          port: 25,
+        },
+      };
+      const error = vi.fn();
+      validateMailChannels(
+        { channels },
+        { error, warning: vi.fn(), isUserProvided: () => true },
+      );
+      expect(error).toHaveBeenCalledExactlyOnceWith(
+        'channels.email',
+        'Channel type and provider must match when both are configured.',
+      );
+      const mailer = createMailer({ channels });
+      expect(mailer.available('email')).toBe(false);
+      expect(
+        await mailer.send('email', {
+          to: 'synthetic@example.test',
+          subject: 'Test',
+        }),
+      ).toMatchObject({ status: 'failed' });
+      await mailer.close();
+    },
+  );
+
+  it('recognizes a Resend channel selected by type', async () => {
     const channels = {
-      email: { type: 'smtp', provider: 'resend', host: 'localhost', port: 25 },
+      marketing: {
+        type: 'resend',
+        apiKey: 'synthetic-key',
+        from: 'synthetic@example.test',
+      },
     };
     const error = vi.fn();
     validateMailChannels(
       { channels },
       { error, warning: vi.fn(), isUserProvided: () => true },
     );
-    expect(error).toHaveBeenCalledExactlyOnceWith(
-      'channels.email',
-      'Channel type and provider must match when both are configured.',
-    );
+    expect(error).not.toHaveBeenCalled();
     const mailer = createMailer({ channels });
-    expect(mailer.available('email')).toBe(false);
+    expect(mailer.available('marketing')).toBe(true);
     expect(
-      await mailer.send('email', {
+      await mailer.send('marketing', {
         to: 'synthetic@example.test',
         subject: 'Test',
       }),
-    ).toMatchObject({ status: 'failed' });
+    ).toEqual({ status: 'accepted' });
     await mailer.close();
   });
 

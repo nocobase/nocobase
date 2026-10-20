@@ -1,4 +1,10 @@
 // @vitest-environment node
+import {
+  notificationServiceToken,
+  type NotificationChannelConfig,
+  type NotificationSendInput,
+  type NotificationChannelMap,
+} from '@nocobase/app-plugin-notification/server';
 import { i18nToken } from '@nocobase/app-server/i18n';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -20,7 +26,12 @@ let sent: ProjectNotice[];
 let stop: () => void;
 
 /** An application that binds its own notices and translates keys as `key(values)`. */
-function application(): AppPluginApplication {
+function application(
+  channel?: NotificationChannelConfig,
+  send?: (
+    input: NotificationSendInput<NotificationChannelMap>,
+  ) => Promise<void>,
+): AppPluginApplication {
   const services = new Map<unknown, unknown>([
     [
       projectsNoticesToken,
@@ -46,8 +57,17 @@ function application(): AppPluginApplication {
       },
     ],
   ]);
+  if (channel) {
+    services.delete(projectsNoticesToken);
+    services.set(notificationServiceToken, { send });
+  }
   return {
-    config: { get: () => undefined },
+    config: {
+      get: (name: string) =>
+        name === 'notification' && channel
+          ? { channels: { inbox: channel } }
+          : undefined,
+    },
     container: {
       has: (token: unknown) => services.has(token),
       resolve: (token: unknown) => services.get(token),
@@ -84,6 +104,31 @@ async function moveTo(
       : {}),
   });
 }
+
+it.each([
+  { type: 'in-app' },
+  { provider: 'in-app' },
+  { type: 'in-app', provider: 'in-app' },
+])('sends direct inbox notices with config %j', async (channel) => {
+  stop();
+  const send = vi.fn(
+    async (
+      _input: NotificationSendInput<NotificationChannelMap>,
+    ): Promise<void> => {},
+  );
+  stop = startNotifications(application(channel, send), h.services.events);
+  const issue = await h.services.issues.create(lead(), {
+    title: 'Direct notification',
+    statusKey: 'in_progress',
+  });
+  await moveTo(alice(), issue, 'blocked');
+  await vi.waitFor(() => expect(send).toHaveBeenCalled());
+  expect(send).toHaveBeenCalledWith(
+    expect.objectContaining({
+      messages: { inbox: expect.objectContaining({ to: ['lead'] }) },
+    }),
+  );
+});
 
 describe('owner notified', () => {
   it('tells the owner when someone else moves the issue to blocked or in review', async () => {

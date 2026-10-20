@@ -45,14 +45,10 @@ export const validateMailChannels: ConfigValidator<MailChannelsConfig> = (
   context,
 ) => {
   for (const [name, channel] of Object.entries(config.channels ?? {})) {
-    if (
-      !channel ||
-      typeof channel !== 'object' ||
-      Reflect.get(channel, 'enabled') === false
-    )
-      continue;
+    if (!channel || typeof channel !== 'object') continue;
     try {
       const normalized = normalizeChannel(channel);
+      if (Reflect.get(channel, 'enabled') === false) continue;
       const provider: unknown = Reflect.get(normalized, 'provider');
       if (
         (provider === 'smtp' || provider === 'resend') &&
