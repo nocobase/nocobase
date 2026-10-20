@@ -14,3 +14,5 @@ export * from './test-contract.js';
 export * from './types.js';
 
 export * from '../shared/target.js';
+
+export type * from './channel-type.js';

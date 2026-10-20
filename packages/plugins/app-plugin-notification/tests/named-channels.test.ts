@@ -278,7 +278,7 @@ it.each([
   {
     name: 'missing Provider',
     config: { channels: { email: {} } } as unknown as NotificationConfig,
-    message: 'Notification Channel "email" is missing a Provider.',
+    message: 'Invalid Notification Channel "email": Channel type is required',
   },
   {
     name: 'unregistered Provider',
@@ -341,6 +341,25 @@ it('closes already-created Providers when a later Channel fails startup', async 
   try {
     await expect(h.manager.start()).rejects.toThrow('startup failed');
     expect(close).toHaveBeenCalledOnce();
+  } finally {
+    await h.close();
+  }
+});
+
+it('normalizes type for legacy extension factories', async () => {
+  const config = {
+    channels: { email: { type: 'fake', from: 'system@example.com' } },
+  };
+  const h = harness(config);
+  try {
+    await h.manager.sendTransient({
+      channel: 'email',
+      message: { to: 'a@example.com', text: 'hello' },
+    });
+    expect(h.sent.mock.calls[0][1]).toEqual({
+      provider: 'fake',
+      from: 'system@example.com',
+    });
   } finally {
     await h.close();
   }

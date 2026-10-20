@@ -1,3 +1,5 @@
+import type { ServiceContainer } from '@nocobase/service-provider';
+import type { ChannelConfig, ChannelTypeClass } from './channel-type.js';
 import type { Logger } from '@nocobase/logging';
 import type { DatabaseManager } from '@nocobase/db';
 import type { JobExecutor } from '@nocobase/jobs';
@@ -22,7 +24,13 @@ type ChannelSchemaForType<T extends string> =
 export type ConfiguredNotificationChannels<
   T extends Readonly<Record<string, NotificationChannelConfig>>,
 > = {
-  [N in keyof T]: ChannelSchemaForType<T[N]['provider']>;
+  [N in keyof T]: ChannelSchemaForType<
+    T[N] extends { readonly type: infer K extends string }
+      ? K
+      : T[N] extends { readonly provider: infer K extends string }
+        ? K
+        : string
+  >;
 };
 
 export type NotificationChannelMap = Record<string, NotificationChannelSchema>;
@@ -52,9 +60,19 @@ export interface NotificationService {
 }
 
 export interface NotificationExtensionRegistry {
+  registerChannelType<
+    TConfig extends ChannelConfig,
+    TMessage extends object,
+    TRecipient extends object,
+    TPrepared extends object,
+  >(
+    Channel: ChannelTypeClass<TConfig, TMessage, TRecipient, TPrepared>,
+  ): NotificationExtensionRegistry;
+  /** @deprecated Register a ChannelInstance class with registerChannelType instead. */
   registerChannel(
     definition: NotificationChannelDefinition,
   ): NotificationExtensionRegistry;
+  /** @deprecated Register a ChannelInstance class with registerChannelType instead. */
   registerProvider(
     definition: NotificationProviderDefinition,
   ): NotificationExtensionRegistry;
@@ -231,7 +249,8 @@ export interface NotificationProviderConfig {
   readonly enabled?: boolean;
 }
 
-export type NotificationChannelConfig = NotificationProviderConfig;
+export type NotificationChannelConfig =
+  NotificationProviderConfig | ChannelConfig;
 
 export interface NotificationConfig {
   readonly channels: Readonly<Record<string, NotificationChannelConfig>>;
@@ -408,6 +427,7 @@ export interface NotificationManagerOptions<
   readonly logger: Logger;
   readonly config: NotificationConfig;
   readonly registry?: NotificationRegistry;
+  readonly container?: ServiceContainer;
   readonly store?: NotificationStore;
   readonly reconcileIntervalMs?: number;
   readonly reconcileBatchSize?: number;

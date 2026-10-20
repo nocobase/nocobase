@@ -61,6 +61,7 @@ export class NotificationProvider<
           }),
         config: this.app.config.get<NotificationConfig>('notification')!,
         registry,
+        container: this.app.container,
       }),
     );
     this.app.container.singleton(notificationServiceToken, (container) =>

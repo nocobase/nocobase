@@ -1,5 +1,13 @@
+import { resolveChannelType } from '@nocobase/app-server/config';
+import type { ChannelConfig, ChannelTypeClass } from './channel-type.js';
+import {
+  adaptChannelType,
+  legacyChannelConfig,
+  type RegisteredChannelType,
+} from './channel-type-adapter.js';
 import type {
   NotificationChannelDefinition,
+  NotificationTestAdapter,
   NotificationConfig,
   NotificationExtensionRegistry,
   NotificationProviderDefinition,
@@ -16,6 +24,50 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
     string,
     NotificationProviderDefinition
   >();
+
+  private readonly channelTypes = new Map<string, RegisteredChannelType>();
+
+  registerChannelType<
+    C extends ChannelConfig,
+    M extends object,
+    R extends object,
+    P extends object,
+  >(Channel: ChannelTypeClass<C, M, R, P>): this {
+    if (!Channel.type?.trim() || Channel.type !== Channel.type.trim())
+      throw new Error(
+        'Notification Channel type requires a non-empty trimmed identifier.',
+      );
+    if (
+      this.channelTypes.has(Channel.type) ||
+      this.providerDefinitions.has(Channel.type)
+    )
+      throw new Error(
+        `Notification Channel type "${Channel.type}" is already registered.`,
+      );
+    this.channelTypes.set(Channel.type, adaptChannelType(Channel));
+    return this;
+  }
+
+  channelType(type: string): RegisteredChannelType | undefined {
+    return this.channelTypes.get(type);
+  }
+
+  testAdapter(type: string): NotificationTestAdapter | undefined {
+    const registered = this.channelType(type);
+    if (registered) return registered.test;
+    const provider = this.provider(type);
+    const test = provider && this.channel(provider.messageType)?.test;
+    return (
+      test && {
+        ...test,
+        toSendInput: (input) =>
+          test.toSendInput({
+            ...input,
+            channelConfig: legacyChannelConfig(input.channelConfig),
+          }),
+      }
+    );
+  }
 
   registerChannel(definition: NotificationChannelDefinition): this {
     if (this.channelDefinitions.has(definition.type))
@@ -35,7 +87,10 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
       throw new Error(
         'Notification Provider requires a non-empty identifier and message type.',
       );
-    if (this.providerDefinitions.has(definition.type))
+    if (
+      this.providerDefinitions.has(definition.type) ||
+      this.channelTypes.has(definition.type)
+    )
       throw new Error(
         `Notification Provider "${definition.type}" is already registered.`,
       );
@@ -56,9 +111,10 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
   ): readonly NotificationTestTargetDescriptor[] {
     return Object.entries(config.channels).flatMap(([name, channelConfig]) => {
       if (channelConfig.enabled === false) return [];
-      const provider = this.provider(channelConfig.provider);
-      const channel = provider && this.channel(provider.messageType);
-      if (!channel?.test || !provider) return [];
+      const type = resolveChannelType(channelConfig);
+      const provider = this.channelType(type) ?? this.provider(type);
+      const test = this.testAdapter(type);
+      if (!test || !provider) return [];
       return [
         {
           channel: { name, type: provider.messageType, label: name },
@@ -66,7 +122,7 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
             type: provider.type,
             label: provider.label ?? provider.type,
           },
-          fields: channel.test.fields,
+          fields: test.fields,
         },
       ];
     });
@@ -115,7 +171,7 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
         throw new Error(
           `Invalid configuration for Notification Channel "${name}".`,
         );
-      for (const key of ['name', 'type', 'providers'])
+      for (const key of ['name', 'providers'])
         if (key in channelConfig)
           throw new Error(
             `Unsupported Notification Channel property "${key}".`,
@@ -125,12 +181,21 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
         typeof channelConfig.enabled !== 'boolean'
       )
         throw new Error('Notification Channel enabled must be a boolean.');
-      if (channelConfig.enabled === false) continue;
-      const providerType = channelConfig.provider;
-      if (typeof providerType !== 'string' || !providerType.trim())
+      let providerType: string;
+      try {
+        providerType = resolveChannelType(channelConfig);
+      } catch (error) {
         throw new Error(
-          `Notification Channel "${name}" is missing a Provider.`,
+          `Invalid Notification Channel "${name}": ${error instanceof Error ? error.message : String(error)}`,
+          { cause: error },
         );
+      }
+      if (channelConfig.enabled === false) continue;
+      const registered = this.channelType(providerType);
+      if (registered) {
+        registered.validateConfig(channelConfig);
+        continue;
+      }
       const provider = this.provider(providerType);
       if (!provider)
         throw new Error(
@@ -141,8 +206,8 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
         throw new Error(
           `Notification message type "${provider.messageType}" is not registered.`,
         );
-      channel.validateConfig?.(channelConfig);
-      provider.validateConfig?.(channelConfig);
+      channel.validateConfig?.(legacyChannelConfig(channelConfig));
+      provider.validateConfig?.(legacyChannelConfig(channelConfig));
     }
   }
 }

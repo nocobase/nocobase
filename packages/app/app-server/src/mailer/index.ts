@@ -5,6 +5,7 @@ import {
   type MailResult,
   type MailSendOptions,
   type MailTransport,
+  type EmailChannelConfig,
 } from '@nocobase/mailer';
 import {
   createServiceToken,
@@ -13,6 +14,7 @@ import {
 } from '@nocobase/service-provider';
 import {
   defineAppConfig,
+  resolveChannelType,
   envString,
   type AppConfigDefinition,
   type AppConfigFactory,
@@ -49,17 +51,41 @@ export const validateMailChannels: ConfigValidator<MailChannelsConfig> = (
       Reflect.get(channel, 'enabled') === false
     )
       continue;
-    const provider: unknown = Reflect.get(channel, 'provider');
-    if (
-      (provider === 'smtp' || provider === 'resend') &&
-      !isMailChannelConfig(channel)
-    )
+    try {
+      const normalized = normalizeChannel(channel);
+      const provider: unknown = Reflect.get(normalized, 'provider');
+      if (
+        (provider === 'smtp' || provider === 'resend') &&
+        !isMailChannelConfig(normalized)
+      )
+        context.error(
+          `channels.${name}`,
+          'Invalid built-in email channel configuration.',
+        );
+    } catch (error) {
       context.error(
         `channels.${name}`,
-        'Invalid built-in email channel configuration.',
+        error instanceof Error ? error.message : String(error),
       );
+    }
   }
 };
+
+function normalizeChannel(channel: object): object {
+  const type: unknown = Reflect.get(channel, 'type');
+  const provider: unknown = Reflect.get(channel, 'provider');
+  return { ...channel, provider: resolveChannelType({ type, provider }) };
+}
+
+function mailChannel(channel: unknown): EmailChannelConfig | undefined {
+  if (!channel || typeof channel !== 'object') return undefined;
+  try {
+    const normalized = normalizeChannel(channel);
+    return isMailChannelConfig(normalized) ? normalized : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /** Declare the existing notification section without installing any notification plugin. */
 export function defineMailChannelsConfig<T extends MailChannelsConfig>(
@@ -91,14 +117,14 @@ export function createMailer(config: MailChannelsConfig): Mailer {
   const transports = new Map<string, MailTransport>();
   let closed = false;
   const available = (channel: string): boolean => {
-    const value = config.channels[channel];
-    return !closed && isMailChannelConfig(value) && value.enabled !== false;
+    const value = mailChannel(config.channels[channel]);
+    return !closed && value !== undefined && value.enabled !== false;
   };
   return {
     available,
     async send(channel, message, options): Promise<MailResult> {
-      const value = config.channels[channel];
-      if (!available(channel) || !isMailChannelConfig(value))
+      const value = mailChannel(config.channels[channel]);
+      if (closed || !value || value.enabled === false)
         return {
           status: 'failed',
           disposition: 'never',
