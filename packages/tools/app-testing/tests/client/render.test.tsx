@@ -102,7 +102,7 @@ function GreetingPage(): ReactElement {
 }
 
 describe('renderWithApp', () => {
-  it('preserves services, translations, router state and component state when rerendering', async () => {
+  it('preserves services and page state after navigation and rerendering under a basename', async () => {
     const starts = vi.fn();
     const fetch = vi.fn(() => Response.json({ data: [] }));
     function Probe({ name }: { name: string }): ReactElement {
@@ -112,7 +112,7 @@ describe('renderWithApp', () => {
       const location = useLocation();
       const [count, setCount] = useState(0);
       useEffect(() => {
-        void api.request({ path: 'orders' });
+        api.request({ path: 'orders' });
       }, [api]);
       return (
         <>
@@ -129,22 +129,28 @@ describe('renderWithApp', () => {
       plugins: [examplePlugin()],
       namespace: '@example/plugin',
       route: '/orders',
+      config: { app: { basePath: '/main' } },
       fetch,
       services: starts,
     });
     fireEvent.click(screen.getByRole('button', { name: 'Count 0' }));
     fireEvent.click(screen.getByRole('link', { name: 'Next' }));
+    await screen.findByText('/next');
     view.rerender(<Probe name='Grace' />);
     expect(
       screen.getByRole('heading', { name: 'Orders: Hello, Grace' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Count 1' })).toBeInTheDocument();
     expect(screen.getByText('/next')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Next' })).toHaveAttribute(
+      'href',
+      '/main/next',
+    );
     expect(starts).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
   });
 
-  it.each(['', '/', '/main', '/main/'])(
+  it.each(['', '/', '/main', '/main/', '/nested/app'])(
     'keeps router links and navigation under mount path %j',
     async (basePath) => {
       function Page(): ReactElement {
@@ -171,7 +177,7 @@ describe('renderWithApp', () => {
         `${prefix}/next?tab=all#top`,
       );
       fireEvent.click(screen.getByRole('link', { name: 'Next' }));
-      expect(screen.getByText('/next?tab=all#top')).toBeInTheDocument();
+      expect(await screen.findByText('/next?tab=all#top')).toBeInTheDocument();
     },
   );
 
@@ -358,6 +364,8 @@ describe('renderWithApp', () => {
     await expect(
       renderWithApp(<Broken />, { plugins: [lifecyclePlugin()] }),
     ).rejects.toThrow('broken page');
+    expect(lifecycle).toEqual(['start', 'shutdown']);
+    expect(document.getElementById('nocobase-runtime-config')).toBeNull();
   });
 
   it('leaves no application running after a page that threw while rendering', () => {

@@ -56,7 +56,11 @@ it('isolates command storage in each configuration directory and removes it on d
       true,
     );
   } finally {
-    await Promise.all([left.dispose(), right.dispose()]);
+    try {
+      await left.dispose();
+    } finally {
+      await right.dispose();
+    }
   }
   expect(existsSync(right.directory)).toBe(false);
 });
@@ -65,6 +69,7 @@ class CountItems extends AppCommand {
   static override summary = 'Count the fixture items.';
 
   public async run(): Promise<{ count: number }> {
+    await this.parse(CountItems);
     let count = 0;
     await this.withApp(async ({ app }) => {
       await app.start();

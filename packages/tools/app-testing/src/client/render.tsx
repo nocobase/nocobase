@@ -216,13 +216,12 @@ export async function renderWithApp(
       toasts: (): readonly TestToast[] => toaster.list(),
     });
   } catch (error) {
-    try {
-      await dispose();
-    } catch (cleanupError) {
+    const [cleanup] = await Promise.allSettled([dispose()]);
+    if (cleanup.status === 'rejected') {
+      const cleanupError: unknown = cleanup.reason;
       throw new AggregateError(
         [error, cleanupError],
         'Test application initialization and cleanup both failed.',
-        // eslint-disable-next-line preserve-caught-error -- Keep the primary failure as the cause; errors retains cleanupError.
         { cause: error },
       );
     }

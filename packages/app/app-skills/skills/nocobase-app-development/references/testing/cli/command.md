@@ -1,6 +1,6 @@
 # CLI example: run a command on an isolated application database
 
-Use `bindTestAppCommand()` when a command opens the application. It binds the command to the configuration from `createTestAppConfig()`, so the command reads the test's databases. `runAppCommand()` captures the result, exit code and JSON output without spawning the CLI runner.
+Use `bindTestAppCommand()` when a command opens the application. It binds the command to the configuration from `createTestAppConfig()`, so the command reads the test's databases and the conventional runtime uses storage under `config.directory`. `runAppCommand()` captures the result, exit code and JSON output without spawning the CLI runner.
 
 For a complete command that works with files and needs no application database, start with [file output, dry runs and failures](files.md).
 
@@ -67,7 +67,7 @@ import {
   createTestAppConfig,
   runAppCommand,
 } from '@nocobase/app-testing/cli';
-import { expect, it, vi } from 'vitest';
+import { expect, it } from 'vitest';
 import CountNotes from '../fixtures/count-notes-command.js';
 import { noteMigrations } from '../helpers/testing-notes.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
@@ -102,7 +102,6 @@ it.each([0, 2])('counts %i prepared records', async (count) => {
     },
   });
   try {
-    vi.stubEnv('APP_STORAGE_DIR', path.join(config.directory, 'storage'));
     const database = await config.testDatabases.open({
       migrations: noteMigrations,
     });
@@ -134,7 +133,6 @@ it.each([0, 2])('counts %i prepared records', async (count) => {
       result: { count },
     });
   } finally {
-    vi.unstubAllEnvs();
     await config.dispose();
   }
 });
@@ -144,7 +142,7 @@ The test's preparation step and the command's startup must both know the fixture
 
 `config.testDatabases.open()` resets and opens the provisioned databases before preparing the row. The returned handle does not own those databases, so `database.destroy()` closes the preparation connections while leaving the row for the command. `config.dispose()` is the owner cleanup: it drops the databases after the command has closed its application. Do not open the preparation handle again after running the command to inspect its writes; opening it resets the schema.
 
-The storage override keeps application logs and background-worker state under the same temporary directory. Restore it in `finally`. Run these command cases sequentially: environment stubs and `runAppCommand()`'s stream capture are process-wide. A successful `runAppCommand()` has `exitCode: undefined`, which means zero; normalize it when asserting.
+`bindTestAppCommand()` keeps the conventional runtime's storage under the same temporary directory without changing `process.env`; `config.dispose()` removes it after the command closes. A custom `loadRuntime` bypasses that loader and must pass `config.path` as `configPath` and set `env: { APP_STORAGE_DIR: path.join(config.directory, 'storage') }` when calling `resolveStandaloneAppRuntime()`. Run these command cases sequentially because `runAppCommand()` captures process-wide streams. A successful `runAppCommand()` has `exitCode: undefined`, which means zero; normalize it when asserting.
 
 ## Run and check
 
