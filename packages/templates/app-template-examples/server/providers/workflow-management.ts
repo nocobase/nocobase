@@ -1,3 +1,4 @@
+import appPackage from '../../package.json' with { type: 'json' };
 import type { Application } from '@nocobase/app-server/application';
 import { ServiceProvider } from '@nocobase/service-provider';
 import {
@@ -12,12 +13,12 @@ export default class WorkflowManagementProvider extends ServiceProvider<Applicat
     const authz = this.app.container.resolve(authorizationToken);
     authz.ui.sections.add({
       name: 'workflow-management',
-      title: { key: 'workflows.title', ns: '@nocobase/app-template-examples' },
+      title: { key: 'workflows.title', ns: appPackage.name },
       parent: 'administration',
     });
     authz.settings.add({
       id: 'workflow-management',
-      title: { key: 'workflows.title', ns: '@nocobase/app-template-examples' },
+      title: { key: 'workflows.title', ns: appPackage.name },
       actions: ['read', 'update'].map((name) => ({
         name,
         title: { key: `options.actions.${name}`, ns: AUTHORIZATION_NAMESPACE },
