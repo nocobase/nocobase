@@ -5034,6 +5034,9 @@ importers:
       '@nocobase/app-cli':
         specifier: workspace:^
         version: link:../../app/app-cli
+      '@nocobase/app-plugin-agents':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-agents
       '@nocobase/app-plugin-api-keys':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-api-keys
