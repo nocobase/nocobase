@@ -55,11 +55,12 @@ export function classifyCodexFailure(
   const message = signal.message || 'Codex run failed';
   if (signal.aborted) return { reason: 'cancelled', message };
 
+  const key = infoKey(signal.codexErrorInfo);
+  if (key === 'usageLimitExceeded') return { reason: 'toolQuota', message };
   const status = httpStatus(signal.codexErrorInfo);
   if (status === 401 || status === 403) return { reason: 'toolAuth', message };
   if (status === 429) return { reason: 'toolRateLimit', message };
 
-  const key = infoKey(signal.codexErrorInfo);
   if (key && key in ERROR_INFO) return { reason: ERROR_INFO[key], message };
 
   // Fall back to the shared text rules (auth, quota, network, process).

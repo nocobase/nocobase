@@ -5,6 +5,7 @@ import {
 } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -62,6 +63,7 @@ const session: Session = {
   title: 'Improve the session start',
   titleSource: 'owner',
   state: null,
+  startup: null,
   settings: {},
   running: false,
   waiting: false,
@@ -209,15 +211,22 @@ describe('link panels', () => {
       },
     );
     await screen.findByRole('heading', { name: session.title });
-    fireEvent.click(screen.getByRole('button', { name: /Tasks 3/u }));
+    // Finish the router transition and its keyboard effect before sending a key.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Tasks 3/u }));
+    });
     const panel = await screen.findByTestId('panel');
     expect(panel.textContent).toContain('PM-2 2/3');
     expect(screen.getByTestId('where').textContent).toBe('?issue=2');
-    fireEvent.keyDown(window, { key: 'j' });
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'j' });
+    });
     await waitFor(() =>
       expect(screen.getByTestId('panel').textContent).toContain('PM-3 3/3'),
     );
-    fireEvent.click(within(screen.getByTestId('panel')).getByText('close'));
+    await act(async () => {
+      fireEvent.click(within(screen.getByTestId('panel')).getByText('close'));
+    });
     await waitFor(() => expect(screen.queryByTestId('panel')).toBeNull());
     expect(screen.getByTestId('where').textContent).toBe('');
   });

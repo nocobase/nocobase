@@ -434,6 +434,10 @@ export async function parseCommandLine<F extends CliFileRef>(
     const text = await io.readText(file);
     if (text === undefined)
       throw invalid(`--${parameter.name}-file: cannot read ${file}.`);
+    if (parameter.contentFileNonEmpty && text.trim() === '')
+      throw invalid(
+        `--${parameter.name}-file: ${file} must not be empty or whitespace-only.`,
+      );
     if (parameter.type !== 'json') {
       values.set(parameter, text);
       continue;
@@ -519,6 +523,17 @@ export async function parseCommandLine<F extends CliFileRef>(
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
       throw invalid(`${bodyPath} must hold a JSON object.`);
     bodyFile = parsed as Record<string, unknown>;
+    for (const parameter of command.parameters) {
+      if (
+        parameter.in === 'body' &&
+        parameter.contentFileNonEmpty &&
+        bodyFile[parameter.field] === null &&
+        values.has(parameter)
+      )
+        throw invalid(
+          `Cannot clear ${parameter.field} in --${command.body?.file ?? 'file'} and also give --${parameter.name} or --${parameter.name}-file.`,
+        );
+    }
   }
 
   // What CI already knows, such as the repository and the commit, for what neither the line nor the body file gives.

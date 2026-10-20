@@ -184,7 +184,6 @@ export const OPTED_OUT_NOTIFICATIONS: readonly string[] = [
   'turn/plan/updated',
   'rawResponseItem/completed',
   'rawResponse/completed',
-  'account/rateLimits/updated',
   'account/updated',
   'skills/changed',
   'app/list/updated',

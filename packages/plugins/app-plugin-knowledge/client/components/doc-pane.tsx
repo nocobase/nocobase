@@ -106,6 +106,7 @@ export interface DocPaneProps {
   /** The documents of the view, to move this one among its space's and list a folder's. */
   readonly docs: readonly KnowledgeDocSummary[];
   readonly onMode: (mode: DocMode) => void;
+  /** Reads the chosen version (or the current one), leaving history mode. */
   readonly onVersion: (version: number | null) => void;
   /** Opens another entry (a folder's, a step of the path). */
   readonly onOpen: (docId: string) => void;
@@ -725,7 +726,6 @@ export function DocPane(props: DocPaneProps): ReactElement {
           doc={current}
           onView={(number) => {
             props.onVersion(number === current.version ? null : number);
-            props.onMode('read');
           }}
         />
       ) : folder ? (

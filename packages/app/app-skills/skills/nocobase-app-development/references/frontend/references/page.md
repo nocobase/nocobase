@@ -204,6 +204,12 @@ A page and the endpoints it calls must agree: the example's `/api/projects` is o
 
 **The resource id is the permission identifier**: the permission set page lists every route whose `authz` checks `page` `access`, keyed by `authz.resource.id` (deduplicated), under the Pages entry with its navigation groups in menu order. Stored grants reference that id, so changing it requires migrating them; renaming the route alone does not.
 
+### Permission display names
+
+Every application route that resolves to a `page` permission needs a non-empty, translated display name, including URL-addressable forms, dialogs, drawers and detail pages. Navigation/breadcrumb titles provide it where already appropriate. For a page that intentionally has neither (especially an overlay), add its existing application route `name` and a static application translation key to `client/pages/settings/page-permission-titles.ts`. This mapping labels permissions only; do not add a menu/breadcrumb or change a route name, `authz.resource.id`, inheritance, `'skip'` or stored grants to repair copy. Plugin routes retain their owning namespace and are not overridden by an application's same-named route.
+
+Provide English and Chinese text without unresolved interpolation placeholders. The permission catalog uses `pagePermissionResources()` and a localized unnamed-page/path fallback instead of exposing technical ids. That fallback is a diagnostic, not successful delivery: `tests/logic/page-permission-titles.test.ts` must pass against the application's actual resolved routes and locales; it rejects missing labels, stale mapping keys and untranslated keys. When fixing an existing app, preserve the complete resource/action identity list and grants, and verify display labels without rewriting authorization data.
+
 ## 5. Settings pages
 
 There is one kind of client route, `defineAppRoutes()`. The application has no separate settings area and no `/settings` or `/dev` prefix, and plugins contribute no settings pages: a page that configures something is an ordinary App page in the main navigation. Put such pages under a navigation group of their own, such as a Settings group at the end of the sidebar, and add the icons to the `lucide-react` import at the top of the file (here `Settings` and `SlidersHorizontal`):
@@ -272,7 +278,7 @@ Write `navigation` on the route. The application sidebar reads its menu entries 
 - Pages that should not appear in the menu (details, tab content and so on) have no `navigation`. When such a page is open, the menu highlights the nearest ancestor that has a menu entry.
 - **A path with a parameter (`:projectId`) cannot have `navigation`**; registration raises an error, because a menu entry must point to a fixed URL (wildcards are rejected on every route, [section 1](#1-declare-the-route)).
 - Navigation group: write only `name`, `navigation` and `children`, without `componentLoader`. For groups and clickable parents, see [`child-routes.md`](child-routes.md).
-- Do not change the shell (`client/layouts/`) or the ServiceProvider to add a menu entry, and do not add a Refine resource for a menu. Refine resources produce no menu entries (see ["Loading data in a component" in `api.md`](api.md#loading-data-in-a-component) for what they are for); the home page entry is declared in the routes as well.
+- Do not change the shell (`client/layouts/`) or the ServiceProvider to add a menu entry; the home page entry is declared in the routes as well.
 - A new page with a menu entry usually touches four places: `client/routes.ts`, the page component, `client/locales/` and, for an App page that requires sign-in, the page grant list in `tests/logic/client-routes.test.ts` ([section 12](#12-update-the-route-test)).
 
 ### A count beside an entry
@@ -397,7 +403,7 @@ export function ExportProjectsButton({
 - Use it for page permissions too, for example for an entry on the home page that points to a page: `useCan({ resource: { type: 'page', id: 'projects' }, action: 'access' })`. A route's `authz` uses the same `{ resource: { type, id }, action }`.
 - **`useCan` answers "does this user have this feature", not "can this record be acted on"**. For actions that depend on record state or data scope, the server returns the actions available for each record in the list or detail response, and the UI shows them accordingly; the endpoint checks again when it executes.
 - Hide actions the user has no permission for; disable actions that are temporarily unavailable and explain why in a tooltip (guideline I7).
-- In a component, get the authorization client with `useAuthorizationClient()`; outside React, resolve `authorizationClientToken` from the application container and call `client.can({ resource, action })`. When state you maintain yourself must reload after permissions change, use `useAuthorizationRevision()`. Do not use Refine's permission configuration or a global authorization client, and do not store permission results in module-level variables (they linger after switching accounts).
+- In a component, get the authorization client with `useAuthorizationClient()`; outside React, resolve `authorizationClientToken` from the application container and call `client.can({ resource, action })`. When state you maintain yourself must reload after permissions change, use `useAuthorizationRevision()`. Do not use a global authorization client, and do not store permission results in module-level variables (they linger after switching accounts).
 - **Hiding something in the UI does not replace endpoint authorization.**
 - When the business has different job responsibilities, data scopes or field permissions, read the `nocobase-app-plugin-authorization` Skill first, then design the pages, business actions and record scopes.
 

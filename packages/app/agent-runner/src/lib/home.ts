@@ -8,6 +8,7 @@
 //                                                  its owner only; see core/local-policy.ts)
 //   ~/.nocobase-runner/apps/<app>.json             one registration per application: server, runner id
 //   ~/.nocobase-runner/credentials/<app>.json      that registration's runner key (0600, in a 0700 directory)
+//   ~/.nocobase-runner/launcher.pid                the service/background launcher, including during backoff
 //   ~/.nocobase-runner/daemon.pid                  the running daemon
 //   ~/.nocobase-runner/runs/<runId>.json           one record per supervised run, for orphan recovery
 //   ~/.nocobase-runner/runs/<runId>.events.ndjson  the run's event spool

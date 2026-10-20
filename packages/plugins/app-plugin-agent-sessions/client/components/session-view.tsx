@@ -52,6 +52,7 @@ import {
   type Mention,
   useAnswer,
   useCancel,
+  useWithdraw,
   useChoose,
   useComputers,
   useDecideLinks,
@@ -61,7 +62,8 @@ import {
   useTranscript,
   useUpdateSession,
 } from '../api.js';
-import { LinkOpenContext } from '../config.js';
+import { LinkOpenContext, useSessionSurface } from '../config.js';
+import { NARROW_PX } from '../lib/size.js';
 import { valueName } from '../lib/choices.js';
 import { errorText } from '../lib/errors.js';
 import { dateTime, shortTime, tokens } from '../lib/format.js';
@@ -81,6 +83,7 @@ import { LinkBar } from './link-bar.js';
 import { LinkName } from './link-name.js';
 import { StatusPill } from './status-pill.js';
 import { TranscriptView } from './transcript-view.js';
+import { WithdrawnEditor } from './withdrawn-editor.js';
 
 export function SessionView({
   sessionId,
@@ -92,6 +95,7 @@ export function SessionView({
   const transcript = useTranscript(sessionId);
   useMarkSeen(sessionId, transcript.data?.at(-1)?.seq);
   const computers = useComputers();
+  const surface = useSessionSurface();
   const viewportRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const viewport = window.visualViewport;
@@ -119,11 +123,12 @@ export function SessionView({
       viewport.removeEventListener('scroll', fit);
     };
   }, [session.data?.id]);
-  // Beside the conversation on a wide screen; on a narrower one it opens over it, when asked for.
+  // Beside a full-page conversation on a wide screen, over it on narrower screens, and inside an embedded sidebar.
   const [details, setDetails] = useState(
     () =>
-      typeof window === 'undefined' ||
-      window.matchMedia('(min-width: 80rem)').matches,
+      !surface.panel &&
+      (typeof window === 'undefined' ||
+        window.matchMedia('(min-width: 80rem)').matches),
   );
   const items = useMemo(
     () => foldTranscript(transcript.data ?? []),
@@ -153,7 +158,10 @@ export function SessionView({
   const showDetails = details && !panel.opened;
   return (
     <LinkOpenContext.Provider value={panel.open}>
-      <div ref={viewportRef} className='flex h-full min-h-0'>
+      <div
+        ref={viewportRef}
+        className={cn('flex h-full min-h-0', surface.panel && 'flex-col')}
+      >
         <Conversation
           session={session.data}
           computer={computer}
@@ -166,13 +174,17 @@ export function SessionView({
             } else setDetails(!details);
           }}
           onSummary={() => {
-            if (!panel.openSummary()) setDetails(true);
+            if (surface.panel) setDetails(!details);
+            else if (!panel.openSummary()) setDetails(true);
           }}
         />
-        {showDetails && (
+        {showDetails && !surface.panel && (
           <div
             aria-hidden
-            className='fixed inset-0 z-40 bg-black/30 xl:hidden'
+            className={cn(
+              'fixed inset-0 z-40 bg-black/30',
+              !surface.panel && 'xl:hidden',
+            )}
             onClick={() => setDetails(false)}
           />
         )}
@@ -181,6 +193,7 @@ export function SessionView({
             session={session.data}
             computer={computer}
             items={items}
+            inline={surface.panel}
             onClose={() => setDetails(false)}
           />
         )}
@@ -218,6 +231,11 @@ function Conversation({
   const sending =
     useIsMutating({ mutationKey: ['agentSessions', 'prompt', session.id] }) > 0;
   const cancel = useCancel(session.id);
+  const withdraw = useWithdraw(session.id);
+  const [editor, setEditor] = useState<{
+    item: Extract<TranscriptItem, { type: 'prompt' }>;
+    key: string;
+  } | null>(null);
   const answer = useAnswer(session.id);
   const decide = useDecideLinks(session.id);
   const choose = useChoose(session.id);
@@ -228,6 +246,7 @@ function Conversation({
       title: errorText(error, t('errors.generic')),
     });
 
+  const sectionRef = useRef<HTMLElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
   const [collapsed, setCollapsed] = useState(false);
@@ -240,8 +259,7 @@ function Conversation({
   const touchYRef = useRef<number | null>(null);
   const changeHeader = (next: boolean): void => {
     if (!next) pendingShrinkRef.current = null;
-    if (next === collapsed || !window.matchMedia('(max-width: 767px)').matches)
-      return;
+    if (next === collapsed || !narrow(sectionRef.current)) return;
     const header = headerRef.current;
     const scroller = scrollerRef.current;
     if (!header || !scroller) return;
@@ -313,7 +331,8 @@ function Conversation({
 
   return (
     <section
-      className='flex min-w-0 flex-1 flex-col'
+      ref={sectionRef}
+      className='@container/agent-session flex min-w-0 flex-1 flex-col'
       aria-label={session.title}
     >
       <div ref={headerRef} className='shrink-0'>
@@ -382,7 +401,7 @@ function Conversation({
             changeHeader(true);
         }}
       >
-        <div className='mx-auto max-w-[760px] px-4 pt-5 pb-6 sm:px-6'>
+        <div className='mx-auto max-w-[760px] px-4 pt-5 pb-6 @md/agent-session:px-6'>
           {items === undefined ? (
             <Skeleton className='h-24' />
           ) : (
@@ -392,6 +411,19 @@ function Conversation({
               agentName={agentName(session, computer)}
               writable={writable}
               actions={{
+                withdraw: async (seq) => {
+                  try {
+                    await withdraw.mutateAsync(seq);
+                  } catch (error) {
+                    fail(error);
+                    throw error;
+                  }
+                },
+                edit: (item) =>
+                  setEditor({
+                    item,
+                    key: `reedit:${session.id}:${crypto.randomUUID()}`,
+                  }),
                 answer: (requestId, optionId) =>
                   answer.mutate({ requestId, optionId }, { onError: fail }),
                 decide: (kind, start, skip) =>
@@ -410,12 +442,22 @@ function Conversation({
                   />
                 ))}
               </span>
-              {t('session.working')}
+              {session.startup
+                ? t(`session.startup.${session.startup}`)
+                : t('session.working')}
             </p>
           )}
         </div>
       </div>
-      <div className='mx-auto w-full max-w-[760px] px-3 pt-2 pb-3 sm:px-6 sm:pb-4'>
+      <div className='mx-auto w-full max-w-[760px] px-3 pt-2 pb-3 @md/agent-session:px-6 @md/agent-session:pb-4'>
+        {editor && (
+          <WithdrawnEditor
+            item={editor.item}
+            session={session}
+            draftKey={editor.key}
+            close={() => setEditor(null)}
+          />
+        )}
         <SubmissionNotice
           pending={submission.pending}
           sending={sending}
@@ -481,6 +523,7 @@ function Header({
   readonly onShowDetails: () => void;
 }): ReactElement {
   const { t } = useTranslation();
+  const surface = useSessionSurface();
   const update = useUpdateSession(session.id);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(session.title);
@@ -493,9 +536,9 @@ function Header({
   };
 
   return (
-    <header className='flex flex-col gap-2 border-b px-4 py-2 md:py-3 sm:px-5'>
+    <header className='flex flex-col gap-2 border-b px-4 py-2 @md/agent-session:py-3 @md/agent-session:px-5'>
       <div className='flex min-w-0 items-center gap-2.5'>
-        <BackLink />
+        {!surface.panel && <BackLink />}
         {renaming ? (
           <Input
             autoFocus
@@ -516,21 +559,35 @@ function Header({
           <h2
             title={session.title}
             className={cn(
-              'min-w-0 flex-1 text-[15px] font-semibold md:truncate',
+              'min-w-0 flex-1 text-[15px] font-semibold @md/agent-session:truncate',
               collapsed ? 'truncate' : 'line-clamp-2 break-words',
             )}
           >
             {session.title}
           </h2>
         )}
+        {collapsed && (
+          <Button
+            variant='ghost'
+            size='sm'
+            className='h-9 shrink-0 gap-1 px-1.5 tabular-nums @md/agent-session:hidden'
+            aria-label={`${t('links.title')} ${session.links.length}`}
+            title={`${t('links.title')} ${session.links.length}`}
+            aria-expanded={details}
+            onClick={onShowDetails}
+          >
+            <ListChecksIcon aria-hidden />
+            {session.links.length}
+          </Button>
+        )}
         {session.waiting ? (
-          <span className='max-md:sr-only inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-amber-800 dark:text-amber-300'>
+          <span className='@max-md/agent-session:sr-only inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-amber-800 dark:text-amber-300'>
             <span className='size-2 rounded-full bg-amber-400' />
             {t('session.asking')}
           </span>
         ) : (
           session.running && (
-            <span className='max-md:sr-only text-primary inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap'>
+            <span className='@max-md/agent-session:sr-only text-primary inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap'>
               <span className='bg-primary size-2 animate-pulse rounded-full' />
               {t('session.answering')}
             </span>
@@ -545,7 +602,9 @@ function Header({
             onClick={onStop}
           >
             <SquareIcon />
-            <span className='max-md:sr-only'>{t('session.stop')}</span>
+            <span className='@max-md/agent-session:sr-only'>
+              {t('session.stop')}
+            </span>
           </Button>
         )}
         <Button
@@ -599,13 +658,33 @@ function Header({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        {surface.actions}
       </div>
-      <div
-        className={cn(
-          'flex min-w-0 flex-nowrap items-center gap-1.5 overflow-x-auto [scrollbar-width:none] md:overflow-visible',
-          collapsed && 'max-md:hidden',
-        )}
-      >
+      {/* Narrow, where the session runs in one line; the chips below say it at full width. */}
+      <p className='text-muted-foreground hidden min-w-0 items-center gap-1.5 text-xs @max-md/agent-session:flex'>
+        <LaptopIcon className='size-3.5 shrink-0' aria-hidden />
+        <span className='text-foreground truncate'>
+          {computer?.name ?? t('session.removedComputer')}
+        </span>
+        <span
+          aria-label={
+            session.computerOnline
+              ? t('computers.online')
+              : t('computers.offline')
+          }
+          className={cn(
+            'size-2 shrink-0 rounded-full',
+            session.computerOnline
+              ? 'bg-emerald-500'
+              : 'border-muted-foreground border-[1.5px]',
+          )}
+        />
+        <code className='min-w-0 truncate' title={session.cwd}>
+          {displayPath(session.cwd, computer?.home ?? null)}
+        </code>
+      </p>
+      {/* Where the session runs, in full. */}
+      <div className='flex min-w-0 flex-nowrap items-center gap-1.5 overflow-visible @max-md/agent-session:hidden'>
         <MetaChip
           title={[agentName(session, computer), mode]
             .filter(Boolean)
@@ -651,7 +730,13 @@ function Header({
         type='button'
         aria-expanded={details}
         onClick={onShowDetails}
-        className='hover:bg-muted focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded-md px-1 py-1 text-left text-xs focus-visible:ring-2'
+        className={cn(
+          'hover:bg-muted focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded-md px-1 py-1 text-left text-xs focus-visible:ring-2',
+          // The open details list the same work; on a phone the line stays one row, cut short.
+          details && '@md/agent-session:hidden',
+          '@max-md/agent-session:overflow-hidden @max-md/agent-session:whitespace-nowrap',
+          collapsed && '@max-md/agent-session:hidden',
+        )}
       >
         <ListChecksIcon className='size-4 shrink-0' aria-hidden />
         <span className='shrink-0 font-medium'>
@@ -660,7 +745,7 @@ function Header({
         {session.links.length === 0 ? (
           <span className='text-muted-foreground'>{t('links.none')}</span>
         ) : (
-          <Legend session={session} />
+          <Legend session={session} nowrap />
         )}
       </button>
     </header>
@@ -740,14 +825,18 @@ function Details({
   session,
   computer,
   items,
+  inline,
   onClose,
 }: {
   readonly session: Session;
   readonly computer: Computer | undefined;
   readonly items: readonly TranscriptItem[];
+  /** Inside the host's sidebar, without covering the main page. */
+  readonly inline: boolean;
   readonly onClose: () => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
+  const surface = useSessionSurface();
   const decide = useDecideLinks(session.id);
   const toaster = useToaster();
   const context = session.state?.context;
@@ -758,10 +847,20 @@ function Details({
   )?.version;
   return (
     <aside
-      className='bg-background fixed inset-y-0 right-0 z-50 w-[min(100%,22rem)] overflow-y-auto border-l shadow-xl xl:static xl:z-auto xl:w-[296px] xl:shrink-0 xl:shadow-none'
+      className={cn(
+        'bg-background overflow-y-auto',
+        inline
+          ? 'max-h-[50%] min-h-0 shrink-0 border-t'
+          : 'fixed inset-y-0 right-0 z-50 w-[min(100%,22rem)] border-l shadow-xl xl:static xl:z-auto xl:w-[296px] xl:shrink-0 xl:shadow-none',
+      )}
       aria-label={t('session.details')}
     >
-      <div className='flex items-center justify-between border-b px-5 py-3 xl:hidden'>
+      <div
+        className={cn(
+          'flex items-center justify-between border-b px-5 py-3',
+          !inline && 'xl:hidden',
+        )}
+      >
         <h2 className='text-[15px] font-semibold'>{t('session.details')}</h2>
         <button
           type='button'
@@ -792,26 +891,36 @@ function Details({
               <LinkBar links={session.links} className='h-2.5 w-full' />
               <Legend session={session} nowrap />
             </div>
-            <ul className='flex flex-col gap-2'>
+            {/* One list, a row per record as the task lists draw them: the title with its status, the key below. */}
+            <ul className='bg-card divide-y overflow-hidden rounded-lg border'>
               {session.links.map((link) => (
                 <li
                   key={`${link.kind}:${link.refId}`}
-                  className='bg-card flex flex-col gap-1.5 rounded-lg border px-3 py-2.5'
+                  aria-current={
+                    surface.activeLink?.kind === link.kind &&
+                    surface.activeLink.refId === link.refId
+                      ? 'true'
+                      : undefined
+                  }
+                  className='flex flex-col gap-1 px-3 py-2 aria-[current=true]:bg-accent'
                 >
-                  {/* The title on its own line; below, the key, and the status at the right, as every card has it. */}
-                  <LinkName link={link} title className='font-medium' />
                   <div className='flex min-w-0 items-center gap-2'>
-                    {link.key && (
-                      <span className='text-muted-foreground font-mono text-xs'>
-                        {link.key}
-                      </span>
-                    )}
+                    <LinkName
+                      link={link}
+                      title
+                      className='min-w-0 flex-1 truncate font-medium'
+                    />
                     {link.status && (
-                      <span className='ml-auto'>
+                      <span className='shrink-0'>
                         <StatusPill status={link.status} compact />
                       </span>
                     )}
                   </div>
+                  {link.key && (
+                    <span className='text-muted-foreground font-mono text-xs'>
+                      {link.key}
+                    </span>
+                  )}
                   {link.startable && session.archivedAt === null && (
                     <div className='text-muted-foreground flex items-center gap-2 text-[11px]'>
                       {t('links.notStarted')}
@@ -1039,7 +1148,7 @@ function Banner({
   return (
     <div
       className={cn(
-        'mx-4 mt-3 flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-[13px] sm:mx-5',
+        'mx-4 mt-3 flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-[13px] @md/agent-session:mx-5 @max-md/agent-session:mt-2 @max-md/agent-session:items-center @max-md/agent-session:py-1.5',
         warning
           ? 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200'
           : 'bg-card',
@@ -1047,11 +1156,16 @@ function Banner({
     >
       <span className='mt-0.5'>{icon}</span>
       <div className='min-w-0'>
-        <p>
+        <p className='@max-md/agent-session:truncate'>
           <span className='font-semibold'>{title}</span>
           {meta && <span className='opacity-80'> · {meta}</span>}
         </p>
-        {body && <p className='mt-0.5 opacity-80'>{body}</p>}
+        {/* A phone keeps the one line; the explanation is for a wider screen. */}
+        {body && (
+          <p className='mt-0.5 opacity-80 @max-md/agent-session:hidden'>
+            {body}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -1091,4 +1205,12 @@ function usage(
 function percent(used: number, size: number): string {
   const share = (used / size) * 100;
   return share < 10 ? share.toFixed(1) : String(Math.round(share));
+}
+
+/** Whether the conversation is drawn as on a phone: its own width, or the screen's before it is laid out. */
+function narrow(element: HTMLElement | null): boolean {
+  const width = element?.getBoundingClientRect().width ?? 0;
+  return width > 0
+    ? width < NARROW_PX
+    : window.matchMedia('(max-width: 767px)').matches;
 }

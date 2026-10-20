@@ -1,0 +1,82 @@
+import type { LocaleResource } from '@nocobase/i18n';
+
+import type enUS from './en-US.js';
+
+const zhTW: LocaleResource<typeof enUS> = {
+  logs: {
+    deliveryOperations: '送貨業務',
+    recipeDescription: '追蹤每個通道切換和每個提供者嘗試。',
+    redacted: '訊息正文、收件人和租賃代幣已被編輯。',
+    providerAttempts: '提供者嘗試',
+    eyebrow: '通知',
+    title: '通知日誌',
+    description:
+      '追蹤通知傳遞和每個提供者的嘗試。訊息正文、收件人和租賃令牌均經過編輯。',
+    refreshing: '清爽…',
+    refresh: '重新整理',
+    sendTest: '傳送測試通知',
+    deliveriesShown: '顯示的交付量',
+    needAttention: '需要注意',
+    unavailable: '日誌不可用',
+    recent: '最近通知',
+    loading: '正在載入交付歷史記錄...',
+    emptyTitle: '尚未出貨',
+    emptyDescription: '通知發出後，此處會顯示送貨記錄。',
+    expand: '展開通知',
+    collapse: '折疊通知',
+    noDeliveries: '沒有交付記錄。',
+    noAttempts: '沒有嘗試記錄。',
+    columns: {
+      source: '來源',
+      notificationId: '通知 ID',
+      status: '狀態',
+      deliveries: '交付',
+      created: '已建立',
+      channel: '頻道',
+      provider: '提供者',
+      attempts: '嘗試',
+      updated: '已更新',
+    },
+  },
+  test: {
+    title: '傳送測試通知',
+    description:
+      '選擇傳送方式，然後按一下「傳送」。該訊息將傳送至您提供的收件人並記錄在下面。',
+    close: '關閉測試通知對話方塊',
+    loadingProviders: '正在載入設定的提供者...',
+    noProviders: '未配置啟用的提供者。',
+    channelProvider: '配送方式',
+    selectProvider: '選擇送貨方式',
+    singleProviderLabel: '{{channel}} ({{provider}})',
+    recipient: '收件人',
+    userIdPlaceholder: '使用者 ID',
+    emailHelp: '應接收此測試的電子郵件地址。',
+    userHelp: '應接收此應用程式內訊息的使用者 ID。',
+    messageTitle: '標題',
+    message: '留言',
+    cancel: '取消',
+    sending: '正在傳送...',
+    send: '傳送',
+    defaultTitle: 'NocoBase 通知測試',
+    defaultBody: '這是 NocoBase 的測試通知。',
+    accepted: '測試通知 {{id}} 已接受。',
+  },
+  status: {
+    pending: '待定',
+    processing: '加工',
+    completed: '已完成',
+    partial: '部分',
+    failed: '失敗',
+    unknown: '未知',
+    preparing: '準備中',
+    submitting: '提交',
+    retrying: '重試',
+    accepted: '已接受',
+  },
+  errors: {
+    requestFailed: '通知請求失敗。',
+    inAppRecipientNotFound: '應用程式內通知收件人不存在。',
+  },
+};
+
+export default zhTW;

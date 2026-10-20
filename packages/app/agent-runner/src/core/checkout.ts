@@ -26,17 +26,13 @@
 // agent's git gets it through a credential helper (env.ts). It is never written to disk. Without one, the host's own
 // git credentials are used.
 //
-// A repository with a `.gitmodules` has its submodules initialized here, before the agent starts and outside any
-// sandbox of its tool. New checkouts keep their Git metadata (including submodule `modules/`) in their own `.git`;
-// legacy worktrees keep it under `<cache>/worktrees/<name>/`. They are fetched with the repository's credential, sent
-// only to the repository's own host. A new checkout initializes every submodule, recursively; an existing one only those not
-// initialized yet, so a submodule the agent moved keeps its state. A failure fails the preparation, and what it was
-// initializing is recorded in the protected cache, keyed by the checkout's Git directory, until an update succeeds: a
-// later preparation of the same checkout finishes it, nested submodules included, even though the top-level ones
-// already look initialized. The agent never ran in between, so there is no state of its to keep.
+// The runner never initializes submodules: a repository's `.gitmodules` is left as checked out, and a project whose
+// agents need its submodules tells them how (for example `git submodule update --init --reference <local copy>`).
+// New checkouts keep their Git metadata, a submodule's `modules/` included, in their own `.git`. What an agent
+// initialized is still inspected: unpushed submodule commits count as unpushed work (`hasUnpushedWork`).
 //
-// Cloning, fetching and the submodules' update are retried where they fail for a passing cause, and abort a stalled
-// transfer instead of hanging (git-retry.ts). One that outlasts every retry fails with a `GitNetworkError`.
+// Cloning and fetching are retried where they fail for a passing cause, and abort a stalled transfer instead of
+// hanging (git-retry.ts). One that outlasts every retry fails with a `GitNetworkError`.
 import {
   addRunWorktree,
   clearContinuations,
@@ -75,19 +71,13 @@ import type {
 import { isInside } from '../lib/paths.ts';
 import {
   GIT_LOW_SPEED_CONFIG,
-  GitNetworkError,
   retryGit,
   type GitRetryOptions,
 } from './git-retry.ts';
 import { installGitHooks } from './git-hooks.ts';
 import { isAlive } from './supervisor.ts';
 import { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
-import {
-  taskGit,
-  taskGitDir,
-  taskGitOk,
-  type TaskGitContext,
-} from './task-git.ts';
+import { taskGit, taskGitDir, taskGitOk } from './task-git.ts';
 
 export { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
 
@@ -290,6 +280,12 @@ export interface CheckedOutRepo {
   localBranch?: string;
   continuation?: string;
   warnings?: string[];
+  /** This attempt's starting commit; independent of the shared default branch. */
+  startSha?: string;
+  /** Last confirmed delivery, or the original continuation's starting commit. */
+  deliveryBaseSha?: string;
+  /** Only a successful remote query can establish absence for local cleanup. */
+  remoteMissing?: boolean;
   primary: boolean;
   /** Absolute. */
   dir: string;
@@ -340,7 +336,7 @@ export interface WorkspaceRepo {
   branch: string;
   localBranch?: string;
   continuation?: string;
-  /** Where the checkout started when the runner created it; nothing past it was committed while HEAD is here. */
+  /** Starting commit (empty for an unborn checkout); continuation records retain the original starting point. */
   startSha?: string;
   /** What the runner last saw the remote task branch hold after it pushed (or found it already pushed). */
   pushedSha?: string;
@@ -450,7 +446,9 @@ function believable(
         ...(!legacy && isText(repo.continuation)
           ? { continuation: repo.continuation }
           : {}),
-        ...(!legacy && isText(repo.startSha) && SHA.test(repo.startSha)
+        ...(!legacy &&
+        typeof repo.startSha === 'string' &&
+        (repo.startSha === '' || SHA.test(repo.startSha))
           ? { startSha: repo.startSha }
           : {}),
         ...(!legacy && isText(repo.pushedSha) && SHA.test(repo.pushedSha)
@@ -870,156 +868,6 @@ async function ensureCheckout(
   return true;
 }
 
-/** The host part of an HTTP(S) URL (`https://github.com/`), the only place a submodule fetch sends the credential. */
-function httpOrigin(url: string): string | undefined {
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
-      ? `${parsed.origin}/`
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/** The filename of a pending submodule preparation record. */
-export const SUBMODULES_PENDING = 'nocobase-runner-submodules.json';
-
-interface PendingSubmodules {
-  /** Every submodule, recursively. */
-  readonly all: boolean;
-  /** Otherwise these top-level ones, with theirs. */
-  readonly paths: readonly string[];
-}
-
-async function readPending(
-  file: string,
-): Promise<PendingSubmodules | undefined> {
-  try {
-    const value = JSON.parse(
-      await readFile(file, 'utf8'),
-    ) as Partial<PendingSubmodules>;
-    return {
-      all: value.all === true,
-      paths: Array.isArray(value.paths)
-        ? value.paths.filter(
-            (entry): entry is string => typeof entry === 'string',
-          )
-        : [],
-    };
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * Initializes the worktree's submodules as its `.gitmodules` lists them: every one, recursively, when `all`; otherwise
- * only the top-level ones not initialized yet (with theirs), and those an earlier update left unfinished
- * (`SUBMODULES_PENDING`). Returns the paths it initialized. The update is retried as `retry` says; one that keeps
- * failing on the network is a `GitNetworkError`.
- */
-export async function initSubmodules(
-  dir: string,
-  options: {
-    all: boolean;
-    url: string;
-    cache: string;
-    auth?: GitAuth;
-    retry?: GitRetryOptions;
-  },
-): Promise<string[]> {
-  const context: TaskGitContext = {
-    dir,
-    cache: options.cache,
-    url: options.url,
-  };
-  if (!existsSync(path.join(dir, '.gitmodules'))) return [];
-  if (
-    (await taskGit(context, [
-      'config',
-      '--local',
-      '--get',
-      'remote.origin.url',
-    ])) !== options.url
-  )
-    throw new CheckoutError(
-      `${options.url}: submodules require the original origin URL; restore it before resuming`,
-    );
-  const failed = (step: string, error: unknown): CheckoutError =>
-    new CheckoutError(
-      `${options.url}: ${step} its submodules failed: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  let status: string;
-  let pendingFile: string;
-  try {
-    status = await taskGit(context, ['submodule', 'status']);
-    const gitDir = await taskGitDir(context);
-    const pendingDir = path.join(options.cache, 'submodule-preparations');
-    await mkdir(pendingDir, { recursive: true, mode: 0o700 });
-    pendingFile = path.join(
-      pendingDir,
-      `${createHash('sha256').update(gitDir).digest('hex')}-${SUBMODULES_PENDING}`,
-    );
-    // Task Git metadata is writable; never read or overwrite a pending record supplied by an agent there.
-  } catch (error) {
-    throw failed('reading', error);
-  }
-  const pending = await readPending(pendingFile);
-  const all = options.all || pending?.all === true;
-  // `-<sha> <path>` is a submodule not initialized; ` `, `+` and `U` are initialized ones.
-  const listed = status
-    .split('\n')
-    .filter((line) => line !== '')
-    .map((line) => ({
-      missing: line.startsWith('-'),
-      path: line.slice(1).trim().split(/\s+/)[1] ?? '',
-    }))
-    .filter((entry) => entry.path !== '');
-  const unfinished = new Set(pending?.paths ?? []);
-  const selected = listed
-    .filter((entry) => all || entry.missing || unfinished.has(entry.path))
-    .map((entry) => entry.path);
-  if (selected.length === 0) {
-    await rm(pendingFile, { force: true });
-    return [];
-  }
-  await writeFile(
-    pendingFile,
-    JSON.stringify({ all, paths: selected } satisfies PendingSubmodules),
-  );
-  const origin = httpOrigin(options.url);
-  try {
-    // `-c` reaches the clones and fetches the update runs (GIT_CONFIG_PARAMETERS), so a stalled one gives up too.
-    await retryGit(
-      `git submodule update in ${options.url}`,
-      () =>
-        taskGit(
-          context,
-          [
-            'submodule',
-            'update',
-            '--init',
-            '--recursive',
-            '--checkout',
-            ...(all ? [] : ['--', ...selected]),
-          ],
-          {},
-          {
-            ...options.retry,
-            ...(options.auth === undefined ? {} : { auth: options.auth }),
-            ...(origin === undefined ? {} : { authScope: origin }),
-          },
-        ),
-      options.retry,
-    );
-  } catch (error) {
-    if (error instanceof GitNetworkError) throw error;
-    throw failed('initializing', error);
-  }
-  await rm(pendingFile, { force: true });
-  return selected;
-}
-
 /** The submodules initialized in the worktree `dir`, nested ones included, as absolute paths. */
 export async function listSubmodules(dir: string): Promise<string[]> {
   if (!existsSync(path.join(dir, '.gitmodules'))) return [];
@@ -1113,7 +961,7 @@ export interface PrepareDirsOptions {
   auth?: RepoAuthSource;
   lockTimeoutMs?: number;
   log?: (message: string) => void;
-  /** How cloning, fetching and the submodules' update are retried. */
+  /** How cloning and fetching are retried. */
   retry?: GitRetryOptions;
   /** The run preparing them, recorded as the last run that worked here. */
   runId?: string;
@@ -1291,25 +1139,16 @@ export async function prepareDirs(
           ]).catch(() => '')
         : (known?.startSha ?? '');
       shas.set(dir, {
-        ...(startSha === '' ? {} : { startSha }),
-        ...(!created && known?.pushedSha !== undefined
-          ? { pushedSha: known.pushedSha }
-          : {}),
+        startSha,
+        ...(runTree?.pushedSha !== undefined
+          ? { pushedSha: runTree.pushedSha }
+          : !created && known?.pushedSha !== undefined
+            ? { pushedSha: known.pushedSha }
+            : {}),
       });
       // Refresh hooks on resumed clones too, so none keeps the push guard an earlier runner installed.
       if (isInside(dir, gitDir))
         await installGitHooks(path.join(gitDir, 'hooks'));
-      const submodules = await withRepoAuth(options.auth, entry.url, (auth) =>
-        initSubmodules(dir, {
-          all: created,
-          url: entry.url,
-          cache,
-          ...(auth === undefined ? {} : { auth }),
-          ...retry,
-        }),
-      );
-      if (submodules.length > 0)
-        options.log?.(`submodules: ${entry.path}: ${submodules.join(', ')}`);
       const repo: CheckedOutRepo = {
         url: entry.url,
         branch: entry.branch,
@@ -1321,6 +1160,10 @@ export async function prepareDirs(
               continuation: runTree.continuation,
               warnings: runTree.warnings,
             }),
+        ...shas.get(dir),
+        ...(runTree?.deliveryBaseSha === undefined
+          ? {}
+          : { deliveryBaseSha: runTree.deliveryBaseSha }),
         primary,
         dir,
         cache,
@@ -1509,7 +1352,11 @@ export async function reportRepos(
       ...(options.onAbort === undefined ? {} : { onAbort: options.onAbort }),
     });
     const remoteSha = async (): Promise<string> => {
-      if (options.active?.() === false) return '';
+      if (options.active?.() === false)
+        throw new RepoAccessFailure(
+          'leaseLost',
+          'The run ended before querying the remote.',
+        );
       return (
         (
           await withRepoAuth(options.auth, repo.url, (auth) => {
@@ -1524,19 +1371,58 @@ export async function reportRepos(
               {},
               networkOptions(auth),
             );
-          }).catch(() => '')
+          })
         ).split(/\s+/)[0] ?? ''
       );
     };
-    const remote = await remoteSha();
-    let pushed = headSha !== '' && remote === headSha;
+    repo.remoteMissing = undefined;
+    let remote: string | undefined;
     let failure: RepoReport['failure'];
-    // Work to push: commits on top of the default branch, or a branch the remote already has and HEAD moved past.
-    const base = await taskGit(repo, [
-      'rev-parse',
-      `origin/${repo.defaultBranch}`,
-    ]).catch(() => '');
-    const hasWork = headSha !== '' && (headSha !== base || remote !== '');
+    try {
+      remote = await remoteSha();
+      repo.remoteMissing = remote === '';
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (options.push)
+        failure = {
+          reason: pushFailureOf(error),
+          message: message.slice(0, 2000),
+        };
+      options.log?.(`report: ${repo.url}: ${message}`);
+    }
+    let pushed = headSha !== '' && remote === headSha;
+    const base = repo.deliveryBaseSha;
+    const pending =
+      base !== undefined &&
+      headSha !== base &&
+      (base === '' ||
+        (await taskGitOk(repo, [
+          'merge-base',
+          '--is-ancestor',
+          base,
+          headSha,
+        ])));
+    const contained =
+      remote === '' &&
+      (await taskGitOk(repo, [
+        'merge-base',
+        '--is-ancestor',
+        headSha,
+        `origin/${repo.defaultBranch}`,
+      ]));
+    const delivered =
+      remote === '' &&
+      base !== undefined &&
+      base !== '' &&
+      (await taskGitOk(repo, ['merge-base', '--is-ancestor', headSha, base]));
+    // Existing branches still use ordinary push semantics. Absent branches require new or known pending work.
+    const hasWork =
+      remote !== undefined &&
+      headSha !== '' &&
+      (remote !== '' ||
+        (!contained &&
+          !delivered &&
+          (headSha !== (repo.startSha ?? '') || pending)));
     if (
       options.push &&
       !switched &&
@@ -1544,6 +1430,8 @@ export async function reportRepos(
       !pushed &&
       hasWork
     ) {
+      // A push can create the branch; only its confirmation may establish absence again.
+      repo.remoteMissing = undefined;
       try {
         await withRepoAuth(options.auth, repo.url, (auth) => {
           if (options.active?.() === false)
@@ -1564,7 +1452,9 @@ export async function reportRepos(
             networkOptions(auth),
           );
         });
-        pushed = (await remoteSha()) === headSha;
+        const confirmed = await remoteSha();
+        repo.remoteMissing = confirmed === '';
+        pushed = confirmed === headSha;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         failure = {
@@ -1575,12 +1465,14 @@ export async function reportRepos(
       }
     }
     // Direct URL pushes leave origin's tracking ref behind; workspace cleanup needs the confirmed remote head.
-    if (pushed)
+    if (pushed) {
+      repo.deliveryBaseSha = headSha;
       await taskGitOk(repo, [
         'update-ref',
         `refs/remotes/origin/${repo.branch}`,
         headSha,
       ]).catch(() => false);
+    }
     reports.push({
       url: repo.url,
       branch: repo.branch,
@@ -1633,6 +1525,27 @@ export async function markWorkspaceEnded(
   const meta = await readWorkspaceMeta(paths, workDir);
   if (meta === undefined) return;
   const now = new Date().toISOString();
+  if (
+    meta.runWorktrees === true &&
+    meta.readOnly !== true &&
+    meta.appKey !== undefined
+  )
+    await updateContinuationState(
+      paths,
+      meta.appKey,
+      meta.subjectKey,
+      (state) => ({
+        ...state,
+        repos: state.repos.map((repo) => {
+          const report = reports.find(
+            (item) => item.url === repo.url && item.branch === repo.branch,
+          );
+          return report?.pushed === true && SHA.test(report.headSha ?? '')
+            ? { ...repo, pushedSha: report.headSha }
+            : repo;
+        }),
+      }),
+    );
   await writeWorkspaceMeta(paths, workDir, {
     ...meta,
     repos: meta.repos.map((repo) => {

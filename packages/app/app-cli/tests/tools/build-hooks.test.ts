@@ -236,7 +236,7 @@ describe('build pipeline hook stages', () => {
         'pnpm demo before',
         'pnpm exec tsc',
         'pnpm exec tsc -p tsconfig.node.json',
-        'pnpm exec refine build',
+        'pnpm exec vite build',
         'pnpm demo after-client',
         'pnpm --filter fixture-app^... build',
         'pnpm exec tsc -p tsconfig.server.json',

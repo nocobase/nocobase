@@ -15,6 +15,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ai-sdk/react": "catalog:",
+    "ai": "catalog:",
     "@base-ui/react": "^1.7.0",
     "@dnd-kit/core": "catalog:",
     "@dnd-kit/sortable": "catalog:",
@@ -58,6 +60,8 @@
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-notification-in-app": "workspace:^",
     "@nocobase/app-plugin-projects": "workspace:^",
+    "@nocobase/app-template-default": "workspace:*",
+    "@nocobase/app-template-examples": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/lifecycle": "workspace:^",
     "@tailwindcss/vite": "catalog:",
@@ -195,6 +199,15 @@
     "#components/flow-layout": "./registry/components/flow-layout.ts",
     "#components/lifecycle-diagram": "./registry/lifecycle/lifecycle-diagram.tsx",
     "#components/lifecycle-diagram-model": "./registry/lifecycle/lifecycle-diagram-model.ts",
-    "#components/*": "./website/components/*.tsx"
+    "#components/*": "./website/components/*.tsx",
+    "#extensions/nocobase-workflow-management/layout": "./registry/lifecycle/workflow-management/layout.tsx",
+    "#extensions/nocobase-workflow-management/definition-list": "./registry/lifecycle/workflow-management/definition-list.tsx",
+    "#extensions/nocobase-workflow-management/execution-detail": "./registry/lifecycle/workflow-management/execution-detail.tsx",
+    "#extensions/nocobase-workflow-management/execution-list": "./registry/lifecycle/workflow-management/execution-list.tsx",
+    "#components/permission-filter": "./registry/authorization/permission-filter.tsx",
+    "#components/data-table/data-table": "./registry/components/data-table/data-table.tsx",
+    "#components/data-table/column-header": "./registry/components/data-table/column-header.tsx",
+    "#components/role-list": "./registry/authorization/role-list.tsx",
+    "#components/default-access-editor": "./registry/authorization/default-access-editor.tsx"
   }
 }

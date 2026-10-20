@@ -20,11 +20,22 @@ import { ServiceProvider } from '@nocobase/service-provider';
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import { RUNNERS_TOPIC, type RunnersChanged } from '../../shared/realtime.js';
 import type { Agents } from '../composition.js';
+import type { AgentsConfig } from './agents.js';
 import { agentsToken } from '../tokens.js';
 import { RUN_DATA_PURGE_INTERVAL_MS } from '../core/runs/run-data-purge.js';
 
-/** How often the sweeper runs. */
+/** How often the sweeper runs, unless `agents.runners.sweepIntervalMs` sets another. */
 export const SWEEP_INTERVAL_MS = 30_000;
+
+/** `agents.runners.sweepIntervalMs`, checked: `SWEEP_INTERVAL_MS` when unset. */
+export function sweepIntervalMs(value: unknown): number {
+  if (value === undefined) return SWEEP_INTERVAL_MS;
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1)
+    throw new Error(
+      'agents.runners.sweepIntervalMs must be a positive integer.',
+    );
+  return value;
+}
 
 /** The schedule's stable identity in this plugin's scope. */
 const SWEEP_SCHEDULE = 'RunnersSweep';
@@ -59,11 +70,11 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
     if (!container.has(realtimeServiceToken)) return;
     const realtime = container.resolve(realtimeServiceToken);
     const publish = (topic: string, payload: RunnersChanged) => {
-      try {
-        realtime.publish(topic, payload);
-      } catch (error) {
-        console.error('Runners realtime announcement failed.', error);
-      }
+      void realtime
+        .publish(topic, payload)
+        .catch((error: unknown) =>
+          console.error('Runners realtime announcement failed.', error),
+        );
     };
     try {
       // Announcements name the runner by id: signed-in connections only.
@@ -94,6 +105,9 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
 
   private async schedule(services: Agents): Promise<void> {
     const { container } = this.app;
+    const sweepEvery = sweepIntervalMs(
+      this.app.config.get<AgentsConfig>('agents')?.runners?.sweepIntervalMs,
+    );
     const sweep = this.guarded(() => services.sweeper.sweep());
     const collect = this.guarded(
       () => services.skills.collectGarbage(SKILL_BLOBS_COLLECT_MS),
@@ -110,7 +124,7 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
         .getScheduleExecutor(ACCESS_NAMESPACE);
       await executor.addJob({
         name: SWEEP_SCHEDULE,
-        options: { every: SWEEP_INTERVAL_MS },
+        options: { every: sweepEvery },
         payload: {},
         execute: sweep,
       });
@@ -129,7 +143,7 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
       await executor.setup();
       this.executor = executor;
     } else {
-      const timer = setInterval(() => void sweep(), SWEEP_INTERVAL_MS);
+      const timer = setInterval(() => void sweep(), sweepEvery);
       timer.unref();
       const collector = setInterval(
         () => void collect(),

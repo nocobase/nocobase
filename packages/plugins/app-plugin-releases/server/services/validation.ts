@@ -39,9 +39,13 @@ export function assertAppId(id: string): void {
 }
 
 /** Archive keys fit a full unique index, including with utf8mb4 on MySQL. */
-export function releaseArtifactKey(appId: string, releaseId: string): string {
+export function releaseArtifactKey(
+  appId: string,
+  releaseId: string,
+  prefix: string = '',
+): string {
   assertAppId(appId);
-  const key = `${appId}/${releaseId}.tar.gz`;
+  const key = `${prefix ? `${prefix}/` : ''}${appId}/${releaseId}.tar.gz`;
   if (key.length > 172)
     throw new ReleasesError(
       'Release artifact keys must not exceed 172 characters.',

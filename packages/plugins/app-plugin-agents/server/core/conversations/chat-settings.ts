@@ -23,13 +23,23 @@ const CHAT_SETTINGS_KEY = 'chat';
 
 export const ChatPreferencesPatchSchema: z.ZodType<ChatPreferencesPatch> = z
   .strictObject({
-    defaultAgentId: z.string().min(1).max(64).nullable(),
+    defaultAgentId: z
+      .string()
+      .min(1)
+      .max(64)
+      .nullable()
+      .describe('The default agent identifier.'),
   })
   .partial();
 
 export const ChatSettingsPatchSchema: z.ZodType<ChatSettingsPatch> = z
   .strictObject({
-    defaultAgentId: z.string().min(1).max(64).nullable(),
+    defaultAgentId: z
+      .string()
+      .min(1)
+      .max(64)
+      .nullable()
+      .describe('The default agent identifier.'),
   })
   .partial();
 
@@ -86,7 +96,7 @@ export function createChatSettingsService(deps: {
       tx.run(async ({ conn }) => {
         const current = await readSettings(conn);
         const next: ChatSettings = { ...current, ...patch };
-        if (next.defaultAgentId !== null) {
+        if (next.defaultAgentId !== null && next.defaultAgentId !== 'online') {
           const agent = await findAgent(conn, next.defaultAgentId);
           if (!agent || agent.status !== 'enabled')
             throw invalid('defaultAgentId names no enabled agent.', {
@@ -122,7 +132,8 @@ export function createChatSettingsService(deps: {
         const next: ChatPreferences = { ...current, ...patch };
         if (
           patch.defaultAgentId !== undefined &&
-          next.defaultAgentId !== null
+          next.defaultAgentId !== null &&
+          next.defaultAgentId !== 'online'
         ) {
           const agent = await findAgent(conn, next.defaultAgentId);
           if (!agent)

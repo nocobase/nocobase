@@ -1,0 +1,45 @@
+---
+import AgentIcon from './AgentIcon.astro';
+
+interface Props {
+  text: string;
+  context: string;
+  language?: string;
+  content: { copy: string; copied: string; copyFailed: string };
+}
+
+const { text, context, content, language = 'bash' } = Astro.props;
+---
+
+<div class='deployment-command' data-language={language}>
+  <div class='command-bar'>
+    <span class='command-context'>
+      <span class='command-kind' aria-hidden='true'>
+        {language === 'text' ? <AgentIcon /> : '$'}
+      </span>
+      <span>{context}</span>
+    </span>
+    <button
+      type='button'
+      data-copy-label={content.copy}
+      data-copied-label={content.copied}
+      data-failed-label={content.copyFailed}
+    >
+      <svg
+        width='15'
+        height='15'
+        viewBox='0 0 24 24'
+        fill='none'
+        stroke='currentColor'
+        stroke-width='1.6'
+        aria-hidden='true'
+      >
+        <rect x='8' y='8' width='12' height='13' rx='2'></rect>
+        <path d='M16 8V3H3v13h5'></path>
+      </svg>
+      <span data-copy-text>{content.copy}</span>
+    </button>
+  </div>
+  <pre><code>{text}</code></pre>
+  <span class='sr-only' role='status'></span>
+</div>

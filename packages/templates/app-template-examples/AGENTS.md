@@ -52,11 +52,17 @@ tests/                    Tests; never beside the source
 
 A feature with a page and an API touches five places: a migration for the table, a route in `server/routes/`, a page in `client/pages/` declared in `client/routes.ts`, navigation on the page route, and strings in `client/locales/`. A page with children or page-local helpers uses a folder with `index.tsx`; child folders mirror route paths. [Application structure](.agents/skills/nocobase-app-development/references/app-structure.md) explains how the runtime composes these pieces, where configuration and its environment variables are declared, and the runtime paths.
 
+## System settings are part of feature delivery
+
+Preserve the built-in Users and Roles and permissions pages. Whenever an application adds lifecycles, workflows, approvals, notifications, files or other configurable capabilities, automatically include their real administration surfaces without requiring a second user request. Follow [system settings delivery](.agents/skills/nocobase-app-development/references/system-settings.md); in particular, every used process includes a definitions directory, standard diagram, supported parameters and authorized execution history. Do not add demo plugins or empty settings for unused capabilities. The template preinstalls `#components/lifecycle-diagram` (React Flow + ELK) and `client/extensions/nocobase-workflow-management/`: use them by default, preserve their visuals unless the user explicitly requests another style, and connect authorized parameter bindings through `LifecycleDiagram.configuration` to the real editor. These are UI Registry sources; an npm package lookup is not a component availability check.
+
 ## Rules that apply everywhere
 
 ### Pages and routes
 
 Declare every page in `client/routes.ts` with `defineAppRoutes()` and keep its component behind a lazy `componentLoader` whose module default-exports it. Never write the deployment base path such as `/main` into a route — the runtime restores it. `auth` controls browser navigation only and is not server security. Declare `navigation` on the route to put it in a menu, and always declare `authz` on the first page of every path; the page id identifies stored page grants, so changing it requires migrating the grants that reference it. Read [pages and routes](.agents/skills/nocobase-app-development/references/frontend/references/page.md), and [overlays](.agents/skills/nocobase-app-development/references/frontend/references/overlay.md) before implementing dialogs, drawers or close guards.
+
+Every route listed as a page permission needs a localized display name: use its existing navigation/breadcrumb title, or add its application route name to `client/pages/settings/page-permission-titles.ts` for an overlay or other page with no title metadata. Do not add breadcrumbs/menus just to label an overlay. Run `tests/logic/page-permission-titles.test.ts`; it requires non-empty English/Chinese labels and rejects missing or stale mappings. Never rename route/permission ids or change `authz` to fix display text.
 
 ### Components and styling
 
@@ -96,7 +102,7 @@ When reporting or opening this application's address, use the `Local:` URL print
 
 Scope all verification — formatting, lint, type checking, tests, builds and runtime checks — to the affected files, projects, or packages and their affected consumers. Do not run full-application or workspace-wide checks, or an aggregate `pnpm check`, as a routine step after each edit. Documentation-only changes need formatting and link checks for the changed documents, not type checking, runtime tests, or builds. Report which checks ran, their scope, and any unverified behavior.
 
-Add tests for what you changed — a route's authenticated, unauthenticated, and unauthorized responses; a migration's `up` and `down` against a real database; a page's actual behavior — in `tests/`, never beside the source; browser tests go in `tests/playwright/`. See [testing and verification](.agents/skills/nocobase-app-development/references/testing.md).
+Add tests for what you changed — a route's authenticated, unauthenticated, and unauthorized responses; a migration's `up` and `down` against a real database; a page's actual behavior — in `tests/`, never beside the source; browser tests go in `tests/playwright/`. Start page tests from `tests/components/page-harness.test.tsx`, which keeps application hooks real and supplies external responses through the test fixture. See [testing and verification](.agents/skills/nocobase-app-development/references/testing.md).
 
 For any UI work, start with [the frontend workflow](.agents/skills/nocobase-app-development/references/frontend/ui-workflow.md), which decides the workflow and routes to the styling rules, the theme token contract and the rest.
 
@@ -104,7 +110,7 @@ For any UI work, start with [the frontend workflow](.agents/skills/nocobase-app-
 
 `client/routing/`, `client/layouts/`, `client/theme/`, the server entry points, the `package.json` scripts that call `nocobase`, and the tsconfigs are the scaffolding the template provides. It is still this application's own source — it shipped to the user and they may change it — but it is the part the template evolves, so an edit there is what a future upgrade has to reconcile.
 
-Prefer the mechanism the system already provides. Declare a page in `client/routes.ts` and add `navigation` when it needs a menu entry. Refine resources add no menu entries and, with no data provider registered, load nothing; pages load data through `useApiClient`. A page uses `authz` to restrict access; a plugin page is customized through an option or an override. Before editing the shell to add a menu, check the route and its `navigation` declaration.
+Prefer the mechanism the system already provides. Declare a page in `client/routes.ts` and add `navigation` when it needs a menu entry; pages load data through `useApiClient`. A page uses `authz` to restrict access; a plugin page is customized through an option or an override. Before editing the shell to add a menu, check the route and its `navigation` declaration.
 
 When the built-in mechanism genuinely cannot express what is being asked, changing this structure is a legitimate answer — not a last resort to apologize for. Do it deliberately, and leave the next agent enough to work with:
 
@@ -117,6 +123,6 @@ When the built-in mechanism genuinely cannot express what is being asked, changi
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | [.agents/rules/components.md](.agents/rules/components.md)             | Adding or changing a component, a shadcn primitive, a UI Library item, or the visual design                  |
 | [.agents/rules/database.md](.agents/rules/database.md)                 | Working with the `externalCrm` connection or another `external` connection's metadata                        |
-| [.agents/rules/plugins.md](.agents/rules/plugins.md)                   | Working with the Mail and Mail Example demonstration                                                         |
+| [.agents/rules/plugins.md](.agents/rules/plugins.md)                   | Working with the Mail, Mail Example or OnlineAgent demonstrations                                            |
 | [.agents/rules/shell.md](.agents/rules/shell.md)                       | Changing layouts, the header, sidebar, breadcrumbs, the account menu or loading indicators                   |
 | [.agents/rules/build-and-deploy.md](.agents/rules/build-and-deploy.md) | Changing the build, packing a deployment, the Docker image, `CDN_BASE_URL`, or building for another platform |

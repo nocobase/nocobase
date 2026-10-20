@@ -134,16 +134,14 @@ export function createInvitationManager(
       if (remaining <= 0)
         throw new Error('Invitation email delivery budget exhausted.');
       await Promise.race([
-        options.mailer.send(
-          buildInvitationEmail({
-            to: row.email,
-            appTitle: options.site.appTitle,
-            inviterName,
-            summary: row.summary,
-            url,
-            expiresAt: new Date(row.expiresAt),
-          }),
-        ),
+        buildInvitationEmail({
+          to: row.email,
+          appTitle: options.site.appTitle,
+          inviterName,
+          summary: row.summary,
+          url,
+          expiresAt: new Date(row.expiresAt),
+        }).then((email) => options.mailer.send(email)),
         new Promise<never>((_, reject) => {
           timeout = setTimeout(
             () =>

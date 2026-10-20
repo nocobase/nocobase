@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 import { lifecycleRoutes } from '@nocobase/app-plugin-lifecycle-example/client';
 import applicationRoutes from '../../client/routes.ts';
+import { buildRouteNavigation } from '../../client/routing/route-navigation.ts';
 
 describe('app client routes', () => {
   it('keeps the landing page and the authentication pages', () => {
@@ -44,11 +45,105 @@ describe('app client routes', () => {
     }
   });
 
+  it('groups the public Agents settings pages without weakening their authorization', () => {
+    const group = resolveRoutes().routes.find(
+      (route) => route.name === 'agentsNavigation',
+    )!;
+    expect(group.componentLoader).toBeUndefined();
+    expect(group.navigation?.title).toBe('onlineAgent.group');
+    expect(group.children?.map((route) => route.name)).toEqual([
+      'agents',
+      'runtimes',
+      'models',
+      'ai-translation',
+      'ai-structured-extraction',
+      'ai-form-fill',
+    ]);
+    for (const name of ['agents', 'runtimes']) {
+      expect(
+        group.children?.find((route) => route.name === name),
+      ).toMatchObject({
+        name,
+        path: `/${name}`,
+        auth: 'required',
+        navigation: { title: `onlineAgent.${name}` },
+        breadcrumb: { title: `onlineAgent.${name}` },
+        authz: { resource: { type: 'page', id: name }, action: 'access' },
+      });
+    }
+    expect(
+      group.children?.find((route) => route.name === 'runtimes')?.children,
+    ).toEqual([
+      expect.objectContaining({
+        name: 'runtimes-connect',
+        path: '/runtimes/connect',
+        auth: 'required',
+        componentLoader: expect.any(Function),
+      }),
+    ]);
+    expect(
+      group.children?.find((route) => route.name === 'models'),
+    ).toMatchObject({
+      name: 'models',
+      path: '/models',
+      auth: 'required',
+      navigation: { title: 'onlineAgent.models' },
+      breadcrumb: { title: 'onlineAgent.models' },
+      authz: {
+        resource: { type: 'settings', id: 'agents.services' },
+        action: 'read',
+      },
+    });
+    expect(
+      group.children?.find((route) => route.name === 'ai-translation'),
+    ).toMatchObject({
+      path: '/ai-translation',
+      auth: 'required',
+      authz: 'skip',
+      navigation: { title: 'aiTranslation.title', icon: expect.any(Object) },
+      breadcrumb: { title: 'aiTranslation.title' },
+      componentLoader: expect.any(Function),
+    });
+    expect(
+      group.children?.find(
+        (route) => route.name === 'ai-structured-extraction',
+      ),
+    ).toMatchObject({
+      path: '/ai-structured-extraction',
+      auth: 'required',
+      authz: 'skip',
+      navigation: {
+        title: 'structuredExtraction.title',
+        icon: expect.anything(),
+      },
+      componentLoader: expect.any(Function),
+    });
+  });
   it('keeps the inbox out of the application navigation', () => {
     // The inbox is reached from the header's inbox button, so it deliberately declares no menu entry.
     expect(
       applicationRoutes[0].routes.find((route) => route.name === 'inbox'),
     ).not.toHaveProperty('navigation');
+  });
+
+  it('keeps workflow, user and role management in one system navigation group', () => {
+    const navigation = buildRouteNavigation(resolveRoutes().routes, new Set());
+    expect(navigation.some(({ route }) => route.name === 'settings')).toBe(
+      false,
+    );
+    const management = navigation.find(
+      ({ route }) => route.name === 'systemManagement',
+    );
+    expect(management?.children.map(({ route }) => route.name)).toEqual([
+      'workflows',
+      'settingsUsers',
+      'permissionManagement',
+    ]);
+    const permissions = management?.children.find(
+      ({ route }) => route.name === 'permissionManagement',
+    );
+    expect(permissions?.children).toEqual([]);
+    expect(permissions?.route.path).toBe('/roles');
   });
 
   it('pins the page authorization of every signed-in page', () => {
@@ -77,11 +172,58 @@ describe('app client routes', () => {
       { name: 'numeric-examples', authorizedAs: 'numeric-examples' },
       { name: 'i18n-examples', authorizedAs: 'i18n-examples' },
       { name: 'external-crm', authorizedAs: 'external-crm' },
-      { name: 'workflows', authorizedAs: null },
-      { name: 'workflowDefinitions', authorizedAs: null },
-      { name: 'workflowDefinition', authorizedAs: null },
-      { name: 'workflowExecutions', authorizedAs: null },
-      { name: 'workflowExecution', authorizedAs: null },
+      { name: 'agents', authorizedAs: 'agents' },
+      { name: 'runtimes', authorizedAs: 'runtimes' },
+      { name: 'runtimes-connect', authorizedAs: 'runtimes' },
+      { name: 'models', authorizedAs: 'settings:agents.services' },
+      { name: 'ai-translation', authorizedAs: null },
+      { name: 'ai-structured-extraction', authorizedAs: null },
+      { name: 'ai-form-fill', authorizedAs: null },
+      { name: 'workflows', authorizedAs: 'settings:workflow-management' },
+      {
+        name: 'workflowDefinitions',
+        authorizedAs: 'settings:workflow-management',
+      },
+      {
+        name: 'workflowDefinition',
+        authorizedAs: 'settings:workflow-management',
+      },
+      {
+        name: 'workflowParameters',
+        authorizedAs: 'settings:workflow-management',
+      },
+      {
+        name: 'workflowExecutions',
+        authorizedAs: 'settings:workflow-management',
+      },
+      {
+        name: 'workflowExecution',
+        authorizedAs: 'settings:workflow-management',
+      },
+      { name: 'settingsUsers', authorizedAs: 'user:*' },
+      { name: 'settingsUserCreate', authorizedAs: 'user:*' },
+      { name: 'settingsUser', authorizedAs: 'user:*' },
+      { name: 'settingsUserEdit', authorizedAs: 'user:*' },
+      {
+        name: 'settingsRoles',
+        authorizedAs: 'settings:authorization.permission-sets',
+      },
+      {
+        name: 'settingsRoleCreate',
+        authorizedAs: 'settings:authorization.permission-sets',
+      },
+      {
+        name: 'settingsRoleEdit',
+        authorizedAs: 'settings:authorization.permission-sets',
+      },
+      ...[
+        'settingsDefaultAccess',
+        'settingsDefaultAccessCreate',
+        'settingsDefaultAccessEdit',
+      ].map((name) => ({
+        name,
+        authorizedAs: 'settings:authorization.default-access',
+      })),
     ]);
   });
 });

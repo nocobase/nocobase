@@ -99,6 +99,40 @@ describe('user invitations', () => {
 
   const tokenOf = (email: InvitationEmail) =>
     /\/main\/invite\/([\w-]+)/u.exec(email.text)?.[1] ?? '';
+  it('applies the application target policy to individual reads before exposing roles', async () => {
+    const assertTarget = vi.fn(async (_action: string, userId: string) => {
+      if (userId === 'outside') throw new Error('Outside management scope');
+    });
+    const users = userAdministration(database.connection());
+    const read = vi.spyOn(users, 'get');
+    const scoped = createUserManagementService({
+      database,
+      users,
+      roleScopes: createUserRoleScopeRegistry(),
+      policy: () => ({
+        excludedUserIds: async () => ['outside'],
+        assertTarget,
+        assertAction: async () => undefined,
+      }),
+    });
+    const user = await service.create({
+      name: 'Inside',
+      email: 'inside@example.test',
+      password: 'TestPassword123!',
+    });
+    await expect(scoped.get(user.id)).resolves.toMatchObject({ id: user.id });
+    expect(assertTarget).toHaveBeenCalledWith(
+      'read',
+      user.id,
+      database.connection(),
+    );
+    read.mockClear();
+    await expect(scoped.get('outside')).rejects.toThrow(
+      'Outside management scope',
+    );
+    expect(read).not.toHaveBeenCalled();
+  });
+
   it('bounds slow batch delivery and omits queued links that were revoked or rotated', async () => {
     let started!: () => void;
     const deliveryStarted = new Promise<void>((resolve) => {

@@ -1,4 +1,3 @@
-import { GLOBAL_SKILL_TARGET } from '../../../shared/skills.js';
 /**
  * Claiming: handing queued runs to a runner that fits them, within each agent's concurrency limit, one run per
  * (agent, subject, thread) at a time, through the runners' one long-poll (`routes/runners/runner.ts`), which hands
@@ -42,6 +41,8 @@ import { GLOBAL_SKILL_TARGET } from '../../../shared/skills.js';
  * counts them, and the lock waits on PostgreSQL).
 
  */
+import { GLOBAL_SKILL_TARGET } from '../../../shared/skills.js';
+
 import {
   ANNOUNCED_FAILURES,
   isProtocolSupported,
@@ -65,7 +66,7 @@ import {
   supportsWorkspaceKey,
   type Runner,
 } from '../../../shared/runners.js';
-import { queueStart } from './selection.js';
+import { queueStart, type ModelSelectionPolicies } from './selection.js';
 import type { DatabaseConnection } from '@nocobase/db';
 import type { Slots } from '../../runners/slots.js';
 import { createHash } from 'node:crypto';
@@ -152,9 +153,7 @@ export interface ClaimService {
   reconcileCommentConsent(unit: Tx, runId: string): Promise<void>;
   reconcileCommentQueue(): Promise<void>;
   /** Structured ordered-model diagnostics; machine visibility is enforced by the caller. */
-  selectionWait(
-    runId: string,
-  ): Promise<import('../../../shared/runs.js').ModelSelectionWait | null>;
+  selectionWait(runId: string): Promise<ModelSelectionWait | null>;
   /** Read-only capacity and compatibility for a real subject and candidate agent, as the run's actor. */
   diagnose(
     conn: DatabaseConnection,
@@ -175,7 +174,7 @@ export interface ClaimService {
 }
 
 export interface ClaimDeps extends TransitionDeps {
-  readonly selectionPolicies?: import('./selection.js').ModelSelectionPolicies;
+  readonly selectionPolicies?: ModelSelectionPolicies;
   readonly runners?: {
     online(conn: DatabaseConnection): Promise<Runner[]>;
     all(conn: DatabaseConnection): Promise<Runner[]>;
@@ -271,8 +270,11 @@ type Attempt =
 export function pickEntry(
   runner: Runner,
   agent: Pick<Agent, 'modelEntries'>,
+  now: number,
 ): RunnerModelEntry | null {
-  return agent.modelEntries.find((entry) => runsEntry(runner, entry)) ?? null;
+  return (
+    agent.modelEntries.find((entry) => runsEntry(runner, entry, now)) ?? null
+  );
 }
 
 /**
@@ -283,10 +285,11 @@ export function pickOpenEntry(
   runner: Runner,
   agent: Pick<Agent, 'modelEntries'>,
   open: (tool: AgentTool) => boolean,
+  now: number,
 ): RunnerModelEntry | null {
   return (
     agent.modelEntries.find(
-      (entry) => runsEntry(runner, entry) && open(entry.tool),
+      (entry) => runsEntry(runner, entry, now) && open(entry.tool),
     ) ?? null
   );
 }
@@ -295,8 +298,9 @@ export function pickOpenEntry(
 export function hasTool(
   runner: Runner,
   agent: Pick<Agent, 'modelEntries'>,
+  now: number,
 ): boolean {
-  return pickEntry(runner, agent) !== null;
+  return pickEntry(runner, agent, now) !== null;
 }
 
 /**
@@ -308,6 +312,7 @@ export function fitsActor(
   agent: Agent,
   actorUserId: string,
   requires: readonly RunnerFeature[],
+  now: number,
 ): boolean {
   if (agent.status !== 'enabled' || runnerLowOnDisk(runner)) return false;
   if (
@@ -317,14 +322,19 @@ export function fitsActor(
   )
     return false;
   if (!covers(runner.features, requires)) return false;
-  if (!hasTool(runner, agent)) return false;
+  if (!hasTool(runner, agent, now)) return false;
   if (!policyAllowsAgent(runner.policy, agent)) return false;
   return runner.trust === 'team' || runner.ownerUserId === actorUserId;
 }
 
 /** Whether `runner` may run `run` of `agent`, before any lock is taken and before its payload is known. */
-export function fits(runner: Runner, agent: Agent, run: RunRecord): boolean {
-  return fitsActor(runner, agent, run.actorUserId, toRun(run).requires);
+export function fits(
+  runner: Runner,
+  agent: Agent,
+  run: RunRecord,
+  now: number,
+): boolean {
+  return fitsActor(runner, agent, run.actorUserId, toRun(run).requires, now);
 }
 
 /** The runner features a payload needs. */
@@ -575,7 +585,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     )
       return 'incompatible';
     if (
-      !fitsActor(runner, agent, run.actorUserId, run.requires) ||
+      !fitsActor(
+        runner,
+        agent,
+        run.actorUserId,
+        run.requires,
+        clock.now().getTime(),
+      ) ||
       !policyAllowsSubject(runner.policy, assembly.subject.key) ||
       assembly.dirs.some(
         (dir) =>
@@ -641,7 +657,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const installed = connected.filter((runner) =>
         runner.tools.some((tool) => tool.kind === entry.tool),
       );
-      const usable = installed.filter((runner) => runsEntry(runner, entry));
+      const usable = installed.filter((runner) =>
+        runsEntry(runner, entry, clock.now().getTime()),
+      );
       const online = usable.filter(
         (runner) =>
           runner.trust === 'team' || runner.ownerUserId === run.actorUserId,
@@ -1401,7 +1419,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     }
     // Avoid assembling or asking authorization when a cheap claim rule already rules this work out.
     if (
-      !fits(runner, agent, candidate) ||
+      !fits(runner, agent, candidate, clock.now().getTime()) ||
       (await runsOfKey(conn, candidate, ACTIVE)).length > 0
     )
       return { kind: 'skipped' };
@@ -1466,12 +1484,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           agent,
           (tool) =>
             (byTool[tool] ?? 0) < toolLimit(runner, tool) && reported.has(tool),
+          now.getTime(),
         );
         if (!entry) return null;
         const busy = await runsOfKey(conn, candidate, ACTIVE);
         if (busy.length > 0) return null;
 
-        const leaseExpiresAt = later(now, TIMINGS.leaseMs);
+        const leaseExpiresAt = later(now, TIMINGS.startTimeoutMs);
         const dispatchValues = {
           status: 'dispatched',
           failureReason: null,
@@ -1738,11 +1757,19 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       if (
         !agent ||
         (!deps.subjects.get(candidate.subjectKind)?.actsAs &&
-          !fits(runner, agent, candidate))
+          !fits(runner, agent, candidate, clock.now().getTime()))
       )
         continue;
       // None of its tools has room on the runner's side: the runs behind it may still fit.
-      if (!pickOpenEntry(runner, agent, (tool) => reported.has(tool))) continue;
+      if (
+        !pickOpenEntry(
+          runner,
+          agent,
+          (tool) => reported.has(tool),
+          clock.now().getTime(),
+        )
+      )
+        continue;
       try {
         const result = await attempt(runner, agent, candidate, reported);
         if (result.kind === 'claimed') return result.payload;

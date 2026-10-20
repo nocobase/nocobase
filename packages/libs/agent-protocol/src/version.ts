@@ -72,6 +72,10 @@ import { z } from 'zod';
  * without it still gets the credentials in its payload. The number moved so that a runner announcing
  * `gitCredentials` is refused cleanly by a server that does not know it; update the application first.
  */
+/**
+ * QuotaReport on FailRequest and event meta.quota are optional additions within version 11.
+ * Older runners retain failure-only behavior; receivers ignore absent quota observations.
+ */
 /** Version 11 adds runnerUpgrade reports, which older servers cannot parse; version 10 added workspace.key. */
 export const PROTOCOL_VERSION = 11;
 
@@ -227,7 +231,7 @@ export const TIMINGS = {
   heartbeatIntervalMs: 15_000,
   /** How long a `claim?wait=1` request is held when there is no work. */
   pollTimeoutMs: 25_000,
-  /** How long a lease lasts; a runner renews it every `leaseRenewMs`. */
+  /** How long a started run’s lease lasts; a runner renews it every `leaseRenewMs`. */
   leaseMs: 45_000,
   leaseRenewMs: 15_000,
   /** A runner not heard from for this long is offline, and its runs go back to the queue. */

@@ -1,7 +1,7 @@
 import { I18nProvider, I18nRuntime } from '@nocobase/i18n/client';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { revealScrollbarsWhileScrolling } from '../../packages/templates/app-template-default/client/lib/scrollbar';
+import { revealScrollbarsWhileScrolling } from '@nocobase/app-template-default/client/lib/scrollbar';
 import './styles.css';
 import { App } from './app';
 

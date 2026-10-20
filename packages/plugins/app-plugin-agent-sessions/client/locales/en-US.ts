@@ -104,7 +104,7 @@ const enUS = {
       'Run this on the computer to keep it connected from every login.',
     noAgentTitle: 'No agent is ready on this computer',
     noAgentHint:
-      'Install any of them there and sign in with its own command; it shows up here within a minute, without connecting again.',
+      'Install any of them there and sign in with its own command. The bridge checks every minute and lists it after setup and startup succeed, without connecting again.',
     supported: 'Supported: {{names}}',
     failedAgent: '{{name}} could not start: {{detail}}',
     modelHint:
@@ -114,7 +114,7 @@ const enUS = {
     agents: 'Agents on this computer',
     availableAgents: 'Available agents',
     agentsHint:
-      'Only the agents installed on this computer are listed; one installed and signed in later shows up within a minute.',
+      'Only installed agents are listed. The bridge checks every minute; setup and startup must finish before an agent is ready.',
     alsoSupported: 'Also supported: {{names}}',
     thisComputer: 'This computer',
     recentFolders: 'Recently used',
@@ -136,6 +136,11 @@ const enUS = {
     offlineBody:
       'The conversation and its tasks are kept here to read as usual. The session continues once the computer is back.',
     working: 'The agent is working…',
+    startup: {
+      starting: 'Starting the agent on your computer…',
+      opening: 'Opening the agent’s session…',
+      configuring: 'Applying settings…',
+    },
     answering: 'Answering',
     asking: 'Needs your approval',
     stop: 'Stop',
@@ -179,6 +184,8 @@ const enUS = {
     queue: 'Send after this turn',
     addImage: 'Add images',
     removeImage: 'Remove image',
+    attached: 'Goes with the message',
+    removeAttached: 'Remove {{name}}',
     commands: 'The agent’s commands',
     mentions: 'Mention a task',
     keys: {
@@ -189,6 +196,7 @@ const enUS = {
     },
   },
   choices: { more: 'More options' },
+  panel: { fullScreen: 'Open full page' },
   transcript: {
     image: {
       open: 'Open image preview',
@@ -200,6 +208,19 @@ const enUS = {
     thought: 'Thinking',
     plan: 'Plan {{done}}/{{total}}',
     prompt: {
+      withdrawing: 'Withdrawing, waiting for computer confirmation',
+      withdrawn: 'Withdrawn',
+      withdraw: 'Withdraw',
+      retry: 'Retry',
+      copy: 'Copy',
+      edit: 'Edit and send again',
+      editBody:
+        'Edit this message in a separate draft. Your current draft stays as it is.',
+      attachmentError:
+        'Could not load the original attachments. Retry before editing.',
+      loading: 'Loading message and attachments…',
+      unsupported:
+        'This older message cannot be safely withdrawn. Update the command line and restart the computer connection.',
       queued: 'Queued, sent when this turn ends',
       cancelled: 'Cancelled',
       failed: 'Not answered',
@@ -278,6 +299,8 @@ const enUS = {
     remove: 'Remove',
     confirmRemove: 'Remove it',
     problems: { notInstalled: 'not installed', failed: 'could not start' },
+    recheckHint:
+      'While connected, the bridge automatically checks agents again every minute.',
     ready: 'Ready',
     name: 'Name',
     system: 'System',

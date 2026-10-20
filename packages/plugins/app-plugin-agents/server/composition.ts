@@ -1,3 +1,11 @@
+import { OnlineAgentUIStreams } from './online/agent/transport/streams.js';
+import type { OnlineAgentRecoveryConfig } from './online/agent/types.js';
+import { OnlineAgentConfigurator } from './online/agent/configuration.js';
+import { RunnerOnlineAgentAdapter } from './online/agent/runner/backend.js';
+import type { ServiceResolver } from '@nocobase/service-provider';
+import { OnlineAgentService } from './online/agent/service.js';
+import { createSessionManager } from './online/agent/persistence/manager.js';
+import { languageModel } from './online/providers.js';
 /**
  * The one place the plugin's services are assembled from their dependencies. The provider binds the result to
  * `agentsToken`; tests call it directly against a real database.
@@ -143,7 +151,12 @@ import {
 } from './core/runs/index.js';
 
 export interface AgentsDeps {
+  readonly uiRecovery?: OnlineAgentRecoveryConfig;
+  readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
+  readonly resolver?: ServiceResolver;
   readonly runRetentionDays?: () => number;
+  /** The first back-off of a failed run attempt (`agents.runs.retryBaseDelayMs`); 30 seconds when left out. */
+  readonly retryBaseDelayMs?: number;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   readonly idGenerator: { generateString(): string };
   /**
@@ -183,6 +196,7 @@ export interface AgentsDeps {
 }
 
 export interface Agents {
+  readonly onlineAgent: OnlineAgentService;
   readonly events: AgentsEventBus;
   readonly tx: TxRunner;
   readonly clock: Clock;
@@ -319,7 +333,13 @@ export function createAgents(deps: AgentsDeps): Agents {
   const clock = deps.clock ?? systemClock;
   const subjects = createSubjectRegistry();
   const signal = createWorkSignal();
-  const transitions = { clock, subjects };
+  const transitions = {
+    clock,
+    subjects,
+    ...(deps.retryBaseDelayMs === undefined
+      ? {}
+      : { retryBaseDelayMs: deps.retryBaseDelayMs }),
+  };
   const app = deps.app ?? defaultRunApp(deps.cli);
   const cli = resolveAgentCli(deps.cli, app);
 
@@ -327,6 +347,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   const dist = createDistService(deps.dist);
   const slots = createSlots(runsHeldSnapshot);
   const runners = createRunnerService({
+    quotaAgents: (unit) => agents.listActive(unit.conn),
     tx,
     ids,
     clock,
@@ -415,10 +436,12 @@ export function createAgents(deps: AgentsDeps): Agents {
     },
   });
   const eligibility = createClaimEligibility({
+    clock,
     runners,
     variables,
   });
   const availability = createAvailability({
+    clock,
     runners,
     eligibility,
     openRuns: openCounts,
@@ -476,6 +499,8 @@ export function createAgents(deps: AgentsDeps): Agents {
     secrets,
     cliName: cli.name,
     appName: app.name,
+    onQuota: (unit, runnerId, tool, model, quota, observation) =>
+      runners.reportQuota(unit, runnerId, tool, model, quota, observation),
     onModelUnavailable: (unit, runnerId, tool, model) =>
       runners.markModelUnavailable(unit, runnerId, tool, model),
   });
@@ -519,6 +544,7 @@ export function createAgents(deps: AgentsDeps): Agents {
       }),
   });
   const conversations = createConversationService({
+    measure: deps.measureOnlineAgent,
     tx,
     ids,
     clock,
@@ -528,9 +554,60 @@ export function createAgents(deps: AgentsDeps): Agents {
     runs,
     people,
     settings: chat,
+    nativeAvailable: async () =>
+      Boolean((await modelServices.catalog().catch(() => null))?.defaultModel),
+    nativeNotice: (unit, row, id, parts) =>
+      sessions.native.deliver(row.userId, row.id, id, parts, { unit, row }),
+    nativeActive: (id, persistedRunning) =>
+      onlineAgent.producerAvailable(id, persistedRunning),
     contextKinds: createPageContextKinds(),
     attachments: chatAttachments.links,
     basePath,
+  });
+  const uiStreams = new OnlineAgentUIStreams({
+    tx,
+    measure: deps.measureOnlineAgent,
+    recovery: deps.uiRecovery,
+    onError: (error) => onError('OnlineAgent UI recovery failed.', error),
+  });
+  const configurator = new OnlineAgentConfigurator();
+  const runnerOnlineAgent = new RunnerOnlineAgentAdapter({
+    configurator,
+    measure: deps.measureOnlineAgent,
+    tx,
+    conversations,
+    streams: uiStreams,
+    now: () => clock.now().toISOString(),
+    basePath,
+    onError: (error) =>
+      onError('Runner OnlineAgent synchronization failed.', error),
+  });
+  const sessions = createSessionManager({
+    contextKinds: conversations.contextKinds,
+    tx,
+    ids,
+    attachments: chatAttachments.links,
+    files: chatAttachments.service,
+    basePath,
+    now: () => clock.now().toISOString(),
+  });
+  const onlineAgent = new OnlineAgentService({
+    configurator,
+    runner: runnerOnlineAgent,
+    uiStreams,
+    sessions,
+    ids,
+    resolver: deps.resolver,
+    model: async (ref, sessionId) =>
+      languageModel(
+        await modelServices.connectionFor(ref),
+        ref.model,
+        sessionId,
+      ),
+    defaultModel: async () =>
+      (await modelServices.catalog()).defaultModel ?? null,
+    onError: (error) =>
+      onError('OnlineAgent execution or finalization failed.', error),
   });
   subjects.register(conversations.binding);
   registerCoreContextKinds(conversations, agents, runs);
@@ -544,6 +621,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   // The agent's text in a conversation becomes messages as the runner reports it; the run's end and reading the
   // messages catch up on anything missed here.
   events.on('run.events', (event) => {
+    if (runnerOnlineAgent.notify(event.runId)) return;
     conversations
       .syncRun(event.runId)
       .catch((error: unknown) =>
@@ -555,6 +633,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
   // The panel shows whether the agent is working: tell the owner when a conversation's run changes.
   events.on('run.changed', (event) => {
+    runnerOnlineAgent.notify(event.runId);
     runs
       .get(event.runId)
       .then(async (run) => {
@@ -595,7 +674,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     app,
     cli,
     runners,
-    runnerView: createRunnerView({ agents, subjects, tx }),
+    runnerView: createRunnerView({ agents, subjects, tx, clock }),
     workspaces: createRunnerWorkspaces({ tx, clock, subjects }),
     jobs,
     slots,
@@ -636,6 +715,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     conversations,
     chatAttachments: chatAttachments.service,
     chat,
+    onlineAgent,
     models: {
       services: modelServices,
       gateway,

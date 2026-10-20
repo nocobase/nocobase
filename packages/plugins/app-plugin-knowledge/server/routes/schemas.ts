@@ -13,6 +13,7 @@ import type {
   KnowledgeChunkingConfig,
   KnowledgeDoc,
   KnowledgeDocIndex,
+  KnowledgeIndexRefreshMeta,
   KnowledgeDocSummary,
   KnowledgeEffectiveAccess,
   KnowledgeFileInfo,
@@ -52,28 +53,30 @@ const versionNumber = z.coerce.number().int().min(1);
 export interface DocParams {
   readonly docId: string;
 }
-export const DocParams: z.ZodType<DocParams> = z.object({ docId: id });
+export const DocParams: z.ZodType<DocParams> = z.object({
+  docId: id.describe('The doc identifier.'),
+});
 
 export interface VersionParams extends DocParams {
   readonly version: number;
 }
 export const VersionParams: z.ZodType<VersionParams, unknown> = z.object({
-  docId: id,
-  version: versionNumber,
+  docId: id.describe('The doc identifier.'),
+  version: versionNumber.describe('The version to read or restore.'),
 });
 
 export interface ProposalParams {
   readonly proposalId: string;
 }
 export const ProposalParams: z.ZodType<ProposalParams> = z.object({
-  proposalId: id,
+  proposalId: id.describe('The proposal identifier.'),
 });
 
 export interface TicketParams {
   readonly ticketId: string;
 }
 export const TicketParams: z.ZodType<TicketParams> = z.object({
-  ticketId: id,
+  ticketId: id.describe('The ticket identifier.'),
 });
 
 /** A space by its kind and key; the key is empty for a space that has none. */
@@ -82,7 +85,7 @@ export interface SpaceQuery {
   readonly scopeId: string;
 }
 const spaceQuery = {
-  scope: z.string().min(1),
+  scope: z.string().min(1).describe('The registered knowledge space kind.'),
   scopeId: z.string().default(''),
 };
 
@@ -91,7 +94,7 @@ export interface SpacesQuery extends SpaceQuery {
 }
 export const SpacesQuery: z.ZodType<SpacesQuery, unknown> = z.object({
   ...spaceQuery,
-  archived: flag,
+  archived: flag.describe('Filter by archive state.'),
 });
 
 export interface SearchQuery extends SpaceQuery {
@@ -101,7 +104,7 @@ export interface SearchQuery extends SpaceQuery {
 }
 export const SearchQuery: z.ZodType<SearchQuery, unknown> = z.object({
   ...spaceQuery,
-  q: z.string().default(''),
+  q: z.string().default('').describe('Text to search for.'),
   pageSize: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).optional().meta({
     description:
       'How many hits at most; the application’s recall settings decide by default (20 unless changed).',
@@ -132,8 +135,8 @@ const chunkingShape = z.object({
 
 export const ChunkingBody: z.ZodType<UpdateKnowledgeChunkingRequest, unknown> =
   z.strictObject({
-    scope: z.string().min(1),
-    scopeId: z.string().default(''),
+    scope: z.string().min(1).describe('The registered knowledge space kind.'),
+    scopeId: z.string().default('').describe('The scope identifier.'),
     override: z
       .strictObject({
         headingDepth: z.number().int(),
@@ -152,8 +155,8 @@ export interface PageQuery {
   readonly pageSize: number;
 }
 export const PageQuery: z.ZodType<PageQuery, unknown> = z.object({
-  page,
-  pageSize,
+  page: page.describe('The page number, starting at 1.'),
+  pageSize: pageSize.describe('The maximum number of records to return.'),
 });
 
 export interface ProposalsQuery extends PageQuery {
@@ -166,13 +169,18 @@ export interface ProposalsQuery extends PageQuery {
 export const ProposalsQuery: z.ZodType<ProposalsQuery, unknown> = z.object({
   status: z
     .enum(['pending', 'accepted', 'rejected', 'withdrawn'])
-    .default('pending'),
-  scope: z.string().min(1).optional(),
-  scopeId: z.string().default(''),
-  docId: id.optional(),
-  decidable: flag,
-  page,
-  pageSize,
+    .default('pending')
+    .describe('The status to set or filter by.'),
+  scope: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('The registered knowledge space kind.'),
+  scopeId: z.string().default('').describe('The scope identifier.'),
+  docId: id.optional().describe('The doc identifier.'),
+  decidable: flag.describe('Only proposals the caller may decide.'),
+  page: page.describe('The page number, starting at 1.'),
+  pageSize: pageSize.describe('The maximum number of records to return.'),
 });
 
 export interface FileQuery {
@@ -180,68 +188,103 @@ export interface FileQuery {
   readonly download?: 'true' | 'false';
 }
 export const FileQuery: z.ZodType<FileQuery, unknown> = z.object({
-  version: versionNumber.optional(),
+  version: versionNumber.optional().describe('The version to read or restore.'),
   download: flag,
 });
 
 export const CreateDocBody: z.ZodType<CreateKnowledgeDocRequest, unknown> =
   z.strictObject({
-    scope: z.string(),
-    scopeId: z.string().default(''),
-    kind: z.enum(['article', 'folder']).optional(),
-    parentId: z.string().nullable().optional(),
-    title: z.string(),
-    slug: z.string().optional(),
-    summary: z.string().optional(),
-    content: z.string().optional(),
+    scope: z.string().describe('The registered knowledge space kind.'),
+    scopeId: z.string().default('').describe('The scope identifier.'),
+    kind: z
+      .enum(['article', 'folder'])
+      .optional()
+      .describe(
+        'Create an article (default) or a folder; upload files separately.',
+      ),
+    parentId: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('The parent identifier.'),
+    title: z.string().describe('The display title.'),
+    slug: z.string().optional().describe('The document’s stable URL slug.'),
+    summary: z.string().optional().describe('A short summary for discovery.'),
+    content: z.string().optional().describe('The Markdown content.'),
   });
 
 export const UpdateDocBody: z.ZodType<UpdateKnowledgeDocRequest> =
   z.strictObject({
-    expectedVersion: z.number().int(),
-    title: z.string().optional(),
-    summary: z.string().optional(),
-    content: z.string().optional(),
-    note: z.string().optional(),
+    expectedVersion: z
+      .number()
+      .int()
+      .describe('The document version last read; reject if it has changed.'),
+    title: z.string().optional().describe('The display title.'),
+    summary: z.string().optional().describe('A short summary for discovery.'),
+    content: z.string().optional().describe('The Markdown content.'),
+    note: z.string().optional().describe('A note explaining this change.'),
   });
 
 export const MoveDocBody: z.ZodType<MoveKnowledgeDocRequest> = z.strictObject({
-  parentId: z.string().nullable(),
-  sortOrder: z.number().int().optional(),
+  parentId: z.string().nullable().describe('The parent identifier.'),
+  sortOrder: z
+    .number()
+    .int()
+    .optional()
+    .describe('The position among sibling documents.'),
 });
 
 export interface ReparseBody {
   readonly version?: number;
 }
 export const ReparseBody: z.ZodType<ReparseBody> = z.strictObject({
-  version: z.number().int().optional(),
+  version: z
+    .number()
+    .int()
+    .optional()
+    .describe('The version to read or restore.'),
 });
 
 export const ProposeBody: z.ZodType<ProposeKnowledgeRequest> = z.strictObject({
-  kind: z.enum(['update', 'create', 'verify']),
+  kind: z
+    .enum(['update', 'create', 'verify'])
+    .describe(
+      'Propose creating a document, updating an existing document, or verifying its current content: create, update, or verify.',
+    ),
   reason: z.string(),
-  docId: z.string().optional(),
-  scope: z.string().optional(),
-  scopeId: z.string().optional(),
-  parentId: z.string().nullable().optional(),
-  title: z.string().optional(),
-  slug: z.string().optional(),
-  summary: z.string().optional(),
-  content: z.string().optional(),
+  docId: z.string().optional().describe('The doc identifier.'),
+  scope: z.string().optional().describe('The registered knowledge space kind.'),
+  scopeId: z.string().optional().describe('The scope identifier.'),
+  parentId: z.string().nullable().optional().describe('The parent identifier.'),
+  title: z.string().optional().describe('The display title.'),
+  slug: z.string().optional().describe('The document’s stable URL slug.'),
+  summary: z.string().optional().describe('A short summary for discovery.'),
+  content: z.string().optional().describe('The Markdown content.'),
   baseVersion: z.number().int().optional(),
 });
 
 export const AcceptBody: z.ZodType<AcceptKnowledgeProposalRequest> =
   z.strictObject({
-    comment: z.string().optional(),
-    confirmStale: z.boolean().optional(),
+    comment: z
+      .string()
+      .optional()
+      .describe('The reason for accepting or rejecting the proposal.'),
+    confirmStale: z
+      .boolean()
+      .optional()
+      .describe(
+        'Confirm applying a proposal based on an older document version.',
+      ),
   });
 
 export interface RejectBody {
   readonly comment?: string;
 }
 export const RejectBody: z.ZodType<RejectBody> = z.strictObject({
-  comment: z.string().optional(),
+  comment: z
+    .string()
+    .optional()
+    .describe('The reason for accepting or rejecting the proposal.'),
 });
 
 /** The text fields of `POST /knowledge/docs/upload`, beside its `file`. */
@@ -255,10 +298,10 @@ export interface UploadFields {
 }
 export const UploadFields: z.ZodType<UploadFields, unknown> = z.strictObject({
   ...spaceQuery,
-  parentId: z.string().optional(),
-  title: z.string().optional(),
-  slug: z.string().optional(),
-  summary: z.string().optional(),
+  parentId: z.string().optional().describe('The parent identifier.'),
+  title: z.string().optional().describe('The display title.'),
+  slug: z.string().optional().describe('The document’s stable URL slug.'),
+  summary: z.string().optional().describe('A short summary for discovery.'),
 });
 
 /** The text fields of `POST /knowledge/docs/:docId/replaceFile`, beside its `file`. */
@@ -268,8 +311,10 @@ export interface ReplaceFileFields {
 }
 export const ReplaceFileFields: z.ZodType<ReplaceFileFields, unknown> =
   z.strictObject({
-    expectedVersion: versionNumber.optional(),
-    note: z.string().optional(),
+    expectedVersion: versionNumber
+      .optional()
+      .describe('The document version last read; reject if it has changed.'),
+    note: z.string().optional().describe('A note explaining this change.'),
   });
 
 /** The text fields of `POST /knowledge/proposals/upload`, beside its `file`. */
@@ -287,21 +332,32 @@ export interface ProposeFileFields {
 }
 export const ProposeFileFields: z.ZodType<ProposeFileFields, unknown> =
   z.strictObject({
-    kind: z.enum(['create', 'update']),
+    kind: z
+      .enum(['create', 'update'])
+      .describe(
+        'Propose creating a file document (create) or replacing an existing file document (update).',
+      ),
     reason: z.string(),
-    docId: z.string().optional(),
-    scope: z.string().optional(),
-    scopeId: z.string().default(''),
-    parentId: z.string().optional(),
-    title: z.string().optional(),
-    slug: z.string().optional(),
-    summary: z.string().optional(),
+    docId: z.string().optional().describe('The doc identifier.'),
+    scope: z
+      .string()
+      .optional()
+      .describe('The registered knowledge space kind.'),
+    scopeId: z.string().default('').describe('The scope identifier.'),
+    parentId: z.string().optional().describe('The parent identifier.'),
+    title: z.string().optional().describe('The display title.'),
+    slug: z.string().optional().describe('The document’s stable URL slug.'),
+    summary: z.string().optional().describe('A short summary for discovery.'),
     baseVersion: versionNumber.optional(),
   });
 
 export const PermissionsBody: z.ZodType<ReplaceKnowledgePermissionsRequest> =
   z.strictObject({
-    mode: z.enum(['inherit', 'custom']),
+    mode: z
+      .enum(['inherit', 'custom'])
+      .describe(
+        'inherit adds this document’s entries to its parent’s access (the space default at the root); custom uses only its own entries. Space managers always retain manage access.',
+      ),
     entries: z
       .array(
         z.strictObject({
@@ -312,7 +368,8 @@ export const PermissionsBody: z.ZodType<ReplaceKnowledgePermissionsRequest> =
           level: z.enum(['read', 'propose', 'edit', 'manage']),
         }),
       )
-      .max(200),
+      .max(200)
+      .describe('Permission entries to apply.'),
   });
 
 /** At most this many subjects a picker's search answers. */
@@ -325,14 +382,19 @@ export interface SubjectsQuery extends SpaceQuery {
 }
 export const SubjectsQuery: z.ZodType<SubjectsQuery, unknown> = z.object({
   ...spaceQuery,
-  q: z.string().default(''),
-  type: z.string().min(1).optional(),
+  q: z.string().default('').describe('Text to search for.'),
+  type: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('The type of relationship or record.'),
   pageSize: z.coerce
     .number()
     .int()
     .min(1)
     .max(MAX_SUBJECTS)
-    .default(DEFAULT_PAGE_SIZE),
+    .default(DEFAULT_PAGE_SIZE)
+    .describe('The maximum number of records to return.'),
 });
 
 /*
@@ -347,29 +409,29 @@ const binaryFile = z
 
 /** `POST /docs/upload` as the document shows it: `file` beside the text fields. */
 export const UploadForm: z.ZodType = z.strictObject({
-  file: binaryFile,
+  file: binaryFile.describe('The file to upload.'),
   ...spaceQuery,
-  parentId: z.string().optional(),
+  parentId: z.string().optional().describe('The parent identifier.'),
   title: z
     .string()
     .optional()
     .meta({ description: "The entry's title; the file's name when absent." }),
-  slug: z.string().optional(),
-  summary: z.string().optional(),
+  slug: z.string().optional().describe('The document’s stable URL slug.'),
+  summary: z.string().optional().describe('A short summary for discovery.'),
 });
 
 /** `POST /docs/:docId/replaceFile` as the document shows it. */
 export const ReplaceFileForm: z.ZodType = z.strictObject({
-  file: binaryFile,
+  file: binaryFile.describe('The file to upload.'),
   expectedVersion: versionNumber.optional().meta({
     description: 'The version read; the current one when absent.',
   }),
-  note: z.string().optional(),
+  note: z.string().optional().describe('A note explaining this change.'),
 });
 
 /** `POST /proposals/upload` as the document shows it. */
 export const ProposeFileForm: z.ZodType = z.strictObject({
-  file: binaryFile,
+  file: binaryFile.describe('The file to upload.'),
   kind: z.enum(['create', 'update']).meta({
     description: '`create` a new file entry, or `update` one with this file.',
   }),
@@ -378,12 +440,12 @@ export const ProposeFileForm: z.ZodType = z.strictObject({
     .string()
     .optional()
     .meta({ description: 'The file entry an `update` replaces.' }),
-  scope: z.string().optional(),
-  scopeId: z.string().default(''),
-  parentId: z.string().optional(),
-  title: z.string().optional(),
-  slug: z.string().optional(),
-  summary: z.string().optional(),
+  scope: z.string().optional().describe('The registered knowledge space kind.'),
+  scopeId: z.string().default('').describe('The scope identifier.'),
+  parentId: z.string().optional().describe('The parent identifier.'),
+  title: z.string().optional().describe('The display title.'),
+  slug: z.string().optional().describe('The document’s stable URL slug.'),
+  summary: z.string().optional().describe('A short summary for discovery.'),
   baseVersion: versionNumber.optional(),
 });
 
@@ -664,13 +726,37 @@ export const KnowledgeUnindexedDocSchema: z.ZodType<KnowledgeUnindexedDoc> = z
   })
   .meta({ ref: 'KnowledgeUnindexedDoc' });
 
-export interface KnowledgeIndexingMeta {
+export const KnowledgeIndexRefreshMetaSchema: z.ZodType<KnowledgeIndexRefreshMeta> =
+  z
+    .object({
+      notifications: z.enum(['none', 'partial', 'complete']).optional().meta({
+        description:
+          'Committed indexer notification coverage. Only complete coverage with an acknowledged topic permits infrequent reconciliation; absent metadata requires polling.',
+      }),
+    })
+    .meta({ ref: 'KnowledgeIndexRefreshMeta' });
+
+export const KnowledgeDocIndexResponseSchema: z.ZodType<{
+  data: KnowledgeDocIndex;
+  meta: KnowledgeIndexRefreshMeta;
+}> = z
+  .object({
+    data: KnowledgeDocIndexSchema,
+    meta: KnowledgeIndexRefreshMetaSchema,
+  })
+  .meta({ ref: 'KnowledgeDocIndexResponse' });
+
+export interface KnowledgeIndexingMeta extends KnowledgeIndexRefreshMeta {
   readonly enabled: boolean;
 }
 export const KnowledgeIndexingMetaSchema: z.ZodType<KnowledgeIndexingMeta> =
   z.object({
     enabled: z.boolean().meta({
       description: 'Whether semantic search is on; the list is empty without.',
+    }),
+    notifications: z.enum(['none', 'partial', 'complete']).optional().meta({
+      description:
+        'Committed indexer notification coverage; absent metadata requires polling.',
     }),
   });
 

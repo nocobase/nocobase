@@ -14,9 +14,11 @@ import path from 'node:path';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
 import { COMMANDS, defineCommands } from '../src/commands.ts';
+import { AGENTS } from '@nocobase/acp-bridge';
 import {
   installSkills,
   prepareSessionSkill,
+  sessionSkillInstructions,
   skillsStatus,
   syncInstalledSkills,
   type SkillsEnvironment,
@@ -218,7 +220,7 @@ describe('overlapping Skill destinations', () => {
     ).toHaveLength(1);
     expect(
       results.find((result) => result.status === 'rejected'),
-    ).toMatchObject({ reason: { code: 'SKILLS_BUSY' } });
+    ).toMatchObject({ reason: { code: 'SKILLS_TARGET_OVERLAP' } });
     const parentWon = results[0]?.status === 'fulfilled';
     const before = readFileSync(
       path.join(env.stateHome, 'skills.json'),
@@ -684,7 +686,7 @@ describe('Skill synchronization and filesystem boundaries', () => {
     expect(readdirSync(path.dirname(codex(env)))).toEqual(['nb-studio-cli']);
   });
 
-  it('serializes concurrent installs without dropping registrations and refuses existing locks', async () => {
+  it('serializes concurrent installs without dropping registrations and reuses current copies without locks', async () => {
     const env = fixture();
     const attempts = await Promise.allSettled([
       installSkills(env, ['claude']),
@@ -692,14 +694,12 @@ describe('Skill synchronization and filesystem boundaries', () => {
     ]);
     expect(
       attempts.filter((attempt) => attempt.status === 'fulfilled'),
-    ).toHaveLength(1);
-    const failed = attempts.find((attempt) => attempt.status === 'rejected');
-    expect(failed).toMatchObject({ reason: { code: 'SKILLS_BUSY', exit: 6 } });
+    ).toHaveLength(2);
     await installSkills(env, ['all']);
     expect(record(env).targets).toHaveLength(2);
     mkdirSync(path.join(path.dirname(codex(env)), '.nb-studio-cli.lock'));
-    await expect(installSkills(env, ['codex'])).rejects.toMatchObject({
-      code: 'SKILLS_BUSY',
+    await expect(installSkills(env, ['codex'])).resolves.toMatchObject({
+      targets: [{ action: 'unchanged' }],
     });
     expect(readFileSync(path.join(codex(env), 'SKILL.md'), 'utf8')).toBe(
       'current instructions',
@@ -707,23 +707,121 @@ describe('Skill synchronization and filesystem boundaries', () => {
   });
 });
 
-it('prepares missing or stale session Skills and refuses unsupported agents', async () => {
-  const environment = fixture();
-  await prepareSessionSkill(environment, 'codex');
-  let status = await skillsStatus(environment);
-  expect(
-    status.targets.some((target) => target.tool === 'codex' && target.upToDate),
-  ).toBe(true);
-  writeFileSync(
-    path.join(environment.packageRoot, 'skills/nb-studio-cli/SKILL.md'),
-    'updated session instructions',
+it('reuses registered, current session Skills without writes even while a lock exists', async () => {
+  const env = fixture();
+  await installSkills(env, ['all']);
+  const registry = path.join(env.stateHome, 'skills.json');
+  const before = statSync(registry);
+  const beforeClaude = statSync(path.dirname(claude(env)));
+  const beforeCodex = statSync(path.dirname(codex(env)));
+  mkdirSync(path.join(env.stateHome, '.skills.lock'));
+  await Promise.all(
+    Array.from({ length: 5 }, (_, index) =>
+      prepareSessionSkill(env, index % 2 ? 'claude' : 'codex'),
+    ),
   );
-  await prepareSessionSkill(environment, 'codex');
-  status = await skillsStatus(environment);
-  expect(
-    status.targets.some((target) => target.tool === 'codex' && target.upToDate),
-  ).toBe(true);
-  await expect(prepareSessionSkill(environment, 'opencode')).rejects.toThrow(
-    'not supported for opencode',
+  expect(statSync(registry).mtimeMs).toBe(before.mtimeMs);
+  expect(statSync(path.dirname(claude(env))).mtimeMs).toBe(
+    beforeClaude.mtimeMs,
   );
+  expect(statSync(path.dirname(codex(env))).mtimeMs).toBe(beforeCodex.mtimeMs);
+  expect(readdirSync(path.join(env.stateHome, '.skills.lock'))).toEqual([]);
 });
+
+it('installs concurrent new and resumed session Skills and shares update synchronization', async () => {
+  const env = fixture();
+  await Promise.all(
+    ['claude', 'claude', 'codex', 'codex', 'claude'].map((id) =>
+      prepareSessionSkill(env, id),
+    ),
+  );
+  expect(record(env).targets).toHaveLength(2);
+  writeFileSync(
+    path.join(env.packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+    'updated instructions',
+  );
+  const [sync] = await Promise.all([
+    syncInstalledSkills(env),
+    prepareSessionSkill(env, 'claude'),
+    prepareSessionSkill(env, 'codex'),
+  ]);
+  expect(sync.warnings).toEqual([]);
+  expect(
+    (await skillsStatus(env)).targets
+      .filter((target) => target.registered)
+      .every((target) => target.upToDate),
+  ).toBe(true);
+});
+
+it.each(['claude', 'codex'])(
+  'prepares missing or stale native session Skills for %s',
+  async (agentId) => {
+    const environment = fixture();
+    await prepareSessionSkill(environment, agentId);
+    let status = await skillsStatus(environment);
+    expect(
+      status.targets.some(
+        (target) => target.tool === agentId && target.upToDate,
+      ),
+    ).toBe(true);
+    writeFileSync(
+      path.join(environment.packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+      'updated session instructions',
+    );
+    await prepareSessionSkill(environment, agentId);
+    status = await skillsStatus(environment);
+    expect(
+      status.targets.some(
+        (target) => target.tool === agentId && target.upToDate,
+      ),
+    ).toBe(true);
+    expect(
+      await sessionSkillInstructions(environment, agentId),
+    ).toBeUndefined();
+  },
+);
+
+it.each([
+  ...AGENTS.map((agent) => agent.id).filter(
+    (id) => !['claude', 'codex'].includes(id),
+  ),
+  'future-compatible-agent',
+])(
+  'supplies the current shared instructions for %s without installing files',
+  async (agentId) => {
+    const environment = fixture();
+    await prepareSessionSkill(environment, agentId);
+    const instructions = await sessionSkillInstructions(environment, agentId);
+    expect(instructions).toContain('current instructions');
+    expect(instructions).toContain('bridge-selected profile');
+    expect(instructions).toContain(
+      path.join(environment.packageRoot, 'skills/nb-studio-cli'),
+    );
+    writeFileSync(
+      path.join(environment.packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+      'updated instructions',
+    );
+    expect(await sessionSkillInstructions(environment, agentId)).toContain(
+      'updated instructions',
+    );
+    expect(existsSync(environment.home!)).toBe(false);
+    expect(existsSync(environment.stateHome)).toBe(false);
+  },
+);
+
+it.each(['missing', 'empty'])(
+  'explains how to recover when packaged fallback instructions are %s',
+  async (state) => {
+    const environment = fixture();
+    if (state === 'missing')
+      rmSync(path.join(environment.packageRoot, 'skills'), { recursive: true });
+    else
+      writeFileSync(
+        path.join(environment.packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+        '  ',
+      );
+    await expect(
+      sessionSkillInstructions(environment, 'opencode'),
+    ).rejects.toThrow('Update or reinstall acme');
+  },
+);

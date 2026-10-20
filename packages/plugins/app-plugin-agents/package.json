@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-agents",
   "displayName": "Agents",
   "description": "Agents for NocoBase applications: agents, the model services online agents call, their runs and conversations, and the runners people connect to run them (registration, the long-poll claim, slots, the sweeper, build jobs, and the runner and CLI tarballs the application serves).",
-  "version": "0.1.0-beta.11",
+  "version": "1.0.0-beta.16",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -62,6 +62,10 @@
       "types": "./shared/reports.ts",
       "import": "./shared/reports.ts"
     },
+    "./shared/online-agent": {
+      "types": "./shared/online-agent.ts",
+      "import": "./shared/online-agent.ts"
+    },
     "./shared/conversations": {
       "types": "./shared/conversations.ts",
       "import": "./shared/conversations.ts"
@@ -114,12 +118,17 @@
       "types": "./cli/index.ts",
       "import": "./cli/index.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./server/online-agent": {
+      "types": "./server/online/agent/index.ts",
+      "import": "./server/online/agent/index.ts"
+    }
   },
   "files": [
     "dist",
     "README.md",
     "CHANGELOG.md",
+    "docs",
     "skills"
   ],
   "publishConfig": {
@@ -177,6 +186,10 @@
         "types": "./dist/shared/reports.d.ts",
         "import": "./dist/shared/reports.js"
       },
+      "./shared/online-agent": {
+        "types": "./dist/shared/online-agent.d.ts",
+        "import": "./dist/shared/online-agent.js"
+      },
       "./shared/conversations": {
         "types": "./dist/shared/conversations.d.ts",
         "import": "./dist/shared/conversations.js"
@@ -229,7 +242,11 @@
         "types": "./dist/cli/index.d.ts",
         "import": "./dist/cli/index.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./server/online-agent": {
+        "types": "./dist/server/online/agent/index.d.ts",
+        "import": "./dist/server/online/agent/index.js"
+      }
     }
   },
   "scripts": {
@@ -252,20 +269,27 @@
     "@ai-sdk/moonshotai": "catalog:",
     "@ai-sdk/openai": "catalog:",
     "@ai-sdk/openai-compatible": "catalog:",
+    "@ai-sdk/provider-utils": "5.0.54",
     "@nocobase/agent-protocol": "workspace:^",
     "@nocobase/app-cli-client": "workspace:^",
     "@nocobase/cli-envelope": "workspace:^",
     "ai": "catalog:",
+    "ajv": "catalog:",
+    "ajv-formats": "^3.0.1",
     "better-sqlite3": "catalog:",
     "hono": "catalog:",
+    "ioredis": "catalog:",
     "knex": "catalog:",
     "ollama-ai-provider-v2": "catalog:",
     "pg": "^8.23.0",
+    "re2js": "^2.8.6",
+    "resumable-stream": "2.2.13",
     "sqlite-vec": "^0.1.9",
     "yaml": "catalog:",
     "zod": "catalog:"
   },
   "peerDependencies": {
+    "@ai-sdk/react": "catalog:",
     "@base-ui/react": "catalog:",
     "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-client": "workspace:^",

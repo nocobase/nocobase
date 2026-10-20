@@ -27,6 +27,7 @@ export interface IssueRecord {
   readonly statusKey: string;
   readonly needsYou: string | null;
   readonly next: string | null;
+  readonly acceptance: string | null;
   readonly priority: Priority;
   /** `PRIORITIES` index of `priority`, kept by the writes below. */
   readonly priorityRank: number;
@@ -95,6 +96,7 @@ const FIELDS = [
   'statusKey',
   'needsYou',
   'next',
+  'acceptance',
   'priority',
   'ownerUserId',
   'executorType',
@@ -413,6 +415,18 @@ export async function issuesExecutedBy(
     select: (select) => select.fields(...FIELDS),
   });
   return rows.map((row) => toIssue(row as IssueRecord));
+}
+
+/** Matching issue ids without loading their detail projections. */
+export async function findIssueIds(
+  conn: DatabaseConnection,
+  filter: RepositoryFilter<IssueRecord>,
+): Promise<string[]> {
+  const rows = await issues(conn).findMany({
+    filter,
+    select: (select) => select.fields('id'),
+  });
+  return rows.map((row) => row.id);
 }
 
 /** Issues by id, deleted or not; ids that match nothing are left out. */

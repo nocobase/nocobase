@@ -7,6 +7,7 @@ import type {
   RunInput,
   WorkspaceDir,
   WorkspaceCommitEvidence,
+  FailureReason,
 } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -301,7 +302,7 @@ export interface SubjectBinding {
     run: Run,
     now: Date,
   ) => Promise<{
-    readonly reason: import('@nocobase/agent-protocol').FailureReason;
+    readonly reason: FailureReason;
     readonly detail: string;
   } | null>;
   /** What the reports may say about the subjects; without it, runs on the kind are reported by id only. */

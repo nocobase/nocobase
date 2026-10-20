@@ -19,7 +19,6 @@ export class DefaultClientServiceProvider extends ServiceProvider<ClientApplicat
       typeof configuredTitle === 'string' && configuredTitle.trim()
         ? configuredTitle.trim()
         : 'NocoBase';
-    this.app.refine.setOptions({ title: { text: title } });
     this.previousDocumentTitle = document.title;
     document.title = title;
     return Promise.resolve();

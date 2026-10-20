@@ -13,6 +13,7 @@ import {
   mapWithConcurrency,
   prepackStepsWithoutBuild,
   resolveConcurrency,
+  selectPackagesToPack,
   validatePackedManifest,
   validatePackageManifest,
 } from '../../scripts/pack-check.mjs';
@@ -56,6 +57,36 @@ test('discovers packages from packages directories in package-name order', async
   assert.deepEqual(
     packages.map(({ manifest }) => manifest.name),
     ['@nocobase/alpha', '@nocobase/zeta'],
+  );
+});
+
+test('narrows the packages to pack to PACK_CHECK_PACKAGES', () => {
+  const packages = ['@nocobase/alpha', '@nocobase/beta', '@nocobase/gamma'].map(
+    (name) => ({ directory: name, manifest: { name } }),
+  );
+  const names = (selected) => selected.map(({ manifest }) => manifest.name);
+
+  assert.equal(selectPackagesToPack(packages, undefined), packages);
+  assert.equal(selectPackagesToPack(packages, ' '), packages);
+  assert.deepEqual(
+    names(
+      selectPackagesToPack(packages, '["@nocobase/gamma","@nocobase/alpha"]'),
+    ),
+    ['@nocobase/alpha', '@nocobase/gamma'],
+  );
+  assert.deepEqual(
+    names(selectPackagesToPack(packages, '@nocobase/beta, @nocobase/gamma')),
+    ['@nocobase/beta', '@nocobase/gamma'],
+  );
+  assert.deepEqual(names(selectPackagesToPack(packages, '[]')), []);
+  assert.throws(
+    () =>
+      selectPackagesToPack(packages, '["@nocobase/alpha","@nocobase/docs"]'),
+    /@nocobase\/docs, which is not a publishable package/u,
+  );
+  assert.throws(
+    () => selectPackagesToPack(packages, '["@nocobase/alpha", 1]'),
+    /must list package names/u,
   );
 });
 

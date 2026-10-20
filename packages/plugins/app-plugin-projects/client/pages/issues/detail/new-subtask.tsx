@@ -55,7 +55,6 @@ type SubtaskTab = (typeof TABS)[number];
  * waits for, and an executor, as the old issue page offered. The AI tab shows only when the viewer can ask AI or a
  * request or draft is open. Both tabs stay mounted, so switching keeps what either holds. Closing or creating stays on
  * the issue's page. It cannot close while the sub-issue is being created, and asks before discarding what was typed.
- * Giving it to an agent asks "Start now?" first.
  */
 export default function NewSubtaskPage(): ReactElement {
   const { t } = useTranslation();

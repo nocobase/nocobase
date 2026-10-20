@@ -1,3 +1,8 @@
+import {
+  realtimeServiceToken,
+  type RealtimePublicTopic,
+} from '@nocobase/app-server/realtime';
+import { OFFICE_FLOWS_TOPIC } from '../../shared/realtime.js';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -32,6 +37,8 @@ export class OfficeFlowsProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = OFFICE_FLOWS_SCOPE;
   private jobs: LifecycleJobs | undefined;
   private runtime: LifecycleRuntime | undefined;
+  private topic?: RealtimePublicTopic<{ readonly kind: 'office.changed' }>;
+  private releaseRealtime?: () => void;
 
   public override register(): void {
     this.app.container.singleton(officeFlowsServiceToken, () => {
@@ -44,6 +51,23 @@ export class OfficeFlowsProvider extends ServiceProvider<AppPluginApplication> {
     });
   }
 
+  public override boot(): Promise<void> {
+    this.topic = this.app.container
+      .resolve(realtimeServiceToken)
+      .defineTopic(OFFICE_FLOWS_TOPIC, {
+        audience: 'public',
+        authenticated: true,
+      });
+    this.releaseRealtime = this.lifecycleRuntime().on(
+      'completed',
+      {},
+      async () => {
+        await this.topic?.publish({ kind: 'office.changed' });
+      },
+    );
+    return Promise.resolve();
+  }
+
   public override async start(): Promise<void> {
     await this.effectJobs().start(this.lifecycleRuntime());
   }
@@ -51,6 +75,10 @@ export class OfficeFlowsProvider extends ServiceProvider<AppPluginApplication> {
   public override async shutdown(): Promise<void> {
     await this.jobs?.shutdown();
     this.jobs = undefined;
+    this.releaseRealtime?.();
+    this.releaseRealtime = undefined;
+    this.topic?.close();
+    this.topic = undefined;
   }
 
   private lifecycleRuntime(): LifecycleRuntime {

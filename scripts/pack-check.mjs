@@ -386,6 +386,35 @@ export function resolveConcurrency(value, { prebuilt = false } = {}) {
   return concurrency;
 }
 
+// `PACK_CHECK_PACKAGES` narrows the packing half of the check to the named packages, as a JSON array or a comma-separated
+// list; the Quality workflow passes the packages a pull request affects when it builds only those. Every package's
+// publish metadata and changelog are still validated, since that only reads files. A name that is not a publishable
+// package fails the check rather than silently packing nothing.
+export function selectPackagesToPack(packages, value) {
+  if (value === undefined || value.trim() === '') return packages;
+  const trimmed = value.trim();
+  const names = trimmed.startsWith('[')
+    ? JSON.parse(trimmed)
+    : trimmed.split(',').map((name) => name.trim());
+  if (
+    !Array.isArray(names) ||
+    names.some((name) => typeof name !== 'string' || name === '')
+  ) {
+    throw new Error(
+      `PACK_CHECK_PACKAGES must list package names, received ${JSON.stringify(value)}.`,
+    );
+  }
+  const known = new Set(packages.map(({ manifest }) => manifest.name));
+  const unknown = names.filter((name) => !known.has(name));
+  if (unknown.length > 0) {
+    throw new Error(
+      `PACK_CHECK_PACKAGES names ${unknown.join(', ')}, which ${unknown.length === 1 ? 'is not a publishable package' : 'are not publishable packages'}.`,
+    );
+  }
+  const selected = new Set(names);
+  return packages.filter(({ manifest }) => selected.has(manifest.name));
+}
+
 // Runs `task` over `items` with at most `concurrency` in flight. The first failure stops new tasks from starting and
 // is rethrown once the tasks already running have settled, so no child process outlives the check.
 export async function mapWithConcurrency(items, concurrency, task) {
@@ -414,7 +443,10 @@ export async function packCheck({
   env = process.env,
   repoRoot = path.resolve(import.meta.dirname, '..'),
 } = {}) {
-  const packages = await discoverPackages(repoRoot);
+  const packages = selectPackagesToPack(
+    await discoverPackages(repoRoot),
+    env.PACK_CHECK_PACKAGES,
+  );
   const configuredDirectory = env.PACK_DIR?.trim();
   const packDirectory = configuredDirectory
     ? path.resolve(configuredDirectory)

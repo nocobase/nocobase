@@ -54,6 +54,8 @@ export interface ListUsersInput {
   /** Matches name, username and email. */
   readonly q?: string;
   readonly status?: 'enabled' | 'disabled';
+  readonly sort?: 'name';
+  readonly order?: 'asc' | 'desc';
   readonly roleScope?: string;
   readonly role?: string;
 }
@@ -156,8 +158,12 @@ interface ListResponse<T> {
 export class UsersClient {
   constructor(private readonly api: ApiClient) {}
 
+  get(userId: string): Promise<ManagedUser> {
+    return this.getData<ManagedUser>(`users/${encodeURIComponent(userId)}`);
+  }
+
   options(): Promise<UsersOptions> {
-    return this.get<UsersOptions>('users/options');
+    return this.getData<UsersOptions>('users/options');
   }
 
   list(input: ListUsersInput = {}): Promise<ManagedUserPage> {
@@ -233,7 +239,7 @@ export class UsersClient {
   }
 
   listInvitations(): Promise<UserInvitation[]> {
-    return this.get<UserInvitation[]>('users/invitations');
+    return this.getData<UserInvitation[]>('users/invitations');
   }
 
   invite(input: InviteUsersInput): Promise<UserInvitationResult[]> {
@@ -279,7 +285,7 @@ export class UsersClient {
     );
   }
 
-  private get<T>(path: string): Promise<T> {
+  private getData<T>(path: string): Promise<T> {
     return this.api.request<DataResponse<T>>({ path }).then(({ data }) => data);
   }
 
