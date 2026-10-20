@@ -14,8 +14,9 @@ export function DefaultAccessEditorDemo(): ReactElement {
   return (
     <div className='flex min-h-svh flex-col gap-6 bg-background p-6 text-foreground'>
       <p className='text-sm text-muted-foreground'>
-        Baseline data access for users who already hold the operation
-        permission.
+        Applies only to users who already have the operation permission. Default
+        data scopes combine with role-granted scopes, allowing records from
+        either scope. Restriction rules still constrain the final access.
       </p>
       <DefaultAccessEditor
         ruleKey={key}

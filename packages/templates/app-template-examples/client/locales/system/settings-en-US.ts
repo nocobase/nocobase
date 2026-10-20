@@ -13,7 +13,7 @@ const settings = {
     delete: 'Delete',
     title: 'Default data scopes',
     description:
-      'Add baseline data access for users who already have the operation permission. Restriction rules still apply.',
+      'Applies only to users who already have the operation permission. Default data scopes combine with role-granted scopes, allowing records from either scope. Restriction rules still constrain the final access.',
     manage: 'Manage default data scopes',
     new: 'New default scope',
     edit: 'Default scope details',
