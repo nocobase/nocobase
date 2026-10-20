@@ -8,14 +8,54 @@
  */
 
 import { DisplayItemModel, FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { AddChildActionModel, PopupActionModel } from '@nocobase/client-v2';
+import { AddChildActionModel, MockFlowModelRepository, PopupActionModel } from '@nocobase/client-v2';
+import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TreeFilterBlockMenuModel } from '../TreeFilterBlockMenuModel';
-import { TreeBlockModel, TreeTitleFieldSettingsModel } from '../TreeBlockModel';
+import { TreeActionGroupModel, TreeBlockModel, TreeTitleFieldSettingsModel } from '../TreeBlockModel';
 
 describe('TreeBlockModel', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it.each([
+    ['renderConfigureActions', 'getActionsContainer'],
+    ['renderConfigureNodeActions', 'getNodeActionsContainer'],
+  ] as const)('preserves actions added through %s after reloading the block', async (renderMethod, getContainer) => {
+    const repository = new MockFlowModelRepository(`tree-${renderMethod}:`);
+    const models = { TreeBlockModel, TreeTitleFieldSettingsModel, TreeActionGroupModel, FlowModel };
+    const engine = new FlowEngine();
+    engine.registerModels(models);
+    engine.setModelRepository(repository);
+
+    try {
+      const block = engine.createModel<TreeBlockModel>({ use: 'TreeBlockModel' });
+      await block.save();
+
+      const button = block[renderMethod]() as ReactElement<{
+        model: TreeActionGroupModel;
+        afterSubModelAdd?: (action: FlowModel) => Promise<void>;
+      }>;
+      const action = button.props.model.addSubModel('actions', {
+        use: 'FlowModel',
+        stepParams: { buttonSettings: { general: { title: 'Configured action' } } },
+      });
+      await button.props.afterSubModelAdd?.(action);
+      await action.save();
+
+      const reloadedEngine = new FlowEngine();
+      reloadedEngine.registerModels(models);
+      reloadedEngine.setModelRepository(repository);
+      const reloadedBlock = await reloadedEngine.loadModel<TreeBlockModel>({ uid: block.uid });
+      const reloadedActions = reloadedBlock?.[getContainer]().subModels.actions;
+
+      expect(reloadedActions).toHaveLength(1);
+      expect(reloadedActions?.[0].uid).toBe(action.uid);
+      expect(reloadedActions?.[0].getStepParams('buttonSettings', 'general')).toEqual({ title: 'Configured action' });
+    } finally {
+      await repository.clear();
+    }
   });
 
   it('prefers a business title field when the collection title field is the primary key', () => {
