@@ -19,43 +19,7 @@ export function configurePermissionScopes(
   onApply: (id: string, value: unknown) => void,
   disabled: boolean,
 ): readonly PermissionEditorSection[] {
-  const labels: PermissionFilterLabels = {
-    limit: text('settings.permissionFilter.limit'),
-    configure: text('settings.permissionFilter.configure'),
-    title: text('settings.permissionFilter.title'),
-    description: text('settings.permissionFilter.description'),
-    all: text('settings.permissionFilter.all'),
-    any: text('settings.permissionFilter.any'),
-    field: text('settings.permissionFilter.field'),
-    operator: text('settings.permissionFilter.operator'),
-    valueType: text('settings.permissionFilter.valueType'),
-    value: text('settings.permissionFilter.value'),
-    text: text('settings.permissionFilter.text'),
-    number: text('settings.permissionFilter.number'),
-    boolean: text('settings.permissionFilter.boolean'),
-    true: text('settings.permissionFilter.true'),
-    false: text('settings.permissionFilter.false'),
-    add: text('settings.permissionFilter.add'),
-    remove: text('settings.permissionFilter.remove'),
-    cancel: text('settings.permissionFilter.cancel'),
-    apply: text('settings.permissionFilter.apply'),
-    invalid: text('settings.permissionFilter.invalid'),
-    advanced: text('settings.permissionFilter.advanced'),
-    reconfigure: text('settings.permissionFilter.reconfigure'),
-    operators: Object.fromEntries(
-      [
-        '$eq',
-        '$ne',
-        '$includes',
-        '$gt',
-        '$gte',
-        '$lt',
-        '$lte',
-        '$empty',
-        '$notEmpty',
-      ].map((key) => [key, text(`settings.permissionFilter.operators.${key}`)]),
-    ),
-  };
+  const labels = permissionFilterLabels(text);
   const resources = catalog.sections.flatMap((section) =>
     section.subsections.flatMap((sub) => sub.resources),
   );
@@ -116,4 +80,46 @@ export function configurePermissionScopes(
       })),
     })),
   }));
+}
+
+export function permissionFilterLabels(
+  text: (key: string, fallback?: string) => string,
+): PermissionFilterLabels {
+  return {
+    limit: text('settings.permissionFilter.limit'),
+    configure: text('settings.permissionFilter.configure'),
+    title: text('settings.permissionFilter.title'),
+    description: text('settings.permissionFilter.description'),
+    all: text('settings.permissionFilter.all'),
+    any: text('settings.permissionFilter.any'),
+    field: text('settings.permissionFilter.field'),
+    operator: text('settings.permissionFilter.operator'),
+    valueType: text('settings.permissionFilter.valueType'),
+    value: text('settings.permissionFilter.value'),
+    text: text('settings.permissionFilter.text'),
+    number: text('settings.permissionFilter.number'),
+    boolean: text('settings.permissionFilter.boolean'),
+    true: text('settings.permissionFilter.true'),
+    false: text('settings.permissionFilter.false'),
+    add: text('settings.permissionFilter.add'),
+    remove: text('settings.permissionFilter.remove'),
+    cancel: text('settings.permissionFilter.cancel'),
+    apply: text('settings.permissionFilter.apply'),
+    invalid: text('settings.permissionFilter.invalid'),
+    advanced: text('settings.permissionFilter.advanced'),
+    reconfigure: text('settings.permissionFilter.reconfigure'),
+    operators: Object.fromEntries(
+      [
+        '$eq',
+        '$ne',
+        '$includes',
+        '$gt',
+        '$gte',
+        '$lt',
+        '$lte',
+        '$empty',
+        '$notEmpty',
+      ].map((key) => [key, text(`settings.permissionFilter.operators.${key}`)]),
+    ),
+  };
 }

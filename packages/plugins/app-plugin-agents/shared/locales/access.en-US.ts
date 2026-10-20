@@ -50,14 +50,14 @@ const accessEnUS: AccessLocale = {
         description: 'The agents of the team and the skills they use.',
         actions: {
           edit: {
-            title: 'Change agents and skills',
+            title: 'Manage agents and skills',
             description:
               "Change an agent's settings, skills and variables, archive, restore and delete it, and edit skills. An agent is given no capability beyond the editor's own",
             related:
-              'Change agents and skills (agents they own and skills they created)',
+              'Manage agents and skills (agents they own and skills they created)',
             relatedLabel: 'Agents I own and skills I created',
             relatedHint: 'Agents I am the owner of, and skills I created',
-            all: 'Change agents and skills (all)',
+            all: 'Manage agents and skills (all)',
           },
         },
       },

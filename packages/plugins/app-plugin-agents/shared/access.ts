@@ -110,7 +110,7 @@ export const RELATIONS: Readonly<Record<BusinessKey, Relation | null>> = {
 /** The authorization resource type the businesses are registered under; every business id starts with it. */
 export const RESOURCE_TYPE = 'agents';
 
-/** The permission workspace subsection (under business) that lists the businesses. */
+/** The permission workspace subsection (under administration) that lists the businesses. */
 export const BUSINESS_SECTION = 'agents.business';
 
 /**

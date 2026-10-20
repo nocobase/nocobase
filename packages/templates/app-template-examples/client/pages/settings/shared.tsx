@@ -78,6 +78,7 @@ export function ConfirmAction({
   title,
   description,
   confirmLabel,
+  error,
   busy,
   onCancel,
   onConfirm,
@@ -86,6 +87,7 @@ export function ConfirmAction({
   readonly title: string;
   readonly description: ReactNode;
   readonly confirmLabel?: string;
+  readonly error?: ReactNode;
   readonly busy: boolean;
   readonly onCancel: () => void;
   readonly onConfirm: () => void;
@@ -102,6 +104,7 @@ export function ConfirmAction({
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
+          {error}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={busy}>
