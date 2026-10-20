@@ -138,7 +138,7 @@ t('target.states.ready'); // 'Ready'
 
 `pnpm i18n:check` checks complete resources, including imported catalogues, interpolation, markup, cardinal plural categories, and lazy loaders. Plugins, example plugins, and libraries must ship all ten languages; application templates keep their own language lists. Use `pnpm i18n:check --strict` to fail on an incomplete resource. An application built from a template runs `pnpm nocobase locales check` to compare the languages its `client/locales/` and `server/locales/` declare.
 
-A plural group declared with `_one` and `_other` may add the other CLDR categories to its complete resource type. For example, French, Spanish, and Brazilian Portuguese need `_many` for quantities such as one million. Translate that form too: without it, i18next can select the English fallback even when `_other` is present. The structural check requires the categories that `Intl.PluralRules` selects for each locale.
+A plural group declared with `_one` and `_other` may add the other CLDR categories to its complete resource type. For example, French, Spanish, and Brazilian Portuguese need `_many` for quantities such as one million. Translate that form too: without it, i18next can select the English fallback even when `_other` is present. The structural check requires the categories that `Intl.PluralRules` selects for each locale. When a literal English singular such as “searched once” omits the count, French and Brazilian Portuguese also need an explicit `_zero` override: their `one` category includes zero.
 
 ### Loading
 

@@ -177,3 +177,34 @@ test('preserves structured Markdown and input syntax while allowing translated p
     [],
   );
 });
+
+test('requires zero overrides where a literal singular would describe zero occurrences as once', () => {
+  const source = {
+    search_one: 'searched once',
+    search_other: 'searched {{count}} times',
+  };
+  assert.deepEqual(
+    compareResources(
+      source,
+      {
+        search_one: 'recherché une fois',
+        search_other: 'recherché {{count}} fois',
+      },
+      'fr-FR',
+    ).missing,
+    ['search_zero', 'search_many'],
+  );
+  assert.deepEqual(
+    compareResources(
+      source,
+      {
+        search_one: 'recherché une fois',
+        search_other: 'recherché {{count}} fois',
+        search_many: 'recherché {{count}} fois',
+        search_zero: 'recherché {{count}} fois',
+      },
+      'fr-FR',
+    ).missing,
+    [],
+  );
+});

@@ -17,7 +17,9 @@ it('includes every server language for an invitee without a saved language', asy
     const { default: resource } = (await load()) as {
       default: { invitationEmail: { action: string } };
     };
-    expect(email.html).toContain(resource.invitationEmail.action);
+    expect(email.html).toContain(
+      resource.invitationEmail.action.replaceAll("'", '&#39;'),
+    );
   }
   expect(email.html).toContain('&lt;Inviter&gt;');
   expect(email.html).toContain('token=test&amp;view=accept');

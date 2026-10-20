@@ -15,7 +15,6 @@ const frFR: LocaleResource<typeof enUS> = {
       'Implémentations de grande ampleur, modifications entre paquets et refactorisation.',
     review: 'Revue de code et analyse des échecs de CI.',
   },
-
   actions: {
     back: 'Retour',
     cancel: 'Annuler',
@@ -511,6 +510,7 @@ const frFR: LocaleResource<typeof enUS> = {
     summary_many: 'Événements {{created}} · {{count}} créés',
     pendingInputs_many: "Commentaires {{count}} en attente de l'agent",
     inputDelivered_many: "Entrées {{count}} fournies à l'agent",
+    inputDelivered_zero: "Entrées {{count}} fournies à l'agent",
   },
   failures: {
     runnerUpgrade:

@@ -278,6 +278,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       think_many: 'pensou {{count}} vezes',
       fetch_many: 'páginas {{count}} buscadas',
       other_many: 'ferramentas {{count}} usadas',
+      search_zero: 'pesquisou vezes {{count}}',
+      think_zero: 'pensou {{count}} vezes',
     },
     kinds: {
       read: 'Ler',

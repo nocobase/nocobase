@@ -766,6 +766,7 @@ const frFR: LocaleResource<typeof enUS> = {
       cardValue_one: 'refuse la prochaine charge',
       cardValue_other: 'refuse les prochains frais {{count}}',
       cardValue_many: 'refuse les prochains frais {{count}}',
+      cardValue_zero: 'refuse les prochains frais {{count}}',
     },
     banner: {
       renewing: 'Chargement de la carte…',

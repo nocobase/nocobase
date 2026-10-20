@@ -98,7 +98,7 @@ for (const section of ['plugins', 'examples', 'libs']) {
               );
               assert.equal(
                 translated.exactUsedKey,
-                `${baseKey}_${new Intl.PluralRules(locale).select(count)}`,
+                `${baseKey}_${count === 0 && `${baseKey}_zero` in copy ? 'zero' : new Intl.PluralRules(locale).select(count)}`,
               );
             }
           if (side === 'server') {

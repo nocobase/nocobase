@@ -280,6 +280,8 @@ const frFR: LocaleResource<typeof enUS> = {
       think_many: 'pensé fois {{count}}',
       fetch_many: 'pages {{count}} récupérées',
       other_many: 'outils {{count}} utilisés',
+      search_zero: 'recherche {{count}} fois',
+      think_zero: 'pensé fois {{count}}',
     },
     kinds: {
       read: 'Lire',

@@ -154,6 +154,15 @@ export function compareResources(source, translated, locale) {
       invalid.push(`${key}: syntax tokens differ`);
   }
   for (const base of pluralBases) {
+    // French and Brazilian Portuguese classify zero as "one". Literal English singulars such as "searched once"
+    // need an explicit zero form so zero cannot be rendered as one occurrence.
+    if (
+      new Intl.PluralRules(locale).select(0) === 'one' &&
+      !String(expected[`${base}_one`] ?? '').includes('{{count}}') &&
+      String(expected[`${base}_other`]).includes('{{count}}') &&
+      !(`${base}_zero` in actual)
+    )
+      missing.push(`${base}_zero`);
     for (const category of new Intl.PluralRules(locale).resolvedOptions()
       .pluralCategories) {
       const key = `${base}_${category}`;

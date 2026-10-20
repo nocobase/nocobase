@@ -14,7 +14,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     large: 'Implementações maiores, alterações entre pacotes e refatoração.',
     review: 'Revisão de código e análise de falhas de CI.',
   },
-
   actions: {
     back: 'Voltar',
     cancel: 'Cancelar',
@@ -505,6 +504,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     summary_many: 'Criados eventos {{created}} · {{count}}',
     pendingInputs_many: 'Comentários {{count}} aguardando o agente',
     inputDelivered_many: 'Entradas {{count}} entregues ao agente',
+    inputDelivered_zero: 'Entradas {{count}} entregues ao agente',
   },
   failures: {
     runnerUpgrade:
