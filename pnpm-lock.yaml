@@ -5064,6 +5064,9 @@ importers:
       '@nocobase/app-plugin-i18n':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-i18n
+      '@nocobase/app-plugin-knowledge':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-knowledge
       '@nocobase/app-plugin-mail':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-mail
@@ -5392,6 +5395,9 @@ importers:
       '@nocobase/app-plugin-i18n':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-i18n
+      '@nocobase/app-plugin-knowledge':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-knowledge
       '@nocobase/app-plugin-jobs-example':
         specifier: workspace:^
         version: link:../../examples/app-plugin-jobs-example
