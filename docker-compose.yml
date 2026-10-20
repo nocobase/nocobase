@@ -1,4 +1,3 @@
-version: "3"
 networks:
   nocobase:
     driver: bridge
@@ -52,6 +51,7 @@ services:
       - "${DB_POSTGRES_PORT}:5432"
     volumes:
       - ./storage/db/postgres/backups:/backups
+      - ./storage/db/postgres/data:/var/lib/postgresql
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_DATABASE}
@@ -66,10 +66,10 @@ services:
     volumes:
       - ./:/var/www/app
   nocobase:
-    image: node:16-stretch-slim
+    image: node:lts-slim
     networks:
       - nocobase
-    command: [ "yarn", "start" ]
+    command: [ "yarn", "nocobase", "install", "&&", "yarn", "dev" ]
     working_dir: /app
     env_file: ./.env
     volumes:
