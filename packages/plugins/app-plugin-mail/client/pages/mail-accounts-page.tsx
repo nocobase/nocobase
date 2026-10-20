@@ -1,3 +1,5 @@
+import { useRealtimeRefresh, ApiClientError } from '@nocobase/app-client';
+import { MAIL_REALTIME_TOPIC } from '../../shared/realtime.js';
 import { PageContainer } from '../components/page-container.js';
 import { FileText, Link2, Mail, PenLine, RefreshCw, Tag } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
@@ -119,82 +121,85 @@ export default function MailAccountsPage({
     void Promise.resolve().then(refresh);
   }, [refresh]);
 
-  useEffect(() => {
-    const activeRuns = Object.values(syncRuns).filter(
-      (run) => run.status === 'pending' || run.status === 'running',
-    );
-    if (activeRuns.length === 0) return undefined;
-    const timer = window.setInterval(() => {
-      for (const run of activeRuns) {
-        void mail.getSyncRun(run.id).then(
-          (nextRun) => {
-            setSyncRuns((current) => ({
-              ...current,
-              [nextRun.accountId]: nextRun,
-            }));
-            if (nextRun.status !== 'pending' && nextRun.status !== 'running') {
-              setSyncing((current) =>
-                current === nextRun.accountId ? undefined : current,
+  const syncRefresh = useRealtimeRefresh(
+    MAIL_REALTIME_TOPIC,
+    async (signal) => {
+      const activeRuns = Object.values(syncRuns).filter(
+        (run) => run.status === 'pending' || run.status === 'running',
+      );
+      if (activeRuns.length === 0) return undefined;
+      await Promise.all(
+        activeRuns.map((run) =>
+          mail.getSyncRun(run.id).then(
+            (nextRun) => {
+              if (signal.aborted) return;
+              setSyncRuns((current) => ({
+                ...current,
+                [nextRun.accountId]: nextRun,
+              }));
+              if (
+                nextRun.status !== 'pending' &&
+                nextRun.status !== 'running'
+              ) {
+                setSyncing((current) =>
+                  current === nextRun.accountId ? undefined : current,
+                );
+              }
+            },
+            (cause: unknown) => {
+              if (signal.aborted) return;
+              setError(
+                mailErrorMessage(
+                  cause,
+                  t('errors.requestFailed', {
+                    defaultValue: 'Mail request failed.',
+                  }),
+                ),
               );
-            }
-          },
-          (cause: unknown) => {
-            setError(
-              mailErrorMessage(
-                cause,
-                t('errors.requestFailed', {
-                  defaultValue: 'Mail request failed.',
-                }),
-              ),
-            );
-            setSyncRuns((current) => {
-              const next = { ...current };
-              delete next[run.accountId];
-              return next;
-            });
-            setSyncing((current) =>
-              current === run.accountId ? undefined : current,
-            );
-          },
-        );
-      }
-    }, 1500);
-    return () => window.clearInterval(timer);
-  }, [mail, syncRuns, t]);
+              if (
+                !(cause instanceof ApiClientError) ||
+                cause.status >= 500 ||
+                cause.status === 408 ||
+                cause.status === 429
+              )
+                throw cause;
+              setSyncRuns((current) => {
+                const next = { ...current };
+                delete next[run.accountId];
+                return next;
+              });
+              setSyncing((current) =>
+                current === run.accountId ? undefined : current,
+              );
+            },
+          ),
+        ),
+      );
+    },
+    {
+      enabled: Object.values(syncRuns).some(
+        (run) => run.status === 'pending' || run.status === 'running',
+      ),
+      refreshIntervalMs: 60_000,
+    },
+  );
 
   const hasRemovingAccounts = accounts.some(
     (account) => account.status === 'removing',
   );
-  useEffect(() => {
-    if (!hasRemovingAccounts) return;
-    let disposed = false;
-    let pending = false;
-    const timer = window.setInterval(() => {
-      if (pending) return;
-      pending = true;
-      void mail
-        .listAccounts()
-        .then((next) => {
-          if (!disposed) {
-            setAccounts(
-              next.filter((account) =>
-                matchesProvider(account.provider, providerKeys),
-              ),
-            );
-          }
-        })
-        .catch(() => {
-          // Keep the last known state; the next poll can recover a transient failure.
-        })
-        .finally(() => {
-          pending = false;
-        });
-    }, 2000);
-    return () => {
-      disposed = true;
-      window.clearInterval(timer);
-    };
-  }, [mail, hasRemovingAccounts, providerKeys]);
+  const removalRefresh = useRealtimeRefresh(
+    MAIL_REALTIME_TOPIC,
+    async (signal) => {
+      const next = await mail.listAccounts();
+      if (!signal.aborted)
+        setAccounts(
+          next.filter((account) =>
+            matchesProvider(account.provider, providerKeys),
+          ),
+        );
+    },
+    { enabled: hasRemovingAccounts, refreshIntervalMs: 60_000 },
+  );
 
   const providerLabels = useMemo(
     () =>
@@ -420,7 +425,15 @@ export default function MailAccountsPage({
               <Tag aria-hidden='true' className='size-4' />
               {t('dev.labelManagement', { defaultValue: 'Labels' })}
             </Button>
-            <Button disabled={loading} onClick={refresh} variant='outline'>
+            <Button
+              disabled={loading}
+              onClick={() => {
+                refresh();
+                syncRefresh.retry();
+                removalRefresh.retry();
+              }}
+              variant='outline'
+            >
               <RefreshCw
                 aria-hidden='true'
                 className={`size-4 ${loading ? 'animate-spin' : ''}`}
@@ -724,8 +737,15 @@ export default function MailAccountsPage({
                       defaultValue: 'Email address',
                     }),
                     username: t('settings.providers.username', {
-                      defaultValue: 'Username',
+                      defaultValue: 'Username (optional)',
                     }),
+                    usernameDescription: t(
+                      'settings.providers.usernameDescription',
+                      {
+                        defaultValue:
+                          'Usually your email address. Leave blank to use the email address you entered.',
+                      },
+                    ),
                     password: t('settings.providers.password', {
                       defaultValue: 'Password',
                     }),

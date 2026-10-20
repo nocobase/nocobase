@@ -93,7 +93,7 @@ export default class PackageRemove extends PluginUnregistrationCommand {
 
   static override examples: Command.Example[] = [
     '<%= config.bin %> <%= command.id %> @nocobase/app-skills',
-    '<%= config.bin %> <%= command.id %> @nocobase/app-plugin-workflow',
+    '<%= config.bin %> <%= command.id %> @nocobase/app-plugin-scheduler',
     '<%= config.bin %> <%= command.id %> @nocobase/app-skills --dry-run',
     '<%= config.bin %> <%= command.id %> @nocobase/app-skills --workspace-root . --app app-template-default',
   ];

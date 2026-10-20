@@ -152,7 +152,7 @@ await submit({ identifier, password });
 - `usePasswordRegistration` takes `{ name, email, username, password }`.
 - `usePasswordResetRequest` takes `{ email }` and exposes `isSuccess`; it
   sends the user back to the application's `/reset-password` route.
-- `usePasswordReset` takes `{ token, password }`.
+- `usePasswordReset` takes `{ token, password }` and exposes `isSuccess`; show a success status and stop offering another submission when it is true.
 
 `error.message` is the message Better Auth returned, already safe to show.
 Navigation after success belongs to the form; the built-in forms use ordinary
@@ -166,11 +166,7 @@ If `server/config/auth.ts` still uses a plain `defineAppConfig`, the server refu
 
 ### Password reset
 
-The forms are present, but sending the email is the application's job:
-configure `emailAndPassword.sendResetPassword` on the server as described in
-[user lifecycle and deployment](user-lifecycle-and-deployment.md). Until it is
-configured, the forgot-password page succeeds silently and sends nothing, so
-do not link to it from a production login page.
+The host can send reset mail without a notification plugin: register `MailerProvider` from `@nocobase/app-server/mailer`, declare the existing `notification` section with `defineMailChannelsConfig`, configure an enabled SMTP or Resend `system-email` channel, and explicitly set `auth.passwordReset.enabled: true`. `auth.passwordReset.emailChannel` selects another channel; `auth.passwordReset.template` can override the default bilingual text/HTML message. Automatic recovery is off by default and defaults to revoking old sessions, unless `emailAndPassword.revokeSessionsOnPasswordReset` explicitly says otherwise. A custom `emailAndPassword.sendResetPassword` takes precedence and remains available when the new switch is absent; explicit `passwordReset.enabled: false` or disabled password sign-in closes every reset endpoint, including custom senders. See [user lifecycle and deployment](user-lifecycle-and-deployment.md) for other email callbacks. The public `GET /api/authentication/capabilities` endpoint reports whether password reset is available; use `usePasswordResetCapability()` to show the forgot-password link only when the server returns `true`, and keep direct page access closed while it is false or unknown.
 
 ## Testing components
 
@@ -179,3 +175,7 @@ Component tests stub the client rather than a network. Register a fake under
 want, mount `AuthenticationProvider`, and render the component. Tests of the
 auth pages mock the `client/actions` module instead, asserting what `submit`
 was called with. The template's own client tests show both patterns.
+
+Reset requests always use an account-independent limit of three per minute per client. The production authentication route passes the host's real connection peer to `Auth.handler`; headers alone cannot identify a client. Forwarded addresses are considered only through explicitly configured `auth.advanced.ipAddress.trustedProxies` and `ipAddressHeaders`, with the actual peer anchoring the chain. Without trusted connection metadata, including direct server API calls, requests share a conservative bucket. A custom HTTP mount forwards `{ clientAddress: getClientAddress(context) }` to `Auth.handler`, using `getClientAddress` from `@nocobase/app-server/router` rather than reading forwarding headers itself.
+
+Automatic recovery requires `app.publicOrigin` (or `APP_PUBLIC_ORIGIN`) to be configured so credential links cannot be derived from a client-controlled `Host`. A direct `Auth` consumer supplies a static HTTP(S) `baseURL` without credentials, query or fragment, or Better Auth's explicitly restricted `baseURL.allowedHosts`. Existing custom senders retain their prior configuration behavior and remain responsible for their own link policy.

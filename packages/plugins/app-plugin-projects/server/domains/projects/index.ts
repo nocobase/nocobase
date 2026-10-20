@@ -1,7 +1,6 @@
 export {
   createProjectService,
   type ProjectIssues,
-  type ProjectWorkflowChoice,
   type ProjectService,
 } from './project.service.js';
 export { createProjectRoutes } from './project.routes.js';

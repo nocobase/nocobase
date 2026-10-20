@@ -4,6 +4,9 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { Output, streamText, generateText } from 'ai';
+import { createOutputSchema } from '../server/online/agent/messages/validation.js';
+import { languageModel } from '../server/online/providers.js';
 import {
   classify,
   createModelGateway,
@@ -31,7 +34,7 @@ describe('the model gateway', () => {
   beforeEach(async () => {
     mock = await startMockOpenAI();
     h = await createHarness();
-    const services = h.services.online.services;
+    const services = h.services.models.services;
     await services.create({
       title: 'Local',
       provider: 'openai-compatible',
@@ -253,6 +256,76 @@ describe('the model gateway', () => {
         }),
       ),
     ).rejects.toMatchObject({ code: 'aborted' });
+  });
+
+  it('sends the original output schema through the compatible provider to the HTTP endpoint', async () => {
+    const schema = {
+      type: 'object' as const,
+      properties: { count: { type: 'integer' as const, minimum: 0 } },
+      required: ['count'],
+      additionalProperties: false,
+    };
+    mock.answer({ text: ['{"count":2}'] });
+    const result = streamText({
+      model: await gateway.languageModel(model),
+      prompt: 'Count',
+      output: Output.object({ schema: createOutputSchema(schema) }),
+      maxRetries: 0,
+    });
+    for await (const _part of result.fullStream) {
+      /* Drain the model response. */
+    }
+    expect(await result.output).toEqual({ count: 2 });
+    expect(mock.requests.at(-1)).toMatchObject({
+      response_format: { type: 'json_schema', json_schema: { schema } },
+    });
+    expect(await result.warnings).toEqual([]);
+  });
+
+  it('rejects Moonshot schema loss while preserving ordinary text calls', async () => {
+    const sdkModel = languageModel(
+      { provider: 'moonshotai', baseUrl: mock.url, apiKey: 'test-key' },
+      'unknown-moonshot-model',
+    );
+    await expect(
+      generateText({
+        model: sdkModel,
+        prompt: 'Count',
+        output: Output.object({
+          schema: createOutputSchema({ type: 'object' }),
+        }),
+        maxRetries: 0,
+      }),
+    ).rejects.toThrow('does not support structured output');
+    expect(mock.requests).toHaveLength(0);
+    mock.answer({ text: ['Plain text'] });
+    expect(
+      (await generateText({ model: sdkModel, prompt: 'Hello', maxRetries: 0 }))
+        .text,
+    ).toBe('Plain text');
+  });
+
+  it('sends schemas for supported Moonshot models', async () => {
+    const schema = {
+      type: 'object' as const,
+      properties: { count: { type: 'integer' as const } },
+      required: ['count'],
+      additionalProperties: false,
+    };
+    mock.answer({ text: ['{"count":2}'] });
+    const result = await generateText({
+      model: languageModel(
+        { provider: 'moonshotai', baseUrl: mock.url, apiKey: 'test-key' },
+        'moonshot-v1-8k',
+      ),
+      prompt: 'Count',
+      output: Output.object({ schema: createOutputSchema(schema) }),
+      maxRetries: 0,
+    });
+    expect(result.output).toEqual({ count: 2 });
+    expect(mock.requests.at(-1)).toMatchObject({
+      response_format: { type: 'json_schema', json_schema: { schema } },
+    });
   });
 
   it('tests a model', async () => {

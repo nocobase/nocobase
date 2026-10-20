@@ -1,5 +1,5 @@
 // The runner's own commands: registering with one or more applications, status, and the service definitions.
-import { statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -88,7 +88,7 @@ describe('nocobase-runner cli', () => {
       registered: true,
       name: 'test-runner',
       slots: 3,
-      agentHome: 'isolated',
+      agentTools: 'runner',
       running: false,
     });
     expect(parsed.apps.map((app) => app.key).sort()).toEqual(
@@ -117,7 +117,7 @@ describe('nocobase-runner cli', () => {
     expect(dry.code).toBe(0);
     if (process.platform === 'darwin') {
       expect(dry.stdout).toContain('<string>com.nocobase.runner</string>');
-      expect(dry.stdout).toContain('<string>--foreground</string>');
+      expect(dry.stdout).toContain('<string>run</string>');
       expect(dry.stdout).toMatch(/\$ launchctl bootstrap gui\/\d+ /);
     }
   });
@@ -137,7 +137,7 @@ describe('nocobase-runner cli', () => {
       '/home/u/.config/systemd/user/nocobase-runner.service',
     );
     expect(plan.content).toContain(
-      'ExecStart=/usr/bin/node /opt/acme/bin/run.js runner start --foreground',
+      'ExecStart=/usr/bin/node /opt/acme/bin/run.js runner service run',
     );
     expect(plan.content).toContain(
       'Environment=NOCOBASE_RUNNER_HOME=/home/u/.nocobase-runner',
@@ -147,5 +147,200 @@ describe('nocobase-runner cli', () => {
       ['systemctl', '--user', 'restart', 'nocobase-runner.service'],
     ]);
     expect(plan.content).toContain('Environment=NOCOBASE_RUNNER_SERVICE=1');
+    expect(plan.captured).toEqual([]);
+  });
+
+  it("writes the installing shell's proxy, CA and --pass-env variables into the service", () => {
+    const env = {
+      PATH: '/usr/bin',
+      HTTPS_PROXY: 'http://user:p%40ss@proxy:3128',
+      no_proxy: 'localhost',
+      NODE_EXTRA_CA_CERTS: '/etc/ca.pem',
+      PI_KEY: 'sk "quoted"',
+      UNRELATED: 'x',
+    };
+    const paths = runnerPaths(
+      '/home/u/.nocobase-runner',
+      '/home/u/.nocobase-runner-work',
+    );
+    const linux = servicePlan({
+      paths,
+      command: ['/usr/bin/node', '/opt/acme/bin/run.js'],
+      platform: 'linux',
+      home: '/home/u',
+      env,
+      passEnv: ['PI_KEY', 'NOT_SET'],
+    });
+    expect(linux.captured).toEqual([
+      'HTTPS_PROXY',
+      'no_proxy',
+      'NODE_EXTRA_CA_CERTS',
+      'PI_KEY',
+    ]);
+    // systemd expands `%` specifiers: a percent-encoded password is written doubled.
+    expect(linux.content).toContain(
+      'Environment=HTTPS_PROXY=http://user:p%%40ss@proxy:3128',
+    );
+    expect(linux.content).toContain('Environment=no_proxy=localhost');
+    expect(linux.content).toContain('Environment="PI_KEY=sk \\"quoted\\""');
+    expect(linux.content).not.toContain('UNRELATED');
+    expect(linux.content).not.toContain('NOT_SET');
+    const mac = servicePlan({
+      paths,
+      command: ['/usr/bin/node', '/opt/acme/bin/run.js'],
+      platform: 'darwin',
+      home: '/Users/u',
+      uid: 501,
+      env,
+      passEnv: ['PI_KEY'],
+    });
+    expect(mac.content).toContain(
+      '<key>HTTPS_PROXY</key>\n    <string>http://user:p%40ss@proxy:3128</string>',
+    );
+    expect(mac.content).toContain(
+      '<key>PI_KEY</key>\n    <string>sk "quoted"</string>',
+    );
+  });
+
+  it('keeps local variables with env set, lists their names only, and forgets them with env unset', async () => {
+    await cli(['env', 'set', 'PI_KEY', 'sk-local-value'], env);
+    const piped = await cli(['env', 'set', 'OTHER_KEY'], env, {
+      input: 'from-stdin\n',
+    });
+    expect(piped.code).toBe(0);
+    expect(
+      (
+        JSON.parse(
+          readFileSync(path.join(home, 'apps', 'test-app.json'), 'utf8'),
+        ) as { variables: Record<string, string> }
+      ).variables.OTHER_KEY,
+    ).toBe('from-stdin');
+
+    const listed = await cli(['env', 'list', '--json'], env);
+    expect(listed.stdout).not.toContain('sk-local-value');
+    const entries = (
+      JSON.parse(listed.stdout) as {
+        result: { name: string; source: string }[];
+      }
+    ).result;
+    expect(entries.map((entry) => entry.name)).toEqual(['OTHER_KEY', 'PI_KEY']);
+    for (const file of readdirSync(path.join(home, 'apps'))) {
+      const stored = path.join(home, 'apps', file);
+      expect(
+        (
+          JSON.parse(readFileSync(stored, 'utf8')) as {
+            variables: Record<string, string>;
+          }
+        ).variables,
+      ).toMatchObject({ PI_KEY: 'sk-local-value', OTHER_KEY: 'from-stdin' });
+      expect(statSync(stored).mode & 0o777).toBe(0o600);
+    }
+    expect((await cli(['env', 'set', '1BAD', 'x'], env)).code).toBe(5);
+    expect((await cli(['env', 'unset', 'PI_KEY'], env)).code).toBe(0);
+    expect((await cli(['env', 'unset', 'PI_KEY'], env)).code).toBe(4);
+    await cli(['env', 'unset', 'OTHER_KEY'], env);
+  });
+
+  it('preserves env values read from delayed and split standard input', async () => {
+    const testHome = tempDir('nocobase-runner-piped-env-home-');
+    const testEnv = cliEnv(testHome);
+    const server = new FakeServer();
+    await server.listen();
+    try {
+      await registerRunner(server.url, testEnv);
+
+      const noNewline = await cli(['env', 'set', 'NO_NEWLINE'], testEnv, {
+        input: 'plain-value',
+      });
+      expect(noNewline.code).toBe(0);
+
+      const unicode = 'prefix-☃-suffix';
+      const unicodeBytes = Buffer.from(unicode);
+      const splitUnicode = await cli(['env', 'set', 'SPLIT_UNICODE'], testEnv, {
+        input: {
+          chunks: [
+            { data: unicodeBytes.subarray(0, 7), delayMs: 0 },
+            { data: unicodeBytes.subarray(7, 8), delayMs: 0 },
+            { data: unicodeBytes.subarray(8), delayMs: 0 },
+          ],
+          synchronizeAtStdinRead: true,
+        },
+      });
+      expect(splitUnicode.code).toBe(0);
+
+      const delayedRemainder = await cli(
+        ['env', 'set', 'DELAYED_REMAINDER'],
+        testEnv,
+        {
+          input: {
+            chunks: [
+              { data: 'consumed-prefix-', delayMs: 0 },
+              { data: 'delayed-suffix', delayMs: 100 },
+            ],
+            synchronizeAtStdinRead: true,
+          },
+        },
+      );
+      expect(delayedRemainder.code).toBe(0);
+
+      const delayedEof = await cli(['env', 'set', 'DELAYED_EOF'], testEnv, {
+        input: {
+          chunks: [{ data: 'all-bytes-before-eof', delayMs: 0 }],
+          endDelayMs: 500,
+          synchronizeAtStdinRead: true,
+        },
+      });
+      expect(delayedEof.code).toBe(0);
+
+      const delayed = await cli(['env', 'set', 'DELAYED_INPUT'], testEnv, {
+        input: {
+          chunks: [{ data: 'arrived-after-parser-timeout', delayMs: 30 }],
+        },
+      });
+      expect(delayed.code).toBe(0);
+
+      const emptyValue = await cli(['env', 'set', 'EMPTY_VALUE', ''], testEnv, {
+        input: 'must-not-replace-explicit-empty',
+      });
+      expect(emptyValue.code).toBe(0);
+
+      const whitespace = await cli(['env', 'set', 'WHITESPACE'], testEnv, {
+        input: ' \t keep  \r\n',
+      });
+      expect(whitespace.code).toBe(0);
+
+      const saved = (
+        JSON.parse(
+          readFileSync(path.join(testHome, 'apps', 'test-app.json'), 'utf8'),
+        ) as { variables: Record<string, string> }
+      ).variables;
+      expect(saved).toMatchObject({
+        NO_NEWLINE: 'plain-value',
+        SPLIT_UNICODE: unicode,
+        DELAYED_REMAINDER: 'consumed-prefix-delayed-suffix',
+        DELAYED_EOF: 'all-bytes-before-eof',
+        DELAYED_INPUT: 'arrived-after-parser-timeout',
+        EMPTY_VALUE: '',
+        WHITESPACE: ' \t keep  ',
+      });
+
+      const missingName = await cli(['env', 'set'], testEnv, {
+        input: 'VALID_PIPE_NAME',
+      });
+      expect(missingName.code).not.toBe(0);
+      expect(missingName.stderr).toMatch(
+        /Missing \d+ required arg:[\s\S]*\bname\s+The variable name\./,
+      );
+      const afterMissingName = (
+        JSON.parse(
+          readFileSync(path.join(testHome, 'apps', 'test-app.json'), 'utf8'),
+        ) as { variables: Record<string, string> }
+      ).variables;
+      expect(afterMissingName).not.toHaveProperty('VALID_PIPE_NAME');
+    } finally {
+      await server.close();
+      removeDir(testHome);
+      removeDir(workRootOf(testHome));
+    }
   });
 });

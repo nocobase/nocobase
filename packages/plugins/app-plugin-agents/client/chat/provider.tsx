@@ -20,13 +20,21 @@ import {
 } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
-import type { ConversationSource } from '../../shared/conversations.js';
+import type {
+  ConversationSource,
+  PageContextRef,
+  PageUIContext,
+} from '../../shared/conversations.js';
+import { clonePageUIContext } from '../../shared/page-ui-context.js';
 import {
   clampSelection,
   itemKey,
   parseSourceAttribute,
   SELECTION_KEY,
   SOURCE_ATTRIBUTE,
+  snapshotUIContext,
+  uiItemKey,
+  type ChatUIContextSource,
   type ChatContextFilter,
   type ChatContextItem,
   type ChatSelection,
@@ -42,6 +50,7 @@ import {
   type ChatPanelState,
   type ChatPanelView,
 } from './panel-state.js';
+import { ChatClientProvider } from './controller.js';
 import { useChatRealtime } from './use-chat.js';
 
 export const CHAT_PANEL_ID = 'agents-chat-panel';
@@ -99,6 +108,14 @@ export interface ChatPanelValue extends ChatPanelState {
 }
 
 export interface ChatSourcesValue {
+  /** All available UI sources; registration does not upload or select them. */
+  readonly uiSources: readonly ChatUIContextSource[];
+  readonly selectedUIKeys: ReadonlySet<string>;
+  readonly registerUI: (source: ChatUIContextSource) => () => void;
+  /** Explicit user intent, separate from source/form registration. */
+  readonly selectUI: (source: PageContextRef, selected?: boolean) => void;
+  /** Reads latest values of the currently selected sources and detaches them. */
+  readonly snapshotUI: () => Promise<PageUIContext | undefined>;
   readonly items: readonly ChatContextItem[];
   readonly filter: ChatContextFilter | null;
   readonly selection: ChatSelection | null;
@@ -134,6 +151,11 @@ const ChatSourcesContext = createContext<ChatSourcesValue | null>(null);
 function noop(): void {}
 
 const NO_SOURCES: ChatSourcesValue = {
+  uiSources: [],
+  selectedUIKeys: new Set(),
+  registerUI: () => noop,
+  selectUI: noop,
+  snapshotUI: async () => undefined,
   items: [],
   filter: null,
   selection: null,
@@ -439,7 +461,7 @@ export function ChatProvider({
             )
           }
         >
-          {children}
+          <ChatClientProvider>{children}</ChatClientProvider>
         </ChatSourcesProvider>
       </ChatPageContext.Provider>
     </ChatPanelContext.Provider>
@@ -464,8 +486,89 @@ function ChatSourcesProvider({
   const [filters, setFilters] = useState<
     ReadonlyMap<number, ChatContextFilter>
   >(() => new Map());
-  const [selection, setSelection] = useState<ChatSelection | null>(null);
+  const uiRegistryRef = useRef(new Map<string, ChatUIContextSource>());
+  const uiLifetimeRef = useRef(0);
+  useLayoutEffect(
+    () => () => {
+      uiLifetimeRef.current += 1;
+    },
+    [],
+  );
   const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
+  const [uiSources, setUISources] = useState<readonly ChatUIContextSource[]>(
+    [],
+  );
+  const [selectedUIKeys, setSelectedUIKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const selectedUIRef = useRef(selectedUIKeys);
+  useLayoutEffect(() => {
+    selectedUIRef.current = selectedUIKeys;
+  }, [selectedUIKeys]);
+  const registerUI = useCallback((source: ChatUIContextSource) => {
+    const key = uiItemKey(source);
+    if (uiRegistryRef.current.has(key))
+      throw new Error(`UI context source already registered: ${key}`);
+    clonePageUIContext({
+      version: 1,
+      items: [{ kind: source.kind, id: source.id }],
+    });
+    // A fresh lease prevents an old cleanup from deleting a later registration of the same descriptor object.
+    const registered: ChatUIContextSource = {
+      kind: source.kind,
+      id: source.id,
+      get label() {
+        return source.label;
+      },
+      getSnapshot: () => source.getSnapshot(),
+    };
+    uiRegistryRef.current.set(key, registered);
+    setUISources([...uiRegistryRef.current.values()]);
+    return () => {
+      if (uiRegistryRef.current.get(key) !== registered) return;
+      uiRegistryRef.current.delete(key);
+      setUISources([...uiRegistryRef.current.values()]);
+      const next = new Set(selectedUIRef.current);
+      next.delete(key);
+      selectedUIRef.current = next;
+      setSelectedUIKeys(next);
+    };
+  }, []);
+  const selectUI = useCallback((source: PageContextRef, selected = true) => {
+    const key = uiItemKey(source);
+    if (selected && !uiRegistryRef.current.has(key))
+      throw new Error('UI context source is no longer registered.');
+    const next = new Set(selectedUIRef.current);
+    if (selected) next.add(key);
+    else next.delete(key);
+    selectedUIRef.current = next;
+    setSelectedUIKeys(next);
+    setRemoved((current) => {
+      const nextRemoved = new Set(current);
+      nextRemoved.delete(key);
+      return nextRemoved;
+    });
+  }, []);
+  const snapshotUI = useCallback(async () => {
+    const lifetime = uiLifetimeRef.current;
+    const selected = selectedUIRef.current;
+    const entries = [...uiRegistryRef.current.entries()].filter(([key]) =>
+      selected.has(key),
+    );
+    const snapshot = await snapshotUIContext(
+      entries.map(([, source]) => source),
+    );
+    if (
+      lifetime !== uiLifetimeRef.current ||
+      selected !== selectedUIRef.current ||
+      entries.some(([key, source]) => uiRegistryRef.current.get(key) !== source)
+    )
+      throw new Error(
+        'UI context selection or source changed while reading its snapshot.',
+      );
+    return snapshot;
+  }, []);
+  const [selection, setSelection] = useState<ChatSelection | null>(null);
   const onUnpinRef = useRef(onUnpin);
   useEffect(() => {
     onUnpinRef.current = onUnpin;
@@ -476,6 +579,7 @@ function ChatSourcesProvider({
     setSeenPath(pathname);
     setSelection(null);
     setRemoved(new Set());
+    setSelectedUIKeys(new Set());
   }
 
   // The page's selection, never one inside the chat (panel, page, history). Clicking into the chat collapses the page's
@@ -549,12 +653,21 @@ function ChatSourcesProvider({
   }, []);
 
   const remove = useCallback((key: string) => {
+    const next = new Set(selectedUIRef.current);
+    next.delete(key);
+    selectedUIRef.current = next;
+    setSelectedUIKeys(next);
     onUnpinRef.current(key);
     setRemoved((current) => new Set(current).add(key));
   }, []);
 
   const value = useMemo<ChatSourcesValue>(
     () => ({
+      uiSources,
+      selectedUIKeys,
+      registerUI,
+      selectUI,
+      snapshotUI,
       items: [...items.values()],
       // The innermost page registers last and wins.
       filter: [...filters.values()].at(-1) ?? null,
@@ -564,7 +677,20 @@ function ChatSourcesProvider({
       registerFilter,
       remove,
     }),
-    [items, filters, selection, removed, registerItem, registerFilter, remove],
+    [
+      uiSources,
+      selectedUIKeys,
+      registerUI,
+      selectUI,
+      snapshotUI,
+      items,
+      filters,
+      selection,
+      removed,
+      registerItem,
+      registerFilter,
+      remove,
+    ],
   );
   return (
     <ChatSourcesContext.Provider value={value}>
@@ -586,6 +712,35 @@ export function useChatContextSource(item: ChatContextItem | null): void {
     if (!kind || !id) return undefined;
     return registerItem({ kind, id, label: label ?? id });
   }, [registerItem, kind, id, label]);
+}
+
+/** Make a UI source available while mounted. Select it separately with useChatSources().selectUI(source). */
+export function useChatUIContextSource(
+  source: ChatUIContextSource | null,
+): void {
+  const { registerUI } = useChatSources();
+  const latestRef = useRef(source);
+  useLayoutEffect(() => {
+    latestRef.current = source;
+  });
+  const kind = source?.kind;
+  const id = source?.id;
+  useEffect(() => {
+    if (kind === undefined || id === undefined) return undefined;
+    return registerUI({
+      kind,
+      id,
+      get label() {
+        return latestRef.current?.label ?? id;
+      },
+      getSnapshot: () => {
+        const current = latestRef.current;
+        if (!current || current.kind !== kind || current.id !== id)
+          throw new Error('UI context source changed before snapshotting.');
+        return current.getSnapshot();
+      },
+    });
+  }, [registerUI, kind, id]);
 }
 
 /** Registers a list page's filter while the page is mounted; null registers nothing. */

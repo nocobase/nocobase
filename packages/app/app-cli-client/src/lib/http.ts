@@ -192,6 +192,7 @@ export class ApiClient {
         method,
         headers: {
           accept: 'application/json',
+          'x-nocobase-client': 'cli',
           ...(body === undefined ? {} : { 'content-type': 'application/json' }),
           ...this.options.headers,
         },

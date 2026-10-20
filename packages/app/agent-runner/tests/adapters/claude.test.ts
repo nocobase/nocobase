@@ -1,4 +1,5 @@
-import { chmod, mkdtemp, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { chmod, mkdir, mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -8,14 +9,12 @@ import {
   ClaudeAdapter,
   DEFAULT_MIN_CLAUDE_VERSION,
   compareVersions,
-  denialMessage,
 } from '../../src/agent/adapters/claude.ts';
 import type {
   AdapterEvent,
   AdapterSession,
-  PermissionCheck,
 } from '../../src/agent/adapters/types.ts';
-import { calls, replay, setScript } from './fake-sdk.ts';
+import { calls, replay, setScript, setSupportedModels } from './fake-sdk.ts';
 import { SESSION_ID, assistant, init, result, toolResult } from './messages.ts';
 
 vi.mock('@anthropic-ai/claude-agent-sdk', async () => ({
@@ -52,7 +51,7 @@ function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
     workDir: '/work',
     prompt: 'Create hello.txt',
     systemPrompt: 'BRIEF',
-    env: { PATH: '/usr/bin', HOME: '/home/runner' },
+    env: { PATH: '/usr/bin', HOME: dir },
     permission: async () => 'allow',
     abort: new AbortController().signal,
     ...overrides,
@@ -71,6 +70,206 @@ let dir: string;
 beforeEach(async () => {
   calls.length = 0;
   dir = await fakeClaudeDir();
+  const project = path.join(dir, '.claude/projects/-work');
+  await mkdir(project, { recursive: true });
+  for (const id of ['old', 'prev'])
+    await writeFile(path.join(project, `${id}.jsonl`), '{}\n');
+});
+
+describe('missing conversations', () => {
+  it('starts a fresh query for a missing file without consuming or duplicating queued input', async () => {
+    setScript(async function* (ctx) {
+      expect(ctx.options.resume).toBeUndefined();
+      expect(ctx.options.systemPrompt).toMatchObject({ append: 'BRIEF' });
+      const prompt = await ctx.nextInput();
+      expect(prompt?.message.content).toContain('previous conversation');
+      expect(prompt?.message.content).toContain('Create hello.txt');
+      yield init();
+      const steer = await ctx.nextInput();
+      expect(steer?.message.content).toBe('early');
+      yield assistant([{ type: 'text', text: 'ok' }], {
+        user_message_uuids: [prompt?.uuid, steer?.uuid],
+      });
+      yield result({ user_message_uuids: [prompt?.uuid, steer?.uuid] });
+      expect(await ctx.nextInput()).toBeUndefined();
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'missing' }),
+    );
+    expect(await handle.steer('early', 'early-input')).toBe(true);
+    const events = await collect(handle.events);
+    expect(await handle.result).toMatchObject({
+      exit: 'completed',
+      sessionId: SESSION_ID,
+    });
+    expect(calls).toHaveLength(1);
+    expect(events.filter((event) => event.type === 'input')).toHaveLength(1);
+    expect(
+      events.filter((event) => event.content === 'sessionRecovery'),
+    ).toHaveLength(1);
+    expect(events.find((event) => event.content === 'started')).toMatchObject({
+      meta: { resumed: false, sessionRecovery: true },
+    });
+  });
+
+  it.each([
+    'throw',
+    'result',
+    'stderr',
+    'generic result before stderr',
+    'generic result after stderr',
+    'generic result before notifications and stderr',
+  ])(
+    'does not reopen a prechecked conversation after a missing-session %s',
+    async (mode) => {
+      setScript(async function* (ctx) {
+        expect(ctx.options.resume).toBe('old');
+        await ctx.nextInput();
+        const steer = await ctx.nextInput();
+        if (mode === 'throw') throw new Error('No conversation found');
+        if (mode === 'stderr') {
+          ctx.options.stderr?.('No conver');
+          ctx.options.stderr?.('sation found');
+          throw new Error('exit 1');
+        }
+        const failure = result({
+          subtype: 'error_during_execution',
+          errors: [
+            mode === 'result'
+              ? 'No conversation found'
+              : 'Process exited with code 1',
+          ],
+          num_turns: 0,
+          usage: {},
+          user_message_uuids: [steer?.uuid],
+        });
+        if (mode.endsWith('after stderr'))
+          ctx.options.stderr?.('No conversation found');
+        yield failure;
+        if (mode.includes('notifications'))
+          yield {
+            type: 'system',
+            subtype: 'session_state_changed',
+            state: 'idle',
+            session_id: 'old',
+            uuid: randomUUID(),
+          };
+        ctx.options.stderr?.('No conversation found');
+      });
+      const handle = adapterWith('9.0.0', dir).start(
+        session({ resumeSessionId: 'old' }),
+      );
+      await handle.steer('early', 'early-input');
+      const events = await collect(handle.events);
+      expect((await handle.result).exit).toBe('error');
+      expect(calls).toHaveLength(1);
+      expect(events.some((event) => event.content === 'sessionRecovery')).toBe(
+        false,
+      );
+    },
+  );
+
+  it('closes streaming input immediately on an unrelated startup error result', async () => {
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      yield result({
+        subtype: 'error_during_execution',
+        errors: ['startup failed'],
+        num_turns: 0,
+        usage: {},
+      });
+      // A real streaming CLI waits for input to close before exiting.
+      expect(await ctx.nextInput()).toBeUndefined();
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'old' }),
+    );
+    expect((await handle.result).exit).toBe('error');
+    expect(calls).toHaveLength(1);
+  }, 1000);
+
+  it('prechecks the encoded working directory under the query configuration directory', async () => {
+    const cwd = path.join(dir, 'work space');
+    const config = path.join(dir, 'custom-config');
+    await mkdir(cwd);
+    const project = path.join(
+      config,
+      'projects',
+      cwd.replace(/[^a-zA-Z0-9]/g, '-'),
+    );
+    await mkdir(project, { recursive: true });
+    await writeFile(path.join(project, 'custom.jsonl'), '{}\n');
+    setScript(replay([init(), result()]));
+    const handle = adapterWith('9.0.0', dir).start(
+      session({
+        workDir: cwd,
+        env: { HOME: dir, CLAUDE_CONFIG_DIR: config },
+        resumeSessionId: 'custom',
+      }),
+    );
+    expect((await handle.result).exit).toBe('completed');
+    expect(calls[0].options.resume).toBe('custom');
+  });
+
+  it.skipIf(process.getuid?.() === 0)(
+    'does not treat inaccessible history as missing',
+    async () => {
+      const project = path.join(dir, '.claude/projects/-work');
+      await chmod(project, 0o000);
+      try {
+        const handle = adapterWith('9.0.0', dir).start(
+          session({ resumeSessionId: 'old' }),
+        );
+        expect((await handle.result).exit).toBe('error');
+        expect(calls).toHaveLength(0);
+      } finally {
+        await chmod(project, 0o700);
+      }
+    },
+  );
+
+  it('does not start after cancellation while prechecking', async () => {
+    const abort = new AbortController();
+    const handle = adapterWith('9.0.0', dir).start(
+      session({
+        resumeSessionId: 'missing',
+        abort: abort.signal,
+      }),
+    );
+    abort.abort();
+    expect((await handle.result).exit).toBe('aborted');
+    expect(calls).toHaveLength(0);
+  });
+
+  it('does not retry a failed fresh conversation', async () => {
+    setScript(async function* (ctx) {
+      yield* [];
+      await ctx.nextInput();
+      throw new Error('No conversation found');
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'missing' }),
+    );
+    expect((await handle.result).exit).toBe('error');
+    expect(calls).toHaveLength(1);
+  });
+
+  it.each([
+    'authentication failed',
+    'No conversation found after model execution',
+  ])('does not replay an unrelated or late error: %s', async (message) => {
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      if (message.includes('after model'))
+        yield assistant([{ type: 'text', text: 'working' }]);
+      throw new Error(message);
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'old' }),
+    );
+    expect((await handle.result).exit).toBe('error');
+    expect(calls).toHaveLength(1);
+  });
 });
 
 describe('detect and executable', () => {
@@ -131,6 +330,108 @@ describe('detect and executable', () => {
   });
 });
 
+describe('model detection', () => {
+  it('lists models by their resolved ids with their efforts, without a prompt, and closes the query', async () => {
+    let cwd = '';
+    setSupportedModels(async (options) => {
+      cwd = options.cwd!;
+      return [
+        {
+          value: 'default',
+          resolvedModel: 'claude-sonnet-5',
+          displayName: 'Default',
+          description: '',
+          supportsEffort: true,
+          supportedEffortLevels: ['low', 'high'],
+        },
+        {
+          value: 'opus',
+          resolvedModel: 'claude-opus-5-5',
+          displayName: 'Opus',
+          description: '',
+          supportsEffort: true,
+          supportedEffortLevels: ['low', 'medium', 'high', 'xhigh', 'max'],
+        },
+        {
+          value: 'claude-haiku-4-5',
+          displayName: 'Haiku',
+          description: '',
+          supportsEffort: false,
+        },
+        { value: 'custom', displayName: 'Custom', description: '' },
+      ];
+    });
+    const adapter = new ClaudeAdapter({
+      searchPath: dir,
+      env: { PATH: dir, HOME: '/home/runner' },
+      exec: async (_file, args) =>
+        args[0] === '--version'
+          ? { code: 0, stdout: '9.0.0 (Claude Code)\n' }
+          : { code: 0, stdout: '{"loggedIn":true}' },
+    });
+    expect(await adapter.detectModels(new AbortController().signal)).toEqual({
+      modelsDetectionStatus: 'detected',
+      models: [
+        { id: 'claude-sonnet-5', efforts: ['low', 'high'] },
+        {
+          id: 'claude-opus-5-5',
+          efforts: ['low', 'medium', 'high', 'xhigh', 'max'],
+        },
+        { id: 'claude-haiku-4-5', efforts: [] },
+        { id: 'custom' },
+      ],
+    });
+    expect(calls).toHaveLength(1);
+    const { options, closed } = calls[0]!;
+    expect(closed).toBe(true);
+    expect(options).toMatchObject({
+      settingSources: [],
+      env: { PATH: dir, HOME: '/home/runner' },
+      pathToClaudeCodeExecutable: path.join(dir, 'claude'),
+    });
+    expect(options.cwd).toBe(cwd);
+    await expect(readdir(cwd)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('reports unsupported without a usable claude, without calling the SDK', async () => {
+    const empty = await mkdtemp(path.join(tmpdir(), 'nocobase-runner-empty-'));
+    expect(
+      await adapterWith('9.0.0', empty).detectModels(
+        new AbortController().signal,
+      ),
+    ).toEqual({ modelsDetectionStatus: 'unsupported' });
+    expect(calls).toHaveLength(0);
+  });
+
+  it('reports a failure without its message', async () => {
+    setSupportedModels(() =>
+      Promise.reject(new Error('/private/config secret=never-upload')),
+    );
+    const result = await adapterWith('9.0.0', dir).detectModels(
+      new AbortController().signal,
+    );
+    expect(result).toEqual({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionError: 'Model detection failed',
+    });
+    expect(calls[0]!.closed).toBe(true);
+  });
+
+  it('stops waiting and aborts the query when aborted', async () => {
+    setSupportedModels(() => new Promise(() => {}));
+    const controller = new AbortController();
+    const result = adapterWith('9.0.0', dir).detectModels(controller.signal);
+    while (calls.length === 0) await new Promise((r) => setTimeout(r, 5));
+    controller.abort();
+    expect(await result).toEqual({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionError: 'Model detection timed out',
+    });
+    expect(calls[0]!.options.abortController?.signal.aborted).toBe(true);
+    expect(calls[0]!.closed).toBe(true);
+  });
+});
+
 describe('query options', () => {
   it('passes the brief, settings, permission mode, env and executable', async () => {
     setScript(replay([init(), result()]));
@@ -150,8 +451,9 @@ describe('query options', () => {
       append: 'BRIEF',
     });
     expect(options.settingSources).toEqual(['project']);
-    expect(options.permissionMode).toBe('acceptEdits');
-    expect(options.env).toEqual({ PATH: '/usr/bin', HOME: '/home/runner' });
+    expect(options.permissionMode).toBe('bypassPermissions');
+    expect(options.allowDangerouslySkipPermissions).toBe(true);
+    expect(options.env).toEqual({ PATH: '/usr/bin', HOME: dir });
     expect(options.cwd).toBe('/work');
     expect(options.pathToClaudeCodeExecutable).toBe(path.join(dir, 'claude'));
     expect(options).toMatchObject({
@@ -161,8 +463,9 @@ describe('query options', () => {
       resume: 'prev',
     });
     expect(options.abortController).toBeInstanceOf(AbortController);
-    expect(options.canUseTool).toBeTypeOf('function');
-    expect(options.hooks?.PreToolUse).toHaveLength(1);
+    // The runner asks nothing: no permission callback and no hooks.
+    expect(options.canUseTool).toBeUndefined();
+    expect(options.hooks).toBeUndefined();
   });
 
   it('fails a run without a usable claude, without calling the SDK', async () => {
@@ -371,133 +674,6 @@ describe('failures', () => {
 });
 
 describe('permissions', () => {
-  async function runWithTool(
-    permission: PermissionCheck,
-    tool = 'Bash',
-    input: Record<string, unknown> = { command: 'rm -rf /' },
-  ) {
-    const verdicts: string[] = [];
-    setScript(async function* (ctx) {
-      await ctx.nextInput();
-      yield init();
-      yield assistant([{ type: 'tool_use', id: 'toolu_9', name: tool, input }]);
-      verdicts.push(await ctx.callTool(tool, input, 'toolu_9'));
-      yield result();
-    });
-    const handle = adapterWith('9.0.0', dir).start(session({ permission }));
-    const events = await collect(handle.events);
-    return {
-      verdicts,
-      permissionEvents: events.filter((e) => e.type === 'permission'),
-    };
-  }
-
-  it('the hook hands a policy denial to canUseTool, even when rules would allow it', async () => {
-    setScript(replay([init(), result()]));
-    adapterWith('9.0.0', dir).start(
-      session({ permission: async () => ({ deny: 'nope' }) }),
-    );
-    await vi.waitFor(() => expect(calls).toHaveLength(1));
-    const hook = calls[0]!.options.hooks!.PreToolUse![0]!.hooks[0]!;
-    const out = await hook(
-      {
-        hook_event_name: 'PreToolUse',
-        tool_name: 'Bash',
-        tool_input: { command: 'rm x' },
-        tool_use_id: 'h1',
-        session_id: 's',
-        transcript_path: '',
-        cwd: '/work',
-      },
-      'h1',
-      { signal: new AbortController().signal },
-    );
-    expect(out).toEqual({
-      hookSpecificOutput: {
-        hookEventName: 'PreToolUse',
-        permissionDecision: 'ask',
-        permissionDecisionReason: 'nope',
-      },
-    });
-  });
-
-  it('denies through the hook and records the reason', async () => {
-    const permission = vi.fn<PermissionCheck>(async () => ({
-      deny: 'rm is not on the allow list',
-    }));
-    const { verdicts, permissionEvents } = await runWithTool(permission);
-    expect(verdicts).toEqual(['deny']);
-    expect(permission).toHaveBeenCalledTimes(1);
-    expect(permissionEvents).toHaveLength(1);
-    expect(permissionEvents[0]).toMatchObject({
-      tool: 'Bash',
-      input: { command: 'rm -rf /' },
-      meta: {
-        decision: 'deny',
-        reason: 'rm is not on the allow list',
-        toolUseId: 'toolu_9',
-      },
-    });
-  });
-
-  it('allows once through hook and canUseTool, consulting the policy once', async () => {
-    const permission = vi.fn<PermissionCheck>(async () => 'allow');
-    const { verdicts, permissionEvents } = await runWithTool(
-      permission,
-      'Bash',
-      { command: 'git status' },
-    );
-    expect(verdicts).toEqual(['allow']);
-    expect(permission).toHaveBeenCalledTimes(1);
-    expect(permission).toHaveBeenCalledWith('Bash', { command: 'git status' });
-    expect(permissionEvents).toHaveLength(1);
-    expect(permissionEvents[0]!.meta).toMatchObject({ decision: 'allow' });
-  });
-
-  it('turns a bare deny and a policy error into denials', async () => {
-    expect(
-      (await runWithTool(async () => 'deny')).permissionEvents[0]!.meta,
-    ).toMatchObject({
-      decision: 'deny',
-      reason: 'Denied by the runner policy',
-    });
-    const failing = await runWithTool(async () => {
-      throw new Error('boom');
-    });
-    expect(failing.verdicts).toEqual(['deny']);
-    expect(failing.permissionEvents[0]!.meta).toMatchObject({
-      reason: 'Policy error: boom',
-    });
-  });
-
-  it('answers canUseTool with the SDK permission result shape', async () => {
-    setScript(replay([init(), result()]));
-    adapterWith('9.0.0', dir).start(
-      session({
-        permission: async (tool) =>
-          tool === 'Bash' ? { deny: 'no' } : 'allow',
-      }),
-    );
-    await vi.waitFor(() => expect(calls).toHaveLength(1));
-    const canUseTool = calls[0]!.options.canUseTool!;
-    const opts = {
-      signal: new AbortController().signal,
-      toolUseID: 'a',
-      requestId: 'r',
-    };
-    expect(await canUseTool('Bash', { command: 'x' }, opts)).toEqual({
-      behavior: 'deny',
-      message: denialMessage('no'),
-    });
-    expect(denialMessage('no')).toContain('do not ask for permission');
-    expect(
-      await canUseTool('Edit', { file_path: 'y' }, { ...opts, toolUseID: 'b' }),
-    ).toEqual({
-      behavior: 'allow',
-      updatedInput: { file_path: 'y' },
-    });
-  });
-
   it('records denials Claude Code made itself', async () => {
     setScript(
       replay([

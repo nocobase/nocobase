@@ -1,4 +1,6 @@
-// Retrying git's network operations (clone, fetch, the submodules' update) where they fail for a moment.
+import { setTimeout as abortableDelay } from 'node:timers/promises';
+import type { GitInvocationOptions } from './git.ts';
+// Retrying git's network operations (clone, fetch) where they fail for a moment.
 //
 // Only a failure whose message names a passing cause is retried: a TLS handshake cut off, a connection reset, refused
 // or timed out, a transfer that stalled (`http.lowSpeedLimit`/`Time`, which every network call sets, so a stalled
@@ -93,7 +95,7 @@ export class GitNetworkError extends Error {
   }
 }
 
-export interface GitRetryOptions {
+export interface GitRetryOptions extends GitInvocationOptions {
   /** The waits before each retry; `GIT_RETRY_DELAYS_MS` by default. */
   readonly delaysMs?: readonly number[];
   /** Waits; `delay` by default, replaced in tests. */
@@ -121,11 +123,20 @@ export async function retryGit<T>(
   options: GitRetryOptions = {},
 ): Promise<T> {
   const delays = options.delaysMs ?? GIT_RETRY_DELAYS_MS;
-  const sleep = options.sleep ?? delay;
+  const sleep =
+    options.sleep ??
+    (options.signal === undefined
+      ? delay
+      : (ms: number) =>
+          abortableDelay(ms, undefined, { signal: options.signal }).then(
+            () => undefined,
+          ));
   for (let retries = 0; ; retries += 1) {
+    options.signal?.throwIfAborted();
     try {
       return await attempt();
     } catch (error) {
+      options.signal?.throwIfAborted();
       const message = messageOf(error);
       const failure = classifyGitFailure(message);
       if (failure.kind === 'permanent') {

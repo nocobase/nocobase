@@ -1,5 +1,5 @@
 /**
- * Apps, releases and deployments. Adapted from the Hub plugin's service: uploads are deduplicated by checksum and made
+ * Apps, releases and deployments: uploads are deduplicated by checksum and made
  * idempotent by key, every deploy and rollback is an immutable deployment record with phases and a log, configuration
  * starts from the release's `config.example.yml` with generated secrets, and the runtime is reached only through the
  * environment's driver session.
@@ -144,6 +144,7 @@ import {
   normalizeLabels,
   normalizeName,
   normalizeRuntimePolicy,
+  releaseArtifactKey,
 } from './validation.js';
 
 const DEFAULT_STARTUP_WAIT_MS = 5_000;
@@ -155,6 +156,7 @@ export interface ReleasesServiceOptions {
   readonly guard: AccessGuard;
   readonly events: ReleasesEventBus;
   readonly artifact: AppDriveDiskConfig;
+  readonly artifactPrefix?: string;
   readonly dataDir: string;
   readonly maxArtifactBytes?: number;
   readonly logging?: {
@@ -298,6 +300,10 @@ export class ReleasesService {
   private readonly runs = new Map<string, Promise<unknown>>();
   private restoring: Promise<void> | null = null;
   private closed = false;
+
+  private artifactKey(appId: string, releaseId: string): string {
+    return releaseArtifactKey(appId, releaseId, this.options.artifactPrefix);
+  }
 
   public constructor(private readonly options: ReleasesServiceOptions) {
     this.diagnostic = createDiagnosticLogger(options.logger);
@@ -805,7 +811,7 @@ export class ReleasesService {
         );
         if (existing) return existing;
         const id = randomUUID();
-        const artifactKey = `${appId}/${id}.tar.gz`;
+        const artifactKey = this.artifactKey(appId, id);
         const release: ReleaseRecord = {
           id,
           appId,
@@ -988,7 +994,7 @@ export class ReleasesService {
       }
       const id = randomUUID();
       const artifactKey = release.artifactKey
-        ? `${targetAppId}/${id}.tar.gz`
+        ? this.artifactKey(targetAppId, id)
         : null;
       const copy: ReleaseRecord = {
         ...release,

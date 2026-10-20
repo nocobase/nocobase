@@ -25,8 +25,6 @@ export interface Project {
   readonly leadUserId: string | null;
   readonly startDate: string | null;
   readonly dueDate: string | null;
-  /** The workflow of its issues; null for the default workflow. */
-  readonly workflowId: string | null;
   /**
    * The issue that sets the project up (created with `projectSetup`): until it is finished, every issue created in the
    * project is created waiting for it (`blockedBy`). Null when there is none.
@@ -115,8 +113,6 @@ export interface CreateProjectRequest {
   readonly leadUserId?: string | null;
   readonly startDate?: string | null;
   readonly dueDate?: string | null;
-  /** Null: the default workflow. Switching is refused while an issue is in a status the new workflow lacks. */
-  readonly workflowId?: string | null;
 }
 
 export type UpdateProjectRequest = Partial<CreateProjectRequest>;

@@ -1,10 +1,13 @@
+import type { OnlineAgentRecoveryConfig } from '../online/agent/types.js';
+import { mayAccessRun } from '../core/runs/access.js';
 /**
  * Binds the plugin's services, and at boot connects them to the platform: realtime announcements of runs and
- * conversations, and this instance's server executor, which runs online agents' runs (stopped again at shutdown,
- * handing back what it holds). The runners' side (their announcements, the sweeper and the wake-ups of work sent back
- * with a back-off) is `runners.ts`.
+ * conversations, and the vector queue's worker. The runners' side (their announcements, the sweeper and the wake-ups of
+ * work sent back with a back-off) is `runners.ts`.
  */
-import { HEADERS, type RunApp } from '@nocobase/agent-protocol';
+import type { RunApp } from '@nocobase/agent-protocol';
+import { runRetentionDays } from '../core/runs/run-data-purge.js';
+import { retryBaseDelayMs } from '../core/runs/policy.js';
 import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import { idGeneratorToken } from '@nocobase/app-server/id-generator';
@@ -31,16 +34,25 @@ import { directoryDisk } from '../core/skills/index.js';
 import { createAgentsSecretsStores } from '../secrets-stores.js';
 import type { VectorsConfig } from '../vectors/index.js';
 import type { DistConfig } from '../distribution/index.js';
-import { resolveAgentCli, type AgentCli } from '../core/runs/index.js';
+import type { AgentCli } from '../core/runs/index.js';
 import { runCredentialResolver } from '../cli/run-credential.js';
-import { bindCliSurface, type CliSurface } from '../cli/surface.js';
-import type { CallerIdentity } from '../core/callers/index.js';
-import type { CommandSurface } from '../online/index.js';
+import { bindCliSurface } from '../cli/surface.js';
 import { agentsSecurityFragment } from '../routes/openapi.js';
 import { agentsToken } from '../tokens.js';
 
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
+  readonly uiRecovery?: OnlineAgentRecoveryConfig;
+  /**
+   * Completed runs' events and prompt snapshots are kept `retentionDays`: 14 days by default, 0 disables cleanup. A
+   * failed attempt waits `retryBaseDelayMs` before the next, doubling up to ten minutes: 30 seconds by default.
+   */
+  readonly runs?: {
+    readonly retentionDays?: number;
+    readonly retryBaseDelayMs?: number;
+  };
+  /** How often the runners sweep runs (`sweepIntervalMs`): every 30 seconds by default. */
+  readonly runners?: { readonly sweepIntervalMs?: number };
   /**
    * The CLI agents talk to the application with, and where runners get it: `name` (the application's id from `app` when
    * left out), and `package`, the tarball this application serves (`{ kind: 'served' }`, from `dist` below) by default,
@@ -58,19 +70,6 @@ export interface AgentsConfig {
    * `storage/runners/dist` by default, on the `stable` channel, the highest version unless `versions` pins one.
    */
   readonly dist?: DistConfig;
-  /**
-   * Online agents' runs, which each instance runs itself: `enabled` (true by default; false leaves them to the other
-   * instances), `maxSteps`, the model calls a run may make (16 by default), and `consult`, the bounds of one agent
-   * consulting another (`ask_agent`): `timeoutMs` (120000) and `tokenBudget`, input and output tokens (200000).
-   */
-  readonly server?: {
-    readonly enabled?: boolean;
-    readonly maxSteps?: number;
-    readonly consult?: {
-      readonly timeoutMs?: number;
-      readonly tokenBudget?: number;
-    };
-  };
   /**
    * The vector store of vector collections, apart from the application's database: `store` (`sqlite-vec` by default,
    * in `path`, `storage/vectors.sqlite` by default; `pgvector` with its own `url` or `host`, `port`, `database`,
@@ -90,14 +89,24 @@ const PURGE_INTERVAL_MS = 60 * 60_000;
 export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = ACCESS_NAMESPACE;
   private readonly releases: (() => void)[] = [];
-  private stopping: Promise<void> | undefined;
   private stoppingVectors: Promise<void> | undefined;
-  private surface: CliSurface | undefined;
 
   public override register(): void {
+    runRetentionDays(
+      this.app.config.get<AgentsConfig>('agents')?.runs?.retentionDays,
+    );
+    retryBaseDelayMs(
+      this.app.config.get<AgentsConfig>('agents')?.runs?.retryBaseDelayMs,
+    );
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
+        resolver,
+        retryBaseDelayMs: retryBaseDelayMs(config?.runs?.retryBaseDelayMs),
+        runRetentionDays: () =>
+          runRetentionDays(
+            this.app.config.get<AgentsConfig>('agents')?.runs?.retentionDays,
+          ),
         database: resolver.resolve(databaseManagerToken),
         idGenerator: resolver.resolve(idGeneratorToken),
         app: this.runApp(config),
@@ -111,25 +120,13 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
           ? { secrets: resolver.resolve(secretsServiceToken) }
           : {}),
         ...(config?.cli ? { cli: config.cli } : {}),
+        uiRecovery: config?.uiRecovery,
         manifestUrl: `${this.app.publicBasePath}/api/cli/manifest`,
-        ...(config?.server?.maxSteps || config?.server?.consult
-          ? {
-              server: {
-                ...(config.server.maxSteps
-                  ? { maxSteps: config.server.maxSteps }
-                  : {}),
-                ...(config.server.consult
-                  ? { consult: config.server.consult }
-                  : {}),
-              },
-            }
-          : {}),
         ...(config?.vectors ? { vectors: config.vectors } : {}),
         paths: {
           root: this.app.paths.root(),
           storage: this.app.paths.storage(),
         },
-        commandsOf: (identity, token) => this.commandsOf(identity, token),
         // The contents of skills' files: on the Drive disk `agents.skills.disk` names (Drive's default), else under the
         // application's storage. Asked on each use, so a configuration reload applies.
         skillDisk: resolver.has(driveManagerToken)
@@ -171,57 +168,6 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     return { id, name: id };
   }
 
-  /**
-   * An online run's commands from the application's command manifest, sent through the application itself with the
-   * run's token; undefined without one (no API documentation or command line), which leaves its shell without a CLI.
-   */
-  private commandsOf(
-    identity: CallerIdentity,
-    token: string,
-  ): Promise<CommandSurface> | undefined {
-    const { container } = this.app;
-    const surface = this.surface;
-    if (!surface || !container.has(cliToken) || !container.has(apiDocsToken))
-      return undefined;
-    const cli = container.resolve(cliToken);
-    const base = this.app.publicBasePath.replace(/\/+$/u, '');
-    const agentsConfig = this.app.config.get<AgentsConfig>('agents');
-    const bin = resolveAgentCli(
-      agentsConfig?.cli,
-      this.runApp(agentsConfig),
-    ).name;
-    return (async () => {
-      const manifest = cli.manifestFor(
-        await container.resolve(apiDocsToken).getDocument(),
-        await surface.callerOf(identity),
-      );
-      return {
-        bin,
-        commands: manifest.commands,
-        send: async (request) => {
-          const path =
-            base && request.path.startsWith(`${base}/`)
-              ? request.path.slice(base.length)
-              : request.path;
-          return this.app.router.fetch(
-            new Request(`http://application${path}`, {
-              method: request.method,
-              headers: {
-                [HEADERS.runToken]: token,
-                accept: 'application/json',
-                // A form sets its own multipart content type.
-                ...(typeof request.body === 'string'
-                  ? { 'content-type': 'application/json' }
-                  : {}),
-              },
-              ...(request.body === undefined ? {} : { body: request.body }),
-            }),
-          );
-        },
-      };
-    })();
-  }
-
   /** Where the plugin keeps sealed values, for `nocobase secrets status` and `secrets rotate`. */
   private registerSecretsStores(): void {
     const { container } = this.app;
@@ -233,10 +179,15 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       secrets.registerStore(store);
   }
 
-  public override boot(): Promise<void> {
-    if (this.releases.length > 0) return Promise.resolve();
+  public override async boot(): Promise<void> {
+    if (this.releases.length > 0) return;
     const { container } = this.app;
     const services = container.resolve(agentsToken);
+    // Command hosts also start Providers, but do not replace the serving process. Detected by
+    // `consoleLogStream`, which `app-cli` sets to `stderr` for a command and leaves unset for
+    // `start`/`dev`; a host that changes this logging configuration would need another signal.
+    if (this.app.consoleLogStream !== 'stderr')
+      await services.onlineAgent.recoverAtStartup();
     this.announce(services);
     // The run token, runner key and registration token as security schemes of the API document.
     if (container.has(apiDocsToken))
@@ -249,14 +200,6 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     this.releases.push(() => {
       this.stoppingVectors = services.vectors.stop();
     });
-    if (
-      this.app.config.get<AgentsConfig>('agents')?.server?.enabled !== false
-    ) {
-      services.online.executor.start();
-      this.releases.push(() => {
-        this.stopping = services.online.executor.stop();
-      });
-    }
     return Promise.resolve();
   }
 
@@ -299,19 +242,19 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       ),
       gate: services.gate,
     });
-    this.surface = surface;
-    this.releases.push(() => {
-      surface.release();
-      if (this.surface === surface) this.surface = undefined;
-    });
+    this.releases.push(() => surface.release());
   }
 
   public override async shutdown(): Promise<void> {
-    for (const release of this.releases.splice(0)) release();
-    await this.stopping;
-    await this.stoppingVectors;
-    this.stopping = undefined;
-    this.stoppingVectors = undefined;
+    try {
+      await this.app.container
+        .resolveIfCreated(agentsToken)
+        ?.onlineAgent.shutdown();
+    } finally {
+      for (const release of this.releases.splice(0)) release();
+      await this.stoppingVectors;
+      this.stoppingVectors = undefined;
+    }
   }
 
   /** Tells open pages what changed; they fetch the details through the API, which checks access. */
@@ -320,12 +263,42 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     if (!container.has(realtimeServiceToken)) return;
     const realtime = container.resolve(realtimeServiceToken);
     const publish = (topic: string, payload: RunChanged) => {
-      try {
-        realtime.publish(topic, payload);
-      } catch (error) {
-        console.error('Agents realtime announcement failed.', error);
-      }
+      void realtime
+        .publish(topic, payload)
+        .catch((error: unknown) =>
+          console.error('Agents realtime announcement failed.', error),
+        );
     };
+    const runsTopic = realtime.defineTopicFamily<{ runId: string }, RunChanged>(
+      'agents:runs:{runId}',
+      {
+        audience: 'public',
+        authenticated: true,
+        authorize: async ({ principal, params }) => {
+          if (!principal) return false;
+          const run = await services.runs.get(params.runId);
+          return mayAccessRun(
+            run,
+            principal.userId,
+            services.subjects.get(run.subject.kind)?.private === true,
+            async () => {
+              if (!container.has(authorizationToken)) return false;
+              const authorization = container.resolve(authorizationToken);
+              const identity = { type: 'user', id: principal.userId };
+              const subjects = [
+                { type: 'authenticated', id: '*' },
+                ...(await authorization.subjects.resolveFor(identity)),
+              ];
+              return authorization.for({ principal: identity, subjects }).can({
+                resource: { type: 'settings', id: 'agents.agents' },
+                action: 'read',
+              });
+            },
+          );
+        },
+      },
+    );
+    this.releases.push(() => runsTopic.close());
     let conversationsTopic = false;
     try {
       this.releases.push(
@@ -343,11 +316,11 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       payload: ConversationChanged,
     ) => {
       if (!conversationsTopic) return;
-      try {
-        realtime.publish(CONVERSATIONS_TOPIC, payload, { userId });
-      } catch (error) {
-        console.error('Agents realtime announcement failed.', error);
-      }
+      void realtime
+        .publish(CONVERSATIONS_TOPIC, payload, { userId })
+        .catch((error: unknown) =>
+          console.error('Agents realtime announcement failed.', error),
+        );
     };
     this.releases.push(
       services.events.onAny((event) => {
@@ -355,16 +328,23 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
           case 'conversation.changed':
             announceConversation(
               event.userId,
-              event.lastSeq === undefined
+              event.messageId !== undefined && event.revision !== undefined
                 ? {
-                    kind: 'conversation.changed',
+                    kind: 'conversation.messageUpdated',
                     conversationId: event.conversationId,
+                    messageId: event.messageId,
+                    revision: event.revision,
                   }
-                : {
-                    kind: 'conversation.messages',
-                    conversationId: event.conversationId,
-                    lastSeq: event.lastSeq,
-                  },
+                : event.lastSeq === undefined
+                  ? {
+                      kind: 'conversation.changed',
+                      conversationId: event.conversationId,
+                    }
+                  : {
+                      kind: 'conversation.messages',
+                      conversationId: event.conversationId,
+                      lastSeq: event.lastSeq,
+                    },
             );
             return;
           case 'run.changed':
@@ -372,6 +352,13 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
               kind: 'run.status',
               runId: event.runId,
               status: event.status,
+            });
+            return;
+          case 'run.retried':
+            publish(runTopic(event.retryOfRunId), {
+              kind: 'run.status',
+              runId: event.retryOfRunId,
+              status: event.previousStatus,
             });
             return;
           case 'run.events':

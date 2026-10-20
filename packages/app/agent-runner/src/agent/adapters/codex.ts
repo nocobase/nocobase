@@ -9,31 +9,32 @@
  *   cannot join the active turn (none is running yet, or it just ended) is
  *   started as the next turn; the run ends when a turn completes with
  *   nothing left to deliver.
- * - Permissions: approval policy `untrusted` with the `workspaceWrite`
- *   sandbox (writable: the work directory and the session's
- *   `writableRoots`, such as each worktree's Git directory; network on, since the agent
- *   reaches its application through the application CLI). Codex then asks
- *   before every command and file change, and each request is answered by
- *   the runner's policy (`shell` with the unwrapped script, `edit` per
- *   file). A command Codex ran without asking (allowed by the machine's own
- *   Codex rules) is still checked when it completes and reported, but it
- *   cannot be undone. Requests to widen the sandbox are always refused.
+ * - Permissions: none. The thread runs with approval policy `never` and the
+ *   `dangerFullAccess` sandbox, and any approval request Codex still sends is
+ *   accepted. The runner is not a security boundary: run it as a dedicated
+ *   user, in a container or in a VM.
  * - `stop()` interrupts the turn, then ends the process group: within five
  *   seconds in all.
  */
-import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 
 import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
+import {
+  MAX_TOOL_MODELS,
+  type ToolCapabilities,
+} from '@nocobase/agent-protocol';
+import { boundedModels } from './models.ts';
+import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
+import { withDetectionEnvironment } from './detection.ts';
 import { classifyCodexFailure } from './codex/classify.ts';
+import { codexQuota } from './quota.ts';
 import type { CodexFailureSignal } from './codex/classify.ts';
 import { OPTED_OUT_NOTIFICATIONS } from './codex/protocol.ts';
+import { detectExec } from './detect-exec.ts';
 import type {
-  CommandApprovalParams,
-  FileChangeApprovalParams,
   InitializeResponse,
   PermissionsApprovalParams,
   SandboxPolicy,
@@ -45,7 +46,7 @@ import type {
   TurnError,
   UserTextInput,
 } from './codex/protocol.ts';
-import { RpcConnection, spawnCodexProcess } from './codex/rpc.ts';
+import { RpcConnection, RpcError, spawnCodexProcess } from './codex/rpc.ts';
 import type { CodexExit, CodexProcess, SpawnCodex } from './codex/rpc.ts';
 import {
   Channel,
@@ -61,7 +62,6 @@ import type {
   AdapterResult,
   AdapterSession,
   AgentAdapter,
-  PermissionDecision,
   RunnerFeature,
   ToolDetection,
   Usage,
@@ -75,7 +75,6 @@ import type {
 export const DEFAULT_MIN_CODEX_VERSION = '0.158.0';
 
 const EFFORTS = new Set(TOOL_EFFORTS.codex);
-const EFFORT_ALIASES: Readonly<Record<string, string>> = { max: 'xhigh' };
 /** How long a stop waits for the interrupted turn before ending the process. */
 const INTERRUPT_GRACE_MS = 1500;
 /** Shutdown steps: stdin closed, then SIGTERM, then SIGKILL. */
@@ -88,17 +87,31 @@ const CLIENT_INFO = {
   version: '1',
 };
 
+interface ModelListPage {
+  data: {
+    model: string;
+    supportedReasoningEfforts?: { reasoningEffort: string }[];
+  }[];
+  nextCursor?: string | null;
+}
+
 export interface ExecResult {
   code: number;
   stdout: string;
 }
 
-export type ExecFn = (file: string, args: string[]) => Promise<ExecResult>;
+export type ExecFn = (
+  file: string,
+  args: string[],
+  options?: { signal?: AbortSignal },
+) => Promise<ExecResult>;
 
 export interface CodexAdapterOptions {
   minVersion?: string;
-  /** PATH searched for `codex`; defaults to the runner's PATH. */
+  /** PATH searched for `codex`; defaults to the PATH of `env`. */
   searchPath?: string;
+  /** What detection runs with (`detectionEnv`); the runner's own environment when absent. */
+  env?: Record<string, string>;
   /** Runs a command for detection; replaceable in tests. */
   exec?: ExecFn;
   /** Starts the app-server; replaceable in tests. */
@@ -108,23 +121,6 @@ export interface CodexAdapterOptions {
 // ---------------------------------------------------------------------------
 // Detection
 // ---------------------------------------------------------------------------
-
-const defaultExec: ExecFn = (file, args) =>
-  new Promise((resolve) => {
-    execFile(
-      file,
-      args,
-      { timeout: 15_000, maxBuffer: 1024 * 1024 },
-      (error, stdout) => {
-        const code = error
-          ? typeof error.code === 'number'
-            ? error.code
-            : 1
-          : 0;
-        resolve({ code, stdout: String(stdout ?? '') });
-      },
-    );
-  });
 
 async function findOnPath(
   name: string,
@@ -141,16 +137,6 @@ async function findOnPath(
     }
   }
   return undefined;
-}
-
-function normalizeDecision(decision: PermissionDecision): {
-  allow: boolean;
-  reason?: string;
-} {
-  if (decision === 'allow') return { allow: true };
-  if (decision === 'deny')
-    return { allow: false, reason: 'Denied by the runner policy' };
-  return { allow: false, reason: decision.deny };
 }
 
 function errorMessage(error: unknown): string {
@@ -180,18 +166,23 @@ function mcpResultText(
 export class CodexAdapter implements AgentAdapter {
   readonly kind = 'codex' as const;
   private readonly options: Required<
-    Omit<CodexAdapterOptions, 'searchPath'>
+    Omit<CodexAdapterOptions, 'searchPath' | 'env'>
   > & {
-    searchPath?: string;
+    searchPath: string;
+    env: NodeJS.ProcessEnv;
   };
+  private readonly detectionEnv?: Record<string, string>;
   private detection?: Promise<ToolDetection>;
 
   constructor(options: CodexAdapterOptions = {}) {
+    const env = options.env ?? process.env;
+    this.detectionEnv = options.env;
     this.options = {
       minVersion: options.minVersion ?? DEFAULT_MIN_CODEX_VERSION,
-      exec: options.exec ?? defaultExec,
+      exec: options.exec ?? detectExec(options.env),
       spawn: options.spawn ?? spawnCodexProcess,
-      searchPath: options.searchPath,
+      searchPath: options.searchPath ?? env.PATH ?? '',
+      env,
     };
   }
 
@@ -199,27 +190,120 @@ export class CodexAdapter implements AgentAdapter {
     return ['steer'];
   }
 
-  detect(): Promise<ToolDetection> {
-    this.detection ??= this.runDetection();
+  detect(signal?: AbortSignal): Promise<ToolDetection> {
+    this.detection ??= this.runDetection(signal);
     return this.detection;
   }
 
-  private async runDetection(): Promise<ToolDetection> {
-    const { exec, minVersion } = this.options;
-    const searchPath = this.options.searchPath ?? process.env.PATH ?? '';
+  async detectModels(signal: AbortSignal): Promise<ToolCapabilities> {
+    const detection = await this.detect(signal);
+    if (!detection.path) return { modelsDetectionStatus: 'unsupported' };
+    const binary = detection.path;
+    return withDetectionEnvironment(
+      signal,
+      async (cwd, env) => {
+        const proc = this.options.spawn({
+          command: binary,
+          args: [
+            '-c',
+            'allow_login_shell=false',
+            'app-server',
+            '--listen',
+            'stdio://',
+          ],
+          cwd,
+          env,
+        });
+        const rpc = new RpcConnection(proc, {
+          notification() {},
+          request: () => Promise.resolve({}),
+        });
+        const exited = new Promise<void>((resolve) => {
+          proc.onExit(() => {
+            rpc.close(new Error('Model detection failed'));
+            resolve();
+          });
+        });
+        const abort = () => {
+          rpc.close(new Error('Model detection timed out'));
+          proc.kill('SIGKILL');
+        };
+        signal.addEventListener('abort', abort, { once: true });
+        if (signal.aborted) abort();
+        try {
+          await rpc.request('initialize', {
+            clientInfo: CLIENT_INFO,
+            capabilities: { experimentalApi: false },
+          });
+          rpc.notify('initialized');
+          const models: { id: unknown; efforts?: unknown[] }[] = [];
+          let cursor: string | null = null;
+          const cursors = new Set<string>();
+          do {
+            // https://github.com/openai/codex/tree/main/codex-rs/app-server-protocol
+            const page: ModelListPage = await rpc.request<ModelListPage>(
+              'model/list',
+              { cursor, limit: 100, includeHidden: false },
+            );
+            if (!Array.isArray(page.data))
+              return {
+                modelsDetectionStatus: 'failed',
+                modelsDetectionError: 'Invalid model listing response',
+              };
+            models.push(
+              ...page.data.map((model) => ({
+                id: model.model,
+                efforts: model.supportedReasoningEfforts?.map(
+                  (effort) => effort.reasoningEffort,
+                ),
+              })),
+            );
+            cursor = page.nextCursor ?? null;
+            if (cursor && cursors.has(cursor))
+              return {
+                modelsDetectionStatus: 'failed',
+                modelsDetectionError: 'Invalid model listing response',
+              };
+            if (cursor) cursors.add(cursor);
+          } while (cursor && models.length < MAX_TOOL_MODELS);
+          return {
+            modelsDetectionStatus: 'detected',
+            models: boundedModels(models),
+          };
+        } catch (error) {
+          return error instanceof RpcError && error.code === -32601
+            ? { modelsDetectionStatus: 'unsupported' }
+            : {
+                modelsDetectionStatus: 'failed',
+                modelsDetectionError: signal.aborted
+                  ? 'Model detection timed out'
+                  : 'Model detection failed',
+              };
+        } finally {
+          signal.removeEventListener('abort', abort);
+          rpc.close(new Error('Model discovery finished'));
+          proc.end();
+          proc.kill('SIGKILL');
+          await exited;
+        }
+      },
+      this.detectionEnv,
+    );
+  }
+
+  private async runDetection(signal?: AbortSignal): Promise<ToolDetection> {
+    const { exec, minVersion, searchPath, env } = this.options;
     const found = await findOnPath('codex', searchPath);
     if (!found) {
       return {
         installed: false,
-        authenticated: Boolean(
-          process.env.OPENAI_API_KEY || process.env.CODEX_API_KEY,
-        ),
+        authenticated: Boolean(env.OPENAI_API_KEY || env.CODEX_API_KEY),
       };
     }
-    const v = await exec(found, ['--version']);
+    const v = await exec(found, ['--version'], { signal });
     const version = v.code === 0 ? parseVersion(v.stdout) : undefined;
     // Exit status 0 means logged in (ChatGPT or API key).
-    const auth = await exec(found, ['login', 'status']);
+    const auth = await exec(found, ['login', 'status'], { signal });
     const installed = Boolean(
       version && compareVersions(version, minVersion) >= 0,
     );
@@ -265,6 +349,7 @@ class CodexRun {
   private turnRunning = false;
   private lastTurn?: Turn;
   private lastError?: TurnError;
+  private rateLimits: unknown;
   private turnSummary?: string;
   private summary?: string;
 
@@ -275,7 +360,6 @@ class CodexRun {
   private steersInFlight = 0;
 
   private readonly items = new Map<string, ThreadItem>();
-  private readonly reviewedItems = new Set<string>();
   private usageBaseline?: TokenUsageBreakdown;
   private usageTotal?: TokenUsageBreakdown;
 
@@ -414,24 +498,24 @@ class CodexRun {
       if (!steer.prompt) this.pendingSteers.set(steer.clientId, steer);
     this.turnRunning = true;
     this.turnSummary = undefined;
-    const effort = session.effort
-      ? (EFFORT_ALIASES[session.effort] ?? session.effort)
-      : undefined;
-    const sandboxPolicy: SandboxPolicy = {
-      type: 'workspaceWrite',
-      writableRoots: [session.workDir, ...(session.writableRoots ?? [])],
-      networkAccess: true,
-      excludeTmpdirEnvVar: false,
-      excludeSlashTmp: false,
-    };
+    const effort = session.effort || undefined;
+    const sandboxPolicy: SandboxPolicy = { type: 'dangerFullAccess' };
     const response = await this.rpc!.request<{ turn: Turn }>('turn/start', {
       threadId: this.threadId,
       input: inputs.map((steer) => textInput(steer.text)),
       clientUserMessageId: first.clientId,
-      approvalPolicy: 'untrusted',
+      approvalPolicy: 'never',
       sandboxPolicy,
       ...(effort && EFFORTS.has(effort) ? { effort } : {}),
     });
+    if (effort && EFFORTS.has(effort))
+      this.emit({
+        type: 'status',
+        tool: 'codex',
+        content: 'executionSettings',
+        // turn/start does not return the resolved effort. Its request cannot stand in for a report.
+        meta: { execution: { effort: null, source: 'codex.turn/start' } },
+      });
     // The first input of a turn is its user message; the rest ride along.
     for (const steer of inputs.slice(1)) this.acknowledge(steer.clientId);
     if (this.turnRunning && !this.activeTurnId) {
@@ -484,58 +568,13 @@ class CodexRun {
     proc.kill('SIGKILL');
   }
 
-  // -- permissions ----------------------------------------------------------
-
-  private async decide(
-    tool: string,
-    input: Record<string, unknown>,
-  ): Promise<{ allow: boolean; reason?: string }> {
-    try {
-      return normalizeDecision(await this.session.permission(tool, input));
-    } catch (error) {
-      return { allow: false, reason: `Policy error: ${errorMessage(error)}` };
-    }
-  }
-
-  private report(
-    tool: string,
-    input: unknown,
-    toolUseId: string | undefined,
-    decision: { allow: boolean; reason?: string },
-    extra: Record<string, unknown> = {},
-  ): void {
-    const capped = capInput(input);
-    this.emit({
-      type: 'permission',
-      tool,
-      input: capped.input,
-      meta: {
-        decision: decision.allow ? 'allow' : 'deny',
-        ...(decision.reason ? { reason: decision.reason } : {}),
-        ...(toolUseId ? { toolUseId } : {}),
-        ...extra,
-        ...(capped.truncated ? { truncated: true } : {}),
-      },
-    });
-  }
+  // -- tool calls as reported ----------------------------------------------
 
   private commandInput(
     command: string,
     cwd: string | null | undefined,
   ): Record<string, unknown> {
     return { command: unwrapShell(command), ...(cwd ? { cwd } : {}) };
-  }
-
-  private async decideChanges(
-    changes: { path: string; kind: string }[],
-  ): Promise<{ allow: boolean; reason?: string }> {
-    if (changes.length === 0)
-      return { allow: false, reason: 'File change without a file list' };
-    for (const change of changes) {
-      const decision = await this.decide('edit', change);
-      if (!decision.allow) return decision;
-    }
-    return { allow: true };
   }
 
   private changeList(itemId: string): { path: string; kind: string }[] {
@@ -547,115 +586,36 @@ class CodexRun {
     }));
   }
 
+  // -- requests -------------------------------------------------------------
+
+  /**
+   * Codex runs with approval policy `never`, so it should not ask; whatever it still asks is accepted, except while the
+   * run is stopping, which starts nothing new. Questions nobody can answer during a run are declined or left empty.
+   */
   private readonly onRequest = async (
     method: string,
     params: unknown,
   ): Promise<unknown> => {
-    // A stopping run starts nothing new.
-    if (
-      this.stopping &&
-      (method === 'item/commandExecution/requestApproval' ||
-        method === 'item/fileChange/requestApproval')
-    ) {
-      this.reviewedItems.add((params as { itemId: string }).itemId);
-      return { decision: 'cancel' };
-    }
     switch (method) {
-      case 'item/commandExecution/requestApproval': {
-        const p = params as CommandApprovalParams;
-        const item = this.items.get(p.itemId);
-        const command =
-          p.command ??
-          (item?.type === 'commandExecution' && 'command' in item
-            ? item.command
-            : '');
-        const input = this.commandInput(command, p.cwd);
-        const decision = await this.decide('shell', input);
-        this.reviewedItems.add(p.itemId);
-        this.report('shell', input, p.itemId, decision);
-        return { decision: decision.allow ? 'accept' : 'decline' };
-      }
-      case 'item/fileChange/requestApproval': {
-        const p = params as FileChangeApprovalParams;
-        const changes = this.changeList(p.itemId);
-        const decision = p.grantRoot
-          ? {
-              allow: false,
-              reason: 'Agent runs do not widen the writable roots',
-            }
-          : await this.decideChanges(changes);
-        this.reviewedItems.add(p.itemId);
-        this.report('edit', { changes }, p.itemId, decision);
-        return { decision: decision.allow ? 'accept' : 'decline' };
-      }
+      case 'item/commandExecution/requestApproval':
+      case 'item/fileChange/requestApproval':
+        return { decision: this.stopping ? 'cancel' : 'accept' };
       case 'item/permissions/requestApproval': {
         const p = params as PermissionsApprovalParams;
-        this.report(
-          'requestPermissions',
-          { permissions: p.permissions, reason: p.reason },
-          p.itemId,
-          {
-            allow: false,
-            reason: 'Agent runs do not widen the sandbox',
-          },
-        );
-        return { permissions: {}, scope: 'turn' };
+        return { permissions: p.permissions ?? {}, scope: 'turn' };
       }
-      case 'mcpServer/elicitation/request': {
-        const p = params as { serverName?: string; message?: string };
-        this.report(
-          `mcp__${p.serverName ?? 'unknown'}`,
-          { message: p.message },
-          undefined,
-          {
-            allow: false,
-            reason: 'MCP elicitations cannot be answered in agent runs',
-          },
-        );
+      case 'mcpServer/elicitation/request':
         return { action: 'decline', content: null, _meta: null };
-      }
       case 'item/tool/requestUserInput':
         // Nobody can answer during a run; the agent proceeds without answers.
         return { answers: {} };
       case 'execCommandApproval':
       case 'applyPatchApproval':
-        return { decision: 'denied' };
+        return { decision: this.stopping ? 'abort' : 'approved' };
       default:
         throw new Error(`Unsupported request: ${method}`);
     }
   };
-
-  /** A command or file change Codex ran without asking (local Codex rules). */
-  private async checkUnreviewed(item: ThreadItem): Promise<void> {
-    if (this.reviewedItems.has(item.id)) return;
-    this.reviewedItems.add(item.id);
-    // Declined calls never ran.
-    if ('status' in item && item.status === 'declined') return;
-    let tool: string;
-    let input: Record<string, unknown>;
-    let decision: { allow: boolean; reason?: string };
-    if (item.type === 'commandExecution' && 'command' in item) {
-      tool = 'shell';
-      input = this.commandInput(item.command, item.cwd);
-      decision = await this.decide(tool, input);
-    } else if (item.type === 'fileChange' && 'changes' in item) {
-      tool = 'edit';
-      const changes = item.changes.map((c) => ({
-        path: c.path,
-        kind: c.kind.type,
-      }));
-      input = { changes };
-      decision = await this.decideChanges(changes);
-    } else return;
-    this.report(tool, input, item.id, decision, { unprompted: true });
-    if (!decision.allow) {
-      this.emit({
-        type: 'error',
-        content: `Codex ran a ${tool} call the runner policy denies, without asking: ${decision.reason ?? ''}`,
-        meta: { reason: 'unknown', toolUseId: item.id },
-      });
-    }
-  }
 
   // -- notifications --------------------------------------------------------
 
@@ -663,6 +623,14 @@ class CodexRun {
     const p = (params ?? {}) as Record<string, unknown>;
     if (p.threadId && this.threadId && p.threadId !== this.threadId) return;
     switch (method) {
+      case 'account/rateLimits/updated':
+        this.rateLimits = p.rateLimits;
+        this.emit({
+          type: 'status',
+          content: 'quota',
+          meta: { quota: codexQuota(this.rateLimits) },
+        });
+        return;
       case 'turn/started': {
         const turn = p.turn as Turn;
         this.turnRunning = true;
@@ -794,7 +762,6 @@ class CodexRun {
         break;
       case 'commandExecution':
         if ('command' in item) {
-          void this.checkUnreviewed(item);
           this.toolResult('shell', item.aggregatedOutput ?? '', item.id, {
             isError: item.status !== 'completed' || (item.exitCode ?? 0) !== 0,
             status: item.status,
@@ -805,7 +772,6 @@ class CodexRun {
       case 'fileChange':
         if ('changes' in item) {
           this.items.set(item.id, item);
-          void this.checkUnreviewed(item);
           this.toolResult(
             'edit',
             item.changes.map((c) => `${c.kind.type} ${c.path}`).join('\n'),
@@ -1060,21 +1026,37 @@ class CodexRun {
     if (session.skills) await this.registerSkills(rpc, session.skills.dir);
     const threadParams = {
       cwd: session.workDir,
-      approvalPolicy: 'untrusted',
-      sandbox: 'workspace-write',
+      approvalPolicy: 'never',
+      sandbox: 'danger-full-access',
       developerInstructions: session.systemPrompt,
       ...(session.model ? { model: session.model } : {}),
     };
-    const thread = session.resumeSessionId
-      ? await rpc.request<ThreadResponse>('thread/resume', {
+    let recovered = false;
+    let thread: ThreadResponse | undefined;
+    if (this.stopping) return;
+    if (session.resumeSessionId) {
+      try {
+        thread = await rpc.request<ThreadResponse>('thread/resume', {
           threadId: session.resumeSessionId,
           ...threadParams,
           excludeTurns: true,
-        })
-      : await rpc.request<ThreadResponse>('thread/start', {
-          ...threadParams,
-          serviceName: 'nocobase-runner',
         });
+      } catch (error) {
+        if (
+          !(error instanceof RpcError) ||
+          !/no rollout found for thread id/i.test(error.message) ||
+          this.stopping
+        )
+          throw error;
+        recovered = true;
+        this.emit(recoveryEvent('codex'));
+      }
+    }
+    if (this.stopping) return;
+    thread ??= await rpc.request<ThreadResponse>('thread/start', {
+      ...threadParams,
+      serviceName: 'nocobase-runner',
+    });
     this.threadId = thread.thread.id;
     this.model = thread.model;
     this.emit({
@@ -1084,13 +1066,22 @@ class CodexRun {
         sessionId: thread.thread.id,
         model: thread.model,
         ...(thread.reasoningEffort ? { effort: thread.reasoningEffort } : {}),
-        ...(session.resumeSessionId ? { resumed: true } : {}),
+        execution: {
+          effort: thread.reasoningEffort ?? null,
+          source:
+            session.resumeSessionId && !recovered
+              ? 'codex.thread/resume'
+              : 'codex.thread/start',
+        },
+        ...(session.resumeSessionId ? { resumed: !recovered } : {}),
+        ...(recovered ? { sessionRecovery: true } : {}),
       },
+      tool: 'codex',
     });
     if (this.stopping) return;
     const prompt: Steer = {
       clientId: randomUUID(),
-      text: session.prompt,
+      text: recovered ? recoveryPrompt(session.prompt) : session.prompt,
       prompt: true,
     };
     const early = this.carry;
@@ -1154,6 +1145,15 @@ class CodexRun {
       if (this.lastError)
         signal.message = `${this.lastError.message}; ${signal.message}`;
     }
+    const info = signal.codexErrorInfo;
+    const key =
+      typeof info === 'string' ? info : info ? Object.keys(info)[0] : undefined;
+    if (key === 'usageLimitExceeded')
+      this.emit({
+        type: 'status',
+        content: 'quota',
+        meta: { quota: codexQuota(this.rateLimits, true, info) },
+      });
     return { ...base, exit: 'error', error: classifyCodexFailure(signal) };
   }
 }

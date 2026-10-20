@@ -1,7 +1,7 @@
 /**
  * The operation catalogue: each operation a plan row may hold (`shared/plans.ts`), mapped onto the services the browser
  * uses, so a row is checked by exactly the rules a person's own request would be (who may see, edit, close, change the
- * owner; the workflow and its approvals; the comment and dependency rules).
+ * owner; where the status may move; the comment and dependency rules).
  *
  * Every operation has the same three parts:
  *
@@ -32,7 +32,7 @@ import type {
   RetractParams,
 } from '../../../shared/plans.js';
 import type { Viewer } from '../../access/viewer.js';
-import { conflict, invalid, notFound } from '../../kernel/errors.js';
+import { invalid, notFound } from '../../kernel/errors.js';
 import type { Tx } from '../../kernel/tx.js';
 import { findComment, type CommentService } from '../comments/index.js';
 import {
@@ -40,7 +40,7 @@ import {
   findIssueRow,
   isTerminal,
   type IssueService,
-  type StatusCatalogs,
+  type StatusService,
 } from '../issues/index.js';
 import { findProject, type ProjectService } from '../projects/index.js';
 import {
@@ -54,7 +54,7 @@ export interface OpServices {
   readonly comments: CommentService;
   readonly subtasks: SubtaskService;
   readonly projects: ProjectService;
-  readonly statuses: StatusCatalogs;
+  readonly statuses: Pick<StatusService, 'catalog'>;
 }
 
 /** What earlier rows created, by their `ref`. */
@@ -264,12 +264,10 @@ const SHAPES = {
     ...ISSUE_FIELDS,
     title: req('string'),
     blockedBy: opt('targets'),
-    start: opt('boolean'),
   },
   'issue.update': {
     issue: req('target'),
     set: req('object'),
-    start: opt('boolean'),
   },
   'comment.create': {
     issue: req('target'),
@@ -291,7 +289,6 @@ const SHAPES = {
     leadUserId: opt('nullableString'),
     startDate: opt('nullableString'),
     dueDate: opt('nullableString'),
-    workflowId: opt('nullableString'),
   },
   retract: { id: req('string') },
 } satisfies Record<string, Shape>;
@@ -381,12 +378,8 @@ export async function issueFields(
   );
 }
 
-async function isFinal(ctx: OpContext, issue: Issue): Promise<boolean> {
-  const catalog = await ctx.services.statuses.forProject(
-    ctx.tx.conn,
-    issue.projectId,
-  );
-  return isTerminal(catalog, issue.statusKey);
+function isFinal(ctx: OpContext, issue: Issue): boolean {
+  return isTerminal(ctx.services.statuses.catalog(), issue.statusKey);
 }
 
 const otherKind = (issue: Issue) =>
@@ -412,7 +405,9 @@ const issueCreate: OpDefinition = {
     });
     const flags: PlanRiskFlag[] = [];
     if (issue.ownerUserId !== ctx.viewer.userId) flags.push('ownerChange');
-    if (otherKind(issue)) flags.push('agentExecutor');
+    // An issue given the kind's default executor (left out of the row) is not one the row gives to an agent.
+    if (params.executor !== undefined && otherKind(issue))
+      flags.push('agentExecutor');
     return {
       target: issueRef(issue),
       created: issueRef(issue),
@@ -424,6 +419,16 @@ const issueCreate: OpDefinition = {
 };
 
 type IssueUpdate = IssueUpdateParams;
+
+/** Status changes also clear progress; rehearsal and undo must account for those existing fields. */
+function changedIssueFields(params: IssueUpdate): string[] {
+  return [
+    ...new Set([
+      ...Object.keys(params.set),
+      ...(params.set.statusKey === undefined ? [] : ['needsYou', 'next']),
+    ]),
+  ];
+}
 
 const issueUpdate: OpDefinition = {
   proposable: true,
@@ -438,7 +443,15 @@ const issueUpdate: OpDefinition = {
           message: 'params.set names no field to change.',
         },
       ];
-    return checkShape(ISSUE_FIELDS, set, 'params.set');
+    return checkShape(
+      {
+        ...ISSUE_FIELDS,
+        needsYou: opt('nullableString'),
+        next: opt('nullableString'),
+      },
+      set,
+      'params.set',
+    );
   },
   async baseline(ctx, params: IssueUpdate) {
     // An issue an earlier row creates has no state to compare yet.
@@ -447,7 +460,7 @@ const issueUpdate: OpDefinition = {
     if (!issue || issue.deletedAt) return null;
     return {
       target: issueRef(issue),
-      fields: await issueFields(ctx, issue, Object.keys(params.set)),
+      fields: await issueFields(ctx, issue, changedIssueFields(params)),
     };
   },
   async run(ctx, params: IssueUpdate) {
@@ -459,17 +472,10 @@ const issueUpdate: OpDefinition = {
       ...rest,
       ...(parent === undefined ? {} : { parentIssueId: parent }),
       ...(project === undefined ? {} : { projectId: project }),
-      ...(params.start === undefined ? {} : { start: params.start }),
       revision: before.revision,
     });
-    if (after.pendingApproval)
-      throw conflict(
-        'APPROVAL_REQUIRED',
-        'This status change needs an approval; a plan cannot ask for one. Ask for it on the issue page.',
-        { issueId: before.id },
-      );
     const flags: PlanRiskFlag[] = [];
-    if (after.statusKey !== before.statusKey && (await isFinal(ctx, after)))
+    if (after.statusKey !== before.statusKey && isFinal(ctx, after))
       flags.push('finalStatus');
     if (after.ownerUserId !== before.ownerUserId) flags.push('ownerChange');
     if (
@@ -481,7 +487,7 @@ const issueUpdate: OpDefinition = {
     return {
       target: issueRef(after),
       created: null,
-      after: await issueFields(ctx, after, Object.keys(params.set)),
+      after: await issueFields(ctx, after, changedIssueFields(params)),
       flags,
     };
   },

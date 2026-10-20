@@ -1,7 +1,11 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { Flags } from '@oclif/core';
-import { backupHasDatabase, restoreDatabase } from '../lib/backup.ts';
+import {
+  backupHasDatabase,
+  readDatabaseInventory,
+  restoreDatabase,
+} from '../lib/backup.ts';
 import { confirm } from '../lib/confirm.ts';
 import { switchCurrent } from '../lib/current-link.ts';
 import { healthUrl, mountPathOf, readAppEnv } from '../lib/env-file.ts';
@@ -24,12 +28,7 @@ import {
   stopApp,
   type ServiceOptions,
 } from '../lib/service.ts';
-import {
-  capitalize,
-  hostsApplications,
-  nodeRebuildAdvice,
-  subjectOf,
-} from '../lib/source.ts';
+import { nodeRebuildAdvice } from '../lib/source.ts';
 import {
   fixedMountPathOf,
   readState,
@@ -53,7 +52,7 @@ export const ROLLBACK_FLAGS = {
     allowNo: true,
     default: true,
     description:
-      'Restore the SQLite databases backed up before the upgrade, when that upgrade migrated them.',
+      'Restore the SQLite databases backed up before the upgrade, when that upgrade migrated them or repaired checksums.',
   }),
   'health-timeout': Flags.integer({
     default: 180,
@@ -117,7 +116,7 @@ export function defaultRollbackTarget(
 
 /**
  * The backup that holds the databases as they were on `target`, and whether they need restoring: only when the upgrade
- * away from `target` applied migrations.
+ * away from `target` applied migrations or repaired checksums.
  *
  * An interrupted upgrade may have migrated once it moved `current`, and how far it got is unknown, so it counts as
  * migrated from then on; before that it had only stopped the application. An interrupted rollback restores what it set
@@ -143,7 +142,8 @@ export function backupFor(
   );
   return {
     backup: upgrade?.backup,
-    migrated: (upgrade?.migrations ?? 0) > 0,
+    migrated:
+      (upgrade?.migrations ?? 0) > 0 || (upgrade?.checksumRepairs ?? 0) > 0,
   };
 }
 
@@ -160,7 +160,6 @@ export async function rollback(
     // Read under the lock: a run that waited on it must see what the previous one wrote.
     const state = await readState(layout);
     checkPlatform();
-    const subject = subjectOf(state);
     const from = state.current;
     const interrupted = state.pending;
     const requested = flags.to ?? defaultRollbackTarget(state);
@@ -182,7 +181,7 @@ export async function rollback(
       return {
         status: 'success-noop',
         result: { directory: root, current: from, rolledBack: false },
-        summary: [`${capitalize(subject)} is already on ${from}.`],
+        summary: [`The application is already on ${from}.`],
       };
     }
     if (!record || !existsSync(releaseDir(layout, record.id))) {
@@ -233,17 +232,21 @@ export async function rollback(
       backupHasDatabase(layout, backup)
         ? backup
         : undefined;
-    if (flags.restore && migrated && restoreFrom === undefined) {
+    const inventory = readDatabaseInventory(layout, env);
+    const external = [...inventory.external, ...inventory.unresolved];
+    if (flags.restore && migrated && external.length > 0) {
       reporter.warn(
-        `The databases may have been migrated past ${target}, and app-installer holds no copy of them from before (an external database, or a backup that was cut short). Restore them from your own backup if ${target} misbehaves.`,
+        `The external database connections ${external.join(', ')} are not restored, including migration and seed history. Restore them from your own backup before relying on ${target}.`,
+      );
+    } else if (flags.restore && migrated && restoreFrom === undefined) {
+      reporter.warn(
+        `The databases may have been migrated or had their checksums repaired past ${target}, and app-installer holds no copy of them from before (an external database, or a backup that was cut short). Restore them from your own backup if ${target} misbehaves.`,
       );
     }
     await confirm(
       [
-        `Roll ${subject} at ${root} back from ${from} to ${target}.`,
-        hostsApplications(state)
-          ? `${capitalize(subject)} and every application it hosts stop while the release switches.`
-          : `${capitalize(subject)} stops while the release switches.`,
+        `Roll the application at ${root} back from ${from} to ${target}.`,
+        'The application stops while the release switches.',
         restoreFrom
           ? `The SQLite databases are restored from ${restoreFrom}: whatever was written since that upgrade is lost.`
           : 'The databases are left as they are; rolling back does not undo migrations.',
@@ -306,8 +309,8 @@ export async function rollback(
       throw new InstallerError(
         'ROLLBACK_FAILED',
         switched
-          ? `${target} did not come back${reason}. ${capitalize(subject)} is down.`
-          : `${restoreFrom && !restored ? 'Restoring the databases' : 'Switching to ' + target} failed${reason}; ${subject} is stopped and still on ${from}.`,
+          ? `${target} did not come back${reason}. The application is down.`
+          : `${restoreFrom && !restored ? 'Restoring the databases' : 'Switching to ' + target} failed${reason}; the application is stopped and still on ${from}.`,
         {
           exitCode: EXIT_ROLLBACK_FAILED,
           details: {
@@ -363,8 +366,8 @@ export async function rollback(
       },
       summary: [
         interrupted
-          ? `Recovered from the interrupted ${interrupted.action} (${interrupted.from} to ${interrupted.to}); ${subject} runs ${target}.`
-          : `Rolled ${subject} back from ${from} to ${target}.`,
+          ? `Recovered from the interrupted ${interrupted.action} (${interrupted.from} to ${interrupted.to}); the application runs ${target}.`
+          : `Rolled the application back from ${from} to ${target}.`,
         restored
           ? `  Databases restored from ${restoreFrom}`
           : '  Databases left as they were',

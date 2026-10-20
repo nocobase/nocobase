@@ -5,7 +5,6 @@
 "@nocobase/app-skills": patch
 "@nocobase/app-template-default": patch
 "@nocobase/app-template-examples": patch
-"@nocobase/app-template-hub": patch
 ---
 
 Add `nocobase app db doctor`, which compares stored Collection metadata with the schema behind it and deletes the records whose table is gone.

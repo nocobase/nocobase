@@ -22,6 +22,8 @@ interface MailWorkspaceDataOptions {
   readonly mail: MailClient;
   readonly accounts: readonly MailAccountView[];
   readonly messageQuery: MailMessagesQuery;
+  /** Suppress list requests while a filter is invalid or awaiting its debounce. */
+  readonly queryEnabled?: boolean;
   readonly reloadVersion: number;
   readonly requestError: (cause: unknown) => void;
   readonly setError: Dispatch<SetStateAction<string | undefined>>;
@@ -33,6 +35,7 @@ export function useMailWorkspaceData({
   mail,
   accounts,
   messageQuery,
+  queryEnabled = true,
   reloadVersion,
   requestError,
   setError,
@@ -142,6 +145,7 @@ export function useMailWorkspaceData({
   );
 
   useMailInvalidations(() => {
+    if (!queryEnabled) return;
     if (
       loadingMessages ||
       loadingConversation ||
@@ -258,6 +262,10 @@ export function useMailWorkspaceData({
         setConversationCursor(undefined);
         setLoadingConversation(false);
         setError(undefined);
+        if (!queryEnabled) {
+          setLoadingMessages(false);
+          return undefined;
+        }
         return accountCount === 0
           ? { items: [], nextCursor: undefined, total: 0 }
           : mail.listMessages(messageQuery);
@@ -289,6 +297,7 @@ export function useMailWorkspaceData({
     accountCount,
     mail,
     messageQuery,
+    queryEnabled,
     reloadVersion,
     requestError,
     setError,
@@ -335,6 +344,7 @@ export function useMailWorkspaceData({
 
   const changeMessagePage = (targetIndex: number): void => {
     if (
+      !queryEnabled ||
       loadingMessages ||
       settledMessageQueryRef.current !== messageQuery ||
       messagePageRequestRef.current === messageRequestIdRef.current ||
@@ -454,6 +464,10 @@ export function useMailWorkspaceData({
     setMessages([]);
     setTotal(undefined);
     setNextCursor(undefined);
+    setPageCursors([undefined]);
+    setPageIndex(0);
+    setListVersion((version) => version + 1);
+    settledMessageQueryRef.current = undefined;
     setLoadingMessages(false);
   }, [cancelRequests, clearSelection]);
 

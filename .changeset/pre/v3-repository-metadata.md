@@ -12,10 +12,8 @@
 "@nocobase/app-plugin-template-print-example": patch
 "@nocobase/app-template-default": patch
 "@nocobase/app-template-examples": patch
-"@nocobase/app-template-hub": patch
 "@nocobase/create-plugin": patch
 "@nocobase/dev-config": patch
-"@nocobase/hub-cli": patch
 "@nocobase/markdown-mermaid": patch
 ---
 

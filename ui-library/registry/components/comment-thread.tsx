@@ -95,6 +95,8 @@ export interface CommentItem {
   readonly authorAvatar?: string | null;
   /** Beside the name: an API key, the author's kind, a note, the comment's kind. */
   readonly tags?: readonly CommentTag[];
+  /** Beside the author, such as a clickable execution badge supplied by the application. */
+  readonly headerExtra?: ReactNode;
   /** Marks the comment with an accent, such as one of a kind the consumer writes. */
   readonly accent?: boolean;
   readonly createdAt: string;
@@ -253,6 +255,7 @@ function Tag({
 }): ReactElement {
   return (
     <Badge
+      data-size='sm'
       variant='secondary'
       className={cn('gap-1 font-normal [&_svg]:size-3', TAG_TONE[tone])}
     >
@@ -392,7 +395,9 @@ function TimelineEntries({
   readonly renderEntry: (entry: CommentTimelineEntry) => ReactNode;
 }): ReactElement {
   const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
-  if (entries.length <= VIRTUALIZE_AFTER)
+  // Keep the browser's scroll anchor while entries arrive or history is loaded.
+  const [virtual] = useState(() => entries.length > VIRTUALIZE_AFTER);
+  if (!virtual)
     return (
       <ul className='space-y-3' aria-label={label}>
         {entries.map((entry) => (
@@ -687,6 +692,7 @@ function CommentBlock({
             {tag.label}
           </Tag>
         ))}
+        {comment.deleted ? null : comment.headerExtra}
         <time
           dateTime={comment.createdAt}
           title={absolute(comment.createdAt, locale)}

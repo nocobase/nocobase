@@ -50,7 +50,7 @@
       "name": "agent-picker-demo",
       "type": "registry:example",
       "title": "Agent Picker Demo",
-      "description": "Usage example of @nocobase/agent-picker. Choosing who a new conversation goes to from agents grouped by mode, an existing conversation whose agent stays, and the availability dot, mode tag and a toolbar picker on their own.",
+      "description": "Usage example of @nocobase/agent-picker. Choosing who a new conversation goes to from the enabled agents, an existing conversation whose agent stays, and the availability dot, a tag and an agent's row on their own.",
       "categories": ["agents"],
       "dependencies": ["@nocobase/app-plugin-agents@^0.1.0-beta.0"],
       "registryDependencies": ["@nocobase/agent-picker"],
@@ -391,7 +391,7 @@
       "name": "property-fields-demo",
       "type": "registry:example",
       "title": "Property Fields Demo",
-      "description": "Usage example of @nocobase/property-fields. A record's property card with every field kind, each change applied to local state.",
+      "description": "Usage example of @nocobase/property-fields. The same record's property card in both variants, form and inline, over shared local state: every field kind, a copyable email and website, and a long introduction.",
       "categories": ["data-entry"],
       "registryDependencies": ["@nocobase/property-fields"],
       "files": [
@@ -433,6 +433,21 @@
           "path": "components/markdown-view.tsx",
           "type": "registry:example",
           "target": "client/extensions/nocobase-markdown-view-demo/markdown-view.tsx"
+        }
+      ]
+    },
+    {
+      "name": "long-text-demo",
+      "type": "registry:example",
+      "title": "Long Text Demo",
+      "description": "Usage example of @nocobase/long-text. A record's description and a comment that unfold in place, and its introduction and address in a narrow column opening in a pop-up.",
+      "categories": ["data-display"],
+      "registryDependencies": ["@nocobase/long-text"],
+      "files": [
+        {
+          "path": "components/long-text.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-long-text-demo/long-text.tsx"
         }
       ]
     },
@@ -629,6 +644,120 @@
           "path": "approval/fixtures.ts",
           "type": "registry:example",
           "target": "client/extensions/nocobase-approval-ui-demo/fixtures.ts"
+        }
+      ]
+    },
+    {
+      "name": "flow-diagram-demo",
+      "type": "registry:example",
+      "title": "Flow Diagram Demo",
+      "description": "Usage example of @nocobase/flow-diagram with branches, a cycle, self-transition, parallel edges and inspection callbacks.",
+      "categories": ["diagrams"],
+      "registryDependencies": ["@nocobase/flow-diagram"],
+      "dependencies": ["lucide-react@^0.487.0"],
+      "files": [
+        {
+          "path": "components/flow-diagram.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-flow-diagram-demo/flow-diagram.tsx"
+        }
+      ]
+    },
+    {
+      "name": "lifecycle-diagram-demo",
+      "type": "registry:example",
+      "title": "Lifecycle Diagram Demo",
+      "description": "Usage example of @nocobase/lifecycle-diagram with branches, a cycle, self-transition, parallel edges and inspection callbacks.",
+      "categories": ["diagrams"],
+      "registryDependencies": ["@nocobase/lifecycle-diagram"],
+      "dependencies": ["@nocobase/lifecycle@^0.1.0-beta.0"],
+      "files": [
+        {
+          "path": "lifecycle/lifecycle-diagram.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-lifecycle-diagram-demo/lifecycle-diagram.tsx"
+        }
+      ]
+    },
+    {
+      "name": "workflow-management-demo",
+      "type": "registry:example",
+      "title": "Workflow Management Demo",
+      "description": "Compose a single workflow management page with in-page tabs, definition and execution lists, definition diagram and parameter layout, and historical execution inspection. An in-memory adapter demonstrates category filtering and adding, editing and deleting categories, alongside application-supplied data, labels and callbacks.",
+      "categories": ["workflows"],
+      "dependencies": [
+        "@nocobase/lifecycle@^0.1.0-beta.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": [
+        "button",
+        "input",
+        "@nocobase/lifecycle-diagram",
+        "@nocobase/workflow-management",
+        "@nocobase/page-header",
+        "dialog",
+        "dropdown-menu"
+      ],
+      "files": [
+        {
+          "path": "lifecycle/workflow-management/index.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-workflow-management-demo/index.tsx"
+        },
+        {
+          "path": "lifecycle/workflow-management/fixtures.ts",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-workflow-management-demo/fixtures.ts"
+        },
+        {
+          "path": "lifecycle/workflow-management/categories.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-workflow-management-demo/categories.tsx"
+        }
+      ]
+    },
+    {
+      "name": "data-table-demo",
+      "type": "registry:example",
+      "title": "Data Table Demo",
+      "description": "Standard TanStack DataTable with stable row identities, sortable columns and pagination.",
+      "registryDependencies": ["@nocobase/data-table"],
+      "files": [
+        {
+          "path": "components/data-table.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-data-table-demo/data-table.tsx"
+        }
+      ]
+    },
+    {
+      "name": "role-list-demo",
+      "type": "registry:example",
+      "title": "Role List Demo",
+      "description": "A compact role list with protected/custom roles, a long name and many rows.",
+      "categories": ["authorization"],
+      "dependencies": ["react-router@^7.0.2"],
+      "registryDependencies": ["@nocobase/role-list"],
+      "files": [
+        {
+          "path": "authorization/role-list.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-role-list-demo/role-list.tsx"
+        }
+      ]
+    },
+    {
+      "name": "default-access-editor-demo",
+      "type": "registry:example",
+      "title": "Default Access Editor Demo",
+      "description": "Controlled default-access rule fields, independent scopes and no implicit all-records selection.",
+      "categories": ["authorization"],
+      "registryDependencies": ["@nocobase/default-access-editor"],
+      "files": [
+        {
+          "path": "authorization/default-access-editor.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-default-access-editor-demo/default-access-editor.tsx"
         }
       ]
     }

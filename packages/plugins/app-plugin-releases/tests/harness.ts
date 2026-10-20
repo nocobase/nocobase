@@ -44,6 +44,8 @@ import {
   type DriverSession,
 } from '../server/drivers/types.js';
 import { createReleasesApi } from '../server/routes/api.js';
+import type { AppDriveConfig } from '@nocobase/drive';
+import type { ReleasesPluginConfig } from '../server/config.js';
 import type { ReleasesAccess, ReleasesEvent } from '../server/tokens.js';
 
 export const ROOT: string = path.resolve(import.meta.dirname, '..');
@@ -320,6 +322,8 @@ export const TEST_SECRETS: SecretsService = createSecretsService({
 
 export async function createHarness(
   options: {
+    readonly artifact?: ReleasesPluginConfig['artifact'];
+    readonly drive?: AppDriveConfig;
     readonly drivers?: readonly DeploymentDriver[];
     readonly maxArtifactSizeMB?: number;
     readonly rootDir?: string;
@@ -344,8 +348,9 @@ export async function createHarness(
   for (const driver of options.drivers ?? []) drivers.register(driver);
   const services = createReleases({
     database,
+    drive: options.drive,
     config: {
-      artifact: {
+      artifact: options.artifact ?? {
         driver: 'fs',
         location: path.join(rootDir, 'artifacts'),
         visibility: 'private',

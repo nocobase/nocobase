@@ -1,5 +1,24 @@
 # @nocobase/drive
 
+## 0.1.0-beta.7
+
+### Minor Changes
+
+- 22717d7: Support synchronous custom driver factories alongside existing configuration objects in `drive.disks`. Create drivers lazily through the shared application Drive provider, preserve Flydrive caching and fakes, and reject factory references where release artifacts require serializable Host configuration. Ship the `nocobase-drive` Skill with filesystem, S3, native Aliyun OSS, and custom driver guides, and direct application guidance to that shared documentation. Consumers reading disk configuration fields must narrow out factory functions first.
+
+## 0.1.0-beta.6
+
+### Minor Changes
+
+- 89648ee: Add a native Aliyun OSS drive using the official server SDK, with access keys or ECS RAM role credentials, on-demand refresh, V4 signed URLs, file operations and ACL support. Handle input stream errors while credentials are loading so failed uploads reject safely without terminating the process. Default OSS transfer timeouts to ten minutes and allow a positive integer `timeout` in milliseconds (up to 2147483647), retained after credential refresh and bucket changes, so slow uploads and buffered downloads are not limited by the SDK default of sixty seconds. Metadata request timeouts remain unchanged. Allow OSS artifact storage in standalone App Hosts. S3 configuration and credential behavior remain unchanged. Validated with simulated metadata and the real OSS SDK request/signing chain; real ECS/OSS verification remains a follow-up.
+- fe81e4b: Export `parseDriveDiskConfig` and `DriveDiskConfigError` to validate a disk configuration without echoing its values, and declare `forcePathStyle` and `supportsACL` on S3 disks as optional, since the S3 driver applies its own defaults when they are omitted.
+
+## 0.1.0-beta.5
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+
 ## 0.1.0-beta.4
 
 ### Patch Changes

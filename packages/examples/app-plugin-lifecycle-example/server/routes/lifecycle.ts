@@ -7,13 +7,15 @@ import {
   describeRoute,
 } from '@nocobase/app-server/router';
 import {
-  lifecycleDescriptionView,
+  lifecycleDescriptionViewAsync,
   type LifecycleRuntime,
 } from '@nocobase/lifecycle';
-import type { Hono } from 'hono';
+import type { Context, Hono, MiddlewareHandler } from 'hono';
+import { z } from 'zod';
 import {
   LIFECYCLE_EXAMPLE_DOMAIN,
   outwardView,
+  signedInUser,
   tags,
   toApiError,
 } from './api.js';
@@ -35,6 +37,21 @@ export interface LifecycleRoutesSpec {
   readonly lifecycle: string;
   /** The record in an operationId and a summary, such as `Ticket`. */
   readonly noun: string;
+  /**
+   * Whether the request names the example persona it acts as, in `actAs`.
+   * The help desk and expense reports do, so one person can play every
+   * role; the durable flows do not, and act as the signed-in user.
+   */
+  readonly persona?: boolean;
+  readonly authorizeParameters?: (actor: string) => void;
+}
+
+/** Who a request acts as: the persona it names, or the signed-in user. */
+function actorOf(
+  context: Context<AuthEnv>,
+  actAs: string | undefined,
+): { readonly id: string } {
+  return { id: actAs ?? signedInUser(context) };
 }
 
 /**
@@ -52,13 +69,24 @@ export function lifecycleRoutes(
   spec: LifecycleRoutesSpec,
 ): void {
   const { lifecycle, noun } = spec;
+  const query: z.ZodType<{ readonly actAs?: string }> =
+    spec.persona === false ? z.object({}) : ActAsQuery;
   const path = `${spec.basePath}/${lifecycle}`;
   const lower = noun.charAt(0).toLowerCase() + noun.slice(1);
   const notFound = apiErrorResponse(404, `No such ${lower}.`);
 
+  const parameterPermission: MiddlewareHandler<AuthEnv> = async (
+    context,
+    next,
+  ) => {
+    if (spec.authorizeParameters)
+      spec.authorizeParameters(actorOf(context, context.req.query('actAs')).id);
+    await next();
+  };
   // A fixed segment, registered before `/:recordId`.
   router.get(
     `${path}/lifecycle`,
+    parameterPermission,
     describeRoute({
       tags,
       summary: `Describe the ${lower} lifecycle`,
@@ -71,12 +99,19 @@ export function lifecycleRoutes(
         500: apiErrorResponse(500),
       },
     }),
-    (context) =>
-      context.json({ data: lifecycleDescriptionView(runtime, lifecycle) }),
+    apiValidator('query', query),
+    async (context) =>
+      context.json({
+        data: await lifecycleDescriptionViewAsync(runtime, lifecycle, {
+          record: null,
+          transactionHandle: undefined,
+        }),
+      }),
   );
 
   router.get(
     `${path}/:recordId`,
+    parameterPermission,
     describeRoute({
       tags,
       summary: `Get a ${lower}`,
@@ -91,13 +126,13 @@ export function lifecycleRoutes(
       },
     }),
     apiValidator('param', RecordParams),
-    apiValidator('query', ActAsQuery),
+    apiValidator('query', query),
     async (context) => {
       const { recordId } = context.req.valid('param');
       const { actAs } = context.req.valid('query');
       return context.json({
         data: outwardView(
-          await runtime.view(lifecycle, recordId, { id: actAs }),
+          await runtime.view(lifecycle, recordId, actorOf(context, actAs)),
         ),
       });
     },
@@ -131,13 +166,13 @@ export function lifecycleRoutes(
       },
     }),
     apiValidator('param', RecordParams),
-    apiValidator('query', ActAsQuery),
+    apiValidator('query', query),
     apiValidator('json', FireInput),
     async (context) => {
       const { recordId } = context.req.valid('param');
       const { actAs } = context.req.valid('query');
       const body = context.req.valid('json');
-      const actor = { id: actAs };
+      const actor = actorOf(context, actAs);
       try {
         const result = await runtime.fire(
           lifecycle,
@@ -201,13 +236,13 @@ export function lifecycleRoutes(
       },
     }),
     apiValidator('param', RunRouteParams),
-    apiValidator('query', ActAsQuery),
+    apiValidator('query', query),
     apiValidator('json', RetryRunInput),
     async (context) => {
       const { recordId, runId } = context.req.valid('param');
       const { actAs } = context.req.valid('query');
       const { force, reason } = context.req.valid('json');
-      const actor = { id: actAs };
+      const actor = actorOf(context, actAs);
       await runtime.view(lifecycle, recordId, actor);
       await runOf(recordId, runId);
       await runtime.retryRun(runId, {
@@ -247,11 +282,11 @@ export function lifecycleRoutes(
       },
     }),
     apiValidator('param', RunRouteParams),
-    apiValidator('query', ActAsQuery),
+    apiValidator('query', query),
     async (context) => {
       const { recordId, runId } = context.req.valid('param');
       const { actAs } = context.req.valid('query');
-      const actor = { id: actAs };
+      const actor = actorOf(context, actAs);
       await runtime.view(lifecycle, recordId, actor);
       await runOf(recordId, runId);
       try {
@@ -286,11 +321,11 @@ export function lifecycleRoutes(
       },
     }),
     apiValidator('param', RunRouteParams),
-    apiValidator('query', ActAsQuery),
+    apiValidator('query', query),
     async (context) => {
       const { recordId, runId } = context.req.valid('param');
       const { actAs } = context.req.valid('query');
-      const actor = { id: actAs };
+      const actor = actorOf(context, actAs);
       await runtime.view(lifecycle, recordId, actor);
       await runOf(recordId, runId);
       await runtime.cancelRun(runId);

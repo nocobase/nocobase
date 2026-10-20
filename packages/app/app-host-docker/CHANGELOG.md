@@ -1,5 +1,26 @@
 # @nocobase/app-host-docker
 
+## 0.1.0-beta.2
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-host@0.1.0-beta.17
+  - @nocobase/app-server@3.0.0-beta.0
+
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-host@0.1.0-beta.15
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/logging@0.1.0-beta.7
+
 ## 0.1.0-beta.0
 
 ### Minor Changes

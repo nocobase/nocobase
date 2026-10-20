@@ -30,9 +30,10 @@ import {
   scopeOf,
   type Viewer,
 } from '../../access/viewer.js';
+import { oneOf } from '../../kernel/db.js';
 import { forbidden, notFound } from '../../kernel/errors.js';
 import { projectRelation, visibleProjects } from '../projects/index.js';
-import { findIssue } from './issue.store.js';
+import { findIssue, findIssueIds } from './issue.store.js';
 
 /** The live issues the viewer may see, as a filter on `pmIssues`. */
 export function visibleIssues(f: FilterBuilder, viewer: Viewer): FilterNode {
@@ -46,6 +47,20 @@ export function visibleIssues(f: FilterBuilder, viewer: Viewer): FilterNode {
       ? f.string('id').eq(null)
       : f.or(viewer.projectIds.map((id) => f.string('projectId').eq(id))),
   ]);
+}
+
+/** Visibility for one request's related issues, using the same filter as issue lists. */
+export async function visibleIssueIds(
+  conn: DatabaseConnection,
+  viewer: Viewer,
+  ids: readonly string[],
+): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  return new Set(
+    await findIssueIds(conn, (f) =>
+      f.and([oneOf(f, 'id', [...new Set(ids)]), visibleIssues(f, viewer)]),
+    ),
+  );
 }
 
 function byScope(f: FilterBuilder, viewer: Viewer): FilterNode {

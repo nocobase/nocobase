@@ -75,6 +75,7 @@ export function useComposerLabels(): AgentComposerLabels {
       send: t('chat.composer.send'),
       stop: t('chat.composer.stop'),
       stopping: t('chat.composer.stopping'),
+      contextFailed: t('chat.contextFailed'),
       contextLabel: t('chat.context.label'),
       contextFilter: t('chat.context.filter', { filter: '{filter}' }),
       contextSelection: t('chat.context.selection', { text: '{text}' }),
@@ -131,7 +132,18 @@ export function useAgentPickerLabels(): AgentPickerLabels {
       chooseFor: t('chat.agents.chooseFor'),
       startWith: t('chat.agents.startWith'),
       boundHint: t('chat.agents.boundHint'),
-      modeHint: t('chat.agents.modeHint'),
+      modeHint: t('chat.agents.hint'),
+      models: t('chat.agents.models'),
+      runnerAgents: t('chat.agents.runnerAgents'),
+      modelPlaceholder: t('chat.agents.modelPlaceholder'),
+      modelSwitch: t('chat.agents.modelSwitch', {
+        name: '{name}',
+        service: '{service}',
+      }),
+      modelHint: t('chat.agents.modelHint'),
+      mixedHint: t('chat.agents.mixedHint'),
+      search: t('chat.agents.search'),
+      noResults: t('chat.agents.noResults'),
       empty: t('chat.agents.empty'),
       none: t('chat.agents.none'),
       field: t('chat.agents.field', { name: '{name}' }),
@@ -141,13 +153,6 @@ export function useAgentPickerLabels(): AgentPickerLabels {
       systemDefault: t('chat.agents.systemDefault'),
       personal: t('chat.agents.personal'),
       temporary: t('chat.agents.temporary'),
-      onlineGroup: t('chat.agents.onlineGroup'),
-      runnerGroup: t('chat.agents.runnerGroup'),
-      mode: { online: t('chat.mode.online'), runner: t('chat.mode.runner') },
-      modeHints: {
-        online: t('chat.mode.onlineHint'),
-        runner: t('chat.mode.runnerHint'),
-      },
       availability: Object.fromEntries(
         AVAILABILITY.map((key) => [key, t(`chat.availability.${key}`)]),
       ) as AgentPickerLabels['availability'],
@@ -161,8 +166,9 @@ const AVAILABILITY = [
   'agentMissing',
   'agentArchived',
   'forbidden',
+  'noModel',
   'noRunner',
-  'modelUnavailable',
+  'othersPersonal',
 ] as const;
 
 function englishOf(key: string): string | undefined {

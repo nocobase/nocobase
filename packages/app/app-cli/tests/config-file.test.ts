@@ -1,26 +1,19 @@
 import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
 import { buildConfigFile, generateAuthSecret } from '../src/lib/config-file.ts';
 
-const packageRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-);
-
 /**
- * The real example from the default template, so the placeholders this module rewrites are tested against the file it
- * will actually be handed rather than against a fixture that can quietly diverge from it.
+ * A copy of an application's example configuration, so the placeholders this module rewrites are tested against a
+ * whole, realistic file rather than a few lines. Each template asserts the same contract on its own
+ * `config.example.yml` (`tests/logic/config-example.test.ts`), and the create-app smoke test runs `config init`
+ * against the real one.
  */
-async function readDefaultTemplateExample(): Promise<string> {
+async function readExample(): Promise<string> {
   return readFile(
-    path.join(
-      packageRoot,
-      '../../templates/app-template-default/config.example.yml',
-    ),
+    fileURLToPath(new URL('./fixtures/config.example.yml', import.meta.url)),
     'utf8',
   );
 }
@@ -32,9 +25,9 @@ function parsed(config: string): Record<string, unknown> {
 }
 
 describe('buildConfigFile', () => {
-  it('fills in the first secrets key in the template example', async () => {
+  it('fills in the first secrets key in the application example', async () => {
     const config = buildConfigFile({
-      example: await readDefaultTemplateExample(),
+      example: await readExample(),
       secretsKey: KEY,
     });
 
@@ -49,7 +42,7 @@ describe('buildConfigFile', () => {
   /** The example is the only documentation of what an application can be configured with, so none of it is dropped. */
   it('keeps the rest of the example, comments included', async () => {
     const config = buildConfigFile({
-      example: await readDefaultTemplateExample(),
+      example: await readExample(),
       secretsKey: KEY,
     });
 
@@ -61,7 +54,7 @@ describe('buildConfigFile', () => {
 
   it('replaces the example instruction with a generated header', async () => {
     const config = buildConfigFile({
-      example: await readDefaultTemplateExample(),
+      example: await readExample(),
       secretsKey: KEY,
     });
 

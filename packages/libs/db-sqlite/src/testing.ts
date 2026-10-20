@@ -1,4 +1,4 @@
-import { mkdir, readdir, rm } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type {
@@ -51,6 +51,27 @@ export const testDatabaseProvisioner: TestDatabaseProvisioner = {
   },
   dropProvisioned: ({ name, env }) =>
     removeDatabaseFiles(sqliteTestDirectory(env), name),
+  // A closed SQLite database is one file, so a copy of it is a database migrated once and opened many times.
+  clone: async ({ source, name, env }) => {
+    const directory = sqliteTestDirectory(env);
+    const target = path.join(directory, name + EXTENSION);
+    try {
+      await copyFile(path.join(directory, source + EXTENSION), target);
+      await copyFile(
+        path.join(directory, source + EXTENSION + '-wal'),
+        target + '-wal',
+      ).catch((error: unknown) => {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      });
+    } catch (error) {
+      await removeDatabaseFiles(directory, name);
+      throw error;
+    }
+    return {
+      connection: sqlite({ filename: target }),
+      drop: () => removeDatabaseFiles(directory, name),
+    };
+  },
 };
 
 async function removeDatabaseFiles(

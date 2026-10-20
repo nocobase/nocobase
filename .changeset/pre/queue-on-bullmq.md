@@ -3,7 +3,6 @@
 '@nocobase/app-server': minor
 '@nocobase/app-template-default': minor
 '@nocobase/app-template-examples': minor
-'@nocobase/app-template-hub': minor
 '@nocobase/create-plugin': minor
 '@nocobase/app-plugin-queue-example': minor
 '@nocobase/dev-config': patch

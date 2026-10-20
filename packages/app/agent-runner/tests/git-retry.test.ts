@@ -1,4 +1,3 @@
-import { existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import path from 'node:path';
@@ -11,7 +10,6 @@ import {
 } from '../src/agent/prepare/types.ts';
 import {
   CheckoutError,
-  checkout,
   lockWorkspace,
   updateCache,
 } from '../src/core/checkout.ts';
@@ -23,7 +21,7 @@ import {
 } from '../src/core/git-retry.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import type { RunPayload } from '../src/protocol/index.ts';
-import { git, makeRemote, publishSeed, removeDir, tempDir } from './helpers.ts';
+import { removeDir, tempDir } from './helpers.ts';
 
 /** Messages as git prints them, from runs that failed for each cause. */
 const TRANSIENT = [
@@ -199,33 +197,12 @@ interface Host {
   close: () => Promise<void>;
 }
 
-/**
- * An HTTP git host that answers the `n`th request (from 1) with `status(n)`, counting them. A 200 serves the bare
- * repositories under `dir` as static files, git's dumb HTTP protocol (`git update-server-info` prepares one).
- */
-async function gitHost(
-  status: (request: number) => number,
-  dir?: string,
-): Promise<Host> {
+/** An HTTP git host that answers the `n`th request (from 1) with `status(n)`, counting them. */
+async function gitHost(status: (request: number) => number): Promise<Host> {
   let requests = 0;
-  const server: Server = createServer((request, response) => {
+  const server: Server = createServer((_request, response) => {
     requests += 1;
-    const code = status(requests);
-    if (code === 200 && dir !== undefined) {
-      const file = path.join(
-        dir,
-        new URL(request.url ?? '/', 'http://x').pathname,
-      );
-      if (file.startsWith(dir) && existsSync(file) && statSync(file).isFile()) {
-        response.writeHead(200, { 'content-type': 'application/octet-stream' });
-        response.end(readFileSync(file));
-        return;
-      }
-      response.writeHead(404);
-      response.end('not found');
-      return;
-    }
-    response.writeHead(code, { 'content-type': 'text/plain' });
+    response.writeHead(status(requests), { 'content-type': 'text/plain' });
     response.end('unavailable');
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -284,159 +261,6 @@ describe('git network operations', () => {
         /not found.*\nHint: Check that the repository URL/su,
       );
       expect(host.requests()).toBe(1);
-    } finally {
-      await host.close();
-    }
-  });
-
-  it('retries a submodule the host answers 503', async () => {
-    const host = await failingHost(503);
-    try {
-      // Git refuses file:// submodules unless told otherwise; the parent is local, the submodule is on the host.
-      vi.stubEnv('GIT_CONFIG_COUNT', '1');
-      vi.stubEnv('GIT_CONFIG_KEY_0', 'protocol.file.allow');
-      vi.stubEnv('GIT_CONFIG_VALUE_0', 'always');
-      const remote = makeRemote(root);
-      const sub = makeRemote(root, 'sub-repo');
-      const seed = path.join(root, 'origin-repo-seed');
-      git(['submodule', 'add', '--quiet', sub, 'vendor/sub'], seed);
-      git(
-        [
-          'config',
-          '--file',
-          '.gitmodules',
-          'submodule.vendor/sub.url',
-          host.url('sub'),
-        ],
-        seed,
-      );
-      git(['add', '.gitmodules'], seed);
-      git(['-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'sub'], seed);
-      publishSeed(root);
-      const error = await checkout({
-        paths,
-        appKey: 'app',
-        subjectKey: 'PM-1',
-        dirs: [
-          {
-            kind: 'repo',
-            url: remote,
-            defaultBranch: 'main',
-            branch: 'agent/PM-1',
-            path: 'app',
-          },
-        ],
-        retry: noWait,
-      }).catch((caught: unknown) => caught);
-      expect(error).toBeInstanceOf(GitNetworkError);
-      expect(error).toMatchObject({ retries: 3 });
-      expect((error as Error).message).toContain('git submodule update');
-      // Four updates; git itself tries a submodule's clone again within each.
-      expect(host.requests()).toBeGreaterThanOrEqual(4);
-    } finally {
-      await host.close();
-    }
-  });
-});
-
-describe('submodules an earlier preparation left unfinished', () => {
-  let root: string;
-  let paths: RunnerPaths;
-
-  beforeEach(() => {
-    root = tempDir('nocobase-runner-git-retry-nested-');
-    paths = runnerPaths(path.join(root, 'home'), path.join(root, 'work'));
-    // Git refuses file:// submodules unless told otherwise; the nested one is on the HTTP host.
-    vi.stubEnv('GIT_CONFIG_COUNT', '1');
-    vi.stubEnv('GIT_CONFIG_KEY_0', 'protocol.file.allow');
-    vi.stubEnv('GIT_CONFIG_VALUE_0', 'always');
-  });
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    removeDir(root);
-  });
-
-  it('finishes a nested submodule whose fetch ran out of retries once the network is back, on the same worktree', async () => {
-    let down = true;
-    const host = await gitHost(() => (down ? 503 : 200), root);
-    try {
-      // origin-repo -> vendor/mid (local) -> nested (on the host).
-      makeRemote(root, 'nested');
-      git(['update-server-info'], path.join(root, 'nested.git'));
-      const mid = makeRemote(root, 'mid');
-      const midSeed = path.join(root, 'mid-seed');
-      git(
-        [
-          'submodule',
-          'add',
-          '--quiet',
-          `file://${path.join(root, 'nested.git')}`,
-          'nested',
-        ],
-        midSeed,
-      );
-      git(
-        [
-          'config',
-          '--file',
-          '.gitmodules',
-          'submodule.nested.url',
-          host.url('nested'),
-        ],
-        midSeed,
-      );
-      git(['add', '.gitmodules'], midSeed);
-      git(
-        ['-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'nested'],
-        midSeed,
-      );
-      publishSeed(root, 'mid');
-      const remote = makeRemote(root);
-      const seed = path.join(root, 'origin-repo-seed');
-      git(['submodule', 'add', '--quiet', mid, 'vendor/mid'], seed);
-      git(['-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'mid'], seed);
-      publishSeed(root);
-      const prepare = () =>
-        checkout({
-          paths,
-          appKey: 'app',
-          subjectKey: 'PM-1',
-          dirs: [
-            {
-              kind: 'repo',
-              url: remote,
-              defaultBranch: 'main',
-              branch: 'agent/PM-1',
-              path: 'app',
-            },
-          ],
-          retry: noWait,
-        });
-
-      const failed = await prepare().catch((caught: unknown) => caught);
-      expect(failed).toBeInstanceOf(GitNetworkError);
-      const nested = path.join(
-        paths.workRoot,
-        'app',
-        'PM-1',
-        'app',
-        'vendor/mid/nested/README.md',
-      );
-      expect(
-        existsSync(path.join(path.dirname(path.dirname(nested)), 'README.md')),
-      ).toBe(true);
-      expect(existsSync(nested)).toBe(false);
-
-      down = false;
-      const work = await prepare();
-      expect(existsSync(nested)).toBe(true);
-      await work.release();
-
-      // Done: a later preparation leaves the submodules, and the host, alone.
-      const before = host.requests();
-      const again = await prepare();
-      expect(host.requests()).toBe(before);
-      await again.release();
     } finally {
       await host.close();
     }
@@ -594,5 +418,37 @@ describe('the dirs step', () => {
     } finally {
       await host.close();
     }
+  });
+});
+
+describe('preparation cancellation', () => {
+  it('stops retrying immediately when cancelled during the backoff', async () => {
+    const controller = new AbortController();
+    let attempts = 0;
+    await expect(
+      retryGit(
+        'fetch',
+        async () => {
+          attempts += 1;
+          throw new Error('Connection timed out');
+        },
+        {
+          signal: controller.signal,
+          delaysMs: [60_000],
+          onRetry: () => controller.abort(),
+        },
+      ),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(attempts).toBe(1);
+  });
+
+  it('does not begin a Git attempt after cancellation', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const attempt = vi.fn();
+    await expect(
+      retryGit('fetch', attempt, { signal: controller.signal }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(attempt).not.toHaveBeenCalled();
   });
 });

@@ -1,3 +1,4 @@
+import { ConsultationCard } from '../../registry/agents/agent-chat/consultation-card';
 import {
   ChatProvider,
   useChatContextSource,
@@ -138,7 +139,6 @@ describe('ChatPanel', () => {
         'About an hour: the templates are done, the tests remain.',
       ),
     ).toBeVisible();
-    expect(within(panel).getByTestId('chat-model')).toBeVisible();
   });
 
   it('keeps the message list positioned, so absolutely placed content stays inside it', async () => {
@@ -151,11 +151,37 @@ describe('ChatPanel', () => {
   it('sends a message and shows the agent at work', async () => {
     renderPanel('release-plan');
     const box = await screen.findByLabelText('Message to the agent');
-    fireEvent.change(box, { target: { value: 'And the docs?' } });
-    fireEvent.keyDown(box, { key: 'Enter' });
-    expect(await screen.findByText('And the docs?')).toBeVisible();
-    expect(await screen.findByTestId('chat-live-steps')).toBeVisible();
-    expect(box).toHaveValue('');
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.change(box, { target: { value: 'And the docs?' } });
+        fireEvent.keyDown(box, { key: 'Enter' });
+      });
+      expect(screen.getByText('And the docs?')).toBeVisible();
+      expect(
+        screen.getByRole('button', { name: 'Stop', exact: true }),
+      ).toBeVisible();
+      expect(screen.queryByTestId('chat-live-steps')).toBeNull();
+      const thinking = screen.getByText('Thinking…');
+      const log = screen.getByRole('log', { name: 'Messages' });
+      expect(log).toContainElement(thinking);
+      const row = thinking.closest('li');
+      expect(row?.parentElement?.lastElementChild).toBe(row);
+      expect(row?.previousElementSibling).toHaveTextContent('And the docs?');
+      expect(
+        thinking
+          .closest('[data-chat-feedback]')
+          ?.querySelector('[data-slot="spinner"]'),
+      ).toBeVisible();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1100);
+      });
+      expect(screen.getByText(/Here is what I would do/u)).toBeVisible();
+      expect(screen.queryByText('Thinking…')).not.toBeInTheDocument();
+      expect(box).toHaveValue('');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('drops a reply still on its way when the demo is reset', async () => {
@@ -173,7 +199,9 @@ describe('ChatPanel', () => {
       act(() => resetChatDemo());
       fireEvent.change(box, { target: { value: 'Again' } });
       fireEvent.keyDown(box, { key: 'Enter' });
-      act(() => vi.advanceTimersByTime(5000));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
       expect(screen.getByText('Again')).toBeVisible();
       expect(screen.getAllByText(/Here is what I would do/u)).toHaveLength(1);
     } finally {
@@ -181,17 +209,26 @@ describe('ChatPanel', () => {
     }
   });
 
-  it('sums up a runner’s steps in one line that expands to them', async () => {
+  it('uses shared Stop controls for managed Runner execution without a legacy steps panel', async () => {
     renderPanel('flaky-test');
-    const line = await screen.findByTestId('chat-step-line');
-    expect(line).toHaveTextContent(
-      'Working on pnpm test:e2e sign-in --repeat-each 20',
-    );
-    expect(line).toHaveTextContent('4 steps');
-    fireEvent.click(line);
+    const stop = await screen.findByRole('button', {
+      name: 'Stop',
+      exact: true,
+    });
+    expect(screen.queryByTestId('chat-step-line')).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Steps' })).toBeNull();
     expect(
-      await screen.findByRole('list', { name: 'Steps' }),
-    ).toHaveTextContent('Bash');
+      screen.getByText(
+        'The sign-in test fails about once in ten runs. Can you find out why?',
+      ),
+    ).toBeVisible();
+    fireEvent.click(stop);
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Stop', exact: true }),
+      ).toBeNull(),
+    );
+    expect(screen.getByLabelText('Message to the agent')).toBeEnabled();
   });
 
   it('shows the page’s context as chips in the composer, each removable', async () => {
@@ -274,71 +311,31 @@ describe('ChatPanel', () => {
     );
   });
 
-  it('offers the online agent’s models before the first message and starts on the chosen one', async () => {
-    renderPanel(null);
-    const picker = await screen.findByTestId('chat-model');
-    // The model after its service's title, not the bare id; the title shows only where the composer is wide.
-    expect(picker).toHaveTextContent('OpenAI · gpt-5-mini');
-    expect(picker).toHaveAccessibleName('Model: OpenAI · gpt-5-mini');
-    expect(within(picker).getByTestId('chat-model-service')).toHaveClass(
-      'hidden',
-      '@md:inline',
-    );
-    expect(picker).toHaveClass('max-w-40', '@md:max-w-64');
-    expect(screen.getByTestId('chat-composer')).toHaveClass('@container');
-    // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
-    await userEvent.click(picker);
-    const option = await screen.findByRole('option', {
-      name: /claude-sonnet/u,
-    });
-    // The menu groups the models by their service.
-    expect(screen.getByText('Anthropic')).toBeVisible();
-    expect(screen.getByRole('option', { name: /gpt-5-mini/u })).toBeVisible();
-    fireEvent.pointerDown(option, { pointerType: 'mouse' });
-    fireEvent.pointerUp(option, { pointerType: 'mouse' });
-    fireEvent.mouseUp(option);
-    fireEvent.click(option);
-    await waitFor(() =>
-      expect(screen.getByTestId('chat-model')).toHaveTextContent(
-        'Anthropic · claude-sonnet',
-      ),
-    );
-    const box = screen.getByLabelText('Message to the agent');
-    fireEvent.change(box, { target: { value: 'Which model?' } });
-    fireEvent.click(screen.getByTestId('chat-send'));
-    expect(
-      await screen.findByRole('heading', { name: 'Which model?' }),
-    ).toBeVisible();
-    // The conversation it created answers with that model, and keeps offering the switch.
-    expect(screen.getByTestId('chat-model')).toHaveTextContent('claude-sonnet');
-  });
-
   it('chooses the agent of a new conversation in the composer, then shows it read-only', async () => {
     renderPanel(null);
     const composer = await screen.findByTestId('chat-composer');
     const picker = await within(composer).findByTestId('chat-agent-picker');
     expect(picker).toHaveTextContent('Assistant');
-    // Fitted to the composer: the availability is in its name, the type tag only where the composer is wide.
+    // Fitted to the composer: the availability is in its name.
     expect(picker).toHaveAccessibleName(
       'Agent: Assistant, Online; choose another',
-    );
-    expect(within(picker).getByText('Online').closest('[title]')).toHaveClass(
-      'hidden',
-      '@md:inline-flex',
     );
     // Before the first message the header names no agent: the composer chooses it.
     expect(screen.queryByTestId('chat-agent')).toBeNull();
     await userEvent.click(picker);
-    // Every agent, grouped by type.
-    expect(await screen.findByText('Runner agents')).toBeVisible();
+    // Every enabled agent; one that cannot answer now says why and cannot be picked.
+    const release = await screen.findByRole('menuitem', {
+      name: /Release manager/u,
+    });
+    expect(release).toHaveTextContent('No runner online, cannot be chosen');
+    expect(release).toHaveTextContent('Personal runners only');
+    expect(release).toHaveAttribute('aria-disabled', 'true');
     fireEvent.click(screen.getByRole('menuitem', { name: /Coding agent/u }));
     await waitFor(() =>
       expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent(
         'Coding agent',
       ),
     );
-    // A runner agent has no model to choose.
-    expect(screen.queryByTestId('chat-model')).toBeNull();
     const box = screen.getByLabelText('Message to the agent');
     fireEvent.change(box, { target: { value: 'Fix the build' } });
     fireEvent.click(screen.getByTestId('chat-send'));
@@ -444,7 +441,7 @@ describe('launchers', () => {
 });
 
 describe('ChatConversationPage', () => {
-  it('shows one conversation with its title, agent and mode', async () => {
+  it('shows one conversation with its title and agent', async () => {
     render(
       <Shell path='/chat/flaky-test'>
         <Routes>
@@ -470,7 +467,7 @@ describe('ChatConversationPage', () => {
     expect(within(page).getByTestId('chat-page-agent')).toHaveTextContent(
       'Coding agent',
     );
-    expect(within(page).getByTestId('chat-mode')).toHaveTextContent('Runner');
+    expect(within(page).queryByTestId('chat-mode')).toBeNull();
   });
 
   it('lists the conversations in a dialog for a page', async () => {
@@ -487,3 +484,46 @@ describe('ChatConversationPage', () => {
     expect(onOpen).toHaveBeenCalledWith('release-plan');
   });
 });
+
+it.each(['en-US', 'zh-CN'])(
+  'renders a historical consultation with plans in %s without a quantity prompt',
+  async (locale) => {
+    const cardRuntime = await createTestI18nRuntime({
+      application: {
+        namespace: 'consultation-test',
+        resources: {
+          'en-US': () => Promise.resolve({ default: enUS }),
+          'zh-CN': () => Promise.resolve({ default: zhCN }),
+        },
+      },
+    });
+    await cardRuntime.changeLanguage(locale);
+    render(
+      <TestI18nProvider runtime={cardRuntime}>
+        <ConsultationCard
+          notice={{
+            code: 'consultation',
+            callId: 'historic',
+            agentId: 'agent',
+            agentName: 'Review agent',
+            runId: null,
+            question: 'Review this change',
+            answer: 'The change is ready.',
+            state: 'completed',
+            error: null,
+            usage: { inputTokens: 1840, outputTokens: 212 },
+            plans: 3,
+          }}
+        />
+      </TestI18nProvider>,
+    );
+    fireEvent.click(
+      screen.getByTestId('chat-consultation').querySelector('button')!,
+    );
+    expect(await screen.findByText('The change is ready.')).toBeVisible();
+    expect(screen.getByText(/1,840/)).toBeVisible();
+    expect(
+      screen.queryByText(/Proposed .*plans|提出了.*计划/u),
+    ).not.toBeInTheDocument();
+  },
+);

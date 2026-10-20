@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-repository-example",
   "displayName": "Repository Example App Plugin",
   "description": "CRM and order management demonstrating relational Repository HTTP APIs.",
-  "version": "1.0.0-beta.19",
+  "version": "2.0.0-beta.0",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -21,10 +21,6 @@
     "./client/plugin": {
       "types": "./client/plugin.ts",
       "import": "./client/plugin.ts"
-    },
-    "./client/providers": {
-      "types": "./client/providers/index.ts",
-      "import": "./client/providers/index.ts"
     },
     "./client/routes": {
       "types": "./client/routes.ts",
@@ -52,10 +48,6 @@
       "./client/plugin": {
         "types": "./dist/client/plugin.d.ts",
         "import": "./dist/client/plugin.js"
-      },
-      "./client/providers": {
-        "types": "./dist/client/providers/index.d.ts",
-        "import": "./dist/client/providers/index.js"
       },
       "./client/routes": {
         "types": "./dist/client/routes.d.ts",

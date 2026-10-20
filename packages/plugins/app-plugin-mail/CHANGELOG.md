@@ -1,5 +1,148 @@
 # @nocobase/app-plugin-mail
 
+## 1.0.0-beta.15
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- 1952789: Make mail synchronization and office workflow views refresh from committed state notifications, including empty sync results, failures, cancellation and lifecycle transitions. Add optional periodic reconciliation to the shared refresh scheduler, pause hidden views, and retain one-minute reconciliation for transient announcements and out-of-band changes. Reduce existing task, run, session and chat fallback reads to one minute while retaining time-based computer status checks, external indexing status reads, deployment health probes and bounded initialization waits.
+
+  Announce knowledge rechunking start and completion even when no chunks change, and support optional committed status notifications from external indexers. Continue tracking pending index work when some sections have already failed.
+
+  Preserve application providers when `renderWithApp` rerenders its page. Exercise mail refresh through real application services and fix the mail account navigation translation key exposed by those checks.
+
+- 1952789: Reconnect the mail accounts Refresh action and workspace error retry action to realtime snapshot recovery after transient retries are exhausted. Preserve running synchronization state and resume account removal notifications without starting another synchronization job.
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-client@4.0.0-beta.0
+  - @nocobase/app-plugin-authentication@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.29
+  - @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/i18n@2.0.0-beta.0
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 1.0.0-beta.14
+
+### Minor Changes
+
+- dcd45ed: Give IMAP messages a reliable identity and track every remote copy. A message is identified by the server's OBJECTID `EMAILID`, then Gmail's `X-GM-MSGID`, then an RFC `Message-ID` proven by byte-identical MIME, and otherwise by its folder, UIDVALIDITY and UID. Each copy is stored in the new `mailMessageImapLocations` collection; read state, star state and folders are derived from the verified copies, flag changes and permanent deletion apply to every copy (permanent deletion now requires UIDPLUS), and a message without copies is removed only when a sync run completes after two matching full verification passes. Migration `202610250001_mail_imap_message_locations` upgrades existing IMAP locator messages and remote draft mirrors offline, preserving their identities, UUIDs and business data while backfilling locator sources and recorded positions. It does not contact mail servers or invent positions for local drafts, SMTP-accepted RFC records or other providers. Unsafe locators and conflicting tuple ownership fail preflight before structural changes; populated destructive rollback remains prohibited. UID, UIDVALIDITY, identity source and location status bounds are validated by application writes; this migration does not install database CHECK constraints, so direct database writes can bypass those bounds.
+
+  Keep opaque remote attachment IDs out of local upload UUID queries so localized drafts can read their remote attachments on PostgreSQL while preserving upload ownership and expiration checks.
+
+### Patch Changes
+
+- 1993feb: Add user-event as a mail plugin test dependency.
+- Updated dependencies [69e212c]
+- Updated dependencies [943a9a8]
+- Updated dependencies [943a9a8]
+- Updated dependencies [1cd749c]
+- Updated dependencies [bdb0581]
+- Updated dependencies [9b946f4]
+  - @nocobase/app-server@2.0.0-beta.7
+  - @nocobase/db@1.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.9
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+
+## 1.0.0-beta.13
+
+### Minor Changes
+
+- f675e8d: Add an optional participant filter to personal and managed message lists, public client query types and the Mail workspace. Full email addresses and @domain values match exact trimmed, lowercased From/To/Cc addresses; Bcc, Reply-To, display names and message content are excluded. Existing q keyword search, ownership boundaries, full conversation details and thread counts remain unchanged.
+
+  Add the internal mailMessageParticipants schema and backfill historical addresses from stored sender/recipient JSON. Existing installations must use a maintenance window: back up the database, stop application writes and Mail synchronization/background workers, deploy and apply the migration, verify the complete historical backfill, then restart. Bounded reads and inserts limit memory and SQL parameters, not transaction duration or locks; this is not an online backfill. Measure mailbox size, migration time, lock/log impact and additional participant-row/index storage and write cost before upgrading. Invalid or unsupported historical addresses are skipped without truncating or rewriting original mail data.
+
+  This release also corrects the released `202609030001_create_mail_tables` migration, which could never install on MySQL with utf8mb4 because two full unique indexes exceeded the 3072-byte key limit, or on SQL Server because signatures and message-folder links had duplicate account cascade paths. Fresh installations retain account foreign-key checks without a second direct cascade for those descendants; their identity/message parents still own cascading deletion. Fresh installs use an outbound storage-key limit of 667 characters (generated keys are 50 characters) and a provider subscription-ID limit of 412 characters, keeping each composite key within the limit. Existing successfully migrated databases are not resized or truncated. Operators of those installations should expect a checksum warning on the next `nocobase db apply`; review this correction and acknowledge it with `nocobase db repair` before proceeding.
+
+  Cross-database regression fixtures now use valid local UUIDs without changing provider identifiers or search behavior.
+
+## 1.0.0-beta.12
+
+### Patch Changes
+
+- 2a54505: Add optional fourth-argument completion details to MailComposer and MailWorkspaceComposer, preserving existing callback arguments. Details include every submission returned by that operation and a detached snapshot of the actual client request, or a separate saved-draft reference. Preserve pending, scheduled, failed and unknown statuses; a transport failure without a response has no submission IDs. Support asynchronous completion callbacks and isolate integration errors through optional onCompletionError without delaying closing, changing the send outcome or retrying mail. Business integrations should associate and deduplicate by submission ID rather than querying the latest sending record; this client callback is not a durable delivery event.
+- 2a54505: Align the email address and optional login name inputs in the IMAP/SMTP account connection form. Keep helper text beneath the login name without stretching neighboring field grids, while preserving the stacked narrow-screen layout.
+
+  Use consistent Chinese optional-field wording for the login name and sender name in the account connection form.
+
+- 2a54505: Show specific English and Chinese guidance when a mail provider rejects account credentials, including checking the login name, password or authorization code, IMAP/SMTP access, and app-password requirements. Preserve the existing error reason and field violations without changing the connection form.
+- 2a54505: Clarify the IMAP/SMTP Username as an optional login name with persistent help text in English and Chinese. Default omitted or blank login names to the mailbox address on the server, and trim explicit names without changing their case.
+- 2a54505: Expose the application's resolved `NODE_ENV` to server providers without inheriting an embedded application's host process environment. Mail now warns once during production startup when its effective OAuth return URL still points to the legacy `/dev/mail/accounts` destination. The current root (`/`) default does not trigger the warning or register an account route: applications must register their own authenticated personal account page and configure `mail.oauthReturnUrl` to that page. This warning does not block startup, change configuration, or verify arbitrary client routes.
+- 2a54505: Expose `prepareMailReply` and `MailComposerRequest` from the public client entry so custom pages can share the workspace's complete reply preparation, including incomplete-content loading and referenced inline-image uploads. Preserve existing recipient, subject, reply association and draft behavior. The browser-only helper does not open, save or send mail; callers retain loading, error and composer-session guards.
+- 2a54505: Expose `useMailUnreadCount` and `MailUnreadCountState` from the public client entry for custom menus, and reuse the Hook in the navigation icon. Preserve current-user count semantics, local/realtime/reconnect/focus refresh, polling, debounce and serialized requests. The Hook distinguishes an unknown initial count from zero, retains the last successful count on refresh failure, and exposes loading/error state. Consumers must remount with session changes; separate Hook instances fetch independently without a global cache.
+- 2a54505: Adapt the mail workspace to its available width: retain the three-column desktop view, show the message list or conversation on narrow screens, and provide mailbox navigation in a keyboard-accessible drawer. Returning to the list preserves its page and scroll position and ignores stale conversation responses.
+- 2a54505: Compose all seven MAIL_* environment mappings with the Mail configuration section and preserve them in the examples application. Keep the legacy fully prefixed application-level mappings compatible. Deployment environment values now override configuration files and code defaults automatically: review existing OAuth, sync, webhook and jobs variables before upgrading, including empty or invalid integers. Applications with custom parsers must retain or override the section rules explicitly; calling the defaults factory alone does not inherit them. Mail server configuration and webhook secrets remain outside public browser configuration.
+- 2a54505: Add optional accountsHref and headerActions to MailWorkspacePage. Applications can link the empty and populated workspace to their own personal account page and append actions without replacing Compose or Sync. The public MailAccountsPage remains available for application-owned personal account routes; the plugin registers no built-in Dev, settings or management pages or routes. Applications must register and authorize their account page and configure mail.oauthReturnUrl separately to their account page; the current default returns to the application's root.
+- Updated dependencies [2a54505]
+  - @nocobase/app-server@2.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.7
+
+## 1.0.0-beta.11
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-client@3.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.6
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 1.0.0-beta.10
+
+### Minor Changes
+
+- c796cb9: Plugins no longer contribute Settings or Dev pages. Every page a plugin registered under `/settings/...` or `/dev/...` is removed, together with the components, locale keys and tests only those pages used; an application that wants such a page builds it on the plugin's HTTP API and client and declares it among its own routes.
+
+  - `@nocobase/app-plugin-api-keys`: the API keys page, `createApiKeysRoutes`, `normalizeApiKeysRoutePath`, `API_KEYS_PAGE_ACCESS`, `API_KEYS_ROUTE_ID` and the `./client/routes` entry are removed. The client factory takes no options, so call `apiKeys()`.
+  - `@nocobase/app-plugin-authorization`: the Permission Sets and Permission Inspector pages, the `./client/routes` entry and the `./client/management` entry the rule plugins built their pages from are removed. `useCan`, `AuthorizationClient`, the provider and the HTTP API are unchanged.
+  - `@nocobase/app-plugin-authz-default-access`, `@nocobase/app-plugin-authz-restriction-rules`, `@nocobase/app-plugin-authz-sharing-rules`: the rule pages and the `./client/routes` entry are removed. The client registers only the locale for the title its server registers.
+  - `@nocobase/app-plugin-database-explorer`: the explorer page and the `./client/routes` entry are removed. `DatabaseExplorerClient` and `DATABASE_EXPLORER_ACCESS` remain.
+  - `@nocobase/app-plugin-mail`: the account overview page and every Dev page are removed, along with the browser acceptance suite that drove them. `MailWorkspacePage` and `MailAccountsPage` remain; `MailWorkspacePage` takes an `accountsHref` that names the application's accounts page, and its empty state links there only when it is given. `mail.oauthReturnUrl` now defaults to the application root instead of `/dev/mail/accounts`; set it to the page that renders `MailAccountsPage`.
+  - `@nocobase/app-plugin-notification`: the notification logs page and the `./client/routes` entry are removed; the `logs-ui` registry item is unchanged.
+  - `@nocobase/app-plugin-notification-in-app`: the Dev inbox page, the `routes` export and the `./client/routes` entry are removed. Render `NotificationInAppInbox` inside `NotificationInAppProvider` in an application page.
+  - `@nocobase/app-plugin-scheduler`: the schedule list and detail pages are removed. The client registers only the locales for the titles its server registers.
+  - `@nocobase/app-plugin-users`: the user management page and the `mount`, `path`, `title` and `componentLoader` options are removed, together with `createUsersRoutes`, `USERS_PAGE_ACCESS` and `USERS_ROUTE_ID`. The plugin contributes only the invitation page at `/invite/:token`, which `inviteComponentLoader` still replaces; build a user management page on `UsersClient`.
+
+- c796cb9: Remove the Settings and Dev route surfaces. `@nocobase/app-client` no longer exports `defineSettingsRoutes()`, `defineDevRoutes()`, `isAppClientSettingsRouteGroup()`, `isAppClientDevRouteGroup()` or their definition, contribution and registered-route types, and the resolved runtime no longer carries `settingsRouteTree`, `devRouteTree`, `settings`, `settingGroups`, `devRoutes` or `devRouteGroups`. `AppClientSettingsRouteNavigation` is renamed `AppClientRouteNavigation` and `AppClientSettingIcon` is renamed `AppClientRouteIcon`. A contribution to any parent other than `app` now fails registration with a message that names `defineAppRoutes()`. Plugins contribute no settings or dev pages; an application that wants a configuration page declares it with `defineAppRoutes()` in its own navigation, for example under a Settings group.
+
+  The default and examples templates drop the settings layout, the `/settings/*` route, the dev route plumbing, and the Settings and Inbox buttons in the header; the `/inbox` page and the inbox block stay. The examples template no longer registers `@nocobase/app-plugin-departments-example`, which is removed. Upgrading an application means removing `defineSettingsRoutes([])` from `client/routes.ts`, the `settingsRouteTree` and `devRouteTree` props passed to `AppRouter`, and any settings layout it kept, and moving its own settings pages to `defineAppRoutes()`. Every package that depends on or peers with `@nocobase/app-client` is released again so that its published range accepts `3.0.0-beta.0`.
+
+### Patch Changes
+
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [98e79a5]
+- Updated dependencies [fb7b576]
+  - @nocobase/app-server@2.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.3
+  - @nocobase/app-plugin-authorization@1.0.0-beta.26
+  - @nocobase/app-client@3.0.0-beta.0
+  - @nocobase/i18n@1.0.0-beta.6
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 1.0.0-beta.9
 
 ### Patch Changes

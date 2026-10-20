@@ -9,12 +9,4 @@ export default {
   plugin: '插件',
   scope: '作用域',
   message: '消息',
-  devExample: '开发路由示例',
-  devTitle: '路由示例开发工具',
-  devRoute: '开发路由',
-  availableIn: '可用环境',
-  developmentOnly: '仅限开发构建',
-  appRoute: '应用路由',
-  apiRoute: 'API 路由',
-  rootRoute: '根路由',
 };

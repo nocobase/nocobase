@@ -1,5 +1,55 @@
 # @nocobase/app-installer
 
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- 164abe7: Describe `--app` with a generic published application (`@acme/crm`) instead of NocoBase Studio in the installer's help, flag description, usage error and README, and in the deployment Skill. The option itself is unchanged and installs any published npm application.
+
+## 0.1.0-beta.8
+
+### Minor Changes
+
+- 033a6dc: Preview migration and seed checksum changes before upgrade downtime and require explicit approval with `--repair-checksums <token>`. Back up SQLite history before repairing and restore it on failed, interrupted, or manually rolled-back upgrades, including upgrades with no pending migrations. Apply the same workflow to SSH deployments and report external databases that require operator restoration.
+
+  Upgrade preflight now requires the target application's `db repair --dry-run --json` support and refuses unreviewed checksum drift even with `--yes`. JSON errors expose `error.details.checksumRepair` with the exact changes and approval token; successful upgrades add `result.checksumRepairs`.
+
+  Checksum-repairing upgrades write installer state format 2 before modifying history, so older installers refuse recovery rather than skipping the restore. The new installer continues to read existing format 1 installations.
+
+## 0.1.0-beta.7
+
+### Minor Changes
+
+- 5f851bb: Add SSH archive deployment and remote install, upgrade, rollback and status commands with an offline installer bundle. Transfer checksums, stdin-only secret transport and structured remote outcomes allow servers without npm access to reuse the existing installation lifecycle.
+
+  Preserve remote confirmation and recovery guidance, route recovery commands to the correct host, and report locally interrupted SSH executions as an unknown remote state requiring a status check.
+
+## 0.1.0-beta.6
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/cli-envelope@0.1.0-beta.1
+
+## 0.1.0-beta.5
+
+### Minor Changes
+
+- 87b8394: Install published applications with `--app @nocobase/studio` or the official shorthand `--app studio`, preserving package identity while building and deploying on the server. Support npm application upgrades, explicit version selection and rebuilding with the existing backup and rollback workflow. Include Studio's shared sources and CLI skills in its published package so it builds outside the repository, and document the deployment route.
+
+## 0.1.0-beta.4
+
+### Minor Changes
+
+- c796cb9: Remove NocoBase Hub. `@nocobase/app-plugin-hub`, `@nocobase/app-template-hub` and `@nocobase/hub-cli` are no longer published, and every package that offered or described the Hub drops it.
+
+  Breaking for `@nocobase/app-installer`: it installs, upgrades and rolls back from a deployment archive only. `install --template`, `install --keep-source`, `upgrade --to`, `upgrade --rebuild`, `upgrade --keep-source` and `status --offline` are removed, as are the `latest` and `updateAvailable` members of the `status` result and the `rebuilt` and `notes` members of the `upgrade` result. An installation an earlier version built from the published Hub template is refused with `STATE_UNSUPPORTED`; manage it with the app-installer version that installed it. The error codes that only a template build reported (`PNPM_MISSING`, `PNPM_UNSUPPORTED`, `REGISTRY_UNREACHABLE`, `VERSION_NOT_FOUND`, `DISK_LOW`, `CREATE_FAILED`, `DRIVER_INSTALL_FAILED` and `BUILD_FAILED`) are no longer produced, and pm2 always kills the process tree of an application it stops.
+
+  Breaking for `@nocobase/create-app`: `--template hub` is no longer a template name, and a generated application no longer gets a `.env`.
+
+  The Default template no longer depends on `@nocobase/hub-cli`, so an application generated from it has no `pnpm nocobase hub` commands. An application upgraded from an earlier version that published to a Hub removes the dependency with `pnpm nocobase package remove @nocobase/hub-cli` and deletes `.nocobase/hub.json`; the `nocobase-app-upgrade` Skill describes the steps. The application Skills, the plugins' documentation and the in-app test notification text no longer mention the Hub.
+
 ## 0.1.0-beta.3
 
 ### Patch Changes

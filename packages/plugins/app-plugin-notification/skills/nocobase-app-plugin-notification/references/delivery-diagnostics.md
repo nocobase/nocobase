@@ -2,7 +2,7 @@
 
 ## Evidence order
 
-1. Resolve the exact Notification id from the send result, business source, or logs page.
+1. Resolve the exact Notification id from the send result, business source, or the logs page an application installs from the `logs-ui` registry item.
 2. Read the Notification summary and all Deliveries.
 3. For each unexpected Delivery, record Channel, Provider identifier, status, attempt count, `nextRunAt`, and sanitized `lastError`.
 4. Read Retry Audits and Attempts in order. A Retry Audit exists for every accepted manual retry request; an Attempt exists only after Provider submission starts. Identify whether failure happened before Provider submission, during a known failed submission, or after an uncertain submission.

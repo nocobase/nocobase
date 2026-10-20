@@ -13,6 +13,7 @@ import { createDatabaseMailStore } from '../../server/store.js';
 
 describe('Mail OAuth persistence', () => {
   let database: DatabaseManager;
+  const accountId = '00000000-0000-4000-8000-000000000001';
 
   beforeEach(async () => {
     database = await createMailTestDatabase();
@@ -109,26 +110,60 @@ describe('Mail OAuth persistence', () => {
     const vault = new DatabaseMailCredentialVault(database, 30, 5);
     const secondVault = new DatabaseMailCredentialVault(database, 30, 5);
     const reference = await vault.put({ token: 'expired' });
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     const refresh = vi.fn(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 80));
+      await gate;
       return { token: 'fresh' };
     });
 
-    await expect(
-      Promise.all([
-        vault.getOrRefresh(
-          reference,
-          (value: { token: string }) => value.token === 'fresh',
-          refresh,
-        ),
-        secondVault.getOrRefresh(
-          reference,
-          (value: { token: string }) => value.token === 'fresh',
-          refresh,
-        ),
-      ]),
-    ).resolves.toEqual([{ token: 'fresh' }, { token: 'fresh' }]);
-    expect(refresh).toHaveBeenCalledTimes(1);
+    // Keep timers and database IO real, but advance lease time only after each heartbeat has reached storage.
+    // A busy event loop must not expire this synthetic 30 ms lease before its heartbeat can run.
+    const startedAt = Date.now();
+    vi.setSystemTime(startedAt);
+    const pending = Promise.all([
+      vault.getOrRefresh(
+        reference,
+        (value: { token: string }) => value.token === 'fresh',
+        refresh,
+      ),
+      secondVault.getOrRefresh(
+        reference,
+        (value: { token: string }) => value.token === 'fresh',
+        refresh,
+      ),
+    ]);
+    try {
+      await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+      // Move beyond the original deadline, observing each renewal before advancing the clock again.
+      for (const elapsed of [10, 20, 30, 40]) {
+        vi.setSystemTime(startedAt + elapsed);
+        await vi.waitFor(async () => {
+          const row = await database
+            .query()
+            .selectFrom<Row>('mailCredentials')
+            .selectAll()
+            .where('reference', '=', reference)
+            .executeTakeFirstOrThrow();
+          expect(row.refreshLeaseExpiresAt).toBe(
+            new Date(startedAt + elapsed + 30).toISOString(),
+          );
+        });
+        expect(refresh).toHaveBeenCalledTimes(1);
+      }
+      release();
+      await expect(pending).resolves.toEqual([
+        { token: 'fresh' },
+        { token: 'fresh' },
+      ]);
+      expect(refresh).toHaveBeenCalledTimes(1);
+    } finally {
+      release();
+      await Promise.allSettled([pending]);
+      vi.useRealTimers();
+    }
   });
 
   it('aborts a refresh that never completes and releases its local flight', async () => {
@@ -185,7 +220,7 @@ describe('Mail OAuth persistence', () => {
   it('stores an authorized account and its identity atomically', async () => {
     const store = createDatabaseMailStore(database);
     const account = {
-      id: 'account-1',
+      id: accountId,
       userId: 'user-1',
       provider: { type: 'gmail', name: 'google' },
       address: 'user@example.com',
@@ -194,7 +229,7 @@ describe('Mail OAuth persistence', () => {
       status: 'active' as const,
     };
     const identity = {
-      id: 'duplicate-identity',
+      id: '00000000-0000-4000-8000-000000000002',
       accountId: account.id,
       address: account.address,
       isPrimary: true,
@@ -211,7 +246,7 @@ describe('Mail OAuth persistence', () => {
     const store = createDatabaseMailStore(database);
     await store.saveAuthorizedAccount(
       {
-        id: 'account-1',
+        id: accountId,
         userId: 'user-1',
         provider: { type: 'microsoft', name: 'microsoft-365' },
         address: 'User@Example.com',
@@ -230,7 +265,7 @@ describe('Mail OAuth persistence', () => {
         'provider-subject-1',
       ),
     ).resolves.toMatchObject({
-      id: 'account-1',
+      id: accountId,
       address: 'user@example.com',
     });
     await expect(
@@ -239,6 +274,6 @@ describe('Mail OAuth persistence', () => {
         [],
         ['USER@EXAMPLE.COM'],
       ),
-    ).resolves.toMatchObject([{ id: 'account-1' }]);
+    ).resolves.toMatchObject([{ id: accountId }]);
   });
 });

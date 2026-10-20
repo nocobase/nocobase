@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Workflow overview"
+  },
+  {
+    "type": "file",
+    "name": "definition",
+    "label": "Process definition and action control"
+  },
+  {
+    "type": "file",
+    "name": "execution",
+    "label": "Waiting, timeouts and reliable execution"
+  },
+  {
+    "type": "file",
+    "name": "progress",
+    "label": "Progress and processing history"
+  }
+]

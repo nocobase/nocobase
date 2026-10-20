@@ -41,7 +41,9 @@ import {
   RunnerFeatureSchema,
   RunnerPolicySchema,
   TIMINGS,
-  ToolInfoSchema,
+  ReportedToolInfoSchema,
+  WorkspacesRequestSchema,
+  WorkspacesResponseSchema,
   type ClaimRequest,
   type ClaimResponse,
   type HeartbeatRequest,
@@ -61,7 +63,7 @@ import { z } from 'zod';
 
 import type { Runner } from '../../../shared/runners.js';
 import type { Agents } from '../../composition.js';
-import { upgradeFor } from '../../distribution/index.js';
+import { upgradeFields, upgradeFor } from '../../distribution/index.js';
 import { domainRouter } from '../../kernel/http.js';
 import { upgradeRequiredOf, type RunnerEnv } from '../../runners/index.js';
 import { ClaimQuery, JobParams } from '../schemas.js';
@@ -127,7 +129,7 @@ const LenientRegisterSchema: z.ZodType<RegisterRequest> = z.preprocess(
       ? {
           ...raw,
           features: known(raw.features, RunnerFeatureSchema),
-          tools: known(raw.tools, ToolInfoSchema),
+          tools: known(raw.tools, ReportedToolInfoSchema),
         }
       : raw,
   RegisterRequestSchema,
@@ -146,7 +148,7 @@ const LenientHeartbeatSchema: z.ZodType<HeartbeatRequest> = z.preprocess(
       version:
         typeof body.version === 'string' ? body.version.slice(0, 64) : '',
       features: known(body.features, RunnerFeatureSchema),
-      tools: known(body.tools, ToolInfoSchema),
+      tools: known(body.tools, ReportedToolInfoSchema),
       active: known(body.active, ActiveRunSchema),
       ...(Array.isArray(body.jobs)
         ? { jobs: known(body.jobs, ActiveJobSchema) }
@@ -241,7 +243,7 @@ export function createRunnerRoutes(
       // Runner protocol: only a runner calls it.
       ...cliRoute(false),
       description:
-        "Reports what the runner holds and its load, every `heartbeatIntervalMs`, and answers which runs and jobs to cancel or release, and whether an upgrade is available. A runner of a protocol this application does not serve is answered with `compatibility` and told to release everything it holds. The body is validated in the handler, against what the runner's protocol allows.",
+        "Reports what the runner holds and its load, every `heartbeatIntervalMs`, and answers which runs and jobs to cancel or release, and whether an upgrade is available: a tarball in `upgrade`, or, only to a runner with the `npm` feature when the application has no tarball of its product, a package to install from npm in `npmUpgrade`. A runner of a protocol this application does not serve is answered with `compatibility` and told to release everything it holds. The body is validated in the handler, against what the runner's protocol allows.",
       security: runnerKeySecurity,
       parameters: [protocolHeader],
       requestBody: jsonRequestBody(HeartbeatRequestSchema),
@@ -267,7 +269,8 @@ export function createRunnerRoutes(
         const response: HeartbeatResponse = {
           ok: true,
           serverTime: services.clock.now().toISOString(),
-          ...(upgrade ? { upgrade } : {}),
+          protocolVersion: PROTOCOL_VERSION,
+          ...upgradeFields(upgrade),
           compatibility: upgradeRequiredOf(runner.protocolVersion),
           cancelRequested: [],
           release: request.active.map((run) => run.runId),
@@ -298,13 +301,48 @@ export function createRunnerRoutes(
       const response: HeartbeatResponse = {
         ok: true,
         serverTime: services.clock.now().toISOString(),
-        ...(upgrade ? { upgrade } : {}),
+        protocolVersion: PROTOCOL_VERSION,
+        ...upgradeFields(upgrade),
         cancelRequested,
         release,
         ...(jobs ? { jobs } : {}),
+        workspaces: services.workspaces.reporting,
       };
       return context.json({ data: response });
     },
+  );
+
+  router.post(
+    '/workspaces',
+    authenticated,
+    served,
+    describeRoute({
+      tags,
+      summary: "Report a runner's working directories",
+      operationId: 'agentsRunnerReportWorkspaces',
+      // Runner protocol: only a runner calls it.
+      ...cliRoute(false),
+      description:
+        'Reports the working directories the runner keeps for this application, each with the last run that worked in it, its size and whether it holds unpushed work, and answers which of those runs belong to subjects whose work is over (`remove`: their directories may go) or goes on (`keep`). Runs of other runners, unknown runs, and subjects whose binding cannot say are in neither list. The report is kept for the runtimes pages. A runner sends it only when the heartbeat answer carries `workspaces`.',
+      security: runnerKeySecurity,
+      parameters: [protocolHeader],
+      responses: {
+        200: dataResponse(WorkspacesResponseSchema),
+        400: apiErrorResponse(
+          400,
+          'The runner speaks a protocol this application does not serve (`PROTOCOL_UNSUPPORTED`).',
+        ),
+        ...runnerKeyErrors,
+      },
+    }),
+    apiValidator('json', WorkspacesRequestSchema),
+    async (context) =>
+      context.json({
+        data: await services.workspaces.report(
+          context.get('runner'),
+          context.req.valid('json'),
+        ),
+      }),
   );
 
   // Runs and jobs share the runner's slots: jobs first (they are short and people wait on them), then runs. Jobs run

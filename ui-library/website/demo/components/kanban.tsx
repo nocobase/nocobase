@@ -62,7 +62,9 @@ export function KanbanDemo(): ReactElement {
             setItems((current) => apply(current, move));
           }}
           overlay={(item) => (
-            <div className='rounded-lg bg-card p-3 text-sm shadow-lg ring-1 ring-primary/30'>
+            // The card in hand: marked as a focused field is (a half-strength line of the ring colour and a faint
+            // halo), lifted by a large shadow.
+            <div className='rounded-lg bg-card p-3 text-sm shadow-[0_0_0_1px_color-mix(in_oklch,var(--ring)_50%,transparent),0_0_0_3px_color-mix(in_oklch,var(--ring)_20%,transparent),0_10px_15px_-3px_rgb(0_0_0/0.1),0_4px_6px_-4px_rgb(0_0_0/0.1)]'>
               {item.title}
             </div>
           )}

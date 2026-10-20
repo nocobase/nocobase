@@ -1,3 +1,4 @@
+export { SkillIdsSchema } from './core/skills/skill.service.js';
 import type { AuthorizationIdentity } from '@nocobase/authorization/core';
 import {
   createServiceToken,
@@ -8,7 +9,12 @@ import type { BusinessKey, Scope } from '../shared/access.js';
 import type { Agents } from './composition.js';
 
 export type { Agents } from './composition.js';
-export type { AgentService } from './core/agents/index.js';
+export type {
+  ModelSelectionPolicies,
+  ModelSelectionPolicy,
+} from './core/runs/selection.js';
+export type { AgentDefaults, AgentService } from './core/agents/index.js';
+export { runnerAgentId } from './core/agents/index.js';
 export type {
   ActionGate,
   CallerGate,
@@ -17,14 +23,9 @@ export type {
 } from './core/callers/index.js';
 export {
   AGENTS_VIEW_ACTION,
-  isConsultation,
   isReadingAction,
   RUN_SELF_ACTION,
 } from './core/callers/index.js';
-export type {
-  ConsultationRules,
-  ConsultationService,
-} from './core/consultations/index.js';
 export type {
   ConversationNews,
   ConversationRef,
@@ -36,10 +37,6 @@ export type {
   PageContextResolver,
   ResolvedRef,
 } from './core/conversations/index.js';
-export type {
-  AgentPresetDefinition,
-  PresetRegistry,
-} from './core/presets/index.js';
 export type {
   ModelUsageEntry,
   ModelUsageRecorder,
@@ -63,9 +60,14 @@ export type {
   ModelUsage,
   ModelGateway,
   ModelServices,
-  ServerExecutor,
 } from './online/index.js';
-export { commandRef, dialectOf } from './core/runs/ports.js';
+export { commandRef } from './core/runs/ports.js';
+export { RepoAccessError } from './core/runs/extensions.js';
+export {
+  executionForViewer,
+  runForViewer,
+  type RunMachineViewer,
+} from './core/runs/execution-view.js';
 export {
   RUN_CREDENTIAL,
   runIdentityOf,
@@ -81,7 +83,6 @@ export type {
   BriefSectionProvider,
   BriefSectionRegistry,
   ClaimContext,
-  CommandDialect,
   ExtensionPrepare,
   ContextProvider,
   EnqueueRequest,
@@ -98,6 +99,9 @@ export type {
   RepoAccessContext,
   RepoAccessProvider,
   RepoAccessRegistry,
+  RepoCredentialGrant,
+  RepoCredentialRequest,
+  RepoPrepareOptions,
   RunMountProvider,
   RunMountRegistry,
   RunService,
@@ -108,6 +112,7 @@ export type {
   SubjectFacts,
   SubjectRegistry,
   SubjectReports,
+  SubjectWorkspaces,
   SubjectScope,
   WorkSink,
 } from './core/runs/index.js';
@@ -118,7 +123,11 @@ export type {
   AgentsEventBus,
   AgentsNotice,
 } from './kernel/events.js';
-export type { DistConfig, DistService } from './distribution/index.js';
+export type {
+  DistConfig,
+  DistNpmSource,
+  DistService,
+} from './distribution/index.js';
 export { JobSecretsNotAllowed } from './jobs/index.js';
 export type {
   BuildJobSpecInput,

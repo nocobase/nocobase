@@ -36,12 +36,10 @@ import { Textarea } from '../../../components/ui/textarea.js';
 import { useRouteOverlay } from '../../../components/use-route-overlay.js';
 import { errorText, useNotify } from '../../../hooks/use-notify.js';
 import { usePmApi } from '../../../hooks/use-pm-api.js';
-import { startingExecutor, useExecutorOptions } from '../../../lib/kinds.js';
-import { INITIAL_STATUS } from '../../../../shared/workflows.js';
+import { useExecutorOptions } from '../../../lib/kinds.js';
 import { INTAKE_DRAFT_PARAM, IntakePanel } from '../../intake/intake-panel.js';
 import { useIntakeBreakdown } from '../../intake/use-intake-breakdown.js';
 import { INTAKE_JOB_PARAM } from '../../intake/use-intake-ai.js';
-import { StartDialog, type StartRequest } from './start-dialog.js';
 
 const FORM_ID = 'pm-subtask-new-form';
 const STAGE_PATTERN = /^\d{1,4}$/u;
@@ -57,7 +55,6 @@ type SubtaskTab = (typeof TABS)[number];
  * waits for, and an executor, as the old issue page offered. The AI tab shows only when the viewer can ask AI or a
  * request or draft is open. Both tabs stay mounted, so switching keeps what either holds. Closing or creating stays on
  * the issue's page. It cannot close while the sub-issue is being created, and asks before discarding what was typed.
- * Giving it to an agent asks "Start now?" first.
  */
 export default function NewSubtaskPage(): ReactElement {
   const { t } = useTranslation();
@@ -233,7 +230,6 @@ function Body({
   const [titleError, setTitleError] = useState<string>();
   const [stageError, setStageError] = useState<string>();
   const [formError, setFormError] = useState<string>();
-  const [startRequest, setStartRequest] = useState<StartRequest | null>(null);
   const others = useExecutorOptions();
   const markSaved = useUnsavedChanges(
     [title, description, stage].some((value) => value.trim() !== '') ||
@@ -252,28 +248,10 @@ function Body({
     setTitleError(trimmed ? undefined : t('issueForm.titleRequired'));
     setStageError(stageValid ? undefined : t('subtasks.stageInvalid'));
     if (!trimmed || !stageValid) return;
-    const starting = startingExecutor({
-      fromStatus: null,
-      toStatus: INITIAL_STATUS,
-      executorBefore: null,
-      executorAfter: executor,
-    });
-    if (starting) {
-      setStartRequest({
-        kind: starting.type,
-        names: [
-          others.find(
-            (option) =>
-              option.type === starting.type && option.id === starting.id,
-          )?.name ?? starting.id,
-        ],
-      });
-      return;
-    }
     void create();
   }
 
-  async function create(start?: boolean): Promise<void> {
+  async function create(): Promise<void> {
     const trimmed = title.trim();
     const stageValue = stage.trim();
     setFormError(undefined);
@@ -286,7 +264,6 @@ function Body({
         ...(stageValue ? { stage: Number(stageValue) } : {}),
         ...(blockedBy.length > 0 ? { blockedBy } : {}),
         ...(executor ? { executor } : {}),
-        ...(start === false ? { start } : {}),
       });
       notify.success(t('issueForm.created', { identifier: issue.identifier }));
       void queryClient.invalidateQueries({ queryKey: pmKeys.issues });
@@ -384,14 +361,6 @@ function Body({
           <FieldDescription>{t('subtasks.blockedByHint')}</FieldDescription>
         </Field>
       </FieldGroup>
-      <StartDialog
-        request={startRequest}
-        onCancel={() => setStartRequest(null)}
-        onDecide={(start) => {
-          setStartRequest(null);
-          void create(start);
-        }}
-      />
     </form>
   );
 }

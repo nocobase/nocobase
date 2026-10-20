@@ -9,7 +9,15 @@ import type { ReactElement, ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
+vi.mock('../../client/components/online-agent/provider.js', () => ({
+  OnlineAgentProvider: ({ children }: { readonly children: ReactNode }) =>
+    children,
+}));
 import { AppLayout } from '../../client/layouts/app-layout.js';
+import {
+  createAppSidebarPreferenceStore,
+  SidebarPreferenceProvider,
+} from '../../client/layouts/use-sidebar-preference.js';
 import enUS from '../../client/locales/en-US.js';
 
 // Breadcrumb titles are route data, not keys any namespace owns: the trail translates each through its package's
@@ -34,7 +42,7 @@ vi.mock('@nocobase/app-plugin-i18n/client', async (importOriginal) => ({
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
-  useClientApplication: () => ({ runtime: { settingsRouteTree: [] } }),
+  useClientApplication: () => ({ runtime: {} }),
 }));
 vi.mock('../../client/routing/route-navigation.js', async (original) => ({
   ...(await original<
@@ -90,14 +98,17 @@ function OrderPage(): ReactElement {
 }
 
 function renderLayout(page: ReactElement): HTMLElement {
+  const sidebarPreference = createAppSidebarPreferenceStore('/test-app');
   render(
-    <MemoryRouter initialEntries={['/orders/42']}>
-      <Routes>
-        <Route element={<AppLayout routes={routes} />}>
-          <Route path='/orders/:id' element={page} />
-        </Route>
-      </Routes>
-    </MemoryRouter>,
+    <SidebarPreferenceProvider value={sidebarPreference}>
+      <MemoryRouter initialEntries={['/orders/42']}>
+        <Routes>
+          <Route element={<AppLayout routes={routes} />}>
+            <Route path='/orders/:id' element={page} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </SidebarPreferenceProvider>,
     { wrapper: I18n },
   );
   return screen.getByRole('banner');

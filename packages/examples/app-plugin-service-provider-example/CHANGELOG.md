@@ -1,5 +1,25 @@
 # @nocobase/app-plugin-service-provider-example
 
+## 1.0.0-beta.9
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 1.0.0-beta.8
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 1.0.0-beta.7
 
 ### Patch Changes

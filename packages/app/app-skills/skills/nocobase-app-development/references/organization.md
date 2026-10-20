@@ -31,13 +31,13 @@ Build this when access follows a department tree: a user belongs to several depa
 5. Decide who gets what across departments, heads and cross-department work: [permission design](organization/permission-design.md).
 6. Cover the test matrix against the real application: [testing](organization/testing.md).
 
-Permission-set assignment stays in Settings → Authorization; do not build a second assignment editor. The core works with the authorization plugin alone; default access, sharing rules and restriction rules are optional plugins, so never make the organisation depend on them.
+Permission-set assignment belongs to the authorization plugin and its API; do not build a second assignment model. The core works with the authorization plugin alone; default access, sharing rules and restriction rules are optional plugins, so never make the organisation depend on them.
 
 ## Pitfalls
 
 - Disabling a parent is a check on the ancestor chain, not a cascade that rewrites child rows.
 - Never accept membership, departments or subjects from the client. `resolveFor` reads the database, and background work that calls `authz.for(identity)` supplies verified subjects itself.
-- `list`, `resolve` and the picker run behind the settings item of the page calling them — permission sets, the inspector or a rule plugin — not behind your organisation item. Add a check of your own in them only if the directory has an independent boundary.
-- Inspecting a department in Settings → Authorization → Inspector shows the department's own grants, not the union of its members'. Inspect a member to see what inheritance gives that person.
+- `list`, `resolve` and the picker run behind the settings item of the endpoint calling them — permission sets, the inspector or a rule plugin — not behind your organisation item. Add a check of your own in them only if the directory has an independent boundary.
+- Inspecting a department through the authorization plugin's inspector API shows the department's own grants, not the union of its members'. Inspect a member to see what inheritance gives that person.
 - A department id stored in an assignment outlives the department; disable instead of deleting so its assignments stay readable and revocable.
 - Never build a separate role-to-permission table; it would bypass the workspace, the inspector and the rule plugins.

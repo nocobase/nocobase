@@ -1,6 +1,6 @@
 ---
 name: nocobase-app-plugin-i18n
-description: "Use when adding or changing user-facing text in a NocoBase application or plugin: writing locale files, wiring a package's locales for the first time, translating a component or a menu title, naming a namespace, translating server responses, errors and outbound mail, or adding a language. Not for building page UI around the text (nocobase-app-development) or scaffolding a new plugin (nocobase-plugin-development); those Skills hand translation work here."
+description: "Use when adding or changing user-facing text in a NocoBase application or plugin: writing locale files, wiring a package's locales for the first time, translating a component or a menu title, naming a namespace, translating server responses, errors and outbound mail, or adding a language. Not for building page UI around the text (nocobase-app-development) or scaffolding a new plugin (nocobase-app-plugin-development); those Skills hand translation work here."
 argument-hint: '[action: add-text|add-locale|translate-component|override-plugin-text] [target-file-or-package]'
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 owner: i18n
@@ -144,7 +144,7 @@ Only in these two cases:
 **A component rendered outside its own package's routes.** Ask: will this render anywhere other than this plugin's own pages? If yes:
 
 ```tsx
-const { t } = useTranslation('@nocobase/app-plugin-workflow');
+const { t } = useTranslation('@nocobase/app-plugin-scheduler');
 ```
 
 Keep the namespace in one constant per package rather than repeating the literal.
@@ -268,7 +268,7 @@ await sendMail(recipient.email, {
 });
 ```
 
-How an error boundary serializes `AppI18nError`, and where a job without a container should translate, are in the `nocobase-plugin-development` Skill's `references/i18n.md` and the `@nocobase/i18n` README.
+How an error boundary serializes `AppI18nError`, and where a job without a container should translate, are in the `nocobase-app-plugin-development` Skill's `references/i18n.md` and the `@nocobase/i18n` README.
 
 ## Adding a language
 
@@ -295,8 +295,8 @@ From the application's locale file, keyed by the plugin's package name:
 const zhCN: AppResource = {
   actions: { save: '保存' },
   overrides: {
-    '@nocobase/app-plugin-workflow': {
-      trigger: { title: '触发条件' },
+    '@nocobase/app-plugin-scheduler': {
+      nav: { schedules: '计划任务' },
     },
   },
 };

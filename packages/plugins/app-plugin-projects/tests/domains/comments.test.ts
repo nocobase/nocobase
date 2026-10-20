@@ -43,6 +43,78 @@ async function anIssue(viewer = alice()): Promise<Issue> {
 }
 
 describe('writing comments', () => {
+  it('returns the originating execution on comments and activities, and hides it when the comment is deleted', async () => {
+    const issue = await anIssue();
+    h.services.kinds.add({
+      key: 'agent',
+      names: (_conn, ids) =>
+        Promise.resolve(new Map(ids.map((id) => [id, 'Coder']))),
+    });
+    const execution = {
+      attempt: 2,
+      runnerId: 'r2',
+      runnerName: 'dev-2',
+      runnerOwnerUserId: 'alice',
+      runnerOwnerName: 'Alice',
+      tool: 'codex',
+      toolVersion: '1.2',
+      model: null,
+      actualModels: ['actual-model'],
+      effort: 'high',
+    };
+    const written = await h.services.comments.post(
+      {
+        type: 'user',
+        id: 'alice',
+        via: 'agent',
+        trace: { agentId: 'coder', runId: 'run2', execution },
+      },
+      issue.id,
+      { content: 'Fixed' },
+    );
+    expect(written.comment.source).toMatchObject({
+      type: 'agent',
+      agentName: 'Coder',
+      runId: 'run2',
+      execution: {
+        ...execution,
+        runnerName: null,
+        runnerOwnerName: null,
+        machineHidden: true,
+      },
+    });
+    const detail = await h.services.issueQueries.detail(alice(), issue.id);
+    expect(
+      detail.activities.find((item) => item.action === 'comment_added')?.via,
+    ).toMatchObject({ runId: 'run2', execution });
+    expect(detail.threads[0]?.root.source?.execution).toMatchObject(execution);
+    const outsider = await h.services.issueQueries.detail(bob(), issue.id);
+    const hidden = {
+      runnerName: null,
+      runnerOwnerName: null,
+      runnerTrust: null,
+      machineHidden: true,
+      actualModels: ['actual-model'],
+    };
+    expect(
+      outsider.activities.find((item) => item.action === 'comment_added')?.via
+        ?.execution,
+    ).toMatchObject(hidden);
+    expect(outsider.threads[0]?.root.source?.execution).toMatchObject(hidden);
+    expect(
+      (await h.services.commentQueries.threads(bob(), issue.id, {})).data[0]
+        ?.root.source?.execution,
+    ).toMatchObject(hidden);
+    const manager = { ...bob(), seesExecutionMachine: () => true };
+    expect(
+      (await h.services.issueQueries.detail(manager, issue.id)).threads[0]?.root
+        .source?.execution,
+    ).toMatchObject(execution);
+    await h.services.comments.remove(alice(), written.comment.id);
+    const after = await h.services.issueQueries.detail(alice(), issue.id);
+    expect(after.threads[0]?.root.source).toBeNull();
+  });
+
   it('posts a comment, records it and keeps the revision', async () => {
     const issue = await anIssue();
     const { comment, triggered } = await h.services.comments.create(
@@ -157,6 +229,38 @@ describe('writing comments', () => {
     expect(second.nextCursor).toBeNull();
   });
 
+  it('lists only what was written after `since`, each thread with its root', async () => {
+    const issue = await anIssue();
+    const old = await h.services.comments.create(bob(), issue.id, {
+      content: 'Old root',
+    });
+    await h.services.comments.create(bob(), issue.id, { content: 'Quiet' });
+    await h.services.comments.create(bob(), issue.id, {
+      content: 'Old reply',
+      parentId: old.comment.id,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const since = new Date().toISOString();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    await h.services.comments.create(bob(), issue.id, {
+      content: 'New reply',
+      parentId: old.comment.id,
+    });
+    await h.services.comments.create(bob(), issue.id, { content: 'New root' });
+    const page = await h.services.commentQueries.threads(alice(), issue.id, {
+      since,
+    });
+    expect(
+      page.data.map((thread) => [
+        thread.root.content,
+        thread.replies.map((reply) => reply.content),
+      ]),
+    ).toEqual([
+      ['Old root', ['New reply']],
+      ['New root', []],
+    ]);
+  });
+
   it('needs pm.issues comment, and seeing the issue', async () => {
     const issue = await anIssue();
     await expect(
@@ -237,6 +341,62 @@ describe('editing and deleting', () => {
     await expect(
       h.services.comments.react(bob(), comment.id, '👍'),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+});
+
+describe('one author’s newest comments', () => {
+  it('reads the newest one on each issue at once, as one issue at a time reads it', async () => {
+    const issues = [await anIssue(), await anIssue(), await anIssue()];
+    const [first, second, third] = issues as [Issue, Issue, Issue];
+    for (const content of ['One', 'Two', 'Three'])
+      await h.services.comments.create(bob(), first.id, { content });
+    await h.services.comments.create(alice(), first.id, { content: 'Mine' });
+    await h.services.comments.create(bob(), second.id, { content: 'Kept' });
+    const gone = await h.services.comments.create(bob(), second.id, {
+      content: 'Gone',
+    });
+    await h.services.comments.remove(bob(), gone.comment.id);
+    await h.services.comments.create(alice(), third.id, { content: 'Only' });
+
+    const conn = h.services.tx.read();
+    const author = { type: 'user', id: 'bob' };
+    for (const live of [true, false]) {
+      const each = await h.services.commentQueries.newestByEach(
+        conn,
+        issues.map((issue) => issue.id),
+        author,
+        { live },
+      );
+      const one = new Map(
+        (
+          await Promise.all(
+            issues.map(async (issue) => {
+              const [newest] = await h.services.commentQueries.newestBy(
+                conn,
+                issue.id,
+                author,
+                { live, limit: 1 },
+              );
+              return newest ? ([[issue.id, newest]] as const) : [];
+            }),
+          )
+        ).flat(),
+      );
+      expect(each).toEqual(one);
+    }
+    const live = await h.services.commentQueries.newestByEach(
+      conn,
+      [first.id, second.id, third.id],
+      author,
+      { live: true },
+    );
+    expect([...live.values()].map((comment) => comment.content)).toEqual(
+      expect.arrayContaining(['Three', 'Kept']),
+    );
+    expect(live.has(third.id)).toBe(false);
+    expect(
+      await h.services.commentQueries.newestByEach(conn, [], author),
+    ).toEqual(new Map());
   });
 });
 
@@ -327,12 +487,12 @@ describe('mentions and triggers', () => {
     expect(candidates.map((candidate) => candidate.id)).toContain('alice');
   });
 
-  it('tells the triggers of a person’s comment that is not a note, in its transaction', async () => {
-    const seen: string[] = [];
+  it('tells the triggers of a comment that is not a note, of anyone but the system, in its transaction', async () => {
+    const seen: { content: string; userId: string | null }[] = [];
     const triggers: IssueTriggers = {
       onIssueChanged: () => Promise.resolve(),
       onCommentCreated: (_tx, change) => {
-        seen.push(change.comment.content);
+        seen.push({ content: change.comment.content, userId: change.userId });
         return Promise.resolve(
           change.mentions.filter((ref) => ref.kind === 'bot') as MentionRef[],
         );
@@ -369,7 +529,33 @@ describe('mentions and triggers', () => {
       { content: 'Done' },
       { origin: { runId: 'r1' } },
     );
-    expect(seen).toEqual(['Go [@B](mention://bot/b1)']);
+    // A principal writing for a person, as a run does: the triggers hear whom it acts for.
+    await services.comments.create(
+      { ...alice(), actor: { type: 'bot', id: 'b1' } },
+      issue.id,
+      { content: 'Checked' },
+    );
+    await services.comments.post(
+      { type: 'bot', id: 'b1' },
+      issue.id,
+      { content: 'For Bob' },
+      { forUserId: 'bob' },
+    );
+    await services.comments.post(
+      { type: 'bot', id: 'b1' },
+      issue.id,
+      { content: 'Quiet' },
+      { trigger: false },
+    );
+    await services.comments.post({ type: 'system', id: null }, issue.id, {
+      content: 'Summary',
+    });
+    expect(seen).toEqual([
+      { content: 'Go [@B](mention://bot/b1)', userId: 'alice' },
+      { content: 'Done', userId: null },
+      { content: 'Checked', userId: 'alice' },
+      { content: 'For Bob', userId: 'bob' },
+    ]);
   });
 
   it('writes a plugin’s comment of its own kind, in the caller’s transaction', async () => {

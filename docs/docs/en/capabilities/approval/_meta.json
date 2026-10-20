@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Approval overview"
+  },
+  {
+    "type": "file",
+    "name": "stages",
+    "label": "Multiple stages and conditional routing"
+  },
+  {
+    "type": "file",
+    "name": "joint-review",
+    "label": "Joint review and decision rules"
+  },
+  {
+    "type": "file",
+    "name": "handover",
+    "label": "Added reviewers and transfers"
+  },
+  {
+    "type": "file",
+    "name": "requests",
+    "label": "Request handling and progress"
+  }
+]

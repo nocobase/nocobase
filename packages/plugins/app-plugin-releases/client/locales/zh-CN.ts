@@ -93,6 +93,17 @@ const zhCN: typeof enUS = {
       deploying: '部署中',
     },
     operate: {
+      refreshFailed:
+        '应用状态刷新失败，刷新成功前无法执行运行操作。请检查网络和访问权限后重试。',
+      disabled: {
+        busy: '正在执行操作。',
+        unavailable: '应用状态不可用，请刷新状态后再操作。',
+        deploying: '正在部署应用。',
+        starting: '应用正在启动。',
+        notDeployed: '请先部署一个版本。',
+        alreadyRunning: '应用已在运行。',
+        notRunning: '应用未在运行。',
+      },
       start: '启动',
       stop: '停止',
       restart: '重启',

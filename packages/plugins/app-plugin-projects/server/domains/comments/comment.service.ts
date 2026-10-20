@@ -1,8 +1,8 @@
 /**
  * Comment writes: post, edit, delete, react and resolve. Each write records its activity, keeps the issue's
  * `lastActivityAt` (without raising its revision), and emits `issue.changed` plus an event saying what happened, from
- * which follows and notices are planned (`domains/notices`). A person's comment that is not a note is handed to the
- * triggers in the same transaction.
+ * which follows and notices are planned (`domains/notices`). A comment that is not a note, of anyone but the system,
+ * is handed to the triggers in the same transaction, with the person it was written for.
  */
 import {
   COMMENT_CONTENT_MAX,
@@ -15,6 +15,7 @@ import {
   type ThreadResolution,
   type UpdateCommentRequest,
 } from '../../../shared/comments.js';
+import { SYSTEM_KIND } from '../../../shared/kinds.js';
 import type { Issue } from '../../../shared/issues.js';
 import { requireAction, type Viewer } from '../../access/viewer.js';
 import type { ActivityRecorder } from '../../kernel/activity.js';
@@ -139,13 +140,18 @@ export function createCommentService(deps: CommentDeps): CommentService {
     return { comment, issue };
   }
 
-  async function mapOne(tx: Tx, id: string): Promise<IssueComment> {
+  async function mapOne(
+    tx: Tx,
+    id: string,
+    viewer?: Viewer,
+  ): Promise<IssueComment> {
     const row = (await findComment(tx.conn, id)) as CommentRecord;
     const [comment] = await mapComments(
       tx.conn,
       deps.kinds,
       [row],
       deps.attachments?.(),
+      viewer,
     );
     if (!comment) throw notFound('Comment');
     return comment;
@@ -166,6 +172,9 @@ export function createCommentService(deps: CommentDeps): CommentService {
       readonly trigger?: boolean;
       /** The person writing, whose right to mention each principal is checked. */
       readonly userId: string | null;
+      /** Without `userId`: the person the triggers hear it was written for. */
+      readonly forUserId?: string;
+      readonly viewer?: Viewer;
     },
   ) {
     const content = contentOf(input);
@@ -216,12 +225,14 @@ export function createCommentService(deps: CommentDeps): CommentService {
       parentId: parent?.id ?? null,
       ...(files.length > 0 ? { attachmentCount: files.length } : {}),
     });
-    const comment = await mapOne(tx, id);
-    const parentComment = parent ? await mapOne(tx, parent.id) : null;
+    const comment = await mapOne(tx, id, options.viewer);
+    const parentComment = parent
+      ? await mapOne(tx, parent.id, options.viewer)
+      : null;
     let triggered: readonly MentionRef[] = [];
     const triggers = deps.triggers();
     if (
-      actor.type === 'user' &&
+      actor.type !== SYSTEM_KIND &&
       !note &&
       options.trigger !== false &&
       triggers.onCommentCreated
@@ -231,6 +242,7 @@ export function createCommentService(deps: CommentDeps): CommentService {
         issue,
         parent: parentComment,
         actor,
+        userId: options.userId ?? options.forUserId ?? null,
         mentions: refs,
       });
     tx.emit({ type: 'issue.changed', issueId: issue.id });
@@ -284,7 +296,10 @@ export function createCommentService(deps: CommentDeps): CommentService {
             'upload',
             'You may not attach files.',
           );
-        return write(tx, viewer.actor, issue, input, { userId: viewer.userId });
+        return write(tx, viewer.actor, issue, input, {
+          userId: viewer.userId,
+          viewer,
+        });
       });
     },
 
@@ -300,6 +315,7 @@ export function createCommentService(deps: CommentDeps): CommentService {
           ...(options.trigger === undefined
             ? {}
             : { trigger: options.trigger }),
+          ...(options.forUserId ? { forUserId: options.forUserId } : {}),
           userId: null,
         });
       }, options.outer);
@@ -312,7 +328,7 @@ export function createCommentService(deps: CommentDeps): CommentService {
         if (comment.deletedAt) throw notFound('Comment');
         if (!canEditComment(viewer, comment))
           throw forbidden('Only its author may edit a comment.');
-        if (content === comment.content) return mapOne(tx, comment.id);
+        if (content === comment.content) return mapOne(tx, comment.id, viewer);
         const added = newMentions(comment.content, content);
         await deps.kinds.requireMentions(tx.conn, added, {
           userId: viewer.userId,
@@ -332,7 +348,7 @@ export function createCommentService(deps: CommentDeps): CommentService {
           mentions: added,
           editedAt: editedAt.toISOString(),
         });
-        return mapOne(tx, comment.id);
+        return mapOne(tx, comment.id, viewer);
       });
     },
 

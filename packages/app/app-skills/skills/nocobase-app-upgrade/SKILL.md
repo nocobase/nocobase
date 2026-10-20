@@ -2,10 +2,17 @@
 name: nocobase-app-upgrade
 description: >-
   Upgrade this application to a newer release of the template it was generated
-  from. Use when the user asks to upgrade the template, pull in template
-  changes, move to a newer template version, or reconcile the application with
-  upstream. Do not use for ordinary feature development or for upgrading a
-  single dependency.
+  from, which is how this application moves to a newer NocoBase version. Users
+  rarely think in terms of templates, so use it whenever the user asks to
+  upgrade or update NocoBase, the NocoBase core, kernel or framework version,
+  or the @nocobase packages as a whole — for example "upgrade NocoBase",
+  "update the NocoBase core version", "move to the latest NocoBase release",
+  "升级 NocoBase", "升级 NocoBase 内核版本", "更新 NocoBase 到最新版" — as well as
+  when they ask to upgrade the template, pull in template changes, move to a
+  newer template version, or reconcile the application with upstream. Do not
+  use for ordinary feature development, for upgrading a single dependency, or
+  for upgrading an already deployed build on a server, which the app installer
+  handles.
 metadata:
   short-description: Merge a newer template release into this application
 ---
@@ -43,17 +50,31 @@ Not a Git project: do not touch it. Offer `git init` plus a commit, or a full co
 node -p "JSON.stringify(require('./package.json').nocobase, null, 2)"
 ```
 
-`templatePackage` names the template; `defaultTemplateVersion` is BASE. Treat that package name as authoritative even when it names a template this Skill has never seen. If it is missing, the application predates the field: inspect `templateKind`, dependency history, plugin registrations, database directories, and published template versions, then confirm the source package before fetching. `templateKind: "app"` alone does not distinguish Default from Examples, while `templateKind: "hub"` identifies Hub ancestry. If `defaultTemplateVersion` itself is missing or was bumped without a merge, the baseline is unknown — work it out with the user from Git history rather than guessing, since too old a baseline replays changes already present and too new a one skips changes never applied.
+`templatePackage` names the template; `defaultTemplateVersion` is BASE. Treat that package name as authoritative even when it names a template this Skill has never seen. If it is missing, the application predates the field: inspect `templateKind`, dependency history, plugin registrations, database directories, and published template versions, then confirm the source package before fetching. `templateKind: "app"` alone does not distinguish Default from Examples, while `templateKind: "hub"` identifies the discontinued Hub template, which has no newer version to upgrade to: tell the user rather than picking another template as BASE. If `defaultTemplateVersion` itself is missing or was bumped without a merge, the baseline is unknown — work it out with the user from Git history rather than guessing, since too old a baseline replays changes already present and too new a one skips changes never applied.
 
 If `nocobase.templatePackage` is missing, use the confirmed package name for `TEMPLATE` instead of the manifest lookup below, then record it in the manifest during the agreed source merge.
 
-## 3. Fetch both releases
+## 3. Select the release channel and fetch both releases
+
+Resolve the user's requested channel before choosing TARGET. An explicit version takes precedence. For a beta upgrade, use the template's `beta` dist-tag; for an explicit `latest` upgrade, use its `latest` dist-tag. If the user only asks to upgrade, retain the baseline's channel: use `beta` for a beta baseline and `latest` for a stable baseline; clarify other prerelease channels instead of guessing. State the selected channel and resolved version in the upgrade plan.
+
+The tags are independent pointers, not a version ordering: `beta` tracks beta releases, while `latest` is npm's default tag and can still point to an older beta before a stable release exists. Do not assume `latest` is newer or stable, or choose the highest version across all channels. If the user asks for a stable release but `latest` resolves to a prerelease, explain that the tag does not provide a stable target and clarify before proceeding. A missing requested tag is not permission to fall back to another channel.
 
 ```bash
 REGISTRY=https://registry.npmjs.org
 TEMPLATE=$(node -p "require('./package.json').nocobase.templatePackage")
 BASE=$(node -p "require('./package.json').nocobase.defaultTemplateVersion")
-TARGET=<target version>
+npm view "$TEMPLATE" dist-tags --json --registry="$REGISTRY"
+
+# Set CHANNEL to beta or latest according to the selection above.
+CHANNEL=beta
+TARGET=$(npm view "$TEMPLATE@$CHANNEL" version --registry="$REGISTRY")
+# For an explicitly requested version, assign that exact version to TARGET instead.
+```
+
+Use semantic version ordering to compare the resolved TARGET with BASE. If equal, there is no template upgrade; if older, report the result rather than performing an implicit downgrade. Resolve a tag once, then use that exact version for fetching, the source diff and `defaultTemplateVersion`, even if the tag moves during the upgrade. Fetch dependencies from the target template's manifest; do not independently move every `@nocobase/*` dependency to a dist-tag, since packages have separate versions and release schedules.
+
+```bash
 WORK=$(mktemp -d)
 
 for VERSION in "$BASE" "$TARGET"; do
@@ -65,8 +86,6 @@ done
 
 These are published tarballs, not Git checkouts — they carry only what `files` publishes, and npm never publishes `.gitignore`. That is fine: both sides are missing the same things.
 
-Do not read the `beta` dist-tag as "newest". While every release is a prerelease, changesets tags each one `latest` and leaves `beta` on the first version ever published.
-
 ## 4. Read what changed, and who else changed it
 
 ```bash
@@ -74,6 +93,10 @@ diff -rq "$WORK/$BASE" "$WORK/$TARGET"
 ```
 
 `Files ... differ` is modified, `Only in TARGET` added, `Only in BASE` removed. Read the substantive ones with `diff -u`. Use the actual BASE → TARGET changes and the project's current state to decide what applies. The target template's `@nocobase/app-skills` dependency identifies the shared guidance shipped for that release; inspect that package's relevant references when a changed framework contract needs explanation. Check [edge cases](references/edge-cases.md) for generated configuration, synchronized Skills, and migration history that the template diff cannot describe.
+
+When the upgrade changes application migrations or registered plugins that supply migrations, read [database upgrades](references/database-upgrades.md) during planning, before starting the target application. Review the affected packages' upgrade notes as well as the template diff: a dependency update can change database behavior without adding a migration file to the application. Include any documented checksum correction, data prerequisite, and irreversible migration in the upgrade and recovery plan. A Git branch protects source, not the database.
+
+When BASE → TARGET changes Realtime contracts, read [Realtime upgrades](references/realtime-upgrade.md) during planning and include application-owned consumers, custom plugins, workers and transport/test adapters in step 5. Topic authorization, ignored publication promises and recovery gaps can survive type checking; use the actual package contracts and project usage to decide which migration steps apply.
 
 Then ask the project which of those files it has also touched:
 
@@ -117,6 +140,8 @@ For each file read three versions — `$WORK/$BASE/<file>`, `$WORK/$TARGET/<file
 
 The generator rewrites template identity into some files, so those files legitimately differ from both releases. Current candidates include `client/runtime.ts`, `client/service-provider.ts`, and the Examples template's `server/providers/app-example.ts`; inspect the project and generator behavior instead of treating this as an exhaustive list for future templates. Keep the application's name when taking a template change there — copying verbatim splits the i18n namespace. When a target removes one of these files, preserve any application-owned customization until step 5 establishes that it is unused or migrated.
 
+A template upgrade is not a theme reset. Preserve application-owned visual customizations by default; apply non-conflicting presentation changes and obtain a decision before replacing a customized visual result. For theme or shell deltas, inspect the [theme upgrade checks](references/theme-upgrade.md) during planning and merging, not only at final verification. An explicit request to adopt the new default theme authorizes replacement only within the agreed visual scope.
+
 When the right answer is unclear, stop and ask. The user is the only one who knows why their code is the way it is.
 
 ## 7. Reconcile what is not ordinary source
@@ -134,10 +159,14 @@ pnpm typecheck && pnpm test && pnpm lint && pnpm build
 
 `pnpm install` can retain older transitive dependencies in `pnpm-lock.yaml` even after the template raises a direct dependency. Run `pnpm dedupe` to refresh compatible resolutions before synchronizing Skills from the final `node_modules`. Review and include the resulting lockfile changes in the upgrade. If type checking still reports incompatible types from two versions of the same package, follow [dependency resolution conflicts](references/edge-cases.md#dependency-resolution-conflicts) before changing application code.
 
-`typecheck` is doing real work here — it catches the broken import a removal left behind. Then run the application and check what the delta touched: sign-in, the user's pages, navigation, locale switching, any new migration. Passing commands are not evidence the application still behaves.
+`typecheck` is doing real work here — it catches the broken import a removal left behind. Before starting the application against retained data, complete the applicable [database upgrade checks](references/database-upgrades.md); startup may apply migrations automatically. Then run the application and check what the delta touched: sign-in, the user's pages, navigation, locale switching, any new migration. Passing commands are not evidence the application still behaves. For a theme or shell change, also complete the [theme upgrade checks](references/theme-upgrade.md); token changes alone do not verify the application-owned consumers.
+
+For a Realtime contract change, complete the applicable [Realtime acceptance checks](references/realtime-upgrade.md#verify-the-migrated-application), including access denial, reconnect catch-up and publication failure; a connected socket alone is insufficient evidence.
 
 Report the range merged, how each contested file was decided, any manual actions and their validation, and how to roll back.
 
 ## Crossing several releases
 
 Compare BASE directly with TARGET and merge the resulting changes once. Check the user's code against changed or removed contracts and preserve existing configuration, data, and migration history. If a compatibility step cannot be determined from the endpoints, inspect the relevant intermediate release or ask for the missing project context; do not assume every historical instruction applies.
+
+When the target adds or changes the standard process UI sources, also follow [standard process management source upgrades](references/edge-cases.md#standard-process-management-source-upgrades): confirm existing process pages actually consume the merged components, while preserving explicit user customizations, parameters, grants and history.

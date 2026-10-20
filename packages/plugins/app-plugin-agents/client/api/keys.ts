@@ -2,15 +2,20 @@ import type { UsageQuery } from '../../shared/reports.js';
 
 /** Query keys of this plugin's cache, all under `['agents']`. */
 export const agentsKeys: {
+  readonly available: readonly ['agents', 'available'];
+  readonly chatAgents: readonly ['agents', 'chat', 'agents'];
+  readonly runner: (
+    id: string,
+  ) => readonly ['agents', 'runners', 'detail', string];
   readonly all: readonly ['agents'];
   readonly agents: readonly ['agents', 'agents'];
+  readonly agentNames: readonly ['agents', 'agent-names'];
   readonly agent: (agentId: string) => readonly ['agents', 'agent', string];
   readonly agentHistory: (
     agentId: string,
   ) => readonly ['agents', 'agent-history', string];
   readonly users: readonly ['agents', 'users'];
   readonly models: readonly ['agents', 'models'];
-  readonly defaultModels: readonly ['agents', 'models', 'defaults'];
   readonly services: readonly ['agents', 'services'];
   readonly prices: readonly ['agents', 'prices'];
   readonly providerModels: (
@@ -59,13 +64,16 @@ export const agentsKeys: {
     scenario: string | null,
   ) => readonly ['agents', 'brief-preview', string, string | null];
 } = {
+  available: ['agents', 'available'],
+  chatAgents: ['agents', 'chat', 'agents'],
+  runner: (id) => ['agents', 'runners', 'detail', id],
   all: ['agents'],
   agents: ['agents', 'agents'],
+  agentNames: ['agents', 'agent-names'],
   agent: (agentId) => ['agents', 'agent', agentId],
   agentHistory: (agentId) => ['agents', 'agent-history', agentId],
   users: ['agents', 'users'],
   models: ['agents', 'models'],
-  defaultModels: ['agents', 'models', 'defaults'],
   services: ['agents', 'services'],
   prices: ['agents', 'prices'],
   providerModels: (service) => ['agents', 'provider-models', service],

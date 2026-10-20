@@ -1,3 +1,5 @@
+import { WorkflowParameterStore } from '../server/configuration/workflow-parameter-store.js';
+import { exampleParameterRegistration } from '../server/configuration/store.js';
 // Edits and transitions racing on one expense report, on the test database:
 // every edit moves the lifecycle version on, so a submit decided on the
 // report before an edit landed is refused rather than committed over values
@@ -20,18 +22,23 @@ afterEach(() => {
 });
 
 function serviceOn(database: DatabaseManager): LifecycleExampleService {
+  const store = createRepositoryLifecycleStore(database, {
+    collections: {
+      transitions: LIFECYCLE_EXAMPLE_COLLECTIONS.transitions,
+      effectRuns: LIFECYCLE_EXAMPLE_COLLECTIONS.effectRuns,
+    },
+  });
   const runtime = new LifecycleRuntime({
-    store: createRepositoryLifecycleStore(database, {
-      collections: {
-        transitions: LIFECYCLE_EXAMPLE_COLLECTIONS.transitions,
-        effectRuns: LIFECYCLE_EXAMPLE_COLLECTIONS.effectRuns,
-      },
-    }),
+    store,
     // Effects stay queued: only the transitions matter here.
     dispatcher: { dispatch: () => Promise.resolve() },
   });
   runtime.register(expenseLifecycle, {
     services: createExampleServices({ info: () => undefined }),
+    parameterConfiguration: exampleParameterRegistration(
+      new WorkflowParameterStore(store),
+      'expenses',
+    ),
   });
   return new LifecycleExampleService(database, runtime);
 }

@@ -19,7 +19,7 @@ const repoRoot = path.resolve(import.meta.dirname, '../..');
 /**
  * Model declaration consumers without requiring a workspace build. This is a focused
  * dependency-category regression, not a published-artifact check: @nocobase/db
- * and transitive packages still resolve through workspace links. The Verdaccio Hub smoke test covers packed
+ * and transitive packages still resolve through workspace links. The Verdaccio create-app smoke test covers packed
  * exports, installation, declaration emission, and startup outside the workspace.
  */
 function installDeclarations(
@@ -66,9 +66,11 @@ function installDeclarations(
 function checkDatabaseDeclarations(t, runtimeDependency) {
   const templateRoot = path.join(
     repoRoot,
-    'packages/templates/app-template-hub',
+    'packages/templates/app-template-default',
   );
-  const root = mkdtempSync(path.join(tmpdir(), 'hub-database-declarations-'));
+  const root = mkdtempSync(
+    path.join(tmpdir(), 'template-database-declarations-'),
+  );
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const manifest = JSON.parse(
     readFileSync(path.join(templateRoot, 'package.json'), 'utf8'),
@@ -127,7 +129,7 @@ function checkDatabaseDeclarations(t, runtimeDependency) {
   assert.ok(!declaration.includes('node_modules'));
 }
 
-test('Hub runtime dependencies let TypeScript name inferred database declarations', (t) => {
+test('template runtime dependencies let TypeScript name inferred database declarations', (t) => {
   checkDatabaseDeclarations(t, true);
 });
 

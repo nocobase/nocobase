@@ -5,63 +5,92 @@
     "label": "Overview"
   },
   {
+    "type": "file",
+    "name": "quick-start",
+    "label": "Quick start"
+  },
+  {
     "type": "dir",
-    "collapsed": true,
     "name": "auth",
-    "label": "Authentication"
+    "label": "Authentication",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "data-sources",
+    "label": "Data sources",
+    "collapsed": true
   },
   {
     "type": "dir",
     "name": "authorization",
-    "label": "Permissions",
+    "label": "Authorization",
     "collapsed": true
   },
   {
-    "type": "file",
-    "name": "scheduler",
-    "label": "Scheduled tasks"
-  },
-  {
-    "type": "file",
-    "name": "notification",
-    "label": "Notifications"
+    "type": "dir",
+    "name": "workflow",
+    "label": "Workflow",
+    "collapsed": true
   },
   {
     "type": "dir",
-    "collapsed": true,
-    "name": "mail",
-    "label": "Mail"
+    "name": "approval",
+    "label": "Approval",
+    "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "file",
-    "label": "Files"
+    "label": "Files",
+    "collapsed": true
   },
   {
-    "type": "file",
-    "name": "template-print",
-    "label": "Template printing"
-  },
-  {
-    "type": "file",
+    "type": "dir",
     "name": "i18n",
-    "label": "Language switching"
+    "label": "Internationalization",
+    "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "theme",
-    "label": "Themes"
+    "label": "Themes",
+    "collapsed": true
   },
   {
     "type": "dir",
-    "collapsed": true,
+    "name": "notification",
+    "label": "Notifications",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "scheduler",
+    "label": "Scheduled tasks",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "mail",
+    "label": "Mail",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
     "name": "ai-employee",
-    "label": "AI employees"
+    "label": "AI employees",
+    "collapsed": true
   },
   {
     "type": "dir",
-    "collapsed": true,
     "name": "ai-knowledge-base",
-    "label": "AI knowledge base"
+    "label": "AI knowledge bases",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "template-print",
+    "label": "Template printing",
+    "collapsed": true
   }
 ]

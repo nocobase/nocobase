@@ -1,12 +1,10 @@
 ---
-'@nocobase/app-plugin-workflow': major
 '@nocobase/app-plugin-scheduler': major
 '@nocobase/app-plugin-i18n': major
 '@nocobase/app-plugin-notification': major
 '@nocobase/app-plugin-notification-in-app': major
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Workflow, scheduler, i18n and notification routes follow the HTTP API specification: every success is `{ data }` (lists `{ data, meta }`), every failure is the standard error body, and every input is validated, with unknown JSON body fields rejected as 400 `INVALID_INPUT`.

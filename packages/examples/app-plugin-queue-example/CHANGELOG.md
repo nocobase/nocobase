@@ -1,5 +1,29 @@
 # @nocobase/app-plugin-queue-example
 
+## 1.0.0-beta.12
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.11
+  - @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 1.0.0-beta.11
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.6
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 1.0.0-beta.10
 
 ### Patch Changes

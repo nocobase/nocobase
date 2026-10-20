@@ -1,5 +1,256 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.12
+
+### Minor Changes
+
+- 32ed5e2: Report coding account quota windows, filter scoped exhausted tools before claims, and restore eligibility at known reset times or after an authorized manual clear. Show quota status and usage in runtime tabs and agent availability, and batch page reads independently of the catalog size.
+
+  Runtime API and CLI: runtime get returns directory totals without directory rows; runtime list omits models, policy, variables, quota details and load, and caps takes at three with takesCount. Use the paginated runtime workspaces command for directory rows. Runtime quota clear takes structured tool/scope/target/window fields and no client revision; only unknown-reset marks may be cleared.
+
+  Classify quota revision races as retryable REVISION_CONFLICT while known-reset clears fail with QUOTA_RESET_KNOWN / FAILED_PRECONDITION.
+
+  Batch related-task visibility and missing blocker reads with the existing issue visibility filter, preserving per-request permissions and hidden blocker counts as task and project counts grow.
+
+### Patch Changes
+
+- 91390b0: Avoid publishing untouched repository checkouts or recreating deleted task branches. Preserve continuation delivery evidence across runs so pending commits can still be delivered after a failed push.
+- Updated dependencies [32ed5e2]
+  - @nocobase/agent-protocol@0.1.0-beta.10
+  - @nocobase/app-cli-client@0.1.0-beta.10
+
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- Updated dependencies [b322dcf]
+  - @nocobase/app-cli-client@0.1.0-beta.9
+
+## 0.1.0-beta.10
+
+### Patch Changes
+
+- b02f078: Persist revoked runner registrations and stop serving them until successful registration. Add optional revocation details to status JSON, stop system services on authentication failure while preserving self-update restarts, bound rapid startup retries, and rotate daemon logs at 5 MiB with two backups. Manual updates explicitly restart installed services. Stopping also cancels a launcher waiting to retry, and duplicate starts are refused while that launcher is alive. Existing installations must run `nocobase-runner service install` with the new version to replace their old unconditional restart definitions; service definitions are not migrated automatically.
+- b7e1719: A read-only step's notes now say what read-only means: change no tracked file, commit and push nothing. The agent may still prepare its checkout to run things there, such as initializing submodules, installing dependencies, building and running checks, which agents had read the old "change nothing" as forbidding.
+- 83e3609: Once the application says a task's work is over, routine collection removes its working directories and Codex session directories whatever they hold — untracked files, uncommitted changes, unpushed commits, recovery worktrees and local continuation refs — without `--force` and without waiting for disk pressure. Only a run holding a directory's lock, or using it since it was reported, keeps it. Directories whose work goes on, or whose status is unknown, keep their unpushed-work protection.
+- b887c55: A workspace's Codex home now links the real `~/.codex` plugin bundles (`plugins/`) and plugin catalog (`cache/`), so a new workspace no longer downloads them again.
+- b887c55: The runner no longer initializes a repository's submodules while preparing a checkout, so a new checkout no longer downloads every submodule in full. A prepared checkout leaves its submodules uninitialized; a project whose repository has submodules should tell its agents how to initialize them, for example `git submodule update --init --reference <local copy>` or a shallow `--depth 1` update. Submodules an agent initialized are still checked for unpushed commits before a checkout is removed.
+- 9656875: Read piped environment values only once so delayed and split input is preserved.
+- Updated dependencies [846e75f]
+- Updated dependencies [d34b6eb]
+- Updated dependencies [5fe8773]
+- Updated dependencies [616561b]
+- Updated dependencies [83e3609]
+- Updated dependencies [55fcee1]
+- Updated dependencies [49f61b9]
+  - @nocobase/app-cli-client@0.1.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.9
+
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- 8e4cf26: Recover runners and agent-session bridges after a protocol upgrade. Heartbeat answers now carry the server's runner protocol (`protocolVersion`), and a runner that speaks an older protocol while no newer version is offered logs what it speaks, what the application needs and how to update, instead of looking up to date. A bridge refused for its protocol now receives the protocols the application speaks in the error's `metadata`; `acp start` then updates the CLI as `update` does and exits non-zero so its launchd, systemd or Startup service starts it again on the new version, and when no update helps it still exits non-zero after a pause rather than stopping with success. A computer whose bridge was refused as too old is shown on My agents with the commands to update it.
+- 923a8e5: Refresh installed tool versions, paths and runner login status in long-running processes using bounded, cancellable background inspections. Rediscover previously unavailable tools and keep model capabilities consistent with the latest inspection. Reprobe ACP agents every minute and allow a session to retry after an authentication-required prompt error without replaying the failed message.
+
+  Terminate ACP launcher descendants after the stop grace period even when the launcher exits first.
+
+- 4626949: Start issue runs from the earliest linked open pull request in the same repository, allow agents to manage branches and pull request associations without rewriting pushed history, and preserve shared local branches and stashes when removing run worktrees. Only published runner-created temporary branches are cleaned up. A run that ends on another branch is preserved by that branch, without a saved head or push failure on the starting target.
+- 0aca290: Save local continuation commits with the checkout's Git identity, a changed-file summary, and no attribution trailers. Retain the worktree and report recovery instructions when the identity is unavailable.
+- f36da62: Keep a runner claiming work while it collects working directories. Collection no longer measures every directory's size by reading every file, which on runners with many directories took tens of minutes per round and held all claims meanwhile; only pruning the shared pnpm store still holds claims. Routine collection now runs an hour after the previous round ended (`WORKSPACE_REPORT_INTERVAL_MS`), still at once when the disk runs low, and the runner logs each round's start and duration. Workspace diagnostics show a directory's size only when a runner reported one.
+- ca7cb55: Runs no longer force pnpm to copy packages from the shared store where the file system cannot clone, and use pnpm's default import method instead: packages are cloned where supported and hard-linked elsewhere, so a run on ext4 no longer copies its whole `node_modules`. The workspace notes tell the agent never to edit files under `node_modules` in place and to use `pnpm patch` instead.
+- 99be3d0: Use short private per-run temporary directories on Linux and macOS so Unix sockets can start, reserve TMP and TEMP alongside TMPDIR, and reclaim temporary files through the existing run lifecycle and garbage collection.
+- 9d22980: Retry failed removal of saved and pushed run worktrees without requiring recovery, clean matching legacy records on startup and GC, and allow read-only runs to continue with recovery notices. Preserve Git stderr in removal diagnostics.
+- Updated dependencies [8e4cf26]
+- Updated dependencies [e23633e]
+- Updated dependencies [1cd749c]
+- Updated dependencies [f36da62]
+  - @nocobase/agent-protocol@0.1.0-beta.8
+  - @nocobase/app-cli-client@0.1.0-beta.7
+
+## 0.1.0-beta.8
+
+### Minor Changes
+
+- 10e261b: Use a private linked Git worktree per run and save local continuation after stopping its tools. Fast-forward the resume reference, retain divergent heads as separately listed saved references, and preserve the directory on cleanup failure. Keep Codex state outside disposable worktrees. Other tools start fresh when their code directory changes; legacy sessions and clones are not migrated. Distinguish private local branches from task push targets and retain older runner compatibility.
+- ddfe1b1: Report the models each coding tool can use (Claude Agent SDK `supportedModels()`, Codex app-server `model/list`, OpenCode `GET /api/model`, Pi `--list-models`, else a built-in list), overridable with `nocobase-runner config models <tool> add|remove|reset|show`. A directory lock held while a run prepares its working directories now requeues the run as workspace-busy without using an attempt. A claim's `workspace.key` names the run's working directory, and a `workspace.readOnly` run works in a read-only worktree of its own (`<dir>.readonly-<agentId>`) on the same branches, alongside the run that writes, and never pushes. A read-only run's work directory is removed as soon as the run ends. Once no run has used a working directory for 12 hours, its regenerable build artifacts (`node_modules`, `.next`, `.turbo` anywhere in the checkout, without following symbolic links) are removed at the next collection while the checkout stays; `nocobase-runner config set artifact-ttl` and `artifact-patterns` change the wait and the names.
+
+### Patch Changes
+
+- ee24e95: Clean idle build artifacts before pushed workspaces when disk space is low, pause new work until heartbeats detect recovery, and report disk-full failures for reassignment without counting a project-manager step failure. Show current disk capacity and workspace size, type and push diagnostics.
+
+  Retry interrupted removal of verified pushed attempt directories from GC or the next run, stop their remaining processes before deleting remnants, and retain cleanup failure reasons without blocking later tasks. Preserve unpublished or uncommitted work for recovery.
+
+  Verify the actual checkout branch and HEAD before retrying removal, report disk exhaustion even when local preservation metadata or events cannot be written, and continue safe pressure cleanup when diagnostic cache writes fail.
+
+- 4748117: Allow the project manager to use an idle fallback after a configurable queue delay, exclude runners that cannot honor its workspace, and show selection and waiting reasons. Persist queue episodes through retries and restarts, withdraw unclaimed manager delegations after a configurable timeout, reliably report their cause in the dispatch thread, and publish identity-aware immediate capacity in each manager roster.
+- a2cf036: Interrupt agent runs for runner updates after stopping tools and preserving local continuation references. Requeue upgrade interruptions without consuming failure attempts or notifying project managers, retain task inputs, and report draining capacity and reasons in runner and queue views.
+- c10937c: Stop run processes before removing read-only workspaces, preserve cleanup during shutdown, rebuild damaged read-only checkouts, and collect unlocked read-only remnants independently of Git state.
+- abc3fcb: Keep enabled agents prominent, group new discoveries by tool and catalog model, and persist shared ignore and restore preferences with revision protection. Choose a provider without changing existing execution identities and show personal runner names. Discover only authenticated Pi providers and prevent model overrides from bypassing that filter. In Studio, authorize runs through their running identity and existing command scope instead of intersecting with legacy agent action lists, including reports, while retaining object permissions, credential scopes, read-only modes and human approval requirements.
+
+  Show recognizable provider and runner labels when selecting a model and cap atomic bulk discovery operations at 256 selected groups with explicit counts and limits.
+
+- Updated dependencies [157a914]
+- Updated dependencies [8698e80]
+- Updated dependencies [10e261b]
+- Updated dependencies [ddfe1b1]
+- Updated dependencies [ee24e95]
+- Updated dependencies [4748117]
+- Updated dependencies [a2cf036]
+- Updated dependencies [6758f9f]
+  - @nocobase/app-cli-client@0.1.0-beta.6
+  - @nocobase/agent-protocol@0.1.0-beta.7
+
+## 0.1.0-beta.7
+
+### Patch Changes
+
+- Updated dependencies [65ec64a]
+- Updated dependencies [65ec64a]
+  - @nocobase/agent-protocol@0.1.0-beta.6
+  - @nocobase/app-cli-client@0.1.0-beta.5
+
+## 0.1.0-beta.6
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/agent-protocol@0.1.0-beta.5
+  - @nocobase/app-cli-client@0.1.0-beta.4
+  - @nocobase/cli-envelope@0.1.0-beta.1
+
+## 0.1.0-beta.5
+
+### Minor Changes
+
+- 0f7ed64: Give a run's git a repository credential whenever it needs one, instead of one handed out at the claim that a long run outlives, and say why a push failed.
+
+  - Protocol version 9 adds the `gitCredentials` runner feature, `RunGit.onDemand` (repository URLs whose credential the runner asks for), `POST /api/agents/runners/runs/:runId/gitCredentials` (`GitCredentialRequest` → `GitCredential`), the reasons `REPO_ACCESS_UNAVAILABLE` and `REPO_ACCESS_DENIED`, the run failures `repoAccessUnavailable` (retried) and `repoAccessDenied`, and `RepoReport.failure` (`authFailed`, `credentialUnavailable`, `credentialDenied`, `leaseLost`, `rejected`, `error`). Nothing of version 8 changed: an application on this version still hands claim-time credentials to runners without the feature. A runner of this version is refused by an application that does not know version 9, so update the application before its runners.
+  - Repository access providers may implement `issue(request)`. For a runner with the feature the claim tells them `onDemand` (in `forRun`'s context and `prepare(run, { onDemand })`), they list their repositories in `RunGit.onDemand` and mint nothing at the claim; the plugin then calls `issue` outside any transaction, within 15 seconds, only while that runner holds that attempt of the run under a live lease, and only for a URL the claim listed, compared exactly. `issue` answers a credential with its expiry, null when the repository is not its own, or throws `RepoAccessError('unavailable' | 'denied', message)` with a message safe to show; with `refresh` it should issue a new credential rather than a cached one. Each issued credential is added to the run's redaction, and is never stored. A provider without `issue` keeps working as before.
+  - Migration `202610100002_ag_add_run_git_credentials` adds `agRuns.gitCredentialUrls` (the URLs the claim listed) and `agRunRepos.failureReason` and `failureDetail`; a run's repositories (`RunRepo`) gain optional `failure` so existing application schemas remain compatible. The server always supplies it, null when the repository was pushed or not tried. Applications should show it, since a run that completed may still have work that was not pushed.
+  - The runner keeps a run's credentials in the worker's memory and no longer puts any password in the agent's environment. The agent's git gets them through the runner's credential helper, which reaches the worker over a Unix socket private to the run; the runner's own git (checkout, submodules, the end-of-run push, which previously sent no credential) uses the same, never the host's credential helpers, and retries once with a fresh credential when the remote refuses one. The agent is told on stderr why git got no credential, and each failure is recorded as an `error` event with `meta.kind` `gitCredential`.
+  - Host-side operations in task checkouts use the safe Git wrapper, retaining its metadata and configuration checks, protected hooks and fixed push URL/refspec. Run credentials disable restoration of host helpers; the agent environment clears helpers per repository URL before installing the runner's helper. Confirmed pushes update remote-tracking refs and the protected workspace record so cleanup recognizes pushed work.
+
+### Patch Changes
+
+- 90d5fab: Clarify gc help: settled directory decisions for completed or cancelled tasks allow removing unpushed commits, changes and untracked files; other directories retain unpushed-work protection unless forced. Explain that manual gc uses one directory decision report without a second confirmation before removal.
+- e9301ed: Check a subject’s admission policy in the claim transaction and cancel outdated issue runs without failing or retrying them. The same policy, with the subject's new optional `selectInputs`, also decides whether input may join a working run and whether pending input is delivered to it: input the subject rejects waits in a queued run for the claim to admit or cancel, and pending input it no longer admits or selects is marked handled instead of being delivered, or of holding the run's completion open. The runner completes again, rather than starting a turn with an empty prompt, when input it was told is pending never arrives. Studio permits its executor only in execution statuses and workflow agents only in their current stage; an agent mentioned by name, or answered under its own comment, runs in any stage, except the executor. Earlier stage instructions are left out of the turn rather than cancelling the run, which is cancelled only when nothing else remains. Approving a proposal now requires an eligible executor (`DESIGN_EXECUTOR_REQUIRED` otherwise). Requeue live workspace contention without consuming execution attempts, bounded by a six-hour wait, with a compatible failure fallback for older applications.
+
+  Filter obsolete stage instructions consistently from the assembled task, turn and delivered inputs. Record permission-rejected executor claims atomically and notify the owner once with the required pull request permission and reassignment options. Preserve restart after an acknowledged project move.
+
+- ee217d5: Start a fresh conversation with context recovery instructions when the requested conversation no longer exists, and report its session so later runs resume it. Claude checks its session file before opening the query, preserving immediate handling of startup errors. Cancelled runs now also report their confirmed session.
+- b4c2116: Add compatible directory settlement diagnostics and repository-scoped merged head evidence. Recheck ended workspaces before cleanup, permit untracked leftovers only after commit and tracked-change checks, preserve unpushed submodule commits, cancel a removal when the follow-up report no longer confirms the work is over, and show low disk reports with permission-aware workspace diagnostics.
+- 90d5fab: Remove a working directory once its subject's work is over, on the subject's status alone. Studio counts an issue as over when it is done or cancelled, whatever its pull requests are, and resolves directories without a known run by their issue key. The agents plugin no longer checks which runner worked on a subject, so legacy directories on any runner are decided too, and no longer asks bindings for commit evidence. The runner removes an ended directory with anything never pushed in it, and logs that it did; it still keeps one a run holds or used since the report, and one the second report no longer confirms as ended. Directories whose work goes on keep their unpushed-work protection. Runners released earlier still keep ended directories with unpushed work, since decisions now carry no commit evidence.
+
+  New runners connected to older applications that only return legacy remove lists continue protecting unpushed commits and changes. Only a settled directory decision permits discarding unpushed work; automatic collection confirms that decision in a second report before deletion.
+
+- Updated dependencies [ca0bfe2]
+- Updated dependencies [0f7ed64]
+- Updated dependencies [e9301ed]
+- Updated dependencies [ee217d5]
+- Updated dependencies [b4c2116]
+  - @nocobase/app-cli-client@0.1.0-beta.3
+  - @nocobase/agent-protocol@0.1.0-beta.4
+
+## 0.1.0-beta.4
+
+### Minor Changes
+
+- 13620d9: The runner and an application's CLI can now be installed and updated from npm when the application serves no tarball of them and names the exact npm version instead (`agents.dist.npm`). The install script asks with `accept=npm`; for an npm answer it checks for Node.js 24 or newer and `npm` (or `NOCOBASE_NPM`), runs `npm install --prefix <prefix>/versions/<version> --no-save --no-audit --no-fund --omit=optional <package>@<version>` and writes a launcher at `versions/<version>/bin/<command>`, so `current`, the linked command and the runner's user service work as they do for a tarball, and links `<prefix>/node` to the Node.js it checked. The runner declares the `npm` feature and installs a heartbeat's `npmUpgrade` the same way between runs; `nocobase-runner update` and `<cli> update` follow either answer, and an installation moves between tarball and npm versions in both directions (`installNpmVersion`, `npmLauncherScript` and `UpdateTarget` in `@nocobase/app-cli-client/install`). An application that answers no npm form is handled exactly as before.
+
+  `@nocobase/agent-runner` and `@nocobase/app-cli-client` now depend on exactly the `@nocobase/agent-protocol` they were built with, and `@nocobase/studio-cli` and `@nocobase/agent-runner` on exactly their `@nocobase/app-cli-client`, so a version installed from npm behaves as it was built.
+
+  `nocobase skills sync` no longer reads Skills from a packaged application CLI (a dependency declaring `nocobase.cli`, such as `@nocobase/studio-cli`): its `skills/` is for that command's users. NocoBase Studio declares `@nocobase/studio-cli`, so its build pins `nb-studio` to the version it was built with, and its CLI documentation and home-page agent prompt say that `nb-studio` needs Node.js 24 or newer with npm. The application development Skill documents `nocobase cli build --universal`.
+
+- 97bd30b: The runner now runs agents with full access and the real home of the user it runs as, and is no longer a sandbox. Codex runs with approval policy `never` and the `danger-full-access` sandbox, accepting any approval it still asks for; Claude Code runs in `bypassPermissions` mode with no hooks; OpenCode and Pi have every permission request allowed. The command policy (allowed commands, denied patterns, download rules, path checks) and the isolated per-workspace home are gone; each run still gets its own TMPDIR, and Codex a per-workspace `CODEX_HOME` linking `auth.json` and `config.toml` from `~/.codex`. The push guard (the `pre-push` hook that let a checkout push only its run's branch) is removed, and an earlier runner's is deleted on upgrade; the run's short-lived repository credential is still provided, so protect default branches on the code host.
+
+  Operators: an agent can now read and change anything the runner's user can, including SSH keys, cloud credentials and `~/.nocobase-runner`. Run the runner as a dedicated OS user that holds only what agents need, in a container or in a VM, and not as root (Claude Code refuses `bypassPermissions` as root). `start --agent-home` is gone. Agents' tool policies keep their idle timeout and turn limit; their permission mode and command patterns are accepted and no longer enforced, and the agent page no longer shows the command rules.
+
+### Patch Changes
+
+- 91f5344: Allow applications to opt coding runs into verified empty-repository initialization. Prepare the default branch without a seed commit, report the first-delivery instructions, and guard its push against updating an existing remote branch. Keep missing branches in populated repositories as checkout failures.
+- Updated dependencies [40a5679]
+- Updated dependencies [91f5344]
+- Updated dependencies [13620d9]
+- Updated dependencies [97bd30b]
+- Updated dependencies [459c33f]
+  - @nocobase/agent-protocol@0.1.0-beta.3
+  - @nocobase/app-cli-client@0.1.0-beta.2
+
+## 0.1.0-beta.3
+
+### Minor Changes
+
+- f94ebc6: Pass proxies and CA certificates to coding tools, let the runner's owner pass and set variables, and let an agent take a variable from the runner.
+
+  - The runner passes the proxy variables (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`, upper and lower case) and the CA variables (`SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`) from its own environment to every coding tool by default. The values of the proxy variables are redacted from what a run reports, since a proxy URL may carry a password.
+  - `nocobase-runner start --pass-env NAME` and `service install --pass-env NAME` (repeatable) pass a variable from the runner's environment to every run. The names are remembered in the settings for later starts; `nocobase-runner env unset NAME` forgets one.
+  - `service install` writes the installing shell's proxy, CA and `--pass-env` variables, with their current values, into the launchd plist or systemd unit beside `PATH`, and prints the names it wrote. The unit or plist is now written with mode 0600, `%` is escaped for systemd, and `--dry-run` and `--json` show `<hidden>` instead of the values.
+  - `nocobase-runner env set NAME [VALUE]`, `env unset NAME` and `env list` keep the runner's local variables (`apps/<key>.json`, 0600). `set` reads the value from standard input when it is left out, and `list` shows names only.
+  - Coding tool detection uses the whitelist, passed variables and local variables of its application, rather than the runner's whole environment. Heartbeats refresh detection when local variables or passed names change, without sharing local keys between applications.
+  - A run's `workspace.passthrough` names are now provided only by the runner's local variables and its `--pass-env` names, no longer by any variable of the runner's environment. A run that asks for a name the runner does not provide fails before anything is prepared, with `setupFailed` and a message naming `nocobase-runner env set NAME` and `--pass-env NAME`.
+  - Protocol: `RegisterRequest` and `HeartbeatRequest` gain an optional `variables`, the names of the variables the runner provides (names only, at most `MAX_RUNNER_VARIABLES`, validated by `RunnerVariableNamesSchema`). A server that does not know the field ignores it, and a runner that does not send it is shown as not reporting.
+  - Agents plugin: a variable can be taken from the runner. `PUT /api/agents/variables/{scopeKind}/{scopeId}/{name}` takes `fromRunner: true` without a value (`variable set ... --from-runner`), which keeps the name only (new collection `agRunnerVariables`, migration `202610090005_ag_add_runner_variables`), and `Variable.fromRunner` marks such variables in lists. Such names merge with the other variables by scope like any variable, and a claim puts those whose last entry is taken from the runner into `workspace.passthrough` instead of `workspace.env`. The variable dialog has a "Take from the runtime" option, and the list a badge. Runner-owned names are rejected; older declarations of reserved names fail preparation explicitly.
+  - Agents plugin: a runner's reported names are kept on the runner (`agRunners.variables`, `Runner.variables`, null when it reported none), and the runtime's sheet lists them under "Variables from this machine". Runners are not chosen by them.
+
+- 1832cfc: Report models and available reasoning efforts detected by Pi, OpenCode and Codex through optional protocol 7 capability fields, with explicit detection status and periodic background refresh. Bound model counts and identifier lengths, and keep configuration, paths and credentials out of failure reasons. Store capabilities per runner and return model suggestions through existing visibility rules without changing Agent configuration. Discard invalid or unfamiliar advisory fields without rejecting registration or heartbeats.
+
+  Run model discovery with the agent environment whitelist in empty temporary directories, terminate discovery process groups on cancellation and wait for cleanup during runner shutdown. Preserve Pi provider/model identifiers, discard invalid efforts individually and avoid reporting successful detection when every received model is invalid.
+
+  Pi's startup version and authentication checks now also use the restricted environment. API keys supplied only through the runner daemon's environment no longer count as a Pi login during detection; configure Pi's persistent authentication for the runner user. Pass run-specific variables explicitly through the application's run environment or passthrough contract instead of relying on implicit daemon environment inheritance. Those run-specific variables are not used for host capability discovery.
+
+- 0170880: Remove a runner's working directories once their work is over. Every ten minutes the runner reports each working directory it keeps for an application, with the last run that worked in it, whether it holds work that was never pushed and when it was last used, and the free space on the disk holding them (`POST /api/agents/runners/workspaces`). The application finds each run's subject and asks the subject's binding whether its work is over (the new optional `SubjectBinding.workspaces.settled`), never while a run on that subject has not finished, and answers which directories may go. Callers who may not see a runner's machine see only the counts and the disk of `Runner.workspaceUsage`, without the directories. The runner removes them, except a directory with unpushed work, which it keeps and reports as unpushed: changes not committed (untracked files included), or a HEAD past both where the runner started the checkout and what it last saw the remote task branch hold after pushing. The runner keeps its record of each working directory in its own directory (`~/.nocobase-runner/workspaces/`), out of the agent's reach, and checks a record an earlier runner left inside the working directory: caches are derived from the repository URL, paths must stay inside the directory, and what it says was pushed is ignored. The existing retention rules (7 days after a fully pushed run, 30 days unused) no longer remove a directory with unpushed work either. Whether a branch was merged is never judged from the default branch's history, so squash merges count as merged once the application says the work is over. A runner keeps reporting only to an application whose heartbeat answer announces it (`HeartbeatResponse.workspaces`); older runners and older applications keep the existing retention rules. The runner also watches the free space on the disk holding its working directories, reading it from the file system rather than measuring directories, against `min-free-disk`: 5 GB by default, or a size or a share of the disk (`nocobase-runner register --min-free-disk 20G`, or `nocobase-runner config set min-free-disk 20G|10%|off`). It removes on its own only the directories whose work is over, least recently used first, never a pushed directory whose work goes on; when the disk is still low after that, it logs once per collection how many pushed and unpushed directories remain and that `nocobase-runner gc` can remove them. `min-free-disk` replaces the earlier `workspace-limit` setting, which upgrading drops from the runner's settings with a one-time log line. `nocobase-runner gc` lists every working directory with its application, subject, server status, unpushed state and last use, with the disk's free space and the threshold, and with `--apply` removes what the rules allow, filtered by `--ended`, `--older-than` and `--subject`; `--force` also removes unpushed work. The application keeps each runner's last report (`agRunners.workspaceUsage`, added by a migration) and shows it as `Runner.workspaceUsage`.
+- b5c6a64: Share one pnpm store between every run on a machine, `<work root>/.pnpm-store`, so a working directory holds links to its dependencies instead of a copy of them. The agent's environment names the store in `pnpm_config_store_dir` and `npm_config_store_dir`, which a run cannot override; Codex's sandbox may write it; and the agent is told to install without `--store-dir` and never to edit files under `node_modules` in place. Once garbage collection removes a working directory, the daemon runs `pnpm store prune` as soon as no run or claim is active, pausing claims until it finishes. Outstanding claims finish their policy checks and start workers before pruning, so claimed leases are not delayed. Failed pruning stays pending and is retried at the next idle opportunity after five minutes. Existing working directories keep the dependencies they already installed until they are reinstalled or collected.
+
+### Patch Changes
+
+- 97d94dc: Preserve each run attempt's runtime, owner, tool version, requested model and reasoning effort, and expose primary-tool models reported during execution in run lists and details. Retain execution history when a retry releases its holder. Existing runs expose known usage models without inventing historical runtime snapshots.
+
+  Allow applications to attach execution snapshots to agent activity traces and return the originating run and attempt on comments. Applications must wire these facts into their run views, CLI projections and activity badges; installed UI Library component copies require an explicit update.
+
+  Separate requested settings from tool-reported effort, retaining report provenance and change times. Codex reports resolved thread settings and explicitly marks per-turn overrides unreported when the tool returns no resolved value. Apply reader machine permissions to execution history and action sources, skip unchanged snapshot writes, and filter/deduplicate legacy model queries in the database. Custom application outputs must apply the provided machine projections, and projects hosts can supply the same rights through `Viewer.seesExecutionMachine`.
+
+- d89339e: Claude Code now reports its models and their reasoning efforts through the Agent SDK's `supportedModels()`, without sending a prompt, instead of reporting model detection as unsupported.
+
+  Codex reasoning efforts are now `low`, `medium`, `high`, `xhigh`, `max` and `ultra`, as current Codex releases advertise them: `minimal` is gone, and `max` is passed to Codex as itself rather than as `xhigh`. An agent entry already saved with an effort its tool no longer takes keeps it until the entry is changed.
+
+  In an agent's tools and models, the effort select stays aligned with the rest of its row, and the reported efforts are listed on a line of their own below the entry, naming only efforts that can be chosen. Model suggestions no longer carry a "Built-in" badge. In the agents list, a long description wraps within the name column, two lines at most, with the full text on hover. The agents list now shows the agents everyone can use first, the application's own in the order it added them, then the viewer's own agents, then the ones others share with them, each group by the name shown in the viewer's language; list entries carry `owned`, whether the caller owns the agent.
+
+  The runner now gives agents its own Node.js and pnpm: it ships pnpm 11.7.0 and writes `node` and `pnpm` launchers first on each run's PATH, and keeps pnpm from switching to the version a repository's `packageManager` names, so `pnpm install` works on a machine without pnpm or with another Node.js. `nocobase-runner config set agent-tools system` keeps the machine's own instead. The runner's own `pnpm store prune` also uses the bundled pnpm, so garbage collection no longer needs pnpm on the runner's PATH.
+
+- 9235602: Let a Codex run write the `.agents` directory of each of its working trees. Codex's `workspaceWrite` sandbox keeps `.agents` read-only inside every writable root as its own skills root, so an application's `pnpm install` failed with `SKILLS_SYNC_FAILED` when its `skills sync` wrote `.agents/skills`. The runner now creates `.agents` in every working directory and every checked-out submodule before Codex starts, and opens each as a writable root; `~/.agents` and anything outside the run's working directories stay closed.
+
+  Open `.agents` only when its real path is exactly the canonical working tree's `.agents` directory. Links to other paths, including protected siblings or the working tree root, dangling links and non-directory paths are left intact and skipped without stopping the run. Use checked-out submodules' complete paths, including spaces and recursively nested submodules.
+
+  `nocobase skills sync` no longer rewrites a skill whose synchronized copy already matches its source byte for byte, nor a `.claude/skills` link that already points at it, nor an unchanged `.agents/.skills-sync.json`. A sync with nothing new writes nothing.
+
+- 38683c7: Make a runner that updated itself exit so its service starts the new version, and stop what runs leave behind.
+
+  - The foreground daemon now always exits once it has stopped, after stopping whatever is still running below it, instead of returning and waiting for the event loop to drain: a handle left open could keep the old version running, still seen as active by systemd or launchd, so the new version was never started. After updating itself it exits with code 75, which a service set to restart on failure restarts too; otherwise with 0.
+  - A run's processes are stopped when its worker ends even when they run in a process group of their own, such as the Codex app-server, the OpenCode server, or a development server or watcher a command started, and even when they left their parent at once. Every process the run's tool starts inherits a random tag of the run's own in its environment (`AGENT_RUN_PROCESS_TAG`), and when the worker exits the daemon kills whatever still carries it, besides the process groups it noted below the worker; it sweeps every run's tag once more when it stops, and recovering a run left by an earlier daemon sweeps it too. The worker also stops what is still below it before it exits.
+  - Closing an OpenCode server waits until its process group is empty, not only until the server exits, and kills what is left there, whether the server exited before the close or during it.
+
+- 0170880: Run the runner's own pnpm outside every directory an agent can write, and stop sharing store files with working directories through hard links. `pnpm store prune` used to start in the shared store, which agents may write, so a `package.json` naming another `packageManager`, a `pnpm-workspace.yaml` moving the store or an `.npmrc` left there could make the runner download and run another pnpm or prune elsewhere; it now starts in the runner's own empty `~/.nocobase-runner/tools/cwd/`, names the store with `--store-dir`, turns off switching pnpm versions and passes only PATH, HOME and LANG from the runner's environment. Runs now install with `package-import-method` set to `clone` where the runner finds the work root's file system clones files, and to `copy` elsewhere, never to pnpm's fallbacks that end in hard links, so an accidental edit inside `node_modules` no longer changes the shared store's copy for every other task: APFS, Btrfs, XFS with reflink and ZFS with block cloning clone files at next to no cost, while ext4 copies them, so each working directory there holds a full copy of its dependencies again and the store still saves the download. This guards against accidents, not against a hostile task: tasks on one runner share a store they can all write, so they trust each other, and the store is not an isolation boundary between them.
+- 8974f9c: Retry a run's preparation when git fails for a passing cause. The runner retries cloning, fetching and the submodules' update three times, after 2, 5 and 15 seconds, when git's error names a cut-off TLS handshake, a reset, refused or timed-out connection, a name that did not resolve, or an HTTP 5xx or 429, and aborts a transfer slower than 1 KiB/s for a minute instead of hanging. Each retry is a `status` event in the run. A repository that does not exist, credentials the host refuses, a certificate the runner does not trust, any other HTTP 4xx, and an error that names no passing cause fail at once, with a hint of what to fix where git names the cause. When every retry fails, the run fails with the new retryable reason `prepareNetwork`, and the application queues it again under the run's retry policy. The failure's error event records how many retries were made and the last error, also when the last attempt failed for a permanent cause. Submodules an earlier preparation could not finish, nested ones included, are finished by the next preparation of the same worktree. The application announces the reasons it accepts on each run (`RunHeader.acceptedFailures`), and the runner reports `checkoutFailed` to an application that does not announce `prepareNetwork`.
+- 0170880: Prepare new task repositories as reference clones with their own Git metadata inside the working directory, so sandboxed coding tools can commit, rebase and update submodules without write access to shared repository caches. Retain existing worktrees and protect borrowed cache objects from automatic pruning.
+
+  Keep push permissions in the runner's protected registry outside checkouts and ignore checkout-local permission files. Enforce protected hooks and checked configuration for every host-side Git operation in a task checkout, using trusted repository URLs for remote queries and automatic pushes. Reject unsafe configuration and redirected submodule metadata without discarding pending work. Remove stale local branches imported from the bare cache when preparing a new task clone.
+
+  Allow standard submodule update policies and common local Git preferences during push and resume, while rejecting custom submodule update commands.
+
+  Retain network retry behavior through the protected Git entry point and keep pending submodule preparation records in the runner-owned cache.
+
+- Updated dependencies [d89339e]
+- Updated dependencies [d942ae9]
+- Updated dependencies [de5254b]
+- Updated dependencies [f94ebc6]
+- Updated dependencies [1832cfc]
+- Updated dependencies [8974f9c]
+- Updated dependencies [0170880]
+- Updated dependencies [0daf996]
+  - @nocobase/agent-protocol@0.1.0-beta.2
+
 ## 0.1.0-beta.2
 
 ### Patch Changes

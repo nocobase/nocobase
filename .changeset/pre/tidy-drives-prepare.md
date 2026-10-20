@@ -1,7 +1,6 @@
 ---
 '@nocobase/drive': patch
 '@nocobase/app-template-default': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Allow drive configurations to omit storage links so application startup succeeds when no symbolic links are configured.

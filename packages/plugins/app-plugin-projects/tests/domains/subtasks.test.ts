@@ -2,10 +2,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { CreateIssueRequest, Issue } from '../../shared/issues.js';
-import type {
-  WorkflowDefinition,
-  WorkflowStatusRule,
-} from '../../shared/workflows.js';
 import type { DomainEvent } from '../../server/kernel/events.js';
 import {
   batchDoneNotice,
@@ -18,7 +14,6 @@ let released: DomainEvent<'issue.dependencyReleased'>[];
 let batches: DomainEvent<'issue.batchDone'>[];
 beforeEach(async () => {
   h = await createHarness();
-  await h.installStandardWorkflow();
   for (const id of ['admin', 'alice', 'bob']) await h.addUser(id, id);
   released = [];
   batches = [];
@@ -60,26 +55,6 @@ async function actions(issueId: string): Promise<string[]> {
   return page.data.map((activity) => activity.action);
 }
 
-async function editWorkflow(
-  edit: (definition: WorkflowDefinition) => WorkflowDefinition,
-) {
-  const [workflow] = await h.services.workflows.list(admin());
-  await h.services.workflows.update(admin(), workflow.id, {
-    revision: workflow.revision,
-    definition: edit(workflow.definition),
-  });
-}
-
-const withRules = (
-  definition: WorkflowDefinition,
-  rules: Readonly<Record<string, readonly WorkflowStatusRule[]>>,
-): WorkflowDefinition => ({
-  ...definition,
-  states: definition.states.map((state) =>
-    rules[state.key] ? { ...state, rules: rules[state.key] } : state,
-  ),
-});
-
 describe('dependencies', () => {
   it('links, shows both sides and counts what holds an issue', async () => {
     const a = await create('A');
@@ -89,7 +64,7 @@ describe('dependencies', () => {
       issueId: b.id,
       identifier: b.identifier,
       type: 'blockedBy',
-      status: { key: 'todo' },
+      status: { key: 'backlog' },
     });
     const left = await detail(a);
     expect(left.blockedBy.map((dep) => dep.identifier)).toEqual([b.identifier]);
@@ -247,6 +222,241 @@ describe('dependencies', () => {
   });
 });
 
+describe('dependency type changes', () => {
+  it('changes the same link in place and releases its waiting issue only after it stops blocking', async () => {
+    const a = await create('A');
+    const b = await create('B');
+    const link = await block(a, b, 'relatedTo');
+    const blocking = await h.services.subtasks.updateDependency(
+      admin(),
+      a.identifier,
+      link.dependencyId,
+      { expectedType: 'relatedTo', type: 'blockedBy' },
+    );
+    expect(blocking).toMatchObject({
+      dependencyId: link.dependencyId,
+      issueId: b.id,
+      type: 'blockedBy',
+    });
+    expect((await detail(a)).relatedTo).toEqual([]);
+    expect((await detail(a)).blockers).toEqual([
+      expect.objectContaining({ issueId: b.id, reason: 'dependency' }),
+    ]);
+    expect((await detail(b)).blocks).toEqual([
+      blockingWithOther(a, link.dependencyId),
+    ]);
+    expect(released).toEqual([]);
+
+    const related = await h.services.subtasks.updateDependency(
+      admin(),
+      a.id,
+      link.dependencyId,
+      { expectedType: 'blockedBy', type: 'relatedTo' },
+    );
+    expect(related).toMatchObject({
+      dependencyId: link.dependencyId,
+      issueId: b.id,
+      type: 'relatedTo',
+    });
+    expect((await detail(a)).blockedBy).toEqual([]);
+    expect((await detail(a)).blockers).toEqual([]);
+    expect((await detail(b)).relatedTo).toEqual([
+      expect.objectContaining({
+        dependencyId: link.dependencyId,
+        issueId: a.id,
+      }),
+    ]);
+    expect(released.map((event) => event.issueId)).toEqual([a.id]);
+  });
+
+  it('makes the current issue the waiting side when converting an incoming related link', async () => {
+    const a = await create('A');
+    const b = await create('B');
+    const link = await block(a, b, 'relatedTo');
+    await h.services.subtasks.updateDependency(
+      admin(),
+      b.id,
+      link.dependencyId,
+      {
+        expectedType: 'relatedTo',
+        type: 'blockedBy',
+      },
+    );
+    expect((await detail(b)).blockedBy).toEqual([
+      blockingWithOther(a, link.dependencyId),
+    ]);
+    expect((await detail(a)).blocks).toEqual([
+      blockingWithOther(b, link.dependencyId),
+    ]);
+    expect((await detail(a)).blockers).toEqual([]);
+    expect((await detail(b)).relatedTo).toEqual([]);
+    expect(released).toEqual([]);
+  });
+
+  it('keeps both links when two callers concurrently convert opposite types', async () => {
+    const a = await create('A');
+    const b = await create('B');
+    const blocking = await block(a, b);
+    const related = await block(a, b, 'relatedTo');
+    const beforeActions = await actions(a.id);
+    const results = await Promise.allSettled([
+      h.services.subtasks.updateDependency(
+        admin(),
+        a.id,
+        blocking.dependencyId,
+        {
+          expectedType: 'blockedBy',
+          type: 'relatedTo',
+        },
+      ),
+      h.services.subtasks.updateDependency(
+        admin(),
+        a.id,
+        related.dependencyId,
+        {
+          expectedType: 'relatedTo',
+          type: 'blockedBy',
+        },
+      ),
+    ]);
+    expect(results).toEqual([
+      {
+        status: 'rejected',
+        reason: expect.objectContaining({ code: 'DEPENDENCY_EXISTS' }),
+      },
+      {
+        status: 'rejected',
+        reason: expect.objectContaining({ code: 'DEPENDENCY_EXISTS' }),
+      },
+    ]);
+    expect((await detail(a)).blockedBy).toEqual([blocking]);
+    expect((await detail(a)).relatedTo).toEqual([related]);
+    expect((await detail(a)).blockers).toHaveLength(1);
+    expect(await actions(a.id)).toEqual(beforeActions);
+    expect(released).toEqual([]);
+  });
+
+  it('accepts only one concurrent conversion from the same expected type', async () => {
+    const a = await create('A');
+    const b = await create('B');
+    const link = await block(a, b);
+    // Both callers submit the same snapshot. A dialect may serialize the transactions;
+    // the stale caller must still conflict on the link or graph version instead of releasing or recording twice.
+    const results = await Promise.allSettled(
+      [1, 2].map(() =>
+        h.services.subtasks.updateDependency(admin(), a.id, link.dependencyId, {
+          expectedType: 'blockedBy',
+          type: 'relatedTo',
+        }),
+      ),
+    );
+    expect(
+      results.filter((result) => result.status === 'fulfilled'),
+    ).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toEqual([
+      {
+        status: 'rejected',
+        reason: expect.objectContaining({
+          kind: 'conflict',
+          code: expect.stringMatching(/^DEPENDENCY_(CHANGED|GRAPH_CHANGED)$/),
+        }),
+      },
+    ]);
+    expect((await detail(a)).blockedBy).toEqual([]);
+    expect((await detail(a)).relatedTo).toEqual([
+      expect.objectContaining({
+        dependencyId: link.dependencyId,
+        issueId: b.id,
+      }),
+    ]);
+    expect(
+      (await actions(a.id)).filter((action) => action === 'dependency_removed'),
+    ).toHaveLength(1);
+    expect(released.map((event) => event.issueId)).toEqual([a.id]);
+  });
+
+  it('rolls back a conversion that would introduce a blocking cycle', async () => {
+    const a = await create('A');
+    const b = await create('B');
+    const related = await block(a, b, 'relatedTo');
+    await block(b, a);
+    const beforeActions = await actions(a.id);
+    await expect(
+      h.services.subtasks.updateDependency(
+        admin(),
+        a.id,
+        related.dependencyId,
+        {
+          expectedType: 'relatedTo',
+          type: 'blockedBy',
+        },
+      ),
+    ).rejects.toMatchObject({ code: 'DEPENDENCY_CYCLE' });
+    expect((await detail(a)).relatedTo).toEqual([related]);
+    expect((await detail(a)).blockedBy).toEqual([]);
+    expect((await detail(b)).blockers).toHaveLength(1);
+    expect(await actions(a.id)).toEqual(beforeActions);
+    expect(released).toEqual([]);
+  });
+
+  it('requires edit permission and visibility of both ends, and refuses incoming blocks', async () => {
+    const projectA = await h.services.projects.create(admin(), { name: 'A' });
+    const projectB = await h.services.projects.create(admin(), { name: 'B' });
+    const a = await create('A', { projectId: projectA.id });
+    const b = await create('B', { projectId: projectB.id });
+    const link = await block(a, b);
+    const input = { expectedType: 'blockedBy', type: 'relatedTo' } as const;
+    const reader = admin();
+    await expect(
+      h.services.subtasks.updateDependency(
+        {
+          ...reader,
+          permissions: {
+            ...reader.permissions,
+            scopes: { ...reader.permissions.scopes, 'pm.issues/edit': 'none' },
+          },
+        },
+        a.id,
+        link.dependencyId,
+        input,
+      ),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
+    await expect(
+      h.services.subtasks.updateDependency(
+        { ...admin(), projectIds: [projectB.id] },
+        a.id,
+        link.dependencyId,
+        input,
+      ),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(
+      h.services.subtasks.updateDependency(
+        { ...admin(), projectIds: [projectA.id] },
+        a.id,
+        link.dependencyId,
+        input,
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID_DEPENDENCY' });
+    await expect(
+      h.services.subtasks.updateDependency(
+        admin(),
+        b.id,
+        link.dependencyId,
+        input,
+      ),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect((await detail(a)).blockedBy).toEqual([link]);
+    expect(released).toEqual([]);
+  });
+});
+
+const blockingWithOther = (issue: Issue, dependencyId: string) =>
+  expect.objectContaining({
+    dependencyId,
+    issueId: issue.id,
+    type: 'blockedBy',
+  });
+
 describe('a project’s setup issue', () => {
   it('holds every issue created in the project until it is finished, but not its own sub-issues', async () => {
     const project = await h.services.projects.create(admin(), {
@@ -401,131 +611,5 @@ describe('sub-issues and stages', () => {
     ).toMatchObject({ stage: '1' });
     // The owner finished it: nobody is told.
     expect(batchDoneNotice(batches[1], (key) => key)).toBeNull();
-  });
-});
-
-describe('the workflow reacts to sub-issues', () => {
-  const autoMove = (definition: WorkflowDefinition): WorkflowDefinition => ({
-    ...definition,
-    transitions: [
-      ...definition.transitions,
-      {
-        from: 'in_progress',
-        to: 'in_review',
-        actors: ['system'],
-        on: 'subtasks.done',
-      },
-    ],
-  });
-
-  it('moves the parent on subtasks.done, up the tree', async () => {
-    await editWorkflow((definition) => ({
-      ...autoMove(definition),
-      transitions: [
-        ...autoMove(definition).transitions,
-        {
-          from: 'in_review',
-          to: 'done',
-          actors: ['system'],
-          on: 'subtasks.done',
-        },
-      ],
-    }));
-    const top = await create('Top');
-    const middle = await create('Middle', { parentIssueId: top.id });
-    const leaf = await create('Leaf', { parentIssueId: middle.id });
-    await moveTo(top, 'in_review');
-    await moveTo(middle, 'in_progress');
-    await moveTo(leaf, 'done');
-    expect((await detail(middle)).statusKey).toBe('in_review');
-    // Middle is not finished: its parent stays.
-    expect((await detail(top)).statusKey).toBe('in_review');
-    const view = await detail(middle);
-    expect(
-      view.activities.find(
-        (activity) =>
-          activity.action === 'status_changed' &&
-          activity.actorType === 'system',
-      )?.details,
-    ).toMatchObject({ event: 'subtasks.done', causeIssueId: leaf.id });
-  });
-
-  it('records a refused move and keeps the sub-issue moved', async () => {
-    await editWorkflow((definition) =>
-      withRules(autoMove(definition), {
-        in_progress: [
-          {
-            type: 'checklist',
-            config: { items: [{ key: 'qa', label: 'QA', required: true }] },
-          },
-        ],
-      }),
-    );
-    const parent = await create('Parent');
-    const child = await create('Child', { parentIssueId: parent.id });
-    await moveTo(parent, 'in_progress');
-    await moveTo(child, 'done');
-    expect((await detail(child)).statusKey).toBe('done');
-    expect((await detail(parent)).statusKey).toBe('in_progress');
-    expect(await actions(parent.id)).toContain('auto_move_skipped');
-  });
-
-  it('leaves the default workflow without an automatic move', async () => {
-    const parent = await create('Parent');
-    const child = await create('Child', { parentIssueId: parent.id });
-    await moveTo(parent, 'in_progress');
-    await moveTo(child, 'done');
-    expect((await detail(parent)).statusKey).toBe('in_progress');
-  });
-
-  it('subtasksDone waits for open sub-issues except into a closed status', async () => {
-    await editWorkflow((definition) =>
-      withRules(definition, {
-        done: [{ type: 'subtasksDone' }],
-        cancelled: [{ type: 'subtasksDone' }],
-      }),
-    );
-    const parent = await create('Parent');
-    const child = await create('Child', { parentIssueId: parent.id });
-    await expect(moveTo(parent, 'done')).rejects.toMatchObject({
-      code: 'SUBTASKS_OPEN',
-      details: { count: 1, issues: [child.identifier] },
-    });
-    await moveTo(child, 'done');
-    await moveTo(parent, 'done');
-    const other = await create('Other');
-    await create('Open', { parentIssueId: other.id });
-    await moveTo(other, 'cancelled');
-  });
-
-  it('blockersDone waits while the issue is held', async () => {
-    await editWorkflow((definition) =>
-      withRules(definition, { in_progress: [{ type: 'blockersDone' }] }),
-    );
-    const a = await create('A');
-    const b = await create('B');
-    await block(a, b);
-    await expect(moveTo(a, 'in_progress')).rejects.toMatchObject({
-      code: 'ISSUE_BLOCKED',
-    });
-    await moveTo(b, 'done');
-    await moveTo(a, 'in_progress');
-  });
-
-  it('keeps event transitions to the system', async () => {
-    await expect(
-      editWorkflow((definition) => ({
-        ...definition,
-        transitions: [
-          ...definition.transitions,
-          {
-            from: 'in_progress',
-            to: 'in_review',
-            actors: ['user'],
-            on: 'subtasks.done',
-          },
-        ],
-      })),
-    ).rejects.toMatchObject({ code: 'INVALID_WORKFLOW' });
   });
 });

@@ -1,6 +1,10 @@
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { findRunRecord, runsRepo } from '../server/core/runs/run.store.js';
+import {
+  findRunRecord,
+  runsRepo,
+  toExecutions,
+} from '../server/core/runs/run.store.js';
 import { requeueRun } from '../server/core/runs/transitions.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
@@ -287,4 +291,31 @@ it('clears the team-only variables noted on a run when new input arrives, when i
     );
   });
   expect(await noted()).toBeNull();
+});
+
+it('records no attempt for a refused claim, and one for the team runner that takes the run next', async () => {
+  h = await createHarness();
+  const agentId = await h.createAgent();
+  await markTeamOnly('agent', agentId, 'TOKEN');
+  const id = await h.enqueue(agentId, '1', { actorUserId: 'bob' });
+  const attempts = async () =>
+    toExecutions(
+      (await findRunRecord(h.services.tx.read(), id))?.executionHistory,
+    );
+  const personal = await h.registerRunner({
+    trust: 'ownerOnly',
+    ownerUserId: 'bob',
+  });
+  expect(await claim(h, personal)).toEqual([]);
+  expect(await attempts()).toEqual([]);
+  const team = await h.registerRunner();
+  expect((await claim(h, team)).map((payload) => payload.run.id)).toEqual([id]);
+  expect(await attempts()).toEqual([
+    expect.objectContaining({
+      attempt: 1,
+      runnerId: team.runnerId,
+      runnerTrust: 'team',
+      finishedAt: null,
+    }),
+  ]);
 });

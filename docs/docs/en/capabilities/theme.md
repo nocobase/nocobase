@@ -1,19 +1,11 @@
 ---
 title: 'Themes'
-description: 'Change colors and fonts, and switch between light and dark.'
+description: 'Use built-in themes and ask a Coding Agent to edit, add, or remove themes.'
+keywords: 'NocoBase 3,themes,appearance,dark mode,Coding Agent'
 ---
 
 # Themes
 
-:::warning Being written
-This page is being written.
-:::
+Adjust colors, typography, and density while preserving clear, usable light and dark appearances.
 
-Change colors and fonts, and switch between light and dark.
-
-## This page will cover
-
-- State it up front: themes are not a plugin — the code is in your project and you may edit it
-- The built-in theme presets
-- Editing an existing theme
-- Adding a new theme: colors, fonts, radius and the rest
+Choose a scenario in the overview and adapt its prompt to your application. See the [usage guide](./theme/usage.md) for detailed instructions.

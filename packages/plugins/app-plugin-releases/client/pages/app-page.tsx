@@ -16,10 +16,7 @@ import {
   BanIcon,
   ClipboardCheckIcon,
   FileCogIcon,
-  PlayIcon,
-  RotateCwIcon,
   ScrollTextIcon,
-  SquareIcon,
   Undo2Icon,
   UploadIcon,
 } from 'lucide-react';
@@ -50,6 +47,7 @@ import {
   type ReleaseView,
 } from '../../shared/releases.js';
 import { ActorName } from '../components/actor-name.js';
+import { AppOperations } from '../components/app-operations.js';
 import { AppSettingsCard } from '../components/app-settings-card.js';
 import {
   DeploymentArtifactTag,
@@ -96,6 +94,7 @@ import {
 } from '../components/variable-alerts.js';
 import { AppVariables } from '../components/variables-table.js';
 import { useNotify } from '../hooks/use-notify.js';
+import { useAppSummary } from '../hooks/use-app-summary.js';
 import { useLoad, useMe, useReleasesApi } from '../hooks/use-releases.js';
 import { useTabHref, useTabParam } from '../hooks/use-tab-param.js';
 import { ReleasesAppOriginContext } from '../lib/app-origin.js';
@@ -111,14 +110,6 @@ import { canOnApp } from '../lib/permissions.js';
 import { policySummary } from '../lib/runtime-policy.js';
 import type { RequestOutletContext } from './request-page.js';
 
-type Operation = 'start' | 'stop' | 'restart';
-
-const OPERATION_ICONS: Readonly<Record<Operation, ReactNode>> = {
-  start: <PlayIcon data-icon='inline-start' />,
-  stop: <SquareIcon data-icon='inline-start' />,
-  restart: <RotateCwIcon data-icon='inline-start' />,
-};
-
 type AppTab = 'overview' | 'deployments' | 'variables' | 'settings';
 
 /** How many deployments the Overview tab lists. */
@@ -126,6 +117,10 @@ const RECENT_DEPLOYMENTS = 5;
 
 export default function AppPage(): ReactElement {
   const { appId = '' } = useParams();
+  return <AppPageContent key={appId} appId={appId} />;
+}
+
+function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const api = useReleasesApi();
   const me = useMe();
@@ -136,13 +131,10 @@ export default function AppPage(): ReactElement {
   const notify = useNotify();
   const tabHref = useTabHref();
   const [busy, setBusy] = useState<string | null>(null);
+  const runningRef = useRef(false);
   const confirmDialog = useConfirmDialog();
   const deleteImpact = useContext(ReleasesDeleteAppImpactContext);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const app = useLoad(
-    () => api.get<AppSummary>(`apps/${appId}`),
-    `app:${appId}`,
-  );
   const releases = useLoad(
     () =>
       api
@@ -159,6 +151,15 @@ export default function AppPage(): ReactElement {
     () => api.list<DeploymentRequestView>('deploymentRequests', { appId }),
     `requests:${appId}`,
   );
+  const app = useAppSummary(
+    appId,
+    () => api.get<AppSummary>(`apps/${appId}`),
+    () => {
+      deployments.reload();
+      releases.reload();
+      requests.reload();
+    },
+  );
   const summary = app.data;
   const origin = useContext(ReleasesAppOriginContext);
   const canConfigure = canOnApp(me, 'configure', summary);
@@ -173,7 +174,7 @@ export default function AppPage(): ReactElement {
   const canDeploy = canOnApp(me, 'deploy', summary);
 
   const reloadAll = (): void => {
-    app.reload();
+    void app.reload();
     releases.reload();
     deployments.reload();
     requests.reload();
@@ -194,14 +195,20 @@ export default function AppPage(): ReactElement {
     work: () => Promise<unknown>,
     done?: string,
   ): Promise<void> => {
+    if (runningRef.current) return;
+    runningRef.current = true;
     setBusy(key);
     try {
       await work();
       if (done) notify.success(done);
-      reloadAll();
+      releases.reload();
+      deployments.reload();
+      requests.reload();
     } catch (reason) {
       notify.error(reason);
     } finally {
+      await app.reload();
+      runningRef.current = false;
       setBusy(null);
     }
   };
@@ -320,7 +327,7 @@ export default function AppPage(): ReactElement {
           <LoadError
             title={t('ui.apps.loadOneFailed')}
             error={app.error}
-            onRetry={app.reload}
+            onRetry={() => void app.reload()}
           />
         ) : (
           <div
@@ -603,7 +610,7 @@ export default function AppPage(): ReactElement {
   const settingsTab = (
     <div className='flex max-w-4xl flex-col gap-6'>
       {canConfigure ? (
-        <AppSettingsCard summary={summary} onSaved={app.reload} />
+        <AppSettingsCard summary={summary} onSaved={() => void app.reload()} />
       ) : null}
       {canConfigure ? (
         <ConfigurationCard
@@ -653,7 +660,7 @@ export default function AppPage(): ReactElement {
             ? { environmentTo: environmentVariablesTo }
             : {})}
           reloadKey={summary.app.currentDeploymentId ?? ''}
-          onChanged={app.reload}
+          onChanged={() => void app.reload()}
         />
       ),
     },
@@ -719,30 +726,20 @@ export default function AppPage(): ReactElement {
           actions={
             <>
               {canOnApp(me, 'operate', summary) &&
-              summary.app.currentDeploymentId
-                ? (['start', 'stop', 'restart'] as const).map((operation) => (
-                    <Button
-                      key={operation}
-                      variant='outline'
-                      disabled={busy !== null}
-                      onClick={() =>
-                        void run(
-                          operation,
-                          () => api.send('POST', `apps/${appId}/${operation}`),
-                          t(`ui.operate.done.${operation}`),
-                        )
-                      }
-                    >
-                      {busy === operation ? (
-                        <Spinner data-icon='inline-start' />
-                      ) : (
-                        OPERATION_ICONS[operation]
-                      )}
-                      {t(`ui.operate.${operation}`)}
-                    </Button>
-                  ))
-                : null}
-              {/* The runtime's state, deployments and requests change on their own; nothing announces them. */}
+              summary.app.currentDeploymentId ? (
+                <AppOperations
+                  summary={summary}
+                  busy={busy}
+                  stale={app.error !== undefined}
+                  onRun={(operation) =>
+                    void run(
+                      operation,
+                      () => api.send('POST', `apps/${appId}/${operation}`),
+                      t(`ui.operate.done.${operation}`),
+                    )
+                  }
+                />
+              ) : null}
               <RefreshButton
                 refreshing={
                   app.loading ||
@@ -757,6 +754,21 @@ export default function AppPage(): ReactElement {
         />
       </div>
 
+      {app.error !== undefined ? (
+        <Alert variant='destructive' role='alert'>
+          <AlertTitle>{t('ui.operate.refreshFailed')}</AlertTitle>
+          <AlertAction>
+            <Button
+              variant='outline'
+              size='sm'
+              disabled={app.loading}
+              onClick={() => void app.reload()}
+            >
+              {t('ui.common.refresh')}
+            </Button>
+          </AlertAction>
+        </Alert>
+      ) : null}
       {pending?.decidable ? (
         <PendingRequestNotice request={pending} to={requestTo(pending.id)} />
       ) : null}

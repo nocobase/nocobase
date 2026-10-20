@@ -52,6 +52,8 @@ export interface ListUsersInput {
   /** Matches name, username and email. */
   readonly q?: string;
   readonly status?: 'enabled' | 'disabled';
+  readonly sort?: 'name';
+  readonly order?: 'asc' | 'desc';
   readonly roleScope?: string;
   readonly role?: string;
 }
@@ -76,6 +78,7 @@ export interface UserInvitation {
   readonly status: 'pending' | 'expired' | 'accepted' | 'revoked';
   readonly invitedBy: { readonly id: string; readonly name: string };
   readonly roleScopes: Readonly<Record<string, UserRoleValue>>;
+  readonly data: Readonly<Record<string, unknown>>;
   readonly summary: readonly string[];
   readonly expiresAt: string;
   readonly sentAt: string | null;
@@ -151,8 +154,12 @@ interface ListResponse<T> {
 export class UsersClient {
   constructor(private readonly api: ApiClient) {}
 
+  get(userId: string): Promise<ManagedUser> {
+    return this.getData<ManagedUser>(`users/${encodeURIComponent(userId)}`);
+  }
+
   options(): Promise<UsersOptions> {
-    return this.get<UsersOptions>('users/options');
+    return this.getData<UsersOptions>('users/options');
   }
 
   list(input: ListUsersInput = {}): Promise<ManagedUserPage> {
@@ -228,7 +235,7 @@ export class UsersClient {
   }
 
   listInvitations(): Promise<UserInvitation[]> {
-    return this.get<UserInvitation[]>('users/invitations');
+    return this.getData<UserInvitation[]>('users/invitations');
   }
 
   invite(input: InviteUsersInput): Promise<UserInvitationResult[]> {
@@ -239,9 +246,12 @@ export class UsersClient {
     );
   }
 
-  resendInvitation(invitationId: string): Promise<UserInvitationResult> {
+  resendInvitation(
+    invitationId: string,
+    sendEmail: boolean = true,
+  ): Promise<UserInvitationResult> {
     return this.send<UserInvitationResult>(
-      `users/invitations/${encodeURIComponent(invitationId)}/resend`,
+      `users/invitations/${encodeURIComponent(invitationId)}/resend?sendEmail=${sendEmail}`,
       'POST',
     );
   }
@@ -260,7 +270,7 @@ export class UsersClient {
     });
   }
 
-  /** Public: creates the account and accepts the invitation. */
+  /** Creates an unverified account, or accepts from the invited account's authenticated session. */
   acceptInvitation(
     input: AcceptUserInvitationInput,
   ): Promise<AcceptedUserInvitation> {
@@ -271,7 +281,7 @@ export class UsersClient {
     );
   }
 
-  private get<T>(path: string): Promise<T> {
+  private getData<T>(path: string): Promise<T> {
     return this.api.request<DataResponse<T>>({ path }).then(({ data }) => data);
   }
 

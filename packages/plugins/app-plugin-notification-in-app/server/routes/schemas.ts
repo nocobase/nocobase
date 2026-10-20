@@ -15,14 +15,22 @@ export const InboxListQuery: z.ZodObject<{
     .int()
     .min(1)
     .max(MAX_INBOX_PAGE_SIZE)
-    .default(DEFAULT_INBOX_PAGE_SIZE),
-  pageToken: z.string().min(1).max(MAX_PAGE_TOKEN_LENGTH).optional(),
+    .default(DEFAULT_INBOX_PAGE_SIZE)
+    .describe('The maximum number of records to return.'),
+  pageToken: z
+    .string()
+    .min(1)
+    .max(MAX_PAGE_TOKEN_LENGTH)
+    .optional()
+    .describe('The continuation token returned by the previous page.'),
   unreadOnly: z.enum(['true', 'false']).optional(),
 });
 export type InboxListQuery = z.infer<typeof InboxListQuery>;
 
 export const InboxMessageParams: z.ZodObject<{ messageId: z.ZodString }> =
-  z.object({ messageId: z.string().min(1) });
+  z.object({
+    messageId: z.string().min(1).describe('The message identifier.'),
+  });
 
 // Response schemas. They describe what the routes send in the API document at `/api/swagger/docs`; nothing validates a
 // response against them.

@@ -9,8 +9,19 @@ import { runnerPaths, readJson } from '../lib/home.ts';
 import { JobPayloadSchema, RunPayloadSchema } from '../protocol/index.ts';
 import { JobWorker } from './job-worker.ts';
 import {
+  killLeftovers,
+  killTagged,
+  PROCESS_TAG_ENV,
+  taggedProcesses,
+  listProcesses,
+  descendantsOf,
+  groupsBelow,
+  workspaceHolders,
+} from './process-tree.ts';
+import {
   jobRecordKey,
   recordPath,
+  isAlive,
   type RunRecord,
   type WorkerJob,
 } from './supervisor.ts';
@@ -86,33 +97,106 @@ async function main(): Promise<number> {
     phase: 'spawned',
     log: '',
   };
+  const settings = await readSettings(paths);
+  const seenGroups = new Set<number>();
+  const observeGroups = async () => {
+    for (const group of groupsBelow(process.pid, await listProcesses()))
+      seenGroups.add(group);
+  };
+  const strict = payload.workspace.readOnly === true;
+  let quiescing = false;
+  let observation = Promise.resolve();
+  const scan = setInterval(() => {
+    if (!quiescing)
+      observation = observation.then(observeGroups).catch(() => undefined);
+  }, job.timings.processScanMs ?? 1_000);
   const worker = new RunWorker(
     payload,
     job.timings,
     {
       paths,
       connection,
-      settings: await readSettings(paths),
-      adapters: loadAdapters(),
+      settings,
+      stopWriters: async () => {
+        quiescing = true;
+        try {
+          await observation;
+          await observeGroups();
+          // A read-only checkout is removed with nothing saved, so a failed process scan keeps it for GC instead.
+          const left = await killLeftovers(process.pid, {
+            groups: seenGroups,
+            graceMs: 2_000,
+            strict,
+          });
+          const tag = process.env[PROCESS_TAG_ENV];
+          const tagged = tag === undefined ? 0 : await killTagged([tag]);
+          if (left.groups > 0)
+            log(
+              `worker: stopped ${left.groups} process group(s) before saving`,
+            );
+          if (left.processes + tagged > 0)
+            log(
+              `worker: stopped ${left.processes + tagged} process(es) the run left behind before saving`,
+            );
+          if (
+            descendantsOf(process.pid, await listProcesses(strict)).some(
+              (entry) => isAlive(entry.pid),
+            ) ||
+            (tag !== undefined &&
+              (await taggedProcesses([tag], strict)).length > 0) ||
+            (record.workDir !== undefined &&
+              (await workspaceHolders(record.workDir, strict)).length > 0)
+          )
+            throw new Error(
+              'Writers remain after stopping the tool; preserve the worktree for recovery.',
+            );
+        } finally {
+          quiescing = false;
+        }
+      },
+      adapters: loadAdapters(
+        process.env,
+        settings.passEnv,
+        Object.fromEntries(
+          Object.entries(connection.registration.variables).filter(([name]) =>
+            payload.workspace.passthrough?.includes(name),
+          ),
+        ),
+      ),
       log,
     },
     record,
   );
   process.on('SIGUSR2', () => void worker.pollStatus());
   process.on('SIGTERM', () => worker.end({ kind: 'shutdown' }));
+  process.on('SIGUSR1', () => worker.end({ kind: 'upgrade' }));
   process.on('SIGINT', () => worker.end({ kind: 'shutdown' }));
-  const outcome = await worker.run();
+  const outcome = await worker.run().finally(() => clearInterval(scan));
   log(`run ${payload.run.id}: worker done (${outcome})`);
   // The outcome was reported to the server; the exit code only tells the daemon the worker did not crash.
   return 0;
 }
 
+/**
+ * Stops whatever the run left running below this worker, in any process group (a development server, a test watcher,
+ * the coding tool's own server), before the worker exits: once it has exited, they would be adopted by init and no
+ * longer be found below it.
+ */
+async function exit(code: number): Promise<never> {
+  const left = await killLeftovers(process.pid, { graceMs: 2_000 }).catch(
+    () => ({ processes: 0, groups: 0 }),
+  );
+  if (left.processes > 0)
+    log(`worker: stopped ${left.processes} process(es) the run left behind`);
+  process.exit(code);
+}
+
 main().then(
-  (code) => process.exit(code),
+  (code) => exit(code),
   (error: unknown) => {
     log(
       `worker: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
     );
-    process.exit(1);
+    return exit(1);
   },
 );

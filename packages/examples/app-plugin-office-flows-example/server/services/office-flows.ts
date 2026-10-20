@@ -1,3 +1,5 @@
+import { OfficeWorkflowParameterService } from './workflow-parameters.js';
+import { officeWorkflowDefinitions } from '../lifecycles/index.js';
 import type {
   DatabaseManager,
   RepositoryFilter,
@@ -183,23 +185,46 @@ function pick(values: Plain, fields: readonly string[]): Plain {
 export class OfficeFlowsService {
   public constructor(
     private readonly database: DatabaseManager,
-    private readonly runtime: LifecycleRuntime,
+    public readonly runtime: LifecycleRuntime,
     private readonly store: OfficeStore,
   ) {}
 
+  /** Read-only metadata for the application's unified workflow browser. */
+  public workflowDefinitions(): typeof officeWorkflowDefinitions {
+    return officeWorkflowDefinitions;
+  }
+
   // ── Reference data ─────────────────────────────────────────────────────
 
-  public async config(): Promise<Plain> {
-    const all = async (collection: string): Promise<Plain[]> =>
-      (await this.database.repository(collection).findMany({})).map((row) => ({
-        ...row,
-      }));
+  public async config(workflow: string = 'incoming'): Promise<Plain> {
+    const values = [
+      'incoming',
+      'clerkTasks',
+      'teamTasks',
+      'dataRequests',
+    ].includes(workflow)
+      ? (await new OfficeWorkflowParameterService(this.database).read(workflow))
+          .values
+      : {};
     return {
       people: PEOPLE,
       roles: { dataRequest: DATA_REQUEST_ROLES, incoming: INCOMING_ROLES },
-      departments: await all(COLLECTIONS.departments),
-      managementGroups: await all(COLLECTIONS.managementGroups),
-      holidays: await all(COLLECTIONS.holidays),
+      dispatchRules: values.dispatchRules,
+      departments: values.dispatchRules
+        ? (
+            await new OfficeWorkflowParameterService(
+              this.database,
+            ).organization()
+          ).departments
+            .filter(
+              (row) =>
+                !values.dispatchRules!.departmentNames.length ||
+                values.dispatchRules!.departmentNames.includes(row.name),
+            )
+            .map((row) => ({ ...row, id: row.name }))
+        : [],
+      managementGroups: values.managementGroups ?? [],
+      holidays: values.holidays ?? [],
     };
   }
 
@@ -630,9 +655,38 @@ export class OfficeFlowsService {
         'A row must include the clerks.',
         { field: 'includeClerks' },
       );
-    const department = await this.database
-      .repository(COLLECTIONS.departments)
-      .findOne({ filter: { name: input.departmentName } });
+    const workflow = {
+      incoming: 'incoming',
+      clerk: 'clerkTasks',
+      team: 'teamTasks',
+    }[parentKind];
+    const configuration = await new OfficeWorkflowParameterService(
+      this.database,
+    ).read(workflow);
+    const rules = configuration.values.dispatchRules!;
+    const department = configuration.organization!.departments.find(
+      (item) => item.name === input.departmentName,
+    );
+    if (
+      (rules.departmentNames.length &&
+        !rules.departmentNames.includes(input.departmentName)) ||
+      (rules.ownDepartmentOnly &&
+        parentKind !== 'incoming' &&
+        parent.departmentName !== input.departmentName)
+    )
+      throw new OfficeFlowsError(
+        'INVALID',
+        'DEPARTMENT_OUT_OF_SCOPE',
+        'Choose a department allowed by this workflow.',
+        { field: 'departmentName' },
+      );
+    if (department && !department[rules.assigneeRole].length)
+      throw new OfficeFlowsError(
+        'INVALID',
+        'ASSIGNEES_REQUIRED',
+        'The selected department has no members in the configured executor role.',
+        { field: 'departmentName' },
+      );
     if (!department)
       throw new OfficeFlowsError(
         'INVALID',
@@ -656,7 +710,9 @@ export class OfficeFlowsService {
           includeClerks: input.includeClerks,
           includeHeads: input.includeHeads,
           includeLeaders: input.includeLeaders,
-          assignees: input.includeClerks ? people(department.clerks) : [],
+          assignees: input.includeClerks
+            ? people(department[rules.assigneeRole])
+            : [],
           ccHeads: input.includeHeads ? people(department.heads) : [],
           ccLeaders: input.includeLeaders ? people(department.leaders) : [],
           origin: assist ? `clerk:${parentId}` : null,
@@ -717,9 +773,10 @@ export class OfficeFlowsService {
     if (input.groupId !== undefined) {
       // A group the body names that does not exist is a bad request, not a
       // missing resource: the URL names the document, which does exist.
-      const group = await this.store.find(
-        COLLECTIONS.managementGroups,
-        input.groupId,
+      const group = (
+        await new OfficeWorkflowParameterService(this.database).read('incoming')
+      ).values.managementGroups!.find(
+        (item) => item.id === Number(input.groupId),
       );
       if (!group)
         throw new OfficeFlowsError(

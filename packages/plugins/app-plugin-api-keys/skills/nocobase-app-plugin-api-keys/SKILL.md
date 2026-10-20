@@ -1,6 +1,6 @@
 ---
 name: nocobase-app-plugin-api-keys
-description: Register the API Keys plugin in a NocoBase App, let scripts and integrations call the App's API with an x-api-key header, place or restrict the key management page, or work out why a key is rejected.
+description: Register the API Keys plugin in a NocoBase App, let scripts and integrations call the App's API with an x-api-key header, or work out why a key is rejected.
 metadata:
   short-description: Authenticate API requests with user-owned keys
 ---
@@ -13,7 +13,7 @@ App issued is being rejected. The default configuration resolves a key into its 
 
 This package is Better Auth's
 [API Key plugin](https://www.better-auth.com/docs/plugins/api-key) plus the
-`apikey` migration, the Settings page, and the locales. `apiKey` is wrapped
+`apikey` migration. `apiKey` is wrapped
 only to supply three defaults, all overridable; its name, options and behaviour
 are Better Auth's, and Better Auth's documentation applies unchanged.
 
@@ -25,14 +25,14 @@ are Better Auth's, and Better Auth's documentation applies unchanged.
   option types, from the same entry. Use these rather than adding
   `@better-auth/api-key` to the App: the migration here matches the schema this
   version declares, and taking both from one package keeps them in step.
-- Client registration factory and `ApiKeysClientOptions`:
-  `@nocobase/app-plugin-api-keys/client`.
+- Client registration factory: `@nocobase/app-plugin-api-keys/client`. It
+  contributes no pages.
 - `apiKeyClient`, re-exported from `@better-auth/api-key/client` by the same
   entry.
-- `ApiKeySummary`, `API_KEYS_PAGE_ACCESS`, `API_KEYS_ROUTE_ID`, and the expiry
-  helpers, for an App that builds its own page instead of using the one here.
-  The page itself reads `useAuthenticationClient().apiKey`, typed through the
-  authentication plugin's `AuthClientPluginRegistry`.
+- `ApiKeySummary` and the expiry helpers, for the App's own key management
+  page. Such a page reads `useAuthenticationClient().apiKey`, typed through the
+  authentication plugin's `AuthClientPluginRegistry`, and is declared among the
+  App's own routes.
 - HTTP API: `POST /api/auth/api-key/create`, `GET /api/auth/api-key/list`,
   `GET /api/auth/api-key/get`, `POST /api/auth/api-key/update`, and
   `POST /api/auth/api-key/delete`. All five act only on the caller's own keys.
@@ -45,14 +45,10 @@ Better Auth's, mounted by Authentication's `/api/auth/*` handler. Its server reg
 Both halves are required, and each fails differently on its own.
 
 1. Add the default export to the App's `server/plugins.ts` and
-   `client/plugins.ts`. Configure the page with
-   `apiKeys({ path: '/api-keys' })`; it mounts under `/settings`.
+   `client/plugins.ts`.
 2. Add `apiKey()` to `plugins` in `server/config/auth.ts`, and `apiKeyClient()`
    to `plugins` in `client/config/auth.ts`.
-3. Grant `page:api-keys/access` to the roles that may manage keys. Keys are
-   self-service and every endpoint acts only on the caller's own, so this is
-   normally granted to all authenticated users.
-4. Run `pnpm nocobase db apply`.
+3. Run `pnpm nocobase db apply`.
 
 Only step 1 leaves the `apikey` table created and no endpoints mounted. Only
 step 2 mounts endpoints against a table that does not exist, and every call
@@ -64,8 +60,8 @@ fails at the database.
 false }` and `requireName: true`, so an App normally passes nothing.
 
 `enableSessionForAPIKeys` is the one that has to be set. Better Auth defaults
-it off, and with it off a key authenticates nothing: the Settings page still
-issues keys, and every request carrying one answers 401. Nothing points at the
+it off, and with it off a key authenticates nothing: keys are still
+issued, and every request carrying one answers 401. Nothing points at the
 configuration, so do not override it without meaning to.
 
 `rateLimit` is off because Better Auth's own default is 10 requests per key per
@@ -138,21 +134,20 @@ own, or the Session is minted and returned first.
 
 ## Ownership
 
-The plugin owns the `apikey` table, the `@better-auth/api-key` version, the
-three defaults, and the Settings page. The App owns its two `config/auth.ts`
-files, any option it overrides there, where the page is mounted, and which
-roles may reach it.
+The plugin owns the `apikey` table, the `@better-auth/api-key` version, and
+the three defaults. The App owns its two `config/auth.ts` files, any
+option it overrides there, and any page it builds for managing keys.
 
 Never write the `apikey` table directly. Its `key` column holds a hash, and a
 row inserted by hand authenticates nothing.
 
 ## Verification
 
-1. Grant `page:api-keys/access`, sign in, open the Settings page, create a key,
-   and copy it.
+1. Sign in and create a key with `authClient.apiKey.create()` (or the App's own
+   page), and copy it.
 2. `curl -H 'x-api-key: <key>' <app>/api/<a route behind auth.required()>` —
    expect the same response the signed-in user gets.
-3. Revoke the key in the page, repeat step 2 — expect 401, not 500.
+3. Revoke the key, repeat step 2 — expect 401, not 500.
 4. Disable the owning user, repeat step 2 with a second key — expect 401.
 
 ## Trusted server extensions

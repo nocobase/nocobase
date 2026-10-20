@@ -2,6 +2,7 @@ packages:
   - packages/*/*
   - ui-library
   - docs
+  - skills/nocobase-app-plugin-development/assets/testing-example
 
 # Commands with --dry-run must not trigger an implicit install before their
 # own code can enforce read-only behavior. Dependency changes are synchronized
@@ -30,7 +31,6 @@ catalog:
   '@hono/node-server': ^2.1.1
   '@oclif/core': ^4.14.0
   '@playwright/test': ^1.62.1
-  '@refinedev/core': ^5.0.8
   '@sinclair/typebox': ^0.34.52
   '@tailwindcss/postcss': ^4.1.4
   '@tailwindcss/vite': ^4.1.8
@@ -61,7 +61,8 @@ catalog:
   '@vitejs/plugin-react': ^4.4.1
   '@vitest/coverage-v8': ^4.1.10
   '@vitest/eslint-plugin': ^1.6.27
-  ai: ^7.0.127
+  ai: 7.0.128
+  '@ai-sdk/react': 4.0.131
   ajv: ^8.20.0
   better-auth: 1.7.5
   better-sqlite3: ^13.0.3
@@ -84,7 +85,6 @@ catalog:
   ignore: ^7.0.6
   ioredis: ^5.11.1
   jsdom: ^30.0.1
-  just-bash: ^3.6.0
   keyv: ^5.6.0
   knex: ^3.1.0
   lint-staged: ^17.3.0
@@ -147,10 +147,6 @@ allowBuilds:
   oracledb: true
   esbuild: true
   tesseract.js: false
-  # Pulled in by @iconscout/unicons, the icon font the documentation site uses. Its build script only runs when
-  # unicons regenerates its own fonts; the .woff2 files ship in the published package, so compiling the native addon
-  # at install time produces nothing anything reads.
-  ttf2woff2: false
   '@parcel/watcher': false
   '@biomejs/biome': true
   '@swc/core': true
@@ -170,10 +166,6 @@ ignoredOptionalDependencies:
   # The Claude Agent SDK's platform packages each carry a bundled Claude Code binary. The runner (`nocobase-runner`)
   # runs the `claude` it finds on PATH instead.
   - '@anthropic-ai/claude-agent-sdk-*'
-  # Optional native decompressors of just-bash, a development dependency of the agents plugin. The bundle the plugin
-  # ships leaves xz and zstd archives out, so nothing here loads them.
-  - node-liblzma
-  - '@mongodb-js/zstd'
 
 # Reports a dependency whose install script was skipped as a warning instead of failing the install.
 # allowBuilds decides the packages known today; this keeps a newly introduced transitive dependency

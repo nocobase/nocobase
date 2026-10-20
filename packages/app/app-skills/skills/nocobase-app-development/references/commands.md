@@ -8,9 +8,9 @@ A command this application owns is a file under `cli/commands/` that default-exp
 
 Do not name a directory under `cli/commands/` `dist`, `build`, `coverage` or `generated`: each is ignored by `.gitignore`, Prettier or the shared ESLint preset, so a command inside one would go unlinted, or never reach git, without any warning.
 
-`cli/` is compiled into `dist`, and every application command is registered there too, so a command runs in a deployment and may import only packages in `dependencies`. There is no development-only application command: one that needs the sources, such as a code generator, cannot read them in a deployment. Keep such work in a script, or in a plugin's `devCommands`.
+`cli/` is compiled into `dist`, and every application command is registered there too, so a command runs in a deployment and may import only packages in `dependencies`. There is no development-only application command: one that needs the sources, such as a code generator, cannot read them in a deployment. Keep such work in a script, or in a plugin's `devCommands`. Change shared behavior in `@nocobase/app-cli` rather than copying it into the application, and use plugin build and dev hooks for local build and development extensions.
 
-Write an application command when the work belongs to this application alone. Work several applications share belongs in a plugin, which contributes its commands under its own topic.
+Write an application command when the work belongs to this application alone. Work users trigger while the application serves is a server route or a job, not a command. Work several applications share belongs in a plugin, which contributes its commands under its own topic.
 
 <!-- command-authoring:start -->
 

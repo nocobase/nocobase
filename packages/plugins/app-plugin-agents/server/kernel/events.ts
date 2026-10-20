@@ -31,6 +31,7 @@ export interface AgentsNotice {
   readonly type:
     | 'runner_upgrade_required'
     | 'run_secrets_not_allowed'
+    | 'runner_quota'
     | 'runner_revoked'
     | 'run_request_expired';
   readonly userIds: readonly string[];
@@ -72,6 +73,12 @@ export type AgentsEvent =
       readonly runId: string;
       readonly status: RunStatus;
     }
+  | {
+      readonly type: 'run.retried';
+      readonly runId: string;
+      readonly retryOfRunId: string;
+      readonly previousStatus: RunStatus;
+    }
   /** Events were stored; `lastSeq` is the highest one. */
   | {
       readonly type: 'run.events';
@@ -95,6 +102,8 @@ export type AgentsEvent =
       readonly conversationId: string;
       readonly userId: string;
       readonly lastSeq?: number;
+      readonly messageId?: string;
+      readonly revision?: number;
     }
   | { readonly type: 'agent.changed'; readonly agentId: string }
   /**
@@ -106,7 +115,7 @@ export type AgentsEvent =
       readonly type: 'agent.removed';
       readonly agentId: string;
       readonly name: string;
-      readonly reason: 'archived' | 'deleted';
+      readonly reason: 'archived' | 'deleted' | 'disabled';
       readonly byUserId: string | null;
     }
   | { readonly type: 'runner.changed'; readonly runnerId: string }
@@ -135,7 +144,9 @@ export type AgentsEvent =
    */
   | {
       readonly type: 'notice.cleared';
-      readonly notice: Pick<AgentsNotice, 'type' | 'subject'>;
+      readonly notice: Pick<AgentsNotice, 'type' | 'subject'> & {
+        readonly key?: string;
+      };
     };
 
 export type AgentsEventType = AgentsEvent['type'];

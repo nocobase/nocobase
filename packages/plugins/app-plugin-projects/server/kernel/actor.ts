@@ -4,6 +4,7 @@
  * `access/viewer.ts`.
  */
 import { SYSTEM_KIND } from '../../shared/kinds.js';
+import type { ActivityExecution } from '../../shared/plans.js';
 
 /** A kind's key (`shared/kinds.ts`). */
 export type ActorType = string;
@@ -23,6 +24,7 @@ export type ActorVia = 'cli' | 'api_key' | 'agent';
 export interface ActorTrace {
   readonly agentId?: string;
   readonly runId?: string;
+  readonly execution?: ActivityExecution;
   readonly conversationId?: string;
   readonly planId?: string;
 }

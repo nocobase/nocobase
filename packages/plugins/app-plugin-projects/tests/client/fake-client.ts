@@ -79,6 +79,8 @@ export const clientMocks = {
       '@nocobase/app-client',
     );
     return {
+      NavigationGuardProvider: actual.NavigationGuardProvider,
+      useNavigationGuard: actual.useNavigationGuard,
       UnsavedChangesContext: actual.UnsavedChangesContext,
       useGuardedClose: actual.useGuardedClose,
       useUnsavedChanges: actual.useUnsavedChanges,
@@ -102,7 +104,10 @@ export const clientMocks = {
     }),
     useLocale: () => ({ locale: 'en-US' }),
   }),
-  authorization: () => ({ useAuthorizationRevision: () => 0 }),
+  authorization: () => ({
+    useAuthorizationRevision: () => 0,
+    useCan: vi.fn(() => ({ can: true })),
+  }),
 };
 /* eslint-enable @eslint-react/no-unnecessary-use-prefix */
 

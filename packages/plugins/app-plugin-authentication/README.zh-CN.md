@@ -33,6 +33,12 @@
 
 ## 认证页面归应用所有
 
+### Client session preparation
+
+`useAuthentication()` exposes `preparation` (`preparing`, `ready`, or `failed`) and `retryPreparation()`, separately from the session query's `isPending` and `refresh()`. For every new user/session pair, including cookie startup, the provider reconnects an already-created realtime client with active subscriptions. It publishes readiness after the synchronous open notification finishes, so authorization invalidation precedes the first page permission check. No realtime client or no subscriptions means immediate readiness without creating a connection. Initialization times out after ten seconds; a late open cannot release the failed attempt. Retry creates a fresh handshake, and logout or a new session cancels the old attempt. Superseded session queries cannot restore an old session.
+
+The Default and Examples templates place `SessionPreparation` inside `RequiredAuthentication` and outside the application layout. The whole signed-in region waits automatically, including routes that skip page authorization; guest and optional routes keep their existing behavior. Failed initialization offers retry and sign-out, including feedback when sign-out fails. Custom applications using only `RequiredAuthentication` must explicitly consume preparation if they need this first-page guarantee. Runtime reconnects and permission notifications continue to invalidate authorization and unmount protected pages and their portals; preparation does not retain hidden content or replace server authorization. A custom application that starts subscriptions only after mounting pages remains subject to that runtime revalidation.
+
 插件不发布 `/login` 等路由，也不提供路由覆盖契约。认证守卫会跳转到 `/login`，因此
 使用本插件的应用必须在自己的 `client/routes.ts` 中声明 `/login`、`/register`、
 `/forgot-password` 和 `/reset-password` 四条 `auth: 'guest'` 路由。仓库内的三个模板
@@ -61,7 +67,7 @@ users:
 
 不配置整个 `initialAdmin` 节点时，保留默认账号 `nocobase/admin123`；显式配置时必须提供非空密码，省略用户名则使用 `nocobase`，省略邮箱则使用 `admin@nocobase.com`。用户名支持 3–30 个字母、数字、下划线或点，邮箱须为有效地址，两者存储时均转为小写。密码经哈希后写入数据库，配置值不传给 Better Auth 的运行时 options。
 
-配置只在用户表为空时生效。已有安装、重复执行 Seed 或之后修改配置，都不会重置账号或密码。root 授权 Seed 使用相同配置中的用户名定位管理员，Hub 后续的管理员初始化也使用该身份。
+配置只在用户表为空时生效。已有安装、重复执行 Seed 或之后修改配置，都不会重置账号或密码。root 授权 Seed 使用相同配置中的用户名定位管理员。
 
 ## 常用命令
 

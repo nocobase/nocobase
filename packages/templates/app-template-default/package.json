@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-default",
   "displayName": "Default Template",
-  "version": "1.0.0-beta.58",
+  "version": "1.0.0-beta.73",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,15 +10,13 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.58"
+    "defaultTemplateVersion": "1.0.0-beta.73"
   },
   "devDependencies": {
-    "@ai-sdk/react": "2.0.0",
+    "@ai-sdk/react": "catalog:",
     "@base-ui/react": "catalog:",
     "@dicebear/core": "^9.4.3",
-    "@gchust/agent-annotations": "0.1.9",
     "@hookform/resolvers": "^5.0.1",
-    "@nocobase/ai-employee-avatars": "^1.0.2",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-template-print": "workspace:*",
     "@nocobase/app-skills": "workspace:*",
@@ -26,19 +24,14 @@
     "@nocobase/app-websocket": "workspace:^",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/drive": "workspace:^",
-    "@nocobase/hub-cli": "workspace:^",
     "@nocobase/logging": "workspace:^",
     "@nocobase/session": "workspace:^",
     "@playwright/test": "catalog:",
-    "@refinedev/cli": "^2.16.48",
-    "@refinedev/core": "catalog:",
-    "@refinedev/react-hook-form": "^5.0.0",
-    "@refinedev/react-router": "^2.0.0",
-    "@refinedev/react-table": "^6.0.0",
     "@silurus/ooxml": "0.85.1",
     "@tailwindcss/postcss": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/react-table": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
@@ -54,7 +47,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "ai": "5.0.0",
+    "ai": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "dayjs": "^1.10.7",
@@ -86,7 +79,9 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "tar": "catalog:"
+    "tar": "catalog:",
+    "@xyflow/react": "^12.11.5",
+    "elkjs": "^0.10.2"
   },
   "files": [
     ".prettierignore",
@@ -96,7 +91,6 @@
     "cli",
     "client",
     "server",
-    "workflows",
     "database/tsconfig.json",
     "database/*/migrations/**",
     "database/*/seeds/**",
@@ -117,6 +111,7 @@
     "config.example.yml",
     "README.MD",
     "AGENTS.md",
+    ".agents/rules",
     "CLAUDE.md",
     "playwright.config.ts"
   ],
@@ -159,18 +154,19 @@
   },
   "dependencies": {
     "zod": "catalog:",
+    "@nocobase/app-plugin-agents": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
     "@nocobase/app-plugin-database-explorer": "workspace:^",
     "@nocobase/app-plugin-file": "workspace:^",
     "@nocobase/app-plugin-i18n": "workspace:^",
+    "@nocobase/app-plugin-mail": "workspace:^",
     "@nocobase/app-plugin-notification": "workspace:^",
     "@nocobase/app-plugin-notification-in-app": "workspace:^",
     "@nocobase/app-plugin-notification-providers": "workspace:^",
     "@nocobase/app-plugin-scheduler": "workspace:^",
     "@nocobase/app-plugin-users": "workspace:^",
-    "@nocobase/app-plugin-workflow": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/config": "workspace:^",
     "@nocobase/db": "workspace:^",
@@ -186,10 +182,12 @@
     "@nocobase/authorization": "workspace:^",
     "@nocobase/queue": "workspace:^",
     "@nocobase/jobs": "workspace:^",
+    "@nocobase/lifecycle": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/caching": "workspace:^",
     "@nocobase/repository-input": "workspace:^",
-    "@nocobase/app-cli": "workspace:^"
+    "@nocobase/app-cli": "workspace:^",
+    "@nocobase/realtime": "workspace:^"
   },
   "description": "NocoBase 3 application template with the standard product capabilities.",
   "imports": {
@@ -197,6 +195,7 @@
     "#hooks/*": "./client/hooks/*.js",
     "#lib/*": "./client/lib/*.js",
     "#extensions/*": "./client/extensions/*.js",
-    "#pages/*": "./client/pages/*.js"
+    "#pages/*": "./client/pages/*.js",
+    "#components/data-table": "./client/components/data-table/index.js"
   }
 }

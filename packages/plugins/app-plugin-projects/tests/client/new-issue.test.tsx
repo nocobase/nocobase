@@ -6,9 +6,14 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { api, clientMocks, me, resetApi } from './fake-client.js';
+import {
+  ExecutorPresentationContext,
+  type ExecutorPresentationProps,
+} from '../../client/kit/executor-presentation.js';
 import { renderAt } from './render.js';
 
 vi.mock('@nocobase/app-client', () => clientMocks.appClient());
@@ -21,6 +26,17 @@ const { default: NewIssuePage } =
   await import('../../client/pages/issues/new.js');
 const { NewIssueButton } =
   await import('../../client/pages/issues/new-issue-button.js');
+
+function QuotaExecutor({
+  name,
+  place,
+}: ExecutorPresentationProps): ReactElement {
+  return (
+    <span>
+      {name} quota detail {place}
+    </span>
+  );
+}
 
 const withAgents = () => {
   const viewer = me('admin');
@@ -100,6 +116,84 @@ describe('the new issue dialog', () => {
     expect(screen.getByRole('option', { name: /Ann/u })).toBeTruthy();
   });
 
+  it('lets the application describe an executor without changing the offered candidates', async () => {
+    api.routes['projects/me'] = () => ({ data: withAgents() });
+    const view = renderAt('/issues/new?tab=manual', [
+      {
+        path: '/issues/new',
+        element: (
+          <ExecutorPresentationContext.Provider
+            value={{
+              kind: 'agent',
+              Component: QuotaExecutor,
+            }}
+          >
+            <NewIssuePage />
+          </ExecutorPresentationContext.Provider>
+        ),
+      },
+    ]);
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByLabelText('properties.executor'));
+    expect(await screen.findByText('Coder quota detail menu')).toBeVisible();
+    expect(screen.queryByText('Unregistered agent')).toBeNull();
+    view.unmount();
+  });
+  it('starts now by default, or later in backlog, and keeps the default executor to the server', async () => {
+    api.routes['projects/me'] = () => ({ data: withAgents() });
+    api.routes['projects/executors'] = () => ({
+      data: [
+        { type: 'agent', id: 'pm', name: 'Project manager', isDefault: true },
+        { type: 'agent', id: 'a1', name: 'Coder' },
+      ],
+    });
+    const created: unknown[] = [];
+    api.routes['POST projects/issues'] = (request) => {
+      created.push(request.json);
+      return { data: { id: 'i1', identifier: 'PM-1' } };
+    };
+    renderNewIssue();
+    const dialog = await screen.findByRole('dialog');
+    // The default executor is shown as chosen.
+    await waitFor(() =>
+      expect(
+        within(dialog).getByLabelText('properties.executor').textContent,
+      ).toContain('Project manager'),
+    );
+    expect(within(dialog).getByText('issueForm.createAndStart')).toBeTruthy();
+    fireEvent.change(within(dialog).getByLabelText('issueForm.titleLabel'), {
+      target: { value: 'Now' },
+    });
+    fireEvent.click(within(dialog).getByText('issueForm.createAndStart'));
+    await waitFor(() => expect(created).toHaveLength(1));
+    expect(created[0]).toMatchObject({
+      title: 'Now',
+      statusKey: 'in_progress',
+    });
+    // Left as it was, the executor goes to the server's default.
+    expect(created[0]).not.toHaveProperty('executor');
+  });
+
+  it('creates a later issue in backlog', async () => {
+    const created: unknown[] = [];
+    api.routes['POST projects/issues'] = (request) => {
+      created.push(request.json);
+      return { data: { id: 'i1', identifier: 'PM-1' } };
+    };
+    renderNewIssue();
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('issueForm.titleLabel'), {
+      target: { value: 'Later' },
+    });
+    await userEvent.click(within(dialog).getByText('issueForm.startLater'));
+    await waitFor(() =>
+      expect(within(dialog).getByText('common.create')).toBeTruthy(),
+    );
+    fireEvent.click(within(dialog).getByText('common.create'));
+    await waitFor(() => expect(created).toHaveLength(1));
+    expect(created[0]).toMatchObject({ title: 'Later', statusKey: 'backlog' });
+  });
+
   it('does not look for other executors when only people execute', async () => {
     renderNewIssue();
     await screen.findByRole('dialog');
@@ -151,4 +245,62 @@ describe('the "New issue" button', () => {
     expect(screen.getByText('issues.new')).toBeTruthy();
     expect(screen.getByText('C')).toBeTruthy();
   });
+});
+
+it('pastes an image at the caret, blocks creation until upload finishes, and binds it on creation', async () => {
+  let finish!: (value: unknown) => void;
+  api.routes['POST projects/attachments'] = () =>
+    new Promise((resolve) => {
+      finish = resolve;
+    });
+  api.routes['POST projects/issues'] = () => ({
+    data: { id: 'i1', identifier: 'PM-1' },
+  });
+  renderNewIssue();
+  const description = await screen.findByRole('textbox', {
+    name: 'issueForm.descriptionLabel',
+  });
+  fireEvent.change(screen.getByLabelText('issueForm.titleLabel'), {
+    target: { value: 'Screenshot' },
+  });
+  description.focus();
+  fireEvent.paste(description, {
+    clipboardData: {
+      files: [new File(['png'], 'image.png', { type: 'image/png' })],
+      getData: () => '',
+      types: ['Files'],
+    },
+  });
+  await waitFor(() => expect(finish).toBeTypeOf('function'));
+  expect(
+    screen
+      .getByRole('button', { name: 'issueForm.createAndStart' })
+      .hasAttribute('disabled'),
+  ).toBe(true);
+  finish({
+    data: {
+      id: 'f1',
+      filename: 'shot.png',
+      contentUrl: '/api/projects/attachments/f1/content',
+      previewable: true,
+    },
+  });
+  await waitFor(() =>
+    expect(description.querySelector('img')?.getAttribute('src')).toBe(
+      '/api/projects/attachments/f1/content',
+    ),
+  );
+  fireEvent.submit(document.getElementById('pm-issue-new-form')!);
+  await waitFor(() =>
+    expect(
+      api.calls.find(
+        (call) => call.method === 'POST' && call.path === 'projects/issues',
+      )?.json,
+    ).toMatchObject({
+      attachmentIds: ['f1'],
+      description: expect.stringContaining(
+        '![shot.png](/api/projects/attachments/f1/content)',
+      ),
+    }),
+  );
 });

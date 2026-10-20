@@ -1,11 +1,7 @@
 [
   {
-    "text": "Get Started",
-    "link": "/get-started/"
-  },
-  {
-    "text": "Tutorials",
-    "link": "/tutorials/"
+    "text": "Quick start",
+    "link": "/capabilities/quick-start"
   },
   {
     "text": "Capabilities",
@@ -13,7 +9,7 @@
   },
   {
     "text": "Deployment",
-    "link": "/deployment/"
+    "link": "/deployment"
   },
   {
     "text": "Home",

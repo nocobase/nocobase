@@ -49,8 +49,8 @@ OPTIONS
 `database` includes the migrations and seeds structure.
 `server.service-providers` includes ServiceProvider, Service, and Token
 structure. `server.routes` supports both API and Root Route contributions
-without choosing either one for the plugin. `client.routes` similarly supports
-App and Settings Routes. `client.service-providers` generates application-owned
+without choosing either one for the plugin. `client.routes` supports App Routes,
+the only Client route type. `client.service-providers` generates application-owned
 Client services and lifecycle hooks, while `client.react-providers` generates
 React context composition owned by the rendered tree.
 

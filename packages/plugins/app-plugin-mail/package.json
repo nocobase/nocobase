@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-mail",
   "displayName": "Mail App Plugin",
   "description": "Provides mail sending and resumable mailbox synchronization architecture.",
-  "version": "1.0.0-beta.9",
+  "version": "1.0.0-beta.15",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -84,7 +84,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json && nocobase-db-manifests",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tests/fixtures/composer-callback-types/tsconfig.json",
     "test": "vitest run --coverage",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
@@ -92,8 +92,7 @@
     "format:check": "prettier . --check",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format",
-    "test:postgres": "NOCOBASE_TEST_DB_DIALECT=postgres vitest run tests/server/message-queries.test.ts",
-    "test:e2e": "playwright test --config tests/playwright/playwright.config.ts"
+    "test:postgres": "NOCOBASE_TEST_DB_DIALECT=postgres vitest run tests/server/message-queries.test.ts"
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",
@@ -106,13 +105,12 @@
     "@nocobase/jobs": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "date-fns": "^4.4.0",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-router": "catalog:",
-    "date-fns": "^4.4.0",
     "react-day-picker": "^10.0.1",
-    "cn": "catalog:"
+    "react-dom": "^19.0.0"
   },
   "dependencies": {
     "@sinclair/typebox": "catalog:",
@@ -123,9 +121,13 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@nocobase/app-testing": "workspace:*",
+    "@nocobase/config": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
+    "@playwright/test": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@types/mailparser": "^3.4.6",
     "@types/node": "catalog:",
     "@types/nodemailer": "^8.0.1",
@@ -136,13 +138,12 @@
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-router": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@nocobase/app-testing": "workspace:*",
-    "@playwright/test": "catalog:"
+    "vitest": "catalog:"
   },
   "repository": {
     "type": "git",

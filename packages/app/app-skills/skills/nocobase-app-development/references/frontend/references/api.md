@@ -3,7 +3,7 @@
 Every endpoint request goes through the HTTP client the application provides:
 
 - **Do not** create your own client, do not use `fetch` or axios, do not hard-code `/api`, and do not build endpoint URLs from `location`. The client's base URL (the configuration key `api.baseURL`, by default `resolveAppUrl('/api')`) already includes the deployment base path (for example `/main`).
-- For a URL served by the application, such as an API download `href`, an API-backed image or a page link, use `resolveAppUrl('/api/…')` from `@nocobase/app-client`, which adds the runtime deployment base path. Keep runtime-generated resources, including workflow artifacts, on this helper.
+- For a URL served by the application, such as an API download `href`, an API-backed image or a page link, use `resolveAppUrl('/api/…')` from `@nocobase/app-client`, which adds the runtime deployment base path. Keep runtime-generated resources on this helper.
 - For a static file shipped in the frontend build, use `resolveAssetUrl('/assets/logo.png')` from `@nocobase/app-client`. Paths are relative to the client output root (`dist/client/assets/logo.png` in this example), with or without a leading slash. The helper uses Vite's absolute HTTP(S) `base` when configured, and otherwise falls back to `resolveAppUrl`; existing absolute, protocol-relative, data and blob URLs are preserved. The templates set `base` from `CDN_BASE_URL` during the build, and Vite writes it into the client code as `import.meta.env.BASE_URL`. Changing CDN settings requires rebuilding and uploading the matching files. Business code should call the helper rather than read the build variable itself.
 - Import `useApiClient`, `apiClientToken`, the `ApiClient` type and `ApiClientError` from `@nocobase/app-client`. That way the application and plugins share one runtime and one error class, which is what makes `instanceof ApiClientError` reliable.
 
@@ -230,9 +230,11 @@ export async function uploadProjectAttachment(
 
 ## Loading data in a component
 
-Data reloads when the user acts (a search, "Retry", a refresh button) or after the page's own writes. Pushing server changes to open pages needs server-side events as well; `@nocobase/app-client` exports `realtimeClientToken`, and the one realtime feature the template ships, the in-app inbox, is documented in the `nocobase-app-plugin-notification-in-app` Skill. Read it before building live updates.
+For live updates, read the installed `nocobase-realtime` Skill in `.agents/skills/` for server authorization, snapshot recovery, retries, distributed delivery and polling decisions.
 
-There is no shared data-loading hook; write it directly in the component: `useApiClient()` + `useEffect` + `AbortController`. Do not reach for the data hooks of the installed Refine packages (`useList`, `useTable`, `useForm` from `@refinedev/*`) or for TanStack Query: the application registers no Refine data provider, so those hooks have nothing to call, and one loading pattern across pages keeps states and errors consistent. The application shell mounts Refine and `client/service-provider.ts` can register Refine resources, which only describe records to code that opts into Refine; without a data provider they load nothing, and they never add menu entries. Add a data provider only when the user asks to adopt Refine's data hooks across the application. The component below loads a project by id and displays it, covering loading, retry after failure, record not found, no permission and empty values (`client/pages/projects/project-summary.tsx`):
+Data reloads when the user acts (a search, "Retry", a refresh button) or after the page's own writes. For live updates, declare the server Topic during provider boot and reuse the host client through `useRealtimeTopic` or `useRealtimeRefresh` from `@nocobase/app-client`. A watch's `onReady` runs after that Topic is acknowledged, including reconnects; `onOpen` only describes the transport. Refresh authoritative API data on readiness because disconnected events are not replayed. Use `enabled: false` for inactive pages, return the refresh promise for burst coalescing and one in-flight follow-up, and use `refreshRealtimeQueries(queryClient, filters, signal)` for TanStack Query snapshots. It matches exact keys, prefixes and predicates, waits for pre-event reads (including initial loading), and follows them with a fresh read without repeatedly cancelling slow requests. Bare `invalidateQueries` with `cancelRefetch: false` can reuse a pre-event response and lose the change. For lower-level code, resolve `realtimeClientToken` and call `watch(topic, { onEvent, onReady, onError })`; close its handle on cleanup. Personal inbox usage is documented in the `nocobase-app-plugin-notification-in-app` Skill.
+
+There is no shared data-loading hook; write it directly in the component: `useApiClient()` + `useEffect` + `AbortController`. Do not reach for TanStack Query in a page: one loading pattern across pages keeps states and errors consistent. The component below loads a project by id and displays it, covering loading, retry after failure, record not found, no permission and empty values (`client/pages/projects/project-summary.tsx`):
 
 ```tsx
 // client/pages/projects/project-summary.tsx (excerpt; the complete file is in example/project-summary.md)
@@ -297,6 +299,23 @@ Other points:
 - List every dependency: `[api, projectId, reloadCount]`. `useApiClient()` returns the same object every time, so it does not cause repeated requests.
 - When loading through a Repository (see "Remote Repository"), the request cannot take a `signal` and cannot be aborted, but still check `controller.signal.aborted` in the callbacks to discard stale results.
 - For the complete list page (search conditions written to the URL, empty and no-results states, the `Spinner` in the toolbar while reloading), see [`table.md`](table.md) and [`example/list-page.md`](example/list-page.md); for loading the latest data before an edit form opens, see [`form.md`](form.md); for the detail drawer, see [`overlay.md`](overlay.md).
+
+## Keeping lists and charts live
+
+When realtime events refresh what a page shows:
+
+- An event that names items refreshes those items: gather the ids of a burst (a few hundred milliseconds), read only those rows, keep one such request in flight, and merge the answer into what the page holds. Read the whole list again only when its membership changed (an item joined or left it, or moved between its groups) or the event names nothing.
+- Do not read a whole list or overview again on every event.
+- Recompute a chart's figures at most every few seconds while it is visible, and not at all while the page is hidden; or update only the figure the event affects.
+- Read nothing for a page that is not shown; read it when it is shown again.
+- A component that needs one small fact reads the small endpoint that answers it, not the list that happens to contain it.
+- Keep realtime subscriptions in one place, such as the page or a hook it owns, rather than one per row or card, and subscribe only to the topics the page shows.
+- When a refresh is triggered while a request for the same data is still in flight, usually let it finish and read once more afterwards rather than aborting it and sending it again; repeated aborts under a stream of events can mean no request ever completes. Aborting is still right when the parameters change or the component unmounts, as above.
+- Skip fetching while the page is hidden (`document.visibilityState`), and refresh once when it becomes visible again.
+- Keep request keys stable: build them from the parameters that decide the data, not from values that change on every render or tick, such as the current time, or each change starts a new request.
+- Be careful with data loaded by components mounted on every page, such as navigation or a header badge: they run on every page and in every open tab, so they usually read a small fact rather than a list.
+
+The server side of these reads is in [server routes](../../server-routes.md#lists-and-statistics-a-fixed-number-of-queries).
 
 ## Error handling
 

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-cli",
-  "version": "1.0.0-beta.15",
+  "version": "1.0.0-beta.25",
   "description": "The NocoBase application command line: runtime commands, plugin management, and the dev and build tooling.",
   "type": "module",
   "license": "Apache-2.0",
@@ -99,7 +99,6 @@
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/dev-config": "workspace:^",
-    "@refinedev/cli": "^2.16.48",
     "prettier": "catalog:",
     "tar": "catalog:",
     "tsc-alias": "^1.9.2",
@@ -109,9 +108,6 @@
   },
   "peerDependenciesMeta": {
     "@nocobase/dev-config": {
-      "optional": true
-    },
-    "@refinedev/cli": {
       "optional": true
     },
     "prettier": {
@@ -134,9 +130,12 @@
     }
   },
   "devDependencies": {
+    "@nocobase/app-client": "workspace:*",
+    "@nocobase/create-plugin": "workspace:*",
     "@nocobase/db-sqlite": "workspace:^",
     "@nocobase/db-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
+    "@nocobase/service-provider": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",

@@ -1,5 +1,21 @@
 # @nocobase/app-plugin-cli-example
 
+## 0.1.0-beta.7
+
+### Patch Changes
+
+- 693e43d: Update agent guidance to refer to the renamed `nocobase-app-plugin-development` Skill.
+- Updated dependencies [d54dd59]
+  - @nocobase/app-cli@1.0.0-beta.20
+
+## 0.1.0-beta.6
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-cli@1.0.0-beta.19
+
 ## 0.1.0-beta.5
 
 ### Patch Changes

@@ -17,6 +17,7 @@ import {
   type ThreadPage,
 } from '../../../shared/comments.js';
 import type { Viewer } from '../../access/viewer.js';
+import { splitVia } from '../../kernel/activity.js';
 import type { KindRegistry } from '../../kernel/kinds.js';
 import { isNote } from '../../kernel/mentions.js';
 import { decodeCursor, pageLimit, pageOf } from '../../kernel/pagination.js';
@@ -24,6 +25,8 @@ import type { TxRunner } from '../../kernel/tx.js';
 import { requireVisibleIssue } from '../issues/index.js';
 import {
   commentsOf,
+  newestCommentEachBy,
+  newestCommentsBy,
   reactionsFor,
   repliesOf,
   rootsPage,
@@ -33,6 +36,21 @@ import type { CommentAttachments, CommentReader } from './ports.js';
 
 const iso = (value: Date | string | null): string | null =>
   value === null ? null : new Date(value).toISOString();
+
+function originOf(
+  value: CommentRecord['origin'],
+): Readonly<Record<string, unknown>> {
+  if (typeof value === 'string') {
+    try {
+      return originOf(JSON.parse(value) as CommentRecord['origin']);
+    } catch {
+      return {};
+    }
+  }
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value
+    : {};
+}
 
 function reactionList(
   rows: readonly { readonly emoji: string; readonly userId: string }[],
@@ -54,10 +72,22 @@ export async function mapComments(
   kinds: KindRegistry,
   records: readonly CommentRecord[],
   attachments?: CommentAttachments,
+  viewer?: Pick<Viewer, 'userId' | 'seesExecutionMachine'>,
 ): Promise<IssueComment[]> {
   const name = await kinds.nameAll(conn, [
     ...records.map((row) => ({ type: row.authorType, id: row.authorId })),
     ...records.map((row) => ({ type: 'user', id: row.resolvedById })),
+    ...records.map((row) => {
+      const trace = originOf(row.origin).trace;
+      const agentId =
+        trace && typeof trace === 'object' && 'agentId' in trace
+          ? trace.agentId
+          : null;
+      return {
+        type: 'agent',
+        id: typeof agentId === 'string' ? agentId : null,
+      };
+    }),
   ]);
   const live = records.filter((row) => !row.deletedAt).map((row) => row.id);
   const reactions = await reactionsFor(conn, live);
@@ -66,6 +96,7 @@ export async function mapComments(
     : new Map<string, never>();
   return records.map((row) => {
     const deleted = row.deletedAt !== null;
+    const origin = originOf(row.origin);
     return {
       id: row.id,
       issueId: row.issueId,
@@ -77,6 +108,13 @@ export async function mapComments(
       note: !deleted && isNote(row.content),
       parentId: row.parentId,
       rootId: row.rootId,
+      source: deleted
+        ? null
+        : splitVia(
+            { ...origin, via: row.via },
+            (id) => name('agent', id),
+            viewer,
+          ).via,
       via:
         row.via === 'cli' || row.via === 'api_key' || row.via === 'agent'
           ? row.via
@@ -95,13 +133,17 @@ export async function mapComments(
   });
 }
 
-/** A page of an issue's threads: the newest roots first page by page, each page oldest first. */
+/**
+ * A page of an issue's threads: the newest roots first page by page, each page oldest first. With `since`, only the
+ * threads with a comment created after it, each with its root and only the replies created after it.
+ */
 export async function threadPage(
   conn: DatabaseConnection,
   kinds: KindRegistry,
   issueId: string,
-  options: { readonly cursor?: string; readonly limit?: number } = {},
+  options: ThreadPageOptions = {},
   attachments?: CommentAttachments,
+  viewer?: Pick<Viewer, 'userId' | 'seesExecutionMachine'>,
 ): Promise<ThreadPage> {
   const limit = pageLimit(
     options.limit,
@@ -109,6 +151,9 @@ export async function threadPage(
     THREAD_PAGE_LIMIT.max,
   );
   const cursor = options.cursor ? decodeCursor(options.cursor) : undefined;
+  const since = options.since
+    ? await commentsOf(conn, issueId, { since: options.since })
+    : null;
   const rows = await rootsPage(
     conn,
     issueId,
@@ -116,21 +161,26 @@ export async function threadPage(
     cursor
       ? { createdAt: String(cursor.createdAt), id: String(cursor.id) }
       : undefined,
+    since ? [...new Set(since.map((row) => row.rootId))] : undefined,
   );
   const page = pageOf(rows, limit, (row) => ({
     createdAt: iso(row.createdAt),
     id: row.id,
   }));
   const roots = page.rows.reverse();
-  const replies = await repliesOf(
-    conn,
-    roots.map((root) => root.id),
-  );
+  const newer = since ? new Set(since.map((row) => row.id)) : null;
+  const replies = (
+    await repliesOf(
+      conn,
+      roots.map((root) => root.id),
+    )
+  ).filter((reply) => !newer || newer.has(reply.id));
   const mapped = await mapComments(
     conn,
     kinds,
     [...roots, ...replies],
     attachments,
+    viewer,
   );
   const byId = new Map(mapped.map((comment) => [comment.id, comment]));
   const data: CommentThread[] = roots.map((root) => ({
@@ -140,6 +190,13 @@ export async function threadPage(
       .map((reply) => byId.get(reply.id) as IssueComment),
   }));
   return { data, nextCursor: page.nextCursor };
+}
+
+export interface ThreadPageOptions {
+  readonly cursor?: string;
+  readonly limit?: number;
+  /** RFC 3339: only what was written after it (`threadPage`). */
+  readonly since?: string;
 }
 
 export interface CommentQueries extends CommentReader {
@@ -155,8 +212,42 @@ export interface CommentQueries extends CommentReader {
   threads(
     viewer: Viewer,
     idOrKey: string,
-    options: { readonly cursor?: string; readonly limit?: number },
+    options: ThreadPageOptions,
   ): Promise<ThreadPage>;
+  /**
+   * One author's newest comments on an issue, newest first, at most `limit`: only live ones with `live`, and none
+   * written after `until` (RFC 3339). Their text alone, without what showing them needs (names, reactions, files), for
+   * a reader that looks for one comment among many.
+   */
+  newestBy(
+    conn: DatabaseConnection,
+    issueId: string,
+    author: { readonly type: string; readonly id: string },
+    options: {
+      readonly live?: boolean;
+      readonly until?: string;
+      readonly limit: number;
+    },
+  ): Promise<AuthoredComment[]>;
+  /**
+   * `newestBy` for many issues at once, with a limit of one: one author's newest comment on each of `issueIds` (only
+   * live ones with `live`), by issue id; an issue without one is left out.
+   */
+  newestByEach(
+    conn: DatabaseConnection,
+    issueIds: readonly string[],
+    author: { readonly type: string; readonly id: string },
+    options?: { readonly live?: boolean },
+  ): Promise<Map<string, AuthoredComment>>;
+}
+
+/** A comment as `CommentQueries.newestBy` answers it. */
+export interface AuthoredComment {
+  readonly id: string;
+  /** Empty once deleted, as everywhere comments are read. */
+  readonly content: string;
+  readonly createdAt: string;
+  readonly deleted: boolean;
 }
 
 export function createCommentQueries(deps: {
@@ -174,6 +265,7 @@ export function createCommentQueries(deps: {
         issue.id,
         options,
         deps.attachments?.(),
+        viewer,
       );
     },
     async mentionCandidates(viewer, input) {
@@ -191,6 +283,36 @@ export function createCommentQueries(deps: {
           MENTION_CANDIDATE_LIMIT.max,
         ),
       });
+    },
+    async newestBy(conn, issueId, author, options) {
+      return (await newestCommentsBy(conn, issueId, author, options)).map(
+        (row) => {
+          const deleted = row.deletedAt !== null;
+          return {
+            id: row.id,
+            content: deleted ? '' : row.content,
+            createdAt: iso(row.createdAt) as string,
+            deleted,
+          };
+        },
+      );
+    },
+    async newestByEach(conn, issueIds, author, options = {}) {
+      const rows = await newestCommentEachBy(conn, issueIds, author, options);
+      return new Map(
+        rows.map((row) => {
+          const deleted = row.deletedAt !== null;
+          return [
+            row.issueId,
+            {
+              id: row.id,
+              content: deleted ? '' : row.content,
+              createdAt: iso(row.createdAt) as string,
+              deleted,
+            },
+          ];
+        }),
+      );
     },
     async list(conn, issueId, options = {}) {
       return mapComments(

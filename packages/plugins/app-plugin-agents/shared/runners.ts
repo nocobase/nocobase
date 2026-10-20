@@ -1,6 +1,8 @@
 /**
  * Runners as the browser and the server's admin API exchange them.
  */
+import type { QuotaLocation } from './quota.js';
+
 import {
   AGENT_TOOLS,
   policyAllowsAgent,
@@ -11,9 +13,12 @@ import {
   type ToolInfo,
   type ToolLoad,
   type ToolSlots,
+  type WorkspaceDecision,
+  type WorkspaceCleanupResult,
 } from '@nocobase/agent-protocol';
 
-import { entryTools, type AgentModelEntry } from './agents.js';
+import type { RunnerModelEntry } from './agents.js';
+import { normalizeModel } from './model-catalog.js';
 
 /**
  * `team` runs anyone's work; `ownerOnly` (shown as "personal") runs only work its owner started. A runner added by its
@@ -37,6 +42,16 @@ export const RUNNER_STATUSES = [
 
 export type RunnerStatus = (typeof RUNNER_STATUSES)[number];
 
+/**
+ * Optional payload support is established by capabilities, never package versions.
+ * Protocol 9 runners may ignore workspace.key; only its explicit declaration is evidence.
+ */
+export function supportsWorkspaceKey(
+  runner: Pick<Runner, 'features'>,
+): boolean {
+  return runner.features.includes('workspaceKey');
+}
+
 export interface Runner {
   readonly id: string;
   readonly name: string;
@@ -51,7 +66,7 @@ export interface Runner {
   readonly product: string | null;
   readonly protocolVersion: number;
   readonly features: readonly RunnerFeature[];
-  /** What the runner reported: each coding tool with its version and whether it is signed in. */
+  /** What the runner reported: version, sign-in and optional advisory model capabilities. Never edits Agent configuration. */
   readonly tools: readonly ToolInfo[];
   /**
    * The coding tools people let this runner run, chosen on the web; null offers every tool it reports. A tool left
@@ -75,6 +90,9 @@ export interface Runner {
    * and could take now, across every application it serves. Null or absent when it reported none (unknown: read as
    * room left).
    */
+  /** Last heartbeat free slots across all applications; absent before a heartbeat. */
+  readonly globalFree?: number;
+  readonly draining?: 'updatePending' | 'pruning';
   readonly toolLoad?: Readonly<Partial<Record<AgentTool, ToolLoad>>> | null;
   /**
    * Its owner (or a manager of runners) lets it take jobs: builds and other steps an application configures, run
@@ -88,9 +106,137 @@ export interface Runner {
    * missing from its `features` instead.
    */
   readonly policy: RunnerPolicy | null;
+  /**
+   * The names of the variables it provides to a run that asks for them by name (variables kept "from the runner"):
+   * its local variables and the names its owner passes from its environment, as it last reported them. Names only.
+   * Null or absent when it reported none (a runner from before they were reported: unknown).
+   */
+  readonly variables?: readonly string[] | null;
+  /**
+   * The working directories it keeps for this application and the free space on the disk holding them, as it last
+   * reported them. Null or absent when it never reported any (a runner that does not report, or one that has not yet).
+   */
+  readonly workspaceUsage?: RunnerWorkspaceUsage | null;
+  /**
+   * The tools and models a run failed `modelUnavailable` with here: not offered here until the runner reports that
+   * tool's models differently. Null or absent for none.
+   */
+  readonly unavailableModels?: readonly UnavailableModel[] | null;
+  readonly quotaRevision: number;
+  readonly quotaUsage?: readonly RunnerQuotaUsage[] | null;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+export interface RunnerQuotaUsage {
+  readonly tool: AgentTool;
+  readonly window: string;
+  readonly scope: 'tool' | 'provider' | 'model';
+  readonly target: string;
+  readonly usedPercent?: number;
+  readonly resetsAt: string | null;
+  readonly observedAt: string;
+  /** Whether this observation exhausted its window. */
+  readonly exhausted?: boolean;
+}
+
+/** Active quota blocks for a candidate; default models still obey tool blocks. */
+export function quotaBlocks(
+  runner: Pick<Runner, 'unavailableModels'>,
+  entry: Pick<RunnerModelEntry, 'tool' | 'model'>,
+  now: number,
+): UnavailableModel[] {
+  const model = entry.model ? normalizeModel(entry.tool, entry.model) : '';
+  return (runner.unavailableModels ?? []).filter(
+    (mark) =>
+      mark.reason === 'toolQuota' &&
+      mark.tool === entry.tool &&
+      (!mark.resetsAt || Date.parse(mark.resetsAt) > now) &&
+      (mark.scope === 'tool' ||
+        (model !== '' &&
+          (mark.scope === 'provider'
+            ? model.split('/')[0] === mark.model
+            : model === mark.model))),
+  );
+}
+
+/** A tool and model a run failed `modelUnavailable` with on a runner (`Runner.unavailableModels`). */
+export interface UnavailableModel {
+  readonly reason?: 'modelUnavailable' | 'toolQuota';
+  readonly scope?: 'tool' | 'provider' | 'model';
+  readonly window?: string;
+  readonly resetsAt?: string | null;
+  readonly tool: AgentTool;
+  /** Normalized (`normalizeModel`). */
+  readonly model: string;
+  readonly at: string;
+  /** The tool's models as the runner reported them then, normalized: a different report lifts the mark. */
+  readonly reported: readonly string[];
+}
+
+/** A runner's working directories, as it last reported them (`Runner.workspaceUsage`). */
+export interface RunnerWorkspaceUsage {
+  /** Computed from reported directory sizes; not a new runner protocol field. */
+  readonly totalBytes?: number;
+  readonly sizeUnknownCount?: number;
+  readonly counts?: Readonly<
+    Record<'all' | 'active' | 'retained' | 'ended', number>
+  >;
+  readonly diskMeasuredAt?: string;
+  readonly intervalMs?: number;
+  /** The disk holding the runner's working directories; null when it did not say. */
+  readonly disk: RunnerWorkspaceDisk | null;
+  /** How many it keeps for this application. */
+  readonly count: number;
+  /** How many of those hold work that was never pushed, and are never removed on the application's word. */
+  readonly unpushedCount: number;
+  /** When directories were collected; null until the first directory report. */
+  readonly measuredAt: string | null;
+  /** This application's, most recently used first. */
+  readonly workspaces: readonly RunnerWorkspace[];
+}
+
+/** The disk holding a runner's working directories, as it reported it. */
+export interface RunnerWorkspaceDisk {
+  readonly freeBytes: number;
+  readonly totalBytes: number;
+  /** What its owner keeps free; below it, the runner removes directories that may go. Null for nothing. */
+  readonly minFreeBytes: number | null;
+}
+
+/** One working directory a runner keeps for this application. */
+export interface RunnerWorkspace {
+  readonly subjectKey?: string;
+  readonly sizeBytes?: number;
+  readonly decision?: WorkspaceDecision;
+  readonly cleanup?: WorkspaceCleanupResult;
+  /** The last run that worked in it. */
+  readonly runId?: string;
+  /** Where it is on the runner. */
+  readonly workDir: string;
+  /** It holds changes not committed, or commits the remote task branch lacks. */
+  readonly unpushed: boolean;
+  readonly lastUsedAt: string;
+  /** The subject its last run worked on; null when the run is unknown here. */
+  readonly subjectKind: string | null;
+  readonly subjectId: string | null;
+  /** The subject's work is over (it may be removed), goes on, or cannot be told (null). */
+  readonly settled: boolean | null;
+}
+
+/** A directory's display category; subject completion alone does not mean it can be removed. */
+export function workspaceCategory(
+  workspace: RunnerWorkspace,
+): 'active' | 'retained' | 'ended' {
+  if (workspace.settled === false) return 'active';
+  if (
+    workspace.settled === true &&
+    !workspace.unpushed &&
+    (!workspace.cleanup || workspace.cleanup.reason === 'allowed')
+  )
+    return 'ended';
+  return 'retained';
 }
 
 /** What a runner takes work for, as the kind of work it serves names it: an agent, for agent runs. */
@@ -113,6 +259,8 @@ export interface RunnerHeldItem {
 
 /** One of a runner's latest runs, for its page. */
 export interface RunnerRecentRun {
+  readonly subjectLabel?: string | null;
+  readonly failureReason?: string | null;
   readonly id: string;
   /** The agent that ran. */
   readonly title: string;
@@ -129,7 +277,11 @@ export interface RunnerRecentRun {
  * executable paths) is shown only to its owner, the managers of runners and anyone who may wake an agent: `hostname`
  * is null and the tools carry no `path` for everyone else.
  */
-export interface RunnerSummary extends Omit<Runner, 'hostname'> {
+export interface RunnerSummary extends Omit<
+  Runner,
+  'hostname' | 'quotaRevision'
+> {
+  readonly canSeeMachine?: boolean;
   /** Null when the viewer may not manage it. */
   readonly hostname: string | null;
   /** Runs it holds now. */
@@ -155,6 +307,9 @@ export interface RunnerSummary extends Omit<Runner, 'hostname'> {
   readonly canChangeTrust: boolean;
   /** The viewer may revoke it, and delete it once revoked: its owner, or a manager of runners in an emergency. */
   readonly canRevoke: boolean;
+  readonly canClearQuota: boolean;
+  /** Count of the recent (at most ten) run rows, without loading their details. */
+  readonly recentRunsCount: number;
   /**
    * A newer runner version the application serves for its platform, which the runner installs on its own between
    * runs; null when it is up to date or the application serves none.
@@ -167,6 +322,79 @@ export interface RunnerSummary extends Omit<Runner, 'hostname'> {
    * whether a runner takes them (`acceptJobs`) worth showing.
    */
   readonly offersJobs: boolean;
+}
+
+/** The list carries totals only; fetch a single runner for directory diagnostics. */
+export const RUNNER_LIST_FIELDS = {
+  id: true,
+  name: true,
+  hostname: true,
+  os: true,
+  arch: true,
+  version: true,
+  product: true,
+  tools: true,
+  enabledTools: true,
+  trust: true,
+  ownerUserId: true,
+  ownerName: true,
+  status: true,
+  slots: true,
+  toolSlots: true,
+  activeRuns: true,
+  activeJobs: true,
+  activeByTool: true,
+  lastSeenAt: true,
+  draining: true,
+  canManage: true,
+  canChangeTrust: true,
+  canRevoke: true,
+  takes: true,
+  updateVersion: true,
+} as const;
+
+export interface RunnerListItem extends Pick<
+  RunnerSummary,
+  keyof typeof RUNNER_LIST_FIELDS
+> {
+  readonly takesCount: number;
+  readonly workspaceUsage?: Omit<RunnerWorkspaceUsage, 'workspaces'> | null;
+}
+
+/** The single public runtime-list projection; schema and type use the same field set. */
+export function runnerListItem(
+  summary: Omit<RunnerSummary, 'recentRunsCount'>,
+): RunnerListItem {
+  const selected = Object.fromEntries(
+    Object.keys(RUNNER_LIST_FIELDS).map((key) => [
+      key,
+      summary[key as keyof typeof RUNNER_LIST_FIELDS],
+    ]),
+  ) as Pick<RunnerSummary, keyof typeof RUNNER_LIST_FIELDS>;
+  const totals = summary.workspaceUsage
+    ? (({ workspaces: _rows, ...rest }) => rest)(summary.workspaceUsage)
+    : null;
+  return {
+    ...selected,
+    tools: summary.tools.map(({ kind, version, authenticated }) => ({
+      kind,
+      version,
+      authenticated,
+    })),
+    takes: summary.takes.slice(0, 3),
+    takesCount: summary.takes.length,
+    workspaceUsage: summary.workspaceUsage ? totals : null,
+  };
+}
+
+export interface RunnerWorkspacePage {
+  readonly data: readonly RunnerWorkspace[];
+  readonly meta: {
+    readonly total: number;
+    readonly page: number;
+    readonly pageSize: number;
+    readonly usage: Omit<RunnerWorkspaceUsage, 'workspaces'> | null;
+  };
 }
 
 /** What people change about a runner after it registered. */
@@ -210,6 +438,15 @@ export interface RegistrationToken {
   readonly expiresAt: string;
 }
 
+/** Usable token metadata; the secret and its hash are never returned by a list. */
+export interface RegistrationTokenSummary extends Omit<
+  RegistrationToken,
+  'token'
+> {
+  readonly createdById: string | null;
+  readonly createdAt: string;
+}
+
 /**
  * A short-lived token that lets the install script download the `acme` CLI for one platform (the one its first
  * download names) and nothing else; `token` is shown only in this answer. It registers no runner.
@@ -237,6 +474,52 @@ export function runsTool(
   return (
     toolEnabled(runner, tool) &&
     runner.tools.some((item) => item.kind === tool && item.authenticated)
+  );
+}
+
+/**
+ * The models a runner reports for `tool`, normalized and each once, when the tool is enabled there and signed in;
+ * empty otherwise, and when the runner reported no models.
+ */
+export function reportedModels(
+  runner: Pick<Runner, 'enabledTools' | 'tools'>,
+  tool: AgentTool,
+): string[] {
+  if (!runsTool(runner, tool)) return [];
+  const info = runner.tools.find(
+    (item) => item.kind === tool && item.authenticated,
+  );
+  return [
+    ...new Set(
+      (info?.models ?? []).map((model) => normalizeModel(tool, model.id)),
+    ),
+  ];
+}
+
+/**
+ * Whether `runner` can run `entry`: its tool enabled, installed and signed in, and, for an entry naming a model, the
+ * model among those the runner reports for the tool and not marked unavailable there (`unavailableModels`).
+ */
+export function runsEntry(
+  runner: Pick<Runner, 'enabledTools' | 'tools' | 'unavailableModels'>,
+  entry: Pick<RunnerModelEntry, 'tool' | 'model'>,
+  now: number,
+): boolean {
+  if (
+    !runsTool(runner, entry.tool) ||
+    quotaBlocks(runner, entry, now).length > 0
+  )
+    return false;
+  if (!entry.model) return true;
+  const model = normalizeModel(entry.tool, entry.model);
+  return (
+    reportedModels(runner, entry.tool).includes(model) &&
+    !(runner.unavailableModels ?? []).some(
+      (mark) =>
+        mark.reason !== 'toolQuota' &&
+        mark.tool === entry.tool &&
+        mark.model === model,
+    )
   );
 }
 
@@ -277,12 +560,29 @@ export function listedTools(runner: Pick<Runner, 'tools'>): AgentTool[] {
  * no work whatever their slots say.
  */
 export type RunnerActivity =
-  'online' | 'busy' | 'offline' | 'revoked' | 'upgrade_required';
+  | 'online'
+  | 'busy'
+  | 'low_disk'
+  | 'offline'
+  | 'revoked'
+  | 'upgrade_required'
+  | 'updatePending'
+  | 'pruning';
 
 export function runnerActivity(
-  runner: Pick<RunnerSummary, 'status' | 'slots' | 'activeRuns' | 'activeJobs'>,
+  runner: Pick<
+    RunnerListItem,
+    | 'status'
+    | 'slots'
+    | 'activeRuns'
+    | 'activeJobs'
+    | 'workspaceUsage'
+    | 'draining'
+  >,
 ): RunnerActivity {
   if (runner.status !== 'online') return runner.status;
+  if (runner.draining) return runner.draining;
+  if (runnerLowOnDisk(runner)) return 'low_disk';
   return runner.activeRuns + runner.activeJobs >= runner.slots
     ? 'busy'
     : 'online';
@@ -328,25 +628,110 @@ export function toolUsage(
 export interface RunnerAgentFit {
   readonly id: string;
   readonly name: string;
-  /** Runner agents list their coding tools; online agents' entries name none, and never run on a runner. */
-  readonly modelEntries: readonly AgentModelEntry[];
-  /** The runners it is limited to; empty for any runner that fits. */
-  readonly runnerIds: readonly string[];
+  /** Its coding tools and models, in order. */
+  readonly modelEntries: readonly RunnerModelEntry[];
 }
 
 /**
- * Whether `runner` may take `agent`'s runs, by what people configured and what it reported: the agent is not limited
- * to other runners, one of its tools is enabled, installed and signed in here, and the owner's local policy lets it in. Whether
- * the runner is online right now is left to the caller.
+ * Whether `runner` may take `agent`'s runs, by what it reported: one of the agent's tools and models is enabled, signed
+ * in and reported here (`runsEntry`), and the owner's local policy lets it in. Whether the runner is online right now is
+ * left to the caller.
  */
-export function runnerTakesAgent(
-  runner: Pick<Runner, 'id' | 'enabledTools' | 'tools' | 'policy'>,
-  agent: RunnerAgentFit,
+/** Shared by admission, availability and the page; does not affect existing leases. */
+export function runnerLowOnDisk(
+  runner: Pick<RunnerListItem, 'workspaceUsage'>,
 ): boolean {
-  if (agent.runnerIds.length > 0 && !agent.runnerIds.includes(runner.id))
-    return false;
+  const disk = runner.workspaceUsage?.disk;
   return (
-    entryTools(agent).some((tool) => runsTool(runner, tool)) &&
+    disk != null &&
+    disk.minFreeBytes !== null &&
+    disk.freeBytes < disk.minFreeBytes
+  );
+}
+
+export function runnerTakesAgent(
+  runner: Pick<
+    Runner,
+    | 'id'
+    | 'enabledTools'
+    | 'tools'
+    | 'policy'
+    | 'unavailableModels'
+    | 'workspaceUsage'
+  >,
+  agent: RunnerAgentFit,
+  now: number,
+): boolean {
+  return (
+    !runnerLowOnDisk(runner) &&
+    agent.modelEntries.some((entry) => runsEntry(runner, entry, now)) &&
     policyAllowsAgent(runner.policy, agent)
   );
+}
+
+/** Quota information for runtimes that otherwise fit; unrelated personal machines stay private. */
+export function quotaForAgent(
+  runners: readonly Runner[],
+  agent: RunnerAgentFit,
+  actorUserId: string | undefined,
+  now: number,
+): QuotaLocation[] {
+  return runners.flatMap((runner) => {
+    if (
+      !(runner.unavailableModels ?? []).some(
+        (mark) =>
+          mark.reason === 'toolQuota' &&
+          (!mark.resetsAt || Date.parse(mark.resetsAt) > now),
+      )
+    )
+      return [];
+    if (
+      runner.trust !== 'team' &&
+      actorUserId !== undefined &&
+      runner.ownerUserId !== actorUserId
+    )
+      return [];
+    const compatible = {
+      ...runner,
+      unavailableModels: (runner.unavailableModels ?? []).filter(
+        (mark) => mark.reason !== 'toolQuota',
+      ),
+    };
+    if (!runnerTakesAgent(compatible, agent, now)) return [];
+    const blocks = agent.modelEntries
+      .filter((entry) => runsEntry(compatible, entry, now))
+      .map((entry) => quotaBlocks(runner, entry, now));
+    if (blocks.some((list) => !list.length)) return [];
+    const resets = blocks.map((list) =>
+      list.some((mark) => !mark.resetsAt)
+        ? null
+        : new Date(
+            Math.max(...list.map((mark) => Date.parse(mark.resetsAt!))),
+          ).toISOString(),
+    );
+    return [
+      {
+        runnerId: runner.id,
+        runnerName: runner.name,
+        resetsAt:
+          resets.filter((reset): reset is string => reset !== null).sort()[0] ??
+          null,
+      },
+    ];
+  });
+}
+
+/** Reuse the directory snapshot already read for detail; list reads keep their small JSON projection. */
+export function workspaceSummary(
+  usage: RunnerWorkspaceUsage,
+): RunnerWorkspaceUsage {
+  const counts = { all: usage.count, active: 0, retained: 0, ended: 0 };
+  let totalBytes = 0,
+    sizeUnknownCount = 0;
+  for (const workspace of usage.workspaces) {
+    counts[workspaceCategory(workspace)]++;
+    if (workspace.sizeBytes === undefined) sizeUnknownCount++;
+    else totalBytes += workspace.sizeBytes;
+  }
+  return { ...usage, totalBytes, sizeUnknownCount, counts };
 }

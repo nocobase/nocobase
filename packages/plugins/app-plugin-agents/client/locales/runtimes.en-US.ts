@@ -1,6 +1,131 @@
 /** The runtimes page's and the "Add runtime" dialog's words, merged into this plugin's locale (`en-US.ts`). */
 const runtimesEnUS = {
   runtimes: {
+    quota: {
+      workspaceStatus: {
+        active: 'Work continues',
+        ended: 'Ended · cleanup allowed',
+        checks: 'Ended · checks pending',
+        inUse: 'Retained: in use',
+        changed: 'Retained: reused',
+        trackedChanges: 'Retained: uncommitted files',
+        unpushed: 'Retained: unpushed work',
+        missingEvidence: 'Retained: verification needed',
+        gitFailed: 'Retained: Git check failed',
+        runNotFound: 'Retained: run not found',
+        ownershipUnknown: 'Retained: owner unverified',
+        ambiguousSubject: 'Retained: ambiguous task',
+        bindingUnavailable: 'Retained: binding unavailable',
+        subjectUnknown: 'Retained: task unknown',
+        unknown: 'Retained: unverified',
+      },
+      usageLimit: 'Usage limit',
+      shortReset: 'resets {{time}}',
+      shortUnknown: 'reset unknown',
+      automatic: 'Clears by itself at the reset.',
+      since: 'since {{time}}',
+      marks_one: '{{count}} quota mark',
+      marks_other: '{{count}} quota marks',
+      queueHint:
+        'An agent at quota can still be selected. Work will queue with its existing waiting deadline.',
+      partial: 'Runs on {{available}} · {{blocked}} at quota',
+
+      workspaceSize: 'Workspace size: {{value}}',
+      providers_one: '{{count}} provider at quota',
+      providers_other: '{{count}} providers at quota',
+      runColumns: {
+        issue: 'Issue / conversation',
+        agent: 'Agent',
+        status: 'Status',
+        started: 'Started',
+        duration: 'Duration',
+      },
+      filter: {
+        all: 'All',
+        active: 'Active',
+        retained: 'Retained',
+        ended: 'Ended',
+      },
+      columns: {
+        directory: 'Directory / task',
+        type: 'Type',
+        size: 'Size',
+        push: 'Push state',
+        status: 'Status',
+        lastUsed: 'Last used',
+      },
+      previous: 'Previous',
+      next: 'Next',
+      working: 'Working',
+      readOnly: 'Read-only copy',
+      clean: 'Clean',
+      unpushed: 'Unpushed',
+      overview: 'Overview',
+      workspaces: 'Workspaces',
+      runs: 'Runs',
+      title: 'Quota',
+      reached: 'Quota reached',
+      unknown: 'Reset time unknown',
+      resets: 'Resets {{time}}',
+      near: 'Near limit',
+      clear: 'Clear',
+      clearMark: 'Clear mark',
+      confirm: 'Clear this mark? {{target}} gets work again.',
+      observed: 'Last reported {{time}}',
+      usedPercent: '{{percent}}% used',
+      ok: 'OK',
+      hint: 'Known reset times restore eligibility automatically. For unknown resets, restore the quota and clear the mark. Only the runtime owner and administrators can clear marks.',
+    },
+    workspaces: {
+      paused:
+        'New work is paused until disk space recovers. Existing runs continue.',
+      working: 'Type: Working directory',
+      readOnly: 'Type: Read-only copy',
+      size: 'Size: {{value}}',
+      pushed: 'Push state: Clean, no unpushed work',
+      unpushed: 'Push state: Uncommitted, unpushed or unverified work',
+      notApplicable: 'Push state: Not applicable',
+      title: 'Workspace diagnostics',
+      low: 'Low disk space',
+      previousLow: 'Last report: low disk space',
+      notReported: 'No workspace report received yet',
+      diskUnknown: 'Disk space could not be measured',
+      thresholdOff: 'No minimum free space warning configured',
+      free: 'Free space: {{value}}',
+      threshold: 'Minimum free space: {{value}}',
+      reportedAt: 'Last reported: {{time}}',
+      stale:
+        'These are previous readings; current disk space is not confirmed.',
+      empty: 'No working directories in the latest report',
+      ended: 'Ended',
+      active: 'Work continues',
+      unknown: 'Cannot confirm whether work ended',
+      oldRunner: 'This runner has not provided diagnostic reasons',
+      noCleanup: 'Local cleanup result has not been received',
+      discardsUntracked: 'Cleanup will discard untracked files',
+      decision: {
+        settled: 'Work ended; local cleanup checks are required',
+        active: 'Work continues',
+        runNotFound: 'Cannot confirm: run not found',
+        ownershipUnknown:
+          'Cannot confirm: runner ownership could not be verified',
+        ambiguousSubject: 'Cannot confirm: ambiguous subject key',
+        bindingUnavailable:
+          'Cannot confirm: application has no workspace binding',
+        subjectUnknown:
+          'Cannot confirm: application could not resolve the subject',
+      },
+      cleanup: {
+        allowed: 'Ended; cleanup allowed',
+        inUse: 'Retained: directory is in use',
+        changed: 'Retained: directory has been reused',
+        trackedChanges: 'Retained: tracked files have uncommitted changes',
+        unpushed:
+          'Retained: unpushed commits or insufficient local commit objects',
+        missingEvidence: 'Retained: insufficient commit evidence',
+        gitFailed: 'Retained: Git check failed',
+      },
+    },
     title: 'Runtimes',
     description:
       'The runtimes that run agents, and the coding tools each one reported.',
@@ -16,6 +141,7 @@ const runtimesEnUS = {
     activity: {
       online: 'Online {{active}}/{{slots}}',
       busy: 'Busy {{active}}/{{slots}}',
+      low_disk: 'Low disk space {{active}}/{{slots}}',
       offline: 'Offline · {{time}}',
       offlineNever: 'Offline',
     },
@@ -51,6 +177,14 @@ const runtimesEnUS = {
       subjects: 'Subjects',
       repos: 'Repositories',
     },
+    variables: {
+      title: 'Variables from this machine',
+      description:
+        'The variables it provides to runs that take them from the runtime, by name; the values stay on the machine. Set one there with `nocobase-runner env set NAME`, or pass it with `--pass-env NAME`.',
+      none: 'None: a run that takes a variable from the runtime fails here before it starts.',
+      unknown:
+        'Not reported: its runner is older than this feature. Update the runner to see them.',
+    },
     jobs: {
       allow: 'Allow build jobs',
       hint: 'Builds and other steps this application configures, run without a model. This runtime reports: {{kinds}}.',
@@ -72,7 +206,7 @@ const runtimesEnUS = {
       general: 'General',
       tools: 'Tools',
       toolsDescription:
-        'The coding tools it reported. Work for a tool that is off is not sent here. Switches and limits are saved with “Save”.',
+        'The coding tools it reported. Work for a tool that is off, or whose quota is exhausted, is not sent here. Switches and limits are saved with “Save”.',
       version: 'Runner {{version}}',
       runs: 'Recent runs',
       runsEmpty: 'No runs yet.',
@@ -81,6 +215,8 @@ const runtimesEnUS = {
       owner: 'Owner {{name}}',
     },
     status: {
+      updatePending: 'Runner waiting for update',
+      pruning: 'Runner cleaning shared store',
       online: 'Online',
       offline: 'Offline',
       revoked: 'Revoked',
@@ -160,10 +296,12 @@ const runtimesEnUS = {
   connect: {
     title: 'Add runtime',
     description:
-      'Run the command below on a host that has a coding tool installed: a server, a VM or your own device.',
+      'Run the command below on a host that has a coding tool installed: a server, a VM or your own device. Agents run there with full access, as the user who runs the runner, and can read and change anything that user can, SSH keys and other credentials included. The runner is not a security boundary: run it as a dedicated user, in a container or in a VM.',
     createCredential: 'Generate install command',
     advanced: 'Advanced: limits per coding tool',
-    run: "Run this on that host. It downloads the runner (nocobase-runner) and this application's CLI from this application (no Node.js needed), registers the runner and starts it at login:",
+    run: "Run this on that host. It downloads the runner (nocobase-runner) and this application's CLI from this application, registers the runner and starts it at login:",
+    nodeRequired:
+      'The host needs Node.js 24 or newer (check with node --version). The command stops and says how to install it when it is missing.',
     installed: 'Already have nocobase-runner installed? Register it instead:',
     unsupported:
       'The runner does not run on Windows yet. Use macOS or Linux, or WSL.',

@@ -1,7 +1,0 @@
-{
-  "extends": "@nocobase/dev-config/tsconfig/client.json",
-  "compilerOptions": {
-    "noEmit": true
-  },
-  "include": ["registry/nocobase-ai/**/*.ts", "registry/nocobase-ai/**/*.tsx"]
-}

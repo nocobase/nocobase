@@ -43,6 +43,12 @@ import {
 } from './ui/dropdown-menu.js';
 import { Kbd } from './ui/kbd.js';
 import { Skeleton } from './ui/skeleton.js';
+import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+} from './ui/empty.js';
 import { Switch } from './ui/switch.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip.js';
 import { cn } from 'cn';
@@ -61,6 +67,17 @@ import { EntryIcon } from './file-pane.js';
 export interface SidebarSpace {
   readonly space: KnowledgeSpace;
   readonly docs: readonly KnowledgeDocSummary[];
+  readonly expanded?: boolean;
+  readonly onExpanded?: (open: boolean) => void;
+  readonly loading?: boolean;
+  readonly error?: boolean;
+  readonly onRetry?: () => void;
+  readonly documents?: number;
+  readonly archivedDocuments?: number;
+  readonly hint?: string;
+  readonly actions?: EntryActions;
+  readonly onSelectSpace?: () => void;
+  readonly onDropFiles?: (files: File[], parentId: string | null) => void;
 }
 
 export interface KnowledgeSidebarProps {
@@ -74,6 +91,8 @@ export interface KnowledgeSidebarProps {
   readonly pending: number;
   readonly reviewing: boolean;
   readonly onReview: () => void;
+  readonly onProposals?: () => void;
+  readonly proposalsActive?: boolean;
   readonly onSearch: () => void;
   /** Files dropped go into the space shown, under the entry dropped on. */
   readonly onDropFiles:
@@ -85,6 +104,7 @@ export interface KnowledgeSidebarProps {
   readonly heading?: ReactNode;
   /** Buttons beside the search: the New menu. */
   readonly toolbar?: ReactNode;
+  readonly directoryControls?: ReactNode;
 }
 
 interface RowProps {
@@ -129,7 +149,23 @@ function RowMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-48'>
         {!editable ? (
-          permissions
+          <>
+            {permissions}
+            {doc.access.propose && holds && !doc.archivedAt ? (
+              <>
+                <DropdownMenuItem
+                  onClick={() => actions.newEntry('article', doc.id)}
+                >
+                  <FilePlusIcon />
+                  {t('knowledge.new.childArticle')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => actions.proposeFile(doc.id)}>
+                  <UploadIcon />
+                  {t('knowledge.files.proposeNew')}
+                </DropdownMenuItem>
+              </>
+            ) : null}
+          </>
         ) : doc.archivedAt ? (
           <DropdownMenuItem onClick={() => actions.restore(doc)}>
             <ArchiveRestoreIcon />
@@ -269,7 +305,8 @@ function TreeRow({
             </Badge>
           ) : null}
         </button>
-        {actions && (doc.access.edit || doc.access.manage) ? (
+        {actions &&
+        (doc.access.edit || doc.access.propose || doc.access.manage) ? (
           <RowMenu doc={doc} actions={actions} />
         ) : null}
       </div>
@@ -324,8 +361,10 @@ function SpaceGroup({
   const inherited = space.inherited;
   const shared = useEntryActions();
   // The space shown is the one the view acts on; one it inherits is read-only here.
-  const actions = inherited ? null : shared;
-  const [open, setOpen] = useState(!inherited);
+  const actions = inherited ? null : (entry.actions ?? shared);
+  const [localOpen, setLocalOpen] = useState(!inherited);
+  const open = entry.expanded ?? localOpen;
+  const setOpen = entry.onExpanded ?? setLocalOpen;
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -339,7 +378,7 @@ function SpaceGroup({
         setCollapsed(
           new Set([...collapsed].filter((id) => !above.includes(id))),
         );
-      if (!open) setOpen(true);
+      if (!open && !entry.onExpanded) setOpen(true);
     }
   }
   const drops = inherited ? null : onDropFiles;
@@ -369,6 +408,11 @@ function SpaceGroup({
           render={
             <button
               type='button'
+              aria-label={
+                entry.documents === undefined
+                  ? label
+                  : `${label}, ${t('knowledge.directory.count', { count: entry.documents })}`
+              }
               className='flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left text-sm font-medium hover:bg-muted'
             />
           }
@@ -380,7 +424,14 @@ function SpaceGroup({
               open && 'rotate-90',
             )}
           />
-          <span className='truncate'>{label}</span>
+          <span className='min-w-0 flex-1 truncate' title={label}>
+            {label}
+          </span>
+          {entry.documents !== undefined ? (
+            <span className='shrink-0 text-xs text-muted-foreground'>
+              {t('knowledge.directory.count', { count: entry.documents })}
+            </span>
+          ) : null}
         </CollapsibleTrigger>
         {inherited ? (
           <Tooltip>
@@ -430,8 +481,34 @@ function SpaceGroup({
           </DropdownMenu>
         ) : null}
       </div>
+      {entry.hint ? (
+        <p className='px-2 text-xs text-muted-foreground'>{entry.hint}</p>
+      ) : null}
       <CollapsibleContent className='pt-0.5'>
-        {docs.length > 0 ? (
+        {entry.onSelectSpace ? (
+          <Button variant='ghost' size='sm' onClick={entry.onSelectSpace}>
+            {t('knowledge.directory.selectTarget', { title: label })}
+          </Button>
+        ) : null}
+        {entry.archivedDocuments ? (
+          <p className='px-2 text-xs text-muted-foreground'>
+            {t('knowledge.directory.archivedCount', {
+              count: entry.archivedDocuments,
+            })}
+          </p>
+        ) : null}
+        {entry.error ? (
+          <div className='p-2 text-sm text-destructive'>
+            {t('knowledge.loadFailed')}
+            {entry.onRetry ? (
+              <Button variant='outline' size='sm' onClick={entry.onRetry}>
+                {t('knowledge.directory.retry')}
+              </Button>
+            ) : null}
+          </div>
+        ) : entry.loading ? (
+          <Skeleton className='m-2 h-16' />
+        ) : docs.length > 0 ? (
           <TreeRows
             nodes={forest(docs)}
             depth={0}
@@ -444,9 +521,16 @@ function SpaceGroup({
             onDropFiles={drops}
           />
         ) : (
-          <p className='px-2 py-1.5 text-sm text-muted-foreground'>
-            {t('knowledge.spaces.empty')}
-          </p>
+          <Empty className='min-h-24 p-2'>
+            <EmptyHeader>
+              <EmptyTitle>{t('knowledge.spaces.empty')}</EmptyTitle>
+              {entry.onSelectSpace ? (
+                <EmptyDescription>
+                  {t('knowledge.directory.emptyHint')}
+                </EmptyDescription>
+              ) : null}
+            </EmptyHeader>
+          </Empty>
         )}
       </CollapsibleContent>
     </Collapsible>
@@ -466,7 +550,7 @@ export function KnowledgeSidebar(props: KnowledgeSidebarProps): ReactElement {
       inheritedHint={props.inheritedHint}
       selected={props.selected}
       onSelect={props.onSelect}
-      onDropFiles={props.onDropFiles}
+      onDropFiles={entry.onDropFiles ?? props.onDropFiles}
     />
   );
   return (
@@ -491,7 +575,8 @@ export function KnowledgeSidebar(props: KnowledgeSidebarProps): ReactElement {
         </Button>
         {props.toolbar}
       </div>
-      <div className='min-h-0 flex-1 space-y-2 overflow-y-auto px-2 pb-2'>
+      <div className='min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain px-2 pb-2'>
+        {props.directoryControls}
         {props.pending > 0 ? (
           <button
             type='button'
@@ -511,6 +596,20 @@ export function KnowledgeSidebar(props: KnowledgeSidebarProps): ReactElement {
             </span>
           </button>
         ) : null}
+        {props.onProposals ? (
+          <Button
+            variant='ghost'
+            className={cn(
+              'w-full justify-start',
+              props.proposalsActive && 'bg-muted font-medium',
+            )}
+            aria-current={props.proposalsActive ? 'page' : undefined}
+            onClick={props.onProposals}
+          >
+            <InboxIcon data-icon='inline-start' />
+            {t('knowledge.directory.allProposals')}
+          </Button>
+        ) : null}
         {props.loading ? (
           <div className='space-y-2 px-2 py-1'>
             <Skeleton className='h-5 w-3/4' />
@@ -519,7 +618,12 @@ export function KnowledgeSidebar(props: KnowledgeSidebarProps): ReactElement {
           </div>
         ) : (
           <>
-            {own.map(group)}
+            {own.filter((entry) => !entry.hint).map(group)}
+            {own.some((entry) => entry.hint) ? (
+              <div className='border-t pt-2'>
+                {own.filter((entry) => entry.hint).map(group)}
+              </div>
+            ) : null}
             {inherited.length > 0 ? (
               <div className='space-y-2 border-t pt-2'>
                 {inherited.map(group)}

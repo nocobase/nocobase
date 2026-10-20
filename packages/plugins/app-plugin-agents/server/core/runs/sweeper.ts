@@ -4,18 +4,16 @@
  * is safe to run on several instances at once: every move it makes is a guarded
  * update, so a run another instance (or its runner) moved first is left alone.
  *
- * - The runs an offline runner holds go back to the queue (`runnerOffline`); so do the runs of a revoked runner. An
- *   online run held by an application instance has no runner to be offline: when the instance stops renewing its
- *   lease, the lease rule below takes it back.
+ * - The runs an offline or revoked runner holds go back to the queue; before start this is `runnerOfflineBeforeStart`.
  * - A dispatched run not started within `startTimeoutMs` goes back to the queue (`startTimeout`).
- * - A held run whose lease lapsed goes back to the queue (`leaseExpired`).
+ * - A running run whose lease lapsed goes back to the queue (`leaseExpired`).
  * - A running run with no event for twice its idle timeout fails (`idleTimeout`).
  * - A cancellation not acknowledged within `cancelGraceMs` is recorded as done.
- * - Queued runs of an archived agent are cancelled.
+ * - Queued runs of an agent that is not enabled are cancelled.
  * - A queued run that waited longer than its subject allows (`SubjectBinding.queuedExpiryMs`), counted from its last
  *   change (queued, sent back to the queue, merged into) or from when its delay passed, fails (`queuedExpired`).
  *
- * A run that goes back to the queue with no attempt left fails with the same reason instead.
+ * Pre-start environment interruptions are exempt from the failure budget, but ten consecutive interruptions end the run. Other retries fail once their budget is exhausted.
  *
  * A runner that stops answering never sends the usage of the attempt it held; the latest `usage` event it reported for
  * the attempt (cumulative, `meta.usage`) is recorded instead, so the tokens it spent still reach the reports.
@@ -32,8 +30,7 @@ import type { Clock } from '../../kernel/clock.js';
 import type { IdSource } from '../../kernel/ids.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { jsonObject } from '../../kernel/values.js';
-import { findAgent } from '../agents/index.js';
-import { isServerHolder } from './claim.js';
+import { lockAgentForClaim, findAgent } from '../agents/index.js';
 import { toolPolicyFor } from './policy.js';
 import {
   ACTIVE,
@@ -42,6 +39,7 @@ import {
   runsRepo,
   usageRepo,
   type RunRecord,
+  toRun,
 } from './run.store.js';
 import { finishRun, requeueRun, type TransitionDeps } from './transitions.js';
 
@@ -56,6 +54,7 @@ export interface Sweeper {
 }
 
 export interface SweeperDeps extends TransitionDeps {
+  readonly reconcileCommentQueue?: () => Promise<void>;
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -121,6 +120,7 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
 
   return {
     async sweep() {
+      await deps.reconcileCommentQueue?.();
       const now = clock.now();
       const counts = { requeued: 0, failed: 0, cancelled: 0 };
 
@@ -130,11 +130,19 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
           if (
             !current ||
             current.status !== run.status ||
-            current.runnerId !== run.runnerId
+            current.runnerId !== run.runnerId ||
+            Number(current.attempt) !== Number(run.attempt)
           )
             return;
           await salvageUsage(unit, deps, current);
-          const outcome = await requeueRun(unit, deps, current, reason);
+          const outcome = await requeueRun(
+            unit,
+            deps,
+            current,
+            reason,
+            undefined,
+            'sweeper',
+          );
           if (outcome.status === 'queued') counts.requeued += 1;
           else if (outcome.run) counts.failed += 1;
         });
@@ -159,12 +167,11 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
         filter: (f) =>
           f.or(ACTIVE.map((status) => f.string('status').eq(status))),
       });
-      // An online run's holder is an application instance, not a registered runner: only its lease tells it is gone.
       const absent = new Set(
         await deps.runners.absent(
           conn,
           [...new Set(held.map((run) => run.runnerId ?? ''))].filter(
-            (id) => id !== '' && !isServerHolder(id),
+            (id) => id !== '',
           ),
         ),
       );
@@ -190,17 +197,25 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
           continue;
         }
         if (run.runnerId && absent.has(run.runnerId)) {
-          await take(run, 'runnerOffline');
+          await take(
+            run,
+            run.status === 'dispatched'
+              ? 'runnerOfflineBeforeStart'
+              : 'runnerOffline',
+          );
           continue;
         }
         if (
           run.status === 'dispatched' &&
-          time(run.dispatchedAt) < now.getTime() - TIMINGS.startTimeoutMs
+          time(run.dispatchedAt) <= now.getTime() - TIMINGS.startTimeoutMs
         ) {
           await take(run, 'startTimeout');
           continue;
         }
-        if (time(run.leaseExpiresAt) < now.getTime()) {
+        if (
+          run.status === 'running' &&
+          time(run.leaseExpiresAt) < now.getTime()
+        ) {
           await take(run, 'leaseExpired');
           continue;
         }
@@ -222,7 +237,13 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
             f.string('status').eq('queued'),
             f
               .relation('agent')
-              .some((agent) => agent.date('archivedAt').notEmpty()),
+              .some((agent) =>
+                agent.or([
+                  agent.string('status').ne('enabled'),
+                  agent.date('archivedAt').notEmpty(),
+                  agent.date('deletedAt').notEmpty(),
+                ]),
+              ),
           ]),
       });
       for (const run of queued)
@@ -233,6 +254,57 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
         });
 
       for (const binding of deps.subjects.list()) {
+        if (binding.queuedTimeout) {
+          let cursor: string | null = null;
+          while (true) {
+            let scan = conn.query
+              .selectFrom('agRuns')
+              .select('id')
+              .where('status', '=', 'queued')
+              .where('subjectKind', '=', binding.kind);
+            if (cursor !== null) scan = scan.where('id', '>', cursor);
+            const ids = await scan.orderBy('id').limit(200).execute();
+            const batch = ids.length
+              ? await runsRepo(conn).findMany({
+                  filter: (f) =>
+                    f.or(ids.map((row) => f.string('id').eq(String(row.id)))),
+                  sort: (s) => s.field('id').asc(),
+                })
+              : [];
+            if (!batch.length) break;
+            for (const candidate of batch)
+              await tx.run(async (unit) => {
+                await lockAgentForClaim(
+                  unit.conn,
+                  candidate.agentId,
+                  clock.now().toISOString(),
+                );
+                const current = await findRunRecord(unit.conn, candidate.id);
+                if (
+                  !current ||
+                  current.status !== 'queued' ||
+                  current.runnerId !== null ||
+                  Number(current.attempt) !== Number(candidate.attempt) ||
+                  time(current.queueEnteredAt ?? null) !==
+                    time(candidate.queueEnteredAt ?? null) ||
+                  time(current.availableAt) !== time(candidate.availableAt)
+                )
+                  return;
+                const outcome = await binding.queuedTimeout!(
+                  unit.conn,
+                  toRun(current),
+                  clock.now(),
+                );
+                if (!outcome) return;
+                const ended = await finishRun(unit, deps, current, {
+                  status: 'cancelled',
+                  ...outcome,
+                });
+                if (ended) counts.cancelled += 1;
+              });
+            cursor = batch.at(-1)!.id;
+          }
+        }
         const expiry = binding.queuedExpiryMs ?? 0;
         if (!(expiry > 0)) continue;
         const cutoff = new Date(now.getTime() - expiry);

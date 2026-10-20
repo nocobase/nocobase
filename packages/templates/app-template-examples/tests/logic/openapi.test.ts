@@ -20,9 +20,9 @@ import type { Application } from '@nocobase/app-server/application';
 import { ServiceContainer } from '@nocobase/service-provider';
 
 import { analyticsRoutes } from '../../server/routes/analytics.ts';
-import { quotationReviewTaskRoutes } from '../../server/routes/quotation-review-tasks.ts';
 import { articlesRoutes } from '../../server/routes/articles.ts';
 import { externalCrmRoutes } from '../../server/routes/external-crm.ts';
+import { workflowRoutes } from '../../server/routes/workflows.js';
 import { numericExamplesRoutes } from '../../server/routes/numeric-examples.ts';
 import {
   createStandaloneServer,
@@ -70,7 +70,6 @@ describe('API document of the examples application', () => {
             analytics: { migrations: { autoRun: true } },
           },
         },
-        hub: { host: { enabled: false } },
       },
     });
     const sourceRoot = path.resolve(import.meta.dirname, '../..');
@@ -143,11 +142,25 @@ describe('API document of the examples application', () => {
       operationId?.startsWith('examples'),
     );
     expect(own.map(({ operationId }) => operationId).sort()).toEqual([
+      'examplesAssignWorkflowCategory',
       'examplesCreateArticle',
+      'examplesCreateWorkflowCategory',
+      'examplesDeleteWorkflowCategory',
+      'examplesExtractStructuredInformation',
       'examplesGetGreeting',
       'examplesGetNumericExamples',
+      'examplesGetWorkflowDefinition',
+      'examplesGetWorkflowExecution',
+      'examplesGetWorkflowParameters',
       'examplesListArticles',
+      'examplesListWorkflowCategories',
+      'examplesListWorkflowDefinitions',
+      'examplesListWorkflowExecutions',
+      'examplesReorderWorkflowCategories',
+      'examplesSaveWorkflowParameters',
+      'examplesTranslateText',
       'examplesUpdateArticle',
+      'examplesUpdateWorkflowCategory',
     ]);
     expect(own.every(({ tags }) => tags?.[0] === 'Examples')).toBe(true);
     expect(document.paths?.['/api/example']?.get?.security).toEqual([]);
@@ -157,7 +170,6 @@ describe('API document of the examples application', () => {
     const tags = new Set(routes.flatMap(({ tags }) => tags ?? []));
     for (const tag of [
       'AuthorizationExample',
-      'DepartmentsExample',
       'JobsExample',
       'NotificationExample',
       'QueueExample',
@@ -174,8 +186,8 @@ it('hides the stand-ins that answer 503 while the application runs without a dat
   const app = { container: new ServiceContainer() } as unknown as Application;
   for (const contribution of [
     articlesRoutes,
-    quotationReviewTaskRoutes,
     numericExamplesRoutes,
+    workflowRoutes,
     analyticsRoutes,
     externalCrmRoutes,
   ]) {

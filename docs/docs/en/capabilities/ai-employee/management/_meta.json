@@ -1,6 +1,0 @@
-[
-  { "type": "file", "name": "index", "label": "Management overview" },
-  { "type": "file", "name": "employees", "label": "AI employees" },
-  { "type": "file", "name": "llm-services", "label": "LLM services" },
-  { "type": "file", "name": "mcp-services", "label": "MCP servers" }
-]

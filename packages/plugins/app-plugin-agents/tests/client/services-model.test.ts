@@ -44,6 +44,12 @@ function service(
 }
 
 describe('the model services UI model', () => {
+  it('uses the China DashScope endpoint as Alibaba Qwen’s default base URL', () => {
+    expect(providerOf('alibaba')?.defaultBaseUrl).toBe(
+      'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    );
+  });
+
   it('lists services by provider in the providers’ order, several of one provider kept in order', () => {
     expect(
       sortServices([

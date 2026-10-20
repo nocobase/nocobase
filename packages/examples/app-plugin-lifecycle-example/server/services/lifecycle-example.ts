@@ -11,6 +11,12 @@ import {
   type ExpenseItem,
 } from '../../shared/expense.js';
 import { person } from '../../shared/people.js';
+import { invoiceLifecycle } from '../lifecycles/invoice.js';
+import { exportLifecycle } from '../lifecycles/export.js';
+import { fulfilmentLifecycle } from '../lifecycles/fulfilment.js';
+import { orderLifecycle } from '../lifecycles/order.js';
+import { purchaseLifecycle } from '../lifecycles/purchase.js';
+import { subscriptionLifecycle } from '../lifecycles/subscription.js';
 import { expenseLifecycle } from '../lifecycles/expense.js';
 import { ticketLifecycle } from '../lifecycles/ticket.js';
 import type { ExampleLifecycleName, Plain } from '../tokens.js';
@@ -85,6 +91,28 @@ export class LifecycleExampleService {
     private readonly clock: () => Date = (): Date => new Date(),
   ) {}
 
+  /** Read-only metadata for the application's unified workflow browser. */
+  public workflowDefinitions(): readonly {
+    readonly name: string;
+    readonly collection: string;
+    readonly stateField: string;
+  }[] {
+    return [
+      ticketLifecycle,
+      expenseLifecycle,
+      orderLifecycle,
+      invoiceLifecycle,
+      exportLifecycle,
+      purchaseLifecycle,
+      fulfilmentLifecycle,
+      subscriptionLifecycle,
+    ].map(({ name, collection, stateField }) => ({
+      name,
+      collection,
+      stateField,
+    }));
+  }
+
   /** Agents see the whole queue; a customer sees their own tickets. Newest first. */
   public async listTickets(actor: string, page: Paging): Promise<PlainPage> {
     const own = person(actor)?.role !== 'agent';
@@ -147,6 +175,7 @@ export class LifecycleExampleService {
       'expenses',
       {
         ...this.expenseChanges(values),
+        parameterContract: 1,
         applicantId: actor,
         approverId: null,
       },
@@ -226,8 +255,12 @@ export class LifecycleExampleService {
   }
 
   /** The parameters the lifecycle runs with, which pages quote to their users. */
-  public parameters(name: ExampleLifecycleName): object {
-    return this.runtime.parameters(name);
+  public parameters(name: ExampleLifecycleName): Promise<Readonly<object>> {
+    return this.runtime.resolveParameters(name, {
+      record: null,
+      transactionHandle: undefined,
+      purpose: 'preview',
+    });
   }
 
   /** Sweeps the triggers now instead of waiting for the next scheduled sweep. */

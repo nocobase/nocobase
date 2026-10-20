@@ -2,6 +2,7 @@ import {
   createMailTestDatabase,
   destroyMailTestDatabase,
 } from '../helpers/database.js';
+import { randomUUID } from 'node:crypto';
 import { type DatabaseManager } from '@nocobase/db';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { createDatabaseMailStore } from '../../server/store.js';
@@ -21,7 +22,7 @@ beforeEach(async () => {
   database = await createMailTestDatabase();
   store = createDatabaseMailStore(database);
   await store.saveAccount({
-    id: 'account',
+    id: '10000000-0000-4000-8000-000000000001',
     userId: 'owner',
     address: 'owner@example.com',
     status: 'active',
@@ -85,15 +86,22 @@ function adapter(
     ...overrides,
   };
 }
-function service(provider: MailProviderAdapter): DefaultMailService {
+function service(
+  provider: MailProviderAdapter,
+  notify?: (userId: string) => void | Promise<void>,
+): DefaultMailService {
   return new DefaultMailService({
     store,
     adapters: { resolve: async () => provider },
     outbox: { kick: vi.fn() },
     syncBatchSize: 100,
+    messageChangeNotifier: notify ? { notify } : undefined,
   });
 }
-async function step(provider: MailProviderAdapter): Promise<void> {
+async function step(
+  provider: MailProviderAdapter,
+  notify?: (userId: string) => void | Promise<void>,
+): Promise<void> {
   const tasks = await store.claimOutbox(
     new Date().toISOString(),
     'publisher',
@@ -110,6 +118,7 @@ async function step(provider: MailProviderAdapter): Promise<void> {
   );
   await new SyncMailboxOperation({
     store,
+    messageChangeNotifier: notify ? { notify } : undefined,
     adapters: { resolve: async () => provider },
   }).execute(task.payload);
 }
@@ -128,7 +137,7 @@ it('continues beyond the former total limit with bounded pages and durable resta
   const provider = adapter({ listMessages });
   const run = await service(provider).startSync(
     { actorId: 'owner' },
-    { accountId: 'account' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
   );
   await step(provider);
   await database
@@ -191,7 +200,7 @@ it('imports new arrivals between history pages and prevents stale history from o
   });
   await service(provider).startSync(
     { actorId: 'owner' },
-    { accountId: 'account' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
   );
   await step(provider);
   await step(provider);
@@ -242,7 +251,7 @@ it('rescans the configured range after expiry and catches arrivals during the re
   });
   const run = await service(provider).startSync(
     { actorId: 'owner' },
-    { accountId: 'account' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
   );
   await step(provider);
   await step(provider);
@@ -277,7 +286,7 @@ it('recovers expired workers and fences their late commits without reviving canc
   const provider = adapter();
   const run = await service(provider).startSync(
     { actorId: 'owner' },
-    { accountId: 'account' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
   );
   const [task] = await store.claimOutbox(
     epoch.toISOString(),
@@ -317,7 +326,7 @@ it('recovers expired workers and fences their late commits without reviving canc
 it('recovers a published delivery lost before the worker claims it, but honors a durable delayed retry', async () => {
   const run = await service(adapter()).startSync(
     { actorId: 'owner' },
-    { accountId: 'account' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
   );
   vi.setSystemTime(new Date(Date.now() + 180_000));
   expect(await store.recoverSyncRuns(new Date().toISOString())).toBe(0);
@@ -367,7 +376,7 @@ it('persists incomplete mail before advancing and retries content without overwr
   const mail = service(provider);
   const run = await mail.startSync(
     { actorId: 'owner' },
-    { accountId: 'account' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
   );
   await step(provider);
   await step(provider);
@@ -379,15 +388,27 @@ it('persists incomplete mail before advancing and retries content without overwr
   const large = (await store.listMessages('owner', {})).items.find(
     (item) => item.providerMessageId === 'large',
   )!;
-  await store.updateMessageState('account', large.id, {
-    read: true,
-    note: 'Keep me',
-  });
+  await store.updateMessageState(
+    '10000000-0000-4000-8000-000000000001',
+    large.id,
+    {
+      read: true,
+      note: 'Keep me',
+    },
+  );
   await expect(
-    mail.retryMessageContent({ actorId: 'other' }, 'account', large.id),
+    mail.retryMessageContent(
+      { actorId: 'other' },
+      '10000000-0000-4000-8000-000000000001',
+      large.id,
+    ),
   ).rejects.toThrow();
   expect(
-    await mail.retryMessageContent({ actorId: 'owner' }, 'account', large.id),
+    await mail.retryMessageContent(
+      { actorId: 'owner' },
+      '10000000-0000-4000-8000-000000000001',
+      large.id,
+    ),
   ).toMatchObject({
     contentStatus: 'complete',
     text: 'Loaded',
@@ -420,7 +441,7 @@ it('does not resurrect messages deleted by an interleaved change page', async ()
   });
   await service(provider).startSync(
     { actorId: 'owner' },
-    { accountId: 'account' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
   );
   for (let index = 0; index < 5; index += 1) await step(provider);
   expect((await store.listMessages('owner', {})).items).toHaveLength(0);
@@ -436,7 +457,7 @@ it('does not resurrect messages deleted by an interleaved change page', async ()
 it('allows only one of two runtimes to recreate a missing delivery', async () => {
   await service(adapter()).startSync(
     { actorId: 'owner' },
-    { accountId: 'account' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
   );
   const [task] = await store.claimOutbox(
     epoch.toISOString(),
@@ -456,17 +477,23 @@ it('allows only one of two runtimes to recreate a missing delivery', async () =>
 });
 
 it('recovers lost deliveries even when more than a full batch of older runs are still queued', async () => {
-  const account = (await store.getAccount('account'))!;
+  const account = (await store.getAccount(
+    '10000000-0000-4000-8000-000000000001',
+  ))!;
   const mail = service(adapter());
   for (let index = 0; index < 100; index++) {
-    const id = `queued-${index}`;
-    await store.saveAccount({ ...account, id, address: `${id}@example.com` });
+    const id = randomUUID();
+    await store.saveAccount({
+      ...account,
+      id,
+      address: `queued-${index}@example.com`,
+    });
     await mail.startSync({ actorId: 'owner' }, { accountId: id });
   }
   vi.setSystemTime(new Date(Date.now() + 1_000));
   const lost = await mail.startSync(
     { actorId: 'owner' },
-    { accountId: 'account' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
   );
   await database
     .query()
@@ -480,4 +507,55 @@ it('recovers lost deliveries even when more than a full batch of older runs are 
     revision: 1,
     status: 'pending',
   });
+});
+
+it('announces committed start, empty progress and completion to the account owner', async () => {
+  const provider = adapter();
+  const observed: string[] = [];
+  let runId = '';
+  const notify = vi.fn(async (userId: string) => {
+    expect(userId).toBe('owner');
+    if (runId) observed.push((await store.getSyncRun(runId))!.status);
+  });
+  const run = await service(provider, notify).startSync(
+    { actorId: 'owner' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
+  );
+  runId = run.id;
+  expect(notify).toHaveBeenCalledWith('owner');
+  await step(provider, notify);
+  await step(provider, notify);
+  await step(provider, notify);
+  await vi.waitFor(() => expect(observed).toContain('completed'));
+  expect(observed).toContain('running');
+  expect((await store.getSyncRun(run.id))?.processedMessages).toBe(0);
+});
+
+it('announces failed and cancelled synchronization without requiring changed messages', async () => {
+  const provider = adapter({
+    getCurrentSyncCursor: async () => ({
+      ok: false,
+      error: {
+        code: 'TEST_FAILED',
+        message: 'Unavailable',
+        category: 'configuration',
+        retryable: false,
+      },
+    }),
+  });
+  const notify = vi.fn();
+  const sync = service(provider, notify);
+  const run = await sync.startSync(
+    { actorId: 'owner' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
+  );
+  notify.mockClear();
+  await step(provider, notify);
+  expect((await store.getSyncRun(run.id))?.status).toBe('failed');
+  expect(notify).toHaveBeenCalledWith('owner');
+  const next = await sync.retrySyncRun({ actorId: 'owner' }, run.id);
+  notify.mockClear();
+  await sync.cancelSyncRun({ actorId: 'owner' }, next.id);
+  expect(notify).toHaveBeenCalledWith('owner');
+  expect((await store.getSyncRun(next.id))?.status).toBe('cancelled');
 });

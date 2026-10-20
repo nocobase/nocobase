@@ -1,51 +1,115 @@
 ---
-title: 'Further use'
-description: 'Use concrete prompts to connect mail with business records, templates, and team workflows.'
-keywords: 'NocoBase,mail,business scenarios,templates,permissions,Agent'
+title: 'More Mail Features'
+description: 'Use signatures and templates, read customer correspondence, and compose from transport orders.'
 ---
 
-# Further use
+# More Mail Features
 
-After completing [Quick start](./quick-start.md), tell the Agent how mail should work with your business. Describe who handles which messages on which page, how messages relate to business records, and who may access them. Let the Agent choose an implementation that matches the installed Mail plugin.
+Mail provides signatures, templates, message reading, and a composer. Applications can place these capabilities on account pages, customer details, or order details.
 
-## Send mail from an order page
-
-This is useful when employees need to contact customers about an order but should review a message before sending it. Replace the field names with those in your app:
+Northstar provides **Mailbox accounts** and **Customer communication** navigation entries and embeds mail actions in customer and transport order details. Ask the Agent:
 
 ```text
-Add a "Contact customer" mail action to the order detail page. Let the user choose a recipient from the contacts linked to the current order. The subject and body can use the order number, customer name, and order status. Show a complete preview and require the employee to confirm the recipient, subject, and body before sending. Do not email customers automatically when an order status changes. Record the send result, and make sure employees can only use mailboxes they are authorized to access. Check the current Mail Skill and order fields before implementing. Tell me first if the installed version has any limitations with template variables or send records.
+Add Mailbox accounts and Customer communication to the application navigation.
+Embed NocoBase's account management page for mailbox connections, signatures, and templates.
+Embed the mail workspace for employees to read and send through their own connected mailboxes.
 ```
 
-**Expected result:** The employee starts a message from the order page with the recipient and order details filled in, reviews it before sending, and can check the result afterward.
+See [Configure Mail](./configuration.md) for connections and [Developer Reference](./development.md) for integration.
 
-## Set up team signatures and templates
+## Use mail signatures
 
-Use this for consistent company introductions, customer support details, or common replies. Tell the Agent which content an administrator maintains and which details employees may personalize. Avoid hard-coding template text into a page.
+Save recurring team names, job titles, and contact details as signatures to avoid entering them each time. Signatures belong to a mailbox account and can have a default.
 
 ```text
-Set up reusable email signatures and templates for the sales team. Sales reps can use templates maintained by the company while keeping their own name, title, and contact details. Let them review the final message before sending. Use the management options supported by the installed Mail plugin, and tell me who maintains the templates and where employees select them. Do not put secrets or private customer data in a template.
+Prepare a Northstar Operations signature for the business mailbox,
+including Northstar Logistics, Operations team, and transport coordination details.
+Let employees manage signatures from Mailbox accounts and select them when composing.
 ```
 
-**Expected result:** Selecting a template fills in its subject and body. Personal details and fields from the current business record appear correctly, and employees can still edit and review the message before sending.
+Open **Mailbox accounts → Signatures**, select an account, enter the signature name and content, and save. Set the frequently used signature as the default.
 
-<!-- Add genuine screenshots showing the mail action on a business record, template selection, and the pre-send preview. Two screenshots may be clearer. -->
+![Manage mailbox signatures](../assets/northstar-mail-signatures-en.png)
 
-## Define team visibility
+**The business mailbox has a saved default signature, available when composing.**
 
-Use this when managers need to track team activity. First decide whether "view progress" also means reading message content; these should not be treated as the same permission by default.
+## Use mail templates
+
+Save recurring subjects and message content as templates. Templates belong to the current user. An application can also supply the current business record to populate variables such as customer names and order numbers.
 
 ```text
-Set up mail access for the sales team: each sales rep can access only messages in their own connected mailboxes. Managers can view team processing status and send results, but must not read message bodies or attachments unless I explicitly approve that. Check whether the installed Mail plugin and application permissions can separate these scopes. Show me the proposed access rules for confirmation before implementing them. Do not rely on hiding a page or button as access control.
+Prepare a Transport progress update template with the order number in the subject
+and customer name, origin, destination, transport status, and expected delivery in the body.
+Provide the current order and customer when opening the composer from order details.
+Employees can apply the template, edit the content, and select an existing signature.
 ```
 
-**Expected result:** Sales reps handle only their own mailboxes, and managers receive only the approved management scope. If the current version cannot safely separate processing status from message content, the Agent should explain the limitation instead of broadening manager access.
+Open **Mailbox accounts → Templates** to manage subjects and content. This example uses variables such as `{{record.customer.name}}` and `{{record.order.number}}`.
 
-## Everyday considerations
+![Manage the transport progress template](../assets/northstar-mail-templates-en.png)
 
-- Choose an appropriate date range when connecting a mailbox for the first time. Importing more history usually takes longer.
-- Refreshing a page only displays content already synchronized to the application. Use the available sync action to fetch new messages.
-- IMAP/SMTP has limited synchronization. See [Choose a connection method](./configuration.md#choose-a-connection-method) for details.
-- If a send result is uncertain, check the receiving mailbox and original send record before retrying to avoid duplicates.
-- For approval results, verification codes, or system alerts—not correspondence through a user's personal mailbox—use [Notifications](../notification.md).
+Open the composer from transport order details, click **Template**, and select **Transport progress update**. Click **Signature** to select a signature.
 
-For custom Mail pages, permissions, or provider extensions, see [Advanced customization](./development.md).
+![Apply the template and signature to an order email](../assets/northstar-mail-template-applied-en.png)
+
+**The template populates the subject and body with customer and order information, followed by the signature. Everything remains editable before sending.**
+
+:::info Important
+
+The embedding business page must supply template variables. Saving a template does not automatically load customer or order data. Unmatched variables remain unchanged. Review recipients and content before sending.
+
+:::
+
+## Read correspondence on business pages
+
+Embed mail lists and message reading in customer details to see communication while reviewing the customer's information. Match messages by contact email.
+
+```text
+Add Correspondence to customer details.
+Match the customer's contact email against senders, recipients, and copied recipients.
+Only show messages accessible through the current employee's own connected mailboxes.
+Select a message to read its body. Reply opens the mail composer with its reply relationship retained.
+The employee reviews the content before sending. Provide Refresh mail and Load more.
+```
+
+Open customer details and select a message under **Correspondence**. This example reads already synchronized messages using the mail reading component.
+
+![Customer correspondence and message body](../assets/northstar-customer-mail-en.png)
+
+**Customer information and related correspondence appear on the same page, without searching separately for the contact email.**
+
+Click **Reply** to open the composer.
+
+![Reply from customer details](../assets/northstar-customer-mail-reply-en.png)
+
+**The reply composer populates recipients and the original subject. Employees can edit the message and select a signature or template.**
+
+:::info Important
+
+Enter the contact email accurately: it determines the correspondence match. Business record access and mailbox access are enforced separately. Access to a customer does not grant access to another employee's mailbox.
+
+:::
+
+## Compose from business pages
+
+Populate contacts and record details when composing order progress updates to reduce copying and entry errors.
+
+```text
+Add Compose progress email to transport order details.
+Read the recipient from the customer contact and include the order number in the subject.
+Populate the body with the customer, origin, destination, and transport status.
+Employees review and edit before sending through their connected mailbox.
+Allow existing templates and signatures; do not send automatically.
+```
+
+Open transport order details and click **Compose progress email**.
+
+![Order information in the mail composer](../assets/northstar-order-mail-en.png)
+
+**Order information populates the subject and body, ready for editing before sending.**
+
+## Usage tips
+
+- Synchronize to retrieve new mail; refreshing displays messages already synchronized to the application.
+- Choose the required history range for the initial synchronization.
+- Organize mail with search, stars, and labels. Whether changes reach the provider depends on the integration.

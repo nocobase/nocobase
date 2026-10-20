@@ -1,7 +1,6 @@
 ---
 "@nocobase/app-template-default": patch
 "@nocobase/app-template-examples": patch
-"@nocobase/app-template-hub": patch
 ---
 
 Stop formatting the generated Collection artifacts under `database/<connection>/collections/`.

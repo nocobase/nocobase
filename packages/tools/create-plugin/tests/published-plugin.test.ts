@@ -25,7 +25,15 @@ const repository = fileURLToPath(new URL('../../../../', import.meta.url));
 const uiRoot = path.join(repository, 'ui-library');
 const uiRequire = createRequire(path.join(uiRoot, 'package.json'));
 const shadcn = path.join(uiRoot, 'node_modules/shadcn/dist/index.js');
-const primitiveNames = ['collapsible', 'select', 'switch'];
+const primitiveNames = [
+  'button',
+  'checkbox',
+  'input',
+  'popover',
+  'select',
+  'switch',
+  'tooltip',
+];
 
 interface Manifest {
   name: string;
@@ -70,6 +78,7 @@ async function linkDependencies(directory: string): Promise<void> {
     'react-dom',
     '@base-ui/react',
     'cn',
+    'class-variance-authority',
     'lucide-react',
     '@types/react',
     '@nocobase/dev-config',
@@ -136,10 +145,9 @@ async function prepareOfflineMetadata(cache: string): Promise<void> {
       };
       const { name, version } = manifest;
       const resolution = lockfile.packages[`${name}@${version}`]?.resolution;
-      if (!resolution?.integrity)
-        throw new Error(
-          `Installed ${name}@${version} is not in the repository lockfile`,
-        );
+      // A reused local store can retain packages from other branches. They must
+      // not participate in this lockfile's offline dependency resolution.
+      if (!resolution?.integrity) continue;
       const metadata = metadataByName.get(name) ?? {
         name,
         'dist-tags': { latest: version },
@@ -223,7 +231,12 @@ it('installs a real registry item, builds and packs a generated plugin, and load
         item = {
           name,
           type: 'registry:ui',
-          dependencies: ['@base-ui/react', 'cn', 'lucide-react'],
+          dependencies: [
+            '@base-ui/react',
+            'cn',
+            'lucide-react',
+            ...(name === 'button' ? ['class-variance-authority'] : []),
+          ],
           files: [
             {
               path: `${name}.tsx`,
@@ -260,7 +273,11 @@ it('installs a real registry item, builds and packs a generated plugin, and load
   });
   try {
     // Copy workspace metadata so real pnpm can resolve catalog/workspace versions without touching the checkout lockfile.
-    for (const name of ['pnpm-workspace.yaml', 'pnpm-lock.yaml'])
+    for (const name of [
+      'pnpm-workspace.yaml',
+      'pnpm-lock.yaml',
+      '.pnpmfile.cjs',
+    ])
       await copyFile(path.join(repository, name), path.join(root, name));
     for (const category of await readdir(path.join(repository, 'packages'))) {
       const source = path.join(repository, 'packages', category);
@@ -272,6 +289,13 @@ it('installs a real registry item, builds and packs a generated plugin, and load
       if (!categoryEntry?.isDirectory()) continue;
       for (const entry of await readdir(source, { withFileTypes: true })) {
         if (!entry.isDirectory()) continue;
+        // Local tooling may leave empty directories for removed workspace packages.
+        if (
+          !(await readdir(path.join(source, entry.name))).includes(
+            'package.json',
+          )
+        )
+          continue;
         const destination = path.join(root, 'packages', category, entry.name);
         await mkdir(destination, { recursive: true });
         await copyFile(

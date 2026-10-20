@@ -1,5 +1,10 @@
 import {
+  createAppSidebarPreferenceStore,
+  SidebarPreferenceProvider,
+} from '../../client/layouts/use-sidebar-preference.js';
+import {
   apiClientToken,
+  realtimeClientToken,
   ClientApplicationContext,
   type ClientApplication,
   createAppClientConfig,
@@ -11,7 +16,6 @@ import {
 } from '@nocobase/app-plugin-authentication/client';
 import {
   AuthorizationClient,
-  type AuthorizationCheck,
   authorizationClientToken,
 } from '@nocobase/app-plugin-authorization/client';
 import {
@@ -28,12 +32,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppRouter } from '../../client/routing/app-router.tsx';
 import { AppThemeProvider } from '../../client/theme/index.ts';
-
-// The header's inbox button reads the in-app notification plugin's API, which these tests do not serve; it is
-// covered by tests/components/inbox.test.tsx.
-vi.mock('../../client/components/inbox-header-button', () => ({
-  InboxHeaderButton: () => null,
-}));
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -109,47 +107,16 @@ describe('application shell', () => {
     ).toBeVisible();
   });
 
-  it.each([true, false])(
-    'shows the Settings entry only when a page is accessible (%s)',
-    async (allowed) => {
-      const can = vi.fn(
-        async ({ resource }: AuthorizationCheck) =>
-          resource.id !== 'preferences' || allowed,
-      );
-      renderApplication('/', true, [], {
-        authorization: { can },
-        settingsRouteTree: [
-          createRoute(
-            'preferences',
-            '/settings/preferences',
-            'required',
-            () => <h2>Preferences</h2>,
-            'plugin',
-            'Preferences',
-            true,
-          ),
-        ],
-      });
-      await screen.findByRole('heading', { name: 'App client is ready' });
-      await waitFor(() =>
-        expect(can).toHaveBeenCalledWith(
-          expect.objectContaining({
-            resource: { type: 'page', id: 'preferences' },
-            action: 'access',
-          }),
-        ),
-      );
-      if (allowed) {
-        expect(
-          await screen.findByRole('link', { name: 'Settings' }),
-        ).toBeVisible();
-      } else {
-        expect(
-          screen.queryByRole('link', { name: 'Settings' }),
-        ).not.toBeInTheDocument();
-      }
-    },
-  );
+  it('renders no Settings or Inbox entry in the header', async () => {
+    renderApplication('/', true);
+    await screen.findByRole('heading', { name: 'App client is ready' });
+    expect(
+      screen.queryByRole('link', { name: 'Settings' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /inbox/i }),
+    ).not.toBeInTheDocument();
+  });
 
   it('renders nested pages through manual outlets and selects the nearest menu ancestor', async () => {
     const child = createRoute('detail', '/orders/42', 'required', () => (
@@ -286,57 +253,6 @@ describe('application shell', () => {
     );
   });
 
-  it('renders dev pages inside the application shell, outside its navigation', async () => {
-    const playground = createRoute(
-      'playground',
-      '/dev/playground',
-      'required',
-      () => <h2>Playground page</h2>,
-      'plugin',
-      'Playground',
-    );
-    const demos: AppClientRegisteredRoute = {
-      ...createRoute('demos', '/dev/demos', 'required', () => null),
-      componentLoader: undefined,
-      navigation: { title: 'Demos' },
-      children: [
-        createRoute('chat', '/dev/demos/chat', 'required', () => (
-          <h2>Chat demo page</h2>
-        )),
-      ],
-    };
-    renderApplication('/dev/playground', true, [], {
-      devRouteTree: [playground, demos],
-    });
-
-    expect(await screen.findByText('Playground page')).toBeVisible();
-    expect(
-      screen.getByRole('navigation', { name: 'Application navigation' }),
-    ).toBeVisible();
-    expect(
-      within(sidebar()).queryByRole('link', { name: 'Playground' }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText('Demos')).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('link', { name: 'Settings' }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('renders a dev page nested under a dev group', async () => {
-    const demos: AppClientRegisteredRoute = {
-      ...createRoute('demos', '/dev/demos', 'required', () => null),
-      componentLoader: undefined,
-      children: [
-        createRoute('chat', '/dev/demos/chat', 'required', () => (
-          <h2>Chat demo page</h2>
-        )),
-      ],
-    };
-    renderApplication('/dev/demos/chat', true, [], { devRouteTree: [demos] });
-
-    expect(await screen.findByText('Chat demo page')).toBeVisible();
-  });
-
   it('keeps guest pages outside the application shell', async () => {
     renderApplication('/login', false, [
       createRoute('login', '/login', 'guest', GuestPage),
@@ -356,8 +272,6 @@ function renderApplication(
   routes: readonly AppClientRegisteredRoute[] = [],
   options: {
     readonly authorization?: Pick<AuthorizationClient, 'can'>;
-    readonly settingsRouteTree?: readonly AppClientRegisteredRoute[];
-    readonly devRouteTree?: readonly AppClientRegisteredRoute[];
   } = {},
 ): void {
   const clientRoutes = [
@@ -378,14 +292,22 @@ function renderApplication(
   };
   const registered = new Map<unknown, unknown>([
     [apiClientToken, apiClient],
+    [
+      realtimeClientToken,
+      {
+        subscribe: vi.fn(() => vi.fn()),
+        onOpen: vi.fn(() => vi.fn()),
+        watch: vi.fn(() => ({ close: vi.fn() })),
+      },
+    ],
     [authenticationClientToken, authClient],
     [authorizationClientToken, authorizationClient],
   ]);
   const app = {
     config: createAppClientConfig({ rawConfig: {} }),
-    runtime: { settingsRouteTree: options.settingsRouteTree ?? [] },
     services: {
       has: (token: unknown) => registered.has(token),
+      resolveIfCreated: (token: unknown) => registered.get(token),
       resolve: (token: unknown) => {
         if (registered.has(token)) return registered.get(token);
         throw new Error(`Unexpected service token: ${String(token)}`);
@@ -397,11 +319,11 @@ function renderApplication(
       <AuthenticationProvider>
         <MemoryRouter initialEntries={[initialEntry]}>
           <AppThemeProvider>
-            <AppRouter
-              devRouteTree={options.devRouteTree ?? []}
-              clientRoutes={clientRoutes}
-              settingsRouteTree={options.settingsRouteTree ?? []}
-            />
+            <SidebarPreferenceProvider
+              value={createAppSidebarPreferenceStore('/main')}
+            >
+              <AppRouter clientRoutes={clientRoutes} />
+            </SidebarPreferenceProvider>
           </AppThemeProvider>
         </MemoryRouter>
       </AuthenticationProvider>
@@ -414,7 +336,7 @@ function createTestAuthClient(authenticated: boolean) {
     getSession: vi.fn().mockResolvedValue({
       data: authenticated
         ? {
-            session: null,
+            session: { id: 'session-1' },
             user: {
               email: 'alice@example.com',
               id: '1',

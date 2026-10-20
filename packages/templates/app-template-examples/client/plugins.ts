@@ -11,12 +11,12 @@ import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
 import authorizationExample from '@nocobase/app-plugin-authorization-example/client';
 import templatePrintExample from '@nocobase/app-plugin-template-print-example/client';
-import departmentsExample from '@nocobase/app-plugin-departments-example/client';
 import users from '@nocobase/app-plugin-users/client';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
 import notificationExample from '@nocobase/app-plugin-notification-example/client';
 import jobsExample from '@nocobase/app-plugin-jobs-example/client';
+import realtimeExample from '@nocobase/app-plugin-realtime-example/client';
 import lifecycleExample from '@nocobase/app-plugin-lifecycle-example/client';
 import officeFlowsExample from '@nocobase/app-plugin-office-flows-example/client';
 import routesExample from '@nocobase/app-plugin-routes-example/client';
@@ -27,6 +27,7 @@ import scheduler from '@nocobase/app-plugin-scheduler/client';
 import file from '@nocobase/app-plugin-file/client';
 import fileExample from '@nocobase/app-plugin-file-example/client';
 import apiKeys from '@nocobase/app-plugin-api-keys/client';
+import agents from '@nocobase/app-plugin-agents/client';
 
 // Array order is contribution order. A plugin is enabled by appearing in this
 // list; removing its entry and its import disables it.
@@ -38,14 +39,14 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   restrictionRules(),
   authorizationExample(),
   templatePrintExample(),
-  departmentsExample(),
-  users({ mount: 'settings', path: '/users' }),
+  users(),
   databaseExplorer(),
-  apiKeys({ path: '/api-keys' }),
+  apiKeys(),
   i18n(),
   notificationInApp(),
   notificationExample(),
   jobsExample(),
+  realtimeExample(),
   lifecycleExample(),
   officeFlowsExample(),
   routesExample(),
@@ -56,6 +57,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   scheduler(),
   mail(),
   mailExample(),
+  agents(),
 ]);
 
 export default clientPlugins;

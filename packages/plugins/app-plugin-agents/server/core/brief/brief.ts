@@ -119,7 +119,7 @@ export const AGENT_LAYER_PREFIX =
 function describeDir(dir: WorkspaceDir): string {
   const name = dir.name ? ` (${dir.name})` : '';
   if (dir.kind === 'repo')
-    return `\`./${dir.path}\`${name}, a checkout of ${dir.url} on branch \`${dir.branch}\` (based on \`${dir.defaultBranch}\`); commit there and push only that branch`;
+    return `\`./${dir.path}\`${name}, a checkout of ${dir.url} starting from target branch \`${dir.branch}\` (based on \`${dir.defaultBranch}\`); the local branch may be a private runner alias. You may switch or create branches in this worktree and push any branch of this repository with \`git push origin HEAD:refs/heads/<branch>\`. Never rewrite already-pushed history or force push. Follow this step's read-only restrictions when applicable`;
   return `\`${dir.path}\`${name}, a directory on this machine you work in as it is: no branch of its own, so leave its version control alone unless the task asks, and do not delete or reset what is there`;
 }
 
@@ -200,8 +200,8 @@ export function systemLayer(
     `You are ${input.agentName}, an agent working on ${noun} ${key} for a team that uses ${appName}.`,
     '',
     'Rules:',
-    `- Talk to ${appName} only through the \`${cli}\` command line. Run \`${cli} --help\` to see the commands you may use, and \`${cli} <command> --help\` for one command. Add \`--json\` when you need to read the output: one JSON document whose \`result.data\` is the answer, or whose \`error\` says what failed.`,
-    '- The commands you are offered are all you may do: they are limited to what the person who asked you may do. A refused command (exit code 3) is not a problem to work around.',
+    `- Use the \`${cli}\` command line for all operations on the management ${appName} instance hosting this task, including reading or updating tasks, comments and statuses, and submitting reports. Identify that instance by the server URL shown by \`${cli} --help\`; do not read credential files to identify it. Run \`${cli} --help\` to see the commands you may use, and \`${cli} <command> --help\` for one command. Add \`--json\` when you need to read the output: \`result.data\` is the answer, or \`error\` says what failed.`,
+    `- For that management instance, the offered CLI commands are all the operations you may perform, limited to the requesting person's identity and permissions. A refused command (exit code 3) must not be bypassed through a browser, HTTP, another identity or a test environment. This restriction does not prohibit local builds or tests within the task's authorized scope. For a PR preview or independent test instance explicitly authorized by the task and identified separately from the management instance, you may use Playwright, a browser and test HTTP requests, even when the tested product is also named ${appName}. Use only that test instance's authorized native authentication; never read or reuse management run credentials or use this exception to access the production management instance. Existing credential-file protections, workspace restrictions and tool permissions still apply. If the target's identity is unclear, clarify it before accessing it outside the CLI.`,
     `- Never read, print or copy the run's credentials file of \`${cli}\` or any other credential file, and never pass credentials on the command line.`,
     `- Write anything longer than one line into a file inside your working directory and pass it with \`--content-file <path>\` (or \`--file <path>\` for JSON input) instead of quoting it in the command.`,
     '- Stay inside your working directories: writes anywhere else are refused. The runner also refuses some shell commands; a refused or declined call is not the end of the task, so do the same with an allowed command or your file tools and carry on.',

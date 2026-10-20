@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildRouteNavigation,
   selectedNavigationId,
+  routeKey,
 } from '../../client/routing/route-navigation.js';
 
 const page = (name: string, path: string): AppClientRegisteredRoute => ({
@@ -63,4 +64,54 @@ describe('route navigation', () => {
       'test:/orders:orders',
     );
   });
+});
+
+it('keeps business workflows flat and management in the application system group', () => {
+  const lifecycle = '@nocobase/app-plugin-lifecycle-example';
+  const office = '@nocobase/app-plugin-office-flows-example';
+  const owned = (name: string, owner: string) => ({
+    ...page(name, `/${name}`),
+    packageName: owner,
+  });
+  const ticket = owned('ticket', lifecycle);
+  const parameters = owned('lifecycleExampleParameters', lifecycle);
+  const incoming = owned('incoming', office);
+  const configuration = owned('officeFlowsConfiguration', office);
+  const request = owned('officeTask', office);
+  const management = owned('workflows', '@nocobase/app-template-examples');
+  const group = (
+    name: string,
+    owner: string,
+    children: AppClientRegisteredRoute[],
+  ) => ({
+    ...owned(name, owner),
+    path: '/',
+    componentLoader: undefined,
+    children,
+  });
+  const routes = [
+    page('home', '/'),
+    group('systemManagement', '@nocobase/app-template-examples', [management]),
+    group('lifecycle', lifecycle, [ticket, parameters]),
+    group('office', office, [
+      incoming,
+      configuration,
+      group('nested', office, [request]),
+    ]),
+  ];
+  const items = buildRouteNavigation(routes, new Set([routeKey(incoming)]));
+  expect(items.map((item) => item.route.name)).toEqual([
+    'home',
+    'systemManagement',
+    'workflowNavigation',
+  ]);
+  expect(items[1].children.map((item) => item.route)).toEqual([management]);
+  expect(items[2].children.map((item) => item.route)).toEqual([
+    ticket,
+    request,
+  ]);
+  expect(items[2].children.every((item) => item.children.length === 0)).toBe(
+    true,
+  );
+  expect(selectedNavigationId(routes, ticket.path)).toBe(routeKey(ticket));
 });

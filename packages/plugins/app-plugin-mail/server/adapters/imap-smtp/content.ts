@@ -1,5 +1,6 @@
 import type {
   FetchQueryObject,
+  FetchMessageObject,
   ImapFlow,
   MessageStructureObject,
 } from 'imapflow';
@@ -10,7 +11,8 @@ import { encodeAttachmentLocator } from './locators.js';
 import { classifyError, throwIfAborted } from './errors.js';
 
 import { MAX_IMAP_BODY_BYTES } from './constants.js';
-const MAX_HEADER_BYTES = 64 * 1024;
+export const MAX_HEADER_BYTES: number = 64 * 1024;
+const RAW_WINDOW_BYTES = 1024 * 1024;
 
 export function metadataQuery(): FetchQueryObject {
   return {
@@ -20,8 +22,113 @@ export function metadataQuery(): FetchQueryObject {
     internalDate: true,
     envelope: true,
     bodyStructure: true,
-    bodyParts: [{ key: 'HEADER', start: 0, maxLength: MAX_HEADER_BYTES }],
+    // One extra byte shows whether the header block was cut at the budget.
+    bodyParts: [{ key: 'HEADER', start: 0, maxLength: MAX_HEADER_BYTES + 1 }],
   };
+}
+
+/**
+ * True when raw MIME bytes can prove two copies identical without reading
+ * attachment or CID content: only known text leaves, within the byte limit.
+ */
+export function rawComparable(
+  structure: MessageStructureObject | undefined,
+  size: number | undefined,
+  maxBytes: number,
+): boolean {
+  if (!structure || size === undefined || !Number.isSafeInteger(size))
+    return false;
+  if (size < 1 || size > maxBytes) return false;
+  const allowed = (part: MessageStructureObject): boolean => {
+    if (
+      typeof part.type !== 'string' ||
+      part.id ||
+      part.parameters?.name ||
+      part.dispositionParameters?.filename ||
+      (part.disposition && part.disposition.toLowerCase() !== 'inline')
+    )
+      return false;
+    const type = part.type.toLowerCase();
+    if (type.startsWith('multipart/')) {
+      if (
+        ![
+          'multipart/mixed',
+          'multipart/alternative',
+          'multipart/related',
+          'multipart/parallel',
+          'multipart/digest',
+          'multipart/report',
+          'multipart/signed',
+          'multipart/encrypted',
+        ].includes(type)
+      )
+        return false;
+      return (
+        Array.isArray(part.childNodes) &&
+        part.childNodes.length > 0 &&
+        part.childNodes.every((child) => Boolean(child) && allowed(child))
+      );
+    }
+    return (
+      ['text/plain', 'text/html'].includes(type) && !part.childNodes?.length
+    );
+  };
+  return allowed(structure);
+}
+
+/**
+ * Read the complete RFC822 source in bounded windows. Returns undefined unless
+ * every window arrived in order and the total equals RFC822.SIZE.
+ */
+export async function readRawSource(
+  client: ImapFlow,
+  uid: number,
+  size: number,
+  signal?: AbortSignal,
+): Promise<Buffer | undefined> {
+  const chunks: Buffer[] = [];
+  let offset = 0;
+  while (offset < size) {
+    throwIfAborted(signal);
+    const length = Math.min(RAW_WINDOW_BYTES, size - offset);
+    const fetched = await client.fetchOne(
+      uid,
+      { uid: true, source: { start: offset, maxLength: length } },
+      { uid: true },
+    );
+    const chunk = fetched ? fetched.source : undefined;
+    // ImapFlow retains the server's literal origin as a non-enumerable property.
+    const origins = fetched
+      ? (
+          fetched as FetchMessageObject & {
+            partialOrigins?: ReadonlyMap<string, number>;
+          }
+        ).partialOrigins
+      : undefined;
+    if (!fetched || fetched.uid !== uid || origins?.get('') !== offset)
+      return undefined;
+    if (!chunk || chunk.byteLength !== length) return undefined;
+    chunks.push(chunk);
+    offset += chunk.byteLength;
+  }
+  throwIfAborted(signal);
+  const end = await client.fetchOne(
+    uid,
+    { uid: true, source: { start: size, maxLength: 1 } },
+    { uid: true },
+  );
+  if (!end || !Buffer.isBuffer(end.source) || end.source.byteLength !== 0)
+    return undefined;
+  if (
+    end.uid !== uid ||
+    (
+      end as FetchMessageObject & {
+        partialOrigins?: ReadonlyMap<string, number>;
+      }
+    ).partialOrigins?.get('') !== size
+  )
+    return undefined;
+  return Buffer.concat(chunks, size);
 }
 
 function isAttachment(part: MessageStructureObject): boolean {
@@ -50,7 +157,16 @@ export function attachmentParts(
 export function bodyParts(
   structure?: MessageStructureObject,
 ): MessageStructureObject[] | undefined {
-  return structure
+  const complete = (part: MessageStructureObject): boolean => {
+    if (!part || typeof part.type !== 'string' || !part.type) return false;
+    return (
+      !part.type.toLowerCase().startsWith('multipart/') ||
+      (Array.isArray(part.childNodes) &&
+        part.childNodes.length > 0 &&
+        part.childNodes.every(complete))
+    );
+  };
+  return structure && complete(structure)
     ? leaves(structure).filter((part) => !isAttachment(part))
     : undefined;
 }

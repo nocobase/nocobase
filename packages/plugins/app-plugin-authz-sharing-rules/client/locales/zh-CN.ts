@@ -1,43 +1,4 @@
+// The title the plugin's server registers with the authorization catalog resolves in this namespace.
 export default {
   resourceTitle: '共享规则',
-  navigation: { title: '共享规则' },
-  sharingRules: {
-    noResources:
-      '尚未定义支持记录范围的业务资源。可以让 AI 定义业务权限和记录范围，开发后即可在这里配置规则。',
-    page: {
-      title: '共享规则',
-      description:
-        '为指定用户扩大可访问的记录范围。用户仍需具备相应的操作和字段权限。',
-    },
-    search: '搜索共享规则',
-    create: '新建共享规则',
-    ruleHeader: '规则',
-    recordsSharedHeader: '共享的记录',
-    sharedWithHeader: '共享给',
-    accessHeader: '访问',
-    emptyNone: '还没有共享规则。新建一条，把记录开放给需要它们的人。',
-    emptySearch: '没有匹配搜索条件的共享规则。',
-    pagerLabel: '共享规则',
-    editTitle: '编辑共享规则',
-    newTitle: '新建共享规则',
-    editorDescription: '选择要共享的记录范围和用户。',
-    ruleHeading: '基本信息',
-    ruleDescription: '为规则命名，并选择要共享的资源。',
-    ruleName: '规则名称',
-    accessHeading: '操作与记录范围',
-    accessDescription: '为每个操作分别选择记录。',
-    assignmentsHeading: '适用对象',
-    assignmentsDescription: '选择谁获得这部分额外访问。',
-    description: '说明',
-    recordsToShare: '要共享的记录',
-    selectedRecords: '指定记录',
-    policyRecords: '符合某条策略的记录',
-    matchingPolicy: '符合策略的记录',
-    noRecords: '未找到记录。',
-    deleteRule: '删除规则',
-    save: '保存共享规则',
-    confirmDeleteTitle: '确定删除该共享规则吗？',
-    confirmDeleteBody:
-      '删除共享规则“{{title}}”。其他权限集和共享规则提供的访问仍然有效。',
-  },
 };

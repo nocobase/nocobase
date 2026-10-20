@@ -51,6 +51,37 @@ const enUS = {
     },
   },
   knowledge: {
+    directory: {
+      title: 'Knowledge',
+      system: 'System knowledge',
+      count_one: '{{count}} document',
+      count_other: '{{count}} documents',
+      archivedCount_one: '{{count}} archived document',
+      archivedCount_other: '{{count}} archived documents',
+      selectTarget: 'Open {{title}}',
+      target: 'Create in {{title}}',
+      chooseTarget: 'Choose a project or system knowledge to create in',
+      expandAll: 'Expand all',
+      collapseAll: 'Collapse all',
+      retry: 'Retry',
+      allProposals: 'All proposals',
+      reviewPage: 'Page {{page}} of {{pages}} · {{total}} total',
+      previous: 'Previous',
+      next: 'Next',
+      empty: 'No accessible knowledge spaces',
+      emptyAccessHint:
+        'Ask an administrator for access to project or system knowledge.',
+      noAccess: 'This knowledge is unavailable or you no longer have access.',
+      emptyHint:
+        'Open this space to create a document, or ask an editor to add one.',
+      createFailed:
+        'Could not create this entry. Check the target and try again.',
+      showResults: 'Show top results for “{{q}}”',
+      topResults:
+        'Top ranked sections across all projects and system knowledge.',
+      welcome:
+        'Expand a project or shared system knowledge to browse documents. Select a space to create there, or search across all authorized knowledge.',
+    },
     title: 'Knowledge',
     someone: 'Someone',
     loading: 'Loading',
@@ -62,6 +93,8 @@ const enUS = {
       failedHint: 'Some sections failed to embed after every attempt.',
       reason: 'Reason: {{reason}}',
       retry: 'Index again',
+      refreshFailed: 'Unable to refresh indexing status',
+      retryRefresh: 'Retry refresh',
       queued: 'Queued for indexing again',
     },
     chunks: {
@@ -263,6 +296,7 @@ const enUS = {
       reload: 'Reload',
     },
     history: {
+      by: 'by {{name}}',
       title: 'History',
       current: 'Current',
       fromProposal: 'From a proposal',

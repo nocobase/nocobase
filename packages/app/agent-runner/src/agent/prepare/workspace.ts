@@ -1,28 +1,44 @@
-// Step `workspace`: locks the subject's work directory for the run and, when the run asks (`workspace.clean`), starts
-// it over: its checkouts, the agent's home and the record of prepared directories go; a directory used in place is
-// never touched.
-import { cleanWorkspace, lockWorkspace } from '../../core/checkout.ts';
-import type { PrepareStep } from './types.ts';
+// Every attempt has a private directory. Its lock protects cleanup only; repositories never hold a task lock.
+import { mkdir } from 'node:fs/promises';
+import path from 'node:path';
+import {
+  acquireLock,
+  RUNNER_DIR,
+  writeWorkspaceMeta,
+} from '../../core/checkout.ts';
+import { runWorkDir } from '../../core/run-worktrees.ts';
+import { workspaceKey, type PrepareStep } from './types.ts';
 
 export const workspaceStep: PrepareStep = {
   name: 'workspace',
   failure: 'checkoutFailed',
   async run(context) {
-    const lock = await lockWorkspace({
-      paths: context.paths,
-      appKey: context.registration.key,
-      subjectKey: context.payload.subject.key,
-    });
+    const workDir = runWorkDir(
+      context.paths,
+      context.registration.key,
+      workspaceKey(context.payload),
+      context.payload.run.id,
+      context.payload.run.attempt,
+      context.payload.workspace.readOnly === true,
+    );
+    const lock = await acquireLock(`${workDir}.lock`);
+    context.workspace = { workDir, release: () => lock.release() };
     context.onRelease(() => lock.release());
-    context.workspace = lock;
-    if (context.payload.workspace.clean === true) {
-      context.log(`workspace: cleaning ${lock.workDir}`);
-      await cleanWorkspace(lock.workDir);
-      context.event({
-        type: 'status',
-        content: 'Started from a clean working directory.',
-        meta: { phase: 'workspace', clean: true },
-      });
-    }
+    await mkdir(path.join(workDir, RUNNER_DIR), {
+      recursive: true,
+      mode: 0o700,
+    });
+    await writeWorkspaceMeta(context.paths, workDir, {
+      appKey: context.registration.key,
+      subjectKey: workspaceKey(context.payload),
+      repos: [],
+      lastRunId: context.payload.run.id,
+      lastUsedAt: new Date().toISOString(),
+      runAttempt: true,
+      runWorktrees: context.payload.workspace.dirs.some(
+        (dir) => dir.kind === 'repo',
+      ),
+      readOnly: context.payload.workspace.readOnly === true,
+    });
   },
 };

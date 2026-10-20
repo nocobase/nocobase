@@ -8,7 +8,6 @@ import authorization from '@nocobase/app-plugin-authorization/server';
 import users from '@nocobase/app-plugin-users/server';
 import authorizationExample from '@nocobase/app-plugin-authorization-example/server';
 import templatePrintExample from '@nocobase/app-plugin-template-print-example/server';
-import departmentsExample from '@nocobase/app-plugin-departments-example/server';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/server';
 import databaseExample from '@nocobase/app-plugin-database-example/server';
 import i18n from '@nocobase/app-plugin-i18n/server';
@@ -33,6 +32,7 @@ import scheduler from '@nocobase/app-plugin-scheduler/server';
 import file from '@nocobase/app-plugin-file/server';
 import fileExample from '@nocobase/app-plugin-file-example/server';
 import apiKeys from '@nocobase/app-plugin-api-keys/server';
+import agents from '@nocobase/app-plugin-agents/server';
 
 const serverPlugins: AppServerPlugins = defineServerPlugins([
   authentication,
@@ -42,7 +42,6 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   restrictionRules,
   authorizationExample,
   templatePrintExample,
-  departmentsExample,
   users,
   databaseExplorer,
   apiKeys,
@@ -66,6 +65,7 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   scheduler,
   mail,
   mailExample,
+  agents,
 ]);
 
 export default serverPlugins;

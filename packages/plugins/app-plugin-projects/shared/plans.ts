@@ -139,7 +139,7 @@ export type ProjectTarget = string | RowRef;
 
 /**
  * `issue.create`: a new issue, as `POST /api/projects/issues` takes it (`CreateIssueRequest`), with targets where it names
- * other issues or a project. `start: false` sets an agent executor without starting its work now.
+ * other issues or a project.
  */
 export interface IssueCreateParams {
   readonly title: string;
@@ -155,14 +155,15 @@ export interface IssueCreateParams {
   readonly startDate?: string | null;
   readonly dueDate?: string | null;
   readonly blockedBy?: readonly IssueTarget[];
-  readonly start?: boolean;
 }
 
-/** The fields `issue.update` may change; at least one. Changing `statusKey` moves the issue through its workflow. */
+/** The fields `issue.update` may change; at least one. Changing `statusKey` moves the issue as its decider may. */
 export interface IssueFieldChanges {
   readonly title?: string;
   readonly description?: string;
   readonly statusKey?: string;
+  readonly needsYou?: string | null;
+  readonly next?: string | null;
   readonly priority?: Priority;
   readonly ownerUserId?: string;
   readonly executor?: Executor | null;
@@ -177,13 +178,11 @@ export interface IssueFieldChanges {
 
 /**
  * `issue.update`. No revision: the rehearsal records the fields' current values (`PlanBaseline`) and execution refuses
- * the plan (`stale`) when one of them changed meanwhile. A status change that needs an approval fails the row
- * (`APPROVAL_REQUIRED`): plans never raise approval requests.
+ * the plan (`stale`) when one of them changed meanwhile.
  */
 export interface IssueUpdateParams {
   readonly issue: IssueTarget;
   readonly set: IssueFieldChanges;
-  readonly start?: boolean;
 }
 
 /** `comment.create`: a comment or a reply. Mentions wake agents as any person's comment does; `/note` wakes none. */
@@ -215,8 +214,6 @@ export interface ProjectCreateParams {
   readonly leadUserId?: string | null;
   readonly startDate?: string | null;
   readonly dueDate?: string | null;
-  /** The workflow of its issues; null or left out for the default workflow. */
-  readonly workflowId?: string | null;
 }
 
 /** An undo row: the issue, comment or project the plan created. */
@@ -290,7 +287,8 @@ export interface PlanProposer {
  * - `finalStatus`: it moves an issue to a done or closed status.
  * - `ownerChange`: it changes an issue's owner, or creates one owned by someone else.
  * - `createsProject`: it creates a project.
- * - `agentExecutor`: it makes a principal other than a person (an agent) an issue's executor.
+ * - `agentExecutor`: it makes a principal other than a person (an agent) an issue's executor; a new issue given the
+ *   kind's default executor because the row names none does not count.
  */
 export const PLAN_RISK_FLAGS = [
   'startsRun',
@@ -580,17 +578,36 @@ export interface PlanDecided {
 // How a change was made, as the timeline shows it
 // ---------------------------------------------------------------------------------------------------------------
 
+/** Opaque execution facts supplied by the application; projects does not depend on the agents plugin. */
+export interface ActivityExecution {
+  readonly attempt: number;
+  readonly runnerId: string;
+  readonly runnerName?: string | null;
+  readonly runnerOwnerUserId?: string | null;
+  readonly runnerOwnerName?: string | null;
+  readonly runnerTrust?: 'team' | 'ownerOnly' | null;
+  readonly machineHidden?: boolean;
+  readonly tool?: string | null;
+  readonly toolVersion?: string | null;
+  readonly model?: string | null;
+  readonly actualModels?: readonly string[];
+  readonly effort?: string | null;
+  readonly actualEffort?: string | null;
+  readonly actualEffortSource?: string | null;
+  readonly actualEffortAt?: string | null;
+}
+
 /**
- * Who a person acted through, recorded with each activity and comment (`Activity.via`). `agent`: an agent acted for
- * the person (in a conversation, a direct write) or proposed the plan they executed (`planId` set): "via ‹Agent›",
- * "via ‹Agent›'s plan". `plan`: a plan nobody's agent proposed (an intake). `cli`, `api_key`: the API without the
- * browser.
+ * Who a person acted through, recorded with each activity (`Activity.via`) and comment (`IssueComment.source`).
+ * `agent`: an agent acted for the person or proposed the plan they executed. `plan`: a plan nobody's agent proposed.
+ * `cli` and `api_key`: the API without the browser.
  */
 export interface ActivityVia {
   readonly type: 'cli' | 'api_key' | 'agent' | 'plan';
   readonly agentId?: string;
   readonly agentName?: string | null;
   readonly runId?: string;
+  readonly execution?: ActivityExecution;
   /** Only meaningful to the conversation's owner; the agents plugin checks access. */
   readonly conversationId?: string;
   readonly planId?: string;

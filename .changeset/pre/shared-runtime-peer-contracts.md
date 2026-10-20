@@ -1,16 +1,12 @@
 ---
-'@nocobase/ai-employee': patch
 '@nocobase/api-client': patch
 '@nocobase/app-client': patch
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-authentication': patch
 '@nocobase/app-plugin-authorization': patch
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-users': patch
 '@nocobase/app-server': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/authorization': patch
 '@nocobase/create-plugin': patch
 '@nocobase/db': patch

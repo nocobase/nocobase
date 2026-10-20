@@ -8,6 +8,7 @@ import { person, personName } from '../../shared/people.js';
 import { text } from '../../shared/text.js';
 import { PRIORITIES, TICKET_CATEGORIES } from '../../shared/ticket.js';
 import { Choice } from '../components/choice.js';
+import { ExampleGuide } from '../components/example-guide.js';
 import { IdentitySelect } from '../components/identity.js';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
@@ -31,6 +32,11 @@ import {
 } from '../lib/api.js';
 import { ago, countdown, dateTime, NAMESPACE } from '../lib/format.js';
 import { useExampleRecord, useTranslate } from '../lib/use-example-record.js';
+import { RefreshNotice } from '../components/refresh-notice.js';
+import {
+  useLifecycleChanges,
+  refreshLifecycleViews,
+} from '../lib/use-lifecycle-changes.js';
 import { useLoader } from '../lib/use-loader.js';
 import { useNow } from '../lib/use-now.js';
 import { cn } from '../lib/utils.js';
@@ -76,8 +82,10 @@ export default function TicketsPage(): ReactElement {
   const isAgent = person(actor)?.role === 'agent';
 
   const list = useLoader(
-    () => client.list('tickets', actor),
+    (signal) => client.list('tickets', actor, undefined, signal),
     `tickets:${actor}`,
+    '',
+    false,
   );
   const current = useExampleRecord('tickets', selected, actor);
   const records = list.data?.records ?? [];
@@ -101,6 +109,17 @@ export default function TicketsPage(): ReactElement {
     await Promise.all([list.reload(), current.lifecycle.reload()]);
   };
 
+  const updates = useLifecycleChanges(
+    'tickets',
+    `tickets:${actor}:${selected ?? ''}`,
+    async (signal) => {
+      await refreshLifecycleViews([
+        list.refresh(signal),
+        current.lifecycle.refresh(signal),
+      ]);
+    },
+  );
+
   return (
     <PageContainer>
       <PageHeader
@@ -120,6 +139,8 @@ export default function TicketsPage(): ReactElement {
           />
         }
       />
+      <RefreshNotice error={updates.error} retry={updates.retry} />
+      <ExampleGuide page='tickets' />
 
       <div className='grid gap-6 lg:grid-cols-[minmax(18rem,24rem)_1fr]'>
         <Card>
@@ -231,6 +252,7 @@ export default function TicketsPage(): ReactElement {
                 onChange={reload}
               />
               <LifecyclePanel
+                actor={actor}
                 detail={current.detail}
                 actions={current.lifecycle}
                 onChange={reload}

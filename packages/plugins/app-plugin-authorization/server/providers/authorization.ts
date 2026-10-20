@@ -57,15 +57,27 @@ export class AuthorizationProvider<
         ? container.resolve(databaseManagerToken).connection()
         : undefined,
       config: this.app.config.get<AuthorizationConfig>('authorization'),
-      onUserPermissionsChanged: (userId) => {
-        this.permissionsChangedTopic?.publishFor(userId, {
-          type: 'permissions-changed',
-        });
+      onUserPermissionsChanged: async (userId) => {
+        await this.permissionsChangedTopic
+          ?.publishFor(userId, {
+            type: 'permissions-changed',
+          })
+          .catch((error: unknown) =>
+            this.warn(
+              `Authorization realtime announcement failed: ${String(error)}`,
+            ),
+          );
       },
-      onAuthenticatedPermissionsChanged: () => {
-        this.globalPermissionsChangedTopic?.publish({
-          type: 'permissions-changed',
-        });
+      onAuthenticatedPermissionsChanged: async () => {
+        await this.globalPermissionsChangedTopic
+          ?.publish({
+            type: 'permissions-changed',
+          })
+          .catch((error: unknown) =>
+            this.warn(
+              `Authorization realtime announcement failed: ${String(error)}`,
+            ),
+          );
       },
       onInvalidGrant: (grant) =>
         this.warn(

@@ -135,7 +135,7 @@ Plugins register HTTP handlers with `authz.routes.add(path, handler)`; the host 
 A resource type comes in one of two shapes, told apart only by whether it has an item registry.
 
 - A **catalog type** passes `items`. A check passes only for a registered item and one of its actions; anything else is denied with `RESOURCE_ACTION_NOT_SUPPORTED`. `settings`, `composite` and `database.collection` are catalog types.
-- A **record type** declares only type-level `actions`. Only the action is validated: an undeclared action is denied, while the id is a runtime record id that the type's `authorize` judges per record. `page`, `hub.app`, `user` and `notification` are record types, and their grants use `id: '*'` to mean every record.
+- A **record type** declares only type-level `actions`. Only the action is validated: an undeclared action is denied, while the id is a runtime record id that the type's `authorize` judges per record. `page`, `user` and `notification` are record types, and their grants use `id: '*'` to mean every record.
 
 A resource type has no title: it is never displayed. `resourceTypes.add` returns `{ type, actions, recordAccess, items? }` and throws for the reserved name `composite`. Set `recordAccess: true` on a type whose grants can be narrowed to records, as `database.collection` does; only such a type can be the target of a composite's data scope. The default judgement is `grantBacked()`: permit when a grant without a policy matches. Pass `also` for a further check once a grant matches.
 
@@ -143,16 +143,21 @@ A resource type has no title: it is never displayed. `resourceTypes.add` returns
 import { ResourceItems, grantBacked } from '@nocobase/authorization/core';
 
 authz.resourceTypes.add({
-  type: 'hub.app',
-  actions: ['read', { name: 'deploy', title: 'Deploy' }],
+  type: 'pm.issue',
+  actions: ['read', { name: 'close', title: 'Close' }],
   authorize: grantBacked({
-    also: async (request) => ownsApp(request.principal.id, request.resource.id),
+    also: async (request) =>
+      ownsIssue(request.principal.id, request.resource.id),
   }),
 });
 
 const settings = new ResourceItems();
 authz.resourceTypes.add({ type: 'settings', items: settings });
-settings.add({ id: 'workflow', title: 'Workflow', actions: ['manage'] });
+settings.add({
+  id: 'scheduler.schedules',
+  title: 'Scheduled tasks',
+  actions: ['read'],
+});
 ```
 
 In a catalog type an item that omits `actions` inherits the type's declared actions and their titles; a catalog type that declares none requires actions on every item. A type action may carry its own `authorize` and `authorizeUnrestricted`. Unsupported items and actions stay denied even for unrestricted identities.

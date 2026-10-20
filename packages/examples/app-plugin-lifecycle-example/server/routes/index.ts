@@ -1,3 +1,5 @@
+import { configurationRoutes } from './parameter-configuration.js';
+import { parameterConfigurationServiceToken } from '../tokens.js';
 import {
   authenticationToken,
   type AuthEnv,
@@ -21,9 +23,13 @@ import type {
   ExpenseDraft,
   LifecycleExampleService,
 } from '../services/lifecycle-example.js';
-import { lifecycleExampleServiceToken } from '../tokens.js';
+import {
+  durableFlowServiceToken,
+  lifecycleExampleServiceToken,
+} from '../tokens.js';
 import type { ExampleLifecycleName, Plain } from '../tokens.js';
 import { outward, tags, toApiError } from './api.js';
+import { durableFlowRoutes, webhookRoutes } from './durable-flows.js';
 import { lifecycleRoutes } from './lifecycle.js';
 import {
   ActAsQuery,
@@ -67,7 +73,7 @@ function listRoutes(
 ): void {
   const list =
     (name: ExampleLifecycleName, page: number, pageSize: number) =>
-    (result: {
+    async (result: {
       readonly records: readonly Plain[];
       readonly total: number;
     }) => ({
@@ -76,7 +82,7 @@ function listRoutes(
         page,
         pageSize,
         total: result.total,
-        parameters: service.parameters(name) as Readonly<
+        parameters: (await service.parameters(name)) as Readonly<
           Record<string, unknown>
         >,
       },
@@ -100,7 +106,7 @@ function listRoutes(
     async (context) => {
       const { actAs, page, pageSize } = context.req.valid('query');
       return context.json(
-        list(
+        await list(
           'tickets',
           page,
           pageSize,
@@ -156,7 +162,7 @@ function listRoutes(
     async (context) => {
       const { actAs, page, pageSize, view } = context.req.valid('query');
       return context.json(
-        list(
+        await list(
           'expenses',
           page,
           pageSize,
@@ -200,13 +206,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const router = new Hono<AuthEnv>();
     const authentication = container.resolve(authenticationToken);
     const service = container.resolve(lifecycleExampleServiceToken);
+    const flows = container.resolve(durableFlowServiceToken);
 
     router.use(`${BASE}/*`, authentication.required());
     router.onError((error, context) =>
       apiErrorHandler(toApiError(error), context),
     );
 
-    // Sweeps the triggers now, so the page need not wait for the schedule.
+    // Sweeps now, so the page need not wait for the schedule.
     router.post(
       `${BASE}/runTriggers`,
       describeRoute({
@@ -214,26 +221,49 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         summary: 'Run the lifecycle triggers now',
         operationId: 'lifecycleExampleRunTriggers',
         description:
-          'Fires every trigger whose records have waited long enough, instead of waiting for the scheduled sweep.',
+          'Does what the scheduled sweep does, at once: fires every trigger whose records have waited long enough, renews the subscriptions whose period ended, and delivers again the sandbox webhooks that were answered with an error.',
         responses: {
           200: dataResponse(TriggersRun),
           401: apiErrorResponse(401),
           500: apiErrorResponse(500),
         },
       }),
-      async (context) =>
-        context.json({ data: { fired: await service.runTriggers() } }),
+      async (context) => context.json({ data: await flows.sweep() }),
     );
 
+    const configuration = container.resolve(parameterConfigurationServiceToken);
+    configurationRoutes(router, BASE, configuration);
     listRoutes(router, service);
+    durableFlowRoutes(router, BASE, flows);
 
     // Each record's routes — its lifecycle, view, transitions and effect
     // runs — follow the paths `@nocobase/lifecycle/react` calls.
-    for (const lifecycle of ['tickets', 'expenses'] as const)
+    for (const [lifecycle, noun] of [
+      ['tickets', 'Ticket'],
+      ['expenses', 'Expense'],
+      ['orders', 'Order'],
+      ['invoices', 'Invoice'],
+      ['exports', 'Export'],
+      ['purchases', 'Purchase'],
+      ['fulfilments', 'Fulfilment'],
+      ['subscriptions', 'Subscription'],
+    ] as const)
       lifecycleRoutes(router, service.runtime, {
         basePath: BASE,
         lifecycle,
-        noun: lifecycle === 'tickets' ? 'Ticket' : 'Expense',
+        noun,
+        ...(['tickets', 'expenses'].includes(lifecycle)
+          ? {
+              authorizeParameters: (actor: string) => {
+                for (const group of service.runtime.describe(lifecycle)
+                  .parameterConfiguration!.groups)
+                  configuration.authorize(actor, 'read', group.key);
+              },
+            }
+          : {}),
+        // The durable flows are about waiting for the outside, not about who
+        // may act: they act as the signed-in user, with no persona.
+        persona: lifecycle === 'tickets' || lifecycle === 'expenses',
       });
 
     // `:recordId`, as the record routes above name it: one path, one parameter.
@@ -279,7 +309,9 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       },
     );
 
-    return new Hono().route('/', router);
+    // The webhooks are registered first: they answer before the session
+    // guard above, which would otherwise match their path too.
+    return new Hono().route('/', webhookRoutes(BASE, flows)).route('/', router);
   });
 
 const routes: readonly AppApiRouteContribution<AppPluginApplication>[] = [

@@ -1,6 +1,8 @@
 /**
  * Runs as the browser and the server's admin API exchange them.
  */
+import type { QuotaReport } from '@nocobase/agent-protocol';
+
 import type {
   ActorKind,
   AgentTool,
@@ -20,6 +22,122 @@ export const CONSULTATION_SUBJECT = 'consultation';
 /** How deep consultations go: the agent asked may ask another, which may not ask further. */
 export const CONSULT_MAX_DEPTH = 2;
 
+/** Execution facts captured at claim time, retained even after a retry releases its holder. */
+export interface RunEffortReport {
+  readonly effort: string | null;
+  /** The tool response that reported the value, never the requested configuration. */
+  readonly source: string;
+  readonly at: string;
+}
+
+export interface RunExecutionSnapshot {
+  readonly quota?: QuotaReport;
+  readonly selection?: {
+    readonly reason: 'preferredQueued' | 'preferredUnavailable';
+    readonly preferredTool: string;
+    readonly preferredModel: string | null;
+    readonly queueEnteredAt: string;
+    readonly waitedSeconds: number;
+  };
+  readonly attempt: number;
+  readonly runnerId: string;
+  readonly runnerName: string | null;
+  readonly runnerOwnerUserId: string | null;
+  readonly runnerOwnerName: string | null;
+  readonly runnerTrust: 'team' | 'ownerOnly' | null;
+  readonly tool: string | null;
+  readonly toolVersion: string | null;
+  readonly modelService: string | null;
+  /** Requested model; null means the tool's default. */
+  readonly model: string | null;
+  /** Models reported by this attempt's primary tool, excluding other tools' usage. */
+  readonly actualModels: readonly string[];
+  /** Requested effort, never evidence of what the tool used. */
+  readonly effort: string | null;
+  readonly effortReports?: readonly RunEffortReport[];
+  /** Latest accepted observation, including repeats; distinct from the value/source change time. */
+  readonly actualEffortObservedAt?: string;
+  readonly actualEffort?: string | null;
+  readonly actualEffortSource?: string | null;
+  readonly actualEffortAt?: string | null;
+  /** Machine fields were removed for this reader. */
+  readonly machineHidden?: boolean;
+  readonly dispatchedAt: string;
+  readonly finishedAt: string | null;
+  readonly failureReason: string | null;
+  /** Set only by the server sweep; runner reports never supply this history marker. */
+  readonly failureSource?: 'sweeper';
+}
+
+/** Maximum consecutive server-reclaimed pre-start attempts, independent of the real failure budget. */
+export const PRE_START_INTERRUPTION_LIMIT = 10;
+
+/** Only server-reclaimed pre-start attempts are exempt from the real failure budget. */
+export function isPreStartInterruption(
+  execution: RunExecutionSnapshot,
+): boolean {
+  return (
+    execution.finishedAt !== null &&
+    execution.failureSource === 'sweeper' &&
+    (execution.failureReason === 'startTimeout' ||
+      execution.failureReason === 'runnerOfflineBeforeStart')
+  );
+}
+
+/** Both pre-start causes share one streak; every other ended attempt breaks it. */
+export function consecutivePreStartInterruptions(
+  executions: readonly RunExecutionSnapshot[],
+): number {
+  let count = 0;
+  for (let index = executions.length - 1; index >= 0; index--) {
+    const execution = executions[index];
+    if (execution.finishedAt === null) continue;
+    if (!isPreStartInterruption(execution)) break;
+    count++;
+  }
+  return count;
+}
+
+export type ModelWaitReason =
+  | 'updatePending'
+  | 'pruning'
+  | 'ready'
+  | 'busy'
+  | 'incompatible'
+  | 'offline'
+  | 'restricted'
+  | 'noSharedRunner'
+  | 'toolNotInstalled'
+  | 'toolUnavailable'
+  | 'unknown'
+  | 'concurrencyFull'
+  | 'sameWorkActive'
+  | 'delayed';
+export interface ModelSelectionWait {
+  readonly queueEnteredAt: string;
+  readonly fallbackAfterSeconds: number;
+  readonly sampledAt: string;
+  readonly entries: readonly {
+    readonly tool: string;
+    readonly model: string | null;
+    readonly reason: ModelWaitReason;
+    readonly compatibleCount: number;
+    readonly blockers?: readonly ModelWaitReason[];
+    readonly runners: readonly {
+      readonly name: string;
+      readonly reason?: ModelWaitReason;
+      readonly lastSeenAt?: string | null;
+      readonly ownerUserId: string | null;
+      readonly used?: number;
+      readonly limit?: number;
+      readonly toolUsed?: number;
+      readonly toolLimit?: number;
+      readonly reportedFree?: number;
+      readonly reportedTotalFree?: number;
+    }[];
+  }[];
+}
+
 export interface Run {
   readonly id: string;
   readonly agentId: string;
@@ -27,6 +145,18 @@ export interface Run {
   readonly agentType: 'online' | 'runner';
   /** The runner holding it; `server:<instance>` for an online run held by an application instance. */
   readonly runnerId: string | null;
+  /** Claim snapshots, oldest first. Absent on responses from older servers. */
+  readonly executions?: readonly RunExecutionSnapshot[];
+  /** The latest attempt's runner, including while queued again. Null when no snapshot exists. */
+  readonly runnerName?: string | null;
+  readonly runnerOwnerUserId?: string | null;
+  readonly runnerOwnerName?: string | null;
+  readonly toolVersion?: string | null;
+  readonly actualModels?: readonly string[];
+  readonly actualEffort?: string | null;
+  readonly actualEffortSource?: string | null;
+  readonly actualEffortAt?: string | null;
+  readonly machineHidden?: boolean;
   /**
    * The entry of the agent's list it works with (`AgentModelEntry`): a runner run's coding tool and model (null: the
    * tool's default), set when a runner claims it; an online run's model service and model, set when it is claimed (a
@@ -49,7 +179,13 @@ export interface Run {
   readonly parentRunId: string | null;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
+  /** The run was asked to start a new session; absent on older servers. */
+  readonly freshSession?: boolean;
   /** The person the run acts as: their permissions bound it, and only their own runners (or team runners) take it. */
+  /** Server-managed authorization for runs caused by one comment, never independent events. */
+  readonly commentRootRunId?: string | null;
+  readonly commentExecution?: 'owner' | 'requester' | null;
+  readonly commentOwnerKey?: string | null;
   readonly actorUserId: string;
   /**
    * Who the chain of work the run belongs to started with: the person whose action woke the agent, or for work a run
@@ -62,6 +198,8 @@ export interface Run {
   readonly requires: readonly RunnerFeature[];
   readonly acceptsInput: boolean;
   readonly availableAt: string | null;
+  /** Start of this queue episode; older servers may omit it. */
+  readonly queueEnteredAt?: string | null;
   readonly leaseExpiresAt: string | null;
   readonly dispatchedAt: string | null;
   readonly startedAt: string | null;
@@ -95,6 +233,16 @@ export interface RunRepo {
   readonly branch: string;
   readonly pushed: boolean;
   readonly headSha: string | null;
+  /**
+   * Why the runner could not push it at the end of the run (`RepoReport.failure`: `authFailed`,
+   * `credentialUnavailable`, `credentialDenied`, `leaseLost`, `rejected` or `error`), with a redacted message; null
+   * when it pushed or did not try. Optional so existing application schemas and older reports remain compatible;
+   * this server always includes it.
+   */
+  readonly failure?: {
+    readonly reason: string;
+    readonly message: string;
+  } | null;
   readonly updatedAt: string;
 }
 
@@ -123,6 +271,11 @@ export interface RunChild {
 }
 
 export interface RunDetail extends Run {
+  readonly confirmedByName?: string;
+  readonly actorName?: string;
+  readonly requestedByName?: string;
+  /** The first run that retried this one; absent on older servers. */
+  readonly retriedRunId?: string | null;
   readonly inputs: readonly RunInputRecord[];
   readonly repos: readonly RunRepo[];
   readonly usage: readonly RunUsageTotal[];
@@ -160,7 +313,13 @@ export interface RunEventPage {
  * - `next`: nothing holds it; the next free runner that asks takes it.
  */
 export const RUN_WAIT_REASONS = [
+  'updatePending',
+  'pruning',
   'agentArchived',
+  'incompatible',
+  'toolNotInstalled',
+  'restricted',
+  'unknown',
   'delayed',
   'noRunnerOnline',
   'runnersOffline',
@@ -318,10 +477,17 @@ export interface RunRequestInput {
  * runs only once the responsible confirms it, as them, or when the person who asked runs it as themselves.
  */
 export interface RunRequest {
+  /** Personal runner consent releases an existing comment chain instead of creating another run. */
+  readonly purpose?: 'personalRunner' | null;
+  readonly commentRunId?: string | null;
+  readonly commentRootRunId?: string | null;
+  readonly commentOwnerKey?: string | null;
   readonly id: string;
   readonly agentId: string;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
+  /** The run was asked to start a new session; absent on older servers. */
+  readonly freshSession?: boolean;
   /** Who answers for the subject: the only person who may confirm or reject the request. */
   readonly responsibleUserId: string;
   /** Who the chain of work started with: the only person who may withdraw it or run it as themselves. */
@@ -353,4 +519,11 @@ export interface RunRequestItem extends RunRequest {
   readonly agentName: string | null;
   readonly responsibleName: string | null;
   readonly requestedByName: string | null;
+}
+
+/** A subject and agent with at least one dispatched or running run; no run details. */
+export interface SubjectAgentWork {
+  readonly subjectId: string;
+  readonly agentId: string;
+  readonly working: boolean;
 }

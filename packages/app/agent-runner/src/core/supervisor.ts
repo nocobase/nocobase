@@ -1,8 +1,13 @@
+import { cleanupRunTemp } from './run-temp.ts';
+import { finalizeRunWorktrees } from './run-worktrees.ts';
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
 //
-// A worker is spawned detached, so it leads a new process group, and everything the agent's tool starts stays in that
-// group. Stopping a run signals the whole group: SIGTERM, then SIGKILL after 5 s. When a worker exits, whatever it left
-// in its group is killed.
+// A worker is spawned detached, so it leads a new process group. Stopping a run signals the whole group: SIGTERM, then
+// SIGKILL after 5 s. Not everything the agent's tool starts stays in that group (Codex, OpenCode, and the shells and
+// servers a tool starts may each lead a group of their own), so while a worker runs the supervisor notes every process
+// group below it (process-tree.ts). Every process the worker's tool starts also carries the run's process tag in its
+// environment, recorded with the run, which still finds what left both the tree and its group before anyone looked.
+// When a worker exits, whatever it left in its group, in those groups and under its tag is killed.
 //
 // The record `<runsDir>/<runId>.json` exists from the spawn until the worker has reported the run's end. A record whose
 // worker is gone, or whose worker outlived its daemon, is an orphan: on start the daemon kills the worker's group,
@@ -31,6 +36,16 @@ import {
 import { deleteRunCredentials } from '../agent/credentials.ts';
 import { EventSpool, spoolPaths } from './events.ts';
 import { LOST_CODES } from './lease.ts';
+import {
+  groupsBelow,
+  killLeftovers,
+  killTagged,
+  listProcesses,
+  newProcessTag,
+  PROCESS_TAG_ENV,
+  workspaceHolders,
+  taggedProcesses,
+} from './process-tree.ts';
 
 export interface RunRecord {
   /** The run's id; for a job, `jobRecordKey(jobId)`. */
@@ -40,6 +55,8 @@ export interface RunRecord {
   jobId?: string;
   /** A job's command runs in a process group of its own: stopped with the worker's. */
   commandPgid?: number;
+  /** The tag in the environment of every process the run starts (process-tree.ts): what carries it is killed with it. */
+  processTag?: string;
   /** The registration (`apps/<key>.json`) the run was claimed through. */
   appKey: string;
   attempt: number;
@@ -52,6 +69,8 @@ export interface RunRecord {
   credentialsFile?: string;
   /** `spawned`, the name of the preparation step under way (prepare/index.ts), `running` or `reporting`. */
   phase: 'spawned' | 'running' | 'reporting' | (string & {});
+  /** Set while the worker saves and removes its worktrees: shutdown waits rather than kill it halfway. */
+  finalizing?: boolean;
   log: string;
 }
 
@@ -71,6 +90,12 @@ export interface Timings {
   cancelGraceMs?: number;
   /** SIGTERM to SIGKILL. */
   killGraceMs?: number;
+  /** How often the daemon checks whether working directories are due for collection. */
+  gcTickMs?: number;
+  /** How often working directories are collected, unless an application asks for sooner. */
+  collectIntervalMs?: number;
+  /** How often the process groups below each worker are noted. */
+  processScanMs?: number;
 }
 
 /** What a worker reads from its stdin: a run, or a job (`kind: 'job'`). */
@@ -187,7 +212,12 @@ export function workerEntry(): string[] {
 // ---------------------------------------------------------------------------------------------------------------
 // The supervisor
 
+/** How many runs' process tags a supervisor keeps to sweep again when it stops. */
+const MAX_TAGS = 1_000;
+
 export interface SupervisedRun {
+  /** Shutdown must not interrupt this worker while it removes its disposable checkout. */
+  readOnly?: boolean;
   /** The record key: the run's id, or `jobRecordKey(jobId)`. */
   runId: string;
   /** Set for a job. */
@@ -200,6 +230,9 @@ export interface SupervisedRun {
   child: ChildProcess;
   exited: Promise<void>;
   cancelSeenAt?: number;
+  upgradeInterrupted?: boolean;
+  /** The process groups seen below the worker, besides its own: stopped when it exits. */
+  groups: Set<number>;
 }
 
 export interface SupervisorOptions {
@@ -215,9 +248,34 @@ export interface SupervisorOptions {
 export class Supervisor {
   private readonly options: SupervisorOptions;
   readonly runs: Map<string, SupervisedRun> = new Map();
+  /** The process tags of the runs it started, the latest `MAX_TAGS`: swept once more when it stops. */
+  private readonly tags = new Set<string>();
+  private scanTimer: NodeJS.Timeout | undefined;
 
   constructor(options: SupervisorOptions) {
     this.options = options;
+  }
+
+  /** Notes the process groups below every worker now. */
+  async scanGroups(): Promise<void> {
+    if (this.runs.size === 0) return;
+    const processes = await listProcesses();
+    for (const run of this.runs.values())
+      for (const group of groupsBelow(run.pid, processes))
+        run.groups.add(group);
+  }
+
+  private watchGroups(): void {
+    if (this.scanTimer !== undefined) return;
+    this.scanTimer = setInterval(() => {
+      if (this.runs.size === 0) {
+        clearInterval(this.scanTimer);
+        this.scanTimer = undefined;
+        return;
+      }
+      void this.scanGroups();
+    }, this.options.timings.processScanMs ?? 5_000);
+    this.scanTimer.unref();
   }
 
   get size(): number {
@@ -274,6 +332,10 @@ export class Supervisor {
     const logFile = runLogPath(paths, runId);
     mkdirSync(path.dirname(logFile), { recursive: true, mode: 0o700 });
     const fd = openSync(logFile, 'a', 0o600);
+    const processTag = newProcessTag();
+    this.tags.add(processTag);
+    if (this.tags.size > MAX_TAGS)
+      this.tags.delete(this.tags.values().next().value!);
     const child = spawn(
       process.execPath,
       [...workerEntry(), workerMarker(runId)],
@@ -284,6 +346,8 @@ export class Supervisor {
           ...process.env,
           NOCOBASE_RUNNER_HOME: paths.home,
           NOCOBASE_RUNNER_WORK_ROOT: paths.workRoot,
+          // The worker hands it to the tool's environment (env.ts).
+          [PROCESS_TAG_ENV]: processTag,
         },
       },
     );
@@ -297,25 +361,47 @@ export class Supervisor {
       ...record,
       pid,
       startedAt,
+      processTag,
       phase: 'spawned',
       log: logFile,
     });
     const exited = new Promise<void>((resolve) => {
       child.on('exit', (code, signal) => {
         log(`${noun} ${label}: worker ${pid} exited (${signal ?? code})`);
-        // Whatever the worker left in its group goes with it.
-        void killGroup(pid, 0).finally(async () => {
-          const cancelled = this.runs.get(runId)?.cancelSeenAt !== undefined;
-          this.runs.delete(runId);
-          await this.afterExit(runId, cancelled);
-          this.options.onExit?.(runId);
-          resolve();
-        });
+        // Whatever the worker left in its group, in the groups seen below it and under its tag goes with it.
+        const groups = this.runs.get(runId)?.groups ?? new Set<number>();
+        void Promise.all([
+          killGroup(pid, 0),
+          killLeftovers(pid, { groups, graceMs: 0, below: false }).then(
+            ({ groups: left }) => {
+              if (left > 0)
+                log(
+                  `${noun} ${label}: killed ${left} process group(s) the worker left behind`,
+                );
+            },
+          ),
+        ])
+          .then(() => killTagged([processTag]))
+          .then((left) => {
+            if (left > 0)
+              log(
+                `${noun} ${label}: killed ${left} process(es) the run left behind`,
+              );
+          })
+          .finally(async () => {
+            const cancelled = this.runs.get(runId)?.cancelSeenAt !== undefined;
+            const upgrade = this.runs.get(runId)?.upgradeInterrupted === true;
+            await this.afterExit(runId, cancelled, upgrade);
+            this.runs.delete(runId);
+            this.options.onExit?.(runId);
+            resolve();
+          });
       });
     });
     child.stdin?.on('error', () => undefined);
     child.stdin?.end(JSON.stringify(job));
     const supervised: SupervisedRun = {
+      readOnly: job.kind !== 'job' && job.payload.workspace.readOnly === true,
       runId,
       ...(record.jobId === undefined ? {} : { jobId: record.jobId }),
       appKey,
@@ -323,8 +409,10 @@ export class Supervisor {
       startedAt,
       child,
       exited,
+      groups: new Set(),
     };
     this.runs.set(runId, supervised);
+    this.watchGroups();
     log(`${noun} ${label}: worker ${pid} started`);
     return supervised;
   }
@@ -333,7 +421,11 @@ export class Supervisor {
    * A worker that exits without having reported its run is handled like an orphan; one killed after a cancel has its
    * cancel acknowledged instead.
    */
-  private async afterExit(runId: string, cancelled: boolean): Promise<void> {
+  private async afterExit(
+    runId: string,
+    cancelled: boolean,
+    upgrade: boolean,
+  ): Promise<void> {
     const record = await readJson<RunRecord>(
       recordPath(this.options.paths, runId),
     ).catch(() => undefined);
@@ -341,10 +433,16 @@ export class Supervisor {
     const noun = record.kind === 'job' ? 'job' : 'run';
     await recoverRun(record, {
       ...this.options,
-      reason: cancelled ? 'cancelled' : 'leaseExpired',
-      detail: cancelled
-        ? `The ${noun} worker did not stop after the cancel and was killed.`
-        : `The ${noun} worker exited without reporting the ${noun}.`,
+      reason: upgrade
+        ? 'runnerUpgrade'
+        : cancelled
+          ? 'cancelled'
+          : 'leaseExpired',
+      detail: upgrade
+        ? 'The runner interrupted this attempt to install an update; the supervisor stopped the worker and preserved local work.'
+        : cancelled
+          ? `The ${noun} worker did not stop after the cancel and was killed.`
+          : `The ${noun} worker exited without reporting the ${noun}.`,
     });
   }
 
@@ -352,12 +450,26 @@ export class Supervisor {
    * The server asked to cancel: wake the worker so it notices now, and kill its group if it has not stopped on its own
    * after the grace period.
    */
-  async enforceCancel(runId: string): Promise<void> {
+  async enforceCancel(runId: string, upgrade: boolean = false): Promise<void> {
     const run = this.runs.get(runId);
     if (run === undefined || run.cancelSeenAt !== undefined) return;
+    // The upgrade signal must not reach a worker before it installs its handlers.
+    if (upgrade) {
+      while (
+        this.runs.has(runId) &&
+        (
+          await readJson<RunRecord>(
+            recordPath(this.options.paths, runId),
+          ).catch(() => undefined)
+        )?.phase === 'spawned'
+      )
+        await delay(20);
+      if (!this.runs.has(runId) || run.cancelSeenAt !== undefined) return;
+    }
     run.cancelSeenAt = Date.now();
+    run.upgradeInterrupted = upgrade;
     try {
-      process.kill(run.pid, 'SIGUSR2');
+      process.kill(run.pid, upgrade ? 'SIGUSR1' : 'SIGUSR2');
     } catch {
       return;
     }
@@ -367,9 +479,49 @@ export class Supervisor {
       delay(grace).then(() => false),
     ]);
     if (stopped) return;
+    if (
+      (
+        await readJson<RunRecord>(recordPath(this.options.paths, runId)).catch(
+          () => undefined,
+        )
+      )?.finalizing
+    ) {
+      await run.exited;
+      return;
+    }
     this.options.log(
       `run ${runId}: worker did not stop within ${grace} ms of the cancel; killing its process group`,
     );
+    if (upgrade) {
+      signalGroup(run.pid, 'SIGTERM');
+      const deadline = Date.now() + (this.options.timings.killGraceMs ?? 5_000);
+      while (groupAlive(run.pid) && Date.now() < deadline) {
+        if (
+          (
+            await readJson<RunRecord>(
+              recordPath(this.options.paths, runId),
+            ).catch(() => undefined)
+          )?.finalizing
+        ) {
+          await run.exited;
+          return;
+        }
+        await delay(100);
+      }
+      if (
+        (
+          await readJson<RunRecord>(
+            recordPath(this.options.paths, runId),
+          ).catch(() => undefined)
+        )?.finalizing
+      ) {
+        await run.exited;
+        return;
+      }
+      await killGroup(run.pid, 0);
+      await run.exited;
+      return;
+    }
     await killGroup(run.pid, this.options.timings.killGraceMs ?? 5_000);
     await run.exited;
   }
@@ -402,11 +554,37 @@ export class Supervisor {
           delay(timeoutMs).then(() => false),
         ]);
         if (!stopped) {
-          await killGroup(run.pid, this.options.timings.killGraceMs ?? 5_000);
+          const finalizing = async (): Promise<boolean> =>
+            run.readOnly === true ||
+            (
+              await readJson<RunRecord>(
+                recordPath(this.options.paths, run.runId),
+              ).catch(() => undefined)
+            )?.finalizing === true;
+          const waitForCleanup = async (): Promise<void> => {
+            this.options.log(
+              `run ${run.runId}: waiting for worktree cleanup before shutdown`,
+            );
+            await run.exited;
+          };
+          if (await finalizing()) return waitForCleanup();
+          signalGroup(run.pid, 'SIGTERM');
+          const deadline =
+            Date.now() + (this.options.timings.killGraceMs ?? 5_000);
+          while (groupAlive(run.pid) && Date.now() < deadline) {
+            if (await finalizing()) return waitForCleanup();
+            await delay(100);
+          }
+          if (await finalizing()) return waitForCleanup();
+          await killGroup(run.pid, 0);
           await run.exited;
         }
       }),
     );
+    // Once more for every run it started: what a leftover started after its run's sweep goes too.
+    const left = await killTagged([...this.tags]);
+    if (left > 0)
+      this.options.log(`killed ${left} process(es) runs left behind`);
   }
 }
 
@@ -419,7 +597,7 @@ export interface RecoverOptions {
   timings: Timings;
   log: (message: string) => void;
   /** `cancelled` acknowledges the cancel instead of failing the run. */
-  reason: 'leaseExpired' | 'runnerOffline' | 'cancelled';
+  reason: 'leaseExpired' | 'runnerOffline' | 'cancelled' | 'runnerUpgrade';
   detail: string;
 }
 
@@ -441,9 +619,50 @@ export async function recoverRun(
     log(`run ${runId}: killing orphaned process group ${record.pid}`);
     await killGroup(record.pid, 0);
   }
+  if (record.processTag !== undefined) {
+    const killed = await killTagged([record.processTag]);
+    if (killed > 0)
+      log(`${runId}: killed ${killed} process(es) the run left behind`);
+  }
   if (record.commandPgid !== undefined && groupAlive(record.commandPgid)) {
     log(`${runId}: killing the job's command group ${record.commandPgid}`);
     await killGroup(record.commandPgid, 0);
+  }
+  let detail = options.detail;
+  if (record.kind !== 'job' && record.workDir !== undefined) {
+    const holders = await workspaceHolders(record.workDir);
+    const tags =
+      record.processTag === undefined
+        ? []
+        : await taggedProcesses([record.processTag]);
+    const liveGroup = (await listProcesses()).some(
+      (p) => p.pgid === record.pid,
+    );
+    const stopped = holders.length + tags.length === 0 && !liveGroup;
+    const results = await finalizeRunWorktrees(
+      paths,
+      record.workDir,
+      log,
+      holders.length + tags.length > 0 || liveGroup
+        ? {
+            unsafeReason:
+              'Processes still hold the attempt directory after stopping.',
+          }
+        : {},
+    );
+    if (stopped) {
+      try {
+        await cleanupRunTemp(paths, record.workDir);
+      } catch (error) {
+        // Temporary cleanup must not prevent credential removal, reporting or worker exit completion.
+        const reason = `Run temporary directory retained for ${record.workDir}: ${String(error)}`;
+        log(reason);
+        detail += `\n${reason}`;
+      }
+    }
+    const failed = results.filter((result) => !result.saved);
+    if (failed.length > 0)
+      detail += `\nDirectory retained: ${record.workDir}: ${failed.map((r) => r.reason).join('; ')}`;
   }
   if (record.credentialsFile !== undefined)
     await deleteRunCredentials(record.credentialsFile);
@@ -493,8 +712,8 @@ export async function recoverRun(
   });
   spool.push(
     job
-      ? { type: 'log', stream: 'runner', content: options.detail }
-      : { type: 'status', content: options.detail, meta: { orphaned: true } },
+      ? { type: 'log', stream: 'runner', content: detail }
+      : { type: 'status', content: detail, meta: { orphaned: true } },
   );
   const delivered = await spool.drain(
     options.timings.reportTimeoutMs ?? 30_000,
@@ -505,7 +724,7 @@ export async function recoverRun(
     else
       await client.request('POST', routes.fail, {
         reason: options.reason,
-        detail: options.detail,
+        detail,
       });
     log(`run ${runId}: reported as failed (${options.reason})`);
   } catch (error) {
