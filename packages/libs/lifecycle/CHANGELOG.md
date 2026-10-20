@@ -1,5 +1,11 @@
 # @nocobase/lifecycle
 
+## 0.1.0-beta.3
+
+### Minor Changes
+
+- c1ab9d4: Add committed record-change notifications for effect and continuation updates, a cancellable snapshot refresh API, and event-driven Lifecycle examples with serialized retries and periodic reconciliation. Preserve existing transition events and the React hook's default polling interval while allowing slow reads to finish. Keep effect cancellation active while asynchronous change notifications are pending. Wait for in-flight actions and repeat overlapping snapshot reads so delayed action responses cannot discard newer committed state. Revalidate effect claims after asynchronous preparation to skip expired or replaced attempts, and preserve replacement cancellation when stale attempts finish.
+
 ## 0.1.0-beta.2
 
 ### Minor Changes
