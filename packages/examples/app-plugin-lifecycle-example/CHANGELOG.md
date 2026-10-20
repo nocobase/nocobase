@@ -1,5 +1,27 @@
 # @nocobase/app-plugin-lifecycle-example
 
+## 0.1.0-beta.10
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- Updated dependencies [1952789]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/app-client@4.0.0-beta.0
+
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- c1ab9d4: Add committed record-change notifications for effect and continuation updates, a cancellable snapshot refresh API, and event-driven Lifecycle examples with serialized retries and periodic reconciliation. Preserve existing transition events and the React hook's default polling interval while allowing slow reads to finish. Keep effect cancellation active while asynchronous change notifications are pending. Wait for in-flight actions and repeat overlapping snapshot reads so delayed action responses cannot discard newer committed state. Revalidate effect claims after asynchronous preparation to skip expired or replaced attempts, and preserve replacement cancellation when stale attempts finish.
+- Updated dependencies [c1ab9d4]
+  - @nocobase/lifecycle@0.1.0-beta.3
+  - @nocobase/app-server@3.0.0-beta.0
+
 ## 0.1.0-beta.8
 
 ### Patch Changes

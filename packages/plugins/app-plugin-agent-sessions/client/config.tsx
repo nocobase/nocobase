@@ -29,6 +29,8 @@ export interface LinkPanelProps {
 export interface AgentSessionsRouteOptions {
   /** The application's command line, whose `acp start` connects a computer, such as `nb-studio`. */
   readonly cli: string;
+  /** Application waiting projection, shared by page and panel lists. */
+  readonly sessionMarks?: ComponentType<{ sessionId: string }>;
   /** Application-owned setup trigger and dialog; omitted to show the default command checklist. */
   readonly connectPrompt?: ComponentType;
   /**
@@ -40,6 +42,8 @@ export interface AgentSessionsRouteOptions {
 
 export interface AgentSessionsSettings {
   readonly cli: string;
+  /** Application waiting projection, shared by page and panel lists. */
+  readonly sessionMarks?: ComponentType<{ sessionId: string }>;
   readonly connectPrompt: ComponentType | null;
   readonly linkPanels: Readonly<Record<string, ComponentType<LinkPanelProps>>>;
 }

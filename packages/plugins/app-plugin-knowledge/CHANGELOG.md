@@ -1,5 +1,33 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- Updated dependencies [1952789]
+- Updated dependencies [06e53be]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/app-client@4.0.0-beta.0
+
+## 0.1.0-beta.8
+
+### Minor Changes
+
+- 7a6d311: Declare indexer notification coverage and expose it as optional snapshot metadata. Share event and fallback refresh scheduling across index query observers, reconcile complete acknowledged subscriptions once per minute, and use bounded adaptive polling for incomplete or legacy indexers. Refresh inherited permission changes, clear inaccessible index snapshots, and release subscriptions and timers when queries leave the cache. Preserve existing API data and client method return shapes. Show failed index refreshes with a reader-accessible retry action in document badges, section panels and space summaries.
+
+### Patch Changes
+
+- @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/app-plugin-file@1.0.0-beta.25
+
 ## 0.1.0-beta.7
 
 ### Minor Changes

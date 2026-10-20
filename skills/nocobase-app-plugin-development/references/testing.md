@@ -89,7 +89,7 @@ Call actual component loaders and render public components through their support
 
 For UI work, verify shadcn interaction and keyboard behavior, the shared theme in light/dark modes, and loading, empty, error, and success states. An App alias resolving in one development environment does not prove compiled plugin imports resolve for an installed consumer.
 
-Use `en-US` as the locale key-shape source, run the relevant `i18n:check`/strict check, and render at least two supported languages. Public components must also work outside their plugin's render subtree. Server request tests cover session/header/default locale resolution and stable `code/ns/key/params` plus translated messages. Jobs, mail, and notifications must load resources before obtaining a fixed translator for a non-default recipient locale. Ensure emitted locale chunks are present in the build and tarball. See [internationalization](i18n.md).
+Use `en-US` as the locale key-shape source, confirm every locale manifest of the plugin and of libraries it depends on that ship translations lists all ten [supported languages](i18n.md#ship-all-ten-supported-languages) with complete resources, run the relevant `i18n:check`/strict check, and render at least two supported languages. Public components must also work outside their plugin's render subtree. Server request tests cover session/header/default locale resolution and stable `code/ns/key/params` plus translated messages. Jobs, mail, and notifications must load resources before obtaining a fixed translator for a non-default recipient locale. Ensure emitted locale chunks are present in the build and tarball. See [internationalization](i18n.md).
 
 ## Registry and Skill verification
 

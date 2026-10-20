@@ -65,3 +65,42 @@ describe('session list archive navigation', () => {
     },
   );
 });
+
+it('shows an unread mark and a permission label together, including an offline computer', async () => {
+  const { AgentSessionsConfigContext } = await import('../../client/config.js');
+  const query = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const session = {
+    id: 's',
+    title: 'Pending conversation',
+    links: [],
+    waiting: true,
+    computerOnline: false,
+    running: false,
+    archivedAt: null,
+    lastActivityAt: new Date().toISOString(),
+  };
+  await renderWithApp(
+    <QueryClientProvider client={query}>
+      <AgentSessionsConfigContext.Provider
+        value={{
+          cli: 'app',
+          connectPrompt: null,
+          linkPanels: {},
+          sessionMarks: () => <span role='img' aria-label='Unread reply' />,
+        }}
+      >
+        <SessionList activeId={undefined} />
+      </AgentSessionsConfigContext.Provider>
+    </QueryClientProvider>,
+    {
+      locale: 'en-US',
+      namespace: '@nocobase/app-plugin-agent-sessions',
+      plugins: [plugin({ routes: false })],
+      fetch: answerApi(() => ({ data: [session], meta: {} })),
+    },
+  );
+  expect(await screen.findByText('Waiting for your permission')).toBeVisible();
+  expect(screen.getByRole('img', { name: 'Unread reply' })).toBeVisible();
+});

@@ -5,6 +5,7 @@ const enUS = {
   navigation: { agentSessions: 'My agents' },
   actions: { close: 'Close', copy: 'Copy', cancel: 'Cancel' },
   status: {
+    permission: 'Waiting for your permission',
     loading: 'Loading',
     offline: 'Computer offline',
     waiting: 'Needs you',

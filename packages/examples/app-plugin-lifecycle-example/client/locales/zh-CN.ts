@@ -460,7 +460,7 @@ const zhCN: LifecycleExampleResource = {
       cancelled: {
         customer: '客户已取消。',
         timeout: '已关闭：未在时限内支付。',
-        refundRequested: '已应客户要求退款。',
+        refundRequested: '客户已申请退款。',
       },
       refunding: '退款中……',
       refundNeedsAttention: '退款失败：{{error}} 等待人工重试。',

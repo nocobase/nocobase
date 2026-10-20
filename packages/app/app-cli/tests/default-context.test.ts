@@ -96,11 +96,37 @@ it('prefers source and propagates import errors instead of falling back to JavaS
   await expect(context.loadRuntime()).rejects.toThrow('source module failed');
 });
 
+it.each(['relative', 'absolute'])(
+  'overrides configured storage with a %s path without changing the process environment',
+  async (kind) => {
+    const rootDir = fixture('ts', 'storage-path-');
+    writeFileSync(
+      path.join(rootDir, '.env'),
+      'APP_STORAGE_DIR=development-storage\n',
+    );
+    const previous = process.env.APP_STORAGE_DIR;
+    const runtime = await createDefaultCommandContext({
+      rootDir,
+      storageDir:
+        kind === 'absolute'
+          ? path.join(rootDir, 'test-storage')
+          : 'test-storage',
+    }).loadRuntime();
+    try {
+      expect(runtime.paths.storage()).toBe(path.join(rootDir, 'test-storage'));
+      expect(process.env.APP_STORAGE_DIR).toBe(previous);
+    } finally {
+      await runtime.scope.destroy();
+    }
+  },
+);
+
 it('reports missing modules only when needed and supports explicit overrides', async () => {
   const loadRuntime = vi.fn();
   const createApp = vi.fn();
   const context = createDefaultCommandContext({
     rootDir: '/missing-app',
+    storageDir: '/test-storage',
     loadRuntime,
     createApp,
   });

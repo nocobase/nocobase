@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "1.0.0-beta.54",
+  "version": "1.0.0-beta.56",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.54",
+    "defaultTemplateVersion": "1.0.0-beta.56",
     "cli": {
       "bin": "nocobase-examples",
       "displayName": "NocoBase Examples",
@@ -60,6 +60,7 @@
     "ai": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
+    "date-fns": "catalog:",
     "dayjs": "^1.10.7",
     "dingtalk-jsapi": "3.1.1",
     "echarts": "^5.5.0",
@@ -74,6 +75,7 @@
     "postcss": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
+    "react-day-picker": "^10.0.2",
     "react-dom": "catalog:",
     "react-error-boundary": "^6.0.0",
     "react-hook-form": "^7.57.0",

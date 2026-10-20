@@ -4,16 +4,16 @@ import type { ModelService } from '@nocobase/app-plugin-agents/shared/models';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 
-import { ModelsLink } from '#components/online-agent/models-link';
+import { ArrowLeftRight, Copy, Languages, Trash2 } from 'lucide-react';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
+import { ChatModelSelect } from '#components/chat-model-select';
 import { Alert, AlertDescription } from '#components/ui/alert';
 import { Button } from '#components/ui/button';
 import {
   Field,
   FieldDescription,
   FieldError,
-  FieldGroup,
   FieldLabel,
 } from '#components/ui/field';
 import {
@@ -101,7 +101,7 @@ function TranslationDemo(): ReactElement {
             .filter((model) => model.kind === 'chat')
             .map((model) => ({
               value: JSON.stringify([service.name, model.value]),
-              label: `${service.title} / ${model.label}`,
+              label: model.label,
               ref: { modelService: service.name, model: model.value },
             })),
         )
@@ -182,66 +182,31 @@ function TranslationDemo(): ReactElement {
       }
     }
   }
+  async function copyTranslation(): Promise<void> {
+    const owner = lifetimeRef.current;
+    try {
+      await navigator.clipboard.writeText(translation);
+      if (owner?.signal.aborted) return;
+      toaster.show({
+        id: 'ai-translation-copy',
+        type: 'success',
+        title: t('aiTranslation.copied'),
+      });
+    } catch {
+      if (owner?.signal.aborted) return;
+      toaster.show({
+        id: 'ai-translation-copy',
+        type: 'error',
+        title: t('aiTranslation.copyFailed'),
+      });
+    }
+  }
 
   return (
-    <PageContainer>
+    <PageContainer className='mx-auto max-w-7xl'>
       <PageHeader
         title={t('aiTranslation.title')}
         description={t('aiTranslation.description')}
-        actions={
-          <div className='flex min-w-0 flex-wrap items-end gap-2'>
-            <Field className='w-full min-w-0 sm:w-64'>
-              <FieldLabel htmlFor='translation-model'>
-                {t('aiTranslation.model')} *
-              </FieldLabel>
-              {catalog.phase === 'loading' ? (
-                <Skeleton
-                  className='h-8 w-full'
-                  role='status'
-                  aria-label={t('status.loading')}
-                />
-              ) : (
-                <Select
-                  items={models}
-                  value={selected?.value ?? null}
-                  disabled={pending || !selected || Boolean(accessStatus)}
-                  onValueChange={(value) => {
-                    if (value) {
-                      setModelKey(value);
-                      setTranslation('');
-                    }
-                  }}
-                >
-                  <SelectTrigger
-                    id='translation-model'
-                    className='w-full'
-                    aria-required
-                  >
-                    <SelectValue placeholder={t('aiTranslation.selectModel')} />
-                  </SelectTrigger>
-                  <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-                    <SelectGroup>
-                      {models.map((model) => (
-                        <SelectItem key={model.value} value={model.value}>
-                          {model.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              )}
-            </Field>
-            <Button
-              disabled={pending || !selected || Boolean(accessStatus)}
-              onClick={() => void translate()}
-            >
-              {pending && <Spinner data-icon='inline-start' />}
-              {pending
-                ? t('aiTranslation.translating')
-                : t('aiTranslation.translate')}
-            </Button>
-          </div>
-        }
       />
       {accessStatus ? (
         <Alert variant='destructive'>
@@ -275,22 +240,13 @@ function TranslationDemo(): ReactElement {
             )}
           </AlertDescription>
         </Alert>
-      ) : catalog.phase === 'ready' && models.length === 0 ? (
-        <Alert role='status'>
-          <AlertDescription>
-            {t('aiTranslation.noModels')} <ModelsLink explain />
-          </AlertDescription>
-        </Alert>
       ) : null}
-      <FieldGroup className='grid gap-4 md:grid-cols-2'>
-        <Field
-          className='min-w-0 rounded-lg border bg-card p-4'
-          data-invalid={Boolean(validation)}
-        >
-          <div className='flex flex-wrap items-center justify-between gap-2'>
-            <FieldLabel htmlFor='translation-original'>
-              {t('aiTranslation.original')} *
-            </FieldLabel>
+      <section
+        aria-label={t('aiTranslation.workspace')}
+        className='overflow-hidden rounded-lg border bg-card text-card-foreground'
+      >
+        <div className='flex flex-wrap items-center justify-between gap-4 border-b p-4'>
+          <div className='flex min-w-0 flex-wrap items-center gap-2'>
             <LanguageSelect
               source
               value={sourceLanguage}
@@ -300,42 +256,24 @@ function TranslationDemo(): ReactElement {
                 setTranslation('');
               }}
             />
-          </div>
-          <Textarea
-            id='translation-original'
-            ref={originalRef}
-            value={text}
-            readOnly={pending}
-            className='field-sizing-fixed h-80 overflow-y-auto'
-            aria-required
-            aria-invalid={Boolean(validation)}
-            aria-describedby={
-              validation ? 'translation-error' : 'translation-limit'
-            }
-            placeholder={t('aiTranslation.sourcePlaceholder')}
-            onChange={(event) => {
-              setText(event.target.value);
-              setTranslation('');
-              if (validation) setValidation(validate(event.target.value));
-            }}
-          />
-          <FieldDescription id='translation-limit'>
-            {t('aiTranslation.limit')}
-          </FieldDescription>
-          {validation && (
-            <FieldError id='translation-error'>
-              {t(`aiTranslation.${validation}`)}
-            </FieldError>
-          )}
-        </Field>
-        <Field
-          className='min-w-0 rounded-lg border bg-card p-4'
-          aria-busy={pending}
-        >
-          <div className='flex flex-wrap items-center justify-between gap-2'>
-            <FieldLabel htmlFor='translation-result'>
-              {t('aiTranslation.translation')}
-            </FieldLabel>
+            <Button
+              variant='ghost'
+              size='icon'
+              aria-label={t('aiTranslation.swap')}
+              disabled={pending || sourceLanguage === 'auto'}
+              onClick={() => {
+                if (sourceLanguage === 'auto') return;
+                setSourceLanguage(targetLanguage);
+                setTargetLanguage(sourceLanguage);
+                if (translation) {
+                  setText(translation);
+                  setTranslation(text);
+                }
+                setValidation(null);
+              }}
+            >
+              <ArrowLeftRight aria-hidden='true' />
+            </Button>
             <LanguageSelect
               value={targetLanguage}
               disabled={pending}
@@ -347,15 +285,161 @@ function TranslationDemo(): ReactElement {
               }}
             />
           </div>
-          <Textarea
-            id='translation-result'
-            value={translation}
-            readOnly
-            className='field-sizing-fixed h-80 overflow-y-auto'
-            placeholder={t('aiTranslation.resultPlaceholder')}
-          />
-        </Field>
-      </FieldGroup>
+          <div className='flex min-w-0 flex-wrap items-center gap-3'>
+            <Field orientation='horizontal' className='w-auto min-w-0'>
+              <FieldLabel htmlFor='translation-model' className='sr-only'>
+                {t('aiTranslation.model')}
+              </FieldLabel>
+              <div className='w-48 min-w-0'>
+                {catalog.phase === 'loading' ? (
+                  <Skeleton
+                    className='h-8 w-full'
+                    role='status'
+                    aria-label={t('status.loading')}
+                  />
+                ) : (
+                  <ChatModelSelect
+                    services={catalog.phase === 'ready' ? catalog.data : []}
+                    value={selected?.value ?? null}
+                    disabled={pending || !selected || Boolean(accessStatus)}
+                    onValueChange={(value) => {
+                      if (value) {
+                        setModelKey(value);
+                        setTranslation('');
+                      }
+                    }}
+                    id='translation-model'
+                    aria-required
+                    placeholder={t('aiTranslation.selectModel')}
+                  />
+                )}
+              </div>
+            </Field>
+            <Button
+              disabled={pending || !selected || Boolean(accessStatus)}
+              onClick={() => void translate()}
+            >
+              {pending ? (
+                <Spinner data-icon='inline-start' />
+              ) : (
+                <Languages data-icon='inline-start' aria-hidden='true' />
+              )}
+              {pending
+                ? t('aiTranslation.translating')
+                : t('aiTranslation.translate')}
+            </Button>
+          </div>
+        </div>
+        <div className='grid min-w-0 md:grid-cols-2'>
+          <Field
+            className='min-w-0 gap-4 p-5 md:p-6'
+            data-invalid={Boolean(validation)}
+          >
+            <div className='flex min-h-8 items-center justify-between gap-2'>
+              <FieldLabel htmlFor='translation-original'>
+                {t('aiTranslation.original')}
+              </FieldLabel>
+            </div>
+            <Textarea
+              id='translation-original'
+              ref={originalRef}
+              value={text}
+              readOnly={pending}
+              className='field-sizing-fixed h-64 resize-none rounded-none border-0 p-0 shadow-none focus-visible:border-transparent! focus-visible:shadow-none! focus-visible:ring-0 md:h-72 dark:bg-transparent'
+              aria-required
+              aria-invalid={Boolean(validation)}
+              aria-describedby={
+                validation ? 'translation-error' : 'translation-limit'
+              }
+              placeholder={t('aiTranslation.sourcePlaceholder')}
+              onChange={(event) => {
+                setText(event.target.value);
+                setTranslation('');
+                if (validation) setValidation(validate(event.target.value));
+              }}
+            />
+            <div className='flex min-h-8 items-center justify-between gap-2'>
+              <FieldDescription
+                id='translation-limit'
+                className='text-xs tabular-nums'
+              >
+                <span aria-hidden='true'>
+                  {text.length.toLocaleString()} /{' '}
+                  {TRANSLATION_MAX_LENGTH.toLocaleString()}
+                </span>
+                <span className='sr-only'>{t('aiTranslation.limit')}</span>
+              </FieldDescription>
+              <Button
+                variant='ghost'
+                size='icon-sm'
+                aria-label={t('aiTranslation.clear')}
+                title={t('aiTranslation.clear')}
+                disabled={pending || !text}
+                onClick={() => {
+                  setText('');
+                  setTranslation('');
+                  setValidation(null);
+                  originalRef.current?.focus();
+                }}
+              >
+                <Trash2 aria-hidden='true' />
+              </Button>
+            </div>
+            {validation && (
+              <FieldError id='translation-error'>
+                {t(`aiTranslation.${validation}`)}
+              </FieldError>
+            )}
+          </Field>
+          <Field
+            className='min-w-0 gap-4 border-t bg-muted/10 p-5 md:border-t-0 md:border-l md:p-6'
+            aria-busy={pending}
+          >
+            <div className='flex min-h-8 items-center'>
+              <FieldLabel htmlFor='translation-result'>
+                {t('aiTranslation.translation')}
+              </FieldLabel>
+            </div>
+            <Textarea
+              id='translation-result'
+              value={translation}
+              readOnly
+              className='field-sizing-fixed h-64 resize-none rounded-none border-0 p-0 shadow-none focus-visible:border-transparent! focus-visible:shadow-none! focus-visible:ring-0 md:h-72 dark:bg-transparent'
+              placeholder={t('aiTranslation.resultPlaceholder')}
+            />
+            <div className='flex min-h-8 items-center justify-end'>
+              <Button
+                variant='ghost'
+                size='sm'
+                disabled={pending || !translation}
+                onClick={() => void copyTranslation()}
+              >
+                <Copy aria-hidden='true' />
+                {t('aiTranslation.copy')}
+              </Button>
+            </div>
+          </Field>
+        </div>
+      </section>
+      <div className='flex flex-wrap items-center gap-2 text-xs text-muted-foreground'>
+        <span>{t('aiTranslation.tryExample')}</span>
+        {(['product', 'email', 'notice'] as const).map((sample) => (
+          <Button
+            key={sample}
+            variant='outline'
+            size='sm'
+            disabled={pending}
+            onClick={() => {
+              setText(t(`aiTranslation.examples.${sample}.text`));
+              setTranslation('');
+              setValidation(null);
+              originalRef.current?.focus();
+            }}
+          >
+            {t(`aiTranslation.examples.${sample}.title`)}
+          </Button>
+        ))}
+      </div>
     </PageContainer>
   );
 }

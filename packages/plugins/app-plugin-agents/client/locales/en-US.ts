@@ -9,6 +9,17 @@ import runtimesEnUS from './runtimes.en-US.js';
 import runWaitEnUS from './runWait.en-US.js';
 
 const pages = {
+  modelSuggestions: {
+    design:
+      'Designs, architecture, hard investigations and reviews of important changes.',
+    routine: 'Well-scoped implementation, small fixes, tests and wording.',
+    small: 'Small, mechanical changes; cheap and fast.',
+    explanation:
+      'Understanding requirements, writing proposals and explanations.',
+    large: 'Larger implementations, changes across packages and refactoring.',
+    review: 'Code review and reading CI failures.',
+  },
+
   actions: {
     back: 'Back',
     cancel: 'Cancel',
