@@ -1,5 +1,22 @@
+import type { Auth } from '@nocobase/app-plugin-authentication';
+import type { OnlineAgentCredentials } from '../../cli/online-credential.js';
+import type { CallerIdentity } from '../../core/callers/index.js';
 import type { OnlineAgentToolContext } from '../agent/types.js';
 import type { CliCommand } from '@nocobase/app-cli-client/parse';
+
+/** Application dependencies; the CLI is resolved only when a Sandbox is actually created. */
+export interface OnlineAgentSandboxOptions {
+  builtinSkills?: OnlineAgentSandboxSkillCatalog;
+  bin?: () => string | undefined;
+  cli?: () => {
+    auth: Auth;
+    credentials: OnlineAgentCredentials;
+    commandsOf(
+      identity: CallerIdentity,
+      token: string,
+    ): Promise<CommandSurface | undefined>;
+  };
+}
 
 /** Current application-owned Skill resources, loaded anew for every SDK execution segment. */
 export interface OnlineAgentSandboxSkill {
@@ -41,7 +58,6 @@ export interface OnlineAgentSandboxProvider {
   prepare(
     input: OnlineAgentSandboxInput,
   ): Promise<OnlineAgentSandboxPreparation>;
-  create(input: OnlineAgentSandboxInput): Promise<OnlineAgentSandbox>;
 }
 /** Caller-filtered application commands and authenticated, application-local dispatch. */
 export interface CommandSurface {

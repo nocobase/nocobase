@@ -76,22 +76,3 @@ export async function loadSkills(
   }
   return { skills, files, unreadable };
 }
-
-export function sandboxInstructions(
-  loaded: Awaited<ReturnType<typeof loadSkills>>,
-  bin?: string,
-): string {
-  return [
-    'Virtual shell: /tmp is the only writable directory; /skills is read-only. No host files, environment, network or external runtimes.',
-    bin
-      ? 'Application CLI: ' +
-        bin +
-        '. Use --help to discover current commands. Authorization and business rules apply; never retry an uncertain write without checking its result.'
-      : 'No application CLI is configured.',
-    'Selected skills (read with skill or cat only when needed):',
-    ...[...loaded.skills].map(
-      ([slug, skill]) =>
-        slug + ': ' + skill.description + ' (/skills/' + slug + '/SKILL.md)',
-    ),
-  ].join('\n');
-}

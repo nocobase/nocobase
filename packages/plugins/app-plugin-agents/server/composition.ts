@@ -151,12 +151,12 @@ import {
 } from './core/runs/index.js';
 
 import { createSandboxProvider } from './online/sandbox/provider.js';
-import type { OnlineAgentSandboxProvider } from './online/sandbox/types.js';
+import type { OnlineAgentSandboxOptions } from './online/sandbox/types.js';
 export interface AgentsDeps {
   readonly uiRecovery?: OnlineAgentRecoveryConfig;
   readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
   readonly resolver?: ServiceResolver;
-  readonly sandboxProvider?: OnlineAgentSandboxProvider;
+  readonly sandbox?: OnlineAgentSandboxOptions;
   readonly runRetentionDays?: () => number;
   /** The first back-off of a failed run attempt (`agents.runs.retryBaseDelayMs`); 30 seconds when left out. */
   readonly retryBaseDelayMs?: number;
@@ -602,7 +602,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
   const onlineAgent = new OnlineAgentService({
     configurator,
-    sandboxProvider: deps.sandboxProvider ?? createSandboxProvider({ skills }),
+    sandboxProvider: createSandboxProvider({ skills, ...deps.sandbox }),
     runner: runnerOnlineAgent,
     uiStreams,
     sessions,

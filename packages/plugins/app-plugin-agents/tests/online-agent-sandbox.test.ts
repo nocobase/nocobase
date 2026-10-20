@@ -42,15 +42,17 @@ import { createSessionManager } from '../server/online/agent/persistence/manager
 import type { OnlineAgentContext } from '../server/online/agent/types.js';
 import type { RealtimeOnlineAgent } from '../server/online/agent/contracts.js';
 import { createSandboxProvider } from '../server/online/sandbox/provider.js';
-import { createAuthenticatedSandboxProvider } from '../server/online/sandbox/authenticated.js';
+import * as sandboxImplementation from '../server/online/sandbox/provider.js';
+import { createAgents } from '../server/composition.js';
 import type {
   OnlineAgentSandbox,
+  OnlineAgentSandboxInput,
+  OnlineAgentSandboxProvider,
   OnlineAgentSandboxSkillCatalog,
 } from '../server/online/sandbox/types.js';
 import { apiRoutes } from '../server/routes/index.js';
 import { agentsToken } from '../server/tokens.js';
 import { AgentsProvider } from '../server/providers/agents.js';
-import { onlineAgentSandboxProviderToken } from '../server/online/sandbox/tokens.js';
 import {
   OnlineAgentCredentials,
   onlineAgentCredentialsToken,
@@ -109,6 +111,19 @@ function answer(value: string) {
     { type: 'text-end', id: 'answer' },
     finish('stop'),
   ]);
+}
+
+async function createPreparedSandbox(
+  provider: OnlineAgentSandboxProvider,
+  input: OnlineAgentSandboxInput,
+): Promise<OnlineAgentSandbox> {
+  const prepared = await provider.prepare(input);
+  try {
+    return await prepared.create();
+  } catch (error) {
+    prepared.dispose();
+    throw error;
+  }
 }
 
 async function fixture(
@@ -225,6 +240,18 @@ async function fixture(
     skills: h.services.skills,
     builtinSkills,
   });
+  const credentials = new OnlineAgentCredentials();
+  const wired = createSandboxProvider({
+    skills: h.services.skills,
+    builtinSkills,
+    bin: () => 'acme',
+    cli: () => ({
+      auth,
+      credentials,
+      commandsOf: (identity, token) =>
+        agentsProvider!['commandsOf'](identity, token),
+    }),
+  });
   const allocated: OnlineAgentSandbox[] = [];
   const errors: unknown[] = [];
   service = new OnlineAgentService({
@@ -234,24 +261,17 @@ async function fixture(
     defaultModel: async () => ref,
     sandboxProvider: {
       async prepare(input) {
-        const prepared = await container
-          .resolve(onlineAgentSandboxProviderToken)
-          .prepare(input);
+        const prepared = await wired.prepare(input);
         return {
-          ...prepared,
+          instructions: prepared.instructions,
+          readSkill: (name) => prepared.readSkill(name),
+          dispose: () => prepared.dispose(),
           async create() {
             const sandbox = await prepared.create();
             allocated.push(sandbox);
             return sandbox;
           },
         };
-      },
-      async create(input) {
-        const sandbox = await container
-          .resolve(onlineAgentSandboxProviderToken)
-          .create(input);
-        allocated.push(sandbox);
-        return sandbox;
       },
     },
     onError: (error) => errors.push(error),
@@ -271,18 +291,7 @@ async function fixture(
   const cli = new CliService();
   cli.describe({ bin: 'acme' });
   agentsProvider = new AgentsProvider(application);
-  container.instance(onlineAgentCredentialsToken, new OnlineAgentCredentials());
-  container.singleton(onlineAgentSandboxProviderToken, () =>
-    createAuthenticatedSandboxProvider({
-      bin: () => 'acme',
-      skills: h.services.skills,
-      builtinSkills,
-      auth,
-      credentials: container.resolve(onlineAgentCredentialsToken),
-      commandsOf: (identity, token) =>
-        agentsProvider!['commandsOf'](identity, token),
-    }),
-  );
+  container.instance(onlineAgentCredentialsToken, credentials);
   container.instance(agentsToken, { ...h.services, onlineAgent: service });
   const api = await apiRoutes.createRouter(application);
   api.post(
@@ -381,7 +390,7 @@ async function fixture(
     app,
     auth,
     credentials: container.resolve(onlineAgentCredentialsToken),
-    wired: container.resolve(onlineAgentSandboxProviderToken),
+    wired,
     users,
     alice,
     bob,
@@ -397,11 +406,60 @@ async function fixture(
 }
 
 describe('Native Sandbox without application CLI wiring', () => {
+  it('assembles one internal Sandbox provider with its own Skills and resolves CLI dependencies only on creation', async () => {
+    const f = await fixture(
+      new MockLanguageModelV4({ doStream: async () => answer('unused') }),
+    );
+    const target = await f.record();
+    const selected = await f.guide(target.id);
+    const create = vi.spyOn(sandboxImplementation, 'createSandboxProvider');
+    const cli = vi.fn(() => {
+      throw new Error('CLI dependencies unavailable.');
+    });
+    const composed = createAgents({
+      database: h.database,
+      idGenerator: { generateString: randomUUID },
+      sandbox: { cli },
+    });
+    try {
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(create.mock.calls[0][0].skills).toBe(composed.skills);
+      expect(cli).not.toHaveBeenCalled();
+      const provider = create.mock.results[0].value;
+      expect(provider).not.toHaveProperty('create');
+      const prepared = await provider.prepare({
+        sessionId: 'composition',
+        context: {
+          ...f.alice.context,
+          sessionId: 'composition',
+          signal: new AbortController().signal,
+        },
+        skill: [selected.id],
+      });
+      try {
+        expect((await prepared.readSkill('query-record')).ok).toBe(true);
+        expect(cli).not.toHaveBeenCalled();
+        await expect(prepared.create()).rejects.toThrow(
+          'CLI dependencies unavailable.',
+        );
+        expect(cli).toHaveBeenCalledTimes(1);
+      } finally {
+        prepared.dispose();
+      }
+      const publicApi = await import('../server/online/agent/index.js');
+      expect(publicApi).not.toHaveProperty('createSandboxProvider');
+      expect(publicApi).not.toHaveProperty('onlineAgentSandboxProviderToken');
+    } finally {
+      await composed.onlineAgent.shutdown();
+      create.mockRestore();
+    }
+  });
+
   it('bounds shell output, loops and real execution time and releases after a deadline', async () => {
     const f = await fixture(
       new MockLanguageModelV4({ doStream: async () => answer('unused') }),
     );
-    const sandbox = await f.provider.create({
+    const sandbox = await createPreparedSandbox(f.provider, {
       sessionId: 'limits',
       context: {
         ...f.alice.context,
@@ -444,7 +502,7 @@ describe('Native Sandbox without application CLI wiring', () => {
     const record = await f.record();
     const selected = await f.guide(record.id);
     const make = (id: string) =>
-      f.provider.create({
+      createPreparedSandbox(f.provider, {
         sessionId: id,
         context: {
           ...f.alice.context,
@@ -509,6 +567,108 @@ describe('Native Sandbox without application CLI wiring', () => {
 });
 
 describe('Slice-01 authenticated Skill and application CLI', () => {
+  it.each(['manifest', 'brand'] as const)(
+    'releases the unified provider credential when %s creation fails',
+    async (failure) => {
+      const f = await fixture(
+        new MockLanguageModelV4({ doStream: async () => answer('unused') }),
+      );
+      const issue = vi.spyOn(f.credentials, 'issue');
+      const commandsOf = vi.fn<
+        ReturnType<
+          NonNullable<Parameters<typeof createSandboxProvider>[0]['cli']>
+        >['commandsOf']
+      >(async () => {
+        if (failure === 'manifest') throw new Error('Manifest unavailable.');
+        return {
+          bin: 'invalid brand',
+          commands: [],
+          send: async () => Response.json({ data: null }),
+        };
+      });
+      const provider = createSandboxProvider({
+        skills: h.services.skills,
+        cli: () => ({ auth: f.auth, credentials: f.credentials, commandsOf }),
+      });
+      const prepared = await provider.prepare({
+        sessionId: 'creation-failure',
+        executionId: 'creation-failure',
+        context: {
+          ...f.alice.context,
+          sessionId: 'creation-failure',
+          signal: new AbortController().signal,
+        },
+        skill: [],
+      });
+      try {
+        expect(issue).not.toHaveBeenCalled();
+        expect(commandsOf).not.toHaveBeenCalled();
+        await expect(prepared.create()).rejects.toThrow(
+          failure === 'manifest'
+            ? 'Manifest unavailable.'
+            : 'Invalid application CLI brand.',
+        );
+        expect(issue).toHaveBeenCalledExactlyOnceWith(
+          f.alice.context.user.id,
+          'creation-failure',
+        );
+        const lease = issue.mock.results[0].value;
+        expect(commandsOf).toHaveBeenCalledWith(
+          expect.objectContaining({ userId: f.alice.context.user.id }),
+          lease.token,
+        );
+        expect(() =>
+          f.credentials.resolve(
+            new Headers({ [HEADERS.runToken]: lease.token }),
+          ),
+        ).toThrow();
+      } finally {
+        prepared.dispose();
+        issue.mockRestore();
+      }
+    },
+  );
+
+  it('retains the credential after filesystem cleanup fails and releases it on retry while remaining closed', async () => {
+    const f = await fixture(
+      new MockLanguageModelV4({ doStream: async () => answer('unused') }),
+    );
+    const issue = vi.spyOn(f.credentials, 'issue');
+    const sandbox = await createPreparedSandbox(f.wired, {
+      sessionId: 'cleanup-retry',
+      context: {
+        ...f.alice.context,
+        sessionId: 'cleanup-retry',
+        signal: new AbortController().signal,
+      },
+      skill: [],
+    });
+    const headers = new Headers({
+      [HEADERS.runToken]: issue.mock.results[0].value.token,
+    });
+    const remove = vi
+      .spyOn(InMemoryFs.prototype, 'rm')
+      .mockRejectedValueOnce(new Error('Filesystem cleanup failed.'));
+    try {
+      await expect(sandbox.dispose()).rejects.toThrow(
+        'Filesystem cleanup failed.',
+      );
+      expect(await f.credentials.resolve(headers)).toMatchObject({
+        type: 'online-agent',
+      });
+      await expect(
+        sandbox.exec('echo forbidden', { toolCallId: 'closed' }),
+      ).rejects.toThrow('closed');
+      await expect(sandbox.readSkill('anything')).rejects.toThrow('closed');
+      await sandbox.dispose();
+      expect(() => f.credentials.resolve(headers)).toThrow();
+    } finally {
+      remove.mockRestore();
+      await sandbox.dispose();
+      issue.mockRestore();
+    }
+  });
+
   it('prepares selected tools and reads Skills without allocating a Sandbox or issuing credentials', async () => {
     let step = 0;
     const model = new MockLanguageModelV4({
@@ -797,11 +957,12 @@ describe('Slice-01 authenticated Skill and application CLI', () => {
         skill: [],
       },
       {
-        create: (input) => f.wired.create(input),
         async prepare(input) {
           const prepared = await f.wired.prepare(input);
           return {
-            ...prepared,
+            instructions: prepared.instructions,
+            readSkill: (name) => prepared.readSkill(name),
+            dispose: () => prepared.dispose(),
             async create() {
               const sandbox = await prepared.create();
               started.resolve();
@@ -1153,7 +1314,7 @@ describe('Slice-01 authenticated Skill and application CLI', () => {
       await exit.promise;
     };
     const abort = new AbortController();
-    const sandbox = await f.wired.create({
+    const sandbox = await createPreparedSandbox(f.wired, {
       sessionId: 'cancel',
       context: {
         ...f.alice.context,
@@ -1252,7 +1413,7 @@ describe('Slice-01 authenticated Skill and application CLI', () => {
       new MockLanguageModelV4({ doStream: async () => answer('unused') }),
     );
     const target = await f.record();
-    const sandbox = await f.wired.create({
+    const sandbox = await createPreparedSandbox(f.wired, {
       sessionId: 'historical-cli',
       context: {
         ...f.alice.context,
@@ -1283,7 +1444,7 @@ describe('Slice-01 authenticated Skill and application CLI', () => {
       new MockLanguageModelV4({ doStream: async () => answer('unused') }),
     );
     const target = await f.record();
-    const sandbox = await f.wired.create({
+    const sandbox = await createPreparedSandbox(f.wired, {
       sessionId: 'presentation',
       context: {
         ...f.alice.context,
@@ -1395,7 +1556,7 @@ describe('Slice-01 authenticated Skill and application CLI', () => {
       );
     const issue = vi.spyOn(f.credentials, 'issue');
     const abort = new AbortController();
-    const sandbox = await f.wired.create({
+    const sandbox = await createPreparedSandbox(f.wired, {
       sessionId: 'reader',
       context: {
         ...f.alice.context,
@@ -1566,7 +1727,7 @@ describe('Slice-02 current support trees through the authenticated chat chain', 
         ],
       ]),
     );
-    const sandbox = await f.wired.create({
+    const sandbox = await createPreparedSandbox(f.wired, {
       sessionId: 'unreadable',
       context: {
         ...f.alice.context,
@@ -1698,7 +1859,7 @@ describe('Slice-03 authorized writes through virtual parameter files', () => {
       ).toBe(title);
       expect(JSON.stringify(await agent.history())).toContain(title);
       expect(f.observation.writes).toBe(1);
-      const bob = await f.wired.create({
+      const bob = await createPreparedSandbox(f.wired, {
         sessionId: 'bob-write',
         context: {
           ...f.bob.context,
@@ -2226,7 +2387,7 @@ describe('Current Skill loading rejection and consistency semantics', () => {
       'old body',
     );
     const old = await prepared.create();
-    const current = await f.provider.create(input);
+    const current = await createPreparedSandbox(f.provider, input);
     try {
       expect(
         (

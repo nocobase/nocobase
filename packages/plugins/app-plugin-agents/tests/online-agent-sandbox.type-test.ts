@@ -7,12 +7,20 @@ import type { OnlineAgentOptions } from '@nocobase/app-plugin-agents/server/onli
 import type {
   OnlineAgentSandboxInput,
   OnlineAgentSandboxProvider,
-} from '@nocobase/app-plugin-agents/server/online-agent';
-import { createSandboxProvider } from '@nocobase/app-plugin-agents/server/online-agent';
+} from '../server/online/sandbox/types.js';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import type {
   OnlineAgentSandboxSkill,
   OnlineAgentSandboxSkillCatalog,
 } from '@nocobase/app-plugin-agents/server/online-agent';
+import type * as PublicOnlineAgent from '@nocobase/app-plugin-agents/server/online-agent';
+
+export type SandboxProviderIsInternal =
+  // @ts-expect-error Provider construction is internal, not an application extension contract.
+  PublicOnlineAgent.OnlineAgentSandboxProvider;
+export type SandboxPreparationIsInternal =
+  // @ts-expect-error Preparation is internal to native execution ownership.
+  PublicOnlineAgent.OnlineAgentSandboxPreparation;
 
 export function builtinSkillCatalogContract(
   skills: Parameters<typeof createSandboxProvider>[0]['skills'],
@@ -31,6 +39,31 @@ export function builtinSkillCatalogContract(
     ['builtin-guide-id', async () => resource],
   ]);
   return createSandboxProvider({ skills, builtinSkills });
+}
+/** The unified factory accepts either Shell-only dependencies or the complete authenticated CLI group. */
+export function sandboxProviderDependenciesContract(
+  skills: Parameters<typeof createSandboxProvider>[0]['skills'],
+  application: ReturnType<
+    NonNullable<Parameters<typeof createSandboxProvider>[0]['cli']>
+  >,
+): OnlineAgentSandboxProvider {
+  const provider = createSandboxProvider({ skills, cli: () => application });
+  createSandboxProvider({
+    skills,
+    // @ts-expect-error A CLI callback requires authentication and credential ownership.
+    cli: () => ({ commandsOf: application.commandsOf }),
+  });
+  // @ts-expect-error Authentication alone is not a complete CLI dependency group.
+  createSandboxProvider({ skills, cli: () => ({ auth: application.auth }) });
+  createSandboxProvider({
+    skills,
+    // @ts-expect-error Authentication and credentials also require the caller-filtered command surface.
+    cli: () => ({
+      auth: application.auth,
+      credentials: application.credentials,
+    }),
+  });
+  return provider;
 }
 
 /** Existing typed native configurations need not add a new field to opt out of Sandbox Skills. */
@@ -51,13 +84,15 @@ export async function sandboxInputContract(
     context,
     skill: ['existing-skill-id'],
   };
-  const sandbox = await provider.create(input);
+  const prepared = await provider.prepare(input);
+  const sandbox = await prepared.create();
   await sandbox.exec('acme --help', {
     toolCallId: 'call',
     abortSignal: context.signal,
   });
   await sandbox.readSkill('selected-slug');
   await sandbox.dispose();
+  prepared.dispose();
   const invalid: OnlineAgentSandboxInput = {
     ...input,
     // @ts-expect-error Tools belong to OnlineAgent configuration rather than duplicated Sandbox state.

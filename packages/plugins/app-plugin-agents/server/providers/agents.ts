@@ -1,4 +1,3 @@
-import { onlineAgentSandboxProviderToken } from '../online/sandbox/tokens.js';
 import type { OnlineAgentRecoveryConfig } from '../online/agent/types.js';
 import { mayAccessRun } from '../core/runs/access.js';
 /**
@@ -46,7 +45,6 @@ import {
   OnlineAgentCredentials,
   onlineAgentCredentialsToken,
 } from '../cli/online-credential.js';
-import { createAuthenticatedSandboxProvider } from '../online/sandbox/authenticated.js';
 
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
@@ -157,28 +155,20 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       onlineAgentCredentialsToken,
       () => new OnlineAgentCredentials(),
     );
-    this.app.container.singleton(onlineAgentSandboxProviderToken, (resolver) =>
-      createAuthenticatedSandboxProvider({
-        skills: resolver.resolve(agentsToken).skills,
-        auth: resolver.resolve(authenticationToken),
-        credentials: resolver.resolve(onlineAgentCredentialsToken),
-        bin: () => {
-          const config = this.app.config.get<AgentsConfig>('agents');
-          return resolveAgentCli(config?.cli, this.runApp(config)).name;
-        },
-        commandsOf: (identity, token) => this.commandsOf(identity, token),
-      }),
-    );
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
         resolver,
-        // Resolve only when an execution selects Sandbox tools: plain native and command hosts remain unchanged.
-        sandboxProvider: {
-          prepare: (input) =>
-            resolver.resolve(onlineAgentSandboxProviderToken).prepare(input),
-          create: (input) =>
-            resolver.resolve(onlineAgentSandboxProviderToken).create(input),
+        sandbox: {
+          bin: () => {
+            const config = this.app.config.get<AgentsConfig>('agents');
+            return resolveAgentCli(config?.cli, this.runApp(config)).name;
+          },
+          cli: () => ({
+            auth: resolver.resolve(authenticationToken),
+            credentials: resolver.resolve(onlineAgentCredentialsToken),
+            commandsOf: (identity, token) => this.commandsOf(identity, token),
+          }),
         },
         retryBaseDelayMs: retryBaseDelayMs(config?.runs?.retryBaseDelayMs),
         runRetentionDays: () =>
