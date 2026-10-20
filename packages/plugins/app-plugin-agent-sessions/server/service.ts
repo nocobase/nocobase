@@ -8,6 +8,7 @@
  */
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 import {
   BRIDGE_PROTOCOL_VERSION,
@@ -552,8 +553,7 @@ export class AgentSessionsService {
       !isOnline(known, this.#now()) ||
       Object.entries(request.computer).some(
         ([field, value]) =>
-          JSON.stringify(known[field as keyof typeof known]) !==
-          JSON.stringify(value),
+          !isDeepStrictEqual(known[field as keyof typeof known], value),
       );
     if (known && (viewChanged || !keyed))
       await computers(this.#conn()).updateMany({
