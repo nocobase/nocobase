@@ -7,6 +7,8 @@ export interface WorkflowSummary {
   readonly states: number;
   readonly transitions: number;
   readonly executionCount: number;
+  readonly lastExecutedAt: string | null;
+  readonly categoryId?: string | null;
 }
 export interface WorkflowDefinition extends LifecycleDescriptionView {
   readonly workflow: WorkflowSummary;

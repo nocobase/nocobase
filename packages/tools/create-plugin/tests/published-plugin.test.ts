@@ -32,6 +32,7 @@ const primitiveNames = [
   'popover',
   'select',
   'switch',
+  'tooltip',
 ];
 
 interface Manifest {

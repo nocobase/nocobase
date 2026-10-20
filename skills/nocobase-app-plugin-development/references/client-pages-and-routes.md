@@ -92,7 +92,7 @@ Declare `navigation: { title: 'navigation.orders' }` on the route. The applicati
 
 Omit `navigation` for a reachable page that should not have a menu entry. Menu targets must resolve to concrete paths: dynamic parameter and wildcard pages do not declare `navigation`. Visiting such a page selects its nearest visible menu ancestor.
 
-Do not add a Refine resource just to create a menu. Resources remain useful for CRUD integration, but do not supply application navigation. The home link is also declared in routes rather than hardcoded in the sidebar.
+The home link is also declared in routes rather than hardcoded in the sidebar.
 
 ### Groups and page children
 
@@ -120,6 +120,6 @@ A root entry passed to `defineAppRoutes()` may declare `parent: 'package-name:gr
 
 ## Checking feature visibility
 
-Use `useCan` from `@nocobase/app-plugin-authorization/client` for buttons and other permission-dependent UI: `useCan({ resource: { type: 'page', id: 'orders' }, action: 'access' })`. Its `{ can, isPending, error, retry }` result follows the current session and realtime permission updates; pending and failed checks do not allow access. Non-React consumers resolve `authorizationClientToken` and call `client.can({ resource, action })`. Page guards and navigation use this authorization client directly, without Refine permission hooks. Route `authz` declarations use the same `{ resource: { type, id }, action }` request; no string adapter is involved. Client visibility never replaces authorization on the endpoint.
+Use `useCan` from `@nocobase/app-plugin-authorization/client` for buttons and other permission-dependent UI: `useCan({ resource: { type: 'page', id: 'orders' }, action: 'access' })`. Its `{ can, isPending, error, retry }` result follows the current session and realtime permission updates; pending and failed checks do not allow access. Non-React consumers resolve `authorizationClientToken` and call `client.can({ resource, action })`. Page guards and navigation use this authorization client directly. Route `authz` declarations use the same `{ resource: { type, id }, action }` request; no string adapter is involved. Client visibility never replaces authorization on the endpoint.
 
-Resolve the current application authorization client with `useAuthorizationClient()` in React or `authorizationClientToken` from its service container elsewhere. Refine access-control configuration and global authorization client accessors are not supported. Checks name domain actions such as `read` and `update`; there is no `list`/`show`/`edit` translation.
+Resolve the current application authorization client with `useAuthorizationClient()` in React or `authorizationClientToken` from its service container elsewhere. Global authorization client accessors are not supported. Checks name domain actions such as `read` and `update`; there is no `list`/`show`/`edit` translation.

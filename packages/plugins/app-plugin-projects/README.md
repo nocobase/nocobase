@@ -24,7 +24,7 @@ Projects, issues, fixed statuses, labels and members for a NocoBase application.
   also do work (`work`, an `IssueWorkHandler`, `server/kernel/work.ts`): unless a plugin binds `projectsTriggersToken`,
   every change, comment and release is handed, in its transaction, to the work handler of each kind it concerns (the
   executor before and after, the kinds a comment mentions or answers), which answers what it started (`RunAttempt[]`;
-  `collectRunAttempts` gathers them around a call). A handler asks `projects.subtasks.blockersOf` whether the issue
+  `collectRunAttempts` gathers them around a call). A handler that opts into `observesIssueChanges` also receives creations and updates with an empty or different executor kind, once per change. Service writes pass their already authorized viewer to the observer, so nested routing need not acquire a second connection for permission reads. Issue responses and update events use the final snapshot after these transactional handlers. Creation in `in_progress` or a transition into it starts work; there is no separate start option. A handler asks `projects.subtasks.blockersOf` whether the issue
   waits for unfinished issues and then starts nothing (`skipped: 'blocked'`); it starts nothing either for an issue in
   backlog (`BACKLOG_STATUS`, `skipped: 'dormant'`), or for a principal's comment past a limit the kind keeps
   (`skipped: 'limited'`). A comment of anyone but the system reaches the handlers, with the person it
@@ -153,6 +153,7 @@ New accounts register directly from the invitation link with a name and password
 | `POST /comments/{commentId}/resolve`, `…/unresolve`                                | Resolves or reopens a thread (on its root)                  |
 | `POST /issues/{issueId}/subscribe`, `…/unsubscribe`                                | Follows or unfollows the issue                              |
 | `GET/POST /issues/{issueId}/attachments`                                           | The issue's own files; uploads one onto it                  |
+| `GET /issues/{issueId}/screenshots`                                                | Latest 100 live Agent comment images and comment provenance |
 | `POST /attachments`                                                                | Uploads one file, attached to nothing yet                   |
 | `GET /attachments/{attachmentId}`, `…/content`, `DELETE`                           | A file, its bytes (`?download=true`), removing it           |
 | `POST /issues/{issueId}/dependencies`                                              | Adds a link (`{ dependsOnIssueId, type }`)                  |
@@ -280,3 +281,5 @@ Invitation emails use `notificationService.sendTransient()` so credentials never
 `Issue` also exposes nullable Markdown `acceptance`: the issue's delivery report — how it was, the agreed approach, what changed, how it was checked, open issues and details — ending with the acceptance criteria the owner checks and where. `PATCH /api/projects/issues/{issueId}` accepts it in any status, normally with the move to In review (`nb-studio issue update <issue> --status in_review --acceptance-file report.md`). It is kept across status changes, including Done, Cancelled and a move back to In progress, and the next delivery replaces it; omitted it is retained, and null, an empty string or whitespace clears it. It allows at most 20,000 characters (`ISSUE_ACCEPTANCE_MAX`). Its reversible migration adds the column without backfilling.
 
 Manual issue descriptions accept pasted images through the existing protected attachment upload. Creation accepts optional `attachmentIds` of the caller's own unattached uploads and requires `pm.attachments` `upload` in addition to issue creation permission. Files are bound in the creation transaction before work starts, so the first agent context includes them. Descriptions remain Markdown; image nodes survive detail edits. Uploading blocks submission; cancelling leaves unattached files to the existing purge.
+
+Applications can provide `ExecutorPresentationContext` from the client kit to render the identity and availability of their registered executor kind in new issue and subtask selectors. It changes presentation only; the server still supplies candidates and enforces qualifications.

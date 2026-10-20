@@ -1,6 +1,6 @@
 ---
 name: nocobase-deployment
-description: Plan, build, deploy, verify, upgrade, and troubleshoot NocoBase 3 applications in production, including standalone Node.js and Docker deployments. Use when an application must move from source to a production environment or when a deployment failure needs diagnosis.
+description: Plan, build, deploy, verify, upgrade, and troubleshoot NocoBase 3 applications on an existing Studio or a standalone Node.js or Docker server. Use when an application must move from source to a deployment environment or when a deployment failure needs diagnosis.
 ---
 
 # NocoBase production deployment
@@ -13,13 +13,21 @@ Do not treat a process being healthy as proof that the application is usable. A 
 
 Before building or changing a server, record:
 
-- The deployment mode: standalone Node.js managed by app-installer, standalone Node.js by hand, or standalone Docker.
+- The deployment mode: an App managed by an existing Studio, standalone Node.js managed by app-installer, standalone Node.js by hand, or standalone Docker.
 - The source revision, application version, Node.js and pnpm versions, target CPU/OS/libc, and the destination host.
 - Whether the destination uses the existing database and storage, a new database, or a restore. Business data is not included in `dist`, `dist.tar.gz`, or a Docker image.
 - The application base path, public origin, database type, external services, reverse proxy, persistent directories, and service identity.
 - Whether the requested action is a first install, an update, a migration, a restart, a rollback, or a recovery.
 
 Do not run production writes, migrations, seeds, uploads, deployments, or destructive removal until the target and the user's authorization are explicit. If the target or data plan is unresolved, stop and ask for it.
+
+## Deploy to an existing Studio
+
+When the user asks to deploy this application to an existing NocoBase Studio, read [Deploy to Studio](references/deploy-to-studio.md) before building. It covers installing and signing in with the target Studio's `nb-studio` CLI, choosing an upload route, deploying and verifying the application. The application being deployed does not need its own business CLI.
+
+Confirm the source application, target Studio, App ID and environment. A source directory, deployment directory and App ID can have different names; do not infer application identity from one of them. Follow the reference for Studio-managed configuration, storage and deployment; use the shared artifact and verification guidance below where applicable, not the standalone installation commands.
+
+Deploying Studio itself to a server follows the standalone deployment workflow below.
 
 ## Prepare the source and artifact
 

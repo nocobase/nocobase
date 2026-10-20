@@ -7,10 +7,6 @@ import type { IssueChanges, IssueUpdate } from './use-issue-update.js';
 export interface ConfirmedUpdate {
   /** Applies a change. */
   readonly apply: (changes: IssueChanges) => void;
-  /** Kept for callers that rendered a "Start now?" step: nothing asks any more, so it is always null. */
-  readonly startRequest: null;
-  readonly decide: (start: boolean) => void;
-  readonly cancel: () => void;
 }
 
 /**
@@ -31,8 +27,5 @@ export function useConfirmedUpdate({
   );
   return {
     apply,
-    startRequest: null,
-    decide: () => undefined,
-    cancel: () => undefined,
   };
 }

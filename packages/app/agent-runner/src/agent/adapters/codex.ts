@@ -30,6 +30,7 @@ import { boundedModels } from './models.ts';
 import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { classifyCodexFailure } from './codex/classify.ts';
+import { codexQuota } from './quota.ts';
 import type { CodexFailureSignal } from './codex/classify.ts';
 import { OPTED_OUT_NOTIFICATIONS } from './codex/protocol.ts';
 import { detectExec } from './detect-exec.ts';
@@ -348,6 +349,7 @@ class CodexRun {
   private turnRunning = false;
   private lastTurn?: Turn;
   private lastError?: TurnError;
+  private rateLimits: unknown;
   private turnSummary?: string;
   private summary?: string;
 
@@ -621,6 +623,14 @@ class CodexRun {
     const p = (params ?? {}) as Record<string, unknown>;
     if (p.threadId && this.threadId && p.threadId !== this.threadId) return;
     switch (method) {
+      case 'account/rateLimits/updated':
+        this.rateLimits = p.rateLimits;
+        this.emit({
+          type: 'status',
+          content: 'quota',
+          meta: { quota: codexQuota(this.rateLimits) },
+        });
+        return;
       case 'turn/started': {
         const turn = p.turn as Turn;
         this.turnRunning = true;
@@ -1135,6 +1145,15 @@ class CodexRun {
       if (this.lastError)
         signal.message = `${this.lastError.message}; ${signal.message}`;
     }
+    const info = signal.codexErrorInfo;
+    const key =
+      typeof info === 'string' ? info : info ? Object.keys(info)[0] : undefined;
+    if (key === 'usageLimitExceeded')
+      this.emit({
+        type: 'status',
+        content: 'quota',
+        meta: { quota: codexQuota(this.rateLimits, true, info) },
+      });
     return { ...base, exit: 'error', error: classifyCodexFailure(signal) };
   }
 }

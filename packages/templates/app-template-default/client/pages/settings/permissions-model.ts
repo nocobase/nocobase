@@ -17,6 +17,15 @@ export function setPermission(
   action: string,
   enabled: boolean,
 ): readonly PermissionGrant[] {
+  const existing =
+    grants
+      .find(
+        (grant) =>
+          grant.resource.type === resource.type &&
+          grant.resource.id === resource.id,
+      )
+      ?.actions.some((entry) => entry.action === action) ?? false;
+  if (existing === enabled) return grants;
   const next = grants.map((grant) => ({
     ...grant,
     actions: [...grant.actions],
@@ -51,19 +60,43 @@ export function setPermission(
   return next.filter((item) => item.actions.length);
 }
 
+const sectionDescriptions: Readonly<Record<string, string>> = {
+  pages: 'pageAccessHint',
+  business: 'businessOperationsHint',
+  users: 'userAccountsHint',
+  administration: 'systemToolsHint',
+};
+
 export function permissionSections(
   catalog: AuthorizationOptionsResponse,
   grants: readonly PermissionGrant[],
   text: (value: LocalizedText) => string,
 ): readonly PermissionEditorSection[] {
+  const sharedActionHint = (resource: CatalogResource): string | undefined => {
+    const first = resource.actions[0]?.description;
+    if (!first) return undefined;
+    const hint = text(first);
+    return resource.actions.every(
+      (action) => action.description && text(action.description) === hint,
+    )
+      ? hint
+      : undefined;
+  };
   return catalog.sections
     .map((section) => ({
       id: section.name,
       title: text(section.title),
+      description: sectionDescriptions[section.name]
+        ? text({ key: `settings.${sectionDescriptions[section.name]}` })
+        : undefined,
       groups: section.subsections.flatMap((subsection) =>
         subsection.resources.map((resource) => ({
           id: JSON.stringify([subsection.name, resource.type, resource.id]),
           title: text(resource.title),
+          actionHint:
+            resource.actions.length > 1
+              ? sharedActionHint(resource)
+              : undefined,
           accessOnly:
             resource.type === 'page' &&
             resource.actions.length === 1 &&
@@ -80,6 +113,11 @@ export function permissionSections(
             const row = {
               id: permissionRowId(resource, action.name),
               label: text(action.title),
+              hint:
+                action.description &&
+                !(resource.actions.length > 1 && sharedActionHint(resource))
+                  ? text(action.description)
+                  : undefined,
               actionKey: action.name,
               enabled: Boolean(granted),
             };
@@ -87,40 +125,59 @@ export function permissionSections(
             return {
               ...row,
               scopes: granted
-                ? (resource.dataScopes?.[action.name] ?? []).map((scope) => ({
-                    id: JSON.stringify([
-                      resource.type,
-                      resource.id,
-                      action.name,
-                      scope.key,
-                    ]),
-                    label: text(
-                      typeof scope.title === 'string' &&
-                        scope.title === scope.collection
-                        ? { key: 'settings.recordScope' }
-                        : scope.title,
-                    ),
-                    levels: [
-                      {
-                        value: '',
-                        label: text({ key: 'settings.noRecordScope' }),
-                      },
-                      ...scope.recordAccess.map((key) => ({
-                        value: key,
-                        label: text(
-                          catalog.recordAccess.find(
-                            (entry) => entry.key === key,
-                          )?.title ?? key,
-                        ),
-                      })),
-                    ],
-                    level: scopeSelectionKey(
+                ? (resource.dataScopes?.[action.name] ?? []).map((scope) => {
+                    const value = scopeSelectionKey(
                       granted.policy?.scopes &&
                         typeof granted.policy.scopes === 'object'
                         ? Reflect.get(granted.policy.scopes, scope.key)
                         : undefined,
-                    ),
-                  }))
+                    );
+                    const preserved =
+                      value !== '' && !scope.recordAccess.includes(value);
+                    return {
+                      id: JSON.stringify([
+                        resource.type,
+                        resource.id,
+                        action.name,
+                        scope.key,
+                      ]),
+                      label: text(
+                        typeof scope.title === 'string' &&
+                          scope.title === scope.collection
+                          ? { key: 'settings.recordScope' }
+                          : scope.title,
+                      ),
+                      levels: [
+                        ...(preserved
+                          ? [
+                              {
+                                value,
+                                label: text({
+                                  key: 'settings.preservedRecordScope',
+                                }),
+                              },
+                            ]
+                          : []),
+                        {
+                          value: '',
+                          label: text({ key: 'settings.noRecordScope' }),
+                        },
+                        ...scope.recordAccess.map((key) => ({
+                          value: key,
+                          label: text(
+                            catalog.recordAccess.find(
+                              (entry) => entry.key === key,
+                            )?.title ?? key,
+                          ),
+                        })),
+                      ],
+                      level: value,
+                      hint:
+                        value === ''
+                          ? text({ key: 'settings.noAdditionalScopeHint' })
+                          : undefined,
+                    };
+                  })
                 : [],
             };
           }),
@@ -136,6 +193,11 @@ export function setScope(
   value: unknown,
 ): readonly PermissionGrant[] {
   const [type, id, action, scope] = JSON.parse(rowId) as string[];
+  if (
+    typeof value === 'string' &&
+    scopeSelectionKey(getScopeSelection(grants, rowId)) === value
+  )
+    return grants;
   return grants.map((grant) =>
     grant.resource.type !== type || grant.resource.id !== id
       ? grant
@@ -174,7 +236,10 @@ export function setPermissions(
     const [type, resourceId, action, scope] = JSON.parse(id) as string[];
     if (scope) return current;
     const resource = resources.find(
-      (item) => item.type === type && item.id === resourceId,
+      (item) =>
+        item.type === type &&
+        item.id === resourceId &&
+        item.actions.some((entry) => entry.name === action),
     );
     if (
       !resource ||
@@ -216,7 +281,7 @@ function scopeSelectionKey(value: unknown): string {
     typeof Reflect.get(value, 'key') === 'string'
   )
     return String(Reflect.get(value, 'key'));
-  return '';
+  return value == null || value === '' ? '' : '__preserved_scope__';
 }
 
 /** Legacy bare custom-filter keys require configuration before saving. */

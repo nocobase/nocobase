@@ -9,7 +9,7 @@ export {
 } from '../shared/realtime.js';
 
 export interface MailMessageChangeNotifier {
-  notify(userId: string): void;
+  notify(userId: string): void | Promise<void>;
 }
 
 export type MailRealtimeTopic = Pick<
@@ -21,8 +21,8 @@ export function createMailMessageChangeNotifier(
   topic: MailRealtimeTopic,
 ): MailMessageChangeNotifier {
   return {
-    notify(userId: string): void {
-      topic.publishFor(userId, { kind: 'mail.changed' });
+    async notify(userId: string): Promise<void> {
+      await topic.publishFor(userId, { kind: 'mail.changed' });
     },
   };
 }
@@ -34,8 +34,11 @@ export function notifyMailMessageChange(
 ): void {
   if (!notifier) return;
   try {
-    notifier.notify(userId);
+    void Promise.resolve(notifier.notify(userId)).catch(report);
   } catch (error) {
+    report(error);
+  }
+  function report(error: unknown): void {
     writeMailLog(
       logger,
       'error',

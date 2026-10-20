@@ -90,6 +90,14 @@ describe('app client routes', () => {
         name: 'settingsRoleEdit',
         authorizedAs: 'settings:authorization.permission-sets',
       },
+      ...[
+        'settingsDefaultAccess',
+        'settingsDefaultAccessCreate',
+        'settingsDefaultAccessEdit',
+      ].map((name) => ({
+        name,
+        authorizedAs: 'settings:authorization.default-access',
+      })),
     ]);
     for (const loader of componentLoadersIn(built.routes))
       await expect(loader()).resolves.toMatchObject({

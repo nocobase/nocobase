@@ -68,3 +68,25 @@ it.each([
     expect(text).not.toContain('English fallback');
   },
 );
+
+it.each([
+  ['en-US', 'Cancellation requested.'],
+  ['zh-CN', '已请求取消。'],
+] as const)(
+  'renders historical runCancelled as a request, never confirmation, in %s',
+  async (locale, expected) => {
+    const namespace = '@nocobase/app-plugin-agents';
+    const runtime = await createTestI18nRuntime({
+      locale,
+      namespaces: { [namespace]: locales },
+    });
+    const text = noticeText(
+      runtime.getFixedT(namespace, locale),
+      { code: 'runCancelled', runId: 'still-running' },
+      'You stopped the agent.',
+      () => 'Agent',
+    );
+    expect(text).toBe(expected);
+    expect(text).not.toMatch(/stopped|已停止|已取消/i);
+  },
+);

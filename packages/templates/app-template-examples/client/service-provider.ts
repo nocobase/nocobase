@@ -14,18 +14,11 @@ export class DefaultClientServiceProvider extends ServiceProvider<ClientApplicat
   }
 
   public override boot(): Promise<void> {
-    this.app.refine.addResources([
-      {
-        name: 'articles',
-        list: '/articles',
-      },
-    ]);
     const configuredTitle = this.app.config.get<unknown>('app.title');
     const title =
       typeof configuredTitle === 'string' && configuredTitle.trim()
         ? configuredTitle.trim()
         : 'NocoBase';
-    this.app.refine.setOptions({ title: { text: title } });
     this.previousDocumentTitle = document.title;
     document.title = title;
     return Promise.resolve();

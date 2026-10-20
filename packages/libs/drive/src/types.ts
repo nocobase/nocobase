@@ -56,9 +56,14 @@ export interface OssDriveDiskConfig {
 export type AppDriveDiskConfig =
   FsDriveDiskConfig | S3DriveDiskConfig | OssDriveDiskConfig;
 
+/** Creates a driver synchronously on first use, without a bound receiver. */
+export type DriveDriverFactory = (this: void) => DriverContract;
+
+export type AppDriveDiskDefinition = AppDriveDiskConfig | DriveDriverFactory;
+
 export interface AppDriveConfig {
   default: string;
-  disks: Record<string, AppDriveDiskConfig>;
+  disks: Record<string, AppDriveDiskDefinition>;
 }
 
 export type NocoBaseDriveDisk = Disk;

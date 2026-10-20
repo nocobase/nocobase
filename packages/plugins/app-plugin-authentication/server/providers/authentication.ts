@@ -95,10 +95,13 @@ export class AuthenticationProvider<
             try {
               const session = await container
                 .resolve(authenticationToken)
-                .getSession(request.headers);
+                .getSession(request.headers, {
+                  disableRefresh: true,
+                  disableCookieCache: true,
+                });
               // An issued credential, such as an agent's run token, is not the person's own connection.
               return session && !session.credential
-                ? { userId: session.user.id }
+                ? { userId: session.user.id, sessionId: session.session.id }
                 : undefined;
             } catch (error) {
               // A refused credential (Better Auth APIError) is not signed in, here.

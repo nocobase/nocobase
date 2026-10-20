@@ -36,9 +36,7 @@ describe('createRealtimeInAppStore', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
     const store = createRealtimeInAppStore(new MemoryInAppStore(), {
-      publishFor: vi.fn(() => {
-        throw new Error('broker unavailable');
-      }),
+      publishFor: vi.fn().mockRejectedValue(new Error('broker unavailable')),
     });
 
     await expect(

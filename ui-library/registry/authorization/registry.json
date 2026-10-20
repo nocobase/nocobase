@@ -4,7 +4,7 @@
       "name": "permission-editor",
       "type": "registry:component",
       "title": "Permission Editor",
-      "description": "A compact resource permission workspace with horizontal action checkboxes, adjacent data scopes and atomic visible selection.",
+      "description": "A compact permission workspace with category navigation, individual action checkboxes, scoped data controls and accessible scope help.",
       "categories": ["authorization"],
       "meta": {
         "group": "Authorization",
@@ -17,9 +17,10 @@
         "select",
         "switch",
         "checkbox",
-        "popover"
+        "popover",
+        "tooltip"
       ],
-      "docs": "Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default. Resource groups render as compact rows with wrapping action checkboxes. Optional row.scopes bind independent scope selectors to their owning action. Pass onEnabledBatchChange to enable atomic group selection of visible toggleable permissions; omit it to keep single-action controls. Filtering never mutates the draft. Pass labels.selectVisible for the localized group checkbox name. Use group.accessOnly for a page with a single access action to show one title checkbox without redundant action text. Provide scope.configuration for parameterized scopes; PermissionFilter edits validated condition drafts and keeps role saving in the host form. Never save customFilter as a bare key: bind its native params.filter object.",
+      "docs": "Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default. Resource groups render as compact rows with wrapping action checkboxes. Optional row.scopes bind independent scope selectors to their owning action. Actions are configured individually; category names and groups omit authorization counts and bulk selection. Filtering never mutates the draft. Use scope.hint for contextual scope help shown on hover, keyboard focus or tap, and labels.scopeHintFor for the accessible trigger name. Use group.accessOnly for a page with a single access action to show one title checkbox without redundant action text. Provide scope.configuration for parameterized scopes; PermissionFilter edits validated condition drafts and keeps role saving in the host form. Never save customFilter as a bare key: bind its native params.filter object.",
       "files": [
         {
           "path": "permission-editor.tsx",
@@ -30,6 +31,47 @@
           "path": "permission-filter.tsx",
           "type": "registry:component",
           "target": "client/components/permission-filter.tsx"
+        }
+      ]
+    },
+    {
+      "name": "role-list",
+      "type": "registry:component",
+      "title": "Role List",
+      "description": "A compact role content list with aligned names, identifiers and protected/custom labels. Use it on role administration pages backed by the Authorization plugin; the host supplies authorized data and edit destinations. Preinstalled in both application templates.",
+      "categories": ["authorization"],
+      "meta": {
+        "group": "Authorization",
+        "iframeHeight": 480
+      },
+      "dependencies": ["react-router@^7.0.2"],
+      "registryDependencies": ["badge"],
+      "docs": "Render inside a React Router with roles containing key, localized title, edit destination (to) and protected state. Pass localized protected/custom labels and an optional ariaLabel. The host owns loading, empty/error states, filtering, sorting and authorization. Rows use body-sized text and compact spacing; identifiers move under the name on narrow containers. Publishing the Registry does not replace installed source; existing apps merge role-list.tsx and the roles page integration through a template source upgrade.",
+      "files": [
+        {
+          "path": "role-list.tsx",
+          "type": "registry:component",
+          "target": "client/components/role-list.tsx"
+        }
+      ]
+    },
+    {
+      "name": "default-access-editor",
+      "type": "registry:component",
+      "title": "Default Access Editor",
+      "description": "Controlled default data scope rule fields with business-object selection, independent operation scopes and native custom-filter slots. The host supplies current rules and performs authorized writes. Preinstalled in both application templates.",
+      "categories": ["authorization"],
+      "meta": {
+        "group": "Authorization",
+        "iframeHeight": 650
+      },
+      "registryDependencies": ["input", "label", "select"],
+      "docs": "Pass localized labels, a stable rule key, resource choices and scope controls. Explain that default data scopes combine with role-granted scopes for users who already hold the operation permission, and that restriction rules still constrain final access. The host loads authorization/defaultAccess and authorization/defaultAccess/options, enforces settings:authorization.default-access read/create/update/delete, and owns draft preservation, custom filters, validation, confirmation and writes. Existing apps reconcile the editor, default-access pages/model/routes, locales and contextual role-form link from the updated template. No existing rule is seeded or rewritten on upgrade. Both templates expose one Permission management sidebar entry with Roles and permissions and Default data scopes tabs, without changing their route ids, URLs, settings guards or stored rules. This navigation organization does not add sharing or restriction editors.",
+      "files": [
+        {
+          "path": "default-access-editor.tsx",
+          "type": "registry:component",
+          "target": "client/components/default-access-editor.tsx"
         }
       ]
     }

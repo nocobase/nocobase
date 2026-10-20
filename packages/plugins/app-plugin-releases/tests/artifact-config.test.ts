@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   parseDriveDiskConfig,
   type AppDriveConfig,
@@ -28,6 +28,21 @@ const drive: AppDriveConfig = {
 };
 
 describe('artifact disk references', () => {
+  it('rejects factory references without executing or serializing the factory', () => {
+    const factory = vi.fn(() => {
+      throw new Error('never-echo-this');
+    });
+    expect(() =>
+      resolveArtifact(
+        { disk: 'custom' },
+        { default: 'custom', disks: { custom: factory } },
+      ),
+    ).toThrow(
+      'Invalid drive.disks "custom" for releases.artifact.disk: release artifacts require a serializable disk configuration object; driver factories are not supported.',
+    );
+    expect(factory).not.toHaveBeenCalled();
+  });
+
   it.each(['local', 'oss'])(
     'copies %s without changing drive configuration',
     (disk) => {

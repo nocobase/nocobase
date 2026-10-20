@@ -283,7 +283,7 @@ run('Typecheck tooling', 'pnpm', ['exec', 'tsc', '-p', 'tsconfig.node.json']);
 // `vite.config.ts` reads only the environment it is given, so the `.env` files are resolved here with the process
 // environment taking precedence — the order `loadStandaloneAppEnv` applies on the server. Letting Vite read `.env`
 // files itself would also pick up `.env.production` and other mode files the server never loads.
-run('Build client', 'pnpm', ['exec', 'refine', 'build'], {
+run('Build client', 'pnpm', ['exec', 'vite', 'build'], {
   env: {
     ...readEnvFiles(applicationEnvFiles, process.env),
     ...process.env,

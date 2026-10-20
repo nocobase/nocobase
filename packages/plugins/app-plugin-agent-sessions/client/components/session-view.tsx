@@ -52,6 +52,7 @@ import {
   type Mention,
   useAnswer,
   useCancel,
+  useWithdraw,
   useChoose,
   useComputers,
   useDecideLinks,
@@ -82,6 +83,7 @@ import { LinkBar } from './link-bar.js';
 import { LinkName } from './link-name.js';
 import { StatusPill } from './status-pill.js';
 import { TranscriptView } from './transcript-view.js';
+import { WithdrawnEditor } from './withdrawn-editor.js';
 
 export function SessionView({
   sessionId,
@@ -121,7 +123,7 @@ export function SessionView({
       viewport.removeEventListener('scroll', fit);
     };
   }, [session.data?.id]);
-  // Beside the conversation on a wide screen; on a narrower one, and in a panel, it opens over it, when asked for.
+  // Beside a full-page conversation on a wide screen, over it on narrower screens, and inside an embedded sidebar.
   const [details, setDetails] = useState(
     () =>
       !surface.panel &&
@@ -156,7 +158,10 @@ export function SessionView({
   const showDetails = details && !panel.opened;
   return (
     <LinkOpenContext.Provider value={panel.open}>
-      <div ref={viewportRef} className='flex h-full min-h-0'>
+      <div
+        ref={viewportRef}
+        className={cn('flex h-full min-h-0', surface.panel && 'flex-col')}
+      >
         <Conversation
           session={session.data}
           computer={computer}
@@ -169,10 +174,11 @@ export function SessionView({
             } else setDetails(!details);
           }}
           onSummary={() => {
-            if (!panel.openSummary()) setDetails(true);
+            if (surface.panel) setDetails(!details);
+            else if (!panel.openSummary()) setDetails(true);
           }}
         />
-        {showDetails && (
+        {showDetails && !surface.panel && (
           <div
             aria-hidden
             className={cn(
@@ -187,7 +193,7 @@ export function SessionView({
             session={session.data}
             computer={computer}
             items={items}
-            overlay={surface.panel}
+            inline={surface.panel}
             onClose={() => setDetails(false)}
           />
         )}
@@ -225,6 +231,11 @@ function Conversation({
   const sending =
     useIsMutating({ mutationKey: ['agentSessions', 'prompt', session.id] }) > 0;
   const cancel = useCancel(session.id);
+  const withdraw = useWithdraw(session.id);
+  const [editor, setEditor] = useState<{
+    item: Extract<TranscriptItem, { type: 'prompt' }>;
+    key: string;
+  } | null>(null);
   const answer = useAnswer(session.id);
   const decide = useDecideLinks(session.id);
   const choose = useChoose(session.id);
@@ -400,6 +411,19 @@ function Conversation({
               agentName={agentName(session, computer)}
               writable={writable}
               actions={{
+                withdraw: async (seq) => {
+                  try {
+                    await withdraw.mutateAsync(seq);
+                  } catch (error) {
+                    fail(error);
+                    throw error;
+                  }
+                },
+                edit: (item) =>
+                  setEditor({
+                    item,
+                    key: `reedit:${session.id}:${crypto.randomUUID()}`,
+                  }),
                 answer: (requestId, optionId) =>
                   answer.mutate({ requestId, optionId }, { onError: fail }),
                 decide: (kind, start, skip) =>
@@ -426,6 +450,14 @@ function Conversation({
         </div>
       </div>
       <div className='mx-auto w-full max-w-[760px] px-3 pt-2 pb-3 @md/agent-session:px-6 @md/agent-session:pb-4'>
+        {editor && (
+          <WithdrawnEditor
+            item={editor.item}
+            session={session}
+            draftKey={editor.key}
+            close={() => setEditor(null)}
+          />
+        )}
         <SubmissionNotice
           pending={submission.pending}
           sending={sending}
@@ -793,17 +825,18 @@ function Details({
   session,
   computer,
   items,
-  overlay,
+  inline,
   onClose,
 }: {
   readonly session: Session;
   readonly computer: Computer | undefined;
   readonly items: readonly TranscriptItem[];
-  /** Over the conversation whatever the screen's width, as in a panel. */
-  readonly overlay: boolean;
+  /** Inside the host's sidebar, without covering the main page. */
+  readonly inline: boolean;
   readonly onClose: () => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
+  const surface = useSessionSurface();
   const decide = useDecideLinks(session.id);
   const toaster = useToaster();
   const context = session.state?.context;
@@ -815,16 +848,17 @@ function Details({
   return (
     <aside
       className={cn(
-        'bg-background fixed inset-y-0 right-0 z-50 w-[min(100%,22rem)] overflow-y-auto border-l shadow-xl',
-        !overlay &&
-          'xl:static xl:z-auto xl:w-[296px] xl:shrink-0 xl:shadow-none',
+        'bg-background overflow-y-auto',
+        inline
+          ? 'max-h-[50%] min-h-0 shrink-0 border-t'
+          : 'fixed inset-y-0 right-0 z-50 w-[min(100%,22rem)] border-l shadow-xl xl:static xl:z-auto xl:w-[296px] xl:shrink-0 xl:shadow-none',
       )}
       aria-label={t('session.details')}
     >
       <div
         className={cn(
           'flex items-center justify-between border-b px-5 py-3',
-          !overlay && 'xl:hidden',
+          !inline && 'xl:hidden',
         )}
       >
         <h2 className='text-[15px] font-semibold'>{t('session.details')}</h2>
@@ -862,7 +896,13 @@ function Details({
               {session.links.map((link) => (
                 <li
                   key={`${link.kind}:${link.refId}`}
-                  className='flex flex-col gap-1 px-3 py-2'
+                  aria-current={
+                    surface.activeLink?.kind === link.kind &&
+                    surface.activeLink.refId === link.refId
+                      ? 'true'
+                      : undefined
+                  }
+                  className='flex flex-col gap-1 px-3 py-2 aria-[current=true]:bg-accent'
                 >
                   <div className='flex min-w-0 items-center gap-2'>
                     <LinkName

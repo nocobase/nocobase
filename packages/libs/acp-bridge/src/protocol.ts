@@ -10,7 +10,7 @@
 import { z } from 'zod';
 
 /** Raised on every incompatible change; the server answers a bridge speaking another version with `upgradeRequired`. */
-export const BRIDGE_PROTOCOL_VERSION: number = 3;
+export const BRIDGE_PROTOCOL_VERSION: number = 4;
 
 /** Includes agent initialization and opening a prompt-free session. */
 export const DISCOVERY_TIMEOUT_MS: number = 150_000;
@@ -26,11 +26,15 @@ export const BRIDGE_ROUTES: {
   readonly poll: string;
   readonly report: string;
   readonly reply: string;
+  readonly claim: string;
+  readonly withdrawn: string;
 } = {
   register: '/api/agentSessions/bridge/register',
   poll: '/api/agentSessions/bridge/poll',
   report: '/api/agentSessions/bridge/report',
   reply: '/api/agentSessions/bridge/reply',
+  claim: '/api/agentSessions/bridge/claim',
+  withdrawn: '/api/agentSessions/bridge/withdrawn',
 };
 
 /** Request headers of the bridge. */
@@ -203,7 +207,15 @@ export type BridgeCommand =
       readonly type: 'prompt';
       readonly session: SessionTarget;
       readonly promptId: string;
+      /** The original prompt event; required for protocol 4 execution authorization. */
+      readonly seq?: number | undefined;
       readonly content: readonly PromptContent[];
+    }
+  | {
+      readonly type: 'withdrawPrompt';
+      readonly sessionId: string;
+      readonly promptId: string;
+      readonly seq: number;
     }
   | { readonly type: 'cancel'; readonly session: SessionTarget }
   | {
@@ -242,7 +254,14 @@ export const BridgeCommandSchema: z.ZodType<BridgeCommand> =
       type: z.literal('prompt'),
       session: SessionTargetSchema,
       promptId: id,
+      seq: z.number().int().positive().optional(),
       content: z.array(PromptContentSchema).min(1).max(20),
+    }),
+    z.object({
+      type: z.literal('withdrawPrompt'),
+      sessionId: id,
+      promptId: id,
+      seq: z.number().int().positive(),
     }),
     z.object({ type: z.literal('cancel'), session: SessionTargetSchema }),
     z.object({
@@ -266,18 +285,44 @@ export const BridgeCommandSchema: z.ZodType<BridgeCommand> =
   ]);
 
 export interface PollRequest {
+  readonly protocol?: number | undefined;
+  readonly bridgeStartedAt?: string | undefined;
   readonly computerId: string;
   /** Wait up to `POLL_WAIT_MS` for a command instead of answering at once. */
   readonly wait: boolean;
 }
 
 export const PollRequestSchema: z.ZodType<PollRequest> = z.object({
+  protocol: z.number().int().positive().optional(),
+  bridgeStartedAt: isoTime.optional(),
   computerId: id,
   wait: z.boolean(),
 });
 
 export interface PollResponse {
   readonly commands: readonly BridgeCommand[];
+}
+
+/** Execution and withdrawal use the same durable prompt identity and registered bridge generation. */
+export interface PromptRequest {
+  readonly computerId: string;
+  readonly protocol: number;
+  readonly bridgeStartedAt: string;
+  readonly sessionId: string;
+  readonly promptId: string;
+  readonly seq: number;
+}
+
+export const PromptRequestSchema: z.ZodType<PromptRequest> = z.object({
+  computerId: id,
+  protocol: z.number().int().positive(),
+  bridgeStartedAt: isoTime,
+  sessionId: id,
+  promptId: id,
+  seq: z.number().int().positive(),
+});
+export interface ClaimResponse {
+  readonly execute: boolean;
 }
 
 /** One option of a permission request, as ACP offers it. */
@@ -328,9 +373,16 @@ const TurnUsageSchema: z.ZodType<TurnUsage> = z.object({
 export type SessionEvent =
   | {
       readonly kind: 'prompt';
+      /** Absent on messages delivered before execution claims were introduced. */
+      readonly withdrawable?: boolean | undefined;
       readonly at: string;
       readonly promptId: string;
       readonly content: readonly PromptPart[];
+    }
+  | {
+      readonly kind: 'withdrawalRequested' | 'promptWithdrawn';
+      readonly at: string;
+      readonly promptId: string;
     }
   | {
       readonly kind: 'update';
@@ -344,6 +396,7 @@ export type SessionEvent =
     }
   | {
       readonly kind: 'turnEnded';
+      readonly seq?: number | undefined;
       readonly at: string;
       readonly promptId: string;
       readonly stopReason: string | null;
@@ -381,7 +434,9 @@ export type SessionEvent =
 /** The events a bridge may report. */
 export type BridgeEvent = Exclude<
   SessionEvent,
-  { readonly kind: 'prompt' } | { readonly kind: 'link' }
+  | { readonly kind: 'prompt' }
+  | { readonly kind: 'link' }
+  | { readonly kind: 'withdrawalRequested' | 'promptWithdrawn' }
 >;
 
 export const BridgeEventSchema: z.ZodType<BridgeEvent> = z.discriminatedUnion(
@@ -398,6 +453,7 @@ export const BridgeEventSchema: z.ZodType<BridgeEvent> = z.discriminatedUnion(
     z.object({ kind: z.literal('turnStarted'), at: isoTime, promptId: id }),
     z.object({
       kind: z.literal('turnEnded'),
+      seq: z.number().int().positive().optional(),
       at: isoTime,
       promptId: id,
       stopReason: z.string().max(40).nullable(),

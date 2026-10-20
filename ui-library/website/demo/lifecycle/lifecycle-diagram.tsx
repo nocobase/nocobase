@@ -3,6 +3,29 @@ import type { LifecycleDescription } from '@nocobase/lifecycle';
 import { LifecycleDiagram } from '#components/lifecycle-diagram';
 
 const description: LifecycleDescription = {
+  parameterConfiguration: {
+    readMode: 'snapshot',
+    groups: [
+      {
+        key: 'approval',
+        title: 'Approval policy',
+        schemaVersion: 1,
+        fields: {
+          reviewers: {
+            type: 'reviewers',
+            title: 'Reviewers',
+            bindings: [{ state: 'review' }],
+          },
+          threshold: {
+            type: 'number',
+            title: 'Finance threshold',
+            minimum: 0,
+            bindings: [{ transition: 'decide' }],
+          },
+        },
+      },
+    ],
+  },
   name: 'expenses',
   initial: 'draft',
   initialStates: ['draft'],
@@ -89,6 +112,15 @@ export function LifecycleDiagramDemo(): ReactElement {
         }
         availableTransitions={['withdraw', 'reassign', 'decide']}
         ariaLabel='Expense lifecycle'
+        configuration={{
+          label: () => 'Configure',
+          // This isolated demo previews selection; a real application checks API permissions.
+          canConfigure: () => true,
+          onConfigure: ({ target, groups }) =>
+            setDetail(
+              `Configuration for ${target.name}: ${groups.flatMap((group) => Object.values(group.fields).map((field) => field.title)).join(', ')}. Connect the application parameter editor and authenticated API here.`,
+            ),
+        }}
         onStateClick={(state) =>
           setDetail(
             `${state.title}: ${description.onEnter[state.name]?.join(', ') ?? '—'}`,

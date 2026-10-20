@@ -31,7 +31,12 @@ import {
 
 import type { PromptContent, Reference } from '../../shared/api.js';
 import { useMentions, type Mention } from '../api.js';
-import { attachedKey, type Attachment } from '../lib/attachments.js';
+import {
+  attachedKey,
+  stopAutomaticAttachment,
+  type Attachment,
+} from '../lib/attachments.js';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSessionMemory } from '../use-session-memory.js';
 import { StatusPill } from './status-pill.js';
 
@@ -40,6 +45,7 @@ type Image = Extract<PromptContent, { type: 'image' }>;
 type Pending = Image & { readonly id: string };
 
 export interface ComposerProps {
+  readonly initialContent?: readonly PromptContent[];
   readonly placeholder: string;
   readonly draftKey?: string;
   readonly disabled?: boolean;
@@ -115,14 +121,23 @@ export function Composer({
   autoFocus,
   onSend,
   onEdit,
+  initialContent = [],
 }: ComposerProps): ReactElement {
   const { t } = useTranslation();
-  const [text, setText] = useSessionMemory(draftKey && `text:${draftKey}`, '');
+  const client = useQueryClient();
+  const [text, setText] = useSessionMemory(
+    draftKey && `text:${draftKey}`,
+    initialContent
+      .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+      .join('\n\n'),
+  );
   const [expanded, setExpanded] = useState(false);
   const [caret, setCaret] = useState(0);
   const [images, setImages] = useSessionMemory<Pending[]>(
     draftKey && `images:${draftKey}`,
-    [],
+    initialContent
+      .filter((part): part is Image => part.type === 'image')
+      .map((part, index) => ({ ...part, id: `original-${index}` })),
   );
   const [mentioned, setMentioned] = useSessionMemory<Reference[]>(
     draftKey && `mentions:${draftKey}`,
@@ -229,6 +244,7 @@ export function Composer({
     if (empty || disabled || sendDisabled || sending || sendingRef.current)
       return;
     sendingRef.current = true;
+    stopAutomaticAttachment(client, draftKey);
     const content: PromptContent[] = [
       ...(text.trim() ? [{ type: 'text' as const, text: text.trim() }] : []),
       ...attached.flatMap(({ text: said }) =>
@@ -403,6 +419,8 @@ export function Composer({
                   })}
                   onClick={() => {
                     onEdit?.();
+                    if (attachment.automatic)
+                      stopAutomaticAttachment(client, draftKey);
                     setAttached((current) =>
                       current.filter((other) => other.id !== attachment.id),
                     );

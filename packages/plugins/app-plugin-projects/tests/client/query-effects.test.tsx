@@ -4,7 +4,7 @@ import { expect, it, vi } from 'vitest';
 
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
-  useService: () => ({ onOpen: () => () => {}, subscribe: () => () => {} }),
+  useService: () => ({ watch: () => ({ close: () => {} }) }),
 }));
 const { default: projects } = await import('../../client/plugin.js');
 

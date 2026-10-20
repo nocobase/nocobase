@@ -8,29 +8,30 @@ import {
 } from '../../client/subscription.js';
 
 describe('Mail Client subscription', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
 
-  it('refreshes after connection recovery, valid events, and focus', () => {
+  it('refreshes after connection recovery, valid events, and focus', async () => {
+    vi.useFakeTimers();
     const now = vi.spyOn(Date, 'now').mockReturnValue(0);
     let eventListener: RealtimeListener<unknown> | undefined;
     let openListener: (() => void) | undefined;
     let focusListener: EventListener | undefined;
     const unsubscribeEvent = vi.fn();
-    const unsubscribeOpen = vi.fn();
-    const realtime: RealtimeClient = {
-      connected: true,
-      subscribe: vi.fn((topic, listener) => {
+    const realtime: Pick<RealtimeClient, 'watch'> = {
+      watch: vi.fn((topic, options) => {
         expect(topic).toBe(MAIL_REALTIME_TOPIC);
-        eventListener = listener as RealtimeListener<unknown>;
-        return unsubscribeEvent;
+        eventListener = options?.onEvent as RealtimeListener<unknown>;
+        openListener = options?.onReady;
+        return {
+          state: 'subscribed',
+          error: undefined,
+          retry: vi.fn(),
+          close: unsubscribeEvent,
+        };
       }),
-      onOpen: vi.fn((listener) => {
-        openListener = listener;
-        return unsubscribeOpen;
-      }),
-      reconnect: vi.fn(),
-      onError: vi.fn(),
-      close: vi.fn(),
     };
     const target: MailFocusTarget = {
       addEventListener: vi.fn((_type, listener) => {
@@ -43,6 +44,7 @@ describe('Mail Client subscription', () => {
     const cleanup = subscribeToMailInvalidations(realtime, target, refresh);
 
     openListener?.();
+    await vi.advanceTimersByTimeAsync(100);
     eventListener?.({
       type: 'event',
       topic: MAIL_REALTIME_TOPIC,
@@ -55,6 +57,7 @@ describe('Mail Client subscription', () => {
       payload: { kind: 'mail.changed' },
       publishedAt: '2026-09-02T00:00:01.000Z',
     });
+    await vi.advanceTimersByTimeAsync(100);
     // Returning from DevTools immediately must not reload an already fresh page.
     focusListener?.(new Event('focus'));
     expect(refresh).toHaveBeenCalledTimes(2);
@@ -75,6 +78,5 @@ describe('Mail Client subscription', () => {
       focusListener,
     );
     expect(unsubscribeEvent).toHaveBeenCalledOnce();
-    expect(unsubscribeOpen).toHaveBeenCalledOnce();
   });
 });

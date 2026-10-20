@@ -47,7 +47,9 @@ const ACTIVITY_TONE: Readonly<Record<RunnerActivity, Tone>> = {
  */
 export function RunnerStatusCell({
   runner,
+  badgeOnly = false,
 }: {
+  readonly badgeOnly?: boolean;
   readonly runner: Pick<
     RunnerListItem,
     | 'status'
@@ -88,7 +90,7 @@ export function RunnerStatusCell({
     </AgTag>
   );
   const usage = toolUsage(runner);
-  if (usage.length === 0) return tag;
+  if (badgeOnly || usage.length === 0) return tag;
   return (
     <div className='flex flex-col items-start gap-1'>
       {tag}
@@ -250,14 +252,10 @@ export function RunnerVersionCell({
 export function RunnerUpgradeRequired({
   runner,
 }: {
-  readonly runner: Pick<
-    RunnerListItem,
-    | 'version'
-    | 'product'
-    | 'protocolVersion'
-    | 'requiredProtocol'
-    | 'updateVersion'
-  >;
+  readonly runner: Pick<Runner, 'version' | 'product' | 'protocolVersion'> & {
+    readonly requiredProtocol: { readonly min: number; readonly max: number };
+    readonly updateVersion: string | null;
+  };
 }): ReactElement {
   const { t } = useTranslation();
   const { min, max } = runner.requiredProtocol;

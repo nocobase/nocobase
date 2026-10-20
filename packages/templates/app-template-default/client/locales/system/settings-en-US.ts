@@ -1,7 +1,78 @@
 const settings = {
+  permissionManagement: 'Permission management',
+  defaultAccess: {
+    noResourcesShort: 'No configurable objects available',
+    scopeInvalid:
+      'Choose a valid data scope or complete its filter conditions.',
+
+    deleteChanged:
+      'This rule changed or was removed. The list was refreshed; review it before deleting.',
+    filterDescription:
+      'Apply conditions to this rule draft, then save the rule to make them effective.',
+    fieldLabels: { name: 'Name', id: 'ID' },
+    delete: 'Delete',
+    title: 'Default data scopes',
+    description:
+      'Adds data access for users with operation permission, combined with role-granted scopes and subject to restriction rules.',
+    manage: 'Manage default data scopes',
+    new: 'New default scope',
+    edit: 'Default scope details',
+    resource: 'Business object',
+    chooseResource: 'Choose a business object',
+    action: 'Operation',
+    scope: 'Data scope',
+    scopes: 'Operations and data scopes',
+    none: 'No default scope',
+    all: 'All records',
+    custom: 'Custom filter',
+    records: 'Selected records ({{count}})',
+    retained: 'Retain existing configuration',
+    search: 'Search business objects or keys',
+    empty: 'No default data scopes',
+    emptyHint:
+      'Create a rule to configure baseline access for a business object.',
+    readOnlyEmpty: 'Ask an administrator to configure baseline data access.',
+    noResources:
+      'Every available business object already has a default rule, or no configurable objects are registered.',
+    unsupported:
+      'This rule includes configuration absent from the current plugin catalog. It is preserved and shown read-only.',
+    changed:
+      'This rule changed or was removed while you were editing. Reload it before saving. Your draft has not been saved.',
+    duplicate:
+      'This key or business object already has a default rule. Use a different key or edit the existing rule.',
+    invalid:
+      'The configuration is not accepted. Check the business object, operation and data scope.',
+    keyRequired: 'Enter a key other than options, subjects or records.',
+    resourceRequired: 'Choose a business object.',
+    reload: 'Reload rule',
+    saved: 'Saved default scope “{{name}}”',
+    deleted: 'Deleted default scope “{{name}}”',
+    deleteTitle: 'Delete default scope “{{name}}”?',
+    deleteHint:
+      'This removes the baseline access supplied by this rule. Existing role grants and other rules remain. This cannot be undone.',
+    back: 'Back to default scopes',
+    open: 'View / edit',
+  },
+  scopeHintFor: 'About the data range for {{name}}',
+  scopeExplanation:
+    'Each range applies to its corresponding data. The operation must also pass its authorization checks.',
+  noAdditionalScopeHint:
+    'This action grants no additional record access here. Default access, sharing and restriction rules still determine actual access.',
+  systemToolsHint:
+    'Manage system configuration and tools. Review the capabilities each action includes before granting access.',
+  userAccountsHint:
+    'Manage user information, account security and role assignments. Review each permission separately.',
+  businessOperationsHint:
+    'Choose the operations this role can perform and the data each operation can use.',
+  pageAccessHint:
+    'Controls which pages this role can open. Data and actions on each page require their own permissions.',
+  roleAssignment: 'Role assignment',
+  accountSecurity: 'Account security',
+  userInformation: 'User information',
+  unnamedPage: 'Unnamed page ({{path}})',
   revokeRoles: 'Revoke roles',
   keyConflict: 'This role key is already in use.',
-  userPermissions: 'User management',
+  userPermissions: 'Users and accounts',
   readUsers: 'View users',
   createUsers: 'Create users',
   updateUsers: 'Edit users',
@@ -94,9 +165,11 @@ const settings = {
   noPermissions: 'No permissions to configure',
   permissionCategories: 'Permission categories',
   selectAllPermissions: 'All',
+  dataRanges: 'Data ranges ({{count}})',
   selectVisiblePermissions: 'Select visible permissions in {{name}}',
   permissionSummary: '{{enabled}} of {{total}} enabled',
-  noRecordScope: 'No records (not authorized)',
+  preservedRecordScope: 'Keep existing configuration',
+  noRecordScope: 'No additional record access',
   permissionFilter: {
     limit: 'Up to 20 conditions',
     configure: 'Conditions',

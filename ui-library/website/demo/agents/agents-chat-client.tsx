@@ -1,10 +1,38 @@
 /* eslint-disable react-refresh/only-export-components, @eslint-react/no-unnecessary-use-prefix -- a stand-in for a
    module of components and hooks, under the names of the real ones whether or not the stand-in calls a hook */
 import type * as Chat from '@nocobase/app-plugin-agents/client/chat';
+import { Chat as SDKChat, useChat as useSDKChat } from '@ai-sdk/react';
+import {
+  createUIMessageStreamResponse,
+  DefaultChatTransport,
+  type UIMessageChunk,
+} from 'ai';
+import { appUIMessageText } from '../../../../packages/plugins/app-plugin-agents/shared/ui-message.js';
+export { appUIMessageText };
+import {
+  AIToolRendererProvider as ToolRendererProvider,
+  useAIToolRenderer as useToolRenderer,
+  getAIToolSourceMessage as toolSourceMessage,
+} from '../../../../packages/plugins/app-plugin-agents/client/chat/tool-renderer.js';
+export type {
+  AIToolPart,
+  AIToolRendererContext,
+  AIToolRendererMap,
+  AIToolRendererProps,
+  AIToolRendererProviderProps,
+} from '@nocobase/app-plugin-agents/client/chat';
+
+// Use the real context implementation so preview nesting and exact-name dispatch cannot drift.
+export const AIToolRendererProvider: typeof Chat.AIToolRendererProvider =
+  ToolRendererProvider;
+export const useAIToolRenderer: typeof Chat.useAIToolRenderer = useToolRenderer;
+export const getAIToolSourceMessage: typeof Chat.getAIToolSourceMessage =
+  toolSourceMessage;
+export { chatMessageSegments } from '../../../../packages/plugins/app-plugin-agents/client/chat/message-model.js';
 import type {
   ChatAgent,
   ConversationDetail,
-  ConversationMessage,
+  ResolvedPageContext,
   ConversationNotice,
   ConversationSource,
   MessageAttachment,
@@ -16,6 +44,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -23,6 +52,13 @@ import {
 import { useNavigate } from 'react-router';
 
 import { cn } from 'cn';
+import {
+  contextChips as realContextChips,
+  buildPageContext as realBuildPageContext,
+  uiItemKey as realUIItemKey,
+  snapshotUIContext as realSnapshotUIContext,
+} from '../../../../packages/plugins/app-plugin-agents/client/chat/context-model.js';
+import { clonePageUIContext } from '../../../../packages/plugins/app-plugin-agents/shared/page-ui-context.js';
 
 // The preview's stand-in for @nocobase/app-plugin-agents/client/chat, aliased in vite.config.ts and mocked with it in
 // the tests: the panel's state as the plugin keeps it, and the conversations in memory. A message is answered after a
@@ -47,6 +83,7 @@ const AGENTS: readonly ChatAgent[] = [
     avatar: null,
     isSystemDefault: false,
     isMyDefault: true,
+    runnerNames: ['Demo runtime'],
     availability: online,
     personalOnly: false,
   },
@@ -59,6 +96,7 @@ const AGENTS: readonly ChatAgent[] = [
     avatar: null,
     isSystemDefault: true,
     isMyDefault: false,
+    runnerNames: ['Demo runtime'],
     availability: online,
     personalOnly: false,
   },
@@ -71,6 +109,7 @@ const AGENTS: readonly ChatAgent[] = [
     avatar: null,
     isSystemDefault: false,
     isMyDefault: false,
+    runnerNames: [],
     availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
     personalOnly: true,
   },
@@ -99,6 +138,7 @@ function conversation(
     title,
     titleSource: 'auto',
     category: 'chat',
+    showInChatList: true,
     source: 'panel',
     mode: 'runner',
     agent: agentRef(agentId),
@@ -119,23 +159,67 @@ function conversation(
 function message(
   conversationId: string,
   seq: number,
-  role: ConversationMessage['role'],
+  role: Chat.AppUIMessage['role'],
   content: string,
-  fields: Partial<ConversationMessage> = {},
-): ConversationMessage {
+  fields: {
+    createdAt?: string;
+    workContext?: ResolvedPageContext;
+    attachments?: readonly MessageAttachment[];
+    metadata?: {
+      agentId?: string;
+      clientId?: string;
+      notice?: ConversationNotice;
+    };
+  } = {},
+): Chat.AppUIMessage {
+  const notice = fields.metadata?.notice;
   return {
     id: `${conversationId}-${seq}`,
-    conversationId,
-    seq,
     role,
-    content: { type: 'text', content },
-    toolCalls: null,
-    attachments: null,
-    workContext: null,
-    metadata: {},
-    runId: null,
-    createdAt: ago(30 - seq),
-    ...fields,
+    metadata: {
+      conversationId,
+      seq,
+      revision: 1,
+      createdAt: fields.createdAt ?? ago(30 - seq),
+      ...(fields.metadata?.agentId ? { agentId: fields.metadata.agentId } : {}),
+      ...(fields.metadata?.clientId
+        ? { clientId: fields.metadata.clientId }
+        : {}),
+      ...(fields.workContext ? { context: fields.workContext } : {}),
+    },
+    parts: [
+      ...(notice
+        ? notice.code === 'news'
+          ? [
+              {
+                type: 'data-notice' as const,
+                id: `notice-${seq}`,
+                data: {
+                  type: notice.type,
+                  title: notice.title,
+                  ...(notice.params ? { params: { ...notice.params } } : {}),
+                },
+              },
+            ]
+          : [
+              {
+                type: 'data-business' as const,
+                id: `business-${seq}`,
+                data: {
+                  kind: notice.code,
+                  id: `record-${seq}`,
+                  payload: JSON.parse(JSON.stringify(notice)) as Chat.AppUIJson,
+                },
+              },
+            ]
+        : [{ type: 'text' as const, text: content, state: 'done' as const }]),
+      ...(fields.attachments ?? []).map((file) => ({
+        type: 'file' as const,
+        filename: file.filename,
+        mediaType: file.mimeType,
+        url: file.contentUrl,
+      })),
+    ],
   };
 }
 
@@ -165,7 +249,7 @@ function attachment(
 
 interface Store {
   readonly conversations: readonly ConversationDetail[];
-  readonly messages: Readonly<Record<string, readonly ConversationMessage[]>>;
+  readonly messages: Readonly<Record<string, readonly Chat.AppUIMessage[]>>;
   readonly events: Readonly<Record<string, readonly RunEvent[]>>;
 }
 
@@ -230,7 +314,7 @@ function initialStore(): Store {
                 'About an hour: the templates are done, the tests remain.',
               error: null,
               usage: { inputTokens: 1840, outputTokens: 212 },
-              plans: 0,
+              plans: 3,
             },
           },
         }),
@@ -307,6 +391,29 @@ function initialStore(): Store {
 
 let store: Store = initialStore();
 const listeners = new Set<() => void>();
+const chats = new Map<string, SDKChat<Chat.AppUIMessage>>();
+const stopReplies = new Map<string, () => void>();
+let generation = 0;
+function demoChat(id: string): SDKChat<Chat.AppUIMessage> {
+  let chat = chats.get(id);
+  if (!chat) {
+    chat = new SDKChat<Chat.AppUIMessage>({
+      id,
+      messages: [...(store.messages[id] ?? [])],
+      transport: new DefaultChatTransport({
+        api: id,
+        fetch: async () =>
+          answer(
+            id,
+            store.conversations.find((item) => item.id === id)?.agent.id ??
+              'assistant',
+          ),
+      }),
+    });
+    chats.set(id, chat);
+  }
+  return chat;
+}
 
 function update(next: (current: Store) => Store): void {
   store = next(store);
@@ -328,6 +435,11 @@ const replyTimers = new Set<ReturnType<typeof setTimeout>>();
 
 /** Puts the sample conversations back; the tests call it between cases. */
 export function resetChatDemo(): void {
+  generation++;
+  for (const stop of stopReplies.values()) stop();
+  stopReplies.clear();
+  for (const chat of chats.values()) void chat.stop();
+  chats.clear();
   for (const timer of replyTimers) clearTimeout(timer);
   replyTimers.clear();
   update(() => initialStore());
@@ -348,8 +460,8 @@ function patchConversation(
 
 function appendMessage(
   conversationId: string,
-  build: (seq: number) => ConversationMessage,
-): ConversationMessage {
+  build: (seq: number) => Chat.AppUIMessage,
+): Chat.AppUIMessage {
   const list = store.messages[conversationId] ?? [];
   const added = build(list.length + 1);
   update((current) => ({
@@ -359,56 +471,96 @@ function appendMessage(
   return added;
 }
 
-function replaceMessage(added: ConversationMessage): void {
-  update((current) => ({
-    ...current,
-    messages: {
-      ...current.messages,
-      [added.conversationId]: (
-        current.messages[added.conversationId] ?? []
-      ).map((item) => (item.id === added.id ? added : item)),
-    },
-  }));
-}
-
 const REPLY =
   'Here is what I would do:\n\n1. Review **PM-12** today.\n2. Let the coding agent finish PM-15.\n3. Move PM-18 to the next release.';
 
-/** An agent's reply: a run opens, then the reply grows in place until it is final. */
-function answer(conversationId: string, agentId: string): void {
+/** A deterministic producer emits standard SDK chunks and saves only its final public message. */
+function answer(conversationId: string, agentId: string): Response {
+  const ownGeneration = generation;
+  const seq = (store.messages[conversationId]?.length ?? 0) + 1;
+  const id = `${conversationId}-${seq}`;
+  const createdAt = new Date().toISOString();
+  let length = 0,
+    ended = false;
+  let output!: ReadableStreamDefaultController<UIMessageChunk>;
+  let interval: ReturnType<typeof setInterval> | undefined;
+  let start: ReturnType<typeof setTimeout>;
   patchConversation(conversationId, (item) => ({
     ...item,
     run: { id: `run-${conversationId}`, status: 'running', acceptsInput: true },
+    execution: { status: 'running' },
   }));
-  const start = setTimeout(() => {
+  const finish = (cancelled = false) => {
+    if (ended) return;
+    ended = true;
+    clearTimeout(start);
+    clearInterval(interval);
     replyTimers.delete(start);
-    const draft = appendMessage(conversationId, (seq) =>
-      message(conversationId, seq, 'assistant', '', {
-        createdAt: new Date().toISOString(),
-        metadata: { agentId, streaming: true },
-      }),
-    );
-    let length = 0;
-    const timer = setInterval(() => {
-      length = Math.min(REPLY.length, length + 12);
-      const done = length === REPLY.length;
-      replaceMessage({
-        ...draft,
-        content: { type: 'text', content: REPLY.slice(0, length) },
-        metadata: { agentId, ...(done ? {} : { streaming: true }) },
-      });
-      if (!done) return;
-      clearInterval(timer);
-      replyTimers.delete(timer);
-      patchConversation(conversationId, (item) => ({
-        ...item,
-        run: null,
-        lastMessageAt: new Date().toISOString(),
-      }));
-    }, 80);
-    replyTimers.add(timer);
-  }, 700);
-  replyTimers.add(start);
+    if (interval) replyTimers.delete(interval);
+    stopReplies.delete(conversationId);
+    if (ownGeneration !== generation) {
+      output.close();
+      return;
+    }
+    const saved: Chat.AppUIMessage = {
+      id,
+      role: 'assistant',
+      metadata: { conversationId, seq, revision: 1, createdAt, agentId },
+      parts: [{ type: 'text', text: REPLY.slice(0, length), state: 'done' }],
+    };
+    if (length) appendMessage(conversationId, () => saved);
+    patchConversation(conversationId, (item) => ({
+      ...item,
+      run: null,
+      execution: {
+        status: 'idle',
+        outcome: cancelled ? 'cancelled' : 'completed',
+      },
+      lastMessageAt: new Date().toISOString(),
+    }));
+    if (length) output.enqueue({ type: 'text-end', id: 'text' });
+    output.enqueue({
+      type: 'finish',
+      ...(length ? { messageMetadata: saved.metadata } : {}),
+      finishReason: cancelled ? 'other' : 'stop',
+    });
+    output.close();
+  };
+  const stream = new ReadableStream<UIMessageChunk>({
+    start(controller) {
+      output = controller;
+      start = setTimeout(() => {
+        replyTimers.delete(start);
+        if (ownGeneration !== generation) return;
+        output.enqueue({
+          type: 'start',
+          messageId: id,
+          messageMetadata: { conversationId, createdAt, agentId, revision: 0 },
+        });
+        output.enqueue({ type: 'text-start', id: 'text' });
+        interval = setInterval(() => {
+          const before = length;
+          length = Math.min(REPLY.length, length + 12);
+          output.enqueue({
+            type: 'text-delta',
+            id: 'text',
+            delta: REPLY.slice(before, length),
+          });
+          if (length === REPLY.length) finish();
+        }, 80);
+        replyTimers.add(interval);
+      }, 700);
+      replyTimers.add(start);
+    },
+    cancel() {
+      ended = true;
+      clearTimeout(start);
+      clearInterval(interval);
+      stopReplies.delete(conversationId);
+    },
+  });
+  stopReplies.set(conversationId, () => finish(true));
+  return createUIMessageStreamResponse({ stream });
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -507,33 +659,12 @@ export const selectionPreview: typeof Chat.selectionPreview = (
   return line.length > max ? `${line.slice(0, max - 1)}…` : line;
 };
 
-export const contextChips: typeof Chat.contextChips = (input) => {
-  const chips: Chat.ChatContextChip[] = [];
-  const seen = new Set<string>();
-  const pinned = new Set(input.pinned.map(itemKey));
-  for (const item of [...input.pinned, ...input.sources]) {
-    const key = itemKey(item);
-    if (seen.has(key) || input.removed.has(key)) continue;
-    seen.add(key);
-    chips.push({ key, kind: 'item', item, pinned: pinned.has(key) });
-  }
-  if (input.filter && !input.removed.has('filter'))
-    chips.push({ key: 'filter', kind: 'filter', filter: input.filter });
-  if (input.selection && !input.removed.has('selection'))
-    chips.push({
-      key: 'selection',
-      kind: 'selection',
-      selection: input.selection,
-    });
-  return chips;
-};
-
-export const buildPageContext: typeof Chat.buildPageContext = (input) => ({
-  route: input.route,
-  items: contextChips(input).flatMap((chip) =>
-    chip.kind === 'item' ? [{ kind: chip.item.kind, id: chip.item.id }] : [],
-  ),
-});
+export const contextChips: typeof Chat.contextChips = realContextChips;
+export const buildPageContext: typeof Chat.buildPageContext =
+  realBuildPageContext;
+export const uiItemKey: typeof Chat.uiItemKey = realUIItemKey;
+export const snapshotUIContext: typeof Chat.snapshotUIContext =
+  realSnapshotUIContext;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Names, avatars and times
@@ -630,6 +761,11 @@ export const useChatPanel: typeof Chat.useChatPanel = () =>
   useContext(PanelContext) ?? unavailable;
 
 const noSources: Chat.ChatSourcesValue = {
+  uiSources: [],
+  selectedUIKeys: new Set(),
+  registerUI: () => noop,
+  selectUI: noop,
+  snapshotUI: async () => undefined,
   items: [],
   filter: null,
   selection: null,
@@ -659,6 +795,34 @@ export const useChatContextSource: typeof Chat.useChatContextSource = (
     const current = itemRef.current;
     return key && current ? registerItem(current) : undefined;
   }, [registerItem, key]);
+};
+
+export const useChatUIContextSource: typeof Chat.useChatUIContextSource = (
+  source,
+) => {
+  const { registerUI } = useChatSources();
+  const latestRef = useRef(source);
+  useLayoutEffect(() => {
+    latestRef.current = source;
+  });
+  const kind = source?.kind;
+  const id = source?.id;
+  useEffect(() => {
+    if (kind === undefined || id === undefined) return;
+    return registerUI({
+      kind,
+      id,
+      get label() {
+        return latestRef.current?.label ?? id;
+      },
+      getSnapshot: () => {
+        const current = latestRef.current;
+        if (!current || current.kind !== kind || current.id !== id)
+          throw new Error('UI context source is no longer available.');
+        return current.getSnapshot();
+      },
+    });
+  }, [registerUI, kind, id]);
 };
 
 export const ChatProvider: typeof Chat.ChatProvider = ({
@@ -790,6 +954,74 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
     ],
   );
 
+  const uiRegistryRef = useRef(new Map<string, Chat.ChatUIContextSource>());
+  const [uiSources, setUISources] = useState<
+    readonly Chat.ChatUIContextSource[]
+  >([]);
+  const [selectedUIKeys, setSelectedUIKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const selectedUIRef = useRef(selectedUIKeys);
+  const registerUI = useCallback((source: Chat.ChatUIContextSource) => {
+    const key = uiItemKey(source);
+    if (uiRegistryRef.current.has(key))
+      throw new Error(`UI context source already registered: ${key}`);
+    clonePageUIContext({
+      version: 1,
+      items: [{ kind: source.kind, id: source.id }],
+    });
+    const registered: Chat.ChatUIContextSource = {
+      kind: source.kind,
+      id: source.id,
+      get label() {
+        return source.label;
+      },
+      getSnapshot: () => source.getSnapshot(),
+    };
+    uiRegistryRef.current.set(key, registered);
+    setUISources([...uiRegistryRef.current.values()]);
+    return () => {
+      if (uiRegistryRef.current.get(key) !== registered) return;
+      uiRegistryRef.current.delete(key);
+      setUISources([...uiRegistryRef.current.values()]);
+      const next = new Set(selectedUIRef.current);
+      next.delete(key);
+      selectedUIRef.current = next;
+      setSelectedUIKeys(next);
+    };
+  }, []);
+  const selectUI = useCallback<Chat.ChatSourcesValue['selectUI']>(
+    (source, selected = true) => {
+      const key = uiItemKey(source);
+      if (selected && !uiRegistryRef.current.has(key))
+        throw new Error('UI context source is no longer registered.');
+      const next = new Set(selectedUIRef.current);
+      if (selected) next.add(key);
+      else next.delete(key);
+      selectedUIRef.current = next;
+      setSelectedUIKeys(next);
+    },
+    [],
+  );
+  const snapshotUI = useCallback<
+    Chat.ChatSourcesValue['snapshotUI']
+  >(async () => {
+    const selected = selectedUIRef.current;
+    const entries = [...uiRegistryRef.current.entries()].filter(([key]) =>
+      selected.has(key),
+    );
+    const snapshot = await snapshotUIContext(
+      entries.map(([, source]) => source),
+    );
+    if (
+      selected !== selectedUIRef.current ||
+      entries.some(([key, source]) => uiRegistryRef.current.get(key) !== source)
+    )
+      throw new Error(
+        'UI context selection or source changed while reading its snapshot.',
+      );
+    return snapshot;
+  }, []);
   const registerItem = useCallback((item: Chat.ChatContextItem) => {
     setItems((current) => [...current, item]);
     return () =>
@@ -797,15 +1029,33 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
   }, []);
   const sources = useMemo<Chat.ChatSourcesValue>(
     () => ({
+      uiSources,
+      selectedUIKeys,
+      registerUI,
+      selectUI,
+      snapshotUI,
       items,
       filter: null,
       selection: null,
       removed,
       registerItem,
       registerFilter: () => noop,
-      remove: (key) => setRemoved((current) => new Set([...current, key])),
+      remove: (key) => {
+        const source = uiRegistryRef.current.get(key);
+        if (source) selectUI(source, false);
+        else setRemoved((current) => new Set([...current, key]));
+      },
     }),
-    [items, removed, registerItem],
+    [
+      uiSources,
+      selectedUIKeys,
+      registerUI,
+      selectUI,
+      snapshotUI,
+      items,
+      removed,
+      registerItem,
+    ],
   );
 
   const tracking = useMemo<Chat.ChatPageTracking>(
@@ -840,13 +1090,24 @@ function query<T>(data: T | undefined): never {
 export const useChatAgents: typeof Chat.useChatAgents = () =>
   query([...AGENTS]);
 
+export const useChatModels: typeof Chat.useChatModels = () => query([]);
 export const useConversation: typeof Chat.useConversation = (
   conversationId,
 ) => {
   const { conversations } = useStore();
   return query(
     conversationId
-      ? conversations.find((item) => item.id === conversationId)
+      ? (() => {
+          const item = conversations.find((item) => item.id === conversationId);
+          return item
+            ? {
+                ...item,
+                execution: item.execution ?? {
+                  status: item.run ? 'running' : 'idle',
+                },
+              }
+            : undefined;
+        })()
       : undefined,
   );
 };
@@ -866,7 +1127,7 @@ export const useConversationList: typeof Chat.useConversationList = (
         (!q ||
           (item.title ?? '').toLowerCase().includes(q) ||
           (messages[item.id] ?? []).some((entry) =>
-            entry.content.content.toLowerCase().includes(q),
+            appUIMessageText(entry).toLowerCase().includes(q),
           )),
     )
     .sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt));
@@ -884,14 +1145,15 @@ export const useConversationList: typeof Chat.useConversationList = (
 export const useConversationMessages: typeof Chat.useConversationMessages = (
   conversationId,
 ) => {
-  const { messages } = useStore();
-  const items = conversationId ? (messages[conversationId] ?? []) : [];
+  useStore();
+  const sdk = useSDKChat({ chat: demoChat(conversationId ?? 'draft') });
+  const items = conversationId ? sdk.messages : [];
   return {
     items,
     pending: [],
     hasMore: false,
     olderToken: null,
-    lastSeq: items.at(-1)?.seq ?? 0,
+    lastSeq: Math.max(0, ...items.map((message) => message.metadata?.seq ?? 0)),
     loaded: true,
     loadingOlder: false,
     error: undefined,
@@ -912,7 +1174,7 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
       let id = conversationId;
       const agent = AGENTS.find((candidate) => candidate.id === agentId);
       if (!id) {
-        if (!agent) return Promise.resolve(null);
+        if (!agent) return false;
         id = `new-${Date.now().toString(36)}`;
         const created = conversation(id, agent.id, input.content.slice(0, 30), {
           source,
@@ -926,7 +1188,8 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
         onCreated(created);
       }
       const target = id;
-      appendMessage(target, (seq) =>
+      const sdk = demoChat(target);
+      const saved = appendMessage(target, (seq) =>
         message(target, seq, 'user', input.content, {
           createdAt: new Date().toISOString(),
           ...(input.attachments?.length
@@ -935,8 +1198,8 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
         }),
       );
       const detail = store.conversations.find((item) => item.id === target);
-      if (detail) answer(target, detail.agent.id);
-      return Promise.resolve(null);
+      if (detail) void sdk.sendMessage(saved);
+      return true;
     },
     [conversationId, agentId, source, onCreated],
   );
@@ -993,11 +1256,14 @@ export const useConversationActions: typeof Chat.useConversationActions =
         archivedAt: archived ? new Date().toISOString() : null,
       })),
     ),
-    stop: mutation<string>((id) =>
-      patchConversation(id, (item) => ({ ...item, run: null })),
-    ),
-    fallback: mutation<string>(noop),
-    restore: mutation<string>(noop),
+    stop: mutation<string>((id) => {
+      stopReplies.get(id)?.();
+      patchConversation(id, (item) => ({
+        ...item,
+        run: null,
+        execution: { status: 'idle', outcome: 'cancelled' },
+      }));
+    }),
     markRead: (id: string) => {
       if (store.conversations.find((item) => item.id === id)?.read === false)
         patchConversation(id, (item) => ({ ...item, read: true }));
@@ -1014,3 +1280,28 @@ const SOURCES: readonly Chat.ConversationSourceOption[] = [
 
 export const useConversationSources: typeof Chat.useConversationSources = () =>
   SOURCES;
+
+/** The preview has no network stream; production chat uses the plugin controller. */
+export const useChatStream: typeof Chat.useChatStream = (id) => {
+  const sdk = useSDKChat({ chat: demoChat(id ?? 'draft') });
+  return id ? { status: sdk.status, error: sdk.error } : undefined;
+};
+export const useChatController: typeof Chat.useChatController = () =>
+  ({
+    refresh: async () => {},
+    resume: async () => {},
+    finalize: async () => {},
+    approve: async () => {},
+    isStopping: () => false,
+    submissions: {
+      blocked: () => false,
+      snapshot: () => [],
+      releaseUnknown: () => false,
+    },
+  }) as unknown as ReturnType<typeof Chat.useChatController>;
+
+export {
+  chatFeedback,
+  chatIsRunning,
+} from '../../../../packages/plugins/app-plugin-agents/client/chat/feedback.js';
+export { useChatScroll } from '../../../../packages/plugins/app-plugin-agents/client/chat/use-chat-scroll.js';

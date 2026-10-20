@@ -12,7 +12,11 @@ import {
   type Permissions,
   type SettingsKey,
 } from '../../shared/access.js';
-import type { Attachment } from '../../shared/attachments.js';
+import type {
+  Attachment,
+  IssueScreenshot,
+  IssueScreenshots,
+} from '../../shared/attachments.js';
 import {
   REACTION_EMOJIS,
   type CommentReaction,
@@ -534,7 +538,6 @@ const issueFields = {
   startDate: date.optional().describe('The planned start date.'),
   dueDate: date.optional().describe('The planned due date.'),
   labelIds: z.array(id).optional().describe('Label identifiers to assign.'),
-  start: z.boolean().optional().describe('Start work after saving the issue.'),
 };
 
 export const CreateIssueBody: z.ZodType<CreateIssueRequest> = z.strictObject({
@@ -544,12 +547,6 @@ export const CreateIssueBody: z.ZodType<CreateIssueRequest> = z.strictObject({
       "The caller's unattached uploads; requires attachment upload permission. Bound before work starts.",
   }),
   ...issueFields,
-  start: z
-    .boolean()
-    .optional()
-    .describe(
-      'Start work after saving. Requires --status in_progress (statusKey: in_progress in JSON); explicit true with backlog or no status is rejected before saving.',
-    ),
   blockedBy: z
     .array(id)
     .optional()
@@ -937,6 +934,36 @@ export const WorkspaceSettingsSchema: z.ZodType<WorkspaceSettings> = z.object({
 
 // Attachments and comments
 
+export const IssueScreenshotSchema: z.ZodType<IssueScreenshot> = z
+  .object({
+    id: z.string(),
+    filename: z.string(),
+    ext: z.string(),
+    mimeType: z.string(),
+    size: z.number().int(),
+    contentUrl: z.string(),
+    downloadUrl: z.string(),
+    comment: z.object({
+      id: z.string(),
+      createdAt: dateTime,
+      author: z.object({
+        type: z.string(),
+        id: z.string(),
+        name: z.string().nullable(),
+      }),
+    }),
+  })
+  .meta({ ref: 'ProjectsIssueScreenshot' });
+
+export const IssueScreenshotsMeta: z.ZodType<IssueScreenshots['meta']> =
+  z.object({
+    limit: z.number().int(),
+    truncated: z.boolean().meta({
+      description:
+        'More images exist. All counts describe only the returned batch.',
+    }),
+  });
+
 export const AttachmentSchema: z.ZodType<Attachment> = z
   .object({
     id: z.string(),
@@ -1318,7 +1345,6 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
         title: z.string(),
         ...issueFieldChanges,
         blockedBy: z.array(issueTarget).optional(),
-        start: z.boolean().optional(),
       }),
     }),
     z.object({
@@ -1335,7 +1361,6 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
           needsYou: z.string().nullable().optional(),
           next: z.string().nullable().optional(),
         }),
-        start: z.boolean().optional(),
       }),
     }),
     z.object({

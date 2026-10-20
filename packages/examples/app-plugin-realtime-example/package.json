@@ -1,8 +1,8 @@
 {
   "name": "@nocobase/app-plugin-realtime-example",
   "displayName": "Realtime Example App Plugin",
-  "description": "Example app plugin with a realtime clock publisher and page.",
-  "version": "0.1.0-beta.8",
+  "description": "Business realtime examples for collaborative tasks, personal notifications, background CSV exports, and a subscription capability lab.",
+  "version": "0.1.0-beta.9",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -13,7 +13,11 @@
       "types": "./server/index.ts",
       "import": "./server/index.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./client": {
+      "types": "./client/index.ts",
+      "import": "./client/index.ts"
+    }
   },
   "publishConfig": {
     "access": "public",
@@ -22,7 +26,16 @@
         "types": "./dist/server/index.d.ts",
         "import": "./dist/server/index.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./client": {
+        "types": "./dist/client/index.d.ts",
+        "import": "./dist/client/index.js"
+      }
+    },
+    "imports": {
+      "#components/*": "./dist/client/components/*.js",
+      "#hooks/*": "./dist/client/hooks/*.js",
+      "#lib/*": "./dist/client/lib/*.js"
     }
   },
   "files": [
@@ -30,7 +43,7 @@
   ],
   "scripts": {
     "clean": "node ./scripts/clean-dist.mjs",
-    "build": "pnpm clean && tsc -p tsconfig.json",
+    "build": "pnpm clean && tsc -p tsconfig.json && nocobase-db-manifests",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint . --max-warnings 0",
@@ -41,7 +54,8 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",
@@ -49,10 +63,49 @@
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "jsdom": "catalog:",
+    "react-dom": "catalog:",
+    "shadcn": "catalog:",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
+    "@nocobase/app-testing": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/app-server": "workspace:^",
-    "@nocobase/service-provider": "workspace:^"
+    "@nocobase/service-provider": "workspace:^",
+    "@base-ui/react": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "lucide-react": "catalog:",
+    "@nocobase/app-client": "workspace:^",
+    "@nocobase/app-plugin-authentication": "workspace:^",
+    "@nocobase/i18n": "workspace:^",
+    "react": "^19.0.0",
+    "react-router": "catalog:",
+    "@nocobase/db": "workspace:^",
+    "@nocobase/jobs": "workspace:^",
+    "@nocobase/app-plugin-notification-example": "workspace:^",
+    "@nocobase/app-plugin-notification-in-app": "workspace:^",
+    "@tanstack/react-query": "catalog:"
+  },
+  "imports": {
+    "#components/*": {
+      "development": "./client/components/*.js",
+      "default": "./dist/client/components/*.js"
+    },
+    "#hooks/*": {
+      "development": "./client/hooks/*.js",
+      "default": "./dist/client/hooks/*.js"
+    },
+    "#lib/*": {
+      "development": "./client/lib/*.js",
+      "default": "./dist/client/lib/*.js"
+    }
   }
 }

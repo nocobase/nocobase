@@ -306,7 +306,10 @@ test('a library many packages depend on selects its dependents and the generated
 
 test('a template change selects the template, its path consumers and the smoke tests it needs', () => {
   const examples = plan('packages/templates/app-template-examples/README.MD');
-  assert.deepEqual(examples.packages, ['@nocobase/app-template-examples']);
+  assert.deepEqual(examples.packages, [
+    '@nocobase/app-template-examples',
+    '@nocobase/ui-library',
+  ]);
   assert.equal(examples.runCreateApp, true);
   assert.equal(examples.runAppInstaller, false);
   assert.equal(examples.buildFull, true);

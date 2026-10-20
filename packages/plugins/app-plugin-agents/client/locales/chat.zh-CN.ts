@@ -13,6 +13,7 @@ const chatZhCN: ChatLocale = {
       agentMissing: '已删除',
       agentArchived: '未启用',
       forbidden: '你无权使用',
+      noModel: '请先配置聊天模型',
       noRunner: '暂无执行机，选不了',
       othersPersonal: '只有别人的个人执行机能跑',
       modelUnavailable: '模型不可用',
@@ -32,7 +33,7 @@ const chatZhCN: ChatLocale = {
       switchedBack: '已切回 {{name}}。',
       runFailed: 'Agent 没有回复就停止了。',
       runFailedReason: 'Agent 没有回复就停止了：{{reason}}',
-      runCancelled: '已停止。',
+      runCancelled: '已请求取消。',
     },
     consultation: {
       unavailableTitle: '咨询对象不可见',

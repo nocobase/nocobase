@@ -2,7 +2,7 @@ import {
   TestI18nProvider,
   createTestI18nRuntime,
 } from '@nocobase/i18n/testing';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { LifecycleDescription } from '@nocobase/lifecycle';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -56,11 +56,13 @@ beforeAll(() => {
 
 describe('example process diagram', () => {
   it.each([
-    { locale: 'en-US', resources: enUS },
-    { locale: 'zh-CN', resources: zhCN },
+    { locale: 'en-US', resources: enUS, autoHeight: undefined },
+    { locale: 'en-US', resources: enUS, autoHeight: false },
+    { locale: 'zh-CN', resources: zhCN, autoHeight: undefined },
+    { locale: 'zh-CN', resources: zhCN, autoHeight: false },
   ])(
-    'renders translated state details in $locale and keeps history highlights',
-    async ({ locale, resources }) => {
+    'renders translated state details in $locale with autoHeight=$autoHeight and keeps history highlights',
+    async ({ locale, resources, autoHeight }) => {
       const runtime = await createTestI18nRuntime({
         locale,
         namespaces: {
@@ -74,6 +76,7 @@ describe('example process diagram', () => {
         <TestI18nProvider runtime={runtime} namespace={NAMESPACE}>
           <ProcessDiagram
             description={description}
+            autoHeight={autoHeight}
             current='open'
             visited={['new', 'open']}
             availableTransitions={['resolve']}
@@ -91,6 +94,9 @@ describe('example process diagram', () => {
         previous.querySelector('[data-execution-state="visited"]'),
       ).not.toBeNull();
       expect(current).toHaveTextContent(resources.flowDiagram.current);
+      expect(
+        current.querySelector('[data-execution-state="current"]'),
+      ).not.toBeNull();
       expect(screen.getByTestId('rf__node-closed')).not.toHaveTextContent(
         resources.diagramStatus.visited,
       );
@@ -100,11 +106,66 @@ describe('example process diagram', () => {
       );
       // A selected state must not show unrelated effect continuations with an absent success target.
       expect(screen.getByRole('status')).not.toHaveTextContent('notify');
+      const onParameterBinding = vi.fn(() => false);
+      const configurableDescription: LifecycleDescription = {
+        ...description,
+        parameterConfiguration: {
+          readMode: 'live',
+          groups: [
+            {
+              key: 'timing',
+              title: 'Timing',
+              schemaVersion: 1,
+              fields: {
+                timeout: {
+                  type: 'number',
+                  title: 'Timeout',
+                  bindings: [{ state: 'open' }],
+                },
+              },
+            },
+          ],
+        },
+      };
       view.rerender(
         <TestI18nProvider runtime={runtime} namespace={NAMESPACE}>
-          <ProcessDiagram description={description} current='closed' />
+          <ProcessDiagram
+            description={configurableDescription}
+            showDetails={false}
+            onParameterBinding={onParameterBinding}
+          />
         </TestI18nProvider>,
       );
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      const gear = within(screen.getByTestId('rf__node-open')).getByRole(
+        'button',
+        {
+          name: resources.parameters.editCurrent,
+        },
+      );
+      expect(
+        within(screen.getByTestId('rf__node-new')).queryByRole('button', {
+          name: resources.parameters.editCurrent,
+        }),
+      ).toBeNull();
+      fireEvent.click(gear);
+      expect(onParameterBinding).toHaveBeenCalledWith('state', 'open');
+      fireEvent.keyDown(screen.getByTestId('rf__node-open'), { key: 'Enter' });
+      expect(onParameterBinding).toHaveBeenCalledWith('state', 'open');
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      view.rerender(
+        <TestI18nProvider runtime={runtime} namespace={NAMESPACE}>
+          <ProcessDiagram
+            description={configurableDescription}
+            current='closed'
+          />
+        </TestI18nProvider>,
+      );
+      expect(
+        within(screen.getByTestId('rf__node-open')).queryByRole('button', {
+          name: resources.parameters.editCurrent,
+        }),
+      ).toBeNull();
       expect(screen.getByTestId('rf__node-new')).not.toHaveTextContent(
         resources.diagramStatus.visited,
       );
@@ -114,6 +175,11 @@ describe('example process diagram', () => {
       expect(screen.getByTestId('rf__node-closed')).toHaveTextContent(
         resources.flowDiagram.current,
       );
+      expect(
+        screen
+          .getByTestId('rf__node-closed')
+          .querySelector('[data-execution-state="current"]'),
+      ).not.toBeNull();
     },
   );
 });

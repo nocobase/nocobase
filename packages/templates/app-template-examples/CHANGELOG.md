@@ -1,5 +1,263 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.55
+
+### Minor Changes
+
+- baf80fe: Add a compact AI Translation example using OnlineAgent background execution with structured output, model and language selection, and side-by-side source and translation text areas.
+- baf80fe: Add an Examples-only OnlineAgent integration with an Agents → Models navigation group, a shared authenticated chat panel, model-readiness guidance, saved history and streaming cancellation.
+
+  Expose the public Agents and Runtimes configuration pages in the Agents menu, including runtime registration, while preserving the plugin's page and settings permissions.
+
+### Patch Changes
+
+- baf80fe: Avoid empty assistant bubbles while thinking and redundant success notifications in shared Agents chat. Keep chat transcripts within their available width while preserving bounded scrolling for wide code blocks and tables, application-owned message extras, and actionable execution feedback.
+- baf80fe: Add extensible UI context snapshots, application-owned tool renderers, and guarded browser form registries to Agents. Preserve exact originating message linkage through public history and recovery, and demonstrate reviewed, draft-only form proposals in Examples without saving records or continuing completed tools.
+- baf80fe: Reauthorize bounded references from the most recent historical page for follow-up chat input, preserving current context priority and omitting stale parameters or inaccessible records.
+- baf80fe: Add a shared public chat-model catalog hook and explicit model selection when creating Online Agent conversations. Update the Examples chat selector to group models by service alongside Agents, with an online-model-or-runner conversation hint and vertical-only option scrolling, preserving Runner status, metadata, and draft content.
+- baf80fe: Describe Runner cancellation history as a request until termination is confirmed, preserving existing notice identifiers and cancellation behavior.
+- baf80fe: Show shared chat progress and safe outcomes, follow growing replies only near the bottom, and align Native defaults, read state and cancellation confirmation across chat consumers.
+- baf80fe: Read restored chat layout bounds in one browser snapshot while preserving containment and scrolling checks.
+- baf80fe: Transform all published plugin client entry points with AppClient in generated-application tests, preserving shared service tokens during real application startup as well as Router and application contexts in component tests. Keep server modules outside this transformation boundary.
+- 388f21f: Present structured extraction examples in a side-by-side workspace with scenario tabs, the same centered layout and shared model selector as AI Translation, concise copy and no model-configuration callouts or example-reset button. Preserve each scenario's source text and editable extraction result when switching tabs.
+- 388f21f: Redesign AI form assistance as an empty procurement request with a responsive two-column layout, a contextual AI chat shortcut, six business fields, and safe local clear and undo actions. Extend AI proposal validation and rendering for procurement values while keeping older conversation cards readable.
+- baf80fe: Declare the Examples business CLI and configure Runner chat to obtain it from the application's distribution while preserving the existing application registration identity. Document the required CLI build and distinguish it from Runner installation and development-management commands.
+- baf80fe: Name the runtime connection page in page permissions without changing its authorization identity.
+- baf80fe: Add contact and purchase-order demos that extract structured information through a shared OnlineAgent.background endpoint using frontend JSON Schemas, with model selection, loading feedback and editable results.
+- 388f21f: Redesign AI Translation as a unified two-column workspace with provider-grouped model selection, language swapping, sample text, copy and clear actions, and borderless editor focus. Move the Agents navigation group below External CRM while preserving its child order.
+- baf80fe: Keep generated application shell tests compatible with acknowledged realtime subscriptions.
+- baf80fe: Use shared AI SDK Chat owners for public chat clients, render ordered UIMessage parts and Runner source segments, and reconcile durable history, tool approval, recovery and independent Stop across application surfaces.
+- baf80fe: Stream native text increments immediately and support callable Runner agents through the shared OnlineAgent realtime service, atomic conversation admission, canonical block history and unified chat controls. Preserve executor bindings, explicit configuration validation and cancellation confirmation, and exclude server business context from public message metadata.
+- baf80fe: Save notices for native and Runner OnlineAgent conversations in the caller's transaction without waking an execution, including when input is supplied. Preserve active execution results and propagate persistence errors.
+
+  Reject direct HTTP tool, model-list and system-prompt overrides. Validate business variables against schemas declared by the selected scopes, while preserving trusted server SDK configuration and existing thinking handling.
+
+  Add showInChatList with a non-null true default. Filter ordinary chat lists before database pagination, allow explicit visibility at ordinary conversation creation, and always hide new background sessions. Known-session ownership checks and direct reads remain unchanged.
+
+- baf80fe: Wait for the admitted OnlineAgent execution in get(), including validated result persistence, finalization and occupancy release. Add try({ wait }) for bounded observation with distinct pending, failed and cancelled results and safe errors. Preserve run() admission semantics and finalization retries without rerunning model or tools.
+
+  Update translation and structured extraction examples to await results without status polling while preserving deadlines, disconnect handling and cancellation of late admission.
+
+- baf80fe: Remove the old conversation start, fallback and restore HTTP operations and the conversation fallback/restore CLI commands without aliases. Replace start with POST /api/agents/conversations followed by POST /api/agents/conversations/:id/messages, or conversation create followed by conversation message send. These are two non-atomic requests and may leave an empty conversation if sending fails. Fallback and restore have no same-session replacement: explicitly create a new conversation with the desired executor/agent, without automatically copying history or changing an existing binding. Trusted domain start/fallback/restore methods remain available.
+
+  Historical unbound conversations remain read-only, with owner-authorized cancellation of unfinished old runs. Browser callers must use the narrow configuration input: move tool lists, model lists and system-prompt policy into trusted server configuration, and declare business variables through selected-scope schemas. Existing thinking handling remains unchanged. Apply the visibility migration before serving requests; existing ordinary records default to visible and new background sessions are hidden, with known-session authorization preserved.
+
+  Background run still acknowledges admission. Use get to wait for validated, saved and finalized results, or try with a finite observation budget; observation timeout does not cancel execution. Deliver can return null after saving a notice in the caller's transaction without waking a new-bound conversation. Remove proposed-plan quantity hints from consultation cards while retaining historical data and plan mechanisms, and consolidate the framework and application upgrade documentation.
+
+- baf80fe: Use `OnlineAgentService` directly as the application service contract and remove redundant service interfaces. Update application dependencies, tests, and integration guidance to use the complete service type while retaining the shared realtime-session and Runner-backend contracts.
+- baf80fe: Integrate single-instance startup correction, transactional UI notifications and background result observation with standard SDK chat. Preserve approval barriers and actual tool occupancy while making interrupted-effect feedback advisory after finalization.
+- baf80fe: Repair previous-process native conversation occupancy during server startup while preserving saved results. Keep interrupted tool facts in private model history, remove effect-review admission locks, and allow owners to cancel historical runs while keeping historical conversations read-only. Stop continues to wait for actual native tool termination and finalization; cancellation requests for Runner and historical runs still require terminal confirmation.
+- baf80fe: Export validated SDK UI message contracts for OnlineAgent integration and align application SDK dependencies with the matching React client.
+- baf80fe: Show OnlineAgent thinking feedback before the first stream event and place animated waiting feedback directly after the latest chat message in Examples and the Registry block.
+- baf80fe: Remove the unused legacy realtime protocol and process-local replay manager after migrating public chat consumers to SDK UI messages. Keep background structured execution and its private model evidence separate from browser streams, and verify the installed application contract.
+
+  Show writing indicators only for the active SDK response so saved partial replies stay still after cancellation, refresh and subsequent turns.
+
+- baf80fe: Keep committed chat messages, execution occupancy, paginated history and command results consistent across views. Confirm uncertain submissions into canonical history without resending or reconnecting, and guard delayed actions and Undo callbacks for the authenticated provider lifetime.
+
+  Keep published client test fixtures, navigation guards and language providers in the same Router and application contexts as application pages, and exercise translation model selection through its keyboard interaction.
+
+- baf80fe: Unify native realtime and background conversations on complete internal SDK UI messages, deriving safe public UI history and private model replay from the same original. Restore the common `OnlineAgent` interface with `RealtimeOnlineAgent` and `BackgroundOnlineAgent` subinterfaces and concrete session implementations. Background agents expose `run`, `get`, and `try` without `send` or browser-stream dependencies; structured results remain independently validated execution data. Update application consumers to use the background interface. Historical background ModelMessage storage is not supported by the new reader.
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [c1ab9d4]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+  - @nocobase/app-plugin-agents@1.0.0-beta.15
+  - @nocobase/lifecycle@0.1.0-beta.3
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.9
+
+## 1.0.0-beta.54
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- 1952789: Add realistic realtime workflows for collaborative task boards, personal inbox synchronization, and durable background CSV exports. Reuse participant-authorized task data and existing in-app notifications, expose task invalidation and export-read contracts, and retain the technical capability lab as a secondary view.
+
+  Store CSV export content as LONGTEXT on MySQL so files larger than 64 KiB can be saved without truncation, while retaining the existing text mapping on other databases.
+
+- 1952789: Ship a dedicated versioned Realtime integration Skill and references for authorization, snapshot recovery, distributed delivery, polling decisions and business verification. Include it in both application templates' direct dependencies so Skills synchronization discovers it, and document optional Redis configuration in both templates.
+
+  Use one refresh scheduler for the Realtime business examples' initial, manual and event reads. Retry transient snapshot failures without another event, preserve trailing reads and provide low-frequency reconciliation. Forward capability-lab read failures to the shared retry policy.
+
+- 1952789: Add an authenticated Realtime demonstration page covering public and personal topics, dynamic resource authorization, acknowledged retries, coalesced snapshot refresh, subscription errors, and connection recovery. Register the page in the examples application and retain the public native WebSocket clock.
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-cli@1.0.0-beta.25
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.29
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.17
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.14
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.13
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.14
+  - @nocobase/app-plugin-database-example@0.1.0-beta.9
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.16
+  - @nocobase/app-plugin-file@1.0.0-beta.25
+  - @nocobase/app-plugin-file-example@1.0.0-beta.20
+  - @nocobase/app-plugin-i18n@1.0.0-beta.17
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.7
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.8
+  - @nocobase/app-plugin-mail@1.0.0-beta.15
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.7
+  - @nocobase/app-plugin-notification@1.0.0-beta.28
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.9
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.26
+  - @nocobase/app-plugin-notification-providers@0.2.0-beta.13
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.6
+  - @nocobase/app-plugin-queue-example@1.0.0-beta.12
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.9
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.0
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.21
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.18
+  - @nocobase/app-plugin-service-provider-example@1.0.0-beta.9
+  - @nocobase/app-plugin-skills-example@1.0.0-beta.8
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.7
+  - @nocobase/app-plugin-users@2.0.0-beta.6
+  - @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/realtime@0.1.0-beta.3
+  - @nocobase/i18n@2.0.0-beta.0
+
+## 1.0.0-beta.53
+
+### Patch Changes
+
+- 6fffa85: Improve permission workspace alignment and responsive density, clarify Chinese data scope labels, and preserve existing policies and unrecognized scope configurations during editing. Deduplicate inherited page permissions by resource identity so one grant is displayed and counted once.
+- Updated dependencies [22717d7]
+  - @nocobase/app-server@2.0.0-beta.9
+
+## 1.0.0-beta.52
+
+### Patch Changes
+
+- 44bc7a7: Require localized page-permission labels, including routes without navigation or breadcrumbs. Preserve authorization identities and grants, provide a localized fallback for missing titles, and add template checks and application-development guidance to prevent technical route IDs from appearing as permission names.
+- 44bc7a7: Preinstall the standard React Flow process components and management layouts without enabling unused settings. Improve themed node hierarchy and configuration controls, and keep the default lifecycle view readable at a minimum initial zoom of 70%. Add authorized configuration entries for native state and outgoing-transition parameter bindings, using a chooser for multiple targets. Clarify UI Registry discovery, upgrade reconciliation and process acceptance requirements. Preserve workflow table links and keyboard focus across refreshes and sorting changes, and document node entries to authoritative organization and role settings.
+- 9adf684: Reuse the UI Library workflow-management block in the example application's definition and execution pages, preserving the single sidebar entry, page tabs, list filters, category controls, parameter editing, historical inspection and read/update authorization boundaries. Keep data fetching, routing and persistence in application adapters.
+
+  Guide application development to install and connect the workflow-management block by default for process administration, with translated display data, controlled list state and application-owned parameter forms and permissions.
+
+  Keep the definition search and refresh controls aligned, stack categories above the list on narrow screens, and demonstrate category filtering, creation, renaming, color selection and deletion without removing workflows, with concise Edit and Delete menu actions.
+
+  Demonstrate changing or clearing a workflow definition's category from the colored tag beside its detail title, keeping category assignments consistent with list filtering and showing a read-only tag when updates are denied.
+
+- 9adf684: Consolidate example workflow administration under System management with explicit read and update permissions, persistent categories, server-side name search, execution activity links and paginated execution records. Give definition and execution details full child pages with filter-preserving breadcrumbs, readable diagrams, inline parameter configuration and historical execution inspection.
+
+  Store lifecycle configuration atomically by workflow key and revision, migrate existing settings while preserving historical facts, and group fields by their bound business nodes. Apply office workflow department, calendar and dispatch overrides, share department role membership, and use searchable member selection. Remove standalone configuration pages and candidate-review demonstrations while retaining historical migrations and records.
+
+  Make system administration a default deliverable for complete applications, including user management, roles and permissions, and authenticated administrator acceptance checks. Place workflows, background tasks and other applicable capabilities directly under System management as sibling entries, with execution status, failures and supported recovery actions inside their own pages instead of a separate monitoring group. Require workflow management pages whenever application requirements include a process, using the existing workflow example's navigation and list/detail layouts by default. Keep one Workflow management sidebar entry with URL-backed Definitions and Executions tabs inside its page; child views do not declare sidebar navigation. Align Lifecycle and parameter guidance with visible parameter forms, execution history and effect inspection, while respecting explicit UI exclusions and API-only scope. Reuse installed capabilities and existing UI Library components, and retain optional contextual editing.
+
+- Updated dependencies [00b85da]
+- Updated dependencies [9adf684]
+  - @nocobase/app-cli@1.0.0-beta.24
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.7
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.5
+
+## 1.0.0-beta.51
+
+### Patch Changes
+
+- eb4b081: Refine the shared permission editor with a single category count, consistent headings across all categories, explicit mixed-state bulk selection and semantic action alignment on wide layouts. Preserve every permission and action-local scope, including special actions and filtered or protected grants, and keep narrow or unclassified catalogs wrapping naturally. Carry the same interaction through the UI registry and both application templates.
+- eb4b081: Expose invitation, deletion and password reset permissions in the templates' user permission category. Save and revoke these native user actions independently while preserving existing grants, with English and Chinese labels.
+- 525ace4: Declare the workspace packages the tests read as devDependencies instead of reaching into their directories, and add a test to each application template that checks `config.example.yml` still has what `nocobase config init` relies on.
+- cb83d7a: `RouteDialog` and `RouteDrawer` now look like the application's other dialogs: they compose the dialog primitive's `DialogHeader`, `DialogTitle`, `DialogDescription` and `DialogFooter` inside the padding, spacing and close-button position of `DialogContent`, so the header no longer has a rule under it, the footer is the dialog footer (stacking its buttons on narrow screens), and a change to the dialog primitive or its theme rules reaches route overlays too. The frontend Skill's overlay guidance describes the new look and the template dialog's current padding and default width.
+- 284ba32: Isolate desktop sidebar preferences by application while preserving layout and cross-tab synchronization. New scoped preferences default to expanded, and the unused shared sidebar cookie is no longer written. Existing generated applications must regenerate or manually synchronize their template changes to receive this fix.
+- c0b7537: Prepare the signed-in realtime identity before mounting template pages to avoid repeated loading after login. Expose session preparation and retry state, and show a retryable connection error with sign-out when initialization times out. Keep runtime permission invalidation and session isolation.
+- eb4b081: Include application-owned user and role administration in the application templates, with dynamic permission categories, scope controls, independently saved role assignments and conflict-safe role updates. Add authorized latest-user reads and stable server-side name sorting. A new reversible authorization migration adds a revision token to existing permission sets; clients may supply the token to reject stale updates atomically while existing callers remain compatible.
+
+  Deliver administration automatically whenever an application uses configurable capabilities, including process definitions, standard diagrams, supported parameters and authorized execution history. Refresh the shared process canvas and installed lifecycle examples with semantic node cards, execution status, a dotted background and accessible viewport controls. Refine the cards with type icons and separate status footers, parameter badges, outlined edge labels, motion-aware active transitions and canvas summaries; reserve space for controls when sizing the graph.
+
+  Keep bare Default applications Home-only. Supply reusable administration routes and reconcile core user and permission management and additional settings throughout development according to the business capabilities actually used, independently of the iteration number. Examples registers the prepared settings because it already contains business features.
+
+  Ship a standard TanStack Table v8 DataTable and companions in both application templates, including controlled server pagination and sorting. Reuse it in user administration and instruct application agents to reuse the provided implementation and repair incompatible dependencies instead of substituting custom table engines.
+
+  Proactively declare configurable business thresholds and reviewer rules during process development without requiring an explicit user prompt. Reconcile validated, authorized parameters and diagram bindings throughout iteration, preserve snapshot and task semantics, and expose real transition-bound configuration in the shared diagram.
+
+  Extend capability-driven administration guidance to non-workflow business parameters, dictionaries, document numbering, operation records, organization relationships, enabled authentication features, notifications, integrations, document processing, AI/knowledge and shared business defaults. Include concrete persistence, authorization, concurrency and acceptance contracts, while preserving Home-only creation and deployment-owned configuration.
+
+  Standardize process administration as a directory-first DataTable even for a single process, with process-scoped definition, explicit node configuration and execution records. Reconcile additional registered processes into the same directory, validate process identifiers and permission scopes server-side, and preserve list navigation state.
+
+  Compact the shared permission editor into resource rows with wrapping action checkboxes, adjacent scope selectors and optional atomic visible-group selection. Synchronize both templates and document source upgrade integration without overwriting application-specific grants or role policies.
+
+  Improve process readability with optional node descriptions and configuration actions, an initial readable zoom bound, overview navigation and focus-driven panning. Document bounded-canvas composition and explicit full-definition access when technical paths are hidden.
+
+  Render single-action page permissions as one title checkbox, omit redundant per-resource counters and bulk toggles, and use localized breadcrumb titles for pages without navigation entries.
+
+  Keep record-scope controls inline with action checkboxes, remove redundant single-scope captions, and localize raw collection scope labels in the template permission models.
+
+  Default lifecycle diagrams to a vertical, automatically sized canvas with readable narrow-screen sizing and top-positioned viewport controls, while preserving explicit compact-view overrides. Require capability-driven process directory, definition/design, node configuration and execution-history delivery in new applications without adding unused settings to bare Home-only apps.
+
+  Bind parameterized custom record scopes to native filter conditions with a reusable draft editor, preserve object selections and independent scope policies, and reject incomplete custom filter grants at the authorization HTTP boundary. Keep no-record scopes explicit and verify saved scopes against real list/detail/write endpoints.
+
+- Updated dependencies [98b3862]
+- Updated dependencies [525ace4]
+- Updated dependencies [5fe8773]
+- Updated dependencies [b22d999]
+- Updated dependencies [00c5970]
+- Updated dependencies [0037dd2]
+- Updated dependencies [c0b7537]
+- Updated dependencies [eb4b081]
+- Updated dependencies [14b7aec]
+- Updated dependencies [49f61b9]
+- Updated dependencies [0037dd2]
+- Updated dependencies [eb4b081]
+  - @nocobase/app-cli@1.0.0-beta.23
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/app-server@2.0.0-beta.8
+  - @nocobase/db-sqlite@0.1.0-beta.6
+  - @nocobase/app-plugin-file@1.0.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.10
+  - @nocobase/app-plugin-users@2.0.0-beta.5
+  - @nocobase/app-plugin-authorization@1.0.0-beta.28
+  - @nocobase/authorization@1.0.0-beta.14
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.6
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.17
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.25
+
 ## 1.0.0-beta.50
 
 ### Minor Changes

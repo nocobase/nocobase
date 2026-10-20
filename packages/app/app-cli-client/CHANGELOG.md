@@ -1,5 +1,50 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.10
+
+### Patch Changes
+
+- Updated dependencies [32ed5e2]
+  - @nocobase/agent-protocol@0.1.0-beta.10
+
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- b322dcf: Allow owners to withdraw individual queued agent messages through server execution claims and computer removal acknowledgements. Bridge protocol 4 requires upgrading and restarting the computer connection; messages already delivered to older bridges cannot be safely withdrawn. Each new message carries its complete instructions and work context. Offline withdrawals remain pending until confirmed, and editing a withdrawn message preserves images and the current draft.
+
+  Unsequenced pre-upgrade commands still on the server cannot be authorized by the new bridge and display a warning asking the owner to send a new message. They are never silently executed without a claim.
+
+  Avoid returning unused command payloads during enqueueing so large prompts also work on Oracle.
+
+  Confirm each turn’s reports before claiming its successor so errors, usage and completion details keep their transcript boundary. Settle cancelled pending claims even when an approval response is delayed or lost, preventing archived sessions from remaining active or replaying closed messages.
+
+- Updated dependencies [b322dcf]
+- Updated dependencies [baa743e]
+  - @nocobase/acp-bridge@1.0.0-beta.3
+
+## 0.1.0-beta.8
+
+### Minor Changes
+
+- 55fcee1: Replace the built-in agent session MCP endpoint and tool registration API with the Studio CLI and shared Skill. Bridge protocol 3 requires a matching CLI upgrade. Session agents use the bridge-selected login profile, validate session ownership before creating linked tasks, default to the session project and Backlog, and read linked work and issue progress through CLI routes. Prepare the shared Skill before starting or restoring sessions and explain unsupported agents or installation failures. Teach both bundled Skill copies to discuss and search before recording work and combine related requirements into as few tasks as practical.
+
+### Patch Changes
+
+- 846e75f: Allow all compatible ACP agents to open My Agent sessions by supplying the shared CLI Skill as prompt instructions when native installation is unavailable. Preserve Claude Code and Codex installation, session identity and permission behavior.
+- d34b6eb: Reject explicit issue start requests that would save into Backlog before allocating an issue number or writing the issue. Keep the validation message client-neutral and explain the required In progress flags in command help and recovery suggestions. Preserve validated application suggestions from API error metadata in CLI errors without changing the JSON envelope shape.
+- 5fe8773: Reject empty or whitespace-only Git credential files before sending a request, and preserve saved credentials when validation fails. Support explicit credential removal through a JSON update file with null values, returning the incomplete connection state when required credentials are cleared.
+- 49f61b9: Show optional settings permissions separately from business actions in CLI identity output, and explain run-token-only permissions. Add available-command typo suggestions, a hint for truncated text, and clean shutdown when a pipe closes early. Describe route schema inputs so generated CLI help and reference tables explain their parameters. The manifest identity and whoami JSON result gain an optional settings list; command admission and authorization are unchanged.
+- Updated dependencies [f584e87]
+- Updated dependencies [846e75f]
+- Updated dependencies [c272997]
+- Updated dependencies [00c5970]
+- Updated dependencies [616561b]
+- Updated dependencies [83e3609]
+- Updated dependencies [55fcee1]
+  - @nocobase/acp-bridge@1.0.0-beta.2
+  - @nocobase/agent-protocol@0.1.0-beta.9
+
 ## 0.1.0-beta.7
 
 ### Minor Changes

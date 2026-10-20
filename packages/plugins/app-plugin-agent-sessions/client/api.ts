@@ -4,6 +4,9 @@
  */
 import {
   realtimeClientToken,
+  refreshRealtimeQueries,
+  createRealtimeRefresh,
+  type RealtimeRefresh,
   useApiClient,
   useService,
   type ApiClient,
@@ -16,11 +19,12 @@ import {
   useQueryClient,
   type InfiniteData,
   type QueryClient,
+  type QueryFilters,
   type UseInfiniteQueryResult,
   type UseMutationResult,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import { useContext, useEffect, useRef } from 'react';
+import { useCallback, useContext, useEffect, useRef } from 'react';
 import { cancelChoiceDiscoveries } from './discovery-requests.js';
 import {
   ApplicationCacheContext,
@@ -82,6 +86,24 @@ export function useComputers(): UseQueryResult<Computer[]> {
   });
 }
 
+/** Check the owner's current computers on demand, without adding a background poll to the host page. */
+export function useAgentSessionAvailability(): () => Promise<boolean> {
+  const api = useApiClient();
+  const cache =
+    useContext(ApplicationCacheContext) ?? agentSessionsQueryClient();
+  return useCallback(async () => {
+    const computers = await cache.fetchQuery({
+      queryKey: keys.computers,
+      queryFn: () => data<Computer[]>(api, { path: path('computers') }),
+      staleTime: 0,
+    });
+    return computers.some(
+      (computer) =>
+        computer.online && computer.agents.some((agent) => !agent.problem),
+    );
+  }, [api, cache]);
+}
+
 export function useSessions(
   archived: boolean,
 ): UseInfiniteQueryResult<InfiniteData<ListAnswer<Session>>> {
@@ -99,7 +121,7 @@ export function useSessions(
       }),
     initialPageParam: '',
     getNextPageParam: (last) => last.meta.nextPageToken,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: true,
   });
 }
@@ -139,7 +161,7 @@ export function useSession(sessionId: string): UseQueryResult<Session> {
     queryKey: keys.session(sessionId),
     queryFn: () => data<Session>(api, { path: path('sessions', sessionId) }),
     // Linked records may change without a session event (for example, an issue accepted elsewhere).
-    refetchInterval: 15_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: true,
   });
 }
@@ -171,7 +193,7 @@ export function useTranscript(
         );
       return shared;
     },
-    refetchInterval: 15_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: true,
     queryFn: async ({ signal }) => {
       const held =
@@ -268,64 +290,29 @@ export function useLiveSessions(): void {
       existing.refs += 1;
       return detach;
     }
-    type Slot = {
-      readonly id: string;
-      readonly key: readonly unknown[];
-      readonly interval: number;
-      pending: boolean;
-      running: boolean;
-      started: number;
-      timer: ReturnType<typeof setTimeout> | undefined;
-    };
-    const slots = new Map<string, Slot>();
-    let disposed = false;
-    const arm = (slot: Slot): void => {
-      if (disposed || slot.timer || slot.running) return;
-      const delay = slot.started
-        ? Math.max(0, slot.started + slot.interval - Date.now())
-        : slot.interval;
-      const timer = setTimeout(() => {
-        slot.timer = undefined;
-        void flush(slot);
-      }, delay);
-      slot.timer = timer;
-    };
-    const flush = async (slot: Slot): Promise<void> => {
-      slot.pending = false;
-      slot.running = true;
-      slot.started = Date.now();
-      // An existing read may predate this notification. Follow it with a fresh read after it settles.
-      if (client.getQueryState(slot.key)?.fetchStatus === 'fetching')
-        slot.pending = true;
-      try {
-        // Never keep aborting a slow read during a continuous stream.
-        await client.invalidateQueries(
-          { queryKey: slot.key },
-          { cancelRefetch: false },
-        );
-      } finally {
-        slot.running = false;
-        if (slot.pending) arm(slot);
-        else slots.delete(slot.id);
-      }
-    };
+    const slots = new Map<string, RealtimeRefresh>();
     const schedule = (
       id: string,
-      key: readonly unknown[],
+      filters: QueryFilters,
       interval: number,
     ): void => {
-      const slot = slots.get(id) ?? {
-        id,
-        key,
-        interval,
-        pending: false,
-        running: false,
-        started: 0,
-        timer: undefined,
-      };
-      slots.set(id, slot);
-      slot.pending = true;
-      arm(slot);
+      let slot = slots.get(id);
+      if (!slot) {
+        slot = createRealtimeRefresh(
+          (signal) => refreshRealtimeQueries(client, filters, signal),
+          {
+            delayMs: interval,
+            onStateChange: (snapshot) => {
+              if (snapshot.status === 'idle') {
+                slots.get(id)?.close();
+                slots.delete(id);
+              }
+            },
+          },
+        );
+        slots.set(id, slot);
+      }
+      slot.request();
     };
     const invalidateDiscovery = (): void => {
       void cancelChoiceDiscoveries(client);
@@ -336,30 +323,28 @@ export function useLiveSessions(): void {
     const refresh = (change?: AgentSessionsChange): void => {
       if (change?.kind === 'session') {
         const id = change.sessionId;
-        schedule(`events:${id}`, keys.transcript(id), 250);
-        schedule(`session:${id}`, keys.session(id), 1_000);
-        schedule('list', ['agentSessions', 'sessions'], 2_000);
+        schedule(`events:${id}`, { queryKey: keys.transcript(id) }, 250);
+        schedule(`session:${id}`, { queryKey: keys.session(id) }, 1_000);
+        schedule('list', { queryKey: ['agentSessions', 'sessions'] }, 2_000);
       } else if (change?.kind === 'computers') {
         invalidateDiscovery();
-        void client.invalidateQueries({ queryKey: keys.computers });
-        void client.invalidateQueries({
-          queryKey: ['agentSessions', 'session'],
-        });
+        schedule('computers', { queryKey: keys.computers }, 100);
+        schedule('details', { queryKey: ['agentSessions', 'session'] }, 100);
       } else {
         invalidateDiscovery();
-        void client.invalidateQueries({
-          predicate: (query) =>
-            query.queryKey[0] === 'agentSessions' &&
-            query.queryKey[1] !== 'discovery',
-        });
+        schedule(
+          'all',
+          {
+            predicate: (query) =>
+              query.queryKey[0] === 'agentSessions' &&
+              query.queryKey[1] !== 'discovery',
+          },
+          100,
+        );
       }
     };
-    const unsubscribe = realtime.subscribe<AgentSessionsChange>(
-      AGENT_SESSIONS_TOPIC,
-      ({ payload }) => refresh(payload),
-    );
     const connectionKey = ['agentSessions', 'discoveryConnection'];
-    client.setQueryData(connectionKey, realtime.connected);
+    client.setQueryData(connectionKey, false);
     const disconnected = (): void => {
       client.setQueryData(connectionKey, false);
       void cancelChoiceDiscoveries(client);
@@ -368,29 +353,30 @@ export function useLiveSessions(): void {
         refetchType: 'none',
       });
     };
-    const unsubscribeError = realtime.onError(disconnected);
-    // onError reports protocol errors, not transport closure; connected is the existing transport signal.
-    const connectionTimer = setInterval(() => {
-      if (!realtime.connected && client.getQueryData(connectionKey) !== false)
-        disconnected();
-    }, 1_000);
-    const unsubscribeOpen = realtime.onOpen(() => {
-      client.setQueryData(connectionKey, true);
-      refresh();
-    });
+    const subscription = realtime.watch<AgentSessionsChange>(
+      AGENT_SESSIONS_TOPIC,
+      {
+        onEvent: ({ payload }) => refresh(payload),
+        onStateChange: (state) => {
+          if (state !== 'subscribed') disconnected();
+        },
+        onReady: () => {
+          client.setQueryData(connectionKey, true);
+          for (const slot of slots.values()) slot.retry();
+          refresh();
+        },
+      },
+    );
     const release = (): void => {
-      disposed = true;
-      clearInterval(connectionTimer);
       void cancelChoiceDiscoveries(client);
-      for (const slot of slots.values()) clearTimeout(slot.timer);
+      for (const slot of slots.values()) slot.close();
+      slots.clear();
       // No bridge generation is exposed to the browser. Do not reuse discovery across an unobserved interval.
       void client.invalidateQueries({
         queryKey: ['agentSessions', 'discovery'],
         refetchType: 'none',
       });
-      unsubscribe();
-      unsubscribeOpen();
-      unsubscribeError();
+      subscription.close();
     };
     liveSubscriptions.set(client, { refs: 1, release });
     refresh();
@@ -514,6 +500,16 @@ export function useCancel(sessionId: string): Mutation<void> {
     await api.request({
       path: path('sessions', sessionId, 'cancel'),
       method: 'POST',
+    });
+  });
+}
+
+export function useWithdraw(sessionId: string): Mutation<number> {
+  return useSessionWrite(sessionId, async (api, seq: number) => {
+    await api.request({
+      path: path('sessions', sessionId, 'withdraw'),
+      method: 'POST',
+      json: { seq },
     });
   });
 }

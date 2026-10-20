@@ -148,3 +148,64 @@ describe('CLI surface', () => {
     expect(cli.hasCallers()).toBe(false);
   });
 });
+
+it('maps the current user message JSON file through the actual chat CLI manifest without legacy input fields', async () => {
+  h = await createHarness();
+  const { fillRequest } = await import('@nocobase/app-cli-client/request');
+  const { ApiDocsService, deriveAllCliCommands } =
+    await import('@nocobase/app-server/router');
+  const docs = new ApiDocsService();
+  docs.attach({
+    api: h.app,
+    describe: () => ({ info: { title: 'Chat CLI fixture', version: '1.0.0' } }),
+  });
+  const manifest = { commands: deriveAllCliCommands(await docs.getDocument()) };
+  const command = manifest.commands.find(
+    (command) => command.id === 'conversation:message:send',
+  )!;
+  expect(command).toBeDefined();
+  expect(
+    manifest.commands.find(
+      (command) => command.id === 'conversation:message:list',
+    )?.output.columns,
+  ).toEqual(['metadata.seq', 'role', 'parts', 'metadata.createdAt']);
+
+  expect(command.parameters.map((parameter) => parameter.field)).toContain(
+    'message',
+  );
+  expect(command.parameters.map((parameter) => parameter.field)).not.toEqual(
+    expect.arrayContaining(['content', 'clientId']),
+  );
+  const body = {
+    message: {
+      id: 'cli-user',
+      role: 'user',
+      parts: [{ type: 'text', text: 'From CLI' }],
+    },
+  };
+  const { parseCommandLine } = await import('@nocobase/app-cli-client/parse');
+  const options = {
+    bin: 'fixture-cli',
+    io: {
+      readText: async (path: string) =>
+        path === 'input.json' ? JSON.stringify(body) : undefined,
+      env: () => undefined,
+    },
+  };
+  const call = await parseCommandLine(
+    command,
+    ['conversation', '--file', 'input.json'],
+    options,
+  );
+  const request = fillRequest(command, call.values, call.bodyFile);
+  for (const old of ['content', 'clientId']) {
+    expect(
+      command.parameters.map((parameter) => parameter.field),
+    ).not.toContain(old);
+    await expect(
+      parseCommandLine(command, ['conversation', `--${old}`, 'old'], options),
+    ).rejects.toThrow();
+  }
+  expect(request.fields).toEqual(body);
+  expect(request.path).toContain('/conversations/conversation/messages');
+});

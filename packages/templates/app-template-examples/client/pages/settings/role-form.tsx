@@ -11,14 +11,17 @@ import {
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   useAuthorizationClient,
+  useCan,
   type AuthorizationOptionsResponse,
   type LocalizedText,
   type PermissionGrant,
   type PermissionSet,
 } from '@nocobase/app-plugin-authorization/client';
-import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
+import { pagePermissionResources } from './page-permissions.js';
+import { pagePermissionTitles } from './page-permission-titles.js';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
+  Link,
   useLocation,
   useNavigate,
   useOutletContext,
@@ -40,7 +43,6 @@ import {
   unconfiguredFilter,
   setPermissions,
   setScope,
-  type CatalogResource,
 } from './permissions-model.js';
 
 function RoleEditor(): ReactElement {
@@ -72,6 +74,10 @@ function RoleEditor(): ReactElement {
   const options = useSettingsData<{ data: AuthorizationOptionsResponse }>(
     'authorization/permissionSets/options',
   );
+  const canReadDefaults = useCan({
+    resource: { type: 'settings', id: 'authorization.default-access' },
+    action: 'read',
+  }).can;
   const canCreate = useRolePermission('create');
   const canUpdate = useRolePermission('update');
   const [nameDraft, setNameDraft] = useState<string>();
@@ -100,32 +106,11 @@ function RoleEditor(): ReactElement {
   const catalog = useMemo(() => {
     if (!options.data) return undefined;
     const source = options.data.data;
-    const pages: CatalogResource[] = [];
-    const collect = (routes: readonly AppClientRegisteredRoute[]) => {
-      for (const route of routes) {
-        const pageTitle = route.navigation?.title ?? route.breadcrumb?.title;
-        if (
-          route.componentLoader &&
-          typeof route.authz === 'object' &&
-          route.authz.resource.type === 'page'
-        )
-          pages.push({
-            type: 'page',
-            id: route.authz.resource.id,
-            title: pageTitle
-              ? { key: pageTitle, ns: route.packageName }
-              : route.id,
-            actions: [
-              {
-                name: 'access',
-                title: { key: 'settings.access' },
-              },
-            ],
-          });
-        collect(route.children ?? []);
-      }
-    };
-    collect(app.runtime.routes);
+    const pages = pagePermissionResources(
+      app.runtime.routes,
+      pagePermissionTitles,
+      (path) => t('settings.unnamedPage', { path }),
+    );
     return {
       ...source,
       sections: [
@@ -134,14 +119,35 @@ function RoleEditor(): ReactElement {
           title: { key: 'settings.userPermissions' },
           order: 0,
           subsections: [
-            {
-              name: 'users.accounts',
-              title: { key: 'settings.users' },
+            ...[
+              {
+                name: 'users.information',
+                title: 'userInformation',
+                actions: ['read', 'create', 'update', 'invite', 'delete'],
+              },
+              {
+                name: 'users.security',
+                title: 'accountSecurity',
+                actions: [
+                  'reset-password',
+                  'disable',
+                  'enable',
+                  'revoke-sessions',
+                ],
+              },
+              {
+                name: 'users.roles',
+                title: 'roleAssignment',
+                actions: ['assign-role'],
+              },
+            ].map((group) => ({
+              name: group.name,
+              title: { key: `settings.${group.title}` },
               resources: [
                 {
                   type: 'user',
                   id: '*',
-                  title: { key: 'settings.users' },
+                  title: { key: `settings.${group.title}` },
                   actions: [
                     { name: 'read', title: { key: 'settings.readUsers' } },
                     { name: 'create', title: { key: 'settings.createUsers' } },
@@ -162,10 +168,10 @@ function RoleEditor(): ReactElement {
                       name: 'revoke-sessions',
                       title: { key: 'settings.revokeSessions' },
                     },
-                  ],
+                  ].filter((action) => group.actions.includes(action.name)),
                 },
               ],
-            },
+            })),
           ],
         },
         ...source.sections.map((section) => ({
@@ -180,7 +186,7 @@ function RoleEditor(): ReactElement {
         })),
       ],
     };
-  }, [options.data, app]);
+  }, [options.data, app, t]);
   const allowed = creating
     ? canCreate
     : canUpdate &&
@@ -337,13 +343,23 @@ function RoleEditor(): ReactElement {
                   {t('settings.protectedHint')}
                 </p>
               )}
+              {canReadDefaults && (
+                <div>
+                  <Link
+                    to='/default-access'
+                    className='text-sm text-foreground underline-offset-4 hover:underline'
+                  >
+                    {t('settings.defaultAccess.manage')}
+                  </Link>
+                </div>
+              )}
               <PermissionEditor
                 sections={sections}
                 readOnly={!allowed || busy}
                 labels={{
-                  selectAll: t('settings.selectAllPermissions'),
-                  selectVisible: (name) =>
-                    t('settings.selectVisiblePermissions', { name }),
+                  dataRanges: (count) => t('settings.dataRanges', { count }),
+                  scopeExplanation: t('settings.scopeExplanation'),
+                  scopeHintFor: (name) => t('settings.scopeHintFor', { name }),
                   levelFor: (name) => t('settings.levelFor', { name }),
                   search: t('settings.permissionSearch'),
                   enabledOnly: t('settings.enabledOnly'),
@@ -351,8 +367,6 @@ function RoleEditor(): ReactElement {
                   empty: t('settings.noPermissions'),
                   noResults: t('settings.noResults'),
                   navigation: t('settings.permissionCategories'),
-                  summary: (enabled, total) =>
-                    t('settings.permissionSummary', { enabled, total }),
                 }}
                 onEnabledChange={(id, enabled) => {
                   if (!catalog) return;
@@ -360,13 +374,6 @@ function RoleEditor(): ReactElement {
                     setPermissions(current ?? grants, catalog, [
                       { id, enabled },
                     ]),
-                  );
-                  setDirty(true);
-                }}
-                onEnabledBatchChange={(changes) => {
-                  if (!catalog) return;
-                  setGrantsDraft((current) =>
-                    setPermissions(current ?? grants, catalog, changes),
                   );
                   setDirty(true);
                 }}

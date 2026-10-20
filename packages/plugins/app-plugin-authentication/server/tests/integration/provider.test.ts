@@ -73,14 +73,17 @@ describe('authentication provider', () => {
     expect(authHandler).toHaveBeenLastCalledWith(expect.any(Request), {
       clientAddress: '203.0.113.10',
     });
-    getSession.mockResolvedValueOnce({ user: { id: 'user-1' } });
+    getSession.mockResolvedValueOnce({
+      user: { id: 'user-1' },
+      session: { id: 'session-1' },
+    });
 
     expect(container.has(realtimePrincipalResolverToken)).toBe(true);
     await expect(
       container
         .resolve(realtimePrincipalResolverToken)
         .resolve(new Request('http://localhost/ws')),
-    ).resolves.toEqual({ userId: 'user-1' });
+    ).resolves.toEqual({ userId: 'user-1', sessionId: 'session-1' });
     getSession.mockRejectedValueOnce(new APIError('FORBIDDEN'));
     await expect(
       container

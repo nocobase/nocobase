@@ -53,6 +53,14 @@ export const SessionParams: z.ZodType<{ sessionId: string }> = z.object({
   sessionId: z.string().min(1).describe('The agent session identifier.'),
 });
 
+export const WithdrawInput: z.ZodType<{ seq: number }> = z.object({
+  seq: z
+    .number()
+    .int()
+    .positive()
+    .meta({ description: 'The original prompt event sequence.' }),
+});
+
 export const ImageParams: z.ZodType<{ sessionId: string; file: string }> =
   z.object({
     sessionId: z.string().min(1).max(64),

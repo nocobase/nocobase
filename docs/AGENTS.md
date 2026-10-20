@@ -6,6 +6,7 @@ Rules for editing anything under `docs/`. [README.md](README.md) is the full aut
 
 - **Content**: Markdown pages in `docs/<lang>/**/*.md(x)` (`en` and `cn`), sidebars in `_meta.json`, `llms.txt` grouping in `docs/<lang>/_nav.json`, images in `docs/<lang>/capabilities/assets/`, downloads in `docs/<lang>/public/` (served at `/downloads/…` and `/zh-CN/downloads/…`).
 - **Hand-built page copy**: home page `src/components/FullHome/markup*.json` and `data*.json`, the 2 vs 3 comparison `src/components/ArchitecturePitch/markup*.json` and `assets/`, the capability overviews `src/components/CapabilityOverview/pages*.json`, the header `src/components/SiteHeader/header.{cn,en}.json` (every page except the home page, which has its own top bar in its markup), the footer `src/components/SiteFooter/index.astro` (the home page and overviews carry their own footer in their markup).
+- **Deployment guide**: `src/components/Deployment/content*.json` supplies the visible copy; keep the commands and anchors aligned with `docs/<lang>/deployment.md`. Its dedicated Astro route and browser script preserve tabs, section links and command copying.
 - **Framework**: `astro.config.ts`, `shared/`, the rest of `src/`, `scripts/`, `tests/`, `.github/workflows/v3-docs.yml`. Change it only when the task is about the site itself, and read `.agents/rules/docs-site.md` first.
 
 ## Adding Pages

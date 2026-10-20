@@ -303,4 +303,4 @@ Root queries return at most 10 records; relation previews have their own limits.
 
 ## Client navigation
 
-`client/routes.ts` owns the API examples, CRM, and Orders menu groups through `navigation` and pathless route groups. Each page keeps its existing URL and lazy loader. Detail routes omit `navigation`. The Client ServiceProvider retains only the CRUD list/show resource mappings; Refine resources do not define the application menu.
+`client/routes.ts` owns the API examples, CRM, and Orders menu groups through `navigation` and pathless route groups. Each page keeps its existing URL and lazy loader. Detail routes omit `navigation`.
