@@ -1,4 +1,57 @@
 const settings = {
+  defaultAccess: {
+    noResourcesShort: 'No configurable objects available',
+    scopeInvalid:
+      'Choose a valid data scope or complete its filter conditions.',
+
+    deleteChanged:
+      'This rule changed or was removed. The list was refreshed; review it before deleting.',
+    filterDescription:
+      'Apply conditions to this rule draft, then save the rule to make them effective.',
+    fieldLabels: { name: 'Name', id: 'ID' },
+    delete: 'Delete',
+    title: 'Default data scopes',
+    description:
+      'Add baseline data access for users who already have the operation permission. Restriction rules still apply.',
+    manage: 'Manage default data scopes',
+    new: 'New default scope',
+    edit: 'Default scope details',
+    resource: 'Business object',
+    chooseResource: 'Choose a business object',
+    action: 'Operation',
+    scope: 'Data scope',
+    scopes: 'Operations and data scopes',
+    none: 'No default scope',
+    all: 'All records',
+    custom: 'Custom filter',
+    records: 'Selected records ({{count}})',
+    retained: 'Retain existing configuration',
+    search: 'Search business objects or keys',
+    empty: 'No default data scopes',
+    emptyHint:
+      'Create a rule to configure baseline access for a business object.',
+    readOnlyEmpty: 'Ask an administrator to configure baseline data access.',
+    noResources:
+      'Every available business object already has a default rule, or no configurable objects are registered.',
+    unsupported:
+      'This rule includes configuration absent from the current plugin catalog. It is preserved and shown read-only.',
+    changed:
+      'This rule changed or was removed while you were editing. Reload it before saving. Your draft has not been saved.',
+    duplicate:
+      'This key or business object already has a default rule. Use a different key or edit the existing rule.',
+    invalid:
+      'The configuration is not accepted. Check the business object, operation and data scope.',
+    keyRequired: 'Enter a key other than options, subjects or records.',
+    resourceRequired: 'Choose a business object.',
+    reload: 'Reload rule',
+    saved: 'Saved default scope “{{name}}”',
+    deleted: 'Deleted default scope “{{name}}”',
+    deleteTitle: 'Delete default scope “{{name}}”?',
+    deleteHint:
+      'This removes the baseline access supplied by this rule. Existing role grants and other rules remain. This cannot be undone.',
+    back: 'Back to default scopes',
+    open: 'View / edit',
+  },
   scopeHintFor: 'About the data range for {{name}}',
   scopeExplanation:
     'Each range applies to its corresponding data. The operation must also pass its authorization checks.',

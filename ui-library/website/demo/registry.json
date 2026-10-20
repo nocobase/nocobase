@@ -745,6 +745,21 @@
           "target": "client/extensions/nocobase-role-list-demo/role-list.tsx"
         }
       ]
+    },
+    {
+      "name": "default-access-editor-demo",
+      "type": "registry:example",
+      "title": "Default Access Editor Demo",
+      "description": "Controlled default-access rule fields, independent scopes and no implicit all-records selection.",
+      "categories": ["authorization"],
+      "registryDependencies": ["@nocobase/default-access-editor"],
+      "files": [
+        {
+          "path": "authorization/default-access-editor.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-default-access-editor-demo/default-access-editor.tsx"
+        }
+      ]
     }
   ]
 }

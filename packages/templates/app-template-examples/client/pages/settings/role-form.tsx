@@ -11,6 +11,7 @@ import {
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   useAuthorizationClient,
+  useCan,
   type AuthorizationOptionsResponse,
   type LocalizedText,
   type PermissionGrant,
@@ -20,6 +21,7 @@ import { pagePermissionResources } from './page-permissions.js';
 import { pagePermissionTitles } from './page-permission-titles.js';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
+  Link,
   useLocation,
   useNavigate,
   useOutletContext,
@@ -72,6 +74,10 @@ function RoleEditor(): ReactElement {
   const options = useSettingsData<{ data: AuthorizationOptionsResponse }>(
     'authorization/permissionSets/options',
   );
+  const canReadDefaults = useCan({
+    resource: { type: 'settings', id: 'authorization.default-access' },
+    action: 'read',
+  }).can;
   const canCreate = useRolePermission('create');
   const canUpdate = useRolePermission('update');
   const [nameDraft, setNameDraft] = useState<string>();
@@ -336,6 +342,16 @@ function RoleEditor(): ReactElement {
                 <p className='text-sm text-muted-foreground'>
                   {t('settings.protectedHint')}
                 </p>
+              )}
+              {canReadDefaults && (
+                <div>
+                  <Link
+                    to='/default-access'
+                    className='text-sm text-foreground underline-offset-4 hover:underline'
+                  >
+                    {t('settings.defaultAccess.manage')}
+                  </Link>
+                </div>
               )}
               <PermissionEditor
                 sections={sections}

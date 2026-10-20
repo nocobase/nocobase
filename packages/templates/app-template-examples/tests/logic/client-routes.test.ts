@@ -136,6 +136,7 @@ describe('app client routes', () => {
     );
     expect(management?.children.map(({ route }) => route.name)).toEqual([
       'workflows',
+      'settingsDefaultAccess',
       'settingsUsers',
       'settingsRoles',
     ]);
@@ -198,6 +199,14 @@ describe('app client routes', () => {
         name: 'workflowExecution',
         authorizedAs: 'settings:workflow-management',
       },
+      ...[
+        'settingsDefaultAccess',
+        'settingsDefaultAccessCreate',
+        'settingsDefaultAccessEdit',
+      ].map((name) => ({
+        name,
+        authorizedAs: 'settings:authorization.default-access',
+      })),
       { name: 'settingsUsers', authorizedAs: 'user:*' },
       { name: 'settingsUserCreate', authorizedAs: 'user:*' },
       { name: 'settingsUser', authorizedAs: 'user:*' },

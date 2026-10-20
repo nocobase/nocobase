@@ -1,4 +1,4 @@
-import { Settings, Users, ShieldCheck } from 'lucide-react';
+import { Settings, Users, ShieldCheck, ListFilter } from 'lucide-react';
 import {
   defineAppRoutes,
   type AppClientRouteContribution,
@@ -11,6 +11,40 @@ const systemSettingsRoutes: AppClientRouteContribution = defineAppRoutes([
     path: '/settings',
     navigation: { title: 'settings.title', icon: Settings, order: 100 },
     children: [
+      {
+        name: 'settingsDefaultAccess',
+        path: '/default-access',
+        auth: 'required',
+        authz: {
+          resource: { type: 'settings', id: 'authorization.default-access' },
+          action: 'read',
+        },
+        navigation: { title: 'settings.defaultAccess.title', icon: ListFilter },
+        breadcrumb: { title: 'settings.defaultAccess.title' },
+        componentLoader: () => import('./default-access.js'),
+        children: [
+          {
+            name: 'settingsDefaultAccessCreate',
+            path: 'create',
+            authz: {
+              resource: {
+                type: 'settings',
+                id: 'authorization.default-access',
+              },
+              action: 'create',
+            },
+            breadcrumb: { title: 'settings.defaultAccess.new' },
+            componentLoader: () => import('./default-access-form.js'),
+          },
+          // Read permission opens the full rule even when the viewer may not update it.
+          {
+            name: 'settingsDefaultAccessEdit',
+            path: ':key/edit',
+            breadcrumb: { title: 'settings.defaultAccess.edit' },
+            componentLoader: () => import('./default-access-form.js'),
+          },
+        ],
+      },
       {
         name: 'settingsUsers',
         path: '/users',

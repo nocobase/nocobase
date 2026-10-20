@@ -156,6 +156,17 @@ A compact role content list with aligned names, identifiers and protected/custom
 - Example: `@nocobase/role-list-demo` (`pnpm exec shadcn view @nocobase/role-list-demo`)
 - After installing: Render inside a React Router with roles containing key, localized title, edit destination (to) and protected state. Pass localized protected/custom labels and an optional ariaLabel. The host owns loading, empty/error states, filtering, sorting and authorization. Rows use body-sized text and compact spacing; identifiers move under the name on narrow containers. Publishing the Registry does not replace installed source; existing apps merge role-list.tsx and the roles page integration through a template source upgrade.
 
+### default-access-editor
+
+Controlled default data scope rule fields with business-object selection, independent operation scopes and native custom-filter slots. The host supplies current rules and performs authorized writes. Preinstalled in both application templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/default-access-editor`
+- Installs to: `client/components/default-access-editor.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/default-access-editor-demo` (`pnpm exec shadcn view @nocobase/default-access-editor-demo`)
+- After installing: Pass localized labels, a stable rule key, resource choices and scope controls. The host loads authorization/defaultAccess and authorization/defaultAccess/options, enforces settings:authorization.default-access read/create/update/delete, and owns draft preservation, custom filters, validation, confirmation and writes. Existing apps reconcile the editor, default-access pages/model/routes, locales and contextual role-form link from the updated template. No existing rule is seeded or rewritten on upgrade.
+
 ## Data display
 
 ### kanban
