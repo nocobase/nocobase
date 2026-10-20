@@ -1,3 +1,4 @@
+import { protectUpgradeWorkspace } from './workspace-use.ts';
 import { cleanupRunTemp } from './run-temp.ts';
 import { finalizeRunWorktrees } from './run-worktrees.ts';
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
@@ -43,8 +44,6 @@ import {
   listProcesses,
   newProcessTag,
   PROCESS_TAG_ENV,
-  workspaceHolders,
-  taggedProcesses,
 } from './process-tree.ts';
 
 export interface RunRecord {
@@ -65,6 +64,7 @@ export interface RunRecord {
   pid: number;
   startedAt: string;
   workDir?: string;
+  privateDir?: string;
   /** The run's CLI credentials file, once written. */
   credentialsFile?: string;
   /** `spawned`, the name of the preparation step under way (prepare/index.ts), `running` or `reporting`. */
@@ -628,42 +628,23 @@ export async function recoverRun(
     log(`${runId}: killing the job's command group ${record.commandPgid}`);
     await killGroup(record.commandPgid, 0);
   }
-  let detail = options.detail;
+  const detail = options.detail;
   if (record.kind !== 'job' && record.workDir !== undefined) {
-    const holders = await workspaceHolders(record.workDir);
-    const tags =
-      record.processTag === undefined
-        ? []
-        : await taggedProcesses([record.processTag]);
-    const liveGroup = (await listProcesses()).some(
-      (p) => p.pgid === record.pid,
-    );
-    const stopped = holders.length + tags.length === 0 && !liveGroup;
-    const results = await finalizeRunWorktrees(
-      paths,
-      record.workDir,
-      log,
-      holders.length + tags.length > 0 || liveGroup
-        ? {
-            unsafeReason:
-              'Processes still hold the attempt directory after stopping.',
-          }
-        : {},
-    );
-    if (stopped) {
-      try {
-        await cleanupRunTemp(paths, record.workDir);
-      } catch (error) {
-        // Temporary cleanup must not prevent credential removal, reporting or worker exit completion.
-        const reason = `Run temporary directory retained for ${record.workDir}: ${String(error)}`;
-        log(reason);
-        detail += `\n${reason}`;
-      }
+    if (options.reason === 'runnerUpgrade')
+      await protectUpgradeWorkspace(paths, record.workDir, runId);
+    // New task directories are permanent. Legacy attempts retain their recovery path.
+    if (record.privateDir === undefined) {
+      await finalizeRunWorktrees(paths, record.workDir, log, {
+        unsafeReason: 'Legacy attempt retained after worker exit.',
+      });
     }
-    const failed = results.filter((result) => !result.saved);
-    if (failed.length > 0)
-      detail += `\nDirectory retained: ${record.workDir}: ${failed.map((r) => r.reason).join('; ')}`;
+    await cleanupRunTemp(paths, record.privateDir ?? record.workDir).catch(
+      (error: unknown) => log(String(error)),
+    );
+    if (record.privateDir !== undefined)
+      await rm(record.privateDir, { recursive: true, force: true });
   }
+
   if (record.credentialsFile !== undefined)
     await deleteRunCredentials(record.credentialsFile);
   // A job's directory is its own and goes with it.
@@ -742,6 +723,13 @@ export async function recoverRun(
     }
   }
   if (delivered || spool.failure !== undefined) await spool.remove();
+  // Reporting establishes the server's interruption time, potentially after a slow event drain.
+  if (
+    options.reason === 'runnerUpgrade' &&
+    record.kind !== 'job' &&
+    record.workDir !== undefined
+  )
+    await protectUpgradeWorkspace(paths, record.workDir, runId);
   await removeRecord(paths, runId);
   const files = spoolPaths(paths.runsDir, runId);
   if (!delivered && spool.failure === undefined)

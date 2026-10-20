@@ -131,7 +131,7 @@ describe('claiming and pruning the shared store', () => {
     await received.promise;
     abandoned();
     const collection = runner['collectGarbage']();
-    await waitFor(() => runner['holdingForPrune']);
+    await waitFor(() => runner['collecting'] !== undefined);
     expect(prune).not.toHaveBeenCalled();
     expect(await runner['claimFrom'](link, 1, false)).toBe(0);
     deliver.resolve();
@@ -151,7 +151,7 @@ describe('claiming and pruning the shared store', () => {
     expect(run.complete).toBeDefined();
   });
 
-  it('keeps claiming and starting work while a collection round is running', async () => {
+  it('pauses new claims during collection and resumes them after cleanup', async () => {
     const runner = await daemon(async () => true);
     const link = runner['links'][0]!;
     server.workspaceReporting = { intervalMs: 60_000 };
@@ -170,11 +170,13 @@ describe('claiming and pruning the shared store', () => {
     const collection = runner['collectGarbage']();
     await reporting.promise;
     expect(runner['collecting']).toBeDefined();
-    expect(await runner['claimFrom'](link, 1, false)).toBe(1);
-    await waitFor(() => run.complete);
+    expect(await runner['claimFrom'](link, 1, false)).toBe(0);
+    expect(run.status).toBe('queued');
     expect(runner['collecting']).toBeDefined();
     finishReport.resolve();
     await collection;
+    expect(await runner['claimFrom'](link, 1, false)).toBe(1);
+    await waitFor(() => run.complete);
   });
 
   it('waits for an outstanding claim when the last worker exits', async () => {

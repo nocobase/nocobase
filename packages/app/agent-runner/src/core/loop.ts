@@ -556,6 +556,7 @@ export class RunnerDaemon {
       const startedAt = Date.now();
       log('gc: collection started');
       try {
+        while (this.claimsInFlight > 0) await delay(20, this.stopping.signal);
         const settings = await readSettings(paths);
         const reporters = new Map<
           string,
@@ -903,7 +904,7 @@ export class RunnerDaemon {
       return;
     this.updating = true;
     try {
-      const reported = Promise.all(this.live.map((app) => this.heartbeat(app)));
+      await Promise.all(this.live.map((app) => this.heartbeat(app)));
       const cancellations = new Map<string, Promise<void>>();
       const interruptAgents = (): void => {
         for (const run of this.supervisor.runs.values()) {
@@ -922,7 +923,7 @@ export class RunnerDaemon {
       }
       interruptAgents();
       await Promise.all(cancellations.values());
-      await reported;
+
       // Background jobs retain their existing completion semantics.
       if (this.supervisor.size > 0 || this.stopping.signal.aborted) return;
       await (selfUpdate.apply ?? applyUpdate)({
@@ -956,6 +957,7 @@ export class RunnerDaemon {
     if (
       this.pendingUpdate ||
       this.pruning ||
+      this.collecting !== undefined ||
       this.holdingForPrune ||
       this.diskPaused ||
       this.stopping.signal.aborted
@@ -969,6 +971,7 @@ export class RunnerDaemon {
       this.holdingForPrune ||
       this.pendingUpdate ||
       this.pruning ||
+      this.collecting !== undefined ||
       this.diskPaused ||
       this.stopping.signal.aborted
     )
@@ -1111,6 +1114,7 @@ export class RunnerDaemon {
         this.slots - this.supervisor.size <= 0 ||
         this.pendingUpdate ||
         this.pruning ||
+        this.collecting !== undefined ||
         this.holdingForPrune ||
         this.diskPaused
       ) {

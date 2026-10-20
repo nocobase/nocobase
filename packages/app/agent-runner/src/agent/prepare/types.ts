@@ -39,6 +39,7 @@ export interface PrepareContext {
   /** How git's network operations are retried (`git-retry.ts`); the defaults when absent. */
   readonly gitRetry?: GitRetryOptions;
   workspace?: WorkspaceLock;
+  privateDir?: string;
   /** The run's working directories, the primary one first; empty when the run names none. */
   dirs: PreparedDir[];
   /** The directory holding the application's CLI, first on the agent's PATH. */
@@ -93,7 +94,7 @@ export function stepFailure(
   return step.failure;
 }
 
-/** The stable subject namespace. Run-attempt paths, including read-only paths, are allocated separately. */
+/** The stable subject namespace. Code paths are shared by every run and read-only mode. */
 export function workspaceKey(payload: RunPayload): string {
   return payload.workspace.key ?? payload.subject.key;
 }

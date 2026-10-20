@@ -1,10 +1,12 @@
+import { workspaceInUse } from './workspace-use.ts';
+import { invalidatePreparation } from './preparation.ts';
 // Regenerable build artifacts in working directories that sit unused.
 //
 // A working directory whose work goes on stays, but what an install or a build regenerates (`node_modules`, `.next`,
 // `.turbo` by default, `RunnerSettings.artifactPatterns`) is removed from it once no run has used it for
-// `RunnerSettings.artifactTtlMs` (2 hours by default; 0 turns it off). The checkout itself, its commits and changes,
+// `RunnerSettings.artifactTtlMs` (24 hours by default; 0 turns it off). The checkout itself, its commits and changes,
 // stay. Every directory with one of those names anywhere inside it goes, without following symbolic links: a link is
-// never entered nor removed. A directory a run holds is never touched: the pass takes the directory's lock, and a run
+// never entered nor removed. A directory a run holds is never touched: the pass checks live usage registrations, and a run
 // that used it since it was read keeps it as it is. Once cleaned, a directory is not walked again until a run uses it.
 import { readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
@@ -69,7 +71,8 @@ export async function cleanArtifacts(
     (a, b) => Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt),
   )) {
     if (await options.shouldStop?.()) break;
-    if (entry.inUse) continue;
+    if (entry.inUse || (await workspaceInUse(options.paths, entry.workDir)))
+      continue;
     const usedAt = Date.parse(entry.lastUsedAt);
     if (
       !Number.isFinite(usedAt) ||
@@ -83,6 +86,7 @@ export async function cleanArtifacts(
       continue;
     }
     try {
+      if (await workspaceInUse(options.paths, entry.workDir)) continue;
       const meta = await readWorkspaceMeta(options.paths, entry.workDir);
       // A run used it since it was read, or it was cleaned since it was last used.
       if (
@@ -132,6 +136,12 @@ export async function cleanArtifacts(
       for (const dir of safe) {
         if (await options.shouldStop?.()) break;
         try {
+          // Invalidate before deletion: partial failures also require initialization next time.
+          for (const repo of meta.repos)
+            await invalidatePreparation(
+              options.paths,
+              path.join(entry.workDir, repo.path),
+            );
           await rm(dir, { recursive: true, force: true });
           removed += 1;
         } catch (error) {

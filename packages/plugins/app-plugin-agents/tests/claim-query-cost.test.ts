@@ -1,9 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHarness, skillMd, type Harness } from './harness.js';
 import { agentsRepo } from '../server/core/agents/agent.store.js';
-import { inputsRepo, runsRepo } from '../server/core/runs/run.store.js';
+import {
+  inputsRepo,
+  runsRepo,
+  sessionsRepo,
+} from '../server/core/runs/run.store.js';
 
 interface QueryEvents {
+  on(
+    event: 'query-response',
+    listener: (response: unknown, query: { sql: string }) => void,
+  ): void;
+  off(
+    event: 'query-response',
+    listener: (response: unknown, query: { sql: string }) => void,
+  ): void;
   on(
     event: 'query',
     listener: (query: { sql: string; __knexTxId?: string }) => void,
@@ -20,16 +32,18 @@ describe('claim query cost', () => {
 
   it.each(
     [1, 10, 50].flatMap((count) =>
-      [0, 3].map((skillCount) => ({ count, skillCount })),
+      [0, 3].flatMap((skillCount) =>
+        [false, true].map((affinity) => ({ count, skillCount, affinity })),
+      ),
     ),
   )(
-    'loads $count candidates with $skillCount skills without additional reads',
-    async ({ count, skillCount }) => {
+    'loads $count candidates with $skillCount skills (affinity: $affinity) with bounded reads',
+    async ({ count, skillCount, affinity }) => {
       h = await createHarness();
       h.scopes = [{ scope: 'team', scopeId: 'team' }];
       if (count > 1) {
         const excluded = await h.createAgent({
-          modelEntries: [{ tool: 'codex', model: null }],
+          modelEntries: [{ tool: affinity ? 'claude' : 'codex', model: null }],
         });
         const excludedRun = await h.enqueue(excluded, 'excluded-1');
         const conn = h.database.connection();
@@ -115,6 +129,25 @@ describe('claim query cost', () => {
       expect(queued).toHaveLength(count);
       expect(new Set(queued.map((run) => run.agentId)).size).toBe(count);
       expect(queued.at(-1)?.id).toBe(runId);
+      if (affinity) {
+        const preferred = await h.registerRunner();
+        await sessionsRepo(h.database.connection()).createMany({
+          values: queued.map((run, index) => ({
+            id: `prior-${index}`,
+            agentId: run.agentId,
+            runnerId: preferred.runnerId,
+            subjectKind: run.subjectKind,
+            subjectId: run.subjectId,
+            threadScope: run.threadScope,
+            sessionId: 'prior',
+            workDir: '/fixed',
+            branch: null,
+            fingerprint: null,
+            poisoned: false,
+            updatedAt: h.clock.now().toISOString(),
+          })),
+        });
+      }
       const registered = await h.registerRunner();
       const runner = await h.services.runners.authenticate(registered.key, {
         touch: false,
@@ -122,6 +155,15 @@ describe('claim query cost', () => {
       const queries: string[] = [];
       const knex = await h.database.connection().client<QueryEvents>();
       let transactionReads = 0;
+      let selectedRows = 0;
+      const onResponse = (response: unknown, query: { sql: string }) => {
+        if (/^\s*select\b/iu.test(query.sql) && /["`]ag_/u.test(query.sql))
+          selectedRows += Array.isArray(response)
+            ? response.length
+            : response == null
+              ? 0
+              : 1;
+      };
       const onQuery = ({
         sql,
         __knexTxId,
@@ -139,11 +181,42 @@ describe('claim query cost', () => {
           transactionReads += 1;
       };
       knex.on('query', onQuery);
+      knex.on('query-response', onResponse);
       let payloads;
       try {
         payloads = await h.services.claims.claim(runner, 1);
       } finally {
         knex.off('query', onQuery);
+        knex.off('query-response', onResponse);
+      }
+      if (affinity) {
+        expect(payloads).toEqual([]);
+        const business = queries.filter(
+          (sql) =>
+            /["`]ag_/u.test(sql) && !/information_schema|pg_catalog/u.test(sql),
+        );
+        const counts = Object.fromEntries(
+          ['select', 'insert', 'update', 'delete'].map((kind) => [
+            kind,
+            business.filter((sql) =>
+              new RegExp(`^\\s*${kind}\\b`, 'iu').test(sql),
+            ).length,
+          ]),
+        );
+        console.info(
+          'claim-affinity-query-cost',
+          { count, skillCount, selectedRows },
+          counts,
+        );
+        expect(counts).toMatchObject({
+          select: 12,
+          insert: 0,
+          update: 0,
+          delete: 0,
+        });
+        expect(transactionReads).toBe(0);
+        expect(selectedRows).toBeLessThanOrEqual(count * 5 + 50);
+        return;
       }
       expect(payloads.map((payload) => payload.run.id)).toEqual([runId]);
       expect(payloads[0].skills.map((skill) => skill.slug)).toEqual(
@@ -166,7 +239,7 @@ describe('claim query cost', () => {
       );
       console.info(
         'claim-query-cost',
-        { count, skillCount },
+        { count, skillCount, selectedRows },
         counts,
         'transactionReads',
         transactionReads,
@@ -183,6 +256,7 @@ describe('claim query cost', () => {
       // Writes remain INSERT 4, UPDATE 5, DELETE 1 on the same fixture.
       // Dialects without RETURNING also read back written rows; keep a bounded read budget.
       expect(counts.select).toBeLessThanOrEqual(25);
+      expect(selectedRows).toBeLessThanOrEqual(count * 5 + 50);
       expect(counts).toMatchObject({
         insert: 4,
         update: 5,

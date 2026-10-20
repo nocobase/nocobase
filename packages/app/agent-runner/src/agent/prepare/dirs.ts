@@ -1,6 +1,6 @@
 // Step `dirs`: the run's working directories, in its order. A repository is checked out (a bare cache and the
 // subject's long-lived worktree on the run's branch); a directory used in place must exist and
-// is held for this run alone. Each gets a `checkout` event saying whether it was prepared fresh for the subject.
+// is shared with other runs, with usage registered for cleanup. Each gets a `checkout` event saying whether it was prepared fresh for the subject.
 //
 // Cloning and fetching are retried on this runner when they fail for a passing cause, each
 // retry a `status` event. One that keeps failing fails the run `prepareNetwork`, which the application queues again,
@@ -11,7 +11,6 @@ import path from 'node:path';
 
 import { prepareDirs, RepoAccessFailure } from '../../core/checkout.ts';
 import { GitNetworkError } from '../../core/git-retry.ts';
-import { taskGit } from '../../core/task-git.ts';
 import { acceptedFailure } from '../../protocol/index.ts';
 import {
   PrepareError,
@@ -27,7 +26,6 @@ async function prepare(
   let retries = 0;
   try {
     return await prepareDirs({
-      perRun: true,
       clean: context.payload.workspace.clean === true,
       readOnly: context.payload.workspace.readOnly === true,
       paths: context.paths,
@@ -88,32 +86,12 @@ export const dirsStep: PrepareStep = {
   failure: 'checkoutFailed',
   async run(context) {
     const workDir = context.workspace?.workDir;
-    if (workDir === undefined) throw new Error('The workspace is not locked.');
+    if (workDir === undefined)
+      throw new Error('The workspace was not prepared.');
     const prepared = await prepare(context, workDir);
     context.onRelease(() => prepared.release());
     context.dirs = prepared.dirs;
     for (const dir of prepared.dirs) {
-      const author = context.payload.workspace.git?.author;
-      if (
-        author &&
-        dir.repo?.localBranch &&
-        !context.payload.workspace.readOnly
-      ) {
-        // Keep the existing checkout configuration aligned with the identity passed to the tool.
-        // Finalization after a worker exit can then use it without a separate identity record.
-        await taskGit(dir.repo, [
-          'config',
-          '--worktree',
-          'user.name',
-          author.name,
-        ]);
-        await taskGit(dir.repo, [
-          'config',
-          '--worktree',
-          'user.email',
-          author.email,
-        ]);
-      }
       const where =
         dir.kind === 'repo' ? path.relative(workDir, dir.dir) : dir.dir;
       context.event({

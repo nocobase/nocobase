@@ -58,11 +58,11 @@ describe('workspaceNotes', () => {
     expect(notes).toContain('not overwrite a branch created by someone else');
     expect(notes).toContain('Preserve existing files and commits on a retry');
   });
-  it('distinguishes the private branch from its permitted remote push target', () => {
+  it('reports the current branch and requested target in a shared workspace', () => {
     const repo = {
       url: 'https://example.com/repo',
       branch: 'fix/human',
-      localBranch: 'runner/attempt/repo',
+      localBranch: 'fix/current',
       defaultBranch: 'main',
       primary: true,
       dir: '/work/run/repo',
@@ -83,14 +83,16 @@ describe('workspaceNotes', () => {
         },
       ],
     });
-    expect(notes).toContain('local branch runner/attempt/repo');
-    expect(notes).toContain('git push origin HEAD:refs/heads/fix/human');
+    expect(notes).toContain('local branch fix/current');
+    expect(notes).toContain('git push origin <branch>');
     expect(notes).toContain('switch or create branches');
     expect(notes).toContain('push any branch of this repository');
     expect(notes).toContain(
       'Never rewrite already-pushed history or force push',
     );
     expect(notes).toContain('pr open --head <branch>');
-    expect(notes).toContain('legacy sessions are not migrated');
+    expect(notes).toContain(
+      'old attempt directories and sessions are not migrated',
+    );
   });
 });

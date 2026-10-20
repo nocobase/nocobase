@@ -813,7 +813,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
       ),
 
     all: async (conn) =>
-      (await runnersRepo(conn).findMany({})).map((record) => toRunner(record)),
+      (await runnersRepo(conn).findMany({})).map((record) =>
+        toRunner(record, null, false),
+      ),
 
     absent: (conn, ids) => absentRunners(conn, ids),
 

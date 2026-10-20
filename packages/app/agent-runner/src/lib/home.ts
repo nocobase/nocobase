@@ -39,6 +39,7 @@ import {
 } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 export function runnerHome(env: NodeJS.ProcessEnv = process.env): string {
   const configured = env.NOCOBASE_RUNNER_HOME;
@@ -140,7 +141,7 @@ export async function writeJsonAtomic(
   mode = 0o600,
 ): Promise<void> {
   await mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
-  const temporary = `${file}.${process.pid}.${Date.now()}.tmp`;
+  const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
   await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { mode });
   // The mode on writeFile is masked by umask; chmod sets it exactly.
   await chmod(temporary, mode);

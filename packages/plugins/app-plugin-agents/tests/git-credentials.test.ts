@@ -399,6 +399,13 @@ describe('repository credentials on demand', () => {
           .status,
       ).toBe('queued');
       h.clock.advance(60_000);
+      await h.database
+        .connection()
+        .repository('agRunners')
+        .updateMany({
+          filter: { id: runner.runnerId },
+          values: { status: 'offline' },
+        });
       const other = await h.registerRunner({
         name: 'other',
         features: [...FEATURES, 'gitCredentials'],
