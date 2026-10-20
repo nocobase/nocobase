@@ -1,0 +1,825 @@
+name: V3 Studio Release
+run-name: studio-release:${{ inputs.channel }}${{ inputs.dry_run && ' (dry run)' || '' }}
+
+# Release NocoBase Studio's image from the private nocobase/studio repository to the private registry
+# pkg-v3.nocobase.com/nocobase/studio, for linux/amd64 and linux/arm64. The released version is the `version` of Studio's
+# root package.json, as it is: unlike nocobase-ci's internal studio-image.yml, nothing is stamped with a dev version.
+#
+# - channel=beta releases studio's `dev` branch and channel=latest its `main` branch. The bump below goes back to the
+#   same branch.
+# - Before anything is built, the run stops when `nocobase/studio:<version>` already exists in the registry or studio
+#   already has the git tag `v<version>`. The registry gates customers by the time a digest was first pushed, so pushing
+#   a version again would move its tag to a new digest that customers whose updates expired could no longer pull.
+# - Each platform builds its own dist/ and pushes its image by digest; one job then tags both under a multi-platform
+#   manifest (see "Name the tags" for which tags), studio is tagged `v<version>` on the commit that was built, and the
+#   versions of package.json and packages/studio-cli/package.json are bumped to the next version (1.0.0-beta.58 ->
+#   1.0.0-beta.59, 1.0.0 -> 1.0.1) through a squashed pull request into the source branch.
+# - dry_run resolves, validates and builds both platforms, but never signs in to the registry for a push, pushes,
+#   tags, pushes a branch, opens a pull request or notifies. With DOCKER_PUBLISH_TOKEN configured it also runs the
+#   read-only registry checks, so the tag decision can be previewed.
+#
+# Secrets: DOCKER_PUBLISH_TOKEN (the registry's PUBLISH_TOKEN), NOCOBASE_APP_PRIVATE_KEY with vars.NOCOBASE_APP_ID (the
+# NocoBase GitHub App, installed on nocobase/studio) and RELEASE_RESULT_FEISHU_WEBHOOK_URL.
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'beta releases studio dev; latest releases studio main'
+        type: choice
+        options:
+          - beta
+          - latest
+        default: beta
+      dry_run:
+        description: 'Dry run: resolve, validate and build without pushing, tagging or merging anything'
+        type: boolean
+        default: false
+
+# One Studio release at a time, whatever the channel: the checks in prepare are only valid while no other run can push
+# a version or move latest.
+concurrency:
+  group: studio-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+# Image names only, never credentials, so they can travel through job outputs.
+env:
+  REGISTRY: pkg-v3.nocobase.com
+  IMAGE_REPOSITORY: nocobase/studio
+  # One line, at most 200 characters. Set on the index as org.opencontainers.image.description; the registry shows it
+  # on the repository's card of its public image pages.
+  IMAGE_DESCRIPTION: NocoBase Studio
+
+jobs:
+  prepare:
+    name: Prepare the Studio release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      source_branch: ${{ steps.source.outputs.branch }}
+      commit: ${{ steps.source.outputs.commit }}
+      version: ${{ steps.version.outputs.version }}
+      next_version: ${{ steps.version.outputs.next }}
+      bump_branch: ${{ steps.version.outputs.bump_branch }}
+      tags: ${{ steps.tags.outputs.tags }}
+      latest_reason: ${{ steps.tags.outputs.latest_reason }}
+    steps:
+      # Without the publish token a real release could only fail at the push, after both builds. A dry run goes on and
+      # skips the registry checks.
+      - name: Check the registry publish token
+        id: publish_token
+        env:
+          DOCKER_PUBLISH_TOKEN: ${{ secrets.DOCKER_PUBLISH_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ -n "$DOCKER_PUBLISH_TOKEN" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "configured=false" >> "$GITHUB_OUTPUT"
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "::warning::The repository secret DOCKER_PUBLISH_TOKEN is not configured; this dry run skips the registry checks."
+            exit 0
+          fi
+          echo "::error::The repository secret DOCKER_PUBLISH_TOKEN is not configured. Set it to the private registry's PUBLISH_TOKEN (Settings -> Secrets and variables -> Actions)."
+          exit 1
+
+      - name: Pick the source branch
+        id: channel
+        env:
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          case "$CHANNEL" in
+            beta) echo "branch=dev" >> "$GITHUB_OUTPUT" ;;
+            latest) echo "branch=main" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "::error::Unknown channel '$CHANNEL'"
+              exit 1
+              ;;
+          esac
+
+      # A read-only token for nocobase/studio alone, revoked as soon as the source is resolved.
+      - name: Create a read-only source token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: studio
+          permission-contents: read
+          skip-token-revoke: true
+
+      # Resolved once, so both platforms build, and the tag lands on, the same commit even if the branch moves during the
+      # run. package.json is read at that commit, not at the branch.
+      - name: Resolve the source
+        id: source
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BRANCH: ${{ steps.channel.outputs.branch }}
+        run: |
+          commit=$(gh api "repos/nocobase/studio/commits/${BRANCH}" --jq .sha)
+          gh api -H 'Accept: application/vnd.github.raw+json' "repos/nocobase/studio/contents/package.json?ref=${commit}" > "$RUNNER_TEMP/studio-package.json"
+          {
+            echo "branch=${BRANCH}"
+            echo "commit=${commit}"
+          } >> "$GITHUB_OUTPUT"
+          echo "nocobase/studio ${BRANCH} is at ${commit}"
+
+      # Semver with an optional prerelease part and no build metadata, which is not a valid image tag. The next version
+      # is computed here too, so a version that cannot be bumped stops the run before anything is published: a
+      # prerelease adds one to its last identifier, which must be numeric (1.0.0-beta.58 -> 1.0.0-beta.59), and a
+      # release adds one to its patch (1.0.0 -> 1.0.1).
+      - name: Read and validate the version
+        id: version
+        run: |
+          version=$(jq -r '.version // empty' "$RUNNER_TEMP/studio-package.json")
+          semver='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+          if ! [[ "$version" =~ $semver ]]; then
+            echo "::error::Studio's package.json has no valid semver version (found '${version}')."
+            exit 1
+          fi
+          if [[ "$version" == *-* ]]; then
+            core=${version%%-*}
+            pre=${version#*-}
+            last=${pre##*.}
+            if ! [[ "$last" =~ ^[0-9]+$ ]]; then
+              echo "::error::Cannot compute the next version of ${version}: its prerelease part does not end in a number."
+              exit 1
+            fi
+            if [[ "$pre" == *.* ]]; then
+              next="${core}-${pre%.*}.$((10#$last + 1))"
+            else
+              next="${core}-$((10#$last + 1))"
+            fi
+          else
+            IFS=. read -r major minor patch <<< "$version"
+            next="${major}.${minor}.$((10#$patch + 1))"
+          fi
+          {
+            echo "version=${version}"
+            echo "next=${next}"
+            echo "bump_branch=release/studio-${next}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Releasing ${version}; the source branch moves on to ${next}."
+
+      # matching-refs lists every ref with the prefix (v1.0.0 also matches v1.0.0-beta.1), so compare full names.
+      - name: Check studio's tag and bump branch are free
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          BUMP_BRANCH: ${{ steps.version.outputs.bump_branch }}
+        run: |
+          if gh api "repos/nocobase/studio/git/matching-refs/tags/v${VERSION}" --jq '.[].ref' | grep -qxF "refs/tags/v${VERSION}"; then
+            echo "::error::nocobase/studio already has the tag v${VERSION}: this version was released. Bump the version in Studio's package.json first."
+            exit 1
+          fi
+          if gh api "repos/nocobase/studio/git/matching-refs/heads/${BUMP_BRANCH}" --jq '.[].ref' | grep -qxF "refs/heads/${BUMP_BRANCH}"; then
+            echo "::error::nocobase/studio already has the branch ${BUMP_BRANCH}, left by an earlier release. Merge or delete it first."
+            exit 1
+          fi
+
+      - name: Revoke the source token
+        if: ${{ always() && steps.app-token.outputs.token != '' }}
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --location \
+            --request DELETE \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $APP_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            https://api.github.com/installation/token
+
+      # Read-only: a pull-scoped registry token, HEAD requests and tags/list. The tag decision:
+      #
+      # - The version itself, always. It must not exist yet (see the header).
+      # - channel=latest: the version and `latest`, even when the version is a prerelease. `beta` is left alone.
+      # - channel=beta: the version and `beta`, and `latest` only while latest has never been a release. latest moves to
+      #   this beta when it does not exist or when it points to a prerelease (a version with a `-` part). Once a release
+      #   without a prerelease part has taken latest, beta releases no longer touch it. latest's version is found by
+      #   comparing its digest with the digest of every version tag; when no version tag has its digest, latest is left
+      #   alone with a warning, since moving it could replace a release.
+      - name: Check the registry and name the tags
+        id: tags
+        env:
+          DOCKER_PUBLISH_TOKEN: ${{ secrets.DOCKER_PUBLISH_TOKEN }}
+          HAS_TOKEN: ${{ steps.publish_token.outputs.configured }}
+          CHANNEL: ${{ inputs.channel }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [ "$CHANNEL" = "latest" ]; then
+            {
+              echo "tags<<EOF"
+              printf '%s\n%s\n' "$VERSION" latest
+              echo "EOF"
+              echo "latest_reason=channel=latest always moves latest"
+            } >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$HAS_TOKEN" != "true" ]; then
+            echo "::warning::Registry checks skipped: DOCKER_PUBLISH_TOKEN is not configured (dry run only)."
+            if [ "$CHANNEL" = "beta" ]; then
+              {
+                echo "tags<<EOF"
+                printf '%s\n%s\n' "$VERSION" beta
+                echo "EOF"
+                echo "latest_reason=unknown: the registry was not checked (dry run without DOCKER_PUBLISH_TOKEN)"
+              } >> "$GITHUB_OUTPUT"
+            fi
+            exit 0
+          fi
+
+          base="https://${REGISTRY}/v2/${IMAGE_REPOSITORY}"
+          jwt=$(curl --fail --silent --show-error --retry 3 --user "ci:${DOCKER_PUBLISH_TOKEN}" \
+            "https://${REGISTRY}/-/docker/token?service=${REGISTRY}&scope=repository:${IMAGE_REPOSITORY}:pull" \
+            | jq -r '.token // .access_token // empty')
+          if [ -z "$jwt" ]; then
+            echo "::error::The registry issued no token for DOCKER_PUBLISH_TOKEN."
+            exit 1
+          fi
+          echo "::add-mask::${jwt}"
+          # Accept every manifest type, or the registry answers 404 for a multi-platform index.
+          accept='application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json'
+          headers="$RUNNER_TEMP/registry-headers"
+          body="$RUNNER_TEMP/registry-body"
+
+          # Prints the digest a tag points to and returns 0, returns 1 when the tag does not exist, 2 on anything else.
+          manifest_digest() {
+            local code
+            code=$(curl --silent --show-error --retry 3 --head --output /dev/null --dump-header "$headers" --write-out '%{http_code}' \
+              --header "Authorization: Bearer ${jwt}" --header "Accept: ${accept}" "${base}/manifests/$1") || code=000
+            case "$code" in
+              200) tr -d '\r' < "$headers" | awk 'tolower($1) == "docker-content-digest:" { print $2 }' ;;
+              404) return 1 ;;
+              *)
+                echo "::error::HEAD ${IMAGE_REPOSITORY}:$1 answered HTTP ${code}." >&2
+                return 2
+                ;;
+            esac
+          }
+
+          rc=0
+          manifest_digest "$VERSION" > /dev/null || rc=$?
+          case "$rc" in
+            0)
+              echo "::error::${REGISTRY}/${IMAGE_REPOSITORY}:${VERSION} already exists. Pushing it again would move the tag to a new digest; bump the version in Studio's package.json first."
+              exit 1
+              ;;
+            1) echo "${IMAGE_REPOSITORY}:${VERSION} does not exist yet." ;;
+            *) exit 1 ;;
+          esac
+
+          [ "$CHANNEL" = "beta" ] || exit 0
+
+          move_latest=false
+          rc=0
+          latest_digest=$(manifest_digest latest) || rc=$?
+          if [ "$rc" = "1" ]; then
+            move_latest=true
+            reason="latest does not exist yet, so this beta takes it"
+          elif [ "$rc" != "0" ] || [ -z "$latest_digest" ]; then
+            echo "::error::Could not read the digest latest points to."
+            exit 1
+          else
+            # All version tags, following the Link header if the registry pages them.
+            : > "$RUNNER_TEMP/registry-tags"
+            url="${base}/tags/list?n=1000"
+            while [ -n "$url" ]; do
+              code=$(curl --silent --show-error --retry 3 --output "$body" --dump-header "$headers" --write-out '%{http_code}' \
+                --header "Authorization: Bearer ${jwt}" "$url") || code=000
+              if [ "$code" != "200" ]; then
+                echo "::error::Listing the tags of ${IMAGE_REPOSITORY} answered HTTP ${code}."
+                exit 1
+              fi
+              jq -r '.tags // [] | .[]' "$body" >> "$RUNNER_TEMP/registry-tags"
+              next=$(tr -d '\r' < "$headers" | awk 'tolower($1) == "link:"' | sed -nE 's/.*<([^>]*)>.*/\1/p')
+              url=${next:+https://${REGISTRY}${next}}
+            done
+            semver='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+            # A tag that disappeared meanwhile is skipped; any other failure stops the run rather than guessing.
+            matched=()
+            while IFS= read -r tag; do
+              [[ "$tag" =~ $semver ]] || continue
+              rc=0
+              digest=$(manifest_digest "$tag") || rc=$?
+              case "$rc" in
+                0) if [ "$digest" = "$latest_digest" ]; then matched+=("$tag"); fi ;;
+                1) continue ;;
+                *) exit 1 ;;
+              esac
+            done < "$RUNNER_TEMP/registry-tags"
+            releases=()
+            for tag in "${matched[@]}"; do
+              [[ "$tag" == *-* ]] || releases+=("$tag")
+            done
+            if [ "${#matched[@]}" = "0" ]; then
+              echo "::warning::latest (${latest_digest}) matches no version tag, so it is left alone."
+              reason="latest matches no version tag; left alone to be safe"
+            elif [ "${#releases[@]}" != "0" ]; then
+              reason="latest is the release ${releases[*]}; beta releases no longer move it"
+            else
+              move_latest=true
+              reason="latest is the prerelease ${matched[*]}, so this beta takes it"
+            fi
+          fi
+          echo "$reason"
+          {
+            echo "tags<<EOF"
+            printf '%s\n%s\n' "$VERSION" beta
+            if [ "$move_latest" = "true" ]; then echo latest; fi
+            echo "EOF"
+            echo "latest_reason=${reason}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          BRANCH: ${{ steps.source.outputs.branch }}
+          COMMIT: ${{ steps.source.outputs.commit }}
+          VERSION: ${{ steps.version.outputs.version }}
+          NEXT: ${{ steps.version.outputs.next }}
+          TAGS: ${{ steps.tags.outputs.tags }}
+          LATEST_REASON: ${{ steps.tags.outputs.latest_reason }}
+        run: |
+          {
+            if [ "$DRY_RUN" = "true" ]; then
+              echo '### Studio release (dry run: nothing is pushed)'
+            else
+              echo '### Studio release'
+            fi
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| Version | \`${VERSION}\` |"
+            echo "| Channel | \`${CHANNEL}\` |"
+            echo "| Source | \`nocobase/studio@${BRANCH}\` (\`${COMMIT}\`) |"
+            echo "| Next version | \`${NEXT}\` |"
+            echo "| latest | ${LATEST_REASON} |"
+            echo
+            echo 'Tags to push:'
+            echo
+            while IFS= read -r tag; do
+              if [ -n "$tag" ]; then echo "- \`${REGISTRY}/${IMAGE_REPOSITORY}:${tag}\`"; fi
+            done <<< "$TAGS"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Each platform builds its own dist/ and pushes its image by digest, in parallel; `manifest` then tags both as one.
+  # Both run on x64: `pnpm build --target linux-arm64` fetches the arm64 native binaries rather than compiling under
+  # emulation, and QEMU only runs the arm64 image's last few RUN lines. A dry run builds the image without pushing it.
+  image:
+    name: Build the linux/${{ matrix.arch }} image
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            target: linux-x64
+          - arch: arm64
+            target: linux-arm64
+    env:
+      # Studio's build typechecks it together with the framework's sources, which needs more than the default heap.
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      # A read-only token for nocobase/studio alone, revoked as soon as the source is checked out.
+      - name: Create a read-only source token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: studio
+          permission-contents: read
+          skip-token-revoke: true
+
+      # The framework is the public submodule vendor/nocobase3; only Studio itself needs the token.
+      - name: Check out Studio
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/studio
+          ref: ${{ needs.prepare.outputs.commit }}
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
+          submodules: true
+          show-progress: false
+
+      - name: Revoke the source token
+        if: ${{ always() && steps.app-token.outputs.token != '' }}
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --location \
+            --request DELETE \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $APP_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            https://api.github.com/installation/token
+
+      # The image carries the version prepare validated; a mismatch means the checkout is not the commit prepare read.
+      - name: Verify the version
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          actual=$(jq -r '.version' package.json)
+          if [ "$actual" != "$VERSION" ]; then
+            echo "::error::package.json has version ${actual}, but prepare validated ${VERSION}."
+            exit 1
+          fi
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # dist/ is built here, with this job's heap, and the image takes it prebuilt. Studio's build first builds the
+      # workspace packages it depends on, and dist/ includes dist/runners, the nb-studio and nocobase-runner packages
+      # Studio serves, at the released versions. `--target` swaps in the native binaries of the image's platform; the
+      # Dockerfile refuses a dist/ built for another one.
+      - name: Build dist
+        run: pnpm build --target ${{ matrix.target }}
+
+      - name: Sign in to the registry
+        if: ${{ !inputs.dry_run }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ci
+          password: ${{ secrets.DOCKER_PUBLISH_TOKEN }}
+
+      - name: Set up QEMU
+        if: ${{ matrix.arch != 'amd64' }}
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ matrix.arch }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Pushed by digest alone; the tags go on the multi-platform manifest. provenance and sbom stay off: their
+      # attestation manifests would enter the registry's version index (and ACR-style registries reject them). A dry run
+      # keeps the result in the build cache only.
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/${{ matrix.arch }}
+          build-args: DIST=prebuilt
+          outputs: ${{ inputs.dry_run && 'type=cacheonly' || format('type=image,name={0}/{1},push-by-digest=true,name-canonical=true,push=true', env.REGISTRY, env.IMAGE_REPOSITORY) }}
+          provenance: false
+          sbom: false
+
+      - name: Export the digest
+        if: ${{ !inputs.dry_run }}
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          if [ -z "$DIGEST" ]; then
+            echo "::error::The build reported no digest."
+            exit 1
+          fi
+          mkdir -p "${RUNNER_TEMP}/digests"
+          touch "${RUNNER_TEMP}/digests/${DIGEST#sha256:}"
+
+      - name: Upload the digest
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  manifest:
+    name: Tag the multi-platform image
+    needs: [prepare, image]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - name: Download the digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - name: Sign in to the registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ci
+          password: ${{ secrets.DOCKER_PUBLISH_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # The version is the first tag, so it is the first to point at the index.
+      - name: Tag and push the manifest
+        id: push
+        env:
+          TAGS: ${{ needs.prepare.outputs.tags }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          DIGESTS: ${{ runner.temp }}/digests
+        run: |
+          image="${REGISTRY}/${IMAGE_REPOSITORY}"
+          count=$(find "$DIGESTS" -type f | wc -l | tr -d ' ')
+          if [ "$count" != "2" ]; then
+            echo "::error::Expected the digests of 2 platforms, found ${count}."
+            exit 1
+          fi
+          args=(--annotation "index:org.opencontainers.image.description=${IMAGE_DESCRIPTION}")
+          while IFS= read -r tag; do
+            if [ -n "$tag" ]; then args+=(--tag "${image}:${tag}"); fi
+          done <<< "$TAGS"
+          for digest in "$DIGESTS"/*; do
+            args+=("${image}@sha256:$(basename "$digest")")
+          done
+          docker buildx imagetools create "${args[@]}"
+          docker buildx imagetools inspect "${image}:${VERSION}"
+          echo "digest=$(docker buildx imagetools inspect "${image}:${VERSION}" --format '{{json .Manifest}}' | jq -r .digest)" >> "$GITHUB_OUTPUT"
+
+  release:
+    name: Tag studio and bump its version
+    needs: [prepare, manifest]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      tagged: ${{ steps.tag.outputs.tagged }}
+      merged: ${{ steps.merge.outputs.merged }}
+      pr_url: ${{ steps.merge.outputs.url }}
+    steps:
+      # Minted after the image is pushed so long builds do not consume its one-hour lifetime.
+      - name: Create a studio write token
+        id: release_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: studio
+          permission-contents: write
+          permission-pull-requests: write
+
+      # Without submodules: the bump changes two package.json files and must leave vendor/nocobase3 where it is.
+      - name: Check out the released commit
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/studio
+          ref: ${{ needs.prepare.outputs.commit }}
+          token: ${{ steps.release_token.outputs.token }}
+          persist-credentials: false
+          show-progress: false
+
+      - name: Configure git
+        env:
+          RELEASE_TOKEN: ${{ steps.release_token.outputs.token }}
+        run: |
+          git config user.name "nocobase[bot]"
+          git config user.email "179432756+nocobase[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/nocobase/studio.git"
+
+      # A tag already on the released commit is a retried run; anywhere else it is a conflict.
+      - name: Tag the released commit
+        id: tag
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          COMMIT: ${{ needs.prepare.outputs.commit }}
+        run: |
+          tag="v${VERSION}"
+          # ls-remote lists an annotated tag's peeled `^{}` line after the tag itself, and that line is the commit.
+          remote=$(git ls-remote origin "refs/tags/${tag}" "refs/tags/${tag}^{}" | awk '{ print $1 }' | tail -n 1)
+          if [ -n "$remote" ]; then
+            if [ "$remote" != "$COMMIT" ]; then
+              echo "::error::nocobase/studio's tag ${tag} points to ${remote} instead of the released commit ${COMMIT}."
+              exit 1
+            fi
+            echo "Tag ${tag} already points to the released commit."
+          else
+            git tag "$tag" "$COMMIT"
+            git push origin "refs/tags/${tag}:refs/tags/${tag}"
+          fi
+          echo "tagged=true" >> "$GITHUB_OUTPUT"
+
+      # Only the top-level "version" line changes, so each file keeps its formatting byte for byte; the check then
+      # confirms nothing but the version differs. defaultTemplateVersion and the submodule are left alone.
+      - name: Bump the version
+        env:
+          NEXT: ${{ needs.prepare.outputs.next_version }}
+          BUMP_BRANCH: ${{ needs.prepare.outputs.bump_branch }}
+        run: |
+          git checkout -b "$BUMP_BRANCH"
+          for manifest in package.json packages/studio-cli/package.json; do
+            # shellcheck disable=SC2016 # the single-quoted script is JavaScript, its ${} is a template literal
+            node -e '
+              const fs = require("fs");
+              const [file, next] = process.argv.slice(1);
+              const before = fs.readFileSync(file, "utf8");
+              const after = before.replace(/^(  "version": ")[^"]*(")/m, `$1${next}$2`);
+              const a = JSON.parse(before);
+              const b = JSON.parse(after);
+              if (b.version !== next) throw new Error(`${file}: no top-level version to bump`);
+              delete a.version;
+              delete b.version;
+              if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${file}: the bump changed more than the version`);
+              fs.writeFileSync(file, after);
+            ' "$manifest" "$NEXT"
+          done
+          git add package.json packages/studio-cli/package.json
+          git diff --cached
+          git commit -m "chore: bump studio version to ${NEXT} [skip ci]"
+          git push origin "refs/heads/${BUMP_BRANCH}:refs/heads/${BUMP_BRANCH}"
+
+      # Squashed like every other pull request. gh runs outside the checkout so --delete-branch only deletes the remote
+      # branch, and a non-zero exit is checked against the pull request's state before it counts as a failed merge.
+      # Conflicts (the source branch changed a version meanwhile) leave the branch for manual resolution.
+      - name: Merge the bump back
+        id: merge
+        env:
+          GH_TOKEN: ${{ steps.release_token.outputs.token }}
+          SOURCE_BRANCH: ${{ needs.prepare.outputs.source_branch }}
+          BUMP_BRANCH: ${{ needs.prepare.outputs.bump_branch }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          NEXT: ${{ needs.prepare.outputs.next_version }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          subject="chore: bump studio version to ${NEXT} [skip ci]"
+          pr_url=$(gh pr create -R nocobase/studio \
+            --base "$SOURCE_BRANCH" \
+            --head "$BUMP_BRANCH" \
+            --title "$subject" \
+            --body "Studio \`${VERSION}\` was released as \`${REGISTRY}/${IMAGE_REPOSITORY}:${VERSION}\` and tagged \`v${VERSION}\`; this moves \`${SOURCE_BRANCH}\` on to \`${NEXT}\`. Released by ${RUN_URL}")
+          echo "url=${pr_url}" >> "$GITHUB_OUTPUT"
+
+          cd "$RUNNER_TEMP"
+          set +e
+          gh pr merge "$pr_url" -R nocobase/studio --squash --delete-branch --subject "$subject"
+          rc=$?
+          set -e
+          state=$(gh pr view "$pr_url" -R nocobase/studio --json state --jq .state || echo UNKNOWN)
+          if [ "$rc" = "0" ] || [ "$state" = "MERGED" ]; then
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Failed to merge the version bump into ${SOURCE_BRANCH}; it needs manual work: ${pr_url}"
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Summary
+        if: ${{ always() }}
+        env:
+          TAGS: ${{ needs.prepare.outputs.tags }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          DIGEST: ${{ needs.manifest.outputs.digest }}
+          TAGGED: ${{ steps.tag.outputs.tagged }}
+          MERGED: ${{ steps.merge.outputs.merged }}
+          PR_URL: ${{ steps.merge.outputs.url }}
+          NEXT: ${{ needs.prepare.outputs.next_version }}
+        run: |
+          {
+            echo '### Published'
+            echo
+            echo "Index \`${DIGEST}\`, tagged:"
+            echo
+            while IFS= read -r tag; do
+              if [ -n "$tag" ]; then echo "- \`${REGISTRY}/${IMAGE_REPOSITORY}:${tag}\`"; fi
+            done <<< "$TAGS"
+            echo
+            echo "- Git tag \`v${VERSION}\`: ${TAGGED:-not pushed}"
+            echo "- Bump to \`${NEXT}\`: ${PR_URL:-no pull request} (merged: ${MERGED:-no})"
+            echo
+            echo "\`docker pull ${REGISTRY}/${IMAGE_REPOSITORY}:${VERSION}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check out workflow tooling
+        if: ${{ steps.merge.outputs.merged != '' }}
+        uses: actions/checkout@v4
+        with:
+          path: workflow-tooling
+          sparse-checkout: scripts
+          persist-credentials: false
+
+      - name: Notify merge failure
+        if: ${{ steps.merge.outputs.merged == 'false' }}
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REPOSITORY: nocobase/studio
+          TITLE: NocoBase Studio 镜像发布成功，但版本号合回失败
+          STATUS: failure
+          STATUS_TEXT_FAILURE: 需要人工介入
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CONTENT: |
+            镜像 **${{ needs.prepare.outputs.version }}**（channel `${{ inputs.channel }}`）已推送到私有源，git tag `v${{ needs.prepare.outputs.version }}` 已打。
+
+            但把版本号改成 `${{ needs.prepare.outputs.next_version }}` 的 PR 合回 `${{ needs.prepare.outputs.source_branch }}` 失败，需要人工处理：
+            ${{ steps.merge.outputs.url }}
+
+            分支 `${{ needs.prepare.outputs.bump_branch }}` 已保留。**合回之前不要再次发布**，否则会因为版本号已存在而失败。
+        run: workflow-tooling/scripts/feishu-notify.sh
+
+      - name: Fail the run when merge back failed
+        if: ${{ steps.merge.outputs.merged == 'false' }}
+        run: exit 1
+
+      - name: Notify success
+        if: ${{ steps.merge.outputs.merged == 'true' }}
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REPOSITORY: nocobase/studio
+          TITLE: NocoBase Studio 镜像发布
+          STATUS: success
+          STATUS_TEXT_SUCCESS: 发布成功
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TAG_LIST: ${{ needs.prepare.outputs.tags }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          CHANNEL: ${{ inputs.channel }}
+          SOURCE_BRANCH: ${{ needs.prepare.outputs.source_branch }}
+          COMMIT: ${{ needs.prepare.outputs.commit }}
+          NEXT: ${{ needs.prepare.outputs.next_version }}
+          LATEST_REASON: ${{ needs.prepare.outputs.latest_reason }}
+        run: |
+          tag_list=
+          while IFS= read -r tag; do
+            if [ -n "$tag" ]; then tag_list="${tag_list:+${tag_list} }\`${tag}\`"; fi
+          done <<< "$TAG_LIST"
+          CONTENT=$(printf '%s\n' \
+            "版本 **${VERSION}** 已发布（channel \`${CHANNEL}\`，来自 \`${SOURCE_BRANCH}\` 的 \`${COMMIT:0:7}\`）。" \
+            "" \
+            "推送的标签：${tag_list}" \
+            "latest：${LATEST_REASON}" \
+            "" \
+            "\`docker pull ${REGISTRY}/${IMAGE_REPOSITORY}:${VERSION}\`" \
+            "" \
+            "已打 git tag \`v${VERSION}\`，\`${SOURCE_BRANCH}\` 的版本号已改为 \`${NEXT}\`。")
+          export CONTENT
+          workflow-tooling/scripts/feishu-notify.sh
+
+  # Covers failures in every job; a failed merge back is notified by the release job itself.
+  notify-failure:
+    name: Notify release failure
+    needs: [prepare, image, manifest, release]
+    if: >-
+      always() && !cancelled() && !inputs.dry_run
+      && needs.release.outputs.merged != 'false'
+      && (needs.prepare.result == 'failure' || needs.image.result == 'failure' || needs.manifest.result == 'failure'
+        || needs.release.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+          persist-credentials: false
+
+      # What already happened decides what needs attention: a pushed image or tag cannot be released again under the
+      # same version.
+      - name: Notify failure
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REPOSITORY: nocobase/studio
+          TITLE: NocoBase Studio 镜像发布失败
+          STATUS: failure
+          STATUS_TEXT_FAILURE: 发布中断
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          CHANNEL: ${{ inputs.channel }}
+          MANIFEST_RESULT: ${{ needs.manifest.result }}
+          TAGGED: ${{ needs.release.outputs.tagged }}
+        run: |
+          if [ "$TAGGED" = "true" ]; then
+            state="镜像已推送，git tag \`v${VERSION}\` 已打，但版本号加一没有完成，需要手动把 studio 的版本号改成下一个版本。"
+          elif [ "$MANIFEST_RESULT" = "success" ]; then
+            state="镜像已推送到私有源，但 git tag \`v${VERSION}\` 没有打上，版本号也没有加一，需要手动补上。"
+          else
+            state="镜像标签没有推送（按 digest 推送的单平台镜像可能已经上传，不影响重新发布）。修复后可以重新发布同一个版本。"
+          fi
+          CONTENT=$(printf '%s\n' \
+            "Studio ${VERSION:+**${VERSION}** }发布中断（channel \`${CHANNEL}\`），请查看 Actions 日志确认失败阶段。" \
+            "" \
+            "$state")
+          export CONTENT
+          scripts/feishu-notify.sh
