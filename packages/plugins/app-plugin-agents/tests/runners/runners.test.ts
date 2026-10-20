@@ -4,7 +4,7 @@ import {
 } from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import type { RunnerNotice } from '../../server/tokens.js';
+import type { AgentsNotice } from '../../server/tokens.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
 const registration = (token: string) => ({
@@ -31,6 +31,505 @@ describe('runners', () => {
   let h: Harness;
   afterEach(async () => {
     await h?.close();
+  });
+
+  it('revokes every prior registration and key for the same owner, name and host', async () => {
+    h = await createHarness();
+    const register = async (owner: string, overrides = {}) => {
+      const token = await h.services.runners.createRegistrationToken(owner, {});
+      return h.services.runners.register({
+        ...registration(token.token),
+        features: [],
+        tools: [],
+        ...overrides,
+      });
+    };
+    const otherOwner = await register('bob');
+    const otherHost = await register('alice', { hostname: 'other.local' });
+    const otherName = await register('alice', { name: 'other' });
+    const old = await register('alice');
+    const runId = await h.enqueue(await h.createAgent());
+    await h.services.runners.update(old.runnerId, { trust: 'team' });
+    // Install a usable tool before the old runtime claims work.
+    await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: old.runnerKey,
+      body: heartbeat,
+    });
+    const claimed = await h.request('POST', '/agents/runners/claim', {
+      runnerKey: old.runnerKey,
+      body: { free: 1 },
+    });
+    expect(claimed.body.data.runs[0].run.id).toBe(runId);
+    const fresh = await register('alice');
+    expect(fresh.runnerId).not.toBe(old.runnerId);
+    expect((await h.services.runners.get(old.runnerId)).status).toBe('revoked');
+    for (const request of ['/heartbeat', '/claim']) {
+      const refused = await h.request('POST', `/agents/runners${request}`, {
+        runnerKey: old.runnerKey,
+        body: request === '/heartbeat' ? heartbeat : { free: 1 },
+      });
+      expect(refused.status).toBe(401);
+      expect(refused.body.error.reason).toBe('RUNNER_REVOKED');
+    }
+    await h.services.sweeper.sweep();
+    expect((await h.services.runs.get(runId)).status).toBe('queued');
+    for (const kept of [otherOwner, otherHost, otherName, fresh])
+      expect((await h.services.runners.get(kept.runnerId)).status).toBe(
+        'online',
+      );
+  });
+
+  it('repeatedly replaces the current registration without changing already revoked records', async () => {
+    h = await createHarness();
+    const register = async () => {
+      const token = await h.services.runners.createRegistrationToken(
+        'alice',
+        {},
+      );
+      return h.services.runners.register({
+        ...registration(token.token),
+        features: [],
+        tools: [],
+      });
+    };
+    const first = await register();
+    h.clock.advance(1000);
+    const second = await register();
+    const revoked = await h.services.runners.get(first.runnerId);
+    h.clock.advance(1000);
+    const third = await register();
+    expect(await h.services.runners.get(first.runnerId)).toEqual(revoked);
+    for (const old of [first, second]) {
+      expect((await h.services.runners.get(old.runnerId)).status).toBe(
+        'revoked',
+      );
+      await expect(
+        h.services.runners.authenticate(old.runnerKey),
+      ).rejects.toMatchObject({
+        code: 'RUNNER_REVOKED',
+      });
+    }
+    expect((await h.services.runners.authenticate(third.runnerKey)).id).toBe(
+      third.runnerId,
+    );
+  });
+
+  it('cleans up multiple active records and all their keys on the next registration', async () => {
+    h = await createHarness();
+    const register = async (name = 'laptop') => {
+      const token = await h.services.runners.createRegistrationToken(
+        'alice',
+        {},
+      );
+      return h.services.runners.register({
+        ...registration(token.token),
+        name,
+        features: [],
+        tools: [],
+      });
+    };
+    const first = await register();
+    const second = await register('temporary');
+    // Reproduce the records simultaneous registrations can leave behind without relying on a race.
+    await h.database
+      .connection()
+      .repository('agRunners')
+      .updateMany({
+        filter: { id: second.runnerId },
+        values: { name: 'laptop' },
+      });
+    for (const old of [first, second])
+      expect((await h.services.runners.authenticate(old.runnerKey)).id).toBe(
+        old.runnerId,
+      );
+    const fresh = await register();
+    for (const old of [first, second]) {
+      expect((await h.services.runners.get(old.runnerId)).status).toBe(
+        'revoked',
+      );
+      const keys = await h.database
+        .connection()
+        .repository('agRunnerCredentials')
+        .findMany({
+          filter: { runnerId: old.runnerId },
+        });
+      expect(keys.length).toBeGreaterThan(0);
+      for (const key of keys) expect(key.revokedAt).toBeTruthy();
+      await expect(
+        h.services.runners.authenticate(old.runnerKey),
+      ).rejects.toMatchObject({
+        code: 'RUNNER_REVOKED',
+      });
+    }
+    expect((await h.services.runners.authenticate(fresh.runnerKey)).id).toBe(
+      fresh.runnerId,
+    );
+  });
+
+  it('leaves the current runner usable when a replacement token is invalid', async () => {
+    h = await createHarness();
+    const token = await h.services.runners.createRegistrationToken('alice', {});
+    const current = await h.services.runners.register({
+      ...registration(token.token),
+      features: [],
+      tools: [],
+    });
+    await expect(
+      h.services.runners.register({
+        ...registration(token.token),
+        features: [],
+        tools: [],
+      }),
+    ).rejects.toMatchObject({ code: 'REGISTRATION_TOKEN_INVALID' });
+    const expired = await h.services.runners.createRegistrationToken(
+      'alice',
+      {},
+    );
+    h.clock.advance(11 * 60_000);
+    await expect(
+      h.services.runners.register({
+        ...registration(expired.token),
+        features: [],
+        tools: [],
+      }),
+    ).rejects.toMatchObject({ code: 'REGISTRATION_TOKEN_INVALID' });
+    expect((await h.services.runners.authenticate(current.runnerKey)).id).toBe(
+      current.runnerId,
+    );
+  });
+
+  it('advertises the protocol it speaks in every heartbeat answer', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    const beat = await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: runner.key,
+      body: heartbeat,
+    });
+    expect(beat.status).toBe(200);
+    expect(beat.body.data.protocolVersion).toBe(PROTOCOL_VERSION);
+  });
+
+  it('replaces installation and login status from heartbeats in the stored runner and page query', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    for (const tools of [
+      [],
+      [
+        {
+          kind: 'opencode',
+          version: '2.0.28',
+          path: '/first/opencode',
+          authenticated: false,
+        },
+      ],
+      [
+        {
+          kind: 'opencode',
+          version: '2.0.29',
+          path: '/first/opencode',
+          authenticated: true,
+        },
+      ],
+      [
+        {
+          kind: 'opencode',
+          version: '2.0.30',
+          path: '/second/opencode',
+          authenticated: false,
+        },
+      ],
+      [],
+    ]) {
+      const beat = await h.request('POST', '/agents/runners/heartbeat', {
+        runnerKey: runner.key,
+        body: { ...heartbeat, tools },
+      });
+      expect(beat.status).toBe(200);
+      expect((await h.services.runners.get(runner.runnerId)).tools).toEqual(
+        tools,
+      );
+      const read = await h.request(
+        'GET',
+        `/agents/runners/${runner.runnerId}`,
+        { user: 'reader', can: ['agents.agents/read'] },
+      );
+      expect(read.status).toBe(200);
+      expect(read.body.data.tools).toEqual(
+        tools.map(({ path: _path, ...tool }) => tool),
+      );
+    }
+  });
+
+  it('merges heartbeat disk readings with directory diagnostics, blocks claims while low, and resumes after recovery', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    const agent = await h.createAgent();
+    const runId = await h.enqueue(agent);
+    const disk = { freeBytes: 1, totalBytes: 1000, minFreeBytes: 100 };
+    await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: runner.key,
+      body: { ...heartbeat, disk },
+    });
+    expect(await h.services.runners.get(runner.runnerId)).toMatchObject({
+      status: 'online',
+      workspaceUsage: { disk, measuredAt: null, workspaces: [] },
+    });
+    const directory = {
+      workDir: '/work/SMP-1',
+      subjectKey: 'SMP-1',
+      lastUsedAt: h.clock.now().toISOString(),
+      unpushed: true,
+      sizeBytes: 321,
+    };
+    const report = await h.request('POST', '/agents/runners/workspaces', {
+      runnerKey: runner.key,
+      body: {
+        workspaces: [],
+        reportId: 'directory-report',
+        directories: [directory],
+        disk: { ...disk, freeBytes: 500 },
+      },
+    });
+    expect(report.status).toBe(200);
+    expect(await h.services.runners.get(runner.runnerId)).toMatchObject({
+      workspaceUsage: {
+        disk,
+        workspaces: [
+          expect.objectContaining({ sizeBytes: 321, subjectKey: 'SMP-1' }),
+        ],
+      },
+    });
+    expect(await claim(h, runner)).toEqual([]);
+    const second = await h.registerRunner();
+    const [payload] = await claim(h, second);
+    expect(payload.run.id).toBe(runId);
+    await h.request('POST', `/agents/runners/runs/${runId}/fail`, {
+      runnerKey: second.key,
+      body: { reason: 'runnerDiskFull' },
+    });
+    await h.enqueue(agent);
+    await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: runner.key,
+      body: { ...heartbeat, disk: { ...disk, freeBytes: 200 } },
+    });
+    expect(await h.services.runners.get(runner.runnerId)).toMatchObject({
+      workspaceUsage: {
+        disk: { freeBytes: 200 },
+        workspaces: [expect.objectContaining({ sizeBytes: 321 })],
+      },
+    });
+    expect(await claim(h, runner)).toHaveLength(1);
+  });
+
+  it('serves npm-only protocol 8 runners and preserves both features for protocol 9 runners', async () => {
+    h = await createHarness();
+    for (const [protocolVersion, features] of [
+      [8, ['input', 'npm']],
+      [PROTOCOL_VERSION, ['input', 'npm', 'gitCredentials']],
+    ] as const) {
+      const token = await h.services.runners.createRegistrationToken(null, {});
+      const response = await h.request('POST', '/agents/runners/register', {
+        headers: { 'x-nocobase-protocol': String(protocolVersion) },
+        body: { ...registration(token.token), protocolVersion, features },
+      });
+      expect(response.status).toBe(200);
+      expect(
+        await h.services.runners.get(response.body.data.runnerId),
+      ).toMatchObject({
+        protocolVersion,
+        features: [...features],
+      });
+      const beat = await h.request('POST', '/agents/runners/heartbeat', {
+        runnerKey: response.body.data.runnerKey,
+        headers: { 'x-nocobase-protocol': String(protocolVersion) },
+        body: { ...heartbeat, features },
+      });
+      expect(beat.status).toBe(200);
+      expect(beat.body.data.compatibility).toBeUndefined();
+    }
+  });
+
+  it('persists per-runner capabilities from heartbeats and exposes suggestions through existing visibility', async () => {
+    h = await createHarness();
+    // No agent may be given work yet, so a reader of agents is no one who may use one.
+    const agentId = await h.createAgent({ status: 'pending' });
+    const agentBefore = await h.services.agents.get(agentId);
+    const first = await h.registerRunner();
+    const other = await h.registerRunner({
+      tools: [
+        {
+          kind: 'pi',
+          authenticated: true,
+          models: [{ id: 'other-model' }],
+          modelsDetectionStatus: 'detected',
+        },
+      ],
+    });
+    const reported = {
+      kind: 'pi',
+      authenticated: true,
+      path: '/private/bin/pi',
+      models: [
+        {
+          id: 'gpt-6-sol',
+          efforts: ['high'],
+          config: { token: 'must-be-stripped' },
+        },
+      ],
+      modelsDetectedAt: '2026-10-09T10:00:00.000Z',
+      modelsDetectionStatus: 'detected',
+    };
+    const response = await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: first.key,
+      body: {
+        ...heartbeat,
+        tools: [
+          reported,
+          {
+            kind: 'claude',
+            authenticated: true,
+            modelsDetectionStatus: 'unsupported',
+          },
+        ],
+      },
+    });
+    expect(response.status).toBe(200);
+    const stored = await h.services.runners.get(first.runnerId);
+    expect(stored.tools[0]).toMatchObject({
+      models: [{ id: 'gpt-6-sol', efforts: ['high'] }],
+      modelsDetectedAt: reported.modelsDetectedAt,
+    });
+    expect(JSON.stringify(stored.tools)).not.toContain('must-be-stripped');
+    const reader = await h.request('GET', `/agents/runners/${first.runnerId}`, {
+      user: 'reader',
+      can: ['agents.agents/read'],
+    });
+    expect(reader.status).toBe(200);
+    expect(reader.body.data.tools).toEqual([
+      {
+        kind: 'pi',
+        authenticated: true,
+        models: [{ id: 'gpt-6-sol', efforts: ['high'] }],
+        modelsDetectedAt: reported.modelsDetectedAt,
+        modelsDetectionStatus: 'detected',
+      },
+      {
+        kind: 'claude',
+        authenticated: true,
+        modelsDetectionStatus: 'unsupported',
+      },
+    ]);
+    expect(reader.body.data.hostname).toBeNull();
+    expect(JSON.stringify(reader.body.data)).not.toContain('/private');
+    const denied = await h.request('GET', `/agents/runners/${first.runnerId}`, {
+      user: 'stranger',
+    });
+    expect(denied.status).toBe(404);
+    expect(
+      (await h.services.runners.get(other.runnerId)).tools[0]?.models,
+    ).toEqual([{ id: 'other-model' }]);
+    expect(
+      (
+        await h.request('POST', '/agents/runners/heartbeat', {
+          runnerKey: first.key,
+          body: {
+            ...heartbeat,
+            tools: [
+              {
+                kind: 'pi',
+                authenticated: true,
+                modelsDetectionStatus: 'failed',
+                modelsDetectionError: 'Model listing command failed',
+              },
+            ],
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (await h.services.runners.get(first.runnerId)).tools[0]?.models,
+    ).toBeUndefined();
+    expect(
+      (
+        await h.request('POST', '/agents/runners/heartbeat', {
+          runnerKey: first.key,
+          body: heartbeat,
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (await h.services.runners.get(first.runnerId)).tools[0]
+        ?.modelsDetectionStatus,
+    ).toBeUndefined();
+    expect(await h.services.agents.get(agentId)).toEqual(agentBefore);
+  });
+
+  it('discards invalid capability suggestions without disrupting registration, heartbeats or claims', async () => {
+    h = await createHarness();
+    const token = await h.services.runners.createRegistrationToken('owner', {
+      trust: 'team',
+    });
+    const reported = {
+      kind: 'claude',
+      authenticated: true,
+      models: [
+        { id: 'https://private.example/model' },
+        { id: 'sk-1' + 'x'.repeat(48) },
+        { id: 'invalid model id' },
+        {
+          id: 'claude-sonnet-4@20250514',
+          config: { token: 'must-be-stripped' },
+        },
+      ],
+      modelsDetectedAt: 'invalid-date',
+      modelsDetectionStatus: 'future-status',
+      modelsDetectionError: 'future-error',
+    };
+    const registered = await h.request('POST', '/agents/runners/register', {
+      body: { ...registration(token.token), tools: [reported] },
+    });
+    expect(registered.status).toBe(200);
+    const runnerId = registered.body.data.runnerId as string;
+    const key = registered.body.data.runnerKey as string;
+    const expected = [
+      {
+        kind: 'claude',
+        authenticated: true,
+        models: [{ id: 'claude-sonnet-4@20250514' }],
+      },
+    ];
+    expect((await h.services.runners.get(runnerId)).tools).toEqual(expected);
+    const beat = await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: key,
+      body: {
+        ...heartbeat,
+        tools: [{ ...reported, modelsDetectionStatus: 'failed' }],
+      },
+    });
+    expect(beat.status).toBe(200);
+    expect((await h.services.runners.get(runnerId)).tools).toEqual([
+      { ...expected[0], modelsDetectionStatus: 'failed' },
+    ]);
+    const runId = await h.enqueue(await h.createAgent());
+    const claimed = await h.request('POST', '/agents/runners/claim', {
+      runnerKey: key,
+      body: { free: 1 },
+    });
+    expect(claimed.status).toBe(200);
+    expect(claimed.body.data.runs).toEqual([
+      expect.objectContaining({ run: expect.objectContaining({ id: runId }) }),
+    ]);
+    expect(
+      (
+        await h.request('POST', '/agents/runners/heartbeat', {
+          runnerKey: key,
+          body: {
+            ...heartbeat,
+            tools: [{ kind: 'claude', authenticated: 'yes' }],
+          },
+        })
+      ).status,
+    ).toBe(400);
   });
 
   it('registers once with a one-time token, keeping its trust, owner and reported tools', async () => {
@@ -177,6 +676,43 @@ describe('runners', () => {
     ).toBeNull();
   });
 
+  it('keeps the variable names a runner reports it provides, names only', async () => {
+    h = await createHarness();
+    const token = await h.services.runners.createRegistrationToken('alice', {});
+    const registered = await h.request('POST', '/agents/runners/register', {
+      body: { ...registration(token.token), variables: ['PI_KEY'] },
+    });
+    const { runnerId, runnerKey } = registered.body.data as {
+      runnerId: string;
+      runnerKey: string;
+    };
+    expect((await h.services.runners.get(runnerId)).variables).toEqual([
+      'PI_KEY',
+    ]);
+    const beat = (variables?: unknown) =>
+      h.request('POST', '/agents/runners/heartbeat', {
+        runnerKey,
+        body: {
+          ...heartbeat,
+          ...(variables === undefined ? {} : { variables }),
+        },
+      });
+    expect((await beat(['ZED', 'HTTPS_PROXY', 'ZED'])).status).toBe(200);
+    expect((await h.services.runners.get(runnerId)).variables).toEqual([
+      'HTTPS_PROXY',
+      'ZED',
+    ]);
+    // A value is never a name.
+    expect((await beat(['KEY=value'])).status).toBe(400);
+    // A runner from before they were reported leaves them out: unknown.
+    await beat();
+    expect((await h.services.runners.get(runnerId)).variables).toBeNull();
+    const page = await h.request('GET', `/agents/runners/${runnerId}`, {
+      user: 'alice',
+    });
+    expect(page.body.data.variables).toBeNull();
+  });
+
   it('shows whoever sees a runner what it takes work for and what it holds', async () => {
     h = await createHarness();
     const runner = await h.registerRunner();
@@ -210,7 +746,7 @@ describe('runners', () => {
 
   it('shows the host name and tool paths to the owner, the managers of runners and those who may use an agent', async () => {
     h = await createHarness();
-    await h.createAgent({ access: 'users', userIds: ['user'] });
+    const agentId = await h.createAgent({ status: 'pending' });
     const runner = await h.registerRunner({
       tools: [
         {
@@ -232,7 +768,6 @@ describe('runners', () => {
     for (const manager of [
       await view('owner'),
       await view('admin', ['agents.runners/manage']),
-      await view('user', ['agents.runners/read']),
     ]) {
       expect(manager.hostname).toBe('host');
       expect(manager.tools).toEqual([
@@ -252,6 +787,8 @@ describe('runners', () => {
     });
     expect(list.body.data[0].hostname).toBeNull();
     expect(JSON.stringify(list.body.data)).not.toContain('/Users/alice');
+    // Once an agent may be given work, everyone signed in may use it, and sees where it runs.
+    await h.enableAgent(agentId);
     const usersList = await h.request('GET', '/agents/runners', {
       user: 'user',
       can: ['agents.runners/read'],
@@ -290,10 +827,10 @@ describe('runners', () => {
 
   it('says whether the application gives runners jobs', async () => {
     h = await createHarness();
-    await h.registerRunner();
+    const { runnerId: id } = await h.registerRunner();
     const offers = async () =>
-      (await h.request('GET', '/agents/runners', { user: 'owner' })).body
-        .data[0].offersJobs;
+      (await h.request('GET', `/agents/runners/${id}`, { user: 'owner' })).body
+        .data.offersJobs;
     expect(await offers()).toBe(false);
     h.services.jobs.register('preview.build', { executor: 'build' });
     expect(await offers()).toBe(true);
@@ -311,7 +848,7 @@ describe('runners', () => {
 
   it('keeps a runner of an unsupported protocol connected as upgrade_required, gives it no work, and tells its owner once', async () => {
     h = await createHarness();
-    const notices: RunnerNotice[] = [];
+    const notices: AgentsNotice[] = [];
     h.services.events.on('notice', (event) => notices.push(event.notice));
     const cleared: unknown[] = [];
     h.services.events.on('notice.cleared', (event) =>

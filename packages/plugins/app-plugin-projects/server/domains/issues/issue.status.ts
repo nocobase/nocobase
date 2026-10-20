@@ -1,15 +1,12 @@
 /**
- * Moving an issue to another status: the workflow's machine and rules (`server/lifecycle`), run in the caller's
- * transaction. The lifecycle's refusals become this plugin's errors: an unknown status is 400 `INVALID_STATUS`, a move
- * nobody allowed 400 `TRANSITION_NOT_ALLOWED`, and a guard's refusal 400 with the guard's own code (such as
- * `CHECKLIST_INCOMPLETE`).
+ * Moving an issue to another status: the fixed statuses' machine and rules (`domains/statuses`, `server/lifecycle`),
+ * run in the caller's transaction. The lifecycle's refusals become this plugin's errors: an unknown status is 400
+ * `INVALID_STATUS` and a move nobody allowed 400 `TRANSITION_NOT_ALLOWED`.
  *
- * Entry actions run each in a savepoint, with their events kept only when they succeed; one that fails is recorded as
- * `stage_action_failed` and the move stands. What the rules other plugins contribute did is recorded too
- * (`stage_action_applied`, or `stage_action_skipped` with its reason, `unavailable` when the rule's plugin is gone).
+ * Entry actions (telling the owner) run each in a savepoint, with their events kept only when they succeed; one that
+ * fails is recorded as `stage_action_failed` and the move stands.
  */
 import type { Issue } from '../../../shared/issues.js';
-import { STATUS_RULE_TYPES } from '../../../shared/workflows.js';
 import type { ActivityRecorder } from '../../kernel/activity.js';
 import type { Actor } from '../../kernel/actor.js';
 import { conflict, invalid } from '../../kernel/errors.js';
@@ -27,9 +24,8 @@ export interface IssueMove {
   readonly catalog: StatusCatalog;
   readonly to: string;
   readonly actor: Actor;
-  /** The move was approved already. */
-  readonly approved?: boolean;
-  /** The workflow event the move answers: only that event's transitions are taken. */
+  readonly sourceActor?: Actor;
+  /** The status event the move answers: only that event's transitions are taken. */
   readonly event?: string;
   /** Writes the change; runs only when the move may happen now. */
   readonly write: () => Promise<void>;
@@ -65,11 +61,12 @@ export async function moveIssue(
       {
         from: issue.statusKey,
         to,
-        actor: { type: actor.type, id: actor.id },
+        actor,
+        sourceActor: input.sourceActor ?? actor,
         subject: issue,
         context: tx,
-        // The system's own moves (a merged pull request, say) never wait for a person.
-        approved: input.approved ?? actor.type === 'system',
+        // The fixed statuses never wait for an approval.
+        approved: true,
         ...(input.event === undefined ? {} : { event: input.event }),
         isolate: isolate(tx),
       },
@@ -88,29 +85,11 @@ export async function moveIssue(
     );
   }
   if (result.outcome === 'moved')
-    for (const report of result.entry) {
-      if (
-        report.status !== 'failed' &&
-        !(STATUS_RULE_TYPES as readonly string[]).includes(report.rule)
-      )
-        await deps.activity.record(tx.conn, {
-          issueId: issue.id,
-          actor,
-          action:
-            report.status === 'applied'
-              ? 'stage_action_applied'
-              : 'stage_action_skipped',
-          details: {
-            ...report.details,
-            statusKey: to,
-            rule: report.rule,
-            ...(report.reason ? { reason: report.reason } : {}),
-          },
-        });
+    for (const report of result.entry)
       if (report.status === 'failed')
         await deps.activity.record(tx.conn, {
           issueId: issue.id,
-          actor,
+          actor: input.sourceActor ?? actor,
           action: 'stage_action_failed',
           details: {
             statusKey: to,
@@ -121,6 +100,5 @@ export async function moveIssue(
                 : String(report.error),
           },
         });
-    }
   return result;
 }

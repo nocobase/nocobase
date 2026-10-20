@@ -1,5 +1,4 @@
 ---
-"@nocobase/app-template-hub": patch
 "@nocobase/create-app": patch
 ---
 

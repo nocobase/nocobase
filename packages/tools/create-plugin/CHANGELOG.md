@@ -1,5 +1,108 @@
 # @nocobase/create-plugin
 
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+- Updated dependencies [7afd595]
+  - @nocobase/dev-config@0.1.0-beta.24
+
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 693e43d: Update agent guidance to refer to the renamed `nocobase-app-plugin-development` Skill.
+
+## 0.1.0-beta.21
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/cli-envelope@0.1.0-beta.1
+  - @nocobase/dev-config@0.1.0-beta.22
+
+## 0.1.0-beta.20
+
+### Patch Changes
+
+- 71d7607: Tell agents that a merged migration is never edited, not even reformatted, and that every later schema change, a fix to an earlier migration included, goes in a new migration that sorts after it. The `nocobase-app-development` Skill gains a "Migrations change incrementally" section, and the `AGENTS.md` of a generated plugin states the same rule.
+
+## 0.1.0-beta.19
+
+### Minor Changes
+
+- c796cb9: Remove the Settings and Dev route surfaces. `@nocobase/app-client` no longer exports `defineSettingsRoutes()`, `defineDevRoutes()`, `isAppClientSettingsRouteGroup()`, `isAppClientDevRouteGroup()` or their definition, contribution and registered-route types, and the resolved runtime no longer carries `settingsRouteTree`, `devRouteTree`, `settings`, `settingGroups`, `devRoutes` or `devRouteGroups`. `AppClientSettingsRouteNavigation` is renamed `AppClientRouteNavigation` and `AppClientSettingIcon` is renamed `AppClientRouteIcon`. A contribution to any parent other than `app` now fails registration with a message that names `defineAppRoutes()`. Plugins contribute no settings or dev pages; an application that wants a configuration page declares it with `defineAppRoutes()` in its own navigation, for example under a Settings group.
+
+  The default and examples templates drop the settings layout, the `/settings/*` route, the dev route plumbing, and the Settings and Inbox buttons in the header; the `/inbox` page and the inbox block stay. The examples template no longer registers `@nocobase/app-plugin-departments-example`, which is removed. Upgrading an application means removing `defineSettingsRoutes([])` from `client/routes.ts`, the `settingsRouteTree` and `devRouteTree` props passed to `AppRouter`, and any settings layout it kept, and moving its own settings pages to `defineAppRoutes()`. Every package that depends on or peers with `@nocobase/app-client` is released again so that its published range accepts `3.0.0-beta.0`.
+
+### Patch Changes
+
+- c796cb9: Remove the AI employee packages from the repository
+
+  `@nocobase/app-plugin-ai-employee`, `@nocobase/ai-employee` and `@nocobase/app-plugin-ai-employee-example` were already deprecated and no template installed them; they are now deleted and will not be released again. The Default and Examples templates drop `@nocobase/ai-employee-avatars`, which only the plugin's avatars used.
+
+  Generated plugins' `AGENTS.md` and the copies shipped with existing plugins no longer list `@nocobase/ai-employee` among the identity-sensitive packages. The HTTP API references in the application development Skill use other plugins for their examples, and the upgrade Skill tells an application that still depends on the removed packages to review their usage before removing them, because the runtime will move past what their peer ranges accept.
+
+  `pnpm build` no longer copies `ai/skills` into `dist/ai/skills`. The AI employee plugin was the only reader of that directory; an application that keeps Skills there for another purpose has to copy them itself, for example from a build hook.
+
+- c796cb9: Remove NocoBase Hub. `@nocobase/app-plugin-hub`, `@nocobase/app-template-hub` and `@nocobase/hub-cli` are no longer published, and every package that offered or described the Hub drops it.
+
+  Breaking for `@nocobase/app-installer`: it installs, upgrades and rolls back from a deployment archive only. `install --template`, `install --keep-source`, `upgrade --to`, `upgrade --rebuild`, `upgrade --keep-source` and `status --offline` are removed, as are the `latest` and `updateAvailable` members of the `status` result and the `rebuilt` and `notes` members of the `upgrade` result. An installation an earlier version built from the published Hub template is refused with `STATE_UNSUPPORTED`; manage it with the app-installer version that installed it. The error codes that only a template build reported (`PNPM_MISSING`, `PNPM_UNSUPPORTED`, `REGISTRY_UNREACHABLE`, `VERSION_NOT_FOUND`, `DISK_LOW`, `CREATE_FAILED`, `DRIVER_INSTALL_FAILED` and `BUILD_FAILED`) are no longer produced, and pm2 always kills the process tree of an application it stops.
+
+  Breaking for `@nocobase/create-app`: `--template hub` is no longer a template name, and a generated application no longer gets a `.env`.
+
+  The Default template no longer depends on `@nocobase/hub-cli`, so an application generated from it has no `pnpm nocobase hub` commands. An application upgraded from an earlier version that published to a Hub removes the dependency with `pnpm nocobase package remove @nocobase/hub-cli` and deletes `.nocobase/hub.json`; the `nocobase-app-upgrade` Skill describes the steps. The application Skills, the plugins' documentation and the in-app test notification text no longer mention the Hub.
+
+- 98e79a5: Remove the Workflow plugin from the repository
+
+  `@nocobase/app-plugin-workflow` was already disabled in every template; it is now deleted and will not be released again. Record lifecycles built with `@nocobase/lifecycle` take its place for business processes, and the Workflow pages of the documentation now describe them.
+
+  Breaking for the Default and Examples templates: they no longer depend on `@nocobase/app-plugin-workflow` and drop `server/config/workflow.ts`, the `workflows` directory in `files`, and the TypeScript and ESLint settings for workflow packages. The Examples template also drops its flow examples: its `workflows` directory, the quotation review task API under `/api/quotationReviewTasks`, the waiting-task pages under `/workflow/waiting-tasks`, and the two schedules that ran the analytics report and the scheduled test flow. A new migration, `202610100001_drop_review_tasks_and_daily_reports`, drops the `quotationReviewTasks` and `exampleDailyReports` tables nothing uses any more. Workflow rows an existing database already holds stay where they are, since no remaining plugin owns them. An application that still uses the plugin keeps its dependency on the last published version, whose peer ranges will stop accepting the runtime as it moves on.
+
+  The scheduler no longer describes a `workflow` target or ships labels for it; every schedule points at a target the application or a plugin registers with `registerTarget()`, and an unlabelled target type or reason is shown as it is. The application development, deployment and upgrade Skills no longer route approvals to the plugin, describe its wait node, its Artifacts after a production build or its pages, and their examples use other plugins. The command help of `@nocobase/app-cli`, the i18n Skill, and the plugin scaffold's guidance use other plugins as examples too.
+
+- Updated dependencies [c796cb9]
+- Updated dependencies [98e79a5]
+  - @nocobase/dev-config@0.1.0-beta.21
+
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+- Updated dependencies [a6758ec]
+  - @nocobase/dev-config@0.1.0-beta.20
+
+## 0.1.0-beta.17
+
+### Minor Changes
+
+- 8a05e66: Generated plugins group their tests by the source directory they cover: `tests/client/`, `tests/server/`, `tests/database/` and `tests/cli/`, with `vitest.config.ts` choosing jsdom or Node by directory. The sample tests move and are renamed accordingly (`tests/database.test.ts` is now `tests/database/migrations.test.ts`, `tests/cli.test.ts` is `tests/cli/info.test.ts`). A plugin without client code now gets a `vitest.config.ts` too, running its tests on the shared Node preset, whose 30-second timeouts replace Vitest's 5-second default. The generated `AGENTS.md` describes the layout. The JSON plan now attributes `cli/` files and the database test to their `cli` and `database` capabilities. Existing plugins are unaffected.
+
+### Patch Changes
+
+- bde3b87: Prepare every plugin with client code for shadcn installation using package-local imports, a generation stylesheet, and the NocoBase registry configuration, without requiring the registry publishing capability.
+
+  Align the Registry example's shadcn setup with source and published package imports so generated components stay inside the plugin.
+
+- dc91aab: Use package-local `#` subpath imports in registry recipes, examples and application templates. Configure the same prefixes in `components.json` and `package.json#imports`, and remove build-tool aliases for these paths. Generated plugins resolve development sources locally and published imports from `dist/client`.
+
+  Existing applications and plugins should merge the new `imports` mappings and shadcn prefixes before installing the updated registry recipes. Directory entry points need an explicit mapping to their index file. Existing customized copies remain application-owned and are not overwritten.
+
+- Updated dependencies [bb8484b]
+  - @nocobase/dev-config@0.1.0-beta.19
+
 ## 0.1.0-beta.16
 
 ### Patch Changes

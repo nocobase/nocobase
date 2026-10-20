@@ -3,12 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import {
-  APP_HOST_PORT,
-  SOURCES,
-  runArchiveSmoke,
-  runTemplateSmoke,
-} from './smoke-app-installer.mjs';
+import { runArchiveSmoke } from './smoke-app-installer.mjs';
 import { isolateWorkspacePackages } from './smoke-registry-config.mjs';
 import { dialects, readMainConfig } from './smoke-database-config.mjs';
 
@@ -26,13 +21,12 @@ const legacyLabel = 'nocobase.local-registry';
 const help = `Test the unreleased checkout as published packages
 
 pnpm unreleased:prepare [--port 4873] [--reset]
-pnpm unreleased:create NAME [--template default|examples|hub] [--dialect sqlite]
+pnpm unreleased:create NAME [--template default|examples] [--dialect sqlite]
   # --dialect only decides which configuration commands are printed afterwards
   [--output-dir /parent/directory] [--json] [--no-install]
-pnpm unreleased:smoke [--template default|examples|hub] [--dialect sqlite]
+pnpm unreleased:smoke [--template default|examples] [--dialect sqlite]
   [--config /absolute/test.yml] [--timeout 420] [--workdir /empty/directory]
-pnpm unreleased:installer-smoke [--source archive|template] [--hub-port 13200]
-  [--app-port 13100] [--workdir /empty/directory]
+pnpm unreleased:installer-smoke [--app-port 13100] [--workdir /empty/directory]
 pnpm unreleased:clean
 eval "$(pnpm -s unreleased:env)"
 
@@ -42,11 +36,9 @@ pnpm and npm commands in the current shell — and an agent started from it — 
 the snapshot too, instead of the registry in your own pnpm and npm configuration.
 Use --reset to remove the previous session and clear its snapshot before preparing again.
 Smoke runs test/dev/build/start and retains applications and logs outside the repository.
-Installer-smoke runs the snapshot's app-installer against both of its sources, or the one
---source names: it creates a default application, builds its deployment archive, installs,
-upgrades and rolls it back; and it installs a Hub from its template, then upgrades and rolls
-it back. It needs pm2 on PATH and, for the Hub, the App Host port 13010 free; it runs pm2
-with its own PM2_HOME, stops it afterwards, and retains the installations and their logs
+Installer-smoke runs the snapshot's app-installer: it creates a default application, builds
+its deployment archive, installs, upgrades and rolls it back. It needs pm2 on PATH; it runs
+pm2 with its own PM2_HOME, stops it afterwards, and retains the installation and its logs
 outside the repository.
 A non-SQLite smoke test requires --config pointing to a dedicated test database;
 application migrations and seeds may modify it. Clean removes the registry and its
@@ -66,7 +58,6 @@ export function parseArgs(argv) {
   const options = {
     action,
     port: 4873,
-    'hub-port': 13200,
     'app-port': 13100,
     template: 'default',
     dialect: 'sqlite',
@@ -75,7 +66,7 @@ export function parseArgs(argv) {
   const allowed = {
     prepare: ['port'],
     smoke: ['template', 'dialect', 'config', 'timeout', 'workdir'],
-    'installer-smoke': ['source', 'hub-port', 'app-port', 'workdir'],
+    'installer-smoke': ['app-port', 'workdir'],
     create: ['template', 'dialect', 'output-dir'],
     env: [],
     clean: [],
@@ -109,7 +100,7 @@ export function parseArgs(argv) {
     throw new Error(
       'Provide an application name using lowercase letters, digits, dots, dashes or underscores.',
     );
-  for (const key of ['port', 'hub-port', 'app-port', 'timeout']) {
+  for (const key of ['port', 'app-port', 'timeout']) {
     options[key] = Number(options[key]);
     if (
       !Number.isInteger(options[key]) ||
@@ -118,15 +109,7 @@ export function parseArgs(argv) {
     )
       throw new Error(`Invalid ${key}.`);
   }
-  if (options['hub-port'] === APP_HOST_PORT)
-    throw new Error(
-      `--hub-port ${APP_HOST_PORT} is where the Hub's App Host listens; choose another port.`,
-    );
-  if (options.source !== undefined && !SOURCES.includes(options.source))
-    throw new Error('--source takes archive or template.');
-  if (options['app-port'] === options['hub-port'])
-    throw new Error('--app-port and --hub-port must differ.');
-  if (!['default', 'examples', 'hub'].includes(options.template))
+  if (!['default', 'examples'].includes(options.template))
     throw new Error('Unknown template.');
   if (!dialects.includes(options.dialect)) throw new Error('Unknown dialect.');
   if (action === 'smoke' && options.dialect !== 'sqlite' && !options.config)
@@ -443,7 +426,7 @@ export function createManually(args, cwd = process.cwd()) {
       template = args[i].slice('--template='.length);
     else forwarded.push(args[i]);
   }
-  if (!['default', 'examples', 'hub'].includes(template))
+  if (!['default', 'examples'].includes(template))
     throw new Error('Unknown template.');
   const env = registryEnv(state);
   assertRegistries(state, env, cwd);
@@ -622,35 +605,22 @@ async function main() {
       const env = { ...registryEnv(state), PM2_HOME: pm2Home };
       assertRegistries(state, env);
       const command = ['npx', '--yes', `@nocobase/app-installer@${installer}`];
-      const sources = options.source ? [options.source] : SOURCES;
       console.log(`Installations and logs: ${directory}`);
       try {
-        if (sources.includes('archive')) {
-          // A default application from the snapshot, built for this machine: what a user deploys without a Hub.
-          createManually(
-            ['app', '--template', 'default', '--json'],
-            fs.realpathSync(directory),
-          );
-          const project = path.join(directory, 'app');
-          run('pnpm', ['build', '--tar'], { cwd: project, env });
-          runArchiveSmoke({
-            root: path.join(directory, 'crm'),
-            port: options['app-port'],
-            archive: path.join(project, 'storage/exports/dist.tar.gz'),
-            installer: command,
-            env,
-          });
-          console.log('Archive smoke test passed.');
-        }
-        if (sources.includes('template')) {
-          runTemplateSmoke({
-            root: path.join(directory, 'hub'),
-            port: options['hub-port'],
-            installer: command,
-            env,
-          });
-          console.log('Hub template smoke test passed.');
-        }
+        // A default application from the snapshot, built for this machine: what a user deploys.
+        createManually(
+          ['app', '--template', 'default', '--json'],
+          fs.realpathSync(directory),
+        );
+        const project = path.join(directory, 'app');
+        run('pnpm', ['build', '--tar'], { cwd: project, env });
+        runArchiveSmoke({
+          root: path.join(directory, 'crm'),
+          port: options['app-port'],
+          archive: path.join(project, 'storage/exports/dist.tar.gz'),
+          installer: command,
+          env,
+        });
         console.log(
           `Installer smoke test passed. Installations and logs retained: ${directory}`,
         );

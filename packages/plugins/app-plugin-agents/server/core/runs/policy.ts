@@ -43,16 +43,32 @@ export function toolPolicyFor(
 }
 
 /** Failures of the runner itself retry at once, elsewhere; the tool's own failures back off. */
-const IMMEDIATE: readonly FailureReason[] = [
-  'runnerOffline',
-  'leaseExpired',
-  'startTimeout',
-];
+const IMMEDIATE: readonly FailureReason[] = ['runnerOffline', 'leaseExpired'];
 
-/** How long before attempt `attempt + 1` may start, after attempt `attempt` failed for `reason`. */
-export function retryDelayMs(reason: FailureReason, attempt: number): number {
+/** The first back-off of a failed attempt, unless `agents.runs.retryBaseDelayMs` sets another. */
+export const DEFAULT_RETRY_BASE_DELAY_MS: number = 30_000;
+
+/**
+ * How long before attempt `attempt + 1` may start, after attempt `attempt` failed for `reason`: `baseMs`, doubling up
+ * to ten minutes.
+ */
+export function retryDelayMs(
+  reason: FailureReason,
+  attempt: number,
+  baseMs: number = DEFAULT_RETRY_BASE_DELAY_MS,
+): number {
   if (IMMEDIATE.includes(reason)) return 0;
-  return Math.min(10 * 60_000, 30_000 * 2 ** Math.max(0, attempt - 1));
+  return Math.min(10 * 60_000, baseMs * 2 ** Math.max(0, attempt - 1));
+}
+
+/** `agents.runs.retryBaseDelayMs`, checked: the default when unset. */
+export function retryBaseDelayMs(value: unknown): number {
+  if (value === undefined) return DEFAULT_RETRY_BASE_DELAY_MS;
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)
+    throw new Error(
+      'agents.runs.retryBaseDelayMs must be a non-negative integer.',
+    );
+  return value;
 }
 
 /** Claims that failed to assemble a run's payload before the run fails `setupFailed`. */
@@ -60,3 +76,15 @@ export const MAX_CLAIM_FAILURES: number = 3;
 
 /** How long a run token lives at most; it is revoked as soon as the run leaves its runner. */
 export const RUN_TOKEN_TTL_MS: number = 7 * 24 * 60 * 60_000;
+
+/**
+ * How long a run may keep waiting for its subject's working directory while another live run holds it
+ * (`workspaceBusy`), counted from the first of its consecutive attempts that found it held. Such waits do not use up
+ * the run's attempts, so this is what bounds them; past it the run fails `workspaceBusy`.
+ */
+export const WORKSPACE_WAIT_LIMIT_MS: number = 6 * 60 * 60_000;
+
+/** How long before the next try after the `busyAttempts`-th consecutive attempt that found the workspace held. */
+export function workspaceBusyDelayMs(busyAttempts: number): number {
+  return Math.min(2 * 60_000, 30_000 * 2 ** Math.max(0, busyAttempts - 1));
+}

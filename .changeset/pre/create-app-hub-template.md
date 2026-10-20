@@ -1,6 +1,5 @@
 ---
 '@nocobase/create-app': minor
-'@nocobase/app-template-hub': patch
 '@nocobase/app-template-default': patch
 ---
 

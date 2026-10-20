@@ -1,0 +1,100 @@
+---
+title: 'Language switching'
+description: 'Switch the interface language, add a language, and set the default in a NocoBase 3 application.'
+keywords: 'NocoBase 3,internationalization,i18n,language switching,default language,locale'
+---
+
+# Language switching
+
+A NocoBase 3 application supports multiple languages out of the box, with English and Chinese built in.
+
+Switch between the built-in languages, or ask a Coding Agent to add a language or change the default.
+
+## Switching the language
+
+Open the account menu at the top right, choose **Language**, and pick one.
+
+The switch takes effect immediately without a reload, and the interface a plugin contributes follows along.
+
+The choice is stored in the current browser and survives a refresh, but does not sync to another device with the account. Switching to Chinese changes nothing for anyone else, and does not change the application's default language.
+
+## Adding a language
+
+Add interface and server-message translations when users need another language for the same business application. This example adds Spanish.
+
+The languages an application offers come from its own locale files — **adding a locale file is adding a language**.
+
+Those files live on both sides: `client/locales/` decides which languages appear in the switcher, and `server/locales/` decides which ones the server can answer in. Keeping the two aligned is recommended. A language available only on the client can still be selected: the interface switches, the server uses English, and an informational toast explains the fallback.
+
+Tell a Coding Agent which language to support and where to use it. For example:
+
+```text
+Add Spanish to my application. Translate the interface and server messages, and add Spanish to the language menu.
+```
+
+It creates the locale files, registers them in the loader map, and checks that both sides agree. Refresh the page afterwards and the switcher has a new entry.
+
+If a language ended up on only one side, this command reports it:
+
+```bash
+pnpm nocobase locales check
+```
+
+## Setting the default language
+
+The default language is what **someone who has never chosen one** sees the first time they open the application. Set it in `config.yml`:
+
+```yaml
+i18n:
+  defaultLocale: zh-CN
+```
+
+It is `en-US` when unset. Refresh the page after the updated configuration takes effect.
+
+In both development and production, the server sets the HTML `lang` attribute to this default before sending the page. The client then synchronizes `lang` and text direction with its resolved language, including a previously saved choice, and keeps them updated when the language changes. Changing the deployment's default language does not require rebuilding the client.
+
+:::tip Anyone who has already chosen is unaffected
+
+The default applies only to a browser that has made no choice. If you change this setting and your own interface stays as it was, you most likely switched language by hand at some point — try another browser, or clear the site data.
+
+:::
+
+The default language has a second job: text with no translation in the language in use falls back to it.
+
+## Languages a plugin has
+
+A plugin has not necessarily translated every language your application offers. What it has not translated falls back in this order:
+
+```text
+the language in use  →  the application's default  →  English
+```
+
+For example: the application defaults to Chinese, you added Spanish, and a plugin translated only Chinese and English. A Spanish-speaking user sees your own text in Spanish and that plugin's text in Chinese.
+
+To put a plugin's wording in your own words, ask a Coding Agent to follow the application's internationalization guidance and override it in your application's locale files.
+
+## Common questions
+
+### I switched language, but part of the interface is still English
+
+That text may not have a translation in the selected language. It falls back to the application default, then English. Ask a Coding Agent to add the application translation or override the corresponding plugin text.
+
+### I added a locale file, but the switcher does not list it
+
+Check that you added it under `client/locales/` — that is the side the switcher reads. Then run `pnpm nocobase locales check` to see whether both sides agree. A new locale file also needs the dev server restarted.
+
+### The interface switched, but what the server returns is still in the old language
+
+Usually the language was added to `client/locales/` alone. Without the corresponding server translations, the server falls back to English. Ask a Coding Agent to add the language file under `server/locales/`.
+
+### Two tabs on the same account affect each other
+
+The server stores the language on the session, and tabs sharing an account share one session, so the later switch overwrites the earlier. The interface itself is unaffected — each tab shows its own language. What is affected is what the server produces, such as error messages. This is a known limitation.
+
+## Northstar example
+
+Dispatch staff can switch the same workspace to Chinese while overseas colleagues use English. Customer names, destinations, and other business values remain unchanged.
+
+![The same transport workspace in Chinese](.././assets/northstar-workspace-cn.png)
+
+**The same business interface can switch to Chinese without changing its records.**

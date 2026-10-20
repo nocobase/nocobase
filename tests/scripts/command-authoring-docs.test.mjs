@@ -11,7 +11,7 @@ import test from 'node:test';
 const repoRoot = path.resolve(import.meta.dirname, '..', '..');
 const copies = [
   'packages/app/app-skills/skills/nocobase-app-development/references/commands.md',
-  'skills/nocobase-plugin-development/references/cli.md',
+  'skills/nocobase-app-plugin-development/references/cli.md',
 ];
 const START = '<!-- command-authoring:start -->';
 const END = '<!-- command-authoring:end -->';

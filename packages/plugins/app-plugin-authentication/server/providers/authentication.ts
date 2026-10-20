@@ -1,3 +1,4 @@
+import { mailerToken } from '@nocobase/app-server/mailer';
 import { joinBasePath, normalizeBasePath } from '@nocobase/app-server/support';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
@@ -26,6 +27,7 @@ import {
 import {
   createAuthentication,
   type Auth,
+  type AuthRequestOptions,
   type CreateAuthenticationOptions,
 } from '../auth.js';
 import {
@@ -93,10 +95,13 @@ export class AuthenticationProvider<
             try {
               const session = await container
                 .resolve(authenticationToken)
-                .getSession(request.headers);
+                .getSession(request.headers, {
+                  disableRefresh: true,
+                  disableCookieCache: true,
+                });
               // An issued credential, such as an agent's run token, is not the person's own connection.
               return session && !session.credential
-                ? { userId: session.user.id }
+                ? { userId: session.user.id, sessionId: session.session.id }
                 : undefined;
             } catch (error) {
               // A refused credential (Better Auth APIError) is not signed in, here.
@@ -130,6 +135,10 @@ export class AuthenticationProvider<
         this.app.config.get<AppIdentityConfig>('app')?.publicBasePath ?? '',
       ),
     );
+  }
+
+  public override async shutdown(): Promise<void> {
+    await this.app.container.resolveIfCreated(authenticationToken)?.close();
   }
 
   private createAuthentication(container: ServiceResolver): Auth {
@@ -176,6 +185,20 @@ export class AuthenticationProvider<
       secondaryStorage: createAuthStorage(caching),
       appName: app.name,
       ...authConfig,
+      passwordResetServices: {
+        mailer: container.has(mailerToken)
+          ? container.resolve(mailerToken)
+          : undefined,
+        increment: (key) =>
+          caching
+            .getCounter({ namespace: 'password-reset-rate-limit' })
+            .increment(key, 1, 60_000),
+        report: (category) =>
+          logger?.warn(
+            { category },
+            'Password reset submission did not complete.',
+          ),
+      },
       logger:
         authConfig.logger ??
         (logger
@@ -217,8 +240,14 @@ export class AuthenticationProvider<
       },
     });
     const originalAuthHandler = auth.handler.bind(auth);
-    auth.handler = (request: Request): Promise<Response> =>
-      originalAuthHandler(toPublicRequest(request, app.publicBasePath));
+    auth.handler = (
+      request: Request,
+      options?: AuthRequestOptions,
+    ): Promise<Response> =>
+      originalAuthHandler(
+        toPublicRequest(request, app.publicBasePath),
+        options,
+      );
     return auth;
   }
 }

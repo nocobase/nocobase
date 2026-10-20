@@ -240,7 +240,7 @@ describe('Breadcrumbs', () => {
 
   it('renders a group as plain text because no page sits behind it', () => {
     render(
-      <MemoryRouter initialEntries={['/settings/automation/workflows']}>
+      <MemoryRouter initialEntries={['/settings/automation/schedules']}>
         <RouteTreeProvider
           routes={[
             {
@@ -249,8 +249,8 @@ describe('Breadcrumbs', () => {
                 componentLoader: undefined,
               }),
               children: [
-                route('workflows', '/settings/automation/workflows', {
-                  breadcrumb: { title: 'Workflows' },
+                route('schedules', '/settings/automation/schedules', {
+                  breadcrumb: { title: 'Schedules' },
                 }),
               ],
             },
@@ -266,7 +266,7 @@ describe('Breadcrumbs', () => {
       screen.queryByRole('link', { name: 'Automation' }),
     ).not.toBeInTheDocument();
     expect(screen.getByText('Automation')).toBeVisible();
-    expect(screen.getByText('Workflows')).toHaveAttribute(
+    expect(screen.getByText('Schedules')).toHaveAttribute(
       'aria-current',
       'page',
     );

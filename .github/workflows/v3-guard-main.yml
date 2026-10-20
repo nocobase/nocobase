@@ -1,0 +1,45 @@
+name: V3 Guard Main
+
+# Stable pull requests must contain neither prerelease state nor prerelease versions.
+# The promotion workflow removes that state before merging into v3-main.
+
+on:
+  pull_request:
+    branches:
+      - v3-main
+    paths-ignore:
+      - 'docs/**'
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Reject prerelease state
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for prerelease state files
+        run: |
+          FOUND=""
+          [ -f .changeset/pre.json ] && FOUND="$FOUND .changeset/pre.json"
+          if [ -d .changeset/pre ] && [ -n "$(ls -A .changeset/pre 2>/dev/null)" ]; then
+            FOUND="$FOUND .changeset/pre/"
+          fi
+          if [ -n "$FOUND" ]; then
+            echo "::error::Prerelease state files are not allowed on v3-main: $FOUND"
+            echo "If this is a promotion merge, changeset version either did not run or the merge happened before it did."
+            exit 1
+          fi
+          echo "No prerelease state files found"
+
+      - name: Check for prerelease versions
+        run: |
+          LEFT=$(node scripts/list-package-versions.mjs --prerelease)
+          if [ -n "$LEFT" ]; then
+            echo "::error::Prerelease versions are not allowed on v3-main: $LEFT"
+            exit 1
+          fi
+          echo "No prerelease versions found"

@@ -1,5 +1,6 @@
 import type { ApiClient } from '@nocobase/app-client';
 
+import type { DurableFlow } from '../../shared/flows.js';
 import { LIFECYCLE_ROUTES } from '../../shared/routes.js';
 import {
   LifecycleRequestError,
@@ -13,11 +14,12 @@ export type {
   AvailableTransition as Available,
   Blocker,
   EffectRun,
+  RecordView,
   TransitionEntry,
 } from '@nocobase/lifecycle/react';
 
 export type Plain = Record<string, unknown>;
-export type LifecycleName = 'tickets' | 'expenses';
+export type LifecycleName = 'tickets' | 'expenses' | DurableFlow;
 
 /** The transition name of the log entry that records a creation. */
 export const CREATE_TRANSITION = '$create';
@@ -37,7 +39,12 @@ const PAGE_SIZE = 100;
 
 /** The plugin's own routes: lists and forms. A record's view and its transitions go through `useExampleLifecycle`. */
 export function exampleApi(client: ApiClient): {
-  list(name: LifecycleName, actAs: string, view?: string): Promise<RecordList>;
+  list(
+    name: LifecycleName,
+    actAs: string,
+    view?: string,
+    signal?: AbortSignal,
+  ): Promise<RecordList>;
   create(name: LifecycleName, actAs: string, values: Plain): Promise<Plain>;
   update(
     name: LifecycleName,
@@ -48,7 +55,7 @@ export function exampleApi(client: ApiClient): {
   runTriggers(): Promise<number>;
 } {
   return {
-    list: async (name, actAs, view) => {
+    list: async (name, actAs, view, signal) => {
       const { data, meta } = await client.request<{
         readonly data: readonly Plain[];
         readonly meta: {
@@ -56,6 +63,7 @@ export function exampleApi(client: ApiClient): {
         };
       }>({
         path: `${base}/${name}`,
+        signal,
         query: {
           actAs,
           pageSize: String(PAGE_SIZE),

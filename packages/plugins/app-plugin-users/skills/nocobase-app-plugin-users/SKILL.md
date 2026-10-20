@@ -1,45 +1,42 @@
 ---
 name: nocobase-app-plugin-users
-description: Integrate the Users plugin into a NocoBase App, configure its page placement and permissions, or add an application-owned role scope through the public Server contracts.
+description: Integrate the Users plugin into a NocoBase App, build a user management page on its API and configure its permissions, or add an application-owned role scope through the public Server contracts.
 metadata:
   short-description: Integrate reusable user administration
 ---
 
 # User Management App Plugin
 
-Use this Skill when an application needs a user management page or API, or when
-another plugin needs to expose application-specific roles in the Users page. Do
+Use this Skill when an application needs user management, or when another
+plugin needs to expose application-specific roles in user management. Do
 not use it to modify the Users plugin source or to replace Authentication's
 user, account, or Session storage.
 
 ## Public surfaces
 
 - Client registration factory and `UsersClientOptions`:
-  `@nocobase/app-plugin-users/client`.
+  `@nocobase/app-plugin-users/client`. It contributes only the public
+  invitation page at `/invite/:token`; there is no user management page.
 - Typed API client: `UsersClient` and its types from
   `@nocobase/app-plugin-users/client/user-client`.
 - Server contracts: `userManagementServiceToken`,
   `userRoleScopeRegistryToken`, `UserRoleScope`, and related types from
   `@nocobase/app-plugin-users/server/tokens`.
-- HTTP API: `GET /api/users` (`page`, `pageSize`, `q`, `status`, `roleScope`, `role`; answers `{ data, meta: { page, pageSize, total } }`), `GET /api/users/options`, `POST /api/users`, `PATCH /api/users/:userId`, `DELETE /api/users/:userId?confirm=true`, `POST /api/users/:userId/disable|enable|resetPassword|revokeSessions`, and `PUT /api/users/:userId/roleScopes/:scope`. The running application documents each one, with request and response schemas, at `/api/swagger/docs` (JSON at `/api/swagger`) under the `Users` tag. Failures use the standard error body; branch on `error.reason`, such as `USER_NOT_FOUND`, `SELF_DELETE_NOT_ALLOWED`, `LAST_ASSIGNMENT` or `USER_EMAIL_CONFLICT`.
+- HTTP API: `GET /api/users` (`page`, `pageSize`, `q`, `status`, `roleScope`, `role`, `sort=name`, `order=asc|desc`; answers `{ data, meta: { page, pageSize, total } }`), `GET /api/users/options`, `GET /api/users/:userId` (latest managed profile and role scopes, requires `user/read`, 404 for absent accounts), `POST /api/users`, `PATCH /api/users/:userId`, `DELETE /api/users/:userId?confirm=true`, `POST /api/users/:userId/disable|enable|resetPassword|revokeSessions`, and `PUT /api/users/:userId/roleScopes/:scope`. The running application documents each one, with request and response schemas, at `/api/swagger/docs` (JSON at `/api/swagger`) under the `Users` tag. Failures use the standard error body; branch on `error.reason`, such as `USER_NOT_FOUND`, `SELF_DELETE_NOT_ALLOWED`, `LAST_ASSIGNMENT` or `USER_EMAIL_CONFLICT`.
 
 Every HTTP route requires Authentication and Authorization. Routes check the `user` record type with one of `read`, `create`, `update`, `disable`, `enable`, `assign-role`, `reset-password`, `revoke-sessions` or `delete`. Account creation checks both `create` and `assign-role`. `delete` is permitted only while an application role scope can clean a deleted user up.
 
-## Register and place the page
+## Register the plugin
 
 1. Register Authentication, Authorization, and then Users in the App's Client
-   and Server plugin arrays.
-2. Configure the Client factory. `users({ mount: 'settings', path: '/users' })`
-   produces `/settings/users`; `mount: 'app'` makes the path App-relative and
-   registers a primary-navigation entry protected by the same page access rule.
-3. Grant the page, `{ resource: { type: 'page', id: 'users' }, actions: [{ action: 'access' }] }` or `authz.pages.grant('users')`, to roles that may open it.
-4. Grant only the `user` actions those roles need, on `{ type: 'user', id: '*' }` because `user` is a record type. The plugin creates no roles and grants no access by itself.
-5. Use `componentLoader` only to replace the page implementation. It does not
-   change the route identity, mount, or path.
+   and Server plugin arrays. The Client factory takes no placement options:
+   `users()`.
+2. Grant only the `user` actions those roles need, on `{ type: 'user', id: '*' }` because `user` is a record type. The plugin creates no roles and grants no access by itself.
+3. For a user management page, build it in the App on `UsersClient` and declare it among the App's own routes with the page access it needs; the plugin ships none.
 
-The page reports results through `useToaster()` from `@nocobase/app-client`, so the App needs the `@nocobase/app-client` that exports it and registers a toaster service, as the templates do: `client/lib/toaster.ts` from the template, and `this.app.container.instance(toasterToken, createToaster())` in the `register()` of `client/service-provider.ts`, with the `Toaster` component mounted in `client/react-providers.ts`. Without the registration nothing throws, but its toasts are only logged to the browser console. Update `@nocobase/app-client` together with this plugin; the `nocobase-app-upgrade` Skill's `references/edge-cases.md` ("Notifications and the application toaster") has the full steps.
+The invitation page reports results through `useToaster()` from `@nocobase/app-client`, so the App needs the `@nocobase/app-client` that exports it and registers a toaster service, as the templates do: `client/lib/toaster.ts` from the template, and `this.app.container.instance(toasterToken, createToaster())` in the `register()` of `client/service-provider.ts`, with the `Toaster` component mounted in `client/react-providers.ts`. Without the registration nothing throws, but its toasts are only logged to the browser console.
 
-The default `app` permission-set scope is supplied by Users whenever the Authorization plugin's `authorizationToken` is available. Do not copy a user-roles Provider into an application. Set `users.permissionSets: false` to replace the default with an application-owned scope; Hub uses this setting.
+The default `app` permission-set scope is supplied by Users whenever the Authorization plugin's `authorizationToken` is available. Do not copy a user-roles Provider into an application. Set `users.permissionSets: false` to replace the default with an application-owned scope.
 
 ## Add an application role scope
 
@@ -57,12 +54,13 @@ For a required single-role scope, set `selection: 'single'` and
 `requiredOnCreate: true`. Reject invalid values in the scope and enforce
 business invariants such as the last-administrator rule on the server.
 
-Set `assignable: false` or `removable: false` on an option when the Users page
+Set `assignable: false` or `removable: false` on an option when user management
 must show a protected assignment but must not add or revoke it. Enforce the
 same rule in `replace()` because these flags only control the Client. Set
 `hasAuthenticatedDefaultAccess: true` when the scope lists direct assignments
-but all signed-in users also inherit separately configured default access; the
-page then explains that distinction instead of treating the default as a role.
+but all signed-in users also inherit separately configured default access, so a
+user management page can explain that distinction instead of treating the
+default as a role.
 Use `labelI18nKey` with `labelI18nNs` on a scope or option when its owner has
 registered Client locale resources; keep `label` as the readable fallback.
 Implement optional `getMany()` when assignments can be read as a batch. Users
@@ -70,35 +68,19 @@ uses it for list pages and falls back to `get()` for existing scopes.
 
 ## Invite users
 
-Holders of `invite` on the `user` resource see "Invite users" on the page. An
-address without an account gets an email with a link to `/invite/:token`, where
-the invitee sets a name and password; an address that already has an account is
-reported back and nothing is sent. Choosing roles in the invitation also needs
-`assign-role`, and they are checked like account creation's.
+Holders of `invite` on `user` can create invitations through `POST /api/users/invitations` or `UsersClient`; choosing roles also requires `assign-role`. Results include a shareable link even when email succeeds. A queued invitation closed or rotated by another request returns `emailSent=false` without a link, while the other recipients still complete. Original inviters can renew with `sendEmail=false`, which invalidates the old link. Plugin-specific invitations must use their domain endpoint, which rechecks its own grants. Other managers may resend email but receive no link. Tokens last seven days; only hashes are stored.
 
-- Emails go through the notification plugin on the Channel named by
-  `users.invitations.emailChannel` (`system-email` by default). Without that
-  Channel, the inviter gets the link to forward by hand.
-- Links start at `app.publicOrigin`, or the request origin when it is unset.
-- A link works once, for seven days. Only the token's hash is stored.
-- Server code invites through `UserManagementService.invite`, may attach `data`
-  and a `summary` the invitee sees (for example project names), and registers
-  `onInvitationAccepted` to act on acceptance. Handlers run in the acceptance
-  transaction; one that throws rolls the account creation back. Accepting one
-  invitation accepts every pending invitation of the address, and the handlers
-  run once per invitation.
-- Replace the accept page with `inviteComponentLoader` to match the
-  application's own sign-in pages.
+New accounts register directly from the invitation link with a name and password; acceptance leaves `emailVerified=false`. Email delivery is optional: authorized original inviters can privately forward the link when the email channel is absent or fails. Links use `app.publicOrigin` when configured, otherwise the invitation request origin. Existing accounts must sign in with the invited email. Acceptance consumes only the supplied invitation and applies only its grants; handlers run in its transaction and roll back account creation on failure.
 
 ## Ownership
 
 - Authentication owns user identity, credentials, account state, password
   hashing, and Sessions.
 - Authorization owns Permission Sets, grants, and assignments.
-- Users owns the management API, built-in page, orchestration transaction,
+- Users owns the management API, the invitation page, orchestration transaction,
   `user` authorization handler, and role-scope registry.
 - The App or business plugin owns role definitions, role grants, assignments,
-  page placement, and role-specific invariants.
+  the user management page, and role-specific invariants.
 - The plugin's `skills/` source is authoritative. `.agents/skills/` is a
   synchronized copy and must not be edited.
 
@@ -106,7 +88,6 @@ reported back and nothing is sent. Choosing roles in the invitation also needs
 
 - Browser route access is only navigation control. The Server independently
   authenticates and authorizes every request.
-- An App-mounted page hides its primary-navigation entry until `access` on page `users` is allowed. Direct navigation is checked separately by the Client Route.
 - A conditional grant is not accepted as an unrestricted user-management
   grant; use explicit static grants for this resource.
 - Disabled users are rejected by Authentication and lose their existing HTTP
@@ -116,7 +97,6 @@ reported back and nothing is sent. Choosing roles in the invitation also needs
 
 ## Verification
 
-- A role without `access` on page `users` cannot navigate to the page.
 - Anonymous API requests return `401`; authenticated requests without the
   requested `user` action return `403`.
 - Creating a user with a required role scope creates both records, while role
@@ -130,4 +110,6 @@ reported back and nothing is sent. Choosing roles in the invitation also needs
 - The target App passes its relevant tests, typecheck, and build. Skill
   synchronization alone proves only that the copy matches this source.
 
-Deletion uses `DELETE /api/users/:userId?confirm=true` and `user/delete` authorization. Obtain an explicit user deletion request before calling it. Application role scopes can guard deletion and clean dependent credentials transactionally. Hub blocks self-deletion, deleting its last active administrator, and deleting owners of Apps. Historical user identities are retained but cannot sign in or appear in management lists.
+Deletion uses `DELETE /api/users/:userId?confirm=true` and `user/delete` authorization. Obtain an explicit user deletion request before calling it. Application role scopes can guard deletion and clean dependent credentials transactionally. Historical user identities are retained but cannot sign in or appear in management lists.
+
+Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.

@@ -5,6 +5,7 @@ import {
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 
+import systemSettingsRoutes from '../../client/pages/settings/routes.js';
 import applicationRoutes from '../../client/routes.ts';
 
 describe('app client routes', () => {
@@ -29,12 +30,8 @@ describe('app client routes', () => {
 
   it('loads every page component', async () => {
     const resolved = resolveRoutes();
-    const loaders = [
-      ...componentLoadersIn(resolved.routes),
-      ...componentLoadersIn(resolved.settingsRouteTree),
-      ...componentLoadersIn(resolved.devRouteTree),
-    ];
-    // The trees above are filtered by loader, so an empty list would make the loop below pass without loading
+    const loaders = componentLoadersIn(resolved.routes);
+    // The tree above is filtered by loader, so an empty list would make the loop below pass without loading
     // anything at all.
     expect(loaders).not.toHaveLength(0);
 
@@ -59,6 +56,45 @@ describe('app client routes', () => {
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
     ]);
+  });
+
+  it('keeps a bare application home-only and supports settings registration as business capabilities are developed', async () => {
+    expect(
+      pagePaths(resolveRoutes().routes).some((path) =>
+        path.startsWith('/settings'),
+      ),
+    ).toBe(false);
+    const built = resolveAppClientContributions([
+      {
+        packageName: '@nocobase/app-template-default',
+        routes: [...applicationRoutes, systemSettingsRoutes],
+        source: 'application',
+      },
+    ]);
+    expect(pageAuthorizations(built.routes)).toEqual([
+      { name: 'home', authorizedAs: null },
+      { name: 'inbox', authorizedAs: null },
+      { name: 'settingsUsers', authorizedAs: 'user:*' },
+      { name: 'settingsUserCreate', authorizedAs: 'user:*' },
+      { name: 'settingsUser', authorizedAs: 'user:*' },
+      { name: 'settingsUserEdit', authorizedAs: 'user:*' },
+      {
+        name: 'settingsRoles',
+        authorizedAs: 'settings:authorization.permission-sets',
+      },
+      {
+        name: 'settingsRoleCreate',
+        authorizedAs: 'settings:authorization.permission-sets',
+      },
+      {
+        name: 'settingsRoleEdit',
+        authorizedAs: 'settings:authorization.permission-sets',
+      },
+    ]);
+    for (const loader of componentLoadersIn(built.routes))
+      await expect(loader()).resolves.toMatchObject({
+        default: expect.any(Function),
+      });
   });
 
   it('keeps the inbox out of the application navigation', () => {

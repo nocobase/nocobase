@@ -14,6 +14,7 @@ import type {
   FailureReason,
   RunEventType,
   RunnerFeature,
+  ToolCapabilities,
 } from '../../protocol/index.ts';
 
 export type { FailureReason, RunEventType, RunnerFeature };
@@ -113,7 +114,10 @@ export interface AdapterSession {
   env: Record<string, string>;
   /** The run's skills, for the adapter to register the way its tool finds skills; none without skills. */
   skills?: SkillsPlacement;
-  /** The runner's tool policy; consulted for every tool call the agent makes. */
+  /**
+   * Answers the tools that ask before a call (OpenCode, Pi). The runner allows every call: it is not a security
+   * boundary. Codex and Claude Code run without asking.
+   */
   permission: PermissionCheck;
   maxTurns?: number;
   /** Aborting it has the same effect as `handle.stop()`. */
@@ -149,7 +153,9 @@ export interface AdapterHandle {
 
 export interface AgentAdapter {
   kind: ToolKind;
-  detect(): Promise<ToolDetection>;
+  detect(signal?: AbortSignal): Promise<ToolDetection>;
+  /** Fresh capability discovery, independent of cached installation detection. No method means unsupported. */
+  detectModels?(signal: AbortSignal): Promise<ToolCapabilities>;
   features(): RunnerFeature[];
   start(session: AdapterSession): AdapterHandle;
 }

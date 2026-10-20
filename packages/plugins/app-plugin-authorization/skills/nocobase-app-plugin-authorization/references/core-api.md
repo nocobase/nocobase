@@ -54,3 +54,7 @@ Never separate the removal check from the user mutation's transaction. Use the a
 ## Optional record rules
 
 Default access, sharing and restriction rules require separate App plugins. Follow [capability discovery](optional-capabilities.md) and the owning installed Skill for implementation, APIs and seeds. Library exports alone do not establish an installed App capability.
+
+### Parameterized record scopes in administration
+
+Persist custom filtering as `{ type: 'recordAccess', key: 'customFilter', params: { filter: nativeFilterNode } }`, rather than the bare `customFilter` key. Collect and validate conditions before replacing the role draft selection, preserve existing object parameters and unrelated scopes, and submit the role through the revision-aware permission-set API. That HTTP boundary rejects missing conditions, unknown target fields and empty groups before writing; native boolean filter constants retain their All/None meaning. The empty scope string explicitly grants no records and is accepted by the HTTP API. Every consuming business route must still bind the resulting native database policy to list, detail and write operations; frontend filtering alone does not enforce it. A route with separately declared reviewer or process-inspection authority may admit records through that independent permission, so test scope changes with an ordinary account holding only the intended business role.

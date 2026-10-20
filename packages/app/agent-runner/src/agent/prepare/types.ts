@@ -4,11 +4,19 @@ import type {
   FailureReason,
   RunPayload,
 } from '../../protocol/index.ts';
+import { acceptedFailure } from '../../protocol/index.ts';
+import { WorkspaceBusyError } from '../../core/checkout.ts';
 import type { SkillsPlacement } from '../adapters/types.ts';
 import type { AppRegistration } from '../../lib/config.ts';
 import type { RunnerPaths } from '../../lib/home.ts';
 import type { ApiClient } from '../../lib/http.ts';
-import type { PreparedDir, WorkspaceLock } from '../../core/checkout.ts';
+import { isDiskFull } from '../../lib/disk-full.ts';
+import type {
+  PreparedDir,
+  RepoAuthSource,
+  WorkspaceLock,
+} from '../../core/checkout.ts';
+import type { GitRetryOptions } from '../../core/git-retry.ts';
 import type { PlacedMount } from '../mounts.ts';
 import type { SpoolEvent } from '../../core/events.ts';
 
@@ -17,6 +25,8 @@ export interface PrepareContext {
   readonly payload: RunPayload;
   readonly paths: RunnerPaths;
   readonly registration: AppRegistration;
+  /** The names the runner's owner passes from its environment (`--pass-env`). */
+  readonly passEnv: readonly string[];
   readonly client: ApiClient;
   readonly tool: AgentTool;
   readonly log: (message: string) => void;
@@ -24,6 +34,10 @@ export interface PrepareContext {
   readonly event: (event: SpoolEvent) => void;
   /** Called, last first, when the run ends, prepared or not. */
   readonly onRelease: (release: () => Promise<void>) => void;
+  /** Where the run's repository credentials come from (`workspace.git`); absent without any. */
+  readonly gitAuth?: RepoAuthSource;
+  /** How git's network operations are retried (`git-retry.ts`); the defaults when absent. */
+  readonly gitRetry?: GitRetryOptions;
   workspace?: WorkspaceLock;
   /** The run's working directories, the primary one first; empty when the run names none. */
   dirs: PreparedDir[];
@@ -45,15 +59,43 @@ export interface PrepareStep {
   run(context: PrepareContext): Promise<void>;
 }
 
-/** A step's failure with its own reason. */
+/** A step's failure with its own reason, and what its error event records besides the step (`meta`). */
 export class PrepareError extends Error {
   override name = 'PrepareError';
   readonly reason: FailureReason;
+  readonly meta: Readonly<Record<string, unknown>>;
 
-  constructor(reason: FailureReason, message: string) {
+  constructor(
+    reason: FailureReason,
+    message: string,
+    meta: Readonly<Record<string, unknown>> = {},
+  ) {
     super(message);
     this.reason = reason;
+    this.meta = meta;
   }
+}
+
+/**
+ * Why a run fails when `step` throws `error`: the error's own reason, else the step's. A lock another live process
+ * holds (`WorkspaceBusyError`), found by any step, is the workspace being busy, which the application requeues without
+ * counting an attempt, when it announces that it accepts it (`acceptedFailures`).
+ */
+export function stepFailure(
+  step: Pick<PrepareStep, 'failure'>,
+  error: unknown,
+  accepted: readonly string[] | undefined,
+): FailureReason {
+  if (isDiskFull(error)) return 'runnerDiskFull';
+  if (error instanceof PrepareError) return error.reason;
+  if (error instanceof WorkspaceBusyError)
+    return acceptedFailure('workspaceBusy', accepted);
+  return step.failure;
+}
+
+/** The stable subject namespace. Run-attempt paths, including read-only paths, are allocated separately. */
+export function workspaceKey(payload: RunPayload): string {
+  return payload.workspace.key ?? payload.subject.key;
 }
 
 /** The working directory the agent starts in: the primary one, or the subject's work directory without any. */

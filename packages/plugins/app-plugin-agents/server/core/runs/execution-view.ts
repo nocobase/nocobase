@@ -1,0 +1,64 @@
+/** Shared machine visibility for every public run projection. */
+import type { AgentService } from '../agents/agent.service.js';
+import type { Run, RunExecutionSnapshot } from '../../../shared/runs.js';
+
+/** An application's permission decision, using the same rules as its runner machine views. */
+export interface RunMachineViewer {
+  readonly userId: string;
+  readonly seesMachines: boolean;
+}
+
+export function executionForViewer(
+  execution: RunExecutionSnapshot,
+  viewer: RunMachineViewer,
+): RunExecutionSnapshot {
+  if (viewer.seesMachines || execution.runnerOwnerUserId === viewer.userId)
+    return execution;
+  return {
+    ...execution,
+    runnerName: null,
+    runnerOwnerName: null,
+    runnerTrust: null,
+    machineHidden: true,
+  };
+}
+
+/** Apply at every user-facing boundary; internal claim/report reads retain the original snapshot. */
+export function runForViewer<T extends Run>(
+  run: T,
+  viewer: RunMachineViewer,
+): T {
+  const executions = run.executions?.map((execution) =>
+    executionForViewer(execution, viewer),
+  );
+  const latest = executions?.at(-1);
+  const hidden =
+    !viewer.seesMachines && (!latest || latest.machineHidden === true);
+  return {
+    ...run,
+    ...(executions ? { executions } : {}),
+    ...(hidden
+      ? { runnerName: null, runnerOwnerName: null, machineHidden: true }
+      : {}),
+  };
+}
+
+/** Shared machine-visibility decision for plugin and application run projections. */
+export async function runMachineViewerFor(
+  agents: Pick<AgentService, 'list' | 'mayInvoke'>,
+  viewer: {
+    readonly userId: string;
+    readonly manage: boolean;
+    readonly read: boolean;
+  },
+): Promise<RunMachineViewer> {
+  return {
+    userId: viewer.userId,
+    seesMachines:
+      viewer.manage ||
+      (viewer.read &&
+        (await agents.list()).some((agent) =>
+          agents.mayInvoke(agent, viewer.userId),
+        )),
+  };
+}

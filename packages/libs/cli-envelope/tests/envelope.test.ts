@@ -130,8 +130,8 @@ describe('isCommandEnvelope', () => {
 describe('a suggestion for a person', () => {
   it('quotes only the arguments a shell would split or interpret', () => {
     expect(quoteForShell('/srv/hub')).toBe('/srv/hub');
-    expect(quoteForShell('--registry=https://npm.nocobase.ai/')).toBe(
-      '--registry=https://npm.nocobase.ai/',
+    expect(quoteForShell('--registry=https://registry.internal.example/')).toBe(
+      '--registry=https://registry.internal.example/',
     );
     expect(quoteForShell("/srv/it's here")).toBe("'/srv/it'\\''s here'");
     expect(

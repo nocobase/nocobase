@@ -1,8 +1,6 @@
 import { expect, it } from 'vitest';
 import {
   defineAppRoutes,
-  defineSettingsRoutes,
-  defineDevRoutes,
   resolveAppClientContributions,
   applyClientRouteComponentOverrides,
 } from '../src/plugins.js';
@@ -43,34 +41,6 @@ it('resolves nested pages and pathless navigation groups as trees', () => {
     id: 'example:orders',
     path: '/orders',
     children: [{ id: 'example:detail', path: '/orders/:orderId' }],
-  });
-});
-it('retains settings page children separately from navigation groups', () => {
-  const result = resolveAppClientContributions([
-    {
-      packageName: 'example',
-      routes: defineSettingsRoutes([
-        {
-          name: 'orders',
-          path: '/orders',
-          authz: 'skip',
-          componentLoader,
-          children: [
-            {
-              name: 'detail',
-              path: ':orderId',
-              authz: 'skip',
-              componentLoader,
-            },
-          ],
-        },
-      ]),
-    },
-  ]);
-  expect(result.settingsRouteTree[0]).toMatchObject({
-    id: 'orders',
-    path: '/settings/orders',
-    children: [{ id: 'detail', path: '/settings/orders/:orderId' }],
   });
 });
 it('overrides nested pages without losing their children', () => {
@@ -274,70 +244,6 @@ it('preserves the parent and sibling loaders when overriding a nested page', asy
     replacement,
   );
   expect(overridden[0]?.children?.[0]?.path).toBe('/parent/child');
-});
-
-it('keeps settings and dev trees independent while preserving repeated page IDs in different groups', () => {
-  const entries = ['one', 'two'].map((name) => ({
-    name,
-    path: name,
-    navigation: { title: name },
-    children: [
-      {
-        name: 'details',
-        path: 'details',
-        authz: { resource: { type: 'page', id: 'details' }, action: 'access' },
-        componentLoader,
-      },
-    ],
-  }));
-  const result = resolveAppClientContributions([
-    {
-      packageName: 'example',
-      routes: [defineSettingsRoutes(entries), defineDevRoutes(entries)],
-    },
-  ]);
-  expect(
-    result.settingsRouteTree.map((node) => node.children?.[0]?.path),
-  ).toEqual(['/settings/one/details', '/settings/two/details']);
-  expect(result.devRouteTree.map((node) => node.children?.[0]?.path)).toEqual([
-    '/dev/one/details',
-    '/dev/two/details',
-  ]);
-  expect(result.settings.map((node) => node.id)).toEqual([
-    'details',
-    'details',
-  ]);
-});
-
-it('allows existing top-level settings page names at distinct paths', () => {
-  const definitions = [
-    {
-      name: 'details',
-      path: '/one',
-      authz: { resource: { type: 'page', id: 'details' }, action: 'access' },
-      componentLoader,
-    },
-    {
-      name: 'details',
-      path: '/two',
-      authz: { resource: { type: 'page', id: 'details' }, action: 'access' },
-      componentLoader,
-    },
-  ];
-  const result = resolveAppClientContributions([
-    {
-      packageName: 'example',
-      routes: [defineSettingsRoutes(definitions), defineDevRoutes(definitions)],
-    },
-  ]);
-  expect(result.settings.map((route) => route.path)).toEqual([
-    '/settings/one',
-    '/settings/two',
-  ]);
-  expect(result.devRoutes.map((route) => route.path)).toEqual([
-    '/dev/one',
-    '/dev/two',
-  ]);
 });
 
 it('names a child page through breadcrumb without putting it in a menu', () => {

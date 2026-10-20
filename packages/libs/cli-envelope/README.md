@@ -43,4 +43,4 @@ The guard's declarations are hand-written in `node-guard.d.ts`. `tsconfig.node-g
 
 ## Dependency contract
 
-This package holds no state that needs one copy per process: the envelope mark is a registered symbol, so two copies agree on it, and everything else is a pure function or a type. Declare it as an ordinary `dependency`, not a peer. It is published to `https://npm.nocobase.ai`.
+This package holds no state that needs one copy per process: the envelope mark is a registered symbol, so two copies agree on it, and everything else is a pure function or a type. Declare it as an ordinary `dependency`, not a peer. It is published to the public npm registry.

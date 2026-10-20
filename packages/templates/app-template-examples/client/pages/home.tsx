@@ -1,3 +1,4 @@
+import { OnlineAgentExample } from '#components/online-agent/example';
 import { PageContainer } from '#components/page-container';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
@@ -8,21 +9,21 @@ import {
   Hash,
   Languages,
   FileText,
+  FilePenLine,
   FolderOpen,
   ShoppingCart,
   PanelsTopLeft,
   Printer,
   Plug,
   ShieldCheck,
-  Sparkles,
   Users,
-  Workflow,
 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 import { Button } from '#components/ui/button';
 
 const examples = [
+  { key: 'aiFormFill', path: '/ai-form-fill', icon: FilePenLine },
   { key: 'routeOverlays', path: '/route-overlays', icon: PanelsTopLeft },
   { key: 'articles', path: '/articles', icon: FileText },
   { key: 'numbers', path: '/numeric-examples', icon: Hash },
@@ -39,13 +40,11 @@ const examples = [
     icon: Printer,
   },
   { key: 'routes', path: '/routes-example', icon: BookOpen },
-  { key: 'workflows', path: '/settings/workflow/workflows', icon: Workflow },
   {
     key: 'notificationTasks',
     path: '/notification-example',
     icon: ClipboardList,
   },
-  { key: 'aiEmployeeTasks', path: '/ai-employee-example', icon: Sparkles },
 ] as const;
 
 export default function ExamplesHomePage(): ReactElement {
@@ -68,6 +67,7 @@ export default function ExamplesHomePage(): ReactElement {
         </Button>
       </header>
       <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
+        <OnlineAgentExample />
         {examples.map(({ key, path, icon: Icon }) => (
           <Link
             key={key}

@@ -2,20 +2,22 @@ export {
   briefOf,
   createClaimService,
   fits,
+  fitsActor,
   hasTool,
-  onlineEntryOf,
   pickEntry,
-  isServerHolder,
   payloadDirs,
   payloadRequires,
   skillTargets,
   variableTargets,
   type ClaimService,
   type RenderedBrief,
-  type ServerClaim,
-  type ServerHolder,
 } from './claim.js';
 export { resolveAgentCli, type AgentCli } from './policy.js';
+export {
+  createClaimEligibility,
+  type ClaimEligibility,
+  type EligibilityRequest,
+} from './eligibility.js';
 export {
   createBriefSectionRegistry,
   createRepoAccessRegistry,
@@ -26,26 +28,28 @@ export {
   type ExtensionPrepare,
   type MountContext,
   type MountOffer,
+  RepoAccessError,
   type RepoAccessContext,
   type RepoAccessProvider,
   type RepoAccessRegistry,
+  type RepoCredentialGrant,
+  type RepoCredentialRequest,
+  type RepoPrepareOptions,
   type RunMountProvider,
   type RunMountRegistry,
 } from './extensions.js';
+export {
+  createGitCredentialService,
+  ISSUE_TIMEOUT_MS,
+  type GitCredentialService,
+} from './git-credentials.js';
 export { createBriefPreviewer, type BriefPreviewer } from './preview.js';
 export { findBrief, requestReset } from './workspace.store.js';
-export {
-  createRunnerReports,
-  type OnlineUsageRecord,
-  type RunnerReports,
-} from './lifecycle.js';
+export { createRunnerReports, type RunnerReports } from './lifecycle.js';
 export {
   commandRef,
   createSubjectRegistry,
-  dialectOf,
-  takesType,
   type ClaimContext,
-  type CommandDialect,
   type ContextProvider,
   type SubjectAssembly,
   type SubjectSample,
@@ -54,12 +58,14 @@ export {
   type SubjectFacts,
   type SubjectRegistry,
   type SubjectReports,
+  type SubjectWorkspaces,
   type SubjectScope,
   type WorkSink,
 } from './ports.js';
 export {
   DEFAULT_TOOL_POLICY,
   MAX_CLAIM_FAILURES,
+  retryBaseDelayMs,
   retryDelayMs,
   toolPolicyFor,
 } from './policy.js';
@@ -79,13 +85,29 @@ export {
 export {
   createRunService,
   DEFAULT_THREAD,
+  queuedRun,
   type EnqueueRequest,
   type EnqueueResult,
   type NewInput,
+  type RunEnqueued,
   type RunFilter,
+  type RunRequestPending,
   type RunService,
 } from './run.service.js';
+export {
+  RUN_REQUEST_TTL_MS,
+  type RequestedRun,
+  type RunRequestFilter,
+  type RunRequestReassignment,
+  type RunRequestService,
+} from './run-requests.js';
 export { createSweeper, type Sweeper, type SweepReport } from './sweeper.js';
+export {
+  executionForViewer,
+  runForViewer,
+  runMachineViewerFor,
+  type RunMachineViewer,
+} from './execution-view.js';
 export {
   createAvailability,
   type AgentAvailability,
@@ -96,5 +118,6 @@ export {
   createRunnerView,
   runsHeldBy,
   runsHeldByTool,
+  runsHeldSnapshot,
   type RunnerView,
 } from './runner-view.js';

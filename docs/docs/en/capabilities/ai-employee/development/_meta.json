@@ -1,6 +1,0 @@
-[
-  { "type": "file", "name": "index", "label": "Development overview" },
-  { "type": "file", "name": "employee", "label": "Register an AI employee" },
-  { "type": "file", "name": "tool", "label": "Register a Tool" },
-  { "type": "file", "name": "skill", "label": "Register a Skill" }
-]

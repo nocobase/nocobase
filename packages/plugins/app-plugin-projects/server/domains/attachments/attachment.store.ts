@@ -3,6 +3,8 @@
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
+import { INLINE_PREVIEW_TYPES } from '../../../shared/attachments.js';
+import type { CommentRecord } from '../comments/comment.store.js';
 import { oneOf } from '../../kernel/db.js';
 
 export const ATTACHMENTS = 'pmAttachments';
@@ -31,6 +33,49 @@ export interface UploaderRef {
 
 const files = (conn: DatabaseConnection) =>
   conn.repository<AttachmentRecord>(ATTACHMENTS);
+
+/** Filter and limit in the database before loading any comment metadata. */
+export async function agentCommentImages(
+  conn: DatabaseConnection,
+  issueId: string,
+  limit: number,
+): Promise<(AttachmentRecord & { readonly comment: CommentRecord })[]> {
+  return conn
+    .repository<AttachmentRecord & { readonly comment: CommentRecord }>(
+      ATTACHMENTS,
+    )
+    .findMany({
+      filter: (f) =>
+        f.and([
+          f.string('issueId').eq(issueId),
+          f
+            .relation('comment')
+            .some((comment) =>
+              comment.and([
+                comment.string('issueId').eq(issueId),
+                comment.date('deletedAt').empty(),
+                comment.string('authorType').eq('agent'),
+              ]),
+            ),
+          f.or(
+            Object.entries(INLINE_PREVIEW_TYPES).map(([ext, mime]) =>
+              f.and([f.string('ext').eq(ext), f.string('mimeType').eq(mime)]),
+            ),
+          ),
+        ]),
+      sort: (sort) => [
+        sort.field('comment.createdAt').desc(),
+        sort.field('comment.id').desc(),
+        sort.field('createdAt').asc(),
+        sort.field('id').asc(),
+      ],
+      select: (select) =>
+        select.include('comment', (comment) =>
+          comment.fields('id', 'authorType', 'authorId', 'createdAt'),
+        ),
+      limit,
+    });
+}
 
 export async function findAttachment(
   conn: DatabaseConnection,

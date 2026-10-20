@@ -8,7 +8,9 @@ import {
   type ConfigValidator,
 } from '@nocobase/app-server/config';
 
-export type AuthConfig = import('better-auth').BetterAuthOptions;
+export type AuthConfig = import('better-auth').BetterAuthOptions & {
+  readonly passwordReset?: import('./password-reset.js').PasswordResetConfig;
+};
 
 /**
  * The `auth` fields the browser may read, through `config.public`. `useSignUpAvailable()` on the client combines them;
@@ -36,6 +38,17 @@ export const validateAuthConfig: ConfigValidator<AuthConfig> = (
   auth,
   context,
 ) => {
+  if (
+    auth.passwordReset?.enabled !== undefined &&
+    typeof auth.passwordReset.enabled !== 'boolean'
+  )
+    context.error('passwordReset.enabled', 'must be true or false.');
+  if (
+    auth.passwordReset?.emailChannel !== undefined &&
+    (typeof auth.passwordReset.emailChannel !== 'string' ||
+      !auth.passwordReset.emailChannel.trim())
+  )
+    context.error('passwordReset.emailChannel', 'must be a non-empty string.');
   const emailAndPassword: Record<string, unknown> =
     (auth.emailAndPassword as Record<string, unknown> | undefined) ?? {};
   for (const field of BOOLEAN_FIELDS) {
@@ -123,8 +136,8 @@ export function resolveAuthSecrets(
   }
   if (secret) return { secret };
 
-  // The fact only: a standalone start adds `pnpm nocobase config init`, and a Hub shows this to an operator whose
-  // configuration lives in the Hub, where that advice would be wrong.
+  // The fact only: a standalone start adds `pnpm nocobase config init`, and a host shows this to an operator whose
+  // configuration lives in the host, where that advice would be wrong.
   throw new ApplicationNotConfiguredError('secrets.keys is not set.', {
     key: 'secrets.keys',
     environmentVariable: 'SECRETS_KEYS',

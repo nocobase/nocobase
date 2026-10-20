@@ -49,7 +49,7 @@ function application() {
     storagePath: directory,
   });
   services.push(schedule);
-  const publish = vi.fn();
+  const publish = vi.fn().mockResolvedValue({ eventId: 'event-1' });
   const close = vi.fn();
   const defineTopic = vi.fn(() => ({
     name: SCHEDULE_CHANGES_TOPIC,

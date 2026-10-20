@@ -1,4 +1,13 @@
 import {
+  normalizeParameterValues,
+  ParameterConfigurationError,
+  type LifecycleParameterStore,
+  type ParameterResolution,
+  type ParameterSource,
+} from './parameter-configuration.js';
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+import {
   describeLifecycle,
   type EffectDefinition,
   type EffectRetry,
@@ -119,10 +128,38 @@ export interface ContinuationSweepOptions {
 export type ServicesSource<T extends LifecycleTypes> =
   ServicesOf<T> | ((transactionHandle: unknown) => ServicesOf<T>);
 
+/** Server-owned context supplied to an asynchronous parameter reader. */
+export interface ParameterReadContext<T extends LifecycleTypes> {
+  readonly lifecycle: string;
+  readonly record: T['record'] | null;
+  /** Creation values before a record has an identity. */
+  readonly values?: Readonly<Record<string, unknown>>;
+  readonly transactionHandle: unknown;
+  readonly purpose: 'transition' | 'create' | 'preview' | 'effect' | 'action';
+  readonly transition?: string;
+  readonly runId?: string;
+  readonly attempt?: number;
+}
+
+export type ParameterProvider<T extends LifecycleTypes> = (
+  context: ParameterReadContext<T>,
+) => Promise<Partial<ParametersOf<T>>>;
+
+export interface ParameterConfigurationRegistration<T extends LifecycleTypes> {
+  readonly store: LifecycleParameterStore;
+  readonly scope: (context: ParameterReadContext<T>) => string;
+  /** Explicitly routes existing records through their original contract. */
+  readonly legacyRecord?: (record: T['record']) => boolean;
+  /** Refuses a submitted record whose historical snapshot cannot be recovered. */
+  readonly snapshotRequired?: (record: T['record']) => boolean;
+}
 export interface RegisterOptions<T extends LifecycleTypes> {
   readonly services?: ServicesSource<T>;
   /** Administrator overrides, read on every transition so a change applies at once. */
   readonly parameters?: () => Partial<ParametersOf<T>>;
+  /** Async overrides; mutually exclusive with the legacy synchronous reader. */
+  readonly parameterProvider?: ParameterProvider<T>;
+  readonly parameterConfiguration?: ParameterConfigurationRegistration<T>;
 }
 
 /**
@@ -305,6 +342,24 @@ export interface LifecycleEvent {
   readonly actor: LifecycleActor;
 }
 
+/** A committed change that can invalidate a record view; read an authorized snapshot for its contents. */
+export interface LifecycleRecordChange {
+  readonly lifecycle: string;
+  readonly recordId: RecordId;
+  readonly kind: 'transition' | 'effect';
+  readonly runId?: string;
+}
+
+export interface RecordChangeFilter {
+  readonly lifecycle?: string;
+  readonly recordId?: RecordId;
+}
+
+interface ChangeSubscription {
+  readonly filter: RecordChangeFilter;
+  readonly listener: LifecycleListener<LifecycleRecordChange>;
+}
+
 /** A transition the record's new state now allows, before any guard is asked. */
 export interface AnnounceEvent extends LifecycleEvent {
   readonly next: string;
@@ -337,6 +392,8 @@ export const CREATE_TRANSITION: string = '$create';
  * its state and version, what the actor may do and why not, and its history.
  */
 export interface RecordView {
+  /** Effective values for this authoritative record preview, including its snapshot. */
+  readonly parameterValues?: Readonly<object>;
   readonly record: LifecycleRecord;
   readonly state: string;
   /** Pass it back as `expect.version` so a stale screen is refused. */
@@ -354,8 +411,16 @@ interface Registered {
   readonly lifecycle: Lifecycle<LifecycleTypes>;
   readonly services: (transactionHandle: unknown) => object;
   readonly parameters: () => object;
+  readonly parameterProvider?: ParameterProvider<LifecycleTypes>;
+  readonly parameterConfiguration?: ParameterConfigurationRegistration<LifecycleTypes>;
   /** Guards added with `addGuard()`, by transition name. */
   readonly guards: Map<string, ExtraGuard<LifecycleTypes>[]>;
+}
+
+interface ParameterExecution {
+  readonly handle: unknown;
+  readonly values: Map<string, Promise<Readonly<object>>>;
+  readonly resolutions: Map<string, ParameterResolution>;
 }
 
 /** A transition or creation decided in a transaction, kept until it commits. */
@@ -584,6 +649,7 @@ export class LifecycleRuntime {
   private readonly continuations: Required<ContinuationSweepOptions>;
   private readonly lifecycles = new Map<string, Registered>();
   private readonly subscriptions: Subscription[] = [];
+  private readonly changeSubscriptions: ChangeSubscription[] = [];
   /** Attempts running in this process, so `cancelRun()` can abort them. */
   private readonly attempts = new Map<string, AbortController>();
   /**
@@ -601,6 +667,9 @@ export class LifecycleRuntime {
     string,
     { readonly code: string; readonly count: number }
   >();
+
+  private readonly parameterExecution =
+    new AsyncLocalStorage<ParameterExecution>();
 
   public constructor(options: LifecycleRuntimeOptions) {
     this.store = options.store;
@@ -627,12 +696,64 @@ export class LifecycleRuntime {
         'INVALID_DEFINITION',
         `Lifecycle "${lifecycle.name}" is already registered.`,
       );
+    if (options.parameters && options.parameterProvider)
+      throw new LifecycleError(
+        'INVALID_DEFINITION',
+        'Register either parameters or parameterProvider, not both.',
+      );
+    if (lifecycle.parameterConfiguration && !options.parameterConfiguration)
+      throw new LifecycleError(
+        'INVALID_DEFINITION',
+        `Lifecycle "${lifecycle.name}" requires a parameter storage adapter.`,
+      );
+    if (
+      options.parameterConfiguration &&
+      (!lifecycle.parameterConfiguration ||
+        options.parameters ||
+        options.parameterProvider)
+    )
+      throw new LifecycleError(
+        'INVALID_DEFINITION',
+        'Configured parameters require a definition and cannot share another override reader.',
+      );
+    if (
+      options.parameterConfiguration &&
+      [
+        'read',
+        'save',
+        'snapshot',
+        'saveSnapshot',
+        'usage',
+        'saveUsage',
+        'listUsage',
+      ].some(
+        (method) =>
+          typeof Reflect.get(options.parameterConfiguration!.store, method) !==
+          'function',
+      )
+    )
+      throw new LifecycleError(
+        'INVALID_DEFINITION',
+        'The parameter storage adapter is missing a required capability.',
+      );
     const source = options.services;
     this.lifecycles.set(lifecycle.name, {
       lifecycle: lifecycle as unknown as Lifecycle<LifecycleTypes>,
       services:
         typeof source === 'function' ? source : (): object => source ?? {},
       parameters: options.parameters ?? ((): object => ({})),
+      ...(options.parameterProvider
+        ? {
+            parameterProvider:
+              options.parameterProvider as unknown as ParameterProvider<LifecycleTypes>,
+          }
+        : {}),
+      ...(options.parameterConfiguration
+        ? {
+            parameterConfiguration:
+              options.parameterConfiguration as unknown as ParameterConfigurationRegistration<LifecycleTypes>,
+          }
+        : {}),
       guards: new Map(),
     });
   }
@@ -683,10 +804,330 @@ export class LifecycleRuntime {
     return describeLifecycle(this.get(name).lifecycle);
   }
 
-  /** The defaults merged with the current overrides. */
+  /** Defaults plus synchronous overrides; excludes parameterProvider values. */
   public parameters(name: string): object {
     const registered = this.get(name);
     return { ...registered.lifecycle.parameters, ...registered.parameters() };
+  }
+
+  /** Resolves current overrides. This does not persist snapshots or usage facts. */
+  public async resolveParameters(
+    name: string,
+    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle'>,
+  ): Promise<Readonly<object>> {
+    const registered = this.get(name);
+    const execution = this.parameterExecution.getStore();
+    const scoped =
+      execution &&
+      context.transactionHandle !== undefined &&
+      context.transactionHandle === execution.handle &&
+      context.purpose !== 'effect';
+    const key = context.record
+      ? moveKey(name, context.record.id)
+      : context.purpose === 'create'
+        ? moveKey(name, '$create')
+        : undefined;
+    const cached = scoped && key ? execution.values.get(key) : undefined;
+    if (cached) {
+      const parameters = await cached;
+      await this.bindParameterSnapshot(registered, context);
+      return parameters;
+    }
+    const pending = (async (): Promise<Readonly<object>> => {
+      if (
+        registered.parameterConfiguration &&
+        !(
+          context.record &&
+          registered.parameterConfiguration.legacyRecord?.(context.record)
+        )
+      ) {
+        const resolution = await this.readConfiguredParameters(
+          registered,
+          context,
+        );
+        if (scoped && key) execution.resolutions.set(key, resolution);
+        const parameters = freezeParameters(resolution.values);
+        await this.bindParameterSnapshot(registered, context, resolution);
+        return parameters;
+      }
+      const overrides = registered.parameterProvider
+        ? await registered.parameterProvider(
+            Object.freeze({ ...context, lifecycle: name }),
+          )
+        : registered.parameters();
+      const values = { ...registered.lifecycle.parameters, ...overrides };
+      // Legacy readers may contain non-data values such as callback functions.
+      return registered.parameterProvider
+        ? freezeParameters(values)
+        : Object.freeze(values);
+    })();
+    if (scoped && key) execution.values.set(key, pending);
+    try {
+      return await pending;
+    } catch (error) {
+      if (scoped && key && execution.values.get(key) === pending)
+        execution.values.delete(key);
+      throw error;
+    }
+  }
+
+  /** Runs one server-owned action with the same values as its same-record tx.fire calls. */
+  public withParameterExecution<R>(
+    name: string,
+    id: RecordId,
+    work: (
+      parameters: Readonly<object>,
+      tx: LifecycleTransaction,
+      resolution: ParameterResolution | undefined,
+    ) => Promise<R>,
+    options: {
+      readonly transaction?: unknown;
+      readonly actionId?: string;
+    } = {},
+  ): Promise<R> {
+    const registered = this.get(name);
+    return this.store.transaction(
+      (store) =>
+        this.parameterExecution.run(
+          {
+            handle: store.transactionHandle,
+            values: new Map(),
+            resolutions: new Map(),
+          },
+          async () => {
+            const record = await store.findRecord(
+              registered.lifecycle.collection,
+              id,
+            );
+            if (!record)
+              throw new LifecycleError(
+                'RECORD_NOT_FOUND',
+                `No ${registered.lifecycle.collection} record "${String(id)}".`,
+              );
+            const parameters = await this.resolveParameters(name, {
+              record,
+              transactionHandle: store.transactionHandle,
+              purpose: 'action',
+            });
+            const resolution = this.parameterExecution
+              .getStore()
+              ?.resolutions.get(moveKey(name, id));
+            const result = await work(
+              parameters,
+              this.scope(store, this.clock()),
+              resolution
+                ? (freezeParameters(resolution) as ParameterResolution)
+                : undefined,
+            );
+            if (options.actionId)
+              await this.recordParameterUsage(
+                registered,
+                record,
+                'action',
+                options.actionId,
+                store.transactionHandle,
+              );
+            return result;
+          },
+        ),
+      joining(options.transaction),
+    );
+  }
+
+  private inParameterExecution<R>(
+    store: LifecycleStore,
+    parentHandle: unknown,
+    work: () => Promise<R>,
+  ): Promise<R> {
+    const parent = this.parameterExecution.getStore();
+    // A savepoint gets its own cache. A refused child cannot contaminate its parent.
+    const values =
+      parentHandle !== undefined && parent?.handle === parentHandle
+        ? new Map(parent.values)
+        : new Map<string, Promise<Readonly<object>>>();
+    const resolutions =
+      parentHandle !== undefined && parent?.handle === parentHandle
+        ? new Map(parent.resolutions)
+        : new Map<string, ParameterResolution>();
+    return this.parameterExecution.run(
+      { handle: store.transactionHandle, values, resolutions },
+      async () => {
+        const result = await work();
+        if (parentHandle !== undefined && parent?.handle === parentHandle)
+          for (const [key, value] of values)
+            if (!parent.values.has(key)) parent.values.set(key, value);
+        if (parentHandle !== undefined && parent?.handle === parentHandle)
+          for (const [key, value] of resolutions)
+            if (!parent.resolutions.has(key))
+              parent.resolutions.set(key, value);
+        return result;
+      },
+    );
+  }
+
+  private async readConfiguredParameters(
+    registered: Registered,
+    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle'>,
+  ): Promise<ParameterResolution> {
+    const config = registered.parameterConfiguration!;
+    const definition = registered.lifecycle.parameterConfiguration!;
+    const scope = config.scope({
+      ...context,
+      lifecycle: registered.lifecycle.name,
+    });
+    if (!scope)
+      throw new ParameterConfigurationError(
+        'CONFIGURATION_INVALID',
+        'The authoritative configuration scope is empty.',
+      );
+    const snapshot = context.record
+      ? await config.store.snapshot(
+          scope,
+          registered.lifecycle.name,
+          String(context.record.id),
+          context.transactionHandle,
+        )
+      : undefined;
+    if (
+      !snapshot &&
+      context.record &&
+      config.snapshotRequired?.(context.record)
+    )
+      throw new ParameterConfigurationError(
+        'PARAMETER_SNAPSHOT_REQUIRED',
+        'This record needs a verified historical snapshot or an explicit legacy route.',
+      );
+    const values = { ...registered.lifecycle.parameters } as JsonObject;
+    const sources: Record<string, ParameterSource> = {};
+    for (const group of definition.groups) {
+      const current = await config.store.read(
+        scope,
+        group.key,
+        context.transactionHandle,
+      );
+      if (current && current.schemaVersion !== group.schemaVersion)
+        throw new ParameterConfigurationError(
+          'CONFIGURATION_INCOMPATIBLE',
+          `Configuration group "${group.key}" has an incompatible schema version.`,
+        );
+      const defaults = Object.fromEntries(
+        Object.keys(group.fields).map((key) => [key, values[key]!]),
+      ) as JsonObject;
+      const complete = normalizeParameterValues(
+        group,
+        current?.values ?? defaults,
+      );
+      for (const [key, field] of Object.entries(group.fields)) {
+        const mode = field.readMode ?? definition.readMode ?? 'live';
+        if (mode === 'snapshot' && snapshot) {
+          const source = snapshot.sources[key];
+          if (
+            !(key in snapshot.values) ||
+            !source ||
+            source.schemaVersion !== group.schemaVersion
+          )
+            throw new ParameterConfigurationError(
+              'CONFIGURATION_INCOMPATIBLE',
+              `Snapshot parameter "${key}" requires an explicit contract migration.`,
+            );
+          values[key] = field.parse(snapshot.values[key]);
+          sources[key] = source;
+        } else {
+          values[key] = complete[key]!;
+          sources[key] = {
+            group: group.key,
+            schemaVersion: group.schemaVersion,
+            revision: current?.revision ?? 0,
+            origin: current ? 'configuration' : 'default',
+            readMode: mode,
+          };
+        }
+      }
+    }
+    return { scope, values, sources };
+  }
+
+  private async bindParameterSnapshot(
+    registered: Registered,
+    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle'>,
+    supplied?: ParameterResolution,
+  ): Promise<void> {
+    const config = registered.parameterConfiguration;
+    if (
+      !config ||
+      !registered.lifecycle.parameterConfiguration?.snapshotTransition ||
+      context.purpose !== 'transition' ||
+      !context.record ||
+      context.transition !==
+        registered.lifecycle.parameterConfiguration?.snapshotTransition ||
+      config.legacyRecord?.(context.record)
+    )
+      return;
+    const resolution =
+      supplied ??
+      this.parameterExecution
+        .getStore()
+        ?.resolutions.get(
+          moveKey(registered.lifecycle.name, context.record.id),
+        );
+    if (!resolution)
+      throw new Error('The parameter execution has no resolution to bind.');
+    if (
+      await config.store.snapshot(
+        resolution.scope,
+        registered.lifecycle.name,
+        String(context.record.id),
+        context.transactionHandle,
+      )
+    )
+      return;
+    const values: JsonObject = {};
+    const sources: Record<string, ParameterSource> = {};
+    for (const [key, source] of Object.entries(resolution.sources))
+      if (source.readMode === 'snapshot') {
+        values[key] = resolution.values[key]!;
+        sources[key] = source;
+      }
+    await config.store.saveSnapshot(
+      {
+        scope: resolution.scope,
+        lifecycle: registered.lifecycle.name,
+        recordId: String(context.record.id),
+        values,
+        sources,
+        at: this.clock().toISOString(),
+      },
+      context.transactionHandle,
+    );
+  }
+
+  private async recordParameterUsage(
+    registered: Registered,
+    record: LifecycleRecord,
+    kind: 'transition' | 'action' | 'effect',
+    associationId: string,
+    transaction?: unknown,
+    attempt?: number,
+    supplied?: ParameterResolution,
+  ): Promise<void> {
+    const resolution =
+      supplied ??
+      this.parameterExecution
+        .getStore()
+        ?.resolutions.get(moveKey(registered.lifecycle.name, record.id));
+    if (!resolution || !registered.parameterConfiguration) return;
+    await registered.parameterConfiguration.store.saveUsage(
+      {
+        ...resolution,
+        lifecycle: registered.lifecycle.name,
+        recordId: String(record.id),
+        kind,
+        associationId,
+        ...(attempt === undefined ? {} : { attempt }),
+        at: this.clock().toISOString(),
+      },
+      transaction,
+    );
   }
 
   /**
@@ -872,6 +1313,25 @@ export class LifecycleRuntime {
   }
 
   /**
+   * Invalidates record views after committed transitions and effect changes,
+   * including attempts, retries, cancellation and pending continuations.
+   * Delivery is best effort and process-local, as with on(): bridge to the
+   * application's authorized topics and periodically reconcile snapshots.
+   * Direct store writes and pruning do not notify. Returns an unsubscribe.
+   */
+  public onChange(
+    filter: RecordChangeFilter,
+    listener: LifecycleListener<LifecycleRecordChange>,
+  ): () => void {
+    const subscription = { filter, listener };
+    this.changeSubscriptions.push(subscription);
+    return (): void => {
+      const index = this.changeSubscriptions.indexOf(subscription);
+      if (index >= 0) this.changeSubscriptions.splice(index, 1);
+    };
+  }
+
+  /**
    * The transitions the record's state allows, each with whether `actor`
    * may fire it now and, if not, every reason why.
    */
@@ -881,9 +1341,17 @@ export class LifecycleRuntime {
     actor: LifecycleActor,
   ): Promise<AvailableTransition[]> {
     const registered = this.get(name);
-    const { lifecycle } = registered;
     const record = await this.require(registered, id);
-    const context = this.guardContext(registered, record, actor);
+    const context = await this.guardContext(registered, record, actor);
+    return this.availableFrom(registered, record, context);
+  }
+
+  private async availableFrom(
+    registered: Registered,
+    record: LifecycleRecord,
+    context: TransitionContext<LifecycleTypes>,
+  ): Promise<AvailableTransition[]> {
+    const { lifecycle } = registered;
     const result: AvailableTransition[] = [];
     for (const transition of transitionsFrom(
       lifecycle,
@@ -964,7 +1432,7 @@ export class LifecycleRuntime {
     }
     const blockers = await guardBlockers(
       declared,
-      this.guardContext(registered, record, actor, input ?? {}),
+      await this.guardContext(registered, record, actor, input ?? {}),
       registered.guards.get(transition),
     );
     return { allowed: blockers.length === 0, blockers, problems: [] };
@@ -1005,100 +1473,133 @@ export class LifecycleRuntime {
     const now = this.clock();
     const at = now.toISOString();
     const inner: { handle?: unknown } = {};
-    const result = await this.store.transaction(async (store) => {
-      inner.handle = store.transactionHandle;
-      await checkCreation(lifecycle, {
-        values,
-        state,
-        actor: options.actor,
-        input: options.input ?? {},
-        parameters: this.parameters(name) as ParametersOf<LifecycleTypes>,
-        services: registered.services(
-          store.transactionHandle,
-        ) as ServicesOf<LifecycleTypes>,
-        now,
-      });
-      const record = await store.createRecord(lifecycle.collection, {
-        ...values,
-        [lifecycle.stateField]: state,
-        [lifecycle.changedAtField]: at,
-        [lifecycle.versionField]: 1,
-      });
-      const entry = await store.appendTransition({
-        lifecycle: lifecycle.name,
-        recordId: String(record.id),
-        transition: CREATE_TRANSITION,
-        from: null,
-        to: state,
-        actorId: options.actor.id,
-        input: options.input ?? {},
-        at,
-        version: 1,
-        requestId: null,
-      });
-      const outcome: { created?: Decision } = {};
-      store.afterCommit(() =>
-        outcome.created
-          ? this.settle(registered, outcome.created, options.actor)
-          : undefined,
-      );
-      const hooks = lifecycle.onEnterState.get(state) ?? [];
-      const entryWork = new EntryWork();
-      const context: EnterStateHookContext<LifecycleTypes> = Object.freeze({
-        lifecycle: name,
-        record,
-        previous: null,
-        from: null,
-        to: state,
-        transition: CREATE_TRANSITION,
-        actor: options.actor,
-        input: options.input ?? {},
-        entry,
-        parameters: this.parameters(name) as ParametersOf<LifecycleTypes>,
-        services: registered.services(
-          store.transactionHandle,
-        ) as ServicesOf<LifecycleTypes>,
-        tx: this.scope(store, now),
-        now,
-        afterEntry: entryWork.queue,
-      });
-      // A hook that moves the new record on through tx ends its stay in the
-      // initial state: the hooks after it and that state's effects are skipped.
-      const moved = await entryWork.during(
-        this.runSteps(
-          store,
-          lifecycle,
-          record.id,
-          hooks.map(
-            (hook): Step =>
-              () =>
-                hook(context),
-          ),
-        ),
-      );
-      const created: Decision = moved
-        ? {
-            result: { record: moved, entry, effectRuns: [] },
-            written: record,
-            movedOn: true,
-          }
-        : await this.enterWith(
-            store,
-            lifecycle,
+    const result = await this.store.transaction(
+      (store) =>
+        this.inParameterExecution(store, options.transaction, async () => {
+          inner.handle = store.transactionHandle;
+          this.parameterExecution
+            .getStore()
+            ?.values.delete(moveKey(name, '$create'));
+          this.parameterExecution
+            .getStore()
+            ?.resolutions.delete(moveKey(name, '$create'));
+          const parameters = await this.resolveParameters(name, {
+            record: null,
+            values,
+            transactionHandle: store.transactionHandle,
+            purpose: 'create',
+          });
+          await checkCreation(lifecycle, {
+            values,
+            state,
+            actor: options.actor,
+            input: options.input ?? {},
+            parameters: parameters as ParametersOf<LifecycleTypes>,
+            services: registered.services(
+              store.transactionHandle,
+            ) as ServicesOf<LifecycleTypes>,
+            now,
+          });
+          const record = await store.createRecord(lifecycle.collection, {
+            ...values,
+            [lifecycle.stateField]: state,
+            [lifecycle.changedAtField]: at,
+            [lifecycle.versionField]: 1,
+          });
+          this.parameterExecution
+            .getStore()
+            ?.values.set(moveKey(name, record.id), Promise.resolve(parameters));
+          const creationResolution = this.parameterExecution
+            .getStore()
+            ?.resolutions.get(moveKey(name, '$create'));
+          if (creationResolution)
+            this.parameterExecution
+              .getStore()
+              ?.resolutions.set(moveKey(name, record.id), creationResolution);
+          const entry = await store.appendTransition({
+            lifecycle: lifecycle.name,
+            recordId: String(record.id),
+            transition: CREATE_TRANSITION,
+            from: null,
+            to: state,
+            actorId: options.actor.id,
+            input: options.input ?? {},
+            at,
+            version: 1,
+            requestId: null,
+          });
+          await this.recordParameterUsage(
+            registered,
             record,
+            'transition',
+            entry.id,
+            store.transactionHandle,
+          );
+          const outcome: { created?: Decision } = {};
+          store.afterCommit(() =>
+            outcome.created
+              ? this.settle(registered, outcome.created, options.actor)
+              : undefined,
+          );
+          const hooks = lifecycle.onEnterState.get(state) ?? [];
+          const entryWork = new EntryWork();
+          const context: EnterStateHookContext<LifecycleTypes> = Object.freeze({
+            lifecycle: name,
+            record,
+            previous: null,
+            from: null,
+            to: state,
+            transition: CREATE_TRANSITION,
+            actor: options.actor,
+            input: options.input ?? {},
             entry,
-            await this.owe(
+            parameters: parameters as ParametersOf<LifecycleTypes>,
+            services: registered.services(
+              store.transactionHandle,
+            ) as ServicesOf<LifecycleTypes>,
+            tx: this.scope(store, now),
+            now,
+            afterEntry: entryWork.queue,
+          });
+          // A hook that moves the new record on through tx ends its stay in the
+          // initial state: the hooks after it and that state's effects are skipped.
+          const moved = await entryWork.during(
+            this.runSteps(
               store,
               lifecycle,
-              entry,
-              lifecycle.onEnter.get(state) ?? [],
-              true,
+              record.id,
+              hooks.map(
+                (hook): Step =>
+                  () =>
+                    hook(context),
+              ),
             ),
-            entryWork,
           );
-      outcome.created = created;
-      return created.result;
-    }, joining(options.transaction));
+          const created: Decision = moved
+            ? {
+                result: { record: moved, entry, effectRuns: [] },
+                written: record,
+                movedOn: true,
+              }
+            : await this.enterWith(
+                store,
+                lifecycle,
+                record,
+                entry,
+                await this.owe(
+                  store,
+                  lifecycle,
+                  entry,
+                  lifecycle.onEnter.get(state) ?? [],
+                  true,
+                ),
+                entryWork,
+              );
+          outcome.created = created;
+          return created.result;
+        }),
+      joining(options.transaction),
+    );
     // A creation moves no record that existed, but its hooks may have.
     this.noteMoves(options.transaction, inner.handle, undefined);
     return result;
@@ -1118,11 +1619,15 @@ export class LifecycleRuntime {
     const registered = this.get(name);
     const { lifecycle } = registered;
     const record = await this.require(registered, id);
+    const context = await this.guardContext(registered, record, actor);
     return {
       record,
       state: stateOf(lifecycle, record),
       version: versionOf(lifecycle, record),
-      available: await this.available(name, id, actor),
+      available: await this.availableFrom(registered, record, context),
+      ...(registered.parameterConfiguration || registered.parameterProvider
+        ? { parameterValues: context.parameters }
+        : {}),
       history: await this.history(name, id),
     };
   }
@@ -1163,8 +1668,8 @@ export class LifecycleRuntime {
     // Every attempt was claimed and none came back: the process running it
     // stopped each time. Running it again could stop this one too.
     if (run.attempts >= run.maxAttempts) {
-      await this.store.updateEffectRun(
-        runId,
+      await this.updateRun(
+        run,
         { status: 'queued', attempts: run.attempts },
         {
           status: 'dead',
@@ -1202,6 +1707,10 @@ export class LifecycleRuntime {
     this.attempts.set(runId, controller);
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
+      // Listeners may await external publication or cancel this claimed run.
+      // Register cancellation before notifying, and do not start cancelled work.
+      await this.effectChanged(run);
+      controller.signal.throwIfAborted();
       const entry = await this.store.findTransition(run.transitionId);
       const record = await this.store.findRecord(
         lifecycle.collection,
@@ -1210,6 +1719,47 @@ export class LifecycleRuntime {
       if (!entry || !record)
         throw new Error('Its transition or record no longer exists.');
       await this.beforeEffect?.(effect.name, attempt);
+      const parameterContext: Omit<
+        ParameterReadContext<LifecycleTypes>,
+        'lifecycle'
+      > = {
+        record,
+        transactionHandle: undefined,
+        purpose: 'effect',
+        transition: entry.transition,
+        runId,
+        attempt,
+      };
+      const resolution =
+        registered.parameterConfiguration &&
+        !registered.parameterConfiguration.legacyRecord?.(record)
+          ? await this.readConfiguredParameters(registered, parameterContext)
+          : undefined;
+      const parameters = resolution
+        ? freezeParameters(resolution.values)
+        : await this.resolveParameters(lifecycle.name, parameterContext);
+      if (resolution)
+        await this.recordParameterUsage(
+          registered,
+          record,
+          'effect',
+          runId,
+          undefined,
+          attempt,
+          resolution,
+        );
+      // Notifications and preparation can outlive this claim. Check the
+      // persisted owner and lease before making any external effect call;
+      // an expired claim is left for the next recovery sweep.
+      const current = await this.store.findEffectRun(runId);
+      if (
+        current?.status !== 'running' ||
+        current.attempts !== attempt ||
+        current.claimedAt !== startedAt ||
+        new Date(startedAt).getTime() < this.clock().getTime() - this.leaseMs
+      )
+        return current;
+      controller.signal.throwIfAborted();
       const work = Promise.resolve(
         effect.run({
           record,
@@ -1219,9 +1769,7 @@ export class LifecycleRuntime {
           to: entry.to,
           attempt,
           idempotencyKey: `${lifecycle.name}:${runId}`,
-          parameters: this.parameters(
-            lifecycle.name,
-          ) as ParametersOf<LifecycleTypes>,
+          parameters: parameters as ParametersOf<LifecycleTypes>,
           services: registered.services(
             undefined,
           ) as ServicesOf<LifecycleTypes>,
@@ -1249,7 +1797,7 @@ export class LifecycleRuntime {
     } finally {
       clearTimeout(timer);
       signal.removeEventListener('abort', forward);
-      this.attempts.delete(runId);
+      if (this.attempts.get(runId) === controller) this.attempts.delete(runId);
     }
 
     const finishedAt = this.clock().toISOString();
@@ -1267,8 +1815,8 @@ export class LifecycleRuntime {
       const runAfter = new Date(
         this.clock().getTime() + backoffMs(effect.retry, attempt),
       ).toISOString();
-      const requeued = await this.store.updateEffectRun(
-        runId,
+      const requeued = await this.updateRun(
+        run,
         { status: 'running', attempts: attempt },
         {
           status: 'queued',
@@ -1326,6 +1874,7 @@ export class LifecycleRuntime {
           changes,
         );
         if (!recorded) return undefined;
+        store.afterCommit(() => this.effectChanged(run));
         if (next === undefined) return null;
         const continued: { decided?: Decision } = {};
         // Registered before deciding, as fire() does, so after the commit
@@ -1416,8 +1965,8 @@ export class LifecycleRuntime {
       const runAfter = new Date(
         this.clock().getTime() + backoffMs(effect.retry, attempt),
       ).toISOString();
-      const requeued = await this.store.updateEffectRun(
-        runId,
+      const requeued = await this.updateRun(
+        run,
         { status: 'running', attempts: attempt },
         {
           status: 'queued',
@@ -1535,8 +2084,8 @@ export class LifecycleRuntime {
         `Effect run "${runId}" is retried by force; the continuation "${continuation.transition}" it owed had not run and is dropped.`,
         { runId, reason: options.reason ?? null },
       );
-    const reset = await this.store.updateEffectRun(
-      runId,
+    const reset = await this.updateRun(
+      run,
       {
         status: run.status,
         attempts: run.attempts,
@@ -1631,8 +2180,10 @@ export class LifecycleRuntime {
         updatedAt: this.clock().toISOString(),
       },
     );
-    if (cancelled)
+    if (cancelled) {
       this.attempts.get(runId)?.abort(new Error('The run was cancelled.'));
+      await this.effectChanged(run);
+    }
     return this.store.findEffectRun(runId);
   }
 
@@ -1886,8 +2437,8 @@ export class LifecycleRuntime {
   ): Promise<void> {
     const at = this.clock().toISOString();
     try {
-      await this.store.updateEffectRun(
-        run.id,
+      await this.updateRun(
+        run,
         {
           status: run.status,
           attempts: run.attempts,
@@ -1943,6 +2494,7 @@ export class LifecycleRuntime {
             updatedAt: at,
           });
           if (!cleared) return { kind: 'changed' };
+          store.afterCommit(() => this.effectChanged(run));
           if (
             await store.findTransitionByRequest(
               run.lifecycle,
@@ -2018,7 +2570,7 @@ export class LifecycleRuntime {
       );
       let recorded: boolean;
       try {
-        recorded = await this.store.updateEffectRun(run.id, read, {
+        recorded = await this.updateRun(run, read, {
           continuation,
           updatedAt: at,
         });
@@ -2189,8 +2741,8 @@ export class LifecycleRuntime {
     const taken: EffectRun[] = [];
     for (const run of stale)
       if (
-        await this.store.updateEffectRun(
-          run.id,
+        await this.updateRun(
+          run,
           { status: 'running', attempts: run.attempts },
           {
             status: 'queued',
@@ -2234,6 +2786,28 @@ export class LifecycleRuntime {
    * leaves the transaction as it found it.
    */
   private async decide(
+    store: LifecycleStore,
+    registered: Registered,
+    id: RecordId,
+    transition: string,
+    options: FireOptions,
+    now: Date,
+    continuing?: EffectRun,
+  ): Promise<Decision> {
+    return this.inParameterExecution(store, options.transaction, () =>
+      this.decideWithParameters(
+        store,
+        registered,
+        id,
+        transition,
+        options,
+        now,
+        continuing,
+      ),
+    );
+  }
+
+  private async decideWithParameters(
     store: LifecycleStore,
     registered: Registered,
     id: RecordId,
@@ -2314,12 +2888,16 @@ export class LifecycleRuntime {
         'CONFLICT',
         `The ${lifecycle.collection} record "${String(id)}" changed state after ${expected.changedBefore}.`,
       );
+    const parameters = await this.resolveParameters(lifecycle.name, {
+      record: current,
+      transactionHandle: store.transactionHandle,
+      purpose: 'transition',
+      transition,
+    });
     const plan = await planTransition(lifecycle, current, transition, {
       actor: options.actor,
       ...(options.input === undefined ? {} : { input: options.input }),
-      parameters: this.parameters(
-        lifecycle.name,
-      ) as ParametersOf<LifecycleTypes>,
+      parameters: parameters as ParametersOf<LifecycleTypes>,
       services: registered.services(
         store.transactionHandle,
       ) as ServicesOf<LifecycleTypes>,
@@ -2359,6 +2937,13 @@ export class LifecycleRuntime {
       ...current,
       ...plan.values,
     }) as LifecycleRecord;
+    await this.recordParameterUsage(
+      registered,
+      current,
+      'transition',
+      entry.id,
+      store.transactionHandle,
+    );
     const hook: StateHookContext<LifecycleTypes> = Object.freeze({
       lifecycle: lifecycle.name,
       record,
@@ -2369,9 +2954,7 @@ export class LifecycleRuntime {
       actor: options.actor,
       input: plan.input,
       entry,
-      parameters: this.parameters(
-        lifecycle.name,
-      ) as ParametersOf<LifecycleTypes>,
+      parameters: parameters as ParametersOf<LifecycleTypes>,
       services: registered.services(
         store.transactionHandle,
       ) as ServicesOf<LifecycleTypes>,
@@ -2404,9 +2987,7 @@ export class LifecycleRuntime {
                   from: plan.from,
                   to: plan.to,
                   entry,
-                  parameters: this.parameters(
-                    lifecycle.name,
-                  ) as ParametersOf<LifecycleTypes>,
+                  parameters: parameters as ParametersOf<LifecycleTypes>,
                   services: registered.services(
                     store.transactionHandle,
                   ) as ServicesOf<LifecycleTypes>,
@@ -2473,13 +3054,6 @@ export class LifecycleRuntime {
     );
   }
 
-  /**
-   * Completes an entry whose hooks left the record in the state it entered:
-   * the work they queued with their context's `afterEntry()` runs now that
-   * the entry's effect runs are registered. A callback that moves the record
-   * on ends a stay that has begun: its runs stay queued, bound to that stay,
-   * and the record is reported as it then is.
-   */
   private async enterWith(
     store: LifecycleStore,
     lifecycle: Lifecycle<LifecycleTypes>,
@@ -2508,6 +3082,11 @@ export class LifecycleRuntime {
     actor: LifecycleActor,
   ): Promise<void> {
     await this.emit(registered, committed, actor);
+    await this.changed({
+      lifecycle: registered.lifecycle.name,
+      recordId: committed.result.entry.recordId,
+      kind: 'transition',
+    });
     for (const run of committed.result.effectRuns)
       await this.handOver(run.id, null);
   }
@@ -2575,6 +3154,51 @@ export class LifecycleRuntime {
       }
   }
 
+  /** A root-store conditional write has committed when it resolves. */
+  private async updateRun(
+    run: EffectRun,
+    condition: EffectRunCondition,
+    changes: EffectRunChanges,
+  ): Promise<boolean> {
+    const updated = await this.store.updateEffectRun(
+      run.id,
+      condition,
+      changes,
+    );
+    if (updated) await this.effectChanged(run);
+    return updated;
+  }
+
+  private effectChanged(run: EffectRun): Promise<void> {
+    return this.changed({
+      lifecycle: run.lifecycle,
+      recordId: run.recordId,
+      kind: 'effect',
+      runId: run.id,
+    });
+  }
+
+  private async changed(change: LifecycleRecordChange): Promise<void> {
+    const payload = Object.freeze(change);
+    for (const { filter, listener } of [...this.changeSubscriptions]) {
+      if (
+        (filter.lifecycle !== undefined &&
+          filter.lifecycle !== change.lifecycle) ||
+        (filter.recordId !== undefined &&
+          String(filter.recordId) !== String(change.recordId))
+      )
+        continue;
+      try {
+        await listener(payload);
+      } catch (error) {
+        this.logger.error(
+          `A record change listener failed on ${change.lifecycle} record "${change.recordId}"`,
+          { error },
+        );
+      }
+    }
+  }
+
   /** Writes a queued run for each effect a log entry owes. */
   private async owe(
     store: LifecycleStore,
@@ -2621,19 +3245,21 @@ export class LifecycleRuntime {
   }
 
   /** What a guard sees outside a transition: the input asked about, if any, and no transaction. */
-  private guardContext(
+  private async guardContext(
     registered: Registered,
     record: LifecycleRecord,
     actor: LifecycleActor,
     input: JsonObject = {},
-  ): TransitionContext<LifecycleTypes> {
+  ): Promise<TransitionContext<LifecycleTypes>> {
     return Object.freeze({
       record,
       actor,
       input,
-      parameters: this.parameters(
-        registered.lifecycle.name,
-      ) as ParametersOf<LifecycleTypes>,
+      parameters: (await this.resolveParameters(registered.lifecycle.name, {
+        record,
+        transactionHandle: undefined,
+        purpose: 'preview',
+      })) as ParametersOf<LifecycleTypes>,
       services: registered.services(undefined) as ServicesOf<LifecycleTypes>,
       now: this.clock(),
     });
@@ -2667,4 +3293,25 @@ export class LifecycleRuntime {
       { runId },
     );
   }
+}
+
+/** Detach provider-owned values before freezing callback input. */
+function freezeParameters(values: object): Readonly<object> {
+  const copy: object = structuredClone(values);
+  const freeze = (value: object): void => {
+    if (Object.isFrozen(value)) return;
+    if (
+      !Array.isArray(value) &&
+      Object.getPrototypeOf(value) !== Object.prototype &&
+      Object.getPrototypeOf(value) !== null
+    )
+      throw new TypeError(
+        'Asynchronous parameter values must use plain objects and arrays.',
+      );
+    Object.freeze(value);
+    for (const child of Object.values(value) as unknown[])
+      if (child !== null && typeof child === 'object') freeze(child);
+  };
+  freeze(copy);
+  return copy;
 }

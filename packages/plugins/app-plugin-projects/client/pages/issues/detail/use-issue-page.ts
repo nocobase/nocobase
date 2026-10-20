@@ -42,17 +42,6 @@ function colorFor(name: string): Color {
 }
 
 export interface IssuePageActions {
-  /** Checks or unchecks an item of the current status's checklist. */
-  readonly toggleChecklistItem: (
-    itemKey: string,
-    checked: boolean,
-  ) => Promise<void>;
-  /** Decides or withdraws the pending approval request. */
-  readonly decideApproval: (
-    requestId: string,
-    decision: 'approve' | 'reject' | 'withdraw',
-    comment?: string,
-  ) => Promise<void>;
   /** The issue waits for `dependsOnIssueId`. */
   readonly addBlocker: (dependsOnIssueId: string) => Promise<void>;
   readonly removeDependency: (dependencyId: string) => Promise<void>;
@@ -93,26 +82,6 @@ export function useIssuePageActions(detail: IssueDetail): IssuePageActions {
 
   return useMemo(
     () => ({
-      toggleChecklistItem: (itemKey, checked) =>
-        run(async () => {
-          if (!detail.checklist) return;
-          await api.setChecklistItem(
-            detail.id,
-            detail.checklist.statusKey,
-            itemKey,
-            { checked },
-          );
-        }),
-      decideApproval: (requestId, decision, comment) =>
-        run(async () => {
-          const decided =
-            decision === 'withdraw'
-              ? await api.withdrawApproval(requestId)
-              : await api.decideApproval(requestId, decision, comment);
-          if (decided.status === 'stale')
-            notify.info(t('approvals.stale'), t('approvals.staleDescription'));
-          else notify.success(t(`approvals.${decided.status}`));
-        }),
       addBlocker: (dependsOnIssueId) =>
         run(async () => {
           await api.addDependency(detail.id, {

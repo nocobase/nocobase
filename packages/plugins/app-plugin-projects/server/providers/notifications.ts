@@ -1,14 +1,8 @@
 /**
  * Notices for the plugin's events: who is told what, worded once in the application's default language.
  *
- * - A status that notifies its owner: an `owner_notified` notice to the owner.
- * - A status change waiting for approval: an `approval_requested` decision to its approvers.
- * - A decided request: the decision is resolved, and whoever asked hears an approval or a rejection
- *   (`approval_decided`) unless they decided it themselves; when another kind (an agent) asked, the issue's owner
- *   hears it instead.
- * - An approved request that no longer applies (its conditions failed when it was approved): an `approval_stale` notice
- *   to the approvers and whoever asked (the owner when another kind asked), except the approver who approved it. A
- *   request that went stale because the issue left the status tells nobody.
+ * - An issue entered `blocked` or `in_review`, moved by someone other than its owner: an `owner_notified` notice to the
+ *   owner.
  * - Notices planned in a transaction (`notice.planned`, `domains/notices`): comments, mentions, status changes and
  *   assignments.
  * - Sub-issues and dependencies: the rules of `domains/subtasks/subtask.notices.ts` (`dependency_released`,
@@ -27,11 +21,8 @@ import {
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { i18nToken } from '@nocobase/app-server/i18n';
 
-import {
-  hasDefaultName,
-  isLocalizedMessage,
-  messageText,
-} from '../../shared/workflows.js';
+import { hasDefaultName } from '../../shared/statuses.js';
+import '../domains/statuses/status.events.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import { findIssue, issueVisibleTo } from '../domains/issues/index.js';
@@ -87,7 +78,6 @@ function directNotices(app: AppPluginApplication): ProjectsNotices | null {
         },
       });
     },
-    resolve: () => Promise.resolve(),
   };
 }
 
@@ -234,7 +224,7 @@ export function startNotifications(
         params: notice.params,
       });
     }),
-    events.on('workflow.ownerNotified', async (event) => {
+    events.on('status.ownerNotified', async (event) => {
       if (!sink()) return;
       const t = await translator();
       await send({
@@ -246,118 +236,13 @@ export function startNotifications(
           identifier: event.identifier,
           status: statusName(t, event.statusKey, event.statusName),
         }),
-        // A keyed message is worded here in the default language, and its key travels along so an inbox can word
-        // it in each reader's.
-        body: messageText(event.message, t) ?? event.title,
+        body: event.title,
         path: issuePath(event.identifier),
         issue: { id: event.issueId, identifier: event.identifier },
         params: {
           identifier: event.identifier,
           status: event.statusKey,
           statusName: event.statusName,
-          ...(isLocalizedMessage(event.message)
-            ? {
-                messageKey: event.message.key,
-                ...(event.message.ns ? { messageNs: event.message.ns } : {}),
-                ...(event.message.defaultValue
-                  ? { messageDefault: event.message.defaultValue }
-                  : {}),
-              }
-            : {}),
-        },
-      });
-    }),
-    events.on('approval.requested', async (event) => {
-      if (!sink()) return;
-      const t = await translator();
-      await send({
-        key: `pm:approval-requested:${event.requestId}`,
-        kind: 'decision',
-        type: 'approval_requested',
-        userIds: event.approverUserIds,
-        title: t('notifications.approvalRequested', {
-          identifier: event.identifier,
-          status: statusName(t, event.toStatus, event.toStatusName),
-        }),
-        body: event.title,
-        path: issuePath(event.identifier),
-        issue: { id: event.issueId, identifier: event.identifier },
-        approvalRequestId: event.requestId,
-        params: {
-          identifier: event.identifier,
-          status: event.toStatus,
-          statusName: event.toStatusName,
-        },
-      });
-    }),
-    events.on('approval.decided', async (event) => {
-      const target = sink();
-      if (!target) return;
-      await target.resolve({
-        approvalRequestId: event.requestId,
-        outcome: event.status,
-      });
-      const { requestedBy } = event;
-      // Whoever asked hears the outcome; the owner does when another kind (an agent) asked.
-      const asker =
-        requestedBy.type === 'user' ? requestedBy.id : event.ownerUserId;
-      const t = await translator();
-      const status = statusName(t, event.toStatus, event.toStatusName);
-      const common = {
-        path: issuePath(event.identifier),
-        issue: { id: event.issueId, identifier: event.identifier },
-        approvalRequestId: event.requestId,
-      };
-      if (event.status === 'stale' && event.staleReason) {
-        const userIds = [...event.approverUserIds, ...(asker ? [asker] : [])]
-          .filter((userId) => userId !== event.staleReason?.attemptedById)
-          .filter((userId, index, all) => all.indexOf(userId) === index);
-        if (userIds.length > 0)
-          await send({
-            ...common,
-            key: `pm:approval-stale:${event.requestId}`,
-            kind: 'info',
-            type: 'approval_stale',
-            userIds,
-            title: t('notifications.approval.stale', {
-              identifier: event.identifier,
-              status,
-            }),
-            body: event.staleReason.message ?? event.title,
-            params: {
-              identifier: event.identifier,
-              status: event.toStatus,
-              statusName: event.toStatusName,
-              outcome: event.status,
-              code: event.staleReason.code,
-              ...(event.staleReason.message
-                ? { message: event.staleReason.message }
-                : {}),
-            },
-          });
-        return;
-      }
-      if (event.status !== 'approved' && event.status !== 'rejected') return;
-      if (!asker || asker === event.decidedById) return;
-      await send({
-        ...common,
-        key: `pm:approval-decided:${event.requestId}`,
-        kind: 'info',
-        type: 'approval_decided',
-        userIds: [asker],
-        title: t(`notifications.approval.${event.status}`, {
-          identifier: event.identifier,
-          status,
-        }),
-        body: event.comment ?? event.title,
-        params: {
-          identifier: event.identifier,
-          status: event.toStatus,
-          statusName: event.toStatusName,
-          outcome: event.status,
-          ...(requestedBy.type === 'user'
-            ? {}
-            : { requestedByType: requestedBy.type }),
         },
       });
     }),

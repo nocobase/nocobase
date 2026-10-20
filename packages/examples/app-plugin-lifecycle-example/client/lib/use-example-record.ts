@@ -23,6 +23,9 @@ import { NAMESPACE } from './format.js';
 export const useExampleLifecycle: UseRecordLifecycle = createLifecycleHook({
   useTransport: useApiClient,
   basePath: LIFECYCLE_ROUTES,
+  // No polling: the pages reload a record when the server says it changed.
+  refreshMs: 0,
+  loadOnMount: false,
 });
 
 /** The page's locale as `errorMessage()` reads it. */
@@ -53,7 +56,15 @@ export function useExampleRecord(
   const lifecycle = useExampleLifecycle(name, id, { actAs: actor });
   const { view, description } = lifecycle;
   return {
-    detail: view && description ? { ...view, ...description } : undefined,
+    detail:
+      view && description
+        ? {
+            ...view,
+            ...description,
+            parameters: (view.parameterValues ??
+              description.parameters) as Readonly<Record<string, unknown>>,
+          }
+        : undefined,
     error: lifecycle.error ? errorMessage(lifecycle.error, translate) : '',
     lifecycle,
   };

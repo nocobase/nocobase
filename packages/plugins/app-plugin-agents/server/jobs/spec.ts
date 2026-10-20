@@ -17,6 +17,13 @@ import { z } from 'zod';
 
 import { invalid } from '../kernel/errors.js';
 
+/** The stored variables named by a job may be delivered only to a team runner. */
+export class JobSecretsNotAllowed extends Error {
+  public constructor() {
+    super('The job names variables restricted to team runners.');
+  }
+}
+
 /** A variable name: upper-case letters, digits and underscores, not starting with a digit. */
 const VARIABLE_NAME_PATTERN = /^[A-Z_][A-Z0-9_]{0,127}$/u;
 

@@ -111,3 +111,269 @@ describeMigration('202610010001_lifecycle_example_create_collections', {
     for (const name of COLLECTIONS) await expectCollection(name).not.toExist();
   },
 });
+
+const FLOW_COLLECTIONS = [
+  'lifecycleExampleOrders',
+  'lifecycleExampleExports',
+  'lifecycleExamplePurchases',
+  'lifecycleExampleFulfilments',
+  'lifecycleExampleSubscriptions',
+];
+
+describeMigration('202610090001_lifecycle_example_create_durable_flows', {
+  sources: migrations,
+  up: async ({ connection, expectCollection }) => {
+    for (const name of FLOW_COLLECTIONS) {
+      await expectCollection(name).toExist();
+      await expectCollection(name).toHaveField('lifecycleVersion', {
+        nullable: false,
+      });
+      // What the trigger sweep reads.
+      await expectCollection(name).toHaveIndex(['status', 'statusChangedAt']);
+    }
+    // What the renewal sweep reads.
+    await expectCollection('lifecycleExampleSubscriptions').toHaveIndex([
+      'status',
+      'currentPeriodEnd',
+    ]);
+    // A simulated system's object is found by its kind and key, once.
+    await expectCollection('lifecycleExampleSandboxObjects').toHaveIndex(
+      ['kind', 'key'],
+      { unique: true },
+    );
+    const objects = connection.repository('lifecycleExampleSandboxObjects');
+    const object = {
+      values: {
+        kind: 'checkout',
+        key: 'cs_1',
+        status: 'open',
+        data: {},
+        version: 0,
+        createdAt: '2026-10-09T09:00:00.000Z',
+        updatedAt: '2026-10-09T09:00:00.000Z',
+      },
+    };
+    await objects.createOne(object);
+    await expect(objects.createOne(object)).rejects.toThrow();
+    // An event is sent under one id, however often it is delivered.
+    await expectCollection('lifecycleExampleWebhookEvents').toHaveIndex(
+      ['eventId'],
+      { unique: true },
+    );
+    await expectCollection('lifecycleExampleWebhookEvents').toHaveField(
+      'outcome',
+      { nullable: true },
+    );
+  },
+  down: async ({ expectCollection }) => {
+    for (const name of [
+      ...FLOW_COLLECTIONS,
+      'lifecycleExampleSandboxObjects',
+      'lifecycleExampleWebhookEvents',
+    ])
+      await expectCollection(name).not.toExist();
+  },
+});
+
+describeMigration('202610110001_lifecycle_example_create_invoices', {
+  sources: migrations,
+  up: async ({ connection, expectCollection }) => {
+    const name = 'lifecycleExampleInvoices';
+    await expectCollection(name).toExist();
+    await expectCollection(name).toHaveIndex(['status', 'statusChangedAt']);
+    await expectCollection(name).toHaveIndex(['orderRef'], { unique: true });
+    const values = {
+      orderRef: '1024',
+      customerId: 'customer-li',
+      title: 'Example company',
+      taxNumber: '91310000MA1K000001',
+      amountCents: 39900,
+      status: 'draft',
+      statusChangedAt: '2026-10-11T00:00:00Z',
+      createdAt: '2026-10-11T00:00:00Z',
+    };
+    await connection.repository(name).createOne({ values });
+    await expect(
+      connection.repository(name).createOne({ values }),
+    ).rejects.toThrow();
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('lifecycleExampleInvoices').not.toExist();
+  },
+});
+
+describeMigration('202610130001_lifecycle_example_parameter_configuration', {
+  sources: migrations,
+  up: async ({ connection, expectCollection }) => {
+    for (const suffix of [
+      'Heads',
+      'Versions',
+      'Selections',
+      'Requests',
+      'Snapshots',
+      'Usages',
+    ])
+      await expectCollection('lifecycleExampleParameter' + suffix).toExist();
+    await expectCollection('lifecycleExampleParameterHeads').toHaveIndex(
+      ['scope', 'groupKey'],
+      { unique: true },
+    );
+    await expectCollection('lifecycleExampleParameterSelections').toHaveField(
+      'referenceId',
+      { nullable: false },
+    );
+    await expectCollection('lifecycleExampleParameterUsages').toHaveIndex([
+      'recordKey',
+      'at',
+      'id',
+    ]);
+    await expectCollection('lifecycleExampleExpenses').toHaveField(
+      'parameterContract',
+      { nullable: true },
+    );
+    expect(
+      await connection.repository('lifecycleExampleDepartments').count(),
+    ).toBe(2);
+    expect(
+      await connection
+        .repository('lifecycleExamplePeople')
+        .findOne({ filter: { id: 'disabled' } }),
+    ).toMatchObject({ active: false });
+  },
+  down: async ({ expectCollection }) => {
+    for (const suffix of [
+      'Heads',
+      'Versions',
+      'Selections',
+      'Requests',
+      'Snapshots',
+      'Usages',
+    ])
+      await expectCollection(
+        'lifecycleExampleParameter' + suffix,
+      ).not.toExist();
+    await expectCollection('lifecycleExampleExpenses').toExist();
+  },
+});
+
+describeMigration('202610160003_lifecycle_example_workflow_parameters', {
+  sources: migrations,
+  before: async ({ database }) => {
+    const { StoredLifecycleParameters, createRepositoryLifecycleStore } =
+      await import('@nocobase/lifecycle');
+    const { PARAMETER_COLLECTIONS } =
+      await import('../server/configuration/store.js');
+    const { reviewerParameterGroup } =
+      await import('../server/configuration/definitions.js');
+    const store = new StoredLifecycleParameters(
+      createRepositoryLifecycleStore(database),
+      PARAMETER_COLLECTIONS,
+    );
+    await store.save({
+      scope: 'demo',
+      group: reviewerParameterGroup,
+      values: {
+        reviewerRule: [{ group: 1, type: 'user', referenceId: 'sun' }],
+      },
+      expectedRevision: 0,
+      requestId: 'legacy-reviewers',
+      actorId: 'zhao',
+      at: '2026-10-15T00:00:00.000Z',
+    });
+  },
+  up: async ({ database }) => {
+    const { StoredLifecycleParameters, createRepositoryLifecycleStore } =
+      await import('@nocobase/lifecycle');
+    const { PARAMETER_COLLECTIONS, workflowParameterStore } =
+      await import('../server/configuration/store.js');
+    const store = new StoredLifecycleParameters(
+      createRepositoryLifecycleStore(database),
+      PARAMETER_COLLECTIONS,
+    );
+    for (const name of ['reviewerDemo', 'reviewerLiveDemo']) {
+      expect(
+        await workflowParameterStore(store, name).read(
+          'demo',
+          'financeReviewers',
+        ),
+      ).toMatchObject({
+        revision: 1,
+        values: {
+          reviewerRule: [{ group: 1, type: 'user', referenceId: 'sun' }],
+        },
+      });
+    }
+    expect(await store.read('demo', 'financeReviewers')).toBeDefined();
+  },
+});
+
+describeMigration('202610160005_lifecycle_example_unified_parameters', {
+  sources: migrations,
+  before: async ({ database }) => {
+    const { StoredLifecycleParameters, createRepositoryLifecycleStore } =
+      await import('@nocobase/lifecycle');
+    const { PARAMETER_COLLECTIONS, workflowParameterStore } =
+      await import('../server/configuration/store.js');
+    const {
+      expenseParameterGroup,
+      expenseTimingGroup,
+      reviewerParameterGroup,
+    } = await import('../server/configuration/definitions.js');
+    const store = new StoredLifecycleParameters(
+      createRepositoryLifecycleStore(database),
+      PARAMETER_COLLECTIONS,
+    );
+    for (const [workflow, group, values] of [
+      [
+        'expenses',
+        expenseParameterGroup,
+        { autoApproveLimit: 123, financeLimit: 456 },
+      ],
+      ['expenses', expenseTimingGroup, { escalateAfterMinutes: 7 }],
+      [
+        'reviewerDemo',
+        reviewerParameterGroup,
+        { reviewerRule: [{ group: 1, type: 'user', referenceId: 'sun' }] },
+      ],
+    ] as const) {
+      await workflowParameterStore(store, workflow).save({
+        scope: 'demo',
+        group,
+        values: values as import('@nocobase/lifecycle').JsonObject,
+        expectedRevision: 0,
+        requestId: group.key,
+        actorId: 'zhao',
+        at: '2026-10-16T00:00:00.000Z',
+      });
+    }
+  },
+  up: async ({ connection }) => {
+    const rows = connection.repository('lifecycleExampleWorkflowParameters');
+    expect(await rows.count()).toBe(8);
+    expect(
+      await rows.findOne({ filter: { id: 'lifecycle.expenses' } }),
+    ).toMatchObject({
+      revision: 1,
+      values: {
+        autoApproveLimit: 123,
+        financeLimit: 456,
+        escalateAfterMinutes: 7,
+      },
+    });
+    expect(
+      await rows.findOne({ filter: { id: 'lifecycle.reviewerDemo' } }),
+    ).toMatchObject({
+      revision: 1,
+      values: {
+        reviewerRule: [{ group: 1, type: 'user', referenceId: 'sun' }],
+      },
+    });
+    expect(
+      await connection.repository('lifecycleExampleParameterVersions').count(),
+    ).toBe(3);
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('lifecycleExampleWorkflowParameters').not.toExist();
+    await expectCollection('lifecycleExampleParameterVersions').toExist();
+  },
+});

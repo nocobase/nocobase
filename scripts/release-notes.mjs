@@ -272,7 +272,7 @@ export function renderReleaseNotes(tag) {
     const heading = `## \`${pkg.name}@${pkg.version}\``;
     const full = `${heading}\n\n${section ? deduplicateDependencyUpdates(section) : '_No changelog entry was recorded for this version._'}`;
     const changelogUrl = directory
-      ? `https://github.com/nocobase/nocobase3/blob/${commit}/packages/${directory}/CHANGELOG.md#${pkg.version.replaceAll('.', '')}`
+      ? `https://github.com/nocobase/nocobase/blob/${commit}/packages/${directory}/CHANGELOG.md#${pkg.version.replaceAll('.', '')}`
       : undefined;
     return {
       full,

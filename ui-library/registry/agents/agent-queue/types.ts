@@ -3,6 +3,7 @@
  * agents, and how busy the runtimes are. The shape mirrors what an application composes from the agents and projects
  * plugins (such as an application's `GET /api/agentBoard`), written out here so the item imports no plugin.
  */
+import type { ReactNode } from 'react';
 
 /** Where an agent stands with an issue. */
 export type AgentQueueState = 'waiting' | 'working' | 'queued' | 'idle';
@@ -11,34 +12,34 @@ export type AgentQueueState = 'waiting' | 'working' | 'queued' | 'idle';
 export type AgentQueueWaitKind =
   'failedRun' | 'approval' | 'proposal' | 'question' | 'review';
 
-/** Why a queued run waits. */
-export type AgentQueueWaitReason =
-  | 'agentArchived'
-  | 'delayed'
-  | 'noRunnerOnline'
-  | 'runnersOffline'
-  | 'toolUnavailable'
-  | 'noSharedRunner'
-  | 'missingFeatures'
-  | 'sameWorkActive'
-  | 'concurrencyFull'
-  | 'runnersBusy'
-  | 'toolSlotsFull'
-  | 'setupRetrying'
-  | 'next';
-
 export interface AgentQueueWait {
-  readonly reason: AgentQueueWaitReason;
+  /**
+   * Why it waits: a code the item does not interpret, such as the agents plugin's `secretsNotAllowed`. The consumer
+   * words it (`formatWait`); without that the code itself is shown.
+   */
+  readonly reason: string;
   /** Its place among every queued run, when the runtimes take them in one order. */
   readonly position: number | null;
   /** Its place among this agent's queued runs, in claim order. */
   readonly agentPosition: number;
-  /** For `delayed`. */
+  /** The values its words need, as the server sends them; handed to `formatWait` with the rest. */
+  readonly params?: Readonly<
+    Record<string, string | number | readonly string[]>
+  >;
+  /** What servers sent before `params`, handed on the same way. */
   readonly until?: string | null;
-  /** For `toolUnavailable` or `toolSlotsFull`. */
   readonly tool?: string | null;
-  /** For `missingFeatures`. */
-  readonly missing: readonly string[];
+  readonly missing?: readonly string[];
+  readonly detail?: string | null;
+}
+
+/** A wait in words, as the consumer's `formatWait` gives it. */
+export interface AgentQueueWaitView {
+  readonly text: ReactNode;
+  /** More about it, shown on hover when it is a string. */
+  readonly detail?: ReactNode;
+  /** It needs someone to act (an administrator, the agent's owner) rather than time: drawn as a warning. */
+  readonly blocking?: boolean;
 }
 
 /** The latest thing a run reported. */

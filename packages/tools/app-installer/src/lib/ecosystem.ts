@@ -3,11 +3,6 @@ export interface EcosystemOptions {
   name: string;
   /** Absolute path of the Node binary the application runs on. */
   nodePath: string;
-  /**
-   * Leave the process's children to it when pm2 stops it. The Hub stops its App Host child itself, and the child exits
-   * on its own if the Hub is killed; an application without such a child keeps pm2's default and has its tree killed.
-   */
-  keepChildren?: boolean;
 }
 
 /**
@@ -42,13 +37,7 @@ module.exports = {
       max_restarts: 10,
       exp_backoff_restart_delay: 1000,
       // pm2 sends SIGKILL 1.6s after SIGINT by default; the application finishes what it is doing first.
-      kill_timeout: 60000,${
-        options.keepChildren
-          ? `
-      // The Hub stops its App Host child itself, and the child exits on its own if the Hub is killed.
-      treekill: false,`
-          : ''
-      }
+      kill_timeout: 60000,
       out_file: path.join(root, 'logs/app.out.log'),
       error_file: path.join(root, 'logs/app.err.log'),
       time: true,

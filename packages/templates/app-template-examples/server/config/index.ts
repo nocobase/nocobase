@@ -1,3 +1,4 @@
+import agents from './agents.js';
 import mail from './mail.js';
 import {
   defaultAppConfigs,
@@ -23,11 +24,10 @@ import app from './app.js';
 import api from './api.js';
 import database from './database.js';
 import snowflake from './snowflake.js';
-import ai from './ai.js';
-import workflow from './workflow.js';
 import users from './users.js';
 
 const defaultConfigs: AppConfigFactory<{
+  agents: ReturnType<typeof agents>;
   auth: ReturnType<typeof auth>;
   authorization: ReturnType<typeof authorization>;
   notification: ReturnType<typeof notification>;
@@ -48,11 +48,10 @@ const defaultConfigs: AppConfigFactory<{
   api: ReturnType<typeof api>;
   database: ReturnType<typeof database>;
   snowflake: ReturnType<typeof snowflake>;
-  ai: ReturnType<typeof ai>;
-  workflow: ReturnType<typeof workflow>;
   users: ReturnType<typeof users>;
   mail: ReturnType<typeof mail>;
 }> = defaultAppConfigs({
+  agents,
   auth,
   authorization,
   notification,
@@ -73,8 +72,6 @@ const defaultConfigs: AppConfigFactory<{
   api,
   database,
   snowflake,
-  ai,
-  workflow,
   users,
   mail,
 });

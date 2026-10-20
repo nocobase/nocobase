@@ -1,14 +1,14 @@
 # NocoBase 3 Examples
 
-A full-stack NocoBase 3 application. The server runs on `@nocobase/app-server` and the browser client is React with Refine, shadcn/ui, and Tailwind CSS.
+A full-stack NocoBase 3 application. The server runs on `@nocobase/app-server` and the browser client is React with shadcn/ui and Tailwind CSS.
 
 You own everything in this directory. Add pages, API routes, database tables, and business logic directly here — this is your application's source code, not a framework you extend from the outside.
 
 This is the examples template, based on `@nocobase/app-template-default`. It is a standalone application with its own database and configuration. Default provides a clean starting template with product capabilities and no example plugins.
 
-The homepage links to article management, repository queries, CRM, orders, file management, routes, and AI employee tasks. Additional registered plugins demonstrate services, queues, scheduled jobs, record lifecycles and the office processes built on them, realtime, CLI commands, and Skills. Plugin demonstrations remain in their own packages under `packages/examples/`; the article page demonstrates application-owned development.
+The homepage links to article management, repository queries, CRM, orders, file management, and routes. Additional registered plugins demonstrate services, queues, scheduled jobs, record lifecycles and the office processes built on them, realtime, CLI commands, and Skills. Plugin demonstrations remain in their own packages under `packages/examples/`; the article page demonstrates application-owned development.
 
-Examples retains Default’s Users and API Keys integration alongside its demonstrations. Users lists direct Authorization Permission Sets as application roles; authenticated default access remains separate. API Keys is configured in both authentication factories and mounted under Settings. Keep these product integrations aligned with Default.
+Examples retains Default’s Users and API Keys integration alongside its demonstrations. Users lists direct Authorization Permission Sets as application roles; authenticated default access remains separate. API Keys is configured in both authentication factories. As an already built application, Examples registers the prepared Users and Roles and permissions pages that Default can enable as business capabilities are developed. Used configurable capabilities include their administration surfaces as part of feature delivery. Keep these product integrations aligned with Default.
 
 ## Create an examples application
 
@@ -31,6 +31,12 @@ Article migration and seed sources create six articles on a fresh managed defaul
 
 Every `/api` route the application writes declares itself for the API document that signed-in users and API keys read at `/api/swagger/docs`. `server/routes/articles.ts` shows the pattern: `describeRoute()` from `@nocobase/app-server/router` with the application's `Examples` tag, a summary, an `operationId` such as `examplesCreateArticle`, and the responses through `dataResponse()`, `listResponse()` and `apiErrorResponse()` for each status the route can produce; `apiValidator()` validates the query, path and body and documents them along with the `400` it answers, so a route lists `400` itself only for another reason; the response schemas live in `server/routes/schemas.ts` with `.meta({ ref })`. The public `GET /api/example` declares `security: []`, and the stand-ins that answer `503 DATABASE_UNAVAILABLE` while no database is configured are hidden with `describeRoute({ hide: true })`. Data endpoints such as the analytics and CRM exposures are documented by the framework without a declaration. `tests/logic/openapi.test.ts` starts the whole application and checks that every route is declared, every `operationId` is present and unique, and `findApiDocumentSchemaProblems()` finds nothing.
 
+Business lists reuse the template's standard `DataTable` and companions from `#components/data-table`. The template declares the compatible TanStack Table v8 dependency and provides controlled server pagination/sorting; application agents should not generate an independent table engine. See the [table guide](.agents/skills/nocobase-app-development/references/frontend/references/table.md).
+
+## OnlineAgent example
+
+Open **Agents → Models** to configure a service and enable a chat model, then open the header chat button, press Cmd/Ctrl+J or use the homepage Online Agent card. [OnlineAgent usage and verification](online-agent.md) explains model configuration, permissions, saved history and the distinction between the local HTTP fixture and a real model service.
+
 ## Internationalization example
 
 Open **Internationalization** from the homepage or sidebar (`/i18n-examples`, relative to the application's mount path). Like the other protected examples, this page requires sign-in and its page permission; administrators can explore it directly.
@@ -41,17 +47,9 @@ The fallback table runs deliberately incomplete resources in a page-local `I18nR
 
 The regional comparison formats the same number, USD amount and fixed UTC timestamp for `zh-CN`, `en-US` and `de-DE` using `Intl`. It performs no currency conversion and does not add German to the application's language list. This example covers regional formatting; it does not demonstrate RTL layout.
 
-## AI employee example
-
-Every signed-in page carries the global AI employee entry: a trigger at the lower right opens the shared AI conversation as a side panel that pushes the page narrower on a wide screen and expands into a dialog. `client/components/ai-employee-entry.tsx` composes it around `AppLayout` from the application-owned `nocobase-ai` Registry item in `client/extensions/nocobase-ai`, and shows the trigger only once the current user has an AI employee. Settings and Dev keep their own layouts without it. Configure an LLM service under `ai.llmServices` in `config.yml` first, as the AI Employee plugin's README describes; without one the employees load but cannot answer.
-
-Open **AI employee tasks** from the homepage or sidebar (`/ai-employee-example`). `@nocobase/app-plugin-ai-employee-example` registers the AI employee Iris and the read-only tool `example-ticket-history` on the server, and declares the route; the page itself is the plugin's `tasks-page` Registry item in `client/extensions/nocobase-ai-employee-example-tasks-page`, which replaces the plugin's fallback through `extension.ts`. Select a ticket and hover **Ask Iris** to run **Analyze this ticket**, which is sent at once, or **Draft a reply**, which only fills the composer; **Triage the queue** starts a task from an ordinary button through `useGlobalAIChatController().triggerTask()` with every ticket as work context. Each task carries its user message, instructions for that run and the tools it may call, and Iris reads each ticket's internal history through the tool.
-
-Both directories under `client/extensions/` belong to the application. `pnpm registry materialize` in the source repository installs them, and upgrades are reviewed with a three-way merge rather than copied over. `tests/components/ai-employee-entry.test.tsx` and `tests/components/ai-employee-tasks-page.test.tsx` cover the entry, the tasks and the requests they send, and `tests/logic/ai-employee-example.test.ts` starts the application and reads the registered employee and tool back.
-
 ## Maintain this template
 
-Keep framework files aligned with Default and Hub: the `package.json` scripts that call `nocobase`, runtime composition mechanisms, the `cli/plugins.ts` composition root, shell, theme and development guidance. Keep the examples homepage, article module, example plugin choices and sample data here. Existing Default installations retain their historical data; follow the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations) when removing example registrations.
+Keep framework files aligned with Default: the `package.json` scripts that call `nocobase`, runtime composition mechanisms, the `cli/plugins.ts` composition root, shell, theme and development guidance. Keep the examples homepage, article module, example plugin choices and sample data here. Existing Default installations retain their historical data; follow the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations) when removing example registrations.
 
 ## Getting started
 
@@ -130,7 +128,7 @@ client/                  Browser application
 ├── pages/               Your page components
 ├── components/          Your components
 │   └── ui/              shadcn/ui primitives
-├── layouts/             App and Settings layouts
+├── layouts/             App layout
 │   └── components/      Layout containers, navigation, branding and account controls
 ├── routing/             Route rendering, access checks, loading and error UI
 ├── locales/             Your translated strings
@@ -381,7 +379,7 @@ pnpm nocobase package remove @nocobase/example --dry-run
 pnpm nocobase package remove @nocobase/example --json
 ```
 
-For an ordinary package, the command uses the application's package manager to remove the dependency and update both `package.json` and the lockfile, then removes only the Skill directories recorded as owned by that package. For an `@nocobase/app-plugin-*` package, it reuses the `plugin unregister` workflow so Client, Server, and CLI registrations are removed together with the dependency and its Skills. `pnpm nocobase plugin unregister <name>` remains available when the task is specifically expressed as unregistering a plugin.
+For an ordinary package, the command uses the application's package manager to remove the dependency and update both `package.json` and the lockfile, then removes only the Skill directories recorded as owned by that package. For an `@nocobase/app-plugin-*` package, it reuses the `plugin unregister` steps so Client, Server, and CLI registrations are removed together with the dependency and its Skills. `pnpm nocobase plugin unregister <name>` remains available when the task is specifically expressed as unregistering a plugin.
 
 After an interrupted or manual removal, make sure the manifest no longer declares the package and run a full `pnpm nocobase skills sync` to reconcile stale package-owned output. Passing a package already absent from the manifest to `package remove` can clean its recorded historical Skill ownership without uninstalling any other package.
 
@@ -431,7 +429,7 @@ For example, `pnpm build --target linux-x64 --node-version 24` produces:
 }
 ```
 
-`nodeMajor` describes the target runtime, not the Node version used to run the build. No target patch version is implied. These fields provide platform and Node ABI checks for Hub deployment; they do not describe system libraries, CPU instruction requirements, or other runtime prerequisites.
+`nodeMajor` describes the target runtime, not the Node version used to run the build. No target patch version is implied. These fields provide platform and Node ABI checks for deployment; they do not describe system libraries, CPU instruction requirements, or other runtime prerequisites.
 
 If your application has no native modules — `pg`, `mysql2`, and `tedious` are all plain JavaScript — no platform-specific binaries need retargeting. The build still records the selected target, and the deployment runtime must satisfy `engines.node`.
 
@@ -455,11 +453,11 @@ import { resolveAssetUrl } from '@nocobase/app-client';
 <img src={resolveAssetUrl('/assets/logo-mark.png')} alt='Logo' />;
 ```
 
-Pass the file's path relative to `dist/client/`, with or without a leading slash. `resolveAssetUrl` reads `import.meta.env.BASE_URL`, which Vite replaces with the configured `base` during the application build; the browser does not read `CDN_BASE_URL` from the server environment. With an absolute HTTP(S) CDN base it returns the CDN URL, otherwise it falls back to `resolveAppUrl` and the runtime `APP_BASE_PATH`. Already resolved URLs are preserved. Use `resolveAppUrl` for API URLs, page links and runtime-generated resources such as workflow artifacts; the CDN must actually contain a file before it can be served there.
+Pass the file's path relative to `dist/client/`, with or without a leading slash. `resolveAssetUrl` reads `import.meta.env.BASE_URL`, which Vite replaces with the configured `base` during the application build; the browser does not read `CDN_BASE_URL` from the server environment. With an absolute HTTP(S) CDN base it returns the CDN URL, otherwise it falls back to `resolveAppUrl` and the runtime `APP_BASE_PATH`. Already resolved URLs are preserved. Use `resolveAppUrl` for API URLs, page links and runtime-generated resources; the CDN must actually contain a file before it can be served there.
 
 #### Packing the build
 
-`pnpm build --tar` writes `storage/exports/dist.tar.gz`, the artifact you upload to a Hub to deploy this application.
+`pnpm build --tar` writes `storage/exports/dist.tar.gz`, the artifact `@nocobase/app-installer` installs on a server.
 
 The archive has two levels: `config.example.yml` and `dist/` sit at the root, and the build is inside `dist/`. What `dist/` holds varies with the application; this is the shape:
 
@@ -577,19 +575,9 @@ Tests live in `tests/`, never beside the source they cover. Put logic and integr
 
 ### Notification testing
 
-After signing in with the `notification:test` `send` permission, use the notification logs settings page to send a real message through the durable Notification Manager. Examples enables the built-in database-backed In-app channel by default. Choose In-app in **Send test notification**, enter a title and message, and leave the recipient user ID blank to send to yourself, or specify another user's ID. Read the message in the **Inbox** (`/inbox`), which the header's inbox button opens. An explicit `notification.channels` setting in `config.yml` overrides the defaults; include the In-app channel there if you configure other channels.
+After signing in with the `notification:test` `send` permission, send a real message through the durable Notification Manager with `POST <APP_BASE_PATH>/api/notifications/testSends`; `GET <APP_BASE_PATH>/api/notifications/testTargets` lists each channel and the fields its test takes. Examples enables the built-in database-backed In-app channel by default: choose it, give a title and message, and leave the recipient blank to send to yourself. Read the message in the **Inbox** at `/inbox`. An explicit `notification.channels` setting in `config.yml` overrides the defaults; include the In-app channel there if you configure other channels.
 
 The form is generated from safe Channel test metadata; Email tests require an address and IM tests use the configured logical target. The button remains visible so configuration problems are discoverable. The server enforces the `notification:test` `send` permission only when the message is submitted.
-
-Application tests use `@nocobase/app-testing` from `devDependencies`:
-
-| Entry                          | Use                                                                                                                                                       |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@nocobase/app-testing/server` | Start the real application with `createAppTest()`, use isolated databases with `createDatabaseTest()`, and verify migrations with `describeMigration()`   |
-| `@nocobase/app-testing/client` | Render pages with `renderWithApp()`, answer requests with `answerApi()`, and assert notifications through `toasts()`                                      |
-| `@nocobase/app-testing/cli`    | Run commands with `bindAppCommand()` and `runAppCommand()`; use `createTestAppConfig()` and `bindTestAppCommand()` when the command opens the application |
-
-Start a page test from `tests/components/page-harness.test.tsx`. It keeps the application hooks real, loads translations strictly, tests permission-dependent actions, and opens and closes a child-route dialog. Supply application locale resources with `namespace` and `namespaces`, register required plugins through `plugins`, and replace external services through `services` without registering their plugins too. Database fixtures select SQLite by default or `NOCOBASE_TEST_DB_DIALECT`; tests do not choose a driver. Server/database tests run under Node, page tests under jsdom. `createAppTest()` shares one application per file unless `scope: 'test'` is selected. See `.agents/skills/nocobase-app-development/references/testing.md` for the complete workflow.
 
 ## API documentation
 
@@ -598,7 +586,7 @@ The application documents every `/api` endpoint it serves — its own routes, ev
 - Swagger UI: `<origin><APP_BASE_PATH>/api/swagger/docs`, such as `http://127.0.0.1:13000/main/api/swagger/docs`
 - JSON: `<origin><APP_BASE_PATH>/api/swagger`
 
-Only a signed-in user or an API key may read them; anyone else gets `401`. Open the Swagger UI in a browser where you are signed in, or, from a script, send an API key created at `<APP_BASE_PATH>/settings/api-keys` in the `x-api-key` header. Swagger UI's **Authorize** button takes a key too and keeps it across reloads.
+Only a signed-in user or an API key may read them; anyone else gets `401`. Open the Swagger UI in a browser where you are signed in, or, from a script, send an API key created with `POST <APP_BASE_PATH>/api/apiKeys` in the `x-api-key` header. Swagger UI's **Authorize** button takes a key too and keeps it across reloads.
 
 ```bash
 curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger
@@ -613,38 +601,6 @@ Replace `/main` with the application's `APP_BASE_PATH`. An application without t
 ## License
 
 MIT
-
-## Workflow examples
-
-Open **Workflow examples** on the homepage, or **Settings → Automation → Workflows**. The three application-owned packages under `workflows/` are built by `pnpm dev` and `pnpm build`. Enable a definition, open its detail page, choose **Run**, and enter the sample values below. Inspect the run diagram and select a node to see its output, errors, and logs.
-
-| Workflow                        | Sample input                                    | Expected result                                                                    |
-| ------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Example: Quotation routing      | `quotationId: Q-100`, `amountCents: 50000`      | Standard branch, then a review task; the shared summary runs after submission.     |
-| Example: Quotation routing      | `quotationId: Q-100`, `amountCents: 150000`     | Manual follow-up classification, then a review task.                               |
-| Example: Analytics daily report | `date: 2026-09-08`                              | Read four seeded metric rows, calculate totals, and save one report for that date. |
-| Example: Analytics daily report | `date: 2000-01-01`                              | Successful early termination without creating a report.                            |
-| Example: Failure diagnostics    | `reference: DIAG-100`, `simulateFailure: true`  | The execute node fails deliberately; the finish node does not run.                 |
-| Example: Failure diagnostics    | `reference: DIAG-100`, `simulateFailure: false` | A new run completes all three steps.                                               |
-
-Quotation routing exposes an administrator parameter, `reviewThresholdCents`, whose default is `100000`. Amounts at or above the threshold take the follow-up branch. Each run creates one `quotationReviewTasks` row in the application's default database. The diagnostic example has no business writes.
-
-To test the quotation wait, run either sample input and inspect the pending `awaitRoutingConfirmation` node. Then open **Workflow → Waiting tasks** in the application menu, select the new task, choose Approved or Rejected, optionally add a comment, and submit. The task page sends the signed-in reviewer identity with the result through the application's authenticated API. The task detail polls the persisted resume request until the decision is applied or rejected, and offers Refresh to check again. A recorded decision is not yet applied: rejected requests display their reason. The summary node reads `nodeResults.awaitRoutingConfirmation`, including `taskId`, `reviewerId`, `confirmedBy`, `decision`, and `comment`; refresh the workflow run detail to inspect this downstream result. Applied means the wait consumed the decision, not that the whole workflow succeeded. Historical submissions without a request id show that their outcome is unavailable. A task created before its Wait node becomes ready cannot be submitted until that node is pending; a run that has ended leaves the task visible but unavailable.
-
-The report reads `analytics.dailyMetrics` and upserts `exampleDailyReports` in the application's default database by its unique date. With unchanged seed data, `2026-09-08` produces 96,000 impressions, 3,120 clicks, 168 conversions, 93,000 spend cents, 672,000 revenue cents, and 579,000 profit cents. The `saveReport` node output contains the saved report. Repeating the workflow refreshes that date's report instead of inserting duplicates. Reading analytics and writing the report are separate operations, not a cross-database transaction.
-
-After editing a package, check it and regenerate development artifacts, then enable the new revision in the management UI:
-
-```bash
-pnpm nocobase workflow check workflows/example-quotation-routing
-pnpm nocobase workflow check workflows/example-analytics-report
-pnpm nocobase workflow check workflows/example-failure-diagnostics
-pnpm nocobase workflow build
-```
-
-When deploying, keep the workflow artifact disk under the application directory, which is the default local storage layout. The report's run modules import `@nocobase/db` and resolve it from the application's `node_modules`, which an artifact directory outside the application tree cannot reach.
-
-These examples run on demonstration data only. How the workflow plugin versions, enables, and triggers packages, including the `workflowServiceToken.trigger()` contract, is documented in its Skill at `.agents/skills/nocobase-app-plugin-workflow/`; read it before invoking a workflow from application code. A business endpoint that triggers a workflow supplies its own authentication, authorization, and input validation.
 
 ## 数字类型示例
 
@@ -672,7 +628,7 @@ pnpm nocobase db apply
 
 后端实现位于 `server/providers/numeric-examples-service.ts` 和
 `server/routes/numeric-examples.ts`，页面位于 `client/pages/numeric-examples.tsx`。
-这是 Examples 独有内容，不改变 Default / Hub 模板或数据库运行时。
+这是 Examples 独有内容，不改变 Default 模板或数据库运行时。
 
 ## Numeric types example
 
@@ -698,7 +654,7 @@ Every signed-in user may read these sample records; the endpoint exposes no
 writes or arbitrary collection/query parameters. Row previews are capped at 100;
 aggregates cover the entire selected sample set.
 
-This is Examples-only teaching content, so it does not change Default or Hub.
+This is Examples-only teaching content, so it does not change Default.
 
 ## Runtime paths and application creation
 
@@ -715,3 +671,15 @@ Set `NOCOBASE_STRICT_STARTUP=true` when running `pnpm dev` or `pnpm start` in au
 The Examples application registers Mail and Mail Example on both the client and server. Open **Mail example** (`/mail-example`) after signing in to connect an offline demo mailbox, synchronize sample messages, and simulate delivery. The `demo`, `demo-microsoft`, and `demo-imap-smtp` providers are configured in `server/config/mail.ts` and require no external credentials.
 
 Mail Example is loaded only by this template. To use real Mail providers in an application created from Default, install and register `@nocobase/app-plugin-mail` and its configuration factory, then configure the desired providers using the plugin's Skill.
+
+## Workflow management
+
+Open **System management → Workflow management** in the sidebar to browse all fourteen lifecycle and office workflow definitions. The **Workflow definitions** tab filters by database-backed business category and opens each definition as a child page. Its vertical category navigation sits to the left of the list, with name filtering and refresh actions above the list; the add button creates a category with a name and a standard palette color, each category menu edits or deletes it, and dragging labels reorders categories (with keyboard-accessible move actions in the menu); deleting one uncategorizes its workflows without touching execution data. The workflow list shows the workflow name and execution count; definition links use only the workflow path without list filter parameters. Workflow details show the current category between the workflow title and execution count; users with workflow-management update permission can change it or choose Uncategorized. Each definition shows its parameter configuration form beside the diagram, with current values and one save action; configured diagram entries scroll to the corresponding parameter group. Definitions without configurable parameters show an empty state. Existing parameter dialog URLs remain available. Parameters are saved by workflow key, including timing settings, department selections and calendars. Dialogs preserve drafts on conflicts and confirm before discarding unsaved changes. The central parameter/configuration pages have been removed. Workflow-management update permission is required to edit; historical instance snapshots remain unchanged.
+
+Lifecycle workflow parameters have one current record per workflow and one shared revision. Lifecycle examples store all parameter fields in the `values` JSON column of `lifecycleExampleWorkflowParameters`; office flows use `officeFlowsWorkflowParameters`. The parameter form shows one version and one save button. Successful inline saves update the current values and revision while keeping the detail page open. Lifecycle saves send `{ kind: 'lifecycle', values, expectedRevision, requestId }` to `PUT /api/workflows/definitions/:workflowId/parameters`; `values` may contain only the edited node fields. The server merges omitted fields, validates the complete configuration and updates the row atomically. Failed validation or a stale revision changes nothing. Apply the consolidation migration before running this version; historical execution snapshots are preserved.
+
+Office distribution workflows share department role membership under `office.organization` and keep their dispatch rules under each workflow key. The parameter pane shows allowed departments, a same-department restriction, the default assignee role and default copy choices; the shared department editor is collapsed and uses searchable member selection. Team tasks default to their own department. Shared membership and workflow rules save atomically with separate revision checks, and referenced departments cannot be removed or renamed until the referencing workflow is updated. Existing assignment rows keep their participant snapshots. See the office example's README for legacy configuration precedence.
+
+The **Execution records** tab lists lifecycle-managed business records across all workflows, with workflow filtering and pagination. Open a record to see its current node, previously visited nodes and the exact traversed edges in different colors. The transition history supports step-by-step replay, including loops and repeated visits, while **Latest progress** restores the full recorded path. History, effect runs and recorded execution parameters are shown beside the diagram on wide screens and stacked on narrow screens. The detail URLs can be opened directly and retain the parent list's filters when closed.
+
+Workflow management requires `read` on the `workflow-management` settings item; category changes require `update`. Root has access. The application seed grants both actions to an existing `system-administrator` permission set without assigning users or overwriting an existing workflow grant. Apply the new plugin migration and application seeds through the normal database upgrade workflow before using the catalog. Initial categories are example business data, not lifecycle engine metadata. Existing business example pages remain accessible under their own policies.

@@ -1,5 +1,5 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -29,8 +29,65 @@ import type { ScriptItem } from './opencode-fake-server.ts';
 const SID = 'ses_test';
 const MODEL = { id: 'm1', providerID: 'prov' };
 
-function adapterFor(fake: FakeOpencode, version = '2.0.12'): OpencodeAdapter {
+describe('model capabilities', () => {
+  it('lists provider/model ids and actual variants and closes the server without creating a session', async () => {
+    const fake = new FakeOpencode({
+      script: [],
+      models: [
+        {
+          providerID: 'openai',
+          id: 'catalog-id',
+          modelID: 'gpt-6-sol',
+          variants: [{ id: 'high', secret: 'private' }, { id: 'low' }],
+          config: 'private',
+        },
+      ],
+    });
+    const adapter = adapterFor(fake);
+    expect(await adapter.detectModels(new AbortController().signal)).toEqual({
+      modelsDetectionStatus: 'detected',
+      models: [{ id: 'openai/gpt-6-sol', efforts: ['high', 'low'] }],
+    });
+    expect(fake.closed).toBe(true);
+    expect(fake.requests.map((request) => request.path)).toEqual([
+      '/api/model',
+    ]);
+    expect(fake.launches[0]?.cwd).not.toBe(process.cwd());
+    await expect(readdir(fake.launches[0]!.cwd)).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+  });
+  it('closes the server when listing fails', async () => {
+    const fake = new FakeOpencode({ script: [], models: [] });
+    const adapter = new OpencodeAdapter({
+      searchPath: '',
+      fallbackPaths: [process.execPath],
+      exec: async (_file, args) => ({
+        code: 0,
+        stdout: args[0] === '--version' ? '2.0.12' : 'Provider API key stored',
+      }),
+      launch: fake.launch,
+      fetch: async () => {
+        throw new Error('secret=private');
+      },
+    });
+    await expect(
+      adapter.detectModels(new AbortController().signal),
+    ).rejects.toThrow();
+    expect(fake.closed).toBe(true);
+    await expect(readdir(fake.launches[0]!.cwd)).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+  });
+});
+
+function adapterFor(
+  fake: FakeOpencode,
+  version = '2.0.12',
+  fetchFn?: typeof fetch,
+): OpencodeAdapter {
   return new OpencodeAdapter({
+    ...(fetchFn ? { fetch: fetchFn } : {}),
     launch: fake.launch,
     exec: async (_file, args) =>
       args[0] === '--version'
@@ -310,6 +367,58 @@ describe('session setup', () => {
     expect(
       fake.requestsTo('PATCH', /^\/api\/session\/ses_test$/)[0].body,
     ).toEqual({ permissions: ASK_EVERYTHING });
+  });
+
+  it.each([
+    ['GET', 401, '{}'],
+    ['GET', 503, '{}'],
+    ['GET', 404, '{"_tag":"NotFound","message":"route"}'],
+    ['PATCH', 404, '{"_tag":"SessionNotFoundError"}'],
+  ])(
+    'does not recover from a %s session request returning %s %s',
+    async (method, status, body) => {
+      const fake = new FakeOpencode({ script: [], knownSessions: [SID] });
+      const fetchFn: typeof fetch = (input, options) => {
+        if (
+          String(input).endsWith(`/api/session/${SID}`) &&
+          options?.method === method
+        )
+          return Promise.resolve(new Response(body, { status }));
+        return fetch(input, options);
+      };
+      const handle = adapterFor(fake, '2.0.12', fetchFn).start(
+        session({ resumeSessionId: SID }),
+      );
+      const events = await collect(handle.events);
+      expect((await handle.result).exit).toBe('error');
+      expect(fake.requestsTo('POST', /^\/api\/session$/)).toHaveLength(0);
+      expect(events.some((e) => e.content === 'sessionRecovery')).toBe(false);
+    },
+  );
+
+  it('creates a session on a missing session query and retains the recovery prompt when instructions return 404', async () => {
+    const fake = new FakeOpencode({
+      script: [...begin(), succeeded],
+      instructionStatus: 404,
+    });
+    const handle = adapterFor(fake).start(
+      session({ resumeSessionId: 'missing' }),
+    );
+    const events = await collect(handle.events);
+    expect(await handle.result).toMatchObject({
+      exit: 'completed',
+      sessionId: SID,
+    });
+    expect(fake.requestsTo('POST', /^\/api\/session$/)).toHaveLength(1);
+    const prompt = (
+      fake.requestsTo('POST', /\/prompt$/)[0].body as { text: string }
+    ).text;
+    expect(prompt).toContain('BRIEF');
+    expect(prompt).toContain('Do the task');
+    expect(prompt).toContain('previous conversation');
+    expect(events.find((e) => e.content === 'started')).toMatchObject({
+      meta: { resumed: false, sessionRecovery: true },
+    });
   });
 
   it('prepends the brief to the prompt when instructions are refused', async () => {

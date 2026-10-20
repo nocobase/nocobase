@@ -3,11 +3,12 @@
 // The runner's own directory (0700), which no agent works in: `~/.nocobase-runner`. `NOCOBASE_RUNNER_HOME` moves it;
 // tests use that.
 //
-//   ~/.nocobase-runner/settings.json               this machine's runner settings: name, slots, how agents get a home
+//   ~/.nocobase-runner/settings.json               this machine's runner settings: name, slots, free disk, tools
 //   ~/.nocobase-runner/policy.json                 the owner's local policy: what work the runner takes (written by
 //                                                  its owner only; see core/local-policy.ts)
 //   ~/.nocobase-runner/apps/<app>.json             one registration per application: server, runner id
 //   ~/.nocobase-runner/credentials/<app>.json      that registration's runner key (0600, in a 0700 directory)
+//   ~/.nocobase-runner/launcher.pid                the service/background launcher, including during backoff
 //   ~/.nocobase-runner/daemon.pid                  the running daemon
 //   ~/.nocobase-runner/runs/<runId>.json           one record per supervised run, for orphan recovery
 //   ~/.nocobase-runner/runs/<runId>.events.ndjson  the run's event spool
@@ -16,14 +17,18 @@
 //   ~/.nocobase-runner/cli/<name>/<version>/       application CLIs installed for runs
 //   ~/.nocobase-runner/skills/<app>/<slug>/<hash>/ skill bundles fetched for runs, by content hash
 //   ~/.nocobase-runner/locks/<sha1>.lock           one lock per directory used in place (one run at a time in it)
-//   ~/.nocobase-runner/hooks/pre-push              the push guard every agent's git runs
+//   ~/.nocobase-runner/hooks/prepare-commit-msg    the commit hook every agent's git runs (core/git-hooks.ts)
+//   ~/.nocobase-runner/workspaces/<sha256>.json    the runner's record of each work directory, keyed by its path
+//   ~/.nocobase-runner/tools/cwd/                  the empty directory the runner's own pnpm and du start in
+//                                                  (core/pnpm-store.ts, core/workspaces.ts)
 //
 // The work root, where agents work: `~/.nocobase-runner-work`, or `<NOCOBASE_RUNNER_HOME>-work`.
 // `NOCOBASE_RUNNER_WORK_ROOT` moves it.
 //
 //   ~/.nocobase-runner-work/<app>/<subjectKey>/   one long-lived working directory per subject
-//     .nocobase-runner/                           the runner's per-workspace files: the agent's home, tmp, bin, the
-//                                                 run's skills (`plugin/skills/`) and the workspace record
+//     .nocobase-runner/                           the runner's per-workspace files: tmp, Codex's home, bin and
+//                                                 the run's skills (`plugin/skills/`)
+//   ~/.nocobase-runner-work/.pnpm-store/          the pnpm store every run shares (core/pnpm-store.ts)
 import {
   chmod,
   mkdir,
@@ -34,25 +39,6 @@ import {
 } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-
-/**
- * Where the person's own copy of a run's CLI keeps its state, such as `~/.acme` (with their `acme login`), which is
- * kept from the agent: the CLI's default state directory, `~/.<name>`, and the home directory's counterpart of the run's
- * credentials directory (`~/.acme` for `.acme/run.json`).
- */
-export function cliStateDirs(
-  cli: {
-    readonly name: string;
-    readonly credential: { readonly file: string };
-  },
-  home: string = os.homedir(),
-): string[] {
-  const dirs = [path.join(home, `.${cli.name}`)];
-  const [top] = cli.credential.file.split(/[\\/]/u);
-  if (cli.credential.file.includes('/') && top !== undefined && top !== '')
-    dirs.push(path.join(home, top));
-  return [...new Set(dirs)];
-}
 
 export function runnerHome(env: NodeJS.ProcessEnv = process.env): string {
   const configured = env.NOCOBASE_RUNNER_HOME;
@@ -87,7 +73,11 @@ export interface RunnerPaths {
   mountsDir: string;
   locksDir: string;
   hooksDir: string;
+  workspacesDir: string;
+  /** An empty directory the runner's own pnpm and du start in, outside every directory an agent may write. */
+  toolCwd: string;
   workRoot: string;
+  pnpmStoreDir: string;
 }
 
 export function runnerPaths(
@@ -111,7 +101,10 @@ export function runnerPaths(
     mountsDir: path.join(home, 'mounts'),
     locksDir: path.join(home, 'locks'),
     hooksDir: path.join(home, 'hooks'),
+    workspacesDir: path.join(home, 'workspaces'),
+    toolCwd: path.join(home, 'tools', 'cwd'),
     workRoot: work,
+    pnpmStoreDir: path.join(work, '.pnpm-store'),
   };
 }
 

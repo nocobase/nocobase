@@ -1,19 +1,94 @@
+import systemSettingsRoutes from './pages/settings/routes.js';
 import {
+  agentsRoute,
+  modelsRoute,
+  runtimesRoute,
+} from '@nocobase/app-plugin-agents/client/routes';
+import {
+  BrainCircuit,
+  BotMessageSquare,
+  Bot,
+  Server,
+  ScanText,
   FileText,
+  FilePenLine,
   Home,
   Hash,
   Languages,
   PanelsTopLeft,
   Plug,
   Workflow,
+  Settings,
 } from 'lucide-react';
 import {
   defineAppRoutes,
-  defineSettingsRoutes,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
+  {
+    name: 'systemManagement',
+    children: [],
+    navigation: {
+      title: 'workflows.systemManagement',
+      icon: Settings,
+      order: 100,
+    },
+    breadcrumb: { title: 'workflows.systemManagement' },
+  },
+  {
+    name: 'workflows',
+    parent: 'systemManagement',
+    path: '/workflows',
+    auth: 'required',
+    authz: {
+      resource: { type: 'settings', id: 'workflow-management' },
+      action: 'read',
+    },
+    navigation: { title: 'workflows.title', icon: Workflow },
+    breadcrumb: { title: 'workflows.title' },
+    componentLoader: () => import('./pages/workflows/index.js'),
+    children: [
+      {
+        name: 'workflowDefinitions',
+        path: 'definitions',
+        breadcrumb: { title: 'workflows.definitions' },
+        componentLoader: () => import('./pages/workflows/definitions.js'),
+        children: [
+          {
+            name: 'workflowDefinition',
+            path: ':workflowId',
+            componentLoader: () => import('./pages/workflows/definition.js'),
+            children: [
+              {
+                name: 'workflowParameters',
+                path: 'parameters',
+                authz: {
+                  resource: { type: 'settings', id: 'workflow-management' },
+                  action: 'update',
+                },
+                componentLoader: () =>
+                  import('./pages/workflows/parameters.js'),
+              },
+            ],
+          },
+        ],
+      },
+      {
+        name: 'workflowExecutions',
+        path: 'executions',
+        breadcrumb: { title: 'workflows.executions' },
+        componentLoader: () => import('./pages/workflows/executions.js'),
+        children: [
+          {
+            name: 'workflowExecution',
+            path: ':workflowId/:recordId',
+            componentLoader: () => import('./pages/workflows/execution.js'),
+          },
+        ],
+      },
+    ],
+  },
   {
     // Every signed-in user reaches the landing page. `authz: 'skip'` takes it out of page authorization entirely, so
     // no permission change can leave a user signed in with nowhere to land.
@@ -25,9 +100,9 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     path: '/',
   },
   {
-    // The header's inbox button is where a user looks for messages, so this page is reached from there. Declaring no
-    // navigation keeps a second menu entry from pointing at the one destination the button already owns. The plugin's
-    // API answers each person's own messages only, so the page needs no authorization of its own.
+    // Declares no navigation, so the application decides where its entry goes (for example a sidebar item with an
+    // unread badge). The plugin's API answers each person's own messages only, so the page needs no authorization of
+    // its own.
     authz: 'skip',
     auth: 'required',
     componentLoader: () => import('./pages/inbox.js'),
@@ -133,32 +208,6 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
   {
     auth: 'required',
-    name: 'workflowExamples',
-    path: '/workflow',
-    navigation: { title: 'navigation.workflow', icon: Workflow },
-    children: [
-      {
-        auth: 'required',
-        authz: 'skip',
-        name: 'workflowWaitingTasks',
-        path: 'waiting-tasks',
-        navigation: { title: 'navigation.workflowWaitingTasks' },
-        breadcrumb: { title: 'navigation.workflowWaitingTasks' },
-        componentLoader: () =>
-          import('./pages/workflow-waiting-tasks/index.js'),
-      },
-      {
-        auth: 'required',
-        authz: 'skip',
-        name: 'workflowWaitingTask',
-        path: 'waiting-tasks/:id',
-        breadcrumb: { title: 'workflowTasks.detailTitle' },
-        componentLoader: () => import('./pages/workflow-waiting-tasks/task.js'),
-      },
-    ],
-  },
-  {
-    auth: 'required',
     authz: {
       resource: { type: 'page', id: 'numeric-examples' },
       action: 'access',
@@ -186,6 +235,56 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     name: 'external-crm',
     navigation: { title: 'navigation.externalCrm', icon: Plug },
     path: '/external-crm',
+  },
+  {
+    name: 'agentsNavigation',
+    auth: 'required',
+    navigation: { title: 'onlineAgent.group', icon: BotMessageSquare },
+    children: [
+      {
+        ...agentsRoute,
+        navigation: { title: 'onlineAgent.agents', icon: Bot },
+        breadcrumb: { title: 'onlineAgent.agents' },
+      },
+      {
+        ...runtimesRoute,
+        navigation: { title: 'onlineAgent.runtimes', icon: Server },
+        breadcrumb: { title: 'onlineAgent.runtimes' },
+      },
+      {
+        ...modelsRoute,
+        navigation: { title: 'onlineAgent.models', icon: BrainCircuit },
+        breadcrumb: { title: 'onlineAgent.models' },
+      },
+      {
+        name: 'ai-translation',
+        path: '/ai-translation',
+        authz: 'skip',
+        navigation: { title: 'aiTranslation.title', icon: Languages },
+        breadcrumb: { title: 'aiTranslation.title' },
+        componentLoader: () => import('./pages/ai-translation/index.js'),
+      },
+      {
+        name: 'ai-structured-extraction',
+        path: '/ai-structured-extraction',
+        auth: 'required',
+        authz: 'skip',
+        navigation: { title: 'structuredExtraction.title', icon: ScanText },
+        breadcrumb: { title: 'structuredExtraction.title' },
+        componentLoader: () =>
+          import('./pages/ai-structured-extraction/index.js'),
+      },
+      {
+        name: 'ai-form-fill',
+        path: '/ai-form-fill',
+        auth: 'required',
+        // This browser-only demonstration has no business persistence or page grant.
+        authz: 'skip',
+        navigation: { title: 'aiFormFill.title', icon: FilePenLine },
+        breadcrumb: { title: 'aiFormFill.title' },
+        componentLoader: () => import('./pages/ai-form-fill/index.js'),
+      },
+    ],
   },
   {
     auth: 'guest',
@@ -226,11 +325,16 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-const settingsRoutes: AppClientRouteContribution = defineSettingsRoutes([]);
-
 const routes: readonly AppClientRouteContribution[] = [
   appRoutes,
-  settingsRoutes,
+  defineAppRoutes(
+    systemSettingsRoutes.routes.flatMap((group) =>
+      (group.children ?? []).map((route) => ({
+        ...route,
+        parent: 'systemManagement',
+      })),
+    ),
+  ),
 ];
 
 export default routes;

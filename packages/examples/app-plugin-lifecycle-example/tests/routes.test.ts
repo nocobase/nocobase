@@ -1,3 +1,8 @@
+import { createDatabaseManager } from '@nocobase/db';
+import { WorkflowParameterStore } from '../server/configuration/workflow-parameter-store.js';
+import { exampleParameterRegistration } from '../server/configuration/store.js';
+import { ParameterConfigurationService } from '../server/services/parameter-configuration.js';
+import { parameterConfigurationServiceToken } from '../server/tokens.js';
 import {
   authenticationToken,
   type Auth,
@@ -19,13 +24,18 @@ import {
 } from '@nocobase/app-server/router';
 
 import { expenseLifecycle } from '../server/lifecycles/expense.js';
+import { invoiceLifecycle } from '../server/lifecycles/invoice.js';
+import { orderLifecycle } from '../server/lifecycles/order.js';
 import { createExampleServices } from '../server/lifecycles/services.js';
 import { ticketLifecycle } from '../server/lifecycles/ticket.js';
 import { apiRoutes } from '../server/routes/index.js';
 import {
+  durableFlowServiceToken,
   lifecycleExampleServiceToken,
   type LifecycleExampleService,
 } from '../server/tokens.js';
+import type { DurableFlowService } from '../server/services/durable-flows.js';
+import { WebhookReceiver } from '../server/webhooks/receiver.js';
 
 const allow = {
   required: () => async (context, next) => {
@@ -43,8 +53,58 @@ function application(authentication: Auth) {
   const store = new MemoryLifecycleStore();
   const runtime = new LifecycleRuntime({ store });
   const services = createExampleServices({ info: () => undefined });
-  runtime.register(expenseLifecycle, { services });
-  runtime.register(ticketLifecycle, { services });
+  const parameters = new WorkflowParameterStore(store);
+  runtime.register(expenseLifecycle, {
+    services,
+    parameterConfiguration: exampleParameterRegistration(
+      parameters,
+      'expenses',
+    ),
+  });
+  runtime.register(ticketLifecycle, {
+    services,
+    parameterConfiguration: exampleParameterRegistration(parameters, 'tickets'),
+  });
+  // No step below reaches the sandbox: cancelling a draft has no checkout to close.
+  runtime.register(orderLifecycle, {
+    services: {} as never,
+    parameterConfiguration: exampleParameterRegistration(parameters, 'orders'),
+  });
+  runtime.register(invoiceLifecycle, {
+    services: {} as never,
+    parameterConfiguration: exampleParameterRegistration(
+      parameters,
+      'invoices',
+    ),
+  });
+  store.insertRecord('lifecycleExampleInvoices', {
+    id: 9,
+    status: 'issued',
+    title: 'Example company',
+    taxNumber: '91310000MA1K000001',
+    orderRef: '1024',
+    customerId: 'customer-li',
+    amountCents: 39900,
+    queryCount: 0,
+    providerRequestId: 'inv_demo',
+    invoiceNumber: 'DEMO-ABC',
+    pdfUrl: '/api/lifecycleExample/invoices/9/pdf',
+    statusChangedAt: '2026-10-01T09:00:00.000Z',
+    lifecycleVersion: 3,
+  });
+  store.insertRecord('lifecycleExampleOrders', {
+    id: 3,
+    title: '降噪耳机',
+    customerId: 'customer-li',
+    amountCents: 39_900,
+    paymentAttempt: 0,
+    paymentSessionId: null,
+    failCheckouts: 0,
+    failRefunds: 0,
+    status: 'draft',
+    statusChangedAt: '2026-10-01T09:00:00.000Z',
+    lifecycleVersion: 1,
+  });
   store.insertRecord('lifecycleExampleExpenses', {
     id: 1,
     title: '上海出差',
@@ -83,11 +143,30 @@ function application(authentication: Auth) {
     listTickets: vi.fn(async () => ({ records: [], total: 0 })),
     parameters: vi.fn(() => ({ waitMinutes: 2, reopenDays: 7 })),
   };
+  // The durable flows' routes: their webhook receiver on the same runtime;
+  // durable-flow-routes.test.ts covers the rest on the test database.
+  const flows = {
+    runtime,
+    outbox: { receiver: new WebhookReceiver(runtime) },
+    sweep: vi.fn(async () => ({ fired: 0, redelivered: 0 })),
+  };
   const container = new ServiceContainer();
+  container.instance(
+    parameterConfigurationServiceToken,
+    new ParameterConfigurationService(
+      createDatabaseManager({ connections: {} }),
+      runtime,
+      parameters,
+    ),
+  );
   container.instance(authenticationToken, authentication);
   container.instance(
     lifecycleExampleServiceToken,
     service as unknown as LifecycleExampleService,
+  );
+  container.instance(
+    durableFlowServiceToken,
+    flows as unknown as DurableFlowService,
   );
   const app: AppPluginApplication = {
     appName: 'main',
@@ -599,6 +678,68 @@ describe('lifecycle example routes', () => {
     );
   });
 
+  it('acts as the signed-in user on a durable flow, whatever persona is named', async () => {
+    const { app } = application(allow);
+    const router = await apiRoutes.createRouter(app);
+    const view = await router.request('/lifecycleExample/orders/3');
+    expect(view.status).toBe(200);
+    // Nobody but the system is refused: the user may cancel the draft.
+    await expect(view.json()).resolves.toMatchObject({
+      data: {
+        available: [
+          { name: 'checkout', allowed: true },
+          { name: 'cancel', allowed: true },
+        ],
+      },
+    });
+    const fired = await router.request(
+      post('/lifecycleExample/orders/3/fire?actAs=lin', {
+        transition: 'cancel',
+        requestId: 'cancel-1',
+      }),
+    );
+    expect(fired.status).toBe(200);
+    const body = (await fired.json()) as {
+      data: {
+        history: { transitions: { transition: string; actorId: string }[] };
+      };
+    };
+    expect(body.data.history.transitions.at(-1)).toMatchObject({
+      transition: 'cancel',
+      actorId: 'user-1',
+    });
+  });
+
+  it('protects invoice creation, platform actions and PDF downloads', async () => {
+    const router = await apiRoutes.createRouter(application(deny).app);
+    for (const request of [
+      post('/lifecycleExample/invoices', {}),
+      post('/lifecycleExample/sandbox/invoices/9/complete', {
+        outcome: 'issued',
+      }),
+      new Request('http://localhost/lifecycleExample/invoices/9/pdf'),
+    ])
+      expect((await router.request(request)).status).toBe(401);
+  });
+
+  it('downloads an issued sample PDF and refuses a missing invoice', async () => {
+    const router = await apiRoutes.createRouter(application(allow).app);
+    const response = await router.request('/lifecycleExample/invoices/9/pdf');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('application/pdf');
+    expect(response.headers.get('content-disposition')).toContain(
+      'invoice-9.pdf',
+    );
+    const pdf = await response.text();
+    expect(pdf).toContain('SANDBOX INVOICE - NOT VALID FOR TAX');
+    expect(pdf).toContain('DEMO-ABC');
+    const offset = Number(/startxref\n(\d+)/.exec(pdf)?.[1]);
+    expect(pdf.slice(offset, offset + 4)).toBe('xref');
+    expect(
+      (await router.request('/lifecycleExample/invoices/999/pdf')).status,
+    ).toBe(404);
+  });
+
   it('declares every route in the API document', async () => {
     const router = await apiRoutes.createRouter(application(allow).app);
     expect(findUndeclaredApiRoutes(router)).toEqual([]);
@@ -609,35 +750,63 @@ describe('lifecycle example routes', () => {
     const operations = Object.values(document.paths ?? {}).flatMap((item) =>
       Object.values(item ?? {}),
     ) as { operationId?: string; tags?: string[] }[];
-    expect(operations.map(({ operationId }) => operationId).sort()).toEqual([
-      'lifecycleExampleCancelExpenseEffectRun',
-      'lifecycleExampleCancelTicketEffectRun',
-      'lifecycleExampleContinueExpenseEffectRun',
-      'lifecycleExampleContinueTicketEffectRun',
-      'lifecycleExampleCreateExpense',
-      'lifecycleExampleCreateTicket',
-      'lifecycleExampleDescribeExpenseLifecycle',
-      'lifecycleExampleDescribeTicketLifecycle',
-      'lifecycleExampleFireExpenseTransition',
-      'lifecycleExampleFireTicketTransition',
-      'lifecycleExampleGetExpense',
-      'lifecycleExampleGetTicket',
-      'lifecycleExampleListExpenses',
-      'lifecycleExampleListTickets',
-      'lifecycleExampleRetryExpenseEffectRun',
-      'lifecycleExampleRetryTicketEffectRun',
-      'lifecycleExampleRunTriggers',
-      'lifecycleExampleUpdateExpense',
-    ]);
+    const nouns = [
+      'Expense',
+      'Export',
+      'Fulfilment',
+      'Order',
+      'Invoice',
+      'Purchase',
+      'Subscription',
+      'Ticket',
+    ];
+    expect(operations.map(({ operationId }) => operationId).sort()).toEqual(
+      [
+        // Every lifecycle's record routes, and its list and form.
+        ...nouns.flatMap((noun) => [
+          `lifecycleExampleCancel${noun}EffectRun`,
+          `lifecycleExampleContinue${noun}EffectRun`,
+          `lifecycleExampleCreate${noun}`,
+          `lifecycleExampleDescribe${noun}Lifecycle`,
+          `lifecycleExampleFire${noun}Transition`,
+          `lifecycleExampleGet${noun}`,
+          `lifecycleExampleList${noun}s`,
+          `lifecycleExampleRetry${noun}EffectRun`,
+        ]),
+        'lifecycleExampleGetParameterGroup',
+        'lifecycleExampleListParameterGroups',
+        'lifecycleExampleParameterHistory',
+        'lifecycleExamplePreviewReviewerCandidates',
+        'lifecycleExampleSearchReviewerReferences',
+        'lifecycleExampleGetReviewerReference',
+        'lifecycleExampleSaveParameterGroup',
+        'lifecycleExampleDeliverSandboxEvent',
+        'lifecycleExampleCompleteSandboxInvoice',
+        'lifecycleExampleDownloadInvoice',
+        'lifecycleExampleGetSandboxCheckout',
+        'lifecycleExampleListSandboxEvents',
+        'lifecycleExampleListSandboxStock',
+        'lifecycleExamplePaySandboxCheckout',
+        'lifecycleExampleReceiveWebhook',
+        'lifecycleExampleRunTriggers',
+        'lifecycleExampleSendSandboxEvent',
+        'lifecycleExampleUpdateExpense',
+      ].sort(),
+    );
     expect(new Set(operations.flatMap(({ tags }) => tags ?? []))).toEqual(
       new Set(['LifecycleExample']),
     );
     // A record's routes name its id once: no path spells it another way.
     const paths = Object.keys(document.paths ?? {});
     expect(paths).toContain('/api/lifecycleExample/expenses/{recordId}');
-    expect(paths.filter((path) => /\{(?!recordId|runId)/.test(path))).toEqual(
-      [],
-    );
+    // The sandbox's own objects are named by their own ids.
+    expect(
+      paths.filter((path) =>
+        /\{(?!recordId|runId|source|eventId|sessionId|groupId|lifecycle|type|referenceId)/.test(
+          path,
+        ),
+      ),
+    ).toEqual([]);
     expect(
       Object.keys(
         document.paths?.['/api/lifecycleExample/expenses/{recordId}'] ?? {},

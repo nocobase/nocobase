@@ -7,9 +7,8 @@
  *   directories), adding a variable choosing its scope;
  * - `DefaultSkillsSection`: the skills every run in that scope gets;
  * - `useRunnerOptions`: the runners a directory used in place may be on, for a runner picker;
- * - `useAgentOptions`: the agents the viewer may see, for an agent picker, with their names and types (Online or Runner),
- *   optionally only one type (an issue's executor is a runner agent), and as `ChatAgent`s for the UI Library's
- *   `AgentPicker`;
+ * - `useAgentOptions`: the enabled agents, for an agent picker, with their names and what each is good at, and as
+ *   `ChatAgent`s for the UI Library's `AgentPicker`;
  * - `AgentAvatar`: an agent's generated avatar, the same on the application's pages as on this plugin's;
  * - `useAgentText`: an agent's name and description in the viewer's language, for agents the application's own API
  *   returns with their `nameText` and `descriptionText`.
@@ -21,7 +20,6 @@ import { useQuery } from '@tanstack/react-query';
 import { createElement, type ComponentType, type ReactElement } from 'react';
 
 import { ACCESS_NAMESPACE } from '../shared/access.js';
-import type { AgentType } from '../shared/agents.js';
 import type { ChatAgent } from '../shared/conversations.js';
 import { agentsKeys } from './api/keys.js';
 import { DefaultSkillsPanel } from './components/default-skills.js';
@@ -31,7 +29,11 @@ import {
 } from './components/variables/variables-panel.js';
 import { useAgentsApi } from './hooks/use-agents-api.js';
 import { useAgentText } from './hooks/use-vocabulary.js';
+import { useQuotaExpiry } from './hooks/use-quota-expiry.js';
+import { useRealtimeTopic } from './hooks/use-realtime-topic.js';
+import { RUNNERS_TOPIC } from '../shared/realtime.js';
 import { pickerAgentOf } from './lib/agents.js';
+import { RunnerAgentsSection as RunnerAgents } from './pages/agents/runner-agents.js';
 import { agentsQueryClient, withAgents } from './query.js';
 
 export {
@@ -77,10 +79,8 @@ export interface RunnerOptions {
   readonly online: number;
 }
 
-/** An agent as a picker offers it, with its type. */
-export interface AgentPickerOption extends PickerOption {
-  readonly type: AgentType;
-}
+/** An agent as a picker offers it. */
+export type AgentPickerOption = PickerOption;
 
 export interface AgentOptions {
   readonly options: readonly AgentPickerOption[];
@@ -139,6 +139,12 @@ export const VariablesSection: ComponentType<ScopeSectionProps> =
   withAgents(ScopeVariables);
 export const ScopedVariablesSection: ComponentType<ScopedVariablesSectionProps> =
   withAgents(ScopedVariables);
+/**
+ * The agents discovered from runners, as the Agent page lists them, with enabling and editing for those who manage
+ * agents: for an application that composes its own Agent page.
+ */
+export const RunnerAgentsSection: ComponentType = withAgents(RunnerAgents);
+
 export const DefaultSkillsSection: ComponentType<ScopeSectionProps> =
   withAgents(ScopeSkills);
 
@@ -172,14 +178,8 @@ export function useRunnerOptions(): RunnerOptions {
   };
 }
 
-/**
- * The agents the viewer may see, as picker options, archived ones left out; only agents of `type` when given. A hook
- * for any tree.
- */
-export function useAgentOptions(
-  filter: { readonly type?: AgentType } = {},
-): AgentOptions {
-  const { t } = useTranslation(ACCESS_NAMESPACE);
+/** The enabled agents, as picker options. A hook for any tree. */
+export function useAgentOptions(): AgentOptions {
   const text = useAgentText();
   const api = useAgentsApi();
   const agents = useQuery(
@@ -191,10 +191,8 @@ export function useAgentOptions(
     agentsQueryClient(),
   );
   const list = agents.data ?? [];
-  const offered = list.filter(
-    (agent) =>
-      !agent.archivedAt && (!filter.type || agent.type === filter.type),
-  );
+  useQuotaExpiry(list);
+  const offered = list.filter((agent) => agent.status === 'enabled');
   return {
     loading: agents.isPending,
     failed: agents.isError,
@@ -202,10 +200,7 @@ export function useAgentOptions(
     options: offered.map((agent) => ({
       value: agent.id,
       label: text.name(agent),
-      type: agent.type,
-      description: [t(`agentTypes.${agent.type}`), text.description(agent)]
-        .filter(Boolean)
-        .join(' · '),
+      description: text.description(agent) ?? undefined,
     })),
     nameOf: (agentId) => {
       const agent = list.find((item) => item.id === agentId);
@@ -213,3 +208,37 @@ export function useAgentOptions(
     },
   };
 }
+
+/** One candidate, including an application's system agent, using the viewer-scoped detail API. */
+export function useAgentOption(agentId: string): ChatAgent | null {
+  const api = useAgentsApi();
+  const text = useAgentText();
+  const cache = agentsQueryClient();
+  const result = useQuery(
+    {
+      queryKey: agentsKeys.agent(agentId),
+      queryFn: () => api.agent(agentId),
+      staleTime: 30_000,
+    },
+    cache,
+  );
+  useQuotaExpiry(result.data ? [result.data] : []);
+  useRealtimeTopic(RUNNERS_TOPIC, () => {
+    void cache.invalidateQueries(
+      { queryKey: agentsKeys.agent(agentId) },
+      { cancelRefetch: false },
+    );
+  });
+  return result.data
+    ? pickerAgentOf(result.data, text.name(result.data))
+    : null;
+}
+
+export {
+  AgentQuotaHint,
+  QuotaLabel,
+  QuotaQueueHint,
+} from './components/quota-status.js';
+export { compactDateTime, quotaWindowLabel } from './lib/format.js';
+
+export { useQuotaClock } from './hooks/use-quota-expiry.js';

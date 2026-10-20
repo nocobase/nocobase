@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createWorld,
   freePort,
-  hub,
+  installer,
   makeArchive,
   tempDir,
   type ArchiveOptions,
@@ -58,7 +58,7 @@ const linked = () =>
   readlinkSync(path.join(root, 'current')).split(path.sep)[1];
 
 async function install(file: string, extra: string[] = []) {
-  return hub(world, [
+  return installer(world, [
     'install',
     root,
     '--archive',
@@ -96,7 +96,6 @@ describe('install --archive', () => {
     expect(state()).toMatchObject({
       appName: 'crm',
       basePath: '/crm',
-      templateKind: 'app',
       source: { kind: 'archive' },
     });
     expect(linked()).toBe(result.json.result?.releaseId);
@@ -157,36 +156,12 @@ describe('install --archive', () => {
     expect(result.json.error?.code).toBe('STORAGE_IN_RELEASE');
     expect(existsSync(root)).toBe(false);
   });
-
-  it('treats a Hub project deployed from an archive as a Hub', async () => {
-    const result = await install(
-      archive({ name: 'my-hub', version: '0.1.0', templateKind: 'hub' }),
-    );
-
-    expect(result.code).toBe(0);
-    expect(state()).toMatchObject({ templateKind: 'hub' });
-    // The Hub stops its App Host child itself, so pm2 must not kill the tree.
-    expect(
-      readFileSync(path.join(root, 'ecosystem.config.cjs'), 'utf8'),
-    ).toContain('treekill: false');
-    const asked = await hub(world, [
-      'upgrade',
-      '--dir',
-      root,
-      '--archive',
-      archive({ name: 'my-hub', version: '0.2.0', templateKind: 'hub' }),
-    ]);
-    expect(asked.json.error?.code).toBe('CONFIRMATION_REQUIRED');
-    expect(JSON.stringify(asked.json.error?.details)).toContain(
-      'every application it hosts',
-    );
-  });
 });
 
 describe('upgrade --archive', () => {
   it('deploys a new build of the same version as a release of its own', async () => {
     const first = await install(archive({ version: '0.1.0' }));
-    const result = await hub(world, [
+    const result = await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -200,7 +175,6 @@ describe('upgrade --archive', () => {
       from: first.json.result?.releaseId,
       fromVersion: '0.1.0',
       toVersion: '0.1.0',
-      rebuilt: false,
       reused: false,
     });
     expect(result.json.result?.to).not.toBe(first.json.result?.releaseId);
@@ -211,7 +185,7 @@ describe('upgrade --archive', () => {
   it('changes nothing for the archive already running', async () => {
     const file = archive({ version: '0.1.0' });
     await install(file);
-    const result = await hub(world, [
+    const result = await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -228,9 +202,16 @@ describe('upgrade --archive', () => {
   it('reuses an archive already on disk after a rollback', async () => {
     await install(archive({ version: '0.1.0' }));
     const next = archive({ version: '0.2.0' });
-    await hub(world, ['upgrade', '--dir', root, '--archive', next, '--yes']);
-    await hub(world, ['rollback', '--dir', root, '--yes']);
-    const result = await hub(world, [
+    await installer(world, [
+      'upgrade',
+      '--dir',
+      root,
+      '--archive',
+      next,
+      '--yes',
+    ]);
+    await installer(world, ['rollback', '--dir', root, '--yes']);
+    const result = await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -259,7 +240,7 @@ describe('upgrade --archive', () => {
     async (_, options, code) => {
       await install(archive({ version: '0.1.0' }));
       const before = readdirSync(path.join(root, 'releases'));
-      const result = await hub(world, [
+      const result = await installer(world, [
         'upgrade',
         '--dir',
         root,
@@ -277,9 +258,9 @@ describe('upgrade --archive', () => {
     },
   );
 
-  it('takes the kind of source the install did', async () => {
+  it('upgrades from an archive only, and refuses an installation from a published template', async () => {
     await install(archive({ version: '0.1.0' }));
-    const withoutArchive = await hub(world, [
+    const withoutArchive = await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -288,7 +269,7 @@ describe('upgrade --archive', () => {
     expect(withoutArchive.code).toBe(2);
     expect(withoutArchive.json.error?.message).toContain('--archive');
 
-    const withTo = await hub(world, [
+    const withTo = await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -301,39 +282,39 @@ describe('upgrade --archive', () => {
     expect(withTo.code).toBe(2);
     expect(withTo.json.error?.message).toContain('--to');
 
-    const hubRoot = path.join(temp.dir, 'hub');
-    await hub(world, [
-      'install',
-      hubRoot,
-      '--template',
-      'hub',
-      '--port',
-      String(await freePort()),
-    ]);
-    const onTemplate = await hub(world, [
+    // What an earlier installer recorded for an installation built from a published template on the server.
+    const recorded = JSON.parse(
+      readFileSync(path.join(root, 'installer.json'), 'utf8'),
+    ) as Record<string, unknown>;
+    writeFileSync(
+      path.join(root, 'installer.json'),
+      JSON.stringify({
+        ...recorded,
+        source: { kind: 'template', template: 'shop', package: 'shop' },
+      }),
+    );
+    const onTemplate = await installer(world, [
       'upgrade',
       '--dir',
-      hubRoot,
+      root,
       '--archive',
-      archive({ version: '9.0.0', name: 'hub', basePath: '/hub' }),
+      archive({ version: '0.2.0' }),
       '--yes',
     ]);
     expect(onTemplate.code).toBe(2);
-    expect(onTemplate.json.error?.code).toBe('INVALID_USAGE');
+    expect(onTemplate.json.error?.code).toBe('STATE_UNSUPPORTED');
   });
 
-  it('reports an archive installation without asking a registry, and advises a rebuilt archive for another Node', async () => {
+  it('reports an archive installation, and advises a rebuilt archive for another Node', async () => {
     await install(archive({ version: '0.1.0' }));
-    const status = await hub(world, ['status', '--dir', root]);
+    const status = await installer(world, ['status', '--dir', root]);
     expect(status.json.result).toMatchObject({
       appName: 'crm',
       version: '0.1.0',
       source: { kind: 'archive' },
-      latest: null,
-      updateAvailable: null,
     });
 
-    await hub(world, [
+    await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -351,14 +332,19 @@ describe('upgrade --archive', () => {
     }
     writeFileSync(path.join(root, 'installer.json'), JSON.stringify(next));
 
-    const warned = await hub(world, ['status', '--dir', root]);
+    const warned = await installer(world, ['status', '--dir', root]);
     expect(warned.json.warnings.join('\n')).toContain('pnpm build --target');
     expect(warned.json.warnings.join('\n')).not.toContain('--rebuild');
     // The warning is prose: a step's command is written out, and a step without one adds nothing.
     expect(warned.json.warnings.join('\n')).not.toMatch(
       /\[object Object\]|`undefined`/u,
     );
-    const refused = await hub(world, ['rollback', '--dir', root, '--yes']);
+    const refused = await installer(world, [
+      'rollback',
+      '--dir',
+      root,
+      '--yes',
+    ]);
     expect(refused.json.error?.code).toBe('NODE_MISMATCH');
     const advice = refused.json.error!.suggestions;
     // A current build is not tied to a mount path, so the command names none.
@@ -372,7 +358,7 @@ describe('upgrade --archive', () => {
     await install(archive({ version: '0.1.0' }));
     const before = state().current;
     world.ignoresStorageDir = true;
-    const result = await hub(world, [
+    const result = await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -391,7 +377,7 @@ describe('upgrade --archive', () => {
   it('adopts a release directory on disk that installer.json does not record', async () => {
     await install(archive({ version: '0.1.0' }));
     const next = archive({ version: '0.2.0' });
-    const upgraded = await hub(world, [
+    const upgraded = await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -399,7 +385,7 @@ describe('upgrade --archive', () => {
       next,
       '--yes',
     ]);
-    await hub(world, ['rollback', '--dir', root, '--yes']);
+    await installer(world, ['rollback', '--dir', root, '--yes']);
     // As left by a run interrupted after unpacking and before recording: the directory without its record.
     const orphan = String(upgraded.json.result?.to);
     const current = JSON.parse(
@@ -411,7 +397,7 @@ describe('upgrade --archive', () => {
     current.history = current.history.filter((entry) => entry.to !== orphan);
     writeFileSync(path.join(root, 'installer.json'), JSON.stringify(current));
 
-    const result = await hub(world, [
+    const result = await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -426,7 +412,7 @@ describe('upgrade --archive', () => {
 
   it('rolls back to the earlier build of a version deployed twice', async () => {
     const first = await install(archive({ version: '0.1.0' }));
-    await hub(world, [
+    await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -434,7 +420,7 @@ describe('upgrade --archive', () => {
       archive({ version: '0.1.0' }),
       '--yes',
     ]);
-    const result = await hub(world, [
+    const result = await installer(world, [
       'rollback',
       '--dir',
       root,
@@ -450,7 +436,7 @@ describe('upgrade --archive', () => {
 
   it('never suggests a command with a placeholder', async () => {
     await install(archive({ version: '0.1.0' }));
-    const withoutArchive = await hub(world, [
+    const withoutArchive = await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -462,7 +448,7 @@ describe('upgrade --archive', () => {
     ).toBe(true);
     expect(suggestions[0].message).toContain('--archive');
 
-    const missing = await hub(world, [
+    const missing = await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -471,7 +457,7 @@ describe('upgrade --archive', () => {
       '--yes',
     ]);
     expect(missing.code).toBe(0);
-    const driver = await hub(world, [
+    const driver = await installer(world, [
       'install',
       path.join(temp.dir, 'erp'),
       '--archive',
@@ -492,7 +478,7 @@ describe('upgrade --archive', () => {
 
   it('rolls back to the archive it came from', async () => {
     const first = await install(archive({ version: '0.1.0' }));
-    await hub(world, [
+    await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -500,7 +486,7 @@ describe('upgrade --archive', () => {
       archive({ version: '0.2.0' }),
       '--yes',
     ]);
-    const result = await hub(world, ['rollback', '--dir', root, '--yes']);
+    const result = await installer(world, ['rollback', '--dir', root, '--yes']);
 
     expect(result.code).toBe(0);
     expect(result.json.result?.to).toBe(first.json.result?.releaseId);
@@ -530,24 +516,6 @@ describe('relocatable archives', () => {
     expect(state().releases[0]).toMatchObject({ relocatable: true });
   });
 
-  it('keeps the Hub default for a Hub archive', async () => {
-    const result = await install(
-      archive({
-        name: 'my-hub',
-        version: '0.1.0',
-        relocatable: true,
-        templateKind: 'hub',
-      }),
-    );
-
-    expect(result.code).toBe(0);
-    expect(appEnv()).toContain('APP_BASE_PATH=/hub');
-    expect(result.json.result).toMatchObject({
-      basePath: '/hub',
-      url: 'https://apps.example.com/hub/',
-    });
-  });
-
   it('mounts at the origin root with --base-path /', async () => {
     const fetched: string[] = [];
     const fetchImpl = world.fetchImpl;
@@ -572,7 +540,7 @@ describe('relocatable archives', () => {
       expect.arrayContaining([expect.stringMatching(/:\d+\/api\/healthz$/u)]),
     );
 
-    const status = await hub(world, ['status', '--dir', root]);
+    const status = await installer(world, ['status', '--dir', root]);
     expect(status.json.result).toMatchObject({ basePath: '/' });
   });
 
@@ -618,7 +586,7 @@ describe('relocatable archives', () => {
     ]);
     moveTo('/sales');
 
-    const result = await hub(world, [
+    const result = await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -638,7 +606,7 @@ describe('relocatable archives', () => {
     ]);
     moveTo('/sales');
 
-    const result = await hub(world, [
+    const result = await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -653,7 +621,7 @@ describe('relocatable archives', () => {
 
   it('refuses to roll back to a release fixed to a path app.env has moved away from', async () => {
     const first = await install(archive({ version: '0.1.0' }));
-    await hub(world, [
+    await installer(world, [
       'upgrade',
       '--dir',
       root,
@@ -663,14 +631,24 @@ describe('relocatable archives', () => {
     ]);
     moveTo('/sales');
 
-    const refused = await hub(world, ['rollback', '--dir', root, '--yes']);
+    const refused = await installer(world, [
+      'rollback',
+      '--dir',
+      root,
+      '--yes',
+    ]);
 
     expect(refused.code).toBe(2);
     expect(refused.json.error?.code).toBe('BASE_PATH_MISMATCH');
     expect(linked()).not.toBe(first.json.result?.releaseId);
 
     moveTo('/crm');
-    const rolledBack = await hub(world, ['rollback', '--dir', root, '--yes']);
+    const rolledBack = await installer(world, [
+      'rollback',
+      '--dir',
+      root,
+      '--yes',
+    ]);
     expect(rolledBack.code).toBe(0);
     expect(linked()).toBe(first.json.result?.releaseId);
   });

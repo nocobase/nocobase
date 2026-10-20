@@ -1,49 +1,22 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ApiClientError } from '@nocobase/app-client';
-import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 
 import {
   NotificationClient,
   NotificationTestApiError,
 } from '../client/notification-client.js';
 import notificationPlugin from '../client/plugin.js';
-import routes from '../client/routes.js';
 
 describe('@nocobase/app-plugin-notification client', () => {
-  it('contributes notification logs and locale resources through the settings centre', () => {
+  it('contributes its service and locale resources but no pages', () => {
     const registration = notificationPlugin();
 
     expect(registration.serviceProviders).toHaveLength(1);
-    expect(registration.routes).toEqual([routes]);
+    expect(registration.routes).toEqual([]);
     expect(registration.locales).toMatchObject({
       'en-US': expect.any(Function),
       'zh-CN': expect.any(Function),
     });
-    expect(routes).toMatchObject({
-      parent: 'settings',
-      routes: [
-        {
-          name: 'notifications',
-          path: '/notifications',
-          children: [{ name: 'logs', path: '/logs' }],
-        },
-      ],
-    });
-    const resolved = resolveAppClientContributions([
-      { packageName: registration.packageName, routes },
-    ]);
-    expect(resolved.settingGroups).toMatchObject([
-      { id: 'notifications', title: 'nav.notifications' },
-    ]);
-    expect(resolved.settings).toMatchObject([
-      {
-        path: '/settings/notifications/logs',
-        authz: {
-          resource: { type: 'page', id: 'notification.logs' },
-          action: 'access',
-        },
-      },
-    ]);
   });
 
   it('loads redacted notification log details through the API client', async () => {

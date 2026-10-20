@@ -281,15 +281,15 @@ if (!proxyTarget) {
     APP_SERVER_PORT: String(appServerPort),
     APP_SERVER_START_LOG: 'false',
     // Asks the server to refresh database/<connection>/collections/ after its startup migrations change a schema.
-    // It names this application's root, so a Hub's in-process applications, which see the same environment, leave
-    // their deployed revisions alone. Read by DatabaseProvider in @nocobase/app-server.
+    // It names this application's root, so other applications a host runs in the same process, which see the same
+    // environment, leave their deployed revisions alone. Read by DatabaseProvider in @nocobase/app-server.
     NOCOBASE_COLLECTIONS_REFRESH: rootDir,
     BETTER_AUTH_TRUSTED_ORIGINS: resolveDevTrustedOrigins(
       nextEnv.BETTER_AUTH_TRUSTED_ORIGINS,
       appServerPort,
     ),
-    APP_PUBLIC_ORIGIN:
-      String(nextEnv.APP_PUBLIC_ORIGIN || '').trim() || appOrigin,
+    // Keep an explicitly supplied APP_PUBLIC_ORIGIN from nextEnv, but do not invent one: environment values
+    // override config.yml, where the application's browser-facing origin may be a LAN address or a domain.
   };
 
   progress('Starting application server');
@@ -316,7 +316,8 @@ if (!proxyTarget) {
   );
 
   if (!strictStartup && serverChild.stdin) {
-    process.stdin.pipe(serverChild.stdin);
+    // Background runs may receive EOF; internal restart input must remain writable.
+    process.stdin.pipe(serverChild.stdin, { end: false });
   }
 
   if (!strictStartup)

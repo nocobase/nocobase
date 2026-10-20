@@ -92,7 +92,6 @@ export function usersOf(scope: Scope): readonly string[] | null {
 export const SETTINGS_ACTIONS = {
   'pm.general': ['read', 'update'],
   'pm.labels': ['read', 'update'],
-  'pm.workflows': ['read', 'update'],
   'pm.members': ['read', 'invite', 'assign', 'define-roles'],
 } as const;
 
@@ -297,7 +296,7 @@ const issuesAction = (action: BusinessAction<'pm.issues'>): KeyScopeAccess => ({
   action,
 });
 const setting = (
-  item: 'pm.general' | 'pm.labels' | 'pm.workflows',
+  item: 'pm.general' | 'pm.labels',
   action: 'read' | 'update',
 ): KeyScopeAccess => ({ kind: 'settings', id: item, action });
 
@@ -351,16 +350,8 @@ export const KEY_SCOPE_GROUPS: readonly KeyScopeGroup[] = [
     title: accessText('keyScopes.settings.title'),
     description: accessText('keyScopes.settings.description'),
     levels: {
-      read: [
-        setting('pm.general', 'read'),
-        setting('pm.labels', 'read'),
-        setting('pm.workflows', 'read'),
-      ],
-      write: [
-        setting('pm.general', 'update'),
-        setting('pm.labels', 'update'),
-        setting('pm.workflows', 'update'),
-      ],
+      read: [setting('pm.general', 'read'), setting('pm.labels', 'read')],
+      write: [setting('pm.general', 'update'), setting('pm.labels', 'update')],
     },
   },
 ];

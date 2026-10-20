@@ -3,12 +3,11 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import path from 'node:path';
 import test from 'node:test';
-import ts from 'typescript';
 
 import { collectRuntimeSpecifiers } from '../../scripts/check-runtime-deps.mjs';
 
 const root = path.resolve(import.meta.dirname, '../../packages/templates');
-const templates = ['default', 'examples', 'hub'].map((kind) => {
+const templates = ['default', 'examples'].map((kind) => {
   const directory = path.join(root, `app-template-${kind}`);
   return {
     kind,
@@ -19,6 +18,36 @@ const templates = ['default', 'examples', 'hub'].map((kind) => {
   };
 });
 const [baseline] = templates;
+// PM-450 removes annotations only from Default; Examples keeps this development tool.
+// Normalize only these exact fragments so all remaining build configuration stays compared.
+const examplesAnnotationViteFragments = [
+  "import agentAnnotations from '@gchust/agent-annotations/vite';\n",
+  `const AGENT_ANNOTATIONS_DISABLED_VALUES = new Set(['false', '0', 'no', 'off']);
+
+function isAgentAnnotationsEnabled(value: string | undefined): boolean {
+  const normalized = value?.trim().toLowerCase();
+  return !normalized || !AGENT_ANNOTATIONS_DISABLED_VALUES.has(normalized);
+}
+
+`,
+  `  const annotationsEnabled = isAgentAnnotationsEnabled(
+    env.AGENT_ANNOTATIONS_ENABLED,
+  );
+`,
+  `      ...(annotationsEnabled
+        ? [
+            agentAnnotations({
+              root: __dirname,
+              clientExtensions: [
+                path.resolve(__dirname, 'client/agent-annotations-host.ts'),
+              ],
+            }),
+          ]
+        : []),
+`,
+  "          '**/.agent-annotations/**',\n",
+];
+const annotationDockerIgnore = '**/.agent-annotations\n';
 const runtimeExtensions = ['.ts', '.tsx', '.mts', '.cts', '.js', '.mjs'];
 const builtins = new Set(
   builtinModules.flatMap((name) => [name, name.replace(/^node:/u, '')]),
@@ -120,175 +149,140 @@ function runtimeDependencies(template) {
   return imported;
 }
 
+// Examples installs Agents; Default deliberately does not. Apply only the documented chat
+// composition slots to Default's expected source, keeping every shared line under comparison.
+function withExamplesChat(source, file) {
+  const replaceOnce = (before, after) => {
+    assert.equal(source.split(before).length - 1, 1, `${file}: chat slot`);
+    source = source.replace(before, after);
+  };
+  if (file === 'client/layouts/app-layout.tsx') {
+    replaceOnce(
+      'import { RouteTreeProvider }',
+      "import { OnlineAgentProvider } from '#components/online-agent/provider';\n" +
+        "import { OnlineAgentPanelHost } from '#components/online-agent/panel-host';\n" +
+        'import { RouteTreeProvider }',
+    );
+    replaceOnce(
+      'export function AppLayout({ routes }: AppLayoutProps): ReactElement {',
+      `export function AppLayout({ routes }: AppLayoutProps): ReactElement {
+  return (
+    <OnlineAgentProvider>
+      <AuthenticatedLayout routes={routes} />
+    </OnlineAgentProvider>
+  );
+}
+
+function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {`,
+    );
+    // Retain the route outlet, watermark, scrolling and surrounding shell verbatim.
+    const main = source.match(
+      /^            <main[\s\S]*?^            <\/main>/mu,
+    )?.[0];
+    assert.ok(main, 'shared route outlet');
+    replaceOnce(
+      main,
+      '            {/* Examples-only integration: the temporary chat docks beside any demo without replacing the route. */}\n' +
+        "            <div className='relative flex min-h-0 flex-1'>\n" +
+        main
+          .replace(/^( +)(?=[<{])/gmu, '  $1')
+          .replace(
+            'relative isolate min-w-0',
+            'relative isolate min-h-0 min-w-0',
+          ) +
+        '\n              <OnlineAgentPanelHost />\n            </div>',
+    );
+  }
+  if (file === 'client/layouts/components/header-actions.tsx') {
+    replaceOnce(
+      "import { UserMenu } from './user-menu.js';",
+      "import { UserMenu } from './user-menu.js';\n" +
+        "import { ChatHeaderButton } from '#extensions/nocobase-agent-chat/launchers';",
+    );
+    replaceOnce(
+      '        <ThemeSettings />',
+      '        <ChatHeaderButton />\n        <ThemeSettings />',
+    );
+  }
+  return source;
+}
+
 function sharedFrameworkSource(template, file) {
   let source = readFileSync(path.join(template.directory, file), 'utf8');
-  if (
-    template.kind !== 'hub' &&
-    file === 'client/layouts/components/header-actions.tsx'
-  ) {
-    // Default and Examples preinstall the UI Library inbox; the Hub registers no in-app notifications. Exclude only
-    // the inbox's explicit entry; all shared header behavior must still match across the three.
-    const additions = [
-      /^import \{ InboxHeaderButton \} from '#components\/inbox-header-button';\n/gm,
-      /^[\t ]*\{\/\* The inbox's entry, from the UI Library; keep its unread shortcut on every authenticated surface\. \*\/\}\n[\t ]*<InboxHeaderButton \/>\n/gm,
-    ];
-    return additions.reduce((shared, addition) => {
+
+  if (template.kind === 'examples') {
+    const fragments =
+      file === 'vite.config.ts'
+        ? examplesAnnotationViteFragments
+        : file === 'Dockerfile.dockerignore'
+          ? [annotationDockerIgnore]
+          : [];
+    for (const fragment of fragments) {
       assert.equal(
-        [...shared.matchAll(addition)].length,
+        source.split(fragment).length - 1,
         1,
-        `${template.kind} header must contain exactly one inbox entry`,
+        `${template.kind}: ${file} must retain exactly one annotation fragment: ${fragment}`,
       );
-      return shared.replace(addition, '');
-    }, source);
+      source = source.replace(fragment, '');
+    }
   }
 
-  if (
-    template.kind === 'examples' &&
-    file === 'client/layouts/app-layout.tsx'
-  ) {
-    // Examples owns the AI employee demonstration: its global entry wraps the signed-in shell, so every page below
-    // it can start an AI employee task. Remove only that wrapper and re-indent what it wraps; the shell itself must
-    // still match Default.
-    const lines = source.split('\n');
-    const only = (predicate, message) => {
-      const indexes = lines.flatMap((line, index) =>
-        predicate(line) ? [index] : [],
-      );
-      assert.equal(indexes.length, 1, message);
-      return indexes[0];
-    };
-    const importLine = only(
-      (line) =>
-        line ===
-        "import { AIEmployeeEntry } from '../components/ai-employee-entry.js';",
-      'Examples layout must import the AI employee entry exactly once',
-    );
-    const marker = only(
-      (line) =>
-        line.trim() ===
-        '{/* Examples owns the AI employee demonstration; its global entry wraps only the signed-in shell. */}',
-      'Examples layout must explain its AI employee entry exactly once',
-    );
-    const open = only(
-      (line) => line.trim() === '<AIEmployeeEntry>',
-      'Examples layout must open the AI employee entry exactly once',
-    );
-    const close = only(
-      (line) => line.trim() === '</AIEmployeeEntry>',
-      'Examples layout must close the AI employee entry exactly once',
-    );
-    assert.ok(
-      marker + 1 === open && open < close,
-      'Examples layout must wrap its shell in the AI employee entry right after its comment',
-    );
-    return [
-      ...lines.slice(0, importLine),
-      ...lines.slice(importLine + 1, marker),
-      ...lines.slice(open + 1, close).map((line) => line.replace(/^ {2}/u, '')),
-      ...lines.slice(close + 1),
-    ].join('\n');
-  }
-
-  // The image recipe is shared. Only the template's own directory, named in the usage comment, and Hub's `/hub` runtime
-  // mount path differ; both are normalized to Default's before comparing.
+  // The image recipe is shared. Only the template's own directory, named in the usage comment, differs; it is
+  // normalized to Default's before comparing.
   if (file === 'Dockerfile') {
     source = source.replaceAll(
       `packages/templates/app-template-${template.kind}`,
       'packages/templates/app-template-default',
     );
-    if (template.kind === 'hub') {
-      const runtimeDefault = /^ {4}APP_BASE_PATH=\/hub \\$/gmu;
-      assert.equal(
-        [...source.matchAll(runtimeDefault)].length,
-        1,
-        'Hub Dockerfile must default the runtime APP_BASE_PATH to /hub',
-      );
-      source = source.replace(runtimeDefault, '    APP_BASE_PATH=/main \\');
-    }
   }
 
-  // Keep product identity and Hub's deliberate menu order local while comparing the shared layout.
+  // Keep product identity local while comparing the shared layout.
   if (file === 'client/layouts/components/sidebar-footer.tsx') {
-    source = source
-      .replace("'Examples Template'", "'Default Template'")
-      .replace("'NocoBase Hub'", "'Default Template'");
+    source = source.replace("'Examples Template'", "'Default Template'");
   }
-  if (
-    template.kind === 'hub' &&
-    file === 'client/layouts/components/app-brand.tsx'
-  ) {
-    source = source
-      .replace('AppBrand(props:', 'AppBrand(inputProps:')
-      .replace('= props;', '= inputProps;')
-      .replace(
-        /aria-label=\{t\('navigation.brandApps', \{\s*defaultValue: 'NocoBase applications',\s*\}\)\}/u,
-        "aria-label={t('navigation.brandHome', { defaultValue: 'NocoBase home' })}",
-      );
-  }
-  if (template.kind === 'hub' && file === 'client/layouts/app-layout.tsx') {
-    source = source
-      .replace('  type RouteNavigationItem,\n', '')
-      .replace(
-        'const { items, denied } = useRouteNavigation(routes);\n  const menuItems = orderHubNavigation(items);',
-        'const { items: menuItems, denied } = useRouteNavigation(routes);',
-      )
-      .replace("t('navigation.console',", "t('shell.workspace',")
-      .replace(
-        "defaultValue: 'Hub console'",
-        "defaultValue: 'AI application workspace'",
-      );
-    // The Hub client-shell suite verifies this product-specific sort order.
-    const helper = source.indexOf('\nconst HUB_NAVIGATION_PATHS');
-    assert.notEqual(
-      helper,
-      -1,
-      'Hub must retain its navigation ordering helper',
-    );
-    source = source.slice(0, helper).trimEnd() + '\n';
-  }
-
-  if (template.kind !== 'hub' || file !== 'server/standalone.ts') {
-    return source;
-  }
-
-  // Hub alone fronts App Host. Its proxy behavior is covered by the Hub tests;
-  // compare every other part of the standalone entry with Default unchanged.
-  const parsed = ts.createSourceFile(
-    file,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-  );
-  const standalone = parsed.statements
-    .filter(ts.isVariableStatement)
-    .flatMap(({ declarationList }) => declarationList.declarations)
-    .find(({ name }) => ts.isIdentifier(name) && name.text === 'standalone');
-  const call = standalone?.initializer;
-  assert.ok(
-    call &&
-      ts.isCallExpression(call) &&
-      ts.isIdentifier(call.expression) &&
-      call.expression.text === 'defineStandaloneServer',
-  );
-  const [options] = call.arguments;
-  assert.ok(options && ts.isObjectLiteralExpression(options));
-  const proxy = options.properties.find(
-    (property) =>
-      ts.isPropertyAssignment(property) &&
-      ts.isIdentifier(property.name) &&
-      property.name.text === 'proxy',
-  );
-  assert.ok(proxy, 'Hub standalone must configure its App Host proxy');
-  const end = proxy.end + (source[proxy.end] === ',' ? 1 : 0);
-  return (source.slice(0, proxy.getFullStart()) + source.slice(end)).replace(
-    "import { hubServiceToken } from '@nocobase/app-plugin-hub/server';\n",
-    '',
-  );
+  return source;
 }
 
 // These are shared framework mechanisms, not product pages or plugin composition.
 // Compare both directions so adding a build helper in only one template also fails.
 for (const template of templates) {
+  test(`${template.kind} keeps its intended development annotation integration`, () => {
+    for (const file of ['vite.config.ts', 'Dockerfile.dockerignore']) {
+      const source = readFileSync(path.join(template.directory, file), 'utf8');
+      if (template.kind === 'default') {
+        assert.doesNotMatch(
+          source,
+          /agent[-_]?annotations|annotationsEnabled/iu,
+        );
+      }
+      // The exact Examples integration is asserted while normalizing; nothing else may differ.
+      assert.equal(
+        sharedFrameworkSource(template, file),
+        sharedFrameworkSource(baseline, file),
+        `${template.kind}: ${file}`,
+      );
+    }
+    const annotationPackage = '@gchust/agent-annotations';
+    if (template.kind === 'default') {
+      for (const field of [
+        'dependencies',
+        'devDependencies',
+        'peerDependencies',
+        'optionalDependencies',
+      ]) {
+        assert.equal(template.manifest[field]?.[annotationPackage], undefined);
+      }
+    } else {
+      assert.ok(template.manifest.devDependencies?.[annotationPackage]);
+    }
+    assert.equal(
+      existsSync(
+        path.join(template.directory, 'client/agent-annotations-host.ts'),
+      ),
+      template.kind === 'examples',
+    );
+  });
+
   test(`${template.kind} keeps the shared build and CLI framework aligned with Default`, () => {
     for (const directory of [
       'client/routing',
@@ -304,7 +298,12 @@ for (const template of templates) {
         const relative = path.join(directory, file);
         assert.equal(
           sharedFrameworkSource(template, relative),
-          sharedFrameworkSource(baseline, relative),
+          template.kind === 'examples'
+            ? withExamplesChat(
+                sharedFrameworkSource(baseline, relative),
+                relative,
+              )
+            : sharedFrameworkSource(baseline, relative),
           `${template.kind}: ${relative}`,
         );
       }
@@ -326,31 +325,25 @@ for (const template of templates) {
     ]) {
       assert.equal(
         sharedFrameworkSource(template, file),
-        sharedFrameworkSource(baseline, file),
+        template.kind === 'examples'
+          ? withExamplesChat(sharedFrameworkSource(baseline, file), file)
+          : sharedFrameworkSource(baseline, file),
         `${template.kind}: ${file}`,
       );
     }
-    // Product-specific scripts need a documented exception; compare the shared contract in both directions.
-    const exceptions = [
-      ...(template.kind === 'hub' ? ['test:e2e'] : []), // Hub has no AI plugin.
-    ];
-    const sharedScripts = (scripts) =>
-      Object.fromEntries(
-        Object.entries(scripts).filter(([name]) => !exceptions.includes(name)),
-      );
+    // The scripts are the shared command contract; compare them in both directions.
     assert.deepEqual(
-      sharedScripts(template.manifest.scripts),
-      sharedScripts(baseline.manifest.scripts),
+      template.manifest.scripts,
+      baseline.manifest.scripts,
       `${template.kind}: shared scripts`,
     );
   });
 
-  test(`${template.kind} enables Hub publishing only when supported`, () => {
-    // `hub deploy` and `hub upload` come from depending on @nocobase/hub-cli, so the dependency is the whole
-    // publishing switch. The flag it replaced must not come back.
+  test(`${template.kind} carries no Hub publishing`, () => {
+    // NocoBase Hub is discontinued: neither @nocobase/hub-cli nor the publishing flag it replaced may come back.
     assert.equal(
-      template.manifest.devDependencies?.['@nocobase/hub-cli'] !== undefined,
-      template.kind === 'default',
+      template.manifest.devDependencies?.['@nocobase/hub-cli'],
+      undefined,
     );
     assert.equal(
       template.manifest.dependencies?.['@nocobase/hub-cli'],

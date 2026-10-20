@@ -13,8 +13,10 @@ import type {
 } from '@nocobase/agent-protocol';
 import type { DatabaseConnection, Repository } from '@nocobase/db';
 
+import { transactionRead } from '../transaction-read.js';
 import type {
   Run,
+  RunExecutionSnapshot,
   RunInputRecord as RunInputView,
   RunRepo,
 } from '../../../shared/runs.js';
@@ -25,10 +27,12 @@ import {
 } from '../../kernel/values.js';
 
 export interface RunRecord {
+  readonly revision: number;
   readonly id: string;
   readonly agentId: string;
   readonly agentType: string;
   readonly runnerId: string | null;
+  readonly executionHistory?: JsonColumn;
   readonly tool?: string | null;
   readonly modelService?: string | null;
   readonly model?: string | null;
@@ -42,11 +46,20 @@ export interface RunRecord {
   readonly subjectKind: string;
   readonly subjectId: string;
   readonly threadScope: string;
+  readonly freshSession?: boolean;
+  /** Server-managed authorization for runs caused by one comment, never independent events. */
+  readonly commentRootRunId?: string | null;
+  readonly commentExecution?: 'owner' | 'requester' | null;
+  readonly commentOwnerKey?: string | null;
   readonly actorUserId: string;
+  /** Null only on a run older than the column that no backfill reached; read as the actor then. */
+  readonly requestedByUserId?: string | null;
+  readonly confirmedByUserId?: string | null;
   readonly ownerUserId: string | null;
   readonly requires: readonly unknown[];
   readonly acceptsInput: boolean;
   readonly availableAt: string | null;
+  readonly queueEnteredAt?: string | null;
   readonly leaseExpiresAt: string | null;
   readonly dispatchedAt: string | null;
   readonly startedAt: string | null;
@@ -62,6 +75,10 @@ export interface RunRecord {
   readonly directoryKey: string | null;
   readonly claimFailures: number;
   readonly payloadFingerprint: string | null;
+  /** While queued: the variables for team runners only that kept a personal runner off it (`VariableRef[]`). */
+  readonly teamOnlyVariables?: JsonColumn;
+  /** While held: the repository URLs its runner may ask credentials for on demand (`RunGit.onDemand`); null otherwise. */
+  readonly gitCredentialUrls?: JsonColumn;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -117,6 +134,8 @@ export interface RepoRecord {
   readonly branch: string;
   readonly pushed: boolean;
   readonly headSha: string | null;
+  readonly failureReason?: string | null;
+  readonly failureDetail?: string | null;
   readonly updatedAt: string;
 }
 
@@ -179,6 +198,27 @@ export function sessionsRepo(
 
 export const ACTIVE: readonly RunStatus[] = ['dispatched', 'running'];
 
+/** JSON columns may be decoded by the driver or returned as strings. */
+export function toExecutions(value: unknown): RunExecutionSnapshot[] {
+  if (typeof value === 'string') {
+    try {
+      return toExecutions(JSON.parse(value) as unknown);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(value)) return [];
+  return value.filter((item: unknown): item is RunExecutionSnapshot => {
+    const record = jsonObject(item);
+    return (
+      typeof record.attempt === 'number' &&
+      typeof record.runnerId === 'string' &&
+      Array.isArray(record.actualModels) &&
+      record.actualModels.every((model: unknown) => typeof model === 'string')
+    );
+  });
+}
+
 export function isActive(status: RunStatus): boolean {
   return ACTIVE.includes(status);
 }
@@ -190,11 +230,22 @@ export function isTerminal(status: RunStatus): boolean {
 }
 
 export function toRun(record: RunRecord): Run {
+  const executions = toExecutions(record.executionHistory);
+  const latest = executions.at(-1);
   return {
     id: record.id,
     agentId: record.agentId,
     agentType: record.agentType === 'online' ? 'online' : 'runner',
     runnerId: record.runnerId,
+    executions,
+    runnerName: latest?.runnerName ?? null,
+    runnerOwnerUserId: latest?.runnerOwnerUserId ?? null,
+    runnerOwnerName: latest?.runnerOwnerName ?? null,
+    toolVersion: latest?.toolVersion ?? null,
+    actualModels: latest?.actualModels ?? [],
+    actualEffort: latest?.actualEffort ?? null,
+    actualEffortSource: latest?.actualEffortSource ?? null,
+    actualEffortAt: latest?.actualEffortAt ?? null,
     tool: (record.tool as AgentTool | null | undefined) ?? null,
     modelService: record.modelService ?? null,
     model: record.model ?? null,
@@ -204,14 +255,21 @@ export function toRun(record: RunRecord): Run {
     attempt: Number(record.attempt),
     maxAttempts: Number(record.maxAttempts),
     retryOfRunId: record.retryOfRunId,
+    freshSession: Boolean(record.freshSession),
     parentRunId: record.parentRunId ?? null,
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,
+    commentRootRunId: record.commentRootRunId ?? null,
+    commentExecution: record.commentExecution ?? null,
+    commentOwnerKey: record.commentOwnerKey ?? null,
     actorUserId: record.actorUserId,
+    requestedByUserId: record.requestedByUserId ?? record.actorUserId,
+    confirmedByUserId: record.confirmedByUserId ?? null,
     ownerUserId: record.ownerUserId,
     requires: stringArray(record.requires) as RunnerFeature[],
     acceptsInput: Boolean(record.acceptsInput),
     availableAt: record.availableAt,
+    queueEnteredAt: record.queueEnteredAt ?? record.createdAt,
     leaseExpiresAt: record.leaseExpiresAt,
     dispatchedAt: record.dispatchedAt,
     startedAt: record.startedAt,
@@ -266,6 +324,13 @@ export function toRepo(record: RepoRecord): RunRepo {
     branch: record.branch,
     pushed: Boolean(record.pushed),
     headSha: record.headSha,
+    failure:
+      record.failureReason === null || record.failureReason === undefined
+        ? null
+        : {
+            reason: record.failureReason,
+            message: record.failureDetail ?? '',
+          },
     updatedAt: record.updatedAt,
   };
 }
@@ -275,6 +340,32 @@ export async function findRunRecord(
   id: string,
 ): Promise<RunRecord | undefined> {
   return runsRepo(conn).findOne({ filter: { id } });
+}
+
+export type RunStatusRecord = Pick<
+  RunRecord,
+  'id' | 'status' | 'runnerId' | 'cancelRequestedAt' | 'leaseExpiresAt'
+> & { readonly pendingInputId: string | null };
+
+/** One row for a poll, including whether unhandled input needs to be read. */
+export async function findRunStatus(
+  conn: DatabaseConnection,
+  id: string,
+): Promise<RunStatusRecord | undefined> {
+  return conn.query
+    .selectFrom('agRuns')
+    .select(['id', 'status', 'runnerId', 'cancelRequestedAt', 'leaseExpiresAt'])
+    .select((eb) => [
+      eb
+        .selectFrom('agRunInputs')
+        .select('id')
+        .whereRef('agRunInputs.runId', '=', 'agRuns.id')
+        .where('handledAt', 'is', null)
+        .limit(1)
+        .as('pendingInputId'),
+    ])
+    .where('id', '=', id)
+    .executeTakeFirst<RunStatusRecord>();
 }
 
 /** The run's input not yet reported as handled, oldest first. */
@@ -307,7 +398,10 @@ export async function markDelivered(
   });
 }
 
-/** The runs of one key (agent, subject, thread) in one of `statuses`. */
+/**
+ * The runs of a work key, (agent, subject, thread), in `statuses`, oldest first. With `actorUserId`, only the runs
+ * working as that person: new work merges only into those, while one run per key at a time holds no matter whose.
+ */
 export async function runsOfKey(
   conn: DatabaseConnection,
   key: {
@@ -317,6 +411,7 @@ export async function runsOfKey(
     readonly threadScope: string;
   },
   statuses: readonly RunStatus[],
+  actorUserId?: string,
 ): Promise<RunRecord[]> {
   return runsRepo(conn).findMany({
     filter: (f) =>
@@ -325,6 +420,9 @@ export async function runsOfKey(
         f.string('subjectKind').eq(key.subjectKind),
         f.string('subjectId').eq(key.subjectId),
         f.string('threadScope').eq(key.threadScope),
+        ...(actorUserId === undefined
+          ? []
+          : [f.string('actorUserId').eq(actorUserId)]),
         f.or(statuses.map((status) => f.string('status').eq(status))),
       ]),
     sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
@@ -403,6 +501,8 @@ export async function inputsOnSince(
   }));
 }
 
+const summaryRead = transactionRead<string | null>();
+
 /** The summary of the newest completed run of an agent on a subject, other than `exceptRunId`. */
 export async function lastSummary(
   conn: DatabaseConnection,
@@ -413,19 +513,28 @@ export async function lastSummary(
   },
   exceptRunId: string,
 ): Promise<string | null> {
-  const records = await runsRepo(conn).findMany({
-    filter: (f) =>
-      f.and([
-        f.string('agentId').eq(key.agentId),
-        f.string('subjectKind').eq(key.subjectKind),
-        f.string('subjectId').eq(key.subjectId),
-        f.string('status').eq('completed'),
-        f.string('id').ne(exceptRunId),
-      ]),
-    sort: (sort) => [sort.field('finishedAt').desc(), sort.field('id').desc()],
-    limit: 5,
-  });
-  return records.find((record) => record.summary)?.summary ?? null;
+  return summaryRead(
+    conn,
+    JSON.stringify([key.agentId, key.subjectKind, key.subjectId, exceptRunId]),
+    async () => {
+      const records = await runsRepo(conn).findMany({
+        filter: (f) =>
+          f.and([
+            f.string('agentId').eq(key.agentId),
+            f.string('subjectKind').eq(key.subjectKind),
+            f.string('subjectId').eq(key.subjectId),
+            f.string('status').eq('completed'),
+            f.string('id').ne(exceptRunId),
+          ]),
+        sort: (sort) => [
+          sort.field('finishedAt').desc(),
+          sort.field('id').desc(),
+        ],
+        limit: 5,
+      });
+      return records.find((record) => record.summary)?.summary ?? null;
+    },
+  );
 }
 
 /** Per agent, the runs it has not finished (queued or held). */

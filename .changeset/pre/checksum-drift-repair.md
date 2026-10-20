@@ -5,7 +5,6 @@
 "@nocobase/app-skills": patch
 "@nocobase/app-template-default": patch
 "@nocobase/app-template-examples": patch
-"@nocobase/app-template-hub": patch
 ---
 
 Report migration and seed checksum drift as a warning instead of failing, and add `nocobase app db repair` to realign the recorded history.

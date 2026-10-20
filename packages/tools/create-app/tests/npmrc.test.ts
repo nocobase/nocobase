@@ -3,15 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { buildNpmrcFile } from '../src/lib/npmrc.ts';
 
 describe('buildNpmrcFile', () => {
-  /**
-   * Nothing else in a generated project records where NocoBase packages come from: creation passes its registry to
-   * the one install it runs itself, and the next `pnpm add @nocobase/…` the user runs would resolve against the
-   * public npm and fail with a 404 that never mentions a registry.
-   */
-  it('records a self-hosted registry for the NocoBase scope only', () => {
-    const contents = buildNpmrcFile({ registry: 'https://npm.nocobase.ai' });
+  it('records a private registry for the NocoBase scope only', () => {
+    const contents = buildNpmrcFile({
+      registry: 'https://registry.internal.example',
+    });
 
-    expect(contents).toContain('@nocobase:registry=https://npm.nocobase.ai');
+    expect(contents).toContain(
+      '@nocobase:registry=https://registry.internal.example',
+    );
     expect(contents).not.toMatch(/^registry=/mu);
   });
 
@@ -30,7 +29,7 @@ describe('buildNpmrcFile', () => {
    */
   it('always carries the peer dependency setting the templates cannot ship', () => {
     for (const registry of [
-      'https://npm.nocobase.ai',
+      'https://registry.internal.example',
       'https://registry.npmjs.org/',
     ]) {
       expect(buildNpmrcFile({ registry })).toContain(
@@ -46,8 +45,8 @@ describe('buildNpmrcFile', () => {
   });
 
   it('ends with a newline', () => {
-    expect(buildNpmrcFile({ registry: 'https://npm.nocobase.ai' })).toMatch(
-      /\n$/u,
-    );
+    expect(
+      buildNpmrcFile({ registry: 'https://registry.internal.example' }),
+    ).toMatch(/\n$/u);
   });
 });

@@ -2,6 +2,34 @@ import type { AgentChatLocale } from './en-US.js';
 
 const agentChatZhCN: AgentChatLocale = {
   chat: {
+    retrySaving: '重试保存',
+    contextFailed: '无法读取所选上下文或发送消息，请检查当前页面后重试。',
+    approval: {
+      request: '此工具需要您批准后才能执行。',
+      approve: '批准',
+      deny: '拒绝',
+      denied: '已拒绝执行工具。',
+      failed: '审批结果尚未确认，请刷新已保存消息后再试。',
+    },
+    feedback: {
+      sending: '正在发送…',
+      waiting: '等待 Agent 响应…',
+      thinking: '正在思考…',
+      stopping: '已请求停止，等待 Agent 确认结束…',
+      completed: '已完成。',
+      cancelled: '已取消。再次执行前请核对可能已完成的操作。',
+      failed: '响应失败。请先查看历史，再决定是否重新发送。',
+      unknown: '结果或历史保存尚未确认。请刷新历史后再决定是否重新发送。',
+      effectReview: '部分操作可能已完成，再次执行前请核对结果。',
+    },
+
+    executionFailed:
+      '执行失败。再次执行前请查看已保存历史，核对可能已完成的操作。',
+    historicalReadOnly: '历史会话仅供查看，请新建聊天以继续。',
+    connectionUnknown:
+      '连接已中断，结果待确认。请刷新已保存历史后决定是否再次发送。',
+    allowAnother: '允许再次发送（可能重复）',
+    refreshHistory: '刷新历史',
     title: 'Agent 对话',
     ask: '问 Agent',
     close: '关闭',
@@ -25,7 +53,7 @@ const agentChatZhCN: AgentChatLocale = {
     emptyTitle: '{{name}} 能帮你做什么？',
     emptyDescription:
       '可以问任何问题，也可以直接描述要安排的工作。当前页面会作为上下文一起发送。',
-    noAgent: '没有你可以对话的 Agent。请管理员创建一个，或者给你开通权限。',
+    noAgent: '没有你可以对话的 Agent。请管理员启用一个，或者连接一台执行机。',
     chooseAgent:
       '在下方选择要对话的 Agent。想每次都从同一个 Agent 开始，可以在个人资料里设置默认 Agent。',
     messages: '消息',
@@ -36,16 +64,12 @@ const agentChatZhCN: AgentChatLocale = {
     availability: {
       online: '在线',
       agentMissing: '已删除',
-      agentArchived: '已归档',
+      agentArchived: '未启用',
       forbidden: '你无权使用',
-      noRunner: '没有在线的运行环境',
+      noModel: '请先配置聊天模型',
+      noRunner: '暂无执行机，选不了',
+      othersPersonal: '只有别人的个人执行机能跑',
       modelUnavailable: '模型不可用',
-    },
-    mode: {
-      online: '在线',
-      runner: 'Runner',
-      onlineHint: '在服务端秒级回答',
-      runnerHint: '在运行环境中工作的编码 Agent',
     },
     reply: {
       writing: '正在输入…',
@@ -53,30 +77,34 @@ const agentChatZhCN: AgentChatLocale = {
     },
     offline: {
       agentMissing: '{{name}} 已不存在',
-      agentArchived: '{{name}} 已归档',
+      agentArchived: '{{name}} 未启用',
       forbidden: '你已无权使用 {{name}}',
+      noModel: '请先配置聊天模型',
       noRunner: '{{name}} 暂时没有在线的运行环境',
+      othersPersonal: '只有别人的个人执行机能跑 {{name}}，请连接你自己的执行机',
       modelUnavailable: '{{name}} 的模型不可用，请联系管理员',
       kept: '消息已保存，它能回复时会处理。',
-      fallback: '这条对话改用系统默认',
-      usingDefault: '这条对话临时使用系统默认的 {{name}}。',
+      fallback: '这条对话改用其他 Agent',
+      usingDefault: '这条对话暂时由 {{name}} 代替 {{own}} 回答。',
       restore: '切回 {{own}}',
     },
     notice: {
       switchedToDefault:
         '已临时改用系统默认的 {{name}}，等 {{own}} 恢复后可以切回。',
+      switchedToOnline:
+        '{{own}} 现在没有你能用的运行环境，先由 {{name}} 回答，等 {{own}} 恢复后可以切回。',
+      onlineFallbackUnavailable:
+        '在线兜底 Agent 暂时无法回答（{{reason}}），这条对话仍由 {{own}} 等待可用的运行环境。',
       switchedBack: '已切回 {{name}}。',
       runFailed: 'Agent 没有回复就停止了。',
       runFailedReason: 'Agent 没有回复就停止了：{{reason}}',
-      runCancelled: '已停止。',
+      runCancelled: '已请求取消。',
     },
     consultation: {
       title: '咨询了 {{name}}',
       question: '问题',
       answer: '回答',
       steps: '它的步骤',
-      plans_one: '提出了一个计划，等你确认。',
-      plans_other: '提出了 {{count}} 个计划，等你确认。',
       usage: '用了 {{input}} 个输入 token 和 {{output}} 个输出 token。',
       state: {
         running: '回答中…',
@@ -103,16 +131,11 @@ const agentChatZhCN: AgentChatLocale = {
       retry: '重新发送',
       discard: '丢弃',
     },
-    model: {
-      label: '模型',
-      current: '模型：{{name}}',
-      default: '{{model}}（默认）',
-    },
     composer: {
       label: '发给 Agent 的消息',
       placeholder: '提问，或者描述要安排的工作…',
       hint: 'Enter 发送，Shift+Enter 换行',
-      runningHint: '现在发的消息会交给正在进行的工作一起处理',
+      runningHint: '正在执行，可以显式停止本次执行。',
       tooLong: '最多 {{max}} 个字。',
       send: '发送',
       stop: '停止',
@@ -145,6 +168,15 @@ const agentChatZhCN: AgentChatLocale = {
       remove: '移除上下文：{{label}}',
     },
     agents: {
+      models: '模型',
+      defaultModel: '默认模型',
+      runnerAgents: 'Agents',
+      modelPlaceholder: '选择模型',
+      modelSwitch: '模型：{{name}} · {{service}}；选择模型或 Agent',
+      modelHint: '选择与在线大模型对话。',
+      mixedHint: '选择与在线大模型或执行机中的 Agent 对话。',
+      search: '搜索模型或 Agent',
+      noResults: '没有匹配的模型或 Agent',
       switch: 'Agent：{{name}}；选择其他 Agent',
       withStatus: '{{name}}，{{status}}',
       chooseFor: '和谁对话',
@@ -157,12 +189,9 @@ const agentChatZhCN: AgentChatLocale = {
       placeholder: '选择 Agent',
       myDefault: '我的默认',
       systemDefault: '系统默认',
-      personal: '仅我可用',
+      personal: '仅个人执行机',
       temporary: '临时',
-      onlineGroup: '在线 Agent',
-      runnerGroup: 'Runner Agent',
-      modeHint:
-        '在线模式在服务端秒级回答；Runner 模式在运行环境中运行编码 Agent。对话创建后模式不变。',
+      hint: '列出已启用的 Agent，并说明哪个现在无法回答你。回答在执行机上运行：第一条回复要等执行机接手，通常几秒。',
     },
     history: {
       title: '对话历史',

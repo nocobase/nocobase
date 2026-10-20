@@ -1,4 +1,8 @@
-import type { ApiClient, RealtimeClient } from '@nocobase/app-client';
+import type {
+  ApiClient,
+  RealtimeClient,
+  RealtimeWatchOptions,
+} from '@nocobase/app-client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren, ReactElement } from 'react';
@@ -15,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   realtime: {
     connected: true,
     subscribe: vi.fn(),
+    watch: vi.fn(),
     onOpen: vi.fn(),
     onError: vi.fn(),
     reconnect: vi.fn(),
@@ -49,7 +54,6 @@ vi.mock('../client/subscription.js', () => ({
 }));
 
 import {
-  inboxKeys,
   useInboxActions,
   useInboxItems,
   useInboxRefresh,
@@ -224,51 +228,60 @@ describe('in-app notification inbox hooks', () => {
     expect(result.current.actions.pending).toBe(true);
   });
 
-  it('invalidates every inbox query on the plugin signal and on extra topics', () => {
+  it('refreshes inbox snapshots on plugin signals and extra topic readiness', async () => {
     const stopItems = vi.fn();
     const stopTopic = vi.fn();
-    let refreshItems: () => void = () => undefined;
-    let refreshTopic: () => void = () => undefined;
+    let refreshItems: (signal: AbortSignal) => Promise<void> = async () => {};
+    let extra: RealtimeWatchOptions<unknown> = {};
     mocks.subscribe.mockImplementation(
-      (_realtime: unknown, _target: unknown, refresh: () => void) => {
+      (_realtime: unknown, _target: unknown, refresh: typeof refreshItems) => {
         refreshItems = refresh;
         return stopItems;
       },
     );
-    mocks.realtime.subscribe.mockImplementation(
-      (_topic: string, refresh: () => void) => {
-        refreshTopic = refresh;
-        return stopTopic;
+    mocks.realtime.watch.mockImplementation(
+      (_topic: string, options: RealtimeWatchOptions<unknown>) => {
+        extra = options;
+        return {
+          state: 'subscribed',
+          error: undefined,
+          retry: vi.fn(),
+          close: stopTopic,
+        };
       },
     );
+    mocks.fetchUnreadCount.mockResolvedValue(1);
     const { queryClient, wrapper } = setup();
-    const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
-
     const view = renderHook(
-      ({ topics }: { topics: string[] }) => useInboxRefresh(topics),
+      ({ topics }: { topics: string[] }) => {
+        useInboxRefresh(topics);
+        return useInboxUnreadCount();
+      },
       { wrapper, initialProps: { topics: ['app:inbox'] } },
     );
-    expect(mocks.subscribe).toHaveBeenCalledWith(
-      mocks.realtime,
-      window,
-      expect.any(Function),
+    await waitFor(() => expect(view.result.current.data).toBe(1));
+    mocks.fetchUnreadCount.mockResolvedValue(2);
+    await act(() => refreshItems(new AbortController().signal));
+    await waitFor(() => expect(view.result.current.data).toBe(2));
+    mocks.fetchUnreadCount.mockResolvedValue(3);
+    act(() => extra.onReady?.());
+    await waitFor(() => expect(view.result.current.data).toBe(3));
+    mocks.fetchUnreadCount.mockResolvedValue(4);
+    act(() =>
+      extra.onEvent?.({
+        type: 'event',
+        topic: 'app:inbox',
+        payload: {},
+        publishedAt: new Date().toISOString(),
+      }),
     );
-    expect(mocks.realtime.subscribe).toHaveBeenCalledWith(
-      'app:inbox',
-      expect.any(Function),
-    );
-
-    refreshItems();
-    refreshTopic();
-    expect(invalidate).toHaveBeenCalledTimes(2);
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: inboxKeys.all });
-
-    // A new array with the same topics does not resubscribe.
+    await waitFor(() => expect(view.result.current.data).toBe(4));
     view.rerender({ topics: ['app:inbox'] });
     expect(mocks.subscribe).toHaveBeenCalledTimes(1);
-
+    expect(mocks.realtime.watch).toHaveBeenCalledTimes(1);
     view.unmount();
-    expect(stopItems).toHaveBeenCalledTimes(1);
-    expect(stopTopic).toHaveBeenCalledTimes(1);
+    expect(stopItems).toHaveBeenCalledOnce();
+    expect(stopTopic).toHaveBeenCalledOnce();
+    queryClient.clear();
   });
 });

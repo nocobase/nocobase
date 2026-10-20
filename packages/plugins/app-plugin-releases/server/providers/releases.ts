@@ -14,12 +14,14 @@ import type { AppConfigAccessor } from '@nocobase/app-server/config';
 import { normalizeBasePath } from '@nocobase/app-server/support';
 import { AppHostSupervisor } from '@nocobase/app-host/supervisor';
 import { databaseManagerToken } from '@nocobase/db';
+import type { AppDriveConfig } from '@nocobase/drive';
 import {
   ServiceProvider,
   type ServiceContainer,
 } from '@nocobase/service-provider';
 
-import { createReleases } from '../composition.js';
+import { createResolvedReleases } from '../composition.js';
+import { resolveArtifact } from '../artifact-config.js';
 import { createReleasesSecretsStores } from '../secrets-stores.js';
 import type {
   ReleasesDockerHostConfig,
@@ -71,6 +73,10 @@ export class ReleasesProvider extends ServiceProvider<ReleasesProviderApplicatio
     });
     container.singleton(releasesToken, (resolver) => {
       const config = this.config();
+      const artifact = resolveArtifact(
+        config.artifact,
+        this.app.config.get<AppDriveConfig>('drive'),
+      );
       const logger = resolver.has(loggingToken)
         ? resolver.resolve(loggingToken).getLogger('releases')
         : undefined;
@@ -109,7 +115,7 @@ export class ReleasesProvider extends ServiceProvider<ReleasesProviderApplicatio
             controller: this.supervisor,
             prepare: () =>
               writeHostConfig(host.configPath, {
-                artifact: config.artifact,
+                artifact: artifact.disk,
                 appVolumesDir: host.appVolumesDir,
                 appRevisionsDir: host.appRevisionsDir,
                 ...(host.controlDir ? { controlDir: host.controlDir } : {}),
@@ -131,7 +137,7 @@ export class ReleasesProvider extends ServiceProvider<ReleasesProviderApplicatio
             controller: this.dockerSupervisor,
             prepare: () =>
               writeHostConfig(docker.configPath, {
-                artifact: config.artifact,
+                artifact: artifact.disk,
                 appVolumesDir: docker.appVolumesDir,
                 appRevisionsDir: docker.appRevisionsDir,
                 ...(docker.controlDir ? { controlDir: docker.controlDir } : {}),
@@ -172,23 +178,26 @@ export class ReleasesProvider extends ServiceProvider<ReleasesProviderApplicatio
         });
         drivers.register(this.hostDriver);
       }
-      return createReleases({
-        database: resolver.resolve(databaseManagerToken),
-        config,
-        drivers,
-        access: () =>
-          resolver.has(releasesAccessToken)
-            ? resolver.resolve(releasesAccessToken)
-            : undefined,
-        ...(resolver.has(secretsServiceToken)
-          ? { secrets: resolver.resolve(secretsServiceToken) }
-          : {}),
-        reservedBasePath: normalizeBasePath(
-          this.app.config.get<string>('app.publicBasePath') ?? '',
-        ),
-        publicOrigin: this.app.config.get<string>('app.publicOrigin') ?? null,
-        logger,
-      });
+      return createResolvedReleases(
+        {
+          database: resolver.resolve(databaseManagerToken),
+          config,
+          drivers,
+          access: () =>
+            resolver.has(releasesAccessToken)
+              ? resolver.resolve(releasesAccessToken)
+              : undefined,
+          ...(resolver.has(secretsServiceToken)
+            ? { secrets: resolver.resolve(secretsServiceToken) }
+            : {}),
+          reservedBasePath: normalizeBasePath(
+            this.app.config.get<string>('app.publicBasePath') ?? '',
+          ),
+          publicOrigin: this.app.config.get<string>('app.publicOrigin') ?? null,
+          logger,
+        },
+        artifact,
+      );
     });
     container.singleton(
       releasesEventsToken,

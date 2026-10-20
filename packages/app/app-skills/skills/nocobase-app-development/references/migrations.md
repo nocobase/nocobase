@@ -51,7 +51,7 @@ While the branch is unmerged, re-run it:
 pnpm nocobase db redo
 ```
 
-Once the branch is merged, do not edit it at all: write a new migration for the correction.
+Once the branch is merged, do not edit it at all: write a new migration for the correction, as the next section describes.
 
 Two things are never the answer here. `pnpm nocobase db repair` only rewrites the recorded checksum, so it makes an un-applied change look applied — the schema stays wrong and nothing says so. Editing `__nocobase_migrations`, `__nocobase_collection_metadata` or a physical table by hand splits the two records of what exists: dropping a table without its metadata record leaves the Collection unresolvable, and the next run fails with `Metadata Collection "…" maps to missing physical table "…"` before it reaches your migration.
 
@@ -65,6 +65,20 @@ Each internal table has a command that maintains it, and none of them should be 
 | `__nocobase_seeds`                                  | Which seeds ran                           | `db apply`, `db repair`                             |
 | `__nocobase_collection_metadata`                    | The Collection metadata behind each table | Migrations, through `builder`; `collections doctor` |
 | `__nocobase_migration_lock`, `__nocobase_seed_lock` | The run in progress                       | The run itself, and `db unlock`                     |
+
+## Migrations change incrementally
+
+A migration that has been merged is history. Every installation that already ran it recorded it as executed and will never run it again, so editing it splits installations in two: those that ran the old version keep the schema it produced, and fresh ones get the schema the new version produces. Nothing reconciles the two, and the only symptom is a checksum warning that `pnpm nocobase db repair` silences without changing the schema.
+
+So every schema change after a merge is a new migration, including a fix to a migration that turned out wrong:
+
+- Leave the merged file untouched: not its operations, its `down`, its name, its filename, its formatting or its comments. Even a reformat changes the checksum every installation recorded and warns each of them.
+- Name the new migration so it sorts after the one it corrects. Migrations run in name order across the application and every plugin.
+- Write it to take an installation from what the earlier migrations left behind to the target, so it holds both on an installation that ran the earlier migrations long ago and on a fresh one that runs everything in order.
+- Spell out the change explicitly with `builder.alterCollection`, field, index or constraint operations, and move existing rows with set-based `query` statements where the change needs it.
+- Test the upgrade path with `describeMigration()`: it applies the earlier migrations first, then this one.
+
+Check `git log -- <file>` when unsure whether a migration is merged. The same rule holds for migrations a plugin ships: a released plugin's migrations reach every application that installs it, so a plugin corrects one the same way.
 
 ## When a run is killed while it holds the lock
 

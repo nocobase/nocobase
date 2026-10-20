@@ -49,6 +49,13 @@ export const RUNNER_ROUTES = {
   skill: '/api/agents/runners/runs/:runId/skills/:slug',
   /** `GET` → `MountBundle`: one of the run's mounts (`RunMount.bundleUrl`), while the runner holds the run. */
   mount: '/api/agents/runners/runs/:runId/mounts/:name',
+  /**
+   * `POST` `GitCredentialRequest` → `GitCredential`: one of the run's `RunGit.onDemand` repositories' credential, while
+   * the runner holds that attempt of the run (`gitCredentials` feature). Fails `REPO_ACCESS_UNAVAILABLE` (try again
+   * later) or `REPO_ACCESS_DENIED` (the application will not issue one), and `LEASE_LOST`, `RUN_NOT_ACTIVE` or
+   * `RUN_NOT_OWNED` once the run is not this runner's.
+   */
+  gitCredential: '/api/agents/runners/runs/:runId/gitCredentials',
   /** `POST` `{}` → `JobLeaseResponse`: renews a job's lease. Jobs (`jobs.ts`) are claimed through `claim`. */
   jobLease: '/api/agents/runners/jobs/:jobId/lease',
   /** `POST` `JobStartRequest` → `JobLeaseResponse`. */
@@ -63,6 +70,11 @@ export const RUNNER_ROUTES = {
   jobFail: '/api/agents/runners/jobs/:jobId/fail',
   /** `POST` `{}` → `JobFinishResponse`. */
   jobCancelAck: '/api/agents/runners/jobs/:jobId/cancelAck',
+  /**
+   * `POST` `WorkspacesRequest` → `WorkspacesResponse`: the runner's working directories, and which of them may go
+   * (`workspaces.ts`). Only to an application whose heartbeat answer carries `workspaces`.
+   */
+  workspaces: '/api/agents/runners/workspaces',
 } as const;
 
 /**

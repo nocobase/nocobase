@@ -1,5 +1,44 @@
 # @nocobase/db
 
+## 1.0.0-beta.21
+
+### Patch Changes
+
+- 98b3862: Identify Dameng, KingbaseES and OceanBase as NocoBase Pro commercial drivers when selecting or initializing a database. Report commercial license and private registry requirements before configuration, including JSON warnings and missing-driver errors.
+- b22d999: Reduce query result mapping and timestamp decoding overhead, batch PostgreSQL schema inspection into one statement, and read SQLite index metadata without per-index queries while preserving transaction-local schema inspection.
+- 0037dd2: Preserve primary-key deferrability, index validity, partial-index restrictions, and index comparison compatibility during schema inspection and resolution. Keep optimistic single-row updates on the cardinality-checking path for generated or cascading locating keys, deferred or invalid constraints, unsafe partial or invalid indexes, and incompatible or unknown index equality semantics, including operator classes. Exclude PostgreSQL traditional inheritance parents whose unique keys do not cover child rows, while retaining eligible declaratively partitioned tables. Keep the preferred record identity instead of substituting a secondary unique key that a trigger could reassign, and diagnose unsuccessful writes using current rows even inside repeatable-read transactions. Roll back unsuccessful conditional writes, including statement-trigger effects from zero-row updates, before reporting the original missing-record or version-conflict error. Preserve earlier caller work and roll back writes that unexpectedly affect multiple rows or cannot reload their result. Keep Oracle character identities with session-dependent or unknown comparison semantics on the cardinality-checking path, without caching NLS settings or changing session behavior; numeric and explicitly binary character keys remain eligible. Associate constraints with their named backing indexes so comparison and validity metadata survive reordered or additional index keys, with order-independent column matching for unnamed references. Preserve all constraint references and deduplicate index keys when Oracle constraints share a backing index, so each constraint inherits its comparison and validity restrictions. Preserve usable Oracle local, global and composite partitioned unique indexes by checking partition and subpartition usability instead of treating their aggregate N/A status as invalid. Preserve SQL Server nullable unique identities whose index predicates only exclude null keys, and keep restricted unique indexes droppable through the Builder.
+- 14b7aec: Let a test suite migrate its databases once: `createTestDatabase({ template: true })` migrates and seeds once per process into a template and gives each call a copy of it, where the dialect's test provisioner can copy a database. `TestDatabaseProvisioner` gains an optional `clone({ source, name, env })`, which the SQLite provisioner implements by copying the file; other dialects keep migrating each database as before.
+- 0037dd2: Use one conditional UPDATE for unobserved scalar updateOne calls with a safe numeric version and the unchanged preferred record identity, combining field changes with the version increment without a preceding row-locking SELECT. Preserve scoped conflict diagnostics and the existing paths for complex or observed writes.
+
+## 1.0.0-beta.20
+
+### Patch Changes
+
+- 69e212c: Move KingbaseES, Dameng and OceanBase driver ownership to NocoBase Pro while preserving optional peer dependencies, automatic loading and CLI configuration support. Install the selected driver through the Pro registry in the application's production dependencies and rebuild deployments; explicit driver registration remains optional. Test fixtures resolve external dialect provisioners from the consuming project.
+- 943a9a8: Fix MySQL installation of the agents and releases plugins by removing the unused directory/status index and limiting archive artifact keys to 172 characters while preserving full-value uniqueness. Add a Collection builder inspection method and forward migrations to converge existing installations without truncating data; oversized legacy artifact keys stop the upgrade before any column or index change. Rebuild the existing artifact-key unique index within the migration transaction on SQL Server so indexed legacy columns can be shortened while retaining uniqueness, nullable behavior and the actual index name under custom naming configurations.
+
+  This fix edits the released migrations `202610020003_ag_create_runs` and `202610020001_rel_create_tables` because their oversized indexes prevent fresh MySQL installations from reaching a later repair migration. Existing installations should expect checksum warnings on the next `nocobase db apply`; installations using `onChecksumMismatch: error` stop instead. After reviewing these exact changes, use `nocobase db repair --dry-run` and then `nocobase db repair` to acknowledge the new checksums, followed by `nocobase db apply` to perform the forward schema changes. Repairing checksums alone does not upgrade the schema. The forward corrections are irreversible because restoring the old indexes would make MySQL installations invalid again. See the plugins' `docs/mysql-installation-upgrade.md` for the upgrade and failed-installation recovery procedure.
+
+- 943a9a8: Preserve compiler-generated index and constraint names in standalone Collection Builder definitions so inspection reflects subsequent drops and recreations. Keep existing names across Collection renames and honor naming overrides without modifying caller inputs or dry-run state.
+- 9b946f4: Reuse validated Collection naming metadata across database transactions after checking a transactional version marker, avoiding repeated full metadata reads while preserving transaction-local physical schema inspection, savepoint isolation, and cache invalidation.
+
+  Keep transaction read views out of the shared cache, revoke cache reuse for transactions spanning explicit invalidation, and preserve metadata conflict errors for concurrent insertions across a parent transaction and its nested savepoints. Check current metadata revisions even when a supplied transaction retains an older repeatable-read snapshot.
+
+  Keep locking revision reads at the top SQL level so metadata writes also work on Oracle.
+
+  Limit cache table name prefixes by UTF-8 bytes so multibyte custom metadata table names initialize correctly on PostgreSQL.
+
+  Document and verify the Database Explorer initialization boundary for metadata and cache-version bookkeeping tables.
+
+## 1.0.0-beta.19
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/repository-input@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 1.0.0-beta.18
 
 ### Minor Changes

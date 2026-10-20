@@ -1,46 +1,39 @@
-/**
- * A conversation's messages in the browser, as plain data: the pages fetched so far merged by `seq`, the messages the
- * person sent that the server has not confirmed yet (optimistic, replaced once a message with the same
- * `metadata.clientId` arrives), and the step line of the run that is answering. An online agent's reply arrives as a
- * draft that grows in place at the same `seq` (`metadata.streaming`): merging by `seq` replaces it with each fetch.
- */
+/** UIMessage reconciliation at the durable-history boundary. SDK Chat owns the active messages. */
+import type { ConsultationIdentity } from './consultation-identity.js';
 import type { RunEvent } from '@nocobase/agent-protocol';
-
 import type {
   ChatAgent,
-  ConversationMessage,
   ConversationNotice,
   MessageAttachment,
-  MessagePage,
   PageContext,
 } from '../../shared/conversations.js';
+import type { AppUIData, AppUIMessage } from '../../shared/online-agent.js';
 import { toolSummary } from '../lib/tool-summary.js';
 
-/** A message the person sent, shown until the server's copy arrives. */
+/** Input recovery information; this never assembles an assistant message or parses a stream. */
 export interface PendingMessage {
   readonly clientId: string;
   readonly content: string;
   readonly context: PageContext | undefined;
-  /** The files sent with it, already uploaded. */
   readonly attachments?: readonly MessageAttachment[];
   readonly createdAt: string;
-  /** `failed`: not saved; the person may send it again. */
-  readonly status: 'sending' | 'failed';
+  readonly status: 'sending' | 'failed' | 'unknown';
 }
-
-export interface MessagesState {
-  /** Oldest first, each `seq` once. */
-  readonly items: readonly ConversationMessage[];
-  readonly pending: readonly PendingMessage[];
-  /** There are older messages than the first one loaded. */
+export interface UIMessagePage {
+  readonly items: readonly AppUIMessage[];
   readonly hasMore: boolean;
-  /** The page token of the older messages, while there are any. */
+  readonly lastSeq: number;
+  readonly nextCursor: string | null;
+  readonly nextAfter?: number;
+}
+export interface MessagesState {
+  readonly items: readonly AppUIMessage[];
+  readonly pending: readonly PendingMessage[];
+  readonly hasMore: boolean;
   readonly olderToken: string | null;
-  /** The highest `seq` the server has reported. */
   readonly lastSeq: number;
   readonly loaded: boolean;
 }
-
 export const EMPTY_MESSAGES: MessagesState = {
   items: [],
   pending: [],
@@ -49,84 +42,119 @@ export const EMPTY_MESSAGES: MessagesState = {
   lastSeq: 0,
   loaded: false,
 };
-
 export type MessagesAction =
-  /** A page arrived: the newest page, a page `after`, or an older page. */
   | {
       readonly type: 'page';
-      readonly page: MessagePage & { readonly nextCursor?: string | null };
+      readonly page: UIMessagePage;
       readonly older?: boolean;
+      readonly reread?: boolean;
     }
-  /** The server confirmed a message (the answer of a send). */
-  | { readonly type: 'confirmed'; readonly message: ConversationMessage }
+  | { readonly type: 'confirmed'; readonly message: AppUIMessage }
   | { readonly type: 'sending'; readonly message: PendingMessage }
-  | { readonly type: 'failed'; readonly clientId: string }
-  | { readonly type: 'discard'; readonly clientId: string }
+  | {
+      readonly type: 'unknown' | 'failed' | 'discard';
+      readonly clientId: string;
+    }
   | { readonly type: 'reset' };
 
-function merge(
-  current: readonly ConversationMessage[],
-  batch: readonly ConversationMessage[],
-): readonly ConversationMessage[] {
-  if (batch.length === 0) return current;
-  const bySeq = new Map(current.map((message) => [message.seq, message]));
-  for (const message of batch) bySeq.set(message.seq, message);
-  return [...bySeq.values()].sort((a, b) => a.seq - b.seq);
-}
-
-/** Drops the optimistic copies of messages the server now has. */
-function settle(
-  pending: readonly PendingMessage[],
-  items: readonly ConversationMessage[],
-): readonly PendingMessage[] {
-  if (pending.length === 0) return pending;
-  const confirmed = new Set(
-    items
-      .map((message) => message.metadata.clientId)
-      .filter((id): id is string => typeof id === 'string'),
+/** Stable IDs and revisions replace snapshots; an active SDK assistant always wins until the response ends. */
+export function mergeUIMessages(
+  current: readonly AppUIMessage[],
+  batch: readonly AppUIMessage[],
+  activeId?: string,
+): AppUIMessage[] {
+  const accepted = new Set(
+    batch.flatMap((message) =>
+      message.role === 'user' ? [message.metadata?.clientId ?? message.id] : [],
+    ),
   );
-  const next = pending.filter((message) => !confirmed.has(message.clientId));
-  return next.length === pending.length ? pending : next;
+  const byId = new Map(
+    current
+      .filter(
+        (message) =>
+          !(
+            message.role === 'user' &&
+            message.metadata?.seq === undefined &&
+            accepted.has(message.id) &&
+            !batch.some((item) => item.id === message.id)
+          ),
+      )
+      .map((message) => [message.id, message]),
+  );
+  for (const message of batch) {
+    const previous = byId.get(message.id);
+    if (
+      previous &&
+      (message.id === activeId ||
+        (previous.metadata?.revision ?? 0) > (message.metadata?.revision ?? 0))
+    )
+      continue;
+    byId.set(message.id, message);
+  }
+  const ordered = [...byId.values()].sort((a, b) => {
+    const left = a.metadata?.seq,
+      right = b.metadata?.seq;
+    if (left !== undefined && right !== undefined) return left - right;
+    return (a.metadata?.createdAt ?? '').localeCompare(
+      b.metadata?.createdAt ?? '',
+    );
+  });
+  // SDK live writes target the final assistant. Rendering follows source metadata, not this working order.
+  const active = activeId ? byId.get(activeId) : undefined;
+  return active
+    ? [...ordered.filter((message) => message.id !== activeId), active]
+    : ordered;
 }
-
 export function messagesReducer(
   state: MessagesState,
   action: MessagesAction,
 ): MessagesState {
   switch (action.type) {
     case 'page': {
-      const items = merge(state.items, action.page.items);
+      const items = mergeUIMessages(state.items, action.page.items);
       return {
+        ...state,
         items,
-        pending: settle(state.pending, items),
-        // An older page tells whether there is more before it; a newer one leaves what the first load said.
+        pending: state.pending.filter(
+          (pending) =>
+            !items.some(
+              (message) =>
+                message.id === pending.clientId ||
+                message.metadata?.clientId === pending.clientId,
+            ),
+        ),
         hasMore:
           action.older || !state.loaded ? action.page.hasMore : state.hasMore,
         olderToken:
           action.older || !state.loaded
-            ? (action.page.nextCursor ?? null)
+            ? action.page.nextCursor
             : state.olderToken,
         lastSeq: Math.max(state.lastSeq, action.page.lastSeq),
         loaded: true,
       };
     }
-    case 'confirmed': {
-      const items = merge(state.items, [action.message]);
-      return {
-        ...state,
-        items,
-        pending: settle(state.pending, items),
-        lastSeq: Math.max(state.lastSeq, action.message.seq),
-      };
-    }
+    case 'confirmed':
+      return messagesReducer(state, {
+        type: 'page',
+        page: {
+          items: [action.message],
+          lastSeq: action.message.metadata?.seq ?? state.lastSeq,
+          hasMore: state.hasMore,
+          nextCursor: state.olderToken,
+        },
+      });
     case 'sending':
       return { ...state, pending: [...state.pending, action.message] };
+    case 'unknown':
     case 'failed':
       return {
         ...state,
         pending: state.pending.map((message) =>
           message.clientId === action.clientId
-            ? { ...message, status: 'failed' }
+            ? {
+                ...message,
+                status: action.type === 'unknown' ? 'unknown' : 'failed',
+              }
             : message,
         ),
       };
@@ -141,39 +169,88 @@ export function messagesReducer(
       return EMPTY_MESSAGES;
   }
 }
-
-/** The highest `seq` loaded, to ask `after` with; 0 before anything was loaded. */
 export function lastLoadedSeq(state: MessagesState): number {
-  return state.items.at(-1)?.seq ?? 0;
+  return Math.max(
+    0,
+    ...state.items.map((message) => message.metadata?.seq ?? 0),
+  );
 }
-
-/** The lowest `seq` of a reply still being written (`metadata.streaming`), or null when none is. */
-export function streamingSeq(state: MessagesState): number | null {
-  return state.items.find((message) => message.metadata.streaming)?.seq ?? null;
-}
-
-/**
- * Where to fetch newer messages from: after the last one loaded, or from just before a reply still being written,
- * which grows in place (same `seq`) until it is final.
- */
 export function fetchCursor(state: MessagesState): number {
-  const streaming = streamingSeq(state);
-  const last = lastLoadedSeq(state);
-  return streaming === null ? last : Math.min(last, streaming - 1);
+  return lastLoadedSeq(state);
 }
 
-let clientSeed = 0;
-
-/** An id for a message the browser sends, echoed back in `metadata.clientId`. */
-export function newClientId(): string {
-  clientSeed += 1;
-  const random =
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID()
-      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-  return `c-${random}-${clientSeed}`;
+/** A rendering segment keeps its original UIMessage; it never creates another SDK message. */
+export interface ChatMessageSegment {
+  readonly key: string;
+  readonly message: AppUIMessage;
+  readonly partIndexes: readonly number[];
+  readonly seq?: number;
+  readonly at: string;
+  readonly first: boolean;
+  readonly last: boolean;
 }
-
+export function chatMessageSegments(
+  messages: readonly AppUIMessage[],
+): ChatMessageSegment[] {
+  return messages
+    .flatMap((message) => {
+      const partIndexes = message.parts.flatMap((part, index) =>
+        (part.type === 'text' && !part.text.trim()) ||
+        part.type === 'step-start' ||
+        part.type === 'reasoning' ||
+        (part.type === 'data-notice' &&
+          part.id === 'execution-status' &&
+          part.data.type === 'completed')
+          ? []
+          : [index],
+      );
+      if (!partIndexes.length && message.role !== 'user') return [];
+      const sources = message.metadata?.sourceRecords;
+      if (!sources?.length || !partIndexes.length)
+        return [
+          {
+            key: message.id,
+            message,
+            partIndexes,
+            seq: message.metadata?.seq,
+            at: message.metadata?.createdAt ?? '',
+            first: true,
+            last: true,
+          },
+        ];
+      const groups = new Map<
+        string,
+        { indexes: number[]; seq: number; at: string }
+      >();
+      const visibleIndexes = new Set(partIndexes);
+      for (const source of sources) {
+        if (!message.parts[source.partIndex]) continue;
+        const group = groups.get(source.recordId) ?? {
+          indexes: [],
+          seq: source.seq,
+          at: source.createdAt ?? message.metadata!.createdAt,
+        };
+        if (visibleIndexes.has(source.partIndex))
+          group.indexes.push(source.partIndex);
+        groups.set(source.recordId, group);
+      }
+      const entries = [...groups].filter(([, group]) => group.indexes.length);
+      return entries.map(([recordId, group], index) => ({
+        key: `${message.id}:${recordId}`,
+        message,
+        partIndexes: group.indexes,
+        seq: group.seq,
+        at: group.at,
+        first: index === 0,
+        last: index === entries.length - 1,
+      }));
+    })
+    .sort((a, b) =>
+      a.seq !== undefined && b.seq !== undefined
+        ? a.seq - b.seq
+        : a.at.localeCompare(b.at),
+    );
+}
 // ---------------------------------------------------------------------------------------------------------------------
 // The step line of the answering run
 // ---------------------------------------------------------------------------------------------------------------------
@@ -256,7 +333,7 @@ export type Translate = (
 ) => string;
 
 /** A notice of what happened outside the conversation (`ConversationNotice` `news`). */
-export type NewsNotice = Extract<ConversationNotice, { code: 'news' }>;
+export type NewsNotice = AppUIData['notice'];
 
 /** The agent a new conversation would go to: the one picked, else the viewer's default, else the system default. */
 export function newConversationAgent(
@@ -274,17 +351,37 @@ export function newConversationAgent(
 
 /** Messages and other items in time order; an item follows the messages created at or before it. */
 export function timelineOrder<
-  T extends { readonly at: string; readonly rank: number },
+  T extends {
+    readonly at: string;
+    readonly rank: number;
+    readonly seq?: number;
+  },
 >(entries: readonly T[]): T[] {
-  return entries
-    .map((entry, index) => ({ entry, index }))
-    .sort(
-      (a, b) =>
-        a.entry.at.localeCompare(b.entry.at) ||
-        a.entry.rank - b.entry.rank ||
-        a.index - b.index,
-    )
-    .map(({ entry }) => entry);
+  const timed = (values: readonly T[]) =>
+    values
+      .map((entry, index) => ({ entry, index }))
+      .sort(
+        (a, b) =>
+          a.entry.at.localeCompare(b.entry.at) ||
+          a.entry.rank - b.entry.rank ||
+          a.index - b.index,
+      )
+      .map(({ entry }) => entry);
+  const messages = entries
+    .filter((entry) => entry.rank === 0 && entry.seq !== undefined)
+    .sort((a, b) => a.seq! - b.seq!);
+  if (!messages.length) return timed(entries);
+  const remaining = timed(
+    entries.filter((entry) => entry.rank !== 0 || entry.seq === undefined),
+  );
+  const result: T[] = [];
+  let cursor = 0;
+  for (const message of messages) {
+    while (cursor < remaining.length && remaining[cursor].at < message.at)
+      result.push(remaining[cursor++]);
+    result.push(message);
+  }
+  return [...result, ...remaining.slice(cursor)];
 }
 
 export function stepLineText(t: Translate, line: StepLine): string {
@@ -294,7 +391,8 @@ export function stepLineText(t: Translate, line: StepLine): string {
 
 /**
  * A notice in the viewer's language; the English `content` when the code is unknown. News is worded by the
- * application (`newsText`), else read as its English title.
+ * application (`newsText`), else read as its English title. For a loaded consultation, pass `useConsultationIdentity`'s
+ * result to distinguish loading, refusal and a missing subject without exposing a hidden identity.
  */
 export function noticeText(
   t: Translate,
@@ -302,6 +400,7 @@ export function noticeText(
   fallback: string,
   agentName: (agentId: string) => string,
   newsText?: (notice: NewsNotice, t: Translate) => string | null,
+  consultationIdentity?: ConsultationIdentity,
 ): string {
   if (!notice) return fallback;
   switch (notice.code) {
@@ -309,6 +408,16 @@ export function noticeText(
       return t('chat.notice.switchedToDefault', {
         name: agentName(notice.agentId),
         own: agentName(notice.fromAgentId),
+      });
+    case 'switchedToOnline':
+      return t('chat.notice.switchedToOnline', {
+        name: agentName(notice.agentId),
+        own: agentName(notice.fromAgentId),
+      });
+    case 'onlineFallbackUnavailable':
+      return t('chat.notice.onlineFallbackUnavailable', {
+        own: agentName(notice.fromAgentId),
+        reason: t(`chat.availability.${notice.reason}`),
       });
     case 'switchedBack':
       return t('chat.notice.switchedBack', { name: agentName(notice.agentId) });
@@ -318,12 +427,30 @@ export function noticeText(
             reason: t(`failures.${notice.reason}`),
           })
         : t('chat.notice.runFailed');
+    // The historical code names a cancellation request, not a terminal outcome.
     case 'runCancelled':
       return t('chat.notice.runCancelled');
     case 'news':
       return newsText?.(notice, t) ?? notice.title;
     case 'consultation':
-      return t('chat.consultation.title', { name: notice.agentName });
+      if (consultationIdentity?.state === 'unavailable')
+        return t('chat.consultation.unavailableTitle');
+      return t(
+        consultationIdentity?.state === 'snapshot' ||
+          (!consultationIdentity &&
+            (notice.identitySnapshot || !notice.agentId))
+          ? 'chat.consultation.snapshotTitle'
+          : 'chat.consultation.title',
+        {
+          name: consultationIdentity
+            ? consultationIdentity.state === 'loading'
+              ? '…'
+              : consultationIdentity.name
+            : notice.agentId && !notice.identitySnapshot
+              ? agentName(notice.agentId)
+              : notice.agentName,
+        },
+      );
     default:
       return fallback;
   }

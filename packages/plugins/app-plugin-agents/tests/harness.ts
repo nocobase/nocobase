@@ -9,6 +9,7 @@ import {
   createSecretsService,
   type SecretsService,
 } from '@nocobase/app-server/secrets';
+import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
@@ -17,18 +18,16 @@ import {
   PROTOCOL_VERSION,
   ProtocolError,
   RUNNER_ROUTES,
-} from '@nocobase/agent-protocol';
-import type {
-  ClaimRequest,
-  RegisterRequest,
-  RunnerFeature,
-  AgentTool,
-  ToolInfo,
+  type ClaimRequest,
+  type RegisterRequest,
+  type RunnerFeature,
+  type AgentTool,
+  type ToolInfo,
+  type ToolPolicy,
 } from '@nocobase/agent-protocol';
 import { createTestDatabase } from '@nocobase/app-testing/server';
 import type { DatabaseManager } from '@nocobase/db';
-import type { MiddlewareHandler } from 'hono';
-import { Hono } from 'hono';
+import { type MiddlewareHandler, Hono } from 'hono';
 
 import type {
   BusinessKey,
@@ -37,7 +36,34 @@ import type {
   SettingsAction,
   SettingsItem,
 } from '../shared/access.js';
-import type { AgentInput } from '../shared/agents.js';
+import type {
+  AgentStatus,
+  ConfirmChanges,
+  RunnerModelEntry,
+} from '../shared/agents.js';
+import { agentsRepo } from '../server/core/agents/agent.store.js';
+import { replaceAttachments } from '../server/core/skills/skill.store.js';
+
+/** An agent a test sets up: what the application's own agents take, and the fields only tests change directly. */
+export interface TestAgentInput {
+  readonly id?: string;
+  readonly name?: string;
+  readonly description?: string | null;
+  readonly modelEntries?: readonly RunnerModelEntry[];
+  readonly instructions?: string | null;
+  readonly actions?: readonly string[];
+  readonly confirmChanges?: ConfirmChanges;
+  readonly skillIds?: readonly string[];
+  readonly maxConcurrentRuns?: number;
+  readonly maxAttempts?: number;
+  readonly toolPolicy?: Partial<ToolPolicy> | null;
+  readonly status?: AgentStatus;
+  /**
+   * `runner`: kept as one discovered from runners, with its first entry's tool and model and reported now, so the Agent
+   * page lists it; the application's own (`system`) by default.
+   */
+  readonly source?: 'runner' | 'system';
+}
 import { composeSkillMarkdown } from '../shared/skills.js';
 import type { RunnerTrust } from '../shared/runners.js';
 import type { DistConfig } from '../server/distribution/index.js';
@@ -54,6 +80,7 @@ import { createAdminRoutes, type AdminEnv } from '../server/routes/admin.js';
 import { createChatRoutes } from '../server/routes/chat.js';
 import { createModelRoutes } from '../server/online/routes.js';
 import { createRunRoutes } from '../server/routes/run.js';
+import { createRunRequestRoutes } from '../server/routes/run-requests.js';
 import { createRosterRoutes } from '../server/routes/roster.js';
 import {
   createAdminRoutes as createRunnersAdminRoutes,
@@ -61,6 +88,7 @@ import {
 } from '../server/routes/runners/admin.js';
 import { createDistRoutes } from '../server/routes/runners/dist.js';
 import { createRunnerRoutes } from '../server/routes/runners/runner.js';
+import type { OnlineAgentRecoveryConfig } from '../server/online/agent/types.js';
 
 const MIGRATIONS = path.resolve(import.meta.dirname, '../database/migrations');
 const PACKAGE = '@nocobase/app-plugin-agents';
@@ -91,6 +119,7 @@ export interface Harness {
     readonly failed: number;
     readonly cancelled: number;
     readonly jobs: { requeued: number; failed: number; cancelled: number };
+    readonly requestsExpired: number;
   }>;
   readonly clock: FakeClock;
   /** Where the contents of skills' files are stored. */
@@ -106,11 +135,22 @@ export interface Harness {
   readonly finished: Run[];
   /** Makes the fake context provider throw, to test failed assembly. */
   failAssembly: boolean;
+  /**
+   * The samples whose work is over, as the fake subject's `workspaces.settled` says; undefined for a subject kind that
+   * cannot say (no `workspaces` member).
+   */
+  settled: Set<string> | undefined;
   /** The working directories the fake subject has. */
   dirs: SubjectDir[];
   /** The scopes (a registered `team`) whose variables and skills the fake subject's runs get. */
   scopes: SubjectScope[];
-  createAgent(input?: Partial<AgentInput>): Promise<string>;
+  /** What the fake subject adds to the turn of a resumed or a fresh session. */
+  sessionNotes: { resumed?: string; fresh?: string };
+  /** An enabled agent (unless `status` says otherwise), as the application's own agents are kept. */
+  createAgent(input?: TestAgentInput): Promise<string>;
+  /** Disables an agent as a manager of agents does (its queued runs withdrawn), or enables it again. */
+  disableAgent(id: string): Promise<void>;
+  enableAgent(id: string): Promise<void>;
   registerRunner(options?: RunnerOptions): Promise<RegisteredRunner>;
   enqueue(
     agentId: string,
@@ -255,8 +295,11 @@ export function testSecrets(
 export async function createHarness(
   options: {
     /** `null` for an application without secrets keys. */
+    readonly uiRecovery?: OnlineAgentRecoveryConfig;
+    readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
+    readonly retryBaseDelayMs?: number;
   } = {},
 ): Promise<Harness> {
   const { database, drop } = await openDatabase();
@@ -272,12 +315,15 @@ export async function createHarness(
     },
   };
   let next = 0;
+  let runnerCount = 0;
   const idGenerator = {
     generateString: () => String((next += 1)).padStart(8, '0'),
   };
   const disk = memoryDisk();
   const chatFiles = memoryChatFiles(database, clock);
   const services = createAgents({
+    measureOnlineAgent: options.measureOnlineAgent,
+    uiRecovery: options.uiRecovery,
     database,
     idGenerator,
     chatFiles,
@@ -286,6 +332,9 @@ export async function createHarness(
     app: { id: 'acme', name: 'Acme' },
     skillDisk: () => disk,
     ...(options.dist ? { dist: options.dist } : {}),
+    ...(options.retryBaseDelayMs === undefined
+      ? {}
+      : { retryBaseDelayMs: options.retryBaseDelayMs }),
     ...(options.secrets === null
       ? {}
       : { secrets: options.secrets ?? testSecrets() }),
@@ -297,12 +346,16 @@ export async function createHarness(
   const finished: Run[] = [];
   const harness = {
     failAssembly: false,
+    settled: undefined,
     dirs: [],
     scopes: [],
+    sessionNotes: {},
   } as {
     failAssembly: boolean;
+    settled: Set<string> | undefined;
     dirs: SubjectDir[];
     scopes: SubjectScope[];
+    sessionNotes: { resumed?: string; fresh?: string };
   };
   services.subjects.register({
     kind: 'sample',
@@ -343,6 +396,7 @@ export async function createHarness(
           context: `Sample ${claim.run.subject.id}`,
           turn: {
             prompt: claim.inputs.map((input) => input.text).join('\n'),
+            ...harness.sessionNotes,
           },
           data: { sampleId: claim.run.subject.id },
           dirs: harness.dirs,
@@ -355,6 +409,15 @@ export async function createHarness(
         finished.push(run);
         return Promise.resolve();
       },
+    },
+    get workspaces() {
+      const settled = harness.settled;
+      return settled === undefined
+        ? undefined
+        : {
+            settled: (_conn: unknown, ids: readonly string[]) =>
+              Promise.resolve(new Set(ids.filter((id) => settled.has(id)))),
+          };
     },
   });
 
@@ -373,6 +436,13 @@ export async function createHarness(
     );
     context.set('caller', {
       userId: user,
+      onlineContext: {
+        user: { id: user },
+        credentials: { kind: 'test-session', userId: user },
+        authorization: {
+          identity: { principal: { type: 'user', id: user } },
+        } as AuthorizationContext,
+      },
       can: (item: SettingsItem, action: SettingsAction) =>
         Promise.resolve(
           grants.includes(`${item}/${action}`) ||
@@ -439,6 +509,7 @@ export async function createHarness(
     }),
   );
   app.route('/agents', createRunRoutes(services));
+  app.route('/agents', createRunRequestRoutes(services, guard));
   app.route('/agents', createRosterRoutes(services, guard));
   app.route('/agents', createChatRoutes(services, guard, personOrRun));
   app.route('/agents', createModelRoutes(services, guard));
@@ -475,6 +546,25 @@ export async function createHarness(
     };
   };
 
+  /** An agent changed as one discovered from runners, which a manager of agents may enable and disable. */
+  async function setEnabled(id: string, enabled: boolean): Promise<void> {
+    await services.tx.run(async ({ conn }) => {
+      const record = await agentsRepo(conn).findOne({ filter: { id } });
+      await agentsRepo(conn).updateMany({
+        filter: { id },
+        values: {
+          source: 'runner',
+          description: record?.description ?? 'Works on samples',
+        },
+      });
+    });
+    const agent = await services.agents.get(id);
+    await services.agents.update(id, 'owner', {
+      enabled,
+      expectedRevision: agent.revision,
+    });
+  }
+
   return Object.assign(harness, {
     database,
     services,
@@ -488,14 +578,52 @@ export async function createHarness(
     app,
     finished,
     request,
-    async createAgent(input: Partial<AgentInput> = {}) {
-      const agent = await services.agents.create('owner', {
-        name: 'Coder',
-        modelEntries: [{ tool: 'claude', model: null }],
-        access: 'everyone',
-        ...input,
+    async createAgent(input: TestAgentInput = {}) {
+      const id = input.id ?? `agent-${randomUUID().slice(0, 8)}`;
+      await services.agents.ensureSystem({
+        id,
+        name: input.name ?? 'Coder',
+        description: input.description ?? null,
+        instructions: input.instructions ?? null,
+        actions: input.actions ?? [],
+        modelEntries: input.modelEntries ?? [{ tool: 'claude', model: null }],
       });
-      return agent.id;
+      await services.tx.run(async ({ conn }) => {
+        await agentsRepo(conn).updateMany({
+          filter: { id },
+          values: {
+            maxConcurrentRuns: input.maxConcurrentRuns ?? 2,
+            maxAttempts: input.maxAttempts ?? 3,
+            toolPolicy: input.toolPolicy ?? null,
+            confirmChanges: input.confirmChanges ?? 'larger',
+            ...(input.status ? { status: input.status } : {}),
+            ...(input.source === 'runner'
+              ? {
+                  source: 'runner',
+                  tool: (input.modelEntries ?? [])[0]?.tool ?? 'claude',
+                  model: (input.modelEntries ?? [])[0]?.model ?? null,
+                  lastReportedAt: clock.now().toISOString(),
+                }
+              : {}),
+          },
+        });
+        if (input.skillIds)
+          await replaceAttachments(
+            conn,
+            'agent',
+            id,
+            [...input.skillIds],
+            () => randomUUID(),
+            new Date().toISOString(),
+          );
+      });
+      return id;
+    },
+    async disableAgent(id: string) {
+      await setEnabled(id, false);
+    },
+    async enableAgent(id: string) {
+      await setEnabled(id, true);
     },
     async registerRunner(options: RunnerOptions = {}) {
       const token = await runners.runners.createRegistrationToken(
@@ -509,7 +637,9 @@ export async function createHarness(
       );
       const registration: RegisterRequest = {
         registrationToken: token.token,
-        name: options.name ?? 'runner',
+        name:
+          options.name ??
+          (++runnerCount === 1 ? 'runner' : `runner-${runnerCount}`),
         hostname: 'host',
         os: 'darwin',
         arch: 'arm64',
@@ -517,6 +647,7 @@ export async function createHarness(
         protocolVersion: PROTOCOL_VERSION,
         features: [
           ...(options.features ?? [
+            'workspaceKey',
             'input',
             'checkout',
             'directories',
@@ -539,6 +670,12 @@ export async function createHarness(
         throw new Error(
           `Registration failed: ${JSON.stringify(response.body)}`,
         );
+      await database
+        .connection()
+        .query.updateTable('agRunners')
+        .set({ load: { free: options.slots ?? 2, slots: options.slots ?? 2 } })
+        .where('id', '=', response.body.data.runnerId as string)
+        .execute();
       return {
         runnerId: response.body.data.runnerId as string,
         key: response.body.data.runnerKey as string,

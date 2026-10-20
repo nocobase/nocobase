@@ -1,5 +1,438 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.73
+
+### Patch Changes
+
+- baf80fe: Transform all published plugin client entry points with AppClient in generated-application tests, preserving shared service tokens during real application startup as well as Router and application contexts in component tests. Keep server modules outside this transformation boundary.
+- 0f5d73f: Include the Agents plugin as a runtime dependency in the default application template.
+- baf80fe: Export validated SDK UI message contracts for OnlineAgent integration and align application SDK dependencies with the matching React client.
+- baf80fe: Keep committed chat messages, execution occupancy, paginated history and command results consistent across views. Confirm uncertain submissions into canonical history without resending or reconnecting, and guard delayed actions and Undo callbacks for the authenticated provider lifetime.
+
+  Keep published client test fixtures, navigation guards and language providers in the same Router and application contexts as application pages, and exercise translation model selection through its keyboard interaction.
+
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [c1ab9d4]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+- Updated dependencies [baf80fe]
+  - @nocobase/app-plugin-agents@1.0.0-beta.15
+  - @nocobase/lifecycle@0.1.0-beta.3
+
+## 1.0.0-beta.72
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- 1952789: Ship a dedicated versioned Realtime integration Skill and references for authorization, snapshot recovery, distributed delivery, polling decisions and business verification. Include it in both application templates' direct dependencies so Skills synchronization discovers it, and document optional Redis configuration in both templates.
+
+  Use one refresh scheduler for the Realtime business examples' initial, manual and event reads. Retry transient snapshot failures without another event, preserve trailing reads and provide low-frequency reconciliation. Forward capability-lab read failures to the shared retry policy.
+
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-cli@1.0.0-beta.25
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.29
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.14
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.13
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.14
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.16
+  - @nocobase/app-plugin-file@1.0.0-beta.25
+  - @nocobase/app-plugin-i18n@1.0.0-beta.17
+  - @nocobase/app-plugin-mail@1.0.0-beta.15
+  - @nocobase/app-plugin-notification@1.0.0-beta.28
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.26
+  - @nocobase/app-plugin-notification-providers@0.2.0-beta.13
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.18
+  - @nocobase/app-plugin-users@2.0.0-beta.6
+  - @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/realtime@0.1.0-beta.3
+  - @nocobase/i18n@2.0.0-beta.0
+
+## 1.0.0-beta.71
+
+### Patch Changes
+
+- 6fffa85: Improve permission workspace alignment and responsive density, clarify Chinese data scope labels, and preserve existing policies and unrecognized scope configurations during editing. Deduplicate inherited page permissions by resource identity so one grant is displayed and counted once.
+- Updated dependencies [22717d7]
+  - @nocobase/app-server@2.0.0-beta.9
+
+## 1.0.0-beta.70
+
+### Patch Changes
+
+- 44bc7a7: Require localized page-permission labels, including routes without navigation or breadcrumbs. Preserve authorization identities and grants, provide a localized fallback for missing titles, and add template checks and application-development guidance to prevent technical route IDs from appearing as permission names.
+- 44bc7a7: Preinstall the standard React Flow process components and management layouts without enabling unused settings. Improve themed node hierarchy and configuration controls, and keep the default lifecycle view readable at a minimum initial zoom of 70%. Add authorized configuration entries for native state and outgoing-transition parameter bindings, using a chooser for multiple targets. Clarify UI Registry discovery, upgrade reconciliation and process acceptance requirements. Preserve workflow table links and keyboard focus across refreshes and sorting changes, and document node entries to authoritative organization and role settings.
+- Updated dependencies [00b85da]
+  - @nocobase/app-cli@1.0.0-beta.24
+
+## 1.0.0-beta.69
+
+### Patch Changes
+
+- eb4b081: Refine the shared permission editor with a single category count, consistent headings across all categories, explicit mixed-state bulk selection and semantic action alignment on wide layouts. Preserve every permission and action-local scope, including special actions and filtered or protected grants, and keep narrow or unclassified catalogs wrapping naturally. Carry the same interaction through the UI registry and both application templates.
+- 571347f: Use theme-aware medium control heights and tighter heading and field spacing on the login page so the form stays comfortable while respecting compact theme density.
+- eb4b081: Expose invitation, deletion and password reset permissions in the templates' user permission category. Save and revoke these native user actions independently while preserving existing grants, with English and Chinese labels.
+- 525ace4: Declare the workspace packages the tests read as devDependencies instead of reaching into their directories, and add a test to each application template that checks `config.example.yml` still has what `nocobase config init` relies on.
+- 695bb8f: Remove Agent Annotations from the default application's development setup, including its Vite integration, theme extension, and dedicated dependency.
+- cb83d7a: `RouteDialog` and `RouteDrawer` now look like the application's other dialogs: they compose the dialog primitive's `DialogHeader`, `DialogTitle`, `DialogDescription` and `DialogFooter` inside the padding, spacing and close-button position of `DialogContent`, so the header no longer has a rule under it, the footer is the dialog footer (stacking its buttons on narrow screens), and a change to the dialog primitive or its theme rules reaches route overlays too. The frontend Skill's overlay guidance describes the new look and the template dialog's current padding and default width.
+- 284ba32: Isolate desktop sidebar preferences by application while preserving layout and cross-tab synchronization. New scoped preferences default to expanded, and the unused shared sidebar cookie is no longer written. Existing generated applications must regenerate or manually synchronize their template changes to receive this fix.
+- c0b7537: Prepare the signed-in realtime identity before mounting template pages to avoid repeated loading after login. Expose session preparation and retry state, and show a retryable connection error with sign-out when initialization times out. Keep runtime permission invalidation and session isolation.
+- eb4b081: Include application-owned user and role administration in the application templates, with dynamic permission categories, scope controls, independently saved role assignments and conflict-safe role updates. Add authorized latest-user reads and stable server-side name sorting. A new reversible authorization migration adds a revision token to existing permission sets; clients may supply the token to reject stale updates atomically while existing callers remain compatible.
+
+  Deliver administration automatically whenever an application uses configurable capabilities, including process definitions, standard diagrams, supported parameters and authorized execution history. Refresh the shared process canvas and installed lifecycle examples with semantic node cards, execution status, a dotted background and accessible viewport controls. Refine the cards with type icons and separate status footers, parameter badges, outlined edge labels, motion-aware active transitions and canvas summaries; reserve space for controls when sizing the graph.
+
+  Keep bare Default applications Home-only. Supply reusable administration routes and reconcile core user and permission management and additional settings throughout development according to the business capabilities actually used, independently of the iteration number. Examples registers the prepared settings because it already contains business features.
+
+  Ship a standard TanStack Table v8 DataTable and companions in both application templates, including controlled server pagination and sorting. Reuse it in user administration and instruct application agents to reuse the provided implementation and repair incompatible dependencies instead of substituting custom table engines.
+
+  Proactively declare configurable business thresholds and reviewer rules during process development without requiring an explicit user prompt. Reconcile validated, authorized parameters and diagram bindings throughout iteration, preserve snapshot and task semantics, and expose real transition-bound configuration in the shared diagram.
+
+  Extend capability-driven administration guidance to non-workflow business parameters, dictionaries, document numbering, operation records, organization relationships, enabled authentication features, notifications, integrations, document processing, AI/knowledge and shared business defaults. Include concrete persistence, authorization, concurrency and acceptance contracts, while preserving Home-only creation and deployment-owned configuration.
+
+  Standardize process administration as a directory-first DataTable even for a single process, with process-scoped definition, explicit node configuration and execution records. Reconcile additional registered processes into the same directory, validate process identifiers and permission scopes server-side, and preserve list navigation state.
+
+  Compact the shared permission editor into resource rows with wrapping action checkboxes, adjacent scope selectors and optional atomic visible-group selection. Synchronize both templates and document source upgrade integration without overwriting application-specific grants or role policies.
+
+  Improve process readability with optional node descriptions and configuration actions, an initial readable zoom bound, overview navigation and focus-driven panning. Document bounded-canvas composition and explicit full-definition access when technical paths are hidden.
+
+  Render single-action page permissions as one title checkbox, omit redundant per-resource counters and bulk toggles, and use localized breadcrumb titles for pages without navigation entries.
+
+  Keep record-scope controls inline with action checkboxes, remove redundant single-scope captions, and localize raw collection scope labels in the template permission models.
+
+  Default lifecycle diagrams to a vertical, automatically sized canvas with readable narrow-screen sizing and top-positioned viewport controls, while preserving explicit compact-view overrides. Require capability-driven process directory, definition/design, node configuration and execution-history delivery in new applications without adding unused settings to bare Home-only apps.
+
+  Bind parameterized custom record scopes to native filter conditions with a reusable draft editor, preserve object selections and independent scope policies, and reject incomplete custom filter grants at the authorization HTTP boundary. Keep no-record scopes explicit and verify saved scopes against real list/detail/write endpoints.
+
+- Updated dependencies [98b3862]
+- Updated dependencies [525ace4]
+- Updated dependencies [5fe8773]
+- Updated dependencies [b22d999]
+- Updated dependencies [00c5970]
+- Updated dependencies [0037dd2]
+- Updated dependencies [c0b7537]
+- Updated dependencies [eb4b081]
+- Updated dependencies [14b7aec]
+- Updated dependencies [49f61b9]
+- Updated dependencies [0037dd2]
+  - @nocobase/app-cli@1.0.0-beta.23
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/app-server@2.0.0-beta.8
+  - @nocobase/db-sqlite@0.1.0-beta.6
+  - @nocobase/app-plugin-file@1.0.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.10
+  - @nocobase/app-plugin-users@2.0.0-beta.5
+  - @nocobase/app-plugin-authorization@1.0.0-beta.28
+  - @nocobase/authorization@1.0.0-beta.14
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.17
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.25
+
+## 1.0.0-beta.68
+
+### Patch Changes
+
+- 43d7d1f: Add unified workflow management to the Examples application, including all lifecycle and office workflow definitions, paginated execution records, node parameter editing, and diagram history replay with current and visited paths highlighted. Consolidate lifecycle and office navigation under one Workflow entry with flat Business workflows and Workflow management sections. Expose the existing example services and reusable lifecycle diagram components for application composition.
+- 9e99702: Add a lightweight SMTP/Resend mailer and host email service using the existing notification channel configuration. Built-in notification email Providers delegate to the shared transport implementation while retaining their registration and submission-result contracts. Email diagnostics now use fixed messages that cannot expose provider bodies or credentials.
+
+  Add explicitly enabled automatic password recovery through the host mailer, with bounded background submission, account-independent rate limiting, account-state checks. Existing custom senders remain available when no password reset switch is declared; explicit disablement or disabling password sign-in closes all reset endpoints. Only automatic recovery defaults to revoking existing sessions, and explicit session configuration wins.
+
+  Register the host mailer in both templates and Studio, add bilingual reset success and retry feedback, and show opt-in recovery in Studio's example configuration. Operators must explicitly enable recovery and configure an enabled SMTP/Resend channel in their deployment; existing deployments are not modified.
+
+  Automatic credential links require an explicitly configured public origin (`app.publicOrigin` / `APP_PUBLIC_ORIGIN`), or a direct Better Auth consumer's restricted host configuration, so a client-controlled Host cannot choose the reset-link destination. Custom sender configuration remains compatible.
+
+  Reject malformed SMTP authentication settings when validating email channel availability.
+
+  Keep default SMTP password and Resend API key environment mappings optional and secret in deployment manifests. Applications may explicitly require selected credentials, while enabled email channels still validate their configuration.
+
+  Space recovery links on reset error pages in both templates and Studio, allowing them to wrap on narrow screens.
+
+  Request-logging middleware remains unchanged. Default email links first reach a token-bearing API path, which request path/message logs may record. Default output sanitizes token query values in Referer strings, while raw/custom outputs may still retain them; deployment and request-log protection need separate follow-up before exposing this flow.
+
+- ecaf517: Refine authentication pages with a cohesive dark palette, quieter form controls, and a simplified brand panel while preserving the application-wide theme.
+- ca0adee: Quieten the default interface: every border takes one faint line, the sidebar's own rules and the Appearance options included, and a new `--hover` grey marks hovered rows, buttons and cards, table headers, and the navigation's hovered entries; the current entry keeps its faint primary tint, with its words and icon in the primary color. Inputs, buttons, links, tabs, checkboxes, switches and radios share one light focus ring. Cards and overlays are framed by the general border, and overlays sit on a faint, blurred backdrop. The compact preset uses `--spacing` 0.225rem and `--radius` 0.5rem. Page titles are `text-2xl`. A badge has a small size, `data-size='sm'` (`size='sm'` on `StatusBadge`), for one beside a title or on a dense card. Line tabs run full width from the left over a 2px underline. Table rows take the `--hover` grey and keep the primitive's padding. Scrollbars are thin and appear only while a region scrolls or the pointer nears its edge. Whatever can be clicked shows the pointer cursor.
+
+  The navigation renders a top-level group with no page of its own as a labelled section with its entries always visible (`sections` on `NavigationMenu`), and its rows are a little roomier than the sidebar primitive's in a sidebar 64 spacing units wide. An entry can show a count, such as unread items, passed by the App layout in `NavigationMenu`'s `badges` keyed by route name: a number on a round ground, or work under way in the primary color behind a pulsing dot, hidden at zero, "99+" above 99, in the entry's accessible name and tooltip, and a dot on the icon when the sidebar is collapsed. Home cards lift on hover, and the inbox list and its tabs are restyled. The Appearance popover's color modes and presets are centered again: their hidden radios no longer take a place in the row. The sidebar footer's tagline and the descriptions under the sign-in, registration and password pages' titles and the sign-in page's brand panel drop their full stops in Chinese.
+
+  Examples now carries everything Default has in its shell: the brand loading mark, dialog, confirmation, alert, toast, badge and table styles, `AlertDialog`, `StatusBadge` and the branded startup screen. Its example pages put the small badge on cards and beside words, keep the default one in table columns and page headers, and no longer size badges with their own utilities.
+
+- Updated dependencies [9e99702]
+- Updated dependencies [43d7d1f]
+  - @nocobase/app-server@2.0.0-beta.6
+  - @nocobase/app-plugin-authentication@2.0.0-beta.8
+  - @nocobase/app-plugin-notification-providers@0.2.0-beta.12
+  - @nocobase/lifecycle@0.1.0-beta.2
+
+## 1.0.0-beta.67
+
+### Patch Changes
+
+- e6dd56e: Slim `AGENTS.md` to an index of always-on rules, at most 32 KB, and move template-specific guidance into a committed `.agents/rules/` directory that ships with the template and is linked from that index. Framework-wide guidance is linked from the synchronized `nocobase-app-development` Skill instead of being copied. `CLAUDE.md` now only imports `AGENTS.md`. `.gitignore`, `.npmignore` and `.prettierignore` ignore `.agents/*` except `.agents/rules/`, and `tests/logic/agents-md.test.ts` enforces the size limit and the links. Existing applications that upgrade should change a `/.agents/` line in their `.gitignore` to `/.agents/*` followed by `!/.agents/rules/`.
+- Updated dependencies [e6dd56e]
+- Updated dependencies [f675e8d]
+  - @nocobase/app-cli@1.0.0-beta.21
+  - @nocobase/app-plugin-mail@1.0.0-beta.13
+
+## 1.0.0-beta.66
+
+### Patch Changes
+
+- 9f02fe3: Route requests to upgrade NocoBase or its core version to the application upgrade Skill, since users rarely refer to the template they generated the application from.
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+  - @nocobase/app-plugin-mail@1.0.0-beta.12
+  - @nocobase/app-server@2.0.0-beta.5
+
+## 1.0.0-beta.65
+
+### Patch Changes
+
+- 9e84d15: Exclude `database/*/migrations/` and `database/*/seeds/` from Prettier in generated applications, so formatting never changes the checksum an installation recorded for an applied migration or seed.
+
+## 1.0.0-beta.64
+
+### Patch Changes
+
+- d54dd59: Show actionable origin errors with the browser address and the app.publicOrigin setting in config.yml. Use localized authentication errors for sign-out in both templates while preserving the session on failure.
+- Updated dependencies [d54dd59]
+- Updated dependencies [d54dd59]
+- Updated dependencies [693e43d]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.7
+  - @nocobase/app-cli@1.0.0-beta.20
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.16
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.13
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.12
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.13
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.14
+  - @nocobase/app-plugin-i18n@1.0.0-beta.16
+
+## 1.0.0-beta.63
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-cli@1.0.0-beta.19
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.15
+  - @nocobase/app-plugin-authentication@2.0.0-beta.6
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.12
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.11
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.12
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.13
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+  - @nocobase/app-plugin-i18n@1.0.0-beta.15
+  - @nocobase/app-plugin-mail@1.0.0-beta.11
+  - @nocobase/app-plugin-notification@1.0.0-beta.27
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.24
+  - @nocobase/app-plugin-notification-providers@0.2.0-beta.11
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.17
+  - @nocobase/app-plugin-users@2.0.0-beta.4
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/authorization@1.0.0-beta.13
+  - @nocobase/caching@0.1.0-beta.3
+  - @nocobase/config@0.1.0-beta.3
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/db-sqlite@0.1.0-beta.5
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/lifecycle@0.1.0-beta.1
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/repository-input@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/snowflake@1.0.0-beta.4
+
+## 1.0.0-beta.62
+
+### Patch Changes
+
+- 251d19e: Report password reset availability from the authentication server, hide unavailable self-service recovery, and let authorized Studio members reset another member's password.
+- a827a63: Clarify application access URLs for agents: use the Hono server entry in full-stack development, verify the actual port and base path, and use the local Vite entry only in remote-backend proxy mode.
+- 6515f8d: Align the homepage's built-in capability cards with the documentation's Capabilities chapter: add Data sources and Workflows, order the cards like the documentation's sidebar, keep at most three prompts per card, remove the Template printing card, and update the Mail prompts to reuse the built-in Mail plugin and configure a mail provider.
+- Updated dependencies [251d19e]
+- Updated dependencies [ca0bfe2]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.3
+  - @nocobase/app-plugin-notification@1.0.0-beta.26
+
+## 1.0.0-beta.61
+
+### Patch Changes
+
+- e99e1a6: New applications depend on `@nocobase/lifecycle` by default, so plugins that declare it as a peer dependency resolve in production deployments.
+- 42c5cbc: Include the Mail plugin in the default application template with client and server registration and an empty mailbox provider configuration.
+- d515c68: Let nested navigation icons inherit the menu item's text color so idle, hovered and selected icons follow the same state as their labels instead of always using the brand accent.
+- Updated dependencies [17a183c]
+- Updated dependencies [13620d9]
+- Updated dependencies [459c33f]
+  - @nocobase/app-cli@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.4
+
+## 1.0.0-beta.60
+
+### Minor Changes
+
+- 7cdb5ba: The default template's homepage now explains that the application is developed by describing requirements to a coding agent, with a sample request to copy, and lists the built-in capabilities (authentication, permissions, scheduled tasks, notifications, mail, files, template printing, languages and themes) as cards. Each card opens a dialog with ready-made prompts that can be edited and copied; edits are not saved once the dialog closes.
+
+  Both templates now keep their own copy in `client/locales/system/`, which `client/locales/en-US.ts` and `zh-CN.ts` spread before the application's groups, so a template upgrade can replace the system copy without touching the application's. An application that extends a shared group such as `navigation` spreads the system group first. To upgrade an existing application, take the template's `client/locales/system/` and reduce each application locale file to the spread followed by the groups the application added; the `nocobase-app-upgrade` Skill describes the steps, and the frontend references of `nocobase-app-development` describe the new layout.
+
+## 1.0.0-beta.59
+
+### Minor Changes
+
+- c796cb9: Remove NocoBase Hub. `@nocobase/app-plugin-hub`, `@nocobase/app-template-hub` and `@nocobase/hub-cli` are no longer published, and every package that offered or described the Hub drops it.
+
+  Breaking for `@nocobase/app-installer`: it installs, upgrades and rolls back from a deployment archive only. `install --template`, `install --keep-source`, `upgrade --to`, `upgrade --rebuild`, `upgrade --keep-source` and `status --offline` are removed, as are the `latest` and `updateAvailable` members of the `status` result and the `rebuilt` and `notes` members of the `upgrade` result. An installation an earlier version built from the published Hub template is refused with `STATE_UNSUPPORTED`; manage it with the app-installer version that installed it. The error codes that only a template build reported (`PNPM_MISSING`, `PNPM_UNSUPPORTED`, `REGISTRY_UNREACHABLE`, `VERSION_NOT_FOUND`, `DISK_LOW`, `CREATE_FAILED`, `DRIVER_INSTALL_FAILED` and `BUILD_FAILED`) are no longer produced, and pm2 always kills the process tree of an application it stops.
+
+  Breaking for `@nocobase/create-app`: `--template hub` is no longer a template name, and a generated application no longer gets a `.env`.
+
+  The Default template no longer depends on `@nocobase/hub-cli`, so an application generated from it has no `pnpm nocobase hub` commands. An application upgraded from an earlier version that published to a Hub removes the dependency with `pnpm nocobase package remove @nocobase/hub-cli` and deletes `.nocobase/hub.json`; the `nocobase-app-upgrade` Skill describes the steps. The application Skills, the plugins' documentation and the in-app test notification text no longer mention the Hub.
+
+- c796cb9: Remove the Settings and Dev route surfaces. `@nocobase/app-client` no longer exports `defineSettingsRoutes()`, `defineDevRoutes()`, `isAppClientSettingsRouteGroup()`, `isAppClientDevRouteGroup()` or their definition, contribution and registered-route types, and the resolved runtime no longer carries `settingsRouteTree`, `devRouteTree`, `settings`, `settingGroups`, `devRoutes` or `devRouteGroups`. `AppClientSettingsRouteNavigation` is renamed `AppClientRouteNavigation` and `AppClientSettingIcon` is renamed `AppClientRouteIcon`. A contribution to any parent other than `app` now fails registration with a message that names `defineAppRoutes()`. Plugins contribute no settings or dev pages; an application that wants a configuration page declares it with `defineAppRoutes()` in its own navigation, for example under a Settings group.
+
+  The default and examples templates drop the settings layout, the `/settings/*` route, the dev route plumbing, and the Settings and Inbox buttons in the header; the `/inbox` page and the inbox block stay. The examples template no longer registers `@nocobase/app-plugin-departments-example`, which is removed. Upgrading an application means removing `defineSettingsRoutes([])` from `client/routes.ts`, the `settingsRouteTree` and `devRouteTree` props passed to `AppRouter`, and any settings layout it kept, and moving its own settings pages to `defineAppRoutes()`. Every package that depends on or peers with `@nocobase/app-client` is released again so that its published range accepts `3.0.0-beta.0`.
+
+- 98e79a5: Remove the Workflow plugin from the repository
+
+  `@nocobase/app-plugin-workflow` was already disabled in every template; it is now deleted and will not be released again. Record lifecycles built with `@nocobase/lifecycle` take its place for business processes, and the Workflow pages of the documentation now describe them.
+
+  Breaking for the Default and Examples templates: they no longer depend on `@nocobase/app-plugin-workflow` and drop `server/config/workflow.ts`, the `workflows` directory in `files`, and the TypeScript and ESLint settings for workflow packages. The Examples template also drops its flow examples: its `workflows` directory, the quotation review task API under `/api/quotationReviewTasks`, the waiting-task pages under `/workflow/waiting-tasks`, and the two schedules that ran the analytics report and the scheduled test flow. A new migration, `202610100001_drop_review_tasks_and_daily_reports`, drops the `quotationReviewTasks` and `exampleDailyReports` tables nothing uses any more. Workflow rows an existing database already holds stay where they are, since no remaining plugin owns them. An application that still uses the plugin keeps its dependency on the last published version, whose peer ranges will stop accepting the runtime as it moves on.
+
+  The scheduler no longer describes a `workflow` target or ships labels for it; every schedule points at a target the application or a plugin registers with `registerTarget()`, and an unlabelled target type or reason is shown as it is. The application development, deployment and upgrade Skills no longer route approvals to the plugin, describe its wait node, its Artifacts after a production build or its pages, and their examples use other plugins. The command help of `@nocobase/app-cli`, the i18n Skill, and the plugin scaffold's guidance use other plugins as examples too.
+
+### Patch Changes
+
+- eea95a7: Establish NocoBase blue as the default theme in both density presets, with coordinated dark-mode colors, semantic status badges, comfortable navigation, and consistent interactive states.
+
+  Unify startup, page and inline loading around an accessible NocoBase mark and orbit animation with reduced-motion support.
+
+  Polish authentication, dialogs, route overlays, alerts and toasts; use shadcn controls for appearance, mobile settings navigation and inbox actions. Add a localized default homepage introducing application capabilities and getting started.
+
+- eea95a7: Use the official NocoBase logomark geometry for branded loading and decorative watermarks.
+- eea95a7: Keep branded dialog dimensions and spacing as overridable component defaults instead of global CSS rules, preserving application-owned dialog and confirmation layouts during upgrades.
+- c796cb9: Remove the AI employee packages from the repository
+
+  `@nocobase/app-plugin-ai-employee`, `@nocobase/ai-employee` and `@nocobase/app-plugin-ai-employee-example` were already deprecated and no template installed them; they are now deleted and will not be released again. The Default and Examples templates drop `@nocobase/ai-employee-avatars`, which only the plugin's avatars used.
+
+  Generated plugins' `AGENTS.md` and the copies shipped with existing plugins no longer list `@nocobase/ai-employee` among the identity-sensitive packages. The HTTP API references in the application development Skill use other plugins for their examples, and the upgrade Skill tells an application that still depends on the removed packages to review their usage before removing them, because the runtime will move past what their peer ranges accept.
+
+  `pnpm build` no longer copies `ai/skills` into `dist/ai/skills`. The AI employee plugin was the only reader of that directory; an application that keeps Skills there for another purpose has to copy them itself, for example from a build hook.
+
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [98e79a5]
+- Updated dependencies [eea95a7]
+  - @nocobase/app-cli@1.0.0-beta.17
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.14
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.11
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.10
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.11
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.12
+  - @nocobase/app-plugin-users@2.0.0-beta.2
+  - @nocobase/app-server@2.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.3
+  - @nocobase/app-plugin-authorization@1.0.0-beta.26
+  - @nocobase/app-plugin-notification@1.0.0-beta.25
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.23
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.16
+  - @nocobase/app-plugin-file@1.0.0-beta.22
+  - @nocobase/app-plugin-i18n@1.0.0-beta.14
+  - @nocobase/i18n@1.0.0-beta.6
+
+## 1.0.0-beta.58
+
+### Minor Changes
+
+- d86a77c: Deprecate `@nocobase/app-plugin-ai-employee` and stop installing it in the application templates
+
+  The plugin is deprecated and no longer developed; its README says so. Default and Examples no longer depend on `@nocobase/app-plugin-ai-employee` or `@nocobase/ai-employee`, register the plugin in `client/plugins.ts`, `server/plugins.ts` and `cli/plugins.ts`, or ship `server/config/ai.ts` and the commented `ai` section of `config.example.yml`. Examples also drops its AI employee demonstration: the global AI entry around `AppLayout`, the `nocobase-ai` and `nocobase-ai-employee-example-tasks-page` extensions, the **AI employee tasks** homepage link, and `@nocobase/app-plugin-ai-employee-example`.
+
+  The application development Skill no longer recommends the plugin or documents its `ai-employee` commands, and the upgrade Skill describes what removing it involves.
+
+  An existing application keeps the plugin unless it removes it. An upgrade that follows the template asks first: an application that configured an LLM service or has AI employees, conversations or an `ai/` directory keeps the plugin, its registrations and its configuration, and the plugin's current release keeps working there. Removing it unregisters the plugin but leaves its tables and data in the database.
+
+### Patch Changes
+
+- 1408643: Disable the Workflow plugin by default while retaining its dependency, configuration, and example sources for explicit opt-in use. Remove inactive workflow example entry points and register their schedules only when the plugin is enabled.
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+- 1408643: Keep the shared Vitest configuration aligned across application templates while temporarily excluding Workflow-specific tests. Preserve the test sources for re-enabling them later.
+- Updated dependencies [487921c]
+- Updated dependencies [1408643]
+- Updated dependencies [a6758ec]
+  - @nocobase/app-server@2.0.0-beta.2
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.15
+  - @nocobase/app-cli@1.0.0-beta.15
+  - @nocobase/app-plugin-file@1.0.0-beta.21
+
+## 1.0.0-beta.57
+
+### Patch Changes
+
+- bb8484b: Support CDN_BASE_URL for frontend asset URLs in application and Docker source builds. Add resolveAssetUrl for shipped static files, migrate template logos, and document its distinction from runtime application URLs.
+- dc91aab: Use package-local `#` subpath imports in registry recipes, examples and application templates. Configure the same prefixes in `components.json` and `package.json#imports`, and remove build-tool aliases for these paths. Generated plugins resolve development sources locally and published imports from `dist/client`.
+
+  Existing applications and plugins should merge the new `imports` mappings and shadcn prefixes before installing the updated registry recipes. Directory entry points need an explicit mapping to their index file. Existing customized copies remain application-owned and are not overwritten.
+
+- Updated dependencies [bb8484b]
+- Updated dependencies [dc91aab]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.2
+  - @nocobase/app-plugin-file@1.0.0-beta.20
+  - @nocobase/app-plugin-notification@1.0.0-beta.24
+  - @nocobase/app-plugin-ai-employee@3.0.0-beta.1
+
 ## 1.0.0-beta.56
 
 ### Minor Changes

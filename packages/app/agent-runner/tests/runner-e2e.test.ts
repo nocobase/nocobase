@@ -1,14 +1,20 @@
+import { runTempName, runTempRoot } from '../src/core/run-temp.ts';
+import { execFileSync } from 'node:child_process';
 // The runner end to end: the real daemon, its worker processes and the echo adapter against the in-memory server.
 import {
   existsSync,
+  chmodSync,
   mkdirSync,
   readFileSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { runnerPaths } from '../src/lib/home.ts';
+import { readRecords } from '../src/core/supervisor.ts';
 import { PROTOCOL_VERSION } from '../src/protocol/index.ts';
 import { FakeServer, waitFor } from './fake-server.ts';
 import {
@@ -37,8 +43,15 @@ describe('runner end to end', () => {
   let env: NodeJS.ProcessEnv;
   let fakeCli: string;
   const daemons: Daemon[] = [];
-  const workDirOf = (key: string) =>
-    path.join(workRootOf(home), 'test-app', key);
+  const workDirOf = (key: string) => {
+    const found = [...server.runs.values()].findLast(
+      (run) =>
+        run.payload.subject.key === key && run.start?.workDir !== undefined,
+    );
+    return (
+      found?.start?.workDir ?? path.join(workRootOf(home), 'test-app', key)
+    );
+  };
 
   beforeEach(async () => {
     server = new FakeServer();
@@ -76,6 +89,7 @@ describe('runner end to end', () => {
     expect(runner?.register).not.toHaveProperty('labels');
     expect(runner?.register.features).toEqual(
       expect.arrayContaining([
+        'workspaceKey',
         'input',
         'checkout',
         'directories',
@@ -97,6 +111,101 @@ describe('runner end to end', () => {
     daemon();
     await waitFor(() => server.lastHeartbeat(), 10_000, 'a heartbeat');
     expect(server.lastHeartbeat()?.load).toEqual({ slots: 1, free: 1 });
+  });
+
+  it('reports the installed Pi model table on a later heartbeat while continuing to claim', async () => {
+    const toolDir = path.join(scratch, 'tools');
+    mkdirSync(toolDir);
+    const pi = path.join(toolDir, 'pi');
+    writeFileSync(
+      pi,
+      '#!/bin/sh\nif [ "$1" = "--version" ]; then echo "0.99.2"; else printf "provider model context max-out thinking images\\nopenai gpt-6-sol 200K 64K yes yes\\n"; fi\n',
+    );
+    chmodSync(pi, 0o755);
+    const realEnv = {
+      ...env,
+      NOCOBASE_RUNNER_ADAPTER: '',
+      PATH: toolDir,
+      HOME: home,
+    };
+    const started = startDaemon(realEnv);
+    daemons.push(started);
+    await waitFor(
+      () =>
+        server
+          .lastHeartbeat()
+          ?.tools.some(
+            (tool) =>
+              tool.kind === 'pi' && tool.modelsDetectionStatus === 'detected',
+          ),
+      10_000,
+      'Pi model capabilities',
+    );
+    expect(
+      server.lastHeartbeat()?.tools.find((tool) => tool.kind === 'pi')?.models,
+    ).toEqual([{ id: 'openai/gpt-6-sol' }]);
+    await waitFor(
+      () => ([...server.runners.values()][0]?.claims ?? 0) > 0,
+      10_000,
+      'claims during capability detection',
+    );
+  });
+
+  it('runs a read-only step in a work directory of its own while the subject is held, pushes nothing and removes it', async () => {
+    const remote = makeRemote(scratch);
+    // The run writing the subject's code holds its work directory.
+    const held = `${workDirOf('PM-8')}.lock`;
+    mkdirSync(held, { recursive: true });
+    writeFileSync(path.join(held, 'owner'), String(process.pid));
+    const run = server.enqueue({
+      subject: { key: 'PM-8', url: 'http://app.test/PM-8' },
+      workspace: {
+        dirs: [
+          {
+            kind: 'repo',
+            url: remote,
+            defaultBranch: 'main',
+            branch: 'agent/PM-8',
+            path: 'app',
+          },
+        ],
+        env: [],
+        readOnly: true,
+      },
+      prompt: {
+        system: 'System rules.',
+        session: 'fresh',
+        turn: [
+          'write review.txt looks fine',
+          `bash ${COMMIT} add review.txt && ${COMMIT} commit -q -m stray`,
+          'say reviewed',
+        ].join('\n'),
+      },
+    });
+    daemon();
+    await waitFor(
+      () => run.status === 'completed' || run.status === 'failed',
+      20_000,
+      'the run to end',
+    );
+    expect(run.fail).toBeUndefined();
+    expect(run.status).toBe('completed');
+    expect(String(run.start?.workDir)).toContain(`${path.sep}PM-8.readonly-`);
+    // It pushes nothing, so its directory goes as soon as the run ends; the next read-only run checks it out again.
+    const readOnlyDir = String(run.start?.workDir);
+    await waitFor(
+      () => !existsSync(readOnlyDir) && !existsSync(`${readOnlyDir}.lock`),
+      10_000,
+      'the read-only directory to be removed',
+    );
+    expect(run.complete?.repos?.[0]).toMatchObject({
+      branch: 'agent/PM-8',
+      pushed: false,
+    });
+    const bare = remote.replace('file://', '');
+    expect(() =>
+      git(['rev-parse', '--verify', '-q', 'refs/heads/agent/PM-8'], bare),
+    ).toThrow();
   });
 
   it('claims, checks out, starts, streams events, pushes and completes', async () => {
@@ -122,13 +231,10 @@ describe('runner end to end', () => {
           'say starting',
           'bash env',
           'bash appcli whoami',
-          'bash cat .app/run.json',
-          `bash cat ${path.join(home, 'credentials', 'test-app.json')}`,
           'bash ls /',
           'read /etc/hosts',
           'write notes.txt hello from the agent',
           `bash ${COMMIT} add notes.txt && ${COMMIT} commit -q -m agent-work`,
-          `bash ${COMMIT} push origin HEAD:main`,
           'say all done',
         ].join('\n'),
       },
@@ -148,7 +254,7 @@ describe('runner end to end', () => {
       acceptsInput: true,
       adapter: { kind: 'claude', version: 'echo' },
     });
-    expect(run.complete?.summary).toBe('all done');
+    expect(run.complete?.summary).toContain('all done');
     expect(run.complete?.usage?.[0]?.tool).toBe('claude');
 
     const events = server.events(run.payload.run.id);
@@ -166,7 +272,7 @@ describe('runner end to end', () => {
       },
     });
 
-    // The agent's environment: whitelisted variables and the run's variables, its own HOME and TMPDIR, the push
+    // The agent's environment: whitelisted variables and the run's variables, the real HOME, its own TMPDIR, the push
     // guard as its hooks, nothing else. The variable's value is redacted from the transcript.
     const envOutput = events.find(
       (event) => event.type === 'toolResult' && event.output?.includes('PATH='),
@@ -175,10 +281,25 @@ describe('runner end to end', () => {
     expect(JSON.stringify(events)).not.toContain('secret-value');
     expect(envOutput).not.toContain('should-not-leak');
     expect(envOutput).not.toMatch(/^NOCOBASE_RUNNER_/m);
-    expect(envOutput).toContain(`HOME=${workDir}/.nocobase-runner/home`);
-    expect(envOutput).toContain(`TMPDIR=${workDir}/.nocobase-runner/tmp`);
+    // The real home of the user the runner runs as, not one inside the work directory.
+    expect(envOutput).toMatch(/^HOME=/m);
+    expect(envOutput).not.toContain(`HOME=${workDir}`);
+    const tmpDir = path.join(
+      await runTempRoot(runnerPaths(home)),
+      runTempName(workDir),
+    );
+    for (const name of ['TMPDIR', 'TMP', 'TEMP'])
+      expect(envOutput).toContain(`${name}=${tmpDir}`);
+    await waitFor(
+      () => !existsSync(tmpDir),
+      5_000,
+      'temporary directory cleanup',
+    );
     expect(envOutput).toContain('GIT_CONFIG_KEY_0=core.hooksPath');
     expect(envOutput).toContain(`PATH=${workDir}/.nocobase-runner/bin:`);
+    // The runner's own Node.js and pnpm are first on PATH, and pnpm keeps to its version.
+    expect(envOutput).toContain(`PATH=${workDir}/.nocobase-runner/bin:`);
+    expect(envOutput).toContain('pnpm_config_pm_on_fail=ignore');
 
     // The application's CLI is on the PATH and finds the run's credential, with the server filled in; the run token
     // it read is redacted from the transcript, which stays valid JSON.
@@ -192,26 +313,16 @@ describe('runner end to end', () => {
         token: '[REDACTED]',
         server: server.url,
       },
-      home: `${workDir}/.nocobase-runner/home`,
+      home: os.homedir(),
     });
 
-    // Refusals are in the transcript.
-    const denials = events.filter((event) => event.type === 'permission');
-    expect(denials.map((event) => event.meta?.reason)).toEqual([
-      'The runner keeps credentials there; tools may not touch them.',
-      'The runner keeps credentials there; tools may not touch them.',
-      'ls outside the work directory: /',
-      'Read outside the work directory: /etc/hosts',
-    ]);
-    // The push guard refused a push to main.
+    // Nothing is refused: the runner is not a sandbox, so reading outside the work directory is allowed.
     expect(
-      events.some(
+      events.filter(
         (event) =>
-          event.type === 'toolResult' &&
-          event.output?.includes('may push only the branch agent/PM-7'),
+          event.type === 'permission' && event.meta?.decision !== 'allow',
       ),
-    ).toBe(true);
-
+    ).toEqual([]);
     // The branch reached the remote.
     expect(run.complete?.repos).toEqual([
       expect.objectContaining({
@@ -231,9 +342,10 @@ describe('runner end to end', () => {
       5_000,
       'credentials removal',
     );
-    expect(readFileSync(path.join(workDir, 'app', 'notes.txt'), 'utf8')).toBe(
+    expect(git(['show', 'refs/heads/agent/PM-7:notes.txt'], bare)).toBe(
       'hello from the agent',
     );
+    await waitFor(() => !existsSync(workDir), 5_000, 'worktree removal');
     await waitFor(
       () => !existsSync(path.join(home, 'runs', `${run.payload.run.id}.json`)),
       5_000,
@@ -241,11 +353,38 @@ describe('runner end to end', () => {
     );
   });
 
+  it("leaves the machine's Node.js and pnpm to agents with agent-tools system", async () => {
+    expect(
+      (await cli(['config', 'set', 'agent-tools', 'system'], env)).code,
+    ).toBe(0);
+    const run = server.enqueue({
+      prompt: { system: '', session: 'fresh', turn: 'bash env\nsay done' },
+    });
+    daemon();
+    await waitFor(() => run.status === 'completed', 20_000, 'the run to end');
+    const bin = path.join(
+      workDirOf(run.payload.subject.key),
+      '.nocobase-runner',
+      'bin',
+    );
+    expect(existsSync(path.join(bin, 'appcli'))).toBe(true);
+    expect(existsSync(path.join(bin, 'node'))).toBe(false);
+    expect(existsSync(path.join(bin, 'pnpm'))).toBe(false);
+    const envOutput = server
+      .events(run.payload.run.id)
+      .find(
+        (event) =>
+          event.type === 'toolResult' && event.output?.includes('PATH='),
+      )?.output;
+    expect(envOutput).not.toContain('pnpm_config_pm_on_fail');
+  });
+
   it("writes a 0600 credentials file for the application's CLI and removes it on cancel", async () => {
     const run = server.enqueue({
       prompt: { system: '', session: 'fresh', turn: 'say waiting\nhang' },
     });
     daemon();
+    await waitFor(() => run.status === 'running', 15_000, 'the run to start');
     const workDir = workDirOf(run.payload.subject.key);
     const file = path.join(workDir, '.app', 'run.json');
     await waitFor(
@@ -268,8 +407,19 @@ describe('runner end to end', () => {
     expect(readFileSync(shim, 'utf8')).toContain(
       `AGENT_RUN_CREDENTIALS='${file}'\nexport AGENT_RUN_CREDENTIALS`,
     );
+    await waitFor(
+      () =>
+        server
+          .events(run.payload.run.id)
+          .some(
+            (event) => event.type === 'text' && event.content === 'waiting',
+          ),
+      10_000,
+      'the tool session to start',
+    );
     server.cancel(run.payload.run.id);
     await waitFor(() => run.status === 'cancelled', 15_000, 'cancel');
+    expect(run.cancelAck?.sessionId).toMatch(/^echo-/);
     // The worker removes it as it exits, right after acknowledging the cancel.
     await waitFor(() => !existsSync(file), 5_000, 'credentials removal');
   });
@@ -306,10 +456,10 @@ describe('runner end to end', () => {
     expect(
       server
         .events(id)
-        .some(
+        .filter(
           (event) => event.type === 'input' && event.meta?.inputId === input.id,
         ),
-    ).toBe(true);
+    ).toHaveLength(1);
   });
 
   it('starts another turn when complete answers RUN_INPUT_PENDING', async () => {
@@ -330,38 +480,168 @@ describe('runner end to end', () => {
     expect(run.complete?.handledInputIds).toContain(input.id);
   });
 
-  it('kills the process group within 15 s of a cancel, even when the tool ignores SIGTERM', async () => {
+  it('completes again instead of starting an empty turn when pending input is withdrawn', async () => {
     const run = server.enqueue({
-      prompt: { system: '', session: 'fresh', turn: 'say working\nhang-hard' },
+      prompt: { system: '', session: 'fresh', turn: 'say one' },
     });
+    server.withdrawPendingOnNextComplete(run.payload.run.id);
     daemon();
     const id = run.payload.run.id;
-    const pid = await waitFor(
-      () => (run.status === 'running' ? server.workerPid(id) : undefined),
-      15_000,
-      'pid',
-    );
-    await waitFor(
-      () => server.events(id).some((event) => event.content === 'working'),
-      10_000,
-      'working',
-    );
-    expect(groupAlive(pid)).toBe(true);
-    const cancelledAt = Date.now();
-    server.cancel(id);
-    await waitFor(
-      () => !groupAlive(pid),
-      15_000,
-      'the process group to disappear',
-    );
-    expect(Date.now() - cancelledAt).toBeLessThan(15_000);
-    await waitFor(() => run.status === 'cancelled', 10_000, 'cancelAck');
-    expect(run.cancelAck).toBeDefined();
-    expect(server.events(id).at(-1)).toMatchObject({
-      type: 'status',
-      meta: { status: 'cancelled' },
-    });
+    await waitFor(() => run.status === 'completed', 15_000, 'completion');
+    expect(
+      run.reports
+        .filter((report) => report.kind === 'complete')
+        .map((report) => report.status),
+    ).toEqual([409, 200]);
+    expect(
+      server
+        .events(id)
+        .some((event) => event.content === 'echo: (empty prompt)'),
+    ).toBe(false);
   });
+
+  it.each(['normal', 'forced'] as const)(
+    'stops the process group within 15 s and saves before the %s cancel acknowledgement',
+    async (mode) => {
+      const remote = makeRemote(scratch);
+      const run = server.enqueue({
+        workspace: {
+          dirs: [
+            {
+              kind: 'repo',
+              url: remote,
+              path: 'repo',
+              branch: 'agent/cancellation',
+              defaultBranch: 'main',
+            },
+          ],
+          env: [],
+          git: { author: { name: 'Test', email: 'test@example.com' } },
+        },
+        prompt: {
+          system: '',
+          session: 'resume',
+          resumeSessionId: 'unconfirmed-old-session',
+          turn: 'write cancelled.txt preserved\nsay working\nhang-hard',
+        },
+      });
+      const started = daemon();
+      const id = run.payload.run.id;
+      const pid = await waitFor(
+        () => (run.status === 'running' ? server.workerPid(id) : undefined),
+        15_000,
+        'worker pid',
+      );
+      await waitFor(
+        () => server.events(id).some((event) => event.content === 'working'),
+        10_000,
+        'working',
+      );
+      const workDir = String(run.start?.workDir);
+      const repo = path.join(workDir, 'repo');
+      const cache = git(['rev-parse', '--git-common-dir'], repo);
+      const paths = runnerPaths(home, workRootOf(home));
+      const directoriesAtAck: boolean[] = [];
+      server.onCancelAck = (acknowledged) => {
+        if (acknowledged.payload.run.id === id)
+          directoriesAtAck.push(existsSync(workDir));
+      };
+      // Freeze the daemon for worker-led cancellation, or the worker for supervisor SIGKILL. Neither choice
+      // depends on machine speed; the process must be stopped before cancellation is requested.
+      const suspended = mode === 'normal' ? started.child.pid! : pid;
+      process.kill(suspended, 'SIGSTOP');
+      try {
+        await waitFor(
+          () =>
+            execFileSync('ps', ['-o', 'stat=', '-p', String(suspended)], {
+              encoding: 'utf8',
+            })
+              .trim()
+              .startsWith('T'),
+          1_000,
+          'stopped fixture process',
+        );
+        const cancelledAt = Date.now();
+        server.cancel(id);
+        if (mode === 'normal') {
+          await waitFor(
+            () => run.status === 'cancelled',
+            10_000,
+            'worker cancel ack',
+          );
+          await waitFor(
+            async () => !(await readRecords(paths)).some((r) => r.runId === id),
+            10_000,
+            'worker cleanup',
+          );
+          started.child.kill('SIGCONT');
+        }
+        await waitFor(() => !groupAlive(pid), 15_000, 'process group gone');
+        expect(Date.now() - cancelledAt).toBeLessThan(15_000);
+        await waitFor(() => run.status === 'cancelled', 10_000, 'cancel ack');
+        expect(run.cancelAck).toBeDefined();
+        expect(run.cancelAck?.sessionId).toBeUndefined();
+        expect(run.fail).toBeUndefined();
+        expect(directoriesAtAck).toEqual([false]);
+        expect(existsSync(workDir)).toBe(false);
+        const resume = git(
+          ['for-each-ref', '--format=%(refname)', 'refs/runner/resume/'],
+          cache,
+        );
+        expect(resume).not.toBe('');
+        expect(git(['show', `${resume}:cancelled.txt`], cache)).toBe(
+          'preserved',
+        );
+        expect(
+          git(
+            [
+              'for-each-ref',
+              '--format=%(refname)',
+              'refs/heads/agent/cancellation',
+            ],
+            remote.replace('file://', ''),
+          ),
+        ).toBe('');
+        const statuses = server
+          .events(id)
+          .filter((event) => event.type === 'status');
+        if (mode === 'normal') {
+          expect(started.output()).not.toContain('worker did not stop within');
+          expect(
+            statuses.filter((event) => event.meta?.status === 'cancelled'),
+          ).toHaveLength(1);
+          expect(
+            statuses.filter((event) => event.meta?.phase === 'localSave')[0]
+              ?.content,
+          ).toContain(`Local continuation saved: ${repo}`);
+        } else {
+          expect(started.output()).toContain(
+            'worker did not stop within 3000 ms',
+          );
+          expect(started.output()).toContain('exited (SIGKILL)');
+          const orphan = statuses.filter(
+            (event) => event.meta?.orphaned === true,
+          );
+          expect(orphan).toHaveLength(1);
+          expect(orphan[0].content).toContain(
+            'worker did not stop after the cancel and was killed',
+          );
+          expect(orphan[0].meta).not.toHaveProperty('localSave');
+        }
+        await waitFor(
+          async () => !(await readRecords(paths)).some((r) => r.runId === id),
+          10_000,
+          'record removal',
+        );
+        expect(
+          existsSync(path.join(await runTempRoot(paths), runTempName(workDir))),
+        ).toBe(false);
+      } finally {
+        if (mode === 'normal') started.child.kill('SIGCONT');
+      }
+    },
+    45_000,
+  );
 
   it('kills the tool when the lease is lost and reports nothing more', async () => {
     const run = server.enqueue({
@@ -540,6 +820,9 @@ describe('runner end to end', () => {
       const beats = runner.heartbeatsSent;
       await new Promise((resolve) => setTimeout(resolve, 1_500));
       expect(runner.protocolHeader).toBe(String(PROTOCOL_VERSION));
+      expect(runner.register.features).toEqual(
+        expect.arrayContaining(['npm', 'gitCredentials']),
+      );
       expect(runner.heartbeatsSent).toBeGreaterThan(beats);
       expect(runner.claims).toBe(claims);
       expect(run.status).toBe('queued');
@@ -582,6 +865,14 @@ describe('runner end to end', () => {
     await stopDaemon(started);
     expect(run.fail?.reason).toBe('runnerOffline');
     expect(groupAlive(pid)).toBe(false);
+    expect(
+      existsSync(
+        path.join(
+          await runTempRoot(runnerPaths(home)),
+          runTempName(workDirOf(run.payload.subject.key)),
+        ),
+      ),
+    ).toBe(false);
   });
 
   it('starts in the background, reports status and logs, and stops', async () => {
@@ -616,6 +907,60 @@ describe('runner end to end', () => {
       });
     }
     expect(groupAlive(pid)).toBe(false);
+  });
+
+  it('starts a coding run in a verified empty remote and publishes its first commit', async () => {
+    const remote = path.join(scratch, 'empty.git');
+    git(['init', '--quiet', '--bare', '--initial-branch=main', remote]);
+    const run = server.enqueue({
+      workspace: {
+        dirs: [
+          {
+            kind: 'repo',
+            url: `file://${remote}`,
+            defaultBranch: 'main',
+            branch: 'agent/PM-9',
+            path: 'app',
+            initializeIfEmpty: true,
+          },
+        ],
+        env: [],
+      },
+      prompt: {
+        system: '{{runner.workspaceNotes}}',
+        session: 'fresh',
+        turn: [
+          'system',
+          'write app.txt initialized',
+          `bash ${COMMIT} add app.txt && ${COMMIT} commit -q -m Initialize`,
+          'say done',
+        ].join('\n'),
+      },
+    });
+    daemon();
+    await waitFor(
+      () => run.status === 'completed' || run.status === 'failed',
+      20_000,
+      'empty repository run',
+    );
+    expect(run.fail).toBeUndefined();
+    expect(run.status).toBe('completed');
+    expect([...run.events.values()]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'checkout',
+          meta: expect.objectContaining({ branch: 'main', initializing: true }),
+        }),
+      ]),
+    );
+    expect(run.complete?.repos).toEqual([
+      expect.objectContaining({
+        branch: 'main',
+        pushed: true,
+        headSha: git(['rev-parse', 'refs/heads/main'], remote),
+      }),
+    ]);
+    expect(git(['show', 'main:app.txt'], remote)).toBe('initialized');
   });
 
   it('fails with checkoutFailed when a repository cannot be cloned', async () => {
@@ -747,7 +1092,7 @@ describe('working directories, initialization prompts and skills', () => {
     expect(system).toContain('copy .env.example to .env');
     expect(system).toContain(`You start in ${own}.`);
     expect(system).not.toContain('{{runner.');
-    const workDir = path.join(workRootOf(home), 'test-app', 'PM-20');
+    const workDir = String(first.start?.workDir);
     const skillsDir = path.join(
       workDir,
       '.nocobase-runner',
@@ -844,7 +1189,7 @@ describe('working directories, initialization prompts and skills', () => {
     const first = enqueue('m-1');
     await ended(first);
     expect(first.fail).toBeUndefined();
-    const workDir = path.join(workRootOf(home), 'test-app', 'PM-30');
+    const workDir = String(first.start?.workDir);
     const target = path.join(workDir, '.nocobase-runner', 'knowledge');
     expect(readFileSync(path.join(target, 'INDEX.md'), 'utf8')).toContain(
       'project/setup.md',
@@ -863,9 +1208,27 @@ describe('working directories, initialization prompts and skills', () => {
     const second = enqueue('m-2');
     await ended(second);
     expect(
-      readFileSync(path.join(target, 'project', 'setup.md'), 'utf8'),
+      readFileSync(
+        path.join(
+          String(second.start?.workDir),
+          '.nocobase-runner',
+          'knowledge',
+          'project',
+          'setup.md',
+        ),
+        'utf8',
+      ),
     ).toContain('# Setup');
-    expect(existsSync(path.join(target, 'scratch.md'))).toBe(false);
+    expect(
+      existsSync(
+        path.join(
+          String(second.start?.workDir),
+          '.nocobase-runner',
+          'knowledge',
+          'scratch.md',
+        ),
+      ),
+    ).toBe(false);
     expect(server.mountFetches.get('knowledge')).toBe(1);
   });
 
@@ -879,7 +1242,7 @@ describe('working directories, initialization prompts and skills', () => {
       },
     });
     await ended(run);
-    const workDir = path.join(workRootOf(home), 'test-app', 'PM-21');
+    const workDir = String(run.start?.workDir);
     expect(texts(run.payload.run.id)[0]).toContain(
       `Your working directory is ${workDir}, an empty directory kept for this task`,
     );
@@ -936,8 +1299,11 @@ describe('one runner, several applications', () => {
       expect(actives(first).every((id) => id.startsWith('a-'))).toBe(true);
       expect(actives(second).every((id) => id.startsWith('b-'))).toBe(true);
       expect(
-        existsSync(path.join(workRootOf(home), 'crm', 'PM-1')) ||
-          existsSync(path.join(workRootOf(home), 'crm', 'PM-2')),
+        [second.run('b-1'), second.run('b-2')].some(
+          (run) =>
+            typeof run.start?.workDir === 'string' &&
+            existsSync(run.start.workDir),
+        ),
       ).toBe(true);
     } finally {
       for (const daemon of started) await stopDaemon(daemon);

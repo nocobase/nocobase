@@ -10,7 +10,7 @@ export const notifyCustomer: EffectDefinition<TicketTypes> =
     name: 'tickets.notifyCustomer',
     retry: { attempts: 3, backoffMs: 2_000, factor: 2, maxMs: 10_000 },
     timeoutMs: 10_000,
-    run({ record, input, idempotencyKey, services }) {
+    run({ record, input, idempotencyKey, services, parameters }) {
       // The example's failure switch: the first N calls fail, so the page
       // can show a retry, and a failure that outlasts every attempt.
       if (services.shouldFail(idempotencyKey, record.failNotifications))
@@ -19,7 +19,7 @@ export const notifyCustomer: EffectDefinition<TicketTypes> =
       services.deliver(
         to,
         `Re: ${record.subject}`,
-        text(input.message),
+        `${parameters.notificationPrefix}${text(input.message)}`,
         idempotencyKey,
       );
       return { to };
@@ -30,13 +30,13 @@ export const notifyCustomer: EffectDefinition<TicketTypes> =
 export const notifyAssignee: EffectDefinition<TicketTypes> =
   defineEffect<TicketTypes>({
     name: 'tickets.notifyAssignee',
-    run({ record, input, idempotencyKey, services }) {
+    run({ record, input, idempotencyKey, services, parameters }) {
       if (!record.assigneeId) return { skipped: true };
       const to = person(record.assigneeId)?.email ?? record.assigneeId;
       services.deliver(
         to,
         `客户回复：${record.subject}`,
-        text(input.message),
+        `${parameters.notificationPrefix}${text(input.message)}`,
         idempotencyKey,
       );
       return { to };

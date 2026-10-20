@@ -1,10 +1,3 @@
-import { createReactVitestConfig } from '@nocobase/dev-config/vitest/react';
+import { createNodeVitestConfig } from '@nocobase/dev-config/vitest/node';
 
-// Server tests run in Node; the settings-panel tests opt into jsdom per file.
-export default createReactVitestConfig({
-  test: {
-    environment: 'node',
-    include: ['tests/**/*.test.{ts,tsx}'],
-    passWithNoTests: true,
-  },
-});
+export default createNodeVitestConfig();

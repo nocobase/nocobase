@@ -315,6 +315,22 @@ describe('permissions on folders and articles', () => {
     expect(await keyOf(child.id)).toBeNull();
   });
 
+  it('revokes child index access through a parent-only permission notification', async () => {
+    await restrict('lead', secrets.id, {
+      mode: 'custom',
+      entries: [{ subject: { type: 'user', id: 'member' }, level: 'read' }],
+    });
+    expect((await call('member', 'GET', `/docs/${keys.id}/index`)).status).toBe(
+      200,
+    );
+    h.events.length = 0;
+    await restrict('lead', secrets.id, { mode: 'custom', entries: [] });
+    expect(h.events).toEqual([{ type: 'doc.changed', docId: secrets.id }]);
+    expect((await call('member', 'GET', `/docs/${keys.id}/index`)).status).toBe(
+      404,
+    );
+  });
+
   it('offers subjects to whoever manages something in the space', async () => {
     const offered = await call(
       'lead',

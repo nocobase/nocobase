@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-client",
-  "version": "2.0.0-beta.1",
-  "description": "React and Refine runtime for NocoBase applications.",
+  "version": "4.0.0-beta.0",
+  "description": "React runtime for NocoBase applications.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,
@@ -54,9 +54,8 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "peerDependencies": {
+    "@tanstack/react-query": "catalog:",
     "@nocobase/i18n": "workspace:^",
-    "@refinedev/core": "^5.0.0",
-    "@refinedev/react-router": "^2.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^17.0.0",
@@ -71,8 +70,6 @@
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/i18n": "workspace:*",
     "@nocobase/service-provider": "workspace:*",
-    "@refinedev/core": "catalog:",
-    "@refinedev/react-router": "^2.0.0",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",

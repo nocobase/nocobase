@@ -1,14 +1,40 @@
 ---
-title: 'Default access'
-description: 'A common record baseline for existing operation holders.'
+title: 'Default data access'
 ---
 
-# Default access
+# Default data access
 
-Use default access for a stable baseline: everyone with View quotes may consult non-confidential quotes, while Edit remains limited to the preparer.
+Default data access adds a shared record scope for people who already hold the action. Northstar account managers can use completed orders as operational references alongside their own work.
 
-In Settings → Authorization → Default access, choose the business operation, action and named scope, configure its range and save. Configure different actions and tables separately. Each resource has at most one default-access rule, which lists every action and scope it widens; saving a second rule for the same resource is rejected. Rules that developers provision keep the key they were created with. Clearing a rule removes that baseline, not action grants or independent sharing.
+## Common reference orders
 
-Defaults combine with role scope and sharing; they are not used only when a role has no selected scope. Do not copy a broad read baseline into editing. Verify both an action holder and a person without that action; the latter must remain denied.
+Users with an existing view permission may need a shared reference baseline. Default access adds common records to their existing scopes, such as completed or reference records.
 
-Use the [AI request template](develop-with-ai) when a new scope is needed. Specify which operation holders should always receive which records.
+```text
+Keep account managers' owned-order viewing scope.
+Add completed orders as a default viewing scope for everyone who already has View orders permission.
+Let administrators save or remove the completed-order viewing rule in Access rules.
+Add viewing only, not editing or transport actions on other people's orders.
+```
+
+Alice can view both owned orders and qualifying reference orders. Default scope is combined with existing scope by union rather than replacing it.
+
+## It does not grant the action
+
+People without View orders permission do not gain it from the default scope. Viewing completed records does not grant editing.
+
+Configure each action separately within the resource's default rule. Use [sharing](./sharing-rules.md) for selected collaborators and [restrictions](./restriction-rules.md) for boundaries that apply across sources.
+
+## Configure common access
+
+Open **Access rules → Common access** and save the completed-order viewing rule. This example uses the order’s **Completed** state; excluding sensitive records would require an additional business field and condition.
+
+![Configure common access to completed orders](../assets/northstar-default-config-en.png)
+
+**The saved common viewing rule covers completed transport orders.**
+
+Alice now sees seven orders instead of six. **NS-2026-003** still belongs to Bob and is included because it is completed. Her existing orders remain visible.
+
+![Alice can view Bob’s completed order](../assets/northstar-default-after-en.png)
+
+**Alice sees seven orders, including Bob’s completed order.**

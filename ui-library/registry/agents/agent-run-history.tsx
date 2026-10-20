@@ -13,7 +13,9 @@ import {
   SquareIcon,
 } from 'lucide-react';
 import {
+  useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent,
@@ -59,9 +61,70 @@ export interface AgentRunHistoryRun {
   readonly finishedAt: string | null;
   /** Why it failed, in the reader's language. */
   readonly failure?: string | null;
+  readonly execution?: AgentRunExecution;
+  readonly executions?: readonly AgentRunExecution[];
+  /** The preceding run's runner, supplied by the application when comparing runs on one subject. */
+  readonly previousRunnerId?: string | null;
 }
 
+/** Compatible with the agents run snapshot and projects activity execution; imports neither plugin. */
+export interface AgentRunExecution {
+  readonly attempt: number;
+  readonly runnerId: string;
+  readonly runnerName?: string | null;
+  readonly runnerOwnerUserId?: string | null;
+  readonly runnerOwnerName?: string | null;
+  readonly tool?: string | null;
+  readonly toolVersion?: string | null;
+  readonly modelService?: string | null;
+  readonly model?: string | null;
+  readonly actualModels?: readonly string[];
+  readonly effort?: string | null;
+  readonly actualEffort?: string | null;
+  readonly actualEffortSource?: string | null;
+  readonly actualEffortAt?: string | null;
+  readonly machineHidden?: boolean;
+}
+
+export interface RunExecutionLabels {
+  readonly unknownRunner: string;
+  readonly unknownModel: string;
+  readonly defaultModel: string;
+  /** `{model}` is the reported model or models. */
+  readonly defaultActual: string;
+  readonly specifiedActual: string;
+  readonly owner: string;
+  readonly defaultEffort: string;
+  readonly effort: string;
+  readonly attempt: string;
+  readonly changedRunner: string;
+  readonly hiddenRunner?: string;
+  readonly actualEffort?: string;
+  readonly unreportedEffort?: string;
+  readonly effortSource?: string;
+  readonly effortChangedAt?: string;
+}
+
+const defaultRunExecutionLabels: RunExecutionLabels = {
+  unknownRunner: 'Unknown runtime',
+  unknownModel: 'Actual model not reported',
+  defaultModel: 'Requested model: default (legacy)',
+  defaultActual: 'Legacy default (actual: {model})',
+  specifiedActual: 'Requested model: {requested} (actual: {model})',
+  owner: 'owned by {name}',
+  defaultEffort: 'Requested reasoning: default',
+  effort: 'Requested reasoning: {effort}',
+  attempt: 'Attempt {attempt}',
+  changedRunner: 'Runtime changed',
+  hiddenRunner: 'Team runtime',
+  actualEffort: 'Actual reasoning: {effort}',
+  unreportedEffort: 'Actual reasoning not reported',
+  effortSource: 'Source: {source}',
+  effortChangedAt: 'Changed: {at}',
+};
+
 export interface AgentRunHistoryLabels {
+  readonly execution?: RunExecutionLabels;
   readonly title: string;
   readonly empty: string;
   readonly status: Readonly<Record<AgentRunHistoryStatus | 'stopping', string>>;
@@ -125,6 +188,180 @@ function fillLabel(
 ): string {
   return text.replace(/\{(\w+)\}/gu, (whole, key: string) =>
     key in values ? String(values[key]) : whole,
+  );
+}
+
+function latestExecution(
+  run: AgentRunHistoryRun,
+): AgentRunExecution | undefined {
+  return run.execution ?? run.executions?.at(-1);
+}
+
+function runnerChanged(run: AgentRunHistoryRun): boolean {
+  const executions = run.executions ?? [];
+  const latest = latestExecution(run);
+  return (
+    Boolean(
+      run.previousRunnerId &&
+      latest &&
+      latest.runnerId !== run.previousRunnerId,
+    ) ||
+    executions.some(
+      (execution, index) =>
+        index > 0 && execution.runnerId !== executions[index - 1]?.runnerId,
+    )
+  );
+}
+
+function executionModel(
+  execution: AgentRunExecution,
+  labels: RunExecutionLabels,
+  short = false,
+): string {
+  const actual = execution.actualModels?.join(', ');
+  if (short) return actual || labels.unknownModel;
+  if (!execution.model)
+    return actual
+      ? fillLabel(labels.defaultActual, { model: actual })
+      : `${labels.defaultModel} (${labels.unknownModel})`;
+  return fillLabel(labels.specifiedActual, {
+    requested: execution.model,
+    model: actual || labels.unknownModel,
+  });
+}
+
+function executionRunner(
+  execution: AgentRunExecution,
+  labels: RunExecutionLabels,
+): string {
+  return execution.machineHidden
+    ? (labels.hiddenRunner ?? defaultRunExecutionLabels.hiddenRunner!)
+    : execution.runnerName || execution.runnerId || labels.unknownRunner;
+}
+
+/** A complete execution heading; the owner and tool version come from the historical snapshot. */
+export function RunExecutionSummary({
+  execution,
+  labels = defaultRunExecutionLabels,
+}: {
+  readonly execution: AgentRunExecution;
+  readonly labels?: RunExecutionLabels;
+}): ReactElement {
+  return (
+    <span className='text-xs text-muted-foreground' data-testid='run-execution'>
+      {[
+        executionRunner(execution, labels),
+        !execution.machineHidden &&
+        (execution.runnerOwnerName || execution.runnerOwnerUserId)
+          ? fillLabel(labels.owner, {
+              name: execution.runnerOwnerName || execution.runnerOwnerUserId!,
+            })
+          : null,
+        [execution.tool || execution.modelService, execution.toolVersion]
+          .filter(Boolean)
+          .join(' '),
+        executionModel(execution, labels),
+        execution.effort
+          ? fillLabel(labels.effort, { effort: execution.effort })
+          : labels.defaultEffort,
+        execution.actualEffort
+          ? fillLabel(
+              labels.actualEffort ?? defaultRunExecutionLabels.actualEffort!,
+              { effort: execution.actualEffort },
+            )
+          : (labels.unreportedEffort ??
+            defaultRunExecutionLabels.unreportedEffort!),
+        execution.actualEffortSource
+          ? fillLabel(
+              labels.effortSource ?? defaultRunExecutionLabels.effortSource!,
+              { source: execution.actualEffortSource },
+            )
+          : null,
+        execution.actualEffortAt
+          ? fillLabel(
+              labels.effortChangedAt ??
+                defaultRunExecutionLabels.effortChangedAt!,
+              { at: execution.actualEffortAt },
+            )
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')}
+    </span>
+  );
+}
+
+/** The short badge beside an agent's action; the consumer opens its originating run. */
+export function RunExecutionBadge({
+  execution,
+  href,
+  onOpen,
+  labels = defaultRunExecutionLabels,
+}: {
+  readonly execution: AgentRunExecution;
+  readonly href?: string;
+  readonly onOpen?: () => void;
+  readonly labels?: RunExecutionLabels;
+}): ReactElement {
+  const text = `${executionRunner(execution, labels)} · ${executionModel(execution, labels, true)}`;
+  const className =
+    'inline-flex rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground';
+  if (href)
+    return (
+      <a
+        href={href}
+        className={className}
+        onClick={(event) => {
+          if (!onOpen || !plainClick(event)) return;
+          event.preventDefault();
+          onOpen();
+        }}
+      >
+        {text}
+      </a>
+    );
+  if (onOpen)
+    return (
+      <Button variant='ghost' size='xs' className={className} onClick={onOpen}>
+        {text}
+      </Button>
+    );
+  return <span className={className}>{text}</span>;
+}
+
+/** Each attempt keeps its own execution facts, including the one whose holder was released for a retry. */
+export function RunAttempts({
+  executions,
+  previousRunnerId,
+  labels = defaultRunExecutionLabels,
+}: {
+  readonly executions: readonly AgentRunExecution[];
+  readonly previousRunnerId?: string | null;
+  readonly labels?: RunExecutionLabels;
+}): ReactElement {
+  return (
+    <ol className='w-full space-y-1' data-testid='run-attempts'>
+      {executions.map((execution, index) => {
+        const previous =
+          index === 0 ? previousRunnerId : executions[index - 1]?.runnerId;
+        return (
+          <li
+            key={execution.attempt}
+            className='flex flex-wrap gap-x-2 gap-y-1'
+          >
+            <span className='text-xs text-muted-foreground'>
+              {fillLabel(labels.attempt, { attempt: execution.attempt })}
+            </span>
+            <RunExecutionSummary execution={execution} labels={labels} />
+            {previous && previous !== execution.runnerId ? (
+              <span className='text-xs text-primary'>
+                {labels.changedRunner}
+              </span>
+            ) : null}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -301,6 +538,7 @@ export function RunStatusBadge({
   const stopping = Boolean(run.stopping) && isRunOpen(run);
   return (
     <Badge
+      data-size='sm'
       variant='secondary'
       className={cn(
         'shrink-0 gap-1.5 font-normal',
@@ -454,6 +692,14 @@ function PinnedRun({
         <RunStatusBadge run={run} labels={labels} />
         <span className='min-w-0 truncate text-sm font-medium'>
           {run.agentName}
+          {latestExecution(run) ? (
+            <span className='block font-normal'>
+              <RunExecutionSummary
+                execution={latestExecution(run)!}
+                labels={labels.execution}
+              />
+            </span>
+          ) : null}
         </span>
         <span
           className='ml-auto shrink-0 font-mono text-xs text-muted-foreground tabular-nums'
@@ -526,6 +772,17 @@ function RunLine({
               {relativeTime(at, locale)}
             </time>
           </span>
+          {latestExecution(run) ? (
+            <RunExecutionSummary
+              execution={latestExecution(run)!}
+              labels={labels.execution}
+            />
+          ) : null}
+          {runnerChanged(run) ? (
+            <span className='block text-xs text-primary'>
+              {(labels.execution ?? defaultRunExecutionLabels).changedRunner}
+            </span>
+          ) : null}
         </span>
       </RunLink>
     </li>
@@ -723,6 +980,14 @@ export function RunActivityRow({
           {labels.viewTranscript}
         </RunLink>
       ) : null}
+      {latestExecution(run) ? (
+        <RunExecutionBadge
+          execution={latestExecution(run)!}
+          href={opener.runHref?.(run)}
+          onOpen={opener.onOpenRun ? () => opener.onOpenRun?.(run) : undefined}
+          labels={labels.execution}
+        />
+      ) : null}
       <time
         dateTime={at}
         title={dateTimeText(at, locale)}
@@ -804,6 +1069,170 @@ function plainText(text: string): ReactNode {
   return <p className='text-sm whitespace-pre-wrap wrap-anywhere'>{text}</p>;
 }
 
+const transcriptGroups = [
+  'agent',
+  'input',
+  'tools',
+  'thinking',
+  'system',
+] as const;
+export type RunTranscriptFilterGroup = (typeof transcriptGroups)[number];
+
+export interface RunTranscriptFilterLabels {
+  readonly title: string;
+  readonly groups: Readonly<Record<RunTranscriptFilterGroup, string>>;
+  /** `{count}` events in `{group}`. */
+  readonly hiddenGroup: string;
+  /** `{summary}` is the hidden event counts, by group. */
+  readonly expandHidden: string;
+  readonly errorsAlwaysVisible: string;
+}
+
+const defaultTranscriptFilterLabels: RunTranscriptFilterLabels = {
+  title: 'Event types',
+  groups: {
+    agent: 'Agent',
+    input: 'Input',
+    tools: 'Tools',
+    thinking: 'Thinking',
+    system: 'System',
+  },
+  hiddenGroup: '{count} {group}',
+  expandHidden: 'Hidden events: {summary}',
+  errorsAlwaysVisible: 'Errors are always shown',
+};
+
+/** Null denotes a failure, which never belongs to a switchable group. */
+function transcriptGroup(
+  event: RunTranscriptEvent,
+): RunTranscriptFilterGroup | null {
+  if (
+    event.type === 'error' ||
+    (event.type === 'toolResult' &&
+      (event.meta?.isError === true || event.meta?.ok === false))
+  )
+    return null;
+  switch (event.type) {
+    case 'text':
+      return 'agent';
+    case 'input':
+      return 'input';
+    case 'toolUse':
+    case 'toolResult':
+    case 'permission':
+    case 'allowed':
+    case 'denied':
+      return 'tools';
+    case 'thinking':
+      return 'thinking';
+    default:
+      return 'system';
+  }
+}
+
+function readTranscriptPreference(
+  key: string | undefined,
+): RunTranscriptFilterGroup[] {
+  try {
+    const value: unknown = key
+      ? JSON.parse(window.localStorage.getItem(key) ?? 'null')
+      : null;
+    if (
+      Array.isArray(value) &&
+      value.every(
+        (group: unknown) =>
+          typeof group === 'string' &&
+          transcriptGroups.some((known) => known === group),
+      )
+    ) {
+      return [...new Set(value as RunTranscriptFilterGroup[])];
+    }
+  } catch {
+    /* Storage can be unavailable or contain an older preference. */
+  }
+  return ['agent', 'input'];
+}
+
+interface TranscriptSegment {
+  readonly hidden: boolean;
+  readonly events: RunTranscriptEvent[];
+}
+
+function transcriptSegments(
+  events: readonly RunTranscriptEvent[],
+  groups: readonly RunTranscriptFilterGroup[],
+): TranscriptSegment[] {
+  const segments: TranscriptSegment[] = [];
+  for (const event of events) {
+    const group = transcriptGroup(event);
+    const hidden = group !== null && !groups.includes(group);
+    const previous = segments.at(-1);
+    if (hidden && previous?.hidden) previous.events.push(event);
+    else segments.push({ hidden, events: [event] });
+  }
+  return segments;
+}
+
+function HiddenTranscriptEvents({
+  events,
+  filterLabels,
+  onLayoutChange,
+  ...rowProps
+}: {
+  readonly events: readonly RunTranscriptEvent[];
+  readonly filterLabels: RunTranscriptFilterLabels;
+  readonly onLayoutChange: () => void;
+  readonly renderMarkdown: (text: string) => ReactNode;
+  readonly locale: string | undefined;
+  readonly labels: RunTranscriptLabels;
+}): ReactElement {
+  const [expanded, setExpanded] = useState(false);
+  const previousExpandedRef = useRef(expanded);
+  useLayoutEffect(() => {
+    if (previousExpandedRef.current === expanded) return;
+    previousExpandedRef.current = expanded;
+    // Expanding history keeps the reading position; collapse may bring the viewport back to the bottom.
+    onLayoutChange();
+  }, [expanded, onLayoutChange]);
+  const counts = new Map<RunTranscriptFilterGroup, number>();
+  for (const event of events) {
+    const group = transcriptGroup(event);
+    if (group !== null) counts.set(group, (counts.get(group) ?? 0) + 1);
+  }
+  const summary = [...counts]
+    .map(([group, count]) =>
+      fillLabel(filterLabels.hiddenGroup, {
+        group: filterLabels.groups[group],
+        count,
+      }),
+    )
+    .join(', ');
+  return (
+    <li className='border-b last:border-b-0'>
+      <Button
+        type='button'
+        variant='ghost'
+        size='sm'
+        className='m-2 max-w-[calc(100%-1rem)] justify-start whitespace-normal text-muted-foreground'
+        aria-expanded={expanded}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <ChevronRightIcon
+          className={cn('size-4 shrink-0', expanded && 'rotate-90')}
+        />
+        {fillLabel(filterLabels.expandHidden, { summary })}
+      </Button>
+      {expanded ? (
+        <ol>
+          {events.map((event) => (
+            <RunTranscriptRow key={event.seq} event={event} {...rowProps} />
+          ))}
+        </ol>
+      ) : null}
+    </li>
+  );
+}
+
 export interface RunTranscriptProps {
   /** The heading: the run's state, agent, what started it, its actions. */
   readonly header?: ReactNode;
@@ -819,6 +1248,9 @@ export interface RunTranscriptProps {
   readonly renderMarkdown?: (text: string) => ReactNode;
   readonly locale?: string;
   readonly labels?: RunTranscriptLabels;
+  /** Local preference key scoped by the consumer to its application and current user. No key means no persistence. */
+  readonly preferenceKey?: string;
+  readonly filterLabels?: RunTranscriptFilterLabels;
 }
 
 /**
@@ -826,7 +1258,12 @@ export interface RunTranscriptProps {
  * content in the form that suits it, and its number and time. It follows the newest event while the reader is at the
  * bottom.
  */
-export function RunTranscript({
+export function RunTranscript(props: RunTranscriptProps): ReactElement {
+  // Remount preference state before rendering another user or application.
+  return <FilteredRunTranscript key={props.preferenceKey ?? ''} {...props} />;
+}
+
+function FilteredRunTranscript({
   header,
   summary,
   events,
@@ -835,14 +1272,39 @@ export function RunTranscript({
   renderMarkdown,
   locale,
   labels = defaultRunTranscriptLabels,
+  preferenceKey,
+  filterLabels = defaultTranscriptFilterLabels,
 }: RunTranscriptProps): ReactElement {
+  const [groups, setGroups] = useState(() =>
+    readTranscriptPreference(preferenceKey),
+  );
+  const toggleGroup = (group: RunTranscriptFilterGroup): void => {
+    const next = groups.includes(group)
+      ? groups.filter((entry) => entry !== group)
+      : [...groups, group];
+    setGroups(next);
+    try {
+      if (preferenceKey)
+        window.localStorage.setItem(preferenceKey, JSON.stringify(next));
+    } catch {
+      /* Filtering still works when storage is disabled or full. */
+    }
+  };
   const listRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
+  const updatePinned = useCallback(() => {
+    const element = listRef.current;
+    if (element)
+      pinnedRef.current =
+        element.scrollHeight - element.scrollTop - element.clientHeight < 48;
+  }, []);
   const count = events?.length ?? 0;
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = listRef.current;
     if (element && pinnedRef.current) element.scrollTop = element.scrollHeight;
-  }, [count]);
+    // A filter can shrink the list to the viewport without dispatching a scroll event.
+    updatePinned();
+  }, [count, groups, updatePinned]);
   const markdown = renderMarkdown ?? plainText;
   return (
     <div className='flex min-h-0 flex-col gap-3' data-testid='run-transcript'>
@@ -853,14 +1315,30 @@ export function RunTranscript({
         </div>
       ) : null}
       <div
+        role='group'
+        aria-label={filterLabels.title}
+        className='flex flex-wrap items-center gap-2'
+      >
+        {transcriptGroups.map((group) => (
+          <Button
+            key={group}
+            type='button'
+            size='sm'
+            variant={groups.includes(group) ? 'secondary' : 'outline'}
+            aria-pressed={groups.includes(group)}
+            onClick={() => toggleGroup(group)}
+          >
+            {filterLabels.groups[group]}
+          </Button>
+        ))}
+        <span className='text-xs text-muted-foreground'>
+          {filterLabels.errorsAlwaysVisible}
+        </span>
+      </div>
+      <div
         ref={listRef}
         className='max-h-[60svh] min-h-40 overflow-y-auto rounded-lg border'
-        onScroll={(event) => {
-          const element = event.currentTarget;
-          pinnedRef.current =
-            element.scrollHeight - element.scrollTop - element.clientHeight <
-            48;
-        }}
+        onScroll={updatePinned}
       >
         {!events ? (
           <div role='status' className='space-y-2 p-4'>
@@ -874,15 +1352,29 @@ export function RunTranscript({
           </p>
         ) : (
           <ol aria-label={labels.events}>
-            {events.map((event) => (
-              <RunTranscriptRow
-                key={event.seq}
-                event={event}
-                renderMarkdown={markdown}
-                locale={locale}
-                labels={labels}
-              />
-            ))}
+            {transcriptSegments(events, groups).map((segment) => {
+              const first = segment.events[0];
+              const key = `${first.at}:${first.seq}:${first.type}`;
+              return segment.hidden ? (
+                <HiddenTranscriptEvents
+                  key={key}
+                  events={segment.events}
+                  filterLabels={filterLabels}
+                  onLayoutChange={updatePinned}
+                  renderMarkdown={markdown}
+                  locale={locale}
+                  labels={labels}
+                />
+              ) : (
+                <RunTranscriptRow
+                  key={key}
+                  event={first}
+                  renderMarkdown={markdown}
+                  locale={locale}
+                  labels={labels}
+                />
+              );
+            })}
           </ol>
         )}
       </div>
@@ -927,6 +1419,26 @@ export function RunHeader({
       ) : null}
       {actions ? (
         <span className='ml-auto flex flex-wrap gap-1.5'>{actions}</span>
+      ) : null}
+      {latestExecution(run) ? (
+        <span className='basis-full'>
+          <RunExecutionSummary
+            execution={latestExecution(run)!}
+            labels={labels.execution}
+          />
+        </span>
+      ) : null}
+      {runnerChanged(run) && (run.executions?.length ?? 0) < 2 ? (
+        <span className='text-xs text-primary'>
+          {(labels.execution ?? defaultRunExecutionLabels).changedRunner}
+        </span>
+      ) : null}
+      {run.executions && run.executions.length > 1 ? (
+        <RunAttempts
+          executions={run.executions}
+          previousRunnerId={run.previousRunnerId}
+          labels={labels.execution}
+        />
       ) : null}
     </div>
   );
@@ -1097,7 +1609,11 @@ function Kind({
   readonly children: ReactNode;
 }): ReactElement {
   return (
-    <Badge variant='secondary' className={cn('font-normal', KIND_TONE[tone])}>
+    <Badge
+      data-size='sm'
+      variant='secondary'
+      className={cn('font-normal', KIND_TONE[tone])}
+    >
       {children}
     </Badge>
   );

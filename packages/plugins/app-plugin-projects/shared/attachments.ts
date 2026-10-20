@@ -11,6 +11,7 @@
  * | ------------------------------------------- | ---------------------------------------------------------------- |
  * | read, download, list                        | seeing the issue (an upload attached to nothing: its uploader)   |
  * | upload                                      | `pm.attachments` `upload`                                        |
+ * | create an issue with uploads                 | `upload`, and `pm.issues` `create` in the project              |
  * | attach to an issue                          | `upload`, and `pm.issues` `edit` on the issue                    |
  * | send with a comment                         | `upload`, and `pm.issues` `comment` on the issue                 |
  * | remove an issue's file                      | its uploader (with `edit`), or `moderate-comments` on the issue  |
@@ -25,7 +26,11 @@
  * | `GET /attachments/{attachmentId}/content`| `?download=true` to save | the bytes; safe images inline, others saved      |
  * | `DELETE /attachments/{attachmentId}`     |                          | 204                                              |
  * | `GET /issues/{issueId}/attachments`      |                          | `{ data: Attachment[], meta: { total } }`        |
+ * | `GET /issues/{issueId}/screenshots`      |                          | `{ data: IssueScreenshot[], meta: { limit, truncated } }` |
  * | `POST /issues/{issueId}/attachments`     | multipart, one `file`    | 201 `{ data: Attachment }`, attached to it       |
+ *
+ * `POST /issues` accepts optional `attachmentIds` of the creator's unattached uploads. They are bound in the
+ * creation transaction before triggers start work; without files no upload permission is required.
  *
  * `POST /issues/{issueId}/comments` takes `attachmentIds` (`CreateCommentRequest`): the caller's own uploads attached
  * to nothing, at most `ATTACHMENTS_PER_REQUEST_MAX`, attached in the comment's transaction. Errors: 400
@@ -45,6 +50,30 @@ export const ATTACHMENT_SIZE_MAX: number = 20 * 1024 * 1024;
 export const ATTACHMENTS_PER_REQUEST_MAX = 10;
 /** How long an upload attached to nothing is kept. */
 export const ORPHAN_HOURS = 24;
+
+/** The newest raw images, including older versions of the same filename. */
+export const ISSUE_SCREENSHOTS_LIMIT = 100;
+
+export interface IssueScreenshot {
+  readonly id: string;
+  readonly filename: string;
+  readonly ext: string;
+  readonly mimeType: string;
+  readonly size: number;
+  readonly contentUrl: string;
+  readonly downloadUrl: string;
+  readonly comment: {
+    readonly id: string;
+    readonly author: AttachmentUploader;
+    readonly createdAt: string;
+  };
+}
+
+export interface IssueScreenshots {
+  readonly data: readonly IssueScreenshot[];
+  /** Counts and versions describe only this batch, never the task's total. */
+  readonly meta: { readonly limit: number; readonly truncated: boolean };
+}
 
 /** The raster images shown inline, by extension: the declared type must be the one listed. */
 export const INLINE_PREVIEW_TYPES: Readonly<Record<string, string>> = {

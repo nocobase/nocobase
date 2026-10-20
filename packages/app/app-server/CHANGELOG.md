@@ -1,5 +1,216 @@
 # @nocobase/app-server
 
+## 3.0.0-beta.0
+
+### Minor Changes
+
+- 1952789: Isolate delivery queues by subscription, bound global authorization work and expose delivery, authorization and broker diagnostics. Publish receipts now describe broker admission; `flush()` observes current local queues without claiming remote delivery. Add optional latest-snapshot coalescing, bounded event deduplication and event IDs for tracing.
+
+  Add an optional Redis Pub/Sub broker with namespace isolation, distributed user/session revocation and resubscription recovery. Broker recovery requests fresh client subscriptions and authoritative snapshots. Redis publication is never retried automatically after an ambiguous result; applications remain responsible for durable state, cursors and outbox retry.
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-websocket@0.1.0-beta.1
+  - @nocobase/realtime@0.1.0-beta.3
+  - @nocobase/i18n@2.0.0-beta.0
+  - @nocobase/caching@0.1.0-beta.3
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 3.0.0-beta
+
+### Major Changes
+
+- Require declared realtime topics and asynchronous publication, subscription authorization and shutdown. Extract the core into `@nocobase/realtime/server`; retain the application service tokens and adapter entry points. Publication receipts contain an event ID instead of a local subscriber count.
+
+## 2.0.0-beta.9
+
+### Patch Changes
+
+- 22717d7: Support synchronous custom driver factories alongside existing configuration objects in `drive.disks`. Create drivers lazily through the shared application Drive provider, preserve Flydrive caching and fakes, and reject factory references where release artifacts require serializable Host configuration. Ship the `nocobase-drive` Skill with filesystem, S3, native Aliyun OSS, and custom driver guides, and direct application guidance to that shared documentation. Consumers reading disk configuration fields must narrow out factory functions first.
+- Updated dependencies [22717d7]
+  - @nocobase/drive@0.1.0-beta.7
+
+## 2.0.0-beta.8
+
+### Patch Changes
+
+- 5fe8773: Reject empty or whitespace-only Git credential files before sending a request, and preserve saved credentials when validation fails. Support explicit credential removal through a JSON update file with null values, returning the incomplete connection state when required credentials are cleared.
+- 49f61b9: Show optional settings permissions separately from business actions in CLI identity output, and explain run-token-only permissions. Add available-command typo suggestions, a hint for truncated text, and clean shutdown when a pipe closes early. Describe route schema inputs so generated CLI help and reference tables explain their parameters. The manifest identity and whoami JSON result gain an optional settings list; command admission and authorization are unchanged.
+- Updated dependencies [98b3862]
+- Updated dependencies [89648ee]
+- Updated dependencies [fe81e4b]
+- Updated dependencies [b22d999]
+- Updated dependencies [0037dd2]
+- Updated dependencies [c0b7537]
+- Updated dependencies [14b7aec]
+- Updated dependencies [0037dd2]
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/drive@0.1.0-beta.6
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/realtime@0.1.0-beta.2
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/caching@0.1.0-beta.3
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 2.0.0-beta.7
+
+### Minor Changes
+
+- 1cd749c: Expose issue handoff viewing, acceptance, and rejection through generated CLI commands. Add a single declarative GET binding that supplies a request body field before a command executes, preserving handoff permissions and stale notification checks.
+- bdb0581: A public realtime topic can be defined with `authenticated: true` (`defineTopic` and `registerTopic` of `@nocobase/app-server/realtime`): subscribing without a signed-in principal is then refused with `AUTHENTICATION_REQUIRED`, as for a user topic, and publishing skips connections without one. The projects plugin's `pm:changes`, the agents plugin's `agents:runners` and Studio's `studio:issues:runs`, whose announcements name records by id, now reach signed-in connections only. The authentication plugin opens the realtime connection again when the signed-in person changes, so a page signed in without a reload receives these topics and user topics.
+
+### Patch Changes
+
+- 69e212c: Move KingbaseES, Dameng and OceanBase driver ownership to NocoBase Pro while preserving optional peer dependencies, automatic loading and CLI configuration support. Install the selected driver through the Pro registry in the application's production dependencies and rebuild deployments; explicit driver registration remains optional. Test fixtures resolve external dialect provisioners from the consuming project.
+- Updated dependencies [69e212c]
+- Updated dependencies [943a9a8]
+- Updated dependencies [943a9a8]
+- Updated dependencies [9b946f4]
+  - @nocobase/db@1.0.0-beta.20
+  - @nocobase/db-mssql@0.1.0-beta.4
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.4
+  - @nocobase/db-postgres@0.1.0-beta.4
+  - @nocobase/db-sqlite@0.1.0-beta.5
+
+## 2.0.0-beta.6
+
+### Minor Changes
+
+- 9e99702: Add a lightweight SMTP/Resend mailer and host email service using the existing notification channel configuration. Built-in notification email Providers delegate to the shared transport implementation while retaining their registration and submission-result contracts. Email diagnostics now use fixed messages that cannot expose provider bodies or credentials.
+
+  Add explicitly enabled automatic password recovery through the host mailer, with bounded background submission, account-independent rate limiting, account-state checks. Existing custom senders remain available when no password reset switch is declared; explicit disablement or disabling password sign-in closes all reset endpoints. Only automatic recovery defaults to revoking existing sessions, and explicit session configuration wins.
+
+  Register the host mailer in both templates and Studio, add bilingual reset success and retry feedback, and show opt-in recovery in Studio's example configuration. Operators must explicitly enable recovery and configure an enabled SMTP/Resend channel in their deployment; existing deployments are not modified.
+
+  Automatic credential links require an explicitly configured public origin (`app.publicOrigin` / `APP_PUBLIC_ORIGIN`), or a direct Better Auth consumer's restricted host configuration, so a client-controlled Host cannot choose the reset-link destination. Custom sender configuration remains compatible.
+
+  Reject malformed SMTP authentication settings when validating email channel availability.
+
+  Keep default SMTP password and Resend API key environment mappings optional and secret in deployment manifests. Applications may explicitly require selected credentials, while enabled email channels still validate their configuration.
+
+  Space recovery links on reset error pages in both templates and Studio, allowing them to wrap on narrow screens.
+
+  Request-logging middleware remains unchanged. Default email links first reach a token-bearing API path, which request path/message logs may record. Default output sanitizes token query values in Referer strings, while raw/custom outputs may still retain them; deployment and request-log protection need separate follow-up before exposing this flow.
+
+### Patch Changes
+
+- Updated dependencies [9e99702]
+  - @nocobase/mailer@0.1.0-beta.0
+
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- 2a54505: Expose the application's resolved `NODE_ENV` to server providers without inheriting an embedded application's host process environment. Mail now warns once during production startup when its effective OAuth return URL still points to the legacy `/dev/mail/accounts` destination. The current root (`/`) default does not trigger the warning or register an account route: applications must register their own authenticated personal account page and configure `mail.oauthReturnUrl` to that page. This warning does not block startup, change configuration, or verify arbitrary client routes.
+
+## 2.0.0-beta.4
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-websocket@0.0.2-beta.0
+  - @nocobase/caching@0.1.0-beta.3
+  - @nocobase/config@0.1.0-beta.3
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/db-dameng@0.1.0-beta.4
+  - @nocobase/db-kingbase@0.1.0-beta.4
+  - @nocobase/db-mssql@0.1.0-beta.4
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oceanbase@0.1.0-beta.4
+  - @nocobase/db-oracle@0.1.0-beta.4
+  - @nocobase/db-postgres@0.1.0-beta.4
+  - @nocobase/db-sqlite@0.1.0-beta.5
+  - @nocobase/drive@0.1.0-beta.5
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/logging@0.1.0-beta.7
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/realtime@0.0.2-beta.1
+  - @nocobase/secrets@0.1.0-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/session@0.1.0-beta.3
+  - @nocobase/snowflake@1.0.0-beta.4
+
+## 2.0.0-beta.3
+
+### Patch Changes
+
+- c796cb9: Remove NocoBase Hub. `@nocobase/app-plugin-hub`, `@nocobase/app-template-hub` and `@nocobase/hub-cli` are no longer published, and every package that offered or described the Hub drops it.
+
+  Breaking for `@nocobase/app-installer`: it installs, upgrades and rolls back from a deployment archive only. `install --template`, `install --keep-source`, `upgrade --to`, `upgrade --rebuild`, `upgrade --keep-source` and `status --offline` are removed, as are the `latest` and `updateAvailable` members of the `status` result and the `rebuilt` and `notes` members of the `upgrade` result. An installation an earlier version built from the published Hub template is refused with `STATE_UNSUPPORTED`; manage it with the app-installer version that installed it. The error codes that only a template build reported (`PNPM_MISSING`, `PNPM_UNSUPPORTED`, `REGISTRY_UNREACHABLE`, `VERSION_NOT_FOUND`, `DISK_LOW`, `CREATE_FAILED`, `DRIVER_INSTALL_FAILED` and `BUILD_FAILED`) are no longer produced, and pm2 always kills the process tree of an application it stops.
+
+  Breaking for `@nocobase/create-app`: `--template hub` is no longer a template name, and a generated application no longer gets a `.env`.
+
+  The Default template no longer depends on `@nocobase/hub-cli`, so an application generated from it has no `pnpm nocobase hub` commands. An application upgraded from an earlier version that published to a Hub removes the dependency with `pnpm nocobase package remove @nocobase/hub-cli` and deletes `.nocobase/hub.json`; the `nocobase-app-upgrade` Skill describes the steps. The application Skills, the plugins' documentation and the in-app test notification text no longer mention the Hub.
+
+- Updated dependencies [98e79a5]
+  - @nocobase/i18n@1.0.0-beta.6
+  - @nocobase/caching@0.1.0-beta.2
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/db-dameng@0.1.0-beta.3
+  - @nocobase/db-kingbase@0.1.0-beta.3
+  - @nocobase/db-mssql@0.1.0-beta.3
+  - @nocobase/db-mysql@0.1.0-beta.4
+  - @nocobase/db-oceanbase@0.1.0-beta.3
+  - @nocobase/db-oracle@0.1.0-beta.3
+  - @nocobase/db-postgres@0.1.0-beta.3
+  - @nocobase/db-sqlite@0.1.0-beta.4
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/queue@0.1.0-beta.8
+  - @nocobase/service-provider@0.0.2-beta.1
+
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- 487921c: Prevent stale development pages after runtime public configuration changes by removing upstream HTML cache validators while preserving Vite resource caching.
+- @nocobase/caching@0.1.0-beta.2
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/db-dameng@0.1.0-beta.3
+  - @nocobase/db-kingbase@0.1.0-beta.3
+  - @nocobase/db-mssql@0.1.0-beta.3
+  - @nocobase/db-mysql@0.1.0-beta.4
+  - @nocobase/db-oceanbase@0.1.0-beta.3
+  - @nocobase/db-oracle@0.1.0-beta.3
+  - @nocobase/db-postgres@0.1.0-beta.3
+  - @nocobase/db-sqlite@0.1.0-beta.4
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/queue@0.1.0-beta.8
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 2.0.0-beta.1
 
 ### Minor Changes

@@ -38,6 +38,23 @@ export function assertAppId(id: string): void {
     );
 }
 
+/** Archive keys fit a full unique index, including with utf8mb4 on MySQL. */
+export function releaseArtifactKey(
+  appId: string,
+  releaseId: string,
+  prefix: string = '',
+): string {
+  assertAppId(appId);
+  const key = `${prefix ? `${prefix}/` : ''}${appId}/${releaseId}.tar.gz`;
+  if (key.length > 172)
+    throw new ReleasesError(
+      'Release artifact keys must not exceed 172 characters.',
+      'INVALID_ARTIFACT_KEY',
+      'INVALID_ARGUMENT',
+    );
+  return key;
+}
+
 /** `check` is a fixed segment beside the ID in `/environments/check` and `/registries/check`. */
 const RESERVED_SETTING_IDS: readonly string[] = ['check'];
 

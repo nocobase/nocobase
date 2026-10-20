@@ -67,6 +67,21 @@ describe('outbound attachment bytes and metadata', () => {
     await rm(directory, { recursive: true, force: true });
   });
 
+  it.each(['part-0', 'imap:opaque-part', 'AAkALgAAAA-remote-part', ''])(
+    'does not interpret opaque provider ID %s as an outbound upload UUID',
+    async (id) => {
+      const query = vi.spyOn(database, 'query');
+      try {
+        await expect(
+          store.getOutboundAttachment('alice', id),
+        ).resolves.toBeUndefined();
+        expect(query).not.toHaveBeenCalled();
+      } finally {
+        query.mockRestore();
+      }
+    },
+  );
+
   it('round-trips bytes through storage and scopes reads to the owner', async () => {
     const uploaded = await storage.create(
       'alice',
@@ -87,7 +102,9 @@ describe('outbound attachment bytes and metadata', () => {
     expect(await readFile(objectPath(row!.key), 'utf8')).toBe('hello');
     disk.getStream.mockClear();
     await expect(storage.open('bob', uploaded.id)).rejects.toThrow('not found');
-    await expect(storage.open('alice', 'missing')).rejects.toThrow('not found');
+    await expect(
+      storage.open('alice', '00000000-0000-4000-8000-000000000001'),
+    ).rejects.toThrow('not found');
     expect(disk.getStream).not.toHaveBeenCalled();
   });
 

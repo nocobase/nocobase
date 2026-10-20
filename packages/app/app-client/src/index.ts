@@ -1,3 +1,4 @@
+export { refreshRealtimeQueries } from './realtime-query.js';
 export {
   apiClientToken,
   ClientApplication,
@@ -53,6 +54,10 @@ export {
 } from './toaster.js';
 export type {
   RealtimeClient,
+  RealtimeSubscription,
+  RealtimeSubscriptionState,
+  RealtimeConnectionState,
+  RealtimeWatchOptions,
   RealtimeErrorEvent,
   RealtimeEvent,
   RealtimeListener,
@@ -72,7 +77,6 @@ export {
   type AppClientConfigValue,
   type AppClientPublicConfig,
   type AppClientReactProvider,
-  type AppClientRefineConfig,
   type AppClientRenderConfig,
 } from './config.js';
 export type {
@@ -95,10 +99,6 @@ export {
   defineClientReactProviders,
   defineClientRouteComponentOverrides,
   defineClientSourceExtension,
-  defineDevRoutes,
-  defineSettingsRoutes,
-  isAppClientDevRouteGroup,
-  isAppClientSettingsRouteGroup,
   resolveAppClientContributions,
 } from './plugins.js';
 export type {
@@ -106,12 +106,7 @@ export type {
   AppClientContribution,
   AppClientContributions,
   AppClientContributionSource,
-  AppClientDevRouteDefinition,
-  AppClientDevRouteGroupDefinition,
-  AppClientDevRoutePageDefinition,
-  AppClientDevRoutesContribution,
   AppClientLocales,
-  AppClientNavigationSurface,
   AppClientPluginContributions,
   AppClientPluginDefinition,
   AppClientPluginFactory,
@@ -120,16 +115,9 @@ export type {
   AppClientReactProviderDefinition,
   AppClientReactProviderLayer,
   AppClientReactProviders,
-  AppClientRefineRegistry,
-  AppClientRefineSetterValue,
-  AppClientRefineSetters,
-  AppClientRegisteredDevRoute,
-  AppClientRegisteredDevRouteGroup,
   AppClientRegisteredReactProvider,
   AppClientRegisteredRoute,
   AppClientRegisteredServiceProvider,
-  AppClientRegisteredSetting,
-  AppClientRegisteredSettingGroup,
   AppClientRouteAuth,
   AppClientRouteAuthz,
   AppClientRouteComponentLoader,
@@ -141,13 +129,25 @@ export type {
   AppClientRouteGroupDefinition,
   AppClientRoutes,
   AppClientServiceProviders,
-  AppClientSettingIcon,
-  AppClientSettingsRouteDefinition,
-  AppClientSettingsRouteGroupDefinition,
-  AppClientSettingsRouteNavigation,
-  AppClientSettingsRoutePageDefinition,
-  AppClientSettingsRoutesContribution,
+  AppClientRouteIcon,
+  AppClientRouteNavigation,
   ClientServiceProviderConstructor,
   ClientServiceProviderContext,
   ResolvedAppClientContributions,
 } from './plugins.js';
+
+export { NavigationGuardProvider } from './navigation-guard-provider.js';
+export { useNavigationGuard } from './navigation-guard.js';
+
+export {
+  useRealtimeTopic,
+  useRealtimeRefresh,
+  useRealtimeConnectionState,
+  createRealtimeRefresh,
+  type UseRealtimeTopicOptions,
+  type UseRealtimeRefreshOptions,
+  type RealtimeRefresh,
+  type RealtimeRefreshOptions,
+  type RealtimeRefreshSnapshot,
+  type UseRealtimeRefreshResult,
+} from './realtime.js';

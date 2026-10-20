@@ -1,8 +1,9 @@
 import { RunnerCommand } from '../lib/command.ts';
+import type { AgentTools } from '../agent/runner-tools.ts';
 import {
   readConnections,
   readSettings,
-  type AgentHome,
+  type AppRegistration,
 } from '../lib/config.ts';
 import { formatToolSlots } from '../lib/slots.ts';
 import type { ToolSlots } from '../protocol/index.ts';
@@ -16,13 +17,14 @@ interface RunnerStatus {
   slots: number;
   /** Limits per coding tool beside `slots`; absent when none is set. */
   toolSlots?: ToolSlots;
-  agentHome: AgentHome;
+  agentTools: AgentTools;
   apps: {
     key: string;
     name: string;
     server: string;
     runnerId: string;
     cli: Record<string, string>;
+    revoked?: AppRegistration['revoked'];
   }[];
   running: boolean;
   pid?: number;
@@ -55,19 +57,25 @@ export default class Status extends RunnerCommand {
       server: registration.server,
       runnerId: registration.runnerId,
       cli: registration.cli,
+      ...(registration.revoked === undefined
+        ? {}
+        : { revoked: registration.revoked }),
     }));
     this.log(`Runner   ${settings.name}`);
     this.log(
       `Slots    ${settings.slots}${settings.toolSlots === undefined ? '' : ` (${formatToolSlots(settings.toolSlots)})`}`,
     );
     this.log(
-      `Home     agents get ${settings.agentHome === 'real' ? 'the real home' : 'an isolated home'}`,
+      'Access   agents run with full access and your real home; the runner is not a sandbox',
+    );
+    this.log(
+      `Tools    agents get ${settings.agentTools === 'system' ? "the machine's Node.js and pnpm" : "the runner's Node.js and pnpm"}`,
     );
     if (apps.length === 0)
       this.log(`Not registered. Run \`${runnerCommandLine('register')}\`.`);
     for (const app of apps)
       this.log(
-        `App      ${app.name || app.key} at ${app.server} as ${app.runnerId}`,
+        `App      ${app.name || app.key} at ${app.server} as ${app.runnerId}${app.revoked === undefined ? '' : ` — revoked at ${app.revoked.at} (${app.revoked.reason}); run ${runnerCommandLine('register')} to register again`}`,
       );
     this.log(
       `Daemon   ${daemon === undefined ? 'stopped' : `running (pid ${daemon.pid}, since ${daemon.startedAt})`}`,
@@ -83,7 +91,7 @@ export default class Status extends RunnerCommand {
       ...(settings.toolSlots === undefined
         ? {}
         : { toolSlots: settings.toolSlots }),
-      agentHome: settings.agentHome,
+      agentTools: settings.agentTools,
       apps,
       running: daemon !== undefined,
       ...(daemon === undefined ? {} : { pid: daemon.pid }),

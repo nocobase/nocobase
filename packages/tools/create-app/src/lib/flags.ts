@@ -8,7 +8,7 @@ import {
 } from './template.ts';
 
 /**
- * `pnpm create @nocobase/app crm --template=hub` passes every argument after the package name through verbatim, so
+ * `pnpm create @nocobase/app crm --template=examples` passes every argument after the package name through verbatim, so
  * this parses the same argv shape a direct `npx @nocobase/create-app` invocation would produce.
  */
 export const CREATE_ARGS = {
@@ -100,11 +100,11 @@ export function formatHelp(binary: string): string {
     `  $ ${binary} crm`,
     `  $ ${binary} crm --no-install`,
     `  $ ${binary} crm --json`,
-    `  $ ${binary} crm --template=hub`,
+    `  $ ${binary} crm --template=examples`,
     `  $ ${binary} crm --template-tag=beta`,
     '',
     'NOTES',
-    '  The template is downloaded from https://npm.nocobase.ai by default.',
+    '  The template is downloaded from https://registry.npmjs.org by default.',
     '  Override it with --registry, or set the NOCOBASE_REGISTRY environment variable.',
     '',
     '  The generated app is not configured yet. Configure it inside the app directory with:',

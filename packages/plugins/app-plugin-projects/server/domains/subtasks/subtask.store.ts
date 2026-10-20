@@ -38,6 +38,28 @@ export async function deleteDependency(
   await dependencies(conn).deleteMany({ filter: { id } });
 }
 
+/** The predicate is part of the UPDATE, so a stale transaction cannot overwrite a changed or removed link. */
+export async function updateDependency(
+  conn: DatabaseConnection,
+  before: DependencyRecord,
+  values: Pick<DependencyRecord, 'issueId' | 'dependsOnIssueId' | 'type'>,
+): Promise<boolean> {
+  const { updatedCount } = await dependencies(conn).updateMany({
+    filter: {
+      id: before.id,
+      issueId: before.issueId,
+      dependsOnIssueId: before.dependsOnIssueId,
+      type: before.type,
+    },
+    values: {
+      issueId: values.issueId,
+      dependsOnIssueId: values.dependsOnIssueId,
+      type: values.type,
+    },
+  });
+  return updatedCount === 1;
+}
+
 export async function findDependency(
   conn: DatabaseConnection,
   id: string,
@@ -57,6 +79,30 @@ export async function findDependencyBetween(
       filter: { issueId, dependsOnIssueId, type },
     })) ?? undefined
   );
+}
+
+/**
+ * Every `blockedBy` link whose issue waited for is live and not in one of `finishedKeys`, of any issue: one query, for
+ * telling which of many issues wait without a query per issue.
+ */
+export async function unfinishedBlockedBy(
+  conn: DatabaseConnection,
+  finishedKeys: readonly string[],
+): Promise<DependencyRecord[]> {
+  return dependencies(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.string('type').eq('blockedBy'),
+        f
+          .relation('dependsOn')
+          .some((target) =>
+            target.and([
+              target.date('deletedAt').empty(),
+              ...finishedKeys.map((key) => target.string('statusKey').ne(key)),
+            ]),
+          ),
+      ]),
+  });
 }
 
 /** What `issueIds` depend on, oldest first. */

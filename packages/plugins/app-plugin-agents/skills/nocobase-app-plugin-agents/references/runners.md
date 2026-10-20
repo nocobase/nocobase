@@ -1,5 +1,11 @@
 # Runners
 
+## Ended workspace diagnostics
+
+For application-owned task cleanup, keep `SubjectWorkspaces.settled` conservative and optionally register `resolveKeys` for legacy directory keys and `commits` for trusted merged PR heads by repository URL. The plugin checks current or historical runner ownership and excludes nonterminal runs; directory keys alone never authorize lookup or cleanup. Use the head at merge time, not a squash merge commit. See `packages/plugins/app-plugin-agents/docs/workspace-cleanup.md` in the source repository for protocol and integration details.
+
+Runtime pages distinguish application settlement from the runner's local cleanup check. An allowed check is not a deletion receipt. Directory diagnostics require explicit `canSeeMachine: true`; disk warnings use the report's measurement time and show expired or offline readings as prior reports. An ended workspace still stays when tracked changes, unpushed submodule commits, missing local objects or insufficient evidence prevent verification. Upgrade and serve both plugin and runner before expecting new diagnostics.
+
 A runner (shown as a runtime) is `nocobase-runner` from `@nocobase/agent-runner`, running on a server, a VM or someone's own device. It registers with one or more Apps, long-polls them for work and drives a coding tool for runner agents' runs. The wire protocol is `@nocobase/agent-protocol`. The README's "What it does" section (Runners, The claim, Runs, The sweep) and `@nocobase/agent-runner`'s README are the reference.
 
 ## Registering a runner
@@ -12,7 +18,13 @@ A runner registers once per App with a one-time registration token (10 minutes):
 
 Then on the runner's machine: `nocobase-runner register --server <App URL> --token <token>`, and `nocobase-runner start` or `nocobase-runner service install` (launchd on macOS, a systemd user unit on Linux). The install script does all of this in one line; see [Distribution](distribution.md).
 
-A runner authenticates afterwards with its own key. Personal runners (`ownerOnly`) run only work their owner started; their owner may share them with the team. `nocobase-runner unregister --server <url>` or "Revoke" on the Runtimes page ends a registration.
+Registering again with the same owner, name and hostname revokes previous registrations and their keys atomically. Old runtimes take no more work, and the sweeper requeues what they held; historical records retain their ids. Hostnames are self-reported, so another owner's matching runtime is preserved. Agent configurations limited to a previous runtime id need to select the new runtime.
+
+`runtime token list` (`GET /api/agents/runners/registrationTokens`, paged with `page` and `pageSize`) lists unused, unexpired token metadata. Signed-in callers see their own tokens; managers of runners see all. Tokens and hashes are never returned: create a fresh token if the original secret is lost. To delete a runtime, run `runtime revoke <runtime>` and then `runtime delete <runtime>`; deleting a live runtime returns `RUNNER_NOT_REVOKED` with those steps.
+
+The install script requires an explicit `--server <App URL>` with `--runner` and rejects a missing or empty value before downloading or installing anything. CLI-only installation still defaults to the application that served the script.
+
+A runner authenticates afterwards with its own key. Personal runners (`ownerOnly`) run only work their owner started, and receive its variables like any runner, except those marked "Team runtimes only" (`teamRunnersOnly`): a run that gets one goes to a team runner. Their owner may share them with the team. `nocobase-runner unregister --server <url>` or "Revoke" on the Runtimes page ends a registration.
 
 ## How work reaches a runner
 
@@ -29,4 +41,18 @@ What to do: upgrade the runner to a version that speaks the App's protocol. An i
 
 ## Coding tools
 
+`RunnerSummary.tools` also carries optional advisory capabilities: `models` (model `id` and optional `efforts`), `modelsDetectedAt` (the last discovery attempt), `modelsDetectionStatus` (`detected`, `unsupported`, `failed`) and a fixed brief `modelsDetectionError` on failure. Missing status means capability information is unknown; missing efforts means unknown support, while an empty model list is a successful discovery of no available models. Discovery runs in the background every five minutes, so completed results arrive on a later heartbeat. The App stores these per runner in its existing tools JSON, keeps the same runner visibility and machine-information filtering, and never writes the suggestions into Agent configuration or uses them to authorize or route work. Pi reports provider/model IDs, and its table does not enumerate per-model efforts; OpenCode variants and Codex reasoning efforts do. Claude reports unsupported. Rebuild and serve the updated runner tarballs to enable reporting; upgrading the plugin alone does not update an already installed runner.
+
+Capability reports are advisory across independently released runners and Apps: registration and heartbeats discard invalid model entries, individual invalid efforts, malformed detection timestamps and unfamiliar status or error values while still validating the tool's basic fields. A report containing only invalid models does not retain detected status; a valid empty list still means no models were found. Counts and identifier lengths remain bounded, and versioned model ids such as `claude-sonnet-4@20250514` are supported.
+
+Run lists and details expose `executions`, one claim snapshot per attempt, with the runner's name, owner and trust, the tool version, requested model, reported `actualModels` and reasoning effort. Retries retain these facts after releasing `runnerId` to null; use the latest snapshot for historical display and the current holder for authorization. Only the primary tool's usage identifies its actual model, and multiple models remain visible. Older runs have no snapshots: their known usage models can be displayed, but their historical machine names and attempt boundaries must not be invented. Applications must forward the fields through custom CLI projections and update their installed UI Library run components.
+
+`effort` is requested; `actualEffort` is only a tool report, with `actualEffortSource`, `actualEffortAt` and per-attempt `effortReports`. Show unreported actual values explicitly, never infer from requests or token counts. Import `runForViewer`/`executionForViewer` from `@nocobase/app-plugin-agents/server/tokens` and apply them to custom user-facing run/workload/CLI outputs, using the runner machine rights; `machineHidden` means a generic runtime label, not a fallback to the hostname/id. A projects viewer may provide `seesExecutionMachine` from those same rights. See `docs/execution-history.md` for the report and projection contracts.
+
 The runner finds each coding tool on its PATH and reports whether it is signed in. A tool not found, or not signed in, is offered no runs: sign in on the runner's machine as the runner's user (for example `claude` and its login), then wait for the next heartbeat. Which tools a runner is offered work for is chosen on the Runtimes page (`enabledTools`). A model the tool's account cannot use fails the run `modelUnavailable`.
+
+## Quota recovery
+
+Quota exhaustion is scoped to the runtime and a tool, provider prefix or model. Known resets restore claim eligibility automatically; unknown resets require the runtime owner or an administrator to clear the selected mark after restoring quota. This never restarts failed, withdrawn or expired work. Runtime Overview, Workspaces and Runs load separately; the list contains summaries. Use runtime workspaces for directories and runtime quota clear with structured tool/scope/target/window fields for unknown-reset marks (no client revision); known resets clear automatically. Upgrade runners for usage/reset reporting; old runners only report the failure. See the package README for fields, endpoint contracts and read/write costs.
+
+For application-owned system agents, `useAgentOption(id)` in the client kit reads the same viewer-scoped agent detail endpoint and includes quota; `useAgentOptions()` lists discovered runner agents only. A final failure reuses accepted event metadata for quota deduplication, while new event sequences remain new observations. The failure snapshot is retained even when its windows were already applied.

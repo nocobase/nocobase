@@ -1,8 +1,6 @@
 ---
 '@nocobase/app-cli': major
-'@nocobase/hub-cli': minor
 '@nocobase/app-template-default': major
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-skills': minor
 ---
 

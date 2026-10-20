@@ -30,6 +30,14 @@ import {
   type SkillBundle,
   type StartRequest,
   type UpgradeNotice,
+  type NpmUpgradeNotice,
+  type DistResolution,
+  NPM_UPGRADE_FEATURE,
+  DIST_ACCEPT_NPM,
+  distAccepts,
+  type WorkspaceReporting,
+  type WorkspacesRequest,
+  type WorkspacesResponse,
 } from '../src/protocol/index.ts';
 
 export interface FakeRunner {
@@ -54,6 +62,8 @@ export interface FakeRun {
   cancelRequested: boolean;
   leaseLost: boolean;
   inputs: RunInput[];
+  /** Set by `withdrawPendingOnNextComplete`. */
+  withdrawnPending: boolean;
   handled: Set<string>;
   events: Map<number, RunEvent>;
   eventRequests: number;
@@ -98,6 +108,8 @@ export interface FakeServerOptions {
   heartbeatIntervalMs?: number;
   /** The application the server says it is on registration; none when absent. */
   app?: { id: string; name: string };
+  /** Gate dispatch on the reported tool authentication, as an application does. */
+  requireAuthentication?: boolean;
 }
 
 type RunInit = Partial<Omit<RunPayload, 'run'>> & {
@@ -142,17 +154,48 @@ export class FakeServer {
   ]);
   /** While set, `events` answers 503. */
   eventsDown = false;
+  onCancelAck?: (run: FakeRun) => void;
   eventsFailures = 0;
   /** Skill bundles by slug, served at `RUNNER_ROUTES.skill`. */
   readonly skillBundles = new Map<string, SkillBundle>();
   /** How many times each skill was fetched. */
   readonly skillFetches = new Map<string, number>();
+  /**
+   * Answers `RUNNER_ROUTES.gitCredential` for a run's `RunGit.onDemand` URL: a credential, or an error reason (with its
+   * HTTP status) to answer instead. Unset answers a new synthetic credential each time, valid for an hour.
+   */
+  gitCredential:
+    | ((request: {
+        runId: string;
+        attempt: number;
+        url: string;
+        refresh: boolean;
+      }) =>
+        | { username: string; password: string; expiresAt: string }
+        | { status: number; reason: string; message?: string })
+    | undefined;
+  /** Every credential request, in order. */
+  readonly gitCredentialRequests: {
+    runId: string;
+    attempt: number;
+    url: string;
+    refresh: boolean;
+  }[] = [];
   /** Mount bundles by name, served at `RUNNER_ROUTES.mount`. */
   readonly mountBundles = new Map<string, MountBundle>();
   /** How many times each mount was fetched. */
   readonly mountFetches = new Map<string, number>();
   /** Sent with every heartbeat answer while set. */
   upgrade: UpgradeNotice | undefined;
+  /** The protocol heartbeat answers say the server speaks while set; left out otherwise, as an older server does. */
+  protocolVersion: number | undefined;
+  /** Sent with every heartbeat answer while set, to a runner whose heartbeat declares the `npm` feature. */
+  npmUpgrade: NpmUpgradeNotice | undefined;
+  /**
+   * What the resolve route answers for the runner while set: `npm` only to a caller that sent `accept=npm`, then
+   * `artifact`; 404 otherwise.
+   */
+  resolution: { artifact?: DistResolution; npm?: DistResolution } = {};
   /**
    * While set, the server cannot work with the runner's protocol: `verdict` answers heartbeats with `compatibility`
    * and claims with no work, as a current server does; `refuse` answers both `PROTOCOL_UNSUPPORTED`, as an older one.
@@ -166,6 +209,13 @@ export class FakeServer {
   uploadStatus: number | undefined;
   /** The slots the registration token carries; registration answers the runner's own, else these, else 1. */
   tokenSlots: number | undefined;
+  /**
+   * While set, heartbeat answers announce workspace reports and the workspaces route answers `workspaceAnswer`;
+   * otherwise the route does not exist, as on an application that predates it.
+   */
+  workspaceReporting: WorkspaceReporting | undefined;
+  workspaceAnswer: WorkspacesResponse = { remove: [], keep: [] };
+  readonly workspaceReports: WorkspacesRequest[] = [];
   private readonly jobQueue: string[] = [];
   private readonly queue: string[] = [];
   private readonly waiters = new Set<() => void>();
@@ -179,6 +229,7 @@ export class FakeServer {
     this.options = {
       pollTimeoutMs: 1_000,
       heartbeatIntervalMs: 500,
+      requireAuthentication: false,
       app: { id: 'test-app', name: 'Test App' },
       ...options,
     };
@@ -279,6 +330,7 @@ export class FakeServer {
       cancelRequested: false,
       leaseLost: false,
       inputs: [...payload.inputs],
+      withdrawnPending: false,
       handled: new Set(),
       events: new Map(),
       eventRequests: 0,
@@ -347,6 +399,14 @@ export class FakeServer {
     this.run(id).cancelRequested = true;
   }
 
+  /**
+   * The next `complete` answers `RUN_INPUT_PENDING` without any input to deliver, as when the server withdraws the
+   * pending input between that answer and the runner's next poll.
+   */
+  withdrawPendingOnNextComplete(id: string): void {
+    this.run(id).withdrawnPending = true;
+  }
+
   addInput(id: string, text: string): RunInput {
     const run = this.run(id);
     const input: RunInput = {
@@ -402,9 +462,17 @@ export class FakeServer {
     const features = new Set(
       runner.heartbeats.at(-1)?.features ?? runner.register.features,
     );
-    const index = this.queue.findIndex((id) =>
-      this.run(id).payload.run.requires.every((f) => features.has(f)),
-    );
+    const tools = runner.heartbeats.at(-1)?.tools ?? runner.register.tools;
+    const index = this.queue.findIndex((id) => {
+      const payload = this.run(id).payload;
+      return (
+        payload.run.requires.every((f) => features.has(f)) &&
+        (!this.options.requireAuthentication ||
+          tools.some(
+            (tool) => tool.kind === payload.tool.kind && tool.authenticated,
+          ))
+      );
+    });
     if (index < 0) return undefined;
     const [id] = this.queue.splice(index, 1);
     const run = this.run(id as string);
@@ -416,8 +484,20 @@ export class FakeServer {
     };
   }
 
+  requests = 0;
+  authFailure:
+    | { route: string; reason: 'RUNNER_REVOKED' | 'RUNNER_KEY_INVALID' }
+    | undefined;
+
   private routes(): void {
     const { app } = this;
+
+    app.use('*', async (c, next) => {
+      this.requests += 1;
+      if (this.authFailure?.route === c.req.path)
+        return error(c, 401, this.authFailure.reason);
+      return next();
+    });
 
     app.post(RUNNER_ROUTES.register, async (c) => {
       const body = (await c.req.json()) as RegisterRequest;
@@ -494,7 +574,14 @@ export class FakeServer {
       return ok(c, {
         ok: true,
         serverTime: new Date().toISOString(),
+        ...(this.protocolVersion === undefined
+          ? {}
+          : { protocolVersion: this.protocolVersion }),
         ...(this.upgrade === undefined ? {} : { upgrade: this.upgrade }),
+        ...(this.npmUpgrade === undefined ||
+        !heartbeat.features.includes(NPM_UPGRADE_FEATURE)
+          ? {}
+          : { npmUpgrade: this.npmUpgrade }),
         ...(this.unsupported === 'verdict'
           ? {
               compatibility: {
@@ -509,7 +596,28 @@ export class FakeServer {
         cancelRequested,
         release: [],
         ...(jobs ? { jobs } : {}),
+        ...(this.workspaceReporting === undefined
+          ? {}
+          : { workspaces: this.workspaceReporting }),
       });
+    });
+
+    app.post(RUNNER_ROUTES.workspaces, async (c) => {
+      if (this.workspaceReporting === undefined)
+        return error(c, 404, 'ROUTE_NOT_FOUND');
+      this.workspaceReports.push((await c.req.json()) as WorkspacesRequest);
+      return ok(c, this.workspaceAnswer);
+    });
+
+    app.get(DIST_ROUTES.resolve, (c) => {
+      if (this.runnerFor(c) === undefined)
+        return error(c, 401, 'RUNNER_KEY_INVALID');
+      const answer =
+        (distAccepts(c.req.query('accept'), DIST_ACCEPT_NPM)
+          ? this.resolution.npm
+          : undefined) ?? this.resolution.artifact;
+      if (answer === undefined) return error(c, 404, 'PRODUCT_NOT_FOUND');
+      return ok(c, answer);
     });
 
     app.get(DIST_ROUTES.file, (c) => {
@@ -762,6 +870,11 @@ export class FakeServer {
       if (!active(run)) return error(c, 400, 'RUN_NOT_ACTIVE');
       if (run.cancelRequested) return error(c, 400, 'RUN_CANCEL_REQUESTED');
       const covered = new Set(body.handledInputIds);
+      if (run.withdrawnPending) {
+        run.withdrawnPending = false;
+        run.reports.push({ kind: 'complete', body, status: 409 });
+        return error(c, 400, 'RUN_INPUT_PENDING');
+      }
       if (unhandled(run).some((input) => !covered.has(input.id))) {
         run.reports.push({ kind: 'complete', body, status: 409 });
         return error(c, 400, 'RUN_INPUT_PENDING');
@@ -788,6 +901,7 @@ export class FakeServer {
       const body = (await c.req.json()) as CancelAckRequest;
       const run = owned(c);
       if (run instanceof Response) return run;
+      this.onCancelAck?.(run);
       run.cancelAck = body;
       run.status = 'cancelled';
       run.reports.push({ kind: 'cancelAck', body, status: 200 });
@@ -802,6 +916,36 @@ export class FakeServer {
       if (bundle === undefined) return error(c, 404, 'NOT_FOUND');
       this.skillFetches.set(slug, (this.skillFetches.get(slug) ?? 0) + 1);
       return ok(c, bundle);
+    });
+
+    app.post('/api/agents/runners/runs/:runId/gitCredentials', async (c) => {
+      const run = owned(c);
+      if (run instanceof Response) return run;
+      const body = (await c.req.json()) as {
+        attempt: number;
+        url: string;
+        refresh?: boolean;
+      };
+      if (!active(run)) return error(c, 400, 'RUN_NOT_ACTIVE');
+      if (body.attempt !== run.payload.run.attempt)
+        return error(c, 409, 'LEASE_LOST');
+      if (!(run.payload.workspace.git?.onDemand ?? []).includes(body.url))
+        return error(c, 400, 'INVALID_REQUEST');
+      const request = {
+        runId: run.payload.run.id,
+        attempt: body.attempt,
+        url: body.url,
+        refresh: body.refresh === true,
+      };
+      this.gitCredentialRequests.push(request);
+      const answer = this.gitCredential?.(request) ?? {
+        username: 'x-access-token',
+        password: `ghs_synthetic${String(this.gitCredentialRequests.length).padStart(36, '0')}`,
+        expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+      };
+      if ('reason' in answer)
+        return error(c, answer.status, answer.reason, answer.message);
+      return ok(c, answer);
     });
 
     app.get('/api/agents/runners/runs/:runId/mounts/:name', (c) => {

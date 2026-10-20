@@ -1,15 +1,7 @@
 [
   {
-    "text": "开始",
-    "link": "/get-started/"
-  },
-  {
-    "text": "教程",
-    "link": "/tutorials/"
-  },
-  {
-    "text": "开发",
-    "link": "/app/"
+    "text": "快速启动",
+    "link": "/capabilities/quick-start"
   },
   {
     "text": "能力",
@@ -17,11 +9,7 @@
   },
   {
     "text": "部署",
-    "link": "/deployment/"
-  },
-  {
-    "text": "插件",
-    "link": "/plugin-development/"
+    "link": "/deployment"
   },
   {
     "text": "首页",

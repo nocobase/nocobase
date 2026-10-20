@@ -22,7 +22,7 @@ describe('agents secrets stores', () => {
     h = await createHarness({ secrets: testSecrets([v1]) });
     const target = { scope: 'agent' as const, scopeId: 'a1' };
     await h.services.variables.set(target, 'TOKEN', 'variable-value', 'admin');
-    await h.services.online.services.create({
+    await h.services.models.services.create({
       title: 'Team',
       provider: 'openai',
       apiKey: 'provider-key',
@@ -53,7 +53,7 @@ describe('agents secrets stores', () => {
     ]);
     expect(
       (
-        await after.online.services.connectionFor({
+        await after.models.services.connectionFor({
           modelService: 'team',
           model: 'model',
         })

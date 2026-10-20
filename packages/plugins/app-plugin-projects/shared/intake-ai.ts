@@ -109,8 +109,12 @@ export interface IntakeAiProgress {
   /** `queued`: waiting for the organiser to start; `working`: it is on it. */
   readonly phase: 'queued' | 'working';
   readonly by: string | null;
-  /** `queued`: why it waits, a key the application words (for example, a run's wait reason). */
+  /** `queued`: why it waits, a code the application words (for example, a run's wait reason). */
   readonly waitReason: string | null;
+  /** `queued`: the values the reason's words need (for example, a run's wait `params`); absent when none. */
+  readonly waitParams?: Readonly<
+    Record<string, string | number | readonly string[]>
+  > | null;
   /** `working`: the newest thing it reported, one line. */
   readonly activity: string | null;
   /** Since when it is in this phase. */

@@ -40,7 +40,7 @@ export interface TestClientServer {
 }
 
 export interface RenderWithAppOptions {
-  /** The client plugins the application registers, as its `client/plugins.ts` lists them, such as `hub()`. */
+  /** The client plugins the application registers, as its `client/plugins.ts` lists them, such as `users()`. */
   readonly plugins?: readonly AppClientPluginRegistration[];
   /**
    * The namespace the page translates in: the owning package for a page rendered under its own routes. Leave it out
@@ -91,7 +91,7 @@ const TEST_ORIGIN = 'http://localhost';
 
 /**
  * Starts a client application with `plugins` and renders `ui` inside it the way the application renders a page: the
- * same `ClientApplication`, its services, translations, React providers and Refine, under a `MemoryRouter`. The page
+ * same `ClientApplication`, its services, translations and React providers, under a `MemoryRouter`. The page
  * reads `useApiClient()`, `useService()`, `useToaster()` and `useTranslation()` from the real implementations rather
  * than mocks of `@nocobase/app-client`; the API client talks to `server` or `fetch`. Call it inside a test: the
  * application shuts down when the test finishes.
@@ -188,17 +188,18 @@ export async function renderWithApp(
   });
   await app.start();
 
-  const view = render(
+  const Wrapper = ({ children }: PropsWithChildren): ReactElement => (
     <MemoryRouter initialEntries={[options.route ?? '/']}>
       <AppClientProviders app={app}>
         {options.namespace ? (
-          <NamespaceScope ns={options.namespace}>{ui}</NamespaceScope>
+          <NamespaceScope ns={options.namespace}>{children}</NamespaceScope>
         ) : (
-          ui
+          children
         )}
       </AppClientProviders>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
+  const view = render(ui, { wrapper: Wrapper });
   return Object.assign(view, {
     app,
     toasts: (): readonly TestToast[] => toaster.list(),

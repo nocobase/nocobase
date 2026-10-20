@@ -1,6 +1,7 @@
 export * from './version.js';
 export * from './routes.js';
 export * from './events.js';
+export * from './quota.js';
 export * from './run.js';
 export * from './runner.js';
 export * from './jobs.js';
@@ -9,3 +10,4 @@ export * from './errors.js';
 export * from './dist.js';
 export * from './redact.js';
 export * from './policy.js';
+export * from './workspaces.js';

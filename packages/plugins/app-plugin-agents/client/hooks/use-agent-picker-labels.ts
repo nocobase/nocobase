@@ -9,8 +9,9 @@ const AVAILABILITY = [
   'agentMissing',
   'agentArchived',
   'forbidden',
+  'noModel',
   'noRunner',
-  'modelUnavailable',
+  'othersPersonal',
 ] as const;
 
 /** `field` names the form field, so the trigger reads "<field>: <agent>". */
@@ -29,17 +30,8 @@ export function useAgentPickerLabels(
       none: t('chat.agents.none'),
       myDefault: t('chat.agents.myDefault'),
       systemDefault: t('chat.agents.systemDefault'),
-      personal: t('chat.agents.personal'),
-      onlineGroup: t('chat.agents.onlineGroup'),
-      runnerGroup: t('chat.agents.runnerGroup'),
-      mode: {
-        online: t('chat.agents.online'),
-        runner: t('chat.agents.runner'),
-      },
-      modeHints: {
-        online: t('chat.agents.onlineHint'),
-        runner: t('chat.agents.runnerHint'),
-      },
+      personal: t('chat.agents.personalOnly'),
+      modeHint: t('chat.agents.hint'),
       availability: Object.fromEntries(
         AVAILABILITY.map((key) => [key, t(`chat.availability.${key}`)]),
       ) as AgentPickerLabels['availability'],

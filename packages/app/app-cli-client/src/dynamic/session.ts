@@ -1,7 +1,7 @@
 // Who the business commands act as, and where they go. Inside a run's working directory the CLI is the run (the token
 // in the run's credentials file); anywhere else it is the user who signed in. Command and manifest paths are relative
 // to the server's origin (they already include any base path the application is served under).
-import { HEADERS } from '@nocobase/agent-protocol';
+import { EXIT_CODES, HEADERS } from '@nocobase/agent-protocol';
 
 import {
   appCliConfig,
@@ -18,9 +18,11 @@ import {
   readUserConfig,
 } from '../lib/credentials.ts';
 import { globalFlags } from '../lib/globals.ts';
+import { UsageError } from '../lib/command.ts';
 
 export interface Session {
   readonly kind: 'run' | 'user';
+  readonly profile?: string | undefined;
   /** As configured: `https://host/app`. */
   readonly server: string;
   readonly headers: Readonly<Record<string, string>>;
@@ -55,6 +57,40 @@ export async function currentSession(
   paths: AppCliPaths = appCliPaths(),
   config: AppCliConfig = appCliConfig(),
 ): Promise<Session | undefined> {
+  const sessionId = config.envPrefix
+    ? process.env[`${config.envPrefix}_AGENT_SESSION`]
+    : undefined;
+  if (sessionId !== undefined) {
+    const profile = process.env[`${config.envPrefix}_PROFILE`];
+    if (
+      !sessionId ||
+      !profile ||
+      (globalFlags().profile !== undefined && globalFlags().profile !== profile)
+    )
+      throw new UsageError(
+        'A session agent must use the bridge-selected profile and session.',
+        EXIT_CODES.auth,
+      );
+    const user = await readUserConfig({
+      paths,
+      config,
+      profile,
+      profileOnly: true,
+    });
+    if (!user)
+      throw new UsageError(
+        'The session profile is no longer signed in. Sign in again before continuing.',
+        EXIT_CODES.auth,
+      );
+    return {
+      kind: 'user',
+      profile,
+      server: user.server,
+      headers: { ...credentialHeaders(user), 'x-nb-agent-session': sessionId },
+      manifestPath: defaultManifestPath(user.server, config),
+      cacheKey: `user:${profile}`,
+    };
+  }
   const runFile = findRunCredentials(cwd, config);
   if (runFile !== undefined) {
     const run = await readRunCredentials(runFile);
@@ -74,6 +110,7 @@ export async function currentSession(
   if (user === undefined) return undefined;
   return {
     kind: 'user',
+    profile: user.profile,
     server: user.server,
     headers: credentialHeaders(user),
     manifestPath: defaultManifestPath(user.server, config),

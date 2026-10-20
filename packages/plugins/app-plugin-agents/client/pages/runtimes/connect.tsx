@@ -17,7 +17,7 @@ import { AGENT_TOOLS, type AgentTool } from '@nocobase/agent-protocol';
 
 import type {
   RegistrationToken,
-  RunnerSummary,
+  RunnerListItem,
   RunnerTrust,
 } from '../../../shared/runners.js';
 import { RUNNERS_TOPIC } from '../../../shared/realtime.js';
@@ -311,6 +311,9 @@ function InstallStep({
                   <p className='text-sm'>{t('connect.run')}</p>
                   <CommandLine command={command} />
                   <p className='text-xs text-muted-foreground'>
+                    {t('connect.nodeRequired')}
+                  </p>
+                  <p className='text-xs text-muted-foreground'>
                     {t('connect.installed')}
                   </p>
                   <CommandLine command={registerCommand(server, token.token)} />
@@ -384,8 +387,8 @@ function InstallStep({
 
 /** The runner that registered after the token was made, if one has. */
 function connectedRunner(
-  runners: readonly RunnerSummary[] | undefined,
+  runners: readonly RunnerListItem[] | undefined,
   known: ReadonlySet<string>,
-): RunnerSummary | undefined {
+): RunnerListItem | undefined {
   return runners?.find((runner) => !known.has(runner.id));
 }

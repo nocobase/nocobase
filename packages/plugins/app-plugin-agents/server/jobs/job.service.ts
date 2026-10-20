@@ -44,7 +44,7 @@ import type {
   JobFilter,
   JobVia,
 } from '../../shared/jobs.js';
-import type { Runner } from '../../shared/runners.js';
+import { runnerLowOnDisk, type Runner } from '../../shared/runners.js';
 import { later, type Clock } from '../kernel/clock.js';
 import { invalid, notFound } from '../kernel/errors.js';
 import type { AgentsEventBus } from '../kernel/events.js';
@@ -85,6 +85,7 @@ import type {
 } from './registry.js';
 import {
   checkSpecInput,
+  JobSecretsNotAllowed,
   runnerSpec,
   secretRefsOf,
   timeoutSecOf,
@@ -175,6 +176,8 @@ export interface JobRunnerReports {
 /**
  * Where the stored variables a job names are opened, as the application provides it (the agents plugin's variables).
  * Each value is keyed `scope\u0000scopeId\u0000name`; a name it does not hold is left out. It records the delivery.
+ * Throw `JobSecretsNotAllowed` when a personal runner asks for a team-only variable: the claim rolls back and the job
+ * stays queued without counting a preparation failure.
  */
 export interface JobSecretSource {
   open(
@@ -283,7 +286,12 @@ function repoUrlOf(spec: unknown): string | null {
 
 /** Whether `runner` may take `job`, before any lock is taken. */
 export function jobFits(runner: Runner, job: JobRecord): boolean {
-  if (runner.status !== 'online' || !runner.acceptJobs) return false;
+  if (
+    runner.status !== 'online' ||
+    runnerLowOnDisk(runner) ||
+    !runner.acceptJobs
+  )
+    return false;
   if (!covers(runner.features, requiresOf(job))) return false;
   const runnerIds = job.runnerIds === null ? [] : stringArray(job.runnerIds);
   if (runnerIds.length > 0 && !runnerIds.includes(runner.id)) return false;
@@ -443,6 +451,7 @@ export function createJobService(deps: JobServiceDeps): JobService {
       try {
         assembled = await assemble(unit, job, runner, leaseExpiresAt);
       } catch (error) {
+        if (error instanceof JobSecretsNotAllowed) throw new NotForThisRunner();
         if (error instanceof NotForThisRunner) throw error;
         throw new PrepareError(
           error instanceof Error ? error.message : String(error),
@@ -483,7 +492,12 @@ export function createJobService(deps: JobServiceDeps): JobService {
   }
 
   async function claim(runner: Runner, free: number): Promise<JobPayload[]> {
-    if (runner.status !== 'online' || !runner.acceptJobs || free <= 0)
+    if (
+      runner.status !== 'online' ||
+      runnerLowOnDisk(runner) ||
+      !runner.acceptJobs ||
+      free <= 0
+    )
       return [];
     if (!runner.features.some((feature) => feature.startsWith('jobs.')))
       return [];

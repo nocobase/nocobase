@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Overview",
+    "link": "/capabilities/i18n"
+  },
+  {
+    "type": "file",
+    "name": "usage",
+    "label": "Usage guide"
+  }
+]

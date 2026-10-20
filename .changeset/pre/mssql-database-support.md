@@ -3,7 +3,6 @@
 '@nocobase/app-server': minor
 '@nocobase/create-app': minor
 '@nocobase/app-template-default': minor
-'@nocobase/app-template-hub': minor
 ---
 
 Add Microsoft SQL Server support through Knex and the `tedious` driver, including connection configuration, Collection Builder and Query behavior, Schema Inspector introspection, real Docker integration tests, generated-application driver installation, and template runtime packaging.

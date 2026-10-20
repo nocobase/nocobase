@@ -1,7 +1,15 @@
+import type { ReactElement } from 'react';
+import { renderWithApp, type RenderedApp } from '@nocobase/app-testing/client';
+import {
+  realtimeClientToken,
+  type RealtimeWatchOptions,
+} from '@nocobase/app-client';
+const subscriptions = new Set<RealtimeWatchOptions<unknown>>();
+import locales from '../../client/locales/index.js';
+import { MAIL_PLUGIN_NS } from '../../client/namespace.js';
 import {
   act,
   fireEvent,
-  render,
   screen,
   waitFor,
   within,
@@ -61,7 +69,7 @@ const mail = vi.hoisted(() => ({
 
 vi.mock('../../client/runtime.js', () => ({ useMailClient: () => mail }));
 
-import MailAccountsDevPage from '../../client/pages/mail-accounts-dev-page.js';
+import MailAccountsPage from '../../client/pages/mail-accounts-page.js';
 
 describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
   beforeEach(() => {
@@ -118,7 +126,101 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     });
   });
 
-  it('shows durable removal failure, disables account actions, and polls until removed', async () => {
+  it('refreshes sync progress after transient errors exhaust automatic retries', async () => {
+    const run = {
+      id: 'run-1',
+      accountId: 'account-1',
+      status: 'running',
+      phase: 'incremental',
+      processedMessages: 0,
+      processedPages: 0,
+    };
+    mail.startSync.mockResolvedValue(run);
+    mail.getSyncRun.mockRejectedValue(new Error('Temporary status outage'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const app = await renderPage(<MailAccountsPage />);
+    const sync = await screen.findByRole('button', { name: 'Sync' });
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(sync);
+      await act(async () => {});
+      act(() => {
+        for (const subscription of subscriptions) subscription.onReady?.();
+      });
+      await act(async () => vi.advanceTimersByTimeAsync(30_000));
+      expect(mail.getSyncRun).toHaveBeenCalledTimes(4);
+      expect(sync).toBeDisabled();
+      expect(screen.getByText('Temporary status outage')).toBeVisible();
+
+      mail.getSyncRun.mockResolvedValue({ ...run, status: 'completed' });
+      act(() => {
+        for (const subscription of subscriptions)
+          subscription.onEvent?.({
+            type: 'event',
+            topic: 'mail',
+            payload: { kind: 'mail.changed' },
+            publishedAt: new Date().toISOString(),
+          });
+      });
+      await act(async () => vi.advanceTimersByTimeAsync(120_000));
+      expect(mail.getSyncRun).toHaveBeenCalledTimes(4);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+      await act(async () => vi.advanceTimersByTimeAsync(1_000));
+      expect(screen.getByRole('button', { name: 'Sync' })).toBeEnabled();
+      expect(screen.queryByText('Temporary status outage')).toBeNull();
+      expect(mail.startSync).toHaveBeenCalledTimes(1);
+    } finally {
+      await app.unmount();
+      vi.useRealTimers();
+      log.mockRestore();
+    }
+  });
+
+  it('resumes removal notifications after manually refreshing an exhausted reader', async () => {
+    const accounts = (await mail.listAccounts()).map(
+      (account: { id: string }) => ({ ...account, status: 'removing' }),
+    );
+    mail.listAccounts.mockResolvedValue(accounts);
+    const app = await renderPage(<MailAccountsPage />);
+    await screen.findByRole('button', { name: 'Removing…' });
+    mail.listAccounts
+      .mockClear()
+      .mockRejectedValue(new Error('Temporary account outage'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.useFakeTimers();
+    try {
+      act(() => {
+        for (const subscription of subscriptions) subscription.onReady?.();
+      });
+      await act(async () => vi.advanceTimersByTimeAsync(30_000));
+      expect(mail.listAccounts).toHaveBeenCalledTimes(4);
+
+      mail.listAccounts.mockResolvedValue(accounts);
+      fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+      await act(async () => vi.advanceTimersByTimeAsync(1_000));
+      expect(screen.getByRole('button', { name: 'Removing…' })).toBeDisabled();
+
+      mail.listAccounts.mockResolvedValue([]);
+      act(() => {
+        for (const subscription of subscriptions)
+          subscription.onEvent?.({
+            type: 'event',
+            topic: 'mail',
+            payload: { kind: 'mail.changed' },
+            publishedAt: new Date().toISOString(),
+          });
+      });
+      await act(async () => vi.advanceTimersByTimeAsync(1_000));
+      expect(screen.getByText('No accounts connected')).toBeVisible();
+    } finally {
+      await app.unmount();
+      vi.useRealTimers();
+      log.mockRestore();
+    }
+  });
+
+  it('shows durable removal failure, disables account actions, and refreshes after the removal notification', async () => {
     const accounts = await mail.listAccounts();
     mail.listAccounts.mockResolvedValue(
       accounts.map((account: { id: string }) => ({
@@ -127,7 +229,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
         removalFailed: true,
       })),
     );
-    render(<MailAccountsDevPage />);
+    await renderPage(<MailAccountsPage />);
     expect(
       await screen.findByText('Removal failed; retrying automatically'),
     ).toBeVisible();
@@ -135,8 +237,14 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     expect(screen.getByRole('button', { name: 'Deactivate' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Sync' })).toBeDisabled();
     mail.listAccounts.mockResolvedValue([]);
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 2100));
+    act(() => {
+      for (const subscription of subscriptions)
+        subscription.onEvent?.({
+          type: 'event',
+          topic: 'mail',
+          payload: { kind: 'mail.changed' },
+          publishedAt: new Date().toISOString(),
+        });
     });
     expect(await screen.findByText('No accounts connected')).toBeVisible();
   });
@@ -157,7 +265,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
           rejectDelete = reject;
         }),
     );
-    render(<MailAccountsDevPage />);
+    await renderPage(<MailAccountsPage />);
     fireEvent.click(
       (await screen.findAllByRole('button', { name: 'Signatures' }))[0],
     );
@@ -216,7 +324,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
   });
 
   it('creates a named signature for an account', async () => {
-    render(<MailAccountsDevPage />);
+    await renderPage(<MailAccountsPage />);
     const signatureButtons = await screen.findAllByRole('button', {
       name: 'Signatures',
     });
@@ -230,7 +338,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     const name =
       await within(signatureDrawer).findByLabelText('Signature name');
     const signature = await within(signatureDrawer).findByRole('textbox', {
-      name: 'Signature content',
+      name: 'Signature text',
     });
     fireEvent.change(name, { target: { value: 'Work' } });
     signature.innerHTML = '<p>New signature</p>';
@@ -265,7 +373,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       signature = { ...signature, ...input };
       return signature;
     });
-    render(<MailAccountsDevPage />);
+    await renderPage(<MailAccountsPage />);
     fireEvent.click(await screen.findByRole('button', { name: 'Signatures' }));
     const drawer = within(
       await screen.findByRole('dialog', { name: 'Signature management' }),
@@ -310,7 +418,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       },
     ]);
 
-    render(<MailAccountsDevPage />);
+    await renderPage(<MailAccountsPage />);
     fireEvent.click(await screen.findByRole('button', { name: 'Signatures' }));
     const signatureDrawer = await screen.findByRole('dialog', {
       name: 'Signature management',
@@ -372,7 +480,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       },
     ]);
 
-    render(<MailAccountsDevPage />);
+    await renderPage(<MailAccountsPage />);
 
     expect(await screen.findByRole('table')).toBeInTheDocument();
     expect(
@@ -403,7 +511,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       id: 'run-1',
       accountId: 'account-1',
       mode: 'initial',
-      phase: 'folders',
+      phase: 'preparing',
       status: 'pending',
       policy: {
         receivedAfter: '2026-02-01T00:00:00.000Z',
@@ -447,7 +555,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       },
     ]);
 
-    render(<MailAccountsDevPage />);
+    await renderPage(<MailAccountsPage />);
 
     expect(await screen.findByText('2026-01-15')).toBeVisible();
     expect(
@@ -457,7 +565,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
   });
 
   it('opens template management from the account page', async () => {
-    render(<MailAccountsDevPage />);
+    await renderPage(<MailAccountsPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Templates' }));
 
@@ -482,7 +590,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       },
     ]);
 
-    render(<MailAccountsDevPage />);
+    await renderPage(<MailAccountsPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Labels' }));
 
     const labelDialog = await screen.findByRole('dialog', {
@@ -519,7 +627,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       },
     ]);
 
-    render(<MailAccountsDevPage />);
+    await renderPage(<MailAccountsPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Labels' }));
     const labelDialog = await screen.findByRole('dialog', {
       name: 'Label management',
@@ -564,7 +672,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
   });
 
   it('requires confirmation before removing an account', async () => {
-    render(<MailAccountsDevPage />);
+    await renderPage(<MailAccountsPage />);
 
     fireEvent.click(
       await screen.findByRole('button', { name: 'Remove account' }),
@@ -600,3 +708,27 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     );
   });
 });
+
+async function renderPage(ui: ReactElement): Promise<RenderedApp> {
+  return renderWithApp(ui, {
+    namespace: MAIL_PLUGIN_NS,
+    namespaces: { [MAIL_PLUGIN_NS]: locales },
+    services: (app) => {
+      vi.spyOn(
+        app.container.resolve(realtimeClientToken),
+        'watch',
+      ).mockImplementation((_topic, options = {}) => {
+        const callbacks = options as RealtimeWatchOptions<unknown>;
+        subscriptions.add(callbacks);
+        return {
+          state: 'subscribed',
+          error: undefined,
+          retry: vi.fn(),
+          close: () => {
+            subscriptions.delete(callbacks);
+          },
+        };
+      });
+    },
+  });
+}

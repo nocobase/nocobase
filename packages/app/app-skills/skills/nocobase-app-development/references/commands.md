@@ -8,9 +8,9 @@ A command this application owns is a file under `cli/commands/` that default-exp
 
 Do not name a directory under `cli/commands/` `dist`, `build`, `coverage` or `generated`: each is ignored by `.gitignore`, Prettier or the shared ESLint preset, so a command inside one would go unlinted, or never reach git, without any warning.
 
-`cli/` is compiled into `dist`, and every application command is registered there too, so a command runs in a deployment and may import only packages in `dependencies`. There is no development-only application command: one that needs the sources, such as a code generator, cannot read them in a deployment. Keep such work in a script, or in a plugin's `devCommands`.
+`cli/` is compiled into `dist`, and every application command is registered there too, so a command runs in a deployment and may import only packages in `dependencies`. There is no development-only application command: one that needs the sources, such as a code generator, cannot read them in a deployment. Keep such work in a script, or in a plugin's `devCommands`. Change shared behavior in `@nocobase/app-cli` rather than copying it into the application, and use plugin build and dev hooks for local build and development extensions.
 
-Write an application command when the work belongs to this application alone. Work several applications share belongs in a plugin, which contributes its commands under its own topic.
+Write an application command when the work belongs to this application alone. Work users trigger while the application serves is a server route or a job, not a command. Work several applications share belongs in a plugin, which contributes its commands under its own topic.
 
 <!-- command-authoring:start -->
 
@@ -115,56 +115,6 @@ expect(run.json()).toMatchObject({
 
 `bindAppCommand()` pins the command to a fixture application, the way the runner would point it at the one it located; `id` is the id the runner would give it, colon-separated, so the document names the command. Pass `loadRuntime` and `createApp` as well to replace the application with a stub. `runAppCommand()` returns what `run()` returned as `result`, what escaped it as `error`, the `exitCode`, the captured `stdout` and `stderr`, and `json()` for the `--json` document. Assert on those rather than on printed text.
 
-A command that opens the real application needs isolated databases and storage. Use `createTestAppConfig()` and `bindTestAppCommand()` from the same entry. Import the application's runtime and factory explicitly so Vitest resolves its TypeScript source and `.js` specifiers; the conventional loader uses Node and otherwise needs compiled JavaScript or an active TypeScript loader. A custom `loadRuntime` must pass `config.path` itself. Provision every connection the command writes and keep output files in a temporary directory. Always dispose the configuration in `finally`:
-
-```ts
-// tests/logic/export-orders.test.ts
-// @vitest-environment node
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { resolveStandaloneAppRuntime } from '@nocobase/app-server/node';
-import {
-  bindTestAppCommand,
-  createTestAppConfig,
-  runAppCommand,
-} from '@nocobase/app-testing/cli';
-import { expect, it } from 'vitest';
-import OrdersExport from '../../cli/commands/orders/export.ts';
-import runtime from '../../server/runtime.ts';
-import { createApp } from '../../server/app.ts';
-
-const rootDir = fileURLToPath(new URL('../..', import.meta.url));
-
-it('previews the export', async () => {
-  const config = await createTestAppConfig({
-    config: {
-      auth: { secret: 'test-only-auth-secret-at-least-32-characters' },
-    },
-  });
-  try {
-    const Bound = bindTestAppCommand(OrdersExport, {
-      rootDir,
-      id: 'app:orders:export',
-      config,
-      createApp,
-      loadRuntime: () =>
-        resolveStandaloneAppRuntime(runtime, {
-          rootDir,
-          configPath: config.path,
-          env: { APP_STORAGE_DIR: path.join(config.directory, 'storage') },
-          consoleLogStream: 'stderr',
-        }),
-    });
-    const run = await runAppCommand(Bound, ['--dry-run', '--json']);
-    expect(run.json()).toMatchObject({ ok: true, status: 'success-noop' });
-  } finally {
-    await config.dispose();
-  }
-});
-```
-
-The configuration fixture provisions databases but does not start the application. Arrange the schema and domain rows the command expects before its operations: `app.start()` runs installation when auto-run is enabled, while `app.registerProviders()` alone does not. The export command below assumes an installed schema and at least one exportable order for its successful path; prepare those in an integration fixture, or use the isolated error-path test below when testing only its output contract.
-
 ## Example
 
 ```ts
@@ -225,8 +175,7 @@ export default class OrdersExport extends AppCommand {
 The default output is computed from `app.paths.storage()` rather than given as an `appPath` default, because storage lives outside the compiled code in a deployment and only the application's paths know where.
 
 ```ts
-// tests/logic/orders-export.test.ts
-// @vitest-environment node
+// tests/cli/orders-export.test.ts
 import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
 import { expect, it, vi } from 'vitest';
 

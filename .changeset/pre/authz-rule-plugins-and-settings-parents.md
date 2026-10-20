@@ -7,7 +7,6 @@
 '@nocobase/app-plugin-authz-restriction-rules': minor
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Support entry-level parent references for settings routes contributed by different plugins. Preserve route ownership and localization while resolving nested groups independently of plugin order.

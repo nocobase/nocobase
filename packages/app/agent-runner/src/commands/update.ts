@@ -14,7 +14,14 @@ import { detectInstallation, launcherOf } from '../lib/install.ts';
 import { EXIT_CODES } from '../protocol/index.ts';
 import { readDaemonPid, runnerVersion } from '../core/loop.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
-import { applyUpdate, isNewer, latestRunner } from '../core/update.ts';
+import {
+  applyUpdate,
+  isNewer,
+  latestRunner,
+  updateTargetOf,
+} from '../core/update.ts';
+
+import { restartService } from '../core/service.ts';
 
 const run = promisify(execFile);
 
@@ -30,7 +37,8 @@ export default class Update extends RunnerCommand {
     'Update the runner to the version the application serves.';
   static override description: string =
     'Asks the application this runner is registered with (the first one, or --server) for the runner it serves for ' +
-    'this platform, installs it beside the running version and restarts the runner on it. A runner installed by the ' +
+    'this platform (a tarball, or the exact version it names on npm), installs it beside the running version and ' +
+    'restarts the runner on it. A runner installed by the ' +
     'install script also does this on its own between runs, unless --auto off.';
   static override flags: {
     server: Interfaces.OptionFlag<string | undefined>;
@@ -109,20 +117,19 @@ export default class Update extends RunnerCommand {
     await applyUpdate({
       installation,
       client,
-      update: {
-        version: latest.version,
-        url: latest.url,
-        sha256: latest.sha256,
-      },
+      update: updateTargetOf(latest),
       log: (message) => this.log(message),
     });
     result.updated = true;
-    // Restart on the new version: the service starts it again by itself once the daemon stops; a background daemon
-    // started by hand is started again here.
-    if ((await readDaemonPid(this.paths)) !== undefined) {
+    // Normal exit no longer asks the service manager to restart; request it explicitly.
+    if (settings.serviceLabel !== undefined) {
+      await run(launcherOf(installation), ['stop']);
+      await restartService(settings.serviceLabel);
+      this.log(`Restarted the runner service on ${latest.version}.`);
+    } else if ((await readDaemonPid(this.paths)) !== undefined) {
       const launcher = launcherOf(installation);
       await run(launcher, ['stop']);
-      if (settings.serviceLabel === undefined) await run(launcher, ['start']);
+      await run(launcher, ['start']);
       this.log(`Restarted the runner on ${latest.version}.`);
     }
     this.log(

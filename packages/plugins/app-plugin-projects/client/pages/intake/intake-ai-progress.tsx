@@ -5,18 +5,7 @@ import { useEffect, useState, type ReactElement } from 'react';
 import type { IntakeAiJob } from '../../../shared/intake-ai.js';
 import { Button } from '../../components/ui/button.js';
 import { Spinner } from '../../components/ui/spinner.js';
-
-/** The wait reasons worded on their own; any other reads as plain queuing. */
-const WAITS: ReadonlySet<string> = new Set([
-  'noRunnerOnline',
-  'runnersOffline',
-  'toolUnavailable',
-  'runnersBusy',
-  'toolSlotsFull',
-  'concurrencyFull',
-  'sameWorkActive',
-  'setupRetrying',
-]);
+import { useIntakeWaitFormat } from '../../lib/intake-wait.js';
 
 function elapsed(since: string, now: number): string {
   const seconds = Math.max(0, Math.floor((now - Date.parse(since)) / 1000));
@@ -47,6 +36,8 @@ export function IntakeAiProgress({
   const by = progress?.by ?? null;
   const waiting = progress?.phase !== 'working';
   const wait = progress?.waitReason ?? null;
+  // Words for the reason the application gives (`IntakeWaitFormatContext`); this plugin knows no reason.
+  const format = useIntakeWaitFormat();
   return (
     <section
       className='flex items-start gap-3 rounded-lg border bg-card p-4 text-card-foreground'
@@ -70,8 +61,13 @@ export function IntakeAiProgress({
         </p>
         <p className='text-xs text-muted-foreground'>
           {waiting
-            ? wait && WAITS.has(wait)
-              ? t(`intakeAi.wait.${wait}`)
+            ? wait
+              ? (format?.({
+                  reason: wait,
+                  ...(progress?.waitParams
+                    ? { params: progress.waitParams }
+                    : {}),
+                }) ?? t('intakeAi.wait.reason', { reason: wait }))
               : t('intakeAi.wait.queued')
             : by
               ? t('intakeAi.working', { name: by })

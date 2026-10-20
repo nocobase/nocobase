@@ -188,7 +188,7 @@ const plansZhCN: typeof plansEnUS = {
     count: '{{count}} / {{max}}',
     files: '文件',
     filesHint:
-      '最多 {{count}} 个文件，每个不超过 {{size}} MB。会读取文本、Markdown、CSV、Word、Excel、PowerPoint 和 PDF；图片只记录文件名。',
+      '最多 {{count}} 个文件，每个不超过 {{size}} MB。会读取文本、Markdown、CSV、Word、Excel、PowerPoint 和 PDF；让 Agent 整理可通过图片工具读取 PNG/JPEG；读取失败可返回修改并重试。规则拆分仅使用图片文件名。',
     addFiles: '添加文件',
     dropFiles: '把文件拖到这里',
     removeFile: '移除 {{name}}',
@@ -246,14 +246,7 @@ const plansZhCN: typeof plansEnUS = {
     lastActivity: '最近：{{text}}',
     wait: {
       queued: '等待开始…',
-      noRunnerOnline: '等待运行环境上线…',
-      runnersOffline: '等待 Agent 的运行环境上线…',
-      toolUnavailable: '等待编码工具已登录的运行环境…',
-      runnersBusy: '运行环境都在忙，排队等待中…',
-      toolSlotsFull: '编码工具的并发已满，排队等待中…',
-      concurrencyFull: 'Agent 正在忙，排队等待中…',
-      sameWorkActive: '等待 Agent 处理完上一个请求…',
-      setupRetrying: '正在重新准备…',
+      reason: '等待开始（{{reason}}）…',
     },
     waitsHint: '现在没有在线的运行环境，请求会排队，等有运行环境连上后开始。',
     unavailable: {

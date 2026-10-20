@@ -85,21 +85,86 @@ export interface CliResult {
   stderr: string;
 }
 
+export interface CliInput {
+  readonly chunks: readonly {
+    readonly data: string | Buffer;
+    readonly delayMs: number;
+  }[];
+  readonly endDelayMs?: number;
+  /** Start input delivery when the CLI's first stdin reader is ready. */
+  readonly synchronizeAtStdinRead?: boolean;
+}
+
 export function cli(
   args: string[],
   env: NodeJS.ProcessEnv,
-  options: { cwd?: string; input?: string } = {},
+  options: { cwd?: string; input?: string | CliInput } = {},
 ): Promise<CliResult> {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [BIN, ...args], {
-      env,
+      env:
+        options.input &&
+        typeof options.input !== 'string' &&
+        options.input.synchronizeAtStdinRead
+          ? {
+              ...env,
+              NODE_OPTIONS: [
+                env.NODE_OPTIONS,
+                `--import=${path.join(PACKAGE_ROOT, 'tests/fixtures/stdin-reader-gate.mjs')}`,
+              ]
+                .filter(Boolean)
+                .join(' '),
+              NOCOBASE_RUNNER_TEST_STDIN_GATE: '1',
+            }
+          : env,
       cwd: options.cwd ?? PACKAGE_ROOT,
+      stdio:
+        options.input &&
+        typeof options.input !== 'string' &&
+        options.input.synchronizeAtStdinRead
+          ? ['pipe', 'pipe', 'pipe', 'pipe']
+          : undefined,
     });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (chunk: Buffer) => (stdout += chunk.toString()));
     child.stderr.on('data', (chunk: Buffer) => (stderr += chunk.toString()));
-    child.stdin.end(options.input ?? '');
+    if (typeof options.input === 'string' || options.input === undefined) {
+      child.stdin.end(options.input ?? '');
+    } else {
+      const input = options.input;
+      const deliver = (includeImmediateFirstChunk = false) => {
+        let lastWriteAt = 0;
+        const firstChunk = input.chunks[0];
+        if (includeImmediateFirstChunk && firstChunk?.delayMs === 0) {
+          child.stdin.write(firstChunk.data);
+        }
+        for (const [index, chunk] of input.chunks.entries()) {
+          if (includeImmediateFirstChunk && index === 0 && chunk.delayMs === 0)
+            continue;
+          lastWriteAt = Math.max(lastWriteAt, chunk.delayMs);
+          setTimeout(() => child.stdin.write(chunk.data), chunk.delayMs);
+        }
+        setTimeout(
+          () => child.stdin.end(),
+          lastWriteAt + (input.endDelayMs ?? 0),
+        );
+      };
+      if (options.input.synchronizeAtStdinRead) {
+        let gateOutput = '';
+        let delivered = false;
+        child.stdio[3]?.on('data', (chunk: Buffer) => {
+          gateOutput += chunk.toString();
+          if (!delivered && gateOutput.includes('stdin-read-start')) {
+            delivered = true;
+            deliver(true);
+            child.stdio[3]?.write('!');
+          }
+        });
+      } else {
+        deliver();
+      }
+    }
     child.on('close', (code) => resolve({ code, stdout, stderr }));
   });
 }
@@ -168,14 +233,27 @@ export function git(args: string[], cwd?: string): string {
 export function makeRemote(root: string, name = 'origin-repo'): string {
   const bare = path.join(root, `${name}.git`);
   const seed = path.join(root, `${name}-seed`);
-  git(['init', '--quiet', '--bare', '--initial-branch=main', bare]);
   git(['init', '--quiet', '--initial-branch=main', seed]);
   writeFileSync(path.join(seed, 'README.md'), '# seed\n');
   git(['add', '.'], seed);
   git(['-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'seed'], seed);
+  // A clone rather than a push, so the fixture does not depend on the pre-push hooks of whoever runs the tests.
+  git(['clone', '--quiet', '--bare', seed, bare]);
   git(['remote', 'add', 'origin', bare], seed);
-  git(['push', '--quiet', 'origin', 'main'], seed);
   return `file://${bare}`;
+}
+
+/** Publishes the seed's `main` (`makeRemote`) to its remote, by fetching rather than pushing for the same reason. */
+export function publishSeed(root: string, name = 'origin-repo'): void {
+  git(
+    [
+      'fetch',
+      '--quiet',
+      path.join(root, `${name}-seed`),
+      '+refs/heads/main:refs/heads/main',
+    ],
+    path.join(root, `${name}.git`),
+  );
 }
 
 export async function registerRunner(

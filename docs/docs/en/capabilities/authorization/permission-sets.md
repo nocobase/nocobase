@@ -1,36 +1,50 @@
 ---
 title: 'Permission sets and assignments'
-description: 'Configure pages, operations and record scopes around job responsibilities.'
 ---
 
 # Permission sets and assignments
 
-A permission set groups reusable capabilities. Name sets after real jobs, such as Sales engineer; express region and ownership as scopes rather than creating a role for every combination.
+Permission sets combine pages, actions, and data scopes into reusable jobs. Multiple account managers can share a set, and employees can hold several sets.
 
-In Settings → Authorization → Permission sets, create or select a set, enable business operations, configure each operation's scopes, grant page access separately, then assign users or integrated teams. Permissions, assignments and basic information have their own save actions.
+## Transport jobs
 
-The permissions of a set are organized in three sections:
+Group pages, actions and record scopes into permission sets for people with the same responsibilities. Reuse job configurations when staff join or change jobs.
 
-| Section              | What it grants                                                                                                          |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Page permissions     | Entry to pages, listed from the application's menu and grouped the same way. “All pages” also covers pages added later. |
-| Business permissions | Business operations such as View, Edit or Submit quotes, each with its record scopes                                    |
-| Administration       | Settings pages and their actions, such as reading or changing permission sets, rules and other module settings          |
+```text
+Create Northstar permission sets for account managers, dispatchers, and drivers.
+Account managers enter customers and orders, create orders, and view or edit records they own.
+Dispatchers enter the dispatch workspace, view transport orders, and assign drivers, but cannot maintain permissions.
+Drivers view assigned tasks and accept, depart, and submit delivery evidence; they cannot change prices or reassign drivers.
+Only authorized administrators maintain permission sets and assignments.
+Provide job editing and assignments in Team access. Initially assign Alice and Bob as account managers, Emma as dispatcher, and Daniel as driver.
+```
 
-Under Business permissions and Administration, the left side lists one entry per module the application declares, such as Sales, Automation or Authorization; anything that names no module is listed under Other. Only pages, operations and settings that the application declares appear; a section is empty until developers add them. Plugins may add further sections.
+Organize editing around pages, actions, and scopes. Viewing and editing orders are separate actions; entering a page does not grant all actions within it.
 
-| Setting       | Sales engineer example                                                  |
-| ------------- | ----------------------------------------------------------------------- |
-| Page          | Quotes                                                                  |
-| View          | Non-confidential reference quotes                                       |
-| Edit          | Quotes prepared by the current user                                     |
-| Submit        | Both an accessible quote and a project in the responsible region        |
-| Writable data | Amount/notes for editing, status for submission; defined by the feature |
+## Assignment and reuse
 
-Page-only access cannot read the feature's data; an operation grant does not automatically open a page. A multi-table operation can expose several independent scopes, such as Quotes and Projects.
+Administrators review a job and assign employees. Alice and Bob share responsibilities but access their own records. Emma coordinates dispatch; Daniel handles assigned tasks.
 
-Assign sets directly to users or to registered teams/departments. Pickers use directories the administrator can read; an unresolved stored name does not mean an assignment disappeared. Multiple sources can contribute capabilities. Removing a team's engineer role should preserve a coordinator's direct project-manager job.
+An employee may hold multiple responsibilities. Removing one assignment may leave another direct or organizational source intact.
 
-The default `member` set applies through the authenticated audience. Give it only capabilities every signed-in user should receive. Root provides unrestricted access and is unsuitable for ordinary job assignments or boundary testing.
+The default member set applies to signed-in users and suits common basic capabilities. Super administrators have unrestricted access and should not stand in for business employees in demonstrations.
 
-Validate with two ordinary users and different records. Exchange detail URLs, test direct API calls, and test page-only, action-only, out-of-scope and revoked access. Use the [inspector](inspector) to identify remaining sources.
+Team and department assignments require real organizational membership. A department-name field alone does not establish permission inheritance.
+
+## Job access in this example
+
+Team access displays saved job permissions and employee assignments. The account manager job is assigned to Alice and Bob; the server applies each user’s actual ownership ID to record reads.
+
+![Team access](../assets/northstar-team-access-en.png)
+
+**Administrators can view saved job permissions and employee assignments.**
+
+Alice sees her six orders, while dispatcher Emma can view all ten. These screenshots use ordinary business accounts. Creating, editing and dispatching require the separate action grants described in the full requirement above.
+
+![Alice orders](../assets/northstar-alice-orders-en.png)
+
+**With only job scope, Alice sees her six orders.**
+
+![Dispatcher orders](../assets/northstar-dispatch-orders-en.png)
+
+**Dispatcher Emma sees all ten orders.**

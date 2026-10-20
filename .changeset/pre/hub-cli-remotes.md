@@ -1,6 +1,4 @@
 ---
-'@nocobase/hub-cli': minor
-'@nocobase/app-plugin-hub': major
 '@nocobase/app-host': minor
 '@nocobase/app-skills': minor
 ---

@@ -4,7 +4,6 @@
 '@nocobase/app-skills': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Synchronize agent skills from direct NocoBase package dependencies with the new skills:sync command while preserving plugin:skills:sync compatibility, and share application development and upgrade skills through @nocobase/app-skills across all application templates.

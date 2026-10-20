@@ -5,10 +5,9 @@
 # anything published for real. Nothing here is written to disk outside the container, and the container is discarded
 # with the job.
 #
-# Two uplinks rather than one. Everything under @nocobase comes from the registry that actually serves v3, so a package
-# this release does not touch resolves to the artifact users already have rather than to something rebuilt here. Every
-# other package goes straight to npmjs: npm.nocobase.ai proxies it too, but routing tens of thousands of public tarballs
-# through a second hop only makes the generated application's install slower.
+# Two uplinks retain the smoke package's scope isolation while resolving unchanged and third-party packages from public
+# npm. A package this release does not touch therefore comes from the artifact users already have rather than something
+# rebuilt in this job.
 
 storage: /verdaccio/storage/data
 
@@ -20,7 +19,7 @@ auth:
 
 uplinks:
   nocobase:
-    url: https://npm.nocobase.ai/
+    url: https://registry.npmjs.org/
     timeout: 60s
     max_fails: 10
     fail_timeout: 1m

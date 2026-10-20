@@ -1,7 +1,7 @@
 // Link every Skill committed under `skills/` into `.agents/skills/` and `.claude/skills/`, so the agents working in
 // this repository see them.
 //
-// `skills/` is the one committed source. It is also where `npx skills add nocobase/nocobase3` reads from, so a Skill
+// `skills/` is the one committed source. It is also where `npx skills add` reads from the repository's v3 branch, so a Skill
 // written there reaches a user's global installation and this checkout alike. Agents do not look there on their own:
 // most read `.agents/skills/`, and Claude Code discovers Skills only under `~/.claude/skills/` and
 // `<project>/.claude/skills/`. Without these links a contributor working in this repository gets none of its Skills,

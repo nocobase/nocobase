@@ -13,7 +13,7 @@ import {
   toolUsage,
   type Runner,
   type RunnerActivity,
-  type RunnerSummary,
+  type RunnerListItem,
   type ToolState,
 } from '../../../shared/runners.js';
 import { AgTag, type Tone } from '../../components/ag-tag.js';
@@ -32,9 +32,12 @@ import { upgradeCommand } from '../../lib/install.js';
 const ACTIVITY_TONE: Readonly<Record<RunnerActivity, Tone>> = {
   online: 'green',
   busy: 'blue',
+  low_disk: 'amber',
   offline: 'grey',
   revoked: 'red',
   upgrade_required: 'amber',
+  updatePending: 'amber',
+  pruning: 'amber',
 };
 
 /**
@@ -44,9 +47,11 @@ const ACTIVITY_TONE: Readonly<Record<RunnerActivity, Tone>> = {
  */
 export function RunnerStatusCell({
   runner,
+  badgeOnly = false,
 }: {
+  readonly badgeOnly?: boolean;
   readonly runner: Pick<
-    RunnerSummary,
+    RunnerListItem,
     | 'status'
     | 'slots'
     | 'activeRuns'
@@ -54,6 +59,8 @@ export function RunnerStatusCell({
     | 'lastSeenAt'
     | 'toolSlots'
     | 'activeByTool'
+    | 'workspaceUsage'
+    | 'draining'
   >;
 }): ReactElement {
   const { t } = useTranslation();
@@ -65,7 +72,7 @@ export function RunnerStatusCell({
     time: format.relative(runner.lastSeenAt),
   };
   let label: string;
-  if (activity === 'online' || activity === 'busy')
+  if (activity === 'online' || activity === 'busy' || activity === 'low_disk')
     label = t(`runtimes.activity.${activity}`, values);
   else if (activity === 'offline')
     label = runner.lastSeenAt
@@ -83,7 +90,7 @@ export function RunnerStatusCell({
     </AgTag>
   );
   const usage = toolUsage(runner);
-  if (usage.length === 0) return tag;
+  if (badgeOnly || usage.length === 0) return tag;
   return (
     <div className='flex flex-col items-start gap-1'>
       {tag}
@@ -245,14 +252,10 @@ export function RunnerVersionCell({
 export function RunnerUpgradeRequired({
   runner,
 }: {
-  readonly runner: Pick<
-    RunnerSummary,
-    | 'version'
-    | 'product'
-    | 'protocolVersion'
-    | 'requiredProtocol'
-    | 'updateVersion'
-  >;
+  readonly runner: Pick<Runner, 'version' | 'product' | 'protocolVersion'> & {
+    readonly requiredProtocol: { readonly min: number; readonly max: number };
+    readonly updateVersion: string | null;
+  };
 }): ReactElement {
   const { t } = useTranslation();
   const { min, max } = runner.requiredProtocol;

@@ -9,6 +9,7 @@
  * `Subject` is the record being moved and `Context` whatever the application passes through `move` (its transaction,
  * for example), so rules read and write where the move does.
  */
+import type { Actor } from '../kernel/actor.js';
 import type { LifecycleMachine } from './machine.js';
 import type { LifecycleIssue } from './validate.js';
 
@@ -16,6 +17,8 @@ import type { LifecycleIssue } from './validate.js';
 export interface LifecycleActor {
   readonly type: string;
   readonly id: string | null;
+  readonly via?: Actor['via'];
+  readonly trace?: Actor['trace'];
 }
 
 export type RuleConfig = Readonly<Record<string, unknown>>;
@@ -25,6 +28,8 @@ export interface RuleContext<Subject, Context> {
   readonly from: string;
   readonly to: string;
   readonly actor: LifecycleActor;
+  /** The original cause, separate from the actor used for permission checks. */
+  readonly sourceActor?: Actor;
   readonly machine: LifecycleMachine;
   readonly context: Context;
   /** The event the move answers, for a move along an event transition. */

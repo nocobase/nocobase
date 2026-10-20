@@ -1,5 +1,246 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.41
+
+### Patch Changes
+
+- baf80fe: Declare the Examples business CLI and configure Runner chat to obtain it from the application's distribution while preserving the existing application registration identity. Document the required CLI build and distinguish it from Runner installation and development-management commands.
+- 30ac4db: Document deploying applications to an existing Studio, including CLI installation and authentication, repository-backed and manual archive uploads, deployment approval, and verification across multiple destinations.
+
+## 0.1.0-beta.40
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- 1952789: Ship a dedicated versioned Realtime integration Skill and references for authorization, snapshot recovery, distributed delivery, polling decisions and business verification. Include it in both application templates' direct dependencies so Skills synchronization discovers it, and document optional Redis configuration in both templates.
+
+  Use one refresh scheduler for the Realtime business examples' initial, manual and event reads. Retry transient snapshot failures without another event, preserve trailing reads and provide low-frequency reconciliation. Forward capability-lab read failures to the shared retry policy.
+
+- 1952789: Add `refreshRealtimeQueries` to refresh active TanStack Query snapshots after pre-event requests settle, including initial loads, prefixes and predicates. Keep inactive snapshots invalid, expose refresh failures, and stop queued follow-ups when their owner is disposed. The application client now declares its TanStack Query peer contract.
+
+  Use the shared catch-up behavior in Projects, Knowledge, Agents, Agent Sessions and the inbox. Refresh additional inbox topics after subscription readiness and preserve refresh promises so concurrent events coalesce correctly. Update application guidance to avoid reusing stale in-flight responses.
+
+- 1952789: Guide application upgrades across Realtime contract changes with version-specific applicability, custom consumer discovery, declared-topic authorization, asynchronous publication, snapshot recovery and runtime acceptance checks.
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+## 0.1.0-beta.39
+
+### Patch Changes
+
+- 22717d7: Support synchronous custom driver factories alongside existing configuration objects in `drive.disks`. Create drivers lazily through the shared application Drive provider, preserve Flydrive caching and fakes, and reject factory references where release artifacts require serializable Host configuration. Ship the `nocobase-drive` Skill with filesystem, S3, native Aliyun OSS, and custom driver guides, and direct application guidance to that shared documentation. Consumers reading disk configuration fields must narrow out factory functions first.
+
+## 0.1.0-beta.38
+
+### Patch Changes
+
+- 1b537d6: Expand the application testing skill references with complete database, server, client, and CLI examples, explicit Vitest configurations, fixture ownership and cleanup guidance, and focused run commands. Cover repository constraints and rollback, authentication and permissions, translated client interactions, exact request history, pending state and retry, command output and file effects, and commands on isolated databases. Align frontend test guidance with the real application harness and include the Playwright session-reuse example.
+- 44bc7a7: Require localized page-permission labels, including routes without navigation or breadcrumbs. Preserve authorization identities and grants, provide a localized fallback for missing titles, and add template checks and application-development guidance to prevent technical route IDs from appearing as permission names.
+- 44bc7a7: Preinstall the standard React Flow process components and management layouts without enabling unused settings. Improve themed node hierarchy and configuration controls, and keep the default lifecycle view readable at a minimum initial zoom of 70%. Add authorized configuration entries for native state and outgoing-transition parameter bindings, using a chooser for multiple targets. Clarify UI Registry discovery, upgrade reconciliation and process acceptance requirements. Preserve workflow table links and keyboard focus across refreshes and sorting changes, and document node entries to authoritative organization and role settings.
+- 9adf684: Reuse the UI Library workflow-management block in the example application's definition and execution pages, preserving the single sidebar entry, page tabs, list filters, category controls, parameter editing, historical inspection and read/update authorization boundaries. Keep data fetching, routing and persistence in application adapters.
+
+  Guide application development to install and connect the workflow-management block by default for process administration, with translated display data, controlled list state and application-owned parameter forms and permissions.
+
+  Keep the definition search and refresh controls aligned, stack categories above the list on narrow screens, and demonstrate category filtering, creation, renaming, color selection and deletion without removing workflows, with concise Edit and Delete menu actions.
+
+  Demonstrate changing or clearing a workflow definition's category from the colored tag beside its detail title, keeping category assignments consistent with list filtering and showing a read-only tag when updates are denied.
+
+- 9adf684: Consolidate example workflow administration under System management with explicit read and update permissions, persistent categories, server-side name search, execution activity links and paginated execution records. Give definition and execution details full child pages with filter-preserving breadcrumbs, readable diagrams, inline parameter configuration and historical execution inspection.
+
+  Store lifecycle configuration atomically by workflow key and revision, migrate existing settings while preserving historical facts, and group fields by their bound business nodes. Apply office workflow department, calendar and dispatch overrides, share department role membership, and use searchable member selection. Remove standalone configuration pages and candidate-review demonstrations while retaining historical migrations and records.
+
+  Make system administration a default deliverable for complete applications, including user management, roles and permissions, and authenticated administrator acceptance checks. Place workflows, background tasks and other applicable capabilities directly under System management as sibling entries, with execution status, failures and supported recovery actions inside their own pages instead of a separate monitoring group. Require workflow management pages whenever application requirements include a process, using the existing workflow example's navigation and list/detail layouts by default. Keep one Workflow management sidebar entry with URL-backed Definitions and Executions tabs inside its page; child views do not declare sidebar navigation. Align Lifecycle and parameter guidance with visible parameter forms, execution history and effect inspection, while respecting explicit UI exclusions and API-only scope. Reuse installed capabilities and existing UI Library components, and retain optional contextual editing.
+
+## 0.1.0-beta.37
+
+### Patch Changes
+
+- 164abe7: Describe `--app` with a generic published application (`@acme/crm`) instead of NocoBase Studio in the installer's help, flag description, usage error and README, and in the deployment Skill. The option itself is unchanged and installs any published npm application.
+- e7ba607: Add performance guidance to the application development Skill: frequently called endpoints, transactions for reads, list response size, client refresh and subscriptions, bounded concurrency, background work, timeouts and leases, and measuring on a realistic database and data volume.
+- b814d71: The app-development Skill's testing reference gains "Keeping the suite fast and honest": test at the cheapest layer that proves the behavior, migrate once with template test databases, avoid real waits, keep tests independent, assert rather than collect evidence, remove tests together with what they cover instead of guarding absences, test behavior rather than implementation details, avoid duplicate checks, and match parallelism to the machine.
+- 98b3862: Identify Dameng, KingbaseES and OceanBase as NocoBase Pro commercial drivers when selecting or initializing a database. Report commercial license and private registry requirements before configuration, including JSON warnings and missing-driver errors.
+- cb83d7a: `RouteDialog` and `RouteDrawer` now look like the application's other dialogs: they compose the dialog primitive's `DialogHeader`, `DialogTitle`, `DialogDescription` and `DialogFooter` inside the padding, spacing and close-button position of `DialogContent`, so the header no longer has a rule under it, the footer is the dialog footer (stacking its buttons on narrow screens), and a change to the dialog primitive or its theme rules reaches route overlays too. The frontend Skill's overlay guidance describes the new look and the template dialog's current padding and default width.
+- 7b1882a: Remove the deployment skill's dependency on retired documentation and use the application's own deployment guidance.
+- eb4b081: Include application-owned user and role administration in the application templates, with dynamic permission categories, scope controls, independently saved role assignments and conflict-safe role updates. Add authorized latest-user reads and stable server-side name sorting. A new reversible authorization migration adds a revision token to existing permission sets; clients may supply the token to reject stale updates atomically while existing callers remain compatible.
+
+  Deliver administration automatically whenever an application uses configurable capabilities, including process definitions, standard diagrams, supported parameters and authorized execution history. Refresh the shared process canvas and installed lifecycle examples with semantic node cards, execution status, a dotted background and accessible viewport controls. Refine the cards with type icons and separate status footers, parameter badges, outlined edge labels, motion-aware active transitions and canvas summaries; reserve space for controls when sizing the graph.
+
+  Keep bare Default applications Home-only. Supply reusable administration routes and reconcile core user and permission management and additional settings throughout development according to the business capabilities actually used, independently of the iteration number. Examples registers the prepared settings because it already contains business features.
+
+  Ship a standard TanStack Table v8 DataTable and companions in both application templates, including controlled server pagination and sorting. Reuse it in user administration and instruct application agents to reuse the provided implementation and repair incompatible dependencies instead of substituting custom table engines.
+
+  Proactively declare configurable business thresholds and reviewer rules during process development without requiring an explicit user prompt. Reconcile validated, authorized parameters and diagram bindings throughout iteration, preserve snapshot and task semantics, and expose real transition-bound configuration in the shared diagram.
+
+  Extend capability-driven administration guidance to non-workflow business parameters, dictionaries, document numbering, operation records, organization relationships, enabled authentication features, notifications, integrations, document processing, AI/knowledge and shared business defaults. Include concrete persistence, authorization, concurrency and acceptance contracts, while preserving Home-only creation and deployment-owned configuration.
+
+  Standardize process administration as a directory-first DataTable even for a single process, with process-scoped definition, explicit node configuration and execution records. Reconcile additional registered processes into the same directory, validate process identifiers and permission scopes server-side, and preserve list navigation state.
+
+  Compact the shared permission editor into resource rows with wrapping action checkboxes, adjacent scope selectors and optional atomic visible-group selection. Synchronize both templates and document source upgrade integration without overwriting application-specific grants or role policies.
+
+  Improve process readability with optional node descriptions and configuration actions, an initial readable zoom bound, overview navigation and focus-driven panning. Document bounded-canvas composition and explicit full-definition access when technical paths are hidden.
+
+  Render single-action page permissions as one title checkbox, omit redundant per-resource counters and bulk toggles, and use localized breadcrumb titles for pages without navigation entries.
+
+  Keep record-scope controls inline with action checkboxes, remove redundant single-scope captions, and localize raw collection scope labels in the template permission models.
+
+  Default lifecycle diagrams to a vertical, automatically sized canvas with readable narrow-screen sizing and top-positioned viewport controls, while preserving explicit compact-view overrides. Require capability-driven process directory, definition/design, node configuration and execution-history delivery in new applications without adding unused settings to bare Home-only apps.
+
+  Bind parameterized custom record scopes to native filter conditions with a reusable draft editor, preserve object selections and independent scope policies, and reject incomplete custom filter grants at the authorization HTTP boundary. Keep no-record scopes explicit and verify saved scopes against real list/detail/write endpoints.
+
+- eb4b081: Reconcile capability-driven process and business administration throughout application development while keeping bare applications Home-only. Standardize directory-first process management, real node configuration and scoped execution history.
+
+  Default lifecycle diagrams to vertical automatic-height presentation with readable policy summaries, explicit configuration actions, accessible viewport controls and normal page scrolling. Preserve compact consumer overrides, actual history and existing approval configuration.
+
+## 0.1.0-beta.36
+
+### Patch Changes
+
+- c048d7d: The application development Skill now says how a list, dashboard or chart endpoint stays fast: it reads with a fixed number of queries whatever the row count, aggregates in the database, keeps expensive per-item work on the detail endpoint, answers a small fact from a small endpoint, and has a test that its query count does not grow with the rows; and how the browser keeps such a page live by refreshing only the rows an event names instead of reading the whole list on every event.
+- 69e212c: Move KingbaseES, Dameng and OceanBase driver ownership to NocoBase Pro while preserving optional peer dependencies, automatic loading and CLI configuration support. Install the selected driver through the Pro registry in the application's production dependencies and rebuild deployments; explicit driver registration remains optional. Test fixtures resolve external dialect provisioners from the consuming project.
+- e8bc078: Guide application and deployment upgrades through independent read-only checksum checks, reviewed checksum repair, documented data prerequisites, and recovery after irreversible schema changes. Preserve pre-repair history in the backup used for recovery. Include the agents and releases MySQL index correction and distinguish installer rollback from external database restoration.
+
+## 0.1.0-beta.35
+
+### Patch Changes
+
+- ca0adee: Document the quieter template interface in the application development Skill: the `--hover` token and the navigation built on it, the single border, which a preset with a darker page has to make opaque, and the compact preset's values, one shared focus ring, the two badge sizes, the pointer cursor, cards that lift on hover, and table rows on the `--hover` grey. Add the long-text rule (I14) for `LongText` and `LongTextPreview`, show a record's particulars inline, describe navigation sections and counts beside menu entries, with guideline L8 on which counts belong there, and list the UI Library's new `long-text` item and the inline variant of `property-fields`. The upgrade Skill's theme checks now say to merge a token together with every use of it, and a global attribute rule together with the components that set the attribute.
+- ddfe1b1: Update the UI Library catalog reference for the agents blocks: the agent picker, chat and composer no longer offer online agents or a model choice, and the issue detail no longer has checklist or approval parts.
+- 43d7d1f: Add code-declared lifecycle parameter groups with asynchronous execution resolution, immutable configuration versions, atomic CAS saves, first-submission snapshots, per-execution usage facts and flat reviewer selection rules. Demonstrate shared configuration editors, optional diagram bindings, snapshot expense thresholds, live ticket policy and finite candidate review workflows, and document application integration.
+- 9555de6: Guide agents to expose node-related lifecycle parameters through editing dialogs on process diagrams, with references to the workflow example. Clarify HTTP-compatible browser request IDs and key reuse for transport retries.
+- 758c372: Ask whether users want a flowchart or process interface when developing a lifecycle, respect separate interface and diagram preferences, and document UI Library diagram integration including label callback arguments.
+
+## 0.1.0-beta.34
+
+### Patch Changes
+
+- e6dd56e: Add application development references for application structure, plugins, dependencies and the development server, carrying guidance that previously lived only in the application templates' `AGENTS.md`. Agents now record application-specific guidance in the committed `.agents/rules/` directory indexed from a small `AGENTS.md`, and the upgrade Skill explains how to merge `.agents/rules/` and un-ignore it in older applications.
+
+## 0.1.0-beta.33
+
+### Patch Changes
+
+- 9f02fe3: Route requests to upgrade NocoBase or its core version to the application upgrade Skill, since users rarely refer to the template they generated the application from.
+- 2a54505: Expose the application's resolved `NODE_ENV` to server providers without inheriting an embedded application's host process environment. Mail now warns once during production startup when its effective OAuth return URL still points to the legacy `/dev/mail/accounts` destination. The current root (`/`) default does not trigger the warning or register an account route: applications must register their own authenticated personal account page and configure `mail.oauthReturnUrl` to that page. This warning does not block startup, change configuration, or verify arbitrary client routes.
+
+## 0.1.0-beta.32
+
+### Patch Changes
+
+- 42615cd: Clarify beta, latest and exact-version selection for application upgrades, resolve tags to fixed versions, and prevent implicit channel changes or downgrades.
+
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- 4dee742: Use the beta app-installer in the application deployment Skill so deployment does not resolve an unintended latest release.
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+
+## 0.1.0-beta.30
+
+### Patch Changes
+
+- a827a63: Clarify application access URLs for agents: use the Hono server entry in full-stack development, verify the actual port and base path, and use the local Vite entry only in remote-backend proxy mode.
+- 8de421a: Guide agents to the theme-aware React Flow and ELK diagram components from the application and lifecycle Skills. Document execution history, inline labels and end markers, and synchronize the offline UI Library catalog.
+- 87b8394: Install published applications with `--app @nocobase/studio` or the official shorthand `--app studio`, preserving package identity while building and deploying on the server. Support npm application upgrades, explicit version selection and rebuilding with the existing backup and rollback workflow. Include Studio's shared sources and CLI skills in its published package so it builds outside the repository, and document the deployment route.
+
+## 0.1.0-beta.29
+
+### Patch Changes
+
+- 17a183c: Respect the configured public origin during local development instead of overriding it with a loopback address. Explain rejected sign-in origins with actionable English and Chinese messages, and document verification of the browser-facing address and authentication request.
+- 13620d9: The runner and an application's CLI can now be installed and updated from npm when the application serves no tarball of them and names the exact npm version instead (`agents.dist.npm`). The install script asks with `accept=npm`; for an npm answer it checks for Node.js 24 or newer and `npm` (or `NOCOBASE_NPM`), runs `npm install --prefix <prefix>/versions/<version> --no-save --no-audit --no-fund --omit=optional <package>@<version>` and writes a launcher at `versions/<version>/bin/<command>`, so `current`, the linked command and the runner's user service work as they do for a tarball, and links `<prefix>/node` to the Node.js it checked. The runner declares the `npm` feature and installs a heartbeat's `npmUpgrade` the same way between runs; `nocobase-runner update` and `<cli> update` follow either answer, and an installation moves between tarball and npm versions in both directions (`installNpmVersion`, `npmLauncherScript` and `UpdateTarget` in `@nocobase/app-cli-client/install`). An application that answers no npm form is handled exactly as before.
+
+  `@nocobase/agent-runner` and `@nocobase/app-cli-client` now depend on exactly the `@nocobase/agent-protocol` they were built with, and `@nocobase/studio-cli` and `@nocobase/agent-runner` on exactly their `@nocobase/app-cli-client`, so a version installed from npm behaves as it was built.
+
+  `nocobase skills sync` no longer reads Skills from a packaged application CLI (a dependency declaring `nocobase.cli`, such as `@nocobase/studio-cli`): its `skills/` is for that command's users. NocoBase Studio declares `@nocobase/studio-cli`, so its build pins `nb-studio` to the version it was built with, and its CLI documentation and home-page agent prompt say that `nb-studio` needs Node.js 24 or newer with npm. The application development Skill documents `nocobase cli build --universal`.
+
+## 0.1.0-beta.28
+
+### Patch Changes
+
+- 7cdb5ba: The default template's homepage now explains that the application is developed by describing requirements to a coding agent, with a sample request to copy, and lists the built-in capabilities (authentication, permissions, scheduled tasks, notifications, mail, files, template printing, languages and themes) as cards. Each card opens a dialog with ready-made prompts that can be edited and copied; edits are not saved once the dialog closes.
+
+  Both templates now keep their own copy in `client/locales/system/`, which `client/locales/en-US.ts` and `zh-CN.ts` spread before the application's groups, so a template upgrade can replace the system copy without touching the application's. An application that extends a shared group such as `navigation` spreads the system group first. To upgrade an existing application, take the template's `client/locales/system/` and reduce each application locale file to the spread followed by the groups the application added; the `nocobase-app-upgrade` Skill describes the steps, and the frontend references of `nocobase-app-development` describe the new layout.
+
+- 71d7607: Tell agents that a merged migration is never edited, not even reformatted, and that every later schema change, a fix to an earlier migration included, goes in a new migration that sorts after it. The `nocobase-app-development` Skill gains a "Migrations change incrementally" section, and the `AGENTS.md` of a generated plugin states the same rule.
+
+## 0.1.0-beta.27
+
+### Minor Changes
+
+- c796cb9: Remove NocoBase Hub. `@nocobase/app-plugin-hub`, `@nocobase/app-template-hub` and `@nocobase/hub-cli` are no longer published, and every package that offered or described the Hub drops it.
+
+  Breaking for `@nocobase/app-installer`: it installs, upgrades and rolls back from a deployment archive only. `install --template`, `install --keep-source`, `upgrade --to`, `upgrade --rebuild`, `upgrade --keep-source` and `status --offline` are removed, as are the `latest` and `updateAvailable` members of the `status` result and the `rebuilt` and `notes` members of the `upgrade` result. An installation an earlier version built from the published Hub template is refused with `STATE_UNSUPPORTED`; manage it with the app-installer version that installed it. The error codes that only a template build reported (`PNPM_MISSING`, `PNPM_UNSUPPORTED`, `REGISTRY_UNREACHABLE`, `VERSION_NOT_FOUND`, `DISK_LOW`, `CREATE_FAILED`, `DRIVER_INSTALL_FAILED` and `BUILD_FAILED`) are no longer produced, and pm2 always kills the process tree of an application it stops.
+
+  Breaking for `@nocobase/create-app`: `--template hub` is no longer a template name, and a generated application no longer gets a `.env`.
+
+  The Default template no longer depends on `@nocobase/hub-cli`, so an application generated from it has no `pnpm nocobase hub` commands. An application upgraded from an earlier version that published to a Hub removes the dependency with `pnpm nocobase package remove @nocobase/hub-cli` and deletes `.nocobase/hub.json`; the `nocobase-app-upgrade` Skill describes the steps. The application Skills, the plugins' documentation and the in-app test notification text no longer mention the Hub.
+
+- c796cb9: Remove the Settings and Dev route surfaces. `@nocobase/app-client` no longer exports `defineSettingsRoutes()`, `defineDevRoutes()`, `isAppClientSettingsRouteGroup()`, `isAppClientDevRouteGroup()` or their definition, contribution and registered-route types, and the resolved runtime no longer carries `settingsRouteTree`, `devRouteTree`, `settings`, `settingGroups`, `devRoutes` or `devRouteGroups`. `AppClientSettingsRouteNavigation` is renamed `AppClientRouteNavigation` and `AppClientSettingIcon` is renamed `AppClientRouteIcon`. A contribution to any parent other than `app` now fails registration with a message that names `defineAppRoutes()`. Plugins contribute no settings or dev pages; an application that wants a configuration page declares it with `defineAppRoutes()` in its own navigation, for example under a Settings group.
+
+  The default and examples templates drop the settings layout, the `/settings/*` route, the dev route plumbing, and the Settings and Inbox buttons in the header; the `/inbox` page and the inbox block stay. The examples template no longer registers `@nocobase/app-plugin-departments-example`, which is removed. Upgrading an application means removing `defineSettingsRoutes([])` from `client/routes.ts`, the `settingsRouteTree` and `devRouteTree` props passed to `AppRouter`, and any settings layout it kept, and moving its own settings pages to `defineAppRoutes()`. Every package that depends on or peers with `@nocobase/app-client` is released again so that its published range accepts `3.0.0-beta.0`.
+
+### Patch Changes
+
+- 98e79a5: Add a record lifecycles reference to the `nocobase-app-development` Skill, telling an agent when to build a staged business record with `@nocobase/lifecycle` instead of a workflow, and how to write its definition, migration, provider, routes, page and tests in an application.
+- 5aae93b: Add optional raw event type filtering to run event queries and the generated CLI. Apply filters before sequence pagination while preserving the default unfiltered history and existing access checks.
+
+  Add a reversible run/type/sequence index so following a sparse event type does not repeatedly scan unrelated events in long runs. Pagination cursors retain their existing meaning.
+
+  Document complete transcript loading, scoped filter preferences, and filter label translation in the UI Library catalog.
+
+- eea95a7: Add theme upgrade checks for connected presentation changes, nested navigation density, business-page verification, isolated unreleased rehearsals, and preservation of custom styles with explicit visual-conflict decisions.
+- c796cb9: Remove the AI employee packages from the repository
+
+  `@nocobase/app-plugin-ai-employee`, `@nocobase/ai-employee` and `@nocobase/app-plugin-ai-employee-example` were already deprecated and no template installed them; they are now deleted and will not be released again. The Default and Examples templates drop `@nocobase/ai-employee-avatars`, which only the plugin's avatars used.
+
+  Generated plugins' `AGENTS.md` and the copies shipped with existing plugins no longer list `@nocobase/ai-employee` among the identity-sensitive packages. The HTTP API references in the application development Skill use other plugins for their examples, and the upgrade Skill tells an application that still depends on the removed packages to review their usage before removing them, because the runtime will move past what their peer ranges accept.
+
+  `pnpm build` no longer copies `ai/skills` into `dist/ai/skills`. The AI employee plugin was the only reader of that directory; an application that keeps Skills there for another purpose has to copy them itself, for example from a build hook.
+
+- 98e79a5: Remove the Workflow plugin from the repository
+
+  `@nocobase/app-plugin-workflow` was already disabled in every template; it is now deleted and will not be released again. Record lifecycles built with `@nocobase/lifecycle` take its place for business processes, and the Workflow pages of the documentation now describe them.
+
+  Breaking for the Default and Examples templates: they no longer depend on `@nocobase/app-plugin-workflow` and drop `server/config/workflow.ts`, the `workflows` directory in `files`, and the TypeScript and ESLint settings for workflow packages. The Examples template also drops its flow examples: its `workflows` directory, the quotation review task API under `/api/quotationReviewTasks`, the waiting-task pages under `/workflow/waiting-tasks`, and the two schedules that ran the analytics report and the scheduled test flow. A new migration, `202610100001_drop_review_tasks_and_daily_reports`, drops the `quotationReviewTasks` and `exampleDailyReports` tables nothing uses any more. Workflow rows an existing database already holds stay where they are, since no remaining plugin owns them. An application that still uses the plugin keeps its dependency on the last published version, whose peer ranges will stop accepting the runtime as it moves on.
+
+  The scheduler no longer describes a `workflow` target or ships labels for it; every schedule points at a target the application or a plugin registers with `registerTarget()`, and an unlabelled target type or reason is shown as it is. The application development, deployment and upgrade Skills no longer route approvals to the plugin, describe its wait node, its Artifacts after a production build or its pages, and their examples use other plugins. The command help of `@nocobase/app-cli`, the i18n Skill, and the plugin scaffold's guidance use other plugins as examples too.
+
+- fb7b576: Keep workflow editing actions visible while scrolling and preserve unsaved editors through host-managed navigation guards. Restore declined navigation safely across native hash history index resets and history predating the mounted guard. Subscribe to page unload only while edits or requests are pending, and document the shared navigation boundary.
+
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- d86a77c: Deprecate `@nocobase/app-plugin-ai-employee` and stop installing it in the application templates
+
+  The plugin is deprecated and no longer developed; its README says so. Default and Examples no longer depend on `@nocobase/app-plugin-ai-employee` or `@nocobase/ai-employee`, register the plugin in `client/plugins.ts`, `server/plugins.ts` and `cli/plugins.ts`, or ship `server/config/ai.ts` and the commented `ai` section of `config.example.yml`. Examples also drops its AI employee demonstration: the global AI entry around `AppLayout`, the `nocobase-ai` and `nocobase-ai-employee-example-tasks-page` extensions, the **AI employee tasks** homepage link, and `@nocobase/app-plugin-ai-employee-example`.
+
+  The application development Skill no longer recommends the plugin or documents its `ai-employee` commands, and the upgrade Skill describes what removing it involves.
+
+  An existing application keeps the plugin unless it removes it. An upgrade that follows the template asks first: an application that configured an LLM service or has AI employees, conversations or an `ai/` directory keeps the plugin, its registrations and its configuration, and the plugin's current release keeps working there. Removing it unregisters the plugin but leaves its tables and data in the database.
+
+- 1408643: Disable the Workflow plugin by default while retaining its dependency, configuration, and example sources for explicit opt-in use. Remove inactive workflow example entry points and register their schedules only when the plugin is enabled.
+
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- 88bc9eb: List the new `approval-ui` UI Library block in the application Skill's UI Library catalog: presentational approval components for a request's progress, history, route preview, parallel branches, receipts and action bar.
+- bb8484b: Support CDN_BASE_URL for frontend asset URLs in application and Docker source builds. Add resolveAssetUrl for shipped static files, migrate template logos, and document its distinction from runtime application URLs.
+- 10a1759: End a bare URL in issue descriptions and comments at the first CJK character or full-width punctuation mark, so `PR：https://example.com/pull/8（分支 x）` links `https://example.com/pull/8` instead of `https://example.com/pull/8（分支`. The UI Library catalog in the application Skill lists the `remark-cjk-autolink.ts` file the `markdown-view` item now installs.
+- a695d19: Use the public npm registry as the default source for NocoBase packages, templates, deployment commands, and generated application guidance.
+- dc91aab: Use package-local `#` subpath imports in registry recipes, examples and application templates. Configure the same prefixes in `components.json` and `package.json#imports`, and remove build-tool aliases for these paths. Generated plugins resolve development sources locally and published imports from `dist/client`.
+
+  Existing applications and plugins should merge the new `imports` mappings and shadcn prefixes before installing the updated registry recipes. Directory entry points need an explicit mapping to their index file. Existing customized copies remain application-owned and are not overwritten.
+
 ## 0.1.0-beta.24
 
 ### Patch Changes

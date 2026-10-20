@@ -22,6 +22,26 @@
 #     max: 600
 #     window: 1m
 
+# Realtime events are transient and local to this process. Clients refetch after subscription acknowledgement.
+# realtime:
+#   adapter: inMemory # Use redis for multiple application processes.
+#   redis:
+#     connection:
+#       host: 127.0.0.1
+#       port: 6379
+#   namespace: my-app # Defaults to the application name; keep applications isolated.
+#   authorizationTimeoutMs: 5000
+#   sessionCheckIntervalMs: 30000
+#   limits:
+#     maxConcurrentAuthorizations: 256
+#     maxPendingAuthorizations: 2048
+#     maxRecentEventIds: 10000
+#     maxConnections: 10000
+#     maxMessageBytes: 65536
+#     maxSubscriptionsPerConnection: 64
+#     maxBufferedBytesPerConnection: 1048576
+#     maxPendingMessagesPerConnection: 64
+
 # Values under client are public and embedded in the SPA HTML.
 client:
   app:
@@ -84,22 +104,6 @@ notification:
     #   provider: dingtalk-webhook
     #   webhookUrl: https://oapi.dingtalk.com/robot/send?access_token=replace-with-the-token
 
-# Declarative LLM services are loaded from application config, keyed by service name.
-# The server reads this when it starts: restart it after editing, which `pnpm dev` does on its own.
-# Keep the key out of this file. Write it into config.yml with
-# `pnpm nocobase config set --from-env ai.llmServices.openai.options.apiKey=OPENAI_API_KEY`,
-# or map an injected environment variable onto that path in server/config/ai.ts.
-# ai:
-#   llmServices:
-#     openai:
-#       title: OpenAI
-#       provider: openai
-#       enabledModels:
-#         - label: GPT-4.1
-#           value: gpt-4.1
-#       enabled: true
-#       sort: 10
-
 # DB_DIALECT, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, DB_SSL and DB_FILENAME override the main
 # connection's fields from the environment.
 database:
@@ -152,6 +156,11 @@ snowflake:
 # The jobs configuration the Scheduler plugin's schedules run on, by name. Left out, they follow jobs.default.
 # scheduler:
 #   jobs: redis
+
+# Mail is registered by default. Configure mailbox provider instances before connecting accounts.
+# See .agents/skills/nocobase-app-plugin-mail/references/configuration-and-accounts.md.
+mail:
+  providers: {}
 
 # File logging is independent of terminal formatting.
 logging:

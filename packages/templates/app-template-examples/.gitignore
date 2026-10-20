@@ -20,7 +20,9 @@ dist-ssr
 /test-results/
 /.pnpm-store/
 /storage/
-/.agents/
+# .agents/skills/ is synchronized output; .agents/rules/ is application-owned guidance linked from AGENTS.md.
+/.agents/*
+!/.agents/rules/
 /.claude/skills/
 
 # Local application configuration
@@ -58,5 +60,3 @@ _.sln
 
 /config.toml
 
-# Application-local workflow test fixtures need application dependency resolution.
-/.workflow-examples-*/

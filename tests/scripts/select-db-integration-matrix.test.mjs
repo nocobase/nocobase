@@ -14,8 +14,10 @@ import path from 'node:path';
 import test from 'node:test';
 import {
   databases,
+  packageSuites,
   planDbIntegration,
   selectDatabases,
+  selectPackageSuites,
 } from '../../scripts/select-db-integration-matrix.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
@@ -105,7 +107,6 @@ test('shared database code and dependency or CI inputs select every database', (
     '.pnpmfile.cjs',
     'pnpmfile.cjs',
     'patches/knex.patch',
-    '.github/workflows/quality.yml',
     'scripts/select-db-integration-matrix.mjs',
     'tests/scripts/select-db-integration-matrix.test.mjs',
   ]) {
@@ -121,10 +122,98 @@ test('unrelated paths and empty changes skip the matrix', () => {
       'AGENTS.md',
       'packages/app/app-client/src/index.ts',
       'packages/libs/db-postgres-extra/src/index.ts',
-      '.github/workflows/release-beta.yml',
+      '.github/workflows/v3-release-beta.yml',
     ]),
     [],
   );
+});
+
+const claimConcurrency = {
+  dialect: 'postgres',
+  filter: '@nocobase/app-plugin-agents',
+  tests:
+    'tests/claim-concurrency.test.ts tests/active-input.test.ts tests/run-revision-migration.test.ts',
+};
+
+const artifactKeyMigration = {
+  dialect: 'mssql',
+  filter: '@nocobase/app-plugin-releases',
+  tests: 'tests/artifact-key-migration.test.ts',
+};
+
+const withdrawalConcurrency = ['postgres', 'mysql'].map((dialect) => ({
+  dialect,
+  filter: '@nocobase/app-plugin-agent-sessions',
+  tests: 'tests/server/withdrawals.test.ts',
+}));
+
+test('execution arbitration selects real row-lock regressions without charging UI changes', () => {
+  for (const file of [
+    'packages/plugins/app-plugin-agent-sessions/server/service.ts',
+    'packages/plugins/app-plugin-agent-sessions/server/store.ts',
+    'packages/plugins/app-plugin-agent-sessions/tests/server/withdrawals.test.ts',
+    'packages/libs/acp-bridge/src/protocol.ts',
+  ])
+    assert.deepEqual(selectPackageSuites([file]), withdrawalConcurrency, file);
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-agent-sessions/client/transcript.ts',
+    ]),
+    [],
+  );
+});
+
+test('release migration changes select the SQL Server upgrade regression', () => {
+  for (const file of [
+    'packages/plugins/app-plugin-releases/database/migrations/202610020001_rel_create_tables.ts',
+    'packages/plugins/app-plugin-releases/database/migrations/202610260002_rel_bound_artifact_keys.ts',
+    'packages/plugins/app-plugin-releases/tests/artifact-key-migration.test.ts',
+  ])
+    assert.deepEqual(selectPackageSuites([file]), [artifactKeyMigration], file);
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-releases/server/plugin.ts',
+    ]),
+    [],
+  );
+});
+
+test('a guarded package path selects its dialect suite, and nothing else does', () => {
+  for (const file of [
+    'packages/plugins/app-plugin-agents/server/core/runs/claim.ts',
+    'packages/plugins/app-plugin-agents/server/core/runs/comment-consent.ts',
+    'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
+    'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
+    'packages/plugins/app-plugin-agents/database/migrations/202610260001_ag_run_revision.ts',
+  ]) {
+    assert.deepEqual(selectPackageSuites([file]), [claimConcurrency], file);
+    assert.deepEqual(selectDatabases([file]), [], file);
+  }
+  for (const file of [
+    'packages/plugins/app-plugin-agents/server/core/agents/agent.service.ts',
+    'packages/plugins/app-plugin-agents/client/index.ts',
+    'packages/libs/db-postgres/src/index.ts',
+  ])
+    assert.deepEqual(selectPackageSuites([file]), [], file);
+});
+
+test('every package suite names tests that exist', () => {
+  for (const suite of packageSuites) {
+    const directory = path.join(
+      root,
+      'packages',
+      'plugins',
+      suite.filter.replace('@nocobase/', ''),
+    );
+    for (const file of suite.tests)
+      assert.ok(
+        readdirSync(path.dirname(path.join(directory, file))).includes(
+          path.basename(file),
+        ),
+        file,
+      );
+    assert.ok(databases.includes(suite.dialect), suite.dialect);
+  }
 });
 
 test('git selection covers additions, deletion, renames in and out, and unusual filenames', (t) => {
@@ -138,10 +227,10 @@ test('git selection covers additions, deletion, renames in and out, and unusual 
     path.join(repo.cwd, 'packages/libs/db-postgres/move-out.ts'),
     path.join(repo.cwd, 'docs/moved-out.ts'),
   );
-  repo.write('packages/libs/db-kingbase/placeholder.ts');
+  repo.write('packages/libs/db-mssql/placeholder.ts');
   renameSync(
     path.join(repo.cwd, 'docs/move-in.ts'),
-    path.join(repo.cwd, 'packages/libs/db-kingbase/moved-in.ts'),
+    path.join(repo.cwd, 'packages/libs/db-mssql/moved-in.ts'),
   );
   repo.write('packages/libs/db-sqlite/空 格\nfile.ts');
   const headSha = repo.commit();
@@ -149,7 +238,7 @@ test('git selection covers additions, deletion, renames in and out, and unusual 
     'sqlite',
     'postgres',
     'mysql',
-    'kingbase',
+    'mssql',
   ]);
 });
 
@@ -189,10 +278,13 @@ test('missing or unavailable comparison commits conservatively select every data
   const repo = createRepository(t);
   const headSha = repo.commit();
   for (const baseSha of [undefined, '', '0'.repeat(40), 'f'.repeat(40)]) {
-    assert.deepEqual(
-      planDbIntegration({ ...repo, baseSha, headSha }).databases,
-      databases,
-    );
+    const plan = planDbIntegration({ ...repo, baseSha, headSha });
+    assert.deepEqual(plan.databases, databases);
+    assert.deepEqual(plan.suites, [
+      ...withdrawalConcurrency,
+      claimConcurrency,
+      artifactKeyMigration,
+    ]);
   }
   assert.deepEqual(
     planDbIntegration({ ...repo, baseSha: headSha }).databases,
@@ -207,8 +299,8 @@ test('the CLI publishes matrix outputs for selected and skipped runs', (t) => {
   const headSha = repo.commit();
   const output = path.join(repo.cwd, 'github-output');
   for (const [base, expected] of [
-    [baseSha, 'databases=["mssql"]\nshould_run=true\n'],
-    [headSha, 'databases=[]\nshould_run=false\n'],
+    [baseSha, 'databases=["mssql"]\nshould_run=true\nsuites=[]\n'],
+    [headSha, 'databases=[]\nshould_run=false\nsuites=[]\n'],
   ]) {
     writeFileSync(output, '');
     execFileSync(process.execPath, [script], {
@@ -222,76 +314,4 @@ test('the CLI publishes matrix outputs for selected and skipped runs', (t) => {
     });
     assert.equal(readFileSync(output, 'utf8'), expected);
   }
-});
-
-test('the actual Quality gate only accepts successful tests or an explicitly planned skip', () => {
-  const workflow = readFileSync(
-    path.join(root, '.github/workflows/quality.yml'),
-    'utf8',
-  );
-  const gate = workflow.slice(
-    workflow.indexOf('      - name: Verify parallel jobs'),
-  );
-  const shell = gate
-    .split('        run: |\n')[1]
-    .split('\n')
-    .map((line) => line.slice(10))
-    .join('\n');
-  const passing = {
-    CHANGED_FILES_RESULT: 'success',
-    VALIDATION_RESULT: 'success',
-    BUILD_RESULT: 'success',
-    CREATE_APP_SMOKE_RESULT: 'success',
-    APP_INSTALLER_SMOKE_RESULT: 'success',
-    DB_PLAN_RESULT: 'success',
-    DB_SHOULD_RUN: 'true',
-    DB_INTEGRATION_RESULT: 'success',
-  };
-  const run = (overrides) =>
-    spawnSync('bash', ['-e', '-c', shell], {
-      env: { ...process.env, ...passing, ...overrides },
-    }).status;
-  assert.equal(run({}), 0);
-  assert.equal(
-    run({ DB_SHOULD_RUN: 'false', DB_INTEGRATION_RESULT: 'skipped' }),
-    0,
-  );
-  for (const result of ['failure', 'cancelled', 'skipped', '']) {
-    assert.notEqual(
-      run({
-        DB_PLAN_RESULT: result,
-        DB_SHOULD_RUN: 'false',
-        DB_INTEGRATION_RESULT: 'skipped',
-      }),
-      0,
-    );
-    assert.notEqual(run({ DB_INTEGRATION_RESULT: result }), 0);
-  }
-  for (const result of ['success', 'failure', 'cancelled']) {
-    assert.notEqual(
-      run({ DB_SHOULD_RUN: 'false', DB_INTEGRATION_RESULT: result }),
-      0,
-    );
-  }
-  assert.notEqual(
-    run({ DB_SHOULD_RUN: '', DB_INTEGRATION_RESULT: 'skipped' }),
-    0,
-  );
-  for (const job of [
-    'CHANGED_FILES_RESULT',
-    'VALIDATION_RESULT',
-    'BUILD_RESULT',
-    'CREATE_APP_SMOKE_RESULT',
-    'APP_INSTALLER_SMOKE_RESULT',
-  ]) {
-    assert.notEqual(run({ [job]: 'failure' }), 0);
-  }
-  assert.notEqual(
-    run({
-      BUILD_RESULT: 'failure',
-      DB_SHOULD_RUN: 'false',
-      DB_INTEGRATION_RESULT: 'skipped',
-    }),
-    0,
-  );
 });

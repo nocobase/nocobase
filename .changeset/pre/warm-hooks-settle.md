@@ -1,7 +1,6 @@
 ---
 '@nocobase/app-template-default': minor
 '@nocobase/app-template-examples': minor
-'@nocobase/app-template-hub': minor
 ---
 
 Run plugin-registered commands during `pnpm build` and `pnpm dev`

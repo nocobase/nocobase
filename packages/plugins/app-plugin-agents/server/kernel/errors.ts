@@ -16,6 +16,7 @@ export function invalid(
 export type Missing =
   | 'Agent'
   | 'Run'
+  | 'Run request'
   | 'Run context'
   | 'Brief'
   | 'Conversation'
@@ -35,6 +36,7 @@ export type Missing =
 const MISSING: Readonly<Record<Missing, ErrorCode>> = {
   Agent: 'AGENT_NOT_FOUND',
   Run: 'RUN_NOT_FOUND',
+  'Run request': 'RUN_REQUEST_NOT_FOUND',
   'Run context': 'RUN_CONTEXT_NOT_FOUND',
   Brief: 'BRIEF_NOT_FOUND',
   Conversation: 'CONVERSATION_NOT_FOUND',

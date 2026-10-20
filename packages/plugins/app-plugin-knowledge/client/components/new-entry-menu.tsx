@@ -50,10 +50,18 @@ export function NewEntryMenuContent({
           </DropdownMenuItem>
         </>
       ) : (
-        <DropdownMenuItem onClick={() => actions.proposeFile()}>
-          <FileUpIcon />
-          {t('knowledge.files.proposeNew')}
-        </DropdownMenuItem>
+        <>
+          <DropdownMenuItem
+            onClick={() => actions.newEntry('article', parentId)}
+          >
+            <FilePlusIcon />
+            {t('knowledge.new.article')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => actions.proposeFile(parentId)}>
+            <FileUpIcon />
+            {t('knowledge.files.proposeNew')}
+          </DropdownMenuItem>
+        </>
       )}
     </DropdownMenuContent>
   );

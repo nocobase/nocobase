@@ -8,7 +8,11 @@ export interface PermissionSetStore<TTransaction = unknown> {
   list(): Promise<readonly PermissionSet[]>;
   get(key: string): Promise<PermissionSet | undefined>;
   create(permissionSet: PermissionSet): Promise<PermissionSet>;
-  update(key: string, permissionSet: PermissionSet): Promise<PermissionSet>;
+  update(
+    key: string,
+    permissionSet: PermissionSet,
+    expectedRevision?: string,
+  ): Promise<PermissionSet>;
   delete(key: string): Promise<void>;
   assign(assignment: PermissionSetAssignment): Promise<PermissionSetAssignment>;
   revoke(id: string): Promise<void>;

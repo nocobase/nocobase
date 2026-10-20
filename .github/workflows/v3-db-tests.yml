@@ -1,0 +1,145 @@
+name: V3 Database tests
+
+# Runs the tests of every package that takes its database from @nocobase/db-testing, directly or through
+# @nocobase/app-testing, on a dialect other than the default. Pull requests run them on SQLite through Quality's Test
+# job; this workflow covers the other dialects nightly, and any one of them on demand. On a pull request it runs only
+# the package suites scripts/select-db-integration-matrix.mjs selects from the changed paths, such as the agents
+# plugin's PostgreSQL claim concurrency test, and nothing when none is selected.
+
+on:
+  pull_request:
+    branches:
+      - v3-main
+      - v3-develop
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      dialect:
+        description: Database dialect to run the tests on
+        type: choice
+        default: postgres
+        options:
+          - sqlite
+          - postgres
+          - mysql
+          - mssql
+          - oracle
+      filter:
+        description: Package to test, such as @nocobase/app-plugin-scheduler; leave empty for every package that uses @nocobase/db-testing or @nocobase/app-testing
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-tests-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'selected' || inputs.dialect || 'nightly' }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Database tests (${{ matrix.dialect }})
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        dialect: ${{ github.event_name == 'schedule' && fromJSON('["postgres","mysql"]') || fromJSON(format('["{0}"]', inputs.dialect)) }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared development config
+        run: pnpm dev-config:build
+
+      - name: Test on ${{ matrix.dialect }}
+        env:
+          DIALECT: ${{ matrix.dialect }}
+          FILTER: ${{ inputs.filter }}
+        run: |
+          if [[ -n "$FILTER" ]]; then
+            pnpm test:db "$DIALECT" --filter "$FILTER"
+          else
+            pnpm test:db "$DIALECT" --all
+          fi
+
+  plan:
+    name: Select database suites
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      suites: ${{ steps.select.outputs.suites }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Select suites from changed paths
+        id: select
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: HEAD_SHA="$(git rev-parse HEAD)" node scripts/select-db-integration-matrix.mjs
+
+  suites:
+    name: Database suite (${{ matrix.suite.dialect }}, ${{ matrix.suite.filter }})
+    needs: plan
+    if: ${{ needs.plan.outputs.suites != '' && needs.plan.outputs.suites != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ fromJSON(needs.plan.outputs.suites) }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared development config
+        run: pnpm dev-config:build
+
+      - name: Test ${{ matrix.suite.tests }} on ${{ matrix.suite.dialect }}
+        env:
+          DIALECT: ${{ matrix.suite.dialect }}
+          FILTER: ${{ matrix.suite.filter }}
+          TESTS: ${{ matrix.suite.tests }}
+        # TESTS is a space-separated list of test files, split on purpose.
+        run: pnpm test:db "$DIALECT" --filter "$FILTER" -- $TESTS

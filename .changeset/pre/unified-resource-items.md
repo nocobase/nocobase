@@ -4,7 +4,6 @@
 '@nocobase/app-plugin-authorization-example': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Unify grantable resource registration through getResource(type).items and separate recursive display groups. Move authorization settings to module-qualified items under the built-in settings resource, replace the database collections registration entry point, and preserve page navigation groups in the resource picker. Existing authorization settings grant records are not migrated.

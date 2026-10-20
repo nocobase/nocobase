@@ -1,5 +1,4 @@
 import type { AppRuntimeContext } from './runtime/index.js';
-import type { RefineProps } from '@refinedev/core';
 import type { ComponentType, PropsWithChildren, ReactNode } from 'react';
 import type { PublicConfigPath, PublicConfigValue } from './public-config.js';
 
@@ -59,8 +58,6 @@ export type AppClientConfigFactory = (
 
 export type AppClientReactProvider = ComponentType<PropsWithChildren>;
 
-export type AppClientRefineConfig = Omit<RefineProps, 'accessControlProvider'>;
-
 export interface AppClientRenderConfig {
   readonly basename?: string;
   readonly reactProviders?: readonly AppClientReactProvider[];
@@ -104,7 +101,7 @@ export function normalizeAppClientBasename(
 }
 
 /**
- * `import.meta.env` is read through a local type and an optional access, as in `defineDevRoutes`: consumers compile
+ * `import.meta.env` is read through a local type and an optional access, as in `plugins.ts`: consumers compile
  * this module without bundler ambient types, and Vitest runs it where `import.meta.env` is undefined — a development
  * context, which is where these checks are meant to speak up.
  */

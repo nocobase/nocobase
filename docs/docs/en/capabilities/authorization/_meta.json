@@ -2,7 +2,7 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Permissions"
+    "label": "Authorization"
   },
   {
     "type": "file",
@@ -12,12 +12,12 @@
   {
     "type": "file",
     "name": "data-scopes",
-    "label": "Record scopes and rules"
+    "label": "Data scopes and rules"
   },
   {
     "type": "file",
     "name": "default-access",
-    "label": "Default access"
+    "label": "Default data access"
   },
   {
     "type": "file",
@@ -32,11 +32,6 @@
   {
     "type": "file",
     "name": "inspector",
-    "label": "Inspect permission results"
-  },
-  {
-    "type": "file",
-    "name": "develop-with-ai",
-    "label": "Describe permissions to AI"
+    "label": "Inspecting permissions"
   }
 ]

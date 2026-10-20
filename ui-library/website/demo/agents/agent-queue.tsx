@@ -5,6 +5,8 @@ import type {
   AgentQueueData,
   AgentQueueEntry,
   AgentQueueRow,
+  AgentQueueWait,
+  AgentQueueWaitView,
 } from '#extensions/nocobase-agent-queue/types';
 
 const VIEWER = 'u-me';
@@ -33,7 +35,7 @@ const row = (
   value: AgentQueueEntry,
 ): AgentQueueRow => ({
   ...value,
-  issue: { id: `i${id}`, identifier: `PM-${id}`, title, blockedCount: 0 },
+  issue: { id: `i${id}`, identifier: `EXAMPLE-${id}`, title, blockedCount: 0 },
   others: [],
   mine,
 });
@@ -135,7 +137,7 @@ const DEMO_DATA: AgentQueueData = {
       false,
       entry('code', 'queued', {
         blockedBy: [
-          { issueId: 'i12', identifier: 'PM-12', title: 'Theme tokens' },
+          { issueId: 'i12', identifier: 'EXAMPLE-12', title: 'Theme tokens' },
         ],
       }),
     ),
@@ -149,7 +151,7 @@ const DEMO_DATA: AgentQueueData = {
           since: ago(3600),
           waitingFor: [{ userId: VIEWER, name: 'Me' }],
           viewerDecides: true,
-          path: '/issues/PM-30#design',
+          path: '/issues/EXAMPLE-30#design',
           detail: null,
         },
       }),
@@ -220,6 +222,20 @@ const DEMO_DATA: AgentQueueData = {
   generatedAt: new Date().toISOString(),
 };
 
+// The words an application gives the waits, such as the agents plugin's `formatRunWait`; the item knows no reason.
+const DEMO_WAITS: Readonly<Record<string, string>> = {
+  noRunnerOnline: 'No runtime online',
+  concurrencyFull: 'Concurrency full',
+  next: 'Next for a free runtime',
+};
+
+function formatDemoWait(wait: AgentQueueWait): AgentQueueWaitView {
+  return {
+    text: DEMO_WAITS[wait.reason] ?? `Queued (${wait.reason})`,
+    blocking: wait.reason === 'noRunnerOnline',
+  };
+}
+
 export function AgentQueueDemo(): ReactElement {
   const [onlyMine, setOnlyMine] = useState(false);
   const [opened, setOpened] = useState<string | null>(null);
@@ -237,6 +253,7 @@ export function AgentQueueDemo(): ReactElement {
           onlyMine={onlyMine}
           onOnlyMineChange={setOnlyMine}
           onStart={(issue) => setOpened(`Started ${issue.identifier}`)}
+          formatWait={formatDemoWait}
           expandIdle
         />
       </div>

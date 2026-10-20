@@ -1,10 +1,8 @@
 ---
 '@nocobase/app-cli': minor
 '@nocobase/app-host': patch
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Declare `tsx` and `typescript` as peer dependencies of `@nocobase/app-tools`, and stop loading the TypeScript compiler on every `pnpm dev`.

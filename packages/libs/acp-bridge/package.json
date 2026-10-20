@@ -1,0 +1,66 @@
+{
+  "name": "@nocobase/acp-bridge",
+  "version": "1.0.0-beta.3",
+  "description": "Runs a person's coding agents on their own computer for a NocoBase application's agent sessions, over the Agent Client Protocol, and the wire protocol between that bridge and the application",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "sideEffects": false,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./protocol": {
+      "types": "./src/protocol.ts",
+      "import": "./src/protocol.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./protocol": {
+        "types": "./dist/protocol.d.ts",
+        "import": "./dist/protocol.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "fix": "pnpm lint:fix && pnpm format"
+  },
+  "dependencies": {
+    "@agentclientprotocol/sdk": "^1.8.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@nocobase/dev-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

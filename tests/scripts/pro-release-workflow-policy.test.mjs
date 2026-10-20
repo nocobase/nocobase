@@ -5,9 +5,9 @@ import test from 'node:test';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const proWorkflows = [
-  'pro-release-beta.yml',
-  'pro-release-stable.yml',
-  'pro-promote-to-stable.yml',
+  'v3-pro-release-beta.yml',
+  'v3-pro-release-stable.yml',
+  'v3-pro-promote-to-stable.yml',
 ];
 
 async function workflow(name) {
@@ -33,6 +33,32 @@ test('every step that can write outside the runner is disabled for dry runs', as
       remoteMutation.test(candidate),
     )) {
       assert.match(step, /^\s*if: .*!inputs\.dry_run/mu, `${name}:\n${step}`);
+    }
+  }
+});
+
+test('the Pro registry serves only the @nocobase scope and the install can authenticate to it', async () => {
+  for (const name of proWorkflows) {
+    const source = await workflow(name);
+    const steps = source.split(/\n(?=      - name: )/u);
+    const registrySteps = steps.filter((step) =>
+      /^\s+registry-url: \$\{\{ secrets\.PRO_NPM_REGISTRY \}\}\s*$/mu.test(
+        step,
+      ),
+    );
+    for (const step of registrySteps) {
+      assert.match(step, /^\s+scope: '@nocobase'\s*$/mu, `${name}:\n${step}`);
+    }
+    if (registrySteps.length > 0) {
+      const install = steps.find((step) =>
+        step.includes('node ./scripts/sync-release-oss.mjs'),
+      );
+      assert.ok(install, name);
+      assert.match(
+        install,
+        /^\s+NODE_AUTH_TOKEN: \$\{\{ secrets\.PRO_NPM_TOKEN \}\}\s*$/mu,
+        `${name}:\n${install}`,
+      );
     }
   }
 });

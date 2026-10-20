@@ -18,12 +18,12 @@ Always use `FieldGroup` + `Field` — never raw `div` with `space-y-*`:
 ```tsx
 <FieldGroup>
   <Field>
-    <FieldLabel htmlFor="email">Email</FieldLabel>
-    <Input id="email" type="email" />
+    <FieldLabel htmlFor='email'>Email</FieldLabel>
+    <Input id='email' type='email' />
   </Field>
   <Field>
-    <FieldLabel htmlFor="password">Password</FieldLabel>
-    <Input id="password" type="password" />
+    <FieldLabel htmlFor='password'>Password</FieldLabel>
+    <Input id='password' type='password' />
   </Field>
 </FieldGroup>
 ```
@@ -52,18 +52,18 @@ Never use raw `Input` or `Textarea` inside an `InputGroup`.
 
 ```tsx
 <InputGroup>
-  <Input placeholder="Search..." />
+  <Input placeholder='Search...' />
 </InputGroup>
 ```
 
 **Correct:**
 
 ```tsx
-import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
+import { InputGroup, InputGroupInput } from '@/components/ui/input-group';
 
 <InputGroup>
-  <InputGroupInput placeholder="Search..." />
-</InputGroup>
+  <InputGroupInput placeholder='Search...' />
+</InputGroup>;
 ```
 
 ---
@@ -75,9 +75,9 @@ Never place a `Button` directly inside or adjacent to an `Input` with custom pos
 **Incorrect:**
 
 ```tsx
-<div className="relative">
-  <Input placeholder="Search..." className="pr-10" />
-  <Button className="absolute right-0 top-0" size="icon">
+<div className='relative'>
+  <Input placeholder='Search...' className='pr-10' />
+  <Button className='absolute right-0 top-0' size='icon'>
     <SearchIcon />
   </Button>
 </div>
@@ -86,16 +86,20 @@ Never place a `Button` directly inside or adjacent to an `Input` with custom pos
 **Correct:**
 
 ```tsx
-import { InputGroup, InputGroupInput, InputGroupAddon } from "@/components/ui/input-group"
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+} from '@/components/ui/input-group';
 
 <InputGroup>
-  <InputGroupInput placeholder="Search..." />
+  <InputGroupInput placeholder='Search...' />
   <InputGroupAddon>
-    <Button size="icon">
-      <SearchIcon data-icon="inline-start" />
+    <Button size='icon'>
+      <SearchIcon data-icon='inline-start' />
     </Button>
   </InputGroupAddon>
-</InputGroup>
+</InputGroup>;
 ```
 
 ---
@@ -125,24 +129,24 @@ const [selected, setSelected] = useState("daily")
 **Correct:**
 
 ```tsx
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 <ToggleGroup spacing={2}>
-  <ToggleGroupItem value="daily">Daily</ToggleGroupItem>
-  <ToggleGroupItem value="weekly">Weekly</ToggleGroupItem>
-  <ToggleGroupItem value="monthly">Monthly</ToggleGroupItem>
-</ToggleGroup>
+  <ToggleGroupItem value='daily'>Daily</ToggleGroupItem>
+  <ToggleGroupItem value='weekly'>Weekly</ToggleGroupItem>
+  <ToggleGroupItem value='monthly'>Monthly</ToggleGroupItem>
+</ToggleGroup>;
 ```
 
 Combine with `Field` for labelled toggle groups:
 
 ```tsx
-<Field orientation="horizontal">
-  <FieldTitle id="theme-label">Theme</FieldTitle>
-  <ToggleGroup aria-labelledby="theme-label" spacing={2}>
-    <ToggleGroupItem value="light">Light</ToggleGroupItem>
-    <ToggleGroupItem value="dark">Dark</ToggleGroupItem>
-    <ToggleGroupItem value="system">System</ToggleGroupItem>
+<Field orientation='horizontal'>
+  <FieldTitle id='theme-label'>Theme</FieldTitle>
+  <ToggleGroup aria-labelledby='theme-label' spacing={2}>
+    <ToggleGroupItem value='light'>Light</ToggleGroupItem>
+    <ToggleGroupItem value='dark'>Dark</ToggleGroupItem>
+    <ToggleGroupItem value='system'>System</ToggleGroupItem>
   </ToggleGroup>
 </Field>
 ```
@@ -157,12 +161,14 @@ Use `FieldSet` + `FieldLegend` for related checkboxes, radios, or switches — n
 
 ```tsx
 <FieldSet>
-  <FieldLegend variant="label">Preferences</FieldLegend>
+  <FieldLegend variant='label'>Preferences</FieldLegend>
   <FieldDescription>Select all that apply.</FieldDescription>
-  <FieldGroup className="gap-3">
-    <Field orientation="horizontal">
-      <Checkbox id="dark" />
-      <FieldLabel htmlFor="dark" className="font-normal">Dark mode</FieldLabel>
+  <FieldGroup className='gap-3'>
+    <Field orientation='horizontal'>
+      <Checkbox id='dark' />
+      <FieldLabel htmlFor='dark' className='font-normal'>
+        Dark mode
+      </FieldLabel>
     </Field>
   </FieldGroup>
 </FieldSet>

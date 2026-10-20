@@ -1,10 +1,14 @@
 import { createApp } from '../../server/app.js';
 import authConfig from '../../server/config/auth.js';
 // @vitest-environment node
+import { workflowRoutes } from '../../server/routes/workflows.js';
 import { articlesRoutes } from '../../server/routes/articles.ts';
 import { analyticsRoutes } from '../../server/routes/analytics.ts';
 import { externalCrmRoutes } from '../../server/routes/external-crm.ts';
 import { numericExamplesRoutes } from '../../server/routes/numeric-examples.ts';
+import { structuredExtractionRoutes } from '../../server/routes/structured-extraction.ts';
+import { aiTranslationRoutes } from '../../server/routes/ai-translation.ts';
+import AIFormFillProvider from '../../server/providers/ai-form-fill.js';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -275,14 +279,6 @@ describe('app server', () => {
     }
   });
 
-  it('starts without optional plugins or workflow routes', async () => {
-    const app = createTestApp();
-
-    expect(
-      app.router.routes.some((route) => route.path.includes('/workflows')),
-    ).toBe(false);
-  });
-
   it('creates embedded apps from a scope', async () => {
     const app = await createEmbeddedServer(
       await createEmbeddedTestScope({
@@ -342,16 +338,21 @@ describe('app server', () => {
       {
         ...appRuntime,
         plugins: defineServerPlugins<AppConfig>([]),
-        // This composition fixture deliberately omits authentication/authorization plugins.
+        // This composition fixture omits business plugins and their dependent provider.
         routes: appRuntime.routes.filter(
           (route) =>
+            route !== workflowRoutes &&
             route !== articlesRoutes &&
             route !== analyticsRoutes &&
             route !== externalCrmRoutes &&
-            route !== numericExamplesRoutes,
+            route !== numericExamplesRoutes &&
+            route !== structuredExtractionRoutes &&
+            route !== aiTranslationRoutes,
         ),
         serviceProviders: [
-          ...appRuntime.serviceProviders,
+          ...appRuntime.serviceProviders.filter(
+            (provider) => provider !== AIFormFillProvider,
+          ),
           TestRuntimeApplicationProvider,
         ],
       },
@@ -487,12 +488,13 @@ describe('app server', () => {
     expect(missingEvents).toBeNull();
   });
 
-  it('subscribes, publishes, and unsubscribes realtime messages', () => {
+  it('subscribes, publishes, and unsubscribes realtime messages', async () => {
     const realtime = createRealtimeService();
+    realtime.registerTopic(TEST_REALTIME_TOPIC, { audience: 'public' });
     const websocket = createTestWebSocket();
     const connection = realtime.connect(websocket);
 
-    realtime.handleClientMessage(
+    await realtime.handleClientMessage(
       connection,
       JSON.stringify({
         type: 'subscribe',
@@ -509,7 +511,7 @@ describe('app server', () => {
       subscriptionId: expect.any(String),
     });
 
-    realtime.publish(TEST_REALTIME_TOPIC, 'tick');
+    await realtime.publish(TEST_REALTIME_TOPIC, 'tick');
 
     expect(websocket.messages[1]).toMatchObject({
       type: 'event',
@@ -518,7 +520,7 @@ describe('app server', () => {
       publishedAt: expect.any(String),
     });
 
-    realtime.handleClientMessage(
+    await realtime.handleClientMessage(
       connection,
       JSON.stringify({
         type: 'unsubscribe',
@@ -527,7 +529,7 @@ describe('app server', () => {
           .subscriptionId,
       }),
     );
-    realtime.publish(TEST_REALTIME_TOPIC, 'after unsubscribe');
+    await realtime.publish(TEST_REALTIME_TOPIC, 'after unsubscribe');
 
     expect(websocket.messages[2]).toMatchObject({
       type: 'unsubscribed',
@@ -537,7 +539,7 @@ describe('app server', () => {
     });
     expect(websocket.messages).toHaveLength(3);
 
-    realtime.close();
+    await realtime.close();
   });
 
   it('registers embedded app resources with the scope', async () => {
@@ -1082,6 +1084,9 @@ describe('app server', () => {
     const app = trackCloseable(
       await createIsolatedStandaloneServer({ viteDevUrl: false }),
     );
+    app.application.container
+      .resolve(realtimeServiceToken)
+      .registerTopic(TEST_REALTIME_TOPIC, { audience: 'public' });
     const serverUrl = await startStandaloneTestServer(app);
     const websocket = new WebSocket(
       `${serverUrl}${app.application.publicBasePath}/ws`,
@@ -1513,12 +1518,6 @@ function createTestApp(options: CreateTestAppOptions = {}): TestApp {
     logging: createSilentLoggingConfig(),
     queue: options.queue ?? createTestQueueConfig(),
     session: createNullSessionConfig(),
-    workflow: {
-      sourceRoot: path.resolve(process.cwd(), 'workflows'),
-      distRoot: path.resolve(process.cwd(), 'dist/workflows'),
-      artifactDisk: 'local',
-      production: false,
-    },
     snowflake: {
       workerId: 0,
     },
@@ -1854,7 +1853,6 @@ async function writeRuntimeTestConfig(
           },
         },
       },
-      hub: { host: { enabled: false } },
     },
   });
   testConfigs.push(config);
