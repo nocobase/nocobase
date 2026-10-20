@@ -2,6 +2,7 @@ import type { FoundationResource } from './en-US.js';
 
 const idID: FoundationResource = {
   nav: {
+    settings: 'Pengaturan sistem',
     foundation: 'Fondasi aplikasi',
   },
   page: {

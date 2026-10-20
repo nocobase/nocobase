@@ -1,3 +1,4 @@
+import foundation from '@nocobase/app-plugin-foundation/client';
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/client';
 import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/client';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/client';
@@ -34,6 +35,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   file(),
   scheduler(),
   mail(),
+  foundation({ settingsGroup: true }),
 ]);
 
 export default clientPlugins;

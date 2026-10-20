@@ -2,6 +2,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   nav: {
+    settings: 'System settings',
     foundation: 'App foundation',
   },
   page: {

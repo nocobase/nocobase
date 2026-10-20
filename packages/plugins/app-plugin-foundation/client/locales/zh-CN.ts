@@ -2,6 +2,7 @@ import type { FoundationResource } from './en-US.js';
 
 const zhCN: FoundationResource = {
   nav: {
+    settings: '系统设置',
     foundation: '应用底座',
   },
   page: {

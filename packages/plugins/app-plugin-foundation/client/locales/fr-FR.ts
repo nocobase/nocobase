@@ -2,6 +2,7 @@ import type { FoundationResource } from './en-US.js';
 
 const frFR: FoundationResource = {
   nav: {
+    settings: 'Paramètres système',
     foundation: 'Socle de l’application',
   },
   page: {

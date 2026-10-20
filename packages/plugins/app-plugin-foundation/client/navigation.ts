@@ -19,10 +19,19 @@ export function groupFoundationNavigation<
   const isFoundation = (item: T): boolean =>
     item.route.packageName === '@nocobase/app-plugin-foundation' &&
     item.route.name === 'foundation';
-  const foundation = items.filter(isFoundation);
+  const isFoundationGroup = (item: T): boolean =>
+    item.route.packageName === '@nocobase/app-plugin-foundation' &&
+    item.route.name === 'foundationSettings';
+  const foundation = items.flatMap((item) =>
+    isFoundationGroup(item)
+      ? item.children.filter(isFoundation)
+      : isFoundation(item)
+        ? [item]
+        : [],
+  );
   if (!settings || foundation.length === 0) return [...items];
   return items
-    .filter((item) => !isFoundation(item))
+    .filter((item) => !isFoundation(item) && !isFoundationGroup(item))
     .map((item) =>
       item === settings
         ? { ...item, children: [...item.children, ...foundation] }

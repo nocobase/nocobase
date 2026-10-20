@@ -2,6 +2,7 @@ import type { FoundationResource } from './en-US.js';
 
 const jaJP: FoundationResource = {
   nav: {
+    settings: 'システム設定',
     foundation: 'アプリ基盤',
   },
   page: {

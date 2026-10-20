@@ -2,6 +2,7 @@ import type { FoundationResource } from './en-US.js';
 
 const zhTW: FoundationResource = {
   nav: {
+    settings: '系統設定',
     foundation: '應用底座',
   },
   page: {

@@ -5176,6 +5176,9 @@ importers:
       '@nocobase/app-plugin-file':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-file
+      '@nocobase/app-plugin-foundation':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-foundation
       '@nocobase/app-plugin-i18n':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-i18n

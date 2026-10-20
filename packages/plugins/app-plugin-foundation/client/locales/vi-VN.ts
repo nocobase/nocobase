@@ -2,6 +2,7 @@ import type { FoundationResource } from './en-US.js';
 
 const viVN: FoundationResource = {
   nav: {
+    settings: 'Cài đặt hệ thống',
     foundation: 'Nền tảng ứng dụng',
   },
   page: {

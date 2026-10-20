@@ -16,7 +16,7 @@ Do not use it to grant the page to a role: it admits only unrestricted access by
 
 - Server plugin: `@nocobase/app-plugin-foundation/server` (default export). Exports `foundationServiceToken`, whose `overview({ refresh? })` answers the same result as the route.
 - Server route: `GET /api/foundation/overview`, optional `refresh=true`. Requires a session or API key of an identity with unrestricted access; anyone else gets `403` with reason `FOUNDATION_FORBIDDEN`.
-- Client plugin: `@nocobase/app-plugin-foundation/client` (default export). `foundation()` adds the page at `/foundation` with a menu entry; options `path`, `navigation: false` and `routes: false`.
+- Client plugin: `@nocobase/app-plugin-foundation/client` (default export). `foundation()` adds the page at `/foundation` with a menu entry; options `path`, `navigation: false`, `routes: false` and `settingsGroup: true`. The default template uses `settingsGroup: true` so a bare application already has a localized settings group containing only the protected Foundation page.
 - Page component: `FoundationPage` from `@nocobase/app-plugin-foundation/client/pages`, for an application that routes it itself (`foundation({ routes: false })`). Declare such a route with `authz: 'unrestricted'`.
 
 ## Prerequisites
@@ -64,3 +64,5 @@ Capability details include their associated business modules. API dependency ass
 ## Sidebar grouping
 
 The host can call `groupFoundationNavigation(items)` from `@nocobase/app-plugin-foundation/client` in its existing `client/lib/navigation-transform.ts` hook, after permission filtering. The helper places an already-visible Foundation entry last in the existing `settings` navigation group, avoiding a separate sidebar group gap. Pass the host’s group name as the second argument when different. It preserves route identity, `/foundation`, authorization and other navigation metadata, never creates a hidden entry and leaves Foundation standalone if no settings group exists. The App needs only the hook call; grouping logic stays in this plugin and does not change Core or the sidebar renderer.
+
+When business settings are added, preserve the template navigation transform: it merges the initial Foundation settings group into the application settings group without changing the page URL or access boundary. Do not remove the initial Foundation entry when keeping unused business administration unregistered.

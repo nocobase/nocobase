@@ -80,6 +80,8 @@ The capability detail lists its automatically associated business modules beside
 
 ## Sidebar grouping
 
+Use `foundation({ settingsGroup: true })` in a bare application to wrap the protected page in a localized System settings group. The default template enables this on initial creation. The group disappears when its page is denied; the navigation helper merges it into the application settings group when that group becomes available.
+
 The host can call `groupFoundationNavigation(items)` from `@nocobase/app-plugin-foundation/client` in its existing `client/lib/navigation-transform.ts` hook, after permission filtering. The helper places an already-visible Foundation entry last in the existing `settings` navigation group, avoiding a separate sidebar group gap. Pass the host’s group name as the second argument when different. It preserves route identity, `/foundation`, authorization and other navigation metadata, never creates a hidden entry and leaves Foundation standalone if no settings group exists. The App needs only the hook call; grouping logic stays in this plugin and does not change Core or the sidebar renderer.
 
 Related package names and versions remain inside the selected capability detail. There is no separate provider-inventory section. The detail's full-width footer contains an initially collapsed Recognition notes disclosure with compact counts and provider rows. This disclosure contains discovery counts and scope, partial-discovery warnings, and installation, registration, origin and classification evidence for that capability's providers. Switching capabilities resets the disclosure. Unclassified registered extensions remain selectable in the capability band and expose their own package and recognition evidence there.

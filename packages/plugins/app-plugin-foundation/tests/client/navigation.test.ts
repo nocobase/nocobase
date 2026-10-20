@@ -46,6 +46,22 @@ describe('Foundation navigation grouping', () => {
     expect(groupFoundationNavigation(result)).toEqual(result);
   });
 
+  it('keeps the bare settings group and merges it once business settings exist', () => {
+    const initial: Item = {
+      route: {
+        ...foundation.route,
+        name: 'foundationSettings',
+        componentLoader: undefined,
+      },
+      children: [foundation],
+    };
+    expect(groupFoundationNavigation([initial])).toEqual([initial]);
+    const merged = groupFoundationNavigation([settings, initial]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0]?.children).toEqual([permissions, foundation]);
+    expect(groupFoundationNavigation(merged)).toEqual(merged);
+  });
+
   it('never adds a Foundation entry removed by the permission filter', () => {
     expect(groupFoundationNavigation([settings])).toEqual([settings]);
   });

@@ -3,9 +3,11 @@ import {
   type AppClientAppRoutesContribution,
   type AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
-import { Layers } from 'lucide-react';
+import { Layers, Settings } from 'lucide-react';
 
 export interface FoundationRouteOptions {
+  /** Wrap the entry in a settings group for a bare application. */
+  readonly settingsGroup?: boolean;
   /** App-relative path of the page. Defaults to `/foundation`. */
   readonly path?: string;
   /** `false` keeps the page out of the menu, for an application that links to it from elsewhere. Defaults to `true`. */
@@ -38,7 +40,17 @@ export function foundationDefinition(
 export function createFoundationRoutes(
   options: FoundationRouteOptions = {},
 ): AppClientAppRoutesContribution {
-  return defineAppRoutes([foundationDefinition(options)]);
+  return defineAppRoutes(
+    options.settingsGroup
+      ? [
+          {
+            name: 'foundationSettings',
+            navigation: { title: 'nav.settings', icon: Settings, order: 100 },
+            children: [foundationDefinition(options)],
+          },
+        ]
+      : [foundationDefinition(options)],
+  );
 }
 
 function normalizePath(value: string): string {
