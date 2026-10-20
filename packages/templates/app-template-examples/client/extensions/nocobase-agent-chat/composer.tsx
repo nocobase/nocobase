@@ -68,14 +68,16 @@ export function Composer({
   const panel = useChatPanel();
   // Upload completion may retain an older onSend closure. Consult current readiness and identity/mount state.
   const currentSendRef = useRef(onSend);
+  const activeRevisionRef = useRef(panel.composerRevision);
   const sendAllowedRef = useRef(false);
   useLayoutEffect(() => {
     currentSendRef.current = onSend;
+    activeRevisionRef.current = panel.composerRevision;
     sendAllowedRef.current = panel.open && !disabled;
     return () => {
       sendAllowedRef.current = false;
     };
-  }, [onSend, disabled, panel.open]);
+  }, [onSend, disabled, panel.open, panel.composerRevision]);
   const sources = useChatSources();
   const labels = useComposerLabels();
   const files = useChatAttachments();
@@ -128,6 +130,7 @@ export function Composer({
 
   return (
     <AgentComposer
+      key={panel.composerRevision}
       variant={variant}
       disabled={disabled}
       running={running}
@@ -142,7 +145,11 @@ export function Composer({
       registerFocus={panel.registerComposer}
       onStop={onStop}
       onSend={(content, carried, sent) => {
-        if (!sendAllowedRef.current) return false;
+        if (
+          !sendAllowedRef.current ||
+          activeRevisionRef.current !== panel.composerRevision
+        )
+          return false;
         const taken = currentSendRef.current(content, carried, sent);
         if (taken) panel.clearPinned();
         return taken;

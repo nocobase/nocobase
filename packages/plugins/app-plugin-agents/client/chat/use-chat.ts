@@ -352,6 +352,7 @@ export function useSendMessage({
   agentId,
   source,
   selectedModel,
+  editorRevision = 0,
   dispatch,
   onCreated,
 }: {
@@ -360,11 +361,13 @@ export function useSendMessage({
   readonly source: ConversationSource;
   /** Snapshotted for a new, explicitly native conversation only; Runner and continuation ignore it. */
   readonly selectedModel?: ModelRef;
+  /** A fresh blank editor must not share pending/unknown creation admission with its predecessor. */
+  readonly editorRevision?: number;
   readonly dispatch: Dispatch<MessagesAction>;
   readonly onCreated: (conversation: ConversationDetail) => void;
 }): (input: SendInput) => boolean {
   const controller = useChatController();
-  const editorKey = `registry:${source}:${conversationId ?? 'new'}`;
+  const editorKey = `registry:${source}:${conversationId ?? 'new'}:${editorRevision}`;
   const editorRef = useRef(editorKey);
   const observersRef = useRef(new Set<() => void>());
   useLayoutEffect(() => {
