@@ -15,7 +15,7 @@ it('localizes every catalog suggestion in all ten languages, including provider-
     namespaces: { [namespace]: locales },
   });
   for (const entry of MODEL_CATALOG.filter((model) => model.goodAt.en)) {
-    expect(MODEL_SUGGESTION_KEYS[entry.id], entry.id).toBeDefined();
+    expect(MODEL_SUGGESTION_KEYS[entry.id]).toBeDefined();
   }
   for (const language of Object.keys(locales)) {
     await runtime.changeLanguage(language);
