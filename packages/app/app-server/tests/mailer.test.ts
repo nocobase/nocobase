@@ -219,6 +219,7 @@ describe('host mailer ownership', () => {
 describe('host mailer deployment variables', () => {
   it.each([
     ['no channels', {}],
+    ['disabled placeholder', { placeholder: { enabled: false } }],
     [
       'disabled channel',
       { 'system-email': { provider: 'smtp', enabled: false } },

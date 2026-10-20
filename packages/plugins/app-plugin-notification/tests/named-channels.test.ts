@@ -364,3 +364,11 @@ it('normalizes type for legacy extension factories', async () => {
     await h.close();
   }
 });
+
+it('keeps disabled placeholder configurations compatible', () => {
+  expect(() =>
+    createNotificationRegistry().validate({
+      channels: { placeholder: { enabled: false } },
+    } as unknown as NotificationConfig),
+  ).not.toThrow();
+});

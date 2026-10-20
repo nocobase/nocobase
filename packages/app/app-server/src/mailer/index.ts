@@ -46,6 +46,12 @@ export const validateMailChannels: ConfigValidator<MailChannelsConfig> = (
 ) => {
   for (const [name, channel] of Object.entries(config.channels ?? {})) {
     if (!channel || typeof channel !== 'object') continue;
+    if (
+      Reflect.get(channel, 'enabled') === false &&
+      Reflect.get(channel, 'type') === undefined &&
+      Reflect.get(channel, 'provider') === undefined
+    )
+      continue;
     try {
       const normalized = normalizeChannel(channel);
       if (Reflect.get(channel, 'enabled') === false) continue;

@@ -601,7 +601,13 @@ export class NotificationManager<
     };
   }
 
-  async retryDelivery(
+  retryDelivery(
+    input: NotificationRetryDeliveryInput,
+  ): Promise<NotificationDeliveryStatusSnapshot> {
+    return this.trackRequest(() => this.retryDeliveryInternal(input));
+  }
+
+  private async retryDeliveryInternal(
     input: NotificationRetryDeliveryInput,
   ): Promise<NotificationDeliveryStatusSnapshot> {
     const reason = input.reason?.trim();

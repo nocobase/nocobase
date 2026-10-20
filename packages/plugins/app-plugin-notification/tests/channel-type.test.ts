@@ -202,6 +202,41 @@ describe('class channel types', () => {
     expect(await h.store.getLogByIdempotencyKey('class-send')).toBeUndefined();
   });
 
+  it('drains an accepted manual retry before shutting down the executor and channel', async () => {
+    const h = harness({
+      first: { type: 'custom', prefix: 'A:' },
+    } as NotificationConfig['channels']);
+    h.sent.mockResolvedValueOnce({
+      status: 'failed',
+      disposition: 'never',
+      error: { message: 'Rejected' },
+    });
+    const first = await h.manager.send({
+      idempotencyKey: 'retry-drain',
+      messages: { first: { to: 'recipient', text: 'hello' } },
+    });
+    const gate = Promise.withResolvers<void>();
+    const original = h.store.retryDelivery.bind(h.store);
+    const retry = vi
+      .spyOn(h.store, 'retryDelivery')
+      .mockImplementation(async (...args) => {
+        await gate.promise;
+        return original(...args);
+      });
+    const retrying = h.manager.retryDelivery({
+      deliveryId: first.deliveries[0].id,
+      reason: 'Repaired',
+    });
+    await vi.waitFor(() => expect(retry).toHaveBeenCalledOnce());
+    const closing = h.manager.close();
+    expect(h.closed).not.toHaveBeenCalled();
+    gate.resolve();
+    expect((await retrying).status).toBe('accepted');
+    await closing;
+    expect(h.closed).toHaveBeenCalledOnce();
+    expect(h.sent).toHaveBeenCalledTimes(2);
+  });
+
   it('closes partial initialization and retries with a fresh instance', async () => {
     const h = harness({
       first: { type: 'custom', prefix: 'A:' },

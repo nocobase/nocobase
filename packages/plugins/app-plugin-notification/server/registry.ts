@@ -181,6 +181,12 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
         typeof channelConfig.enabled !== 'boolean'
       )
         throw new Error('Notification Channel enabled must be a boolean.');
+      if (
+        channelConfig.enabled === false &&
+        Reflect.get(channelConfig, 'type') === undefined &&
+        Reflect.get(channelConfig, 'provider') === undefined
+      )
+        continue;
       let providerType: string;
       try {
         providerType = resolveChannelType(channelConfig);
