@@ -388,6 +388,26 @@ describe('MobileLazySelect', () => {
     resetMockState();
   });
 
+  it.each([false, true])('updates the disabled trigger state in %s multiple mode', (multiple) => {
+    const onDropdownVisibleChange = vi.fn();
+    const { rerender } = renderMobileLazySelect({ multiple, onDropdownVisibleChange });
+
+    rerender({ disabled: true });
+
+    expect(mockState.selectProps?.disabled).toBe(true);
+    act(() => {
+      mockState.selectProps?.onClick?.();
+    });
+    expect(screen.queryByTestId('popup')).not.toBeInTheDocument();
+    expect(onDropdownVisibleChange).not.toHaveBeenCalled();
+
+    rerender({ disabled: false });
+
+    expect(mockState.selectProps?.disabled).toBe(false);
+    openLazyPopup();
+    expect(onDropdownVisibleChange).toHaveBeenCalledWith(true);
+  });
+
   it('renders a translated cancel action after searching', () => {
     renderMobileLazySelect();
 
