@@ -2,6 +2,8 @@ import {
   agentsQueryClient,
   ChatProvider,
   useChatPanel,
+  useChatContextSource,
+  useChatFilterSource,
   useChatSources,
   useChatUIContextSource,
   type ChatUIContextSource,
@@ -49,6 +51,16 @@ function Probe() {
   const current = useChatPanel();
   const currentSources = useChatSources();
   const currentNavigate = useNavigate();
+  useChatContextSource({
+    kind: 'issue',
+    id: 'page-item',
+    label: 'Current page issue',
+  });
+  useChatFilterSource({
+    page: 'issues',
+    params: { status: 'open' },
+    label: 'Old filter',
+  });
   useChatUIContextSource({
     kind: 'form',
     id: 'procurement',
@@ -60,7 +72,7 @@ function Probe() {
     sources = currentSources;
     navigate = currentNavigate;
   });
-  return null;
+  return <span data-testid='page-selection'>Old selected page text</span>;
 }
 function mount(registerAddFiles?: ComposerProps['registerAddFiles']) {
   return render(
@@ -110,6 +122,150 @@ beforeEach(() => {
     .mockResolvedValue({ kind: 'form', id: 'procurement' });
 });
 afterEach(() => agentsQueryClient().clear());
+
+it.each(['select', 'open', 'link'])(
+  'clears all carried work context on New via %s without unregistering page sources',
+  (mode) => {
+    mount();
+    act(() =>
+      panel.openChat({
+        pin: { kind: 'issue', id: 'old-pin', label: 'Old pinned issue' },
+      }),
+    );
+    act(() => sources.selectUI(sources.uiSources[0]!, true));
+    const range = document.createRange();
+    range.selectNodeContents(screen.getByTestId('page-selection'));
+    const selection = document.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    act(() => document.dispatchEvent(new Event('selectionchange')));
+    expect(sources.selection?.text).toBe('Old selected page text');
+    expect(screen.getByTestId('chat-context-chips')).toHaveTextContent(
+      'Old pinned issue',
+    );
+    expect(screen.getByTestId('chat-context-chips')).toHaveTextContent(
+      'Procurement',
+    );
+    act(() => panel.closeChat());
+    act(() => panel.openChat());
+    expect(sources.selectedUIKeys.size).toBe(1);
+    expect(panel.pinned).toHaveLength(1);
+    act(() => {
+      if (mode === 'select') panel.selectConversation(null);
+      else if (mode === 'open') panel.openChat({ conversationId: null });
+      else void navigate('/?chat=new');
+    });
+    expect(panel.pinned).toEqual([]);
+    expect(sources.selectedUIKeys.size).toBe(0);
+    expect(sources.selection).toBeNull();
+    expect(sources.uiSources).toHaveLength(1);
+    expect(sources.items).toHaveLength(1);
+    expect(screen.queryByTestId('chat-context-chips')).toBeNull();
+    type('Without old context');
+    submit();
+    expect(host.send).toHaveBeenCalledWith(
+      'Without old context',
+      { route: '/', items: [] },
+      [],
+    );
+    expect(host.snapshot).not.toHaveBeenCalled();
+  },
+);
+
+it('does not lose the context reset when New and a launcher update are batched', () => {
+  mount();
+  act(() => sources.selectUI(sources.uiSources[0]!));
+  act(() => {
+    panel.selectConversation(null);
+    panel.openChat({
+      pin: { kind: 'issue', id: 'fresh-pin', label: 'Fresh pin' },
+    });
+  });
+  expect(sources.selectedUIKeys.size).toBe(0);
+  expect(screen.getByTestId('chat-context-chips')).toHaveTextContent(
+    'Fresh pin',
+  );
+  expect(screen.getByTestId('chat-context-chips')).not.toHaveTextContent(
+    'Procurement',
+  );
+});
+
+it('refuses sending when an explicitly included UI source is unavailable', async () => {
+  mount();
+  act(() =>
+    panel.openChat({
+      conversationId: null,
+      draft: 'Keep this draft',
+      uiSources: [{ kind: 'form', id: 'unavailable' }],
+    }),
+  );
+  submit();
+  await waitFor(() => expect(screen.getByRole('alert')).toBeVisible());
+  expect(host.send).not.toHaveBeenCalled();
+  expect(box()).toHaveValue('Keep this draft');
+});
+
+it('replaces old context atomically with only the business entry pin and selected form', async () => {
+  mount();
+  const oldForm = {
+    kind: 'form',
+    id: 'old-form',
+    label: 'Old form',
+    getSnapshot: () => ({ kind: 'form', id: 'old-form' }),
+  };
+  act(() => {
+    sources.registerUI(oldForm);
+  });
+  act(() => sources.selectUI(oldForm));
+  act(() =>
+    panel.openChat({
+      pin: { kind: 'issue', id: 'old-pin', label: 'Old pinned issue' },
+    }),
+  );
+  act(() =>
+    panel.openChat({
+      conversationId: 'new-business-chat',
+      draft: 'Read the current form',
+      pin: { kind: 'issue', id: 'page-item', label: 'Current page issue' },
+      uiSources: [{ kind: 'form', id: 'procurement' }],
+    }),
+  );
+  const chips = screen.getByTestId('chat-context-chips');
+  expect(chips).toHaveTextContent('Current page issue');
+  expect(chips).toHaveTextContent('Procurement');
+  expect(chips).not.toHaveTextContent('Old');
+  expect(sources.selectedUIKeys.size).toBe(1);
+  act(() =>
+    panel.selectConversation('promoted', undefined, { preserveComposer: true }),
+  );
+  expect(sources.selectedUIKeys.size).toBe(1);
+  submit();
+  await waitFor(() =>
+    expect(host.send).toHaveBeenCalledWith(
+      'Read the current form',
+      {
+        route: '/',
+        items: [{ kind: 'issue', id: 'page-item' }],
+        ui: { version: 1, items: [{ kind: 'form', id: 'procurement' }] },
+      },
+      [],
+    ),
+  );
+});
+
+it('allows an explicit Ask action to re-include a previously removed page object without resetting text', () => {
+  mount();
+  const pin = { kind: 'issue', id: 'page-item', label: 'Current page issue' };
+  act(() => panel.openChat({ conversationId: null, pin }));
+  act(() => sources.remove('issue:page-item'));
+  expect(screen.queryByTestId('chat-context-chips')).toBeNull();
+  type('Keep this draft');
+  act(() => panel.openChat({ pin }));
+  expect(screen.getByTestId('chat-context-chips')).toHaveTextContent(
+    'Current page issue',
+  );
+  expect(box()).toHaveValue('Keep this draft');
+});
 
 it('resets every explicit new chat, including an already blank conversation, without replaying prefill', async () => {
   mount();

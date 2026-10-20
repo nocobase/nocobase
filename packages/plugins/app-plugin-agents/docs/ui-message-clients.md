@@ -12,6 +12,8 @@ Mount a single provider inside the application's router and key its lifetime by 
 
 Pre-send model/Agent changes and first-send ID promotion use `selectConversation(id, agentId, { preserveComposer: true })`; the promotion retires old prefill without remounting the input or losing focus. Ordinary close/reopen does not change the revision. Full-page scopes keep their own stable composer revision rather than inheriting resets from the closed sidebar.
 
+A fresh composer also clears carried work context: pinned business objects, registered page-object chips, filters, selected page text and checked UI sources. Page/form registrations remain available for subsequent explicit selection; cleared sources are not read or included in the next message. Closing and reopening the same chat, changing the executor and promoting a newly created conversation ID preserve its carried context. Business launchers attach only the intended context atomically with `openChat({ conversationId, draft, pin, uiSources: [{ kind: 'form', id: 'example-request' }] })`; do not call `selectUI` before opening a different conversation because the reset discards the old selection. UI values are still read only when sending, never when opening the chat. A normal new chat may retain its current route identifier, but carries no old object/filter/selection/UI snapshot.
+
 ## Input, admission and recovery
 
 The SDK transport uses the host's authenticated `ApiClient.stream`. A POST contains only the current `message: { id, role: "user", parts: [{ type: "text", text }] }`, authorized attachment IDs and optional page context. It never sends the SDK's complete browser history, assistant parts or tool output as input. Uploaded files remain the existing attachment service's responsibility.

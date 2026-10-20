@@ -842,14 +842,25 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
   const [pinned, setPinned] = useState<readonly Chat.ChatContextItem[]>([]);
   const [draft, setDraft] = useState<Chat.ChatDraft | null>(null);
   const [composerRevision, setComposerRevision] = useState(0);
+  const [contextChange, setContextChange] = useState<{
+    readonly revision: number;
+    readonly pin: Chat.OpenChatOptions['pin'];
+    readonly uiSources: Chat.OpenChatOptions['uiSources'];
+  } | null>(null);
   const draftNonceRef = useRef(0);
   const conversationRef = useRef(state.conversationId);
   useLayoutEffect(() => {
     conversationRef.current = state.conversationId;
   }, [state.conversationId]);
-  const resetComposer = useCallback(() => {
+  const resetComposer = useCallback((options: Chat.OpenChatOptions = {}) => {
     setComposerRevision((revision) => revision + 1);
     setDraft(null);
+    setPinned([]);
+    setContextChange((current) => ({
+      revision: (current?.revision ?? 0) + 1,
+      pin: options.pin,
+      uiSources: options.uiSources,
+    }));
   }, []);
   const [source, setSource] = useState<ConversationSource>('panel');
   const [items, setItems] = useState<readonly Chat.ChatContextItem[]>([]);
@@ -874,14 +885,19 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
 
   const openChat = useCallback(
     (options: Chat.OpenChatOptions = {}) => {
-      if (options.conversationId !== undefined) {
-        if (
-          options.conversationId === null ||
-          options.conversationId !== conversationRef.current
-        )
-          resetComposer();
+      const fresh =
+        options.conversationId !== undefined &&
+        (options.conversationId === null ||
+          options.conversationId !== conversationRef.current);
+      if (fresh) resetComposer(options);
+      else if (options.pin || options.uiSources !== undefined)
+        setContextChange((current) => ({
+          revision: current?.revision ?? 0,
+          pin: options.pin,
+          uiSources: options.uiSources,
+        }));
+      if (options.conversationId !== undefined)
         conversationRef.current = options.conversationId;
-      }
       setState((current) => ({
         ...current,
         open: true,
@@ -1038,6 +1054,8 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
     Chat.ChatSourcesValue['snapshotUI']
   >(async () => {
     const selected = selectedUIRef.current;
+    if ([...selected].some((key) => !uiRegistryRef.current.has(key)))
+      throw new Error('UI context source is no longer registered.');
     const entries = [...uiRegistryRef.current.entries()].filter(([key]) =>
       selected.has(key),
     );
@@ -1058,6 +1076,26 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
     return () =>
       setItems((current) => current.filter((other) => other !== item));
   }, []);
+  const [seenContextChange, setSeenContextChange] = useState(contextChange);
+  if (contextChange !== seenContextChange) {
+    const clear =
+      contextChange?.revision !== (seenContextChange?.revision ?? 0);
+    setSeenContextChange(contextChange);
+    if (contextChange) {
+      const nextRemoved = clear
+        ? new Set(items.map(itemKey))
+        : new Set(removed);
+      const nextSelected = clear ? new Set<string>() : new Set(selectedUIKeys);
+      if (contextChange.pin) nextRemoved.delete(itemKey(contextChange.pin));
+      for (const source of contextChange.uiSources ?? []) {
+        const key = uiItemKey(source);
+        nextSelected.add(key);
+        nextRemoved.delete(key);
+      }
+      setSelectedUIKeys(nextSelected);
+      setRemoved(nextRemoved);
+    }
+  }
   const sources = useMemo<Chat.ChatSourcesValue>(
     () => ({
       uiSources,

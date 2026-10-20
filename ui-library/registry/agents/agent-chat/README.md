@@ -102,6 +102,8 @@ Every key is under `chat.`. A key missing from the application's resources rende
 
 Pre-send model/Agent changes and first-send ID promotion use `selectConversation(id, agentId, { preserveComposer: true })`; the promotion retires old prefill without remounting the input or losing focus. Ordinary close/reopen does not change the revision. Full-page scopes keep their own stable composer revision rather than inheriting resets from the closed sidebar.
 
+A fresh composer also clears carried work context: pinned business objects, registered page-object chips, filters, selected page text and checked UI sources. Page/form registrations remain available for subsequent explicit selection; cleared sources are not read or included in the next message. Closing and reopening the same chat, changing the executor and promoting a newly created conversation ID preserve its carried context. Business launchers attach only the intended context atomically with `openChat({ conversationId, draft, pin, uiSources: [{ kind: 'form', id: 'example-request' }] })`; do not call `selectUI` before opening a different conversation because the reset discards the old selection. UI values are still read only when sending, never when opening the chat. A normal new chat may retain its current route identifier, but carries no old object/filter/selection/UI snapshot.
+
 ## Customizing
 
 The views are the application's to restyle and rearrange. Keep the `data-testid` attributes the application's end-to-end tests rely on, and keep the message list's scroller `relative`: absolutely placed content inside it, such as screen-reader text and live regions, would otherwise size the page rather than the scroller.

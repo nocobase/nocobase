@@ -246,16 +246,11 @@ describe('procurement form AI assistance', () => {
         config: { scope: ['examples-form-fill'] },
         selectedModel: { modelService: 'test-model', model: 'chat' },
       });
-      expect(hooks.selectUI).toHaveBeenCalledWith(
-        { kind: 'form', id: 'example-request' },
-        true,
-      );
-      expect(hooks.selectUI.mock.invocationCallOrder[0]).toBeLessThan(
-        hooks.openChat.mock.invocationCallOrder[0],
-      );
+      expect(hooks.selectUI).not.toHaveBeenCalled();
       expect(hooks.openChat).toHaveBeenCalledWith({
         conversationId: 'conversation-a',
         draft: copy.prompt,
+        uiSources: [{ kind: 'form', id: 'example-request' }],
       });
       expect(currentForm().getValues()).toEqual({});
     },
