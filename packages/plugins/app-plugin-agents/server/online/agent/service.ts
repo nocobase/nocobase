@@ -183,7 +183,6 @@ export class OnlineAgentService {
         scope: options.scope ?? defaults.scope,
       },
       undefined,
-      [],
       boundary === 'http',
     );
     this.trusted(context);

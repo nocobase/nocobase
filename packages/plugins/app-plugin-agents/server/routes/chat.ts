@@ -94,7 +94,7 @@ const ConfigOutput: z.ZodType<OnlineChatConfigSnapshot> = z.object({
     .object({ modelService: z.string(), model: z.string() })
     .nullable(),
   scope: z.array(z.string()),
-  model: z.array(z.string()),
+  model: z.array(z.string()).optional(),
   thinking: z.string().optional(),
   tool: z.array(z.string()),
   toolVersions: z.record(z.string(), z.string()),

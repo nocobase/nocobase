@@ -51,7 +51,8 @@ export type OnlineAgentConfig = {
   variable?: OnlineAgentJson;
   tool: string[];
   toolVersions: Record<string, string>;
-  model: string[];
+  /** Missing and empty lists are unrestricted; preserve their distinct shapes. */
+  model?: string[];
   thinking?: string;
 };
 export type OnlineAgentToolDefinition<

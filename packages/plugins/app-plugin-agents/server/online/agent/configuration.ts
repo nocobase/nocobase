@@ -135,28 +135,19 @@ export class OnlineAgentConfigurator {
     context: OnlineAgentContext,
     options: OnlineAgentOptions,
     previous?: OnlineAgentConfig,
-    fallbackModels: string[] = [],
     http: boolean = false,
   ): Promise<OnlineAgentConfig> {
-    return (
-      await this.resolveSelection(
-        context,
-        options,
-        previous,
-        fallbackModels,
-        http,
-      )
-    ).config;
+    return (await this.resolveSelection(context, options, previous, http))
+      .config;
   }
 
   async resolveSelection(
     context: OnlineAgentContext,
     options: OnlineAgentOptions,
     previous?: OnlineAgentConfig,
-    fallbackModels: string[] = [],
     http: boolean = false,
   ): Promise<{ config: OnlineAgentConfig; hasModel: boolean }> {
-    let hasModel = previous !== undefined;
+    let hasModel = previous?.model !== undefined;
     supported(options);
     if (
       http &&
@@ -185,7 +176,6 @@ export class OnlineAgentConfigurator {
           systemPrompt: '',
           tool: [],
           toolVersions: {},
-          model: [...fallbackModels],
         };
     const layers: {
       value: OnlineAgentScope | OnlineAgentScopeProvider;

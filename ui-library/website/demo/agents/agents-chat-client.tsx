@@ -1091,6 +1091,11 @@ export const useChatAgents: typeof Chat.useChatAgents = () =>
   query([...AGENTS]);
 
 export const useChatModels: typeof Chat.useChatModels = () => query([]);
+export const useConversationModel: typeof Chat.useConversationModel = () => ({
+  configuration: query(undefined),
+  select: mutation(() => {}),
+  changing: false,
+});
 export const useConversation: typeof Chat.useConversation = (
   conversationId,
 ) => {

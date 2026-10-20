@@ -12,6 +12,7 @@ import {
   useAgentText,
   useChatAgents,
   useChatModels,
+  useConversationModel,
   useChatPanel,
   useConversation,
   useConversationMessages,
@@ -49,7 +50,7 @@ import { Skeleton } from '#components/ui/skeleton';
 import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
-import { NewChatChoice } from './agent-choice.js';
+import { NewChatChoice, ConversationModelChoice } from './agent-choice.js';
 import { AgentNotice } from './agent-status.js';
 import { errorStatus, useChatTranslation } from './chat-i18n.js';
 import { LoadError } from './chat-ui.js';
@@ -192,8 +193,26 @@ function ConversationBody({
   const extensions = useContext(ChatExtensionsContext);
   const actions = useConversationActions();
   const agents = useChatAgents(panel.open);
-  const catalog = useChatModels(panel.open && !conversation);
+  const nativeConversation =
+    conversation?.agent.id === 'online' && Boolean(conversation.execution);
+  const catalog = useChatModels(
+    panel.open && (!conversation || nativeConversation),
+  );
+  const {
+    configuration,
+    select: selectModel,
+    changing: changingModel,
+  } = useConversationModel(
+    nativeConversation ? conversation.id : null,
+    panel.open,
+  );
   const [chosenModel, setChosenModel] = useState<ModelRef | null>(null);
+  const modelChangeBlocked =
+    changingModel ||
+    (nativeConversation &&
+      (selectModel.isError ||
+        configuration.isFetching ||
+        !configuration.isSuccess));
   const run = conversation?.run ?? null;
   const stream = useChatStream(conversation?.execution ? conversationId : null);
   const receiving =
@@ -696,6 +715,20 @@ function ConversationBody({
         {sendAvailability?.notice ? (
           <div className='mb-3'>{sendAvailability.notice}</div>
         ) : null}
+        {nativeConversation && (configuration.error || selectModel.error) ? (
+          <LoadError
+            title={t(
+              selectModel.error
+                ? 'chat.agents.modelChangeFailed'
+                : 'chat.agents.modelLoadFailed',
+            )}
+            error={selectModel.error ?? configuration.error}
+            onRetry={() => {
+              selectModel.reset();
+              void configuration.refetch();
+            }}
+          />
+        ) : null}
         {saveError ? (
           <LoadError
             title={t('chat.loadFailed')}
@@ -711,6 +744,7 @@ function ConversationBody({
         <Composer
           variant={variant}
           disabled={
+            modelChangeBlocked ||
             sendAvailability?.canSend === false ||
             running ||
             Boolean(conversation && !conversation.availability.online) ||
@@ -726,6 +760,7 @@ function ConversationBody({
             if (conversationId) actions.stop.mutate(conversationId);
           }}
           onSend={(content, context, attachments) => {
+            if (modelChangeBlocked) return false;
             if (sendAvailability?.canSend === false) return false;
             const accepted = send({ content, context, attachments });
             if (accepted) focusComposer();
@@ -733,7 +768,35 @@ function ConversationBody({
           }}
           registerAddFiles={registerAddFiles}
           toolbar={
-            conversation ? null : (
+            conversation ? (
+              nativeConversation ? (
+                <ConversationModelChoice
+                  services={catalog.data ?? []}
+                  model={configuration.data?.selectedModel ?? null}
+                  allowedModels={configuration.data?.model}
+                  disabled={
+                    running ||
+                    stopping ||
+                    modelChangeBlocked ||
+                    catalog.isFetching ||
+                    !catalog.isSuccess ||
+                    chatController.submissions.blocked(
+                      conversationId,
+                      `registry:${source}:${conversationId ?? 'new'}`,
+                    )
+                  }
+                  onModelChange={(selected) => {
+                    const current = configuration.data?.selectedModel;
+                    if (
+                      current?.modelService === selected.modelService &&
+                      current.model === selected.model
+                    )
+                      return;
+                    selectModel.mutate(selected);
+                  }}
+                />
+              ) : null
+            ) : (
               // Before the first message: who the conversation goes to.
               <NewChatChoice
                 agents={agents.data ?? []}
