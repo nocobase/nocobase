@@ -36,7 +36,7 @@ export const ProviderSettingsForm: React.FC = () => {
             </div>
             <div style={{ marginTop: 8 }}>
               {t(
-                'For the Anthropic-compatible API, create an Anthropic service, use the matching Base URL below, and add MiniMax-M3 and MiniMax-M2.7 with Manual input.',
+                'For the Anthropic-compatible API, create an Anthropic service, use the matching Base URL below, and add MiniMax-M3.1-Flash and MiniMax-M3 with Manual input.',
               )}
             </div>
             <div>

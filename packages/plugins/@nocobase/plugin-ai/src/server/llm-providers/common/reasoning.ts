@@ -62,6 +62,10 @@ export class ReasoningChatOpenAI extends ChatOpenAICompletions {
     const nextOptions = {
       ...(options || {}),
       [REASONING_MAP_KEY]: reasoningMap,
+      options: {
+        ...options?.options,
+        [REASONING_MAP_KEY]: reasoningMap,
+      },
     };
     return super._generate(messages, nextOptions, runManager);
   }
@@ -74,6 +78,10 @@ export class ReasoningChatOpenAI extends ChatOpenAICompletions {
     const nextOptions = {
       ...(options || {}),
       [REASONING_MAP_KEY]: reasoningMap,
+      options: {
+        ...options?.options,
+        [REASONING_MAP_KEY]: reasoningMap,
+      },
     };
     yield* super._streamResponseChunks(messages, nextOptions, runManager);
   }

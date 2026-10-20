@@ -17,8 +17,8 @@ import { AIMessageChunk } from '@langchain/core/messages';
 import { ReasoningChatOpenAI } from './common/reasoning';
 import { LLMProvider, ParsedAttachmentResult } from './provider';
 
+const MINIMAX_FLASH = 'MiniMax-M3.1-Flash';
 const MINIMAX_M3 = 'MiniMax-M3';
-const MINIMAX_M27 = 'MiniMax-M2.7';
 
 function isThinkingMode(value: unknown): value is 'adaptive' | 'disabled' {
   return value === 'adaptive' || value === 'disabled';
@@ -37,7 +37,8 @@ export class MiniMaxProvider extends LLMProvider {
 
   createModel() {
     const { apiKey } = this.serviceOptions || {};
-    const { thinking, serviceTier, ...modelOptions } = this.modelOptions || {};
+    const { thinking, serviceTier, reasoningEffort, ...modelOptions } = this.modelOptions || {};
+    modelOptions.model ||= MINIMAX_FLASH;
     if (modelOptions.maxCompletionTokens === -1) {
       delete modelOptions.maxCompletionTokens;
     }
@@ -45,6 +46,15 @@ export class MiniMaxProvider extends LLMProvider {
     const modelKwargs: Record<string, unknown> = {
       reasoning_split: true,
     };
+    if (modelOptions.model === MINIMAX_FLASH) {
+      modelKwargs.thinking = { type: 'adaptive' };
+      if (['low', 'medium', 'high', 'xhigh', 'max'].includes(reasoningEffort)) {
+        modelKwargs.reasoning_effort = reasoningEffort;
+      }
+    }
+    if (modelOptions.model !== MINIMAX_FLASH && modelOptions.model !== MINIMAX_M3 && reasoningEffort !== undefined) {
+      modelOptions.reasoningEffort = reasoningEffort;
+    }
     if (modelOptions.model === MINIMAX_M3 && isThinkingMode(thinking)) {
       modelKwargs.thinking = { type: thinking };
     }
@@ -61,6 +71,10 @@ export class MiniMaxProvider extends LLMProvider {
       },
       verbose: true,
     });
+  }
+
+  async listModels() {
+    return { models: minimaxProviderOptions.models[SupportedModel.LLM].map((id) => ({ id })) };
   }
 
   protected isApiSupportedAttachment(attachment: AttachmentModel): boolean {
@@ -122,7 +136,7 @@ export const minimaxProviderOptions: LLMProviderMeta = {
   title: 'MiniMax',
   supportedModel: [SupportedModel.LLM],
   models: {
-    [SupportedModel.LLM]: [MINIMAX_M3, MINIMAX_M27],
+    [SupportedModel.LLM]: [MINIMAX_FLASH, MINIMAX_M3],
   },
   provider: MiniMaxProvider,
 };

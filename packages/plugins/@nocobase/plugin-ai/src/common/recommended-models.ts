@@ -11,7 +11,12 @@
  * NocoBase officially recommended models for each LLM provider.
  * These models are tested to ensure quality and compatibility.
  */
-export const recommendedModels: Record<string, { label: string; value: string }[]> = {};
+export const recommendedModels: Record<string, { label: string; value: string }[]> = {
+  minimax: [
+    { label: 'MiniMax-M3.1-Flash', value: 'MiniMax-M3.1-Flash' },
+    { label: 'MiniMax-M3', value: 'MiniMax-M3' },
+  ],
+};
 
 /**
  * Check if a model is recommended for a given provider
