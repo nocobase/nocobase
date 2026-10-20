@@ -134,7 +134,7 @@ export async function prepareEmailMessage(input: {
   return { to: input.recipient.address, content: input.message };
 }
 
-/** @deprecated Register a concrete channel class with registerChannelType. */
+/** @deprecated Use registerChannelType(SmtpChannel) or registerChannelType(ResendChannel) instead. */
 export function createEmailChannelDefinition(): NotificationChannelDefinition<
   EmailChannelConfig,
   EmailRecipient,

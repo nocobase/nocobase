@@ -33,6 +33,7 @@ export function defineResendProviderConfig(
   return { provider: 'resend', ...input };
 }
 
+/** @deprecated Use registerChannelType(ResendChannel) instead. */
 export function createResendProviderDefinition(): NotificationProviderDefinition<
   ResendProviderConfig,
   PreparedEmailMessage

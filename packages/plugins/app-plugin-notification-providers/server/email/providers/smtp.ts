@@ -32,6 +32,7 @@ export function defineSmtpProviderConfig(
   return { provider: 'smtp', ...input };
 }
 
+/** @deprecated Use registerChannelType(SmtpChannel) instead. */
 export function createSmtpProviderDefinition(): NotificationProviderDefinition<
   SmtpProviderConfig,
   PreparedEmailMessage

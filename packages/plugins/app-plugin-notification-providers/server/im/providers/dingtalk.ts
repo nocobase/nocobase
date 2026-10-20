@@ -40,6 +40,7 @@ export function defineDingTalkWebhookProviderConfig(
   return { provider: 'dingtalk-webhook', ...input };
 }
 
+/** @deprecated Use registerChannelType(DingTalkWebhookChannel) instead. */
 export function createDingTalkWebhookProviderDefinition(): NotificationProviderDefinition<
   DingTalkWebhookProviderConfig,
   PreparedImMessage

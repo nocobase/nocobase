@@ -171,7 +171,7 @@ export async function prepareInAppMessage(input: {
   };
 }
 
-/** @deprecated Register a concrete channel class with registerChannelType. */
+/** @deprecated Use registerChannelType(InAppChannel) instead. */
 export function createInAppChannelDefinition(): NotificationChannelDefinition<
   InAppChannelConfig,
   InAppRecipient,
@@ -191,6 +191,7 @@ export function createInAppChannelDefinition(): NotificationChannelDefinition<
   };
 }
 
+/** @deprecated Use registerChannelType(InAppChannel) instead. */
 export function createDatabaseProviderDefinition(options: {
   readonly store: InAppStore;
   readonly recipientExists: (userId: string) => Promise<boolean>;

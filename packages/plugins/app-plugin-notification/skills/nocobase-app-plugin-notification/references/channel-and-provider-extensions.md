@@ -229,7 +229,7 @@ await notification.send({
 
 ## Compatibility
 
-`provider`-only config continues to work; both keys are accepted when equal and rejected when different. The host mailer uses the same rule. Old `registerChannel` and `registerProvider` APIs and built-in factory exports remain available, and legacy factories receive normalized `provider` config even when the user supplied `type`. New extensions should use classes.
+`provider`-only config continues to work; both keys are accepted when equal and rejected when different. The host mailer uses the same rule. Old `registerChannel` and `registerProvider` APIs and built-in factory exports remain available, and legacy factories receive normalized `provider` config even when the user supplied `type`. Legacy registration methods, definition types and factory functions carry `@deprecated` annotations identifying their replacements. New extensions should use classes.
 
 Built-in class registration preserves historical `channelType` (`email` for SMTP/Resend, `im` for the two webhooks) and `providerType`, so pending deliveries, retries, status results and test descriptors retain their identities. These storage and response fields are compatibility details, not additional registration concepts. Custom legacy extensions can keep their existing factories to retain their historical message-family identity; migrating a custom type with a different historical message family requires an explicit history migration or draining that work first.
 

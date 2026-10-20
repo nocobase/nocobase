@@ -69,6 +69,7 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
     );
   }
 
+  /** @deprecated Register a ChannelInstance class with registerChannelType instead. */
   registerChannel(definition: NotificationChannelDefinition): this {
     if (this.channelDefinitions.has(definition.type))
       throw new Error(
@@ -78,6 +79,7 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
     return this;
   }
 
+  /** @deprecated Register a ChannelInstance class with registerChannelType instead. */
   registerProvider(definition: NotificationProviderDefinition): this {
     if (
       !definition.type?.trim() ||

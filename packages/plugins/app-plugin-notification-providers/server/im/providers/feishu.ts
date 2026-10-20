@@ -40,6 +40,7 @@ export function defineFeishuWebhookProviderConfig(
   return { provider: 'feishu-webhook', ...input };
 }
 
+/** @deprecated Use registerChannelType(FeishuWebhookChannel) instead. */
 export function createFeishuWebhookProviderDefinition(): NotificationProviderDefinition<
   FeishuWebhookProviderConfig,
   PreparedImMessage

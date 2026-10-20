@@ -159,7 +159,7 @@ export async function prepareImMessage(input: {
   };
 }
 
-/** @deprecated Register a concrete channel class with registerChannelType. */
+/** @deprecated Use registerChannelType(FeishuWebhookChannel) or registerChannelType(DingTalkWebhookChannel) instead. */
 export function createImChannelDefinition(): NotificationChannelDefinition<
   ImChannelConfig,
   ImRecipient,

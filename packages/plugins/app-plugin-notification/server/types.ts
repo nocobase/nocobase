@@ -382,6 +382,7 @@ export interface NotificationChannelContext {
   readonly logger: Logger;
 }
 
+/** @deprecated Implement ChannelInstance and register the class with registerChannelType instead. */
 export interface NotificationProviderDefinition<
   TConfig extends NotificationProviderConfig = NotificationProviderConfig,
   TPrepared = object,
@@ -397,6 +398,7 @@ export interface NotificationProviderDefinition<
   ): Promise<NotificationProvider<TPrepared>>;
 }
 
+/** @deprecated Implement ChannelInstance and register the class with registerChannelType instead. */
 export interface NotificationChannelDefinition<
   TConfig extends NotificationChannelConfig = NotificationChannelConfig,
   TRecipient = object,
