@@ -13,7 +13,6 @@ const viVN: LocaleResource<typeof enUS> = {
     large: 'Triển khai lớn, thay đổi trên nhiều gói và tái cấu trúc.',
     review: 'Đánh giá mã và phân tích lỗi CI.',
   },
-
   actions: {
     back: 'Quay lại',
     cancel: 'Hủy',
@@ -857,7 +856,7 @@ const viVN: LocaleResource<typeof enUS> = {
     system: {
       macos: 'macOS',
       linux: 'Linux',
-      windows: 'Cửa sổ',
+      windows: 'Windows',
     },
   },
   chat: {

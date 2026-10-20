@@ -579,6 +579,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
   },
   errors: {
+    messageNotFound: 'Không tìm thấy thư.',
     requestFailed: 'Yêu cầu thư không thành công.',
     authorizationFailed: 'Không thể bắt đầu ủy quyền thư.',
     syncFailed: 'Không thể bắt đầu đồng bộ hóa hộp thư.',

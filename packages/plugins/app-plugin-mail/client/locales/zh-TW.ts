@@ -548,6 +548,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
   },
   errors: {
+    messageNotFound: '未找到郵件訊息。',
     requestFailed: '郵件請求失敗。',
     authorizationFailed: '無法啟動郵件授權。',
     syncFailed: '無法啟動郵箱同步。',

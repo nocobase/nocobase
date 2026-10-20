@@ -586,6 +586,7 @@ const esES: LocaleResource<typeof enUS> = {
     },
   },
   errors: {
+    messageNotFound: 'No se encontró el mensaje de correo.',
     requestFailed: 'La solicitud de correo falló.',
     authorizationFailed: 'No se pudo iniciar la autorización de correo.',
     syncFailed: 'No se pudo iniciar la sincronización del buzón.',

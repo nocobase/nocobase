@@ -881,7 +881,7 @@ const frFR: LocaleResource<typeof enUS> = {
     system: {
       macos: 'macOS',
       linux: 'Linux',
-      windows: 'Fenêtres',
+      windows: 'Windows',
     },
   },
   chat: {

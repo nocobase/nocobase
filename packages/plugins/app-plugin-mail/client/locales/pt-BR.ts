@@ -587,6 +587,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
   },
   errors: {
+    messageNotFound: 'A mensagem de correio não foi encontrada.',
     requestFailed: 'Falha na solicitação de correio.',
     authorizationFailed: 'Não foi possível iniciar a autorização de correio.',
     syncFailed: 'Não foi possível iniciar a sincronização da caixa de correio.',

@@ -587,6 +587,7 @@ const frFR: LocaleResource<typeof enUS> = {
     },
   },
   errors: {
+    messageNotFound: "Le message électronique n'a pas été trouvé.",
     requestFailed: 'La demande de courrier a échoué.',
     authorizationFailed: "Impossible de démarrer l'autorisation de messagerie.",
     syncFailed:

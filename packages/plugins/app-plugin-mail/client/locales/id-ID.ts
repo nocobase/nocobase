@@ -582,6 +582,7 @@ const idID: LocaleResource<typeof enUS> = {
     },
   },
   errors: {
+    messageNotFound: 'Pesan email tidak ditemukan.',
     requestFailed: 'Permintaan surat gagal.',
     authorizationFailed: 'Tidak dapat memulai otorisasi email.',
     syncFailed: 'Tidak dapat memulai sinkronisasi kotak surat.',

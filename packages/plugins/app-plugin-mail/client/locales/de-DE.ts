@@ -589,6 +589,7 @@ const deDE: LocaleResource<typeof enUS> = {
     },
   },
   errors: {
+    messageNotFound: 'E-Mail-Nachricht wurde nicht gefunden.',
     requestFailed: 'Mail-Anfrage fehlgeschlagen.',
     authorizationFailed: 'E-Mail-Autorisierung konnte nicht gestartet werden.',
     syncFailed: 'Die Postfachsynchronisierung konnte nicht gestartet werden.',

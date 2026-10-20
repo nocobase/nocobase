@@ -876,7 +876,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     system: {
       macos: 'macOS',
       linux: 'Linux',
-      windows: 'Janelas',
+      windows: 'Windows',
     },
   },
   chat: {

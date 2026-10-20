@@ -15,7 +15,6 @@ const esES: LocaleResource<typeof enUS> = {
       'Implementaciones grandes, cambios entre paquetes y refactorización.',
     review: 'Revisión de código y análisis de fallos de CI.',
   },
-
   actions: {
     back: 'Volver',
     cancel: 'Cancelar',
@@ -887,7 +886,7 @@ const esES: LocaleResource<typeof enUS> = {
     system: {
       macos: 'macOS',
       linux: 'Linux',
-      windows: 'Ventanas',
+      windows: 'Windows',
     },
   },
   chat: {

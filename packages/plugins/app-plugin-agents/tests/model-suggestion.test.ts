@@ -62,3 +62,14 @@ it('preserves external suggestions for a model the shipped catalog does not know
     ),
   ).toBe('External description');
 });
+
+it('preserves coding tool and operating system product names in every locale', async () => {
+  for (const locale of Object.keys(locales)) {
+    const { default: copy } = (await locales[locale]()) as {
+      default: typeof enUS;
+    };
+    expect(copy.tools.pi).toBe('Pi');
+    expect(copy.connect.system.linux).toBe('Linux');
+    expect(copy.connect.system.windows).toBe('Windows');
+  }
+});

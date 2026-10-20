@@ -14,7 +14,6 @@ const idID: LocaleResource<typeof enUS> = {
     large: 'Implementasi besar, perubahan lintas paket, dan refaktorisasi.',
     review: 'Peninjauan kode dan analisis kegagalan CI.',
   },
-
   actions: {
     back: 'Kembali',
     cancel: 'Batal',
@@ -860,7 +859,7 @@ const idID: LocaleResource<typeof enUS> = {
     system: {
       macos: 'macOS',
       linux: 'Linux',
-      windows: 'Jendela',
+      windows: 'Windows',
     },
   },
   chat: {

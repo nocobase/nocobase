@@ -11,7 +11,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     large: '大規模な実装、パッケージをまたぐ変更、リファクタリング。',
     review: 'コードレビューと CI の失敗分析。',
   },
-
   actions: {
     back: '戻る',
     cancel: 'キャンセル',
@@ -76,7 +75,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     claude: 'Claude Code',
     codex: 'Codex',
     opencode: 'OpenCode',
-    pi: '円周率',
+    pi: 'Pi',
   },
   agents: {
     title: 'エージェント',
@@ -859,8 +858,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     done: '完了',
     system: {
       macos: 'macOS',
-      linux: 'リナックス',
-      windows: '窓',
+      linux: 'Linux',
+      windows: 'Windows',
     },
   },
   chat: {

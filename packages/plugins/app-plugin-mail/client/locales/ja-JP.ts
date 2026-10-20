@@ -583,6 +583,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
   },
   errors: {
+    messageNotFound: 'メールメッセージが見つかりませんでした。',
     requestFailed: 'メールリクエストが失敗しました。',
     authorizationFailed: 'メール認証を開始できませんでした。',
     syncFailed: 'メールボックスの同期を開始できませんでした。',
