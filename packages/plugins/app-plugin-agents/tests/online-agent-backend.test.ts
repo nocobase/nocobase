@@ -226,10 +226,12 @@ describe('Native backend ownership and facade regressions', () => {
           scope: ['personal'],
           systemPrompt: 'Personal',
           thinking: 'initial',
-          model: ['fixture/alternate'],
         },
         model: alternate,
       });
+      expect(
+        (await f.sessions.load('alice', agent.sessionId)).config,
+      ).not.toHaveProperty('model');
       expect(defaults).toHaveBeenCalledExactlyOnceWith('alice');
       expect(global).toHaveBeenCalledTimes(1);
       expect(personal).toHaveBeenCalledTimes(1);

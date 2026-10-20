@@ -109,6 +109,10 @@ export {
 } from './chat/use-chat.js';
 export { ChatApi } from './chat/api.js';
 export {
+  useConversationModel,
+  type ConversationModel,
+} from './chat/use-conversation-model.js';
+export {
   useConversationSources,
   useLiveRunEvents,
   type ConversationSourceOption,

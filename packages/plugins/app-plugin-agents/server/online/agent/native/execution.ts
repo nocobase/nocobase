@@ -141,23 +141,26 @@ export class NativeOnlineAgent {
             context,
             input.overrides,
             session.config,
-            [],
             input.boundary === 'http',
           )
         : session.config;
       if ((config.agentId ?? 'online') !== (session.config.agentId ?? 'online'))
         throw conflict('Start a new conversation to choose another agent.');
-      const candidate = config.model[0]?.split('/');
+      const candidate = config.model?.[0]?.split('/');
       const selected =
         input?.selectedModel ??
+        (config.model?.length &&
         (input?.overrides?.model !== undefined ||
-        JSON.stringify(config.model) !== JSON.stringify(session.config.model)
+          JSON.stringify(config.model) !== JSON.stringify(session.config.model))
           ? {
               modelService: candidate?.[0] ?? '',
               model: candidate?.slice(1).join('/') ?? '',
             }
           : session.model);
-      if (!config.model.includes(`${selected.modelService}/${selected.model}`))
+      if (
+        config.model?.length &&
+        !config.model.includes(`${selected.modelService}/${selected.model}`)
+      )
         throw invalid('The selected model is outside this configuration.');
       model = await this.deps.model(selected, id);
       const boundContext: OnlineAgentToolContext = Object.freeze({
