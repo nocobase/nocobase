@@ -60,7 +60,7 @@ describe('compact role list', () => {
       </MemoryRouter>,
     );
     const link = screen.getByRole('link', {
-      name: /Member.*member.*Protected/u,
+      name: 'Member',
     });
     expect(link).toHaveAttribute('href', '/roles/member/edit?q=team');
     await user.tab();
