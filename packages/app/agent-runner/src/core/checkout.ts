@@ -13,7 +13,11 @@ import {
 } from './run-worktrees.ts';
 
 import { createHash, randomUUID } from 'node:crypto';
-import { registerWorkspaceUse, workspaceInUse } from './workspace-use.ts';
+import {
+  registerWorkspaceUse,
+  workspaceInUse,
+  waitForWorkspaceCleanup,
+} from './workspace-use.ts';
 import {
   confirmPreparation,
   preparationCurrent,
@@ -903,14 +907,21 @@ export async function lockWorkspace(options: {
     options.appKey,
     options.subjectKey,
   );
-  await mkdir(workDir, { recursive: true, mode: 0o700 });
+  const release = await registerWorkspaceUse(
+    options.paths,
+    workDir,
+    String(process.pid),
+  );
+  try {
+    await waitForWorkspaceCleanup(workDir);
+    await mkdir(workDir, { recursive: true, mode: 0o700 });
+  } catch (error) {
+    await release();
+    throw error;
+  }
   return {
     workDir,
-    release: await registerWorkspaceUse(
-      options.paths,
-      workDir,
-      String(process.pid),
-    ),
+    release,
   };
 }
 
@@ -922,11 +933,14 @@ export async function lockWorkspace(options: {
 export async function cleanWorkspace(
   paths: RunnerPaths,
   workDir: string,
+  runId?: string,
 ): Promise<void> {
-  if (await workspaceInUse(paths, workDir))
+  if (await workspaceInUse(paths, workDir, runId))
     throw new CheckoutError('The workspace is in use and cannot be reset.');
   const meta = await readWorkspaceMeta(paths, workDir);
-  await removeWorkspace(paths, workDir, meta ?? { repos: [] });
+  await removeWorkspace(paths, workDir, meta ?? { repos: [] }, {
+    ignoreRunId: runId,
+  });
   await mkdir(path.join(workDir, RUNNER_DIR), { recursive: true, mode: 0o700 });
 }
 
@@ -1010,6 +1024,7 @@ export async function prepareDirs(
           options.runId ?? String(process.pid),
         );
         locks.push({ release: unregister });
+        await waitForWorkspaceCleanup(dir);
         const hash = await preparationHash(dir, common.initPrompt);
         const key = preparedKey(entry);
         dirs.push({
@@ -1501,14 +1516,34 @@ export async function removeWorkspace(
   paths: RunnerPaths,
   workDir: string,
   meta: Pick<WorkspaceMeta, 'repos'> & Partial<WorkspaceMeta>,
+  options: { cleanupHeld?: boolean; ignoreRunId?: string } = {},
 ): Promise<void> {
-  if (await workspaceInUse(paths, workDir))
-    throw new CheckoutError('The workspace is in use.');
-  if (meta.appKey && meta.subjectKey)
-    await rm(taskSessionRoot(paths, meta.appKey, meta.subjectKey), {
-      recursive: true,
-      force: true,
-    });
+  const lock = options.cleanupHeld
+    ? undefined
+    : await acquireLock(`${workDir}.lock`, { timeoutMs: 0 });
+  try {
+    await removeWorkspaceUnderCleanup(
+      paths,
+      workDir,
+      meta,
+      options.ignoreRunId,
+    );
+  } finally {
+    await lock?.release();
+  }
+}
+
+async function removeWorkspaceUnderCleanup(
+  paths: RunnerPaths,
+  workDir: string,
+  meta: Pick<WorkspaceMeta, 'repos'> & Partial<WorkspaceMeta>,
+  ignoreRunId?: string,
+): Promise<void> {
+  const checkUse = async (): Promise<void> => {
+    if (await workspaceInUse(paths, workDir, ignoreRunId))
+      throw new CheckoutError('The workspace is in use.');
+  };
+  await checkUse();
   for (const repo of meta.repos)
     await invalidatePreparation(paths, path.join(workDir, repo.path));
 
@@ -1518,6 +1553,7 @@ export async function removeWorkspace(
   }
   // A read-only checkout holds nothing to save. The caller holds its lock and has stopped its processes.
   if (isDisposableWorkspace(workDir, meta)) {
+    await checkUse();
     await rm(workDir, { recursive: true, force: true });
     // Missing metadata is common after an interrupted removal. Prune registrations, never borrowed objects.
     for (const entry of await readdir(paths.reposDir, {
@@ -1541,6 +1577,7 @@ export async function removeWorkspace(
       }
     }
     await rm(workspaceRecordPath(paths, workDir), { force: true });
+    await removeOwnedSessions(paths, workDir, meta, ignoreRunId);
     return;
   }
   if (meta.runWorktrees === true || meta.recoveryRequired === true)
@@ -1554,14 +1591,42 @@ export async function removeWorkspace(
     if (existsSync(repo.cache)) {
       const lock = await lockCache(repo.cache);
       try {
+        await checkUse();
         await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
       } finally {
         await lock.release();
       }
     }
   }
+  await checkUse();
   await rm(workDir, { recursive: true, force: true });
   await rm(workspaceRecordPath(paths, workDir), { force: true });
+  await removeOwnedSessions(paths, workDir, meta, ignoreRunId);
+}
+
+/** Legacy attempts own only their recorded legacy sessions, never the new fixed task's session home. */
+export async function removeOwnedSessions(
+  paths: RunnerPaths,
+  workDir: string,
+  meta: Partial<WorkspaceMeta>,
+  ignoreRunId?: string,
+): Promise<void> {
+  if (meta.appKey && meta.subjectKey) {
+    const owner = taskWorkDir(paths, meta.appKey, meta.subjectKey);
+    if (
+      path.resolve(workDir) === owner &&
+      !(await workspaceInUse(paths, owner, ignoreRunId))
+    )
+      await rm(taskSessionRoot(paths, meta.appKey, meta.subjectKey), {
+        recursive: true,
+        force: true,
+      });
+  }
+  for (const key of meta.sessionKeys ?? [])
+    await rm(path.join(paths.workRoot, '.sessions', key), {
+      recursive: true,
+      force: true,
+    });
 }
 
 /** Removes the work directories the retention rules let go. Returns the removed directories. */
@@ -1596,7 +1661,9 @@ export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
         continue;
       }
       try {
-        await removeWorkspace(paths, workDir, meta ?? { repos: [] });
+        await removeWorkspace(paths, workDir, meta ?? { repos: [] }, {
+          cleanupHeld: true,
+        });
         removed.push(workDir);
       } catch (error) {
         options.log?.(`gc: cleanup failed for ${workDir}: ${String(error)}`);
@@ -1632,7 +1699,7 @@ export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
         );
         continue;
       }
-      await removeWorkspace(paths, workDir, current);
+      await removeWorkspace(paths, workDir, current, { cleanupHeld: true });
       removed.push(workDir);
       options.log?.(`gc: removed ${workDir}`);
     } finally {

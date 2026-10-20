@@ -6,6 +6,7 @@ import {
   runsRepo,
   sessionsRepo,
 } from '../server/core/runs/run.store.js';
+import { runnersRepo } from '../server/runners/runner.store.js';
 
 interface QueryEvents {
   on(
@@ -26,9 +27,116 @@ interface QueryEvents {
   ): void;
 }
 
+function logCost(...values: readonly unknown[]): void {
+  process.stdout.write(
+    `${values.map((value) => (typeof value === 'string' ? value : JSON.stringify(value))).join(' ')}\n`,
+  );
+}
+
 describe('claim query cost', () => {
   let h: Harness;
   afterEach(async () => h?.close());
+
+  it.each([0, 1000])(
+    'bounds returned rows with %i unrelated live runs and same-task historical sessions',
+    async (noise) => {
+      h = await createHarness();
+      const conn = h.database.connection();
+      const agent = await h.createAgent();
+      const runId = await h.enqueue(agent, 'target');
+      const original = await h.registerRunner({ slots: 2 });
+      const claimant = await h.registerRunner({ slots: 2 });
+      const unrelated = await h.registerRunner({ slots: 2 });
+      const session = {
+        id: 'location',
+        agentId: agent,
+        runnerId: original.runnerId,
+        subjectKind: 'sample',
+        subjectId: 'target',
+        threadScope: 'root',
+        sessionId: 'prior',
+        workDir: '/fixed',
+        branch: null,
+        fingerprint: null,
+        poisoned: false,
+        updatedAt: h.clock.now().toISOString(),
+      };
+      await sessionsRepo(conn).createOne({ values: session });
+      if (noise) {
+        const noiseAgent = await h.createAgent();
+        const seedId = await h.enqueue(noiseAgent, 'unrelated');
+        const { revision: _revision, ...seed } = (await runsRepo(conn).findOne({
+          filter: { id: seedId },
+        }))!;
+        await runsRepo(conn).deleteMany({ filter: { id: seedId } });
+        const { revision: _runnerRevision, ...machine } = (await runnersRepo(
+          conn,
+        ).findOne({ filter: { id: unrelated.runnerId } }))!;
+        for (let offset = 0; offset < noise; offset += 100) {
+          const indexes = Array.from(
+            { length: Math.min(100, noise - offset) },
+            (_, i) => offset + i,
+          );
+          await runsRepo(conn).createMany({
+            values: indexes.map((i) => ({
+              ...seed,
+              id: `noise-run-${i}`,
+              subjectId: `unrelated-${i}`,
+              status: 'running' as const,
+              runnerId: unrelated.runnerId,
+            })),
+          });
+          await sessionsRepo(conn).createMany({
+            values: indexes.map((i) => ({
+              ...session,
+              id: `historical-${i}`,
+              threadScope: `history-${i}`,
+              updatedAt: new Date(0).toISOString(),
+            })),
+          });
+          await sessionsRepo(conn).createMany({
+            values: indexes.map((i) => ({
+              ...session,
+              id: `unrelated-session-${i}`,
+              subjectId: `unrelated-${i}`,
+              runnerId: unrelated.runnerId,
+            })),
+          });
+          await runnersRepo(conn).createMany({
+            values: indexes.map((i) => ({
+              ...machine,
+              id: `unrelated-runner-${i}`,
+            })),
+          });
+        }
+      }
+      const runner = await h.services.runners.authenticate(claimant.key, {
+        touch: false,
+      });
+      const knex = await conn.client<QueryEvents>();
+      let rows = 0;
+      let selects = 0;
+      const onResponse = (response: unknown, query: { sql: string }) => {
+        if (/^\s*select\b/iu.test(query.sql) && /["`]ag_/u.test(query.sql)) {
+          selects++;
+          rows += Array.isArray(response)
+            ? response.length
+            : response == null
+              ? 0
+              : 1;
+        }
+      };
+      knex.on('query-response', onResponse);
+      try {
+        expect(await h.services.claims.claim(runner, 1)).toEqual([]);
+      } finally {
+        knex.off('query-response', onResponse);
+      }
+      logCost('claim-noise-cost', { noise, selects, rows, runId });
+      expect(selects).toBe(13);
+      expect(rows).toBeLessThanOrEqual(12);
+    },
+  );
 
   it.each(
     [1, 10, 50].flatMap((count) =>
@@ -203,13 +311,13 @@ describe('claim query cost', () => {
             ).length,
           ]),
         );
-        console.info(
+        logCost(
           'claim-affinity-query-cost',
           { count, skillCount, selectedRows },
           counts,
         );
         expect(counts).toMatchObject({
-          select: 12,
+          select: 13,
           insert: 0,
           update: 0,
           delete: 0,
@@ -237,7 +345,7 @@ describe('claim query cost', () => {
           ).length,
         ]),
       );
-      console.info(
+      logCost(
         'claim-query-cost',
         { count, skillCount, selectedRows },
         counts,

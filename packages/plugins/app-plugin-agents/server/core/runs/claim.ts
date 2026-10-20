@@ -179,7 +179,7 @@ export interface ClaimDeps extends TransitionDeps {
   readonly selectionPolicies?: ModelSelectionPolicies;
   readonly runners?: {
     online(conn: DatabaseConnection): Promise<Runner[]>;
-    all(conn: DatabaseConnection): Promise<Runner[]>;
+    all(conn: DatabaseConnection, ids?: readonly string[]): Promise<Runner[]>;
   };
   readonly people?: Pick<People, 'names'>;
   readonly tx: TxRunner;
@@ -614,12 +614,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     requirePolicy = true,
     trust?: 'team' | 'personal',
     resources = claimResources(conn, run.id),
+    sampledRunners?: readonly Runner[],
   ): Promise<ModelSelectionWait | null> {
     const policy = await deps.selectionPolicies?.forRun(conn, run);
     if ((requirePolicy && !policy) || !deps.runners) return null;
     const now = clock.now();
     const start = queueStart(run);
-    const registered = (await deps.runners.all(conn)).filter(
+    const registered = (
+      sampledRunners ?? (await deps.runners.all(conn))
+    ).filter(
       (runner) =>
         !trust ||
         (trust === 'team' ? runner.trust === 'team' : runner.trust !== 'team'),
@@ -829,6 +832,44 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       fallbackAfterSeconds: policy?.fallbackAfterSeconds ?? 0,
       sampledAt: now.toISOString(),
       entries,
+    };
+  }
+
+  /** The same ordered-model decision is used for dispatch and for immediate runner affinity. */
+  async function modelAdmission(
+    conn: DatabaseConnection,
+    run: Run,
+    agent: Agent,
+    entry: RunnerModelEntry,
+    resources = claimResources(conn, run.id),
+    sampledRunners?: readonly Runner[],
+  ): Promise<RunExecutionSnapshot['selection'] | false> {
+    const selection = await selectionFacts(
+      conn,
+      run,
+      agent,
+      true,
+      undefined,
+      resources,
+      sampledRunners,
+    );
+    if (!selection || agent.modelEntries.indexOf(entry) <= 0) return undefined;
+    const elapsed = Math.max(
+      0,
+      (clock.now().getTime() - queueStart(run)) / 1000,
+    );
+    const preferredAvailable =
+      (selection.entries[0]?.compatibleCount ?? 0) > 0 ||
+      selection.entries[0]?.reason === 'unknown' ||
+      selection.entries[0]?.blockers?.includes('unknown') === true;
+    if (preferredAvailable && elapsed < selection.fallbackAfterSeconds)
+      return false;
+    return {
+      reason: preferredAvailable ? 'preferredQueued' : 'preferredUnavailable',
+      preferredTool: agent.modelEntries[0].tool,
+      preferredModel: agent.modelEntries[0].model,
+      queueEnteredAt: selection.queueEnteredAt,
+      waitedSeconds: elapsed,
     };
   }
 
@@ -1534,38 +1575,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           // Admission must precede preflight assembly: a missing or obsolete
           // subject is cancelled normally, rather than counted as setup failure.
           const resources = claimResources(conn, run.id);
-          const selection = await selectionFacts(
+          const admission = await modelAdmission(
             conn,
             toRun(current),
             agent,
-            true,
-            undefined,
+            entry,
             resources,
           );
-          const elapsed = Math.max(
-            0,
-            (now.getTime() - queueStart(toRun(current))) / 1000,
-          );
-          const preferredAvailable =
-            (selection?.entries[0]?.compatibleCount ?? 0) > 0 ||
-            selection?.entries[0]?.reason === 'unknown' ||
-            selection?.entries[0]?.blockers?.includes('unknown') === true;
-          const chosenIndex = agent.modelEntries.indexOf(entry);
-          if (selection && chosenIndex > 0) {
-            // Throw to roll back the provisional dispatch; the original run keeps
-            // waiting for its first choice without consuming an attempt or token.
-            if (preferredAvailable && elapsed < selection.fallbackAfterSeconds)
-              throw new NotForThisRunner();
-            selectionSnapshot = {
-              reason: preferredAvailable
-                ? 'preferredQueued'
-                : 'preferredUnavailable',
-              preferredTool: agent.modelEntries[0].tool,
-              preferredModel: agent.modelEntries[0].model,
-              queueEnteredAt: selection.queueEnteredAt,
-              waitedSeconds: elapsed,
-            };
-          }
+          if (admission === false) throw new NotForThisRunner();
+          selectionSnapshot = admission;
           assembled = await assemble(
             unit,
             run,
@@ -1771,13 +1789,16 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       return {
         machines: [runner],
         preferred: new Map<string, Runner>(),
-        held: [] as RunRecord[],
-        jobs: [] as { runnerId: string | null }[],
+        held: [] as {
+          runnerId: string | null;
+          tool: string | null;
+          count: number;
+        }[],
+        jobs: [] as { runnerId: string | null; count: number }[],
       };
-    const machines = deps.runners ? await deps.runners.all(conn) : [runner];
-    const locations = await sessionsRepo(conn).findMany({
-      select: (s) =>
-        s.fields('runnerId', 'subjectKind', 'subjectId', 'updatedAt'),
+    const locations = await sessionsRepo(conn).groupBy({
+      by: ['runnerId', 'subjectKind', 'subjectId'],
+      aggregate: (a) => ({ updatedAt: a.max('updatedAt') }),
       filter: (f) =>
         f.or(
           queued.map((run) =>
@@ -1789,25 +1810,50 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         ),
       sort: (sort) => sort.field('updatedAt').desc(),
     });
-    const held = await runsRepo(conn).findMany({
-      select: (s) =>
-        s.fields('runnerId', 'subjectKind', 'subjectId', 'updatedAt', 'tool'),
+    const activeLocations = await runsRepo(conn).groupBy({
+      by: ['runnerId', 'subjectKind', 'subjectId'],
+      aggregate: (a) => ({ updatedAt: a.max('updatedAt') }),
       filter: (f) =>
         f.and([
           f.string('runnerId').notEmpty(),
           f.or(ACTIVE.map((status) => f.string('status').eq(status))),
+          f.or(
+            queued.map((run) =>
+              f.and([
+                f.string('subjectKind').eq(run.subjectKind),
+                f.string('subjectId').eq(run.subjectId),
+              ]),
+            ),
+          ),
         ]),
     });
+    const machineIds = [
+      ...new Set(
+        [
+          runner.id,
+          ...queued.map(
+            (run) => toExecutions(run.executionHistory).at(-1)?.runnerId,
+          ),
+          ...locations.map((item) => item.runnerId),
+          ...activeLocations.map((item) => item.runnerId),
+        ].filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const machines = deps.runners
+      ? await deps.runners.all(conn, machineIds)
+      : [runner];
     const preferred = new Map<string, Runner>();
     for (const run of queued) {
       const last = toExecutions(run.executionHistory).at(-1)?.runnerId;
-      const current = held
+      const current = activeLocations
         .filter(
           (item) =>
             item.subjectKind === run.subjectKind &&
             item.subjectId === run.subjectId,
         )
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]?.runnerId;
+        .sort((a, b) =>
+          String(b.updatedAt).localeCompare(String(a.updatedAt)),
+        )[0]?.runnerId;
       const location = locations.find(
         (item) =>
           item.subjectKind === run.subjectKind &&
@@ -1819,11 +1865,24 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       if (machine) preferred.set(run.id, machine);
     }
     const ids = [...new Set([...preferred.values()].map((item) => item.id))];
+    const held =
+      ids.length === 0
+        ? []
+        : await runsRepo(conn).groupBy({
+            by: ['runnerId', 'tool'],
+            aggregate: (a) => ({ count: a.count() }),
+            filter: (f) =>
+              f.and([
+                f.or(ids.map((id) => f.string('runnerId').eq(id))),
+                f.or(ACTIVE.map((status) => f.string('status').eq(status))),
+              ]),
+          });
     const jobs =
       ids.length === 0
         ? []
-        : await jobsRepo(conn).findMany({
-            select: (s) => s.fields('runnerId'),
+        : await jobsRepo(conn).groupBy({
+            by: ['runnerId'],
+            aggregate: (a) => ({ count: a.count() }),
             filter: (f) =>
               f.and([
                 f.or(ids.map((id) => f.string('runnerId').eq(id))),
@@ -1851,8 +1910,10 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       return false;
     const held = batch.held.filter((item) => item.runnerId === preferred.id);
     if (
-      held.length +
-        batch.jobs.filter((item) => item.runnerId === preferred.id).length >=
+      held.reduce((count, item) => count + Number(item.count), 0) +
+        batch.jobs
+          .filter((item) => item.runnerId === preferred.id)
+          .reduce((count, item) => count + Number(item.count), 0) >=
       preferred.slots
     )
       return false;
@@ -1861,7 +1922,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         preferred,
         agent,
         (tool) =>
-          held.filter((item) => item.tool === tool).length <
+          held
+            .filter((item) => item.tool === tool)
+            .reduce((count, item) => count + Number(item.count), 0) <
             toolLimit(preferred, tool) &&
           (preferred.toolLoad?.[tool]?.free ?? 1) > 0,
         now,
@@ -1944,6 +2007,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       ),
     );
     const ready = new Set<string>();
+    let modelRunners: readonly Runner[] | undefined;
     for (const { run, agent, runner, assembly } of checks) {
       const variables = new Map<string, (typeof variableRows)[number]>();
       for (const target of variableTargets(agent, assembly))
@@ -1980,8 +2044,38 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           names,
           teamOnly,
         }) === 'ready'
-      )
+      ) {
+        const entry = pickOpenEntry(
+          runner,
+          agent,
+          (tool) =>
+            batch.held
+              .filter(
+                (item) => item.runnerId === runner.id && item.tool === tool,
+              )
+              .reduce((count, item) => count + Number(item.count), 0) <
+              toolLimit(runner, tool) &&
+            (runner.toolLoad?.[tool]?.free ?? 1) > 0,
+          clock.now().getTime(),
+        );
+        if (!entry) continue;
+        if (agent.modelEntries.indexOf(entry) > 0) {
+          // Ordered fallback can depend on other machines, sampled once for this batch.
+          modelRunners ??= await deps.runners?.all(conn);
+          if (
+            (await modelAdmission(
+              conn,
+              toRun(run),
+              agent,
+              entry,
+              undefined,
+              modelRunners,
+            )) === false
+          )
+            continue;
+        }
         ready.add(run.id);
+      }
     }
     return ready;
   }

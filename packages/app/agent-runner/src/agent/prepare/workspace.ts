@@ -8,7 +8,10 @@ import {
   readWorkspaceMeta,
   writeWorkspaceMeta,
 } from '../../core/checkout.ts';
-import { registerWorkspaceUse } from '../../core/workspace-use.ts';
+import {
+  registerWorkspaceUse,
+  waitForWorkspaceCleanup,
+} from '../../core/workspace-use.ts';
 import { workspaceKey, type PrepareStep } from './types.ts';
 
 export const workspaceStep: PrepareStep = {
@@ -21,8 +24,7 @@ export const workspaceStep: PrepareStep = {
       workspaceKey(context.payload),
     );
     if (context.payload.workspace.clean === true)
-      await cleanWorkspace(context.paths, workDir);
-    await mkdir(workDir, { recursive: true, mode: 0o700 });
+      await cleanWorkspace(context.paths, workDir, context.payload.run.id);
     const release = await registerWorkspaceUse(
       context.paths,
       workDir,
@@ -30,6 +32,8 @@ export const workspaceStep: PrepareStep = {
     );
     context.workspace = { workDir, release };
     context.onRelease(release);
+    await waitForWorkspaceCleanup(workDir);
+    await mkdir(workDir, { recursive: true, mode: 0o700 });
     context.privateDir = path.join(
       context.paths.runsDir,
       'private',

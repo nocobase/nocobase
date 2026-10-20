@@ -142,6 +142,7 @@ export async function cleanArtifacts(
               options.paths,
               path.join(entry.workDir, repo.path),
             );
+          if (await workspaceInUse(options.paths, entry.workDir)) break;
           await rm(dir, { recursive: true, force: true });
           removed += 1;
         } catch (error) {

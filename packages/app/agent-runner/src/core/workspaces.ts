@@ -33,6 +33,7 @@ import {
   hasUnpushedWork,
   readWorkspaceMeta,
   removeWorkspace,
+  removeOwnedSessions,
   workspaceRecordPath,
   writeWorkspaceMeta,
   type Lock,
@@ -45,7 +46,6 @@ import {
   clearContinuations,
   retryWorkspaceRemoval,
   runBranch,
-  taskSessionRoot,
 } from './run-worktrees.ts';
 
 export { hasUnpushedWork } from './checkout.ts';
@@ -560,7 +560,9 @@ export async function removePlanned(
       )
         return 'changed';
 
-      await removeWorkspace(paths, entry.workDir, meta ?? { repos: [] });
+      await removeWorkspace(paths, entry.workDir, meta ?? { repos: [] }, {
+        cleanupHeld: true,
+      });
       return undefined;
     }
     if (meta === undefined) return 'changed';
@@ -591,7 +593,7 @@ export async function removePlanned(
       );
       return 'unpushed';
     }
-    await removeWorkspace(paths, entry.workDir, meta);
+    await removeWorkspace(paths, entry.workDir, meta, { cleanupHeld: true });
     return undefined;
   } finally {
     await lock.release();
@@ -645,7 +647,11 @@ async function discardDirectory(
     if (!existsSync(repo.cache)) continue;
     const lock = await lockCache(repo.cache);
     try {
+      if (await workspaceInUse(paths, workDir))
+        throw new Error('The workspace is in use.');
       await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
+      if (await workspaceInUse(paths, workDir))
+        throw new Error('The workspace is in use.');
       await rm(dir, { recursive: true, force: true });
       await gitOk(['worktree', 'prune'], repo.cache);
       if (
@@ -660,18 +666,11 @@ async function discardDirectory(
       await lock.release();
     }
   }
-  if (meta?.appKey)
-    await rm(taskSessionRoot(paths, meta.appKey, meta.subjectKey), {
-      recursive: true,
-      force: true,
-    });
-  for (const key of meta?.sessionKeys ?? [])
-    await rm(path.join(paths.workRoot, '.sessions', key), {
-      recursive: true,
-      force: true,
-    });
+  if (await workspaceInUse(paths, workDir))
+    throw new Error('The workspace is in use.');
   await rm(workDir, { recursive: true, force: true });
   await rm(workspaceRecordPath(paths, workDir), { force: true });
+  await removeOwnedSessions(paths, workDir, meta ?? {});
 }
 
 /**

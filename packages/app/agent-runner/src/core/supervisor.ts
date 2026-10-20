@@ -1,4 +1,9 @@
-import { protectUpgradeWorkspace } from './workspace-use.ts';
+import {
+  protectUpgradeWorkspace,
+  registerWorkspaceUse,
+  waitForWorkspaceCleanup,
+} from './workspace-use.ts';
+import { taskWorkDir } from './checkout.ts';
 import { cleanupRunTemp } from './run-temp.ts';
 import { finalizeRunWorktrees } from './run-worktrees.ts';
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
@@ -245,6 +250,19 @@ export interface SupervisorOptions {
   onExit?: (runId: string) => void;
 }
 
+function runDirectories(
+  paths: RunnerPaths,
+  appKey: string,
+  payload: RunPayload,
+): string[] {
+  return [
+    taskWorkDir(paths, appKey, payload.workspace.key ?? payload.subject.key),
+    ...payload.workspace.dirs
+      .filter((dir) => dir.kind === 'directory')
+      .map((dir) => path.resolve(dir.path)),
+  ];
+}
+
 export class Supervisor {
   private readonly options: SupervisorOptions;
   readonly runs: Map<string, SupervisedRun> = new Map();
@@ -283,17 +301,33 @@ export class Supervisor {
   }
 
   async spawn(appKey: string, payload: RunPayload): Promise<SupervisedRun> {
-    const supervised = await this.start(
-      {
-        runId: payload.run.id,
-        appKey,
-        attempt: payload.run.attempt,
-        firstSeq: payload.run.firstSeq,
-      },
-      { appKey, payload, timings: this.options.timings },
-    );
-    supervised.tool = payload.tool.kind;
-    return supervised;
+    const dirs = runDirectories(this.options.paths, appKey, payload);
+    const releases: (() => Promise<void>)[] = [];
+    try {
+      for (const dir of dirs) {
+        releases.push(
+          await registerWorkspaceUse(this.options.paths, dir, payload.run.id),
+        );
+        await waitForWorkspaceCleanup(dir);
+      }
+      const supervised = await this.start(
+        {
+          runId: payload.run.id,
+          appKey,
+          attempt: payload.run.attempt,
+          firstSeq: payload.run.firstSeq,
+        },
+        { appKey, payload, timings: this.options.timings },
+      );
+      supervised.tool = payload.tool.kind;
+      void supervised.exited
+        .finally(() => Promise.all(releases.map((release) => release())))
+        .catch((error: unknown) => this.options.log(String(error)));
+      return supervised;
+    } catch (error) {
+      await Promise.all(releases.map((release) => release()));
+      throw error;
+    }
   }
 
   /** How many runs of `tool` it supervises now. */
@@ -365,6 +399,18 @@ export class Supervisor {
       phase: 'spawned',
       log: logFile,
     });
+    // A worker can outlive this daemon. Its own PID protects startup even before its preparation steps run.
+    const startupUses: (() => Promise<void>)[] = [];
+    try {
+      if (job.kind !== 'job')
+        for (const dir of runDirectories(paths, appKey, job.payload))
+          startupUses.push(await registerWorkspaceUse(paths, dir, runId, pid));
+    } catch (error) {
+      child.stdin?.destroy();
+      await killGroup(pid, 0);
+      await Promise.all(startupUses.map((release) => release()));
+      throw error;
+    }
     const exited = new Promise<void>((resolve) => {
       child.on('exit', (code, signal) => {
         log(`${noun} ${label}: worker ${pid} exited (${signal ?? code})`);
@@ -392,6 +438,7 @@ export class Supervisor {
             const cancelled = this.runs.get(runId)?.cancelSeenAt !== undefined;
             const upgrade = this.runs.get(runId)?.upgradeInterrupted === true;
             await this.afterExit(runId, cancelled, upgrade);
+            await Promise.all(startupUses.map((release) => release()));
             this.runs.delete(runId);
             this.options.onExit?.(runId);
             resolve();

@@ -41,6 +41,29 @@ describe('task runner affinity', () => {
     ]);
   });
 
+  it('does not defer a preferred-model machine to an original machine still waiting for model fallback', async () => {
+    const { original, other } = await fixture();
+    const agent = await h.createAgent({
+      modelEntries: [
+        { tool: 'claude', model: null },
+        { tool: 'codex', model: null },
+      ],
+    });
+    h.services.selectionPolicies.register(agent, async () => ({
+      fallbackAfterSeconds: 120,
+    }));
+    await runnersRepo(h.database.connection()).updateMany({
+      filter: { id: original.runnerId },
+      values: {
+        enabledTools: ['codex'],
+        tools: [{ kind: 'codex', authenticated: true }],
+      },
+    });
+    const run = await h.enqueue(agent, 'task');
+    expect(await claim(h, original)).toEqual([]);
+    expect((await claim(h, other)).map((item) => item.run.id)).toEqual([run]);
+  });
+
   it.each([
     'busy',
     'offline',
