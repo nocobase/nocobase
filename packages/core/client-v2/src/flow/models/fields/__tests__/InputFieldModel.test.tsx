@@ -27,6 +27,22 @@ function createInputFieldModel(props?: Record<string, unknown>) {
 }
 
 describe('InputFieldModel', () => {
+  it('aligns plain inputs with the top of other filter form controls', () => {
+    const model = createInputFieldModel();
+
+    render(<>{model.render()}</>);
+
+    expect(screen.getByRole('textbox')).toHaveStyle({ verticalAlign: 'top' });
+  });
+
+  it('preserves explicitly configured input styles', () => {
+    const model = createInputFieldModel({ style: { verticalAlign: 'middle', width: 200 } });
+
+    render(<>{model.render()}</>);
+
+    expect(screen.getByRole('textbox')).toHaveStyle({ verticalAlign: 'middle', width: '200px' });
+  });
+
   it('renders the normal input when scan input is disabled', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const model = createInputFieldModel({ disableManualInput: true, enableScan: false });

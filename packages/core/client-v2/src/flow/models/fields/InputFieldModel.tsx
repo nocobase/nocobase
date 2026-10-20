@@ -58,7 +58,7 @@ export class InputFieldModel extends FieldModel {
       return <ScanInput {...this.props} />;
     }
     const { enableScan, disableManualInput, ...inputProps } = this.props;
-    return <IMESafeInput {...inputProps} />;
+    return <IMESafeInput {...inputProps} style={{ verticalAlign: 'top', ...inputProps.style }} />;
   }
 }
 
