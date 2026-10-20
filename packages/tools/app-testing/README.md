@@ -10,6 +10,8 @@ Test fixtures for NocoBase applications and plugins. A server test gets an appli
 
 Declare it in `devDependencies`. The application runtime packages are optional peers: `./server` needs `@nocobase/app-server`, `./cli` needs `@nocobase/app-cli` and `@oclif/core`, `./client` needs `@nocobase/app-client`, `@nocobase/i18n`, `@nocobase/service-provider`, `react`, `react-router` and `@testing-library/react`, and the dialect packages follow `@nocobase/db-testing`'s rules — SQLite is required, every other dialect only when it is selected.
 
+Run server, database and CLI fixtures under Node, and page tests under jsdom, following the consumer's Vitest configuration. Real login and a real database do not require a browser test; use browser tests for browser behavior and complete user workflows. Pure functions and services with explicit dependencies can use ordinary Vitest tests.
+
 ## An application on test databases
 
 ```ts
@@ -79,6 +81,8 @@ try {
 
 `bindTestAppCommand()` is `bindAppCommand()` with the application the command opens pointed at the test databases `config` names, so a command that opens the application — `db apply`, or one of a plugin's — runs against databases of its own. Its storage also lives under `config.directory` and is removed by `config.dispose()` after the command finishes. A custom `loadRuntime` bypasses the conventional loader and must provide its own isolated configuration and storage.
 
+Keep runtime storage and command output files in a temporary directory too; database isolation does not redirect file writes. A custom `loadRuntime` must pass `config.path` as `configPath` and set `env: { APP_STORAGE_DIR: path.join(config.directory, 'storage') }` when calling `resolveStandaloneAppRuntime()` from `@nocobase/app-server/node`. The conventional loader runs through Node, so TypeScript source using `.js` import specifiers needs a compatible loader, compiled modules, or explicit imports of the runtime and app factory supplied through `loadRuntime` and `createApp`. Prepare migrations and records before a command that assumes an installed schema: creating the test configuration alone does not install the application.
+
 ## Pages
 
 ```tsx
@@ -104,6 +108,8 @@ test('lists the orders', async () => {
 ```
 
 `renderWithApp()` starts a client application with `plugins`, their services and their translations, and renders the page inside it under a `MemoryRouter` starting at `route`, the way the application renders it: `useApiClient()`, `useService()`, `useToaster()` and `useTranslation()` are the real ones, not mocks of `@nocobase/app-client`. `namespace` is the translation scope the application gives a plugin's own pages. Translations are strict, so a key the locale files lack fails the test. Call it inside a test: the application shuts down when the test finishes. `route` is relative to the application mount path: use `/orders` for a page served at `/main/orders` when the server mounts at `/main`. Router links and navigation include that mount path. The returned `rerender()` preserves the application providers, translation scope, router and component state when updating the page element. Initialization failures clean up the runtime configuration before rejecting.
+
+For application-owned pages, read the namespace from the application's `package.json` and pass its locale loader map as `namespaces: { [packageMetadata.name]: locales }`, with `namespace: packageMetadata.name`. The helper does not automatically load the application's `client/runtime.ts`; register the required plugins and services explicitly. Render `Routes` with child `Route` elements inside the existing router. Host route guards need application routing or browser coverage. Return an error `Response` for unexpected `answerApi()` requests, assert the visible result and recorded calls, and wait for permission checks before asserting that an action is absent.
 
 The API client talks to `server` or `fetch`. Pass an application from `createTestApp()` as `server` to reach it in process, with `cookie` set to a session's `cookie` from `signIn()` to act as that user; otherwise `fetch` answers each request, and a request nothing answers fails the call that sent it. The server's `publicBasePath` is the mount path the page sees: the client configuration is written into the document the way the server renders it, so `resolveAppUrl()` builds URLs under it, as it does in the running application. `resolveAssetUrl()` follows that same mount path unless Vite's build-time `BASE_URL` is an absolute HTTP(S) CDN prefix; it is for shipped static files, not API or page URLs. Changing the test server's `publicBasePath` does not change a compiled CDN prefix. `answerApi(handler)` builds that `fetch` from a function of `{ method, path, query, json }`, with `path` below the API root: it returns the JSON body, or a `Response` for another status, and a handler that throws fails the request with status 500 and its message, as does a request whose JSON body cannot be parsed. A `vi.fn()` handler records every call the page made, for `toHaveBeenCalledWith`. `services` registers stand-ins before the plugins start, such as another plugin's client service; leave out the plugin a stand-in replaces. Toasts render after the page as plain text, and `toasts()` on the result lists the open ones.
 

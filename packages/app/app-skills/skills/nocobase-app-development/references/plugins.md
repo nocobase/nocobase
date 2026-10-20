@@ -6,14 +6,15 @@ Read this before registering, updating, customizing or removing a plugin, and be
 
 **You are not starting from scratch.** This application ships with NocoBase packages that already solve whole categories of requirement, and packages may publish a Skill explaining how to use them. `pnpm nocobase skills sync` copies Skills from direct `@nocobase/*` dependencies and registered plugins into `.agents/skills/`. Before implementing a feature, check whether an installed and registered plugin already covers it:
 
-| The requirement sounds like                                                                  | Read the Skill for                    |
-| -------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Email, IM, or in-app messages; notifying someone that something happened                     | `@nocobase/app-plugin-notification`   |
-| Roles, permissions, "user A may only see their own records", field-level or row-level access | `@nocobase/app-plugin-authorization`  |
-| Sign-in, registration, sessions, password reset                                              | `@nocobase/app-plugin-authentication` |
-| User listing, account state, password reset, and application-owned role assignment           | `@nocobase/app-plugin-users`          |
-| File upload and metadata through Repository                                                  | `@nocobase/app-plugin-file`           |
-| Translated text and language switching                                                       | `@nocobase/app-plugin-i18n`           |
+| The requirement sounds like                                                                  | Read the Skill for                                                                                                                        |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Email, IM, or in-app messages; notifying someone that something happened                     | `@nocobase/app-plugin-notification`                                                                                                       |
+| Approval processes, joint decisions and approval tasks                                       | `@nocobase/app-plugin-approval` (commercial Pro plugin; check [prerequisites](lifecycle.md#approval-requests-check-the-pro-plugin-first)) |
+| Roles, permissions, "user A may only see their own records", field-level or row-level access | `@nocobase/app-plugin-authorization`                                                                                                      |
+| Sign-in, registration, sessions, password reset                                              | `@nocobase/app-plugin-authentication`                                                                                                     |
+| User listing, account state, password reset, and application-owned role assignment           | `@nocobase/app-plugin-users`                                                                                                              |
+| File upload and metadata through Repository                                                  | `@nocobase/app-plugin-file`                                                                                                               |
+| Translated text and language switching                                                       | `@nocobase/app-plugin-i18n`                                                                                                               |
 
 Run `pnpm nocobase skills sync` if `.agents/skills/` is missing or looks out of date, then read the Skill for the plugin you need. It documents that plugin's public entries, the ownership boundary, and how to verify the result — which is faster and more correct than inferring an API from its source.
 
