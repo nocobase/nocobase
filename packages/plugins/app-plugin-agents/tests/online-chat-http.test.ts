@@ -331,6 +331,65 @@ it('uses standard POST streams for authenticated tools, authorized attachments a
     );
 });
 
+it.each(['absent', 'empty'] as const)(
+  'preserves an %s restriction through HTTP creation, idle model changes and configuration reads',
+  async (restriction) => {
+    const f = await fixture();
+    if (restriction === 'empty')
+      service.configurator.registerOnlineAgentScope('unrestricted', {
+        model: [],
+      });
+    const creation = await f.request(
+      '/conversations',
+      'POST',
+      restriction === 'empty' ? { config: { scope: ['unrestricted'] } } : {},
+    );
+    expect(creation.status).toBe(201);
+    const { data: created } = await creation.json();
+    const check = (config: object) => {
+      if (restriction === 'absent') expect(config).not.toHaveProperty('model');
+      else expect(config).toHaveProperty('model', []);
+    };
+    check(
+      (await (await f.request(`/conversations/${created.id}/config`)).json())
+        .data,
+    );
+    for (const selectedModel of [
+      { modelService: 'alternate', model: 'second' },
+      { modelService: 'fixture', model: 'chat' },
+    ]) {
+      const response = await f.request(
+        `/conversations/${created.id}/config`,
+        'PATCH',
+        {
+          config: {},
+          selectedModel,
+        },
+      );
+      expect(response.status).toBe(200);
+      const { data: changed } = await response.json();
+      check(changed);
+      expect(changed.selectedModel).toEqual(selectedModel);
+      const { data: saved } = await (
+        await f.request(`/conversations/${created.id}/config`)
+      ).json();
+      check(saved);
+      expect(saved.selectedModel).toEqual(selectedModel);
+      const row = await h.database
+        .connection()
+        .repository('agConversations')
+        .findOne({
+          filter: { id: created.id },
+        });
+      check(row!.metadata.onlineAgent.config);
+      expect(row).toMatchObject({
+        modelService: selectedModel.modelService,
+        model: selectedModel.model,
+      });
+    }
+  },
+);
+
 it.each(['static', 'provider'])(
   'atomically selects the resolved Scope model through HTTP (%s)',
   async (kind) => {
