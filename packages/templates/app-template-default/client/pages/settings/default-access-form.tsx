@@ -117,9 +117,10 @@ function DefaultAccessFormBody(): ReactElement {
   const invalidKey =
     !value.key.trim() ||
     ['options', 'subjects', 'records'].includes(value.key.trim());
-  const fieldLabels = t('settings.defaultAccess.fieldLabels', {
-    returnObjects: true,
-  }) as unknown as Record<string, string>;
+  const fieldLabels: Record<string, string> = {
+    name: t('settings.defaultAccess.fieldLabels.name'),
+    id: t('settings.defaultAccess.fieldLabels.id'),
+  };
   const labels = {
     ...permissionFilterLabels((label, fallback) =>
       t(label, { defaultValue: fallback ?? label }),
