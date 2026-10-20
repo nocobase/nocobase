@@ -231,12 +231,17 @@ describe('ChatPanel', () => {
     expect(screen.getByLabelText('Message to the agent')).toBeEnabled();
   });
 
-  it('shows the page’s context as chips in the composer, each removable', async () => {
-    function Page(): null {
-      useChatContextSource({ kind: 'issue', id: 'pm-12', label: 'PM-12 Tour' });
-      return null;
+  it('includes explicitly requested page context as removable chips after New', async () => {
+    function Page(): ReactElement {
+      const item = { kind: 'issue', id: 'pm-12', label: 'PM-12 Tour' };
+      useChatContextSource(item);
+      return <AskAgentButton item={item} />;
     }
     renderPanel(null, <Page />);
+    expect(screen.queryByTestId('chat-context-chips')).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Ask agent', exact: true }),
+    );
     const chips = await screen.findByTestId('chat-context-chips');
     expect(within(chips).getByText('PM-12 Tour')).toBeVisible();
     fireEvent.click(

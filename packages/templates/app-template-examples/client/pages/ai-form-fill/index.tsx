@@ -3,7 +3,6 @@ import {
   useAIFormRegistry,
   useChatApi,
   useChatPanel,
-  useChatSources,
   useChatUIContextSource,
   type AIFormField,
 } from '@nocobase/app-plugin-agents/client/chat';
@@ -52,7 +51,6 @@ export default function AIFormFillPage(): ReactElement {
   const { t } = useTranslation();
   const { session } = useAuthentication();
   const registry = useAIFormRegistry();
-  const sources = useChatSources();
   const panel = useChatPanel();
   const api = useChatApi();
   const catalog = useModelCatalog(true);
@@ -191,10 +189,10 @@ export default function AIFormFillPage(): ReactElement {
         selectedModel: { modelService: service.name, model: model.value },
       });
       if (!mountedRef.current || !identityActive()) return;
-      sources.selectUI(sourceRef, true);
       panel.openChat({
         conversationId: conversation.id,
         draft: t('aiFormFill.prompt'),
+        uiSources: [sourceRef],
       });
     } catch {
       if (mountedRef.current && identityActive()) setFailure(true);
