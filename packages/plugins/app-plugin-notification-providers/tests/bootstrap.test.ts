@@ -6,17 +6,17 @@ import NotificationProvidersProvider from '../server/provider.js';
 import { ServiceContainer } from '@nocobase/service-provider';
 
 describe('@nocobase/app-plugin-notification-providers bootstrap', () => {
-  it('registers its Email and IM definitions', () => {
+  it('registers concrete channel classes', () => {
     const registry = createNotificationRegistry();
 
     registerBuiltInNotificationProviders(registry);
 
-    expect(registry.channel('email')?.type).toBe('email');
-    expect(registry.provider('smtp')?.type).toBe('smtp');
-    expect(registry.provider('resend')?.type).toBe('resend');
-    expect(registry.channel('im')?.type).toBe('im');
-    expect(registry.provider('feishu-webhook')?.type).toBe('feishu-webhook');
-    expect(registry.provider('dingtalk-webhook')?.type).toBe(
+    expect(registry.channel('email')).toBeUndefined();
+    expect(registry.channelType('smtp')?.type).toBe('smtp');
+    expect(registry.channelType('resend')?.type).toBe('resend');
+    expect(registry.channel('im')).toBeUndefined();
+    expect(registry.channelType('feishu-webhook')?.type).toBe('feishu-webhook');
+    expect(registry.channelType('dingtalk-webhook')?.type).toBe(
       'dingtalk-webhook',
     );
   });

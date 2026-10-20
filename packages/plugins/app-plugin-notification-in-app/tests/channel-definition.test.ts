@@ -1,3 +1,9 @@
+import { ServiceContainer } from '@nocobase/service-provider';
+import {
+  userAdministrationServiceToken,
+  type UserAdministrationService,
+} from '@nocobase/app-plugin-authentication';
+import { inAppNotificationStoreToken } from '../server/tokens.js';
 import type {
   NotificationChannelContext,
   NotificationProviderContext,
@@ -5,6 +11,7 @@ import type {
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  InAppChannel,
   createDatabaseProviderDefinition,
   createInAppChannelDefinition,
 } from '../server/definition.js';
@@ -214,4 +221,42 @@ describe('In-app Channel common input', () => {
       }),
     ]);
   });
+});
+
+it('resolves class dependencies through the container and stores one item per delivery', async () => {
+  const store = new MemoryInAppStore();
+  const users = { get: vi.fn().mockResolvedValue({ id: 'user' }) };
+  const container = new ServiceContainer();
+  container.instance(inAppNotificationStoreToken, store);
+  container.instance(
+    userAdministrationServiceToken,
+    users as unknown as UserAdministrationService,
+  );
+  const channel = new InAppChannel({ channelName: 'inbox', container });
+  const validated = channel.validateMessage({
+    to: 'user',
+    title: 'Notice',
+    body: 'Hello',
+  });
+  const identity = {
+    deliveryId: 'delivery',
+    notificationId: 'notification',
+    signal: new AbortController().signal,
+  };
+  const message = await channel.prepare({
+    ...identity,
+    message: validated.message,
+    recipient: validated.recipients[0],
+  });
+  expect(await store.countUnread('user')).toBe(0);
+  const input = {
+    ...identity,
+    message,
+    attemptId: 'attempt',
+    deadline: new Date(Date.now() + 10000).toISOString(),
+  };
+  expect(await channel.send(input)).toEqual({ status: 'accepted' });
+  expect(await channel.send(input)).toEqual({ status: 'accepted' });
+  expect(await store.countUnread('user')).toBe(1);
+  expect(users.get).toHaveBeenCalledWith('user');
 });
