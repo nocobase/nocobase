@@ -263,6 +263,7 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
     <>
       <Select
         {...restProps}
+        disabled={disabled}
         dropdownStyle={buildDropdownStyle(dropdownStyle)}
         fieldNames={fieldNames}
         options={realOptions}
