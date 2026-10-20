@@ -6,4 +6,6 @@ import type { PagePermissionTitles } from './page-permissions.js';
  */
 export const pagePermissionTitles: PagePermissionTitles = {
   'runtimes-connect': 'onlineAgent.connectRuntime',
+  'skills-new': 'onlineAgent.newSkill',
+  'skills-detail': 'onlineAgent.skillDetail',
 };

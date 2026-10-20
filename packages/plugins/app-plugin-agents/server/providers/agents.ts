@@ -1,3 +1,4 @@
+import { onlineAgentSandboxProviderToken } from '../online/sandbox/tokens.js';
 import type { OnlineAgentRecoveryConfig } from '../online/agent/types.js';
 import { mayAccessRun } from '../core/runs/access.js';
 /**
@@ -5,7 +6,7 @@ import { mayAccessRun } from '../core/runs/access.js';
  * conversations, and the vector queue's worker. The runners' side (their announcements, the sweeper and the wake-ups of
  * work sent back with a back-off) is `runners.ts`.
  */
-import type { RunApp } from '@nocobase/agent-protocol';
+import { HEADERS, type RunApp } from '@nocobase/agent-protocol';
 import { runRetentionDays } from '../core/runs/run-data-purge.js';
 import { retryBaseDelayMs } from '../core/runs/policy.js';
 import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
@@ -34,11 +35,18 @@ import { directoryDisk } from '../core/skills/index.js';
 import { createAgentsSecretsStores } from '../secrets-stores.js';
 import type { VectorsConfig } from '../vectors/index.js';
 import type { DistConfig } from '../distribution/index.js';
-import type { AgentCli } from '../core/runs/index.js';
+import { resolveAgentCli, type AgentCli } from '../core/runs/index.js';
 import { runCredentialResolver } from '../cli/run-credential.js';
-import { bindCliSurface } from '../cli/surface.js';
+import { bindCliSurface, type CliSurface } from '../cli/surface.js';
 import { agentsSecurityFragment } from '../routes/openapi.js';
 import { agentsToken } from '../tokens.js';
+import type { CallerIdentity } from '../core/callers/index.js';
+import type { CommandSurface } from '../online/sandbox/types.js';
+import {
+  OnlineAgentCredentials,
+  onlineAgentCredentialsToken,
+} from '../cli/online-credential.js';
+import { createAuthenticatedSandboxProvider } from '../online/sandbox/authenticated.js';
 
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
@@ -90,6 +98,53 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = ACCESS_NAMESPACE;
   private readonly releases: (() => void)[] = [];
   private stoppingVectors: Promise<void> | undefined;
+  private surface: CliSurface | undefined;
+
+  /** Historical command surface, with execution-local authentication and cancellation. */
+  private commandsOf(
+    identity: CallerIdentity,
+    token: string,
+  ): Promise<CommandSurface | undefined> {
+    const { container } = this.app;
+    const surface = this.surface;
+    if (!surface || !container.has(cliToken) || !container.has(apiDocsToken))
+      return Promise.resolve(undefined);
+    const cli = container.resolve(cliToken);
+    const base = this.app.publicBasePath.replace(/\/+$/u, '');
+    const config = this.app.config.get<AgentsConfig>('agents');
+    const bin = resolveAgentCli(config?.cli, this.runApp(config)).name;
+    return (async () => {
+      const manifest = cli.manifestFor(
+        await container.resolve(apiDocsToken).getDocument(),
+        await surface.callerOf(identity),
+      );
+      return {
+        bin,
+        commands: manifest.commands,
+        send: async (request, signal) => {
+          const path =
+            base && request.path.startsWith(`${base}/`)
+              ? request.path.slice(base.length)
+              : request.path;
+          return this.app.router.fetch(
+            new Request(`http://application${path}`, {
+              method: request.method,
+              headers: {
+                [HEADERS.runToken]: token,
+                accept: 'application/json',
+                'x-nocobase-client': 'cli',
+                ...(typeof request.body === 'string'
+                  ? { 'content-type': 'application/json' }
+                  : {}),
+              },
+              ...(request.body === undefined ? {} : { body: request.body }),
+              signal,
+            }),
+          );
+        },
+      };
+    })();
+  }
 
   public override register(): void {
     runRetentionDays(
@@ -98,10 +153,33 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     retryBaseDelayMs(
       this.app.config.get<AgentsConfig>('agents')?.runs?.retryBaseDelayMs,
     );
+    this.app.container.singleton(
+      onlineAgentCredentialsToken,
+      () => new OnlineAgentCredentials(),
+    );
+    this.app.container.singleton(onlineAgentSandboxProviderToken, (resolver) =>
+      createAuthenticatedSandboxProvider({
+        skills: resolver.resolve(agentsToken).skills,
+        auth: resolver.resolve(authenticationToken),
+        credentials: resolver.resolve(onlineAgentCredentialsToken),
+        bin: () => {
+          const config = this.app.config.get<AgentsConfig>('agents');
+          return resolveAgentCli(config?.cli, this.runApp(config)).name;
+        },
+        commandsOf: (identity, token) => this.commandsOf(identity, token),
+      }),
+    );
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
         resolver,
+        // Resolve only when an execution selects Sandbox tools: plain native and command hosts remain unchanged.
+        sandboxProvider: {
+          prepare: (input) =>
+            resolver.resolve(onlineAgentSandboxProviderToken).prepare(input),
+          create: (input) =>
+            resolver.resolve(onlineAgentSandboxProviderToken).create(input),
+        },
         retryBaseDelayMs: retryBaseDelayMs(config?.runs?.retryBaseDelayMs),
         runRetentionDays: () =>
           runRetentionDays(
@@ -230,6 +308,9 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     const auth = container.resolve(authenticationToken);
     this.releases.push(
       auth.addCredentialResolver(runCredentialResolver(services)),
+      auth.addCredentialResolver(
+        container.resolve(onlineAgentCredentialsToken).resolve,
+      ),
     );
     if (!container.has(cliToken) || !container.has(authorizationToken)) return;
     const authorization = container.resolve(authorizationToken);
@@ -242,7 +323,11 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       ),
       gate: services.gate,
     });
-    this.releases.push(() => surface.release());
+    this.surface = surface;
+    this.releases.push(() => {
+      surface.release();
+      this.surface = undefined;
+    });
   }
 
   public override async shutdown(): Promise<void> {

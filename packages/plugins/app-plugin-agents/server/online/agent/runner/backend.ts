@@ -79,6 +79,7 @@ function supported(config: OnlineAgentConfig, selectedModel?: ModelRef): void {
     config.agentId === 'online' ||
     config.model.length ||
     config.tool.length ||
+    (config.skill?.length ?? 0) > 0 ||
     config.thinking !== undefined ||
     selectedModel
   )

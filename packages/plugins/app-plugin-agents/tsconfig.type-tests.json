@@ -4,6 +4,7 @@
     "noEmit": true
   },
   "include": [
+    "tests/online-agent-sandbox.type-test.ts",
     "tests/shared-compatibility.test.ts",
     "tests/ui-message.test.ts",
     "tests/online-agent-json.type-test.ts",

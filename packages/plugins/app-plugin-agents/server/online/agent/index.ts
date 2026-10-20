@@ -1,3 +1,16 @@
+export {
+  createSandboxProvider,
+  onlineAgentSandboxProviderToken,
+} from '../sandbox/index.js';
+export type {
+  OnlineAgentSandbox,
+  OnlineAgentSandboxProvider,
+  OnlineAgentSandboxInput,
+  OnlineAgentSandboxPreparation,
+  OnlineAgentSandboxSkill,
+  OnlineAgentSandboxSkillCatalog,
+  CommandSurface,
+} from '../sandbox/index.js';
 export type {
   OnlineAgent,
   RealtimeOnlineAgent,
@@ -9,6 +22,7 @@ export type {
   OnlineAgentSafeError,
   OnlineAgentContext,
   OnlineAgentToolContext,
+  OnlineAgentToolExecution,
   OnlineAgentScope,
   OnlineAgentScopeProvider,
   OnlineAgentOptions,

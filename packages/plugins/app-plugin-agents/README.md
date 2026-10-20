@@ -40,6 +40,7 @@ Repository access providers that mint credentials in `prepare` implement the ide
 ## Chat integration documentation
 
 - [OnlineAgent service and business tools](skills/nocobase-app-plugin-agents/references/online-agent.md): trusted server configuration, Native/Runner sessions, public browser transport and lifecycle boundaries.
+- [Native Skills and application CLI](docs/native-sandbox.md): explicit scopes, current support trees, lazy per-execution resources, VFS parameter files, authenticated business commands and approval/stop boundaries.
 - [UI messages](docs/ui-messages.md) and [client coordination](docs/ui-message-clients.md): SDK message ownership, safe projections, streaming, persistence and recovery.
 - [UI context, tool cards and AI form adapters](docs/ai-forms.md): open `context.ui.items`, exact-name `AIToolRendererProvider` registration, `useAIForm` ref callbacks, explicit async context selection and guarded browser-draft application, with integrated Examples wiring. The plugin provides no built-in form-filling business tool/card and never submits or saves a form or continues a server tool when a user applies a local proposal.
 

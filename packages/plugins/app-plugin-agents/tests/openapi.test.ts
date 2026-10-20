@@ -388,11 +388,22 @@ describe('agents API document', () => {
       ['POST', '/api/agents/dist/downloadTokens'],
     ] as const)
       expect(cli(method, path)).toBe(false);
-    // Every runToken route names the business action a run must hold.
+    for (const path of [
+      '/api/agents/conversations',
+      '/api/agents/conversations/{conversationId}',
+    ])
+      expect(cli('GET', path)).toMatchObject({ identities: ['person'] });
+    expect(
+      cli('PATCH', '/api/agents/conversations/{conversationId}'),
+    ).toMatchObject({ identities: ['person'], bodyFile: 'file' });
+    // Run-capable commands name an action; OnlineAgent-only owner operations stay person-only in the CLI.
     expect(
       operations().filter(
         (item) =>
           item.security?.some((entry) => 'runToken' in entry) &&
+          !(item as { 'x-cli'?: { identities?: string[] } })[
+            'x-cli'
+          ]?.identities?.every((kind) => kind === 'person') &&
           !(item as { 'x-cli'?: { action?: string } })['x-cli']?.action,
       ),
     ).toEqual([]);

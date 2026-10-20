@@ -279,6 +279,7 @@
     "better-sqlite3": "catalog:",
     "hono": "catalog:",
     "ioredis": "catalog:",
+    "just-bash": "3.6.0",
     "knex": "catalog:",
     "ollama-ai-provider-v2": "catalog:",
     "pg": "^8.23.0",
