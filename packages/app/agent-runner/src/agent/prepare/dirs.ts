@@ -42,11 +42,11 @@ async function prepare(
           retries += 1;
           const seconds = Math.round(retry.delayMs / 1000);
           context.log(
-            `checkout: ${retry.operation} failed on the network; retry ${retry.attempt} in ${seconds}s: ${retry.error}`,
+            `checkout: ${retry.operation} failed transiently; retry ${retry.attempt} in ${seconds}s: ${retry.error}`,
           );
           context.event({
             type: 'status',
-            content: `${retry.operation} failed on the network; retrying (${retry.attempt}) in ${seconds}s.`,
+            content: `${retry.operation} failed transiently; retrying (${retry.attempt}) in ${seconds}s.`,
             meta: {
               phase: 'dirs',
               retry: retry.attempt,

@@ -41,6 +41,30 @@ describe('task runner affinity', () => {
     ]);
   });
 
+  it('immediately falls back after the original runner heartbeats a disk pause', async () => {
+    const { agent, original, other } = await fixture();
+    const response = await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: original.key,
+      body: {
+        version: '1.0.0',
+        features: [],
+        tools: [{ kind: 'claude', authenticated: true }],
+        active: [],
+        load: { slots: 2, free: 0, draining: 'diskLow' },
+      },
+    });
+    expect(response.status).toBe(200);
+    expect(
+      (
+        await runnersRepo(h.database.connection()).findOne({
+          filter: { id: original.runnerId },
+        })
+      )?.load,
+    ).toMatchObject({ free: 0, draining: 'diskLow' });
+    const run = await h.enqueue(agent, 'task');
+    expect((await claim(h, other)).map((item) => item.run.id)).toEqual([run]);
+  });
+
   it('does not defer a preferred-model machine to an original machine still waiting for model fallback', async () => {
     const { original, other } = await fixture();
     const agent = await h.createAgent({

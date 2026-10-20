@@ -212,19 +212,32 @@ export async function updateCache(
 ): Promise<string> {
   const cache = cachePath(paths, url);
   const env = gitAuthEnv(options.auth);
-  {
+  const lock = await lockCache(cache);
+  try {
     if (!existsSync(cache)) {
       await mkdir(paths.reposDir, { recursive: true, mode: 0o700 });
       await retryGit(
         `git clone ${url}`,
         async () => {
-          // A clone cut off may leave a partial cache behind.
-          await git(
-            [...GIT_LOW_SPEED_CONFIG, 'clone', '--bare', '--quiet', url, cache],
-            paths.reposDir,
-            env,
-            options.retry,
-          );
+          // Only this cache creator owns the partial directory; remove it before another attempt can observe it.
+          try {
+            await git(
+              [
+                ...GIT_LOW_SPEED_CONFIG,
+                'clone',
+                '--bare',
+                '--quiet',
+                url,
+                cache,
+              ],
+              paths.reposDir,
+              env,
+              options.retry,
+            );
+          } catch (error) {
+            await rm(cache, { recursive: true, force: true });
+            throw error;
+          }
         },
         options.retry,
       );
@@ -257,6 +270,8 @@ export async function updateCache(
       options.retry,
     );
     return cache;
+  } finally {
+    await lock.release();
   }
 }
 
@@ -700,6 +715,25 @@ async function ensureCheckout(
   cache: string,
   dir: string,
   repo: RepoDir,
+  retry?: GitRetryOptions,
+): Promise<boolean> {
+  const lock = await lockCache(cache);
+  try {
+    // The existence check must follow the cache lock: .git appears before worktree add finishes checkout.
+    return await retryGit(
+      `git worktree ${dir}`,
+      () => ensureCheckoutLocked(cache, dir, repo),
+      retry,
+    );
+  } finally {
+    await lock.release();
+  }
+}
+
+async function ensureCheckoutLocked(
+  cache: string,
+  dir: string,
+  repo: RepoDir,
 ): Promise<boolean> {
   const context = { cache, dir, url: repo.url };
   const cacheOk = async (args: string[]): Promise<boolean> => {
@@ -716,7 +750,6 @@ async function ensureCheckout(
     }
   };
   if (existsSync(path.join(dir, '.git'))) {
-    await taskGit(context, ['status', '--porcelain']);
     // Older fixed reference clones have independent tracking refs.
     if ((await stat(path.join(dir, '.git'))).isDirectory())
       await taskGit(context, [
@@ -772,15 +805,32 @@ async function ensureCheckout(
       '--unset',
       'core.bare',
     ]);
-  if (localExists)
-    await cacheGit(cache, repo.url, [
-      'worktree',
-      'add',
-      '--quiet',
-      dir,
-      repo.branch,
-    ]);
-  else if (remoteExists || fallbackExists)
+  if (localExists) {
+    try {
+      await cacheGit(cache, repo.url, [
+        'worktree',
+        'add',
+        '--quiet',
+        dir,
+        repo.branch,
+      ]);
+    } catch (error) {
+      if (
+        !remoteExists ||
+        !/already (?:checked out|used by worktree) at/iu.test(String(error))
+      )
+        throw error;
+      // Another task/app may use this same PR branch. Start from the advertised branch without sharing its HEAD.
+      await cacheGit(cache, repo.url, [
+        'worktree',
+        'add',
+        '--quiet',
+        '--detach',
+        dir,
+        remote,
+      ]);
+    }
+  } else if (remoteExists || fallbackExists)
     await cacheGit(cache, repo.url, [
       'worktree',
       'add',
@@ -864,6 +914,11 @@ async function workspaceWarnings(repo: CheckedOutRepo): Promise<string[]> {
   for (const name of ['MERGE_HEAD', 'rebase-merge', 'rebase-apply'])
     if (existsSync(path.join(repo.gitDir, name))) operations.push(name);
   return [
+    ...(branch === 'detached HEAD'
+      ? [
+          `This workspace has a detached HEAD. Push the requested branch explicitly with git push origin HEAD:refs/heads/${repo.branch}.`,
+        ]
+      : []),
     `Workspace branch: ${branch}; requested target: ${repo.branch}; ahead/behind origin target: ${counts}; uncommitted changes: ${dirty ? 'yes' : 'no'}; unfinished operations: ${operations.join(', ') || 'none'}. The runner only fetched remote refs; inspect and coordinate before changing this shared workspace.`,
   ];
 }
@@ -1110,7 +1165,7 @@ export async function prepareDirs(
           entry = { ...entry, branch: entry.defaultBranch, initial: true };
         }
       }
-      const created = await ensureCheckout(cache, dir, entry);
+      const created = await ensureCheckout(cache, dir, entry, options.retry);
       const gitDir = await taskGitDir({ dir, cache, url: entry.url });
       const relative = path.relative(workDir, dir);
       const known = meta?.repos.find(
@@ -1343,46 +1398,44 @@ export async function reportRepos(
         'HEAD',
       ]).catch(() => 'detached HEAD');
       const dirty = (await taskGit(repo, ['status', '--porcelain'])) !== '';
-      // Refresh remote evidence without moving any local branch or claiming ownership of another run's work.
-      await withRepoAuth(options.auth, repo.url, (auth) =>
-        taskGit(
-          repo,
-          [
-            'fetch',
-            '--quiet',
-            '--prune',
-            repo.url,
-            '+refs/heads/*:refs/remotes/origin/*',
-          ],
-          {},
-          {
-            ...(auth ? { auth } : {}),
-            ...(options.signal ? { signal: options.signal } : {}),
-          },
-        ),
-      );
-      const refs = (
-        await taskGit(repo, [
+      // Serialize only shared Git metadata operations, never the agent's time in the workspace.
+      const lock = await lockCache(repo.cache);
+      try {
+        await withRepoAuth(options.auth, repo.url, (auth) =>
+          retryGit(
+            `git fetch ${repo.url}`,
+            () =>
+              taskGit(
+                repo,
+                [
+                  'fetch',
+                  '--quiet',
+                  '--prune',
+                  repo.url,
+                  '+refs/heads/*:refs/remotes/origin/*',
+                ],
+                {},
+                {
+                  ...(auth ? { auth } : {}),
+                  ...(options.signal ? { signal: options.signal } : {}),
+                  ...(options.onAbort ? { onAbort: options.onAbort } : {}),
+                },
+              ),
+            { ...(options.signal ? { signal: options.signal } : {}) },
+          ),
+        );
+      } finally {
+        await lock.release();
+      }
+      const reachable =
+        (await taskGit(repo, [
           'for-each-ref',
-          '--format=%(objectname)',
+          '--contains',
+          headSha,
+          '--count=1',
+          '--format=%(refname)',
           'refs/remotes/origin/',
-        ])
-      )
-        .split('\n')
-        .filter(Boolean);
-      let reachable = false;
-      for (const remote of refs)
-        if (
-          await taskGitOk(repo, [
-            'merge-base',
-            '--is-ancestor',
-            headSha,
-            remote,
-          ])
-        ) {
-          reachable = true;
-          break;
-        }
+        ])) !== '';
       reports.push({
         url: repo.url,
         branch,

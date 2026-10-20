@@ -161,3 +161,5 @@ Studio delivery follows this repository's release: update its NocoBase submodule
 ## Coding account quotas
 
 Claude rate-limit events and Codex account rate-limit notifications report usage through the existing event spool. Rejected account limits also accompany the terminal failure report. OpenCode/Pi provider quota failures identify the selected model prefix, with no invented reset time. Session budget failures do not mark the account. Upgrade the runner to enable reporting.
+
+Cache clone, fetch, configuration and initial worktree creation use a short repository-cache mutex, released before agents start; runs still share the task directory concurrently. Transient Git lock conflicts are retried. An occupied local branch falls back to detached HEAD at its remote tip, with an explicit `git push origin HEAD:refs/heads/<target>` instruction. Host status disables optional index locks, and delivery uses one remote-containment query. Disk pauses report `load.draining: diskLow` with zero free slots; periodic workspace collection continues claims while live registrations protect active files.

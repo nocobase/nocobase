@@ -761,10 +761,12 @@ export class RunnerDaemon {
               ? { draining: 'updatePending' as const }
               : this.pruning
                 ? { draining: 'pruning' as const }
-                : {}),
+                : this.diskPaused
+                  ? { draining: 'diskLow' as const }
+                  : {}),
             slots: this.slots,
             free:
-              this.pendingUpdate || this.pruning
+              this.pendingUpdate || this.pruning || this.diskPaused
                 ? 0
                 : Math.max(0, this.slots - this.supervisor.size),
             ...(this.limitedTools.length > 0
@@ -774,7 +776,10 @@ export class RunnerDaemon {
                       tool,
                       {
                         slots: this.toolLimit(tool as AgentTool),
-                        free: this.pendingUpdate || this.pruning ? 0 : free,
+                        free:
+                          this.pendingUpdate || this.pruning || this.diskPaused
+                            ? 0
+                            : free,
                       } satisfies ToolLoad,
                     ]),
                   ),
@@ -957,7 +962,6 @@ export class RunnerDaemon {
     if (
       this.pendingUpdate ||
       this.pruning ||
-      this.collecting !== undefined ||
       this.holdingForPrune ||
       this.diskPaused ||
       this.stopping.signal.aborted
@@ -971,7 +975,6 @@ export class RunnerDaemon {
       this.holdingForPrune ||
       this.pendingUpdate ||
       this.pruning ||
-      this.collecting !== undefined ||
       this.diskPaused ||
       this.stopping.signal.aborted
     )
@@ -1114,7 +1117,6 @@ export class RunnerDaemon {
         this.slots - this.supervisor.size <= 0 ||
         this.pendingUpdate ||
         this.pruning ||
-        this.collecting !== undefined ||
         this.holdingForPrune ||
         this.diskPaused
       ) {

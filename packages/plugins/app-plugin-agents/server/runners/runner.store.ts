@@ -338,7 +338,9 @@ export function toRunner(
         ? 'updatePending'
         : jsonObject(record.load).draining === 'pruning'
           ? 'pruning'
-          : undefined,
+          : jsonObject(record.load).draining === 'diskLow'
+            ? 'diskLow'
+            : undefined,
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
     variables: storedVariableNames(record.variables),

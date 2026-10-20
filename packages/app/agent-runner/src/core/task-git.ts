@@ -300,10 +300,11 @@ export async function taskGit(
       helperEnv[name] = helper;
       return `--config-env=credential.helper=${name}`;
     });
+  // Shared workspaces may have an Agent committing: host status must not refresh or lock the index.
   return git(
     settings
       .flatMap((value) => ['-c', value])
-      .concat(GIT_LOW_SPEED_CONFIG, helperArgs, args),
+      .concat(['--no-optional-locks'], GIT_LOW_SPEED_CONFIG, helperArgs, args),
     context.dir,
     {
       ...env,

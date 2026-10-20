@@ -133,10 +133,8 @@ describe('claiming and pruning the shared store', () => {
     const collection = runner['collectGarbage']();
     await waitFor(() => runner['collecting'] !== undefined);
     expect(prune).not.toHaveBeenCalled();
-    expect(await runner['claimFrom'](link, 1, false)).toBe(0);
     deliver.resolve();
     await checkingPolicy.promise;
-    expect(await runner['claimFrom'](link, 1, false)).toBe(0);
     expect(prune).not.toHaveBeenCalled();
     finishPolicy.resolve();
     await starting.promise;
@@ -151,7 +149,7 @@ describe('claiming and pruning the shared store', () => {
     expect(run.complete).toBeDefined();
   });
 
-  it('pauses new claims during collection and resumes them after cleanup', async () => {
+  it('continues claiming during periodic collection', async () => {
     const runner = await daemon(async () => true);
     const link = runner['links'][0]!;
     server.workspaceReporting = { intervalMs: 60_000 };
@@ -170,12 +168,11 @@ describe('claiming and pruning the shared store', () => {
     const collection = runner['collectGarbage']();
     await reporting.promise;
     expect(runner['collecting']).toBeDefined();
-    expect(await runner['claimFrom'](link, 1, false)).toBe(0);
-    expect(run.status).toBe('queued');
+    expect(await runner['claimFrom'](link, 1, false)).toBe(1);
+    expect(run.status).toBe('dispatched');
     expect(runner['collecting']).toBeDefined();
     finishReport.resolve();
     await collection;
-    expect(await runner['claimFrom'](link, 1, false)).toBe(1);
     await waitFor(() => run.complete);
   });
 
@@ -255,6 +252,11 @@ describe('claiming and pruning the shared store', () => {
       async () => ({ freeBytes, totalBytes: 100 * 1024 ** 3 }),
     );
     const link = runner['links'][0]!;
+    vi.spyOn(
+      runner as unknown as { readonly limitedTools: 'claude'[] },
+      'limitedTools',
+      'get',
+    ).mockReturnValue(['claude']);
     await runner.heartbeat(link);
     const collect = vi.spyOn(runner, 'collectGarbage');
     freeBytes = 0;
@@ -262,11 +264,18 @@ describe('claiming and pruning the shared store', () => {
     await runner['collecting'];
     expect(collect).toHaveBeenCalledOnce();
     expect(runner['diskPaused']).toBe(true);
+    expect(server.lastHeartbeat()?.load).toMatchObject({
+      draining: 'diskLow',
+      free: 0,
+      tools: { claude: { free: 0 } },
+    });
     await runner.heartbeat(link);
     expect(collect).toHaveBeenCalledOnce();
     freeBytes = 10 * 1024 ** 3;
     await runner.heartbeat(link);
     expect(runner['diskPaused']).toBe(false);
+    expect(server.lastHeartbeat()?.load).not.toHaveProperty('draining');
+    expect(server.lastHeartbeat()?.load.free).toBeGreaterThan(0);
   });
 
   it('honors a heartbeat pause that arrives while the claim disk probe is still pending', async () => {

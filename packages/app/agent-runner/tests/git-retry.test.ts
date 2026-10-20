@@ -25,6 +25,9 @@ import { removeDir, tempDir } from './helpers.ts';
 
 /** Messages as git prints them, from runs that failed for each cause. */
 const TRANSIENT = [
+  "error: cannot lock ref 'refs/remotes/origin/dev': is at abcd but expected efgh",
+  "fatal: Unable to create '/tmp/cache/config.lock': File exists.",
+  'error: could not lock config file /tmp/cache/config: File exists',
   'git fetch --prune --quiet origin failed: error: RPC failed; curl 56 GnuTLS recv error (-110): The TLS connection was non-properly terminated.\nfatal: expected flush after ref listing',
   "fatal: unable to access 'https://github.com/nocobase/nocobase.git/': gnutls_handshake() failed: The TLS connection was non-properly terminated.",
   "fatal: unable to access 'https://github.com/a/b.git/': OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443",
@@ -40,6 +43,11 @@ const TRANSIENT = [
 ];
 
 const PERMANENT = [
+  {
+    message:
+      "error: cannot lock ref 'refs/remotes/origin/dev': unable to resolve reference: reference broken",
+    hint: undefined,
+  },
   {
     message:
       "remote: Repository not found.\nfatal: repository 'https://github.com/a/missing.git/' not found",

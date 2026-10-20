@@ -758,7 +758,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
               ? 'unknown'
               : 'ready'
             : runner.draining
-              ? runner.draining
+              ? runner.draining === 'diskLow'
+                ? 'busy'
+                : runner.draining
               : 'busy',
           lastSeenAt: runner.lastSeenAt,
           used,

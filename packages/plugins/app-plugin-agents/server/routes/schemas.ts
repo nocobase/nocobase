@@ -1730,7 +1730,7 @@ const runnerObject = z.object({
     description:
       'How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own.',
   }),
-  draining: z.enum(['updatePending', 'pruning']).optional().meta({
+  draining: z.enum(['updatePending', 'pruning', 'diskLow']).optional().meta({
     description:
       'Why the runner temporarily accepts no new work, regardless of available slots.',
   }),
