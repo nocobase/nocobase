@@ -19,6 +19,17 @@ import { transpileModule, ScriptTarget, ModuleKind, JsxEmit } from 'typescript';
 const execute = promisify(execFile);
 const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
 const require = createRequire(import.meta.url);
+// Explicit paths keep these reads visible to the cross-package dependency check.
+const templateRoots = {
+  'app-template-default': path.resolve(
+    packageRoot,
+    '../../templates/app-template-default',
+  ),
+  'app-template-examples': path.resolve(
+    packageRoot,
+    '../../templates/app-template-examples',
+  ),
+};
 
 it.each(['shared', 'app-template-default', 'app-template-examples'] as const)(
   'shares installed client contexts with the %s configuration',
@@ -130,11 +141,7 @@ it.each(['shared', 'app-template-default', 'app-template-examples'] as const)(
           "import {createReactVitestConfig} from '@nocobase/dev-config/vitest/react'; export default createReactVitestConfig();",
         );
       } else {
-        const templateRoot = path.resolve(
-          packageRoot,
-          '../../templates',
-          configuration,
-        );
+        const templateRoot = templateRoots[configuration];
         // Exercise the configuration shipped to generated applications, including its local inline rules and setup.
         for (const file of [
           'vitest.config.ts',

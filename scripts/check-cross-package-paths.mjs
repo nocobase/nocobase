@@ -81,6 +81,12 @@ export const EXEMPTIONS = [
       'Copies the agents plugin’s alert, badge, button, card and table primitives into the Registry test application and links the default template’s node_modules; see the comment above.',
   },
   {
+    packageName: '@nocobase/app-testing',
+    path: 'tests/project/published-router.test.ts',
+    reason:
+      'Reads both templates’ Vitest configurations and client setup for the installed-client regression. Both templates depend on app-testing, so declaring them would create a cycle; scripts/select-quality-scope.mjs maps these files to app-testing instead.',
+  },
+  {
     packageName: '@nocobase/app-plugin-mail',
     path: 'tests/fixtures/production-acceptance/',
     reason:

@@ -51,6 +51,14 @@ export const pathDependencies = [
     path: 'packages/plugins/app-plugin-agents/client/components/ui/',
     consumers: ['@nocobase/app-plugin-notification'],
   },
+  // The installed-client regression reads each template's actual Vitest configuration and setup. Both templates
+  // depend on app-testing, so it cannot declare them without a cycle.
+  ...['app-template-default', 'app-template-examples'].flatMap((template) =>
+    ['vitest.config.ts', 'tests/setup/client-config.ts'].map((file) => ({
+      path: `packages/templates/${template}/${file}`,
+      consumers: ['@nocobase/app-testing'],
+    })),
+  ),
 ];
 
 // Packages whose change needs the generated-application smoke tests, which install every packed workspace package.
