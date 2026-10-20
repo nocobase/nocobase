@@ -7,8 +7,7 @@ import type {
 import { type ReactElement } from 'react';
 import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
 import { ShieldCheckIcon, PlusIcon } from 'lucide-react';
-import { PageContainer } from '#components/page-container';
-import { PageHeader } from '#components/page-header';
+import { PermissionManagementPage } from './permission-management-page.js';
 import { Input } from '#components/ui/input';
 import { Button } from '#components/ui/button';
 import { RoleList } from '#components/role-list';
@@ -60,12 +59,10 @@ export default function RolesPage(): ReactElement {
   ) : null;
   return (
     <>
-      <PageContainer>
-        <PageHeader
-          title={t('settings.roles')}
-          description={t('settings.rolesDescription')}
-          actions={rows.length || search ? create : undefined}
-        />
+      <PermissionManagementPage
+        tab='roles'
+        actions={rows.length || search ? create : undefined}
+      >
         <div className='flex items-center gap-3'>
           <Input
             className='sm:max-w-xs'
@@ -139,7 +136,7 @@ export default function RolesPage(): ReactElement {
             </Empty>
           ))
         )}
-      </PageContainer>
+      </PermissionManagementPage>
       <Outlet context={{ reload: request.reload }} />
     </>
   );

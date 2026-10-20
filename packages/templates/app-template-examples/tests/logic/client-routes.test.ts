@@ -139,11 +139,11 @@ describe('app client routes', () => {
       'settingsUsers',
       'permissionManagement',
     ]);
-    expect(
-      management?.children
-        .find(({ route }) => route.name === 'permissionManagement')
-        ?.children.map(({ route }) => route.name),
-    ).toEqual(['settingsRoles', 'settingsDefaultAccess']);
+    const permissions = management?.children.find(
+      ({ route }) => route.name === 'permissionManagement',
+    );
+    expect(permissions?.children).toEqual([]);
+    expect(permissions?.route.path).toBe('/roles');
   });
 
   it('pins the page authorization of every signed-in page', () => {

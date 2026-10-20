@@ -21,6 +21,7 @@ it('keeps the controlled Registry editor and both template administration implem
     'default-access.tsx',
     'default-access-form.tsx',
     'default-access-model.ts',
+    'permission-management-page.tsx',
     'permission-filters.tsx',
   ])
     expect(

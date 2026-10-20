@@ -10,8 +10,7 @@ import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
 import { ListFilterIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Alert, AlertDescription } from '#components/ui/alert';
-import { PageContainer } from '#components/page-container';
-import { PageHeader } from '#components/page-header';
+import { PermissionManagementPage } from './permission-management-page.js';
 import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
@@ -282,16 +281,12 @@ export default function DefaultAccessPage(): ReactElement {
   };
   return (
     <>
-      <PageContainer>
-        <PageHeader
-          title={t('settings.defaultAccess.title')}
-          description={t('settings.defaultAccess.description')}
-          actions={
-            rules.data && (rules.data.data.length || search)
-              ? create
-              : undefined
-          }
-        />
+      <PermissionManagementPage
+        tab='default-access'
+        actions={
+          rules.data && (rules.data.data.length || search) ? create : undefined
+        }
+      >
         <div className='flex flex-wrap items-center gap-2'>
           <Input
             ref={searchRef}
@@ -390,7 +385,7 @@ export default function DefaultAccessPage(): ReactElement {
             void remove();
           }}
         />
-      </PageContainer>
+      </PermissionManagementPage>
       <Outlet
         context={{
           reload: rules.reload,
