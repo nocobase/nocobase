@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { isToolUIPart } from 'ai';
 import { z } from 'zod';
-import { createCommandContext, InMemoryFs } from 'just-bash';
+import {
+  createCommandContext,
+  InMemoryFs,
+} from '../server/vendor/just-bash.js';
 import { cliCommand } from '../server/online/sandbox/cli-command.js';
 import { NativeToolExecution } from '../server/online/sandbox/execution.js';
 import type { NativeExecution } from '../server/online/agent/native/types.js';

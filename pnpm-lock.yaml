@@ -186,6 +186,9 @@ catalogs:
     date-fns:
       specifier: ^4.1.0
       version: 4.4.0
+    esbuild:
+      specifier: ^0.28.2
+      version: 0.28.2
     eslint:
       specifier: ^10.0.0
       version: 10.8.1
@@ -3323,9 +3326,6 @@ importers:
       ioredis:
         specifier: 'catalog:'
         version: 5.11.1
-      just-bash:
-        specifier: 3.6.0
-        version: 3.6.0
       knex:
         specifier: 'catalog:'
         version: 3.3.0(better-sqlite3@13.0.3)(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)
@@ -3399,12 +3399,18 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.18
+      esbuild:
+        specifier: 'catalog:'
+        version: 0.28.2
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
       jsdom:
         specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
+      just-bash:
+        specifier: 3.6.0
+        version: 3.6.0(supports-color@8.1.1)
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
@@ -18609,7 +18615,7 @@ snapshots:
       '@tiptap/core': 3.30.2(@tiptap/pm@3.30.2)
       '@tiptap/pm': 3.30.2
 
-  '@tokenizer/inflate@0.4.1':
+  '@tokenizer/inflate@0.4.1(supports-color@8.1.1)':
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       token-types: 6.1.2
@@ -20980,9 +20986,9 @@ snapshots:
     dependencies:
       flat-cache: 4.0.1
 
-  file-type@21.3.4:
+  file-type@21.3.4(supports-color@8.1.1):
     dependencies:
-      '@tokenizer/inflate': 0.4.1
+      '@tokenizer/inflate': 0.4.1(supports-color@8.1.1)
       strtok3: 10.3.5
       token-types: 6.1.2
       uint8array-extras: 1.5.0
@@ -20991,7 +20997,7 @@ snapshots:
 
   file-type@22.0.2:
     dependencies:
-      '@tokenizer/inflate': 0.4.1
+      '@tokenizer/inflate': 0.4.1(supports-color@8.1.1)
       strtok3: 10.3.5
       token-types: 6.1.2
       uint8array-extras: 1.5.0
@@ -21767,11 +21773,11 @@ snapshots:
       readable-stream: 2.3.8
       setimmediate: 1.0.5
 
-  just-bash@3.6.0:
+  just-bash@3.6.0(supports-color@8.1.1):
     dependencies:
       diff: 8.0.4
       fast-xml-parser: 5.11.2
-      file-type: 21.3.4
+      file-type: 21.3.4(supports-color@8.1.1)
       guarded-fetch: 0.1.3
       ini: 6.0.0
       modern-tar: 0.7.7

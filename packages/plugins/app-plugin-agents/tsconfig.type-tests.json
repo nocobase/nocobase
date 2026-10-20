@@ -4,6 +4,7 @@
     "noEmit": true
   },
   "include": [
+    "tests/just-bash.type-test.ts",
     "tests/online-agent-sandbox.type-test.ts",
     "tests/shared-compatibility.test.ts",
     "tests/ui-message.test.ts",

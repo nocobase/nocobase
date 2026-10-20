@@ -1,4 +1,4 @@
-import { InMemoryFs } from 'just-bash';
+import { InMemoryFs } from '../server/vendor/just-bash.js';
 import { describe, expect, it } from 'vitest';
 import { createSandboxFilesystem } from '../server/online/sandbox/filesystem.js';
 import {

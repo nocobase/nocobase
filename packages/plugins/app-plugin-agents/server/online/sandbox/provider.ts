@@ -3,7 +3,7 @@ import {
   getCommandNames,
   type Command,
   type CommandName,
-} from 'just-bash';
+} from '../../vendor/just-bash.js';
 import type { SkillService } from '../../core/skills/skill.service.js';
 import type {
   OnlineAgentSandboxProvider,

@@ -34,7 +34,7 @@ import {
   type Command,
   type CommandContext,
   type ExecResult,
-} from 'just-bash';
+} from '../../vendor/just-bash.js';
 import type { CommandSurface } from './types.js';
 import { responseText } from './limits.js';
 export type { CommandSurface } from './types.js';

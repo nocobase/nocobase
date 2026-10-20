@@ -1,5 +1,5 @@
 import { posix } from 'node:path';
-import { InMemoryFs, type IFileSystem } from 'just-bash';
+import { InMemoryFs, type IFileSystem } from '../../vendor/just-bash.js';
 import { sandboxLimits } from './limits.js';
 
 const MUTATORS = new Set([

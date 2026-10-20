@@ -1,4 +1,4 @@
-import { Bash } from 'just-bash';
+import { Bash } from '../server/vendor/just-bash.js';
 import { describe, expect, it, vi } from 'vitest';
 import type { CliCommand } from '@nocobase/app-cli-client/parse';
 import { cliCommand } from '../server/online/sandbox/cli-command.js';
