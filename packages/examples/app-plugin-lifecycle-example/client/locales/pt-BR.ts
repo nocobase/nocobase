@@ -754,9 +754,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       card: 'Cartão',
       cardWorks: 'Obras',
       cardValue_one: 'recusa a próxima cobrança',
-      cardValue_other: 'recusa as próximas cobranças {{count}}',
-      cardValue_many: 'recusa as próximas cobranças {{count}}',
-      cardValue_zero: 'recusa as próximas cobranças {{count}}',
+      cardValue_other: 'recusa as próximas {{count}} cobranças',
+      cardValue_many: 'recusa as próximas {{count}} cobranças',
+      cardValue_zero: 'não recusa nenhuma cobrança ({{count}})',
     },
     banner: {
       renewing: 'Carregando o cartão…',
