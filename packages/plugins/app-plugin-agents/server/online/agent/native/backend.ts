@@ -356,6 +356,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
   }
   private firstModel(models: string[]): ModelRef {
     const value = models[0];
+    if (!value) throw invalid('No enabled chat model is configured.');
     const separator = value?.indexOf('/') ?? -1;
     if (separator < 1 || separator === value.length - 1)
       throw invalid('The selected model is outside this configuration.');
