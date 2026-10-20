@@ -8,8 +8,8 @@ import type {
 /**
  * Refer to another Collection's read node from inside `read.relations`.
  *
- * The target names a key of the same `withPolicies` map, not a Policy the
- * target Collection owns globally. That is the one place several Collections'
+ * The target names a key of the same `scope` or legacy `withPolicies` map,
+ * not a Policy the target Collection owns globally. That is where Collections'
  * Policies share a scope, and it keeps "reached through a relation" and
  * "queried directly" from silently influencing each other: the reuse is
  * written out rather than inherited.
@@ -31,22 +31,24 @@ export function ref(target: string): PolicyRef {
 export function expandPolicyRefs(
   policies: Readonly<Record<string, NormalizedRepositoryPolicy>>,
 ): Readonly<Record<string, NormalizedRepositoryPolicy>> {
-  const expanded: Record<string, NormalizedRepositoryPolicy> = {};
-  for (const [collection, policy] of Object.entries(policies)) {
-    expanded[collection] =
-      policy.read === true || policy.read === false
-        ? policy
-        : Object.freeze({
-            ...policy,
-            read: expandReadNode(
-              policies,
-              policy.read,
-              [collection],
-              [collection, 'read'],
-            ),
-          });
-  }
-  return Object.freeze(expanded);
+  return Object.freeze(
+    Object.fromEntries(
+      Object.entries(policies).map(([collection, policy]) => [
+        collection,
+        policy.read === true || policy.read === false
+          ? policy
+          : Object.freeze({
+              ...policy,
+              read: expandReadNode(
+                policies,
+                policy.read,
+                [collection],
+                [collection, 'read'],
+              ),
+            }),
+      ]),
+    ),
+  );
 }
 
 function expandReadNode(
@@ -55,19 +57,22 @@ function expandReadNode(
   chain: readonly string[],
   path: readonly (string | number)[],
 ): NormalizedReadNode {
-  const relations: Record<string, NormalizedReadNode> = {};
-  for (const [name, child] of Object.entries(node.relations)) {
-    const childPath = [...path, 'relations', name];
-    relations[name] =
-      'kind' in child
-        ? expandReadNode(
-            policies,
-            resolveRef(policies, child, chain, childPath),
-            [...chain, child.target],
-            childPath,
-          )
-        : expandReadNode(policies, child, chain, childPath);
-  }
+  const relations = Object.fromEntries(
+    Object.entries(node.relations).map(([name, child]) => {
+      const childPath = [...path, 'relations', name];
+      return [
+        name,
+        'kind' in child
+          ? expandReadNode(
+              policies,
+              resolveRef(policies, child, chain, childPath),
+              [...chain, child.target],
+              childPath,
+            )
+          : expandReadNode(policies, child, chain, childPath),
+      ];
+    }),
+  );
   return Object.freeze({ ...node, relations: Object.freeze(relations) });
 }
 
@@ -84,11 +89,13 @@ function resolveRef(
       { path },
     );
   }
-  const target = policies[reference.target];
+  const target = Object.hasOwn(policies, reference.target)
+    ? policies[reference.target]
+    : undefined;
   if (!target) {
     throw new RepositoryError(
       'INVALID_POLICY',
-      `Policy reference to "${reference.target}" names no Collection in this binding. A reference resolves against the same withPolicies map, not a Policy the target owns elsewhere.`,
+      `Policy reference to "${reference.target}" names no Collection in this binding. A reference resolves against the same policy map, not a Policy the target owns elsewhere.`,
       { path },
     );
   }

@@ -249,6 +249,8 @@ Resolve the manager once — in a route factory, or as a constructor dependency 
 
 The methods are `findOne`, `findMany`, `count`, `exists`, `aggregate`, `groupBy`, `createOne`, `createMany`, `updateOne`, `updateMany`, `upsertOne`, `deleteOne` and `deleteMany`; `describeMutation` and `validateMutation` report capabilities and pre-validate input, and `withPolicy` returns a scoped Repository.
 
+For a request that touches several Collections, use `connection.scope(policies, principal)`. It returns a `DatabaseScope` exposing only `repository`, `transaction`, `afterCommit`, `afterRollback`, and `explainPolicies`; unlisted direct Collection access throws `POLICY_REQUIRED`. Policy factories run once at binding, and transaction callbacks receive the same restricted scope bound to their transaction. Its repositories expose `narrow()` but no `withPolicy()`, and return `Partial<TRecord>` because policies can omit fields. Relation access still follows the originating policy; `ref()` explicitly reuses another entry's read rules. Keep the trusted connection for raw queries, schema operations and event subscriptions. `withPolicies()` is deprecated but keeps its legacy raw access and unlisted-Collection behavior, so migration requires an explicit policy for each Collection the service accesses.
+
 Boundaries that are easy to get wrong:
 
 - `findOne` takes the first match; `updateOne` and `deleteOne` require exactly one; `upsertOne` requires a unique equality condition.

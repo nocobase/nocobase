@@ -77,6 +77,92 @@ describeIntegrationDatabases(
       ]);
     });
 
+    it('preserves event ancestry when a listener creates a scope and a savepoint', async () => {
+      await createEventsFixture(context);
+      const seen = collectEvents();
+      let parentOperationId: string | undefined;
+      subscriptions.push(
+        context.connection.onRepositoryMutation(
+          { collections: ['tasks'] },
+          {
+            inTransaction: async (event, connection) => {
+              parentOperationId = event.operationId;
+              const scope = connection.scope(
+                {
+                  notes: {
+                    read: true,
+                    create: true,
+                    update: false,
+                    delete: false,
+                  },
+                },
+                undefined,
+              );
+              await scope.transaction(async (savepoint) => {
+                expect(savepoint).not.toHaveProperty('client');
+                await savepoint
+                  .repository('notes')
+                  .createOne({ values: { body: 'Scoped audit' } });
+              });
+            },
+          },
+        ),
+        context.connection.onRepositoryMutation(
+          { collections: ['notes'] },
+          seen.listeners,
+        ),
+      );
+      await context.connection
+        .scope(projectOneTasks, undefined)
+        .repository('tasks')
+        .updateOne({
+          filter: { id: 'task-edit' },
+          values: { title: 'Audited' },
+        });
+      expect(seen.batches).toHaveLength(1);
+      expect(seen.batches[0]).toMatchObject([
+        {
+          collection: 'notes',
+          operation: 'createOne',
+          parentOperationId,
+        },
+      ]);
+      expect(await context.connection.repository('notes').count()).toBe(3);
+    });
+
+    it('retains the listener recursion limit through scopes', async () => {
+      await createEventsFixture(context);
+      subscriptions.push(
+        context.connection.onRepositoryMutation(
+          { collections: ['notes'] },
+          {
+            inTransaction: async (_event, connection) => {
+              await connection
+                .scope(
+                  {
+                    notes: {
+                      read: true,
+                      create: true,
+                      update: false,
+                      delete: false,
+                    },
+                  },
+                  undefined,
+                )
+                .repository('notes')
+                .createOne({ values: { body: 'echo' } });
+            },
+          },
+        ),
+      );
+      await expect(
+        context.connection
+          .repository('notes')
+          .createOne({ values: { body: 'start' } }),
+      ).rejects.toMatchObject({ code: 'REPOSITORY_EVENT_RECURSION' });
+      expect(await context.connection.repository('notes').count()).toBe(2);
+    });
+
     it.each([true, false])(
       'emits nothing for migration and seed writes with transaction=%s',
       async (transaction) => {

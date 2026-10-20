@@ -100,8 +100,8 @@ export class PolicyBoundConnection implements ScopedDatabaseConnection {
 
   /**
    * A collection the map does not cover returns an unbound Repository, which
-   * is why this cannot promise a ScopedRepository. Tightening that is what
-   * `requireScope` on the Collection is for.
+   * is why this cannot promise a ScopedRepository. Use connection.scope()
+   * when unlisted collections must be denied.
    */
   repository<
     TRecord extends object = RepositoryRecord,

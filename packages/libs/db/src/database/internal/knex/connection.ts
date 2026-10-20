@@ -21,6 +21,8 @@ import type {
   RepositoryRecord,
 } from '../../../repository/types.js';
 import { bindPolicies } from './policy-bound-connection.js';
+import { createDatabaseScope } from '../scope.js';
+import type { DatabaseScope, DatabaseScopePolicies } from '../../scope.js';
 import { RepositoryListenerConnection } from './listener-connection.js';
 import { RepositoryError } from '../../../repository/errors.js';
 import type {
@@ -356,6 +358,14 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     };
   }
 
+  scope<P, const TCollection extends string>(
+    policies: DatabaseScopePolicies<P, TCollection>,
+    principal: P,
+  ): DatabaseScope<TCollection> {
+    return createDatabaseScope(this, policies, principal);
+  }
+
+  /** @deprecated Use scope() for restricted repository access. */
   withPolicies<P>(
     policies: Readonly<
       Record<string, RepositoryPolicy | ((principal: P) => RepositoryPolicy)>

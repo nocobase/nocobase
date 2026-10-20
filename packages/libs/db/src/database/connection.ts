@@ -17,6 +17,7 @@ import type { DatabaseCapabilities, SchemaAdapter } from '../schema/adapter.js';
 import type { SchemaInspector } from '../schema/inspector/types.js';
 import type { DatabaseDriver, SchemaManagementMode } from './config.js';
 import type { DatabaseDriverRuntime } from './runtime.js';
+import type { DatabaseScope, DatabaseScopePolicies } from './scope.js';
 
 export interface DatabaseConnection {
   name: string;
@@ -43,6 +44,11 @@ export interface DatabaseConnection {
   >(
     collection: string,
   ): Repository<TRecord, TCreate, TUpdate>;
+  /** Bind policies for one principal; unlisted collections are denied. */
+  scope<P, const TCollection extends string>(
+    policies: DatabaseScopePolicies<P, TCollection>,
+    principal: P,
+  ): DatabaseScope<TCollection>;
   /**
    * Bind a Policy per Collection for one principal.
    *
@@ -50,6 +56,9 @@ export interface DatabaseConnection {
    * usually touches several Collections and takes fresh Repositories inside a
    * transaction; one place to bind is also one place to see what this request
    * was authorized to touch.
+   *
+   * @deprecated Use scope() for restricted repository access. This legacy
+   * connection retains raw database access and permits unlisted collections.
    */
   withPolicies<P>(
     policies: Readonly<
@@ -129,13 +138,12 @@ export interface DatabaseConnection {
 }
 
 /**
- * A Connection carrying Policy bindings. It has no `withPolicies` of its own,
- * so the bindings cannot be replaced by a second call — narrowing them is
- * `narrow` on the Repository, and widening is not on offer.
+ * A legacy connection carrying policy bindings while retaining raw access.
+ * @deprecated Use DatabaseScope, returned by DatabaseConnection.scope().
  */
 export interface ScopedDatabaseConnection extends Omit<
   DatabaseConnection,
-  'withPolicies' | 'transaction' | 'connect' | 'reconnect'
+  'scope' | 'withPolicies' | 'transaction' | 'connect' | 'reconnect'
 > {
   /** The Policies in force, by Collection name. */
   explainPolicies(): Readonly<Record<string, NormalizedRepositoryPolicy>>;
