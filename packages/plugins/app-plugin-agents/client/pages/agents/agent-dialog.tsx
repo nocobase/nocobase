@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
+import { modelSuggestion } from '../../model-suggestion.js';
 import { agentsKeys } from '../../api/keys.js';
 import { Button } from '../../components/ui/button.js';
 import {
@@ -44,14 +45,6 @@ export interface AgentDialogProps {
   readonly agent: AgentView | null;
   readonly onClose: () => void;
   readonly candidates?: readonly AgentView[];
-}
-
-/** The catalog's suggestion in the viewer's language: Chinese for a `zh` locale, English otherwise. */
-function suggestionFor(agent: AgentView, language: string): string {
-  if (!agent.suggestion) return '';
-  return language.toLowerCase().startsWith('zh')
-    ? agent.suggestion.zh
-    : agent.suggestion.en;
 }
 
 export function AgentDialog({
@@ -161,7 +154,7 @@ function AgentForm({
   const queryClient = useQueryClient();
   const enabling = agent.status === 'pending';
   const [goodAt, setGoodAt] = useState(
-    () => agent.description ?? suggestionFor(agent, i18n.language),
+    () => agent.description ?? modelSuggestion(agent, i18n.language, t),
   );
   const [effort, setEffort] = useState<string>(agent.effort ?? DEFAULT_EFFORT);
   const [enabled, setEnabled] = useState(agent.status !== 'disabled');

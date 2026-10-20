@@ -1,3 +1,4 @@
+import { i18nToken } from '@nocobase/app-server/i18n';
 import { ServiceProvider } from '@nocobase/service-provider';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
@@ -23,6 +24,7 @@ export default class WebPushProvider extends ServiceProvider<AppPluginApplicatio
     const { container } = this.app;
     container.singleton(webPushServiceToken, (resolver) =>
       createWebPushService({
+        i18n: resolver.resolve(i18nToken),
         subscriptions: createSubscriptions(
           () => resolver.resolve(databaseManagerToken).connection(),
           resolver.resolve(secretsServiceToken),

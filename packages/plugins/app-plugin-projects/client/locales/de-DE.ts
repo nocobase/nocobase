@@ -1,0 +1,1467 @@
+import type { LocaleResource } from '@nocobase/i18n';
+
+import type enUS from './en-US.js';
+
+const deDE: LocaleResource<typeof enUS> = {
+  actions: {
+    cancel: 'Abbrechen',
+    close: 'Schließen',
+    save: 'Speichern',
+  },
+  activity: {
+    actions: {
+      approvalApproved: 'genehmigte die Statusänderung',
+      approvalNoApprover:
+        'hat den Status geändert (kein Genehmiger zum Fragen)',
+      approvalRejected: 'lehnte die Statusänderung ab',
+      approvalRequested:
+        'hat die Genehmigung für eine Statusänderung beantragt',
+      approvalSelf: 'hat den Status als Genehmiger geändert',
+      approvalStale: 'markierte den Genehmigungsantrag als nicht mehr gültig',
+      approvalWithdrawn: 'zog den Genehmigungsantrag zurück',
+      checklistItemChecked: 'hat den Artikel überprüft',
+      commentDeleted: 'hat einen Kommentar gelöscht',
+      attachmentAdded: 'beigefügt',
+      attachmentRemoved: 'hat die Datei entfernt',
+      threadResolved: 'hat einen Thread gelöst',
+      threadUnresolved: 'hat einen Thread erneut geöffnet',
+      checklistItemUnchecked: 'hat das Kontrollkästchen deaktiviert',
+      ownerNotified: 'hat den Eigentümer benachrichtigt',
+      stageActionApplied: 'hat eine Bühnenaktion angewendet',
+      stageActionSkipped: 'hat eine Bühnenaktion übersprungen',
+      stageActionSuppressed: 'eine Bühnenaktion unterdrückt (zu viele Läufe)',
+      stageActionBlocked:
+        'hat eine Bühnenaktion übersprungen: Das Problem wartet auf',
+      workBlocked: 'hat nicht mit der Arbeit begonnen: Das Problem wartet',
+      workDormant:
+        'hat nicht mit der Arbeit begonnen, während das Problem besteht',
+      workLimited:
+        'hat nicht mit der Arbeit begonnen: Die Kommentare der Agenten haben das Ausführungslimit des Problems erreicht',
+      workWithdrawn:
+        'hat seine in der Warteschlange befindliche Arbeit zurückgezogen: Das Problem wartet nun',
+      stageActionFailed: 'Eine Regel des Status konnte nicht ausgeführt werden',
+      created: 'hat das Problem verursacht',
+      datesChanged: 'hat die Daten geändert',
+      deleted: 'hat das Problem gelöscht',
+      descriptionChanged: 'hat die Beschreibung bearbeitet',
+      executorChanged: 'hat den Testamentsvollstrecker gewechselt',
+      executorRemoved: 'Executor {{name}} wurde entfernt',
+      labelsChanged: 'hat die Beschriftungen geändert',
+      ownerChanged: 'hat den Besitzer gewechselt',
+      parentChanged: 'hat das übergeordnete Problem geändert',
+      priorityChanged: 'hat die Priorität geändert',
+      projectChanged: 'hat das Problem in ein anderes Projekt verschoben',
+      restored: 'hat das Problem behoben',
+      statusChanged: 'hat den Status geändert',
+      titleChanged: 'hat das Problem umbenannt',
+      updated: 'hat das Problem aktualisiert',
+      subtaskAdded: 'hat das Unterthema hinzugefügt',
+      dependencyAdded: 'fügte die Abhängigkeit von hinzu',
+      dependencyRemoved: 'entfernte die Abhängigkeit von',
+      stageChanged: 'wechselte die Bühne',
+      autoMoveSkipped: 'konnte das Problem nicht automatisch verschieben',
+    },
+    afterEvent: '(automatisch, auf „{{event}}“)',
+    empty: 'Noch keine Aktivität.',
+    loadOlder: 'Ältere Aktivität laden',
+    system: 'System',
+    title: 'Aktivität',
+    via: {
+      agent: 'über {{agent}}',
+      agentPlan: 'über den Plan von {{agent}}',
+      plan: 'über einen Plan',
+    },
+  },
+  actor: {
+    system: 'System',
+    user: 'Person',
+  },
+  board: {
+    announce: {
+      cancel: 'Umzug abgebrochen.',
+      end: 'Abgelegt auf {{status}}.',
+      instructions:
+        'Drücken Sie die Leertaste oder die Eingabetaste, um ein Problem aufzunehmen, verwenden Sie die Pfeiltasten, um es in einen anderen Status zu verschieben, und drücken Sie dann erneut die Leertaste oder die Eingabetaste, um es zu löschen, oder die Escape-Taste, um abzubrechen.',
+      over: 'Über {{status}}.',
+      start: '{{identifier}} abgeholt.',
+    },
+    boardView: 'Vorstand',
+    cardRole: 'Ziehbares Problem',
+    closeDenied:
+      'Nur der Eigentümer, der Projektleiter oder ein Administrator darf {{identifier}} schließen.',
+    emptyColumn: 'Keine Probleme',
+    label: 'Ausgabetafel',
+    listView: 'Liste',
+    moveRejected: '{{identifier}} kann nicht in diesen Status wechseln.',
+    viewLabel: 'Anzeigen',
+  },
+  colors: {
+    blue: 'Blau',
+    gray: 'Grau',
+    green: 'Grün',
+    orange: 'Orange',
+    purple: 'Lila',
+    red: 'Rot',
+    yellow: 'Gelb',
+  },
+  common: {
+    apiKey: 'API-Taste',
+    clearFilters: 'Filter löschen',
+    close: 'Schließen',
+    collapseText: 'Reduzieren Sie den Textbereich',
+    create: 'Erstellen',
+    createNamed: 'Erstellen Sie „{{name}}“',
+    creating: 'Erstellen…',
+    expandText: 'Erweitern Sie den Textbereich',
+    forbidden: 'Sie haben dazu keine Berechtigung.',
+    notFound:
+      'Es existiert nicht mehr, oder Sie sehen es möglicherweise nicht.',
+    loading: 'Wird geladen…',
+    noOptions: 'Keine Optionen',
+    requestFailed:
+      'Die Anfrage ist fehlgeschlagen. Bitte versuchen Sie es erneut.',
+    retry: 'Erneut versuchen',
+    save: 'Speichern',
+    saving: 'Speichern',
+    unknown: 'Unbekannt',
+  },
+  attachments: {
+    attach: 'Dateien anhängen',
+    attachHint:
+      'Dateien anhängen: Wählen Sie sie aus, fügen Sie einen Screenshot ein oder legen Sie Dateien in der Box ab',
+    download: '{{name}} herunterladen',
+    dropHint:
+      'Legen Sie hier Dateien ab oder fügen Sie sie ein, jeweils bis zu {{size}} MB',
+    files: 'Dateien',
+    images: 'Bilder',
+    next: 'Nächste Datei',
+    pending: 'Zu sendende Dateien',
+    preview: 'Vorschau {{name}}',
+    previous: 'Vorherige Datei',
+    remove: '{{name}} entfernen',
+    removeConfirm: 'Entfernen',
+    removeDescription: '„{{name}}“ wird für alle gelöscht.',
+    removeTitle: 'Diese Datei entfernen?',
+    title: 'Anhänge',
+    tooLarge: '{{name}} ist größer als {{size}} MB.',
+    tooMany: 'Höchstens {{count}}-Dateien gleichzeitig.',
+    upload: 'Hochladen',
+    uploadFailed: '{{name}} konnte nicht hochgeladen werden.',
+    uploading: '{{name}} wird hochgeladen…',
+  },
+  comments: {
+    cancelReply: 'Antwort abbrechen',
+    delete: 'Löschen',
+    deleteDescription:
+      'Der Kommentar wird durch den Hinweis ersetzt, dass er gelöscht wurde; Antworten bleiben.',
+    deleteTitle: 'Diesen Kommentar löschen?',
+    deleted: 'Dieser Kommentar wurde gelöscht.',
+    edit: 'Bearbeiten',
+    editLabel: 'Kommentar bearbeiten',
+    edited: '(bearbeitet)',
+    failed:
+      'Der Kommentar konnte nicht gepostet werden. Bitte versuchen Sie es erneut.',
+    label: 'Kommentar',
+    modeComment: 'Kommentar',
+    modeNote: 'Notiz',
+    more: 'Weitere Aktionen',
+    nameSeparator: ', ',
+    note: 'Notiz',
+    notePlaceholder: 'Schreibe eine Notiz…',
+    placeholder: 'Einen Kommentar schreiben…',
+    reply: 'Antworten',
+    replyTo: 'Antwort auf {{name}}',
+    replyingTo: 'Antwort auf {{name}}',
+    send: 'Kommentar',
+    sendNote: 'Anmerkung hinzufügen',
+    sendReply: 'Antworten',
+  },
+  composer: {
+    newLine: 'für eine neue Zeile',
+    quickSend: 'zum Senden',
+  },
+  config: {
+    labels: {
+      actionsFor: 'Aktionen für {{name}}',
+      columns: {
+        actions: 'Aktionen',
+        color: 'Farbe',
+        name: 'Name',
+      },
+      create: 'Etikett erstellen',
+      created: 'Label „{{name}}“ erstellt',
+      delete: 'Label löschen',
+      deleteDescription:
+        'Es wird aus jeder Ausgabe entfernt, die es enthält. Dies kann nicht rückgängig gemacht werden.',
+      deleteTitle: 'Label „{{name}}“ löschen?',
+      deleted: 'Label „{{name}}“ gelöscht',
+      description: 'Labels gruppieren Probleme projektübergreifend.',
+      emptyDescription:
+        'Erstellen Sie eine Bezeichnung, um Probleme zu gruppieren.',
+      emptyNoAccess: 'Bitten Sie einen Administrator, Etiketten zu erstellen.',
+      emptyTitle: 'Noch keine Etiketten',
+      loadFailed: 'Etiketten können nicht geladen werden',
+      namePlaceholder: 'Labelname',
+      newColor: 'Neue Etikettenfarbe',
+      newName: 'Neuer Markenname',
+      recolored: 'Farbe von „{{name}}“ geändert',
+      rename: 'Umbenennen',
+      renameLabel: '{{name}} umbenennen',
+      renamed: 'Bezeichnung umbenannt in „{{name}}“',
+      title: 'Etiketten',
+    },
+  },
+  configPage: {
+    description:
+      'Mitglieder, Rollen, Labels und das Issue-Präfix von Projekten.',
+    noAccess: 'Hier gibt es nichts einzurichten',
+    noAccessDescription:
+      'Ihre Rollen beinhalten keine Projekteinstellungen. Fragen Sie einen Eigentümer oder Administrator, wenn Sie eines benötigen.',
+    tabsLabel: 'Einstellungsabschnitte',
+    title: 'Einstellungen',
+  },
+  connect: {
+    copied: 'Kopiert',
+    copy: 'Kopierbefehl',
+    copyFailed:
+      'Kopieren nicht möglich. Wählen Sie den Befehl aus und kopieren Sie ihn manuell.',
+  },
+  dataTable: {
+    firstPage: 'Gehe zur ersten Seite',
+    lastPage: 'Gehe zur letzten Seite',
+    nextPage: 'Gehe zur nächsten Seite',
+    noResults: 'Keine Ergebnisse.',
+    pageOf: 'Seite {{page}} von {{pageCount}}',
+    previousPage: 'Zur vorherigen Seite gehen',
+    rowsPerPage: 'Zeilen pro Seite',
+    selectedCount: '{{selected}} der {{total}} Zeile(n) ausgewählt.',
+    sortAscending: 'Asc',
+    sortDescending: 'Beschr',
+    toggleColumns: 'Spalten umschalten',
+    view: 'Anzeigen',
+  },
+  datePicker: {
+    placeholder: 'Wählen Sie ein Datum',
+    rangePlaceholder: 'Wählen Sie einen Datumsbereich',
+  },
+  dates: {
+    clearDue: 'Fälligkeitsdatum löschen',
+    clearStart: 'Startdatum löschen',
+    due: 'Fälligkeitsdatum',
+    start: 'Startdatum',
+  },
+  errors: {
+    APPROVAL_DECIDED: 'Über diesen Antrag wurde bereits entschieden.',
+    NOT_REQUESTER: 'Nur wer gefragt hat, kann die Anfrage zurückziehen.',
+    CHECKLIST_INCOMPLETE:
+      'Überprüfen Sie zunächst die erforderlichen Punkte der Checkliste für den aktuellen Status.',
+    GRANT_NOT_ALLOWED:
+      'Eine Rolle enthält nur die Seiten, Einstellungen und Aktionen dieses Plugins.',
+    INVALID_DATE: 'Das Datum ist ungültig.',
+    INVALID_EXECUTOR:
+      'Dieser Testamentsvollstrecker kann nicht ausgewählt werden.',
+    INVALID_INVITATION: 'Überprüfen Sie die E-Mail-Adressen.',
+    INVALID_LABEL: 'Ein Label existiert nicht mehr.',
+    INVALID_LEAD: 'Der Lead muss ein aktives Mitglied sein.',
+    INVALID_OWNER: 'Der Eigentümer muss ein aktives Mitglied sein.',
+    INVALID_PARENT: 'Das übergeordnete Problem kann nicht verwendet werden.',
+    INVALID_PREFIX:
+      'Verwenden Sie 1 bis 10 Großbuchstaben und Ziffern, beginnend mit einem Buchstaben.',
+    INVALID_PROJECT: 'Das Projekt existiert nicht.',
+    INVALID_PROJECTS: 'Wählen Sie vorhandene Projekte aus.',
+    INVALID_STATUS: 'Dieser Status kann hier nicht verwendet werden.',
+    INVALID_TITLE: 'Der Titel muss 1 bis 100 Zeichen lang sein.',
+    INVALID_URL: 'Das Repository URL ist ungültig.',
+    INVITATION_CLOSED: 'Die Einladung steht nicht mehr aus.',
+    LABEL_EXISTS: 'Ein Label mit diesem Namen existiert bereits.',
+    LAST_OWNER:
+      'Der letzte Eigentümer kann die Eigentümerrolle nicht verlieren.',
+    LEAD_MEMBER:
+      'Wählen Sie einen anderen Projektleiter, bevor Sie dieses Mitglied entfernen.',
+    OWNER_REQUIRED: 'Ein Problem braucht einen Besitzer.',
+    REVISION_CONFLICT:
+      'Jemand hat dies inzwischen geändert. Die neueste Version wird angezeigt; Wenden Sie Ihre Änderung erneut an.',
+    REVISION_REQUIRED:
+      'Die Seite ist veraltet. Laden Sie es neu und versuchen Sie es erneut.',
+    ROLE_BUILT_IN: 'Integrierte Rollen können nicht gelöscht werden.',
+    ROLE_IN_USE:
+      'Jemand hat diese Rolle immer noch inne; Ändern Sie zuerst ihre Rollen.',
+    ROLE_NOT_EDITABLE:
+      'Die Besitzerrolle beinhaltet alles; es kann nicht bearbeitet werden.',
+    TRANSITION_NOT_ALLOWED:
+      'Sie können das Problem nicht in diesen Status verschieben.',
+    UNKNOWN_ROLE: 'Die Rolle existiert nicht mehr.',
+    USER_DISABLED:
+      'Einem deaktivierten Konto kann keine Rolle zugewiesen werden.',
+    DEPENDENCY_CYCLE: 'Diese Abhängigkeit würde einen Kreislauf erzeugen.',
+    DEPENDENCY_CHANGED:
+      'Die Beziehung änderte sich. Neu laden und erneut versuchen.',
+    DEPENDENCY_GRAPH_CHANGED:
+      'Problemabhängigkeiten geändert. Neu laden und erneut versuchen.',
+    DEPENDENCY_EXISTS: 'Diese Abhängigkeit besteht bereits.',
+    DEPENDENCY_TOO_DEEP: 'Die Abhängigkeitskette ist zu lang.',
+    INVALID_DEPENDENCY: 'Dieses Problem kann hier keine Abhängigkeit sein.',
+    INVALID_STAGE:
+      'Geben Sie eine ganze Zahl von 0 bis 1000 ein oder lassen Sie das Feld leer.',
+    ISSUE_BLOCKED:
+      'Das Problem wartet immer noch auf Probleme, die es blockieren.',
+    SUBTASKS_OPEN: 'Beenden oder stornieren Sie zuerst die Teilausgaben.',
+    PLAN_INVALID: 'Einige Änderungen des Plans werden nicht angenommen.',
+    PLAN_NOT_OPEN: 'Der Plan wartet nicht mehr auf eine Entscheidung.',
+    PLAN_EXPIRED: 'Der Plan ist abgelaufen.',
+    UNDO_EXPIRED: 'Der Plan kann nicht mehr rückgängig gemacht werden.',
+    NOTHING_TO_UNDO:
+      'Alles, was der Plan vorsah, wurde seitdem geändert; Es gibt nichts rückgängig zu machen.',
+    INVALID_INTAKE:
+      'Geben Sie innerhalb der Grenzen einen Text oder eine Datei an.',
+    AI_UNAVAILABLE: 'KI ist derzeit nicht verfügbar.',
+    INTAKE_JOB_CLOSED: 'Diese Anfrage an AI ist bereits beendet.',
+    INVALID_FILE: 'Eine Datei gehört nicht zu Ihren Uploads.',
+    FILE_TOO_LARGE: 'Die Datei ist zu groß.',
+    FILES_UNAVAILABLE: 'Diese Anwendung speichert keine Dateien.',
+  },
+  dependencies: {
+    add: 'Fügen Sie ein Blockierungsproblem hinzu',
+    added: 'Abhängigkeit hinzugefügt.',
+    addPlaceholder: 'Suchprobleme, die als Blocker hinzugefügt werden sollen',
+    blockedBy: 'Blockiert von',
+    blocks: 'Blöcke',
+    hidden_one:
+      '{{count}} weitere Blockierungsprobleme, die Sie nicht sehen können.',
+    hidden_other:
+      '{{count}} weitere Blockierungsprobleme, die Sie nicht sehen können.',
+    related: 'Verwandte',
+    remove: '{{identifier}} entfernen',
+    removed: 'Abhängigkeit entfernt.',
+    title: 'Abhängigkeiten',
+  },
+  executor: {
+    busy_one: '{{count}} in Bearbeitung',
+    busy_other: '{{count}} in Bearbeitung',
+    none: 'Nicht zugewiesen',
+    offline: 'Offline',
+  },
+  filters: {
+    allLabels: 'Alle Etiketten',
+    allProjects: 'Alle Projekte',
+    anyExecutor: 'Jeder Testamentsvollstrecker',
+    anyOwner: 'Jeder Eigentümer',
+    executor: 'Nach Testamentsvollstrecker filtern',
+    label: 'Nach Label filtern',
+    owner: 'Nach Eigentümer filtern',
+    project: 'Nach Projekt filtern',
+    toggle: 'Filter',
+  },
+  invitations: {
+    actions: 'Aktionen',
+    actionsFor: 'Aktionen für Einladung zu {{email}}',
+    dialogDescription:
+      'Jede Adresse erhält eine E-Mail mit einem Link zum Festlegen eines Namens und eines Passworts. Der Link ist 7 Tage gültig.',
+    dialogTitle: 'Mitglieder einladen',
+    done: 'Erledigt',
+    emails: 'E-Mail-Adressen',
+    emailsHint:
+      'Eine pro Zeile oder durch Kommas oder Leerzeichen getrennt. Bis 50.',
+    emailsInvalid: 'Keine gültige E-Mail-Adresse: {{emails}}',
+    emailsRequired: 'Geben Sie mindestens eine E-Mail-Adresse ein.',
+    emailsTooMany: 'Bis zu 50 Adressen gleichzeitig.',
+    expired: 'Abgelaufen',
+    expiresAt: 'Läuft ab',
+    forbidden: 'Sie können nicht zu diesen Projekten einladen.',
+    invite: 'Mitglieder einladen',
+    invitedBy: 'Eingeladen von',
+    link: 'Einladungslink',
+    linkTitle: 'Leiten Sie diesen Link weiter',
+    linkUnavailable:
+      'Die Einladung hat sich geändert. Aktualisieren Sie die Liste und versuchen Sie es erneut.',
+    listSeparator: ', ',
+    loadFailed: 'Einladungen können nicht geladen werden',
+    noProjects: 'Keine Projekte',
+    notSent: 'E-Mail nicht gesendet',
+    outcome: {
+      added: 'Hat ein Konto – zu den Projekten hinzugefügt',
+      alreadyMember: 'Bereits Mitglied',
+      notSent: 'E-Mail nicht gesendet',
+      sent: 'E-Mail gesendet',
+    },
+    pending: 'Warten',
+    projectRequired: 'Wählen Sie mindestens ein Projekt aus, das Sie leiten.',
+    projects: 'Projekte',
+    projectsHint:
+      'Eingeladene Personen treten diesen Projekten als Mitglieder bei.',
+    projectsPlaceholder: 'Projekte auswählen',
+    resend: 'Erneut senden',
+    generateLink: 'Neuen Link generieren',
+    generateDescription:
+      'Der vorherige Einladungslink funktioniert nicht mehr. Es wird keine E-Mail verschickt. Kopieren Sie den neuen Link, nachdem Sie ihn generiert haben.',
+    linkReady: 'Neuer Link bereit',
+    newLinkDescription:
+      'Der vorherige Link funktioniert nicht mehr. Kopieren und teilen Sie den neuen Link unten.',
+    copyLink: 'Einladungslink kopieren',
+    resent: 'Einladung erneut an {{email}} gesendet',
+    resultsLabel: 'Ergebnisse der Einladung',
+    revoke: 'Widerrufen',
+    revokeDescription:
+      'Der Link funktioniert nicht mehr. Sie können die Adresse später erneut einladen.',
+    revokeTitle: 'Einladung für {{email}} widerrufen?',
+    revoked: 'Einladung für {{email}} widerrufen',
+    send: 'Einladungen versenden',
+    sent: 'Einladungen verarbeitet: {{number}}',
+    status: 'Status',
+    title: 'Ausstehende Einladungen',
+  },
+  issue: {
+    backToList: 'Zurück zu den Themen',
+    delete: 'Problem löschen',
+    deleteDescription:
+      'Es verschwindet aus Listen und Suchen. Ein Administrator kann es wiederherstellen.',
+    deleteTitle: '{{identifier}} löschen?',
+    deleted: '{{identifier}} gelöscht.',
+    editDescription: 'Beschreibung bearbeiten',
+    editTitle: 'Titel bearbeiten',
+    conflict: 'Dieses Problem hat sich durch Neuladen geändert.',
+    loadFailed: 'Dieses Problem konnte nicht geladen werden',
+    noDescription: 'Keine Beschreibung.',
+    parent: 'Unterausgabe von',
+  },
+  issueAdd: {
+    dependency: 'Blocker',
+    label: 'Hinzufügen',
+    none: 'keine',
+  },
+  issuePicker: {
+    empty: 'Keine Matching-Probleme',
+    placeholder: 'Suche nach Titel oder Kennung',
+  },
+  issueForm: {
+    created: '{{identifier}} erstellt',
+    descriptionLabel: 'Beschreibung',
+    descriptionPlaceholder: 'Markdown wird unterstützt.',
+    noProject: 'Kein Projekt',
+    ownerHint: 'Die für das Problem verantwortliche Person. Standardmäßig Sie.',
+    startLabel: 'Wann soll begonnen werden?',
+    startNow: 'Beginnen Sie jetzt',
+    startNowHint: 'Der Projektmanager beginnt sofort mit der Organisation.',
+    startLater: 'Später',
+    startLaterHint:
+      'Es wartet im Backlog; Starten Sie es auf der Problemseite.',
+    createAndStart: 'Erstellen und starten',
+    projectLabel: 'Projekt',
+    titleLabel: 'Titel',
+    titleRequired: 'Geben Sie einen Titel ein.',
+  },
+  issues: {
+    allStatuses: 'Alle Status',
+    columns: {
+      executor: 'Testamentsvollstrecker',
+      identifier: 'ID',
+      owner: 'Verantwortlicher',
+      priority: 'Priorität',
+      status: 'Status',
+      title: 'Titel',
+      updated: 'Aktualisiert',
+    },
+    agentsDescription:
+      'Arbeit für Menschen und Programmieragenten. Weisen Sie einen Agenten als Ausführenden zu, um einen Lauf zu starten.',
+    agentsEmptyDescription:
+      'Erstellen Sie ein Problem und wählen Sie einen Agenten als Ausführenden aus, der ihm die Arbeit übergibt.',
+    description: 'Alles, woran das Team arbeitet, als Tafel oder Liste.',
+    emptyDescription:
+      'Erstellen Sie ein Problem und wählen Sie aus, wer es ausführt.',
+    emptyTitle: 'Noch keine Probleme',
+    loadFailed: 'Probleme konnten nicht geladen werden',
+    new: 'Neue Ausgabe',
+    noResults: 'Keine Matching-Probleme.',
+    restore: 'Wiederherstellen',
+    restored: '{{identifier}} wiederhergestellt.',
+    searchLabel: 'Suchprobleme',
+    searchPlaceholder: 'Suche nach Titel oder Kennung',
+    statusFilterLabel: 'Nach Status filtern',
+    title: 'Vorgänge',
+  },
+  labelColors: {
+    for: 'Farbe von {{name}}',
+    open: 'Beschriftungsfarben ändern',
+    title: 'Etikettenfarben',
+  },
+  labels: {
+    createFailed: 'Das Etikett konnte nicht erstellt werden.',
+    empty:
+      'Noch keine Etiketten. Geben Sie einen Namen ein, um einen zu erstellen.',
+    placeholder: 'Beschriftungen hinzufügen',
+  },
+  members: {
+    columns: {
+      email: 'E-Mail',
+      name: 'Name',
+      roles: 'Rollen',
+    },
+    description:
+      'Jeder, der in Projekten arbeitet, mit seinen Rollen. Systemadministratoren haben alles in der Hand und werden nicht aufgeführt. Nur ein Eigentümer gewährt oder widerruft die Eigentümerrolle.',
+    loadFailed: 'Mitglieder können nicht geladen werden',
+    title: 'Mitglieder',
+  },
+  myIssues: {
+    description:
+      'Probleme, für die Sie verantwortlich sind und an denen Sie selbst arbeiten.',
+    empty: {
+      executing: 'Sie führen keine Probleme aus',
+      owned: 'Sie besitzen keine Probleme',
+    },
+    emptyDescription:
+      'Ihnen zugewiesene Probleme werden hier angezeigt. Erstellen Sie eines oder wählen Sie eines aus der Problemliste aus.',
+    tabs: {
+      executing: 'Ich exekutiere',
+      owned: 'Ich besitze',
+    },
+    tabsLabel: 'Meine Ausgabenansichten',
+    title: 'Meine Probleme',
+  },
+  nav: {
+    general: 'Allgemein',
+    issues: 'Vorgänge',
+    labels: 'Etiketten',
+    members: 'Mitglieder',
+    myIssues: 'Meine Probleme',
+    projects: 'Projekte',
+    roles: 'Rollen',
+    settings: 'Einstellungen',
+  },
+  newIssue: {
+    tabs: {
+      ai: 'KI-Entwurf',
+      manual: 'Manuell',
+    },
+    tabsLabel: 'Wege zum Schaffen',
+    title: 'Neue Ausgabe',
+  },
+  pagination: {
+    countMore: '{{count}}+',
+    loadMore: 'Mehr laden',
+    shown: 'Zeigt {{count}} an',
+  },
+  priority: {
+    high: 'Hoch',
+    low: 'Niedrig',
+    medium: 'Mittel',
+    none: 'Keine Priorität',
+    urgent: 'Dringend',
+  },
+  projectForm: {
+    created: 'Projekt {{name}} erstellt',
+    description:
+      'Projekte gruppieren Probleme und die Repositories, die sie betreffen.',
+    descriptionHint:
+      'Was jeder, der an diesem Projekt arbeitet, wissen sollte.',
+    descriptionPlaceholder: 'Worum es in diesem Projekt geht.',
+    name: 'Name',
+    nameRequired: 'Geben Sie einen Namen ein.',
+    title: 'Neues Projekt',
+  },
+  projectMembers: {
+    actions: 'Aktionen für {{name}}',
+    choose: 'Mitglied hinzufügen: Nach Namen suchen',
+    empty: 'Noch keine Mitglieder.',
+    leadSet: 'Leitungswechsel.',
+    noMatches: 'Niemand passt.',
+    removeAction: 'Entfernen',
+    removeDescription: '{{name}} wird kein Mitglied dieses Projekts mehr sein.',
+    removeTitle: '{{name}} entfernen?',
+    removed: 'Mitglied entfernt.',
+    role: {
+      lead: 'Projektleiter',
+    },
+    setLead: 'Als Lead festlegen',
+    title: 'Mitglieder',
+  },
+  projectMore: {
+    delete: 'Projekt löschen',
+    deleteDescription:
+      'Das Projekt, seine Mitglieder und Repositorys werden entfernt. Seine Themen bleiben bestehen und gehören nicht mehr zu einem Projekt.',
+    deleteTitle: '{{name}} löschen?',
+    deleted: 'Projekt {{name}} gelöscht',
+    label: 'Weitere Projektaktionen',
+  },
+  projectPage: {
+    distribution: 'Nach Status',
+    noIssues: 'Noch keine Probleme.',
+    numbers: 'Schlüsselzahlen',
+    openInList: 'In der Problemliste öffnen',
+    stats: {
+      done: 'Erledigt',
+      review: 'In Prüfung',
+      started: 'In Bearbeitung',
+      total: 'Vorgänge',
+    },
+    tabs: {
+      issues: 'Vorgänge',
+      label: 'Projektabschnitte',
+      overview: 'Übersicht',
+    },
+  },
+  projectStatus: {
+    cancelled: 'Abgebrochen',
+    completed: 'Abgeschlossen',
+    inProgress: 'In Bearbeitung',
+    paused: 'Angehalten',
+    planned: 'Geplant',
+  },
+  projects: {
+    backToList: 'Zurück zu Projekten',
+    breadcrumb: 'Projekt',
+    columns: {
+      lead: 'Projektleiter',
+      members: 'Mitglieder',
+      name: 'Name',
+      priority: 'Priorität',
+      progress: 'Fortschritt',
+      status: 'Status',
+    },
+    description:
+      'Gruppieren Sie Probleme, verknüpfen Sie ihre Repositories und verfolgen Sie den Fortschritt.',
+    descriptionLabel: 'Beschreibung',
+    detailLoadFailed: 'Dieses Projekt konnte nicht geladen werden',
+    editDescription: 'Beschreibung bearbeiten',
+    emptyDescription:
+      'Erstellen Sie ein Projekt, um Probleme zu gruppieren und die betreffenden Repositories zu verknüpfen.',
+    emptyNoAccess: 'Bitten Sie einen Administrator, ein Projekt zu erstellen.',
+    emptyTitle: 'Noch keine Projekte',
+    loadFailed: 'Projekte können nicht geladen werden',
+    new: 'Neues Projekt',
+    noDescription: 'Keine Beschreibung.',
+    noLead: 'Keine Spur',
+    noResults: 'Keine Projektübereinstimmungen.',
+    notFound: 'Dieses Projekt existiert nicht oder Sie können es nicht sehen.',
+    progressLabel: '{{done}}- oder {{total}}-Probleme behoben',
+    search: 'Projekte suchen',
+    sidePanel: 'Projektdetails',
+    title: 'Projekte',
+    visibility: {
+      everyone: 'Alle',
+      members: 'Nur für Mitglieder',
+    },
+    visibilityHint: {
+      everyone: 'Jedes Mitglied des Arbeitsbereichs kann dieses Projekt sehen.',
+      members:
+        'Nur Projektmitglieder und Arbeitsbereichsadministratoren können dieses Projekt und seine Probleme sehen.',
+    },
+    visibilityLabel: 'Sichtbarkeit',
+  },
+  properties: {
+    assignToMe: 'Beauftrage mich',
+    created: 'Erstellt',
+    details: 'Details',
+    executor: 'Testamentsvollstrecker',
+    labels: 'Etiketten',
+    owner: 'Verantwortlicher',
+    priority: 'Priorität',
+    project: 'Projekt',
+    status: 'Status',
+    title: 'Eigenschaften',
+    updated: 'Aktualisiert',
+    you: '(du)',
+  },
+  reactions: {
+    add: 'Reaktion hinzufügen',
+    label: 'Reaktionen',
+    picker: 'Wählen Sie eine Reaktion',
+    toggle: '{{emoji}} {{count}}: {{names}}',
+  },
+  resourceEdit: {
+    edit: '{{name}} bearbeiten',
+    moveDown: 'Bewegen Sie {{name}} nach unten',
+    moveUp: '{{name}} nach oben verschieben',
+    saved: 'Gespeichert.',
+    title: 'Repository bearbeiten',
+    titleDirectory: 'Verzeichnis bearbeiten',
+  },
+  resources: {
+    add: 'Hinzufügen',
+    addSubmit: 'Hinzufügen',
+    added: 'Hinzugefügt.',
+    adding: 'Hinzufügen…',
+    defaultBranch: 'Standardzweig',
+    defaultRef: 'Standardzweig',
+    defaultRefHint:
+      'Optional. Lassen Sie das Feld leer, um den Repository-Standard zu verwenden.',
+    empty: 'Keine Repositorys oder Verzeichnisse angehängt.',
+    initPrompt: 'Initialisierungsaufforderung',
+    initPromptHint:
+      'Optional. Einfache Anweisungen, die ein Agent befolgt, wenn er hier zum ersten Mal für eine Aufgabe arbeitet, bevor diese beginnt. Kein Skript: Es führt nichts selbst aus.',
+    initPromptPlaceholder:
+      'Führen Sie pnpm install aus und kopieren Sie dann .env.example nach .env.',
+    initPromptTooLong: 'Die Initialisierungsaufforderung ist zu lang.',
+    label: 'Etikett',
+    newDescription:
+      'Wo die Arbeit dieses Projekts stattfindet. Das erste ist das primäre Arbeitsverzeichnis.',
+    newTitle: 'Fügen Sie ein Arbeitsverzeichnis hinzu',
+    noRunners: 'Noch keine Laufzeiten',
+    path: 'Verzeichnispfad',
+    pathHint:
+      'Der absolute Pfad des Verzeichnisses in dieser Laufzeit. Agenten arbeiten dort vor Ort, eine Aufgabe nach der anderen.',
+    pathInvalid:
+      'Geben Sie einen absoluten Pfad ein, z. B. /Users/me/work/app.',
+    pathRequired: 'Geben Sie den Verzeichnispfad ein.',
+    primary: 'Primär',
+    remove: '{{name}} entfernen',
+    removed: 'Entfernt.',
+    runner: 'Laufzeitumgebung',
+    runnerHint: 'Nur diese Laufzeit funktioniert im Verzeichnis.',
+    runnerIdPlaceholder: 'Laufzeit-ID',
+    runnerPlaceholder: 'Wählen Sie eine Laufzeit',
+    runnerRequired:
+      'Wählen Sie die Laufzeit aus, in der sich das Verzeichnis befindet.',
+    title: 'Repositories und Verzeichnisse',
+    type: 'Typ',
+    types: {
+      directory: 'Verzeichnis auf einer Laufzeit',
+      gitRepo: 'Git-Repository',
+    },
+    url: 'Repository-URL',
+    urlHint:
+      'Ein https oder ssh URL, von dem aus das Repository geklont werden kann.',
+    urlInvalid:
+      'Geben Sie einen Git URL ein, z. B. https://github.com/owner/repo.git.',
+    urlRequired: 'Geben Sie das Repository URL ein.',
+  },
+  richText: {
+    mentionList: 'Erwähnungen',
+    noMatches: 'Keine Übereinstimmungen',
+    toolbar: 'Formatierung',
+    tools: {
+      bold: 'Fett',
+      bulletList: 'Aufzählungsliste',
+      code: 'Code',
+      italic: 'Kursiv',
+      orderedList: 'Nummerierte Liste',
+      quote: 'Zitat',
+      strike: 'Durchgestrichen',
+    },
+  },
+  roles: {
+    actions: 'Aktionen',
+    assigned: 'Rollen von {{name}} aktualisiert.',
+    backToList: 'Zurück zu den Rollen',
+    breadcrumb: 'Rolle',
+    builtIn: 'Eingebaut',
+    columns: {
+      holders: 'Inhaber',
+      kind: 'Typ',
+      name: 'Name',
+    },
+    created: 'Rolle {{name}} erstellt.',
+    custom: 'Benutzerdefiniert',
+    abilities: {
+      issues: {
+        changeOwner: {
+          hint: 'Übergeben Sie ein Problem an jemand anderen, der dafür verantwortlich ist',
+          title: 'Besitzer wechseln',
+        },
+        close: {
+          hint: 'Markieren Sie ein Problem als erledigt oder abgebrochen',
+          title: 'Probleme schließen',
+        },
+        create: {
+          hint: 'Erstellen Sie Probleme, in einem Projekt oder alleine',
+          title: 'Erstellen Sie Probleme',
+        },
+        delete: {
+          hint: 'Probleme löschen und gelöschte wiederherstellen',
+          title: 'Probleme beim Löschen und Wiederherstellen',
+        },
+        edit: {
+          hint: 'Titel, Beschreibung, Priorität, Daten, Labels, Ausführende und offene Status',
+          title: 'Probleme bearbeiten',
+        },
+        view: {
+          hint: 'Sehen Sie sich Probleme in Listen, Foren und deren Details an',
+          title: 'Probleme anzeigen',
+        },
+      },
+      projects: {
+        create: {
+          hint: 'Starten Sie ein neues Projekt und leiten Sie es',
+          title: 'Projekte erstellen',
+        },
+        delete: {
+          hint: 'Projekte löschen und gelöschte wiederherstellen',
+          title: 'Projekte löschen',
+        },
+        manage: {
+          hint: 'Umbenennen, Status, Daten und Lead ändern, Mitglieder und Repositories verwalten',
+          title: 'Projekte verwalten',
+        },
+        view: {
+          hint: 'Sehen Sie sich Projekte, deren Überblick und Fortschritt an',
+          title: 'Projekte anzeigen',
+        },
+      },
+    },
+    capabilities: {
+      general: {
+        read: 'Siehe allgemeine Einstellungen',
+        update: 'Ändern Sie das Problempräfix',
+      },
+      labels: {
+        read: 'Siehe Etiketten',
+        update: 'Labels verwalten',
+      },
+      members: {
+        assign: 'Ändern Sie die Rollen der Mitglieder',
+        defineRoles: 'Rollen erstellen und bearbeiten',
+        invite: 'Leute einladen',
+        read: 'Siehe Mitglieder und Rollen',
+      },
+    },
+    copyOf: '{{name}} (Kopie)',
+    defineRolesNote:
+      'Wenn Sie „Rollen erstellen und bearbeiten“ gedrückt halten, erhalten Sie Zugriff auf alles in Projekten: Der Inhaber kann seiner eigenen Rolle jede beliebige Fähigkeit hinzufügen.',
+    delete: 'Löschen',
+    deleteDescription: 'Die Rolle und ihre Berechtigungen werden entfernt.',
+    deleteInUse:
+      '{{count}}-Leute haben diese Rolle immer noch inne. Ändern Sie ihre Rollen, bevor Sie sie löschen.',
+    deleteNamed: '{{name}} löschen',
+    deleteTitle: 'Die Rolle {{name}} löschen?',
+    deleted: 'Rolle {{name}} gelöscht.',
+    description:
+      '​​Eine Rolle entscheidet, welche Seiten ihre Inhaber öffnen, welche Einstellungen sie ändern dürfen und wie weit jeder Geschäftsvorgang reicht.',
+    discard: 'Änderungen verwerfen',
+    duplicate: 'Als neue Rolle duplizieren',
+    errors: {
+      builtIn: 'Integrierte Rollen können nicht gelöscht werden.',
+      notOffered: 'Die Rolle enthält etwas, was Projekte nicht bieten.',
+      inUse:
+        'Jemand hat diese Rolle immer noch inne; Ändern Sie zuerst ihre Rollen.',
+      invalidTitle: 'Der Name muss 1 bis 100 Zeichen lang sein.',
+      lastOwner: 'Der letzte Eigentümer behält die Eigentümerrolle.',
+      notEditable: 'Die Eigentümerrolle wird hier nicht geändert.',
+      notPmRole:
+        'Das ist keine Projektrolle; Plattformrollen werden in den Berechtigungseinstellungen verwaltet.',
+      systemAdmin:
+        'Die Rollen eines Systemadministrators werden in den Berechtigungseinstellungen verwaltet.',
+      userDisabled:
+        'Einem deaktivierten Konto kann keine Rolle zugewiesen werden.',
+    },
+    holders: 'Wird von {{count}} gehalten',
+    legend: {
+      issues:
+        'Sichtbare: Vorgänge ohne Projekt und Vorgänge in Projekten, die sie sehen können. Diejenigen, die sie leiten oder besitzen: Probleme, die ihnen gehören, und Probleme in Projekten, die sie leiten. Alle: jede Ausgabe.',
+      projects:
+        'Sichtbare: öffentliche Projekte und private, denen sie beigetreten sind. Diejenigen, die sie leiten oder besitzen: Projekte, die sie leiten. Alle: jedes Projekt.',
+    },
+    levels: {
+      all: 'Alle',
+      managed: 'Diejenigen, die sie führen oder besitzen',
+      none: 'Nicht erlaubt',
+      visible: 'Sichtbare',
+    },
+    loadFailed: 'Rollen können nicht geladen werden',
+    modules: {
+      issues: 'Vorgänge',
+      projects: 'Projekte',
+      settings: 'Einstellungen',
+    },
+    modulesLabel: 'Module',
+    name: 'Name',
+    new: 'Neue Rolle',
+    newTitle: 'Neue Rolle',
+    none: 'Keine Rolle',
+    notFound: 'Diese Rolle existiert nicht.',
+    ownerReadOnly:
+      'Die Eigentümerrolle besitzt alle Projektberechtigungen und wird hier nicht geändert.',
+    pick: 'Fügen Sie eine Rolle hinzu',
+    rolesFor: 'Rollen von {{name}}',
+    save: 'Speichern',
+    saved: 'Rolle {{name}} gespeichert.',
+    scopeFor: 'Wie weit {{name}} reicht',
+    title: 'Rollen',
+    owner: 'Verantwortlicher',
+    admin: 'Admin',
+    member: 'Mitglied',
+  },
+  search: {
+    description: 'Suchen Sie nach Problemen nach Titel oder Kennung.',
+    hint: 'Geben Sie Folgendes ein, um nach Problemen zu suchen.',
+    issues: 'Vorgänge',
+    noResults: 'Keine Matching-Probleme.',
+    placeholder: 'Suche nach Titel oder Kennung…',
+    title: 'Suchprobleme',
+    trigger: 'Suchen',
+  },
+  settingsPage: {
+    general: {
+      prefix: 'Präfix der Problemkennung',
+      prefixHint:
+        'Neue Ausgaben werden wie folgt nummeriert {{example}}. Bestehende Probleme behalten ihre Kennungen.',
+      saved: 'Einstellungen gespeichert.',
+      title: 'Problemkennungen',
+    },
+    readOnly: 'Schreibgeschützt: Sie können dies anzeigen, aber nicht ändern.',
+    loadFailed: 'Die Einstellungen konnten nicht geladen werden',
+  },
+  subtasks: {
+    aiIntro:
+      'AI liest diese Ausgabe und entwirft ihre Unterausgaben. Sie prüfen und bearbeiten die Entwürfe; Es wird nichts erstellt, bis Sie es bestätigen.',
+    blockedByHint:
+      'Es wird erst gestartet, wenn diese erledigt oder abgebrochen sind.',
+    blockedByLabel: 'Wartet auf',
+    blockedByPlaceholder: 'Wählen Sie Geschwister-Unterthemen',
+    count_one: 'Unterproblem {{count}}',
+    count_other: '{{count}}-Unterprobleme',
+    new: 'Neue Unterausgabe',
+    newDescription:
+      'Unterprobleme in einer späteren Phase beginnen erst, nachdem jede frühere Phase abgeschlossen ist.',
+    newTitle: 'Neue Unterausgabe',
+    noSiblings: 'Bisher keine weiteren Unterausgaben.',
+    noStage: 'Keine Bühne',
+    stage: 'Stufe {{stage}}',
+    stageHint: 'Optional. Die unteren Stufen laufen zuerst.',
+    stageInvalid:
+      'Geben Sie eine ganze Zahl von 0 bis 1000 ein oder lassen Sie das Feld leer.',
+    stageLabel: 'Phase',
+    tabs: {
+      ai: 'KI-Zusammenbruch',
+      manual: 'Manuell',
+    },
+    title: 'Unterthemen',
+    waiting_one: 'Warten auf {{count}}',
+    waiting_other: 'Warten auf {{count}}',
+  },
+  states: {
+    notFound: 'Es existiert nicht oder wurde gelöscht.',
+  },
+  unsavedChanges: {
+    description: 'Ihre Eingaben wurden nicht übermittelt und gehen verloren.',
+    discard: 'Verwerfen',
+    keepEditing: 'Bearbeiten Sie weiter',
+    title: 'Nicht gespeicherte Änderungen verwerfen?',
+  },
+  status: {
+    analysis: 'Analyse',
+    backlog: 'Rückstand',
+    blocked: 'Blockiert',
+    cancelled: 'Abgebrochen',
+    done: 'Erledigt',
+    in_progress: 'In Bearbeitung',
+    in_review: 'In Prüfung',
+    proposal_review: 'Vorschlagsprüfung',
+    todo: 'Offen',
+  },
+  subscribers: {
+    label_one: '{{count}}-Abonnent',
+    label_other: '{{count}}-Abonnenten',
+    none: 'Niemand ist abonniert.',
+    reason: {
+      commenter: 'kommentierte',
+      creator: 'hat es erstellt',
+      executor: 'Testamentsvollstrecker',
+      manual: 'abonniert',
+      mentioned: 'erwähnt',
+      owner: 'Besitzer',
+    },
+    subscribe: 'Abonnieren',
+    subscribed: 'Sie werden über dieses Problem benachrichtigt.',
+    title: 'Teilnehmer & Follower',
+    unsubscribe: 'Abmelden',
+    unsubscribed: 'Sie werden über dieses Problem nicht mehr benachrichtigt.',
+  },
+  threads: {
+    collapse: 'Reduziere den Thread',
+    expand: 'Zeigt den gelösten Thread von {{name}} an',
+    replies_one: '{{count}} Antwort',
+    replies_other: '{{count}} antwortet',
+    earlierReplies: '{{count}} frühere Antworten anzeigen',
+    resolve: 'Entschlossenheit',
+    resolved: 'Behoben',
+    resolvedBy: 'Behoben durch {{name}}',
+    unresolve: 'Wieder öffnen',
+  },
+  plans: {
+    breadcrumb: 'Plan',
+    loadFailed: 'Der Plan konnte nicht geladen werden',
+    notFound: 'Der Plan existiert nicht, oder Sie können ihn nicht sehen.',
+    open: 'Offener Grundriss',
+    backToList: 'Zurück zu den Themen',
+    source: {
+      intake: 'Von der Einnahme',
+      conversation: 'Aus einem Gespräch',
+      statusRule: 'Aus einer Statusregel',
+      other: 'Von {{kind}}',
+    },
+    status: {
+      pending: 'Ich warte auf dich',
+      executing: 'Ausführung',
+      executed: 'Hingerichtet',
+      failed: 'Fehlgeschlagen',
+      stale: 'Veraltet',
+      voided: 'Für ungültig erklärt',
+      expired: 'Abgelaufen',
+      undone: 'Rückgängig gemacht',
+    },
+    superseded: 'Durch einen neueren Plan ersetzt',
+    proposedBy: 'Vorgeschlagen von {{name}}',
+    decidedBy: 'Damit {{name}} entscheidet',
+    rowCount_one: '{{count}}-Änderung',
+    rowCount_other: '{{count}} ändert sich',
+    expiresIn: 'Läuft in {{hours}} h ab',
+    undoableFor: 'Kann für {{hours}} h rückgängig gemacht werden',
+    executedAt: '{{time}} ausgeführt',
+    expand: 'Zeigt die Änderungen an',
+    collapse: 'Die Änderungen ausblenden',
+    rows: 'Änderungen',
+    edit: 'Bearbeiten',
+    doneEditing: 'Erledigt',
+    execute: 'Ausführen',
+    createIssues_one: '{{count}}-Problem erstellen',
+    createIssues_other: '{{count}}-Probleme erstellen',
+    retry: 'Überprüfen Sie es erneut',
+    void: 'Nichtig',
+    undo: 'Rückgängig machen',
+    executed: 'Der Plan wurde ausgeführt.',
+    executedIssues_one: '{{count}}-Problem erstellt.',
+    executedIssues_other: '{{count}}-Probleme wurden erstellt.',
+    executeFailed: 'Der Plan wurde nicht ausgeführt; nichts hat sich geändert.',
+    staleNotice:
+      'Etwas, das dieser Plan ändert, wurde von jemand anderem geändert, nachdem es überprüft wurde. Es wurde nichts angewendet; Überprüfen Sie es erneut, um es mit den aktuellen Werten auszuführen.',
+    failedNotice:
+      'Eine Änderung ist fehlgeschlagen, daher wurde nichts angewendet.',
+    failedRow: 'Ändern Sie {{position}}: {{message}}',
+    retried: 'Der Plan wurde erneut überprüft.',
+    retryFailed:
+      'Einige Änderungen bestehen nicht mehr; reparieren oder entfernen.',
+    voided: 'Der Plan wurde aufgehoben.',
+    undoDone: 'Der Plan wurde zunichte gemacht.',
+    undoPreview: {
+      title: 'Diesen Plan rückgängig machen?',
+      description:
+        'Durch das Rückgängigmachen wird sofort rückgängig gemacht, was der Plan bewirkt hat. Was jemand seitdem verändert hat, bleibt in Ruhe.',
+      revertTitle_one: '{{count}}-Änderung wird rückgängig gemacht',
+      revertTitle_other: '{{count}}-Änderungen werden rückgängig gemacht',
+      skippedTitle_one: '{{count}}-Änderung bleibt unberücksichtigt',
+      skippedTitle_other: '{{count}}-Änderungen bleiben unberücksichtigt',
+      skippedRow: 'Ändern Sie {{position}}: {{reason}}',
+      restore: '{{target}}: {{fields}} wieder wie zuvor',
+      separator: ', ',
+      nothing:
+        'Alles, was der Plan vorsah, wurde seitdem geändert; Es gibt nichts mehr rückgängig zu machen.',
+      failed:
+        'Es konnte nicht überprüft werden, was das Rückgängigmachen bewirken würde.',
+      confirm: 'Rückgängig machen',
+      ops: {
+        'issue.retract': 'Löschen Sie das Problem {{target}}',
+        'comment.retract': 'Löschen Sie den Kommentar zu {{target}}',
+        'project.retract': 'Löschen Sie das Projekt {{target}}',
+        dependency:
+          'Machen Sie die Abhängigkeitsänderung von {{target}} rückgängig',
+      },
+    },
+    skippedTitle: 'Allein gelassen, wenn rückgängig gemacht (geändert seit)',
+    skipped: {
+      changed: 'Jemand hat es seitdem geändert',
+      gone: 'Es existiert nicht mehr',
+      notReversible: 'Es kann nicht rückgängig gemacht werden',
+    },
+    voidTitle: 'Diesen Plan ungültig machen?',
+    voidDescription:
+      'Es werden keine Änderungen vorgenommen. Wer auch immer es vorgeschlagen hat, kann ein anderes vorschlagen.',
+    executeTitle: 'Diesen Plan ausführen?',
+    executeDescription: 'Diese Änderungen gehen über den Plan selbst hinaus:',
+    saveChanges: 'Änderungen speichern',
+    saveAndExecute: 'Speichern und ausführen',
+    discardChanges: 'Änderungen verwerfen',
+    unsaved: 'Nicht gespeicherte Änderungen',
+    saved: 'Der Plan wurde mit Ihren Änderungen noch einmal überprüft.',
+    rowsFailed:
+      'Einige Änderungen werden nicht übernommen. Reparieren oder entfernen Sie sie und speichern Sie sie dann erneut.',
+    nothingLeft: 'Ein Plan braucht mindestens eine Änderung.',
+    newProject: 'Das oben erstellte Projekt',
+    wakes: 'Weckt {{name}} auf',
+    wakesSkipped: 'Würde {{name}} wecken, aber {{reason}}',
+    wakeSkip: {
+      deferred: 'noch nicht',
+      denied: 'Sie dürfen daran nicht arbeiten',
+      blocked: 'Das Problem ist blockiert',
+      dormant: 'Das Problem ist im Rückstand',
+      duplicate: 'Es wird bereits daran gearbeitet',
+      archived: 'es ist archiviert',
+      noRunner: 'Kein Runner ist online',
+      unavailable: 'Es ist nicht verfügbar',
+    },
+    flags: {
+      label: 'Was es beeinflusst',
+      startsRun: 'Startet die Ausführung eines Agenten',
+      finalStatus: 'Schließt ein Problem',
+      ownerChange: 'Wechselt einen Besitzer',
+      createsProject: 'Erstellt ein Projekt',
+      agentExecutor: 'Macht einen Agenten zum Testamentsvollstrecker',
+    },
+    ops: {
+      'issue.create': 'Neue Ausgabe',
+      'issue.update': 'Änderungsproblem',
+      'comment.create': 'Kommentar',
+      dependency: 'Abhängigkeit',
+      'project.create': 'Neues Projekt',
+      'issue.retract': 'Problem beheben',
+      'comment.retract': 'Kommentar löschen',
+      'project.retract': 'Projekt entfernen',
+    },
+    dependsOn: '{{issue}} wartet auf {{dependsOn}}',
+    dependencyRemove: '{{issue}} wartet nicht mehr auf {{dependsOn}}',
+    becomes: 'wird',
+    openResult: 'Öffnen',
+    rowDone: 'Erledigt',
+    rowFailed: 'Fehlgeschlagen',
+    removeRow: '{{title}} entfernen',
+    restoreRow: 'Behalten Sie {{title}}',
+    removed: 'Aus dem Plan entfernt',
+    referenced: 'Weitere Veränderungen hängen davon ab',
+    indent: 'Machen Sie {{title}} zu einem Unterthema der Zeile oben',
+    outdent: 'Verschieben Sie {{title}} eine Ebene nach oben',
+    editDescription: 'Beschreibung von {{title}}',
+    untitled: 'Ohne Titel',
+    unknownIssue: 'Ein Problem',
+    noParent: 'Höchste Ebene',
+    visibility: {
+      public: 'Alle',
+      private: 'Nur für Mitglieder',
+    },
+    columns: {
+      title: 'Titel',
+      project: 'Projekt',
+      priority: 'Priorität',
+      labels: 'Etiketten',
+      executor: 'Testamentsvollstrecker',
+      owner: 'Verantwortlicher',
+      stage: 'Phase',
+      actions: 'Aktionen',
+    },
+    fields: {
+      title: 'Titel',
+      description: 'Beschreibung',
+      projectId: 'Projekt',
+      parentIssueId: 'Übergeordnetes Problem',
+      stage: 'Phase',
+      statusKey: 'Status',
+      priority: 'Priorität',
+      ownerUserId: 'Verantwortlicher',
+      executor: 'Testamentsvollstrecker',
+      labelIds: 'Etiketten',
+      startDate: 'Starten',
+      dueDate: 'Fällig',
+      blockedBy: 'Wartet auf',
+      content: 'Kommentar',
+      name: 'Name',
+      visibility: 'Sichtbarkeit',
+      leadUserId: 'Projektleiter',
+    },
+    defaultOwner: 'Ich',
+    noProject: 'Kein Projekt',
+    change: {
+      added: 'Neu',
+      changed: 'Geändert',
+    },
+  },
+  intake: {
+    open: 'KI-Entwurf',
+    textLabel: 'Anforderungen',
+    textPlaceholder:
+      '# Anmeldung\n- Formular gestalten [high] #frontend\n  - E-Mail validieren\n- Versuche begrenzen @stage2',
+    textHint:
+      'Überschriften werden zu übergeordneten Vorgängen, Listenelemente zu Vorgängen und eingerückte Elemente zu Untervorgängen. ! oder [high] legt die Priorität fest, #Label fügt ein Label hinzu und @stage2 legt die Phase fest. Die CSV-Datei benötigt eine Spalte title.',
+    textTooLong:
+      'Höchstens {{max}}-Zeichen; Teilen Sie den Rest in einer anderen Charge auf.',
+    count: '{{count}} / {{max}}',
+    files: 'Dateien',
+    filesHint:
+      'Bis zu {{count}} Dateien, jeweils {{size}} MB. Text, Markdown, CSV, Word, Excel, PowerPoint und PDF werden gelesen; Lassen Sie einen Agenten organisieren, der mit seinen Bildtools PNG-/JPEG-Bilder lesen kann. Wenn das Lesen fehlschlägt, kehren Sie zum Bearbeiten zurück und versuchen Sie es erneut. Bei der Regelaufteilung werden nur Bilddateinamen verwendet.',
+    addFiles: 'Dateien hinzufügen',
+    dropFiles: 'Dateien hier ablegen',
+    removeFile: '{{name}} entfernen',
+    uploading: 'Hochladen…',
+    uploadFailed: '{{name}} konnte nicht hochgeladen werden.',
+    tooManyFiles: 'Höchstens {{count}}-Dateien.',
+    fileTooLarge: '{{name}} ist größer als {{size}} MB.',
+    project: 'Standardprojekt',
+    projectHint:
+      'Jede Ausgabe geht darauf ein; Sie können jeden einzelnen unten ändern.',
+    splitAction: 'Entwurfsausgaben',
+    splitDone_one: 'Aufteilung in {{count}}-Entwurf',
+    splitDone_other: 'Aufteilung in {{count}}-Entwürfe',
+    splitting: 'Spaltung…',
+    splitFailed: 'Der Text konnte nicht geteilt werden.',
+    resplit: 'Erneut teilen',
+    splitAgainTitle: 'Den Entwurf ersetzen?',
+    splitAgainDescription:
+      'Der aktuelle Entwurf wird ungültig und aus dem oben genannten Text und den Dateien wird ein neuer erstellt.',
+    draftTitle: 'Entwürfe ({{count}})',
+    draftHint:
+      'Es wird nichts erstellt, bis Sie auf „Erstellen“ klicken. Über diesen Link bleibt der Entwurf 24 Stunden lang erhalten.',
+    draftCreated: 'Diese Probleme wurden bereits erstellt.',
+    draftClosed:
+      'Dieser Entwurf wurde ersetzt oder ist abgelaufen; die Themen noch einmal formulieren.',
+    invalidDraft:
+      'Einige Probleme sind noch nicht gelöst. Korrigieren Sie sie im Text und teilen Sie sie erneut auf.',
+    unknownLabels:
+      'Diese Bezeichnungen existieren nicht und wurden weggelassen: {{labels}}',
+    dropped_one:
+      'Nur die ersten 50 Ausgaben sind im Entwurf; {{count}} mehr wurde weggelassen.',
+    dropped_other:
+      'Nur die ersten 50 Ausgaben sind im Entwurf; {{count}} weitere wurden weggelassen.',
+    fileStates: {
+      read: 'lesen',
+      truncated: 'teilweise gelesen',
+      empty: 'kein Text',
+      image: 'nur Name',
+      unsupported: 'nur Name',
+      legacy: 'altes Format, nicht gelesen',
+      failed: 'konnte nicht gelesen werden',
+      skipped: 'nicht gelesen (zu viel Text)',
+    },
+  },
+  intakeAi: {
+    splitByRules: 'Aufteilung nach Regeln',
+    breakdown: 'In Teilthemen aufteilen',
+    breakdownHint:
+      'Entwürfe von Unterausgaben für {{issue}}: Überprüfen und bearbeiten Sie sie und erstellen Sie sie dann. Nichts wird erstellt, bis Sie es tun.',
+    drafted: 'AI hat die Themen ausgearbeitet',
+    revised: 'Entwürfe überarbeitet',
+    startFailed: 'Konnte AI nicht fragen.',
+    failed: 'AI konnte die Themen nicht formulieren. Versuchen Sie es erneut.',
+    failedWhy: 'AI konnte die Probleme nicht formulieren: {{message}}',
+    cancel: 'Abbrechen',
+    progress: {
+      split: 'KI entwirft die Themen …',
+      revise: 'KI überarbeitet die Entwürfe…',
+      breakdown: 'KI bricht {{issue}} zusammen …',
+    },
+    working: '{{name}} ist darauf',
+    workingAnonymous: 'Ich arbeite daran',
+    lastActivity: 'Neueste: {{text}}',
+    wait: {
+      queued: 'Warten auf den Start…',
+      reason: 'Warten auf Start ({{reason}})…',
+    },
+    waitsHint:
+      'Im Moment ist keine Laufzeit online: Eine Anfrage wartet, bis eine Verbindung hergestellt wird.',
+    unavailable: {
+      noAgent:
+        'KI ist nicht verfügbar: Wählen Sie einen Standard-Chat-Agenten in Ihrem Profil oder bitten Sie einen Administrator, einen festzulegen.',
+    },
+    removed_one: '{{count}}-Entwurf entfernt: {{titles}}',
+    removed_other: '{{count}}-Entwürfe entfernt: {{titles}}',
+    separator: ', ',
+    revise: {
+      title: 'Fordern Sie die KI zur Überarbeitung auf',
+      label: 'Was zu ändern ist',
+      placeholder:
+        'Sagen Sie, was Sie ändern möchten, z. „Diese feiner aufteilen“ oder „Reihe 3 unter Reihe 1 verschieben“',
+      submit: 'Überarbeiten',
+      submitting: 'Überarbeitung…',
+      revisedTag: 'Überarbeitet',
+      undo: 'Rückgängig machen',
+      undone: 'Überarbeitung rückgängig gemacht',
+      undoneTag: 'Rückgängig gemacht',
+      undoFailed: 'Die Überarbeitung konnte nicht rückgängig gemacht werden.',
+      history: 'Überarbeitungen',
+      tooLong: 'Verwenden Sie höchstens {{max}}-Zeichen.',
+    },
+  },
+  access: {
+    sections: {
+      projects: 'Projekte',
+      issues: 'Vorgänge',
+      settings: 'Projekteinstellungen',
+      members: 'Mitglieder und Rollen',
+    },
+    businesses: {
+      projects: {
+        title: 'Projekte',
+        description: 'Projekte, ihre Mitglieder, Repositories und Fortschritt.',
+        actions: {
+          view: {
+            title: 'Projekte anzeigen',
+            description:
+              'Sehen Sie sich Projekte, deren Überblick und Fortschritt an',
+            related: 'Projekte anzeigen (die sie sehen können)',
+            relatedLabel: 'Die, die ich sehen kann',
+            relatedHint:
+              'Öffentliche und private Projekte, die ich leite oder denen ich beigetreten bin',
+            all: 'Projekte anzeigen (alle)',
+          },
+          create: {
+            title: 'Projekte erstellen',
+            description: 'Starten Sie ein neues Projekt und leiten Sie es',
+            all: 'Projekte erstellen',
+          },
+          manage: {
+            title: 'Projekte verwalten',
+            description:
+              'Umbenennen, Status, Daten und Lead ändern, Mitglieder und Repositories verwalten',
+            related: 'Projekte verwalten (die sie leiten)',
+            relatedLabel: 'Diejenigen, die ich führe',
+            relatedHint: 'Projekte, deren Leiter ich bin',
+            all: 'Projekte verwalten (alle)',
+          },
+          delete: {
+            title: 'Projekte löschen',
+            description: 'Projekte löschen und gelöschte wiederherstellen',
+            all: 'Projekte löschen',
+          },
+        },
+      },
+      issues: {
+        title: 'Vorgänge',
+        description: 'Issues und deren Kommentare, im Projekt oder alleine.',
+        actions: {
+          view: {
+            title: 'Probleme anzeigen',
+            description:
+              'Sehen Sie sich Probleme in Listen, Foren und deren Details an',
+            related: 'Probleme anzeigen (die sie sehen können)',
+            relatedLabel: 'In Projekten kann ich sehen',
+            relatedHint:
+              'Probleme ohne Projekt und Probleme in Projekten, die ich sehen kann',
+            all: 'Probleme anzeigen (alle)',
+          },
+          create: {
+            title: 'Erstellen Sie Probleme',
+            description:
+              'Erstellen Sie Probleme, in einem Projekt oder alleine',
+            related: 'Probleme erstellen (in Projekten, die sie sehen können)',
+            relatedLabel: 'In Projekten kann ich sehen',
+            relatedHint:
+              'Probleme ohne Projekt oder in Projekten, die ich sehen kann',
+            all: 'Probleme erstellen (alle)',
+          },
+          edit: {
+            title: 'Probleme bearbeiten',
+            description:
+              'Titel, Beschreibung, Priorität, Daten, Labels, Ausführende und offene Status',
+            related: 'Probleme bearbeiten (die sie sehen können)',
+            relatedLabel: 'In Projekten kann ich sehen',
+            relatedHint:
+              'Probleme ohne Projekt und Probleme in Projekten, die ich sehen kann',
+            all: 'Probleme bearbeiten (alle)',
+          },
+          comment: {
+            title: 'Kommentar zu Problemen',
+            description:
+              'Threads kommentieren, antworten und auflösen; eigene Kommentare bearbeiten und löschen',
+            related: 'Kommentieren Sie Probleme (die sie sehen können)',
+            relatedLabel: 'In Projekten kann ich sehen',
+            relatedHint:
+              'Probleme ohne Projekt und Probleme in Projekten, die ich sehen kann',
+            all: 'Kommentar zu Problemen (alle)',
+          },
+          moderateComments: {
+            title: 'Moderate Kommentare',
+            description: 'Kommentare anderer Personen löschen',
+            related:
+              'Moderieren Sie Kommentare (zu Themen, die ihnen gehören oder deren Projekt sie leiten)',
+            relatedLabel:
+              'Zu Themen, die mir gehören, oder in Projekten, die ich leite',
+            relatedHint:
+              'Kommentare zu Issues, die mir gehören, und zu Issues in Projekten, die ich leite',
+            all: 'Moderate Kommentare (alle)',
+          },
+          close: {
+            title: 'Probleme schließen',
+            description:
+              'Markieren Sie ein Problem als erledigt oder abgebrochen',
+            related:
+              'Probleme schließen (die sie besitzen oder deren Projekt sie leiten)',
+            relatedLabel:
+              'Diejenigen, die ich besitze oder in Projekten, die ich leite',
+            relatedHint:
+              'Vorgänge, die mir gehören, und Vorgänge in Projekten, die ich leite',
+            all: 'Probleme schließen (alle)',
+          },
+          changeOwner: {
+            title: 'Besitzer wechseln',
+            description:
+              'Übergeben Sie ein Problem an jemand anderen, der dafür verantwortlich ist',
+            related:
+              'Ändern Sie den Eigentümer (die Eigentümer oder deren Projekt sie leiten)',
+            relatedLabel:
+              'Diejenigen, die ich besitze oder in Projekten, die ich leite',
+            relatedHint:
+              'Vorgänge, die mir gehören, und Vorgänge in Projekten, die ich leite',
+            all: 'Besitzer wechseln (alle)',
+          },
+          delete: {
+            title: 'Probleme beim Löschen und Wiederherstellen',
+            description: 'Probleme löschen und gelöschte wiederherstellen',
+            all: 'Probleme beim Löschen und Wiederherstellen',
+          },
+        },
+      },
+      attachments: {
+        title: 'Anhänge',
+        description: 'An Probleme und Kommentare angehängte Dateien.',
+        actions: {
+          upload: {
+            title: 'Anhänge hochladen',
+            description:
+              'Hängen Sie Dateien an Probleme an, die sie bearbeiten können, und an ihre Kommentare',
+            related: 'Anhänge hochladen (zu Problemen, die sie sehen können)',
+            relatedLabel: 'Zu Problemen in Projekten kann ich sehen',
+            relatedHint:
+              'Dateien zu Problemen ohne Projekt und zu Problemen in Projekten, die ich sehen kann',
+            all: 'Anhänge hochladen (alle)',
+          },
+        },
+      },
+    },
+    collections: {
+      pmProjects: 'Projekte',
+      pmIssues: 'Vorgänge',
+    },
+    recordAccess: {
+      visible: 'Projekte und Probleme, die sie sehen können',
+      managed:
+        'Projekte, die sie leiten, und Issues, deren Eigentümer sie sind',
+    },
+    settings: {
+      pm: {
+        general: 'Allgemein',
+        labels: 'Etiketten',
+        members: 'Mitglieder',
+      },
+    },
+    keyScopes: {
+      projects: {
+        title: 'Projekte',
+        description: 'Siehe Projekte; sie verwalten; erstellen und löschen.',
+        objects: 'Projekte',
+      },
+      issues: {
+        title: 'Vorgänge',
+        description:
+          'Siehe Probleme; erstellen, bearbeiten, kommentieren, schließen und neu zuordnen; Kommentare moderieren und Probleme löschen.',
+      },
+      settings: {
+        title: 'Projekteinstellungen',
+        description: 'Allgemeine Einstellungen und Beschriftungen.',
+      },
+    },
+    actions: {
+      view: 'Anzeigen',
+      create: 'Erstellen',
+      manage: 'Verwalten',
+      edit: 'Bearbeiten',
+      close: 'Schließen',
+      comment: 'Kommentar',
+      moderateComments: 'Moderate Kommentare',
+      changeOwner: 'Eigentümer wechseln',
+      delete: 'Löschen',
+      upload: 'Hochladen',
+      read: 'Anzeigen',
+      update: 'Bearbeiten',
+      invite: 'Einladen',
+      assign: 'Rollen zuweisen',
+      'define-roles': 'Rollen definieren',
+    },
+  },
+};
+
+export default deDE;
