@@ -49,6 +49,9 @@ permissions:
 env:
   REGISTRY: pkg-v3.nocobase.com
   IMAGE_REPOSITORY: nocobase/studio
+  # One line, at most 200 characters. Set on the index as org.opencontainers.image.description; the registry shows it
+  # on the repository's card of its public image pages.
+  IMAGE_DESCRIPTION: NocoBase Studio
 
 jobs:
   prepare:
@@ -545,7 +548,7 @@ jobs:
             echo "::error::Expected the digests of 2 platforms, found ${count}."
             exit 1
           fi
-          args=()
+          args=(--annotation "index:org.opencontainers.image.description=${IMAGE_DESCRIPTION}")
           while IFS= read -r tag; do
             if [ -n "$tag" ]; then args+=(--tag "${image}:${tag}"); fi
           done <<< "$TAGS"
