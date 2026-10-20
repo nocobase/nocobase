@@ -743,6 +743,7 @@ const unavailable: Chat.ChatPanelValue = {
   pinned: [],
   clearPinned: noop,
   draft: null,
+  composerRevision: 0,
   source: 'panel',
   resetSource: noop,
   registerComposer: () => noop,
@@ -840,6 +841,16 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
   });
   const [pinned, setPinned] = useState<readonly Chat.ChatContextItem[]>([]);
   const [draft, setDraft] = useState<Chat.ChatDraft | null>(null);
+  const [composerRevision, setComposerRevision] = useState(0);
+  const draftNonceRef = useRef(0);
+  const conversationRef = useRef(state.conversationId);
+  useLayoutEffect(() => {
+    conversationRef.current = state.conversationId;
+  }, [state.conversationId]);
+  const resetComposer = useCallback(() => {
+    setComposerRevision((revision) => revision + 1);
+    setDraft(null);
+  }, []);
   const [source, setSource] = useState<ConversationSource>('panel');
   const [items, setItems] = useState<readonly Chat.ChatContextItem[]>([]);
   const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
@@ -861,31 +872,42 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
     };
   }, []);
 
-  const openChat = useCallback((options: Chat.OpenChatOptions = {}) => {
-    setState((current) => ({
-      ...current,
-      open: true,
-      view: options.view ?? 'chat',
-      conversationId:
-        options.conversationId === undefined
-          ? current.conversationId
-          : options.conversationId,
-      newAgentId:
-        options.agentId === undefined ? current.newAgentId : options.agentId,
-    }));
-    if (options.source) setSource(options.source);
-    const pin = options.pin;
-    if (pin)
-      setPinned((current) =>
-        current.some((item) => itemKey(item) === itemKey(pin))
-          ? current
-          : [...current, pin],
-      );
-    if (options.draft) {
-      const text = options.draft;
-      setDraft((current) => ({ text, nonce: (current?.nonce ?? 0) + 1 }));
-    }
-  }, []);
+  const openChat = useCallback(
+    (options: Chat.OpenChatOptions = {}) => {
+      if (options.conversationId !== undefined) {
+        if (
+          options.conversationId === null ||
+          options.conversationId !== conversationRef.current
+        )
+          resetComposer();
+        conversationRef.current = options.conversationId;
+      }
+      setState((current) => ({
+        ...current,
+        open: true,
+        view: options.view ?? 'chat',
+        conversationId:
+          options.conversationId === undefined
+            ? current.conversationId
+            : options.conversationId,
+        newAgentId:
+          options.agentId === undefined ? current.newAgentId : options.agentId,
+      }));
+      if (options.source) setSource(options.source);
+      const pin = options.pin;
+      if (pin)
+        setPinned((current) =>
+          current.some((item) => itemKey(item) === itemKey(pin))
+            ? current
+            : [...current, pin],
+        );
+      if (options.draft !== undefined) {
+        draftNonceRef.current += 1;
+        setDraft({ text: options.draft, nonce: draftNonceRef.current });
+      }
+    },
+    [resetComposer],
+  );
   const closeChat = useCallback(
     () => setState((current) => ({ ...current, open: false })),
     [],
@@ -915,17 +937,24 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
       toggleChat,
       setMode: (mode) => setState((current) => ({ ...current, mode })),
       setView: (view) => setState((current) => ({ ...current, view })),
-      selectConversation: (conversationId, agentId) =>
+      selectConversation: (conversationId, agentId, options) => {
+        const changed = conversationId !== conversationRef.current;
+        if ((conversationId === null || changed) && !options?.preserveComposer)
+          resetComposer();
+        else if (changed) setDraft(null);
+        conversationRef.current = conversationId;
         setState((current) => ({
           ...current,
           view: 'chat',
           conversationId,
           newAgentId:
             conversationId === null ? (agentId ?? null) : current.newAgentId,
-        })),
+        }));
+      },
       pinned,
       clearPinned: () => setPinned([]),
       draft,
+      composerRevision,
       source,
       resetSource: () => setSource('panel'),
       registerComposer,
@@ -946,6 +975,8 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
       toggleChat,
       pinned,
       draft,
+      composerRevision,
+      resetComposer,
       source,
       registerComposer,
       focusComposer,

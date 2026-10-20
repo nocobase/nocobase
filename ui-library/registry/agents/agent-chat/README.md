@@ -94,6 +94,14 @@ const enUS = {
 
 Every key is under `chat.`. A key missing from the application's resources renders the English of `locales/en-US.ts` (`useChatTranslation`), and a run's failure reason in a notice comes from the agents plugin's own namespace. `zh-CN.ts` is typed with `AgentChatLocale`, so a key missing from it fails `typecheck`; add a new language the same way.
 
+## Composer lifecycle
+
+`openChat({ conversationId: null })` and `selectConversation(null)` always start a fresh composer, even while the current conversation is already blank. Opening a different conversation clears the previous prefill; omitting the ID or reopening the same ID preserves the local draft. A supplied `draft`, including `''`, is applied in the same update as reset and never sends automatically. Business entries only open the target with optional prefill; they do not clear textarea DOM or own upload cleanup.
+
+`ChatPanelValue.composerRevision` is the local reset identity. The installed `Composer` keys only its input subtree by it, clearing text, unsent attachments and preparation errors, aborting uploads, and rejecting stale completion callbacks. The blank-conversation body also receives a fresh identity so an accepted but delayed creation cannot navigate the replacement editor or retain its optimistic message there. Existing conversation streams and durable messages are not reset. Pass `editorRevision: panel.composerRevision` to `useSendMessage` so a new blank editor does not reuse an earlier editor's pending/unknown creation gate.
+
+Pre-send model/Agent changes and first-send ID promotion use `selectConversation(id, agentId, { preserveComposer: true })`; the promotion retires old prefill without remounting the input or losing focus. Ordinary close/reopen does not change the revision. Full-page scopes keep their own stable composer revision rather than inheriting resets from the closed sidebar.
+
 ## Customizing
 
 The views are the application's to restyle and rearrange. Keep the `data-testid` attributes the application's end-to-end tests rely on, and keep the message list's scroller `relative`: absolutely placed content inside it, such as screen-reader text and live regions, would otherwise size the page rather than the scroller.

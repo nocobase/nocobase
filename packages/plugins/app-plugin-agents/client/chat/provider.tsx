@@ -60,9 +60,9 @@ export const CHAT_PANEL_ATTRIBUTE = 'data-agents-chat';
 export interface OpenChatOptions {
   /** An object kept in the context until the next message is sent ("Ask agent"). */
   readonly pin?: ChatContextItem;
-  /** Text put into the composer; never sent on its own. */
+  /** Text put into the composer; never sent on its own. An explicit empty string is retained. */
   readonly draft?: string;
-  /** Open this conversation; null opens a new one; left out keeps the current one. */
+  /** Open this conversation; null always resets to a fresh composer; left out keeps the current one. */
   readonly conversationId?: string | null;
   /** The agent a new conversation goes to. */
   readonly agentId?: string | null;
@@ -84,14 +84,17 @@ export interface ChatPanelValue extends ChatPanelState {
   readonly toggleChat: () => void;
   readonly setMode: (mode: ChatPanelMode) => void;
   readonly setView: (view: ChatPanelView) => void;
-  /** Shows a conversation; null starts a new one, with `agentId` when given. */
+  /** Shows a conversation; null starts a fresh one. Preserve the composer only for executor changes or first-send promotion. */
   readonly selectConversation: (
     conversationId: string | null,
     agentId?: string | null,
+    options?: { readonly preserveComposer?: boolean },
   ) => void;
   readonly pinned: readonly ChatContextItem[];
   readonly clearPinned: () => void;
   readonly draft: ChatDraft | null;
+  /** Changes only when a fresh composer is requested, not on close/reopen or first-send promotion. */
+  readonly composerRevision: number;
   /** Where the next new conversation comes from; back to `panel` once it is created. */
   readonly source: ConversationSource;
   readonly resetSource: () => void;
@@ -181,6 +184,7 @@ const UNAVAILABLE: ChatPanelValue = {
   pinned: [],
   clearPinned: noop,
   draft: null,
+  composerRevision: 0,
   source: 'panel',
   resetSource: noop,
   registerComposer: () => noop,
@@ -229,6 +233,15 @@ export function ChatProvider({
   const [state, setState] = useState<ChatPanelState>(() => readPanelState());
   const [pinned, setPinned] = useState<readonly ChatContextItem[]>([]);
   const [draft, setDraft] = useState<ChatDraft | null>(null);
+  const [composerRevision, setComposerRevision] = useState(0);
+  const conversationRef = useRef(state.conversationId);
+  useLayoutEffect(() => {
+    conversationRef.current = state.conversationId;
+  }, [state.conversationId]);
+  const resetComposer = useCallback(() => {
+    setComposerRevision((revision) => revision + 1);
+    setDraft(null);
+  }, []);
   const [source, setSource] = useState<ConversationSource>('panel');
   const composerFocusRef = useRef<(() => void) | null>(null);
   const focusWantedRef = useRef(false);
@@ -264,6 +277,14 @@ export function ChatProvider({
       if (!focusIsInPanel() && document.activeElement instanceof HTMLElement)
         returnFocusRef.current = document.activeElement;
       const view = options.view ?? 'chat';
+      if (options.conversationId !== undefined) {
+        if (
+          options.conversationId === null ||
+          options.conversationId !== conversationRef.current
+        )
+          resetComposer();
+        conversationRef.current = options.conversationId;
+      }
       setState((current) => ({
         ...current,
         open: true,
@@ -283,13 +304,13 @@ export function ChatProvider({
             ? current
             : [...current, pin],
         );
-      if (options.draft) {
+      if (options.draft !== undefined) {
         draftNonceRef.current += 1;
         setDraft({ text: options.draft, nonce: draftNonceRef.current });
       }
       if (view === 'chat') focusComposer();
     },
-    [focusComposer],
+    [focusComposer, resetComposer],
   );
 
   const closeChat = useCallback(() => {
@@ -387,11 +408,16 @@ export function ChatProvider({
   const [seenSearch, setSeenSearch] = useState<string | null>(null);
   if (available && location.search !== seenSearch) {
     setSeenSearch(location.search);
-    const next = panelStateFromSearch(
-      new URLSearchParams(location.search),
-      state,
-    );
-    if (next) setState(next);
+    const params = new URLSearchParams(location.search);
+    const next = panelStateFromSearch(params, state);
+    if (next) {
+      if (
+        next.conversationId !== state.conversationId ||
+        params.get(CHAT_PARAM)?.trim() === 'new'
+      )
+        resetComposer();
+      setState(next);
+    }
   }
   const { pathname, search, hash } = location;
   useEffect(() => {
@@ -414,7 +440,12 @@ export function ChatProvider({
       toggleChat,
       setMode: (mode) => setState((current) => ({ ...current, mode })),
       setView: (view) => setState((current) => ({ ...current, view })),
-      selectConversation: (conversationId, agentId) =>
+      selectConversation: (conversationId, agentId, options) => {
+        const changed = conversationId !== conversationRef.current;
+        if ((conversationId === null || changed) && !options?.preserveComposer)
+          resetComposer();
+        else if (changed) setDraft(null);
+        conversationRef.current = conversationId;
         setState((current) => ({
           ...current,
           view: 'chat',
@@ -423,10 +454,12 @@ export function ChatProvider({
             conversationId === null && agentId !== undefined
               ? agentId
               : current.newAgentId,
-        })),
+        }));
+      },
       pinned,
       clearPinned: () => setPinned([]),
       draft,
+      composerRevision,
       source,
       resetSource: () => setSource('panel'),
       registerComposer,
@@ -444,6 +477,8 @@ export function ChatProvider({
       toggleChat,
       pinned,
       draft,
+      composerRevision,
+      resetComposer,
       source,
       registerComposer,
       focusComposer,

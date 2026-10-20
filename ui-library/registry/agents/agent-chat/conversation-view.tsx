@@ -91,12 +91,18 @@ export function ConversationView({
   // keeps its focus and the message stays where it is.
   const [created, setCreated] = useState<string | null>(null);
   const continuing = conversationId !== null && created === conversationId;
-  // Each "new conversation" is a fresh body.
+  // An explicit fresh blank chat also drops its optimistic timeline and pending creation observer.
+  // Existing conversations keep their message/stream owner; only their composer follows the revision.
   const [freshKey, setFreshKey] = useState(0);
   const [seenId, setSeenId] = useState(conversationId);
-  if (seenId !== conversationId) {
+  const [seenRevision, setSeenRevision] = useState(panel.composerRevision);
+  if (seenId !== conversationId || seenRevision !== panel.composerRevision) {
     setSeenId(conversationId);
-    if (conversationId === null) setFreshKey((value) => value + 1);
+    setSeenRevision(panel.composerRevision);
+    if (conversationId === null) {
+      setFreshKey((value) => value + 1);
+      setCreated(null);
+    }
   }
 
   if (conversationId && detail.isError && !detail.data) {
@@ -262,7 +268,7 @@ function ConversationBody({
   const created = useCallback(
     (detail: ConversationDetail) => {
       onCreated(detail.id);
-      selectConversation(detail.id);
+      selectConversation(detail.id, undefined, { preserveComposer: true });
       resetSource();
     },
     [onCreated, selectConversation, resetSource],
@@ -271,6 +277,7 @@ function ConversationBody({
     conversationId,
     agentId: conversation ? conversation.agent.id : (target?.id ?? null),
     source,
+    editorRevision: panel.composerRevision,
     dispatch: messages.dispatch,
     onCreated: created,
     ...(target?.id === 'online' && model ? { selectedModel: model } : {}),
@@ -734,11 +741,13 @@ function ConversationBody({
                 }
                 onModelChange={(selected) => {
                   setChosenModel(selected);
-                  selectConversation(null, 'online');
+                  selectConversation(null, 'online', {
+                    preserveComposer: true,
+                  });
                   focusComposer();
                 }}
                 onAgentChange={(agentId) => {
-                  selectConversation(null, agentId);
+                  selectConversation(null, agentId, { preserveComposer: true });
                   focusComposer();
                 }}
               />

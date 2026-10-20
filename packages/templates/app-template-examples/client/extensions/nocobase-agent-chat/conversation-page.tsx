@@ -111,6 +111,7 @@ export function ChatConversationPage({
       pinned: [],
       clearPinned: noop,
       draft: null,
+      composerRevision: 0,
       source: 'panel',
       resetSource: noop,
       registerComposer,
