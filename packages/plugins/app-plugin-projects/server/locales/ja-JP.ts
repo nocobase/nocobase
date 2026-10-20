@@ -104,7 +104,7 @@ const jaJP: LocaleResource<typeof enUS> = {
             all: '適度なコメント（すべて）',
           },
           close: {
-            title: '問題を解決する',
+            title: '課題をクローズ',
             description: '問題を完了またはキャンセルとしてマークします',
             related:
               '問題を解決する (自分が所有する問題、または自分が主導するプロジェクト)',

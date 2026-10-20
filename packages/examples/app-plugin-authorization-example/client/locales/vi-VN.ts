@@ -80,7 +80,7 @@ const viVN: LocaleResource<typeof enUS> = {
     carrier: 'Đơn vị vận chuyển',
     unassigned: 'Không được giao',
     assign: 'Chỉ định người vận chuyển',
-    disconnect: 'Xóa bài tập',
+    disconnect: 'Hủy phân công',
     checks: 'Kiểm tra giao hàng',
     done: 'Hoàn thành',
     pending: 'Đang chờ',

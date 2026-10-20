@@ -352,7 +352,7 @@ const esES: LocaleResource<typeof enUS> = {
     noGroup: 'Ninguno',
     unknown: 'Desconocido',
     onlineTool: 'En línea (servicios de modelo)',
-    setPrices: 'Establecer precios',
+    setPrices: 'Configurar precios',
     chart: {
       title: 'Tendencia diaria',
       metric: 'Mostrar',
@@ -413,7 +413,7 @@ const esES: LocaleResource<typeof enUS> = {
     unknownAgent: 'Agente',
     attempt: 'intento {{attempt}} de {{max}}',
     viewTranscript: 'Ver transcripción',
-    transcriptTitle: 'Ejecutar transcripción',
+    transcriptTitle: 'Transcripción de la ejecución',
     viewAll: 'Ver todo {{count}}',
     allTitle: 'Todas las ejecuciones ({{count}})',
     filters: {
@@ -429,7 +429,7 @@ const esES: LocaleResource<typeof enUS> = {
     cancelDescription: 'Se detendrá {{name}}. Lo que ya cambió se queda.',
     cancelRequested: 'Parada solicitada',
     retry: 'Reintentar',
-    retried: 'Ejecutar en cola nuevamente',
+    retried: 'Ejecución puesta de nuevo en cola',
     viewBrief: 'Ver aviso completo',
     briefTitle: 'Mensaje completo',
     briefDescription:
@@ -479,7 +479,7 @@ const esES: LocaleResource<typeof enUS> = {
     },
   },
   transcript: {
-    title: 'Ejecutar transcripción',
+    title: 'Transcripción de la ejecución',
     notFound: 'Esta ejecución no existe.',
     waiting: 'Esperando que el agente inicie…',
     empty: 'Esta ejecución no registró eventos.',
@@ -1086,7 +1086,7 @@ const esES: LocaleResource<typeof enUS> = {
       output: 'Salida / 1M',
       inputOf: 'Precio de entrada de {{model}}, por millón de tokens',
       outputOf: 'Precio de salida de {{model}}, por millón de tokens',
-      save: 'Ahorre el precio de {{model}}',
+      save: 'Guardar el precio de {{model}}',
       saved: 'Precio de {{model}} guardado.',
       remove: 'Eliminar el precio de {{model}}',
       removed: 'Precio de {{model}} eliminado.',
@@ -1279,7 +1279,7 @@ const esES: LocaleResource<typeof enUS> = {
     versions: {
       title: 'Versiones',
       description:
-        'Cada guardado es una nueva versión; Los agentes siempre obtienen lo último.',
+        'Cada guardado crea una nueva versión; los agentes siempre reciben la versión más reciente.',
       current: 'Actual',
       compare: 'Comparar',
       compareTitle: 'Versión {{version}} → versión {{current}}',

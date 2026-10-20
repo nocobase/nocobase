@@ -535,7 +535,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     descriptionPlaceholder: 'このプロジェクトの内容。',
     name: '名前',
     nameRequired: '名前を入力します。',
-    title: '新プロジェクト\n【1865】新規購入',
+    title: '新しいプロジェクト',
   },
   projectMembers: {
     actions: '{{name}}のアクション',
@@ -564,8 +564,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   },
   projectPage: {
     distribution: 'ステータス別',
-    noIssues:
-      'まだ問題はありません。\n[1953 年] ベンダーにはまだ仕事がありません。',
+    noIssues: '課題はまだありません。',
     numbers: 'キーナンバー',
     openInList: '問題リストで開く',
     stats: {
@@ -608,12 +607,11 @@ const jaJP: LocaleResource<typeof enUS> = {
     emptyNoAccess: '管理者にプロジェクトの作成を依頼します。',
     emptyTitle: 'まだプロジェクトはありません',
     loadFailed: 'プロジェクトをロードできません',
-    new: '新プロジェクト\n【1865】新規購入',
+    new: '新しいプロジェクト',
     noDescription: '記載なし。',
     noLead: 'リードなし',
     noResults: '一致するプロジェクトはありません。',
-    notFound:
-      'このプロジェクトは存在しないか、見ることができません。\n【3776】本案は既に決定済みです。',
+    notFound: 'このプロジェクトは存在しないか、表示する権限がありません。',
     progressLabel: '{{done}}/{{total}} の問題が完了しました',
     search: 'プロジェクトを検索',
     sidePanel: 'プロジェクト詳細',
@@ -678,8 +676,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     newDescription:
       'このプロジェクトの作業が行われる場所。最初のディレクトリはプライマリ作業ディレクトリです。',
     newTitle: '作業ディレクトリを追加する',
-    noRunners:
-      'ランタイムはまだありません\n[2029 年] この作業を許可するランタイムのポリシーはありません。',
+    noRunners: 'ランタイムはまだありません',
     path: 'ディレクトリパス',
     pathHint:
       'そのランタイム上のディレクトリの絶対パス。エージェントはその場で、一度に 1 つのタスクを実行します。',
@@ -740,7 +737,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         },
         close: {
           hint: '問題を完了またはキャンセルとしてマークします',
-          title: '問題を解決する',
+          title: '課題をクローズ',
         },
         create: {
           hint: 'プロジェクト内または独自に問題を作成する',
@@ -957,7 +954,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     breadcrumb: 'プラン',
     loadFailed: 'プランを読み込めません',
     notFound: '計画は存在しないか、あなたのものではありません。',
-    open: 'オープンプラン',
+    open: 'プランを開く',
     backToList: '問題に戻る',
     source: {
       intake: '摂取から',
@@ -1046,7 +1043,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     unsaved: '保存されていない変更',
     saved: '変更内容を反映して計画が再度チェックされました。',
     rowsFailed:
-      '一部の変更は通過しません。修正または削除して、再度保存してください。',
+      '一部の変更に入力エラーがあります。修正または削除してから、もう一度保存してください。',
     nothingLeft: '計画には少なくとも 1 つの変更が必要です。',
     newProject: '上記で作成したプロジェクト',
     wakes: 'ウェイクス{{name}}',
@@ -1074,7 +1071,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       'issue.update': '変更問題',
       'comment.create': 'コメント',
       dependency: '依存関係',
-      'project.create': '新プロジェクト\n【1865】新規購入',
+      'project.create': '新しいプロジェクト',
       'issue.retract': '問題を削除する',
       'comment.retract': 'コメントを削除',
       'project.retract': 'プロジェクトを削除する',
@@ -1082,7 +1079,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     dependsOn: '{{issue}} は {{dependsOn}} を待ちます',
     dependencyRemove: '{{issue}} は {{dependsOn}} を待たなくなりました',
     becomes: 'は',
-    openResult: 'オープン',
+    openResult: '開く',
     rowDone: '完了',
     rowFailed: '失敗しました',
     removeRow: '{{title}}を削除',
@@ -1335,7 +1332,7 @@ const jaJP: LocaleResource<typeof enUS> = {
             all: '適度なコメント（すべて）',
           },
           close: {
-            title: '問題を解決する',
+            title: '課題をクローズ',
             description: '問題を完了またはキャンセルとしてマークします',
             related:
               '問題を解決する (自分が所有する問題、または自分が主導するプロジェクト)',

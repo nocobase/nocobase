@@ -451,7 +451,7 @@ const idID: LocaleResource<typeof enUS> = {
       checkout: 'Bayar',
       cancel: 'Batalkan pesanan',
       ship: 'Kapal',
-      refundOrder: 'Pengembalian dana',
+      refundOrder: 'Kembalikan dana',
       retryRefund: 'Coba lagi pengembalian dana',
     },
     form: {
@@ -470,7 +470,7 @@ const idID: LocaleResource<typeof enUS> = {
       attempt: 'Putaran pembayaran',
       session: 'Sesi pembayaran',
       paymentRef: 'Pembayaran',
-      refundRef: 'Pengembalian dana',
+      refundRef: 'Kembalikan dana',
     },
     banner: {
       draft: 'Belum dibayar.',
@@ -483,12 +483,12 @@ const idID: LocaleResource<typeof enUS> = {
       cancelled: {
         customer: 'Dibatalkan oleh pelanggan.',
         timeout: 'Ditutup: tidak dibayar tepat waktu.',
-        refundRequested: 'Dikembalikan atas permintaan pelanggan.',
+        refundRequested: 'Pengembalian dana diminta oleh pelanggan.',
       },
-      refunding: 'Pengembalian dana…',
+      refunding: 'Sedang mengembalikan dana…',
       refundNeedsAttention:
         'Pengembalian dana gagal: {{error}} Menunggu seseorang untuk mencobanya lagi.',
-      refunded: 'Dikembalikan.',
+      refunded: 'Dana telah dikembalikan.',
       fulfilled: 'Dibayar dan dikirim.',
     },
     sessionStatus: {
@@ -594,7 +594,7 @@ const idID: LocaleResource<typeof enUS> = {
     actions: {
       submit: 'Lakukan pemesanan',
       abandon: 'Buang',
-      retryRelease: 'Coba lagi rilisnya',
+      retryRelease: 'Coba lagi pelepasan stok',
     },
     items: {
       headphones: 'Headphone',
@@ -607,7 +607,7 @@ const idID: LocaleResource<typeof enUS> = {
       quantity: 'Kuantitas',
       total: 'Jumlah {{total}}',
       declineCharge: 'Kartu ditolak',
-      failReleases: 'Rilis saham yang gagal dengan sengaja',
+      failReleases: 'Pelepasan stok yang sengaja digagalkan',
       failHint:
         'Tolak kartu untuk melihat kompensasi; membuat rilis gagal 3 kali atau lebih untuk melihatnya berhenti dan menunggu seseorang.',
       submit: 'Buat',
@@ -863,7 +863,7 @@ const idID: LocaleResource<typeof enUS> = {
       step2:
         'Tempatkan contoh pembelian keyboard, yang kartunya ditolak, dan lihat unit meninggalkan “stok Gudang” dan kembali lagi.',
       step3:
-        'Lakukan pembelian dengan kartu ditolak dan “Rilis stok yang gagal dengan sengaja” disetel ke 3: rilis berhenti dan menunggu “Coba lagi rilis”.',
+        'Buat pembelian dengan kartu ditolak dan atur “Pelepasan stok yang sengaja digagalkan” ke 3: pelepasan stok berhenti dan menunggu “Coba lagi pelepasan stok”.',
     },
     fulfilments: {
       purpose:
@@ -1000,9 +1000,9 @@ const idID: LocaleResource<typeof enUS> = {
     awaitingPayment: 'Menunggu pembayaran',
     paymentFailed: 'Pembayaran gagal',
     cancelled: 'Dibatalkan',
-    refunding: 'Pengembalian dana',
+    refunding: 'Sedang mengembalikan dana',
     refundNeedsAttention: 'Pengembalian dana perlu diperhatikan',
-    refunded: 'Dikembalikan',
+    refunded: 'Dana telah dikembalikan',
     fulfilled: 'Dikirim',
     starting: 'Dimulai',
     processing: 'Pemrosesan',
@@ -1044,21 +1044,21 @@ const idID: LocaleResource<typeof enUS> = {
     paymentDeclined: 'Pembayaran ditolak',
     paidAfterCancel: 'Pembayaran setelah pembatalan',
     expire: 'Tutup setelah batas waktu habis',
-    refundOrder: 'Pengembalian dana',
+    refundOrder: 'Kembalikan dana',
     refunded: 'Pengembalian dana selesai',
     refundFailed: 'Pengembalian dana gagal',
     retryRefund: 'Coba lagi pengembalian dana',
     charged: 'Serangan berhasil',
     chargeFailed: 'Pengisian gagal',
     renew: 'Perbarui saat jatuh tempo',
-    retryCharge: 'Coba lagi biayanya',
+    retryCharge: 'Coba lagi penagihan',
     updateCard: 'Perbarui kartu',
     abandon: 'Abaikan',
     stockReserved: 'Stok dipesan',
     stockUnavailable: 'Stok tidak tersedia',
     stockReleased: 'Stok dirilis',
     releaseFailed: 'Pelepasan stok gagal',
-    retryRelease: 'Coba lagi rilis stok',
+    retryRelease: 'Coba lagi pelepasan stok',
     retryInvoice: 'Coba lagi faktur',
     submitted: 'Permintaan diajukan',
     submissionFailed: 'Pengiriman gagal',

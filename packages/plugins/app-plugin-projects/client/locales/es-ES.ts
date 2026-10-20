@@ -743,7 +743,7 @@ const esES: LocaleResource<typeof enUS> = {
         },
         close: {
           hint: 'Marcar una emisión realizada o cancelada',
-          title: 'Cerrar números',
+          title: 'Cerrar incidencias',
         },
         create: {
           hint: 'Crear incidencias, en un proyecto o por su cuenta',
@@ -965,7 +965,7 @@ const esES: LocaleResource<typeof enUS> = {
     breadcrumb: 'Plano',
     loadFailed: 'No se puede cargar el plan',
     notFound: 'El plan no existe o no está a vuestra disposición para verlo.',
-    open: 'Plan abierto',
+    open: 'Abrir el plan',
     backToList: 'Volver a los números',
     source: {
       intake: 'De la ingesta',
@@ -1055,7 +1055,7 @@ const esES: LocaleResource<typeof enUS> = {
     unsaved: 'Cambios no guardados',
     saved: 'El plan fue revisado nuevamente con sus cambios.',
     rowsFailed:
-      'Algunos cambios no se aprueban. Arréglelos o elimínelos, luego guárdelos nuevamente.',
+      'Algunos cambios no son válidos. Corríjalos o elimínelos y vuelva a guardar.',
     nothingLeft: 'Un plan necesita al menos un cambio.',
     newProject: 'El proyecto creado arriba',
     wakes: 'Despierta {{name}}',
@@ -1091,7 +1091,7 @@ const esES: LocaleResource<typeof enUS> = {
     dependsOn: '{{issue}} espera por {{dependsOn}}',
     dependencyRemove: '{{issue}} ya no espera a {{dependsOn}}',
     becomes: 'se convierte',
-    openResult: 'Abierto',
+    openResult: 'Abrir',
     rowDone: 'Hecho',
     rowFailed: 'Falló',
     removeRow: 'Eliminar {{title}}',
@@ -1348,7 +1348,7 @@ const esES: LocaleResource<typeof enUS> = {
             all: 'Comentarios moderados (todos)',
           },
           close: {
-            title: 'Cerrar números',
+            title: 'Cerrar incidencias',
             description: 'Marcar una emisión realizada o cancelada',
             related:
               'Temas cerrados (los que son de su propiedad o cuyo proyecto lidera)',

@@ -47,7 +47,7 @@ const frFR: LocaleResource<typeof enUS> = {
     'Le même champ ne peut pas apparaître deux fois, même avec des directions différentes. Exécutez pour inspecter INVALID_SORT.',
   'sort_to-many_title': 'Rejeté : chemin de champ direct vers plusieurs',
   'sort_to-many_description':
-    'items.quantity a plusieurs valeurs par produit. Utilisez plutôt un agrégat de relations explicites.\nTouche',
+    'items.quantity comporte plusieurs valeurs par produit. Utilisez plutôt un agrégat explicite de relation.',
   sort_sum_title: 'Classement de la relation SUM',
   sort_sum_description:
     "Classez les produits par SOMME de la quantité d'articles, en commençant par les valeurs NULL en ordre décroissant. Les relations vides sont triées comme 0, bien que la SOMME sélectionnée soit NULL. Les métriques et les lignes d’éléments sont sélectionnées explicitement.",

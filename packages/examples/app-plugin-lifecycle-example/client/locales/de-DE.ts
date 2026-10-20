@@ -457,7 +457,7 @@ const deDE: LocaleResource<typeof enUS> = {
       checkout: 'Bezahlen',
       cancel: 'Bestellung stornieren',
       ship: 'Schiff',
-      refundOrder: 'Rückerstattung',
+      refundOrder: 'Rückerstattung veranlassen',
       retryRefund: 'Rückerstattung erneut versuchen',
     },
     form: {
@@ -476,7 +476,7 @@ const deDE: LocaleResource<typeof enUS> = {
       attempt: 'Zahlungsrunde',
       session: 'Checkout-Sitzung',
       paymentRef: 'Zahlung',
-      refundRef: 'Rückerstattung',
+      refundRef: 'Rückerstattung veranlassen',
     },
     banner: {
       draft: 'Noch nicht bezahlt.',
@@ -490,9 +490,9 @@ const deDE: LocaleResource<typeof enUS> = {
       cancelled: {
         customer: 'Vom Kunden storniert.',
         timeout: 'Geschlossen: nicht rechtzeitig bezahlt.',
-        refundRequested: 'Rückerstattung auf Wunsch des Kunden.',
+        refundRequested: 'Rückerstattung vom Kunden angefordert.',
       },
-      refunding: 'Rückerstattung…',
+      refunding: 'Rückerstattung läuft…',
       refundNeedsAttention:
         'Die Rückerstattung ist fehlgeschlagen: {{error}} Es wird darauf gewartet, dass jemand es erneut versucht.',
       refunded: 'Erstattet.',
@@ -598,7 +598,7 @@ const deDE: LocaleResource<typeof enUS> = {
     actions: {
       submit: 'Bestellung aufgeben',
       abandon: 'Verwerfen',
-      retryRelease: 'Versuchen Sie die Freigabe erneut',
+      retryRelease: 'Bestandsfreigabe erneut versuchen',
     },
     items: {
       headphones: 'Kopfhörer',
@@ -611,7 +611,7 @@ const deDE: LocaleResource<typeof enUS> = {
       quantity: 'Menge',
       total: 'Gesamt {{total}}',
       declineCharge: 'Die Karte wurde abgelehnt',
-      failReleases: 'Lagerfreigaben, die absichtlich fehlschlagen',
+      failReleases: 'Absichtlich fehlschlagende Bestandsfreigaben',
       failHint:
         'Lehnen Sie die Karte ab, um die Entschädigung zu beobachten. Lassen Sie die Freigabe dreimal oder öfter fehlschlagen, um zu beobachten, wie sie anhält und auf eine Person wartet.',
       submit: 'Erstellen',
@@ -627,7 +627,7 @@ const deDE: LocaleResource<typeof enUS> = {
       reserving: 'Einheiten werden reserviert…',
       charging: 'Einheiten gehalten; Aufladen der Karte…',
       releasing:
-        'Der Ladevorgang ist fehlgeschlagen ({{error}}); die Einheiten zurückgeben…',
+        'Die Abbuchung ist fehlgeschlagen ({{error}}); der reservierte Bestand wird freigegeben…',
       compensationNeedsAttention:
         'Die Einheiten konnten nicht zurückgegeben werden: {{error}} Es wird darauf gewartet, dass jemand die Freigabe erneut versucht.',
       confirmed: 'Bestätigt: Einheiten reserviert und bezahlt.',
@@ -785,7 +785,7 @@ const deDE: LocaleResource<typeof enUS> = {
     outside: {
       title: 'Abrechnung (Sandbox)',
       description:
-        'Jeder Ladevorgang ist ein Durchlauf des Ladeeffekts, der durch den Zeitraum und den Versuch bestimmt wird.',
+        'Jede Abbuchung ist eine Ausführung des Abbuchungseffekts, dessen Schlüssel sich aus dem Abrechnungszeitraum und dem Versuch ergibt.',
       charges: 'Abbuchungen',
       chargesHint: 'Älteste zuerst.',
       noCharges: 'Noch keine Anklage.',
@@ -870,7 +870,7 @@ const deDE: LocaleResource<typeof enUS> = {
       step2:
         'Platzieren Sie den Mustertastaturkauf, dessen Karte abgelehnt wurde, und beobachten Sie, wie das Gerät den „Lagerbestand“ verlässt und zurückkommt.',
       step3:
-        'Erstellen Sie einen Kauf mit abgelehnter Karte und der Einstellung „Bestandsfreigaben, die absichtlich fehlschlagen“ auf 3: Die Freigabe stoppt und wartet auf „Retry the release“.',
+        'Erstellen Sie einen Kauf mit abgelehnter Karte und setzen Sie „Absichtlich fehlschlagende Bestandsfreigaben“ auf 3: Die Bestandsfreigabe stoppt und wartet auf „Bestandsfreigabe erneut versuchen“.',
     },
     fulfilments: {
       purpose:
@@ -888,7 +888,7 @@ const deDE: LocaleResource<typeof enUS> = {
       purpose:
         'Ein Abonnement wird zu Beginn jeder Periode für die gesamte Laufzeit berechnet. Der Sweep des Plugins erneuert jede Gebühr am Ende ihres eigenen Zeitraums, und eine abgelehnte Gebühr wird vom Mahnauslöser unter einem neuen Schlüssel erneut versucht, bis sie wiederhergestellt wird oder das Abonnement gekündigt wird.',
       step1:
-        'Klicken Sie auf „Abonnieren“ und wählen Sie einen Plan aus: Der erste Ladevorgang erfolgt sofort. Ein Musterabonnement gibt es nicht, da der Abschluss eines solchen Abos die Karte belastet.',
+        'Klicken Sie auf „Abonnieren“ und wählen Sie einen Tarif: Die erste Abbuchung erfolgt sofort. Es gibt kein Beispielabonnement, da das Anlegen eines Abonnements die Karte belastet.',
       step2:
         'Abonnieren mit der Einstellung „Belastung der Karte wird abgelehnt“ auf 1: Die Zahlung geht über die Fälligkeit hinaus, wird eine Minute später erneut versucht und wird wiederhergestellt. „Karte aktualisieren“ stellt sie sofort wieder her.',
       step3:
@@ -1008,7 +1008,7 @@ const deDE: LocaleResource<typeof enUS> = {
     awaitingPayment: 'Warten auf Zahlung',
     paymentFailed: 'Die Zahlung ist fehlgeschlagen',
     cancelled: 'Abgebrochen',
-    refunding: 'Rückerstattung',
+    refunding: 'Rückerstattung läuft',
     refundNeedsAttention: 'Rückerstattung erfordert Aufmerksamkeit',
     refunded: 'Erstattet',
     fulfilled: 'Ausgeliefert',
@@ -1052,14 +1052,14 @@ const deDE: LocaleResource<typeof enUS> = {
     paymentDeclined: 'Zahlung abgelehnt',
     paidAfterCancel: 'Zahlung nach Stornierung',
     expire: 'Nach Zeitüberschreitung schließen',
-    refundOrder: 'Rückerstattung',
+    refundOrder: 'Rückerstattung veranlassen',
     refunded: 'Rückerstattung abgeschlossen',
     refundFailed: 'Rückerstattung fehlgeschlagen',
     retryRefund: 'Rückerstattung erneut versuchen',
     charged: 'Der Angriff war erfolgreich',
     chargeFailed: 'Ladung fehlgeschlagen',
     renew: 'Bei Fälligkeit erneuern',
-    retryCharge: 'Wiederholen Sie den Ladevorgang',
+    retryCharge: 'Abbuchung erneut versuchen',
     updateCard: 'Karte aktualisieren',
     abandon: 'Aufgeben',
     stockReserved: 'Lagerbestand reserviert',

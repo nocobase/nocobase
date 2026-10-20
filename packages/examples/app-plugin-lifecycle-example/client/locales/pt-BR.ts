@@ -445,7 +445,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       checkout: 'Pagar',
       cancel: 'Cancelar pedido',
       ship: 'Navio',
-      refundOrder: 'Reembolso',
+      refundOrder: 'Reembolsar',
       retryRefund: 'Tentar novamente o reembolso',
     },
     form: {
@@ -464,7 +464,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       attempt: 'Rodada de pagamento',
       session: 'Sessão de checkout',
       paymentRef: 'Pagamento',
-      refundRef: 'Reembolso',
+      refundRef: 'Reembolsar',
     },
     banner: {
       draft: 'Ainda não pago.',
@@ -477,9 +477,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       cancelled: {
         customer: 'Cancelado pelo cliente.',
         timeout: 'Fechado: não pago a tempo.',
-        refundRequested: 'Reembolsado a pedido do cliente.',
+        refundRequested: 'Reembolso solicitado pelo cliente.',
       },
-      refunding: 'Reembolsando…',
+      refunding: 'Reembolso em andamento…',
       refundNeedsAttention:
         'O reembolso falhou: {{error}} Aguarda alguém tentar novamente.',
       refunded: 'Reembolsado.',
@@ -585,7 +585,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     actions: {
       submit: 'Fazer pedido',
       abandon: 'Descartar',
-      retryRelease: 'Tente liberar novamente',
+      retryRelease: 'Tentar liberar o estoque novamente',
     },
     items: {
       headphones: 'Fones de ouvido',
@@ -598,7 +598,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       quantity: 'Quantidade',
       total: 'Total {{total}}',
       declineCharge: 'O cartão foi recusado',
-      failReleases: 'Liberações de estoque que falham propositalmente',
+      failReleases: 'Liberações de estoque que falham de propósito',
       failHint:
         'Recusar o cartão para assistir à compensação; faça o lançamento falhar 3 vezes ou mais para vê-lo parar e esperar por uma pessoa.',
       submit: 'Criar',
@@ -858,7 +858,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       step2:
         'Faça a compra do teclado de amostra, cujo cartão foi recusado, e observe a unidade sair do “estoque do armazém” e voltar.',
       step3:
-        'Criar uma compra com o cartão recusado e “Liberações de estoque que falham propositalmente” definido como 3: a liberação para e aguarda “Tentar novamente a liberação”.',
+        'Crie uma compra com o cartão recusado e “Liberações de estoque que falham de propósito” definido como 3: a liberação do estoque para e aguarda “Tentar liberar o estoque novamente”.',
     },
     fulfilments: {
       purpose:
@@ -995,7 +995,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     awaitingPayment: 'Aguardando pagamento',
     paymentFailed: 'Falha no pagamento',
     cancelled: 'Cancelado',
-    refunding: 'Reembolso',
+    refunding: 'Reembolso em andamento',
     refundNeedsAttention: 'Reembolso precisa de atenção',
     refunded: 'Reembolsado',
     fulfilled: 'Enviado',
@@ -1039,7 +1039,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     paymentDeclined: 'Pagamento recusado',
     paidAfterCancel: 'Pagamento após cancelamento',
     expire: 'Fechar após tempo limite',
-    refundOrder: 'Reembolso',
+    refundOrder: 'Reembolsar',
     refunded: 'Reembolso concluído',
     refundFailed: 'Falha no reembolso',
     retryRefund: 'Tentar novamente o reembolso',

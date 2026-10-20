@@ -973,7 +973,7 @@ const frFR: LocaleResource<typeof enUS> = {
     breadcrumb: 'Planifier',
     loadFailed: 'Impossible de charger le plan',
     notFound: "Le plan n'existe pas, ou il ne vous appartient pas de le voir.",
-    open: 'Aire ouverte',
+    open: 'Ouvrir le plan',
     backToList: 'Retour aux numéros',
     source: {
       intake: "De l'admission",
@@ -1068,7 +1068,7 @@ const frFR: LocaleResource<typeof enUS> = {
     unsaved: 'Modifications non enregistrées',
     saved: 'Le plan a été vérifié à nouveau avec vos modifications.',
     rowsFailed:
-      'Certains changements ne sont pas adoptés. Corrigez-les ou supprimez-les, puis enregistrez à nouveau.',
+      'Certaines modifications ne sont pas valides. Corrigez-les ou supprimez-les, puis enregistrez à nouveau.',
     nothingLeft: 'Un plan nécessite au moins un changement.',
     newProject: 'Le projet créé ci-dessus',
     wakes: 'Réveil {{name}}',
@@ -1104,7 +1104,7 @@ const frFR: LocaleResource<typeof enUS> = {
     dependsOn: '{{issue}} attend {{dependsOn}}',
     dependencyRemove: "{{issue}} n'attend plus {{dependsOn}}",
     becomes: 'devient',
-    openResult: 'Ouvert',
+    openResult: 'Ouvrir',
     rowDone: 'Terminé',
     rowFailed: 'Échec',
     removeRow: 'Supprimer {{title}}',

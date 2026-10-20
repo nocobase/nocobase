@@ -51,7 +51,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   removeAvatar: 'アバターを削除する',
   avatarHint:
     'アップロードではファイルが保存され、プロファイル関係を通じてファイルが接続されます。削除すると関係がクリアされるだけです。',
-  ordersTitle: '添付ファイルの注文 (1 対多)\n【2268】受注品',
+  ordersTitle: '注文の添付ファイル（1 対多）',
   ordersDescription:
     'オーダーは任意の数の添付ファイルを所有します。複数のファイルを一度に選択して、バッチとしてアップロードします。',
   ordersRelationHint:

@@ -11,7 +11,7 @@ const esES: LocaleResource<typeof enUS> = {
   pageDescription:
     'Se cargó de forma diferida y lee una respuesta de la ruta del servidor del mismo complemento.',
   loading: 'Cargando datos del servidor…',
-  retry: 'Solicitud de reintento',
+  retry: 'Reintentar la solicitud',
   plugin: 'Complemento',
   scope: 'Ámbito',
   message: 'Mensaje',

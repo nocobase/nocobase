@@ -980,7 +980,7 @@ const deDE: LocaleResource<typeof enUS> = {
     breadcrumb: 'Plan',
     loadFailed: 'Der Plan konnte nicht geladen werden',
     notFound: 'Der Plan existiert nicht, oder Sie können ihn nicht sehen.',
-    open: 'Offener Grundriss',
+    open: 'Plan öffnen',
     backToList: 'Zurück zu den Themen',
     source: {
       intake: 'Von der Einnahme',
@@ -1072,7 +1072,7 @@ const deDE: LocaleResource<typeof enUS> = {
     unsaved: 'Nicht gespeicherte Änderungen',
     saved: 'Der Plan wurde mit Ihren Änderungen noch einmal überprüft.',
     rowsFailed:
-      'Einige Änderungen werden nicht übernommen. Reparieren oder entfernen Sie sie und speichern Sie sie dann erneut.',
+      'Einige Änderungen sind ungültig. Korrigieren oder entfernen Sie sie und speichern Sie dann erneut.',
     nothingLeft: 'Ein Plan braucht mindestens eine Änderung.',
     newProject: 'Das oben erstellte Projekt',
     wakes: 'Weckt {{name}} auf',
@@ -1101,7 +1101,7 @@ const deDE: LocaleResource<typeof enUS> = {
       'comment.create': 'Kommentar',
       dependency: 'Abhängigkeit',
       'project.create': 'Neues Projekt',
-      'issue.retract': 'Problem beheben',
+      'issue.retract': 'Issue entfernen',
       'comment.retract': 'Kommentar löschen',
       'project.retract': 'Projekt entfernen',
     },

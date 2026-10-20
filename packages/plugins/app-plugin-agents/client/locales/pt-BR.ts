@@ -407,7 +407,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     unknownAgent: 'Agente',
     attempt: 'tentativa {{attempt}} de {{max}}',
     viewTranscript: 'Ver transcrição',
-    transcriptTitle: 'Executar transcrição',
+    transcriptTitle: 'Transcrição da execução',
     viewAll: 'Ver todos {{count}}',
     allTitle: 'Todas as execuções ({{count}})',
     filters: {
@@ -423,7 +423,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     cancelDescription: '{{name}} será parado. O que já mudou fica.',
     cancelRequested: 'Parada solicitada',
     retry: 'Tentar novamente',
-    retried: 'Execução na fila novamente',
+    retried: 'Execução enfileirada novamente',
     viewBrief: 'Ver prompt completo',
     briefTitle: 'Solicitação completa',
     briefDescription:
@@ -472,7 +472,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
   },
   transcript: {
-    title: 'Executar transcrição',
+    title: 'Transcrição da execução',
     notFound: 'Esta execução não existe.',
     waiting: 'Aguardando o início do agente…',
     empty: 'Esta execução não registrou eventos.',
@@ -1076,7 +1076,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       output: 'Saída / 1M',
       inputOf: 'Preço de entrada de {{model}}, por milhão de tokens',
       outputOf: 'Preço de saída de {{model}}, por milhão de tokens',
-      save: 'Economize o preço de {{model}}',
+      save: 'Salvar o preço de {{model}}',
       saved: 'Preço de {{model}} salvo.',
       remove: 'Remova o preço de {{model}}',
       removed: 'Preço de {{model}} removido.',
@@ -1265,7 +1265,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     versions: {
       title: 'Versões',
       description:
-        'Cada salvamento é uma nova versão; os agentes sempre recebem as últimas novidades.',
+        'Cada salvamento cria uma nova versão; os agentes sempre recebem a versão mais recente.',
       current: 'Atual',
       compare: 'Comparar',
       compareTitle: 'Versão {{version}} → versão {{current}}',

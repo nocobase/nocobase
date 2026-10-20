@@ -162,7 +162,7 @@ const frFR: LocaleResource<typeof enUS> = {
       forward: 'Transférer',
       edit: 'Modifier le brouillon',
     },
-    closeComposer: 'Fermer le compositeur',
+    closeComposer: 'Fermer l’éditeur de courrier',
     to: 'À',
     cc: 'Cc',
     bcc: 'Cci',

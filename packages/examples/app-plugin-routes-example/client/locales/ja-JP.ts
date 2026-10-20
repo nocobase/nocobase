@@ -11,7 +11,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   pageDescription:
     '遅延ロードされており、同じプラグインのサーバー ルートから応答を読み取ります。',
   loading: 'サーバーデータをロード中…',
-  retry: 'リトライリクエスト',
+  retry: 'リクエストを再試行',
   plugin: 'プラグイン',
   scope: 'スコープ',
   message: 'メッセージ',

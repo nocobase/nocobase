@@ -142,6 +142,9 @@ export function compareResources(source, translated, locale) {
       invalid.push(`${key}: interpolation differs`);
     if (!same(markup(String(sourceValue)), markup(value)))
       invalid.push(`${key}: markup differs`);
+    // Soft wrapping belongs to the renderer. A new explicit line can hide text joined from another message.
+    if (!String(sourceValue).includes('\n') && value.includes('\n'))
+      invalid.push(`${key}: unexpected line break`);
     if (
       multilineMarkers(String(sourceValue)).some(Boolean) &&
       !same(multilineMarkers(String(sourceValue)), multilineMarkers(value))

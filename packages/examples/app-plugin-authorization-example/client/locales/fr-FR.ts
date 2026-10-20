@@ -86,7 +86,7 @@ const frFR: LocaleResource<typeof enUS> = {
     done: 'Terminé',
     pending: 'En attente',
     toggle: "Basculer l'achèvement",
-    delete: 'Supprimer le chèque',
+    delete: 'Supprimer le point de contrôle',
     checkTitle: 'Vérifier le titre',
     add: 'Ajouter un chèque',
     collaborators: 'Transporteurs collaborateurs',

@@ -489,11 +489,11 @@ const viVN: LocaleResource<typeof enUS> = {
         back: 'Quay lại',
         changes: 'Thay đổi',
         noChanges: 'Văn bản đặt những gì đã có ở đó.',
-        nothing: 'Chẳng còn gì để cứu',
+        nothing: 'Không có thay đổi nào để lưu',
         unchanged_one: 'Biến {{count}} vẫn giữ nguyên.',
         unchanged_other: 'Các biến {{count}} vẫn giữ nguyên.',
-        save_one: 'Lưu thay đổi {{count}}',
-        save_other: 'Lưu các thay đổi {{count}}',
+        save_one: 'Lưu {{count}} thay đổi',
+        save_other: 'Lưu {{count}} thay đổi',
         saved_one: 'Đã lưu thay đổi {{count}}.',
         saved_other: 'Đã lưu các thay đổi {{count}}.',
         secretOf: '{{name}} là một bí mật',
@@ -529,7 +529,7 @@ const viVN: LocaleResource<typeof enUS> = {
     initialAdmin: {
       title: 'Người quản trị đầu tiên',
       expires:
-        'Được tạo cho lần triển khai đầu tiên. Lưu ngay: nó đã bị xóa trong {{hours}} h.',
+        'Được tạo cho lần triển khai đầu tiên. Hãy lưu ngay: thông tin này sẽ bị xóa sau {{hours}} giờ.',
       kept: 'Được tạo cho lần triển khai đầu tiên; nó được giữ cho đến khi ứng dụng bị xóa.',
       username: 'Tên người dùng',
       email: 'Email',
@@ -555,7 +555,7 @@ const viVN: LocaleResource<typeof enUS> = {
       externalTitle: 'Không có config.yml để chỉnh sửa',
       noFileTitle: 'Chưa có config.yml',
       noFile:
-        'config.yml được tạo trong lần triển khai đầu tiên. Cho đến lúc đó, hãy định cấu hình ứng dụng bằng các biến.\nTên',
+        'Tệp config.yml được tạo khi triển khai lần đầu. Trước đó, hãy cấu hình ứng dụng bằng các biến.',
       toVariables: 'Đi đến biến',
       maskedHint:
         'Giá trị bí mật hiển thị dưới dạng {{mask}}. Để mặt nạ tại chỗ để giữ giá trị được lưu trữ hoặc nhập một giá trị mới lên trên nó.',
@@ -859,7 +859,7 @@ const viVN: LocaleResource<typeof enUS> = {
       noLimit: 'Không giới hạn',
       writeOnly: '(chỉ viết)',
       secretSet: 'Bộ',
-      secretCleared: 'Đã xóa khi bạn lưu',
+      secretCleared: 'Sẽ bị xóa khi bạn lưu',
       replace: 'Thay thế',
       clear: 'Loại bỏ',
       undo: 'Hoàn tác',

@@ -413,7 +413,7 @@ const deDE: LocaleResource<typeof enUS> = {
     unknownAgent: 'Agent',
     attempt: 'Versuch {{attempt}} von {{max}}',
     viewTranscript: 'Transkript anzeigen',
-    transcriptTitle: 'Transkript ausführen',
+    transcriptTitle: 'Protokoll der Ausführung',
     viewAll: 'Alle anzeigen {{count}}',
     allTitle: 'Alle Läufe ({{count}})',
     filters: {
@@ -481,7 +481,7 @@ const deDE: LocaleResource<typeof enUS> = {
     },
   },
   transcript: {
-    title: 'Transkript ausführen',
+    title: 'Protokoll der Ausführung',
     notFound: 'Dieser Lauf existiert nicht.',
     waiting: 'Warten auf den Start des Agenten…',
     empty: 'Bei diesem Lauf wurden keine Ereignisse aufgezeichnet.',
@@ -1088,7 +1088,7 @@ const deDE: LocaleResource<typeof enUS> = {
       output: 'Ausgabe / 1M',
       inputOf: 'Eingabepreis von {{model}}, pro Million Token',
       outputOf: 'Ausgabepreis von {{model}}, pro Million Token',
-      save: 'Sparen Sie den Preis von {{model}}',
+      save: 'Preis für {{model}} speichern',
       saved: 'Preis von {{model}} gespeichert.',
       remove: 'Den Preis von {{model}} entfernen',
       removed: 'Preis von {{model}} entfernt.',
@@ -1286,7 +1286,7 @@ const deDE: LocaleResource<typeof enUS> = {
     versions: {
       title: 'Versionen',
       description:
-        'Jeder Speichervorgang ist eine neue Version; Agenten erhalten immer das Neueste.',
+        'Jeder Speichervorgang erstellt eine neue Version; Agenten erhalten immer die neueste Version.',
       current: 'Strom',
       compare: 'Vergleiche',
       compareTitle: 'Version {{version}} → Version {{current}}',

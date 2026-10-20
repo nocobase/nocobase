@@ -494,8 +494,8 @@ const ptBR: LocaleResource<typeof enUS> = {
         nothing: 'Nada para salvar',
         unchanged_one: 'A variável {{count}} permanece como está.',
         unchanged_other: 'As variáveis ​​{{count}} permanecem como estão.',
-        save_one: 'Salvar alteração {{count}}',
-        save_other: 'Salvar alterações {{count}}',
+        save_one: 'Salvar {{count}} alteração',
+        save_other: 'Salvar {{count}} alterações',
         saved_one: 'Alteração {{count}} salva.',
         saved_other: 'Alterações {{count}} salvas.',
         secretOf: '{{name}} é um segredo',
@@ -516,7 +516,7 @@ const ptBR: LocaleResource<typeof enUS> = {
             'Linha {{line}}: a cotação em torno do valor de {{name}} não está fechada.',
         },
         unchanged_many: 'As variáveis ​​{{count}} permanecem como estão.',
-        save_many: 'Salvar alterações {{count}}',
+        save_many: 'Salvar {{count}} alterações',
         saved_many: 'Alterações {{count}} salvas.',
       },
       missingIn_many: 'Ausente em aplicativos {{count}}',
@@ -537,7 +537,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     initialAdmin: {
       title: 'Primeiro administrador',
       expires:
-        'Gerado para a primeira implantação. Salve agora: ele foi excluído em {{hours}} h.',
+        'Gerado para a primeira implantação. Salve-o agora: ele será excluído em {{hours}} h.',
       kept: 'Gerado para a primeira implantação; ele é mantido até que o aplicativo seja removido.',
       username: 'Nome de usuário',
       email: 'E-mail',

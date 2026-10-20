@@ -455,7 +455,7 @@ const frFR: LocaleResource<typeof enUS> = {
       checkout: 'Payer',
       cancel: 'Annuler la commande',
       ship: 'Navire',
-      refundOrder: 'Remboursement',
+      refundOrder: 'Rembourser',
       retryRefund: 'Réessayer le remboursement',
     },
     form: {
@@ -474,7 +474,7 @@ const frFR: LocaleResource<typeof enUS> = {
       attempt: 'Tour de paiement',
       session: 'Session de paiement',
       paymentRef: 'Paiement',
-      refundRef: 'Remboursement',
+      refundRef: 'Rembourser',
     },
     banner: {
       draft: 'Pas encore payé.',
@@ -487,9 +487,9 @@ const frFR: LocaleResource<typeof enUS> = {
       cancelled: {
         customer: 'Annulé par le client.',
         timeout: 'Fermé : non payé à temps.',
-        refundRequested: 'Remboursé à la demande du client.',
+        refundRequested: 'Remboursement demandé par le client.',
       },
-      refunding: 'Remboursement…',
+      refunding: 'Remboursement en cours…',
       refundNeedsAttention:
         "Le remboursement a échoué : {{error}} Il attend que quelqu'un réessaye.",
       refunded: 'Remboursé.',
@@ -595,7 +595,7 @@ const frFR: LocaleResource<typeof enUS> = {
     actions: {
       submit: 'Passer la commande',
       abandon: 'Jeter',
-      retryRelease: 'Réessayez la version',
+      retryRelease: 'Réessayer la libération du stock',
     },
     items: {
       headphones: 'Écouteurs',
@@ -608,7 +608,7 @@ const frFR: LocaleResource<typeof enUS> = {
       quantity: 'Quantité',
       total: 'Total {{total}}',
       declineCharge: 'La carte est refusée',
-      failReleases: 'Des sorties de stock qui échouent volontairement',
+      failReleases: 'Libérations de stock qui échouent volontairement',
       failHint:
         "Refuser la carte pour surveiller la compensation ; faites échouer la version 3 fois ou plus pour la voir s'arrêter et attendre une personne.",
       submit: 'Créer',
@@ -868,7 +868,7 @@ const frFR: LocaleResource<typeof enUS> = {
       step2:
         "Effectuez l'achat d'un exemple de clavier, dont la carte est refusée, et regardez l'unité quitter le « stock d'entrepôt » et revenir.",
       step3:
-        "Créer un achat avec la carte refusée et « Les sorties de stock qui échouent volontairement » réglées à 3 : la sortie s'arrête et attend « Réessayer la sortie ».",
+        'Créez un achat avec une carte refusée et réglez « Libérations de stock qui échouent volontairement » sur 3 : la libération du stock s’arrête et attend « Réessayer la libération du stock ».',
     },
     fulfilments: {
       purpose:
@@ -1004,7 +1004,7 @@ const frFR: LocaleResource<typeof enUS> = {
     awaitingPayment: 'En attente de paiement',
     paymentFailed: 'Échec du paiement',
     cancelled: 'Annulé',
-    refunding: 'Remboursement',
+    refunding: 'Remboursement en cours',
     refundNeedsAttention:
       'Le remboursement nécessite une attention particulière',
     refunded: 'Remboursé',
@@ -1049,21 +1049,21 @@ const frFR: LocaleResource<typeof enUS> = {
     paymentDeclined: 'Paiement refusé',
     paidAfterCancel: 'Paiement après annulation',
     expire: 'Fermer après expiration du délai',
-    refundOrder: 'Remboursement',
+    refundOrder: 'Rembourser',
     refunded: 'Remboursement terminé',
     refundFailed: 'Échec du remboursement',
     retryRefund: 'Réessayer le remboursement',
     charged: 'Charge réussie',
     chargeFailed: 'Échec de la charge',
     renew: "Renouveler à l'échéance",
-    retryCharge: 'Nouvelle tentative de facturation',
+    retryCharge: 'Réessayer le prélèvement',
     updateCard: 'Mettre à jour la carte',
     abandon: 'Abandonner',
     stockReserved: 'Stock réservé',
     stockUnavailable: 'Stock indisponible',
     stockReleased: 'Stock libéré',
     releaseFailed: 'Échec de la libération des stocks',
-    retryRelease: 'Réessayer la version de stock',
+    retryRelease: 'Réessayer la libération du stock',
     retryInvoice: 'Réessayer la facture',
     submitted: 'Demande soumise',
     submissionFailed: 'Échec de la soumission',

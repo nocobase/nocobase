@@ -956,7 +956,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     breadcrumb: 'Plano',
     loadFailed: 'Não foi possível carregar o plano',
     notFound: 'O plano não existe, ou não é seu para ver.',
-    open: 'Plano aberto',
+    open: 'Abrir plano',
     backToList: 'Voltar aos problemas',
     source: {
       intake: 'Da ingestão',
@@ -1046,7 +1046,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     unsaved: 'Alterações não salvas',
     saved: 'O plano foi verificado novamente com suas alterações.',
     rowsFailed:
-      'Algumas mudanças não passam. Corrija ou remova-os e salve novamente.',
+      'Algumas alterações são inválidas. Corrija-as ou remova-as e salve novamente.',
     nothingLeft: 'Um plano precisa de pelo menos uma mudança.',
     newProject: 'O projeto criado acima',
     wakes: 'Acorda {{name}}',

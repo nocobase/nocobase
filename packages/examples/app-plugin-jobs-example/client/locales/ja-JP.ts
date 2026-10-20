@@ -50,7 +50,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     live: 'リアルタイム',
     offline: '再接続中',
     rule: {
-      heartbeat: 'ハートビート\n【1391】開催',
+      heartbeat: 'ハートビート',
       interval: 'インターバル',
       limited: '限定',
       cron: 'クロン',

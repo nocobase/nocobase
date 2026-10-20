@@ -33,8 +33,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     forbidden: 'これは許可されていません。',
     loading: '読み込み中',
     notFound: '現在は存在しません。',
-    requestFailed:
-      'リクエストは失敗しました。もう一度やり直してください。\n【3610】リクエストは決定済みです。',
+    requestFailed: 'リクエストに失敗しました。もう一度お試しください。',
     retry: '再試行',
     secretKept: '設定 — 空のままにしておきます',
   },
@@ -105,7 +104,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       all: 'すべての{{count}}',
       enabled: '{{count}}を有効にしました',
       pending: '{{count}}を有効にするには',
-      unreported: 'ノーランナー {{count}}\n【2019年】この期間は無失点。',
+      unreported: 'ランナーなし {{count}}',
     },
     loadFailed: 'エージェントをロードできませんでした',
     emptyTitle: 'まだエージェントがいません',
@@ -200,7 +199,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     manage: 'スキルを管理する',
     placeholder: 'スキル選択',
     empty: 'まだスキルがありません。',
-    save: 'セーブスキル',
+    save: 'スキルを保存',
     descriptionOnline:
       'サーバー上の読み取り専用サンドボックスで、タスクがその説明に一致したときにエージェントが読むマニュアル。',
     onlineScripts:
@@ -329,7 +328,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         text: 'ユーティリティテキスト',
       },
     },
-    title: '使い方',
+    title: '利用状況',
     description:
       'どのエージェントが中古で動作するか、および現在のモデルの価格でいくらかかるか。',
     loadFailed: '使用状況を読み込めませんでした',
@@ -340,7 +339,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     noGroup: 'なし',
     unknown: '不明',
     onlineTool: 'オンライン（モデルサービス）',
-    setPrices: 'セット価格',
+    setPrices: '価格を設定',
     chart: {
       title: '日々のトレンド',
       metric: 'ショー',
@@ -390,7 +389,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   defaultSkills: {
     title: 'デフォルトスキル',
     description: 'ここで働くすべてのエージェントもこれらのスキルを取得します。',
-    save: 'セーブスキル',
+    save: 'スキルを保存',
     saved: 'デフォルトスキルが保存されました。',
   },
   runs: {
@@ -400,7 +399,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     unknownAgent: 'エージェント',
     attempt: '{{attempt}} の {{max}} を試みます',
     viewTranscript: 'トランスクリプトを表示',
-    transcriptTitle: '実行トランスクリプト',
+    transcriptTitle: '実行の記録',
     viewAll: '全 {{count}} 件を表示',
     allTitle: 'すべての実行 ({{count}})',
     filters: {
@@ -409,8 +408,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       allAgents: 'すべてのエージェント',
       allStatuses: '全ステータス',
     },
-    noMatch:
-      'これらのフィルターに一致するランはありません。\n【2021年】まだ出走なし。',
+    noMatch: '条件に一致する実行はありません。',
     cancel: '停止',
     stopping: '止まっています…',
     cancelTitle: 'この実行を停止しますか?',
@@ -466,7 +464,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
   },
   transcript: {
-    title: '実行トランスクリプト',
+    title: '実行の記録',
     notFound: 'このランは存在しません。',
     waiting: 'エージェントの起動を待っています…',
     empty: 'この走行ではイベントは記録されませんでした。',
@@ -876,8 +874,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       agentArchived: '有効ではありません',
       forbidden: 'あなたは利用できません',
       noModel: '最初にチャットモデルを設定します',
-      noRunner:
-        'オンラインではランナーがいないため選択できません\n【2017年】現在オンライン上にそれを持っているランナーは存在しません。',
+      noRunner: 'オンラインのランナーがいないため、選択できません',
       othersPersonal: '他人の個人ランナーのみが所持',
       modelUnavailable: 'モデルが利用できません',
     },
@@ -999,7 +996,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       testFailed: '{{model}} は応答しませんでした: {{message}}',
       testNeedsModel: '接続をテストするにはモデルを確認してください。',
       openCodeHint:
-        'OpenCode は、リクエストごとに x-opencode-session を送信します (会話ごとに 1 つのセッション ID)。独自の API を通じて各モデル ファミリにサービスを提供します。 OpenAI。必要な各タイプのサービスをすべてこのベース URL で追加します。',
+        'OpenCode は、リクエストごとに x-opencode-session を送信します（会話ごとに 1 つのセッション ID）。モデルの種類に応じて API が異なります。DeepSeek、GLM、Kimi、MiMo は DeepSeek または OpenAI 互換 API、Claude、MiniMax、Qwen は Anthropic API、GPT、Grok は OpenAI API を使用します。必要な API の種類ごとにサービスを追加し、すべてにこのベース URL を設定してください。',
     },
     models: {
       title: 'モデル',
@@ -1061,7 +1058,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       output: '出力 / 1M',
       inputOf: '{{model}}の入力価格、100万トークンあたり',
       outputOf: '{{model}} の出力価格、100 万トークンあたり',
-      save: '{{model}}の価格を節約',
+      save: '{{model}} の価格を保存',
       saved: '{{model}}の価格が保存されました。',
       remove: '{{model}}の価格を削除',
       removed: '{{model}}の価格が削除されました。',
@@ -1254,7 +1251,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     versions: {
       title: 'バージョン',
       description:
-        'すべての保存は新しいバージョンです。エージェントは常に最新情報を入手できます。',
+        '保存するたびに新しいバージョンが作成され、エージェントには常に最新のバージョンが渡されます。',
       current: '現在',
       compare: '比較する',
       compareTitle: 'バージョン{{version}} → バージョン{{current}}',
@@ -1287,8 +1284,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       toolUnavailable:
         'ツールがサインインしていないか、無効になっているか、要求されたモデルが利用できません ({{tool}})',
       noSharedRunner: '他人の個人ランナーのみがオンラインです',
-      missingFeatures:
-        '{{features}} をサポートするランタイムはありません\n[2026年]ランタイムが間に合いませんでした。',
+      missingFeatures: '{{features}} に対応するランタイムはありません',
       secretsNotAllowed:
         'チーム ランタイムが必要: {{variables}} はチーム ランタイム専用です',
       sameWorkActive: 'すでに実行した後',

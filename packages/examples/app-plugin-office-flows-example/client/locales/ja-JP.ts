@@ -79,8 +79,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     notices: 'リマインダー',
     noticesNote:
       'ドキュメントおよびレベルごとに 1 つのリマインダー。ただし、個人名を指定する行が多くても問題ありません。',
-    noNotices:
-      'リマインダーはまだありません。\n[2006 年] ここにはレポートがありません。',
+    noNotices: 'リマインダーはまだありません。',
   },
   configuration: {
     title: '構成',
@@ -116,7 +115,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     assist: '(補助)',
     assistOther: '他部門からの支援',
     add: '行を追加',
-    addAssist: '補助タスクを保存して作成します',
+    addAssist: '保存して補助タスクを作成',
   },
   processing: {
     number: '番号',

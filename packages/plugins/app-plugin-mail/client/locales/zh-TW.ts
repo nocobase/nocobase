@@ -154,7 +154,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       forward: '轉寄',
       edit: '編輯草稿',
     },
-    closeComposer: '關閉作曲家',
+    closeComposer: '關閉郵件編輯器',
     to: '至',
     cc: '抄送',
     bcc: '密件抄送',

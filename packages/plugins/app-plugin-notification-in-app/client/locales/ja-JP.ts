@@ -26,7 +26,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     expand: 'もっと見る',
     collapse: '表示を少なくする',
     channel: 'アプリ内',
-    open: 'オープン',
+    open: '開く',
     markUnread: '未読としてマークする',
     markRead: '既読マーク',
     delete: '通知の削除',

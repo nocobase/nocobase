@@ -52,7 +52,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     description:
       '瀏覽從模擬郵箱匯入的郵件，按關鍵字搜尋，並檢查每封郵件的帳戶、讀取狀態、星標和附件元資料。',
     listTitle: '留言列表',
-    resultCount: '{{count}} 訊息\n此對話中的',
+    resultCount: '{{count}} 封郵件',
     pageCount: '{{pages}} 的第 {{page}} 頁',
     searchLabel: '搜尋郵件',
     searchPlaceholder: '搜尋主題、寄件者或訊息內容',

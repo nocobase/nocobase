@@ -102,7 +102,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     filters: {
       all: '全部{{count}}',
       enabled: '啟用 {{count}}',
-      pending: '啟用{{count}}\n今天',
+      pending: '待啟用 {{count}}',
       unreported: '無參賽者 {{count}}',
     },
     loadFailed: '無法載入代理',
@@ -292,7 +292,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
   },
   scopeVariables: {
-    title: '變數和秘密\n上傳應用程式的第一個版本後，',
+    title: '變數與機密',
     description:
       '發給在這裡工作的每一位代理。更具體的變數（工作目錄，然後是代理的）勝過這些。',
   },
@@ -318,7 +318,7 @@ const zhTW: LocaleResource<typeof enUS> = {
         text: '實用文本',
       },
     },
-    title: '用法',
+    title: '使用量',
     description: '使用什麼代理執行以及它們在當前模型價格下的成本是多少。',
     loadFailed: '無法載入使用情況',
     groupBy: '分組依據',
@@ -388,7 +388,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     unknownAgent: '代理',
     attempt: '試試 {{max}} 的 {{attempt}}',
     viewTranscript: '檢視成績單',
-    transcriptTitle: '執行成績單',
+    transcriptTitle: '執行記錄',
     viewAll: '看全部 {{count}}',
     allTitle: '所有執行 ({{count}})',
     filters: {
@@ -404,7 +404,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     cancelDescription: '{{name}} 將被停止。它已經改變的東西仍然存在。',
     cancelRequested: '請求停止',
     retry: '重試',
-    retried: '再次排隊執行',
+    retried: '執行已重新加入佇列',
     viewBrief: '看完整提示',
     briefTitle: '完整提示',
     briefDescription: '最後一次申領此輪運轉時代理人被告知的內容。',
@@ -450,7 +450,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
   },
   transcript: {
-    title: '執行成績單',
+    title: '執行記錄',
     notFound: '此執行不存在。',
     waiting: '等待代理啟動...',
     empty: '此執行未記錄任何事件。',
@@ -1010,7 +1010,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       output: '輸出/1M',
       inputOf: '{{model}} 的輸入價格，每百萬代幣',
       outputOf: '{{model}} 的產出價格，每百萬代幣',
-      save: '節省{{model}}的價格',
+      save: '儲存 {{model}} 的價格',
       saved: '{{model}} 的價格已儲存。',
       remove: '去掉{{model}}的價格',
       removed: '刪除了 {{model}} 的價格。',
@@ -1183,7 +1183,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
     versions: {
       title: '版本',
-      description: '每次儲存都是新版本；代理始終掌握最新資訊。',
+      description: '每次儲存都會建立新版本；代理程式一律取得最新版本。',
       current: '當前',
       compare: '比較',
       compareTitle: '版本 {{version}} → 版本 {{current}}',

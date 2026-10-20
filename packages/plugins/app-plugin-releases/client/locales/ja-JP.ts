@@ -485,11 +485,11 @@ const jaJP: LocaleResource<typeof enUS> = {
         back: '戻る',
         changes: '変更点',
         noChanges: 'テキストは、すでに存在するものを設定します。',
-        nothing: '保存できるものは何もありません',
+        nothing: '保存する変更はありません',
         unchanged_one: '{{count}}変数はそのままです。',
         unchanged_other: '{{count}} 変数はそのままです。',
-        save_one: '{{count}}の変更を保存',
-        save_other: '{{count}}の変更を保存',
+        save_one: '{{count}} 件の変更を保存',
+        save_other: '{{count}} 件の変更を保存',
         saved_one: '{{count}} の変更が保存されました。',
         saved_other: '{{count}} の変更が保存されました。',
         secretOf: '{{name}}は秘密です',
@@ -720,7 +720,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       title: '環境の展開',
       description:
         'アプリケーションが展開される場所、およびそこに展開できる人。',
-      open: 'オープン',
+      open: '開く',
       loadOneFailed: '環境をロードできませんでした。',
       settingsTitle: '環境設定',
       readOnly:
@@ -813,11 +813,10 @@ const jaJP: LocaleResource<typeof enUS> = {
       urlHint:
         'https://ghcr.io; などの発信元のローカルホスト アドレスは、HTTP 経由で到達します。',
       namespace: '名前空間',
-      namespaceHint:
-        'acme などのパス解放イメージが続きます。\n【3562】入金は確認済みです。',
+      namespaceHint: 'リリース用イメージを格納するパスです（例：acme）。',
       pull: '認証情報をプルする',
       pullHint:
-        'このレジストリから取得する環境の場合。匿名のプルが許可される場合は除外してください。\n[1305 例: 上海トレードショー、10 月',
+        'このレジストリからイメージを取得する環境で使用します。匿名で取得できる環境では、これらの認証情報を省略してください。',
       username: 'ユーザー名',
       password: 'パスワードまたはトークン',
       checkOk: '接続されました',

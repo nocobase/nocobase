@@ -46,7 +46,7 @@ const esES: LocaleResource<typeof enUS> = {
     'El mismo campo no puede aparecer dos veces, incluso con direcciones diferentes. Ejecute para inspeccionar INVALID_SORT.',
   'sort_to-many_title': 'Rechazado: ruta de campo directa a muchos',
   'sort_to-many_description':
-    'items.quantity tiene múltiples valores por producto. Utilice en su lugar un agregado de relaciones explícito.\nclave',
+    'items.quantity tiene varios valores por producto. Use una agregación explícita de la relación.',
   sort_sum_title: 'Clasificación SUM de relación',
   sort_sum_description:
     'Clasificar los productos por SUMA de la cantidad de artículos, descendiendo primero con NULL. Las relaciones vacías se clasifican como 0, aunque la SUM seleccionada es NULL. Las métricas y las filas de elementos se seleccionan explícitamente.',

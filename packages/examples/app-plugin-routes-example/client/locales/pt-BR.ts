@@ -11,7 +11,7 @@ const ptBR: LocaleResource<typeof enUS> = {
   pageDescription:
     'Ele foi carregado lentamente e lê uma resposta da rota do servidor do mesmo plugin.',
   loading: 'Carregando dados do servidor…',
-  retry: 'Solicitação de nova tentativa',
+  retry: 'Tentar a solicitação novamente',
   plugin: 'Plug-in',
   scope: 'Escopo',
   message: 'Mensagem',

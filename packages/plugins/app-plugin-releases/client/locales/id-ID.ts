@@ -490,8 +490,8 @@ const idID: LocaleResource<typeof enUS> = {
         nothing: 'Tidak ada yang perlu disimpan',
         unchanged_one: 'Variabel {{count}} tetap apa adanya.',
         unchanged_other: 'Variabel {{count}} tetap apa adanya.',
-        save_one: 'Simpan perubahan {{count}}',
-        save_other: 'Simpan perubahan {{count}}',
+        save_one: 'Simpan {{count}} perubahan',
+        save_other: 'Simpan {{count}} perubahan',
         saved_one: 'Perubahan {{count}} disimpan.',
         saved_other: 'Perubahan {{count}} disimpan.',
         secretOf: '{{name}} adalah Rahasia',
@@ -553,7 +553,7 @@ const idID: LocaleResource<typeof enUS> = {
       externalTitle: 'Tidak ada config.yml yang perlu diedit',
       noFileTitle: 'Belum ada config.yml',
       noFile:
-        'config.yml dibuat pada penerapan pertama. Sampai saat itu tiba, konfigurasikan aplikasi dengan variabel.\nNama',
+        'config.yml dibuat saat penerapan pertama. Sebelum itu, konfigurasikan aplikasi menggunakan variabel.',
       toVariables: 'Pergi ke variabel',
       maskedHint:
         'Nilai rahasia ditampilkan sebagai {{mask}}. Biarkan masker di tempatnya untuk mempertahankan nilai yang disimpan, atau ketikkan nilai baru di atasnya.',

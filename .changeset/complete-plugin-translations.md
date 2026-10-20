@@ -33,3 +33,5 @@
 ---
 
 Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.

@@ -26,7 +26,7 @@ const frFR: LocaleResource<typeof enUS> = {
     expand: 'Afficher plus',
     collapse: 'Afficher moins',
     channel: "Dans l'application",
-    open: 'Ouvert',
+    open: 'Ouvrir',
     markUnread: 'Marquer comme non lu',
     markRead: 'Marc a lu',
     delete: 'Supprimer la notification',

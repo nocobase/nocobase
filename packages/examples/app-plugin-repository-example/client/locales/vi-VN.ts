@@ -69,7 +69,7 @@ const viVN: LocaleResource<typeof enUS> = {
   combineJson: 'JSON thô',
   combineNoRelated: 'Không có hồ sơ liên quan',
   combineTableHint:
-    'Các cột sử dụng đường dẫn trường phản hồi. Các nhánh bản ghi xuất hiện dưới dạng các bảng lồng nhau; NULL khác với danh sách 0 và danh sách trống.',
+    'Các cột dùng đường dẫn trường trong phản hồi. Các nhánh bản ghi hiển thị dưới dạng bảng lồng nhau; NULL khác với 0 và danh sách rỗng.',
   combineRun: 'Chạy truy vấn',
   combineResult: 'Kết quả truy vấn',
   combineResultHint:

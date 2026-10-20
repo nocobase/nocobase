@@ -953,7 +953,7 @@ const viVN: LocaleResource<typeof enUS> = {
     breadcrumb: 'Kế hoạch',
     loadFailed: 'Không thể tải kế hoạch',
     notFound: 'Kế hoạch không tồn tại hoặc nó không phải là của bạn để xem.',
-    open: 'Kế hoạch mở',
+    open: 'Mở kế hoạch',
     backToList: 'Quay lại vấn đề',
     source: {
       intake: 'Từ lượng vào',
@@ -1042,7 +1042,7 @@ const viVN: LocaleResource<typeof enUS> = {
     unsaved: 'Những thay đổi chưa được lưu',
     saved: 'Kế hoạch đã được kiểm tra lại với những thay đổi của bạn.',
     rowsFailed:
-      'Một số thay đổi không thành công. Hãy sửa hoặc xóa chúng rồi lưu lại.',
+      'Một số thay đổi không hợp lệ. Hãy sửa hoặc xóa chúng, rồi lưu lại.',
     nothingLeft: 'Một kế hoạch cần ít nhất một sự thay đổi.',
     newProject: 'Dự án được tạo ở trên',
     wakes: 'Đánh thức {{name}}',

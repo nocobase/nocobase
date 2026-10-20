@@ -351,7 +351,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     variables: {
       title: '變數',
       description:
-        '此應用程式執行環境所使用的環境變數。每個變更都會立即儲存並透過下一次部署到達應用程式。\n新增了',
+        '此應用程式執行時使用的環境變數。每次變更都會立即儲存，並在下次部署時套用至應用程式。',
       environmentDescription:
         '此環境中的每個應用程式（包括拉取請求預覽）都會取得這些應用程式，除非它設定自己的應用程式。列出了每個應用程式的最新版本所宣告的內容。變更會立即儲存並透過下一次部署到達應用程式。',
       add: '新增變數',
@@ -452,11 +452,11 @@ const zhTW: LocaleResource<typeof enUS> = {
         back: '返回',
         changes: '變更',
         noChanges: '文本設定了已有的內容。',
-        nothing: '沒有什麼可儲存的',
+        nothing: '沒有需要儲存的變更',
         unchanged_one: '{{count}} 變數保持原樣。',
         unchanged_other: '{{count}} 變數保持原樣。',
-        save_one: '儲存 {{count}} 更改',
-        save_other: '儲存 {{count}} 更改',
+        save_one: '儲存 {{count}} 項變更',
+        save_other: '儲存 {{count}} 項變更',
         saved_one: '{{count}} 更改已儲存。',
         saved_other: '{{count}} 更改已儲存。',
         secretOf: '{{name}} 是個秘密',

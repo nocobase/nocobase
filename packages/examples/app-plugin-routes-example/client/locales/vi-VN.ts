@@ -11,7 +11,7 @@ const viVN: LocaleResource<typeof enUS> = {
   pageDescription:
     'Nó được tải từng phần và đọc phản hồi từ tuyến máy chủ của cùng một plugin.',
   loading: 'Đang tải dữ liệu máy chủ…',
-  retry: 'Yêu cầu thử lại',
+  retry: 'Gửi lại yêu cầu',
   plugin: 'Trình cắm',
   scope: 'Phạm vi',
   message: 'Tin nhắn',

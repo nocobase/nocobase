@@ -333,7 +333,7 @@ const zhTW: LocaleResource<typeof enUS> = {
   moneyHint: '價格為整數美分。線路合計=數量×單價；沒有浮點貨幣數學。',
   version: '版本',
   addItem: '新增專案',
-  removeItem: '刪除專案',
+  removeItem: '移除項目',
   orderTotal: '訂單總額（分）',
   noItems: '沒有訂購商品。',
   itemRow: '商品 {{number}}',

@@ -11,7 +11,7 @@ const idID: LocaleResource<typeof enUS> = {
   pageDescription:
     'Itu dimuat dengan lambat dan membaca respons dari rute server plugin yang sama.',
   loading: 'Memuat data server…',
-  retry: 'Permintaan coba lagi',
+  retry: 'Coba lagi permintaan',
   plugin: 'Pengaya',
   scope: 'Cakupan',
   message: 'Pesan',

@@ -165,7 +165,7 @@ const deDE: LocaleResource<typeof enUS> = {
       forward: 'Weiterleiten',
       edit: 'Entwurf bearbeiten',
     },
-    closeComposer: 'Naher Komponist',
+    closeComposer: 'E-Mail-Editor schließen',
     to: 'Zu',
     cc: 'Cc',
     bcc: 'v.Chr',

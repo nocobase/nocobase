@@ -515,7 +515,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       accepted: '承認されました。',
       rejected: '拒否されました。',
       decided: '{{name}} による {{outcome}}',
-      open: 'オープン',
+      open: '開く',
       readOnly: 'この知識を編集できる人が決定します。',
     },
   },

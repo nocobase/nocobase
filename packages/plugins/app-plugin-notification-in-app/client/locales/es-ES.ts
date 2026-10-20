@@ -26,7 +26,7 @@ const esES: LocaleResource<typeof enUS> = {
     expand: 'Mostrar más',
     collapse: 'Mostrar menos',
     channel: 'En la aplicación',
-    open: 'Abierto',
+    open: 'Abrir',
     markUnread: 'Marcar como no leído',
     markRead: 'Marcos leído',
     delete: 'Eliminar notificación',

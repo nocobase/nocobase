@@ -539,7 +539,7 @@ const frFR: LocaleResource<typeof enUS> = {
       accepted: 'Accepté.',
       rejected: 'Rejeté.',
       decided: '{{outcome}} par {{name}}',
-      open: 'Ouvert',
+      open: 'Ouvrir',
       readOnly: 'Celui qui peut éditer cette connaissance en décide.',
     },
   },

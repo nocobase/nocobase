@@ -141,7 +141,7 @@ test('checks repeated placeholders, markup, empty text and locale-specific plura
   );
 });
 
-test('preserves structured Markdown and input syntax while allowing translated prose to wrap', () => {
+test('preserves structured Markdown and input syntax without introducing explicit lines', () => {
   const source = {
     sample: '# Sign-in\n- Form [high] #frontend\n  - Email @stage2',
   };
@@ -174,6 +174,28 @@ test('preserves structured Markdown and input syntax while allowing translated p
   );
   assert.deepEqual(
     compareResources({ text: 'Prose' }, { text: 'Du\ntexte' }, 'fr-FR').invalid,
+    ['text: unexpected line break'],
+  );
+});
+
+test('rejects a second message joined to a single-line translation', () => {
+  assert.deepEqual(
+    compareResources(
+      { empty: 'No issues yet.', refund: 'Refund requested.' },
+      {
+        empty: '課題はまだありません。\n[1953年] 別のメッセージ',
+        refund: '返金を依頼しました。\n返金されました。',
+      },
+      'ja-JP',
+    ).invalid,
+    ['empty: unexpected line break', 'refund: unexpected line break'],
+  );
+  assert.deepEqual(
+    compareResources(
+      { help: 'First paragraph\nSecond paragraph' },
+      { help: 'Premier paragraphe\nSecond paragraphe' },
+      'fr-FR',
+    ).invalid,
     [],
   );
 });

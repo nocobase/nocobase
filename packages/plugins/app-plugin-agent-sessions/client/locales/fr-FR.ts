@@ -363,7 +363,7 @@ const frFR: LocaleResource<typeof enUS> = {
     steps: {
       agent: 'Installez un agent de codage et connectez-vous à celui-ci.',
       agentHint:
-        'Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, Qwen Code, Kimi CLI et plus : connectez-vous avec sa propre commande. Utilisez le modèle le plus puissant possible.\nWebhook',
+        'Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, Qwen Code, Kimi CLI et d’autres : connectez-vous avec la commande propre à chaque outil. Utilisez le modèle le plus performant possible.',
       login: 'Connectez-vous avec votre compte',
       start: 'Gardez cet ordinateur connecté',
       startHint:

@@ -163,7 +163,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       forward: '転送',
       edit: 'ドラフト編集',
     },
-    closeComposer: '作曲家を閉じる',
+    closeComposer: 'メール作成画面を閉じる',
     to: 'へ',
     cc: 'Cc',
     bcc: 'Bcc',

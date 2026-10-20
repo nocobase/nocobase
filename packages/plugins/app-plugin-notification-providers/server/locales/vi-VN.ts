@@ -12,7 +12,7 @@ const viVN: LocaleResource<typeof enUS> = {
       smtp: 'SMTP',
       resend: 'Gửi lại',
       feishuWebhook: 'Feishu',
-      dingtalkWebhook: 'DingTalk webhook\nWebhook',
+      dingtalkWebhook: 'Webhook DingTalk',
     },
     fields: {
       subject: 'Chủ đề',

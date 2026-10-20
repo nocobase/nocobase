@@ -49,7 +49,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   sort_sum_title: '関係SUMランキング',
   sort_sum_description:
     '商品数量の合計により、NULL の降順で商品をランク付けします。選択された SUM が NULL であっても、空のリレーションは 0 としてソートされます。メトリクスと項目行は明示的に選択されます。',
-  sort_avg_title: '関係AVGランキング\n【2644】関係MAXランキング',
+  sort_avg_title: 'リレーションの AVG による順位',
   sort_avg_description:
     '商品数量の AVG によって商品をランク付けし、NULL を最初に降順にします。空のリレーションは NULL としてソートされます。メトリクスと項目行は明示的に選択されます。',
   sort_min_title: '関係MINランキング',
@@ -143,7 +143,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     'リレーションを通じてターゲットを作成します。リポジトリは関係キーを埋めます。この例では、hasOne create には空のリレーションが必要です。',
   lab_connect_title: '既存のターゲットをリンクする',
   lab_connect_description:
-    'このカードのリンクされていない対象を１枚選ぶ。接続によってターゲットは作成されません。 hasOne ターゲットが使用可能である必要があります。',
+    'このカード用に用意された未接続の対象を選択します。connect で対象が新規作成されることはありません。hasOne の対象は接続可能な状態である必要があります。',
   lab_disconnect_title: 'リンクを解除してターゲットを保持する',
   lab_disconnect_description:
     'null 許容の hasOne リンクをクリアするか、hasMany ターゲットを切り離すか、結合テーブル リンクを削除します。目標は残る。',
@@ -192,7 +192,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     '切断: タスクが存在します = {{exists}}、プロジェクト ID = {{projectId}}',
   relationDeleteCheck: '削除: タスクが存在します={{exists}}',
   relationSetCheck: '集合: 削除したタグの存在={{exists}}',
-  findManyTitle: 'findMany: 配列とストリーム\n新しい行の場合は',
+  findManyTitle: 'findMany：配列とストリーム',
   findManyIntro:
     '同じリポジトリ クエリを 2 つの消費モードで実行します。 Await は完全な配列で 1 回解決されます。非同期反復は、フレーム化された NDJSON レコードを到着時に読み取ります。データベースのクエリ、フィルター、並べ替え、および制限は変わりません。',
   findManyArrayTitle: '配列を待つ',
@@ -227,7 +227,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   atomicVisits: '来店カウンター',
   atomicVisitsHint:
     '1 回インクリメントするか、10 個の同時インクリメント: 1 リクエストを送信します。他のユーザーもこの共有カウンターを変更できます。',
-  atomicAmount: '金額\n【232】金額(円)',
+  atomicAmount: '金額',
   atomic_increment: '増加',
   atomic_decrement: '減少(ガード)',
   atomic_multiply: 'ダブル×2',
@@ -280,7 +280,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   crm: 'CRMの例',
   ordersTitle: '注文例',
   subtitle: 'リポジトリ API を利用した顧客、関係、注文。',
-  customer: '顧客\n【829】お客様オーダーランキング',
+  customer: '顧客',
   contact: 'お問い合わせ',
   product: '製品',
   order: '注文',
@@ -298,7 +298,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   sku: 'SKU',
   unitPriceCents: '単価（セント）',
   number: '注文番号',
-  customerId: '顧客\n【829】お客様オーダーランキング',
+  customerId: '顧客',
   orderId: '注文',
   productId: '製品',
   quantity: '数量',
@@ -322,8 +322,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   next: '次へ',
   page: 'ページ {{page}}',
   count: '{{count}} レコード',
-  empty:
-    'まだ記録がありません。開始するには、最初のレコードを作成します。\n[2002 年] 拒否された提案はありません。',
+  empty: 'レコードはまだありません。最初のレコードを作成して始めましょう。',
   loading: '読み込み中…',
   select: 'レコードを選択してください',
   createTitle: '{{entity}} を作成する',

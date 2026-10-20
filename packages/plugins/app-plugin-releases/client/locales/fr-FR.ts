@@ -491,11 +491,11 @@ const frFR: LocaleResource<typeof enUS> = {
         back: 'Retour',
         changes: 'Modifications',
         noChanges: 'Le texte fixe ce qui existe déjà.',
-        nothing: 'Rien à sauver',
+        nothing: 'Aucune modification à enregistrer',
         unchanged_one: 'La variable {{count}} reste telle quelle.',
         unchanged_other: 'Les variables {{count}} restent telles quelles.',
-        save_one: 'Enregistrer la modification {{count}}',
-        save_other: 'Enregistrer les modifications {{count}}',
+        save_one: 'Enregistrer {{count}} modification',
+        save_other: 'Enregistrer {{count}} modifications',
         saved_one: 'Modification {{count}} enregistrée.',
         saved_other: 'Modifications {{count}} enregistrées.',
         secretOf: '{{name}} est un secret',
@@ -516,7 +516,7 @@ const frFR: LocaleResource<typeof enUS> = {
             "Ligne {{line}} : la citation autour de la valeur de {{name}} n'est pas fermée.",
         },
         unchanged_many: 'Les variables {{count}} restent telles quelles.',
-        save_many: 'Enregistrer les modifications {{count}}',
+        save_many: 'Enregistrer {{count}} modifications',
         saved_many: 'Modifications {{count}} enregistrées.',
       },
       missingIn_many: 'Manquant dans les applications {{count}}',
@@ -563,7 +563,7 @@ const frFR: LocaleResource<typeof enUS> = {
       externalTitle: 'Aucun config.yml à modifier',
       noFileTitle: 'Pas encore de config.yml',
       noFile:
-        "config.yml est créé par le premier déploiement. En attendant, configurez l'application avec des variables.\nLe nom",
+        'Le premier déploiement crée config.yml. En attendant, configurez l’application avec des variables.',
       toVariables: 'Aller aux variables',
       maskedHint:
         "Les valeurs secrètes s'affichent sous la forme {{mask}}. Laissez le masque en place pour conserver la valeur stockée ou saisissez une nouvelle valeur dessus.",
@@ -750,7 +750,7 @@ const frFR: LocaleResource<typeof enUS> = {
       title: 'Déployer des environnements',
       description:
         "Où les applications sont déployées et qui peut s'y déployer.",
-      open: 'Ouvert',
+      open: 'Ouvrir',
       loadOneFailed: "Impossible de charger l'environnement.",
       settingsTitle: "Paramètres d'environnement",
       readOnly:

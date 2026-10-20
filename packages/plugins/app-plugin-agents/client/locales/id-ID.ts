@@ -341,7 +341,7 @@ const idID: LocaleResource<typeof enUS> = {
     noGroup: 'Tidak ada',
     unknown: 'Tidak diketahui',
     onlineTool: 'Online (layanan model)',
-    setPrices: 'Tetapkan harga',
+    setPrices: 'Atur harga',
     chart: {
       title: 'Tren harian',
       metric: 'Tunjukkan',
@@ -402,7 +402,7 @@ const idID: LocaleResource<typeof enUS> = {
     unknownAgent: 'Agen',
     attempt: 'mencoba {{attempt}} dari {{max}}',
     viewTranscript: 'Lihat transkrip',
-    transcriptTitle: 'Jalankan transkrip',
+    transcriptTitle: 'Transkrip proses',
     viewAll: 'Lihat semua {{count}}',
     allTitle: 'Semua berjalan ({{count}})',
     filters: {
@@ -419,7 +419,7 @@ const idID: LocaleResource<typeof enUS> = {
       '{{name}} akan dihentikan. Apa yang sudah diubah tetap ada.',
     cancelRequested: 'Berhenti diminta',
     retry: 'Coba lagi',
-    retried: 'Jalankan antri lagi',
+    retried: 'Proses kembali masuk antrean',
     viewBrief: 'Lihat perintah lengkap',
     briefTitle: 'Perintah penuh',
     briefDescription:
@@ -468,7 +468,7 @@ const idID: LocaleResource<typeof enUS> = {
     },
   },
   transcript: {
-    title: 'Jalankan transkrip',
+    title: 'Transkrip proses',
     notFound: 'Proses ini tidak ada.',
     waiting: 'Menunggu agen memulai…',
     empty: 'Lari ini tidak mencatat kejadian apa pun.',
@@ -1058,7 +1058,7 @@ const idID: LocaleResource<typeof enUS> = {
       output: 'Keluaran / 1 juta',
       inputOf: 'Harga masukan {{model}}, per juta token',
       outputOf: 'Harga keluaran {{model}}, per juta token',
-      save: 'Hemat harga {{model}}',
+      save: 'Simpan harga {{model}}',
       saved: 'Harga {{model}} dihemat.',
       remove: 'Hapus harga {{model}}',
       removed: 'Harga {{model}} dihapus.',
@@ -1248,7 +1248,7 @@ const idID: LocaleResource<typeof enUS> = {
     versions: {
       title: 'Versi',
       description:
-        'Setiap penyimpanan adalah versi baru; agen selalu mendapatkan yang terbaru.',
+        'Setiap penyimpanan membuat versi baru; agen selalu mendapatkan versi terbaru.',
       current: 'Saat ini',
       compare: 'Bandingkan',
       compareTitle: 'Versi {{version}} → versi {{current}}',

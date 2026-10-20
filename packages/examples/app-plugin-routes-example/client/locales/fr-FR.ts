@@ -11,7 +11,7 @@ const frFR: LocaleResource<typeof enUS> = {
   pageDescription:
     'Il a été chargé paresseux et lit une réponse depuis la route du serveur du même plugin.',
   loading: 'Chargement des données du serveur…',
-  retry: 'Nouvelle demande de tentative',
+  retry: 'Réessayer la requête',
   plugin: 'Plugin',
   scope: 'Périmètre',
   message: 'Message',

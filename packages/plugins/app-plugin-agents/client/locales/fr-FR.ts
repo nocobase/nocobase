@@ -352,7 +352,7 @@ const frFR: LocaleResource<typeof enUS> = {
     noGroup: 'Aucun',
     unknown: 'Inconnu',
     onlineTool: 'En ligne (services modèles)',
-    setPrices: 'Fixer les prix',
+    setPrices: 'Définir les prix',
     chart: {
       title: 'Tendance quotidienne',
       metric: 'Afficher',
@@ -413,7 +413,7 @@ const frFR: LocaleResource<typeof enUS> = {
     unknownAgent: 'Agent',
     attempt: 'tentative {{attempt}} de {{max}}',
     viewTranscript: 'Voir la transcription',
-    transcriptTitle: 'Exécuter la transcription',
+    transcriptTitle: 'Transcription de l’exécution',
     viewAll: 'Tout afficher {{count}}',
     allTitle: 'Toutes les exécutions ({{count}})',
     filters: {
@@ -478,7 +478,7 @@ const frFR: LocaleResource<typeof enUS> = {
     },
   },
   transcript: {
-    title: 'Exécuter la transcription',
+    title: 'Transcription de l’exécution',
     notFound: "Cette exécution n'existe pas.",
     waiting: "En attente du démarrage de l'agent…",
     empty: "Cette exécution n'a enregistré aucun événement.",
@@ -1082,7 +1082,7 @@ const frFR: LocaleResource<typeof enUS> = {
       output: 'Sortie / 1M',
       inputOf: "Prix d'entrée de {{model}}, par million de jetons",
       outputOf: 'Prix de sortie de {{model}}, par million de jetons',
-      save: 'Économisez le prix de {{model}}',
+      save: 'Enregistrer le prix de {{model}}',
       saved: 'Prix du {{model}} économisé.',
       remove: 'Supprimer le prix du {{model}}',
       removed: 'Prix du {{model}} supprimé.',
@@ -1278,7 +1278,7 @@ const frFR: LocaleResource<typeof enUS> = {
     versions: {
       title: 'Versions',
       description:
-        'Chaque sauvegarde est une nouvelle version ; les agents reçoivent toujours les dernières informations.',
+        'Chaque enregistrement crée une nouvelle version ; les agents reçoivent toujours la plus récente.',
       current: 'Actuel',
       compare: 'Comparer',
       compareTitle: 'Version {{version}} → version {{current}}',

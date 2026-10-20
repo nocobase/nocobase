@@ -207,7 +207,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     mentions: 'タスクについて言及する',
     keys: {
       send: '送信',
-      queue: 'このターン後に送信\n【4350】セット',
+      queue: 'このターンが終わったら送信',
       newline: '新しい行',
       interrupt: 'このターンを停止して今すぐ送信',
     },
@@ -332,7 +332,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     folders: 'ディレクトリ',
     allowedFolders: 'セッションが機能する場所',
     defaultFolders: 'ホームディレクトリ',
-    defaultRoots: 'ブリッジが許可するすべてのこと\n【215】全種類',
+    defaultRoots: 'ブリッジで許可されているすべてのルート',
     addFolder: 'フォルダーを追加する',
     removeFolder: 'フォルダーを削除する',
     resetFolders: 'ホームディレクトリ全体に戻る',

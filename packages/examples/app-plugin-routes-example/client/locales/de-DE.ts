@@ -11,7 +11,7 @@ const deDE: LocaleResource<typeof enUS> = {
   pageDescription:
     'Es wurde verzögert geladen und liest eine Antwort von der Serverroute desselben Plugins.',
   loading: 'Serverdaten werden geladen…',
-  retry: 'Wiederholungsanforderung',
+  retry: 'Anfrage erneut senden',
   plugin: 'Plugin',
   scope: 'Geltungsbereich',
   message: 'Nachricht',

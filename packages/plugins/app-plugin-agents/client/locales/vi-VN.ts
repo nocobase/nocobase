@@ -330,7 +330,7 @@ const viVN: LocaleResource<typeof enUS> = {
         text: 'Văn bản tiện ích',
       },
     },
-    title: 'Cách sử dụng',
+    title: 'Mức sử dụng',
     description:
       'Đại lý nào đang chạy đã được sử dụng và giá của chúng ở mức giá mẫu hiện tại.',
     loadFailed: 'Không thể tải việc sử dụng',
@@ -341,7 +341,7 @@ const viVN: LocaleResource<typeof enUS> = {
     noGroup: 'Không có',
     unknown: 'Không rõ',
     onlineTool: 'Trực tuyến (dịch vụ mẫu)',
-    setPrices: 'Đặt giá',
+    setPrices: 'Thiết lập giá',
     chart: {
       title: 'Xu hướng hàng ngày',
       metric: 'Hiển thị',
@@ -401,7 +401,7 @@ const viVN: LocaleResource<typeof enUS> = {
     unknownAgent: 'Tác nhân',
     attempt: 'thử {{attempt}} của {{max}}',
     viewTranscript: 'Xem bản ghi',
-    transcriptTitle: 'Chạy bản ghi',
+    transcriptTitle: 'Bản ghi lượt chạy',
     viewAll: 'Xem tất cả {{count}}',
     allTitle: 'Tất cả các lần chạy ({{count}})',
     filters: {
@@ -417,7 +417,7 @@ const viVN: LocaleResource<typeof enUS> = {
     cancelDescription: '{{name}} sẽ bị dừng. Những gì nó đã thay đổi vẫn còn.',
     cancelRequested: 'Yêu cầu dừng',
     retry: 'Thử lại',
-    retried: 'Chạy lại xếp hàng',
+    retried: 'Lượt chạy được đưa vào hàng đợi trở lại',
     viewBrief: 'Xem toàn bộ lời nhắc',
     briefTitle: 'Lời nhắc đầy đủ',
     briefDescription:
@@ -465,7 +465,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
   },
   transcript: {
-    title: 'Chạy bản ghi',
+    title: 'Bản ghi lượt chạy',
     notFound: 'Hoạt động này không tồn tại.',
     waiting: 'Đang chờ đại lý bắt đầu…',
     empty: 'Lần chạy này không ghi nhận sự kiện nào.',
@@ -1057,7 +1057,7 @@ const viVN: LocaleResource<typeof enUS> = {
       output: 'Đầu ra / 1M',
       inputOf: 'Giá đầu vào của {{model}}, trên một triệu token',
       outputOf: 'Giá đầu ra của {{model}}, trên một triệu token',
-      save: 'Tiết kiệm giá {{model}}',
+      save: 'Lưu giá của {{model}}',
       saved: 'Đã lưu giá {{model}}.',
       remove: 'Xóa giá {{model}}',
       removed: 'Giá {{model}} đã bị loại bỏ.',
@@ -1244,7 +1244,7 @@ const viVN: LocaleResource<typeof enUS> = {
     versions: {
       title: 'Phiên bản',
       description:
-        'Mỗi lần lưu là một phiên bản mới; đại lý luôn nhận được thông tin mới nhất.',
+        'Mỗi lần lưu tạo một phiên bản mới; các tác tử luôn nhận được phiên bản mới nhất.',
       current: 'Hiện tại',
       compare: 'So sánh',
       compareTitle: 'Phiên bản {{version}} → phiên bản {{current}}',

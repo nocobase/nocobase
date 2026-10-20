@@ -50,7 +50,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       periodMinutes: {
         title: '訂閱續訂週期（分鐘）',
         description:
-          '使用此持續時間來計算成功充電後的新週期結束時間。更改將在下次成功充電後生效；當前期末保持不變。',
+          '扣款成功後，以此時長計算新計費週期的結束時間。變更會在下次成功扣款後套用；目前週期的結束時間不變。',
       },
       dunningMinutes: {
         title: '續費支付失敗重試間隔（分鐘）',
@@ -461,9 +461,9 @@ const zhTW: LocaleResource<typeof enUS> = {
       cancelled: {
         customer: '被客戶取消。',
         timeout: '已關閉：未及時付款。',
-        refundRequested: '應客戶要求退款。',
+        refundRequested: '客戶已申請退款。',
       },
-      refunding: '退款…',
+      refunding: '退款中…',
       refundNeedsAttention: '退款失敗：{{error}} 等待有人再試一次。',
       refunded: '已退款。',
       fulfilled: '已付款並發貨。',
@@ -566,7 +566,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     actions: {
       submit: '下訂單',
       abandon: '丟棄',
-      retryRelease: '重試發布',
+      retryRelease: '重試釋放庫存',
     },
     items: {
       headphones: '耳機',
@@ -579,7 +579,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       quantity: '數量',
       total: '總計{{total}}',
       declineCharge: '卡被拒絕',
-      failReleases: '故意失敗的庫存發布',
+      failReleases: '故意使庫存釋放失敗的次數',
       failHint: '拒絕刷卡觀看補償；讓釋放失敗3次或更多才能看到它停下來等人。',
       submit: '建立',
     },
@@ -593,7 +593,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       draft: '尚未放置。',
       reserving: '預留單位...',
       charging: '持有單位；為卡片儲值…',
-      releasing: '充電失敗（{{error}}）；歸還單位…',
+      releasing: '扣款失敗（{{error}}）；正在釋放預留庫存…',
       compensationNeedsAttention:
         '無法歸還單位：{{error}} 它等待有人重試釋放。',
       confirmed: '已確認：已預訂並已付款。',
@@ -698,7 +698,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     shows:
       '訂閱在其生命週期內會在活躍→充電→活躍期間移動一次。掃描發現，續訂應在訂閱本身的週期結束時到期；被拒絕的卡將通過觸發器重試，直到放棄。',
     description:
-      '每 {{period}} 分鐘充電一次。每 {{dunning}} 分鐘重試一次被拒絕的收費；{{tries}} 嘗試後訂閱被取消。',
+      '每 {{period}} 分鐘扣款一次。若扣款遭拒，會每隔 {{dunning}} 分鐘重試；嘗試 {{tries}} 次後仍失敗便會取消訂閱。',
     nothing: '您無事可做：計費自行執行。',
     actions: {
       updateCard: '更新卡',
@@ -724,7 +724,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       periods: '已付期間',
       periodEnd: '期間結束',
       dunning: '嘗試失敗',
-      lastCharge: '最後一次充電',
+      lastCharge: '上次扣款',
       card: '卡',
       cardWorks: '有效',
       cardValue_one: '拒絕下次收費',
@@ -742,7 +742,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
     outside: {
       title: '計費（沙盒）',
-      description: '每次充電都是充電效果的執行，由週期和嘗試決定。',
+      description:
+        '每次扣款都會執行一次扣款副作用，並以計費週期和嘗試次數組成識別鍵。',
       charges: '扣款',
       chargesHint: '最舊的在前。',
       noCharges: '尚未收費。',
@@ -790,7 +791,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       step2:
         '以林曉身分提交「杭州客戶遊覽」草稿（872元）：自動審核通過，稍後付款。 “幕後花絮”展示了支付效果及其引發的“付費”轉變。',
       step3:
-        '換財務總監趙靜，批“反對立場”，陳明已經批了：5萬元以上兩者都需要。',
+        '切換為財務總監赵静，核准陈明已核准的「法兰克福展会参展」：金額超過 ¥50,000 時，需要兩人核准。',
       step4:
         '以何東身份，重新提交“北京客戶現場支援”，已發回更多資訊，然後以孫磊身份批准。向經理提交的報告持續 3 分鐘後將升級至該經理的經理。',
       step5:
@@ -824,7 +825,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       step1: '開啟兩盞燈的樣品購買，點選「下單」：預約，刷卡，購買完成。',
       step2: '放置樣品鍵盤購買，其卡被拒絕，並觀察裝置離開“倉庫庫存”並返回。',
       step3:
-        '建立購買，卡片被拒絕且「故意失敗的庫存發布」設定為 3：發布停止並等待「重試發布」。',
+        '建立購買記錄時，將卡片設為拒絕付款，並將「故意使庫存釋放失敗的次數」設為 3：庫存釋放會停止，等待執行「重試釋放庫存」。',
     },
     fulfilments: {
       purpose:
@@ -951,7 +952,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     awaitingPayment: '等待付款',
     paymentFailed: '付款失敗',
     cancelled: '已取消',
-    refunding: '退款',
+    refunding: '退款中',
     refundNeedsAttention: '退款需注意',
     refunded: '已退款',
     fulfilled: '已出貨',
@@ -999,10 +1000,10 @@ const zhTW: LocaleResource<typeof enUS> = {
     refunded: '退款完成',
     refundFailed: '退款失敗',
     retryRefund: '重試退款',
-    charged: '充電成功',
-    chargeFailed: '充電失敗',
+    charged: '扣款成功',
+    chargeFailed: '扣款失敗',
     renew: '到期時續訂',
-    retryCharge: '重試充電',
+    retryCharge: '重試扣款',
     updateCard: '更新卡',
     abandon: '放棄',
     stockReserved: '庫存保留',

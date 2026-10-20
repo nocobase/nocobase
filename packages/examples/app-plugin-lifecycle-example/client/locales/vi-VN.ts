@@ -231,7 +231,7 @@ const viVN: LocaleResource<typeof enUS> = {
       failNotifications: 'Việc gửi email không cố ý',
       failHint:
         'Mỗi câu trả lời cho vé này sẽ gửi email cho bạn. Hãy thử lần đầu tiên không thành công để xem hiệu ứng thử lại.',
-      submit: 'Gửi vé',
+      submit: 'Gửi yêu cầu hỗ trợ',
     },
     categories: {
       account: 'Tài khoản và đăng nhập',
@@ -458,7 +458,7 @@ const viVN: LocaleResource<typeof enUS> = {
       item: 'Vật phẩm',
       amount: 'Số tiền (¥)',
       failCheckouts: 'Các nỗ lực thanh toán không cố ý',
-      failRefunds: 'Nỗ lực hoàn tiền không cố ý',
+      failRefunds: 'Số lần cố ý làm hoàn tiền thất bại',
       failHint:
         'Việc mở thanh toán và hoàn tiền có tác dụng với việc thử lại; khiến họ không xem được lần thử lại và nơi lệnh dừng.',
       submit: 'Đặt hàng',
@@ -482,12 +482,12 @@ const viVN: LocaleResource<typeof enUS> = {
       cancelled: {
         customer: 'Bị khách hàng hủy.',
         timeout: 'Đã đóng: không thanh toán đúng hạn.',
-        refundRequested: 'Hoàn tiền theo yêu cầu của khách hàng.',
+        refundRequested: 'Khách hàng đã yêu cầu hoàn tiền.',
       },
-      refunding: 'Hoàn tiền…',
+      refunding: 'Đang hoàn tiền…',
       refundNeedsAttention:
         'Việc hoàn tiền không thành công: {{error}} Nó đang chờ ai đó thử lại.',
-      refunded: 'Đã hoàn lại tiền.',
+      refunded: 'Đã hoàn tiền.',
       fulfilled: 'Đã thanh toán và giao hàng.',
     },
     sessionStatus: {
@@ -592,7 +592,7 @@ const viVN: LocaleResource<typeof enUS> = {
     actions: {
       submit: 'Đặt hàng',
       abandon: 'Loại bỏ',
-      retryRelease: 'Thử lại việc phát hành',
+      retryRelease: 'Thử giải phóng hàng tồn kho lại',
     },
     items: {
       headphones: 'Tai nghe',
@@ -605,7 +605,7 @@ const viVN: LocaleResource<typeof enUS> = {
       quantity: 'Số lượng',
       total: 'Tổng {{total}}',
       declineCharge: 'Thẻ bị từ chối',
-      failReleases: 'Phát hành cổ phiếu không cố ý',
+      failReleases: 'Số lần cố ý làm giải phóng hàng tồn kho thất bại',
       failHint:
         'Từ chối thẻ để xem bồi thường; làm cho việc phát hành thất bại 3 lần trở lên để xem nó dừng lại và chờ một người.',
       submit: 'Tạo',
@@ -620,7 +620,8 @@ const viVN: LocaleResource<typeof enUS> = {
       draft: 'Chưa đặt.',
       reserving: 'Đặt trước các đơn vị…',
       charging: 'Đơn vị nắm giữ; nạp thẻ…',
-      releasing: 'Sạc không thành công ({{error}}); trả lại các đơn vị…',
+      releasing:
+        'Thu tiền thất bại ({{error}}); đang giải phóng số lượng hàng đã giữ…',
       compensationNeedsAttention:
         'Không thể trả lại các đơn vị: {{error}} Nó chờ ai đó thử lại bản phát hành.',
       confirmed: 'Đã xác nhận: đơn vị được bảo lưu và thanh toán.',
@@ -728,7 +729,7 @@ const viVN: LocaleResource<typeof enUS> = {
     shows:
       'Một thuê bao sẽ di chuyển vòng quanh hoạt động → tính phí → hoạt động mỗi kỳ một lần, miễn là nó còn tồn tại. Việc gia hạn sẽ đến hạn vào thời điểm kết thúc giai đoạn đăng ký mà quá trình quét tìm thấy; thẻ bị từ chối sẽ được thử lại bằng trình kích hoạt cho đến khi nó bỏ cuộc.',
     description:
-      'Được sạc mỗi phút {{period}}. Khoản phí bị từ chối sẽ được thử lại sau mỗi phút {{dunning}}; sau khi {{tries}} thử đăng ký sẽ bị hủy.',
+      'Thu tiền sau mỗi {{period}} phút. Nếu thanh toán bị từ chối, hệ thống sẽ thử lại sau mỗi {{dunning}} phút; sau {{tries}} lần thử không thành công, đăng ký sẽ bị hủy.',
     nothing: 'Bạn không cần phải làm gì: quá trình thanh toán sẽ tự diễn ra.',
     actions: {
       updateCard: 'Cập nhật thẻ',
@@ -746,7 +747,7 @@ const viVN: LocaleResource<typeof enUS> = {
       charge: '{{price}} được tính phí ngay bây giờ và vào đầu mỗi kỳ.',
       cardDeclines: 'Phí thẻ từ chối',
       failHint:
-        'Từ chối là câu trả lời, không phải ngừng hoạt động: việc sạc không được thử lại ngay lập tức mà bằng nút kích hoạt, dưới một khóa mới.',
+        'Việc từ chối thanh toán là phản hồi nghiệp vụ, không phải sự cố dịch vụ: hệ thống không thu tiền lại ngay mà chờ bộ kích hoạt nhắc thanh toán, với một khóa mới.',
       submit: 'Theo dõi',
     },
     fields: {
@@ -754,7 +755,7 @@ const viVN: LocaleResource<typeof enUS> = {
       periods: 'Kỳ trả tiền',
       periodEnd: 'Thời kỳ kết thúc',
       dunning: 'Lần thử thất bại',
-      lastCharge: 'Lần sạc cuối cùng',
+      lastCharge: 'Lần thu tiền gần nhất',
       card: 'Thẻ bài',
       cardWorks: 'Tác phẩm',
       cardValue_one: 'từ chối khoản phí tiếp theo',
@@ -774,7 +775,7 @@ const viVN: LocaleResource<typeof enUS> = {
     outside: {
       title: 'Thanh toán (hộp cát)',
       description:
-        'Mỗi lần sạc là một lần chạy của hiệu ứng sạc, được xác định theo thời gian và lần thử.',
+        'Mỗi lần thu tiền là một lần chạy tác vụ thu tiền, với khóa được xác định bằng kỳ thanh toán và lần thử.',
       charges: 'Khoản thu',
       chargesHint: 'Cũ nhất đầu tiên.',
       noCharges: 'Chưa có cáo buộc nào.',
@@ -817,13 +818,13 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     expenses: {
       purpose:
-        'Một báo cáo chi phí được định tuyến theo số tiền: tối đa 5.000 yên sẽ được phê duyệt tự động, trên mức người quản lý của người nộp đơn phê duyệt và trên 50.000 yên thì giám đốc tài chính cũng vậy. Người phê duyệt phê duyệt, gửi lại hoặc từ chối có lý do, người quản lý nhàn rỗi được chuyển qua trình kích hoạt và báo cáo đã phê duyệt sẽ được thanh toán bằng hiệu ứng sau đó đánh dấu báo cáo đó đã được thanh toán.',
+        'Báo cáo chi phí được chuyển theo số tiền: từ 5.000 nhân dân tệ trở xuống được phê duyệt tự động; cao hơn mức đó cần người quản lý của người nộp phê duyệt, và trên 50.000 nhân dân tệ còn cần giám đốc tài chính phê duyệt. Người phê duyệt có thể phê duyệt, trả lại hoặc từ chối kèm lý do. Bộ kích hoạt sẽ bỏ qua người quản lý không phản hồi; báo cáo đã được phê duyệt được thanh toán bởi một tác vụ, rồi được đánh dấu đã thanh toán.',
       step1:
         'Sử dụng “Đã đăng nhập với tư cách” để đóng vai nhân viên 林晓 và 何东, người quản lý, giám đốc điều hành và giám đốc tài chính của họ. Một nhân viên xem báo cáo của chính họ; người phê duyệt sẽ thấy điều gì đang chờ đợi họ.',
       step2:
         'Với tư cách là 林晓, hãy gửi bản dự thảo “杭州客户拜访” (¥872): nó được phê duyệt tự động và được thanh toán ngay sau đó. “Dưới mui xe” cho thấy hiệu ứng thanh toán và quá trình chuyển đổi “trả phí” mà nó đã thực hiện.',
       step3:
-        'Chuyển sang 赵静, giám đốc tài chính, và phê duyệt “法兰克福展会参展”, mà 陈明 đã phê duyệt: trên 50.000 Yên thì cần cả hai.',
+        'Chuyển sang giám đốc tài chính 赵静 và phê duyệt “法兰克福展会参展”, báo cáo mà 陈明 đã phê duyệt: số tiền trên 50.000 nhân dân tệ cần cả hai người phê duyệt.',
       step4:
         'Với tư cách là 何东, hãy gửi lại “北京客户现场支持”, đã được gửi lại để biết thêm thông tin, sau đó phê duyệt dưới dạng 孙磊. Một báo cáo để lại cho người quản lý trong 3 phút sẽ được chuyển đến người quản lý của người quản lý đó.',
       step5:
@@ -859,7 +860,7 @@ const viVN: LocaleResource<typeof enUS> = {
       step2:
         'Đặt mua bàn phím mẫu có thẻ bị từ chối và xem thiết bị rời khỏi “Kho kho” và quay trở lại.',
       step3:
-        'Tạo giao dịch mua với thẻ bị từ chối và “Cố ý phát hành hàng không thành công” được đặt thành 3: quá trình phát hành dừng lại và chờ “Thử phát hành lại”.',
+        'Tạo giao dịch mua với thẻ bị từ chối và đặt “Số lần cố ý làm giải phóng hàng tồn kho thất bại” thành 3: quá trình giải phóng hàng tồn kho dừng lại và chờ “Thử giải phóng hàng tồn kho lại”.',
     },
     fulfilments: {
       purpose:
@@ -994,9 +995,9 @@ const viVN: LocaleResource<typeof enUS> = {
     awaitingPayment: 'Đang chờ thanh toán',
     paymentFailed: 'Thanh toán không thành công',
     cancelled: 'Đã hủy',
-    refunding: 'Hoàn tiền',
+    refunding: 'Đang hoàn tiền',
     refundNeedsAttention: 'Cần chú ý hoàn tiền',
-    refunded: 'Đã hoàn lại',
+    refunded: 'Đã hoàn tiền',
     fulfilled: 'Đã vận chuyển',
     starting: 'Bắt đầu',
     processing: 'Đang xử lý',
@@ -1043,16 +1044,16 @@ const viVN: LocaleResource<typeof enUS> = {
     refundFailed: 'Hoàn tiền không thành công',
     retryRefund: 'Thử lại hoàn tiền',
     charged: 'Phí thành công',
-    chargeFailed: 'Sạc không thành công',
+    chargeFailed: 'Thu tiền thất bại',
     renew: 'Gia hạn khi đến hạn',
-    retryCharge: 'Thử lại phí',
+    retryCharge: 'Thử thu tiền lại',
     updateCard: 'Cập nhật thẻ',
     abandon: 'Từ bỏ',
     stockReserved: 'Đã dự trữ hàng',
     stockUnavailable: 'Hàng không có sẵn',
     stockReleased: 'Đã phát hành hàng',
-    releaseFailed: 'Phát hành cổ phiếu không thành công',
-    retryRelease: 'Thử lại phát hành cổ phiếu',
+    releaseFailed: 'Giải phóng hàng tồn kho thất bại',
+    retryRelease: 'Thử giải phóng hàng tồn kho lại',
     retryInvoice: 'Thử lại hóa đơn',
     submitted: 'Đã gửi yêu cầu',
     submissionFailed: 'Gửi không thành công',

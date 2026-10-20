@@ -252,7 +252,7 @@ const viVN: LocaleResource<typeof enUS> = {
       delete_one: 'đã xóa tệp {{count}}',
       delete_other: 'đã xóa các tệp {{count}}',
       move_one: 'đã di chuyển tệp {{count}}',
-      move_other: 'đã di chuyển tệp {{count}}\nTên',
+      move_other: 'đã di chuyển {{count}} tệp',
       search_one: 'đã tìm kiếm một lần',
       search_other: 'đã tìm kiếm {{count}} lần',
       execute_one: 'đã chạy lệnh {{count}}',

@@ -530,7 +530,7 @@ const esES: LocaleResource<typeof enUS> = {
       accepted: 'Aceptado.',
       rejected: 'Rechazado.',
       decided: '{{outcome}} por {{name}}',
-      open: 'Abierto',
+      open: 'Abrir',
       readOnly: 'Alguien que pueda editar este conocimiento lo decide.',
     },
   },

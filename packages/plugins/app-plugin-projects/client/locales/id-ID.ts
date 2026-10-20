@@ -961,7 +961,7 @@ const idID: LocaleResource<typeof enUS> = {
     breadcrumb: 'Rencana',
     loadFailed: 'Tidak dapat memuat rencana',
     notFound: 'Rencananya tidak ada, atau Anda tidak dapat melihatnya.',
-    open: 'Rencana terbuka',
+    open: 'Buka rencana',
     backToList: 'Kembali ke persoalan',
     source: {
       intake: 'Dari asupan',
@@ -1051,7 +1051,7 @@ const idID: LocaleResource<typeof enUS> = {
     unsaved: 'Perubahan yang belum disimpan',
     saved: 'Rencananya diperiksa lagi dengan perubahan Anda.',
     rowsFailed:
-      'Beberapa perubahan tidak berhasil. Perbaiki atau hapus, lalu simpan lagi.',
+      'Beberapa perubahan tidak valid. Perbaiki atau hapus perubahan tersebut, lalu simpan lagi.',
     nothingLeft: 'Sebuah rencana membutuhkan setidaknya satu perubahan.',
     newProject: 'Proyek dibuat di atas',
     wakes: 'Membangunkan {{name}}',

@@ -50,7 +50,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       periodMinutes: {
         title: 'サブスクリプション更新期間 (分)',
         description:
-          'この期間を使用して、チャージが成功した後の新しい期間の終了日を計算します。変更は次回の充電成功後に適用されます。当期末は固定のままです。',
+          '決済成功後、この期間を使って新しい請求期間の終了日時を計算します。変更は次回の決済成功後に適用され、現在の請求期間の終了日時は変わりません。',
       },
       dunningMinutes: {
         title: '更新失敗時の支払い再試行間隔 (分)',
@@ -136,8 +136,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     orderSummary: '注文 #{{order}} · {{amount}}',
     fields: {
       order: '注文完了',
-      customer: '顧客\n【829】お客様オーダーランキング',
-      amount: '金額\n【232】金額(円)',
+      customer: '顧客',
+      amount: '金額',
       taxNumber: '納税者番号',
       request: 'プロバイダーリクエスト',
       number: '請求書番号',
@@ -245,7 +245,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       urgent: '緊急',
     },
     meta: {
-      customer: '顧客\n【829】お客様オーダーランキング',
+      customer: '顧客',
       category: 'カテゴリー',
       priority: '優先順位',
       assignee: '担当者',
@@ -314,7 +314,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       date: '日付',
       category: 'カテゴリー',
       description: '説明',
-      amount: '金額(円)',
+      amount: '金額（人民元）',
       addItem: '経費を追加する',
       removeItem: '削除',
       total: '合計',
@@ -406,7 +406,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     pending: '未踏破',
   },
   flows: {
-    customer: '顧客\n【829】お客様オーダーランキング',
+    customer: '顧客',
     final: 'これで完成です。もうそれを動かすものは何もありません。',
     process: 'プロセス',
     legend:
@@ -446,13 +446,13 @@ const jaJP: LocaleResource<typeof enUS> = {
       checkout: '支払う',
       cancel: '注文をキャンセルする',
       ship: '船',
-      refundOrder: '払い戻し',
+      refundOrder: '返金する',
       retryRefund: '払い戻しの再試行',
     },
     form: {
       title: '注文する',
       item: 'アイテム',
-      amount: '金額(円)',
+      amount: '金額（人民元）',
       failCheckouts: 'チェックアウト試行が意図的に失敗する',
       failRefunds: '払い戻しの試行が意図的に失敗する',
       failHint:
@@ -460,12 +460,12 @@ const jaJP: LocaleResource<typeof enUS> = {
       submit: '注文する',
     },
     fields: {
-      customer: '顧客\n【829】お客様オーダーランキング',
-      amount: '金額\n【232】金額(円)',
+      customer: '顧客',
+      amount: '金額',
       attempt: '支払いラウンド',
       session: 'チェックアウトセッション',
-      paymentRef: 'お支払い\n【2335】キャンセル後のお支払い',
-      refundRef: '払い戻し',
+      paymentRef: '決済',
+      refundRef: '返金する',
     },
     banner: {
       draft: 'まだ支払われていません。',
@@ -478,10 +478,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       cancelled: {
         customer: 'お客様によりキャンセルされました。',
         timeout: '閉店: 支払いが期限内に行われていません。',
-        refundRequested:
-          'お客様のご要望により返金いたします。\n【2628】返金されました。',
+        refundRequested: 'お客様から返金の依頼がありました。',
       },
-      refunding: '払い戻し中…',
+      refunding: '返金処理中…',
       refundNeedsAttention:
         '返金に失敗しました: {{error}} 誰かが再試行するのを待ちます。',
       refunded: '返金されました。',
@@ -588,7 +587,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     actions: {
       submit: '注文する',
       abandon: '廃棄',
-      retryRelease: 'リリースを再試行します',
+      retryRelease: '在庫の引当解除を再試行',
     },
     items: {
       headphones: 'ヘッドフォン',
@@ -601,22 +600,23 @@ const jaJP: LocaleResource<typeof enUS> = {
       quantity: '数量',
       total: '合計 {{total}}',
       declineCharge: 'カードが拒否されました',
-      failReleases: '意図的に失敗した株式リリース',
+      failReleases: '意図的に失敗させる在庫引当解除の回数',
       failHint:
         '補償金を見るためにカードを拒否します。リリースを 3 回以上失敗させて、停止して人を待つのを確認します。',
       submit: '作成',
     },
     fields: {
-      customer: '顧客\n【829】お客様オーダーランキング',
-      amount: '金額\n【232】金額(円)',
+      customer: '顧客',
+      amount: '金額',
       reservation: '予約',
-      paymentRef: 'お支払い\n【2335】キャンセル後のお支払い',
+      paymentRef: '決済',
     },
     banner: {
       draft: 'まだ配置されていません。',
       reserving: 'ユニットを予約中…',
       charging: '保有単位。カードにチャージ中…',
-      releasing: '充電に失敗しました ({{error}})。ユニットを返却します…',
+      releasing:
+        '決済に失敗しました（{{error}}）。確保した在庫を解放しています…',
       compensationNeedsAttention:
         'ユニットを返せませんでした: {{error}} 誰かがリリースを再試行するのを待ちます。',
       confirmed: '確認済み: ユニットは予約され、支払われています。',
@@ -635,7 +635,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       stepsHint: '各ステップの効果の最後の実行。',
       reserve: '予約在庫',
       charge: 'カードにチャージする',
-      release: '株式放出（補償）',
+      release: '在庫の引当解除（補償処理）',
       notYet: '実行されません',
       stock: '倉庫在庫',
       stockHint: 'ユニットが出発して戻ってくるのを見てください。',
@@ -673,13 +673,13 @@ const jaJP: LocaleResource<typeof enUS> = {
       exception: '例外',
     },
     form: {
-      title: '貨物を開封する',
+      title: '出荷を登録',
       name: '名前',
-      customer: '顧客\n【829】お客様オーダーランキング',
+      customer: '顧客',
       submit: '作成',
     },
     fields: {
-      customer: '顧客\n【829】お客様オーダーランキング',
+      customer: '顧客',
       paid: '支払いが捕捉されました',
       picked: '選んだ',
       tracking: '追跡番号',
@@ -724,7 +724,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     shows:
       'サブスクリプションは、有効である限り、期間ごとにアクティブ→充電→アクティブを繰り返します。更新の期限は、スイープが検出したサブスクリプション自体の期間の終了日です。拒否されたカードは、断念するまでトリガーによって再試行されます。',
     description:
-      '{{period}} 分ごとに充電されます。拒否された請求は、{{dunning}} 分ごとに再試行されます。 {{tries}} が試行すると、サブスクリプションはキャンセルされます。',
+      '{{period}} 分ごとに決済します。決済が拒否されると {{dunning}} 分ごとに再試行し、{{tries}} 回試しても成功しない場合はサブスクリプションをキャンセルします。',
     nothing: '何もする必要はありません。請求は自動的に実行されます。',
     actions: {
       updateCard: 'アップデートカード',
@@ -746,7 +746,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       submit: '購読する',
     },
     fields: {
-      customer: '顧客\n【829】お客様オーダーランキング',
+      customer: '顧客',
       periods: '支払われた期間',
       periodEnd: '期間終了',
       dunning: '失敗した試行',
@@ -813,13 +813,13 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     expenses: {
       purpose:
-        '経費報告書は金額によってルーティングされます。5,000 円までは自動的に承認され、それを超えると申請者のマネージャーが承認し、50,000 円を超えると財務責任者も承認します。承認者は理由を付けて承認、差し戻し、または拒否し、アイドル状態のマネージャーはトリガーによって引き渡され、承認されたレポートには支払い済みのマークを付ける効果によって支払いが行われます。',
+        '経費申請の承認経路は金額で決まります。5,000 人民元以下は自動承認、それを超える場合は申請者の上司が承認し、50,000 人民元を超える場合は財務責任者の承認も必要です。承認者は理由を添えて承認、差し戻し、または却下を行います。一定期間対応しない上司はトリガーによってスキップされます。承認済みの申請は副作用処理で支払われ、その後、支払済みになります。',
       step1:
         '「サインイン」を使用して、従業員の林晓と何东、そのマネージャー、執行役員、財務部長を演じます。従業員は自分のレポートを確認します。承認者は何が待っているかを確認します。',
       step2:
         '林晓として、「杭州客户拜访」(¥872) の草案を提出します。これは自動的に承認され、すぐに支払われます。 「内部」では、支払い効果とそれが起動した「有料」トランジションを示しています。',
       step3:
-        '財務部長の赵静に切り替え、陈明がすでに承認した「法兰克福展会参展」を承認する: 50,000円以上は両方必要。',
+        '財務責任者の赵静に切り替え、陈明がすでに承認した「法兰克福展会参展」を承認してください。50,000 人民元を超える申請には、両者の承認が必要です。',
       step4:
         '何东として、詳細情報のために返送された「北京客户现场支持」を再送信し、孙磊として承認します。マネージャーに 3 分間放置されたレポートは、マネージャーのマネージャーにエスカレーションされます。',
       step5:
@@ -855,7 +855,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       step2:
         'カードが拒否されたサンプル キーボードを購入し、ユニットが「倉庫在庫」から出て戻ってくるのを観察します。',
       step3:
-        'カードが拒否され、「意図的に失敗したストック リリース」を 3 に設定して購入を作成します。リリースは停止し、「リリースを再試行」するまで待機します。',
+        'カードを拒否に設定し、「意図的に失敗させる在庫引当解除の回数」を 3 にして購入を作成します。在庫の引当解除が停止し、「在庫の引当解除を再試行」が実行されるまで待機します。',
     },
     fulfilments: {
       purpose:
@@ -873,7 +873,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       purpose:
         'サブスクリプションは、存続期間中、各期間の開始時に請求されます。プラグインのスイープは、それぞれの期間終了時にそれぞれを更新し、拒否された請求は、回復するかサブスクリプションがキャンセルされるまで、新しいキーの下で督促トリガーによって再試行されます。',
       step1:
-        '「購読」をクリックしてプランを選択します。最初の充電はすぐに実行されます。サンプル サブスクリプションを作成するとカードに請求されるため、サンプル サブスクリプションはありません。',
+        '「購読する」をクリックしてプランを選ぶと、最初の決済がすぐに実行されます。登録時にカードへの請求が発生するため、サンプルのサブスクリプションはありません。',
       step2:
         '「カードの請求を拒否する」を 1 に設定して購読します。期限を過ぎますが、1 分後に再試行され、回復します。 「アップデートカード」で一気に回復します。',
       step3:
@@ -910,7 +910,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     amountCents: '金額は0以上である必要があります。',
     durationSeconds: 'ベンダーには 5 ～ 600 秒かかります。',
     vendorOutcome: 'ジョブの終了方法を選択します。',
-    sku: '項目を選択してください。\n［551］このカードのリンクされていない対象１枚を選ぶ。接続によってターゲットは作成されません。 hasOne ターゲットが使用可能である必要があります。',
+    sku: '商品を選択してください。',
     quantity: '1〜5の間で購入してください。',
     plan: 'プランを選択してください。',
     customerId: '顧客を選択してください。',
@@ -987,7 +987,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     awaitingPayment: '支払い待ち',
     paymentFailed: '支払いに失敗しました',
     cancelled: 'キャンセル済み',
-    refunding: '払い戻し',
+    refunding: '返金処理中',
     refundNeedsAttention: '払い戻しには注意が必要です',
     refunded: '返金されました',
     fulfilled: '発送済み',
@@ -1031,21 +1031,21 @@ const jaJP: LocaleResource<typeof enUS> = {
     paymentDeclined: '支払いが拒否されました',
     paidAfterCancel: 'キャンセル後のお支払い',
     expire: 'タイムアウト後に閉じる',
-    refundOrder: '払い戻し',
+    refundOrder: '返金する',
     refunded: '払い戻し完了',
     refundFailed: '払い戻しに失敗しました',
     retryRefund: '払い戻しの再試行',
     charged: 'チャージ成功',
-    chargeFailed: '充電に失敗しました',
+    chargeFailed: '決済に失敗しました',
     renew: '期限が切れたら更新する',
-    retryCharge: 'リトライチャージ',
+    retryCharge: '決済を再試行',
     updateCard: 'アップデートカード',
     abandon: '放棄する',
     stockReserved: '在庫確保済み',
     stockUnavailable: '在庫なし',
     stockReleased: '在庫放出',
     releaseFailed: '在庫放出に失敗しました',
-    retryRelease: '在庫解放をリトライ',
+    retryRelease: '在庫の引当解除を再試行',
     retryInvoice: '請求書を再試行します',
     submitted: 'リクエストが送信されました',
     submissionFailed: '送信できませんでした',

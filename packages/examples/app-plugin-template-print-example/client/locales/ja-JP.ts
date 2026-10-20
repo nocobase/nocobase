@@ -19,7 +19,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   downloading: 'レンダリング中…',
   downloadFailed: '請求書をレンダリングできませんでした。',
   invoice: '請求書',
-  customer: '顧客\n【829】お客様オーダーランキング',
+  customer: '顧客',
   issuedOn: '発行日',
   quote: '出典引用',
   amount: '合計',

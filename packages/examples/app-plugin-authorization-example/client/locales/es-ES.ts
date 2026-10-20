@@ -85,7 +85,7 @@ const esES: LocaleResource<typeof enUS> = {
     done: 'Hecho',
     pending: 'Pendiente',
     toggle: 'Alternar finalización',
-    delete: 'Eliminar cheque',
+    delete: 'Eliminar comprobación',
     checkTitle: 'Comprobar título',
     add: 'Añadir cheque',
     collaborators: 'Transportistas colaboradores',

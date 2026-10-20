@@ -101,7 +101,7 @@ const esES: LocaleResource<typeof enUS> = {
             all: 'Comentarios moderados (todos)',
           },
           close: {
-            title: 'Cerrar números',
+            title: 'Cerrar incidencias',
             description: 'Marcar una emisión realizada o cancelada',
             related:
               'Temas cerrados (los que son de su propiedad o cuyo proyecto lidera)',

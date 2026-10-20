@@ -451,7 +451,7 @@ const esES: LocaleResource<typeof enUS> = {
       checkout: 'Pagar',
       cancel: 'Cancelar orden',
       ship: 'Barco',
-      refundOrder: 'Reembolso',
+      refundOrder: 'Reembolsar',
       retryRefund: 'Reintentar reembolso',
     },
     form: {
@@ -470,7 +470,7 @@ const esES: LocaleResource<typeof enUS> = {
       attempt: 'Ronda de pago',
       session: 'Sesión de pago',
       paymentRef: 'Pago',
-      refundRef: 'Reembolso',
+      refundRef: 'Reembolsar',
     },
     banner: {
       draft: 'Aún no pagado.',
@@ -483,9 +483,9 @@ const esES: LocaleResource<typeof enUS> = {
       cancelled: {
         customer: 'Cancelado por el cliente.',
         timeout: 'Cerrado: no pagado a tiempo.',
-        refundRequested: 'Reembolsado a petición del cliente.',
+        refundRequested: 'Reembolso solicitado por el cliente.',
       },
-      refunding: 'Reembolso…',
+      refunding: 'Reembolso en curso…',
       refundNeedsAttention:
         'El reembolso falló: {{error}} Espera a que alguien lo reintente.',
       refunded: 'Reembolsado.',
@@ -592,7 +592,7 @@ const esES: LocaleResource<typeof enUS> = {
     actions: {
       submit: 'Realizar pedido',
       abandon: 'Descartar',
-      retryRelease: 'Reintentar la liberación',
+      retryRelease: 'Reintentar la liberación de existencias',
     },
     items: {
       headphones: 'Auriculares',
@@ -605,7 +605,7 @@ const esES: LocaleResource<typeof enUS> = {
       quantity: 'Cantidad',
       total: 'Total {{total}}',
       declineCharge: 'La tarjeta es rechazada',
-      failReleases: 'Lanzamientos de acciones que fallan a propósito',
+      failReleases: 'Liberaciones de existencias que fallan deliberadamente',
       failHint:
         'Rechazar la tarjeta para velar por la compensación; haga que el lanzamiento falle 3 veces o más para verlo detenerse y esperar a una persona.',
       submit: 'Crear',
@@ -863,7 +863,7 @@ const esES: LocaleResource<typeof enUS> = {
       step2:
         'Realice la compra de teclado de muestra, cuya tarjeta es rechazada, y observe cómo la unidad sale del “Stock de almacén” y regresa.',
       step3:
-        'Cree una compra con la tarjeta rechazada y “Liberaciones de stock que fallan a propósito” configuradas en 3: la liberación se detiene y espera “Reintentar la liberación”.',
+        'Cree una compra con la tarjeta rechazada y «Liberaciones de existencias que fallan deliberadamente» establecido en 3: la liberación se detiene y espera a «Reintentar la liberación de existencias».',
     },
     fulfilments: {
       purpose:
@@ -999,7 +999,7 @@ const esES: LocaleResource<typeof enUS> = {
     awaitingPayment: 'En espera de pago',
     paymentFailed: 'Pago fallido',
     cancelled: 'Cancelado',
-    refunding: 'Reembolso',
+    refunding: 'Reembolso en curso',
     refundNeedsAttention: 'El reembolso necesita atención',
     refunded: 'Reembolsado',
     fulfilled: 'Enviado',
@@ -1043,14 +1043,14 @@ const esES: LocaleResource<typeof enUS> = {
     paymentDeclined: 'Pago rechazado',
     paidAfterCancel: 'Pago después de la cancelación',
     expire: 'Cerrar después del tiempo de espera',
-    refundOrder: 'Reembolso',
+    refundOrder: 'Reembolsar',
     refunded: 'Reembolso completado',
     refundFailed: 'Reembolso fallido',
     retryRefund: 'Reintentar reembolso',
     charged: 'Cargo exitoso',
     chargeFailed: 'Cargo fallido',
     renew: 'Renovar cuando corresponda',
-    retryCharge: 'Cargo de reintento',
+    retryCharge: 'Reintentar el cobro',
     updateCard: 'Tarjeta de actualización',
     abandon: 'Abandonar',
     stockReserved: 'Stock reservado',
