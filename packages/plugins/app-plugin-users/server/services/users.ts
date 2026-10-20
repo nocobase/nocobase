@@ -20,6 +20,7 @@ import {
   type CreateManagedUserInput,
   type ListManagedUsersInput,
   type ManagedUser,
+  type UserAdministrationAction,
   type UserManagementOptions,
   type UserManagementService,
   type UserRoleScope,
@@ -200,13 +201,27 @@ class DefaultUserManagementService implements UserManagementService {
     return this.withRoleScopes(user, this.services.database.connection());
   }
 
+  /** Asks every role scope whether `actorId` may do `action` to `userId`; nothing to ask without an actor. */
+  private async assertCanAdminister(
+    userId: string,
+    actorId: string | undefined,
+    action: UserAdministrationAction,
+    connection: DatabaseConnection,
+  ): Promise<void> {
+    if (actorId === undefined) return;
+    for (const scope of this.services.roleScopes.list())
+      await scope.assertCanAdminister?.(userId, actorId, action, connection);
+  }
+
   async update(
     userId: string,
     input: Parameters<UserManagementService['update']>[1],
+    actorId?: string,
   ) {
     const user = await this.services.database.transaction(
       async (connection) => {
         await lockUserForAdministration(connection, userId);
+        await this.assertCanAdminister(userId, actorId, 'update', connection);
         return this.services.users
           .withConnection(connection)
           .update(userId, input);
@@ -215,9 +230,10 @@ class DefaultUserManagementService implements UserManagementService {
     return this.withRoleScopes(user, this.services.database.connection());
   }
 
-  async disable(userId: string): Promise<ManagedUser> {
+  async disable(userId: string, actorId?: string): Promise<ManagedUser> {
     const user = await this.services.database.transaction(
       async (connection) => {
+        await this.assertCanAdminister(userId, actorId, 'disable', connection);
         for (const scope of this.services.roleScopes.list()) {
           await scope.assertCanDisable?.(userId, connection);
         }
@@ -275,10 +291,11 @@ class DefaultUserManagementService implements UserManagementService {
     });
   }
 
-  async enable(userId: string): Promise<ManagedUser> {
+  async enable(userId: string, actorId?: string): Promise<ManagedUser> {
     const user = await this.services.database.transaction(
       async (connection) => {
         await lockUserForAdministration(connection, userId);
+        await this.assertCanAdminister(userId, actorId, 'enable', connection);
         return this.services.users.withConnection(connection).enable(userId);
       },
     );
@@ -289,6 +306,7 @@ class DefaultUserManagementService implements UserManagementService {
     userId: string,
     scopeKey: string,
     value: UserRoleValue,
+    actorId?: string,
   ): Promise<ManagedUser> {
     const scope = this.requireScope(scopeKey);
     this.validateRoleScopeValue(scope, value);
@@ -303,6 +321,12 @@ class DefaultUserManagementService implements UserManagementService {
           404,
         );
       }
+      await this.assertCanAdminister(
+        userId,
+        actorId,
+        'assign-role',
+        connection,
+      );
       await scope.replace(userId, value, connection);
       this.afterRoleScopesCommit(connection, userId);
     });
@@ -317,16 +341,35 @@ class DefaultUserManagementService implements UserManagementService {
     return this.withRoleScopes(user, this.services.database.connection());
   }
 
-  async resetPassword(userId: string, password: string): Promise<void> {
+  async resetPassword(
+    userId: string,
+    password: string,
+    actorId?: string,
+  ): Promise<void> {
     await this.services.database.transaction(async (connection) => {
       await lockUserForAdministration(connection, userId);
+      await this.assertCanAdminister(
+        userId,
+        actorId,
+        'reset-password',
+        connection,
+      );
       await this.services.users
         .withConnection(connection)
         .resetPassword(userId, password);
     });
   }
 
-  revokeSessions(userId: string): Promise<void> {
+  async revokeSessions(userId: string, actorId?: string): Promise<void> {
+    if (actorId !== undefined)
+      await this.services.database.transaction((connection) =>
+        this.assertCanAdminister(
+          userId,
+          actorId,
+          'revoke-sessions',
+          connection,
+        ),
+      );
     return this.services.users.revokeSessions(userId);
   }
 
