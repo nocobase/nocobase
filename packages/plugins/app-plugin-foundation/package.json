@@ -30,6 +30,10 @@
       "types": "./client/components/foundation-page.tsx",
       "import": "./client/components/foundation-page.tsx"
     },
+    "./cli": {
+      "types": "./cli/index.ts",
+      "import": "./cli/index.ts"
+    },
     "./package.json": "./package.json"
   },
   "imports": {
@@ -79,6 +83,10 @@
         "types": "./dist/client/components/foundation-page.d.ts",
         "import": "./dist/client/components/foundation-page.js"
       },
+      "./cli": {
+        "types": "./dist/cli/index.d.ts",
+        "import": "./dist/cli/index.js"
+      },
       "./package.json": "./package.json"
     },
     "imports": {
@@ -106,6 +114,7 @@
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",
+    "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",

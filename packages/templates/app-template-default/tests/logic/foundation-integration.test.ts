@@ -2,11 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { resolveAppRuntime } from '@nocobase/app-client/runtime';
 import { defineAppRuntime } from '@nocobase/app-client/runtime';
 import appRuntime from '../../client/runtime.js';
+import cliPlugins from '../../cli/plugins.js';
 import serverPlugins from '../../server/plugins.js';
 import settingsRoutes from '../../client/pages/settings/routes.js';
 import { buildRouteNavigation } from '../../client/routing/route-navigation.js';
 
 describe('default Foundation integration', () => {
+  it('registers the Foundation deployment evidence build hook', () => {
+    expect(
+      cliPlugins.plugins.filter(
+        (plugin) => plugin.packageName === '@nocobase/app-plugin-foundation',
+      ),
+    ).toHaveLength(1);
+  });
   it('exposes Foundation in settings for an unrestricted administrator and removes the empty group when denied', async () => {
     const runtime = await resolveAppRuntime(appRuntime);
     const menu = buildRouteNavigation(runtime.routes, new Set());

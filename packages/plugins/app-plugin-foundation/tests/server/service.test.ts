@@ -170,6 +170,32 @@ describe('App Foundation overview', () => {
     ).toBeGreaterThan(0);
   });
 
+  it('counts every permission set and grant across configuration pages', async () => {
+    await app.migrateApplication();
+    const values = Array.from({ length: 1001 }, (_, index) => ({
+      id: `paged-role-${index}`,
+      key: `paged-role-${index}`,
+      title: `Role ${index}`,
+      grants: [
+        { resource: { type: 'page', id: 'equipment' }, action: 'access' },
+      ],
+      createdAt: now,
+      updatedAt: now,
+    }));
+    for (let offset = 0; offset < values.length; offset += 200) {
+      await app.database
+        .repository('authorizationPermissionSets')
+        .createMany({ values: values.slice(offset, offset + 200) });
+    }
+    const overview = await app.service().overview();
+    expect(metricValue(overview, 'permissions', 'permissionSets')).toBe(1001);
+    expect(metricValue(overview, 'permissions', 'grants')).toBe(1001);
+    expect(capability(overview, 'permissions')).toMatchObject({
+      completeness: 'complete',
+      issues: [],
+    });
+  });
+
   it('counts grants outside the root Permission Set and lifecycle transitions', async () => {
     await app.migrateApplication();
     await app.database.repository('authorizationPermissionSets').createMany({

@@ -8,6 +8,7 @@ import type {
 } from '../shared/foundation.js';
 import type { RuntimeProviderEvidence } from './provider-inventory.js';
 import { SourceEvidence } from './source-evidence.js';
+import { readModuleManifest } from './module-manifest.js';
 
 const MAX_FILES = 400;
 const MAX_BYTES = 512_000;
@@ -47,7 +48,13 @@ export async function collectModuleSources(
       }
       const entry = await graph.entry();
       if (!entry) {
-        complete = false;
+        const built = !name
+          ? await readModuleManifest(directory, packageName)
+          : undefined;
+        if (built) {
+          routes.push(...built.routes);
+          complete &&= built.complete;
+        } else complete = false;
         continue;
       }
       const declarationFiles = await graph.walk(entry, false);

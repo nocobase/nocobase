@@ -112,16 +112,29 @@ export class Probe {
     });
   }
 
-  /** Every record of a small configuration Collection, such as Permission Sets. */
+  /** Read configuration Collections in stable pages; never present a truncated prefix as a complete total. */
   public records(
     name: string,
-    limit = 1000,
+    pageSize = 1000,
   ): Promise<readonly Record<string, unknown>[] | null> {
-    return this.read(name, async () => [
-      ...(await this.inventory.database
-        .repository<Record<string, unknown>>(name)
-        .findMany({ limit })),
-    ]);
+    return this.read(name, async () => {
+      if (!Number.isSafeInteger(pageSize) || pageSize < 1)
+        throw new RangeError(
+          'Configuration page size must be a positive integer.',
+        );
+      const records: Record<string, unknown>[] = [];
+      const repository =
+        this.inventory.database.repository<Record<string, unknown>>(name);
+      for (let offset = 0; ; offset += pageSize) {
+        const page = await repository.findMany({
+          limit: pageSize,
+          offset,
+          sort: (sort) => sort.field('id').asc(),
+        });
+        records.push(...page);
+        if (page.length < pageSize) return records;
+      }
+    });
   }
 
   /**
