@@ -38,6 +38,8 @@ The [shared helper](../assets/testing-example/tests/helpers/app.ts) creates `cre
 | [Client public configuration](../assets/testing-example/tests/client/public-config.test.tsx) | The typed Client accessor reads the Server-published payload and supplies its documented default when absent |
 | [CLI](../assets/testing-example/tests/cli/count.test.ts) | The contributed production command starts the fixture App on an owned test database and returns the expected JSON envelope |
 
+The CLI fixture uses `bindTestAppCommand()` to place runtime storage in `path.join(config.directory, 'storage')` without changing `APP_STORAGE_DIR` in the process environment. Its assertion checks that owned path, and `config.dispose()` removes the temporary directory.
+
 `createAppTest()` owns its lifecycle; the default file scope shares one application between route cases. Direct `createTestApp()` calls and CLI configuration fixtures use `finally` to close/dispose. Environment stubs are restored. Client requests match both method and API-relative path, reject unexpected endpoints, and release held responses in `finally` without sleeps. The database dialect comes from the standard test environment, not a hard-coded SQLite connection.
 
 Client tests use `answerApi()` at the network boundary. They prove rendering, translations and request contracts; Server tests independently prove persistence and authorization. A page-to-real-API browser workflow, route authorization, navigation/reload, compiled package consumption and publishable tarball contents require target App or packaging checks when those surfaces change. This fixture does not claim those checks passed.

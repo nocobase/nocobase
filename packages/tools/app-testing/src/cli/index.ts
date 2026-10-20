@@ -1,4 +1,6 @@
 // What a command's tests import: `@nocobase/app-cli/testing`, plus a way to run the command on test databases.
+import path from 'node:path';
+
 import type { AppCommand } from '@nocobase/app-cli';
 import {
   bindAppCommand,
@@ -17,7 +19,7 @@ export {
 
 export interface BindTestAppCommandOptions extends Omit<
   BindAppCommandOptions,
-  'configPath'
+  'configPath' | 'storageDir'
 > {
   /** The configuration `createTestAppConfig()` wrote; the command's application loads it instead of its own. */
   readonly config: TestAppConfig;
@@ -32,5 +34,9 @@ export function bindTestAppCommand<T extends typeof AppCommand>(
   options: BindTestAppCommandOptions,
 ): T {
   const { config, ...bindOptions } = options;
-  return bindAppCommand(command, { ...bindOptions, configPath: config.path });
+  return bindAppCommand(command, {
+    ...bindOptions,
+    configPath: config.path,
+    storageDir: path.join(config.directory, 'storage'),
+  });
 }

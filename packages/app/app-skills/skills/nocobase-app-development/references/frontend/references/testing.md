@@ -31,6 +31,8 @@ For a page or component that uses application services, start from the [complete
 
 The template's local Vitest inline rules transform client plugins in any scope, including `@acme/app-plugin-*`, alongside `app-client` and the client test helper. Preserve that scope coverage when changing the configuration so installed plugins share application contexts and service tokens. Keep server and database modules external. The shared React preset handles native router resolution; preserve its package export conditions and router externalization when adjusting local rules.
 
+`renderWithApp()` takes an application-relative `route`: use `/orders` for `/main/orders` under a server mounted at `/main`; router links and navigation include that mount path. Its returned `rerender()` preserves providers, translations and component state. Initialization failures remove the helper's runtime configuration immediately without removing configuration supplied by the test.
+
 For anything else, start from the test that already sets it up:
 
 - **A second language**: pass the `client/locales/index.ts` loader map and switch with `changeLanguage` inside `act`, as the next section shows; `tests/components/primitive-labels.test.tsx` renders in Chinese from the start with `locale: 'zh-CN'`.
