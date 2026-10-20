@@ -36,9 +36,11 @@ const sendSchema = z.object({
 });
 const proposedValues: FormProposal['values'] = {
   name: 'Proposed browser request',
-  priority: 'high',
+  department: 'design',
+  quantity: 3,
   budget: 420,
-  subscribe: true,
+  arrival: '2026-11-06',
+  purpose: 'Design work and prototyping',
 };
 
 async function startScene(page: Page) {
@@ -57,6 +59,7 @@ async function startScene(page: Page) {
     await page.screenshot({
       path: path.join(process.env.E2E_SCREENSHOT_DIR, name),
       fullPage: true,
+      animations: 'disabled',
     });
   };
   const close = async () => {
@@ -130,21 +133,20 @@ async function startScene(page: Page) {
     await expect(panel).toBeVisible();
     expect(fixture.streams).toHaveLength(0);
     await expect(panel.getByTestId('chat-context-chips')).toContainText(
-      'Request draft',
+      'Purchase request',
     );
     const readDraft = async () => ({
       name: await form.getByTestId('draft-name').inputValue(),
-      priority: await form
-        .getByTestId('draft-priority')
-        .locator('[data-slot="select-value"]')
-        .innerText(),
+      department: await form.getByTestId('draft-department').innerText(),
+      quantity: await form.getByTestId('draft-quantity').inputValue(),
       budget: await form.getByTestId('draft-budget').inputValue(),
-      subscribe: await form
-        .getByTestId('draft-subscribe')
-        .locator('[data-slot="select-value"]')
-        .innerText(),
+      arrival: await form.getByTestId('draft-arrival').innerText(),
+      purpose: await form.getByTestId('draft-purpose').inputValue(),
     });
-    const sendProposal = async (text: string) => {
+    const sendProposal = async (
+      text: string,
+      beforeOutput?: () => Promise<void>,
+    ) => {
       const streamIndex = fixture.streams.length;
       const request = page.waitForRequest(
         (candidate) =>
@@ -171,9 +173,10 @@ async function startScene(page: Page) {
       expect(JSON.stringify(fixture.requests.at(-1)?.messages)).toContain(
         source.instance,
       );
+      await beforeOutput?.();
       fixture.formProposal(streamIndex, proposal, `form-${streamIndex}`);
       await expect.poll(() => fixture.streams.length).toBe(streamIndex + 2);
-      fixture.append(streamIndex + 1, 'Review this browser-only proposal.');
+      fixture.append(streamIndex + 1, 'The browser draft values are ready.');
       fixture.complete(streamIndex + 1);
       await expect
         .poll(
@@ -208,73 +211,54 @@ async function startScene(page: Page) {
   }
 }
 
-test('requires review, applies edited values only to the draft, and never reapplies restored history', async ({
+test('automatically fills the draft without confirmation and never reapplies restored history', async ({
   page,
 }) => {
   const scene = await startScene(page);
   try {
     const initial = await scene.readDraft();
-    await expect(
-      scene.form.getByRole('button', {
-        name: 'Open AI chat for this form',
-        exact: true,
-      }),
-    ).toBeVisible();
     const first = await scene.sendProposal(
-      'Propose a high priority request with a budget.',
+      'Fill a procurement request with quantity, total and delivery date.',
     );
-    expect(await scene.readDraft()).toEqual(initial);
-    await scene.capture('form-proposal-before-apply.png');
-    await first.card
-      .getByTestId('proposal-name')
-      .fill('Reviewed browser request');
-    await first.card.getByTestId('proposal-budget').fill('500');
-    expect(await scene.readDraft()).toEqual(initial);
-    await first.card
-      .getByRole('button', { name: 'Apply to draft', exact: true })
-      .click();
     await expect(scene.form.getByTestId('draft-name')).toHaveValue(
-      'Reviewed browser request',
+      proposedValues.name!,
     );
-    await expect(scene.form.getByTestId('draft-budget')).toHaveValue('500');
-    await expect(
-      scene.form
-        .getByTestId('draft-priority')
-        .locator('[data-slot="select-value"]'),
-    ).toHaveText('High');
-    await expect(
-      scene.form
-        .getByTestId('draft-subscribe')
-        .locator('[data-slot="select-value"]'),
-    ).toHaveText('Yes');
-    await expect(
-      first.card.getByRole('heading', { name: 'Suggested draft values' }),
-    ).toBeFocused();
-    await expect(page.locator('[data-slot="toast-title"]')).toHaveText(
-      'Applied to the browser draft. Nothing was saved.',
+    await expect(scene.form.getByTestId('draft-budget')).toHaveValue('420');
+    await expect(scene.form.getByTestId('draft-department')).toHaveText(
+      'Product Design',
     );
-    const applied = await scene.readDraft();
-    await scene.capture('form-proposal-applied-draft.png');
-    const second = await scene.sendProposal(
-      'Propose another change that I may dismiss.',
+    await expect(scene.form.getByTestId('draft-quantity')).toHaveValue('3');
+    await expect(scene.form.getByTestId('draft-arrival')).toHaveText(
+      'Nov 6, 2026',
     );
-    await second.card
-      .getByRole('button', { name: 'Dismiss', exact: true })
-      .click();
-    expect(await scene.readDraft()).toEqual(applied);
+    await expect(scene.form.getByTestId('draft-purpose')).toHaveValue(
+      proposedValues.purpose!,
+    );
+    await expect(
+      first.card.getByText('Applied to the browser draft. Nothing was saved.'),
+    ).toBeVisible();
+    await expect(first.card.getByTestId('apply-form-proposal')).toHaveCount(0);
+    await expect(first.card.getByTestId('dismiss-form-proposal')).toHaveCount(
+      0,
+    );
+    await scene.capture('form-automatically-filled.png');
+    await scene.form
+      .getByTestId('draft-name')
+      .fill('Edited after automatic filling');
+    expect(await scene.readDraft()).toMatchObject({
+      name: 'Edited after automatic filling',
+    });
     const streams = scene.fixture.streams.length;
-    // Reopen durable history after a full reload: cards render, but local values are never applied on mount.
     await page.goto(scene.url);
-    await expect(scene.panel.getByTestId('form-proposal-card')).toHaveCount(2);
+    await expect(scene.panel.getByTestId('form-proposal-card')).toHaveCount(1);
+    await expect(scene.form.getByTestId('draft-name')).toHaveValue(
+      initial.name,
+    );
     expect(await scene.readDraft()).toEqual(initial);
     expect(scene.fixture.streams).toHaveLength(streams);
-    const restored = scene.panel.getByTestId('form-proposal-card').first();
-    const apply = restored.getByRole('button', {
-      name: 'Apply to draft',
-      exact: true,
-    });
-    if (await apply.isEnabled()) await apply.click();
-    expect(await scene.readDraft()).toEqual(initial);
+    await expect(
+      scene.panel.getByTestId('form-proposal-card').getByRole('alert'),
+    ).toBeVisible();
     await scene.capture('form-proposal-restored-history.png');
     expect(scene.businessWrites).toEqual([]);
     expect(scene.approvals).toEqual([]);
@@ -284,50 +268,43 @@ test('requires review, applies edited values only to the draft, and never reappl
   }
 });
 
-test('blocks proposals after manual edits and after record A to B to A target changes', async ({
+test('preserves edits made during generation and rejects cleared and restored drafts', async ({
   page,
 }) => {
   const scene = await startScene(page);
   try {
     const first = await scene.sendProposal(
-      'Prepare a proposal for the currently selected form.',
+      'Fill the selected request.',
+      async () => {
+        await scene.form
+          .getByTestId('draft-name')
+          .fill('Manual edit while generating');
+      },
     );
-    await scene.form
-      .getByTestId('draft-name')
-      .fill('Manual edit after sending');
-    const edited = await scene.readDraft();
-    const staleApply = first.card.getByRole('button', {
-      name: 'Apply to draft',
-      exact: true,
+    await expect(
+      first.card.getByText(
+        'The form or draft has changed. Include the current form and generate a new proposal.',
+      ),
+    ).toBeVisible();
+    expect(await scene.readDraft()).toMatchObject({
+      name: 'Manual edit while generating',
     });
-    if (await staleApply.isEnabled()) await staleApply.click();
-    expect(await scene.readDraft()).toEqual(edited);
     const second = await scene.sendProposal(
-      'Read my latest manual draft and propose again.',
+      'Fill the latest draft.',
+      async () => {
+        await scene.form
+          .getByRole('button', { name: 'Clear form', exact: true })
+          .click();
+        await scene.form
+          .getByTestId('draft-name')
+          .fill('Manual edit while generating');
+      },
     );
-    expect(JSON.stringify(second.sent)).toContain('Manual edit after sending');
-    await scene.form.getByTestId('draft-record').click();
-    await page.getByRole('option', { name: 'Record B', exact: true }).click();
-    await expect(
-      scene.form
-        .getByTestId('draft-record')
-        .locator('[data-slot="select-value"]'),
-    ).toHaveText('Record B');
-    const oldApply = second.card.getByRole('button', {
-      name: 'Apply to draft',
-      exact: true,
-    });
-    // Do not attempt this card in B: the A→B→A guard must work without relying on a cached earlier rejection.
-    await scene.form.getByTestId('draft-record').click();
-    await page.getByRole('option', { name: 'Record A', exact: true }).click();
-    await expect(
-      scene.form
-        .getByTestId('draft-record')
-        .locator('[data-slot="select-value"]'),
-    ).toHaveText('Record A');
-    const remountedA = await scene.readDraft();
-    if (await oldApply.isEnabled()) await oldApply.click();
-    expect(await scene.readDraft()).toEqual(remountedA);
+    expect(JSON.stringify(second.sent)).toContain(
+      'Manual edit while generating',
+    );
+    await expect(second.card.getByRole('alert')).toBeVisible();
+    expect((await scene.readDraft()).name).not.toBe(proposedValues.name);
     await scene.capture('form-proposal-stale-target.png');
     expect(scene.businessWrites).toEqual([]);
     expect(scene.approvals).toEqual([]);
@@ -342,15 +319,15 @@ test('does not authorize a registered form from a different user message context
 }) => {
   const scene = await startScene(page);
   try {
-    const first = await scene.sendProposal(
-      'Read the selected form without applying anything.',
+    const first = await scene.sendProposal('Fill the selected form.');
+    await expect(scene.form.getByTestId('draft-name')).toHaveValue(
+      proposedValues.name!,
     );
-    await first.card.getByTestId('dismiss-form-proposal').click();
+    await scene.form.getByTestId('draft-name').fill('Keep this manual edit');
     const unchanged = await scene.readDraft();
-    // Keep the same live registration and tokens, but explicitly remove it from the next message's selection.
     await scene.panel
       .getByRole('button', {
-        name: 'Remove context: Request draft',
+        name: 'Remove context: Purchase request',
         exact: true,
       })
       .click();
@@ -374,20 +351,12 @@ test('does not authorize a registered form from a different user message context
       .parse((await sentRequest).postDataJSON());
     expect(sent.context?.ui?.items ?? []).toEqual([]);
     await expect.poll(() => scene.fixture.streams.length).toBe(streamIndex + 1);
-    // An adversarial model reuses a real, still-live target learned from the previous turn.
     scene.fixture.formProposal(streamIndex, first.proposal, 'unselected-form');
     await expect.poll(() => scene.fixture.streams.length).toBe(streamIndex + 2);
     scene.fixture.complete(streamIndex + 1);
-    await expect
-      .poll(
-        async () =>
-          (await (await page.request.get(scene.endpoint)).json()).data.execution
-            ?.status,
-      )
-      .toBe('idle');
     const card = scene.panel.getByTestId('form-proposal-card').last();
-    await expect(card.getByTestId('apply-form-proposal')).toBeDisabled();
     await expect(card.getByRole('alert')).toBeVisible();
+    await expect(card.getByTestId('apply-form-proposal')).toHaveCount(0);
     expect(await scene.readDraft()).toEqual(unchanged);
     await scene.capture('form-proposal-missing-source.png');
     expect(scene.businessWrites).toEqual([]);
@@ -398,43 +367,181 @@ test('does not authorize a registered form from a different user message context
   }
 });
 
-test('keeps proposal review and explicit draft application usable at a narrow viewport', async ({
+test('automatically fills the draft at a narrow viewport and leaves it editable', async ({
   page,
 }) => {
   const scene = await startScene(page);
   try {
-    const initial = await scene.readDraft();
-    const { card } = await scene.sendProposal(
-      'Propose a browser-only draft for mobile review.',
-    );
     await page.setViewportSize({ width: 375, height: 812 });
+    const { card } = await scene.sendProposal(
+      'Fill the browser draft on mobile.',
+    );
     await expect(card).toBeVisible();
-    await card.getByTestId('proposal-name').fill('Reviewed mobile request');
-    await card.getByTestId('proposal-budget').fill('650');
-    expect(await scene.readDraft()).toEqual(initial);
-    await scene.capture('form-proposal-mobile-review.png');
-    await card.getByTestId('apply-form-proposal').click();
     await expect(
-      card.getByRole('heading', { name: 'Suggested draft values' }),
-    ).toBeFocused();
-    await expect(card.getByTestId('apply-form-proposal')).toBeDisabled();
+      card.getByText('Applied to the browser draft. Nothing was saved.'),
+    ).toBeVisible();
+    await expect(card.getByTestId('apply-form-proposal')).toHaveCount(0);
+    await expect(card.getByTestId('proposal-name')).toBeDisabled();
     expect(await scene.readDraft()).toMatchObject({
-      name: 'Reviewed mobile request',
-      budget: '650',
+      name: proposedValues.name,
+      budget: '420',
     });
-    expect(
-      await page.locator('html').evaluate((element) => {
-        if (
-          !('scrollWidth' in element) ||
-          typeof element.scrollWidth !== 'number'
-        )
-          throw new Error('The document width is unavailable.');
-        return element.scrollWidth;
-      }),
-    ).toBeLessThanOrEqual(375);
-    await scene.capture('form-proposal-mobile-applied.png');
+    await expect
+      .poll(() =>
+        page.locator('html').evaluate((element) => {
+          if (
+            !('scrollWidth' in element) ||
+            typeof element.scrollWidth !== 'number'
+          )
+            throw new Error('The document width is unavailable.');
+          return element.scrollWidth;
+        }),
+      )
+      .toBeLessThanOrEqual(375);
+    await scene.capture('form-automatically-filled-mobile.png');
     expect(scene.businessWrites).toEqual([]);
     expect(scene.approvals).toEqual([]);
+    expect(scene.errors).toEqual([]);
+  } finally {
+    await scene.close();
+  }
+});
+
+test('keeps extraction side by side and preserves drafts across scenario tabs', async ({
+  page,
+}) => {
+  const scene = await startScene(page);
+  try {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto(`${applicationUrl!.replace(/\/$/, '')}/ai-translation`);
+    const translationContainer = page
+      .getByRole('heading', { name: 'AI Translation', exact: true })
+      .locator('xpath=ancestor::section[1]');
+    await expect(translationContainer).toBeVisible();
+    const translationBox = await translationContainer.boundingBox();
+    const translationModel = page.getByRole('combobox', {
+      name: 'Language model',
+      exact: true,
+    });
+    await expect(translationModel).toBeVisible();
+    const translationModelBox = await translationModel.boundingBox();
+    await page.goto(
+      `${applicationUrl!.replace(/\/$/, '')}/ai-structured-extraction`,
+    );
+    const contactTab = page.getByRole('tab', {
+      name: 'Contact profile',
+      exact: true,
+    });
+    const orderTab = page.getByRole('tab', {
+      name: 'Purchase order',
+      exact: true,
+    });
+    const contact = page.getByRole('region', {
+      name: 'Contact profile',
+      exact: true,
+    });
+    const source = contact.getByRole('textbox', {
+      name: 'Source text',
+      exact: true,
+    });
+    const result = contact.getByRole('region', {
+      name: 'Extracted information',
+      exact: true,
+    });
+    await expect(contactTab).toHaveAttribute('aria-selected', 'true');
+    const extractionContainer = page
+      .getByRole('heading', { name: 'AI structured extraction', exact: true })
+      .locator('xpath=ancestor::section[1]');
+    const extractionBox = await extractionContainer.boundingBox();
+    expect(extractionBox!.x).toBeCloseTo(translationBox!.x, 0);
+    expect(extractionBox!.width).toBeCloseTo(translationBox!.width, 0);
+    const extractionModel = contact.getByRole('combobox', {
+      name: 'Language model',
+      exact: true,
+    });
+    await expect(extractionModel).toBeVisible();
+    await expect(extractionModel).toContainText('fixture-chat');
+    const extractionModelBox = await extractionModel.boundingBox();
+    expect(extractionModelBox!.width).toBeCloseTo(
+      translationModelBox!.width,
+      0,
+    );
+    const sourceBox = await source.boundingBox();
+    const resultBox = await result.boundingBox();
+    expect(sourceBox!.x + sourceBox!.width).toBeLessThanOrEqual(resultBox!.x);
+    const extractButton = contact.getByRole('button', {
+      name: 'Extract',
+      exact: true,
+    });
+    await expect(extractButton).toBeEnabled();
+    const extractBox = await extractButton.boundingBox();
+    expect(extractBox!.x + extractBox!.width).toBeCloseTo(
+      sourceBox!.x + sourceBox!.width,
+      0,
+    );
+    await expect(
+      page.getByText('No chat models are available.', { exact: true }),
+    ).toHaveCount(0);
+    await source.fill('Text kept while switching scenarios');
+    await contact.getByLabel('Name', { exact: true }).fill('Manual contact');
+    await orderTab.click();
+    await expect(contact).toBeHidden();
+    await contactTab.click();
+    await expect(source).toHaveValue('Text kept while switching scenarios');
+    await expect(contact.getByLabel('Name', { exact: true })).toHaveValue(
+      'Manual contact',
+    );
+    await expect(
+      contact.getByRole('button', { name: 'Use example', exact: true }),
+    ).toHaveCount(0);
+    await scene.capture('structured-extraction-desktop.png');
+    await page.getByRole('button', { name: 'Appearance', exact: true }).hover();
+    await page
+      .getByRole('radiogroup', { name: 'Color mode' })
+      .getByText('Dark', { exact: true })
+      .click();
+    await page
+      .getByRole('radiogroup', { name: 'Theme', exact: true })
+      .getByText('Spacious', { exact: true })
+      .click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('html')).toHaveClass(/dark/);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'default');
+    await scene.capture('structured-extraction-dark-spacious.png');
+    await page.getByRole('button', { name: 'Appearance', exact: true }).hover();
+    await page
+      .getByRole('radiogroup', { name: 'Color mode' })
+      .getByText('Light', { exact: true })
+      .click();
+    await page
+      .getByRole('radiogroup', { name: 'Theme', exact: true })
+      .getByText('Compact', { exact: true })
+      .click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('html')).not.toHaveClass(/dark/);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'compact');
+    await page.setViewportSize({ width: 375, height: 812 });
+    await expect(source).toBeVisible();
+    const narrowSource = await source.boundingBox();
+    const narrowResult = await result.boundingBox();
+    expect(narrowSource!.y + narrowSource!.height).toBeLessThan(
+      narrowResult!.y,
+    );
+    await expect
+      .poll(() =>
+        page.locator('html').evaluate((element) => {
+          if (
+            !('scrollWidth' in element) ||
+            typeof element.scrollWidth !== 'number'
+          )
+            throw new Error('The document width is unavailable.');
+          return element.scrollWidth;
+        }),
+      )
+      .toBeLessThanOrEqual(375);
+    await scene.capture('structured-extraction-mobile.png');
+    expect(scene.fixture.streams).toHaveLength(0);
+    expect(scene.businessWrites).toEqual([]);
     expect(scene.errors).toEqual([]);
   } finally {
     await scene.close();

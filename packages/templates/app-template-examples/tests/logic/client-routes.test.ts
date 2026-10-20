@@ -137,11 +137,13 @@ describe('app client routes', () => {
     expect(management?.children.map(({ route }) => route.name)).toEqual([
       'workflows',
       'settingsUsers',
-      'settingsRoles',
+      'permissionManagement',
     ]);
-    expect(
-      management?.children.every(({ children }) => children.length === 0),
-    ).toBe(true);
+    const permissions = management?.children.find(
+      ({ route }) => route.name === 'permissionManagement',
+    );
+    expect(permissions?.children).toEqual([]);
+    expect(permissions?.route.path).toBe('/roles');
   });
 
   it('pins the page authorization of every signed-in page', () => {
@@ -154,13 +156,6 @@ describe('app client routes', () => {
     expect(pageAuthorizations(resolved.routes)).toEqual([
       // The landing page opted out of page authorization, so it is reachable by every signed-in user.
       { name: 'home', authorizedAs: null },
-      { name: 'agents', authorizedAs: 'agents' },
-      { name: 'runtimes', authorizedAs: 'runtimes' },
-      { name: 'runtimes-connect', authorizedAs: 'runtimes' },
-      { name: 'models', authorizedAs: 'settings:agents.services' },
-      { name: 'ai-translation', authorizedAs: null },
-      { name: 'ai-structured-extraction', authorizedAs: null },
-      { name: 'ai-form-fill', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       { name: 'routeOverlays', authorizedAs: 'routeOverlays' },
       // Overlay children are nested under a page, so the parent's check is the only one.
@@ -177,6 +172,13 @@ describe('app client routes', () => {
       { name: 'numeric-examples', authorizedAs: 'numeric-examples' },
       { name: 'i18n-examples', authorizedAs: 'i18n-examples' },
       { name: 'external-crm', authorizedAs: 'external-crm' },
+      { name: 'agents', authorizedAs: 'agents' },
+      { name: 'runtimes', authorizedAs: 'runtimes' },
+      { name: 'runtimes-connect', authorizedAs: 'runtimes' },
+      { name: 'models', authorizedAs: 'settings:agents.services' },
+      { name: 'ai-translation', authorizedAs: null },
+      { name: 'ai-structured-extraction', authorizedAs: null },
+      { name: 'ai-form-fill', authorizedAs: null },
       { name: 'workflows', authorizedAs: 'settings:workflow-management' },
       {
         name: 'workflowDefinitions',
@@ -214,6 +216,14 @@ describe('app client routes', () => {
         name: 'settingsRoleEdit',
         authorizedAs: 'settings:authorization.permission-sets',
       },
+      ...[
+        'settingsDefaultAccess',
+        'settingsDefaultAccessCreate',
+        'settingsDefaultAccessEdit',
+      ].map((name) => ({
+        name,
+        authorizedAs: 'settings:authorization.default-access',
+      })),
     ]);
   });
 });

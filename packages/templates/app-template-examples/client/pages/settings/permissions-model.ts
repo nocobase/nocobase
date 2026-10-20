@@ -60,19 +60,43 @@ export function setPermission(
   return next.filter((item) => item.actions.length);
 }
 
+const sectionDescriptions: Readonly<Record<string, string>> = {
+  pages: 'pageAccessHint',
+  business: 'businessOperationsHint',
+  users: 'userAccountsHint',
+  administration: 'systemToolsHint',
+};
+
 export function permissionSections(
   catalog: AuthorizationOptionsResponse,
   grants: readonly PermissionGrant[],
   text: (value: LocalizedText) => string,
 ): readonly PermissionEditorSection[] {
+  const sharedActionHint = (resource: CatalogResource): string | undefined => {
+    const first = resource.actions[0]?.description;
+    if (!first) return undefined;
+    const hint = text(first);
+    return resource.actions.every(
+      (action) => action.description && text(action.description) === hint,
+    )
+      ? hint
+      : undefined;
+  };
   return catalog.sections
     .map((section) => ({
       id: section.name,
       title: text(section.title),
+      description: sectionDescriptions[section.name]
+        ? text({ key: `settings.${sectionDescriptions[section.name]}` })
+        : undefined,
       groups: section.subsections.flatMap((subsection) =>
         subsection.resources.map((resource) => ({
           id: JSON.stringify([subsection.name, resource.type, resource.id]),
           title: text(resource.title),
+          actionHint:
+            resource.actions.length > 1
+              ? sharedActionHint(resource)
+              : undefined,
           accessOnly:
             resource.type === 'page' &&
             resource.actions.length === 1 &&
@@ -89,6 +113,11 @@ export function permissionSections(
             const row = {
               id: permissionRowId(resource, action.name),
               label: text(action.title),
+              hint:
+                action.description &&
+                !(resource.actions.length > 1 && sharedActionHint(resource))
+                  ? text(action.description)
+                  : undefined,
               actionKey: action.name,
               enabled: Boolean(granted),
             };
@@ -143,6 +172,10 @@ export function permissionSections(
                         })),
                       ],
                       level: value,
+                      hint:
+                        value === ''
+                          ? text({ key: 'settings.noAdditionalScopeHint' })
+                          : undefined,
                     };
                   })
                 : [],
@@ -203,7 +236,10 @@ export function setPermissions(
     const [type, resourceId, action, scope] = JSON.parse(id) as string[];
     if (scope) return current;
     const resource = resources.find(
-      (item) => item.type === type && item.id === resourceId,
+      (item) =>
+        item.type === type &&
+        item.id === resourceId &&
+        item.actions.some((entry) => entry.name === action),
     );
     if (
       !resource ||

@@ -729,6 +729,37 @@
           "target": "client/extensions/nocobase-data-table-demo/data-table.tsx"
         }
       ]
+    },
+    {
+      "name": "role-list-demo",
+      "type": "registry:example",
+      "title": "Role List Demo",
+      "description": "A compact role list with protected/custom roles, a long name and many rows.",
+      "categories": ["authorization"],
+      "dependencies": ["react-router@^7.0.2"],
+      "registryDependencies": ["@nocobase/role-list"],
+      "files": [
+        {
+          "path": "authorization/role-list.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-role-list-demo/role-list.tsx"
+        }
+      ]
+    },
+    {
+      "name": "default-access-editor-demo",
+      "type": "registry:example",
+      "title": "Default Access Editor Demo",
+      "description": "Controlled default-access rule fields, independent scopes and no implicit all-records selection.",
+      "categories": ["authorization"],
+      "registryDependencies": ["@nocobase/default-access-editor"],
+      "files": [
+        {
+          "path": "authorization/default-access-editor.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-default-access-editor-demo/default-access-editor.tsx"
+        }
+      ]
     }
   ]
 }

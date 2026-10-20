@@ -25,9 +25,11 @@ const proposal: FormProposal = {
   revision: '0',
   values: {
     name: 'Fixture request',
-    priority: 'high',
+    department: 'design',
+    quantity: 3,
     budget: 0,
-    subscribe: false,
+    arrival: '2026-11-06',
+    purpose: 'Design and prototyping',
   },
 };
 
@@ -44,6 +46,12 @@ it('validates the application proposal without accepting undeclared or read-only
     { budget: NaN },
     { budget: Infinity },
     { subscribe: 'true' },
+    { department: 'unknown' },
+    { quantity: 0 },
+    { quantity: 1.5 },
+    { quantity: 10_001 },
+    { arrival: '2026-02-30' },
+    { purpose: 'x'.repeat(2001) },
     JSON.parse('{"__proto__":{"polluted":true}}'),
     { constructor: 'unsafe' },
   ]) {
@@ -141,21 +149,22 @@ test('delivers selected UI data to the model and persists a safe, completed draf
       revision: proposal.revision,
       values: {
         name: 'Current browser draft',
-        priority: 'normal',
+        department: 'design',
+        quantity: 1,
         budget: 0,
-        subscribe: false,
       },
       fields: [
         { name: 'name', type: 'string', editable: true },
         {
-          name: 'priority',
+          name: 'department',
           type: 'string',
           editable: true,
-          enum: ['low', 'normal', 'high'],
+          enum: ['design', 'engineering', 'marketing', 'admin'],
         },
+        { name: 'quantity', type: 'number', editable: true },
         { name: 'budget', type: 'number', editable: true },
-        { name: 'subscribe', type: 'boolean', editable: true },
-        { name: 'recordId', type: 'string', editable: false },
+        { name: 'arrival', type: 'string', editable: true },
+        { name: 'purpose', type: 'string', editable: true },
       ],
       applicationExtension: {
         nested: [false, 0, '', null, { custom: 'kept' }],

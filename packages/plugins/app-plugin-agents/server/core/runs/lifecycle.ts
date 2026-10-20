@@ -61,6 +61,9 @@ import {
 } from './run.store.js';
 import { finishRun, requeueRun, type TransitionDeps } from './transitions.js';
 
+// MySQL TEXT stores at most 65,535 bytes, one less than the protocol's event limit.
+const MAX_STORED_EVENT_BYTES = Math.min(MAX_EVENT_CONTENT_BYTES, 65_535);
+
 const executionReport = z.object({
   effort: z.string().trim().min(1).max(200).nullable(),
   source: z.string().trim().min(1).max(200),
@@ -429,14 +432,14 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
               ? null
               : truncateBytes(
                   redact.text(event.content),
-                  MAX_EVENT_CONTENT_BYTES,
+                  MAX_STORED_EVENT_BYTES,
                 );
           const output =
             event.output === undefined
               ? null
               : truncateBytes(
                   redact.text(event.output),
-                  MAX_EVENT_CONTENT_BYTES,
+                  MAX_STORED_EVENT_BYTES,
                 );
           await eventsRepo(conn).createOne({
             values: {

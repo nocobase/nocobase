@@ -229,24 +229,33 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
         removalFailed: true,
       })),
     );
-    await renderPage(<MailAccountsPage />);
+    const app = await renderPage(<MailAccountsPage />);
     expect(
       await screen.findByText('Removal failed; retrying automatically'),
     ).toBeVisible();
     expect(screen.getByRole('button', { name: 'Removing…' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Deactivate' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Sync' })).toBeDisabled();
-    mail.listAccounts.mockResolvedValue([]);
-    act(() => {
-      for (const subscription of subscriptions)
-        subscription.onEvent?.({
-          type: 'event',
-          topic: 'mail',
-          payload: { kind: 'mail.changed' },
-          publishedAt: new Date().toISOString(),
-        });
-    });
-    expect(await screen.findByText('No accounts connected')).toBeVisible();
+    await waitFor(() => expect(subscriptions.size).toBe(1));
+    vi.useFakeTimers();
+    try {
+      mail.listAccounts.mockResolvedValue([]);
+      act(() => {
+        for (const subscription of subscriptions)
+          subscription.onEvent?.({
+            type: 'event',
+            topic: 'mail',
+            payload: { kind: 'mail.changed' },
+            publishedAt: new Date().toISOString(),
+          });
+      });
+      // Complete the notification's debounce without waiting for real time or the 60-second fallback refresh.
+      await act(async () => vi.advanceTimersByTimeAsync(1_000));
+      expect(screen.getByText('No accounts connected')).toBeVisible();
+    } finally {
+      await app.unmount();
+      vi.useRealTimers();
+    }
   });
 
   it('confirms signature deletion in the drawer, preserves edits on cancel and retries failures', async () => {

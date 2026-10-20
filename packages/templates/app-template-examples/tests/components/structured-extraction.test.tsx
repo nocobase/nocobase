@@ -10,7 +10,13 @@ import {
   renderWithApp,
   type ApiCall,
 } from '@nocobase/app-testing/client';
-import { act, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -154,15 +160,22 @@ async function mount(
 }
 
 function section(title = copy.contactTitle) {
+  fireEvent.click(screen.getByRole('tab', { name: title, exact: true }));
   return screen.getByRole('region', { name: title });
 }
 
 async function chooseModel(
   user: ReturnType<typeof userEvent.setup>,
   region: HTMLElement,
-  label = 'Demo provider / Chat One',
+  label = 'Chat One',
   modelLabel = copy.model,
 ) {
+  fireEvent.click(
+    screen.getByRole('tab', {
+      name: region.querySelector('h2')!.textContent!,
+      exact: true,
+    }),
+  );
   const trigger = within(region).getByRole('combobox', { name: modelLabel });
   await waitFor(() => expect(trigger).toBeEnabled());
   await user.click(trigger);
@@ -207,6 +220,41 @@ beforeEach(() => {
 });
 
 describe('structured extraction page', () => {
+  it('shows one scenario at a time and restores local drafts without an example action', async () => {
+    const user = userEvent.setup();
+    const view = await mount();
+    const contactRegion = section();
+    expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+    expect(
+      screen.getByRole('tab', { name: copy.contactTitle }),
+    ).toHaveAttribute('aria-selected', 'true');
+    await replace(
+      user,
+      within(contactRegion).getByRole('textbox', { name: copy.source }),
+      'My source draft',
+    );
+    await replace(
+      user,
+      within(contactRegion).getByLabelText(copy.fields.name),
+      'My manual name',
+    );
+    section(copy.orderTitle);
+    expect(screen.getByRole('tab', { name: copy.orderTitle })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    section();
+    expect(
+      within(contactRegion).getByRole('textbox', { name: copy.source }),
+    ).toHaveValue('My source draft');
+    expect(within(contactRegion).getByLabelText(copy.fields.name)).toHaveValue(
+      'My manual name',
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Use example' }),
+    ).not.toBeInTheDocument();
+    expect(view.extractions()).toHaveLength(0);
+  });
   it('loads the shared catalog and submits two frontend-owned JSON Schemas to the same endpoint', async () => {
     const user = userEvent.setup();
     const view = await mount({
@@ -219,6 +267,7 @@ describe('structured extraction page', () => {
     const contactRegion = section();
     const orderRegion = section(copy.orderTitle);
     for (const region of [contactRegion, orderRegion]) {
+      section(region.querySelector('h2')!.textContent!);
       expect(
         within(region).getByRole('button', { name: copy.extract, exact: true }),
       ).toBeDisabled();
@@ -227,10 +276,12 @@ describe('structured extraction page', () => {
       ).toHaveAttribute('aria-required', 'true');
     }
     expect(
-      within(contactRegion).getByRole('textbox', { name: copy.source }),
+      within(section()).getByRole('textbox', { name: copy.source }),
     ).toHaveValue(copy.contactSample);
     expect(
-      within(orderRegion).getByRole('textbox', { name: copy.source }),
+      within(section(copy.orderTitle)).getByRole('textbox', {
+        name: copy.source,
+      }),
     ).toHaveValue(copy.orderSample);
     await chooseModel(user, contactRegion);
     await replace(
@@ -270,7 +321,7 @@ describe('structured extraction page', () => {
       within(orderRegion).getByLabelText(copy.fields.supplier),
     ).toHaveValue('');
 
-    await chooseModel(user, orderRegion, 'Other provider / Chat Two');
+    await chooseModel(user, orderRegion, 'Chat Two');
     await user.click(
       within(orderRegion).getByRole('button', {
         name: copy.extract,
@@ -346,7 +397,8 @@ describe('structured extraction page', () => {
     const contactRegion = section();
     const orderRegion = section(copy.orderTitle);
     await chooseModel(user, contactRegion);
-    await chooseModel(user, orderRegion, 'Other provider / Chat Two');
+    await chooseModel(user, orderRegion, 'Chat Two');
+    section();
     await user.dblClick(
       within(contactRegion).getByRole('button', {
         name: copy.extract,
@@ -364,6 +416,7 @@ describe('structured extraction page', () => {
     expect(
       within(contactRegion).getByLabelText(copy.fields.name),
     ).toBeDisabled();
+    section(copy.orderTitle);
     expect(
       within(orderRegion).getByRole('textbox', { name: copy.source }),
     ).toBeEnabled();
@@ -393,6 +446,7 @@ describe('structured extraction page', () => {
         within(contactRegion).getByLabelText(copy.fields.name),
       ).toHaveValue(contact.name),
     );
+    section();
     expect(
       within(contactRegion).getByRole('button', {
         name: copy.extract,
@@ -415,7 +469,7 @@ describe('structured extraction page', () => {
     await replace(user, skills, 'TypeScript, C++, , 中文,');
     expect(skills).toHaveValue('TypeScript, C++, , 中文,');
     const orderRegion = section(copy.orderTitle);
-    await chooseModel(user, orderRegion, 'Other provider / Chat Two');
+    await chooseModel(user, orderRegion, 'Chat Two');
     await user.click(
       within(orderRegion).getByRole('button', {
         name: copy.extract,
@@ -515,6 +569,7 @@ describe('structured extraction page', () => {
       ).not.toBeInTheDocument();
       expect(view.extractions()).toHaveLength(2);
       expect(view.toasts()).toHaveLength(1);
+      section();
       if (message === copy.sessionExpired) {
         await user.click(
           within(region).getByRole('button', { name: copy.signIn }),
@@ -722,8 +777,9 @@ describe('structured extraction page', () => {
         name: chinese.source,
       }),
     ).toHaveValue(chinese.orderSample);
+    section(chinese.contactTitle);
     expect(within(region).getByLabelText(chinese.fields.skills)).toBeVisible();
-    await chooseModel(user, region, 'Demo provider / Chat One', chinese.model);
+    await chooseModel(user, region, 'Chat One', chinese.model);
     await user.click(
       within(region).getByRole('button', {
         name: chinese.extract,
@@ -769,12 +825,13 @@ describe('structured extraction page', () => {
     },
   );
 
-  it('keeps both sections disabled while the catalog loads, then enables model selection without auto-submitting', async () => {
+  it('defaults each scenario to the first loaded model without submitting and preserves manual choices', async () => {
+    const user = userEvent.setup();
     const pending = deferred<unknown>();
     const view = await mount({ models: () => pending.promise });
     expect(
       screen.getAllByRole('status', { name: enUS['status.loading'] }),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     for (const title of [copy.contactTitle, copy.orderTitle]) {
       expect(within(section(title)).getByRole('combobox')).toBeDisabled();
       expect(
@@ -790,67 +847,51 @@ describe('structured extraction page', () => {
     await waitFor(() =>
       expect(within(section()).getByRole('combobox')).toBeEnabled(),
     );
-    expect(
-      within(section()).getByRole('button', {
-        name: copy.extract,
-        exact: true,
-      }),
-    ).toBeDisabled();
+    for (const title of [copy.contactTitle, copy.orderTitle]) {
+      const region = section(title);
+      expect(within(region).getByRole('combobox')).toHaveTextContent(
+        'Chat One',
+      );
+      expect(
+        within(region).getByRole('button', { name: copy.extract, exact: true }),
+      ).toBeEnabled();
+    }
+    await chooseModel(user, section(), 'Chat Two');
+    section(copy.orderTitle);
+    expect(within(section()).getByRole('combobox')).toHaveTextContent(
+      'Chat Two',
+    );
     expect(view.extractions()).toHaveLength(0);
   });
 
-  it.each([true, false])(
-    'handles an empty chat catalog with real model-configuration authorization (%s)',
-    async (canConfigure) => {
-      const view = await mount({
-        models: () => ({
-          data: [
-            {
-              ...catalog[0]!,
-              models: catalog[0]!.models.filter(
-                (model) => model.kind === 'embedding',
-              ),
-            },
-          ],
+  it('keeps the capability example quiet when no chat models are available', async () => {
+    const view = await mount({ models: () => ({ data: [] }) });
+    await waitFor(() =>
+      expect(view.calls.some((call) => call.path === 'agents/models')).toBe(
+        true,
+      ),
+    );
+    for (const title of [copy.contactTitle, copy.orderTitle]) {
+      const region = section(title);
+      expect(within(region).getByRole('combobox')).toBeDisabled();
+      expect(
+        within(region).getByRole('button', { name: copy.extract, exact: true }),
+      ).toBeDisabled();
+      expect(within(region).queryByText(copy.noModels)).not.toBeInTheDocument();
+      expect(
+        within(region).queryByText(copy.missingInput),
+      ).not.toBeInTheDocument();
+      expect(
+        within(region).queryByRole('button', {
+          name: enUS.onlineAgent.openModels,
         }),
-        canConfigure,
-      });
-      await waitFor(() =>
-        expect(screen.getAllByText(copy.noModels)).toHaveLength(2),
-      );
-      for (const title of [copy.contactTitle, copy.orderTitle]) {
-        const region = section(title);
-        expect(within(region).getByRole('combobox')).toBeDisabled();
-        expect(
-          within(region).getByRole('button', {
-            name: copy.extract,
-            exact: true,
-          }),
-        ).toBeDisabled();
-        if (canConfigure) {
-          expect(
-            await within(region).findByRole('button', {
-              name: enUS.onlineAgent.openModels,
-            }),
-          ).toHaveAttribute('href', '/models');
-        } else {
-          expect(
-            await within(region).findByText(enUS.onlineAgent.noModels.readOnly),
-          ).toBeVisible();
-          expect(
-            within(region).queryByRole('button', {
-              name: enUS.onlineAgent.openModels,
-            }),
-          ).not.toBeInTheDocument();
-        }
-      }
-      expect(view.calls).toContainEqual({
-        path: 'authorization/permissions',
-        method: 'GET',
-      });
-      expect(view.extractions()).toHaveLength(0);
-    },
-  );
+      ).not.toBeInTheDocument();
+    }
+    expect(
+      view.calls.some((call) => call.path === 'authorization/permissions'),
+    ).toBe(false);
+    expect(view.extractions()).toHaveLength(0);
+  });
 
   it('retries a failed shared catalog explicitly and does not expose server details', async () => {
     const user = userEvent.setup();

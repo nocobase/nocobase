@@ -5034,6 +5034,9 @@ importers:
       '@nocobase/app-cli':
         specifier: workspace:^
         version: link:../../app/app-cli
+      '@nocobase/app-plugin-agents':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-agents
       '@nocobase/app-plugin-api-keys':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-api-keys
@@ -5621,6 +5624,9 @@ importers:
       cn:
         specifier: 'catalog:'
         version: 0.4.0
+      date-fns:
+        specifier: 'catalog:'
+        version: 4.4.0
       dayjs:
         specifier: ^1.10.7
         version: 1.11.21
@@ -5666,6 +5672,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.2.8
+      react-day-picker:
+        specifier: ^10.0.2
+        version: 10.0.2(@types/react@19.2.18)(react@19.2.8)
       react-dom:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)
@@ -13514,6 +13523,16 @@ packages:
 
   react-day-picker@10.0.1:
     resolution: {integrity: sha512-eNh6BlwcYInWaJtRv18mXQ06Ys/H6rdTZAnTaSdOYJuTpwP1JMCHNd1FDRadA+gbeinq+psdULN5Xnowy9mV8w==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@types/react': '>=16.8.0'
+      react: '>=16.8.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
+  react-day-picker@10.0.2:
+    resolution: {integrity: sha512-QetiKtZWE9Uaw/pM/SYNv6WPYOTRnSJ2puL0GgwkmUFMIwiY0dtjH1W4B7DOVXVNQM0ZOClGpH/heOfBSzWeiA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@types/react': '>=16.8.0'
@@ -23203,6 +23222,14 @@ snapshots:
   re2js@2.8.6: {}
 
   react-day-picker@10.0.1(@types/react@19.2.18)(react@19.2.8):
+    dependencies:
+      '@date-fns/tz': 1.5.0
+      date-fns: 4.4.0
+      react: 19.2.8
+    optionalDependencies:
+      '@types/react': 19.2.18
+
+  react-day-picker@10.0.2(@types/react@19.2.18)(react@19.2.8):
     dependencies:
       '@date-fns/tz': 1.5.0
       date-fns: 4.4.0

@@ -181,9 +181,9 @@ describe('claim query cost', () => {
       );
       // Run skills use the current global/project defaults and one metadata join.
       // Writes remain INSERT 4, UPDATE 5, DELETE 1 on the same fixture.
+      // Dialects without RETURNING also read back written rows; keep a bounded read budget.
       expect(counts.select).toBeLessThanOrEqual(25);
-      expect(counts).toEqual({
-        select: 17,
+      expect(counts).toMatchObject({
         insert: 4,
         update: 5,
         delete: 1,
