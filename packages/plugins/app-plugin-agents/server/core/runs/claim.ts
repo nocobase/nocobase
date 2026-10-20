@@ -105,6 +105,7 @@ import {
   mountsFor,
   prepareExtensions,
   repoAccessFor,
+  responsibleOf,
   type RepoAccessRegistry,
   sessionKeyOf,
   withSections,
@@ -472,6 +473,11 @@ export function asksCredentialsOnDemand(
   runner: Pick<Runner, 'features'>,
 ): boolean {
   return runner.features.includes('gitCredentials');
+}
+
+/** Whether `runner` wraps code host CLIs with the run's credential (`RunGit.tools`). */
+export function wrapsHostTools(runner: Pick<Runner, 'features'>): boolean {
+  return runner.features.includes('gitTools');
 }
 
 const DIRECTORY_KEY_SEPARATOR = '\n';
@@ -1143,6 +1149,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             dir.kind === 'repo',
         ),
         onDemand: asksCredentialsOnDemand(runner),
+        tools: wrapsHostTools(runner),
+        responsibleUserId: await responsibleOf(conn, deps.subjects, {
+          kind: run.subjectKind,
+          id: run.subjectId,
+        }),
       },
       prepared,
     );
@@ -1618,7 +1629,16 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         deps.mounts,
         (error) => deps.onClaimFailure?.(candidate.id, error),
         deps.repoAccess,
-        { onDemand: asksCredentialsOnDemand(runner) },
+        {
+          onDemand: asksCredentialsOnDemand(runner),
+          tools: wrapsHostTools(runner),
+          responsibleUserId: deps.repoAccess
+            ? await responsibleOf(conn, deps.subjects, {
+                kind: candidate.subjectKind,
+                id: candidate.subjectId,
+              }).catch(() => null)
+            : null,
+        },
       ),
     );
     const subjectContext = deps.subjects.get(candidate.subjectKind)?.context;

@@ -512,6 +512,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     clock,
     reports,
     repoAccess,
+    subjects,
     secrets,
     onError,
   });

@@ -9,7 +9,8 @@
  * else is refused, so a run that ended, went back to the queue or was taken by another attempt gets nothing.
  *
  * The application issues the credential (`RepoAccessProvider.issue`), outside any transaction, within
- * `ISSUE_TIMEOUT_MS`; whether a cached one is still good enough is its decision. Every credential handed out is added
+ * `ISSUE_TIMEOUT_MS`, told who answers for the run's subject now (`responsibleUserId`); whose credential it is, and
+ * whether a cached one is still good enough, is its decision. Every credential handed out is added
  * to the run's remembered secrets, so what the run reports afterwards is redacted of it too. A failure is answered
  * with a reason the runner can act on and a message safe to show: `REPO_ACCESS_UNAVAILABLE` (try again later) or
  * `REPO_ACCESS_DENIED` (the application will not issue one).
@@ -27,9 +28,11 @@ import { stringArray } from '../../kernel/values.js';
 import type { Runner } from '../../../shared/runners.js';
 import {
   RepoAccessError,
+  responsibleOf,
   type RepoAccessRegistry,
   type RepoCredentialGrant,
 } from './extensions.js';
+import type { SubjectRegistry } from './ports.js';
 import type { RunnerReports } from './lifecycle.js';
 import { findRunRecord, toRun, type RunRecord } from './run.store.js';
 
@@ -49,6 +52,8 @@ export interface GitCredentialDeps {
   readonly clock: Clock;
   readonly reports: Pick<RunnerReports, 'holds'>;
   readonly repoAccess: RepoAccessRegistry;
+  /** Where the subject's responsible is read (`RepoCredentialRequest.responsibleUserId`). */
+  readonly subjects?: Pick<SubjectRegistry, 'get'>;
   readonly secrets?: SecretMemory;
   /** Told what went wrong when a provider failed in a way it did not explain (`RepoAccessError`). */
   readonly onError?: (message: string, error: unknown) => void;
@@ -152,6 +157,11 @@ export function createGitCredentialService(
       .list()
       .filter((provider) => provider.issue !== undefined);
     try {
+      const responsibleUserId = await responsibleOf(
+        deps.tx.read(),
+        deps.subjects,
+        { kind: run.subjectKind, id: run.subjectId },
+      );
       for (const provider of providers) {
         const grant = await withTimeout((signal) =>
           provider.issue!({
@@ -160,6 +170,7 @@ export function createGitCredentialService(
             attempt: request.attempt,
             url: request.url,
             refresh: request.refresh === true,
+            responsibleUserId,
             signal,
           }),
         );
