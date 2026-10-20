@@ -1,13 +1,6 @@
 import { useClientApplication } from '@nocobase/app-client';
 import { cn } from 'cn';
-import {
-  ChevronRight,
-  Layers,
-  Package,
-  Plug,
-  RefreshCw,
-  TriangleAlert,
-} from 'lucide-react';
+import { Layers, Package, Plug, RefreshCw, TriangleAlert } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -22,18 +15,12 @@ import {
   type FoundationBusinessModule,
   type FoundationCapabilityKey,
   type FoundationOverview,
-  type FoundationProviderEntry,
   type FoundationProviderInventory,
   type FoundationStatus,
 } from '../../shared/foundation.js';
 import { withAvailableCapabilities } from '../../shared/available-capabilities.js';
 import { businessModules } from '../business-modules.js';
 import { Button } from './ui/button.js';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from './ui/collapsible.js';
 import { ModuleMatrix } from './module-matrix.js';
 import { useFoundationTranslation } from './foundation-translation.js';
 
@@ -360,147 +347,6 @@ export function FoundationOverviewView({
   );
 }
 
-function RecognitionNotes({
-  inventory,
-  selected,
-}: {
-  readonly inventory: FoundationProviderInventory;
-  readonly selected: FoundationCapabilityKey;
-}): ReactElement {
-  const { t } = useFoundationTranslation();
-  const selectedProviders = inventory.entries.filter(
-    (entry) =>
-      entry.categories.includes(selected) ||
-      selected === `extension:${entry.name}`,
-  );
-  const extensions = inventory.entries.filter(
-    (entry) => entry.categories.length === 0,
-  );
-  const mapped = inventory.entries.length - extensions.length;
-  return (
-    <Collapsible className='border-t pt-4'>
-      <CollapsibleTrigger className='group inline-flex items-center gap-1.5 rounded-sm text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
-        <ChevronRight
-          className='size-4 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none'
-          aria-hidden
-        />
-        {t('inventory.recognitionNotes')}
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        {!inventory.complete ? (
-          <p role='status' className='pt-3 text-sm text-destructive'>
-            {t('inventory.partial', {
-              sources: inventory.unreadable.join(', '),
-            })}
-          </p>
-        ) : null}
-        <dl className='flex flex-wrap gap-x-6 gap-y-2 pt-3 text-xs'>
-          {[
-            ['discovered', inventory.entries.length],
-            ['mapped', mapped],
-            ['unmapped', extensions.length],
-          ].map(([key, count]) => (
-            <div key={key} className='flex items-baseline gap-2'>
-              <dt className='text-xs text-muted-foreground'>
-                {t(`inventory.${key}`)}
-              </dt>
-              <dd className='font-medium tabular-nums'>{count}</dd>
-            </div>
-          ))}
-        </dl>
-        <p className='py-3 text-xs leading-relaxed text-muted-foreground'>
-          {t('inventory.discoveryBoundary')}
-        </p>
-        {selectedProviders.length > 0 ? (
-          <ul className='min-w-0 divide-y'>
-            {selectedProviders.map((entry) => (
-              <ProviderCard key={entry.name} entry={entry} showEvidence />
-            ))}
-          </ul>
-        ) : null}
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
-
-function ProviderCard({
-  entry,
-  showEvidence = false,
-}: {
-  readonly entry: FoundationProviderEntry;
-  readonly showEvidence?: boolean;
-}): ReactElement {
-  const { t } = useFoundationTranslation();
-  return (
-    <li className='grid min-w-0 gap-3 py-4 first:pt-1 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]'>
-      <div className='flex min-w-0 items-start gap-2'>
-        <Package
-          className='mt-0.5 size-4 shrink-0 text-muted-foreground'
-          aria-hidden
-        />
-        <div className='min-w-0'>
-          <p className='break-all font-mono text-xs font-medium'>
-            {entry.name}
-          </p>
-          <p className='mt-1 break-all text-xs text-muted-foreground'>
-            {entry.version ?? t('inventory.versionUnknown')}
-          </p>
-        </div>
-      </div>
-      {showEvidence ? (
-        <dl className='grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs leading-relaxed'>
-          <dt className='text-muted-foreground'>{t('inventory.origin')}</dt>
-          <dd>
-            {t(
-              `inventory.${entry.origin === 'nocobase' ? 'officialCatalog' : 'unverifiedOrigin'}`,
-            )}
-          </dd>
-          <dt className='text-muted-foreground'>
-            {t('inventory.installation')}
-          </dt>
-          <dd>
-            {t(
-              entry.installed
-                ? 'inventory.installed'
-                : 'inventory.manifestUnavailable',
-            )}
-          </dd>
-          {entry.kind === 'plugin' ? (
-            <>
-              <dt className='text-muted-foreground'>
-                {t('inventory.registration')}
-              </dt>
-              <dd>
-                {t(
-                  entry.registration === 'observed'
-                    ? 'inventory.observed'
-                    : 'inventory.registrationUnknown',
-                )}
-              </dd>
-            </>
-          ) : null}
-          <dt className='text-muted-foreground'>{t('inventory.evidence')}</dt>
-          <dd>
-            {entry.evidence.length
-              ? entry.evidence
-                  .map((evidence) => t(`inventory.evidenceLabels.${evidence}`))
-                  .join(' · ')
-              : t('inventory.noEvidence')}
-          </dd>
-          <dt className='text-muted-foreground'>{t('inventory.categories')}</dt>
-          <dd>
-            {entry.categories.length
-              ? entry.categories
-                  .map((category) => t(`capabilities.${category}.name`))
-                  .join(' · ')
-              : t('inventory.awaitingRecognition')}
-          </dd>
-        </dl>
-      ) : null}
-    </li>
-  );
-}
-
 function countStatuses(
   overview: FoundationOverview,
 ): Record<FoundationStatus | 'undetermined', number> {
@@ -733,6 +579,22 @@ function CapabilityDetail({
   const { t, word, text, locale } = useFoundationTranslation();
   const Icon = CAPABILITY_ICONS[capability.key] ?? Plug;
   const base = `capabilities.${capability.key}`;
+  const relatedPackages = new Map(
+    capability.packages.map((entry) => [entry.name, entry]),
+  );
+  for (const entry of inventory?.entries ?? []) {
+    if (
+      entry.categories.includes(capability.key) ||
+      capability.key === `extension:${entry.name}`
+    ) {
+      const existing = relatedPackages.get(entry.name);
+      relatedPackages.set(entry.name, {
+        name: entry.name,
+        version: existing?.version ?? entry.version,
+      });
+    }
+  }
+  const packages = [...relatedPackages.values()];
   const pending = capability.reason === 'unrecognizedExtension';
   const inUse = capability.status === 'active';
   const unreadable = capability.issues
@@ -930,9 +792,9 @@ function CapabilityDetail({
             <h3 className='text-sm text-muted-foreground'>
               {t('detail.packages')}
             </h3>
-            {capability.packages.length > 0 ? (
+            {packages.length > 0 ? (
               <ul className='flex flex-col gap-1 font-mono text-xs'>
-                {capability.packages.map((entry) => (
+                {packages.map((entry) => (
                   <li
                     key={entry.name}
                     className='flex items-center justify-between gap-3'
@@ -958,13 +820,6 @@ function CapabilityDetail({
           </div>
         </div>
       </div>
-      {inventory ? (
-        <RecognitionNotes
-          key={capability.key}
-          inventory={inventory}
-          selected={capability.key}
-        />
-      ) : null}
     </section>
   );
 }

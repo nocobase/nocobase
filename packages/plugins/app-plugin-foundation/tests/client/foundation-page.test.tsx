@@ -529,7 +529,7 @@ describe('App Foundation page', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('keeps package versions and collapsed recognition evidence in the capability detail without a duplicate provider section', async () => {
+  it('shows related packages once without recognition diagnostics', async () => {
     await render(() => ({
       data: {
         ...OVERVIEW,
@@ -544,6 +544,16 @@ describe('App Foundation page', () => {
               kind: 'plugin',
               origin: 'nocobase',
               categories: ['interface'],
+              registration: 'observed',
+              evidence: ['serverRegistration'],
+            },
+            {
+              name: '@nocobase/app-plugin-database-explorer',
+              version: '2.0.0',
+              installed: true,
+              kind: 'plugin',
+              origin: 'nocobase',
+              categories: ['dataModeling', 'interface'],
               registration: 'observed',
               evidence: ['serverRegistration'],
             },
@@ -577,37 +587,23 @@ describe('App Foundation page', () => {
         'No additional provider was found within the current discovery scope.',
       ),
     ).not.toBeInTheDocument();
-    const trigger = within(inventory).getByRole('button', {
-      name: 'Recognition notes',
-    });
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(within(inventory).queryByText(/^Scope:/)).not.toBeInTheDocument();
-    expect(within(inventory).getByText('@nocobase/db')).toBeVisible();
+    expect(
+      within(inventory).getByText('@nocobase/app-plugin-database-explorer'),
+    ).toBeVisible();
+    expect(within(inventory).getByText('2.0.0')).toBeVisible();
+    expect(within(inventory).getAllByText('@nocobase/db')).toHaveLength(1);
     expect(within(inventory).getByText('1.2.3')).toBeVisible();
     expect(
-      within(inventory).queryByText('provider packages discovered'),
+      screen.queryByRole('button', { name: 'Recognition notes' }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Scope:/)).not.toBeInTheDocument();
     expect(
-      within(inventory).queryByText('Manifest found'),
+      screen.queryByText('provider packages discovered'),
     ).not.toBeInTheDocument();
-    fireEvent.click(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(await within(inventory).findByText(/^Scope:/)).toBeVisible();
-    expect(
-      within(inventory).getByText('provider packages discovered'),
-    ).toBeVisible();
-    expect(within(inventory).getByText('Manifest found')).toBeVisible();
-    fireEvent.click(trigger);
-    await waitFor(() =>
-      expect(within(inventory).queryByText(/^Scope:/)).not.toBeInTheDocument(),
-    );
-    expect(
-      within(inventory).queryByText('provider packages discovered'),
-    ).not.toBeInTheDocument();
-    expect(within(inventory).getByText('@nocobase/db')).toBeVisible();
+    expect(screen.queryByText('Manifest found')).not.toBeInTheDocument();
   });
 
-  it('keeps extension diagnostics with the selected capability and resets the disclosure on capability changes', async () => {
+  it('shows only the selected capability packages including registered extensions', async () => {
     await render(() => ({
       data: {
         ...OVERVIEW,
@@ -650,10 +646,6 @@ describe('App Foundation page', () => {
     expect(
       within(inventory).queryByText('@vendor/app-plugin-pro-audit'),
     ).not.toBeInTheDocument();
-    fireEvent.click(
-      within(inventory).getByRole('button', { name: 'Recognition notes' }),
-    );
-    expect(within(inventory).getByText('Manifest found')).toBeInTheDocument();
     expect(screen.getByText('3 / 6')).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole('button', { name: 'Mail: Ready, needs setup' }),
@@ -662,8 +654,8 @@ describe('App Foundation page', () => {
       name: 'Mail Ready, needs setup',
     });
     expect(
-      within(mailDetail).getByRole('button', { name: 'Recognition notes' }),
-    ).toHaveAttribute('aria-expanded', 'false');
+      within(mailDetail).queryByRole('button', { name: 'Recognition notes' }),
+    ).not.toBeInTheDocument();
     expect(
       within(mailDetail).queryByText('@nocobase/db'),
     ).not.toBeInTheDocument();
@@ -673,14 +665,12 @@ describe('App Foundation page', () => {
     const extension = screen.getByRole('region', {
       name: 'Pro audit Pending recognition',
     });
-    fireEvent.click(
-      within(extension).getByRole('button', { name: 'Recognition notes' }),
-    );
     expect(
-      within(extension).getByText('Source unverified'),
-    ).toBeInTheDocument();
+      within(extension).getByText('@vendor/app-plugin-pro-audit'),
+    ).toBeVisible();
+    expect(within(extension).getByText('2.3.4')).toBeVisible();
     expect(
-      within(extension).getByText('Current runtime contribution observed'),
-    ).toBeInTheDocument();
+      within(extension).queryByRole('button', { name: 'Recognition notes' }),
+    ).not.toBeInTheDocument();
   });
 });

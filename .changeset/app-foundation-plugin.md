@@ -10,4 +10,4 @@ Derive module associations from registered navigation, authentication and author
 
 Expose optional immutable Client and Server registration snapshots so the plugin can discover provider-only and locales-only registrations without reloading contributions. Keep collection, classification, authorization and presentation in the Foundation plugin.
 
-Keep provider versions within capability details and place technical discovery counts and evidence in a compact, initially collapsed full-width Recognition notes footer. Export a permission-preserving helper for placing the Foundation link last in an existing settings navigation group.
+Show deduplicated related package names and versions once within capability details, keeping technical discovery counts and diagnostic evidence internal. Export a permission-preserving helper for placing the Foundation link last in an existing settings navigation group.
