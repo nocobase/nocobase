@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   onlineKey,
+  mergePriceCatalogs,
   exactPrice,
   onlinePairs,
   parseAmount,
@@ -50,6 +51,47 @@ function price(overrides: Partial<ModelPrice>): ModelPrice {
 }
 
 describe('the models page model', () => {
+  it('combines kinds into one price row per service and model', () => {
+    const chat = {
+      value: 'shared',
+      label: 'Chat',
+      kind: 'chat' as const,
+      dimensions: null,
+    };
+    const embedding = {
+      value: 'embed',
+      label: 'Embedding',
+      kind: 'embedding' as const,
+      dimensions: null,
+    };
+    const rerank = {
+      value: 'rank',
+      label: 'Rerank',
+      kind: 'rerank' as const,
+      dimensions: null,
+    };
+    const team = { name: 'team', title: 'Team', provider: 'openai' };
+    const merged = mergePriceCatalogs([
+      { services: [{ ...team, models: [chat] }] },
+      {
+        services: [
+          { ...team, models: [embedding] },
+          { ...team, name: 'other', models: [embedding] },
+        ],
+      },
+      { services: [{ ...team, models: [rerank, chat] }] },
+    ]);
+    expect(
+      onlinePairs(merged).map(({ service, models }) => ({
+        name: service.name,
+        models,
+      })),
+    ).toEqual([
+      { name: 'team', models: ['shared', 'embed', 'rank'] },
+      { name: 'other', models: ['embed'] },
+    ]);
+  });
+
   it('prices each enabled service’s models, by service and model', () => {
     expect(
       onlinePairs([

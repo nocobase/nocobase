@@ -57,7 +57,11 @@ function Harness() {
   );
 }
 
-async function setup(items: ModelPrice[] = [], canManage = true) {
+async function setup(
+  items: ModelPrice[] = [],
+  canManage = true,
+  kind: 'chat' | 'embedding' | 'rerank' = 'embedding',
+) {
   let stored: PricesAnswer = { items, subscriptions: ['claude'], seen: [] };
   const requests: ApiCall[] = [];
   const writes: PricesInput[] = [];
@@ -68,7 +72,7 @@ async function setup(items: ModelPrice[] = [], canManage = true) {
     baseUrl: null,
     apiKeySet: false,
     enabled: true,
-    models: [{ value: 'tiny-embedding', label: 'Tiny', kind: 'embedding' }],
+    models: [{ value: 'tiny-embedding', label: 'Tiny', kind }],
   };
   const fetch = answerApi((call) => {
     requests.push(call);
@@ -84,7 +88,8 @@ async function setup(items: ModelPrice[] = [], canManage = true) {
           ],
         },
       };
-    if (call.path === 'agents/services') return { data: [service] };
+    if (call.path === 'agents/models')
+      return { data: (call.query?.kind ?? 'chat') === kind ? [service] : [] };
     if (call.path === 'agents/prices') {
       if (call.method === 'PUT') {
         const body = call.json as PricesInput;
@@ -144,6 +149,16 @@ async function setup(items: ModelPrice[] = [], canManage = true) {
 beforeEach(() => window.localStorage.clear());
 
 describe('price precision', () => {
+  it.each(['chat', 'rerank'] as const)(
+    'also prices %s models through their catalog',
+    async (kind) => {
+      await setup([price()], true, kind);
+      expect(
+        await screen.findByRole('textbox', { name: inputName }),
+      ).toHaveValue('1e-7');
+    },
+  );
+
   it.each(
     [1e-7, 0.123456789, 0, 0.123456].flatMap((value) =>
       (['input', 'output'] as const).map((untouched) => ({ value, untouched })),

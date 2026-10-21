@@ -61,13 +61,13 @@ function serve(permissions: readonly string[] = ALL): void {
   resetApi(
     {
       'agents/services': () => state.services,
-      'agents/models': () =>
+      'agents/models': ({ query }) =>
         state.services
           .filter((service) => service.enabled)
           .map((service) => ({
             ...service,
             models: service.models.filter(
-              (model) => !model.kind || model.kind === 'chat',
+              (model) => (model.kind ?? 'chat') === (query.kind ?? 'chat'),
             ),
           }))
           .filter((service) => service.models.length > 0),
