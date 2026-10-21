@@ -61,6 +61,7 @@ import {
   covers,
   stringArray,
   truncateBytes,
+  withoutNul,
 } from '../kernel/values.js';
 import { absentRunners } from '../runners/index.js';
 import {
@@ -583,7 +584,8 @@ export function createJobService(deps: JobServiceDeps): JobService {
         };
       }),
 
-    async events(runner, jobId, request) {
+    async events(runner, jobId, reported) {
+      const request = withoutNul(reported);
       const outcome = await tx.run(async (unit) => {
         const { conn } = unit;
         const job = await held(conn, runner, jobId);
@@ -676,8 +678,9 @@ export function createJobService(deps: JobServiceDeps): JobService {
         };
       }),
 
-    complete: (runner, jobId, request) =>
+    complete: (runner, jobId, reported) =>
       tx.run(async (unit) => {
+        const request = withoutNul(reported);
         const job = await held(unit.conn, runner, jobId);
         if (request.result.kind !== job.executor)
           throw invalid(
@@ -696,8 +699,9 @@ export function createJobService(deps: JobServiceDeps): JobService {
         return { status: ended.status };
       }),
 
-    fail: (runner, jobId, request) =>
+    fail: (runner, jobId, reported) =>
       tx.run(async (unit) => {
+        const request = withoutNul(reported);
         const job = await held(unit.conn, runner, jobId);
         const outcome = await requeueJob(
           unit,
