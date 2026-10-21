@@ -476,7 +476,7 @@ export function asksCredentialsOnDemand(
 }
 
 /** Where a claim keeps the subject's responsible it read before its transaction (`Prepared`). */
-const RESPONSIBLE_KEY = 'responsible';
+const RESPONSIBLE_KEY = 'claim:responsibleUserId';
 
 function responsibleIn(prepared: Prepared): string | null {
   const value = prepared.get(RESPONSIBLE_KEY);
