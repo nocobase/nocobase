@@ -11,6 +11,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 
 import { demoModeServiceToken } from '../tokens.js';
+import { accountRoutes } from './accounts.js';
 import { configurationRoutes } from './configuration.js';
 import { dataRoutes } from './data.js';
 import { modelRoutes } from './models.js';
@@ -45,6 +46,7 @@ const routes: readonly AppRouteContribution<AppPluginApplication>[] = [
     );
     return router;
   }),
+  accountRoutes,
   configurationRoutes,
   dataRoutes,
   modelRoutes,

@@ -44,6 +44,15 @@ An application registers one dataset on `demoDataToken` (`@nocobase/app-plugin-d
 - `createAccount` only reuses accounts whose dataset ownership was recorded by this plugin. An existing username aborts the import; never weaken that check or grant demo accounts access to non-demo business records.
 - Build the page on `useDemoData()` from `@nocobase/app-plugin-demo-mode/client/demo-data`; the plugin ships no page of its own.
 
+## Quick sign-in
+
+While demo mode is on, visitors enter the imported demo accounts without a password, and switch between them, with no application code: the Client plugin contributes the `/demo-sign-in` page and a corner switcher on every page. `demoMode.quickSignIn: false` or `NOCOBASE_DEMO_QUICK_SIGN_IN=false` turns it off.
+
+- `GET /api/demoMode/accounts` (public) lists `{ username, name, role, current }` for the accounts `accounts(language)` lists for the imported language whose user the dataset created (`demoModeAccounts`) and is not disabled. Passwords are never returned. Empty when demo mode is off, quick sign-in is off or no data is imported.
+- `POST /api/demoMode/accounts/{username}/signIn` signs the request's own session out, then signs in through Better Auth's `/sign-in/email` with the email of that user and the password `accounts(language)` lists, and forwards Better Auth's `Set-Cookie`. The session is ordinary. `DEMO_ACCOUNT_NOT_FOUND` (404) for an account the list does not offer; `DEMO_ACCOUNT_SIGN_IN_FAILED` (400) when the listed password is not the account's password. Email-and-password sign-in must be enabled.
+- So `accounts(language)` must list the real password of every account: the spec's `password`, or the username followed by `123` when the spec leaves it out. Every listed account can be entered by anyone who reaches the demo, so give each one only what a visitor may see and do.
+- Embed a demo, for example in a product page's iframe, by opening `<base path>/demo-sign-in?as=<username>&redirect=/path`. `redirect` must be a path inside the application. Signing in reloads the page, so nothing of the previous account stays. A session cookie is `SameSite=Lax`: serve the demo on the same site as the embedding page, such as a subdomain of it, or the browser will not send the cookie inside the iframe.
+
 ## Constraints
 
 Only `@nocobase/db` connections are guarded: outbound requests, drive files and queue messages a route sends before its refused write still happen. Writes from jobs, schedules, migrations and seeds are not refused; a job a request enqueues is refused only while it still runs inside that request. Do not use demo mode as an authorization boundary; it does not distinguish users.

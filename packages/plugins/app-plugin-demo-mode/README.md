@@ -107,6 +107,19 @@ container.resolve(demoDataToken).register({
 
 The routes require `settings:demoMode.data` (`read` for status, `manage` for changes): `GET /api/demoMode/data` and `POST /api/demoMode/data/import|clear|reset`. Import/reset accept `{ language }` and return progress through status. Every mutation requires enabled demo mode, including CLI and Scheduler calls. Authorized lifecycle work also runs in read-only mode without exempting concurrent ordinary requests. `useDemoData()` drives the application’s own management page.
 
+## Quick sign-in
+
+While demo mode is `read-only` or `observe`, visitors enter the imported demo accounts without a password and switch between them. Registration alone enables it: the Client plugin contributes a `/demo-sign-in` page and a corner account switcher on every page, the sign-in page included.
+
+| Environment                   | Configuration          | Meaning                                    |
+| ----------------------------- | ---------------------- | ------------------------------------------ |
+| `NOCOBASE_DEMO_QUICK_SIGN_IN` | `demoMode.quickSignIn` | `true` (default) or `false` to turn it off |
+
+- `GET /api/demoMode/accounts`, public, lists the accounts `accounts(language)` lists for the imported language, limited to users the dataset created and has not disabled, as `{ username, name, role, current }` without passwords.
+- `POST /api/demoMode/accounts/{username}/signIn` ends the request's own session, signs in through Better Auth's email-and-password sign-in with the password the dataset lists, and answers with Better Auth's session cookie. The authentication plugin is unchanged, and the session is an ordinary one. An account the list does not offer is `404 DEMO_ACCOUNT_NOT_FOUND`; a listed password that is wrong is `400 DEMO_ACCOUNT_SIGN_IN_FAILED`.
+- `accounts(language)` must therefore list each account's real password, and every listed account, an administrator included, is open to anyone who reaches the demo.
+- To embed a demo in another page, open `<base path>/demo-sign-in?as=<username>&redirect=/path` in an iframe; without `as` the page lists the accounts. Session cookies are `SameSite=Lax`, so the demo must be on the same site as the embedding page, such as a subdomain of its domain.
+
 ## Command line
 
 Register the CLI plugin alongside the server and client registrations:

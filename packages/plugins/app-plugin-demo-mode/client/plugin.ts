@@ -5,11 +5,13 @@ import {
 
 import locales from './locales/index.js';
 import reactProviders from './react-providers/index.js';
+import routes from './routes.js';
 
 const demoMode: AppClientPluginFactory = defineClientPlugin({
   packageName: '@nocobase/app-plugin-demo-mode',
   locales,
   reactProviders,
+  routes,
 });
 
 export default demoMode;

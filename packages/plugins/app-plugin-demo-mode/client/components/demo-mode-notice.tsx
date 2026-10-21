@@ -7,6 +7,7 @@ import {
   type ReactElement,
 } from 'react';
 
+import { DemoAccountSwitcher } from './demo-account-switcher.js';
 import {
   DEMO_MODE_NAMESPACE,
   DEMO_SERVER_TIMING_METRIC,
@@ -29,7 +30,7 @@ function isRefusedEntry(entry: PerformanceEntry): boolean {
 /**
  * Tells visitors of a read-only demo, with a toast, whenever the server refuses a change. Refusals are read from
  * finished requests' `Server-Timing`, so this works whichever client made the request and however the application
- * shows its own errors.
+ * shows its own errors. In a demo it also offers the demo accounts to enter or switch to.
  */
 export function DemoModeNotice({ children }: PropsWithChildren): ReactElement {
   const api = useApiClient();
@@ -68,5 +69,10 @@ export function DemoModeNotice({ children }: PropsWithChildren): ReactElement {
     return () => observer.disconnect();
   }, [mode, toaster, t]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {mode === 'off' ? null : <DemoAccountSwitcher />}
+    </>
+  );
 }

@@ -21,6 +21,8 @@
 
 ## Unreleased
 
+- Add quick sign-in for demo visitors: a public list of the imported demo accounts, password-free sign-in through Better Auth's own email sign-in, a `/demo-sign-in` page for embedding (`?as=`, `?redirect=`) and a corner account switcher. On by default in demo mode; `demoMode.quickSignIn` or `NOCOBASE_DEMO_QUICK_SIGN_IN` turns it off.
+
 - Renew long-running cleanup leases, fence lifecycle status changes by operation ID, and preserve existing datasets through an additive lease migration.
 - Settle fixture and policy initialization failures immediately so imports can be retried; disable and revoke sessions for tracked demo accounts that initiate cleanup.
 

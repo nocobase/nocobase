@@ -11,6 +11,8 @@ export interface DemoModeSettings {
   readonly mode: DemoMode;
   /** Physical table names, lower-cased, whose writes requests may still make, such as sign-in sessions. */
   readonly allowTables: ReadonlySet<string>;
+  /** Whether visitors may sign in as the imported demo accounts without a password, while demo mode is on. */
+  readonly quickSignIn: boolean;
   readonly data: DemoDataSettings;
 }
 
@@ -26,6 +28,7 @@ export interface DemoDataSettings {
 export interface DemoModeConfig {
   readonly mode?: DemoMode;
   readonly allowTables?: readonly string[];
+  readonly quickSignIn?: boolean;
   readonly data?: {
     readonly models?: boolean;
     readonly modelBaseUrl?: string;
@@ -34,6 +37,7 @@ export interface DemoModeConfig {
 
 export const DEMO_MODE_ENV = 'NOCOBASE_DEMO_MODE';
 export const DEMO_MODE_ALLOW_TABLES_ENV = 'NOCOBASE_DEMO_ALLOW_TABLES';
+export const DEMO_QUICK_SIGN_IN_ENV = 'NOCOBASE_DEMO_QUICK_SIGN_IN';
 export const DEMO_DATA_MODELS_ENV = 'NOCOBASE_DEMO_DATA_MODELS';
 export const DEMO_DATA_MODEL_BASE_URL_ENV = 'NOCOBASE_DEMO_DATA_MODEL_BASE_URL';
 
@@ -76,6 +80,11 @@ export function resolveDemoModeSettings(
   return {
     mode: mode as DemoMode,
     allowTables,
+    quickSignIn: booleanFlag(
+      DEMO_QUICK_SIGN_IN_ENV,
+      env[DEMO_QUICK_SIGN_IN_ENV],
+      section.quickSignIn !== false,
+    ),
     data: resolveDataSettings(section.data ?? {}, env),
   };
 }
@@ -84,12 +93,6 @@ function resolveDataSettings(
   section: NonNullable<DemoModeConfig['data']>,
   env: NodeJS.ProcessEnv,
 ): DemoDataSettings {
-  const flag = env[DEMO_DATA_MODELS_ENV]?.trim().toLowerCase();
-  if (flag && !['true', 'false'].includes(flag)) {
-    throw new DemoModeConfigError(
-      `${DEMO_DATA_MODELS_ENV} must be true or false; got "${flag}".`,
-    );
-  }
   const modelBaseUrl =
     env[DEMO_DATA_MODEL_BASE_URL_ENV]?.trim() || section.modelBaseUrl;
   if (modelBaseUrl && !/^https?:\/\//u.test(modelBaseUrl)) {
@@ -98,9 +101,28 @@ function resolveDataSettings(
     );
   }
   return {
-    models: flag ? flag === 'true' : section.models !== false,
+    models: booleanFlag(
+      DEMO_DATA_MODELS_ENV,
+      env[DEMO_DATA_MODELS_ENV],
+      section.models !== false,
+    ),
     ...(modelBaseUrl
       ? { modelBaseUrl: modelBaseUrl.replace(/\/+$/u, '') }
       : {}),
   };
+}
+
+/** A `true`/`false` environment variable, or `fallback` when it is unset. */
+function booleanFlag(
+  name: string,
+  value: string | undefined,
+  fallback: boolean,
+): boolean {
+  const flag = value?.trim().toLowerCase();
+  if (!flag) return fallback;
+  if (!['true', 'false'].includes(flag))
+    throw new DemoModeConfigError(
+      `${name} must be true or false; got "${flag}".`,
+    );
+  return flag === 'true';
 }

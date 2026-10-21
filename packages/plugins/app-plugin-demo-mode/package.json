@@ -42,6 +42,10 @@
     "./client/demo-configuration": {
       "types": "./client/demo-configuration.ts",
       "import": "./client/demo-configuration.ts"
+    },
+    "./client/accounts": {
+      "types": "./client/accounts.ts",
+      "import": "./client/accounts.ts"
     }
   },
   "imports": {
@@ -104,6 +108,10 @@
       "./client/demo-configuration": {
         "types": "./dist/client/demo-configuration.d.ts",
         "import": "./dist/client/demo-configuration.js"
+      },
+      "./client/accounts": {
+        "types": "./dist/client/accounts.d.ts",
+        "import": "./dist/client/accounts.js"
       }
     },
     "imports": {
@@ -141,7 +149,8 @@
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-router": "catalog:"
   },
   "devDependencies": {
     "@ai-sdk/openai-compatible": "catalog:",
@@ -157,7 +166,6 @@
     "jsdom": "catalog:",
     "prettier": "catalog:",
     "react-dom": "catalog:",
-    "react-router": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
