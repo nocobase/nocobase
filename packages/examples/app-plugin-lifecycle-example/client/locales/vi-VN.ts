@@ -386,6 +386,9 @@ const viVN: LocaleResource<typeof enUS> = {
     fullscreen: 'Toàn màn hình',
     exitFullscreen: 'Thoát toàn màn hình',
     escapeHint: 'Nhấn Escape để thoát',
+    leavesTo: 'Chuyển đến',
+    arrivesFrom: 'Đến từ',
+    otherRoutes: 'Tuyến khác',
     minimap: 'Tổng quan sơ đồ',
 
     overview: 'Tổng quan về sơ đồ',

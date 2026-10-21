@@ -9,6 +9,7 @@ import {
 } from '#components/flow-diagram';
 import {
   partitionFlowDiagramReturns,
+  type FlowDiagramEdge,
   type FlowDiagramNode,
 } from '#components/flow-layout';
 
@@ -87,15 +88,43 @@ export function LifecycleDiagram({
   const routes = process
     ? partitionFlowDiagramReturns(graph)
     : { edges: graph.edges, extraEdges: [] };
-  const notesForNode = (id: string) =>
-    routes.extraEdges
-      .filter((edge) => edge.source === id || edge.target === id)
-      .map((edge) => ({
-        id: edge.id,
+  const notesForNode = (id: string) => {
+    const nodeOf = (nodeId: string) =>
+      graph.nodes.find((node) => node.id === nodeId);
+    const labelOf = (nodeId: string) => nodeOf(nodeId)?.label ?? nodeId;
+    // A transition with several sources or targets becomes one edge per pair;
+    // list it once per direction with every state at the other end.
+    const groups = new Map<
+      string,
+      { edge: FlowDiagramEdge; direction: 'out' | 'in'; peers: string[] }
+    >();
+    for (const edge of routes.extraEdges) {
+      const direction =
+        edge.source === id ? 'out' : edge.target === id ? 'in' : undefined;
+      if (!direction) continue;
+      const [name] = JSON.parse(edge.id) as string[];
+      const key = JSON.stringify([name, direction]);
+      const group = groups.get(key) ?? { edge, direction, peers: [] };
+      groups.set(key, group);
+      const peer = direction === 'out' ? edge.target : edge.source;
+      if (!group.peers.includes(peer)) group.peers.push(peer);
+    }
+    return [...groups.values()].map(({ edge, direction, peers }) => {
+      const self = labelOf(id);
+      const names = peers.map(labelOf);
+      return {
+        id: `${direction}:${edge.id}`,
         label: edge.label,
-        detail: `${graph.nodes.find((node) => node.id === edge.source)?.label ?? edge.source} · ${edge.label ?? ''} → ${graph.nodes.find((node) => node.id === edge.target)?.label ?? edge.target}`,
-        kind: kindForNode(graph.nodes.find((node) => node.id === edge.target)!),
-      }));
+        direction,
+        peers: names,
+        detail:
+          direction === 'out'
+            ? `${self} · ${edge.label ?? ''} → ${names.join(', ')}`
+            : `${names.join(', ')} · ${edge.label ?? ''} → ${self}`,
+        kind: kindForNode(nodeOf(peers[0])!),
+      };
+    });
+  };
   const kindForNode = (node: FlowDiagramNode): FlowDiagramStepKind => {
     const state = description.stateInfo.find((item) => item.name === node.id);
     return (
@@ -107,6 +136,24 @@ export function LifecycleDiagram({
           : 'work')
     );
   };
+  // A transition declared from several states draws one edge per source, which
+  // would repeat its label beside the target. Label only the edge from the
+  // nearest source; the others keep the action as hover text.
+  const order = new Map(graph.nodes.map((node, index) => [node.id, index]));
+  const labelledEdges = new Map<string, FlowDiagramEdge>();
+  for (const edge of routes.edges) {
+    if (edge.decorative) continue;
+    const [name] = JSON.parse(edge.id) as string[];
+    const key = JSON.stringify([name, edge.target]);
+    const current = labelledEdges.get(key);
+    if (!current || order.get(edge.source)! > order.get(current.source)!)
+      labelledEdges.set(key, edge);
+  }
+  const processEdges = routes.edges.map((edge) =>
+    edge.decorative || [...labelledEdges.values()].includes(edge)
+      ? { ...edge, title: edge.label }
+      : { ...edge, title: edge.label, label: undefined, configurable: false },
+  );
   const nodes = process
     ? graph.nodes.map((node) => {
         if (node.decorative) return node;
@@ -132,9 +179,10 @@ export function LifecycleDiagram({
       {...props}
       {...graph}
       nodes={nodes}
-      edges={routes.edges}
+      edges={process ? processEdges : routes.edges}
       revealEdges={process ? undefined : props.revealEdges}
-      renderNode={(node, { active }) => {
+      auxiliaryEdges={process ? routes.extraEdges : props.auxiliaryEdges}
+      renderNode={(node, { active, linked }) => {
         const state = description.stateInfo.find(
           (state) => state.name === node.id,
         );
@@ -147,6 +195,7 @@ export function LifecycleDiagram({
             label={label}
             description={nodeDescription?.(node)}
             actions={nodeActions?.(node)}
+            linked={linked}
             progress={
               node.highlighted
                 ? 'current'

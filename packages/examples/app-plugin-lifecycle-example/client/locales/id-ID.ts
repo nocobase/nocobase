@@ -386,6 +386,9 @@ const idID: LocaleResource<typeof enUS> = {
     fullscreen: 'Layar penuh',
     exitFullscreen: 'Keluar dari layar penuh',
     escapeHint: 'Tekan Escape untuk keluar',
+    leavesTo: 'Menuju',
+    arrivesFrom: 'Datang dari',
+    otherRoutes: 'Rute lain',
     minimap: 'Ikhtisar diagram',
 
     overview: 'Ikhtisar diagram',

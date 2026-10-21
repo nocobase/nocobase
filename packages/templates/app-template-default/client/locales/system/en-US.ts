@@ -14,6 +14,9 @@ const systemEnUS = {
     fullscreen: 'Fullscreen',
     exitFullscreen: 'Exit fullscreen',
     escapeHint: 'Press Escape to exit',
+    leavesTo: 'Leaves to',
+    arrivesFrom: 'Arrives from',
+    otherRoutes: 'Other routes',
     minimap: 'Diagram overview',
 
     configure: 'Configure',

@@ -1,4 +1,4 @@
-import { act, render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import {
   TestI18nProvider,
   createTestI18nRuntime,
@@ -151,19 +151,118 @@ it('omits long return lines in process mode and shows their explanation on node 
   expect(
     screen.queryByTestId('rf__edge-reveal:legacy-return'),
   ).not.toBeInTheDocument();
-  const capsule = await screen.findByRole('note', {
+  const route = await screen.findByRole('note', {
     name: 'Approved · Return → Draft',
   });
-  expect(capsule).toHaveTextContent('Return');
-  expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-  fireEvent.keyDown(document, { key: 'Tab' });
-  act(() => capsule.focus());
-
-  expect(await screen.findByRole('tooltip')).toHaveTextContent(
-    'Approved · Return → Draft',
+  expect(route).toHaveTextContent('ReturnDraft');
+  expect(screen.getByRole('group', { name: 'Other routes' })).toHaveTextContent(
+    'Leaves to',
   );
-  act(() => capsule.blur());
+  expect(
+    screen
+      .getByTestId('rf__node-draft')
+      .querySelector('[data-execution-state]'),
+  ).toHaveClass('outline-dashed');
+  fireEvent.blur(node);
   expect(
     screen.queryByRole('note', { name: 'Approved · Return → Draft' }),
   ).not.toBeInTheDocument();
+});
+
+it('lists a return transition declared from several states once', async () => {
+  const process = {
+    ...description,
+    transitions: [
+      ...description.transitions,
+      {
+        ...description.transitions[0]!,
+        name: 'return',
+        title: 'Return',
+        from: ['review', 'approved'],
+        to: ['draft'],
+      },
+    ],
+  };
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <LifecycleDiagram
+        description={process}
+        presentation='process'
+        ariaLabel='Return paths'
+      />
+    </TestI18nProvider>,
+  );
+  fireEvent.focus(await screen.findByTestId('rf__node-draft'));
+  const routes = await screen.findAllByRole('note');
+  expect(routes).toHaveLength(1);
+  expect(routes[0]).toHaveAccessibleName('Review, Approved · Return → Draft');
+  expect(routes[0]).toHaveTextContent('ReturnReview, Approved');
+  expect(screen.getByRole('group', { name: 'Other routes' })).toHaveTextContent(
+    'Arrives from',
+  );
+});
+
+it('labels a transition declared from several forward states once', async () => {
+  const process = {
+    ...description,
+    transitions: [
+      ...description.transitions,
+      {
+        ...description.transitions[0]!,
+        name: 'fastTrack',
+        title: 'Fast track',
+        from: ['draft', 'review'],
+        to: ['approved'],
+      },
+    ],
+  };
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <LifecycleDiagram
+        description={process}
+        presentation='process'
+        ariaLabel='Fast track paths'
+      />
+    </TestI18nProvider>,
+  );
+  const labelled = await screen.findByTestId(
+    'rf__edge-["fastTrack","review","approved"]',
+  );
+  const unlabelled = screen.getByTestId(
+    'rf__edge-["fastTrack","draft","approved"]',
+  );
+  expect(labelled.querySelector('text')).toHaveTextContent('Fast track');
+  expect(unlabelled.querySelector('text')).toBeNull();
+  expect(unlabelled.querySelector('title')).toHaveTextContent('Fast track');
+});
+
+it('lists a transition once per direction when it leaves, loops and arrives', async () => {
+  const process = {
+    ...description,
+    transitions: [
+      ...description.transitions,
+      {
+        ...description.transitions[0]!,
+        name: 'customerReply',
+        title: 'Customer reply',
+        from: ['review', 'approved'],
+        to: ['draft', 'review'],
+      },
+    ],
+  };
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <LifecycleDiagram
+        description={process}
+        presentation='process'
+        ariaLabel='Customer reply paths'
+      />
+    </TestI18nProvider>,
+  );
+  fireEvent.focus(await screen.findByTestId('rf__node-review'));
+  const routes = await screen.findAllByRole('note');
+  expect(routes.map((route) => route.getAttribute('aria-label'))).toEqual([
+    'Review · Customer reply → Draft, Review',
+    'Approved · Customer reply → Review',
+  ]);
 });

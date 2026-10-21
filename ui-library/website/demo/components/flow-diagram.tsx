@@ -66,7 +66,7 @@ export function FlowDiagramDemo(): ReactElement {
           height: node.id === 'review' ? 64 : 44,
           minimapShape: node.id === 'review' ? 'card' : 'pill',
         }))}
-        renderNode={(node, { active }) => (
+        renderNode={(node, { active, linked }) => (
           <FlowDiagramStep
             kind={
               node.id === 'draft'
@@ -79,6 +79,7 @@ export function FlowDiagramDemo(): ReactElement {
             }
             label={node.label}
             description={node.id === 'review' ? 'Manager approval' : undefined}
+            linked={linked}
             progress={
               node.highlighted
                 ? 'current'
@@ -94,17 +95,29 @@ export function FlowDiagramDemo(): ReactElement {
                     (edge) =>
                       edge.source === node.id || edge.target === node.id,
                   )
-                  .map((edge) => ({
-                    id: edge.id,
-                    label: edge.label,
-                    detail: `${nodes.find((item) => item.id === edge.source)!.label} · ${edge.label} → ${nodes.find((item) => item.id === edge.target)!.label}`,
-                    kind: edge.target === 'draft' ? 'start' : 'approval',
-                  }))}
+                  .map((edge) => {
+                    const out = edge.source === node.id;
+                    const peer = nodes.find(
+                      (item) => item.id === (out ? edge.target : edge.source),
+                    )!;
+                    return {
+                      id: edge.id,
+                      label: edge.label,
+                      direction: out ? ('out' as const) : ('in' as const),
+                      peers: [peer.label],
+                      detail: `${nodes.find((item) => item.id === edge.source)!.label} · ${edge.label} → ${nodes.find((item) => item.id === edge.target)!.label}`,
+                      kind:
+                        peer.id === 'draft'
+                          ? ('start' as const)
+                          : ('approval' as const),
+                    };
+                  })}
               />
             )}
           </FlowDiagramStep>
         )}
         edges={routes.edges}
+        auxiliaryEdges={routes.extraEdges}
         direction='DOWN'
         compact
         controls

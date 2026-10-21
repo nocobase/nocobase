@@ -374,6 +374,9 @@ const enUS = {
     fullscreen: 'Fullscreen',
     exitFullscreen: 'Exit fullscreen',
     escapeHint: 'Press Escape to exit',
+    leavesTo: 'Leaves to',
+    arrivesFrom: 'Arrives from',
+    otherRoutes: 'Other routes',
     minimap: 'Diagram overview',
 
     overview: 'Diagram overview',

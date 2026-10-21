@@ -367,6 +367,9 @@ const zhTW: LocaleResource<typeof enUS> = {
     fullscreen: '全螢幕',
     exitFullscreen: '退出全螢幕',
     escapeHint: '按 Escape 退出',
+    leavesTo: '可轉到',
+    arrivesFrom: '來自',
+    otherRoutes: '其他流轉',
     minimap: '流程縮略導航',
 
     overview: '圖表概述',

@@ -39,6 +39,8 @@ import {
   CircleCheck,
   CircleX,
   TriangleAlert,
+  ArrowLeftIcon,
+  ArrowRightIcon,
   CheckIcon,
   CircleDotIcon,
   FlagIcon,
@@ -395,13 +397,18 @@ export interface FlowDiagramProps extends FlowDiagramGraph {
   /** transitions left out of the layout. Hovering or focusing a node draws
    * the ones touching it in lanes beside the graph and dims unrelated states. */
   readonly revealEdges?: readonly FlowDiagramEdge[];
+  /** Routes left off the canvas, such as returns a node lists in its own
+   * details. Hovering or focusing a node keeps the states they connect it to at
+   * full strength, dims the rest and passes `linked` to `renderNode`; nothing
+   * is drawn. */
+  readonly auxiliaryEdges?: readonly FlowDiagramEdge[];
   readonly nodeActions?: (node: FlowDiagramNode) => ReactNode;
   readonly nodeDescription?: (node: FlowDiagramNode) => ReactNode;
   readonly initialMinZoom?: number;
   readonly showMiniMap?: boolean;
   readonly renderNode?: (
     node: FlowDiagramNode,
-    state: { active: boolean },
+    state: { active: boolean; linked: boolean },
   ) => ReactNode;
   readonly onNodeClick?: (node: FlowDiagramNode) => void;
   readonly onEdgeClick?: (edge: FlowDiagramEdge) => void;
@@ -421,6 +428,7 @@ export function FlowDiagram({
   style,
   ariaLabel,
   revealEdges,
+  auxiliaryEdges,
   renderNode,
   nodeActions,
   nodeDescription,
@@ -518,20 +526,36 @@ export function FlowDiagram({
         : [],
     [active, revealEdges],
   );
+  // States joined to the active one only by routes left off the canvas.
+  const linked = useMemo(
+    () =>
+      new Set(
+        (active ? (auxiliaryEdges ?? []) : [])
+          .flatMap((edge) =>
+            edge.source === active
+              ? [edge.target]
+              : edge.target === active
+                ? [edge.source]
+                : [],
+          )
+          .filter((id) => id !== active),
+      ),
+    [active, auxiliaryEdges],
+  );
   // The active state and every state one transition away stay at full strength.
   const related = useMemo(
     () =>
-      active && revealEdges
+      active && (revealEdges || auxiliaryEdges)
         ? new Set(
             [...edges, ...revealed]
               .filter(
                 (edge) => edge.source === active || edge.target === active,
               )
               .flatMap((edge) => [edge.source, edge.target])
-              .concat(active),
+              .concat(active, ...linked),
           )
         : undefined,
-    [active, edges, revealed, revealEdges],
+    [active, edges, revealed, revealEdges, auxiliaryEdges, linked],
   );
   const placedNodes = useMemo<DiagramNode[]>(
     () =>
@@ -582,7 +606,10 @@ export function FlowDiagram({
             item,
             direction,
             content: renderNode
-              ? renderNode(item, { active: item.id === active })
+              ? renderNode(item, {
+                  active: item.id === active,
+                  linked: linked.has(item.id),
+                })
               : item.label,
             actions: nodeActions?.(item),
             description: nodeDescription?.(item),
@@ -596,6 +623,7 @@ export function FlowDiagram({
       renderNode,
       active,
       related,
+      linked,
       nodeActions,
       nodeDescription,
     ],
@@ -629,7 +657,7 @@ export function FlowDiagram({
               item.visited || item.highlighted ? 2.5 : item.faint ? 1 : 1.5,
             strokeDasharray: item.dashed ? '5 4' : undefined,
             opacity:
-              revealEdges &&
+              (revealEdges || auxiliaryEdges) &&
               active &&
               item.source !== active &&
               item.target !== active
@@ -644,7 +672,7 @@ export function FlowDiagram({
           },
         };
       }),
-    [layout, edges, active, revealEdges],
+    [layout, edges, active, revealEdges, auxiliaryEdges],
   );
   const revealedEdges = useMemo<DiagramEdge[]>(() => {
     if (!layout) return [];
@@ -1017,16 +1045,14 @@ const stepIconTones = {
   work: 'bg-[var(--area-administration,var(--chart-2))] text-background',
 };
 
-const stepPillTones: Record<FlowDiagramStepKind, string> = {
-  start: 'border-border bg-card text-foreground',
-  approval: 'border-primary/30 bg-card text-primary',
-  work: 'border-border bg-card text-foreground',
-  success:
-    'border-(--status-success)/30 bg-(--status-success-background) text-(--status-success)',
-  negative:
-    'border-dashed border-destructive/40 bg-destructive/5 text-destructive',
-  exception:
-    'border-dashed border-(--status-warning)/35 bg-(--status-warning-background) text-(--status-warning)',
+// The tone of the state at the other end of a route listed beside a node.
+const stepDotTones: Record<FlowDiagramStepKind, string> = {
+  start: 'bg-muted-foreground',
+  approval: 'bg-primary',
+  work: 'bg-[var(--area-administration,var(--chart-2))]',
+  success: 'bg-(--status-success)',
+  negative: 'bg-destructive',
+  exception: 'bg-(--status-warning)',
 };
 
 export interface FlowDiagramStepProps {
@@ -1035,6 +1061,8 @@ export interface FlowDiagramStepProps {
   readonly description?: ReactNode;
   readonly icon?: ReactNode;
   readonly progress?: 'plan' | 'current' | 'visited' | 'unreached';
+  /** Joined to the active state by a route left off the canvas. */
+  readonly linked?: boolean;
   readonly actions?: ReactNode;
   /** Supporting exits or details revealed by the canvas's active state. */
   readonly children?: ReactNode;
@@ -1047,6 +1075,7 @@ export function FlowDiagramStep({
   description,
   icon,
   progress = 'plan',
+  linked = false,
   actions,
   children,
 }: FlowDiagramStepProps): ReactElement {
@@ -1069,6 +1098,8 @@ export function FlowDiagramStep({
           'border-dashed border-(--status-warning)/35 bg-(--status-warning-background) text-(--status-warning)',
         progress === 'current' && 'border-primary ring-2 ring-primary/40',
         progress === 'unreached' && 'border-dashed opacity-55',
+        linked &&
+          'opacity-100 outline-2 outline-offset-2 outline-primary/60 outline-dashed',
       )}
     >
       <span
@@ -1126,45 +1157,90 @@ export function FlowDiagramStep({
 
 export interface FlowDiagramTransitionNote {
   readonly id: string;
-  /** Short translated action shown in the capsule. */
+  /** Short translated action. */
   readonly label: ReactNode;
-  /** Complete translated route, shown on focus/hover and read by assistive technology. */
+  /** Complete translated route, read by assistive technology. */
   readonly detail?: string;
+  /** Tone of the state at the other end of the route. */
   readonly kind?: FlowDiagramStepKind;
+  /** Lists the route under "Leaves to" (the default) or "Arrives from". */
+  readonly direction?: 'out' | 'in';
+  /** Translated labels of the states at the other end of the route. */
+  readonly peers?: readonly string[];
 }
 
-/** Supplementary routes use individual capsules beside the active node. */
+/** Routes left off the canvas, listed in one card beside the active node. */
 export function FlowDiagramTransitionNotes({
   notes,
 }: {
   readonly notes: readonly FlowDiagramTransitionNote[];
 }): ReactElement | null {
+  const { t } = useTranslation();
   if (!notes.length) return null;
+  const sections = [
+    {
+      direction: 'out',
+      title: t('flowDiagram.leavesTo', { defaultValue: 'Leaves to' }),
+      icon: ArrowRightIcon,
+    },
+    {
+      direction: 'in',
+      title: t('flowDiagram.arrivesFrom', { defaultValue: 'Arrives from' }),
+      icon: ArrowLeftIcon,
+    },
+  ] as const;
   return (
-    <div className='nodrag nopan absolute top-1/2 left-full z-10 -translate-y-1/2 pl-2'>
-      <ul className='flex w-max flex-col items-start gap-1'>
-        {notes.map((note) => {
+    <div
+      role='group'
+      aria-label={t('flowDiagram.otherRoutes', {
+        defaultValue: 'Other routes',
+      })}
+      className='nodrag nopan absolute top-1/2 left-full z-10 -translate-y-1/2 pl-2 text-left'
+    >
+      <div className='flex w-max max-w-72 flex-col gap-2 rounded-lg border bg-popover p-2.5 text-xs text-popover-foreground shadow-md'>
+        {sections.map(({ direction, title, icon: Icon }) => {
+          const items = notes.filter(
+            (note) => (note.direction ?? 'out') === direction,
+          );
+          if (!items.length) return null;
           return (
-            <li key={note.id} className='rounded-full bg-card'>
-              <Tooltip>
-                <TooltipTrigger
-                  render={<span role='note' tabIndex={0} />}
-                  aria-label={note.detail}
-                  className={cn(
-                    'flex max-w-72 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-normal shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    stepPillTones[note.kind ?? 'start'],
-                  )}
-                >
-                  <span className='truncate'>{note.label}</span>
-                </TooltipTrigger>
-                <TooltipContent role='tooltip' className='max-w-72'>
-                  {note.detail ?? note.label}
-                </TooltipContent>
-              </Tooltip>
-            </li>
+            <div key={direction} className='flex flex-col gap-1'>
+              <p className='font-medium text-muted-foreground'>{title}</p>
+              <ul className='flex flex-col gap-1'>
+                {items.map((note) => (
+                  <li key={note.id}>
+                    <span
+                      role='note'
+                      aria-label={note.detail}
+                      className='flex min-w-0 items-center gap-1.5'
+                    >
+                      <span
+                        aria-hidden
+                        className={cn(
+                          'size-1.5 shrink-0 rounded-full',
+                          stepDotTones[note.kind ?? 'start'],
+                        )}
+                      />
+                      <span className='shrink-0 font-medium'>{note.label}</span>
+                      {note.peers?.length ? (
+                        <>
+                          <Icon
+                            aria-hidden
+                            className='size-3 shrink-0 text-muted-foreground'
+                          />
+                          <span className='truncate text-muted-foreground'>
+                            {note.peers.join(', ')}
+                          </span>
+                        </>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 }

@@ -389,6 +389,9 @@ const frFR: LocaleResource<typeof enUS> = {
     fullscreen: 'Plein écran',
     exitFullscreen: 'Quitter le plein écran',
     escapeHint: 'Appuyez sur Échap pour quitter',
+    leavesTo: 'Mène à',
+    arrivesFrom: 'Arrive de',
+    otherRoutes: 'Autres parcours',
     minimap: 'Vue d’ensemble du diagramme',
 
     overview: 'Présentation du diagramme',

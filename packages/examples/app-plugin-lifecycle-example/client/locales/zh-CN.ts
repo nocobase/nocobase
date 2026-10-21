@@ -365,6 +365,9 @@ const zhCN: LifecycleExampleResource = {
     fullscreen: '全屏',
     exitFullscreen: '退出全屏',
     escapeHint: '按 Escape 退出',
+    leavesTo: '可转到',
+    arrivesFrom: '来自',
+    otherRoutes: '其他流转',
     minimap: '流程缩略导航',
 
     overview: '流程缩略导航',

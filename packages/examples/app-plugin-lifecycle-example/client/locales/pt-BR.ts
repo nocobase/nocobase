@@ -381,6 +381,9 @@ const ptBR: LocaleResource<typeof enUS> = {
     fullscreen: 'Tela cheia',
     exitFullscreen: 'Sair da tela cheia',
     escapeHint: 'Pressione Escape para sair',
+    leavesTo: 'Leva a',
+    arrivesFrom: 'Vem de',
+    otherRoutes: 'Outras rotas',
     minimap: 'Visão geral do diagrama',
 
     overview: 'Visão geral do diagrama',

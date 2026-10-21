@@ -386,6 +386,9 @@ const esES: LocaleResource<typeof enUS> = {
     fullscreen: 'Pantalla completa',
     exitFullscreen: 'Salir de pantalla completa',
     escapeHint: 'Pulsa Escape para salir',
+    leavesTo: 'Sale hacia',
+    arrivesFrom: 'Llega desde',
+    otherRoutes: 'Otras rutas',
     minimap: 'Vista general del diagrama',
 
     overview: 'Descripción general del diagrama',

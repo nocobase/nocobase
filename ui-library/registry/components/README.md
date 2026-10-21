@@ -132,6 +132,9 @@ The shared DataTable and its column header and pagination controls use these key
 | `flowDiagram.escapeHint`     | Press Escape to exit                         | 按 Escape 退出              |
 | `flowDiagram.minimap`        | Diagram overview                             | 流程缩略导航                |
 | `flowDiagram.fit`            | Fit to view                                  | 适应画布                    |
+| `flowDiagram.leavesTo`       | Leaves to                                    | 可转到                      |
+| `flowDiagram.arrivesFrom`    | Arrives from                                 | 来自                        |
+| `flowDiagram.otherRoutes`    | Other routes                                 | 其他流转                    |
 
 ## In a plugin
 
@@ -222,7 +225,7 @@ Set `bare: true` to draw the whole node with `renderNode(node, { active })`. Use
 
 Pass the main business path as `edges` and auxiliary routes between displayed nodes as `revealEdges`. Hovering or focusing a node temporarily draws its auxiliary routes in outer lanes without rerunning layout and dims unrelated states. `renderNode` receives the active state for optional exit details in its children; keyboard focus inside a node also keeps those details visible. Routes to absent nodes are omitted. Keep definition path selection in the application, and retain every recorded transition in execution history. Use `faint` and `dashed` for secondary routes and `title` for full hover/accessibility text when the canvas label is omitted. Give visible conditions priority over action labels; do not hide conditional branch meaning behind hover alone.
 
-`partitionFlowDiagramReturns(graph)` separates backward edges and self-transitions by node declaration order for process adapters. Render the returned `edges` on the canvas and show `extraEdges` through `FlowDiagramTransitionNotes` inside the active node. These notes render independent small capsules without a surrounding card. Pass a short translated action in `label`, the complete route in `detail` for the accessible name and tooltip, and the destination `kind` for its tone. Capsules display the action text without a type icon. Hovering or focusing a capsule shows its route details. The capsules remain outside layout geometry. Standard process diagrams keep these auxiliary routes as capsules during hover and focus. `revealEdges` is a low-level opt-in for other graph consumers that intentionally draw auxiliary lines; the process presentation does not forward it to the canvas.
+`partitionFlowDiagramReturns(graph)` separates backward edges and self-transitions by node declaration order for process adapters. Render the returned `edges` on the canvas and show `extraEdges` through `FlowDiagramTransitionNotes` inside the active node. The notes render as one card beside the node, listing outgoing routes under Leaves to and incoming ones under Arrives from. Pass a short translated action in `label`, `direction` (`out` by default, or `in`), the translated states at the other end in `peers`, the tone of the first of them in `kind`, and the complete route in `detail` for the accessible name. List each action once per direction, with every state at the other end in `peers`. The card stays outside layout geometry. Pass the same `extraEdges` as `auxiliaryEdges`: hovering or focusing a node then keeps the states those routes join it to at full strength, dims the rest, and passes `linked` to `renderNode`, which `FlowDiagramStep` shows as a dashed outline. Nothing is drawn for these routes. `revealEdges` is a low-level opt-in for other graph consumers that intentionally draw auxiliary lines; the process presentation does not forward it to the canvas.
 
 ## Setup readiness
 

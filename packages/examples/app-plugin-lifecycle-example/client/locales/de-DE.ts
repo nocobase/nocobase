@@ -390,6 +390,9 @@ const deDE: LocaleResource<typeof enUS> = {
     fullscreen: 'Vollbild',
     exitFullscreen: 'Vollbild verlassen',
     escapeHint: 'Mit Escape verlassen',
+    leavesTo: 'Führt zu',
+    arrivesFrom: 'Kommt von',
+    otherRoutes: 'Weitere Übergänge',
     minimap: 'Diagrammübersicht',
 
     overview: 'Diagrammübersicht',

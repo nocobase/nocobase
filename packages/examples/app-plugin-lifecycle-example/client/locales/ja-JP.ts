@@ -383,6 +383,9 @@ const jaJP: LocaleResource<typeof enUS> = {
     fullscreen: '全画面表示',
     exitFullscreen: '全画面表示を終了',
     escapeHint: 'Escape キーで終了',
+    leavesTo: '遷移先',
+    arrivesFrom: '遷移元',
+    otherRoutes: 'その他の遷移',
     minimap: '図の概要',
 
     overview: '図の概要',
