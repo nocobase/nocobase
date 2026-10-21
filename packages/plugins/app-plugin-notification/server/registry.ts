@@ -7,7 +7,7 @@ import {
 import type { ChannelConfig, ChannelTypeClass } from './channel-type.js';
 import type {
   NotificationChannelDefinition,
-  NotificationConfig,
+  NotificationConfigInput,
   NotificationExtensionRegistry,
   NotificationProviderDefinition,
 } from './types.js';
@@ -89,7 +89,7 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
     return this.providerDefinitions.get(type);
   }
 
-  validate(config: NotificationConfig): void {
+  validate(config: NotificationConfigInput): void {
     if (
       config.retry !== undefined &&
       (!config.retry ||

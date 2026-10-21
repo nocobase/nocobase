@@ -950,7 +950,7 @@ export function createNotificationManager<
     'config'
   > & {
     readonly config: Omit<
-      import('./types.js').NotificationConfig,
+      import('./types.js').NotificationConfigInput,
       'channels'
     > & { readonly channels: TConfig };
   },

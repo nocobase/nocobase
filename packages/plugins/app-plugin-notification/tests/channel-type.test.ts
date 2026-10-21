@@ -17,7 +17,7 @@ import type {
 } from '../server/channel-type.js';
 import { createNotificationManager } from '../server/manager.js';
 import { createNotificationRegistry } from '../server/registry.js';
-import type { NotificationConfig } from '../server/types.js';
+import type { NotificationConfigInput } from '../server/types.js';
 import { FakeNotificationStore } from './helpers/fake-notification-store.js';
 import { InlineJobExecutor } from './helpers/inline-job-executor.js';
 
@@ -34,7 +34,7 @@ interface Config extends ChannelConfig {
 }
 const dependency = createServiceToken<string>('channel-test');
 
-function harness(channels: NotificationConfig['channels']) {
+function harness(channels: NotificationConfigInput['channels']) {
   const initialized = vi.fn(async (_channel: string): Promise<void> => {});
   const closed = vi.fn(async (_channel: string): Promise<void> => {});
   const sent = vi.fn(
@@ -158,7 +158,7 @@ describe('class channel types', () => {
   it('initializes once under concurrency and drains transient sends before closing', async () => {
     const h = harness({
       first: { type: 'custom', prefix: 'A:' },
-    } as NotificationConfig['channels']);
+    } as NotificationConfigInput['channels']);
     const ready = Promise.withResolvers<void>();
     const delivered = Promise.withResolvers<ChannelSendResult>();
     h.initialized.mockImplementation(() => ready.promise);
@@ -191,7 +191,7 @@ describe('class channel types', () => {
   it('drains an accepted manual retry before shutting down the executor and channel', async () => {
     const h = harness({
       first: { type: 'custom', prefix: 'A:' },
-    } as NotificationConfig['channels']);
+    } as NotificationConfigInput['channels']);
     h.sent.mockResolvedValueOnce({
       status: 'failed',
       disposition: 'never',
@@ -226,7 +226,7 @@ describe('class channel types', () => {
   it('closes partial initialization and retries with a fresh instance', async () => {
     const h = harness({
       first: { type: 'custom', prefix: 'A:' },
-    } as NotificationConfig['channels']);
+    } as NotificationConfigInput['channels']);
     h.initialized.mockRejectedValueOnce(
       new Error('temporary initialization failure'),
     );
@@ -252,7 +252,7 @@ describe('class channel types', () => {
   it('does not redeliver an unknown submission', async () => {
     const h = harness({
       first: { type: 'custom', prefix: 'A:' },
-    } as NotificationConfig['channels']);
+    } as NotificationConfigInput['channels']);
     h.sent.mockResolvedValue({
       status: 'submission_unknown',
       error: { category: 'network', message: 'Connection lost' },

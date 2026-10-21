@@ -177,6 +177,7 @@ export interface NotificationRetryDeliveryInput {
 }
 
 export interface NotificationProviderConfig {
+  /** @deprecated Use type instead. Application configuration keeps provider as a compatibility alias. */
   readonly provider: string;
   readonly enabled?: boolean;
 }
@@ -187,7 +188,8 @@ export type NotificationChannelConfig = NotificationProviderConfig;
 export type NotificationChannelConfigInput =
   NotificationChannelConfig | ChannelConfig;
 
-export interface NotificationConfig {
+/** Configuration input accepting either type or the deprecated provider alias. */
+export interface NotificationConfigInput {
   readonly channels: Readonly<Record<string, NotificationChannelConfigInput>>;
   /**
    * The `jobs` configuration Delivery tasks run on. Omitted, they follow
@@ -198,6 +200,13 @@ export interface NotificationConfig {
     readonly maxAttempts?: number;
     readonly intervalMs?: number;
   };
+}
+
+/** Application configuration with the provider alias populated for legacy readers. */
+export interface NotificationConfig extends NotificationConfigInput {
+  readonly channels: Readonly<
+    Record<string, NotificationChannelConfig & { readonly type?: string }>
+  >;
 }
 
 export interface NotificationProviderSendError {
@@ -361,7 +370,7 @@ export interface NotificationManagerOptions<
    */
   readonly executor: JobExecutor;
   readonly logger: Logger;
-  readonly config: NotificationConfig;
+  readonly config: NotificationConfigInput;
   readonly registry?: NotificationRegistry;
   readonly container?: ServiceContainer;
   readonly store?: NotificationStore;

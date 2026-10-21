@@ -11,14 +11,14 @@ import type {
 import { createNotificationManager } from '../server/manager.js';
 import { createNotificationRegistry } from '../server/registry.js';
 import type {
-  NotificationConfig,
+  NotificationConfigInput,
   ProviderSendResult,
 } from '../server/types.js';
 import { FakeNotificationStore } from './helpers/fake-notification-store.js';
 import { InlineJobExecutor } from './helpers/inline-job-executor.js';
 
 function harness(
-  config: NotificationConfig,
+  config: NotificationConfigInput,
   store = new FakeNotificationStore(),
 ) {
   const executor = new InlineJobExecutor();
@@ -213,7 +213,7 @@ it.each(['removed', 'disabled', 'changed'])(
       messages: { original: { to: 'a@example.com', text: 'hello' } },
     });
     await first.close();
-    const config: NotificationConfig = {
+    const config: NotificationConfigInput = {
       channels:
         kind === 'removed'
           ? { other: { provider: 'fake' } }
@@ -267,7 +267,7 @@ it('allows disabled Channels whose Provider is not registered', () => {
 it.each([
   {
     name: 'missing Provider',
-    config: { channels: { email: {} } } as unknown as NotificationConfig,
+    config: { channels: { email: {} } } as unknown as NotificationConfigInput,
     message: 'Invalid Notification Channel "email": Channel type is required',
   },
   {
@@ -343,6 +343,6 @@ it('keeps disabled placeholder configurations compatible', () => {
   expect(() =>
     createNotificationRegistry().validate({
       channels: { placeholder: { enabled: false } },
-    } as unknown as NotificationConfig),
+    } as unknown as NotificationConfigInput),
   ).not.toThrow();
 });

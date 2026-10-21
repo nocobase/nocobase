@@ -11,13 +11,17 @@ import {
   notificationExtensionRegistryToken,
   notificationServiceToken,
 } from '../tokens.js';
-import type { NotificationChannelMap, NotificationConfig } from '../types.js';
+import type {
+  NotificationChannelMap,
+  NotificationConfig,
+  NotificationConfigInput,
+} from '../types.js';
 
 export interface NotificationProviderApplicationConfig {
   readonly app: {
     readonly publicBasePath: string;
   };
-  readonly notification?: NotificationConfig;
+  readonly notification?: NotificationConfigInput;
 }
 
 export type NotificationProviderApplication =
