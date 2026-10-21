@@ -46,6 +46,13 @@ function Column({
 }) {
   const { fixedBlock } = useKanbanBlockContext();
   const [headerHeight, setHeaderHeight] = useState(0);
+  const columnStyle: React.CSSProperties & { ['--column-height']?: string } = {
+    height: '100%',
+    minHeight: '28px',
+    display: 'inline-block',
+    verticalAlign: 'top',
+    '--column-height': fixedBlock ? `calc(100% - ${headerHeight}px)` : 'inherit',
+  };
   return (
     <Draggable draggableId={`column-draggable-${children.id}`} index={columnIndex} isDragDisabled={disableColumnDrag}>
       {(columnProvided) => {
@@ -56,12 +63,8 @@ function Column({
             ref={columnProvided.innerRef}
             {...draggablePropsWithoutStyle}
             style={{
-              height: '100%',
-              minHeight: '28px',
-              display: 'inline-block',
-              verticalAlign: 'top',
+              ...columnStyle,
               ...columnProvided.draggableProps.style,
-              '--column-height': fixedBlock ? `calc(100% - ${headerHeight}px)` : 'inherit',
             }}
             className="react-kanban-column"
             data-testid={`column-${children.id}`}
