@@ -18,14 +18,18 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import agents from '../../client/plugin.js';
 import { PricesSheet } from '../../client/pages/usage/prices/index.js';
-import type { ModelServiceView } from '../../shared/models.js';
+import type { ModelCatalog } from '../../shared/models.js';
 import type {
   ModelPrice,
   PricesAnswer,
   PricesInput,
 } from '../../shared/reports.js';
 
-const label = 'Team · tiny-embedding';
+const modelValue = (kind: 'chat' | 'embedding' | 'rerank' = 'chat') =>
+  `tiny-${kind}`;
+const label = `Team · ${modelValue()}`;
+const inputNameFor = (model: string) =>
+  `Input price of Team · ${model}, per million tokens`;
 const inputName = `Input price of ${label}, per million tokens`;
 const outputName = `Output price of ${label}, per million tokens`;
 const saveName = `Save the price of ${label}`;
@@ -35,7 +39,7 @@ function price(extra: Partial<ModelPrice> = {}): ModelPrice {
     id: 'p1',
     tool: 'online',
     modelService: 'team',
-    model: 'tiny-embedding',
+    model: modelValue(),
     inputPerM: 1e-7,
     outputPerM: 0.123456789,
     cacheReadPerM: 0.01,
@@ -60,19 +64,23 @@ function Harness() {
 async function setup(
   items: ModelPrice[] = [],
   canManage = true,
-  kind: 'chat' | 'embedding' | 'rerank' = 'embedding',
+  kind: 'chat' | 'embedding' | 'rerank' = 'chat',
 ) {
   let stored: PricesAnswer = { items, subscriptions: ['claude'], seen: [] };
   const requests: ApiCall[] = [];
   const writes: PricesInput[] = [];
-  const service: ModelServiceView = {
+  const service: ModelCatalog['services'][number] = {
     name: 'team',
     title: 'Team',
     provider: 'openai-compatible',
-    baseUrl: null,
-    apiKeySet: false,
-    enabled: true,
-    models: [{ value: 'tiny-embedding', label: 'Tiny', kind }],
+    models: [
+      {
+        value: modelValue(kind),
+        label: 'Tiny',
+        kind,
+        dimensions: null,
+      },
+    ],
   };
   const fetch = answerApi((call) => {
     requests.push(call);
@@ -149,12 +157,13 @@ async function setup(
 beforeEach(() => window.localStorage.clear());
 
 describe('price precision', () => {
-  it.each(['chat', 'rerank'] as const)(
+  it.each(['embedding', 'rerank'] as const)(
     'also prices %s models through their catalog',
     async (kind) => {
-      await setup([price()], true, kind);
+      const model = modelValue(kind);
+      await setup([price({ model })], true, kind);
       expect(
-        await screen.findByRole('textbox', { name: inputName }),
+        await screen.findByRole('textbox', { name: inputNameFor(model) }),
       ).toHaveValue('1e-7');
     },
   );
