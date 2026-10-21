@@ -2,20 +2,16 @@ import { z } from 'zod';
 import type {
   DemoConfigurationView,
   DemoWriteRule,
-  DemoTableRule,
   DemoDailySchedule,
   DemoChatConfiguration,
 } from './types.js';
 
 const operation = z.enum(['insert', 'update', 'delete']);
-export const TableRule: z.ZodType<DemoTableRule> = z.strictObject({
-  table: z
-    .string()
-    .min(1)
-    .max(128)
-    .regex(/^[a-z][a-z0-9_]*$/u),
-  operations: z.array(operation).min(1).max(3),
-});
+const tableName = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[a-z][a-z0-9_]*$/u);
 export const WriteRule: z.ZodType<DemoWriteRule> = z.strictObject({
   capability: z.string().min(1).max(128),
   operation,
@@ -43,20 +39,20 @@ export const ChatConfiguration: z.ZodType<DemoChatConfiguration> =
     ),
   });
 export const ConfigurationInput: Record<
-  'rules' | 'tableRules' | 'mocks' | 'schedule' | 'chat',
+  'rules' | 'tables' | 'mocks' | 'schedule' | 'chat',
   z.ZodType<{
     expectedRevision: number;
     value:
       | DemoWriteRule[]
-      | DemoTableRule[]
+      | string[]
       | Record<string, boolean>
       | DemoDailySchedule
       | DemoChatConfiguration;
   }>
 > = {
-  tableRules: z.strictObject({
+  tables: z.strictObject({
     expectedRevision: z.number().int().nonnegative(),
-    value: z.array(TableRule).max(100),
+    value: z.array(tableName).max(100),
   }),
   chat: z.strictObject({
     expectedRevision: z.number().int().nonnegative(),
@@ -80,7 +76,7 @@ export const ConfigurationView: z.ZodType<DemoConfigurationView> = z
     busy: z.boolean(),
     revision: z.number(),
     rules: z.array(WriteRule),
-    tableRules: z.array(TableRule),
+    tables: z.array(tableName),
     mocks: z.record(z.string(), z.boolean()),
     schedule: DailySchedule.nullable(),
     chat: ChatConfiguration,

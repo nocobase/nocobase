@@ -14,4 +14,4 @@ Add opt-in online chat policies for existing host model services and explicit pe
 
 Support explicitly scoped persistence for legacy online conversation adapters without global Agent table write rules.
 
-Add administrator-configured physical-table exceptions with per-operation grants, protected-table validation and request-boundary revocation, without application capability registration.
+Add administrator-configured physical-table exceptions with a simple table-name list, protected-table validation and request-boundary revocation, without application capability registration.

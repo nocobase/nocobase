@@ -72,7 +72,7 @@ export const configurationRoutes: AppApiRouteContribution<AppPluginApplication> 
     );
     for (const [path, section] of [
       ['writeRules', 'rules'],
-      ['tableRules', 'tableRules'],
+      ['tables', 'tables'],
       ['mocks', 'mocks'],
       ['schedule', 'schedule'],
       ['chat', 'chat'],

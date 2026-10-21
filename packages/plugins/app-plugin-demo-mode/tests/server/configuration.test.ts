@@ -71,7 +71,7 @@ it('persists explicit rules, rejects stale updates and protected/unknown capabil
   await other.save('rules', 1, []);
   expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
 });
-it('configures table operations without application registration and revokes them across instances', async () => {
+it('configures exception tables without application registration and revokes them across instances', async () => {
   const { config, container, guard } = await setup();
   const other = new DemoConfigurationService(
     container.resolve(databaseManagerToken),
@@ -79,33 +79,49 @@ it('configures table operations without application registration and revokes the
     guard,
     async () => ({ importing: null, languages: ['en-US'] }),
   );
-  expect((await config.read()).tableRules).toEqual([]);
+  expect((await config.read()).tables).toEqual([]);
   expect((await app.request('/notes', { method: 'POST' })).status).toBe(400);
-  await config.save('tableRules', 0, [
-    { table: 'demonotes', operations: ['update'] },
-  ]);
-  expect((await app.request('/notes', { method: 'POST' })).status).toBe(400);
-  await other.save('tableRules', 1, [
-    { table: 'demonotes', operations: ['insert'] },
-  ]);
+  await other.save('tables', 0, ['demonotes']);
   expect((await app.request('/notes', { method: 'POST' })).status).toBe(200);
   expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
+  await guard.run(
+    {
+      method: 'POST',
+      path: '/notes',
+      blocked: [],
+      allowed: await config.wholeTableRules(),
+    },
+    async () => {
+      await app.connection.query
+        .updateTable('demonotes')
+        .set({ name: 'updated' })
+        .where('name', '=', 'note')
+        .execute();
+      await app.connection.query
+        .deleteFrom('demonotes')
+        .where('name', '=', 'updated')
+        .execute();
+    },
+  );
+  await expect(
+    config.save('tables', 1, ['demonotes', 'demonotes']),
+  ).rejects.toMatchObject({ reason: 'DEMO_CONFIGURATION_INVALID' });
   for (const table of [
     'user',
     'ag_agents',
     'demo_mode_configuration',
     'demonotes;drop',
   ]) {
-    await expect(
-      config.save('tableRules', 2, [{ table, operations: ['insert'] }]),
-    ).rejects.toMatchObject({ reason: 'DEMO_CONFIGURATION_INVALID' });
+    await expect(config.save('tables', 1, [table])).rejects.toMatchObject({
+      reason: 'DEMO_CONFIGURATION_INVALID',
+    });
   }
-  await expect(config.save('tableRules', 1, [])).rejects.toMatchObject({
+  await expect(config.save('tables', 0, [])).rejects.toMatchObject({
     reason: 'DEMO_CONFIGURATION_CONFLICT',
   });
-  await other.save('tableRules', 2, []);
+  await other.save('tables', 1, []);
   expect((await app.request('/notes', { method: 'POST' })).status).toBe(400);
-  expect((await other.read()).tableRules).toEqual([]);
+  expect((await other.read()).tables).toEqual([]);
 });
 it('allows only the registered scoped operation and isolates parallel requests', async () => {
   const { config, guard } = await setup();
