@@ -1,5 +1,4 @@
 /** Drives a catalog agent through the same ACP client used by personal sessions. */
-import { realpath, stat } from 'node:fs/promises';
 import { AGENTS } from '@nocobase/acp-bridge/catalog';
 import type { AgentSpec } from '@nocobase/acp-bridge/catalog';
 import {
@@ -13,6 +12,7 @@ import {
   sessionModels,
 } from '@nocobase/acp-bridge/client';
 import type { SessionNotification } from '@nocobase/acp-bridge/client';
+import { programFingerprint } from './program-fingerprint.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { EventQueue } from './echo.ts';
 import { capInput, capText } from './codex/util.ts';
@@ -34,21 +34,6 @@ import {
 
 const CLIENT = { name: 'nocobase-runner', version: '1' };
 
-/** A filesystem observation does not start the program or inspect account credentials. */
-export async function programFingerprint(
-  command: string | undefined,
-  args: readonly string[] = [],
-): Promise<string> {
-  if (!command) return 'missing';
-  try {
-    const file = await realpath(command);
-    const info = await stat(file);
-    return JSON.stringify([command, file, args, info.mtimeMs, info.size]);
-  } catch {
-    return 'missing';
-  }
-}
-
 export function createAcpAdapter(
   spec: AgentSpec,
   env: Record<string, string>,
@@ -68,8 +53,11 @@ export function createAcpAdapter(
 async function inspect(
   spec: AgentSpec,
   env: Record<string, string>,
-  signal?: AbortSignal,
+  stop?: AbortSignal,
 ): Promise<ToolDetection & ToolCapabilities> {
+  const deadline = AbortSignal.timeout(30_000);
+  const signal = stop ? AbortSignal.any([stop, deadline]) : deadline;
+  signal.throwIfAborted();
   const resolved = await resolveAgent(spec, env);
   if (!resolved)
     return { installed: false, authenticated: false, status: 'notInstalled' };

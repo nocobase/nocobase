@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -219,4 +220,26 @@ it('declines permissions during detection', async () => {
   expect(
     trace.find((message) => message.id === 'permission-1').result.outcome,
   ).toEqual({ outcome: 'cancelled' });
+});
+
+it('aborts detection while the agent ignores session creation', async () => {
+  const f = await fixture('hangOpen');
+  const controller = new AbortController();
+  const detected = f.adapter.detect(controller.signal);
+  const { waitFor } = await import('../fake-server.ts');
+  await waitFor(
+    () =>
+      existsSync(f.trace) &&
+      readFileSync(f.trace, 'utf8').includes('session/new'),
+    3_000,
+    'inspection session request',
+  );
+  controller.abort();
+  expect(await detected).toMatchObject({
+    status: 'failed',
+    authenticated: false,
+  });
+  expect(
+    (await f.messages()).some((message) => message.method === 'session/prompt'),
+  ).toBe(false);
 });

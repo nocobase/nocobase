@@ -84,6 +84,7 @@ readline.createInterface({ input: process.stdin }).on('line', async (line) => {
     method === 'session/load' ||
     method === 'session/resume'
   ) {
+    if (variant === 'hangOpen') return;
     if (variant === 'auth') return error(-32000);
     if (variant === 'sessionMissing' && method !== 'session/new')
       return error(-32002);

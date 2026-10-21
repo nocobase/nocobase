@@ -1120,7 +1120,12 @@ export class RunnerDaemon {
           `run ${payload.run.id}: ${payload.tool.kind} is over its limit of ${this.toolLimit(payload.tool.kind)}; ${link.key} does not apply limits per tool`,
         );
       try {
-        await this.supervisor.spawn(link.key, payload);
+        const tools = (await link.detection?.capabilities)?.tools;
+        await this.supervisor.spawn(
+          link.key,
+          payload,
+          tools?.find((tool) => tool.kind === payload.tool.kind)?.version,
+        );
       } catch (error) {
         this.options.log(
           `run ${payload.run.id}: could not start: ${error instanceof Error ? error.message : String(error)}`,

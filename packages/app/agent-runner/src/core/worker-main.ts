@@ -116,6 +116,9 @@ async function main(): Promise<number> {
       paths,
       connection,
       settings,
+      ...(job.toolVersion === undefined
+        ? {}
+        : { toolVersion: job.toolVersion }),
       stopWriters: async () => {
         quiescing = true;
         try {

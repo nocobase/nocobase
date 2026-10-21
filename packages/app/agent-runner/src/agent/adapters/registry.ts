@@ -3,10 +3,7 @@
 // Claude Code, Codex, OpenCode and Pi all have real adapters. `NOCOBASE_RUNNER_ADAPTER=echo` makes the echo adapter stand in for every
 // tool kind, which is how the tests and local development drive the runner without a coding tool.
 import { AGENTS } from '@nocobase/acp-bridge/catalog';
-import { findProgram } from '@nocobase/acp-bridge/client';
-import os from 'node:os';
-import path from 'node:path';
-import { createAcpAdapter, programFingerprint } from './acp.ts';
+import { createAcpAdapter } from './acp.ts';
 import { AGENT_TOOLS, type AgentTool } from '../../protocol/index.ts';
 import { detectionEnv } from '../env.ts';
 import { createClaudeAdapter } from './claude.ts';
@@ -47,19 +44,7 @@ export function loadAdapters(
     const factory = nativeAdapters.get(kind);
     const spec = AGENTS.find((agent) => agent.id === kind);
     if (factory) {
-      const adapter = factory(detection);
-      adapter.fingerprint = async () =>
-        programFingerprint(
-          await findProgram(
-            kind,
-            [
-              path.join(os.homedir(), '.local/bin'),
-              path.join(os.homedir(), '.opencode/bin'),
-            ],
-            detection.env,
-          ),
-        );
-      adapters.set(kind, adapter);
+      adapters.set(kind, factory(detection));
     } else if (spec) adapters.set(kind, createAcpAdapter(spec, detection.env));
     else throw new Error(`Unknown coding tool: ${kind}`);
   }
