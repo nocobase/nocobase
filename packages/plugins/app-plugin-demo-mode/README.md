@@ -146,3 +146,7 @@ Applications can build a management UI on `/api/demoMode/configuration`, with in
 ## Upgrading the development snapshot
 
 The isolated-environment contract intentionally removes mixed-data compatibility. Follow the [adapter migration checklist](skills/nocobase-app-plugin-demo-mode/references/upgrading.md) before replacing a vendored snapshot. The current Agents API is required; update an older host instead of adding legacy API fallbacks.
+
+### Host model service registration
+
+The default integration uses `agents.models.services`. A host that exposes the same model registration operations through another public facade can call `demoData.registerModelServices(services)` during its provider's `boot()`. The adapter implements `create`, `update`, `remove` and `setDefaultChat`; the plugin still owns the durable model binding and its key. This is an explicit host adapter, not automatic legacy API detection. Bind application Agents in `ready()` after the plugin has initialized its model; `start()` runs earlier. Missing model services on an installed Agents host fail startup with an actionable error.

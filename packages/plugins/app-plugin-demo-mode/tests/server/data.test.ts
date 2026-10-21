@@ -1,9 +1,21 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createTestApp, type TestApp } from '@nocobase/app-testing/server';
 import { generateText, jsonSchema, stepCountIs, streamText, tool } from 'ai';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
-import { demoDataToken, type DemoDataService } from '../../server/tokens.js';
+import {
+  demoDataToken,
+  type DemoDataService,
+  type DemoModelServices,
+} from '../../server/tokens.js';
 import type { DemoDataset } from '../../server/data/types.js';
 import { createDemoClock } from '../../server/data/clock.js';
 import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
@@ -392,5 +404,40 @@ describe('simulated model', () => {
       headers: { authorization: 'Bearer rotated-key' },
     });
     expect(cleared.status).toBe(401);
+  });
+});
+
+describe('host model services adapter', () => {
+  it('provisions once and retains the binding independently of imported data', async () => {
+    const host = await createTestApp({
+      createServer: createStandaloneServer,
+      config: { demoMode: { mode: 'observe', data: { models: true } } },
+    });
+    try {
+      const data = host.application.container.resolve(demoDataToken);
+      const services = {
+        create: vi.fn(async () => ({ name: 'host-demo-model' })),
+        update: vi.fn(async () => undefined),
+        remove: vi.fn(async () => undefined),
+        setDefaultChat: vi.fn(async () => undefined),
+      };
+      data.registerModelServices(services as unknown as DemoModelServices);
+      await data.initialize();
+      expect(data.models.serviceName).toBe('host-demo-model');
+      expect((await data.status()).model.enabled).toBe(true);
+      await data.initialize();
+      expect(services.create).toHaveBeenCalledTimes(1);
+      expect(services.setDefaultChat).toHaveBeenLastCalledWith(
+        { modelService: 'host-demo-model', model: 'demo-chat' },
+        null,
+      );
+      expect(() =>
+        data.registerModelServices({
+          ...services,
+        } as unknown as DemoModelServices),
+      ).toThrow('already registered');
+    } finally {
+      await host.close();
+    }
   });
 });

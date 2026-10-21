@@ -31,7 +31,7 @@ export const demoModeServiceToken: ServiceToken<DemoModeService> =
 export const demoDataToken: ServiceToken<DemoDataService> =
   createServiceToken<DemoDataService>('@nocobase/app-plugin-demo-mode/data');
 
-export type { DemoDataService } from './data/service.js';
+export type { DemoDataService, DemoModelServices } from './data/service.js';
 export type * from './data/types.js';
 export type { DemoModels } from './data/models.js';
 
