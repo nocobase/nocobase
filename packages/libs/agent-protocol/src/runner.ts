@@ -336,7 +336,8 @@ export interface HeartbeatRequest {
    * limits per tool.
    */
   readonly load: {
-    readonly draining?: 'updatePending' | 'pruning';
+    /** diskLow reports no intake while workspace disk capacity is below its configured threshold. */
+    readonly draining?: 'updatePending' | 'pruning' | 'diskLow';
     readonly slots: number;
     readonly free: number;
     readonly tools?: Readonly<Partial<Record<AgentTool, ToolLoad>>>;
@@ -356,7 +357,7 @@ export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
   active: z.array(ActiveRunSchema),
   jobs: z.array(ActiveJobSchema).optional(),
   load: z.object({
-    draining: z.enum(['updatePending', 'pruning']).optional(),
+    draining: z.enum(['updatePending', 'pruning', 'diskLow']).optional(),
     slots: z.number().int().nonnegative(),
     free: z.number().int().nonnegative(),
     tools: z.partialRecord(AgentToolSchema, ToolLoadSchema).optional(),

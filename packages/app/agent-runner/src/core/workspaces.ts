@@ -1,3 +1,5 @@
+import { invalidatePreparation } from './preparation.ts';
+import { workspaceInUse } from './workspace-use.ts';
 // Once the application says a directory's work is over (`ended`), routine collection removes it, with its session
 // directories, whatever it holds: untracked files, uncommitted changes and commits never pushed go with it. Only a run
 // holding its lock, or using it since it was reported, keeps it. Directories whose work goes on, or whose status is
@@ -31,6 +33,7 @@ import {
   hasUnpushedWork,
   readWorkspaceMeta,
   removeWorkspace,
+  removeOwnedSessions,
   workspaceRecordPath,
   writeWorkspaceMeta,
   type Lock,
@@ -128,7 +131,8 @@ export async function inspectWorkspace(
   options: { now?: number; force?: boolean; log?: (message: string) => void },
 ): Promise<WorkspaceEntry> {
   const now = options.now ?? Date.now();
-  const inUse = await isLocked(workDir);
+  const inUse =
+    (await workspaceInUse(paths, workDir)) || (await isLocked(workDir));
   const checkedAt =
     meta.measuredAt === undefined ? Number.NaN : Date.parse(meta.measuredAt);
   const stale =
@@ -526,6 +530,7 @@ export async function removePlanned(
     return 'inUse';
   }
   try {
+    if (await workspaceInUse(paths, entry.workDir)) return 'inUse';
     const meta = await readWorkspaceMeta(paths, entry.workDir);
     if (
       meta !== undefined &&
@@ -555,7 +560,9 @@ export async function removePlanned(
       )
         return 'changed';
 
-      await removeWorkspace(paths, entry.workDir, meta ?? { repos: [] });
+      await removeWorkspace(paths, entry.workDir, meta ?? { repos: [] }, {
+        cleanupHeld: true,
+      });
       return undefined;
     }
     if (meta === undefined) return 'changed';
@@ -586,7 +593,7 @@ export async function removePlanned(
       );
       return 'unpushed';
     }
-    await removeWorkspace(paths, entry.workDir, meta);
+    await removeWorkspace(paths, entry.workDir, meta, { cleanupHeld: true });
     return undefined;
   } finally {
     await lock.release();
@@ -615,6 +622,7 @@ async function discardEnded(
       return 'inUse';
     }
     try {
+      if (await workspaceInUse(paths, dir)) return 'inUse';
       await discardDirectory(paths, dir, await readWorkspaceMeta(paths, dir));
     } finally {
       await lock.release();
@@ -630,13 +638,20 @@ async function discardDirectory(
   workDir: string,
   meta: WorkspaceMeta | undefined,
 ): Promise<void> {
+  if (await workspaceInUse(paths, workDir))
+    throw new Error('The workspace is in use.');
   for (const repo of meta?.repos ?? []) {
+    await invalidatePreparation(paths, path.join(workDir, repo.path));
     const dir = path.join(workDir, repo.path);
     if (!isInside(workDir, dir) || dir === path.resolve(workDir)) continue;
     if (!existsSync(repo.cache)) continue;
     const lock = await lockCache(repo.cache);
     try {
+      if (await workspaceInUse(paths, workDir))
+        throw new Error('The workspace is in use.');
       await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
+      if (await workspaceInUse(paths, workDir))
+        throw new Error('The workspace is in use.');
       await rm(dir, { recursive: true, force: true });
       await gitOk(['worktree', 'prune'], repo.cache);
       if (
@@ -651,8 +666,11 @@ async function discardDirectory(
       await lock.release();
     }
   }
+  if (await workspaceInUse(paths, workDir))
+    throw new Error('The workspace is in use.');
   await rm(workDir, { recursive: true, force: true });
   await rm(workspaceRecordPath(paths, workDir), { force: true });
+  await removeOwnedSessions(paths, workDir, meta ?? {});
 }
 
 /**

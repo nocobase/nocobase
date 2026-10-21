@@ -72,15 +72,15 @@ export interface RunnerSettings {
   models?: ModelListOverrides;
   /**
    * How long a working directory stays unused before its regenerable build artifacts go (`config set artifact-ttl
-   * 2h`), in milliseconds; absent for `DEFAULT_ARTIFACT_TTL_MS`, 0 when the owner turned it off.
+   * 24h`), in milliseconds; absent for `DEFAULT_ARTIFACT_TTL_MS`, 0 when the owner turned it off.
    */
   artifactTtlMs?: number;
   /** The directory names removed as regenerable build artifacts (`config set artifact-patterns`); absent for the defaults. */
   artifactPatterns?: string[];
 }
 
-/** Two hours unused before a working directory's regenerable build artifacts go. */
-export const DEFAULT_ARTIFACT_TTL_MS: number = 2 * 60 * 60 * 1000;
+/** Twenty-four hours unused before a working directory's regenerable build artifacts go. */
+export const DEFAULT_ARTIFACT_TTL_MS: number = 24 * 60 * 60 * 1000;
 /** The directories removed as regenerable build artifacts, by name. */
 export const DEFAULT_ARTIFACT_PATTERNS: readonly string[] = [
   'node_modules',

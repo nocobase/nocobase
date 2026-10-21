@@ -92,7 +92,7 @@ export interface Runner {
    */
   /** Last heartbeat free slots across all applications; absent before a heartbeat. */
   readonly globalFree?: number;
-  readonly draining?: 'updatePending' | 'pruning';
+  readonly draining?: 'updatePending' | 'pruning' | 'diskLow';
   readonly toolLoad?: Readonly<Partial<Record<AgentTool, ToolLoad>>> | null;
   /**
    * Its owner (or a manager of runners) lets it take jobs: builds and other steps an application configures, run
@@ -581,6 +581,7 @@ export function runnerActivity(
   >,
 ): RunnerActivity {
   if (runner.status !== 'online') return runner.status;
+  if (runner.draining === 'diskLow') return 'low_disk';
   if (runner.draining) return runner.draining;
   if (runnerLowOnDisk(runner)) return 'low_disk';
   return runner.activeRuns + runner.activeJobs >= runner.slots

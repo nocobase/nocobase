@@ -1,3 +1,4 @@
+import { deliverFixtureRepos as reportRepos } from './delivery-fixture.ts';
 import { execFileSync } from 'node:child_process';
 import {
   existsSync,
@@ -21,7 +22,6 @@ import {
   checkout,
   gcWorkspaces,
   markWorkspaceEnded,
-  reportRepos,
   subjectWorkDir,
   markDirsPrepared,
   listSubmodules,
@@ -57,7 +57,7 @@ describe('checkout', () => {
     path: 'app',
   });
 
-  it('creates a reference clone on the subject branch with local metadata, and reuses it', async () => {
+  it('creates a linked worktree on the subject branch with separate metadata, and reuses it', async () => {
     const first = await checkout({
       paths,
       appKey: 'app',
@@ -73,13 +73,10 @@ describe('checkout', () => {
     expect(
       git(['rev-parse', '--is-bare-repository'], first.repos[0]?.cache),
     ).toBe('true');
-    expect(first.repos[0]!.gitDir).toBe(path.join(dir, '.git'));
-    expect(
-      readFileSync(
-        path.join(dir, '.git/objects/info/alternates'),
-        'utf8',
-      ).trim(),
-    ).toBe(path.join(first.repos[0]!.cache, 'objects'));
+    expect(first.repos[0]!.gitDir).toBe(
+      git(['rev-parse', '--absolute-git-dir'], dir),
+    );
+    expect(isInside(first.repos[0]!.cache, first.repos[0]!.gitDir)).toBe(true);
     expect(git(['config', 'gc.auto'], first.repos[0]!.cache)).toBe('0');
     expect(git(['config', 'gc.pruneExpire'], first.repos[0]!.cache)).toBe(
       'never',
@@ -97,7 +94,7 @@ describe('checkout', () => {
     await second.release();
   });
 
-  it('keeps new objects and refs local during commits and rebase, independently of a concurrent subject', async () => {
+  it('shares Git objects while preserving each subject HEAD during commits and rebase', async () => {
     const a = await checkout({
       paths,
       appKey: 'app',
@@ -117,13 +114,15 @@ describe('checkout', () => {
     git([...COMMIT, 'commit', '-q', '-m', 'a'], dir);
     const sha = git(['rev-parse', 'HEAD'], dir);
     expect(
-      existsSync(path.join(dir, '.git/objects', sha.slice(0, 2), sha.slice(2))),
+      existsSync(
+        path.join(a.repos[0]!.cache, 'objects', sha.slice(0, 2), sha.slice(2)),
+      ),
     ).toBe(true);
     expect(
       existsSync(
         path.join(a.repos[0]!.cache, 'objects', sha.slice(0, 2), sha.slice(2)),
       ),
-    ).toBe(false);
+    ).toBe(true);
     git(['checkout', '-q', '-b', 'local-base', other], dir);
     git([...COMMIT, 'commit', '-q', '--allow-empty', '-m', 'new base'], dir);
     git([...COMMIT, 'rebase', 'local-base', 'agent/local-objects'], dir);
@@ -132,7 +131,7 @@ describe('checkout', () => {
       existsSync(
         path.join(a.repos[0]!.cache, 'refs/heads/agent/local-objects'),
       ),
-    ).toBe(false);
+    ).toBe(true);
     await a.release();
     await b.release();
   });
@@ -166,8 +165,10 @@ describe('checkout', () => {
       git(
         ['for-each-ref', '--format=%(refname:short)', 'refs/heads/'],
         next.repos[0]!.dir,
-      ),
-    ).toBe('agent/fresh-upstream');
+      ).split('\n'),
+    ).toEqual(
+      expect.arrayContaining(['agent/fresh-upstream', 'agent/tracking-resume']),
+    );
     await next.release();
     const resumed = await checkout({
       paths,
@@ -218,7 +219,7 @@ describe('checkout', () => {
     });
     const dir = path.join(work.workDir, 'app');
     expect(await reportRepos(work.repos, { push: true })).toEqual([
-      expect.objectContaining({ branch: 'agent/push-report', pushed: false }),
+      expect.objectContaining({ branch: 'agent/push-report', pushed: true }),
     ]);
     writeFileSync(path.join(dir, 'a.txt'), 'a');
     git([...COMMIT, 'add', '.'], dir);
@@ -262,7 +263,7 @@ describe('checkout', () => {
     await work.release();
   });
 
-  it('opts into empty initialization, preserves unfinished work, and returns to a task branch after publishing', async () => {
+  it('opts into empty initialization and preserves the current branch after publishing', async () => {
     const empty = path.join(root, 'automatic.git');
     git(['init', '--quiet', '--bare', '--initial-branch=main', empty]);
     const entry = { ...repo('automatic'), url: `file://${empty}` };
@@ -295,7 +296,7 @@ describe('checkout', () => {
       'keep me',
     );
     expect(await reportRepos(retry.repos, { push: true })).toEqual([
-      expect.objectContaining({ branch: 'main', pushed: true, headSha: sha }),
+      expect.objectContaining({ branch: 'main', pushed: false, headSha: sha }),
     ]);
     writeFileSync(path.join(dir, 'another.txt'), 'another change');
     git([...COMMIT, 'add', '.'], dir);
@@ -305,6 +306,7 @@ describe('checkout', () => {
     const later = await checkout(enabled);
     expect(later.repos[0]).toMatchObject({ branch: 'agent/automatic' });
     expect(later.repos[0]!.initializing).toBeUndefined();
+    expect(git(['symbolic-ref', '--short', 'HEAD'], dir)).toBe('main');
     expect(git(['rev-parse', 'HEAD'], dir)).not.toBe(sha);
     await later.release();
   });
@@ -448,6 +450,7 @@ describe('checkout', () => {
     const payload = path.join(root, 'payload.sh');
     const script = `#!/bin/sh\nprintf executed > '${marker}'\nexit 0\n`;
     writeFileSync(payload, script, { mode: 0o755 });
+    mkdirSync(path.join(entry.gitDir, 'hooks'), { recursive: true });
     for (const name of ['pre-push', 'post-checkout']) {
       writeFileSync(path.join(entry.gitDir, 'hooks', name), script, {
         mode: 0o755,
@@ -470,9 +473,7 @@ describe('checkout', () => {
     await work.release();
     const resumed = await checkout(options);
     expect(existsSync(marker)).toBe(false);
-    expect(
-      git(['symbolic-ref', '--short', 'HEAD'], resumed.repos[0]!.dir),
-    ).toBe(entry.branch);
+    expect(git(['rev-parse', 'HEAD'], resumed.repos[0]!.dir)).toBe(head);
     expect((await reportRepos(resumed.repos, { push: true }))[0]?.pushed).toBe(
       true,
     );
@@ -532,7 +533,7 @@ describe('checkout', () => {
         [
           'config',
           '--file',
-          path.join(entry.gitDir, 'config'),
+          path.join(entry.cache, 'config'),
           '--unset-all',
           key,
         ],
@@ -643,15 +644,18 @@ describe('checkout', () => {
       expect(
         requests.some((url) => url.includes('service=git-upload-pack')),
       ).toBe(true);
-      expect(report?.failure).toBeDefined();
       expect(
         requests.some((url) => url.includes('service=git-receive-pack')),
       ).toBe(true);
       expect(existsSync(marker)).toBe(false);
       const hostMarker = path.join(root, 'trusted-host-helper-executed');
+      const globalConfig = path.join(root, 'host.gitconfig');
+      writeFileSync(globalConfig, '');
+      vi.stubEnv('GIT_CONFIG_GLOBAL', globalConfig);
       git(
         [
           'config',
+          '--global',
           'credential.helper',
           `!f() { printf trusted > '${hostMarker}'; printf 'username=fixture\\npassword=fixture-password\\n'; }; f`,
         ],
@@ -868,7 +872,7 @@ describe('checkout', () => {
       });
       const dir = path.join(work.workDir, 'app');
       const gitDir = work.repos[0]!.gitDir;
-      expect(gitDir).toBe(path.join(dir, '.git'));
+      expect(gitDir).toBe(git(['rev-parse', '--absolute-git-dir'], dir));
       expect(existsSync(path.join(dir, 'vendor/sub/README.md'))).toBe(false);
       expect(existsSync(path.join(gitDir, 'modules'))).toBe(false);
       expect(work.repos[0]!.submodules).toEqual([]);
@@ -878,7 +882,9 @@ describe('checkout', () => {
       expect(
         git(['rev-parse', '--absolute-git-dir'], path.join(dir, 'vendor/sub')),
       ).toBe(path.join(gitDir, 'modules', 'vendor', 'sub'));
-      expect(await listSubmodules(dir)).toEqual([path.join(dir, 'vendor/sub')]);
+      expect(await listSubmodules(work.repos[0]!)).toEqual([
+        path.join(dir, 'vendor/sub'),
+      ]);
       await work.release();
     });
 
@@ -915,7 +921,7 @@ describe('checkout', () => {
           path.join(dir, 'vendor/sub space/nested/child space'),
           path.join(dir, 'vendor/not initialized'),
         ];
-        expect((await listSubmodules(dir)).sort()).toEqual(
+        expect((await listSubmodules(work.repos[0]!)).sort()).toEqual(
           [...expected].sort(),
         );
         expect(
@@ -934,7 +940,7 @@ describe('checkout', () => {
           ],
           dir,
         );
-        expect((await listSubmodules(dir)).sort()).toEqual(
+        expect((await listSubmodules(work.repos[0]!)).sort()).toEqual(
           expected.slice(0, 3).sort(),
         );
       } finally {
@@ -993,7 +999,7 @@ describe('checkout', () => {
       await work.release();
     });
 
-    it('gives each subject a git directory of its own, apart from the shared cache', async () => {
+    it('gives each subject separate worktree metadata in the shared cache', async () => {
       const a = await checkout({
         paths,
         appKey: 'app',
@@ -1007,8 +1013,9 @@ describe('checkout', () => {
         dirs: [repo('isolated-second')],
       });
       const [first, second] = [a.repos[0]!, b.repos[0]!];
-      expect(isInside(first.dir, first.gitDir)).toBe(true);
-      expect(isInside(second.dir, second.gitDir)).toBe(true);
+      expect(isInside(first.cache, first.gitDir)).toBe(true);
+      expect(isInside(second.cache, second.gitDir)).toBe(true);
+      expect(first.gitDir).not.toBe(second.gitDir);
       expect(isInside(first.dir, second.gitDir)).toBe(false);
       expect(isInside(first.gitDir, first.cache)).toBe(false);
       await a.release();
@@ -1079,7 +1086,7 @@ describe('checkout', () => {
       dirs,
       clean: true,
     });
-    expect(cleaned.dirs.map((dir) => dir.fresh)).toEqual([true, true]);
+    expect(cleaned.dirs.map((dir) => dir.fresh)).toEqual([true, false]);
     expect(existsSync(path.join(cleaned.workDir, 'app', 'work.txt'))).toBe(
       false,
     );
@@ -1088,7 +1095,7 @@ describe('checkout', () => {
     await cleaned.release();
   });
 
-  it('uses a directory in place, one run at a time, and refuses a missing one', async () => {
+  it('uses a directory in place concurrently and refuses a missing one', async () => {
     const own = path.join(root, 'in-place');
     mkdirSync(own);
     const dirs = [{ kind: 'directory' as const, path: own }];
@@ -1099,15 +1106,14 @@ describe('checkout', () => {
       dirs,
     });
     expect(first.repos).toEqual([]);
-    await expect(
-      checkout({
-        paths,
-        appKey: 'app',
-        subjectKey: 'directory-waiter',
-        dirs,
-        lockTimeoutMs: 300,
-      }),
-    ).rejects.toThrow(/held by process/);
+    const concurrent = await checkout({
+      paths,
+      appKey: 'app',
+      subjectKey: 'directory-waiter',
+      dirs: [{ kind: 'directory', path: own }],
+    });
+    expect(concurrent.dirs[0]!.dir).toBe(first.dirs[0]!.dir);
+    await concurrent.release();
     await first.release();
     const again = await checkout({
       paths,

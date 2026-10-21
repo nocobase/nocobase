@@ -82,7 +82,7 @@ import {
 } from '../protocol/index.ts';
 import type { Installation } from '../lib/install.ts';
 import { gcRunTemps } from './run-temp.ts';
-import { gcWorkspaces } from './checkout.ts';
+import { gcWorkspaces, WorkspaceBusyError } from './checkout.ts';
 import { prunePnpmStore } from './pnpm-store.ts';
 import {
   collectWorkspaces,
@@ -556,6 +556,7 @@ export class RunnerDaemon {
       const startedAt = Date.now();
       log('gc: collection started');
       try {
+        while (this.claimsInFlight > 0) await delay(20, this.stopping.signal);
         const settings = await readSettings(paths);
         const reporters = new Map<
           string,
@@ -760,10 +761,12 @@ export class RunnerDaemon {
               ? { draining: 'updatePending' as const }
               : this.pruning
                 ? { draining: 'pruning' as const }
-                : {}),
+                : this.diskPaused
+                  ? { draining: 'diskLow' as const }
+                  : {}),
             slots: this.slots,
             free:
-              this.pendingUpdate || this.pruning
+              this.pendingUpdate || this.pruning || this.diskPaused
                 ? 0
                 : Math.max(0, this.slots - this.supervisor.size),
             ...(this.limitedTools.length > 0
@@ -773,7 +776,10 @@ export class RunnerDaemon {
                       tool,
                       {
                         slots: this.toolLimit(tool as AgentTool),
-                        free: this.pendingUpdate || this.pruning ? 0 : free,
+                        free:
+                          this.pendingUpdate || this.pruning || this.diskPaused
+                            ? 0
+                            : free,
                       } satisfies ToolLoad,
                     ]),
                   ),
@@ -903,7 +909,7 @@ export class RunnerDaemon {
       return;
     this.updating = true;
     try {
-      const reported = Promise.all(this.live.map((app) => this.heartbeat(app)));
+      await Promise.all(this.live.map((app) => this.heartbeat(app)));
       const cancellations = new Map<string, Promise<void>>();
       const interruptAgents = (): void => {
         for (const run of this.supervisor.runs.values()) {
@@ -922,7 +928,7 @@ export class RunnerDaemon {
       }
       interruptAgents();
       await Promise.all(cancellations.values());
-      await reported;
+
       // Background jobs retain their existing completion semantics.
       if (this.supervisor.size > 0 || this.stopping.signal.aborted) return;
       await (selfUpdate.apply ?? applyUpdate)({
@@ -1084,7 +1090,12 @@ export class RunnerDaemon {
             'POST',
             routePath(RUNNER_ROUTES.fail, { runId: payload.run.id }),
             {
-              reason: isDiskFull(error) ? 'runnerDiskFull' : 'startTimeout',
+              reason: isDiskFull(error)
+                ? 'runnerDiskFull'
+                : error instanceof WorkspaceBusyError &&
+                    payload.run.acceptedFailures?.includes('workspaceBusy')
+                  ? 'workspaceBusy'
+                  : 'startTimeout',
               detail: `The runner could not start a worker: ${error instanceof Error ? error.message : String(error)}`,
             },
           )

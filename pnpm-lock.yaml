@@ -3372,6 +3372,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
+      '@nocobase/agent-runner':
+        specifier: workspace:*
+        version: link:../../app/agent-runner
       '@nocobase/app-testing':
         specifier: workspace:*
         version: link:../../tools/app-testing
