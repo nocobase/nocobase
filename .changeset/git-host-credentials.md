@@ -10,4 +10,6 @@ Every run's agent now gets `git`, `gh` and `glab` wrappers that refuse `gh`/`gla
 
 Repository access providers are told whether the runner wraps CLIs (`tools`) and who answers for the run's subject now (`responsibleUserId`), at the claim, in `prepare` and on every `issue`, so an application can issue credentials for a task's owner. `RunGit.tools` is dropped for runners without the feature and for repositories without a credential in the payload.
 
+The runner's workspace notes now tell the agent to open and update change requests with the code host's command line rather than an application `pr open` command.
+
 Update the application before its runners: a server speaking protocol 11 refuses a runner speaking 12.
