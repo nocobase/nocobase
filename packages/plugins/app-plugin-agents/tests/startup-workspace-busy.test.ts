@@ -1,28 +1,27 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { claim, createHarness, type Harness } from './harness.js';
+import { RunnerDaemon } from '../../../app/agent-runner/src/core/loop.ts';
 import {
-  claim,
-  createHarness,
-  type Harness,
-} from '../../../plugins/app-plugin-agents/tests/harness.js';
-import { RunnerDaemon } from '../src/core/loop.ts';
-import { acquireLock, taskWorkDir } from '../src/core/checkout.ts';
-import { loadAdapters } from '../src/agent/adapters/registry.ts';
-import { ApiClient } from '../src/lib/http.ts';
-import { runnerPaths } from '../src/lib/home.ts';
-import { workspaceInUse } from '../src/core/workspace-use.ts';
+  acquireLock,
+  taskWorkDir,
+} from '../../../app/agent-runner/src/core/checkout.ts';
+import { loadAdapters } from '../../../app/agent-runner/src/agent/adapters/registry.ts';
+import { ApiClient } from '../../../app/agent-runner/src/lib/http.ts';
+import { runnerPaths } from '../../../app/agent-runner/src/lib/home.ts';
+import { workspaceInUse } from '../../../app/agent-runner/src/core/workspace-use.ts';
 import {
   HEADERS,
   PROTOCOL_VERSION,
   RUNNER_ROUTES,
   type RunPayload,
-} from '../src/protocol/index.ts';
+} from '../../../app/agent-runner/src/protocol/index.ts';
 import type {
   AppConnection,
   AppRegistration,
   RunnerSettings,
-} from '../src/lib/config.ts';
-import { removeDir, tempDir } from './helpers.ts';
+} from '../../../app/agent-runner/src/lib/config.ts';
+import { removeDir, tempDir } from '../../../app/agent-runner/tests/helpers.ts';
 
 async function waitFor<T>(
   check: () => T | undefined | false | Promise<T | undefined | false>,
