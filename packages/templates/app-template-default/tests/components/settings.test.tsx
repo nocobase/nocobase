@@ -48,7 +48,7 @@ describe('template system settings', () => {
       services,
       fetch: answerApi(calls),
     });
-    expect(await screen.findByRole('link', { name: 'Alice' })).toBeVisible();
+    expect(await screen.findByText('Alice', { exact: true })).toBeVisible();
     expect(
       screen.queryByRole('link', { name: 'New user' }),
     ).not.toBeInTheDocument();

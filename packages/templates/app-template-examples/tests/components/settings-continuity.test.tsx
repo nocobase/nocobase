@@ -84,12 +84,8 @@ it('uses role labels and paired server filters, retaining the source and orderin
   expect(
     screen.getByRole('link', { name: 'Return to previous page' }),
   ).toHaveAttribute('href', source);
-  expect(
-    screen.getByRole('link', { name: 'Alice' }).getAttribute('href'),
-  ).toContain('roleScope=app');
-  expect(
-    screen.getByRole('link', { name: 'Alice' }).getAttribute('href'),
-  ).toContain('page=2');
+  expect(screen.getByText('Alice', { exact: true })).toBeVisible();
+  expect(screen.queryByRole('link', { name: 'Alice' })).not.toBeInTheDocument();
   expect(calls).toHaveBeenCalledWith(
     expect.objectContaining({
       path: 'users',
@@ -200,87 +196,97 @@ it('resolves localized role descriptors through their namespace without rewritin
   ).toBeVisible();
 });
 
-it('keeps a failed edit draft, updates the actual user on retry, and closes to the same filtered list', async () => {
-  const user = userEvent.setup();
-  let current = row;
-  let fail = true;
-  const calls = vi.fn(
-    ({
-      path,
-      method,
-      json,
-    }: {
-      path: string;
-      method: string;
-      json?: { name: string };
-    }) => {
-      if (path === 'authorization/permissions')
-        return { data: { unrestricted: true, permissions: [] } };
-      if (path === 'users/options') return options;
-      if (path === 'users/alice' && method === 'PATCH') {
-        if (fail) {
-          fail = false;
-          return Response.json(
-            {
-              error: { code: 'INTERNAL_SERVER_ERROR', message: 'Unavailable' },
-            },
-            { status: 500 },
-          );
+it.each(['/settings/users', '/users'])(
+  'keeps a failed edit draft, updates the actual user on retry, and closes to the same filtered list at %s',
+  async (base) => {
+    const user = userEvent.setup();
+    let current = row;
+    let fail = true;
+    const calls = vi.fn(
+      ({
+        path,
+        method,
+        json,
+      }: {
+        path: string;
+        method: string;
+        json?: { name: string };
+      }) => {
+        if (path === 'authorization/permissions')
+          return { data: { unrestricted: true, permissions: [] } };
+        if (path === 'users/options') return options;
+        if (path === 'users/alice' && method === 'PATCH') {
+          if (fail) {
+            fail = false;
+            return Response.json(
+              {
+                error: {
+                  code: 'INTERNAL_SERVER_ERROR',
+                  message: 'Unavailable',
+                },
+              },
+              { status: 500 },
+            );
+          }
+          current = { ...current, name: json!.name };
+          return { data: current };
         }
-        current = { ...current, name: json!.name };
-        return { data: current };
-      }
-      if (path === 'users/alice') return { data: current };
-      return { data: [current], meta: { total: 41 } };
-    },
-  );
-  const search = '?page=2&pageSize=20&roleScope=app&role=sales';
-  await renderWithApp(
-    <>
-      <Routes>
-        <Route path='/settings/users' element={<UsersPage />}>
-          <Route path=':userId' element={<UserDetail />}>
-            <Route path='edit' element={<UserForm />} />
+        if (path === 'users/alice') return { data: current };
+        return { data: [current], meta: { total: 41 } };
+      },
+    );
+    const search = '?page=2&pageSize=20&roleScope=app&role=sales';
+    await renderWithApp(
+      <>
+        <Routes>
+          <Route path={base} element={<UsersPage />}>
+            <Route path=':userId' element={<UserDetail />}>
+              <Route path='edit' element={<UserForm />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
-      <Location />
-    </>,
-    {
-      route: `/settings/users/alice/edit${search}`,
-      namespace,
-      namespaces,
-      services,
-      fetch: answerApi(calls),
-    },
-  );
-  const name = await screen.findByRole('textbox', { name: 'Name *' });
-  await waitFor(() => expect(name).toHaveValue('Alice'));
-  await user.clear(name);
-  await user.type(name, 'Alice updated');
-  await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
-  expect(await screen.findByText(enUS.settings.failed)).toBeVisible();
-  expect(name).toHaveValue('Alice updated');
-  expect(screen.getByTestId('location')).toHaveTextContent('/edit');
-  await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
-  await waitFor(() =>
-    expect(screen.getByTestId('location')).toHaveTextContent(
-      `/settings/users/alice${search}`,
-    ),
-  );
-  expect(
-    await screen.findByRole('heading', { name: 'Alice updated' }),
-  ).toBeVisible();
-  await user.click(screen.getByRole('button', { name: 'Close', exact: true }));
-  await waitFor(() =>
-    expect(screen.getByTestId('location')).toHaveTextContent(
-      `/settings/users${search}`,
-    ),
-  );
-  expect(
-    await screen.findByRole('link', { name: 'Alice updated' }),
-  ).toBeVisible();
-});
+        </Routes>
+        <Location />
+      </>,
+      {
+        route: `${base}/alice/edit${search}`,
+        namespace,
+        namespaces,
+        services,
+        fetch: answerApi(calls),
+      },
+    );
+    const name = await screen.findByRole('textbox', { name: 'Name *' });
+    await waitFor(() => expect(name).toHaveValue('Alice'));
+    await user.clear(name);
+    await user.type(name, 'Alice updated');
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Save',
+        exact: true,
+      }),
+    );
+    expect(await screen.findByText(enUS.settings.failed)).toBeVisible();
+    expect(name).toHaveValue('Alice updated');
+    expect(screen.getByTestId('location')).toHaveTextContent('/edit');
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Save',
+        exact: true,
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        `${base}${search}`,
+      ),
+    );
+    expect(
+      await screen.findByText('Alice updated', { exact: true }),
+    ).toBeVisible();
+  },
+);
 
 it('restores a controlled role table from URL after unmounting a detail view', async () => {
   const roles = Array.from({ length: 25 }, (_, i) => ({
@@ -356,7 +362,7 @@ it('keeps loaded users visible when role labels fail and provides retry without 
           : { data: [row], meta: { total: 1 } },
     ),
   });
-  expect(await screen.findByRole('link', { name: 'Alice' })).toBeVisible();
+  expect(await screen.findByText('Alice', { exact: true })).toBeVisible();
   expect(await screen.findByText('sales, retired-role')).toBeVisible();
   expect(screen.getByRole('button', { name: 'Retry' })).toBeVisible();
   expect(
@@ -369,7 +375,9 @@ it('refreshes a filtered list after disabling a user, corrects an empty last pag
   const user = userEvent.setup();
   await renderWithApp(
     <>
-      <UsersPage />
+      <Routes>
+        <Route path='/settings/users' element={<UsersPage />} />
+      </Routes>
       <Location />
     </>,
     {
@@ -403,7 +411,7 @@ it('refreshes a filtered list after disabling a user, corrects an empty last pag
   );
   await waitFor(() =>
     expect(
-      screen.queryByRole('link', { name: 'Alice' }),
+      screen.queryByText('Alice', { exact: true }),
     ).not.toBeInTheDocument(),
   );
   await waitFor(() =>

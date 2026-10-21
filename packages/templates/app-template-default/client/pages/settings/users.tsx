@@ -19,7 +19,13 @@ import {
   useEffect,
   type ReactElement,
 } from 'react';
-import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
+import {
+  Link,
+  Outlet,
+  useLocation,
+  useSearchParams,
+  useResolvedPath,
+} from 'react-router';
 import { MoreHorizontalIcon, PlusIcon, UsersIcon } from 'lucide-react';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
@@ -38,7 +44,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
 } from '#components/ui/dropdown-menu';
 import {
   Empty,
@@ -61,6 +66,7 @@ function UserActions({
   const toaster = useToaster();
   const client = useMemo(() => new UsersClient(api), [api]);
   const canUpdate = useUserPermission('update', user.id);
+  const canAssign = useUserPermission('assign-role', user.id);
   const canDisable = useUserPermission('disable', user.id);
   const canEnable = useUserPermission('enable', user.id);
   const canRevoke = useUserPermission('revoke-sessions', user.id);
@@ -88,58 +94,68 @@ function UserActions({
       setBusy(false);
     }
   };
-  if (!canUpdate && !canRevoke && !(user.disabledAt ? canEnable : canDisable))
+  if (
+    !canUpdate &&
+    !canAssign &&
+    !canRevoke &&
+    !(user.disabledAt ? canEnable : canDisable)
+  )
     return <></>;
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
+    <div className='flex items-center justify-end gap-1 whitespace-nowrap'>
+      {(canUpdate || canAssign) && (
+        <Button
+          variant='ghost'
+          size='sm'
+          nativeButton={false}
+          aria-label={t('settings.editUserFor', { name: user.name })}
           render={
-            <Button
-              size='icon-sm'
-              variant='ghost'
-              aria-label={t('settings.actionsFor', { name: user.name })}
-            >
-              <MoreHorizontalIcon />
-            </Button>
+            <Link
+              to={{ pathname: `${user.id}/edit`, search: location.search }}
+            />
           }
-        />
-        <DropdownMenuContent align='end' className='w-auto min-w-40'>
-          {canUpdate && (
-            <DropdownMenuItem
-              render={
-                <Link
-                  to={{ pathname: `${user.id}/edit`, search: location.search }}
-                />
-              }
-            >
-              {t('settings.edit')}
-            </DropdownMenuItem>
-          )}
-          {(canDisable || canEnable || canRevoke) && <DropdownMenuSeparator />}
-          {!user.disabledAt && canDisable && (
-            <DropdownMenuItem
-              variant='destructive'
-              onClick={() => setAction('disable')}
-            >
-              {t('settings.disable')}
-            </DropdownMenuItem>
-          )}
-          {user.disabledAt && canEnable && (
-            <DropdownMenuItem onClick={() => setAction('enable')}>
-              {t('settings.enable')}
-            </DropdownMenuItem>
-          )}
-          {canRevoke && (
-            <DropdownMenuItem
-              variant='destructive'
-              onClick={() => setAction('revokeSessions')}
-            >
-              {t('settings.revokeSessions')}
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        >
+          {t('settings.edit')}
+        </Button>
+      )}
+      {(canRevoke || (user.disabledAt ? canEnable : canDisable)) && (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                size='icon-sm'
+                variant='ghost'
+                aria-label={t('settings.actionsFor', { name: user.name })}
+              >
+                <MoreHorizontalIcon />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align='end' className='w-auto min-w-40'>
+            {!user.disabledAt && canDisable && (
+              <DropdownMenuItem
+                variant='destructive'
+                onClick={() => setAction('disable')}
+              >
+                {t('settings.disable')}
+              </DropdownMenuItem>
+            )}
+            {user.disabledAt && canEnable && (
+              <DropdownMenuItem onClick={() => setAction('enable')}>
+                {t('settings.enable')}
+              </DropdownMenuItem>
+            )}
+            {canRevoke && (
+              <DropdownMenuItem
+                variant='destructive'
+                onClick={() => setAction('revokeSessions')}
+              >
+                {t('settings.revokeSessions')}
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
       <ConfirmAction
         open={Boolean(action)}
         title={t(
@@ -165,7 +181,7 @@ function UserActions({
         onCancel={() => setAction(undefined)}
         onConfirm={() => void run()}
       />
-    </>
+    </div>
   );
 }
 
@@ -173,12 +189,13 @@ export default function UsersPage(): ReactElement {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
   const location = useLocation();
+  const listPath = useResolvedPath('.').pathname;
   const searchRef = useRef<HTMLInputElement>(null);
   const previousPathRef = useRef(location.pathname);
   useEffect(() => {
     const returned =
       previousPathRef.current !== location.pathname &&
-      location.pathname === '/settings/users';
+      location.pathname === listPath;
     previousPathRef.current = location.pathname;
     if (!returned) return;
     const frame = requestAnimationFrame(() => {
@@ -189,7 +206,7 @@ export default function UsersPage(): ReactElement {
         searchRef.current?.focus();
     });
     return () => cancelAnimationFrame(frame);
-  }, [location.pathname]);
+  }, [listPath, location.pathname]);
   const [queryDraft, setQueryDraft] = useState<{
     key: string;
     value: string;
@@ -315,10 +332,10 @@ export default function UsersPage(): ReactElement {
           ),
         });
       refreshUsers();
-      if (updated && location.pathname === '/settings/users')
+      if (updated && location.pathname === listPath)
         requestAnimationFrame(() => searchRef.current?.focus());
     },
-    [pageData, replaceData, refreshUsers, location.pathname],
+    [pageData, replaceData, refreshUsers, location.pathname, listPath],
   );
   const canCreate = useUserPermission('create');
   const canAssign = useUserPermission('assign-role');
@@ -332,15 +349,7 @@ export default function UsersPage(): ReactElement {
         ),
         enableHiding: false,
         cell: ({ row }) => (
-          <Link
-            className='font-medium text-foreground underline-offset-4 hover:underline'
-            to={{
-              pathname: row.original.id,
-              search: location.search,
-            }}
-          >
-            {row.original.name}
-          </Link>
+          <span className='font-medium'>{row.original.name}</span>
         ),
       },
       {
@@ -393,7 +402,7 @@ export default function UsersPage(): ReactElement {
         cell: ({ row }) => <UserActions user={row.original} reload={reload} />,
       },
     ],
-    [t, location.search, reload, roleScopes, roleText],
+    [t, reload, roleScopes, roleText],
   );
   const create =
     canCreate && canAssign ? (

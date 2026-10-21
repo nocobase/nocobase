@@ -67,6 +67,7 @@ export interface CreateUserInput {
 }
 
 export interface UpdateUserInput {
+  readonly roleScopes?: Readonly<Record<string, UserRoleValue>>;
   readonly name?: string;
   readonly username?: string | null;
   readonly email?: string;
