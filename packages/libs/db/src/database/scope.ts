@@ -16,7 +16,7 @@ export type DatabaseScopePolicies<
 >;
 
 /**
- * Repository access limited to an explicit policy map.
+ * Repository access limited to an explicit policy map, created by connection.restrict().
  *
  * This is not a DatabaseConnection: it exposes no raw client, query builder,
  * schema management, connection lifecycle, or mutation subscriptions.

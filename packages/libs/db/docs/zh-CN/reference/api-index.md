@@ -32,7 +32,7 @@ The package has two public entries: `@nocobase/db` and `@nocobase/db/testing`. T
 
 The export index distinguishes runtime values from type-only exports and identifies their package entry. Other contracts are available through returned objects and callbacks without being importable by name. Use the signatures to check access rather than deep-importing a source module.
 
-Repository input builders and AST types are covered by the Repository chapter. `RelationMutationAst` describes a normalized relation plan; it is not a root-level CRUD `relations` option. The reference describes the current checkout, including `scope()` and the current `withPolicies()` annotations. Historical proposals do not define the current contract.
+Repository input builders and AST types are covered by the Repository chapter. `RelationMutationAst` describes a normalized relation plan; it is not a root-level CRUD `relations` option. The reference describes the current checkout, including `restrict()` for restricted access and `withPolicies()` for supported full-connection policy binding. Historical proposals do not define the current contract.
 
 ## Usage guides
 

@@ -1,6 +1,6 @@
 # Database public API reference
 
-This reference covers the TypeScript and JavaScript API of `@nocobase/db` in the current source checkout, including `connection.scope()`. It covers both package entries, their exported values and types, and contracts reachable through public objects. HTTP endpoints, CLI commands and implementation classes unreachable through public signatures are outside its scope.
+This reference covers the TypeScript and JavaScript API of `@nocobase/db` in the current source checkout, including `connection.restrict()`. It covers both package entries, their exported values and types, and contracts reachable through public objects. HTTP endpoints, CLI commands and implementation classes unreachable through public signatures are outside its scope.
 
 For release readiness, see the [API freeze review](./release-review.md). This reference documents the current surface; complete export coverage does not mean every contract has been approved as stable. Known issues are linked from the affected chapters.
 

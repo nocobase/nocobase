@@ -2,7 +2,7 @@
 
 [Reference contents](./README.md)
 
-Reviewed on 2026-10-20 against source commit `c3b9707b86` and the working-tree API reference. This is a review of the current contract and a proposed freeze checklist, not approval of a stable release. Runtime code and exported signatures have not been changed by this review.
+Reviewed on 2026-10-20 against source commit `c3b9707b86` and the working-tree API reference. This is a review of the current contract and a proposed freeze checklist, not approval of a stable release. The subsequent API naming decision is recorded in G2: retain `withPolicies()` without deprecation and expose restricted access through `restrict()`. The reproduced defects F1-F5 remain unresolved.
 
 The ten-chapter organization and most API responsibilities can be retained. Do not freeze the entire surface unchanged: four contract defects affect transaction ownership or result typing, one event metadata defect loses an accepted value, and the compatibility gate does not yet cover signatures. The recommendations below distinguish confirmed behavior from design decisions.
 
@@ -18,7 +18,7 @@ The ten-chapter organization and most API responsibilities can be retained. Do n
 | 4. Collection and Schema | Retain schema definitions, registry, metadata, inspection and artifacts; hold Builder transaction placeholders | Resolve F2; keep logical/physical names distinct and preserve store revisions and artifact format versions                               |
 | 5. Query                 | Retain the low-level query/expression API                                                                      | State that result generics are caller assertions and that synchronous `compile()` omits execution-time metadata/projection/decoding work |
 | 6. Repository            | Hold projection result typing                                                                                  | Resolve F4; retain CRUD wrappers, relation inputs, validation, cursor/iteration semantics and optimistic locking                         |
-| 7. Permissions           | Hold derived-handle typing and deprecation decision                                                            | Resolve F3 and settle `withPolicies()` versus the restricted scope contract before announcing a canonical stable entry                   |
+| 7. Permissions           | Hold derived-handle typing; binding and restricted access remain separate                                      | Resolve F3; retain `withPolicies()` without deprecation and use `restrict()` for the restricted scope contract                           |
 | 8. Transactions          | Hold transaction-handle lifecycle contract                                                                     | Resolve F1/F2; retain tested savepoint, callback ordering and callback-error behavior                                                    |
 | 9. Events                | Retain subscription and phase model after a targeted fix                                                       | Resolve F5; document written values without promising before/after images or durable delivery                                            |
 | 10. Testing              | Retain the separate `@nocobase/db/testing` entry                                                               | State compatibility expectations for exported test helpers; do not treat an exported testing API as an arbitrary private deep import     |
@@ -54,7 +54,7 @@ Two reproductions pass strict TypeScript checking: a `read: true` repository nar
 
 Recommendation: make narrowing account for possible changes in readable fields while preserving separate create/update input types. For `withPolicies()`, distinguish known mapped keys from unlisted repositories, or expose a conservative common operations interface for dynamically selected keys. Do not promise rebinding on a bound repository. DatabaseScope's conservative partial result types are a useful precedent, but are not a replacement for fixing retained `withPolicies()` callers.
 
-Compatibility: honest result types require consumers to handle missing fields. Add negative type tests for narrowing from `read: true`, dynamic policy maps and mapped/unmapped collection access; pair them with runtime shape tests. Keeping or deprecating `withPolicies()` is a separate decision below.
+Compatibility: honest result types require consumers to handle missing fields. Add negative type tests for narrowing from `read: true`, dynamic policy maps and mapped/unmapped collection access; pair them with runtime shape tests. The decision to retain `withPolicies()` without deprecation is recorded below; it does not resolve these typing defects.
 
 ### F4. Serialized projections promise fields they do not return
 
@@ -84,9 +84,9 @@ Before freeze, add a reviewed declaration/signature report and consumer type fix
 
 ### G2. Settle permission naming and support boundaries
 
-Recommendation: retain `withPolicy()` for one repository and `withPolicies()` for full-connection policy binding. Treat the restricted facade as a separate API. The current `scope()` contract is coherent, but its name and the `withPolicies()` deprecation remain release decisions; a restricted scope is not a drop-in replacement for full-connection capabilities or unlisted repository access. Do not recommend a mechanical replacement solely because the current declaration carries `@deprecated`.
+Resolved naming decision: retain `withPolicy()` for one repository and `withPolicies()` for full-connection policy binding, without deprecating either `withPolicies()` or `ScopedDatabaseConnection`. Expose the restricted facade through `connection.restrict()`, returning `DatabaseScope`. Restricted access requires explicit policies for directly accessed collections and keeping raw operations on the trusted connection; existing `withPolicies()` callers can retain their current behavior.
 
-If `scope()` is retained, document the distinction between creating a DatabaseScope and a policy node's row-filter `scope`. If a different name is chosen, decide it before the stable release and provide the appropriate transition. This review does not rename the API or remove existing deprecation annotations.
+The unmerged `connection.scope()` addition is renamed to `restrict()` before release, with no `scope()` compatibility alias. The `DatabaseScope` and `DatabaseScopePolicies` type names remain; policy node `scope` fields and policy builder `scope()` methods still describe row filters. The separation of these two connection APIs is settled; the export compatibility expectations below still need release sign-off.
 
 Every root/testing export needs a deliberate compatibility expectation. Driver descriptors, runtime strategies and Knex-related helpers are extension contracts even when they are not normal application APIs. The appendix is a reading classification, not permission to break them without a versioning policy. Likewise, do not automatically export all 127 supporting contracts: compiler branding symbols and inference internals need different treatment from useful option/result types.
 

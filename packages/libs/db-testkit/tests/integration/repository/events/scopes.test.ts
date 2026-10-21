@@ -87,7 +87,7 @@ describeIntegrationDatabases(
           {
             inTransaction: async (event, connection) => {
               parentOperationId = event.operationId;
-              const scope = connection.scope(
+              const scope = connection.restrict(
                 {
                   notes: {
                     read: true,
@@ -113,7 +113,7 @@ describeIntegrationDatabases(
         ),
       );
       await context.connection
-        .scope(projectOneTasks, undefined)
+        .restrict(projectOneTasks, undefined)
         .repository('tasks')
         .updateOne({
           filter: { id: 'task-edit' },
@@ -138,7 +138,7 @@ describeIntegrationDatabases(
           {
             inTransaction: async (_event, connection) => {
               await connection
-                .scope(
+                .restrict(
                   {
                     notes: {
                       read: true,

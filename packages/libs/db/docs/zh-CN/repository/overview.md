@@ -9,7 +9,7 @@ Repository 基于解析后的 Collection 定义访问记录，识别逻辑字段
 
 服务端 [`writePolicy`](./write-policy.md) 可限制普通字段、每种关系操作、嵌套 create/update/upsert 字段和 through payload。内部 Repository 默认 `true`；API routes 默认 `false`，须显式配置白名单。前端不接受该参数。
 
-To restrict which rows can be accessed as well as the write shape, see [Policy quick start](./policy-quick-start.md). Bind one repository with `withPolicy()`, or use `connection.scope()` for restricted access across an explicit collection map and its transactions.
+To restrict which rows can be accessed as well as the write shape, see [Policy quick start](./policy-quick-start.md). Bind one repository with `withPolicy()`, or use `connection.restrict()` for restricted access across an explicit collection map and its transactions.
 
 ## 选择正确入口
 

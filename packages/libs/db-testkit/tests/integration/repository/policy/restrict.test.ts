@@ -49,10 +49,11 @@ function assertRestricted(scope: DatabaseScope): void {
   }
 }
 
-describeIntegrationDatabases('DatabaseScope', (context) => {
+describeIntegrationDatabases('DatabaseConnection.restrict', (context) => {
   it('denies unlisted collections and exposes only restricted capabilities, including in savepoints', async () => {
     await createTenantFixture(context);
-    const scope = context.connection.scope(tenantPolicies, undefined);
+    expect(context.connection).not.toHaveProperty('scope');
+    const scope = context.connection.restrict(tenantPolicies, undefined);
     assertRestricted(scope);
     await scope.transaction(async (transaction) => {
       assertRestricted(transaction);
@@ -61,19 +62,26 @@ describeIntegrationDatabases('DatabaseScope', (context) => {
         expect(await savepoint.repository('policyProjects').count()).toBe(2);
       });
     });
-    const empty: DatabaseScope = context.connection.scope({}, undefined);
+    const empty: DatabaseScope = context.connection.restrict({}, undefined);
     expect(() => empty.repository('policyProjects')).toThrowError(
       expect.objectContaining({ code: 'POLICY_REQUIRED' }),
     );
-    const legacy = context.connection.withPolicies(tenantPolicies, undefined);
-    expect(await legacy.repository('policyTasks').count()).toBe(5);
-    expect(await legacy.client()).toBe(await context.connection.client());
-    expect(legacy).not.toHaveProperty('scope');
+    const bound = context.connection.withPolicies(tenantPolicies, undefined);
+    expect(await bound.repository('policyProjects').count()).toBe(2);
+    expect(await bound.repository('policyTasks').count()).toBe(5);
+    expect(await bound.client()).toBe(await context.connection.client());
+    expect(bound).not.toHaveProperty('restrict');
+    await bound.transaction(async (transaction) => {
+      expect(await transaction.repository('policyProjects').count()).toBe(2);
+      expect(await transaction.repository('policyTasks').count()).toBe(5);
+      expect(transaction).toHaveProperty('query');
+      expect(transaction).not.toHaveProperty('restrict');
+    });
   });
 
   it('enforces rows, fields and writes, and can narrow without widening or changing its parent', async () => {
     await createTenantFixture(context);
-    const scope = context.connection.scope(tenantPolicies, undefined);
+    const scope = context.connection.restrict(tenantPolicies, undefined);
     const projects = scope.repository('policyProjects');
     expect(
       await projects.findMany({ sort: (sort) => sort.field('id').asc() }),
@@ -121,14 +129,14 @@ describeIntegrationDatabases('DatabaseScope', (context) => {
       read: { scope: { tenantId: principal.tenantId }, fields: ['id'] },
     };
     const factory = vi.fn(() => policy);
-    const scope = context.connection.scope(
+    const scope = context.connection.restrict(
       { policyProjects: factory },
       principal,
     );
     principal.tenantId = 'T2';
     policy.read.scope.tenantId = 'T2';
     policy.read.fields.push('budget');
-    const other = context.connection.scope(
+    const other = context.connection.restrict(
       {
         policyProjects: {
           ...tenantPolicies.policyProjects,
@@ -155,7 +163,7 @@ describeIntegrationDatabases('DatabaseScope', (context) => {
 
   it('preserves commit and rollback semantics across transactions and savepoints', async () => {
     await createTenantFixture(context);
-    const scope = context.connection.scope(tenantPolicies, undefined);
+    const scope = context.connection.restrict(tenantPolicies, undefined);
     const callbacks: string[] = [];
     const aborted = new Error('abort savepoint');
     const result = await scope.transaction(async (transaction) => {
@@ -221,7 +229,7 @@ describeIntegrationDatabases('DatabaseScope', (context) => {
 
   it('expands read references once while preserving the source policy for relation access', async () => {
     await createTenantFixture(context);
-    const scope = context.connection.scope(
+    const scope = context.connection.restrict(
       {
         policyProjects: {
           ...tenantPolicies.policyProjects,
@@ -277,7 +285,7 @@ describeIntegrationDatabases('DatabaseScope', (context) => {
       ['__proto__', policy],
       ['constructor', policy],
     ]);
-    const scope = context.connection.scope(policies, undefined);
+    const scope = context.connection.restrict(policies, undefined);
     timestamp.setFullYear(2030);
     const explanation = scope.explainPolicies();
     expect(Object.keys(explanation).sort()).toEqual([

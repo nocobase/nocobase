@@ -11,11 +11,11 @@ Permissions bind read/create/update/delete rules to repositories and derived con
 | `repository.withPolicy(policy)`             | One policy-bound `ScopedRepository`                                                                               |
 | `repository.withPolicy(factory, principal)` | Evaluate a principal-dependent policy for one repository                                                          |
 | `connection.withPolicies(map, principal)`   | A `ScopedDatabaseConnection`; retains full connection capabilities and allows unlisted repositories               |
-| `connection.scope(map, principal)`          | A `DatabaseScope`; rejects unlisted direct repository access and exposes restricted repositories and transactions |
+| `connection.restrict(map, principal)`       | A `DatabaseScope`; rejects unlisted direct repository access and exposes restricted repositories and transactions |
 | `scopedRepository.narrow(patch)`            | A derived repository whose policy cannot widen the original                                                       |
 | `explainPolicy()` / `explainPolicies()`     | The effective repository policy or collection policy map                                                          |
 
-`withPolicies()` and `ScopedDatabaseConnection` currently carry `@deprecated` annotations in this checkout; both remain callable. The reference reproduces the current declarations. `scope()` is a separate contract, not an equivalent alias. The single-repository `withPolicy()` API is not deprecated.
+`withPolicy()`, `withPolicies()` and `ScopedDatabaseConnection` remain supported without deprecation. Use `withPolicies()` for policy binding with full connection capabilities, or `restrict()` for a restricted `DatabaseScope`. These APIs provide different access boundaries, so adopting `restrict()` requires an explicit policy for every directly accessed collection and keeping raw operations on the trusted connection.
 
 Policies require read/create/update/delete nodes. A rule object's `scope` constrains rows; `fields` is an allowlist, and omission does not mean every field is allowed. `create.defaults` assigns values, while `create.scope` checks them. `ref()` explicitly reuses another entry's read rules in a policy map. Relation writes are authorized by the originating policy rather than automatically inheriting the target collection's policy.
 

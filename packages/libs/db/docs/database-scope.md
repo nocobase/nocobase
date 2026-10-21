@@ -1,9 +1,9 @@
-# Database scopes
+# Restricted database access
 
-Use `connection.scope(policies, principal)` to give application code repository access limited to an explicit policy map. The result is a `DatabaseScope`, with no raw client, query builder, schema management, connection lifecycle, or mutation subscriptions.
+Use `connection.restrict(policies, principal)` to give application code repository access limited to an explicit policy map. The result is a `DatabaseScope`, with no raw client, query builder, schema management, connection lifecycle, or mutation subscriptions.
 
 ```ts
-const scope = connection.scope(
+const scope = connection.restrict(
   {
     projects: (principal) => ({
       read: {
@@ -71,19 +71,19 @@ const rows = await projects.findMany(); // Partial<Project>[]
 
 Reads conservatively return `Partial<TRecord>` because a policy may omit fields, including after `narrow()`. Explicit create and update input types remain available through `repository<TRecord, TCreate, TUpdate>()`. This does not change the runtime policy checks.
 
-## Migrating from withPolicies()
+## Choosing between withPolicies() and restrict()
 
-`connection.withPolicies()` and `ScopedDatabaseConnection` are deprecated but remain available with their existing behavior. They are not aliases for `scope()`.
+`connection.withPolicies()` and `ScopedDatabaseConnection` remain supported without deprecation. Use `withPolicies()` to bind policies while retaining full connection capabilities, or `restrict()` to give application code only the restricted operations. `restrict()` creates a `DatabaseScope`; a policy node's `scope` still means its row filter.
 
-| Behavior                                     | `withPolicies()`         | `scope()`                               |
-| -------------------------------------------- | ------------------------ | --------------------------------------- |
-| Unlisted direct repository                   | Unbound repository       | `POLICY_REQUIRED`                       |
-| Raw `query`, `client`, builder and schema    | Available                | Absent                                  |
-| Connection lifecycle and event subscriptions | Available                | Absent                                  |
-| Policy-bound repository type                 | `Repository<TRecord>`    | `ScopedRepository<Partial<TRecord>>`    |
-| Transaction callback                         | Legacy scoped connection | Restricted scope with the same policies |
-| Policy factories and read references         | Evaluated at binding     | Evaluated at binding                    |
+| Behavior                                     | `withPolicies()`        | `restrict()`                            |
+| -------------------------------------------- | ----------------------- | --------------------------------------- |
+| Unlisted direct repository                   | Unbound repository      | `POLICY_REQUIRED`                       |
+| Raw `query`, `client`, builder and schema    | Available               | Absent                                  |
+| Connection lifecycle and event subscriptions | Available               | Absent                                  |
+| Policy-bound repository type                 | `Repository<TRecord>`   | `ScopedRepository<Partial<TRecord>>`    |
+| Transaction callback                         | Policy-bound connection | Restricted scope with the same policies |
+| Policy factories and read references         | Evaluated at binding    | Evaluated at binding                    |
 
-Before replacing a call, list every collection the service accesses directly and add an explicit policy for each one. Keep schema setup, raw SQL, connection lifecycle, and event registration on the trusted connection. Pass a `DatabaseScope` into services that only need the restricted operations; a scope does not satisfy `DatabaseConnection` or integrations requiring `client()`, such as the lifecycle repository store's transaction handle.
+When choosing restricted access, list every collection the service accesses directly and add an explicit policy for each one. Keep schema setup, raw SQL, connection lifecycle, and event registration on the trusted connection. Pass a `DatabaseScope` into services that only need the restricted operations; a scope does not satisfy `DatabaseConnection` or integrations requiring `client()`, such as the lifecycle repository store's transaction handle.
 
-Existing `withPolicies()` calls need no changes for this release. Custom implementations or complete mocks of the `DatabaseConnection` interface must implement the new required `scope()` method. Driver packages using the shared Knex connection receive it automatically.
+Existing `withPolicies()` calls need no changes for this release. Custom implementations or complete mocks of the `DatabaseConnection` interface must implement the new required `restrict()` method. Driver packages using the shared Knex connection receive it automatically.

@@ -8,7 +8,7 @@ import type {
 /**
  * Refer to another Collection's read node from inside `read.relations`.
  *
- * The target names a key of the same `scope` or legacy `withPolicies` map,
+ * The target names a key of the same `restrict` or `withPolicies` map,
  * not a Policy the target Collection owns globally. That is where Collections'
  * Policies share a scope, and it keeps "reached through a relation" and
  * "queried directly" from silently influencing each other: the reuse is

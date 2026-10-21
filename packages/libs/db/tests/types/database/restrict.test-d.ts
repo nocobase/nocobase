@@ -13,10 +13,10 @@ interface Project {
   name: string;
 }
 
-export async function scopeContract(
+export async function restrictContract(
   connection: DatabaseConnection,
 ): Promise<void> {
-  const scope = connection.scope(
+  const scope = connection.restrict(
     {
       projects: (principal) => ({
         read: {
@@ -55,7 +55,7 @@ export async function scopeContract(
   // @ts-expect-error the client cannot be recovered from a scope
   scope.client();
   // @ts-expect-error a scope cannot replace its policies
-  scope.scope({}, undefined);
+  scope.restrict({}, undefined);
   // @ts-expect-error subscriptions hand out full connections and are not exposed
   scope.onRepositoryMutation;
   // @ts-expect-error a scoped repository can narrow but cannot rebind its policy
@@ -78,15 +78,28 @@ export async function scopeContract(
   });
 
   const dynamic: DatabaseScopePolicies<undefined> = {};
-  connection.scope(dynamic, undefined).repository('runtime-checked');
+  connection.restrict(dynamic, undefined).repository('runtime-checked');
   // @ts-expect-error an empty static map permits no collection
-  connection.scope({}, undefined).repository('projects');
+  connection.restrict({}, undefined).repository('projects');
+  // @ts-expect-error the unreleased connection.scope method was renamed to restrict
+  connection.scope({}, undefined);
 }
 
-export function legacyContract(legacy: ScopedDatabaseConnection): void {
-  // Adding scope to DatabaseConnection must not add it to the legacy wrapper.
-  // @ts-expect-error legacy bindings cannot be rebound through the new API
-  legacy.scope({}, undefined);
-  legacy.query;
-  legacy.repository('unlisted');
+export async function policyBindingContract(
+  connection: DatabaseConnection,
+): Promise<void> {
+  const bound = connection.withPolicies(
+    { projects: { read: true, create: false, update: false, delete: false } },
+    undefined,
+  );
+  expectTypeOf(bound).toEqualTypeOf<ScopedDatabaseConnection>();
+  // @ts-expect-error policy-bound connections cannot replace their bindings
+  bound.restrict({}, undefined);
+  expectTypeOf(bound.query).toEqualTypeOf<DatabaseConnection['query']>();
+  bound.repository('unlisted');
+  await bound.transaction(async (transaction) => {
+    expectTypeOf(transaction).toEqualTypeOf<ScopedDatabaseConnection>();
+    transaction.repository('unlisted');
+    transaction.client();
+  });
 }

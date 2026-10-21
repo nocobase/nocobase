@@ -126,10 +126,10 @@ WHERE 只挡住「能碰哪一行」，挡不住「改完跑到哪去」。这�
 
 ## 5. 一次请求绑多张表
 
-A request often touches several Collections and takes fresh repositories inside a transaction. Bind the policy map with `connection.scope()` to carry the same restrictions through both:
+A request often touches several Collections and takes fresh repositories inside a transaction. Bind the policy map with `connection.restrict()` to carry the same restrictions through both:
 
 ```ts
-const scoped = db.connection().scope(
+const scoped = db.connection().restrict(
   {
     projects: projectPolicy,
     tasks: (principal: Principal) => taskPolicyFor(principal),
@@ -146,7 +146,7 @@ The returned `DatabaseScope` only exposes repositories, transactions, commit/rol
 
 Policy functions run once at binding with the supplied principal; their results are normalized and frozen. Transactions reuse those results. Do not share a principal-bound scope across requests.
 
-`withPolicies()` is deprecated and retains its previous behavior, including raw database access and unbound repositories for unlisted Collections. See [Database scopes](../../database-scope.md) for the migration checklist and compatibility details.
+`withPolicies()` remains supported without deprecation for policy binding with full connection capabilities, including raw database access and unbound repositories for unlisted Collections. See [Restricted database access](../../database-scope.md) to choose between `withPolicies()` and `restrict()`.
 
 ## 6. 关系
 
@@ -181,7 +181,7 @@ import { ref } from '@nocobase/db';
 
 const open = { scope: true } as const;
 
-db.connection().scope(
+db.connection().restrict(
   {
     projects: {
       read: { scope: true, fields: ['id'], relations: { tasks: ref('tasks') } },
@@ -200,7 +200,7 @@ db.connection().scope(
 );
 ```
 
-`ref` resolves a key in the same policy map, supplied to `scope()` or legacy `withPolicies()`. Expansion and cycle detection happen at binding time. Cycles, missing targets, and targets whose `read` is not a rule object throw `INVALID_POLICY`.
+`ref` resolves a key in the same policy map, supplied to `restrict()` or `withPolicies()`. Expansion and cycle detection happen at binding time. Cycles, missing targets, and targets whose `read` is not a rule object throw `INVALID_POLICY`.
 
 ## 7. 收窄与检视
 
@@ -265,7 +265,7 @@ defineRepositoryApiRoutes<Session>({
 
 两种写法的检查时机不同：固定 Policy 在**定义路由时**规范化，配错了当场报错；函数做不到，它每个请求才求值，校验也跟着推迟到第一个打进来的请求。那种失败是 `INVALID_POLICY`，交给宿主错误处理器按服务端错误返回，而不是 400——Policy 是服务端拥有的，配错了不是调用方的问题。
 
-Request bodies containing `policy` or `scope` receive 400 `UNSUPPORTED_REPOSITORY_OPTION`. This route API rejects `ref()` at definition time: references need a shared policy map, as provided by `connection.scope()`, while each exposure here binds its own policy.
+Request bodies containing `policy` or `scope` receive 400 `UNSUPPORTED_REPOSITORY_OPTION`. This route API rejects `ref()` at definition time: references need a shared policy map, as provided by `connection.restrict()`, while each exposure here binds its own policy.
 
 写起来啰嗦的话用 `buildRepositoryPolicy`，没提到的节点就是 `false`：
 

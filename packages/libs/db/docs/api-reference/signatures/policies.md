@@ -110,11 +110,11 @@ Related declarations: [PolicyScalarValue](./policies.md#policyscalarvalue), [Rep
 
 Import: `import type { DatabaseScope } from '@nocobase/db'`.
 
-Repository access limited to an explicit policy map. This is not a DatabaseConnection: it exposes no raw client, query builder, schema management, connection lifecycle, or mutation subscriptions. Relations follow the originating repository's policy; a target collection's entry is reused only through an explicit read policy ref().
+Repository access limited to an explicit policy map, created by connection.restrict(). This is not a DatabaseConnection: it exposes no raw client, query builder, schema management, connection lifecycle, or mutation subscriptions. Relations follow the originating repository's policy; a target collection's entry is reused only through an explicit read policy ref().
 
 ```ts
 /**
- * Repository access limited to an explicit policy map.
+ * Repository access limited to an explicit policy map, created by connection.restrict().
  *
  * This is not a DatabaseConnection: it exposes no raw client, query builder,
  * schema management, connection lifecycle, or mutation subscriptions.
@@ -867,16 +867,16 @@ Related declarations: [CreatePolicyNodeBuilder](./policies.md#createpolicynodebu
 
 Import: `import type { ScopedDatabaseConnection } from '@nocobase/db'`.
 
-A legacy connection carrying policy bindings while retaining raw access.
+A connection carrying policy bindings while retaining raw access. Use DatabaseConnection.restrict() to create a restricted DatabaseScope.
 
 ```ts
 /**
- * A legacy connection carrying policy bindings while retaining raw access.
- * @deprecated Use DatabaseScope, returned by DatabaseConnection.scope().
+ * A connection carrying policy bindings while retaining raw access.
+ * Use DatabaseConnection.restrict() to create a restricted DatabaseScope.
  */
 export interface ScopedDatabaseConnection extends Omit<
   DatabaseConnection,
-  'scope' | 'withPolicies' | 'transaction' | 'connect' | 'reconnect'
+  'restrict' | 'withPolicies' | 'transaction' | 'connect' | 'reconnect'
 > {
   /** The Policies in force, by Collection name. */
   explainPolicies(): Readonly<Record<string, NormalizedRepositoryPolicy>>;
@@ -1265,13 +1265,13 @@ Related declarations: [NormalizedRepositoryPolicy](./policies.md#normalizedrepos
 
 Import: `import { ref } from '@nocobase/db'`.
 
-Refer to another Collection's read node from inside `read.relations`. The target names a key of the same `scope` or legacy `withPolicies` map, not a Policy the target Collection owns globally. That is where Collections' Policies share a scope, and it keeps "reached through a relation" and "queried directly" from silently influencing each other: the reuse is written out rather than inherited. It is expanded when the map is bound, not dereferenced per query, so a cycle is a configuration error rather than a stack overflow at request time.
+Refer to another Collection's read node from inside `read.relations`. The target names a key of the same `restrict` or `withPolicies` map, not a Policy the target Collection owns globally. That is where Collections' Policies share a scope, and it keeps "reached through a relation" and "queried directly" from silently influencing each other: the reuse is written out rather than inherited. It is expanded when the map is bound, not dereferenced per query, so a cycle is a configuration error rather than a stack overflow at request time.
 
 ```ts
 /**
  * Refer to another Collection's read node from inside `read.relations`.
  *
- * The target names a key of the same `scope` or legacy `withPolicies` map,
+ * The target names a key of the same `restrict` or `withPolicies` map,
  * not a Policy the target Collection owns globally. That is where Collections'
  * Policies share a scope, and it keeps "reached through a relation" and
  * "queried directly" from silently influencing each other: the reuse is

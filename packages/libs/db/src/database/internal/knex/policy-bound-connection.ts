@@ -100,7 +100,7 @@ export class PolicyBoundConnection implements ScopedDatabaseConnection {
 
   /**
    * A collection the map does not cover returns an unbound Repository, which
-   * is why this cannot promise a ScopedRepository. Use connection.scope()
+   * is why this cannot promise a ScopedRepository. Use connection.restrict()
    * when unlisted collections must be denied.
    */
   repository<

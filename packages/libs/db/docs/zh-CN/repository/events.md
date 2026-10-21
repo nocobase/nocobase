@@ -158,7 +158,7 @@ belongsToMany 的 `connect` 不写目标表，所以没有目标 Collection 的�
 - 调用方处于事务中时，Repository 复用该事务，不为每次调用建 savepoint（见[事务](./transactions.md)）。`inTransaction` 抛错后，调用方不应捕获再继续提交：那次调用的写入会被提交，却不会投递事件。
 - 需要“写入前拒绝”的检查，放在 `inTransaction` 中按写入后的状态判断：判断与写入在同一事务内，失败则一起回滚。
 
-`inTransaction` receives the underlying transaction connection with full access. Create a restricted scope with `connection.scope(policies, principal)` when listener writes need policies. Writes through that scope, including its savepoints, retain `parentOperationId` and the recursion limit. The connection option `repositoryEventMaxDepth` defaults to 8; exceeding it rejects the write with `RepositoryError('REPOSITORY_EVENT_RECURSION')` and rolls back the call.
+`inTransaction` receives the underlying transaction connection with full access. Create a restricted scope with `connection.restrict(policies, principal)` when listener writes need policies. Writes through that scope, including its savepoints, retain `parentOperationId` and the recursion limit. The connection option `repositoryEventMaxDepth` defaults to 8; exceeding it rejects the write with `RepositoryError('REPOSITORY_EVENT_RECURSION')` and rolls back the call.
 
 `afterCommit` 收到的 Connection 是根 Connection，写入在新的事务中进行，事件的 `parentOperationId` 是这批事件中最后一个的 `operationId`，深度从这批事件中最深的一个再加一，同样受 `repositoryEventMaxDepth` 限制。监听器在提交后写入自己订阅的 Collection 时，超过深度的那次写入以 `REPOSITORY_EVENT_RECURSION` 失败并交给 `onRepositoryEventError`，调用方正常返回。直接用 `db.connection()` 写入不带这些信息，也就不受限制，提交后的写入应经收到的 Connection 进行。
 

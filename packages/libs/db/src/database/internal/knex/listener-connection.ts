@@ -36,7 +36,7 @@ import {
 /**
  * The transaction connection an `inTransaction` listener receives. It is the
  * transaction connection of the call that emitted the event, except that the
- * Repositories it hands out, directly, through `scope` / `withPolicies` or in a
+ * Repositories it hands out, directly, through `restrict` / `withPolicies` or in a
  * savepoint, report that call as the parent of their own events. That is how
  * `parentOperationId` and the recursion limit follow a chain of listener
  * writes without ambient state.
@@ -110,14 +110,13 @@ export class RepositoryListenerConnection implements PolicyBindableConnection {
     );
   }
 
-  scope<P, const TCollection extends string>(
+  restrict<P, const TCollection extends string>(
     policies: DatabaseScopePolicies<P, TCollection>,
     principal: P,
   ): DatabaseScope<TCollection> {
     return createDatabaseScope(this, policies, principal);
   }
 
-  /** @deprecated Use scope() for restricted repository access. */
   withPolicies<P>(
     policies: Parameters<DatabaseConnection['withPolicies']>[0],
     principal: P,

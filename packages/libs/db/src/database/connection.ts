@@ -44,8 +44,8 @@ export interface DatabaseConnection {
   >(
     collection: string,
   ): Repository<TRecord, TCreate, TUpdate>;
-  /** Bind policies for one principal; unlisted collections are denied. */
-  scope<P, const TCollection extends string>(
+  /** Create a restricted DatabaseScope for one principal; unlisted collections are denied. */
+  restrict<P, const TCollection extends string>(
     policies: DatabaseScopePolicies<P, TCollection>,
     principal: P,
   ): DatabaseScope<TCollection>;
@@ -54,11 +54,10 @@ export interface DatabaseConnection {
    *
    * Binding lives here rather than on each Repository because a request
    * usually touches several Collections and takes fresh Repositories inside a
-   * transaction; one place to bind is also one place to see what this request
-   * was authorized to touch.
+   * transaction; one place to bind keeps those Repository policies together.
    *
-   * @deprecated Use scope() for restricted repository access. This legacy
-   * connection retains raw database access and permits unlisted collections.
+   * The returned connection retains raw database access and permits unlisted
+   * collections. Use restrict() when those capabilities must not be exposed.
    */
   withPolicies<P>(
     policies: Readonly<
@@ -138,12 +137,12 @@ export interface DatabaseConnection {
 }
 
 /**
- * A legacy connection carrying policy bindings while retaining raw access.
- * @deprecated Use DatabaseScope, returned by DatabaseConnection.scope().
+ * A connection carrying policy bindings while retaining raw access.
+ * Use DatabaseConnection.restrict() to create a restricted DatabaseScope.
  */
 export interface ScopedDatabaseConnection extends Omit<
   DatabaseConnection,
-  'scope' | 'withPolicies' | 'transaction' | 'connect' | 'reconnect'
+  'restrict' | 'withPolicies' | 'transaction' | 'connect' | 'reconnect'
 > {
   /** The Policies in force, by Collection name. */
   explainPolicies(): Readonly<Record<string, NormalizedRepositoryPolicy>>;

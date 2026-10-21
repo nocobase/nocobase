@@ -358,14 +358,13 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     };
   }
 
-  scope<P, const TCollection extends string>(
+  restrict<P, const TCollection extends string>(
     policies: DatabaseScopePolicies<P, TCollection>,
     principal: P,
   ): DatabaseScope<TCollection> {
     return createDatabaseScope(this, policies, principal);
   }
 
-  /** @deprecated Use scope() for restricted repository access. */
   withPolicies<P>(
     policies: Readonly<
       Record<string, RepositoryPolicy | ((principal: P) => RepositoryPolicy)>
