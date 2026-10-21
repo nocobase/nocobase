@@ -31,7 +31,7 @@ import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
-import { Badge } from '#components/ui/badge';
+import { StatusBadge } from '#components/status-badge';
 import {
   Select,
   SelectTrigger,
@@ -103,27 +103,25 @@ function UserActions({
   };
   if (!canRevoke && !(user.disabledAt ? canEnable : canDisable)) return <></>;
   return (
-    <div className='flex items-center justify-end gap-1 whitespace-nowrap'>
+    <div className='flex items-center justify-end gap-2 whitespace-nowrap'>
       {!user.disabledAt && canDisable && (
         <Button
-          variant='ghost'
-          size='sm'
-          className='text-destructive'
+          variant='outline'
+          size='xs'
           onClick={() => setAction('disable')}
         >
           {t('settings.disable')}
         </Button>
       )}
       {user.disabledAt && canEnable && (
-        <Button variant='ghost' size='sm' onClick={() => setAction('enable')}>
+        <Button variant='outline' size='xs' onClick={() => setAction('enable')}>
           {t('settings.enable')}
         </Button>
       )}
       {canRevoke && (
         <Button
-          variant='ghost'
-          size='sm'
-          className='text-destructive'
+          variant='outline'
+          size='xs'
           onClick={() => setAction('revokeSessions')}
         >
           {t('settings.revokeSessions')}
@@ -338,13 +336,13 @@ export default function UsersPage(): ReactElement {
         header: t('settings.status'),
         enableSorting: false,
         cell: ({ row }) => (
-          <Badge variant='secondary'>
+          <StatusBadge tone={row.original.disabledAt ? 'danger' : 'success'}>
             {t(
               row.original.disabledAt
                 ? 'settings.disabled'
                 : 'settings.enabled',
             )}
-          </Badge>
+          </StatusBadge>
         ),
       },
       {

@@ -16,3 +16,5 @@ Simplify user management to one edit dialog for basic information and roles, wit
 Allow user profile fields and submitted role scopes to be updated in one transaction, requiring each affected action independently and preserving omitted scopes and legacy profile-only callers.
 
 Keep localized pagination summaries on one line with content-sized widths and wrap complete control groups at narrow widths, preventing Chinese labels from splitting under desktop table layouts.
+
+Use quiet, consistent outlined account-action buttons and semantic green enabled/red disabled status badges in user management, keeping existing action confirmations and authorization.

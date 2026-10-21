@@ -7,6 +7,8 @@ const tones = {
   info: 'border-primary/15 bg-primary/8 text-primary',
   warning:
     'border-(--status-warning)/20 bg-(--status-warning-background) text-(--status-warning)',
+  danger:
+    'border-destructive/20 bg-destructive/10 text-destructive dark:bg-destructive/20',
   success:
     'border-(--status-success)/20 bg-(--status-success-background) text-(--status-success)',
 };
