@@ -13,6 +13,7 @@ import type {
   DemoMockAdapter,
   DemoWriteCapability,
   DemoWriteRule,
+  DemoTableRule,
 } from './types.js';
 
 const protectedTable =
@@ -122,6 +123,7 @@ export class DemoConfigurationService {
     return {
       revision: Number(row.revision),
       rules: stored.rules,
+      tableRules: stored.tableRules ?? [],
       schedule: stored.schedule,
       chat: stored.chat ?? { enabled: false, model: null, tools: {} },
       mocks: {
@@ -163,7 +165,7 @@ export class DemoConfigurationService {
     };
   }
   public async save(
-    section: 'rules' | 'mocks' | 'schedule' | 'chat',
+    section: 'rules' | 'tableRules' | 'mocks' | 'schedule' | 'chat',
     expectedRevision: number,
     input: unknown,
   ): Promise<DemoConfigurationView> {
@@ -188,7 +190,20 @@ export class DemoConfigurationService {
         'ALREADY_EXISTS',
       );
     let value: unknown = input;
-    if (section === 'rules') {
+    if (section === 'tableRules') {
+      const tables = new Set<string>();
+      for (const rule of input as DemoTableRule[]) {
+        if (
+          protectedTable.test(rule.table) ||
+          tables.has(rule.table) ||
+          new Set(rule.operations).size !== rule.operations.length
+        )
+          throw invalid(
+            'Protected tables and duplicate table operations cannot be configured.',
+          );
+        tables.add(rule.table);
+      }
+    } else if (section === 'rules') {
       const rules = input as DemoWriteRule[];
       const keys = new Set<string>();
       for (const rule of rules) {
@@ -221,6 +236,7 @@ export class DemoConfigurationService {
     }
     const updated = {
       rules: current.rules,
+      tableRules: current.tableRules,
       mocks: current.mocks,
       schedule: current.schedule,
       chat: current.chat,
@@ -314,16 +330,21 @@ export class DemoConfigurationService {
     readonly { table: string; statement: string }[]
   > {
     if (!this.enabled) return [];
-    const { rules } = await this.currentPolicy();
-    return rules.flatMap((rule) => {
-      const capability = this.writes.get(rule.capability);
-      return capability &&
-        rule.scope === 'all' &&
-        capability.scopes.some((scope) => scope.id === 'all') &&
-        capability.operations.includes(rule.operation)
-        ? [{ table: capability.table, statement: rule.operation }]
-        : [];
-    });
+    const { rules, tableRules } = await this.currentPolicy();
+    return [
+      ...tableRules.flatMap((rule) =>
+        rule.operations.map((statement) => ({ table: rule.table, statement })),
+      ),
+      ...rules.flatMap((rule) => {
+        const capability = this.writes.get(rule.capability);
+        return capability &&
+          rule.scope === 'all' &&
+          capability.scopes.some((scope) => scope.id === 'all') &&
+          capability.operations.includes(rule.operation)
+          ? [{ table: capability.table, statement: rule.operation }]
+          : [];
+      }),
+    ];
   }
   /** Call only around the declared, already-authorized business operation, never around a general dispatcher. */
   public runWrite<T>(

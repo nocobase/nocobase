@@ -35,9 +35,15 @@ export interface DemoDailySchedule {
   timezone: string;
   language: string;
 }
+/** Environment-wide exceptions; normal application authorization still applies. */
+export interface DemoTableRule {
+  table: string;
+  operations: ('insert' | 'update' | 'delete')[];
+}
 export interface DemoConfiguration {
   revision: number;
   rules: DemoWriteRule[];
+  tableRules: DemoTableRule[];
   mocks: Record<string, boolean>;
   schedule: DemoDailySchedule | null;
   chat: DemoChatConfiguration;

@@ -118,7 +118,7 @@ The command waits for completion. `--dry-run` previews only the operation and ar
 
 ## Demo configuration
 
-While demo mode is `read-only` or `observe`, administrators adjust a demo from the application's demo page, through `GET /api/demoMode/configuration` and `PUT /api/demoMode/configuration/writeRules|mocks|schedule` (`settings:demoMode.configuration`: `read` / `configure`). Every save carries `expectedRevision` and is refused with `DEMO_CONFIGURATION_CONFLICT` when another administrator saved first.
+While demo mode is `read-only` or `observe`, administrators adjust a demo from the application's demo page, through `GET /api/demoMode/configuration` and `PUT /api/demoMode/configuration/writeRules|tableRules|mocks|schedule` (`settings:demoMode.configuration`: `read` / `configure`). Every save carries `expectedRevision` and is refused with `DEMO_CONFIGURATION_CONFLICT` when another administrator saved first.
 
 - **Read-only write exceptions.** An application registers what may be opened with `demoConfigurationToken.registerWrite({ id, title, table, operations, scopes, checkScope })`; identity, authorization, secret and plugin tables are refused. Rules start empty. The application wraps exactly the authorized business mutation in `runWrite(id, operation, input, run)`, or `runWrites([[id, operation], …], input, run)` when one mutation writes through several capabilities: an entry without a rule allows nothing, and a configured entry whose `checkScope` refuses the input refuses the whole mutation with `DEMO_SCOPE_DENIED`.
 - **Simulations.** `registerMock` registers model/tool/Runner adapters. `registerAgent({ id, title, defaultEnabled, execute })` supplies an environment-wide Agent proxy: demo mode always uses the application’s replacement, while mode `off` uses the normal Agent. Disabled adapters fail closed; unmarked or visitor-created business records never fall through to a real Agent in demo mode.
@@ -138,6 +138,12 @@ pnpm --filter @nocobase/app-plugin-demo-mode build
 ## Runtime configuration
 
 Applications can build a management UI on `/api/demoMode/configuration`, with independent `demoMode.configuration` read/configure permissions. Register explicit write capabilities and mock adapters through `demoConfigurationToken`; no business write rules are enabled by default. Configuration uses optimistic revisions, daily reset supports IANA timezones, and disabled mocks fail closed. The published [integration Skill](skills/nocobase-app-plugin-demo-mode/SKILL.md) documents scope validation, scheduling and application-owned adapters.
+
+### Exception tables
+
+Administrators can PUT `/api/demoMode/configuration/tableRules` with `{ expectedRevision, value: [{ table: "crm_plans", operations: ["update"] }] }`. `table` is the lowercase physical table name, not a Collection alias; operations are `insert`, `update` and `delete`. No application capability registration is required. The list defaults to empty, persists across restarts and applies to subsequent HTTP requests, including implicit writes from GET routes. Remove an entry or operation to revoke it. This is an environment-wide exception, so it permits explicit writes too, subject to normal application authorization; prefer scoped capabilities for row-specific exceptions.
+
+Protected identity, authorization, Agent and Demo configuration tables cannot be added through this API. Deployment-level exceptions (including sign-in sessions) remain visible as `fixedTables` and are managed by deployment configuration. Runtime exception tables are returned separately as `tableRules`. The SQL guard never treats an exception as permission for DDL or unknown statements. A route that refreshes expired state while reading may need an UPDATE exception even when no rows are ultimately changed.
 
 ### Demo Agent replacement
 

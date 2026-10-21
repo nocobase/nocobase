@@ -13,3 +13,5 @@ Expose revision-safe write-rule and simulation configuration plus one persisted 
 Add opt-in online chat policies for existing host model services and explicit per-tool reads or simulations, with fresh execution-time checks and no Agents changes or automatic write exemptions.
 
 Support explicitly scoped persistence for legacy online conversation adapters without global Agent table write rules.
+
+Add administrator-configured physical-table exceptions with per-operation grants, protected-table validation and request-boundary revocation, without application capability registration.
