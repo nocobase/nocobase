@@ -237,6 +237,34 @@ describe('repository credentials on demand', () => {
     expect(provider.requests[0]?.responsibleUserId).toBe('u-next-owner');
   });
 
+  it('treats a failed read of the responsible as retryable: the run stays queued, and an ask is unavailable', async () => {
+    h = await createHarness();
+    repos(APP);
+    const provider = provide();
+    const agentId = await h.createAgent({ maxAttempts: 3 });
+    await h.enqueue(agentId, '1');
+    let broken = true;
+    Object.assign(h.services.subjects.get('sample')!, {
+      responsibleUserId: async () => {
+        if (broken) throw new Error('database busy');
+        return 'u-owner';
+      },
+    });
+    const runner = await h.registerRunner({
+      features: [...FEATURES, 'gitCredentials'] as never,
+    });
+    expect(await claim(h, runner)).toEqual([]);
+    expect(provider.prepares).toEqual([]);
+    broken = false;
+    const [payload] = await claim(h, runner);
+    expect(provider.contexts[0]?.responsibleUserId).toBe('u-owner');
+    broken = true;
+    const asked = await ask(runner, payload.run.id, { attempt: 1, url: APP });
+    expect(asked.status).toBe(503);
+    expect(asked.body.error.reason).toBe('REPO_ACCESS_UNAVAILABLE');
+    expect(provider.requests).toEqual([]);
+  });
+
   it('issues a credential per repository of the run, again on every ask, fresh on refresh', async () => {
     h = await createHarness();
     repos(APP, LIB);

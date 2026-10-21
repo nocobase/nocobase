@@ -475,6 +475,14 @@ export function asksCredentialsOnDemand(
   return runner.features.includes('gitCredentials');
 }
 
+/** Where a claim keeps the subject's responsible it read before its transaction (`Prepared`). */
+const RESPONSIBLE_KEY = 'responsible';
+
+function responsibleIn(prepared: Prepared): string | null {
+  const value = prepared.get(RESPONSIBLE_KEY);
+  return typeof value === 'string' ? value : null;
+}
+
 /** Whether `runner` wraps code host CLIs with the run's credential (`RunGit.tools`). */
 export function wrapsHostTools(runner: Pick<Runner, 'features'>): boolean {
   return runner.features.includes('gitTools');
@@ -1150,10 +1158,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         ),
         onDemand: asksCredentialsOnDemand(runner),
         tools: wrapsHostTools(runner),
-        responsibleUserId: await responsibleOf(conn, deps.subjects, {
-          kind: run.subjectKind,
-          id: run.subjectId,
-        }),
+        responsibleUserId: responsibleIn(prepared),
       },
       prepared,
     );
@@ -1621,6 +1626,19 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       return { kind: 'skipped' };
     const consent = await commentConsentFor(conn, runner, candidate);
     if (!consent.allowed) return { kind: 'skipped' };
+    // Read once, before the transaction, and handed to every repository access hook of this claim. A failed read
+    // leaves the run queued for the next poll rather than letting a provider pick an identity without it.
+    let responsibleUserId: string | null = null;
+    if ((deps.repoAccess?.list().length ?? 0) > 0)
+      try {
+        responsibleUserId = await responsibleOf(conn, deps.subjects, {
+          kind: candidate.subjectKind,
+          id: candidate.subjectId,
+        });
+      } catch (error) {
+        deps.onClaimFailure?.(candidate.id, error);
+        return { kind: 'skipped' };
+      }
     // Before the transaction: on SQLite it holds the only connection, so the providers read what else they need now.
     const prepared = new Map(
       await prepareExtensions(
@@ -1632,15 +1650,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         {
           onDemand: asksCredentialsOnDemand(runner),
           tools: wrapsHostTools(runner),
-          responsibleUserId: deps.repoAccess
-            ? await responsibleOf(conn, deps.subjects, {
-                kind: candidate.subjectKind,
-                id: candidate.subjectId,
-              }).catch(() => null)
-            : null,
+          responsibleUserId,
         },
       ),
     );
+    prepared.set(RESPONSIBLE_KEY, responsibleUserId);
     const subjectContext = deps.subjects.get(candidate.subjectKind)?.context;
     if (subjectContext?.prepare) {
       try {

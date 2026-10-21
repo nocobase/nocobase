@@ -157,11 +157,22 @@ export function createGitCredentialService(
       .list()
       .filter((provider) => provider.issue !== undefined);
     try {
-      const responsibleUserId = await responsibleOf(
-        deps.tx.read(),
-        deps.subjects,
-        { kind: run.subjectKind, id: run.subjectId },
-      );
+      let responsibleUserId: string | null;
+      try {
+        responsibleUserId = await responsibleOf(deps.tx.read(), deps.subjects, {
+          kind: run.subjectKind,
+          id: run.subjectId,
+        });
+      } catch (error) {
+        deps.onError?.(
+          `Agents could not read who answers for the subject of run ${run.id}.`,
+          error,
+        );
+        throw new RepoAccessError(
+          'unavailable',
+          'The application could not tell whose credential to issue just now.',
+        );
+      }
       for (const provider of providers) {
         const grant = await withTimeout((signal) =>
           provider.issue!({
