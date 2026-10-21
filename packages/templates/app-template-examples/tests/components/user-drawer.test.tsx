@@ -170,30 +170,31 @@ async function selectSales(user: ReturnType<typeof userEvent.setup>) {
 }
 
 it.each(['/users', '/settings/users'])(
-  'exposes Edit beside account actions and cancels to the same list at %s',
+  'opens name editing in a dialog with inline account actions and cancels to the same list at %s',
   async (base) => {
     const user = userEvent.setup();
     await renderUsers(base);
-    expect(await screen.findByText('Alice', { exact: true })).toBeVisible();
+    const edit = await screen.findByRole('link', {
+      name: 'Alice',
+      exact: true,
+    });
+    expect(edit).toHaveClass('underline');
     expect(
-      screen.queryByRole('link', { name: 'Alice' }),
+      screen.getByRole('button', { name: 'Disable', exact: true }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Revoke sessions', exact: true }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: 'Edit Alice' }),
     ).not.toBeInTheDocument();
     expect(
-      await screen.findByRole('button', { name: 'Edit Alice', exact: true }),
-    ).toBeVisible();
-    await user.click(
-      await screen.findByRole('button', { name: 'Actions for Alice' }),
-    );
-    expect(
-      (await screen.findAllByRole('menuitem')).map((item) => item.textContent),
-    ).toEqual(['Disable', 'Revoke sessions']);
-    await user.keyboard('{Escape}');
-    await user.click(
-      screen.getByRole('button', { name: 'Edit Alice', exact: true }),
-    );
+      screen.queryByRole('button', { name: 'Actions for Alice' }),
+    ).not.toBeInTheDocument();
+    await user.click(edit);
     const panel = await screen.findByRole('dialog', { name: 'Edit user' });
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
-    expect(panel).toHaveAttribute('data-presentation', 'drawer');
+    expect(panel).toHaveAttribute('data-presentation', 'dialog');
     const name = await within(panel).findByRole('textbox', { name: 'Name *' });
     await waitFor(() => expect(name).toHaveFocus());
     await user.click(
@@ -346,6 +347,18 @@ it('retains both drafts on failed unified save and keeps one discard guard', asy
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 });
 
+it('keeps names as plain text and hides account actions for read-only users', async () => {
+  await renderUsers('/users', '', false, true, ['read']);
+  expect(await screen.findByText('Alice', { exact: true })).toBeVisible();
+  expect(
+    screen.queryByRole('link', { name: 'Alice', exact: true }),
+  ).not.toBeInTheDocument();
+  for (const name of ['Disable', 'Enable', 'Revoke sessions'])
+    expect(
+      screen.queryByRole('button', { name, exact: true }),
+    ).not.toBeInTheDocument();
+});
+
 it('keeps the editor read-only without management permission', async () => {
   await renderUsers('/users', '/alice/edit', false, true);
   expect(await screen.findByRole('textbox', { name: 'Name *' })).toBeDisabled();
@@ -363,8 +376,8 @@ it('lets role-only managers save only roleScopes and prevents protected role sel
     'read',
     'assign-role',
   ]);
-  const edit = await screen.findByRole('button', {
-    name: 'Edit Alice',
+  const edit = await screen.findByRole('link', {
+    name: 'Alice',
     exact: true,
   });
   expect(

@@ -26,7 +26,7 @@ import {
   useSearchParams,
   useResolvedPath,
 } from 'react-router';
-import { MoreHorizontalIcon, PlusIcon, UsersIcon } from 'lucide-react';
+import { PlusIcon, UsersIcon } from 'lucide-react';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { Button } from '#components/ui/button';
@@ -40,12 +40,6 @@ import {
   SelectItem,
 } from '#components/ui/select';
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from '#components/ui/dropdown-menu';
-import {
   Empty,
   EmptyMedia,
   EmptyTitle,
@@ -53,6 +47,22 @@ import {
   EmptyContent,
 } from '#components/ui/empty';
 import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
+
+function UserName({ user }: { readonly user: ManagedUser }): ReactElement {
+  const canUpdate = useUserPermission('update', user.id);
+  const canAssign = useUserPermission('assign-role', user.id);
+  const location = useLocation();
+  return canUpdate || canAssign ? (
+    <Link
+      to={{ pathname: `${user.id}/edit`, search: location.search }}
+      className='font-medium underline underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-ring'
+    >
+      {user.name}
+    </Link>
+  ) : (
+    <span className='font-medium'>{user.name}</span>
+  );
+}
 
 function UserActions({
   user,
@@ -65,12 +75,9 @@ function UserActions({
   const api = useApiClient();
   const toaster = useToaster();
   const client = useMemo(() => new UsersClient(api), [api]);
-  const canUpdate = useUserPermission('update', user.id);
-  const canAssign = useUserPermission('assign-role', user.id);
   const canDisable = useUserPermission('disable', user.id);
   const canEnable = useUserPermission('enable', user.id);
   const canRevoke = useUserPermission('revoke-sessions', user.id);
-  const location = useLocation();
   const [action, setAction] = useState<
     'disable' | 'enable' | 'revokeSessions'
   >();
@@ -94,67 +101,33 @@ function UserActions({
       setBusy(false);
     }
   };
-  if (
-    !canUpdate &&
-    !canAssign &&
-    !canRevoke &&
-    !(user.disabledAt ? canEnable : canDisable)
-  )
-    return <></>;
+  if (!canRevoke && !(user.disabledAt ? canEnable : canDisable)) return <></>;
   return (
     <div className='flex items-center justify-end gap-1 whitespace-nowrap'>
-      {(canUpdate || canAssign) && (
+      {!user.disabledAt && canDisable && (
         <Button
           variant='ghost'
           size='sm'
-          nativeButton={false}
-          aria-label={t('settings.editUserFor', { name: user.name })}
-          render={
-            <Link
-              to={{ pathname: `${user.id}/edit`, search: location.search }}
-            />
-          }
+          className='text-destructive'
+          onClick={() => setAction('disable')}
         >
-          {t('settings.edit')}
+          {t('settings.disable')}
         </Button>
       )}
-      {(canRevoke || (user.disabledAt ? canEnable : canDisable)) && (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                size='icon-sm'
-                variant='ghost'
-                aria-label={t('settings.actionsFor', { name: user.name })}
-              >
-                <MoreHorizontalIcon />
-              </Button>
-            }
-          />
-          <DropdownMenuContent align='end' className='w-auto min-w-40'>
-            {!user.disabledAt && canDisable && (
-              <DropdownMenuItem
-                variant='destructive'
-                onClick={() => setAction('disable')}
-              >
-                {t('settings.disable')}
-              </DropdownMenuItem>
-            )}
-            {user.disabledAt && canEnable && (
-              <DropdownMenuItem onClick={() => setAction('enable')}>
-                {t('settings.enable')}
-              </DropdownMenuItem>
-            )}
-            {canRevoke && (
-              <DropdownMenuItem
-                variant='destructive'
-                onClick={() => setAction('revokeSessions')}
-              >
-                {t('settings.revokeSessions')}
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {user.disabledAt && canEnable && (
+        <Button variant='ghost' size='sm' onClick={() => setAction('enable')}>
+          {t('settings.enable')}
+        </Button>
+      )}
+      {canRevoke && (
+        <Button
+          variant='ghost'
+          size='sm'
+          className='text-destructive'
+          onClick={() => setAction('revokeSessions')}
+        >
+          {t('settings.revokeSessions')}
+        </Button>
       )}
       <ConfirmAction
         open={Boolean(action)}
@@ -348,9 +321,7 @@ export default function UsersPage(): ReactElement {
           <DataTableColumnHeader column={column} title={t('settings.name')} />
         ),
         enableHiding: false,
-        cell: ({ row }) => (
-          <span className='font-medium'>{row.original.name}</span>
-        ),
+        cell: ({ row }) => <UserName user={row.original} />,
       },
       {
         accessorKey: 'email',

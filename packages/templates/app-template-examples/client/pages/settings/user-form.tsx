@@ -31,7 +31,6 @@ import { RouteDialog } from '#components/route-dialog';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
-import { RouteDrawer } from '#components/route-drawer';
 import {
   Combobox,
   ComboboxTrigger,
@@ -540,7 +539,7 @@ function UserEditor(): ReactElement {
   );
   if (!creating)
     return (
-      <RouteDrawer
+      <RouteDialog
         title={t('settings.editUser')}
         description={initial?.name}
         closeTo={closeTo}
@@ -559,7 +558,7 @@ function UserEditor(): ReactElement {
             if (formRef.current) void save(formRef.current, true);
           }}
         />
-      </RouteDrawer>
+      </RouteDialog>
     );
   return (
     <RouteDialog
