@@ -541,3 +541,47 @@ it('adds side history without remounting the draft, keeps its context and select
   expect(screen.getByRole('menuitem', { name: 'Archive' })).toBeVisible();
   expect(screen.getByRole('menuitem', { name: 'Show details' })).toBeVisible();
 });
+
+it('uses the host mode title and new action above search and state filters, with a plain empty row', async () => {
+  const { update } = await setup({
+    view: { kind: 'new' },
+    showHistory: true,
+    title: 'My Agent',
+    historyActions: <button>New conversation</button>,
+    renderHeaderActions: () => <button>Host controls</button>,
+  });
+  const history = await screen.findByRole('region', { name: 'Sessions' });
+  expect(
+    within(history).getByRole('heading', { name: 'My Agent' }),
+  ).toBeVisible();
+  expect(
+    within(history).getByRole('button', { name: 'New conversation' }),
+  ).toBeVisible();
+  expect(screen.queryByRole('heading', { name: 'New session' })).toBeNull();
+  expect(within(history).queryByRole('combobox')).toBeNull();
+  fireEvent.click(within(history).getByRole('button', { name: 'Needs me 0' }));
+  expect(await within(history).findByText('No conversations')).toBeVisible();
+  fireEvent.click(
+    within(history).getByRole('button', { name: 'All', exact: true }),
+  );
+  fireEvent.change(
+    within(history).getByRole('textbox', { name: 'Search sessions' }),
+    { target: { value: 'not here' } },
+  );
+  expect(within(history).getByText('No conversations')).toBeVisible();
+  fireEvent.click(
+    within(history).getByRole('button', { name: 'Archived', exact: true }),
+  );
+  expect(
+    within(history).getByRole('button', { name: 'Archived', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.click(
+    within(history).getByRole('button', { name: 'Archived', exact: true }),
+  );
+  expect(
+    within(history).getByRole('button', { name: 'My computers' }),
+  ).toBeVisible();
+  update({ showHistory: false });
+  expect(screen.queryByRole('region', { name: 'Sessions' })).toBeNull();
+  expect(screen.getByRole('heading', { name: 'My Agent' })).toBeVisible();
+});

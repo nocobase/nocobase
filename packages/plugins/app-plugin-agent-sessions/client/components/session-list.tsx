@@ -142,6 +142,7 @@ function FullSessionList({
       className={cn(
         '@container/session-list flex h-full min-h-0 w-full shrink-0 flex-col',
         !surface.panel && 'md:w-[264px] md:border-r',
+        surface.renderHeaderActions && 'bg-muted/30',
         className,
       )}
       aria-label={t('list.label')}
@@ -149,12 +150,17 @@ function FullSessionList({
       <div
         className={
           surface.renderHeaderActions
-            ? 'flex flex-col gap-2.5 px-3.5 py-2'
+            ? 'flex flex-col gap-3 pb-3'
             : 'flex flex-col gap-2.5 px-3.5 pt-3.5 pb-2'
         }
       >
-        <div className='flex items-center gap-2'>
-          {archived && (
+        <div
+          className={cn(
+            'flex items-center gap-2',
+            surface.renderHeaderActions && 'border-b px-3.5 py-2',
+          )}
+        >
+          {archived && !surface.renderHeaderActions && (
             <Button
               variant='ghost'
               size='icon-sm'
@@ -174,7 +180,8 @@ function FullSessionList({
             }
             title={archived ? t('list.archived') : t('list.title')}
           >
-            {archived ? t('list.archived') : t('list.title')}
+            {surface.panelTitle ??
+              (archived ? t('list.archived') : t('list.title'))}
           </h1>
           {/* The application's primary button, as "New issue" is: its default size and text. A panel has its own. */}
           {surface.panel ? (
@@ -191,7 +198,9 @@ function FullSessionList({
             </Button>
           )}
         </div>
-        <div className='relative'>
+        <div
+          className={cn('relative', surface.renderHeaderActions && 'mx-3.5')}
+        >
           <SearchIcon className='text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2' />
           <Input
             className='bg-card h-8 pl-8 text-base md:text-sm'
@@ -201,9 +210,12 @@ function FullSessionList({
             aria-label={t('list.search')}
           />
         </div>
-        {!archived && (
+        {(!archived || surface.renderHeaderActions) && (
           <div
-            className='flex flex-wrap gap-1'
+            className={cn(
+              'flex flex-wrap gap-1',
+              surface.renderHeaderActions && 'mx-3.5',
+            )}
             role='group'
             aria-label={t('list.filter')}
           >
@@ -230,17 +242,19 @@ function FullSessionList({
                   : t(`list.filters.${value}`, { count: counts[value] })}
               </button>
             ))}
-            <ProjectFilter
-              projects={[
-                ...new Set(
-                  [...facts.values()].flatMap((fact) =>
-                    fact.group ? [fact.group] : [],
+            {!surface.renderHeaderActions && (
+              <ProjectFilter
+                projects={[
+                  ...new Set(
+                    [...facts.values()].flatMap((fact) =>
+                      fact.group ? [fact.group] : [],
+                    ),
                   ),
-                ),
-              ].sort((a, b) => a.localeCompare(b))}
-              value={project}
-              onChange={setProject}
-            />
+                ].sort((a, b) => a.localeCompare(b))}
+                value={project}
+                onChange={setProject}
+              />
+            )}
           </div>
         )}
       </div>
@@ -254,11 +268,13 @@ function FullSessionList({
           </div>
         ) : shown.length === 0 ? (
           <p className='text-muted-foreground p-3 text-sm'>
-            {sessions.length === 0
-              ? archived
-                ? t('list.noArchived')
-                : t('list.empty')
-              : t('list.noMatch')}
+            {surface.renderHeaderActions
+              ? t('list.panelEmpty')
+              : sessions.length === 0
+                ? archived
+                  ? t('list.noArchived')
+                  : t('list.empty')
+                : t('list.noMatch')}
           </p>
         ) : (
           GROUPS.map((group) => {
@@ -268,9 +284,11 @@ function FullSessionList({
             if (rows.length === 0) return null;
             return (
               <div key={group}>
-                <h2 className='text-muted-foreground px-2.5 pt-3 pb-1 text-xs'>
-                  {t(`list.groups.${group}`)}
-                </h2>
+                {!surface.renderHeaderActions && (
+                  <h2 className='text-muted-foreground px-2.5 pt-3 pb-1 text-xs'>
+                    {t(`list.groups.${group}`)}
+                  </h2>
+                )}
                 {rows.map((session) => (
                   <SessionRow
                     key={session.id}
@@ -307,7 +325,9 @@ function FullSessionList({
         </FooterButton>
         <FooterButton
           title={t('list.archived')}
-          onClick={() => setArchived(true)}
+          onClick={() =>
+            setArchived(surface.renderHeaderActions ? !archived : true)
+          }
           pressed={archived}
         >
           <ArchiveIcon className='size-4 shrink-0' />

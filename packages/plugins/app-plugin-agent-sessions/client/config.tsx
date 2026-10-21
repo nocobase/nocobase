@@ -74,6 +74,7 @@ export function useLinkOpen():
  * their header, opening records at their own address and telling the application which session to show.
  */
 export interface SessionSurface {
+  readonly panelTitle?: string | undefined;
   /** Inspect the exact attached text or reference without removing it. */
   readonly onInspectAttachment?: ((attachment: Attachment) => void) | undefined;
   readonly placeholder?: string | undefined;

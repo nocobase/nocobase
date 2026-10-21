@@ -25,6 +25,7 @@ const deDE: LocaleResource<typeof enUS> = {
       'Diese Sitzung existiert nicht oder sie gehört nicht Ihnen.',
   },
   list: {
+    panelEmpty: 'Keine Unterhaltungen',
     expand: 'Sitzungen anzeigen',
     label: 'Sitzungen',
     title: 'Meine Agenten',

@@ -24,6 +24,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     sessionNotFound: '此會話不存在，或者不是您的。',
   },
   list: {
+    panelEmpty: '暫無會話',
     expand: '展示場次',
     label: '會議',
     title: '我的經紀人',

@@ -25,6 +25,7 @@ const frFR: LocaleResource<typeof enUS> = {
       "Cette session n'existe pas ou elle ne vous appartient pas.",
   },
   list: {
+    panelEmpty: 'Aucune conversation',
     expand: 'Afficher les sessions',
     label: 'Séances',
     title: 'Mes agents',

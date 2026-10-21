@@ -24,6 +24,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     sessionNotFound: 'Esta sessão não existe ou não é sua.',
   },
   list: {
+    panelEmpty: 'Nenhuma conversa',
     expand: 'Mostrar sessões',
     label: 'Sessões',
     title: 'Meus agentes',

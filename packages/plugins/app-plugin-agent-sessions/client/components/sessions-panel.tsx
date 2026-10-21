@@ -61,6 +61,9 @@ export interface AgentSessionsPanelProps extends AgentSessionsRouteOptions {
   readonly actions?: ReactNode;
   /** Show the existing session history beside the current content without remounting its draft. */
   readonly showHistory?: boolean;
+  /** Mode label and new-session control for a host-owned history column. */
+  readonly title?: string;
+  readonly historyActions?: ReactNode;
   /** Replace panel header controls, retaining session commands in the host menu. */
   readonly renderHeaderActions?:
     ((menuItems: ReactNode) => ReactNode) | undefined;
@@ -74,6 +77,8 @@ const APPLIED = 'panel:attach';
 function Panel({
   view: requestedView,
   showHistory = false,
+  title,
+  historyActions,
   onViewChange,
   attach,
   activeLink,
@@ -201,6 +206,7 @@ function Panel({
     : defaultButtons;
   const surface: SessionSurface = {
     renderHeaderActions,
+    panelTitle: title,
     panel: true,
     onInspectAttachment,
     actions: buttons,
@@ -216,7 +222,9 @@ function Panel({
     <SessionSurfaceContext.Provider value={surface}>
       <div className='flex h-full min-h-0 min-w-0'>
         {showHistory && (
-          <SessionSurfaceContext.Provider value={{ ...surface, actions: null }}>
+          <SessionSurfaceContext.Provider
+            value={{ ...surface, actions: historyActions }}
+          >
             <div className='w-[18rem] shrink-0 border-r' data-panel-history=''>
               <SessionList
                 activeId={view.kind === 'session' ? view.sessionId : undefined}
@@ -235,9 +243,15 @@ function Panel({
           {view.kind === 'new' && (
             <>
               <header className='flex items-center gap-2 border-b px-3.5 py-2'>
-                <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
-                  {t('list.new')}
-                </h2>
+                {renderHeaderActions && showHistory ? (
+                  <div className='flex-1' />
+                ) : (
+                  <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
+                    {renderHeaderActions
+                      ? (title ?? t('list.title'))
+                      : t('list.new')}
+                  </h2>
+                )}
                 {buttons}
               </header>
               <div className='min-h-0 flex-1'>
