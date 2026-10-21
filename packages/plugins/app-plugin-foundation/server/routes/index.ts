@@ -8,8 +8,10 @@ import {
   ApiError,
   apiErrorHandler,
   apiErrorResponses,
+  apiErrorResponse,
   apiValidator,
   dataResponse,
+  listResponse,
   defineApiRoutes,
   describeRoute,
   type AppApiRouteContribution,
@@ -19,7 +21,12 @@ import { Hono } from 'hono';
 
 import { FOUNDATION_NAMESPACE } from '../../shared/foundation.js';
 import { foundationServiceToken } from '../tokens.js';
-import { OverviewQuery, OverviewSchema } from './schemas.js';
+import {
+  OverviewQuery,
+  OverviewSchema,
+  CollectionsQuery,
+  CollectionItemSchema,
+} from './schemas.js';
 
 const tags = ['Foundation'];
 
@@ -66,11 +73,41 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       }),
       apiValidator('query', OverviewQuery),
       async (context) => {
-        const { refresh } = context.req.valid('query');
+        const { refresh, countRecords } = context.req.valid('query');
+        const data = await container.resolve(foundationServiceToken).overview({
+          refresh: refresh === true,
+          countRecords: countRecords === true,
+        });
+        return context.json({ data });
+      },
+    );
+
+    routes.get(
+      '/collections',
+      describeRoute({
+        tags,
+        summary: 'List application Collections on demand',
+        operationId: 'foundationListCollections',
+        responses: {
+          200: listResponse(CollectionItemSchema),
+          ...apiErrorResponses,
+          503: apiErrorResponse(503),
+        },
+      }),
+      apiValidator('query', CollectionsQuery),
+      async (context) => {
         const data = await container
           .resolve(foundationServiceToken)
-          .overview({ refresh: refresh === true });
-        return context.json({ data });
+          .collections(context.req.valid('query'));
+        if (!data)
+          throw new ApiError({
+            status: 'UNAVAILABLE',
+            reason: 'FOUNDATION_COLLECTIONS_UNAVAILABLE',
+            domain: FOUNDATION_NAMESPACE,
+            message:
+              'Application Collection ownership could not be determined.',
+          });
+        return context.json({ data: data.items, meta: { total: data.total } });
       },
     );
 

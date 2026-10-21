@@ -3,17 +3,46 @@ import { z } from 'zod';
 import {
   FOUNDATION_STATUSES,
   type FoundationOverview,
+  type FoundationCollectionPage,
 } from '../../shared/foundation.js';
 
 export const OverviewQuery: z.ZodObject<
-  { refresh: z.ZodOptional<z.ZodCodec<z.ZodString, z.ZodBoolean>> },
+  {
+    refresh: z.ZodOptional<z.ZodCodec<z.ZodString, z.ZodBoolean>>;
+    countRecords: z.ZodOptional<z.ZodCodec<z.ZodString, z.ZodBoolean>>;
+  },
   z.core.$strip
 > = z.object({
   refresh: z.stringbool().optional().meta({
     description:
       'Collects again instead of answering a result collected within the last 30 seconds.',
   }),
+  countRecords: z.stringbool().optional().meta({
+    description:
+      'Explicitly query every business table for exact row counts. Omitted on ordinary page loads and refreshes.',
+  }),
 });
+
+export const CollectionsQuery: z.ZodType<{ offset: number; search: string }> =
+  z.object({
+    offset: z.coerce.number().int().min(0).max(1_000_000).default(0).meta({
+      description:
+        'Zero-based offset; each page contains at most 50 Collections.',
+    }),
+    search: z.string().max(200).default('').meta({
+      description:
+        'Case-insensitive search across all application Collection names and titles.',
+    }),
+  });
+export const CollectionItemSchema: z.ZodType<
+  FoundationCollectionPage['items'][number]
+> = z
+  .object({
+    name: z.string(),
+    title: z.string().optional(),
+    kind: z.string(),
+  })
+  .meta({ ref: 'FoundationCollection' });
 
 const FactSchema = z
   .object({
@@ -120,6 +149,7 @@ export const OverviewSchema: z.ZodType<FoundationOverview> = z
             routeName: z.string(),
             providers: z.array(z.string()),
             apiProviders: z.array(z.string()).optional(),
+            collections: z.array(z.string()).optional(),
             complete: z.boolean(),
           }),
         ),
@@ -167,6 +197,10 @@ export const OverviewSchema: z.ZodType<FoundationOverview> = z
     checkedAt: z.string().meta({
       description:
         'When the result was collected; a cached one keeps its time.',
+    }),
+    recordCountCheckedAt: z.string().optional().meta({
+      description:
+        'When the retained exact business record count was collected, independently of the overview.',
     }),
     durationMs: z.number(),
     connection: z.literal('default').meta({

@@ -28,6 +28,7 @@ const zhTW: FoundationResource = {
     lowerBound: '此為下限：部分資料未能讀取。',
   },
   matrix: {
+    collections: '關聯資料表：{{names}}',
     title: '業務模組與底座能力',
     description:
       '查看各業務模組由哪些底座能力支撐，點選標記，了解關聯依據與自行實作時需要承擔的工作。',
@@ -100,6 +101,22 @@ const zhTW: FoundationResource = {
     legendUnused: '尚未使用 {{count}}',
   },
   detail: {
+    collectionCount: '共 {{count}} 張資料表',
+    collectionPreview: '資料表示例',
+    collectionsTitle: '資料表',
+    noCollectionMatches: '找不到資料表',
+    noCollectionMatchesHint: '試試其他名稱，或清除搜尋。',
+    collectionRange: '第 {{from}}–{{to}} 項，共 {{total}} 項',
+    closeCollections: '關閉資料表清單',
+    viewCollections: '查看全部資料表',
+    searchCollections: '搜尋資料表',
+    collectionResults: '共 {{count}} 張符合的資料表',
+    previousPage: '上一頁',
+    nextPage: '下一頁',
+    countRecords: '統計業務資料量',
+    recordsOnDemand: '業務資料總量按需統計，資料庫較大時可能需要較長時間。',
+    recordsCountedAt: '資料量統計於 {{time}}',
+
     businessModules: '關聯業務模組',
     inThisApp: '在本系統中',
     withoutFoundation: '若沒有底座',
@@ -151,7 +168,8 @@ const zhTW: FoundationResource = {
       name: 'AI 與 Agent',
       tagline: '模型服務、Agent 與執行器',
       without: '須自行整合模型、儲存金鑰、記錄用量並安全執行 Agent。',
-      onceInUse: '統一設定模型與 Agent，並記錄執行用量。',
+      onceInUse:
+        '啟用模型服務即可支援 Online agent 與模型閘道呼叫，也可接入執行器執行 Agent 任務。',
     },
     knowledge: {
       name: '知識庫',
@@ -209,7 +227,7 @@ const zhTW: FoundationResource = {
       '目前僅管理員具完整權限，尚無授予其他人員的權限集。',
     noWorkflows: '尚無持久化生命週期或已啟用排程。',
     noSchedules: '尚未啟用排程。',
-    noModelOrRunner: '尚無可執行的 Agent；需要模型服務與 Agent，或執行器。',
+    noModelOrRunner: '尚無已啟用的模型服務，也沒有已註冊的執行器。',
     noModelService: '尚未啟用模型服務。',
     noAgent: '尚未定義 Agent。',
     noDocuments: '知識空間尚無文件。',
@@ -224,6 +242,8 @@ const zhTW: FoundationResource = {
     collectionOwnershipUnknown:
       '發現未分類的執行階段擴充，資料表歸屬尚未確認，暫不顯示業務統計。',
     noApplicationCollections: '資料層已執行，應用尚無自有資料表。',
+    applicationCollectionsPreview:
+      '本系統自有 {{count}} 張資料表，包含 {{names}} 等。',
     applicationCollections: '本應用有 {{count}} 個自有資料表：{{names}}。',
     relations: '共 {{count}} 個關聯。',
     fileCollections: '共 {{count}} 個檔案資料表：{{names}}。',
@@ -234,6 +254,9 @@ const zhTW: FoundationResource = {
     lifecycles:
       '{{count}} 個生命週期記錄了 {{transitions}} 次轉換：{{names}}。',
     schedules: '已啟用 {{count}} 個排程。',
+    modelServices:
+      '{{count}} 個已啟用的模型服務，支援 Online agent 與模型閘道。',
+    runners: '已註冊 {{count}} 個執行器，支援 Agent 執行。',
     agents: '共 {{count}} 個 Agent，已執行 {{runs}} 次。',
     documents: '知識空間共有 {{count}} 份文件。',
     mailboxes: '已連接 {{count}} 個信箱。',

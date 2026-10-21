@@ -31,6 +31,151 @@ afterEach(async () => {
 });
 
 describe('static module dependencies', () => {
+  it('keeps literal array-generated route names and conditional loaders paired', async () => {
+    const root = await fixture({
+      'client/routes.ts': `export default ['books','loans'].map(kind=>({name:kind==='books'?'catalog':'borrowing',componentLoader:()=>kind==='books'?import('./books.js'):import('./loans.js'),children:[{name:\`\${kind}-detail\`,componentLoader:()=>kind==='books'?import('./books.js'):import('./loans.js')}]}));`,
+      'client/books.ts': `import {read} from '@nocobase/db'; export default ()=>read();`,
+      'client/loans.ts': `import {send} from '@nocobase/app-plugin-notification/client'; export default ()=>send();`,
+    });
+    expect(
+      (await collectModuleSources(root)).routes.map(
+        ({ routeName, providers }) => ({ routeName, providers }),
+      ),
+    ).toEqual([
+      { routeName: 'catalog', providers: ['@nocobase/db'] },
+      { routeName: 'books-detail', providers: ['@nocobase/db'] },
+      {
+        routeName: 'borrowing',
+        providers: ['@nocobase/app-plugin-notification'],
+      },
+      {
+        routeName: 'loans-detail',
+        providers: ['@nocobase/app-plugin-notification'],
+      },
+    ]);
+  });
+
+  it('follows aliased loaders, JSX props and non-null shared hook arguments to literal loop endpoints', async () => {
+    const root = await fixture({
+      'client/routes.ts': `const books=()=>import('./books.js'); const loans=()=>import('./loans.js'); export default [{name:'books',componentLoader:books},{name:'loans',componentLoader:loans}];`,
+      'client/books.tsx': `import List from './list.js'; export default ()=> <List mode='books'/>;`,
+      'client/loans.tsx': `import List from './list.js'; export default ()=> <List mode='loans'/>;`,
+      'client/list.tsx': `import {useLoad} from './hooks.js'; export default function List({mode='books'}){const isBook=mode==='books'||mode==='catalog'; const resource=isBook?'books':'loans'; return useLoad(\`library/\${resource}?page=1\`);}`,
+      'client/hooks.ts': `import {useApiClient} from '@nocobase/app-client'; export function useLoad(path:string|undefined){const api=useApiClient(); return api.request({path:path!});}`,
+      'server/routes/index.ts': `import {Hono} from 'hono'; import {read} from '@nocobase/db'; import {send} from '@nocobase/app-plugin-notification/server'; const router=new Hono(); for(const name of ['books','catalog'] as const){router.get(\`/library/\${name}\`,()=>read());} for(const own of [true,false]){const base=own?'/library/myLoans':'/library/loans'; router.get(base,()=>send());} export default router;`,
+    });
+    expect(
+      (await collectModuleSources(root)).routes.map((route) => ({
+        name: route.routeName,
+        providers: route.apiProviders,
+      })),
+    ).toEqual([
+      { name: 'books', providers: ['@nocobase/db'] },
+      { name: 'loans', providers: ['@nocobase/app-plugin-notification'] },
+    ]);
+    await writeFile(
+      path.join(root, 'server/routes/index.ts'),
+      `import {Hono} from 'hono'; import {read} from '@nocobase/db'; const router=new Hono(); for(const name of unknownNames){router.get(\`/library/\${name}\`,()=>read());} export default router;`,
+    );
+    expect(
+      (await collectModuleSources(root)).routes.every(
+        (route) => !route.apiProviders?.length,
+      ),
+    ).toBe(true);
+  });
+
+  it('resolves object argument defaults without guessing values supplied through a spread', async () => {
+    const root = await fixture({
+      'client/routes.ts': `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts': `import {useApiClient} from '@nocobase/app-client'; function load({path='items',method='GET'}){return useApiClient().request({path,method});} export default ()=>load({});`,
+      'server/routes/index.ts': `import {Hono} from 'hono'; import {read} from '@nocobase/db'; const router=new Hono(); router.get('/items',()=>read()); export default router;`,
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/db',
+    ]);
+    await writeFile(
+      path.join(root, 'client/page.ts'),
+      `import {useApiClient} from '@nocobase/app-client'; function load({path='items',method='GET'}){return useApiClient().request({path,method});} export default ()=>load({...unknown});`,
+    );
+    expect(
+      (await collectModuleSources(root)).routes[0]?.apiProviders,
+    ).toBeUndefined();
+    await writeFile(
+      path.join(root, 'client/page.ts'),
+      `import {useApiClient} from '@nocobase/app-client'; function load({path='items',method='GET'}){return useApiClient().request({path,method});} export default ()=>load({path:unknown});`,
+    );
+    expect(
+      (await collectModuleSources(root)).routes[0]?.apiProviders,
+    ).toBeUndefined();
+  });
+
+  it('recognizes a database injected into a service constructor even when the service imports only database types', async () => {
+    const root = await fixture({
+      'client/routes.ts': `export default [{name:'orders',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts': `import {useApiClient} from '@nocobase/app-client'; export default ()=>{const api=useApiClient(); return api.request({path:'orders'});};`,
+      'server/routes/index.ts': `import {Hono} from 'hono'; import {defineApiRoutes} from '@nocobase/app-server/router'; import {ordersToken} from '../tokens.js'; export default defineApiRoutes(app=>{const router=new Hono(); const orders=app.container.resolve(ordersToken); router.get('/orders',()=>orders.list()); return router;});`,
+      'server/tokens.ts': `import {createServiceToken} from '@nocobase/service-provider'; export const ordersToken=createServiceToken('orders');`,
+      'server/providers/index.ts': `import {databaseManagerToken} from '@nocobase/db'; import {ordersToken} from '../tokens.js'; import {Orders} from '../orders.js'; export default class Provider{register(app){app.container.singleton(ordersToken,container=>new Orders(container.resolve(databaseManagerToken)));}}`,
+      'server/orders.ts': `import type {DatabaseManager} from '@nocobase/db'; export class Orders{constructor(private database:DatabaseManager){} list(){return this.database.repository('orders').findMany();}}`,
+    });
+    expect(
+      (await collectModuleSources(root)).routes[0]?.apiProviders,
+    ).toContain('@nocobase/db');
+    await writeFile(
+      path.join(root, 'server/providers/index.ts'),
+      `import {databaseManagerToken} from '@nocobase/db'; import {ordersToken} from '../tokens.js'; import {Orders} from '../orders.js'; export default []; export class UnregisteredProvider{register(app){app.container.singleton(ordersToken,container=>new Orders(container.resolve(databaseManagerToken)));}}`,
+    );
+    expect(
+      (await collectModuleSources(root)).routes[0]?.apiProviders ?? [],
+    ).not.toContain('@nocobase/db');
+  });
+  it('composes nested router prefixes and follows request arguments through a shared helper', async () => {
+    const root = await fixture({
+      'client/routes.ts': `export default [{name:'orders',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts': `import {useApiClient as useApi} from '@nocobase/app-client'; import {read} from './api.js'; export default ()=>{const api=useApi(); return read(api,'sales/orders','get');};`,
+      'client/api.ts': `export function read(api,path,method){return api.request({path,method});}`,
+      'server/routes/index.ts': `import {Hono} from 'hono'; import {defineApiRoutes} from '@nocobase/app-server/router'; import orders from './orders.js'; export default defineApiRoutes(()=>new Hono().route('/sales',orders));`,
+      'server/routes/orders.ts': `import {Hono} from 'hono'; import {read} from '@nocobase/db'; const router=new Hono().basePath('/orders'); router.get('/',()=>read()); export default router;`,
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/db',
+    ]);
+  });
+
+  it('matches proven API repository clients to explicitly exposed actions and collection names', async () => {
+    const root = await fixture({
+      'client/routes.ts': `export default [{name:'orders',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts': `import {useApiClient} from '@nocobase/app-client'; export default ()=>{const api=useApiClient(); const orders=api.repository('salesOrders'); return orders.findMany();};`,
+      'server/routes/index.ts': `import {defineRepositoryApiRoutes} from '@nocobase/app-server/router'; const exposures=[{name:'salesOrders',collection:'orders',policy:{},actions:{findMany:{}}}]; export default [defineRepositoryApiRoutes({repositories:exposures})];`,
+    });
+    expect((await collectModuleSources(root)).routes[0]).toMatchObject({
+      apiProviders: ['@nocobase/db'],
+      collections: ['orders'],
+    });
+    await writeFile(
+      path.join(root, 'client/page.ts'),
+      `import {useApiClient} from '@nocobase/app-client'; export default ()=>{const api=useApiClient(); return api.repository('salesOrders').deleteOne();};`,
+    );
+    expect(
+      (await collectModuleSources(root)).routes[0]?.apiProviders,
+    ).toBeUndefined();
+  });
+
+  it('follows an explicitly registered service token to the selected method without borrowing unused methods', async () => {
+    const root = await fixture({
+      'client/routes.ts': `export default [{name:'orders',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts': `import {useApiClient} from '@nocobase/app-client'; export default ()=>{const api=useApiClient(); return api.request({path:'orders'});};`,
+      'server/routes/index.ts': `import {Hono} from 'hono'; import {defineApiRoutes} from '@nocobase/app-server/router'; import {ordersToken} from '../tokens.js'; export default defineApiRoutes(app=>{const router=new Hono(); const orders=app.container.resolve(ordersToken); router.get('/orders',()=>orders.list()); return router;});`,
+      'server/tokens.ts': `import {createServiceToken} from '@nocobase/service-provider'; export const ordersToken=createServiceToken('orders');`,
+      'server/providers/index.ts': `import {ordersToken} from '../tokens.js'; import {Orders} from '../orders.js'; export default class Provider{register(app){app.container.singleton(ordersToken,()=>new Orders());}}`,
+      'server/orders.ts': `import {read} from '@nocobase/db'; import {send} from '@nocobase/app-plugin-notification/server'; export class Orders{list(){return read();} unused(){return send();}}`,
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/db',
+      '@nocobase/service-provider',
+    ]);
+  });
+
   it('keeps API client bindings scoped and excludes an unreferenced router', async () => {
     const root = await fixture({
       'client/routes.ts': `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,

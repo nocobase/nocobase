@@ -20,11 +20,14 @@ export interface CollectorContext {
   readonly applicationName: string | undefined;
   /** Whether the application ships a client the NocoBase client runtime serves. */
   readonly hasClient: boolean;
+  /** Exact business row counts are opt-in because every business table must be queried. */
+  readonly countRecords?: boolean;
 }
 
 /** What one capability's collector established. The service adds packages, completeness and issues. */
 export interface CapabilityFindings {
-  readonly status: FoundationStatus;
+  /** Unknown when no execution path can be confirmed and a required read failed. */
+  readonly status: FoundationStatus | null;
   readonly reason?: string;
   readonly facts?: readonly FoundationFact[];
   readonly metrics?: readonly FoundationMetric[];
