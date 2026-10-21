@@ -144,7 +144,13 @@ export default function RolesPage(): ReactElement {
                 {t(search ? 'settings.noResults' : 'settings.noRoles')}
               </EmptyTitle>
               <EmptyDescription>
-                {t(search ? 'settings.clearHint' : 'settings.rolesDescription')}
+                {t(
+                  search
+                    ? 'settings.clearHint'
+                    : canCreate
+                      ? 'settings.rolesDescription'
+                      : 'settings.rolesReadOnlyEmpty',
+                )}
               </EmptyDescription>
               <EmptyContent>
                 {search ? (

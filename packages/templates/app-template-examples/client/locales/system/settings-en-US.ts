@@ -104,6 +104,11 @@ const settings = {
 
   assignedRoles: 'Assigned roles',
   actionSaved: 'Updated access for "{{name}}"',
+  userActionSaved: {
+    disable: 'Disabled user "{{name}}"',
+    enable: 'Enabled user "{{name}}"',
+    revokeSessions: 'Revoked active sessions for "{{name}}"',
+  },
 
   identityConflict: 'This email or username is already in use.',
   signInAgain: 'Sign in again',
@@ -138,6 +143,10 @@ const settings = {
   noResults: 'No matching results',
   clearHint: 'Try a different search or clear the filters.',
   noUsers: 'No users yet',
+  usersReadOnlyEmpty:
+    'Contact an administrator to add users or grant the permissions needed to create users and assign roles.',
+  rolesReadOnlyEmpty:
+    'Contact an administrator to create a role or grant you permission to create roles.',
   noRoles: 'No roles yet',
   create: 'Create',
   edit: 'Edit',
@@ -170,12 +179,14 @@ const settings = {
   discardTitle: 'Discard changes?',
   discardHint: 'Your unsaved changes will be lost.',
   failed: 'Unable to complete the request. Try again.',
+  invalidRequest:
+    'Some values are invalid. Check your input or filters and try again.',
   retry: 'Retry',
   loading: 'Loading',
   denied: 'You do not have access. Contact an administrator.',
   missing: 'This record does not exist or has been deleted.',
   conflict:
-    'This role has changed. Reload it and merge your changes before saving.',
+    'The request conflicts with current data. Review the latest record before trying again.',
   sessionEnded: 'Your session has ended. Sign in again.',
   previous: 'Previous',
   next: 'Next',

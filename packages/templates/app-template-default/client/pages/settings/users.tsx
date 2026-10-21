@@ -78,7 +78,7 @@ function UserActions({
       const updated = await client[action](user.id);
       toaster.show({
         type: 'success',
-        title: t('settings.actionSaved', { name: user.name }),
+        title: t(`settings.userActionSaved.${action}`, { name: user.name }),
       });
       setAction(undefined);
       reload(updated ?? undefined);
@@ -532,7 +532,11 @@ export default function UsersPage(): ReactElement {
               </EmptyTitle>
               <EmptyDescription>
                 {t(
-                  filtered ? 'settings.clearHint' : 'settings.usersDescription',
+                  filtered
+                    ? 'settings.clearHint'
+                    : canCreate && canAssign
+                      ? 'settings.usersDescription'
+                      : 'settings.usersReadOnlyEmpty',
                 )}
               </EmptyDescription>
               <EmptyContent>

@@ -93,6 +93,11 @@ const settings = {
 
   assignedRoles: '已分配角色',
   actionSaved: '已更新“{{name}}”的访问状态',
+  userActionSaved: {
+    disable: '已禁用用户“{{name}}”',
+    enable: '已启用用户“{{name}}”',
+    revokeSessions: '已撤销“{{name}}”的登录会话',
+  },
 
   identityConflict: '此邮箱或用户名已被使用。',
   signInAgain: '重新登录',
@@ -127,6 +132,9 @@ const settings = {
   noResults: '没有匹配的结果',
   clearHint: '请更换搜索条件或清除筛选。',
   noUsers: '暂无用户',
+  usersReadOnlyEmpty:
+    '请联系管理员添加用户，或授予创建用户和分配角色所需的权限。',
+  rolesReadOnlyEmpty: '请联系管理员创建角色，或授予你创建角色的权限。',
   noRoles: '暂无角色',
   create: '创建',
   edit: '编辑',
@@ -157,11 +165,12 @@ const settings = {
   discardTitle: '放弃未保存的更改？',
   discardHint: '未保存的更改将丢失。',
   failed: '请求失败，请重试。',
+  invalidRequest: '部分内容无效，请检查填写内容或筛选条件后重试。',
   retry: '重试',
   loading: '加载中',
-  denied: '无权查看，请联系管理员。',
+  denied: '没有执行此操作的权限，请联系管理员。',
   missing: '记录不存在或已被删除。',
-  conflict: '角色已被其他人修改，请重新加载后合并。',
+  conflict: '此操作与当前数据冲突，请查看最新记录后再试。',
   sessionEnded: '会话已结束，请重新登录。',
   previous: '上一页',
   next: '下一页',
