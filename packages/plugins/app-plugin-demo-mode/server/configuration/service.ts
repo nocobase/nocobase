@@ -27,13 +27,13 @@ interface Stored {
 
 /** All instances read shared configuration; no process-local policy cache can retain revoked access. */
 export class DemoConfigurationService {
-  private readonly policy = new AsyncLocalStorage<DemoConfigurationView>();
+  private readonly policy = new AsyncLocalStorage<DemoConfiguration>();
   public async runWithPolicy<T>(run: () => Promise<T>): Promise<T> {
     if (!this.enabled || this.policy.getStore()) return run();
-    return this.policy.run(await this.read(false), run);
+    return this.policy.run(await this.readPolicy(), run);
   }
-  private async currentPolicy(): Promise<DemoConfigurationView> {
-    return this.policy.getStore() ?? this.read(false);
+  private async currentPolicy(): Promise<DemoConfiguration> {
+    return this.policy.getStore() ?? this.readPolicy();
   }
   private readonly writes = new Map<string, DemoWriteCapability>();
   private readonly adapters = new Map<string, DemoMockAdapter>();
@@ -135,6 +135,13 @@ export class DemoConfigurationService {
         ...stored.mocks,
       },
     };
+  }
+  /** Execution checks read fresh persisted policy without building management-only schedule previews. */
+  private async readPolicy(): Promise<DemoConfiguration> {
+    this.requireEnabled();
+    const row = await this.row();
+    if (!row) throw new Error('Demo configuration has not been initialized.');
+    return this.decode(row);
   }
   public async read(includeBusy = true): Promise<DemoConfigurationView> {
     this.requireEnabled();
@@ -279,7 +286,7 @@ export class DemoConfigurationService {
     model: string;
   }): Promise<{ modelService: string; model: string } | undefined> {
     if (!this.enabled) return undefined;
-    const { chat } = await this.read(false);
+    const { chat } = await this.readPolicy();
     if (!chat.enabled)
       throw demoDataError(
         'DEMO_CHAT_DISABLED',
@@ -297,7 +304,7 @@ export class DemoConfigurationService {
     },
   ): Promise<T> {
     if (!this.enabled) return operation.run();
-    const { chat } = await this.read(false);
+    const { chat } = await this.readPolicy();
     if (!chat.enabled)
       throw demoDataError(
         'DEMO_CHAT_DISABLED',

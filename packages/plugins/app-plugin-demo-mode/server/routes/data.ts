@@ -141,10 +141,10 @@ export const dataRoutes: AppApiRouteContribution<AppPluginApplication> =
       require('manage'),
       describeRoute({
         tags,
-        summary: 'Import the demo data',
+        summary: 'Generate demo data',
         operationId: 'demoModeImportData',
         description: description(
-          'Starts the import and answers at once, including in read-only mode; read the status for its progress. Demo data imported already is refused with `DEMO_DATA_EXISTS`.',
+          'Runs the application-defined dataset steps and answers at once, including in read-only mode; read the status for generation progress. This endpoint accepts no uploaded data. Existing generated data is refused with `DEMO_DATA_EXISTS`.',
         ),
         responses: {
           200: dataResponse(DemoDataStatusSchema),
@@ -178,7 +178,7 @@ export const dataRoutes: AppApiRouteContribution<AppPluginApplication> =
         summary: 'Clear the demo data',
         operationId: 'demoModeClearData',
         description: description(
-          'Clears the registered dataset and its accounts and model. A dataset with application-wide cleanup also removes application business data and requires demo mode.',
+          'Runs the required application-wide business cleanup, including visitor additions, and disables tracked demo accounts for reuse. Preserves system configuration and the environment model. Requires enabled demo mode; cleanup also runs before the first import.',
         ),
         responses: {
           200: dataResponse(DemoDataStatusSchema),
@@ -186,7 +186,7 @@ export const dataRoutes: AppApiRouteContribution<AppPluginApplication> =
           400: busy,
           404: apiErrorResponse(
             404,
-            'No demo data is imported (`DEMO_DATA_MISSING`).',
+            'The application provides no demo dataset (`DEMO_DATA_UNAVAILABLE`), or demo mode is disabled (`DEMO_MODE_REQUIRED`).',
           ),
         },
       }),
@@ -205,7 +205,7 @@ export const dataRoutes: AppApiRouteContribution<AppPluginApplication> =
         summary: 'Reset the demo data',
         operationId: 'demoModeResetData',
         description: description(
-          'Clears the registered dataset (including application-wide cleanup when configured), then imports it again. Application-wide cleanup requires demo mode.',
+          'Runs the required application-wide business cleanup, then generates the dataset again. Preserves system configuration and the environment model. Requires enabled demo mode; this does not restore previous business data if the import fails.',
         ),
         responses: {
           200: dataResponse(DemoDataStatusSchema),

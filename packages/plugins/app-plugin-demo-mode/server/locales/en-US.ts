@@ -3,7 +3,7 @@ const resource = {
   authorization: {
     title: 'Demo data',
     read: 'View',
-    manage: 'Import and clear',
+    manage: 'Generate and clear',
     configuration: 'Demo configuration',
     configure: 'Configure',
   },

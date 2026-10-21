@@ -119,7 +119,7 @@ export interface DemoDataset {
   timeZone?(language: string): string;
   /** The accounts an import in `language` creates, as the demo page lists them before and after the import. */
   accounts(language: string): readonly DemoAccountSummary[];
-  /** Run in order; a failing step rolls the whole import back. */
+  /** Run in order; a failing step triggers full-business cleanup, not transaction rollback or restoration of prior data. */
   steps(language: string): readonly DemoStep[];
   /**
    * Clears ALL application business data, including visitor-created records and files. Used for explicit clear,

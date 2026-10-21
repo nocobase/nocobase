@@ -3,7 +3,7 @@ const resource: DemoModeResource = {
   authorization: {
     title: 'Demodaten',
     read: 'Anzeigen',
-    manage: 'Importieren und löschen',
+    manage: 'Erzeugen und löschen',
     configuration: 'Demokonfiguration',
     configure: 'Konfigurieren',
   },

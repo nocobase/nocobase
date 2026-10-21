@@ -1,6 +1,6 @@
 # Adapt demo data to an application
 
-Use this workflow when a user asks for demo data without specifying a fixture format. The application owns the story, records, relationships and service calls. This plugin owns the lifecycle, tracking, demo-account ownership, progress and simulated model gateway. Read the application's development, database and authorization Skills before implementing its adapter.
+Use this workflow to populate a dedicated demo system after choosing that scope. For ordinary example records in an existing application, follow the application development Skill's sample-data workflow instead. The application owns the story, records, relationships and service calls. This plugin owns the lifecycle, tracking, demo-account ownership, progress and simulated model gateway. Read the application's development, database and authorization Skills before implementing its adapter.
 
 ## Inspect before generating
 
@@ -19,7 +19,7 @@ Implement `id`, `languages`, `accounts(language)`, `steps(language)` and `clear(
 - Use `createAccount`, `createPermissionSet` and `assignPermissionSet`; never insert authentication rows directly or reuse a username the plugin does not own.
 - Track created records promptly with `context.track(collection, ids, { key })`; use the real collection name and primary key. Where service transactions support it, keep creation and ownership recording consistent. Record identifiers needed by cleanup with `setData` before later steps depend on them.
 - Keep role grants limited to the demo's projects/tenants. A demo role must not gain access to pre-existing records merely because it has a convenient broad permission set.
-- Do not call the application's own HTTP endpoints during an import that already holds its database transaction. Use application services and respect the installed database's transaction model.
+- The plugin does not wrap the whole import in a database transaction. Use application services and respect any transactions they open; do not call the application's own HTTP endpoints from inside such a transaction. Failure recovery calls full-business cleanup rather than restoring a transaction snapshot.
 
 ## Keep the story recent and reproducible
 
@@ -37,7 +37,7 @@ The same cleanup runs for clear, reset and failed/interrupted imports. It must b
 
 ## Deliver the management flow
 
-Build the application page on `useDemoData()` from `@nocobase/app-plugin-demo-mode/client/demo-data`. The plugin ships APIs and a hook, not an administration page. Grant `settings:demoMode.data` read/manage through the installed authorization plugin; reflect actual actions in the UI and preserve each endpoint's server checks. Show language, progress, current state, accounts and the exact clear/reset consequence. Do not grant every visitor the administrator action merely to let them try a demo.
+Build the application page on `useDemoData()` from `@nocobase/app-plugin-demo-mode/client/demo-data`. The plugin ships APIs and a hook, not an administration page. Grant `settings:demoMode.data` read/manage through the installed authorization plugin; reflect actual actions in the UI and preserve each endpoint's server checks. Label the actions Generate, Clear and Reset: generation runs the application's predefined steps, with no file import. Show language, progress, current state, accounts and the exact clear/reset consequence. Do not grant every visitor the administrator action merely to let them try a demo.
 
 The installed version's documented deployment table allowlist is separate from business authorization. Never allow all tables to bypass errors. A physical-table allowlist cannot express “only records in this demo project”; use explicit application scope checks and the authorization system, and do not claim that the SQL guard supplies row-level policy.
 

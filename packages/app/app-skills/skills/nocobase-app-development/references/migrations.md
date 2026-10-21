@@ -18,6 +18,12 @@ This applies pending migrations and then pending seeds for `database.default`, i
 
 Seeds are the second half of that run, so the structure a seed writes into must already exist from an earlier migration. Keep seed data fixed and reproducible — no current timestamps or random values in identifying fields — and never let a repeat run silently overwrite data a user has edited.
 
+## Sample data and demo systems
+
+Sample data is optional example content for exploring or developing an application, such as fictional customers and related orders. It does not enable read-only protection, recurring resets, demo-account management or external-call simulation. Required system records still belong in ordinary seeds.
+
+Use `@nocobase/app-plugin-demo-mode` when the requirement is a dedicated demo system with a separate database and storage, repeatable data lifecycle, visitor write policies and optional Agent or external-call simulation. Follow that installed plugin's Skill for its application-owned dataset and full-business cleanup contract. A request for a few example records does not require this plugin. Both mechanisms can use the same fictional story or application fixture helpers, but keep their execution and cleanup lifecycles separate; do not register the same data-generation routine in both paths and run it twice.
+
 Sample data is not required data. Put it in the same `seeds` directory as `defineSeed({ name, sample: true, run })`, or, when it has to go through plugins' services, register it on `sampleDataToken` from `@nocobase/app-server/sample-data` in a service provider's `boot()`; `.agents/skills/nocobase-db/SKILL.md` section 2 has the details. Both load only while the run installs the connection — it held no migration or seed history, or `db reset` rebuilt it — with `app.sampleData` set (`APP_SAMPLE_DATA=true`); otherwise they are recorded as skipped. The seeds entry of a run reports `freshInstall` and, when it skipped any, `skippedSamples`. `pnpm nocobase db sample` runs what was skipped, in development only: a built `dist/` refuses it.
 
 ## Multiple connections

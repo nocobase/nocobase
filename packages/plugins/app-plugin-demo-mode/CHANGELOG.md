@@ -21,5 +21,9 @@
 
 ## Unreleased
 
+- Keep request and chat policy checks separate from management schedule previews; Scheduler remains the independent reset trigger. Describe dataset execution as generation and update localized management labels while retaining existing API/CLI names.
+
+- Distinguish optional sample data from dedicated demo systems in application and plugin guidance. Clarify compensating full-business cleanup, model persistence and explicit host model adapters in the public contracts.
+
 - Simplify the plugin for isolated demo deployments: one business cleanup contract, reusable disabled accounts, an environment-owned model, environment-wide Agent routing and one persisted reset schedule.
 - Remove mixed-data rollback, prior-model restoration, legacy Agents compatibility and deployment-cron overrides. See the published Skill's adapter migration checklist before upgrading a vendored snapshot.

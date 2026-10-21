@@ -3,7 +3,7 @@ const resource: DemoModeResource = {
   authorization: {
     title: 'Données de démonstration',
     read: 'Afficher',
-    manage: 'Importer et effacer',
+    manage: 'Générer et effacer',
     configuration: 'Configuration de démonstration',
     configure: 'Configurer',
   },

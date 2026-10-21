@@ -1,5 +1,5 @@
 import { createTestApp, type TestApp } from '@nocobase/app-testing/server';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { demoConfigurationToken, demoDataToken } from '../../server/tokens.js';
 import { DemoConfigurationService } from '../../server/configuration/service.js';
 import { demoWriteGuardToken } from '../../server/guard.js';
@@ -7,6 +7,7 @@ import { databaseManagerToken } from '@nocobase/db';
 import { resolveDemoModeSettings } from '../../server/config.js';
 import { createDemoClock } from '../../server/data/clock.js';
 import { nextDailyRun } from '../../server/configuration/schedule.js';
+import * as scheduleHelpers from '../../server/configuration/schedule.js';
 import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
 let app: TestApp;
 afterEach(async () => app?.close());
@@ -464,4 +465,56 @@ it('lists physical table choices without protected or deployment-managed tables'
     'demonotes',
   ]);
   expect(await deployed.availableTables()).not.toContain('demonotes');
+});
+
+it('keeps schedule previews out of request and chat policy checks while observing policy changes', async () => {
+  const { config } = await setup();
+  await config.save('schedule', 0, {
+    enabled: true,
+    hour: 12,
+    minute: 0,
+    timezone: 'UTC',
+    language: 'en-US',
+  });
+  await config.save('chat', 1, {
+    enabled: true,
+    model: null,
+    tools: { lookup: 'read' },
+  });
+  await config.save('tables', 2, ['demoitems']);
+  const preview = vi.spyOn(scheduleHelpers, 'nextDailyRun');
+  try {
+    expect((await app.request('/items', { method: 'POST' })).status).toBe(200);
+    await config.runWithPolicy(async () => {
+      await config.requireMock('dataset.model');
+      expect(
+        await config.chatModel({ modelService: 'demo', model: 'demo-chat' }),
+      ).toEqual({ modelService: 'demo', model: 'demo-chat' });
+      expect(
+        await config.runChatTool('lookup', {
+          readOnly: true,
+          run: async () => 'result',
+        }),
+      ).toBe('result');
+    });
+    expect(preview).not.toHaveBeenCalled();
+    expect((await config.read()).nextRun).not.toBeNull();
+    expect(preview).toHaveBeenCalledTimes(1);
+    await config.save('tables', 3, []);
+    await config.save('chat', 4, { enabled: false, model: null, tools: {} });
+    preview.mockClear();
+    expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
+    await expect(
+      config.chatModel({ modelService: 'demo', model: 'demo-chat' }),
+    ).rejects.toMatchObject({ reason: 'DEMO_CHAT_DISABLED' });
+    await expect(
+      config.runChatTool('lookup', {
+        readOnly: true,
+        run: async () => 'result',
+      }),
+    ).rejects.toMatchObject({ reason: 'DEMO_CHAT_DISABLED' });
+    expect(preview).not.toHaveBeenCalled();
+  } finally {
+    preview.mockRestore();
+  }
 });

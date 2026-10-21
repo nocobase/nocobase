@@ -3,7 +3,7 @@ const resource: DemoModeResource = {
   authorization: {
     title: 'Data demo',
     read: 'Lihat',
-    manage: 'Impor dan hapus',
+    manage: 'Buat dan hapus',
     configuration: 'Konfigurasi demo',
     configure: 'Konfigurasi',
   },

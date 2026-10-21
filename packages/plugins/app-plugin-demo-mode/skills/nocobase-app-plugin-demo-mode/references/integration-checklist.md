@@ -4,6 +4,8 @@ The order of work when an application adopts this plugin, and the mistakes earli
 
 ## 1. Register and decide the scope
 
+Confirm that the user needs a dedicated demo system, not only sample records in an existing application. The latter uses sample seeds or `sampleDataToken` without this plugin.
+
 - Register the Server plugin, the Client factory and `@nocobase/app-plugin-demo-mode/cli` in the application's composition roots, and add the package's build hook if the application vendors or packages plugins itself.
 - Decide with the user, before writing code: which languages, which roles and how many accounts, the full business cleanup boundary (this is a dedicated demo instance), whether visitors may write anything in read-only mode, and whether Agents answer from scripts. Record those decisions in the application's development guide.
 

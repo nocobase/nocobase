@@ -3,7 +3,7 @@ const resource: DemoModeResource = {
   authorization: {
     title: '演示数据',
     read: '查看',
-    manage: '导入和清除',
+    manage: '生成和清空',
     configuration: '演示配置',
     configure: '配置',
   },

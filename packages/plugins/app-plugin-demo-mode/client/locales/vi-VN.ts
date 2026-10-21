@@ -3,7 +3,7 @@ const resource: DemoModeResource = {
   authorization: {
     title: 'Dữ liệu demo',
     read: 'Xem',
-    manage: 'Nhập và xóa',
+    manage: 'Tạo và xóa',
     configuration: 'Cấu hình demo',
     configure: 'Cấu hình',
   },

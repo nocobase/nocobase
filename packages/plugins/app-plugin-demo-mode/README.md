@@ -2,8 +2,14 @@
 
 For dedicated demo deployments with databases and storage isolated from production. Mixed production and demo business data in one instance is not supported. The plugin has two parts:
 
-- **Read-only mode.** Visitors can sign in and browse every page; every change they try is refused before it reaches the database, and the browser tells them why with a toast. Nothing in the application changes beyond registering the plugin.
-- **Demo data.** An application registers one demo dataset; administrators import, clear and reset it from the application's own page, a command, a schedule or the API, and a simulated model answers its agents. See [Demo data](#demo-data).
+- **Read-only mode.** A request-scoped database guard refuses writes except configured exceptions, and the client reports refused operations. Registration enables the guard; applications must verify browsing and sign-in flows, adapt read paths that write, and separately isolate external calls.
+- **Demo data.** An application registers one demo dataset; administrators generate, clear and reset it from the application's own page, a command, a schedule or the API, and a simulated model answers its agents. See [Demo data generation](#demo-data-generation).
+
+## Sample data or a dedicated demo system
+
+Sample data is optional example content in an existing application: fictional customers, orders, tasks and their relationships. Use `defineSeed({ name, sample: true, run })` or `sampleDataToken` from `@nocobase/app-server/sample-data`, following the installed application development and database Skills. Sample data does not require this plugin and does not change the application's operating mode.
+
+Demo Mode supports an entire dedicated demo system: isolated database/storage, repeatable business-data generation/clear/reset, demo-account lifecycle, visitor write policies and optional simulated external or Agent execution. The plugin supplies those mechanisms; the application implements its dataset, cleanup, management UI and adapters. Choose it for that lifecycle, rather than merely because example records are called "demo data." Fixture-building helpers may be shared, but sample installation and demo reset remain separate entry points.
 
 ## Register and switch on
 
@@ -50,9 +56,11 @@ Some pages write while they are only being read, for example to refresh a cache.
 - The application's request log records the status the route produced before the plugin replaced it, such as a 500 from Better Auth.
 - `process.env` is shared by every application in one process; use the configuration section to set the mode per application under an app host.
 
-## Demo data
+## Demo data generation
 
-The plugin owns the lifecycle; the application owns what the data says. Register the dataset from a service provider:
+The user actions are **Generate demo data**, **Clear demo data** and **Reset demo data**. Generation runs the application's predefined dataset steps; it does not upload a file or ingest an external dataset. Reset clears the demo system's business data and generates it again. The existing API/CLI names (`/import`, `importNow`, `demo-mode data import`) are retained as technical names for generation, not a separate data-import feature.
+
+The plugin owns the generation/clear/reset lifecycle; the application owns what the data says. Register the dataset from a service provider:
 
 ```ts
 import { demoDataToken } from '@nocobase/app-plugin-demo-mode/server/tokens';
@@ -86,7 +94,7 @@ container.resolve(demoDataToken).register({
 });
 ```
 
-- **Import** claims the dataset's row in `demoModeDatasets` before anything is written, so a second import is refused, runs the steps in order with progress, and takes everything back when a step fails. An import no process moved on for ten minutes counts as interrupted and is cleared before the next one.
+- **Generate** claims the dataset's row in `demoModeDatasets` before anything is written, so a second import is refused, runs the steps in order with progress, and attempts the full-business cleanup contract when a step fails. The import is not one database transaction; failure recovery does not restore previous business data, and failed cleanup must be retried. An import no process moved on for ten minutes counts as interrupted and is cleared before the next one.
 - **Tracking and accounts.** `context.track(collection, ids)` records import membership for counts and application lookups; the application clears its business tables. `createAccount`, `createPermissionSet` and `assignPermissionSet` own the identity lifecycle. Clear revokes assignments, disables demo accounts and removes demo-owned permission sets. The next import re-enables owned accounts and applies `roleScopes` again. Usernames cannot be reused after deletion by the Users plugin, so demo accounts are always retained disabled. An unowned username collision is refused. `setData()` stores import context for steps and cleanup.
 - **Dates.** `context.clock` gives `daysAgo`, `dateAgo` and `isoAgo` relative to when the import started, in the dataset's time zone, never in the future unless asked for.
 - **Clearing.** The required `clear(context)` deletes all application business data, including visitor additions and files. It runs for manual clear, reset, failed imports and interrupted-import recovery. It must handle empty/partial context and be safe to retry. The plugin then cleans its account/role assignments and tracking. Administrator identities, authorization, demo configuration and the environment model survive. Reset clears and imports again.
@@ -124,7 +132,7 @@ While demo mode is `read-only` or `observe`, administrators adjust a demo from t
 
 - **Read-only write exceptions.** An application registers what may be opened with `demoConfigurationToken.registerWrite({ id, title, table, operations, scopes, checkScope })`; identity, authorization, secret and plugin tables are refused. Rules start empty. The application wraps exactly the authorized business mutation in `runWrite(id, operation, input, run)`, or `runWrites([[id, operation], …], input, run)` when one mutation writes through several capabilities: an entry without a rule allows nothing, and a configured entry whose `checkScope` refuses the input refuses the whole mutation with `DEMO_SCOPE_DENIED`.
 - **Simulations.** `registerMock` registers model/tool/Runner adapters. `registerAgent({ id, title, defaultEnabled, execute })` supplies an environment-wide Agent proxy: demo mode always uses the application’s replacement, while mode `off` uses the normal Agent. Disabled adapters fail closed; unmarked or visitor-created business records never fall through to a real Agent in demo mode.
-- **Daily reset.** Configure `{ enabled, hour, minute, timezone, language }` through the management API/UI. This is the only schedule source; there is no deployment-cron override. A durable claim permits one reset per local day, including across processes and repeated DST minutes. Configure it after the first import, whose administrator is used for subsequent resets. Register the Scheduler plugin in the host: Demo Mode owns the `demoMode.dailyReset` target and minute tick; applications supply only the dataset adapter and configuration UI. The default is disabled. Expose `nextRun` from the saved configuration and execution failures in Scheduler. Missed minutes are skipped, including downtime; a failed claimed run is not retried automatically that day.
+- **Daily reset.** Scheduler triggers resets independently of HTTP traffic. Normal request policy checks do not calculate the next reset time; `nextRun` is only a management-view preview. Configure `{ enabled, hour, minute, timezone, language }` through the management API/UI. This is the only schedule source; there is no deployment-cron override. A durable claim permits one reset per local day, including across processes and repeated DST minutes. Configure it after the first import, whose administrator is used for subsequent resets. Register the Scheduler plugin in the host: Demo Mode owns the `demoMode.dailyReset` target and minute tick; applications supply only the dataset adapter and configuration UI. The default is disabled. Expose `nextRun` from the saved configuration and execution failures in Scheduler. Missed minutes are skipped, including downtime; a failed claimed run is not retried automatically that day.
 
 `pnpm nocobase demo-mode data <status|import|clear|reset>` drives the same lifecycle from a shell (`--actor`, `--language`; changes need `--force`, and `--dry-run` only prints what would happen).
 
