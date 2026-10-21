@@ -333,7 +333,7 @@ function Conversation({
   return (
     <section
       ref={sectionRef}
-      className='@container/agent-session flex min-w-0 flex-1 flex-col'
+      className='@container/agent-session flex min-h-0 min-w-0 flex-1 flex-col'
       aria-label={session.title}
     >
       <div ref={headerRef} className='shrink-0'>
