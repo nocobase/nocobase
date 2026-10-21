@@ -39,7 +39,12 @@ import {
   type SecretMemory,
 } from '../../kernel/redaction.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
-import { asJson, jsonObject, truncateBytes } from '../../kernel/values.js';
+import {
+  asJson,
+  jsonObject,
+  truncateBytes,
+  withoutNul,
+} from '../../kernel/values.js';
 import { recordActualModels } from './execution.js';
 import { dropInputs, gatePending, type InputGateDeps } from './input-gate.js';
 import { everHeld } from './run-tokens.js';
@@ -373,9 +378,10 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         };
       }),
 
-    events: (runner, runId, request) =>
+    events: (runner, runId, reported) =>
       tx.run(async (unit) => {
         const { conn } = unit;
+        const request = withoutNul(reported);
         const run = await held(conn, runner, runId);
         const seqs = request.events.map((event) => event.seq);
         const existing =
@@ -537,8 +543,9 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
       });
     },
 
-    complete: (runner, runId, request) =>
+    complete: (runner, runId, reported) =>
       tx.run(async (unit) => {
+        const request = withoutNul(reported);
         const handled = new Set(request.handledInputIds);
         // Revision conflicts are bounded; exhaustion rolls back the transaction.
         for (let attempt = 0; attempt < 4; attempt += 1) {
@@ -587,8 +594,9 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         );
       }),
 
-    fail: (runner, runId, reported) =>
+    fail: (runner, runId, failure) =>
       tx.run(async (unit) => {
+        const reported = withoutNul(failure);
         const run = await held(unit.conn, runner, runId);
         const machine =
           reported.reason === 'runnerDiskFull'
@@ -709,8 +717,9 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         return { status: ended.status };
       }),
 
-    cancelAck: (runner, runId, request) =>
+    cancelAck: (runner, runId, acknowledged) =>
       tx.run(async (unit) => {
+        const request = withoutNul(acknowledged);
         const run = await held(unit.conn, runner, runId);
         await recordOutcome(unit, run, request);
         await rememberSession(unit, run, request.sessionId, false);
