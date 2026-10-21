@@ -306,3 +306,55 @@ it('keeps online chat opt-in and rechecks models and tool policies without real 
   await config.save('chat', 2, { enabled: true, model: null, tools: {} });
   expect(await config.chatModel(simulated)).toEqual(simulated);
 });
+
+it('limits legacy chat persistence to the callback and requires enabled chat', async () => {
+  const { config, guard } = await setup();
+  let inspect: (query: { sql: string }) => void = () => {};
+  guard.attach({
+    client: {
+      on(_event, listener) {
+        inspect = listener;
+      },
+    },
+  });
+  const request = <T>(run: () => T) =>
+    guard.run({ method: 'POST', path: '/chat', blocked: [] }, run);
+  await expect(
+    request(() => config.runLegacyOnlineConversation(async () => {})),
+  ).rejects.toMatchObject({ reason: 'DEMO_CHAT_DISABLED' });
+  await config.save('chat', 0, { enabled: true, model: null, tools: {} });
+  await request(() =>
+    config.runLegacyOnlineConversation(async () => {
+      expect(() =>
+        inspect({ sql: 'insert into ag_conversations (id) values (1)' }),
+      ).not.toThrow();
+      expect(() =>
+        inspect({ sql: 'update ag_agents set last_claim_at = 1' }),
+      ).not.toThrow();
+      expect(() => inspect({ sql: 'delete from ag_conversations' })).toThrow();
+      expect(() =>
+        inspect({ sql: 'insert into ag_run_tokens (id) values (1)' }),
+      ).toThrow();
+      expect(() =>
+        inspect({ sql: 'update ag_model_services set name = 1' }),
+      ).toThrow();
+      expect(() =>
+        inspect({ sql: 'insert into crm_leads (id) values (1)' }),
+      ).toThrow();
+      await new Promise<void>((resolve) => {
+        // A distinct request must not inherit this operation's exemption.
+        request(() => {
+          expect(() =>
+            inspect({ sql: 'insert into ag_conversations (id) values (1)' }),
+          ).toThrow();
+          resolve();
+        });
+      });
+    }),
+  );
+  request(() =>
+    expect(() =>
+      inspect({ sql: 'insert into ag_runs (id) values (1)' }),
+    ).toThrow(),
+  );
+});
