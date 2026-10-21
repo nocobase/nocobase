@@ -1,5 +1,20 @@
 # @nocobase/app-plugin-users
 
+## 2.0.0-beta.8
+
+### Minor Changes
+
+- 799c227: Let an application role scope refuse who acts on whom. A scope's optional `assertCanAdminister(userId, actorId, action, connection)` is called for `update`, `disable`, `enable`, `reset-password`, `revoke-sessions` and `assign-role` with the authenticated actor, inside the action's transaction and before anything changes; a refusal answers `FAILED_PRECONDITION`. An application can then keep, for example, anyone but an owner from resetting an owner's password. The management service's account methods take the actor as an optional last argument; calls without one are not checked.
+
+### Patch Changes
+
+- Updated dependencies [62da032]
+  - @nocobase/app-client@4.0.0-beta.1
+  - @nocobase/app-server@3.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-plugin-notification@1.0.0-beta.29
+
 ## 2.0.0-beta.7
 
 ### Patch Changes

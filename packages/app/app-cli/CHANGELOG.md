@@ -1,5 +1,17 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.26
+
+### Patch Changes
+
+- 8b30952: Isolate application command test storage in the test configuration directory. Respect the application mount path in test router links and navigation, and clean up runtime configuration immediately when initialization or rendering fails. Preserve the original failure when cleanup also fails, without reporting handled cleanup failures again at test completion. Document the test helpers' storage, routing and cleanup contracts.
+- 4f0d96e: Add opt-in native OnlineAgent Skills and application-branded CLI execution using an isolated, lazily created just-bash environment. Load current Skill support trees, support virtual parameter files and read bindings, retain existing business authorization, and release execution resources across stop, approval and retryable finalization without replaying writes.
+
+  Redact execution credentials and declare intentionally disabled optional archive-native build scripts in workspace, generated-application and deployment installation policies.
+
+- Updated dependencies [62da032]
+  - @nocobase/app-server@3.0.0-beta.1
+
 ## 1.0.0-beta.25
 
 ### Patch Changes

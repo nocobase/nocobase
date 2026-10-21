@@ -18,14 +18,14 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import agents from '../../client/plugin.js';
 import { PricesSheet } from '../../client/pages/usage/prices/index.js';
-import type { ModelServiceView } from '../../shared/models.js';
+import type { ModelCatalog } from '../../shared/models.js';
 import type {
   ModelPrice,
   PricesAnswer,
   PricesInput,
 } from '../../shared/reports.js';
 
-const label = 'Team · tiny-embedding';
+const label = 'Team · tiny-chat';
 const inputName = `Input price of ${label}, per million tokens`;
 const outputName = `Output price of ${label}, per million tokens`;
 const saveName = `Save the price of ${label}`;
@@ -35,7 +35,7 @@ function price(extra: Partial<ModelPrice> = {}): ModelPrice {
     id: 'p1',
     tool: 'online',
     modelService: 'team',
-    model: 'tiny-embedding',
+    model: 'tiny-chat',
     inputPerM: 1e-7,
     outputPerM: 0.123456789,
     cacheReadPerM: 0.01,
@@ -61,14 +61,13 @@ async function setup(items: ModelPrice[] = [], canManage = true) {
   let stored: PricesAnswer = { items, subscriptions: ['claude'], seen: [] };
   const requests: ApiCall[] = [];
   const writes: PricesInput[] = [];
-  const service: ModelServiceView = {
+  const service: ModelCatalog['services'][number] = {
     name: 'team',
     title: 'Team',
     provider: 'openai-compatible',
-    baseUrl: null,
-    apiKeySet: false,
-    enabled: true,
-    models: [{ value: 'tiny-embedding', label: 'Tiny', kind: 'embedding' }],
+    models: [
+      { value: 'tiny-chat', label: 'Tiny', kind: 'chat', dimensions: null },
+    ],
   };
   const fetch = answerApi((call) => {
     requests.push(call);
@@ -84,7 +83,7 @@ async function setup(items: ModelPrice[] = [], canManage = true) {
           ],
         },
       };
-    if (call.path === 'agents/services') return { data: [service] };
+    if (call.path === 'agents/models') return { data: [service] };
     if (call.path === 'agents/prices') {
       if (call.method === 'PUT') {
         const body = call.json as PricesInput;

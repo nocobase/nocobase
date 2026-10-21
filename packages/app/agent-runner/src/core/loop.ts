@@ -141,6 +141,8 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
   'mounts',
   // Repository credentials asked for whenever git needs one (agent/git-credentials.ts).
   'gitCredentials',
+  // Code host CLI wrappers with the run's credential (agent/host-tools.ts).
+  'gitTools',
   // Updates from the npm registry (`npmUpgrade` in heartbeat answers; update.ts).
   NPM_UPGRADE_FEATURE,
 ];
