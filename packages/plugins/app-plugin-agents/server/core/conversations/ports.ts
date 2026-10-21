@@ -101,6 +101,8 @@ export interface MessageReadOptions {
 }
 
 export interface ConversationService {
+  /** Explicitly expose an application-owned agent to chat, including queueing while its runners are offline. */
+  allowSystemAgent(agentId: string): () => void;
   /** The `conversation` subject kind of runs; registered once, by the composition. */
   readonly binding: SubjectBinding;
   /** Where plugins register how references of their kinds in a page context resolve. */

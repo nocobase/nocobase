@@ -33,6 +33,10 @@ it.each([1, 10, 50])(
     }
     for (const agent of await h.services.agents.list())
       await h.enableAgent(agent.id);
+    const coordinator = await h.createAgent({
+      modelEntries: [{ tool: 'codex', model: 'quota-model-0' }],
+    });
+    h.services.conversations.allowSystemAgent(coordinator);
     const client = await h.database.connection().client<Knex>();
     for (const endpoint of [
       '/agents',
