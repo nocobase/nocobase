@@ -49,14 +49,18 @@ export default defineMigration({ name: '001_rows', async up({ builder }) {
 await builder.createCollection('rows', c => { c.increments('id'); c.string('value'); });
 }, async down({ builder }) { await builder.dropCollection('rows'); } });`,
   );
-  function seed(name: string, sample: boolean): void {
+  function seed(
+    name: string,
+    sample: boolean,
+    installation: boolean = false,
+  ): void {
     const directory = paths.database('main/seeds');
     mkdirSync(directory, { recursive: true });
     writeFileSync(
       path.join(directory, `${name}.ts`),
       `import { defineSeed } from '@nocobase/db';
-export default defineSeed({ name: '${name}', sample: ${sample}, async run({ query }) {
-await query.insertInto('rows').values({ value: '${name}' }).execute();
+export default defineSeed({ name: '${name}', sample: ${sample}, async run({ query, freshInstall }) {
+await query.insertInto('rows').values({ value: '${name}'${installation ? ` + ':' + String(freshInstall === true)` : ''} }).execute();
 } });`,
     );
   }
@@ -86,6 +90,21 @@ await query.insertInto('rows').values({ value: '${name}' }).execute();
 }
 
 describe('sample seeds', () => {
+  it('passes pre-migration installation state to seeds and clears it for upgrades and deferred samples', async () => {
+    const { seed, run, rows } = await fixture();
+    seed('001_initial', false, true);
+    seed('002_deferred', true, true);
+    await run(false);
+    seed('003_upgrade', false, true);
+    await run(false);
+    await run(false, 'sample');
+    expect(await rows()).toEqual([
+      '001_initial:true',
+      '003_upgrade:false',
+      '002_deferred:false',
+    ]);
+  });
+
   it('run on a fresh install with app.sampleData, and never on a later run', async () => {
     const { seed, run, rows } = await fixture();
     seed('001_required', false);

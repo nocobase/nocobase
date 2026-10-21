@@ -15,8 +15,10 @@ export function createSeedContext(
   connection: DatabaseConnection,
   config: DatabaseTaskConfig = emptyDatabaseTaskConfig,
   container: ServiceResolver = emptyDatabaseTaskContainer,
+  freshInstall: boolean = false,
 ): SeedContext {
   return {
+    freshInstall,
     config,
     container,
     repository: createTaskRepositoryAccessor(connection),

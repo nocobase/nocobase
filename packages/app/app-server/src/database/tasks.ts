@@ -236,6 +236,7 @@ export async function executeAppDatabasePlan(
                           : createAppMigrator(options).latest())
                       : await createAppSeeder({
                           ...options,
+                          freshInstall: freshInstall === true,
                           sample: {
                             enabled: freshInstall === true && sampleData,
                           },

@@ -20,6 +20,8 @@ export type SeedConnection = MigrationConnection;
 
 /** Services available while executing a seed definition. */
 export interface SeedContext {
+  /** True only when the application installer identified a new database before running migrations. */
+  readonly freshInstall?: boolean;
   readonly config: DatabaseTaskConfig;
   readonly container: ServiceResolver;
   /**
@@ -92,6 +94,8 @@ export interface SeedSampleOptions {
 
 /** Configuration for a standalone Seeder, including its database dependency. */
 export interface CreateSeederOptions extends LoadSeedsOptions {
+  /** Installation state computed before migrations; defaults to false for standalone seeders. */
+  readonly freshInstall?: boolean;
   /** Sample seeds are recorded as skipped unless this enables them. */
   readonly sample?: SeedSampleOptions;
   readonly config?: DatabaseTaskConfig;

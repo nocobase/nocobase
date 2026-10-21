@@ -300,13 +300,13 @@ function frontMatterInvalid(
 }
 
 /** A `SKILL.md` that may be saved, with what its front matter says. */
-interface CheckedSkill {
+export interface CheckedSkill {
   readonly content: string;
   readonly name: string;
   readonly description: string;
 }
 
-function checkedSkill(content: string): CheckedSkill {
+export function checkedSkill(content: string): CheckedSkill {
   if (Buffer.byteLength(content, 'utf8') > SKILL_CONTENT_MAX_BYTES)
     throw invalid(
       `SKILL.md is larger than ${formatBytes(SKILL_CONTENT_MAX_BYTES)}.`,

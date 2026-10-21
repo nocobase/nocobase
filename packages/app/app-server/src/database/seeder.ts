@@ -63,6 +63,8 @@ export interface AppSeedRepairResult {
 }
 
 export interface CreateAppSeederOptions {
+  /** Installation state computed before migrations, forwarded to seed contexts. */
+  freshInstall?: boolean;
   runtimeConfig?: DatabaseTaskConfig;
   container?: ServiceResolver;
   database: DatabaseManager;
@@ -162,6 +164,7 @@ function createDatabaseSeederOptions(
   options: CreateAppSeederOptions,
 ): CreateSeederOptions {
   const common = {
+    freshInstall: options.freshInstall,
     config: snapshotDatabaseTaskConfig(options.runtimeConfig),
     container: createTaskServiceResolver(options.container),
     database: options.database,

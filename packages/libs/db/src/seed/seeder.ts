@@ -346,6 +346,7 @@ class DefaultSeeder implements Seeder {
         connection,
         this.options.config,
         this.options.container,
+        write === 'insert' && this.options.freshInstall === true,
       );
       const startedAt = Date.now();
       await loaded.seed.run(context);
@@ -358,6 +359,7 @@ class DefaultSeeder implements Seeder {
         trxConnection,
         this.options.config,
         this.options.container,
+        write === 'insert' && this.options.freshInstall === true,
       );
       const startedAt = Date.now();
       await loaded.seed.run(context);
