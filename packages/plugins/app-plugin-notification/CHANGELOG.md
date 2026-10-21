@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-notification
 
+## 2.0.0-beta
+
+### Major Changes
+
+- Remove generic notification test adapters and test-send APIs. Verify delivery through normal business flows or server-side `send()` calls. Existing notification logs and inbox data are retained.
+
 ## 1.0.0-beta.29
 
 ### Patch Changes
