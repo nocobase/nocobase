@@ -13,7 +13,7 @@ Use this workflow when a user asks for demo data without specifying a fixture fo
 
 Import `DemoDataset` and the original `demoDataToken` from `@nocobase/app-plugin-demo-mode/server/tokens`. Register one dataset from an application provider after its required services exist. Keep registration deterministic; it must not import or clear data during ordinary startup.
 
-Implement `id`, `languages`, `accounts(language)` and `steps(language)`. Add `timeZone(language)`, `counts(context)`, `clear(context)` and `answers` as required by the application. Each step has a stable key, optional progress weight and `run(context)`. Write through application services so real validation and derived data run. Split steps by meaningful user-visible progress, not one step per row.
+Implement `id`, `languages`, `accounts(language)`, `steps(language)` and `clear(context)`. Add `timeZone(language)`, `counts(context)` and `answers` as required by the application. Each step has a stable key, optional progress weight and `run(context)`. Write through application services so real validation and derived data run. Split steps by meaningful user-visible progress, not one step per row.
 
 - Use `context.actorId` as the administrator initiating the import, not a hard-coded user id.
 - Use `createAccount`, `createPermissionSet` and `assignPermissionSet`; never insert authentication rows directly or reuse a username the plugin does not own.
@@ -27,13 +27,13 @@ Use `context.clock` throughout a step: `now`, `timeZone`, `daysAgo`, `dateAgo` a
 
 An application that needs daily variation can derive a deterministic seed from `datasetId`, `language` and `clock.dateAgo(0)`. Derive each record's variation from that seed plus a stable record key, rather than consuming global randomness whose results change with step order. Keep the seed algorithm application-owned unless the installed plugin exposes a documented helper. Store the seed in `context.setData` when later cleanup or diagnostics needs it. Variation should remain bounded and preserve totals, references and domain invariants.
 
-Relative dates become current when the dataset is imported or reset. They do not advance in persisted records merely because the page is opened the next day. Configure `demoMode.data.reset` through the documented Scheduler integration if daily regeneration is needed, with an explicit timezone and language. Explain the deletion scope before enabling automatic reset. Do not replace an administrator's existing schedule or clear live data just to make a preview look recent.
+Relative dates become current when the dataset is imported or reset. They do not advance in persisted records merely because the page is opened the next day. Configure the daily schedule through the demo configuration API/UI if daily regeneration is needed, with an explicit timezone and language. Explain the deletion scope before enabling automatic reset. Do not replace an administrator's existing schedule or clear live data just to make a preview look recent.
 
-## Separate rollback from full reset
+## One business cleanup contract
 
-`clear(context)` cleans the imported scope and must tolerate partially completed steps. The plugin removes tracked records afterwards. Use persisted ownership markers to remove visitor-created child records and owned blobs not covered by tracking. Cleanup must be retry-safe, preserve unrelated data, and handle missing rows without losing evidence needed to retry a failed file deletion.
+Implement `clear(context)` to delete ALL business data and visitor additions in the dedicated demo instance, including files, queues, active work and caches. Preserve system identities, authorization, secrets, demo configuration and the environment model. Inventory tables and deletion order explicitly; never delete every database table indiscriminately. Tracking supplies counts and import membership, not a promise to preserve older business records.
 
-`clearAll(context)` is optional and deliberately broader. Explicit clear/reset invokes it only in enabled demo mode, including CLI and scheduled operations. Implement it only for a user-approved whole-application reset; inventory business tables, orphan rows, history, files, caches and active work. Preserve administrator access and system configuration. It must handle an empty import context. Never invoke full cleanup from failure rollback or interrupted-import recovery; those use `clear` alone.
+The same cleanup runs for clear, reset and failed/interrupted imports. It must be retry-safe and accept partial or empty import context. It does not restore an earlier business state. An interrupted cleanup must retain enough evidence to retry failed file deletion. Demo accounts are disabled for reuse; do not delete their reserved usernames or introduce an application-specific account policy.
 
 ## Deliver the management flow
 
@@ -45,8 +45,8 @@ The installed version's documented deployment table allowlist is separate from b
 
 - Import into an isolated database and inspect the actual principal pages: coherent relations, useful charts, role-appropriate accounts and recent dates in each supported language.
 - Test the same seed/date twice and a different date/timezone; assert invariants and visible variation rather than random snapshots.
-- Inject a middle-step failure, then retry; no unrelated data, credentials or administrator assignments may be removed. Test username collisions and restart recovery.
-- Add visitor content within demo scope, clear it, then reset; verify blobs and cached views as well as rows. Test optional full cleanup separately from scoped rollback.
+- Inject a middle-step failure, then retry; business data is cleared while credentials and administrator assignments survive. Test username collisions and restart recovery.
+- Add visitor content within demo scope, clear it, then reset; verify blobs and cached views as well as rows. Verify failure recovery uses the same full cleanup contract.
 - Exercise anonymous, read-only administrator and managing administrator access, including direct API calls and concurrent ordinary requests during lifecycle exemption.
 - Trace every external/model/tool/Runner boundary. A fixture miss must not silently invoke a real provider. Follow the [simulation checklist](simulation.md).
 - Verify the published Skill reaches the application through Skills synchronization; that check proves delivery only. Report actual runtime tests and any unverified external boundaries separately.

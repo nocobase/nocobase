@@ -95,12 +95,7 @@ export const configurationRoutes: AppApiRouteContribution<AppPluginApplication> 
             data: await container
               .resolve(demoWriteGuardToken)
               .runDemoData(() =>
-                service.save(
-                  section,
-                  input.expectedRevision,
-                  input.value,
-                  'replaceLegacy' in input && input.replaceLegacy === true,
-                ),
+                service.save(section, input.expectedRevision, input.value),
               ),
           });
         },

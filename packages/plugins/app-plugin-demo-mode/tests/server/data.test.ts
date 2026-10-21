@@ -60,6 +60,10 @@ function dataset(options: { fail?: boolean } = {}): DemoDataset {
     ],
     clear: async (context) => {
       cleared.push(String(context.data.wrote));
+      await app.connection.query
+        .deleteFrom('demoitems')
+        .allowAllRows()
+        .execute();
     },
   };
 }
@@ -71,7 +75,7 @@ let cleared: string[] = [];
 beforeAll(async () => {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'observe', data: { models: false } } },
+    config: { demoMode: { mode: 'observe', data: { models: true } } },
   });
   service = app.application.container.resolve(demoDataToken);
 });
@@ -92,7 +96,7 @@ describe('demo data lifecycle', () => {
     });
   });
 
-  it('imports, reports, and clears only what it created', async () => {
+  it('imports, reports, and clears all application business data', async () => {
     service.register(dataset());
     await app.connection.query
       .insertInto('demoitems')
@@ -120,7 +124,7 @@ describe('demo data lifecycle', () => {
     const after = await service.clear('1');
     expect(after).toMatchObject({ present: false, state: null, records: 0 });
     expect(cleared).toEqual(['item-en-US']);
-    expect(await names(app)).toEqual(['mine']);
+    expect(await names(app)).toEqual([]);
   });
 
   it('takes a failed import back and lets the next one start over', async () => {
@@ -220,6 +224,12 @@ it('lets scheduled or CLI resets write outside HTTP while read-only mode is enab
     const demo = readonly.application.container.resolve(demoDataToken);
     demo.register({
       id: 'scheduled',
+      clear: async () => {
+        await readonly.connection.query
+          .deleteFrom('demoitems')
+          .allowAllRows()
+          .execute();
+      },
       languages: ['en-US'],
       accounts: () => [],
       steps: () => [
@@ -295,9 +305,12 @@ describe('simulated model', () => {
     });
     await service.importNow('1');
     await app.connection.query
-      .updateTable('demoModeDatasets')
-      .set({ modelService: 'demo-model', modelKey: 'test-key' })
-      .where('id', '=', 'fixture')
+      .insertInto('demoModeModel')
+      .values({
+        id: 'default',
+        modelService: 'demo-model',
+        modelKey: 'test-key',
+      })
       .execute();
     await service.load();
   });
@@ -358,9 +371,9 @@ describe('simulated model', () => {
 
   it('reloads model credentials changed by another process', async () => {
     await app.connection.query
-      .updateTable('demoModeDatasets')
+      .updateTable('demoModeModel')
       .set({ modelKey: 'rotated-key' })
-      .where('id', '=', 'fixture')
+      .where('id', '=', 'default')
       .execute();
     const old = await app.request('/demoMode/models/v1/models', {
       headers: { authorization: 'Bearer test-key' },
@@ -371,9 +384,9 @@ describe('simulated model', () => {
     });
     expect(current.status).toBe(200);
     await app.connection.query
-      .updateTable('demoModeDatasets')
-      .set({ modelKey: null, modelService: null })
-      .where('id', '=', 'fixture')
+      .updateTable('demoModeModel')
+      .set({ modelService: null })
+      .where('id', '=', 'default')
       .execute();
     const cleared = await app.request('/demoMode/models/v1/models', {
       headers: { authorization: 'Bearer rotated-key' },

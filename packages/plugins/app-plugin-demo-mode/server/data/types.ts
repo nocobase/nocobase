@@ -1,6 +1,6 @@
 /**
  * The contract between this plugin and the demo dataset an application registers. The plugin owns the lifecycle —
- * claiming, progress, rollback, clearing, the accounts and the simulated model — and the application owns what the
+ * claiming, progress, clearing and accounts; the environment owns the simulated model — and the application owns what the
  * data says and how its own records are written and removed.
  */
 
@@ -56,7 +56,7 @@ export interface DemoClock {
   isoAgo(days: number, hour?: number, minute?: number): string;
 }
 
-/** How a step tells the plugin what it created; every tracked record is removed when the demo is cleared. */
+/** How a step records import membership for counts and application lookups. */
 export interface DemoTrackOptions {
   /** The key field of the Collection; `id` when absent. */
   readonly key?: string;
@@ -72,7 +72,7 @@ export interface DemoImportContext {
   readonly data: Readonly<Record<string, unknown>>;
   /** Merges into `data` and persists it, so a clear after a failed import knows what to undo. */
   setData(patch: Record<string, unknown>): Promise<void>;
-  /** Records rows the step created, by Collection; cleared in reverse order of first tracking. */
+  /** Records rows the step created, by Collection; the application clear hook removes business rows. */
   track(
     collection: string,
     ids: string | readonly string[],
@@ -94,7 +94,7 @@ export interface DemoClearContext {
   readonly language: string | null;
   readonly actorId: string;
   readonly data: Readonly<Record<string, unknown>>;
-  /** The rows the import tracked, which the plugin deletes after `clear` returns. */
+  /** Import membership for application lookups; the application owns deletion of business rows. */
   readonly records: readonly DemoTrackedRecord[];
 }
 
@@ -119,25 +119,14 @@ export interface DemoDataset {
   timeZone?(language: string): string;
   /** The accounts an import in `language` creates, as the demo page lists them before and after the import. */
   accounts(language: string): readonly DemoAccountSummary[];
-  /**
-   * Disable the demo's accounts on clear instead of deleting them, and enable them again on the next import. The users
-   * plugin keeps a deleted account's username and email reserved, so an application whose users plugin allows
-   * deleting accounts sets this to import the demo again after clearing it.
-   */
-  readonly keepAccounts?: boolean;
   /** Run in order; a failing step rolls the whole import back. */
   steps(language: string): readonly DemoStep[];
   /**
-   * Removes what the tracked records do not cover, such as everything visitors added inside a demo project. Runs
-   * before the plugin deletes the tracked rows, accounts and model service; it must tolerate a partial import.
+   * Clears ALL application business data, including visitor-created records and files. Used for explicit clear,
+   * reset and failed/interrupted imports alike. Must be retry-safe, accept empty context, and preserve system
+   * identities, permissions and environment configuration. Mixed production/demo data is not supported.
    */
-  clear?(context: DemoClearContext): Promise<void>;
-  /**
-   * Explicit clear/reset only: removes application business data beyond this import. Requires demo mode.
-   * Never called during failed-import rollback or interrupted-import recovery. Must be safe to retry and tolerate
-   * an empty import context. System configuration and administrator access remain the application's responsibility.
-   */
-  clearAll?(context: DemoClearContext): Promise<void>;
+  clear(context: DemoClearContext): Promise<void>;
   /** Counts shown on the demo page; the tracked rows per Collection when absent. */
   counts?(context: DemoClearContext): Promise<Record<string, number>>;
   /** What the simulated model answers; tried in order before the plugin's own fallback. */
@@ -225,11 +214,9 @@ export interface DemoDataStatus {
   readonly failure: { readonly code?: string; readonly message: string } | null;
   /** Whether normal requests may change data; application-wide clear/reset require a mode other than `off`. */
   readonly mode: 'off' | 'read-only' | 'observe';
-  /** The simulated model service an import added, or why there is none. */
+  /** The environment model service, independent of whether business data is imported. */
   readonly model: {
     readonly enabled: boolean;
     readonly service: string | null;
   };
-  /** The reset schedule the deployment configured, if any. */
-  readonly reset: { readonly cron: string; readonly timezone?: string } | null;
 }

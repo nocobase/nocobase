@@ -56,3 +56,16 @@ describeMigration('202610210001_demo_mode_configuration', {
     await expectCollection('demoModeConfiguration').not.toExist();
   },
 });
+
+describeMigration('202610210002_demo_mode_environment_model', {
+  sources,
+  up: async ({ expectCollection }) => {
+    await expectCollection('demoModeModel').toHaveField('modelService', {
+      type: 'string',
+      length: 128,
+    });
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('demoModeModel').not.toExist();
+  },
+});

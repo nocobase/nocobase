@@ -59,9 +59,6 @@ const DemoDataStatusSchema: z.ZodType<DemoDataStatus> = z
       .nullable(),
     mode: z.enum(['off', 'read-only', 'observe']),
     model: z.object({ enabled: z.boolean(), service: z.string().nullable() }),
-    reset: z
-      .object({ cron: z.string(), timezone: z.string().optional() })
-      .nullable(),
   })
   .meta({ ref: 'DemoModeDataStatus' });
 

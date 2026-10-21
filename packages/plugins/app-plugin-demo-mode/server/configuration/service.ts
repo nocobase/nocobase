@@ -158,7 +158,6 @@ export class DemoConfigurationService {
         scope: item.scope,
         defaultEnabled: item.defaultEnabled,
       })),
-      legacySchedule: this.settings.data.reset ?? null,
       nextRun: nextDailyRun(value.schedule, new Date(), row.lastDay),
     };
   }
@@ -166,13 +165,11 @@ export class DemoConfigurationService {
     section: 'rules' | 'mocks' | 'schedule',
     expectedRevision: number,
     input: unknown,
-    replaceLegacy = false,
   ): Promise<DemoConfigurationView> {
     this.requireEnabled();
     const parsed = ConfigurationInput[section].safeParse({
       expectedRevision,
       value: input,
-      ...(section === 'schedule' ? { replaceLegacy } : {}),
     });
     if (!parsed.success) throw invalid('Invalid demo configuration.');
     input = parsed.data.value;
@@ -210,14 +207,6 @@ export class DemoConfigurationService {
         throw invalid('Unknown mock adapter.');
       value = { ...current.mocks, ...(input as object) };
     } else {
-      if (
-        this.settings.data.reset &&
-        current.schedule === null &&
-        !replaceLegacy
-      )
-        throw invalid(
-          'Explicitly replace the deployment schedule before editing it.',
-        );
       const schedule = input as DemoDailySchedule;
       if (schedule.enabled) {
         try {

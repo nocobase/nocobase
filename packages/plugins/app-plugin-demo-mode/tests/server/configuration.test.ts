@@ -33,6 +33,7 @@ async function setup() {
     languages: ['en-US'],
     accounts: () => [],
     steps: () => [],
+    clear: async () => {},
   });
   return { config, guard: container.resolve(demoWriteGuardToken), container };
 }
@@ -213,28 +214,23 @@ it('provides deterministic daily samples independent of record iteration order',
   expect(a.sample('task')).toBeLessThan(1);
 });
 
-it('proxies scoped Agent calls, preserves live calls and rechecks disabled proxies', async () => {
+it('proxies every Agent call in the demo environment and rechecks disabled proxies', async () => {
   const { config } = await setup();
   let liveCalls = 0;
   const proxy = config.registerAgent({
     id: 'test.agent',
     title: 'Demo Agent',
-    scope: 'demo-projects',
     defaultEnabled: true,
-    matches: async (input: { projectId: string }) => input.projectId === 'demo',
     execute: async () => 'simulated',
   });
   const real = async () => {
     liveCalls++;
     return 'live';
   };
-  expect(await proxy.run({ projectId: 'production' }, real)).toBe('live');
+  expect(await proxy.run({ projectId: 'unmarked' }, real)).toBe('simulated');
   expect(await proxy.run({ projectId: 'demo' }, real)).toBe('simulated');
-  await expect(
-    proxy.execute({ projectId: 'production' }),
-  ).rejects.toMatchObject({ reason: 'DEMO_SCOPE_DENIED' });
   await config.runWithPolicy(async () => {
-    expect(await proxy.prepare({ projectId: 'demo' })).toBe(true);
+    expect(await proxy.prepare()).toBe(true);
     await config.save('mocks', 0, { 'test.agent': false });
     await expect(
       config.withFreshPolicy(() => proxy.execute({ projectId: 'demo' })),
@@ -243,5 +239,25 @@ it('proxies scoped Agent calls, preserves live calls and rechecks disabled proxi
   await expect(proxy.run({ projectId: 'demo' }, real)).rejects.toMatchObject({
     reason: 'DEMO_MOCK_UNAVAILABLE',
   });
-  expect(liveCalls).toBe(1);
+  expect(liveCalls).toBe(0);
+});
+
+it('uses the real Agent only in an off deployment and refuses direct queued demo execution there', async () => {
+  const { container, guard } = await setup();
+  const config = new DemoConfigurationService(
+    container.resolve(databaseManagerToken),
+    resolveDemoModeSettings({ get: () => ({ mode: 'off' }) } as never, {}),
+    guard,
+    async () => ({ importing: null, languages: ['en-US'] }),
+  );
+  const proxy = config.registerAgent({
+    id: 'off.agent',
+    title: 'Demo',
+    execute: async () => 'simulated',
+  });
+  expect(await proxy.prepare()).toBe(false);
+  expect(await proxy.run({}, async () => 'live')).toBe('live');
+  await expect(proxy.execute({})).rejects.toMatchObject({
+    reason: 'DEMO_MODE_REQUIRED',
+  });
 });

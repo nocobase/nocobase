@@ -16,19 +16,10 @@ export interface DemoModeSettings {
 
 /** How the demo dataset an application registers is imported, answered by models and reset on a schedule. */
 export interface DemoDataSettings {
-  /** Whether an import adds a simulated model service and makes it the default chat model. */
+  /** Whether startup provisions the dedicated environment model as the default chat model. */
   readonly models: boolean;
   /** Where the model gateway reaches this application's simulated model; derived from the server address when absent. */
   readonly modelBaseUrl?: string;
-  /** A schedule that clears the demo data and imports it again. */
-  readonly reset?: DemoDataResetSettings;
-}
-
-export interface DemoDataResetSettings {
-  readonly cron: string;
-  readonly timezone?: string;
-  /** The language each reset imports; the language of the dataset present when absent. */
-  readonly language?: string;
 }
 
 /** The configuration section an application may declare; the environment variables below override it. */
@@ -38,7 +29,6 @@ export interface DemoModeConfig {
   readonly data?: {
     readonly models?: boolean;
     readonly modelBaseUrl?: string;
-    readonly reset?: DemoDataResetSettings;
   };
 }
 
@@ -46,9 +36,6 @@ export const DEMO_MODE_ENV = 'NOCOBASE_DEMO_MODE';
 export const DEMO_MODE_ALLOW_TABLES_ENV = 'NOCOBASE_DEMO_ALLOW_TABLES';
 export const DEMO_DATA_MODELS_ENV = 'NOCOBASE_DEMO_DATA_MODELS';
 export const DEMO_DATA_MODEL_BASE_URL_ENV = 'NOCOBASE_DEMO_DATA_MODEL_BASE_URL';
-export const DEMO_DATA_RESET_CRON_ENV = 'NOCOBASE_DEMO_DATA_RESET_CRON';
-export const DEMO_DATA_RESET_TIMEZONE_ENV = 'NOCOBASE_DEMO_DATA_RESET_TIMEZONE';
-export const DEMO_DATA_RESET_LANGUAGE_ENV = 'NOCOBASE_DEMO_DATA_RESET_LANGUAGE';
 
 /**
  * Tables official plugins write while someone only signs in, signs out or browses: Better Auth's session rows, and
@@ -110,24 +97,10 @@ function resolveDataSettings(
       `The demo model base URL must start with http:// or https://; got "${modelBaseUrl}".`,
     );
   }
-  const cron = env[DEMO_DATA_RESET_CRON_ENV]?.trim() || section.reset?.cron;
-  const timezone =
-    env[DEMO_DATA_RESET_TIMEZONE_ENV]?.trim() || section.reset?.timezone;
-  const language =
-    env[DEMO_DATA_RESET_LANGUAGE_ENV]?.trim() || section.reset?.language;
   return {
     models: flag ? flag === 'true' : section.models !== false,
     ...(modelBaseUrl
       ? { modelBaseUrl: modelBaseUrl.replace(/\/+$/u, '') }
-      : {}),
-    ...(cron
-      ? {
-          reset: {
-            cron,
-            ...(timezone ? { timezone } : {}),
-            ...(language ? { language } : {}),
-          },
-        }
       : {}),
   };
 }

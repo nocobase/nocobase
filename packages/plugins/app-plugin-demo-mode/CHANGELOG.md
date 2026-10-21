@@ -18,3 +18,8 @@
 - Expose deterministic daily fixture seeds and integration guidance; enforce enabled demo mode for lifecycle operations.
 - Let demo account specs carry the users plugin's `roleScopes`, for applications with a role scope required on create, and apply them again when an import reuses an account.
 - Add the dataset option `keepAccounts`, which disables demo accounts on clear instead of deleting them, since a deleted account's username stays reserved.
+
+## Unreleased
+
+- Simplify the plugin for isolated demo deployments: one business cleanup contract, reusable disabled accounts, an environment-owned model, environment-wide Agent routing and one persisted reset schedule.
+- Remove mixed-data rollback, prior-model restoration, legacy Agents compatibility and deployment-cron overrides. See the published Skill's adapter migration checklist before upgrading a vendored snapshot.

@@ -28,7 +28,7 @@ export const DEMO_DATA_RESET_TARGET = 'demoMode.resetData';
 /**
  * The demo dataset service. Applications register their dataset on `demoDataToken`; this provider gives it the
  * accounts, roles and model services of the official plugins it finds, the settings item that guards its routes,
- * and, when the deployment configures one, the Scheduler schedule that resets it.
+ * and the persisted daily Scheduler configuration that resets it.
  */
 export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-demo-mode/data';
@@ -124,34 +124,25 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
 
   public override async ready(): Promise<void> {
     await this.app.container.resolve(demoConfigurationToken).initialize();
-    await this.service?.load();
+    await this.service?.initialize();
   }
 
   private schedule(): void {
     const service = this.service!;
     const configuration = this.app.container.resolve(demoConfigurationToken);
     const scheduler = this.app.container.resolve(schedulerServiceToken);
-    const handle = scheduler.registerTarget<{
-      language?: string;
-      daily?: boolean;
-    }>({
+    const handle = scheduler.registerTarget<Record<string, never>>({
       type: DEMO_DATA_RESET_TARGET,
       title: 'Reset demo data',
       validate: (config) =>
         config && typeof config === 'object'
           ? { valid: true }
           : { valid: false, reason: 'config-must-be-an-object' },
-      async start(config, context) {
+      async start(_config, context) {
         try {
-          let language = config.language;
-          if (config.daily) {
-            const due = await configuration.claimDaily(new Date());
-            if (!due) return { state: 'skipped', reason: 'not-due' };
-            language = due.language;
-          } else if ((await configuration.read()).schedule !== null) {
-            return { state: 'skipped', reason: 'replaced-by-managed-schedule' };
-          }
-          await service.reset(undefined, language);
+          const due = await configuration.claimDaily(new Date());
+          if (!due) return { state: 'skipped', reason: 'not-due' };
+          await service.reset(undefined, due.language);
         } catch (error) {
           return {
             state: 'failed',
@@ -184,23 +175,7 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
       key: 'demoMode.dailyReset',
       title: 'Check configured daily demo reset',
       schedule: { cron: '* * * * *', timezone: 'UTC' },
-      target: { type: DEMO_DATA_RESET_TARGET, config: { daily: true } },
-    });
-    const reset = resolveDemoModeSettings(this.app.config).data.reset;
-    if (!reset) return;
-    scheduler.defineSchedule({
-      key: DEMO_DATA_RESET_TARGET,
-      title: 'Reset demo data',
-      description:
-        'Clears the demo data and imports it again, as the account that imported it last.',
-      schedule: {
-        cron: reset.cron,
-        ...(reset.timezone ? { timezone: reset.timezone } : {}),
-      },
-      target: {
-        type: DEMO_DATA_RESET_TARGET,
-        config: reset.language ? { language: reset.language } : {},
-      },
+      target: { type: DEMO_DATA_RESET_TARGET, config: {} },
     });
   }
 

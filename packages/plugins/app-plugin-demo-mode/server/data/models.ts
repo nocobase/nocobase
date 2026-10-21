@@ -11,7 +11,7 @@ import type {
 
 /** The model the simulated service offers. */
 export const DEMO_CHAT_MODEL = 'demo-chat';
-/** The title of the model service an import adds; the Agents plugin derives its name from it. */
+/** The title of the model environment service; the Agents plugin derives its name from it. */
 export const DEMO_MODEL_SERVICE_TITLE = 'Demo model';
 
 /** What the simulated model answers, after the dataset's answers and the plugin's fallback were tried. */
@@ -234,7 +234,7 @@ export class DemoModels {
     this.answers = answers;
   }
 
-  /** The service an import added and the key it was given, as the dataset row stores them. */
+  /** The environment service and the key it was given, as the environment binding stores them. */
   public bind(service: string | null, key: string | null): void {
     this.service = service;
     this.key = key;
@@ -244,7 +244,7 @@ export class DemoModels {
     return this.service;
   }
 
-  /** Whether `ref` names the simulated model service an import added. */
+  /** Whether `ref` names the simulated model environment service. */
   public isDemoModel(
     ref: { readonly modelService?: string | null } | null | undefined,
   ): boolean {

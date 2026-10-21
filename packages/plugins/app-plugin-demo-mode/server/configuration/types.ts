@@ -41,6 +41,5 @@ export interface DemoConfigurationView extends DemoConfiguration {
   fixedTables: readonly string[];
   capabilities: readonly Omit<DemoWriteCapability, 'checkScope'>[];
   adapters: readonly Omit<DemoMockAdapter, 'invoke'>[];
-  legacySchedule: { cron: string; timezone?: string; language?: string } | null;
   nextRun: string | null;
 }

@@ -85,10 +85,10 @@ function service(): DefaultDemoDataService {
   });
 }
 
-const dataset = (keepAccounts?: boolean): DemoDataset => ({
+const dataset = (): DemoDataset => ({
   id: 'accounts',
   languages: ['en-US'],
-  ...(keepAccounts === undefined ? {} : { keepAccounts }),
+  clear: async () => {},
   accounts: () => [],
   steps: () => [
     {
@@ -107,7 +107,7 @@ const dataset = (keepAccounts?: boolean): DemoDataset => ({
 
 it('gives a new account its role scopes and applies them again when an import reuses it', async () => {
   const demo = service();
-  demo.register(dataset(true));
+  demo.register(dataset());
   await demo.importNow('admin');
   expect(calls).toEqual(['create ann {"app":["sales"]}']);
   calls = [];
@@ -120,11 +120,11 @@ it('gives a new account its role scopes and applies them again when an import re
   await demo.clear('admin');
 });
 
-it('deletes the demo accounts on clear unless the dataset keeps them', async () => {
+it('always disables demo accounts so usernames remain reusable', async () => {
   const demo = service();
   demo.register(dataset());
   await demo.importNow('admin');
   calls = [];
   await demo.clear('admin');
-  expect(calls).toEqual(['remove u1']);
+  expect(calls).toEqual(['disable u1']);
 });

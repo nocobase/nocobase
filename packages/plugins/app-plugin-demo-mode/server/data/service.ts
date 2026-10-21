@@ -1,5 +1,3 @@
-import { randomBytes } from 'node:crypto';
-
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 import type { UserManagementService } from '@nocobase/app-plugin-users/server/tokens';
@@ -9,11 +7,8 @@ import type { DatabaseManager } from '@nocobase/db';
 import type { DemoDataSettings, DemoMode } from '../config.js';
 import { DEMO_MODE_ERROR_DOMAIN } from '../errors.js';
 import { createDemoClock } from './clock.js';
-import {
-  DEMO_CHAT_MODEL,
-  DEMO_MODEL_SERVICE_TITLE,
-  type DemoModels,
-} from './models.js';
+import type { DemoModels } from './models.js';
+import { DemoModelRuntime } from './model-runtime.js';
 import type {
   DemoAccountSpec,
   DemoAccountSummary,
@@ -30,7 +25,6 @@ import type {
 const USER = '@user';
 const PERMISSION_SET = '@permissionSet';
 const ASSIGNMENT = '@permissionSetAssignment';
-const MODEL_SERVICE = '@modelService';
 
 /** An import or clear no process has moved on for this long was cut off, as when the server stopped mid-import. */
 const STALE_MS = 10 * 60 * 1000;
@@ -38,14 +32,16 @@ const STALE_MS = 10 * 60 * 1000;
 export interface DemoDataService {
   /** Registers the application's dataset, once, from a service provider's `register()` or `boot()`. */
   register(dataset: DemoDataset): void;
-  /** Re-read the model binding after another process imports or clears the dataset. */
+  /** Re-read the environment model binding, without changing it. */
   load(): Promise<void>;
+  /** Provision the environment model at application startup, independently of business data. */
+  initialize(): Promise<void>;
   status(): Promise<DemoDataStatus>;
   /** Starts an import without waiting for it; `status()` tells how far it got and, when it stopped, why. */
   start(actorId: string, language?: string): Promise<DemoDataStatus>;
   /** Imports and waits, for commands, schedules and tests. */
   importNow(actorId: string, language?: string): Promise<DemoDataStatus>;
-  /** Deletes everything the import created, accounts and the simulated model service included. */
+  /** Clears application business data and disables demo accounts; environment configuration stays. */
   clear(actorId: string): Promise<DemoDataStatus>;
   /** Clears what is there and imports again; waits when `wait` is set. */
   reset(
@@ -84,8 +80,6 @@ interface DatasetRow {
   percent: number;
   data: Record<string, unknown> | null;
   failure: { code?: string; message: string } | null;
-  modelKey: string | null;
-  modelService: string | null;
   createdAt: Date;
   updatedAt: Date;
   finishedAt: Date | null;
@@ -135,9 +129,11 @@ export class DefaultDemoDataService implements DemoDataService {
   /** The import or clear this process runs, so a second one is refused at once and progress is live. */
   private running: Promise<unknown> | undefined;
   private percent = 0;
+  private readonly runtime: DemoModelRuntime;
 
   public constructor(private readonly deps: DemoDataDependencies) {
     this.models = deps.models;
+    this.runtime = new DemoModelRuntime(deps);
   }
 
   public async whenIdle(): Promise<void> {
@@ -148,6 +144,10 @@ export class DefaultDemoDataService implements DemoDataService {
     if (this.dataset && this.dataset.id !== dataset.id)
       throw new Error(
         `A demo dataset is registered already (${this.dataset.id}); an application registers one.`,
+      );
+    if (typeof dataset.clear !== 'function')
+      throw new Error(
+        'A dedicated demo dataset must provide full business cleanup.',
       );
     if (!dataset.languages.length)
       throw new Error(`Demo dataset ${dataset.id} names no language.`);
@@ -162,15 +162,17 @@ export class DefaultDemoDataService implements DemoDataService {
     );
   }
 
-  /** Loads the simulated model's key the last import stored, so the gateway can call it after a restart. */
-  public async load(): Promise<void> {
-    if (!this.dataset) return;
-    const row = await this.row();
-    this.models.bind(row?.modelService ?? null, row?.modelKey ?? null);
+  public initialize(): Promise<void> {
+    return this.runtime.initialize();
+  }
+
+  public load(): Promise<void> {
+    return this.runtime.load();
   }
 
   public async status(): Promise<DemoDataStatus> {
     const dataset = this.dataset;
+    await this.load();
     const row = dataset ? await this.row() : undefined;
     const stale = row ? this.stale(row) : false;
     const state: DemoDataState | null = row
@@ -224,17 +226,12 @@ export class DefaultDemoDataService implements DemoDataService {
           : null,
       mode: this.deps.mode(),
       model: {
-        enabled: this.deps.settings.models && Boolean(this.deps.agents?.()),
-        service: row?.modelService ?? null,
+        enabled:
+          this.deps.mode() !== 'off' &&
+          this.deps.settings.models &&
+          Boolean(this.deps.agents?.()),
+        service: this.models.serviceName,
       },
-      reset: this.deps.settings.reset
-        ? {
-            cron: this.deps.settings.reset.cron,
-            ...(this.deps.settings.reset.timezone
-              ? { timezone: this.deps.settings.reset.timezone }
-              : {}),
-          }
-        : null,
     };
   }
 
@@ -259,19 +256,12 @@ export class DefaultDemoDataService implements DemoDataService {
 
   public async clear(actorId: string): Promise<DemoDataStatus> {
     const dataset = this.requireDataset();
-    this.requireClearMode(dataset);
     if (this.running)
       throw demoDataError(
         'DEMO_DATA_BUSY',
         'The demo data is being imported or cleared.',
       );
     const row = await this.row();
-    if (!row && !dataset.clearAll)
-      throw demoDataError(
-        'DEMO_DATA_MISSING',
-        'No demo data is imported.',
-        'NOT_FOUND',
-      );
     if (
       row &&
       (row.state === 'importing' || row.state === 'clearing') &&
@@ -286,7 +276,6 @@ export class DefaultDemoDataService implements DemoDataService {
         dataset,
         row ?? (await this.claimEmptyClear(dataset, actorId)),
         actorId,
-        true,
       ),
     );
     return this.status();
@@ -298,7 +287,6 @@ export class DefaultDemoDataService implements DemoDataService {
     options: { readonly wait?: boolean } = {},
   ): Promise<DemoDataStatus> {
     const dataset = this.requireDataset();
-    this.requireClearMode(dataset);
     if (this.running)
       throw demoDataError(
         'DEMO_DATA_BUSY',
@@ -327,15 +315,13 @@ export class DefaultDemoDataService implements DemoDataService {
         `The demo data is not written in ${target}.`,
         'INVALID_ARGUMENT',
       );
-    if (row || dataset.clearAll)
-      await this.exclusive(async () =>
-        this.remove(
-          dataset,
-          row ?? (await this.claimEmptyClear(dataset, actor, target)),
-          actor,
-          true,
-        ),
-      );
+    await this.exclusive(async () =>
+      this.remove(
+        dataset,
+        row ?? (await this.claimEmptyClear(dataset, actor, target)),
+        actor,
+      ),
+    );
     return options.wait
       ? this.importNow(actor, target)
       : this.start(actor, target);
@@ -354,15 +340,6 @@ export class DefaultDemoDataService implements DemoDataService {
         'NOT_FOUND',
       );
     return this.dataset;
-  }
-
-  /** Full application cleanup is an explicit demo-only operation, including from CLI and Scheduler. */
-  private requireClearMode(dataset: DemoDataset): void {
-    if (dataset.clearAll && this.deps.mode() === 'off')
-      throw demoDataError(
-        'DEMO_MODE_REQUIRED',
-        'Enable demo mode before clearing or resetting application business data.',
-      );
   }
 
   /** Persist a lease even before the first import, so competing processes cannot clear and import together. */
@@ -566,8 +543,6 @@ export class DefaultDemoDataService implements DemoDataService {
     }, 30_000);
     heartbeat.unref();
     try {
-      if (this.deps.settings.models)
-        await this.addModel(dataset.id, actorId, track, context);
       for (step of steps) {
         this.deps.logger?.info(
           { dataset: dataset.id, step: step.key },
@@ -620,7 +595,6 @@ export class DefaultDemoDataService implements DemoDataService {
     dataset: DemoDataset,
     row: DatasetRow,
     actorId: string,
-    all = false,
   ): Promise<void> {
     const claimed = await this.deps.database
       .query()
@@ -637,7 +611,7 @@ export class DefaultDemoDataService implements DemoDataService {
       );
     this.percent = 0;
     try {
-      await this.undo(dataset, row, actorId, all);
+      await this.undo(dataset, row, actorId);
     } catch (cause) {
       await this.touch(dataset.id, {
         state: 'failed',
@@ -655,7 +629,6 @@ export class DefaultDemoDataService implements DemoDataService {
       .deleteFrom('demoModeDatasets')
       .where('id', '=', dataset.id)
       .execute();
-    this.models.bind(null, null);
     this.deps.logger?.info({ dataset: dataset.id }, 'Cleared demo data');
   }
 
@@ -663,36 +636,10 @@ export class DefaultDemoDataService implements DemoDataService {
     dataset: DemoDataset,
     row: DatasetRow,
     actorId: string,
-    all = false,
   ): Promise<void> {
     const records = await this.records(dataset.id);
     const context = this.clearContext(row, records, actorId);
-    if (all && dataset.clearAll) await dataset.clearAll(context);
-    else if (dataset.clear) await dataset.clear(context);
-    this.percent = 40;
-    const tables = new Map<
-      string,
-      { keyField: string; ids: string[]; first: number }
-    >();
-    for (const record of records) {
-      if (record.collection.startsWith('@')) continue;
-      const entry = tables.get(record.collection) ?? {
-        keyField: record.keyField,
-        ids: [],
-        first: record.ordinal,
-      };
-      entry.ids.push(record.recordId);
-      tables.set(record.collection, entry);
-    }
-    const ordered = [...tables].sort((a, b) => b[1].first - a[1].first);
-    await this.deps.database.transaction(async (connection) => {
-      for (const [collection, { keyField, ids }] of ordered)
-        for (let index = 0; index < ids.length; index += 500)
-          await connection.query
-            .deleteFrom(collection)
-            .where(keyField, 'in', ids.slice(index, index + 500))
-            .execute();
-    });
+    await dataset.clear(context);
     this.percent = 70;
     const of = (collection: string) =>
       records
@@ -713,28 +660,11 @@ export class DefaultDemoDataService implements DemoDataService {
         .catch(() => undefined);
       if (!users) continue;
       await users.revokeSessions(id).catch(() => undefined);
-      // An application that does not let accounts be deleted, or asks to keep them, gets them disabled; the next
-      // import enables them.
-      if (dataset.keepAccounts) {
-        await users.disable(id);
-        continue;
-      }
-      try {
-        await users.remove(id, actorId);
-        await this.deps.database
-          .query()
-          .deleteFrom('demoModeAccounts')
-          .where('userId', '=', id)
-          .where('datasetId', '=', dataset.id)
-          .execute();
-      } catch {
-        // A failed disable must leave the tracking rows intact so the cleanup can be retried.
-        await users.disable(id);
-      }
+      // Keep identities reusable: the Users plugin reserves deleted usernames and email addresses.
+      await users.disable(id);
     }
     for (const key of of(PERMISSION_SET))
       await sets?.delete(key).catch(() => undefined);
-    for (const name of of(MODEL_SERVICE)) await this.removeModel(name, row);
     await this.deps.database
       .query()
       .deleteFrom('demoModeRecords')
@@ -886,77 +816,6 @@ export class DefaultDemoDataService implements DemoDataService {
         'Demo roles need the authorization plugin.',
       );
     return sets;
-  }
-
-  /** Adds the simulated model service and makes it the default chat model, remembering the one it replaces. */
-  private async addModel(
-    datasetId: string,
-    actorId: string,
-    track: (
-      collection: string,
-      ids: string | readonly string[],
-      keyField?: string,
-    ) => Promise<void>,
-    context: DemoImportContext,
-  ): Promise<void> {
-    const services = this.modelServices();
-    if (!services) return;
-    const key = randomBytes(24).toString('hex');
-    const view = await services.create({
-      title: DEMO_MODEL_SERVICE_TITLE,
-      provider: 'openai-compatible',
-      baseUrl: this.deps.modelBaseUrl(),
-      apiKey: key,
-      models: [{ value: DEMO_CHAT_MODEL, label: 'Demo chat' }],
-    });
-    await track(MODEL_SERVICE, view.name);
-    const previous = (await services.defaults()).chat;
-    await this.touch(datasetId, { modelKey: key, modelService: view.name });
-    await context.setData({ previousChatModel: previous ?? null });
-    this.models.bind(view.name, key);
-    await services.setDefaultChat(
-      { modelService: view.name, model: DEMO_CHAT_MODEL },
-      actorId,
-    );
-  }
-
-  private async removeModel(name: string, row: DatasetRow): Promise<void> {
-    const services = this.modelServices();
-    if (!services) return;
-    const previous = (row.data?.previousChatModel ?? null) as {
-      modelService: string;
-      model: string;
-    } | null;
-    const current = (await services.defaults()).chat;
-    if (
-      current?.modelService === name &&
-      previous?.modelService &&
-      previous.modelService !== name
-    )
-      // The default the import replaced comes back while it is still offered.
-      await services
-        .setDefaultChat(previous, row.actorId)
-        .catch(() => undefined);
-    await services
-      .remove(name)
-      .catch((cause: unknown) =>
-        this.deps.logger?.warn(
-          { service: name, cause: String(cause) },
-          'Could not remove the demo model service',
-        ),
-      );
-  }
-
-  /** The Agents plugin's model services; releases before 0.1.0-beta.11 kept them under `online`. */
-  private modelServices(): Agents['models']['services'] | undefined {
-    const agents = this.deps.agents?.() as
-      | (Partial<Pick<Agents, 'models'>> & {
-          readonly online?: {
-            readonly services?: Agents['models']['services'];
-          };
-        })
-      | undefined;
-    return agents?.models?.services ?? agents?.online?.services;
   }
 
   private async touch(

@@ -13,8 +13,7 @@ async function fixture(mode: 'off' | 'read-only' | 'observe') {
     config: { demoMode: { mode, data: { models: false } } },
   });
   const service = app.application.container.resolve(demoDataToken);
-  const clear = vi.fn(async () => {});
-  const clearAll = vi.fn(async () => {
+  const clear = vi.fn(async () => {
     await app.connection.query.deleteFrom('demoitems').allowAllRows().execute();
   });
   const dataset: DemoDataset = {
@@ -34,7 +33,6 @@ async function fixture(mode: 'off' | 'read-only' | 'observe') {
       },
     ],
     clear,
-    clearAll,
   };
   service.register(dataset);
   await app.connection.query
@@ -50,13 +48,13 @@ async function fixture(mode: 'off' | 'read-only' | 'observe') {
     )
       .map((row) => row.name)
       .sort();
-  return { service, dataset, clear, clearAll, names };
+  return { service, dataset, clear, names };
 }
 
 it.each(['read-only', 'observe'] as const)(
   'allows explicit full cleanup in %s mode, before and after imports',
   async (mode) => {
-    const { service, clear, clearAll, names } = await fixture(mode);
+    const { service, clear, names } = await fixture(mode);
     expect(await service.clear('admin')).toMatchObject({
       state: null,
       present: false,
@@ -72,13 +70,12 @@ it.each(['read-only', 'observe'] as const)(
     expect(await names()).toEqual(['zh-CN']);
     await service.clear('admin');
     await service.clear('admin');
-    expect(clearAll).toHaveBeenCalledTimes(4);
-    expect(clear).not.toHaveBeenCalled();
+    expect(clear).toHaveBeenCalledTimes(4);
   },
 );
 
 it('refuses full clear and reset with demo mode off, without touching existing data', async () => {
-  const { service, clearAll, names } = await fixture('off');
+  const { service, clear, names } = await fixture('off');
   for (const operation of ['clear', 'reset'] as const)
     await expect(service[operation]('admin')).rejects.toMatchObject({
       reason: 'DEMO_MODE_REQUIRED',
@@ -90,12 +87,11 @@ it('refuses full clear and reset with demo mode off, without touching existing d
     reason: 'DEMO_MODE_REQUIRED',
   });
   expect(await names()).toEqual(['existing']);
-  expect(clearAll).not.toHaveBeenCalled();
+  expect(clear).not.toHaveBeenCalled();
 });
 
-it('keeps failed-import rollback and interrupted-import recovery scoped to that import', async () => {
-  const { service, dataset, clearAll, clear, names } =
-    await fixture('read-only');
+it('uses the same full cleanup for failed and interrupted imports', async () => {
+  const { service, dataset, clear, names } = await fixture('read-only');
   service.register({
     ...dataset,
     steps: (language) => [
@@ -109,7 +105,7 @@ it('keeps failed-import rollback and interrupted-import recovery scoped to that 
     ],
   });
   await expect(service.importNow('admin')).rejects.toThrow('import failed');
-  expect(await names()).toEqual(['existing']);
+  expect(await names()).toEqual([]);
   service.register(dataset);
   await service.importNow('admin');
   await app.connection.query
@@ -118,13 +114,12 @@ it('keeps failed-import rollback and interrupted-import recovery scoped to that 
     .where('id', '=', 'fixture')
     .execute();
   await service.importNow('admin', 'zh-CN');
-  expect(await names()).toEqual(['existing', 'zh-CN']);
+  expect(await names()).toEqual(['zh-CN']);
   expect(clear).toHaveBeenCalledTimes(3);
-  expect(clearAll).not.toHaveBeenCalled();
 });
 
 it('persists a lease for full cleanup even when no dataset was imported', async () => {
-  const { service, dataset, clearAll } = await fixture('read-only');
+  const { service, dataset, clear } = await fixture('read-only');
   let finish!: () => void;
   let entered!: () => void;
   const held = new Promise<void>((resolve) => {
@@ -135,10 +130,10 @@ it('persists a lease for full cleanup even when no dataset was imported', async 
   });
   service.register({
     ...dataset,
-    clearAll: async () => {
+    clear: async () => {
       entered();
       await held;
-      await clearAll();
+      await clear();
     },
   });
   const clearing = service.clear('admin');

@@ -62,7 +62,7 @@ const toolCalls = (output: Extract<DemoModelOutput, { kind: 'tools' }>) =>
   }));
 
 /**
- * An OpenAI-compatible chat model served by the application itself, which the simulated model service an import adds
+ * An OpenAI-compatible chat model served by the application itself, which the simulated model environment service
  * points at. Answers come from the dataset's scripts; the key the service was given is the only credential.
  */
 export const modelRoutes: AppApiRouteContribution<AppPluginApplication> =

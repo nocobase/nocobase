@@ -23,7 +23,6 @@ export const ConfigurationInput: Record<
   z.ZodType<{
     expectedRevision: number;
     value: DemoWriteRule[] | Record<string, boolean> | DemoDailySchedule;
-    replaceLegacy?: boolean;
   }>
 > = {
   rules: z.strictObject({
@@ -37,7 +36,6 @@ export const ConfigurationInput: Record<
   schedule: z.strictObject({
     expectedRevision: z.number().int().nonnegative(),
     value: DailySchedule,
-    replaceLegacy: z.boolean().optional(),
   }),
 };
 export const ConfigurationView: z.ZodType<DemoConfigurationView> = z
@@ -67,13 +65,6 @@ export const ConfigurationView: z.ZodType<DemoConfigurationView> = z
         defaultEnabled: z.boolean().optional(),
       }),
     ),
-    legacySchedule: z
-      .object({
-        cron: z.string(),
-        timezone: z.string().optional(),
-        language: z.string().optional(),
-      })
-      .nullable(),
     nextRun: z.string().nullable(),
   })
   .meta({ ref: 'DemoModeConfiguration' });
