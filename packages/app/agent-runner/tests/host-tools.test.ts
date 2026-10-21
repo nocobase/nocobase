@@ -193,16 +193,74 @@ describe('code host CLI wrappers', () => {
       ['glab', 'login'],
       ['gh', 'login'],
       ['gh', 'setup-git'],
+      ['gh', 'token'],
     ] as const) {
       const refused = await run(path.join(binDir, bin), ['auth', sub], env);
       expect(refused.code).toBe(1);
       expect(refused.stdout).toBe('');
       expect(refused.stderr).toContain(`'${bin} auth ${sub}' would change`);
     }
+    for (const bin of ['gh', 'glab']) {
+      const shown = await run(
+        path.join(binDir, bin),
+        ['auth', 'status', '--show-token'],
+        env,
+      );
+      expect(shown.code).toBe(1);
+      expect(shown.stderr).toContain('would show the run');
+    }
     const status = await run(path.join(binDir, 'gh'), ['auth', 'status'], env);
     expect(status.code).toBe(0);
     expect(status.stdout).toContain('args=auth status');
     expect(status.stdout).toContain('token=\n');
+  });
+
+  it('has the runner fetch a fresh credential after gh says the code host refused it', async () => {
+    const refreshes: boolean[] = [];
+    answers = [
+      () => ({
+        username: 'x-access-token',
+        password: 'ghs-revoked',
+        expiresAt: new Date(Date.now() + 60 * MINUTE).toISOString(),
+      }),
+      () => ({
+        username: 'x-access-token',
+        password: 'ghs-fresh',
+        expiresAt: new Date(Date.now() + 60 * MINUTE).toISOString(),
+      }),
+    ];
+    const gh: RunGitTool = {
+      bin: 'gh',
+      url: REPO,
+      env: { GH_TOKEN: { credential: 'password' } },
+    };
+    const { binDir, realDir, env } = await setUp([gh]);
+    // A gh that answers 4 (authentication required) to the revoked token.
+    await writeFile(
+      path.join(realDir, 'gh'),
+      '#!/bin/sh\n[ "$GH_TOKEN" = ghs-revoked ] && exit 4\necho "token=$GH_TOKEN"\n',
+    );
+    const originalPost = client.post.bind(client);
+    (client as { post: unknown }).post = async (
+      route: string,
+      body: { refresh?: boolean },
+      ...rest: unknown[]
+    ) => {
+      refreshes.push(body.refresh === true);
+      return (originalPost as (...args: unknown[]) => unknown)(
+        route,
+        body,
+        ...rest,
+      );
+    };
+    const refused = await run(path.join(binDir, 'gh'), ['pr', 'list'], env);
+    expect(refused.code).toBe(4);
+    expect(refused.stderr).toContain('the runner fetched a fresh one');
+    const again = await run(path.join(binDir, 'gh'), ['pr', 'list'], env);
+    expect(again.code).toBe(0);
+    expect(again.stdout).toContain('token=ghs-fresh');
+    expect(refreshes).toEqual([false, true]);
+    (client as { post: unknown }).post = originalPost;
   });
 
   it('writes no wrapper for a tool that is not installed, and replaces an earlier run’s wrappers', async () => {
@@ -238,6 +296,15 @@ describe('the git guard', () => {
       refusal: (args: string[]) => string | null;
     };
     const refused = [
+      ['-c', 'credential.helper=store', 'push'],
+      ['-C', 'repo', '-c', 'Credential.https://h.helper=store', 'fetch'],
+      ['--config-env=credential.helper=HELPER', 'push'],
+      ['--config-env', 'credential.helper=HELPER', 'push'],
+      ['push', 'https://glpat-x@gitlab.local/g/app.git'],
+      ['remote', 'add', 'origin', 'http://token@host:8929/x.git'],
+      ['config', '--file', '/tmp/x', 'credential.helper', 'store'],
+      ['config', '-f', 'cfg', '--add', 'credential.helper', 'store'],
+      ['config', '--file=../.gitconfig', 'credential.helper', 'store'],
       [
         'remote',
         'add',
@@ -270,6 +337,10 @@ describe('the git guard', () => {
       ['config', '--global', '--list'],
       ['credential', 'fill'],
       ['commit', '-m', 'config'],
+      ['commit', '-m', 'see https://x@y.example/z'],
+      ['-c', 'user.name=A', 'commit'],
+      ['config', '--local', 'credential.helper', 'cache'],
+      ['config', '--file', 'credential.cfg', 'user.name', 'A'],
     ];
     expect(allowed.filter((args) => refusal(args) !== null)).toEqual([]);
   });
@@ -322,7 +393,9 @@ describe('the git guard', () => {
       'https://oauth2:glpat-x@gitlab.local/g/app.git',
     ]);
     expect(embedded.code).toBe(1);
-    expect(embedded.stderr).toContain('do not put a credential in a git URL');
+    expect(embedded.stderr).toContain(
+      'do not put a user or a credential in a git URL',
+    );
 
     expect(
       (await git(['remote', 'add', 'origin', 'https://gitlab.local/g/app.git']))

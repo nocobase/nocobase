@@ -5,8 +5,10 @@
 //   the worker through the credential helper (`<index> env <spec>`), exports the variables and execs the real binary.
 //   Outside a run it runs as it is; when the runner cannot give a credential it fails with the runner's reason rather
 //   than falling back to this machine's login;
-// - every run refuses what would store a credential beyond it: `gh`/`glab` logins (`HOST_LOGIN_COMMANDS`), `git config`
-//   writes of `credential.*` at global or system scope, and git URLs that embed a password (`GUARD_SCRIPT`).
+//   After `gh` says the code host refused the credential (`AUTH_EXIT_CODES`), the runner fetches a fresh one;
+// - every run refuses what would store or show a credential beyond it: `gh`/`glab` logins and token output
+//   (`HOST_LOGIN_COMMANDS`), `credential.*` set with `-c`/`--config-env` or written outside the repository's own config,
+//   and git URLs with a user in them (`GUARD_SCRIPT`).
 //
 // A host without a tool gets no wrapper. Like the keychain guards, they stop the casual path only: the runner is not a
 // security boundary, and the agent can still call a binary by its absolute path.
@@ -31,11 +33,11 @@ export const WRAPPER_MARKER = '# nocobase-runner host tool wrapper';
 /** The tools wrapped whenever they are installed, credential or not. */
 export const GUARDED_TOOLS: readonly string[] = ['git', 'gh', 'glab'];
 
-/** `<bin> auth <subcommand>` that would change this machine's login. */
+/** `<bin> auth <subcommand>` that would change this machine's login or print the credential. */
 export const HOST_LOGIN_COMMANDS: Readonly<Record<string, readonly string[]>> =
   {
-    gh: ['login', 'logout', 'refresh', 'setup-git', 'switch'],
-    glab: ['login', 'logout'],
+    gh: ['login', 'logout', 'refresh', 'setup-git', 'switch', 'token'],
+    glab: ['login', 'logout', 'token'],
   };
 
 export const GUARD_FILE = 'git-guard-nocobase-runner.mjs';
@@ -47,25 +49,35 @@ export const GUARD_FILE = 'git-guard-nocobase-runner.mjs';
 export const GUARD_SCRIPT: string = `// Installed by nocobase-runner: refuses git calls that would store a credential beyond the run.
 import { fileURLToPath } from 'node:url';
 
-const URL_WITH_PASSWORD = /[a-z][a-z0-9+.-]*:\\/\\/[^\\/\\s@:]*:[^\\/\\s@]*@/i;
+// A URL argument (or an option's value) with a user in it: any user for HTTP, a password for any other scheme.
+const URL_WITH_USER = /^(?:-[^=]*=)?(?:https?:\\/\\/[^\\/\\s@]+@|[a-z][a-z0-9+.-]*:\\/\\/[^\\/\\s@:]*:[^\\/\\s@]*@)/i;
 const GLOBAL_WITH_VALUE = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env', '--exec-path']);
 const READS = new Set(['--get', '--get-all', '--get-regexp', '--get-urlmatch', '-l', '--list', '--get-color', '--get-colorbool']);
+const CREDENTIAL_KEY = /^credential(\\.|=|$)/i;
+const BECAUSE = ' The run\\'s git already authenticates through the runner.';
 
 export function refusal(args) {
-  if (args.some((arg) => URL_WITH_PASSWORD.test(arg)))
-    return 'refused: do not put a credential in a git URL. The run\\'s git already authenticates through the runner; use the repository URL without one.';
+  if (args.some((arg) => URL_WITH_USER.test(arg)))
+    return 'refused: do not put a user or a credential in a git URL; use the repository URL without one.' + BECAUSE;
   let at = 0;
-  while (at < args.length && args[at].startsWith('-')) at += GLOBAL_WITH_VALUE.has(args[at]) ? 2 : 1;
+  while (at < args.length && args[at].startsWith('-')) {
+    const arg = args[at];
+    const value = GLOBAL_WITH_VALUE.has(arg) ? args[at + 1] ?? '' : arg.startsWith('--config-env=') ? arg.slice(13) : '';
+    if ((arg === '-c' || arg.startsWith('--config-env')) && CREDENTIAL_KEY.test(value))
+      return 'refused: the run may not set credential.* for a git command (' + arg + ').' + BECAUSE;
+    at += GLOBAL_WITH_VALUE.has(arg) ? 2 : 1;
+  }
   const command = args[at];
   const rest = args.slice(at + 1);
   if (command === 'credential' && (rest[0] === 'approve' || rest[0] === 'store'))
-    return 'refused: the run may not store credentials with git. Its git already authenticates through the runner.';
+    return 'refused: the run may not store credentials with git.' + BECAUSE;
   if (command !== 'config') return null;
-  if (!rest.some((arg) => arg === '--global' || arg === '--system')) return null;
-  const words = rest.filter((arg) => !arg.startsWith('-'));
-  if (!words.some((word) => /^credential(\\.|$)/i.test(word))) return null;
+  const words = rest.filter((arg, index) => !arg.startsWith('-') && rest[index - 1] !== '-f' && rest[index - 1] !== '--file');
+  if (!words.some((word) => CREDENTIAL_KEY.test(word))) return null;
   if (rest.some((arg) => READS.has(arg)) || words[0] === 'get' || words[0] === 'list') return null;
-  return 'refused: the run may not change credential settings outside the repository (git config --global/--system credential.*). Its git already authenticates through the runner.';
+  const outside = rest.some((arg) => arg === '--global' || arg === '--system' || arg === '-f' || arg === '--file' || arg.startsWith('--file='));
+  if (!outside) return null;
+  return 'refused: the run may change credential settings only in the repository (not with --global, --system or --file).' + BECAUSE;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -100,13 +112,19 @@ export function gitWrapperScript(
     WRAPPER_MARKER,
     'for arg do',
     '  case "$arg" in',
-    `    config|credential|*://*@*) ${quote(node)} ${quote(guard)} "$@" || exit 1; break ;;`,
+    `    config|credential|-c|--config-env*|*://*@*) ${quote(node)} ${quote(guard)} "$@" || exit 1; break ;;`,
     '  esac',
     'done',
     `exec ${quote(real)} "$@"`,
     '',
   ].join('\n');
 }
+
+/**
+ * The exit code with which a tool says the code host refused its credential (`gh help exit-codes`). After it the
+ * wrapper has the runner fetch a fresh credential for the next call; a tool without one keeps the runner's margin.
+ */
+export const AUTH_EXIT_CODES: Readonly<Record<string, number>> = { gh: 4 };
 
 /** Where a code host CLI wrapper gets the run's credential: the helper and the repository's index in the broker. */
 export interface ToolCredential {
@@ -130,8 +148,14 @@ export function hostToolWrapperScript(
       '  case "$2" in',
       `    ${logins.join('|')})`,
       // `bin` matches RUN_GIT_TOOL_BIN_PATTERN, so it is safe inside double quotes.
-      `      echo "nocobase-runner: refused: '${bin} auth $2' would change this machine's login. The run's ${bin} already uses the credential the runner gives it." >&2`,
+      `      echo "nocobase-runner: refused: '${bin} auth $2' would change this machine's login or show the run's credential. The run's ${bin} already uses the credential the runner gives it." >&2`,
       '      exit 1 ;;',
+      '    status)',
+      '      for arg do',
+      '        case "$arg" in',
+      `          -t|--show-token) echo "nocobase-runner: refused: '${bin} auth status $arg' would show the run's credential." >&2; exit 1 ;;`,
+      '        esac',
+      '      done ;;',
       '  esac',
       'fi',
     );
@@ -140,7 +164,16 @@ export function hostToolWrapperScript(
       `exports=$(${quote(node)} ${quote(credential.helper)} ${credential.index} env ${quote(JSON.stringify(credential.env))}) || exit 1`,
       'eval "$exports"',
     );
-  lines.push(`exec ${quote(real)} "$@"`, '');
+  const authExit = AUTH_EXIT_CODES[bin];
+  if (credential !== undefined && authExit !== undefined)
+    lines.push(
+      `${quote(real)} "$@"`,
+      'status=$?',
+      `[ "$status" -eq ${authExit} ] && ${quote(node)} ${quote(credential.helper)} ${credential.index} refresh`,
+      'exit "$status"',
+      '',
+    );
+  else lines.push(`exec ${quote(real)} "$@"`, '');
   return lines.join('\n');
 }
 
