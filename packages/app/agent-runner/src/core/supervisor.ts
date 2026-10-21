@@ -101,6 +101,8 @@ export interface Timings {
   collectIntervalMs?: number;
   /** How often the process groups below each worker are noted. */
   processScanMs?: number;
+  /** Override the production cleanup wait in tests that drive the full claim path. */
+  workspaceCleanupWaitMs?: number;
 }
 
 /** What a worker reads from its stdin: a run, or a job (`kind: 'job'`). */
@@ -308,7 +310,9 @@ export class Supervisor {
         releases.push(
           await registerWorkspaceUse(this.options.paths, dir, payload.run.id),
         );
-        await waitForWorkspaceCleanup(dir);
+        await waitForWorkspaceCleanup(dir, {
+          timeoutMs: this.options.timings.workspaceCleanupWaitMs,
+        });
       }
       const supervised = await this.start(
         {

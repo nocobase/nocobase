@@ -82,7 +82,7 @@ import {
 } from '../protocol/index.ts';
 import type { Installation } from '../lib/install.ts';
 import { gcRunTemps } from './run-temp.ts';
-import { gcWorkspaces } from './checkout.ts';
+import { gcWorkspaces, WorkspaceBusyError } from './checkout.ts';
 import { prunePnpmStore } from './pnpm-store.ts';
 import {
   collectWorkspaces,
@@ -1090,7 +1090,12 @@ export class RunnerDaemon {
             'POST',
             routePath(RUNNER_ROUTES.fail, { runId: payload.run.id }),
             {
-              reason: isDiskFull(error) ? 'runnerDiskFull' : 'startTimeout',
+              reason: isDiskFull(error)
+                ? 'runnerDiskFull'
+                : error instanceof WorkspaceBusyError &&
+                    payload.run.acceptedFailures?.includes('workspaceBusy')
+                  ? 'workspaceBusy'
+                  : 'startTimeout',
               detail: `The runner could not start a worker: ${error instanceof Error ? error.message : String(error)}`,
             },
           )
