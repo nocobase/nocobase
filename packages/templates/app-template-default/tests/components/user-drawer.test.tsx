@@ -170,7 +170,7 @@ async function selectSales(user: ReturnType<typeof userEvent.setup>) {
 }
 
 it.each(['/users', '/settings/users'])(
-  'opens name editing in a dialog with inline account actions and cancels to the same list at %s',
+  'opens name editing in a drawer with inline account actions and cancels to the same list at %s',
   async (base) => {
     const user = userEvent.setup();
     await renderUsers(base);
@@ -197,7 +197,7 @@ it.each(['/users', '/settings/users'])(
     } else await user.click(edit);
     const panel = await screen.findByRole('dialog', { name: 'Edit user' });
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
-    expect(panel).toHaveAttribute('data-presentation', 'dialog');
+    expect(panel).toHaveAttribute('data-presentation', 'drawer');
     const name = await within(panel).findByRole('textbox', { name: 'Name *' });
     await waitFor(() => expect(name).toHaveFocus());
     await user.click(
