@@ -403,9 +403,9 @@ Tests live in `tests/`, never beside the source they cover. Put logic and integr
 
 Application tests use the `/server`, `/client` and `/cli` entries of `@nocobase/app-testing`. Start page tests from `tests/components/page-harness.test.tsx`: it uses `renderWithApp()` with real application hooks, strict translations, permission checks and a test toaster. Answer requests through `answerApi()` and replace external services through `services`, without also registering their owning plugins. The template's Vitest configuration includes client plugins in custom package scopes so their contexts and service tokens remain shared. See `.agents/skills/nocobase-app-development/references/testing.md` for fixture ownership and complete server, migration and CLI examples.
 
-### Notification testing
+### Notification verification
 
-With the `notification:test` `send` permission, send a real message through the durable Notification Manager with `POST <APP_BASE_PATH>/api/notifications/testSends`. `GET <APP_BASE_PATH>/api/notifications/testTargets` lists each configured channel and the fields its test takes: Email tests require an address and IM tests use the configured logical target. The server enforces the permission when the message is submitted.
+Exercise the application's business notification flow, or use a server-side command resolving `notificationServiceToken` and calling `send()` with complete messages and explicit recipients. Inspect the returned notification ID through the protected `/api/notifications/logs` API or the logs page installed by the application. Log access requires `page:notification.logs` `access`.
 
 ## API documentation
 
