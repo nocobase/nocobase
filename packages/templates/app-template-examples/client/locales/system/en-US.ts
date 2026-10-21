@@ -9,6 +9,13 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  */
 const systemEnUS = {
   flowDiagram: {
+    controls: 'Diagram controls',
+    fitView: 'Fit to view',
+    fullscreen: 'Fullscreen',
+    exitFullscreen: 'Exit fullscreen',
+    escapeHint: 'Press Escape to exit',
+    minimap: 'Diagram overview',
+
     configure: 'Configure',
     overview: 'Diagram overview',
     actualSize: 'Actual size',

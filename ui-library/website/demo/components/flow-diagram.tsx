@@ -1,6 +1,11 @@
 import { useState, type ReactElement } from 'react';
 import { GitBranchIcon, MousePointer2Icon } from 'lucide-react';
-import { FlowDiagram } from '#components/flow-diagram';
+import {
+  FlowDiagram,
+  FlowDiagramStep,
+  FlowDiagramTransitionNotes,
+} from '#components/flow-diagram';
+import { partitionFlowDiagramReturns } from '#components/flow-layout';
 
 const nodes = [
   { id: 'draft', label: 'Draft', kind: 'initial' as const, visited: true },
@@ -34,6 +39,8 @@ const edges = [
   { id: 'assign', source: 'review', target: 'review', label: 'Reassign' },
 ];
 
+const routes = partitionFlowDiagramReturns({ nodes, edges });
+
 export function FlowDiagramDemo(): ReactElement {
   const [selected, setSelected] = useState(
     'Select a state or transition to inspect it.',
@@ -52,8 +59,55 @@ export function FlowDiagramDemo(): ReactElement {
         </div>
       </div>
       <FlowDiagram
-        nodes={nodes}
-        edges={edges}
+        nodes={nodes.map((node) => ({
+          ...node,
+          bare: true,
+          width: 216,
+          height: node.id === 'review' ? 64 : 44,
+          minimapShape: node.id === 'review' ? 'card' : 'pill',
+        }))}
+        renderNode={(node, { active }) => (
+          <FlowDiagramStep
+            kind={
+              node.id === 'draft'
+                ? 'start'
+                : node.id === 'review'
+                  ? 'approval'
+                  : node.id === 'rejected'
+                    ? 'negative'
+                    : 'success'
+            }
+            label={node.label}
+            description={node.id === 'review' ? 'Manager approval' : undefined}
+            progress={
+              node.highlighted
+                ? 'current'
+                : node.visited
+                  ? 'visited'
+                  : 'unreached'
+            }
+          >
+            {active && (
+              <FlowDiagramTransitionNotes
+                notes={routes.extraEdges
+                  .filter(
+                    (edge) =>
+                      edge.source === node.id || edge.target === node.id,
+                  )
+                  .map((edge) => ({
+                    id: edge.id,
+                    label: edge.label,
+                    detail: `${nodes.find((item) => item.id === edge.source)!.label} · ${edge.label} → ${nodes.find((item) => item.id === edge.target)!.label}`,
+                    kind: edge.target === 'draft' ? 'start' : 'approval',
+                  }))}
+              />
+            )}
+          </FlowDiagramStep>
+        )}
+        edges={routes.edges}
+        direction='DOWN'
+        compact
+        controls
         ariaLabel='Expense process'
         className='h-[min(36rem,70svh)] min-h-80'
         onNodeClick={(node) => setSelected(node.label)}

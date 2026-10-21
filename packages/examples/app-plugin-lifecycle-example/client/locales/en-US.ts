@@ -369,6 +369,13 @@ const enUS = {
     withdraw: 'Withdraw',
   },
   flowDiagram: {
+    controls: 'Diagram controls',
+    fitView: 'Fit to view',
+    fullscreen: 'Fullscreen',
+    exitFullscreen: 'Exit fullscreen',
+    escapeHint: 'Press Escape to exit',
+    minimap: 'Diagram overview',
+
     overview: 'Diagram overview',
     actualSize: 'Actual size',
     states: 'States',

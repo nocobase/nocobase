@@ -360,6 +360,13 @@ const zhCN: LifecycleExampleResource = {
     withdraw: '撤回',
   },
   flowDiagram: {
+    controls: '流程图控制',
+    fitView: '适应画布',
+    fullscreen: '全屏',
+    exitFullscreen: '退出全屏',
+    escapeHint: '按 Escape 退出',
+    minimap: '流程缩略导航',
+
     overview: '流程缩略导航',
     actualSize: '实际大小',
     states: '状态',

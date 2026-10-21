@@ -362,6 +362,13 @@ const zhTW: LocaleResource<typeof enUS> = {
     withdraw: '撤回',
   },
   flowDiagram: {
+    controls: '流程圖控制',
+    fitView: '適應畫布',
+    fullscreen: '全螢幕',
+    exitFullscreen: '退出全螢幕',
+    escapeHint: '按 Escape 退出',
+    minimap: '流程縮略導航',
+
     overview: '圖表概述',
     actualSize: '實際尺寸',
     states: '州',

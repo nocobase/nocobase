@@ -63,7 +63,7 @@ The application owns authentication, initial administrator grants, navigation an
 
 ## Standard diagram and contextual configuration
 
-Current application templates already contain these parts and the standard React Flow/ELK components. Reuse the installed `LifecycleDiagram` and preserve its default visuals unless the user explicitly asks to customize them. UI Library entries are shadcn registry source, not npm packages; use `shadcn view/add`, never an npm 404 as a fallback decision.
+Current application templates already contain these parts and the standard React Flow/ELK components. Reuse the installed `LifecycleDiagram`; the installable demo opts into `presentation="process"` for compact boundary pills and work cards in both definitions and executions. Supply application-owned `stateKind` semantics and keep configuration and history callbacks intact. Omit `presentation` to retain the classic visuals. UI Library entries are shadcn registry source, not npm packages; use `shadcn view/add`, never an npm 404 as a fallback decision.
 
 Connect `LifecycleDiagram.configuration` to the application's existing authorized parameter editor. Native `parameterConfiguration` bindings supply the exact state/transition fields; the component automatically renders bound state controls and sends bound transition selections to `onConfigure`. `canConfigure` is mandatory and controls the affordance only, never server security. The application editor reads current values/revision, preserves other group fields, validates and saves the complete authorized group with CAS, and refreshes the diagram summary from persisted data. Avoid replacing a group with the callback's filtered field subset. Keep historical snapshots read-only.
 

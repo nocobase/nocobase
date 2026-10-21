@@ -15,8 +15,17 @@ import {
   PopoverTrigger,
 } from '#components/ui/popover';
 import type { LifecycleDescription } from '@nocobase/lifecycle';
-import { FlowDiagram, type FlowDiagramProps } from '#components/flow-diagram';
-import type { FlowDiagramNode } from '#components/flow-layout';
+import {
+  FlowDiagram,
+  FlowDiagramStep,
+  FlowDiagramTransitionNotes,
+  type FlowDiagramProps,
+  type FlowDiagramStepKind,
+} from '#components/flow-diagram';
+import {
+  partitionFlowDiagramReturns,
+  type FlowDiagramNode,
+} from '#components/flow-layout';
 
 import {
   lifecycleDiagramGraph,
@@ -41,6 +50,13 @@ export interface LifecycleDiagramProps
       | 'onEdgeClick'
     > {
   readonly description: LifecycleDescription;
+  /** Opt into compact boundary pills and work cards; the classic presentation remains the default. */
+  readonly presentation?: 'classic' | 'process';
+  /** Business semantics belong to the caller; unknown intermediate states default to work. */
+  readonly stateKind?: (
+    state: LifecycleDescription['stateInfo'][number],
+  ) => FlowDiagramStepKind;
+
   /** Opens the application-owned, authorized parameter editor for declared bindings. */
   readonly configuration?: LifecycleDiagramConfiguration;
   readonly stateActions?: (
@@ -61,6 +77,9 @@ export interface LifecycleDiagramProps
 /** Definitions are source-owned; clicking opens consumer-owned details, never fires a transition. */
 export function LifecycleDiagram({
   description,
+  presentation = 'classic',
+  stateKind,
+  nodeDescription,
   currentState,
   endLabel,
   history,
@@ -126,51 +145,121 @@ export function LifecycleDiagram({
         })),
       }
     : sourceGraph;
+  const process = presentation === 'process';
+  const routes = process
+    ? partitionFlowDiagramReturns(graph)
+    : { edges: graph.edges, extraEdges: [] };
+  const notesForNode = (id: string) =>
+    routes.extraEdges
+      .filter((edge) => edge.source === id || edge.target === id)
+      .map((edge) => ({
+        id: edge.id,
+        label: edge.label,
+        detail: `${graph.nodes.find((node) => node.id === edge.source)?.label ?? edge.source} · ${edge.label ?? ''} → ${graph.nodes.find((node) => node.id === edge.target)?.label ?? edge.target}`,
+        kind: kindForNode(graph.nodes.find((node) => node.id === edge.target)!),
+      }));
+  const kindForNode = (node: FlowDiagramNode): FlowDiagramStepKind => {
+    const state = description.stateInfo.find((state) => state.name === node.id);
+    return (
+      (state && stateKind?.(state)) ??
+      (node.kind === 'initial'
+        ? 'start'
+        : node.kind === 'final'
+          ? 'success'
+          : 'work')
+    );
+  };
+  const nodeActions = (node: FlowDiagramNode): ReactNode => {
+    const state = description.stateInfo.find((state) => state.name === node.id);
+    if (!state) return undefined;
+    const actions = stateActions?.(state);
+    const selections =
+      configuration &&
+      lifecycleNodeConfigurationSelections(
+        description,
+        state.name,
+        configuration.canConfigure,
+      );
+    if (!selections?.length || !configuration) return actions;
+    return (
+      <div className='nodrag nopan flex items-center gap-1'>
+        {actions}
+        <NodeConfigurationActions
+          configuration={configuration}
+          selections={selections}
+          state={{ kind: 'state', name: state.name }}
+          title={(target) => {
+            if (target.kind === 'state')
+              return stateLabel?.(state) ?? state.title;
+            const transition = description.transitions.find(
+              (item) => item.name === target.name,
+            )!;
+            return transitionLabel?.(transition) ?? transition.title;
+          }}
+        />
+      </div>
+    );
+  };
+  const displayGraph = process
+    ? {
+        ...graph,
+        nodes: graph.nodes.map((node) => {
+          if (node.decorative) return node;
+          const kind = kindForNode(node);
+          const card = kind === 'work' || kind === 'approval';
+          return {
+            ...node,
+            bare: true,
+            width: card ? 240 : 176,
+            height: card ? 80 : nodeDescription?.(node) ? 64 : 44,
+            minimapShape: card ? ('card' as const) : ('pill' as const),
+          };
+        }),
+        edges: routes.edges.map((edge) => ({ ...edge, title: edge.label })),
+      }
+    : graph;
   return (
     <FlowDiagram
       direction='DOWN'
-      initialMinZoom={0.7}
+      initialMinZoom={process ? 0.1 : 0.7}
+      compact={process}
+      controls={process}
+      nodeDescription={nodeDescription}
       autoHeight
       {...props}
-      {...graph}
-      nodeActions={(node) => {
+      {...displayGraph}
+      revealEdges={process ? undefined : props.revealEdges}
+      nodeActions={nodeActions}
+      renderNode={(node, { active }) => {
         const state = description.stateInfo.find(
           (state) => state.name === node.id,
         );
-        if (!state) return undefined;
-        const actions = stateActions?.(state);
-        const selections =
-          configuration &&
-          lifecycleNodeConfigurationSelections(
-            description,
-            state.name,
-            configuration.canConfigure,
-          );
-        if (!selections?.length || !configuration) return actions;
+        const label =
+          state && renderState ? renderState(state, node) : node.label;
+        if (!process || node.decorative) return label;
         return (
-          <div className='nodrag nopan flex items-center gap-1'>
-            {actions}
-            <NodeConfigurationActions
-              configuration={configuration}
-              selections={selections}
-              state={{ kind: 'state', name: state.name }}
-              title={(target) => {
-                if (target.kind === 'state')
-                  return stateLabel?.(state) ?? state.title;
-                const transition = description.transitions.find(
-                  (item) => item.name === target.name,
-                )!;
-                return transitionLabel?.(transition) ?? transition.title;
-              }}
-            />
-          </div>
+          <FlowDiagramStep
+            kind={kindForNode(node)}
+            label={label}
+            description={nodeDescription?.(node)}
+            actions={nodeActions(node)}
+            progress={
+              node.highlighted
+                ? 'current'
+                : node.visited
+                  ? 'visited'
+                  : history !== undefined ||
+                      currentState !== undefined ||
+                      visitedStates !== undefined
+                    ? 'unreached'
+                    : 'plan'
+            }
+          >
+            {active && (
+              <FlowDiagramTransitionNotes notes={notesForNode(node.id)} />
+            )}
+          </FlowDiagramStep>
         );
-      }}
-      renderNode={(node) => {
-        const state = description.stateInfo.find(
-          (state) => state.name === node.id,
-        );
-        return state && renderState ? renderState(state, node) : node.label;
       }}
       onNodeClick={(node) => {
         const state = description.stateInfo.find(

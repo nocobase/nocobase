@@ -381,6 +381,13 @@ const idID: LocaleResource<typeof enUS> = {
     withdraw: 'Tarik kembali',
   },
   flowDiagram: {
+    controls: 'Kontrol diagram',
+    fitView: 'Sesuaikan tampilan',
+    fullscreen: 'Layar penuh',
+    exitFullscreen: 'Keluar dari layar penuh',
+    escapeHint: 'Tekan Escape untuk keluar',
+    minimap: 'Ikhtisar diagram',
+
     overview: 'Ikhtisar diagram',
     actualSize: 'Ukuran sebenarnya',
     states: 'Serikat',

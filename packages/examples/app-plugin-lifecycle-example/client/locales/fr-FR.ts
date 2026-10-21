@@ -384,6 +384,13 @@ const frFR: LocaleResource<typeof enUS> = {
     withdraw: 'Retirer',
   },
   flowDiagram: {
+    controls: 'Commandes du diagramme',
+    fitView: 'Ajuster à la vue',
+    fullscreen: 'Plein écran',
+    exitFullscreen: 'Quitter le plein écran',
+    escapeHint: 'Appuyez sur Échap pour quitter',
+    minimap: 'Vue d’ensemble du diagramme',
+
     overview: 'Présentation du diagramme',
     actualSize: 'Taille réelle',
     states: 'États',

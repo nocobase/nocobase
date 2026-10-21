@@ -385,6 +385,13 @@ const deDE: LocaleResource<typeof enUS> = {
     withdraw: 'Zurückziehen',
   },
   flowDiagram: {
+    controls: 'Diagrammsteuerung',
+    fitView: 'An Ansicht anpassen',
+    fullscreen: 'Vollbild',
+    exitFullscreen: 'Vollbild verlassen',
+    escapeHint: 'Mit Escape verlassen',
+    minimap: 'Diagrammübersicht',
+
     overview: 'Diagrammübersicht',
     actualSize: 'Tatsächliche Größe',
     states: 'Staaten',

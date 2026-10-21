@@ -1375,6 +1375,9 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.6.5
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
     devDependencies:
       '@nocobase/app-testing':
         specifier: workspace:*
@@ -1394,6 +1397,9 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.18
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.4(@types/react@19.2.18)
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
@@ -1403,9 +1409,6 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.2.8(react@19.2.8)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

@@ -376,6 +376,13 @@ const ptBR: LocaleResource<typeof enUS> = {
     withdraw: 'Retirar',
   },
   flowDiagram: {
+    controls: 'Controles do diagrama',
+    fitView: 'Ajustar à visualização',
+    fullscreen: 'Tela cheia',
+    exitFullscreen: 'Sair da tela cheia',
+    escapeHint: 'Pressione Escape para sair',
+    minimap: 'Visão geral do diagrama',
+
     overview: 'Visão geral do diagrama',
     actualSize: 'Tamanho real',
     states: 'Estados',
