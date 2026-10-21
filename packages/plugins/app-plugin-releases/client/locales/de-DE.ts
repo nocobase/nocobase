@@ -220,6 +220,14 @@ const deDE: LocaleResource<typeof enUS> = {
       },
       idleLabel: 'Halten Sie an, wenn Sie keinen Besuch abstatten',
       dormantLabel: 'Winterschlaf halten, wenn er nicht besucht wird',
+      idleModeLabel: 'Verhalten des Leerlauf-Timers',
+      dormantModeLabel: 'Verhalten des Ruhezustands-Timers',
+      timerMode: {
+        inherit: 'Umgebungsstandard verwenden',
+        custom: 'Eigenen Wert festlegen',
+      },
+      customTimerHint:
+        'Ein leerer benutzerdefinierter Wert deaktiviert diesen Timer; der Umgebungsstandard wird nicht verwendet.',
       minutes: 'Minuten',
       hours: 'Stunden',
       neverIdle: 'Niemals',

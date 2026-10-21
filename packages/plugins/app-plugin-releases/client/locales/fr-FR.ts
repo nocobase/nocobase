@@ -220,6 +220,14 @@ const frFR: LocaleResource<typeof enUS> = {
       },
       idleLabel: "Arrêtez-vous lorsque vous n'êtes pas visité pendant",
       dormantLabel: "Hiberner lorsqu'il n'est pas visité pendant",
+      idleModeLabel: 'Comportement du minuteur d’inactivité',
+      dormantModeLabel: 'Comportement du minuteur d’hibernation',
+      timerMode: {
+        inherit: 'Utiliser la valeur par défaut de l’environnement',
+        custom: 'Définir une valeur personnalisée',
+      },
+      customTimerHint:
+        'Une valeur personnalisée vide désactive ce minuteur ; la valeur par défaut de l’environnement n’est pas utilisée.',
       minutes: 'minutes',
       hours: 'heures',
       neverIdle: 'Jamais',

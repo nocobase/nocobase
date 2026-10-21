@@ -217,6 +217,14 @@ const idID: LocaleResource<typeof enUS> = {
       },
       idleLabel: 'Berhenti jika belum dikunjungi',
       dormantLabel: 'Hibernasi saat tidak dikunjungi',
+      idleModeLabel: 'Perilaku pengatur waktu tidak aktif',
+      dormantModeLabel: 'Perilaku pengatur waktu hibernasi',
+      timerMode: {
+        inherit: 'Gunakan nilai default lingkungan',
+        custom: 'Tetapkan nilai khusus',
+      },
+      customTimerHint:
+        'Nilai khusus yang kosong menonaktifkan pengatur waktu tersebut; nilai default lingkungan tidak digunakan.',
       minutes: 'menit',
       hours: 'jam',
       neverIdle: 'Tidak pernah',

@@ -219,6 +219,14 @@ const viVN: LocaleResource<typeof enUS> = {
       },
       idleLabel: 'Dừng lại khi không được ghé thăm',
       dormantLabel: 'Ngủ đông khi không được truy cập',
+      idleModeLabel: 'Chế độ bộ hẹn giờ nhàn rỗi',
+      dormantModeLabel: 'Chế độ bộ hẹn giờ ngủ đông',
+      timerMode: {
+        inherit: 'Dùng giá trị mặc định của môi trường',
+        custom: 'Đặt giá trị tùy chỉnh',
+      },
+      customTimerHint:
+        'Giá trị tùy chỉnh để trống sẽ tắt bộ hẹn giờ đó, không dùng giá trị mặc định của môi trường.',
       minutes: 'phút',
       hours: 'giờ',
       neverIdle: 'Không bao giờ',
