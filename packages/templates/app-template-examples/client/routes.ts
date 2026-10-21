@@ -3,12 +3,14 @@ import {
   agentsRoute,
   modelsRoute,
   runtimesRoute,
+  skillsRoute,
 } from '@nocobase/app-plugin-agents/client/routes';
 import {
   BrainCircuit,
   BotMessageSquare,
   Bot,
   Server,
+  Sparkles,
   ScanText,
   FileText,
   FilePenLine,
@@ -250,6 +252,11 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
         ...runtimesRoute,
         navigation: { title: 'onlineAgent.runtimes', icon: Server },
         breadcrumb: { title: 'onlineAgent.runtimes' },
+      },
+      {
+        ...skillsRoute,
+        navigation: { title: 'onlineAgent.skills', icon: Sparkles },
+        breadcrumb: { title: 'onlineAgent.skills' },
       },
       {
         ...modelsRoute,

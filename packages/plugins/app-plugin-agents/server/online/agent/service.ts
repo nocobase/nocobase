@@ -1,3 +1,5 @@
+import type { OnlineAgentSandboxProvider } from '../sandbox/types.js';
+import { registerSandboxTools } from '../sandbox/tools.js';
 import type { LanguageModel } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import type {
@@ -33,6 +35,7 @@ export class OnlineAgentService {
       sessions: OnlineAgentSessionManager;
       runner?: OnlineAgentBackend;
       configurator?: OnlineAgentConfigurator;
+      sandboxProvider?: OnlineAgentSandboxProvider;
       ids: IdSource;
       resolver?: ServiceResolver;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
@@ -42,6 +45,7 @@ export class OnlineAgentService {
     },
   ) {
     this.configurator = deps.configurator ?? new OnlineAgentConfigurator();
+    registerSandboxTools(this.configurator);
     this.uiStreams =
       deps.uiStreams ??
       new OnlineAgentUIStreams({ onError: (error) => deps.onError(error) });

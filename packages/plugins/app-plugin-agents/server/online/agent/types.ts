@@ -1,3 +1,4 @@
+import type { OnlineAgentSandbox } from '../sandbox/types.js';
 import type { Tool, ModelMessage, UIMessage, UIMessageChunk } from 'ai';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { ServiceResolver } from '@nocobase/service-provider';
@@ -21,10 +22,17 @@ export type OnlineAgentContext = Readonly<{
   variable?: OnlineAgentJson;
   systemPrompt?: string;
 }>;
+/** In-memory capabilities owned by the current execution, never model input or persisted state. */
+export interface OnlineAgentToolExecution {
+  readonly id: string;
+  getSandbox(): Promise<OnlineAgentSandbox>;
+  readSkill(name: string): Promise<{ ok: boolean; output: string }>;
+}
 export type OnlineAgentToolContext = OnlineAgentContext & {
   /** The executing session, supplied by the runtime rather than model or page input. */
   readonly sessionId: string;
   readonly signal: AbortSignal;
+  readonly execution: OnlineAgentToolExecution;
 };
 export type OnlineAgentScope = {
   agentId?: string;
@@ -36,6 +44,7 @@ export type OnlineAgentScope = {
       };
   context?: { variable?: OnlineAgentJson; systemPrompt?: string };
   tool?: string[];
+  skill?: string[];
   model?: string[];
   thinking?: string;
   permissions?: never;
@@ -50,6 +59,7 @@ export type OnlineAgentConfig = {
   systemPrompt: string;
   variable?: OnlineAgentJson;
   tool: string[];
+  skill?: string[];
   toolVersions: Record<string, string>;
   /** Missing and empty lists are unrestricted; preserve their distinct shapes. */
   model?: string[];

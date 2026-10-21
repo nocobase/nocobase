@@ -54,12 +54,13 @@ describe('app client routes', () => {
     expect(group.children?.map((route) => route.name)).toEqual([
       'agents',
       'runtimes',
+      'skills',
       'models',
       'ai-translation',
       'ai-structured-extraction',
       'ai-form-fill',
     ]);
-    for (const name of ['agents', 'runtimes']) {
+    for (const name of ['agents', 'runtimes', 'skills']) {
       expect(
         group.children?.find((route) => route.name === name),
       ).toMatchObject({
@@ -119,6 +120,28 @@ describe('app client routes', () => {
       componentLoader: expect.any(Function),
     });
   });
+  it('retains the public Skills creation and detail routes under its protected library', () => {
+    const group = resolveRoutes().routes.find(
+      (route) => route.name === 'agentsNavigation',
+    );
+    const library = group?.children?.find((route) => route.name === 'skills');
+    expect(library?.children).toEqual([
+      expect.objectContaining({
+        name: 'skills-new',
+        path: '/skills/new',
+        auth: 'required',
+        componentLoader: expect.any(Function),
+      }),
+      expect.objectContaining({
+        name: 'skills-detail',
+        path: '/skills/:skillId',
+        auth: 'required',
+        componentLoader: expect.any(Function),
+      }),
+    ]);
+    expect(library?.children?.every((child) => !child.navigation)).toBe(true);
+  });
+
   it('keeps the inbox out of the application navigation', () => {
     // The inbox is reached from the header's inbox button, so it deliberately declares no menu entry.
     expect(
@@ -175,6 +198,9 @@ describe('app client routes', () => {
       { name: 'agents', authorizedAs: 'agents' },
       { name: 'runtimes', authorizedAs: 'runtimes' },
       { name: 'runtimes-connect', authorizedAs: 'runtimes' },
+      { name: 'skills', authorizedAs: 'skills' },
+      { name: 'skills-new', authorizedAs: 'skills' },
+      { name: 'skills-detail', authorizedAs: 'skills' },
       { name: 'models', authorizedAs: 'settings:agents.services' },
       { name: 'ai-translation', authorizedAs: null },
       { name: 'ai-structured-extraction', authorizedAs: null },
