@@ -159,7 +159,7 @@ describe('App Foundation overview', () => {
       },
     });
 
-    const overview = await app.service().overview();
+    const overview = await app.service().overview({ countRecords: true });
 
     // Two pieces of equipment, one borrowing, one photo; the account and permission tables are not the application's.
     expect(metricValue(overview, 'dataModeling', 'businessRecords')).toBe(4);
@@ -403,6 +403,31 @@ describe('App Foundation overview', () => {
     );
     clock += 31_000;
     expect((await service.overview()).checkedAt).not.toBe(first.checkedAt);
+  });
+
+  it('preserves known catalog totals when a data scan times out', async () => {
+    await app.migrateApplication();
+    const overview = await app
+      .service({
+        collectorTimeoutMs: 20,
+        collectors: [
+          {
+            key: 'dataModeling',
+            packages: [],
+            collect: () => new Promise(() => undefined),
+          },
+        ],
+      })
+      .overview();
+    expect(capability(overview, 'dataModeling')).toMatchObject({
+      status: 'active',
+      completeness: 'partial',
+      issues: [{ code: 'COLLECTOR_TIMEOUT' }],
+    });
+    expect(metricValue(overview, 'dataModeling', 'businessCollections')).toBe(
+      3,
+    );
+    expect(metricValue(overview, 'dataModeling', 'fields')).toBeNull();
   });
 
   it('writes nothing while collecting', async () => {

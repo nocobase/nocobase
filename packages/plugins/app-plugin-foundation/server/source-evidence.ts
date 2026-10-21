@@ -9,6 +9,7 @@ export interface EvidenceSource {
 export class SourceEvidence {
   private readonly checker: ts.TypeChecker;
   private readonly sources: Map<string, EvidenceSource>;
+  private readonly services = new Map<ts.Declaration, ts.Expression[]>();
 
   public constructor(
     sources: readonly EvidenceSource[],
@@ -35,6 +36,43 @@ export class SourceEvidence {
     this.checker = ts
       .createProgram([...this.sources.keys()], options, host)
       .getTypeChecker();
+  }
+
+  /** Only declarations reachable from the provider entry establish service registrations. */
+  public registerServices(entries: readonly string[]): void {
+    const calls = new Set<ts.Node>();
+    const visit = (node: ts.Node): void => {
+      if (calls.has(node)) return;
+      calls.add(node);
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        ['singleton', 'instance'].includes(node.expression.name.text)
+      ) {
+        const [token, factory] = node.arguments;
+        const declaration = token && this.declarations(token)[0];
+        if (declaration && factory)
+          this.services.set(declaration, [
+            ...(this.services.get(declaration) ?? []),
+            factory,
+          ]);
+      }
+      ts.forEachChild(node, visit);
+    };
+    for (const entry of entries)
+      for (const nodes of this.collect(entry).nodes.values()) {
+        for (const node of nodes) {
+          if (ts.isCallExpression(node)) visit(node);
+          if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) {
+            for (const member of node.members)
+              if (
+                ts.isMethodDeclaration(member) &&
+                ['register', 'boot'].includes(member.name.getText())
+              )
+                visit(member);
+          }
+        }
+      }
   }
 
   public collect(
@@ -146,6 +184,8 @@ export class SourceEvidence {
         ts.isPropertyAccessExpression(node) &&
         ts.isIdentifier(node.expression)
       ) {
+        for (const root of this.serviceMethod(node.expression, node.name.text))
+          visit(root);
         const receiver = this.checker.getSymbolAtLocation(node.expression);
         const namespace = receiver?.declarations?.find(ts.isNamespaceImport);
         if (namespace) {
@@ -154,7 +194,7 @@ export class SourceEvidence {
         }
       }
       if (ts.isIdentifier(node)) {
-        const symbol = this.checker.getSymbolAtLocation(node);
+        const symbol = this.symbol(node);
         if (symbol) follow(symbol);
       }
       if (
@@ -182,6 +222,87 @@ export class SourceEvidence {
   }
 
   public symbol(node: ts.Node): ts.Symbol | undefined {
+    if (
+      node.parent &&
+      ts.isShorthandPropertyAssignment(node.parent) &&
+      node.parent.name === node
+    )
+      return this.checker.getShorthandAssignmentValueSymbol(node.parent);
     return this.checker.getSymbolAtLocation(node);
+  }
+
+  public declarations(node: ts.Node): readonly ts.Declaration[] {
+    let symbol = this.symbol(node);
+    if (symbol && symbol.flags & ts.SymbolFlags.Alias)
+      symbol = this.checker.getAliasedSymbol(symbol);
+    return symbol?.declarations ?? [];
+  }
+
+  /** Resolve local value aliases and re-exports without executing a module. */
+  public values(
+    node: ts.Node,
+    seen: Set<ts.Node> = new Set<ts.Node>(),
+  ): readonly ts.Node[] {
+    if (seen.has(node)) return [];
+    seen.add(node);
+    if (ts.isIdentifier(node))
+      return this.declarations(node).flatMap((item) => this.values(item, seen));
+    if (ts.isVariableDeclaration(node))
+      return node.initializer ? this.values(node.initializer, seen) : [];
+    if (ts.isExportAssignment(node)) return this.values(node.expression, seen);
+    if (
+      ts.isParenthesizedExpression(node) ||
+      ts.isAsExpression(node) ||
+      ts.isSatisfiesExpression(node)
+    )
+      return this.values(node.expression, seen);
+    return [node];
+  }
+
+  private serviceMethod(
+    receiver: ts.Expression,
+    method: string,
+  ): readonly ts.Node[] {
+    const roots: ts.Node[] = [];
+    for (const value of this.values(receiver)) {
+      if (
+        !ts.isCallExpression(value) ||
+        !ts.isPropertyAccessExpression(value.expression) ||
+        value.expression.name.text !== 'resolve'
+      )
+        continue;
+      const token = value.arguments[0];
+      const declaration = token && this.declarations(token)[0];
+      const factories = declaration
+        ? (this.services.get(declaration) ?? [])
+        : [];
+      // Competing registrations cannot establish which implementation this runtime selected.
+      if (factories.length !== 1) continue;
+      for (const factory of factories) {
+        const find = (node: ts.Node): void => {
+          if (ts.isNewExpression(node)) {
+            for (const candidate of this.values(node.expression)) {
+              if (
+                !ts.isClassDeclaration(candidate) &&
+                !ts.isClassExpression(candidate)
+              )
+                continue;
+              roots.push(node);
+              roots.push(candidate);
+              for (const member of candidate.members)
+                if (
+                  ts.isMethodDeclaration(member) &&
+                  member.name &&
+                  member.name.getText() === method
+                )
+                  roots.push(member);
+            }
+          }
+          ts.forEachChild(node, find);
+        };
+        this.values(factory).forEach(find);
+      }
+    }
+    return roots;
   }
 }

@@ -4,7 +4,13 @@ import {
   type ApiCall,
 } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import plugin from '../../client/plugin.js';
@@ -241,11 +247,11 @@ describe('App Foundation page', () => {
     await render();
 
     const detail = await screen.findByRole('region', { name: /Data modeling/ });
-    expect(
-      within(detail).getByText(
-        '2 Collections of the application’s own: equipment and borrowings.',
-      ),
-    ).toBeInTheDocument();
+    const preview = within(detail).getByRole('list', {
+      name: 'Collection preview',
+    });
+    expect(within(preview).getByText('equipment')).toBeInTheDocument();
+    expect(within(preview).getByText('borrowings')).toBeInTheDocument();
     expect(within(detail).getByText('75,413')).toBeInTheDocument();
     expect(within(detail).getByText('@nocobase/db')).toBeInTheDocument();
     expect(within(detail).getByText('1.2.3')).toBeInTheDocument();
@@ -304,7 +310,7 @@ describe('App Foundation page', () => {
     expect(within(detail).getByText('Once in use')).toBeInTheDocument();
   });
 
-  it('offers only refresh and collects again when asked to', async () => {
+  it('refreshes the overview without requesting expensive business record counts', async () => {
     const calls = await render();
     await screen.findByText('3 / 13');
 
@@ -321,6 +327,228 @@ describe('App Foundation page', () => {
       query: { refresh: 'true' },
     });
   });
+
+  it('counts business records only when explicitly requested', async () => {
+    const calls = await render();
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Count business records' }),
+    );
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1]).toMatchObject({
+      path: 'foundation/overview',
+      query: { countRecords: 'true' },
+    });
+  });
+
+  it('keeps the catalog in a dialog and searches automatically across pages', async () => {
+    const names = Array.from(
+      { length: 61 },
+      (_, index) => `collection${String(index).padStart(3, '0')}`,
+    );
+    const calls = await render((call) => {
+      if (call.path !== 'foundation/collections') return { data: OVERVIEW };
+      const matching = names.filter((name) =>
+        name.includes(String(call.query?.search ?? '')),
+      );
+      const offset = Number(call.query?.offset ?? 0);
+      return {
+        data: matching
+          .slice(offset, offset + 50)
+          .map((name) => ({ name, kind: 'table' })),
+        meta: { total: matching.length },
+      };
+    });
+    const open = await screen.findByRole('button', {
+      name: 'View all collections',
+    });
+    expect(calls).toHaveLength(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    fireEvent.click(open);
+    const dialog = await screen.findByRole('dialog', { name: 'Collections' });
+    await screen.findByText('collection000');
+    expect(
+      within(dialog).getByRole('list', { name: 'Collections' }).children,
+    ).toHaveLength(50);
+    expect(screen.queryByText('collection060')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await screen.findByText('collection060');
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Search collections' }),
+      { target: { value: 'collection059' } },
+    );
+    await screen.findByText('Showing 1–1 of 1');
+    expect(calls.at(-1)).toMatchObject({
+      path: 'foundation/collections',
+      query: { search: 'collection059', offset: '0' },
+    });
+    expect(screen.queryByText('collection060')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close collections' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(open).toHaveFocus();
+  });
+
+  it('waits for IME composition to finish and shows a useful empty search state', async () => {
+    const calls = await render((call) =>
+      call.path === 'foundation/collections'
+        ? { data: [], meta: { total: 0 } }
+        : { data: OVERVIEW },
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'View all collections' }),
+    );
+    const input = await screen.findByRole('textbox', {
+      name: 'Search collections',
+    });
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: 'shebei' } });
+    await act(() => new Promise((resolve) => setTimeout(resolve, 300)));
+    expect(
+      calls.filter((call) => call.query?.search === 'shebei'),
+    ).toHaveLength(0);
+    fireEvent.change(input, { target: { value: '设备' } });
+    fireEvent.compositionEnd(input);
+    await waitFor(() => expect(calls.at(-1)?.query?.search).toBe('设备'));
+    expect(
+      await screen.findByText('No matching collections'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Try another name or clear the search.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
+  });
+
+  it('keeps a large catalog preview bounded without requesting its full list', async () => {
+    const calls = await render(() => ({
+      data: {
+        ...OVERVIEW,
+        capabilities: OVERVIEW.capabilities.map((item) =>
+          item.key === 'dataModeling'
+            ? {
+                ...item,
+                facts: [
+                  {
+                    code: 'applicationCollectionsPreview',
+                    params: {
+                      count: 1018,
+                      names: Array.from(
+                        { length: 1000 },
+                        (_, index) => `demo${index}`,
+                      ),
+                    },
+                  },
+                ],
+              }
+            : item,
+        ),
+      },
+    }));
+    const preview = await screen.findByRole('list', {
+      name: 'Collection preview',
+    });
+    expect(within(preview).getAllByRole('listitem')).toHaveLength(6);
+    expect(within(preview).getByText('+1,013')).toBeInTheDocument();
+    expect(screen.queryByText('demo999')).not.toBeInTheDocument();
+    expect(calls).toHaveLength(1);
+  });
+
+  it.each([403, 500])(
+    'offers catalog retry only for a recoverable failure (%i)',
+    async (status) => {
+      let failed = true;
+      await render((call) =>
+        call.path !== 'foundation/collections'
+          ? { data: OVERVIEW }
+          : failed
+            ? Response.json(
+                {
+                  error: {
+                    code: status,
+                    status:
+                      status === 403
+                        ? 'PERMISSION_DENIED'
+                        : 'INTERNAL_SERVER_ERROR',
+                    reason: 'FAILED',
+                    domain: 'foundation',
+                    message: 'Unavailable.',
+                  },
+                },
+                { status },
+              )
+            : {
+                data: [{ name: 'recovered', kind: 'table' }],
+                meta: { total: 1 },
+              },
+      );
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'View all collections' }),
+      );
+      const dialog = await screen.findByRole('dialog', { name: 'Collections' });
+      await within(dialog).findByRole('alert');
+      if (status === 403)
+        expect(
+          within(dialog).queryByRole('button', { name: 'Try again' }),
+        ).not.toBeInTheDocument();
+      else {
+        failed = false;
+        fireEvent.click(
+          within(dialog).getByRole('button', { name: 'Try again' }),
+        );
+        expect(
+          await within(dialog).findByText('recovered'),
+        ).toBeInTheDocument();
+      }
+    },
+  );
+
+  it.each([
+    ['en-US', 'focus'],
+    ['zh-CN', 'focus'],
+    ['en-US', 'hover'],
+    ['zh-CN', 'hover'],
+  ])(
+    'shows capability header tooltips in %s on %s',
+    async (locale, interaction) => {
+      await renderWithApp(
+        <FoundationOverviewView
+          overview={OVERVIEW}
+          registeredRoutes={[
+            {
+              id: 'app:orders',
+              name: 'orders',
+              path: '/orders',
+              source: 'application',
+              packageName: 'app',
+              auth: 'required',
+              authz: 'skip',
+              navigation: { title: 'Orders' },
+              componentLoader: async () => ({ default: () => null }),
+            },
+          ]}
+        />,
+        { plugins: [plugin()], namespace: FOUNDATION_I18N_NAMESPACE, locale },
+      );
+      const matrix = screen.getByRole('region', {
+        name:
+          locale === 'en-US'
+            ? 'Business modules and foundation capabilities'
+            : '业务模块与底座能力',
+      });
+      const name = locale === 'en-US' ? 'Data modeling' : '数据建模';
+      const trigger = within(matrix).getByRole('button', { name });
+      if (interaction === 'focus') {
+        fireEvent.keyDown(document, { key: 'Tab' });
+        act(() => trigger.focus());
+      } else {
+        fireEvent.pointerEnter(trigger, { pointerType: 'mouse' });
+        fireEvent.mouseEnter(trigger);
+        fireEvent.mouseMove(trigger);
+      }
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(name);
+    },
+  );
 
   it('tells a user without unrestricted access that the page is not theirs', async () => {
     await render(() =>

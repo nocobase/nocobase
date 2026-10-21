@@ -31,6 +31,7 @@ const idID: FoundationResource = {
     lowerBound: 'Nilai minimum: sebagian data tidak dapat dibaca.',
   },
   matrix: {
+    collections: 'Koleksi data: {{names}}',
     title: 'Modul bisnis dan kemampuan fondasi',
     description:
       'Lihat kemampuan yang mendukung tiap modul. Pilih tanda centang untuk melihat dasar hubungan dan pekerjaan yang perlu dibuat sendiri.',
@@ -106,6 +107,23 @@ const idID: FoundationResource = {
     legendUnused: 'Belum digunakan {{count}}',
   },
   detail: {
+    collectionCount: '{{count}} tabel',
+    collectionPreview: 'Pratinjau tabel',
+    collectionsTitle: 'Tabel',
+    noCollectionMatches: 'Tidak ada tabel yang cocok',
+    noCollectionMatchesHint: 'Coba nama lain atau kosongkan pencarian.',
+    collectionRange: '{{from}}–{{to}} dari {{total}}',
+    closeCollections: 'Tutup daftar tabel',
+    viewCollections: 'Lihat semua koleksi',
+    searchCollections: 'Cari koleksi',
+    collectionResults: '{{count}} koleksi cocok',
+    previousPage: 'Sebelumnya',
+    nextPage: 'Berikutnya',
+    countRecords: 'Hitung catatan bisnis',
+    recordsOnDemand:
+      'Catatan bisnis dihitung sesuai permintaan. Basis data besar mungkin memerlukan waktu lebih lama.',
+    recordsCountedAt: 'Catatan dihitung {{time}}',
+
     businessModules: 'Modul bisnis terkait',
     inThisApp: 'Dalam aplikasi ini',
     withoutFoundation: 'Tanpa fondasi',
@@ -254,6 +272,8 @@ const idID: FoundationResource = {
       'Ditemukan ekstensi runtime tanpa klasifikasi. Kepemilikan koleksi belum pasti; angka bisnis disembunyikan.',
     noApplicationCollections:
       'Lapisan data berjalan, aplikasi belum memiliki koleksi sendiri.',
+    applicationCollectionsPreview:
+      'Aplikasi ini memiliki {{count}} koleksi, termasuk {{names}}.',
     applicationCollections: '{{count}} koleksi milik aplikasi: {{names}}.',
     relations: '{{count}} relasi menghubungkannya.',
     fileCollections: '{{count}} koleksi berkas: {{names}}.',

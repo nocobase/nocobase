@@ -28,6 +28,7 @@ const zhTW: FoundationResource = {
     lowerBound: '此為下限：部分資料未能讀取。',
   },
   matrix: {
+    collections: '關聯資料表：{{names}}',
     title: '業務模組與底座能力',
     description:
       '查看各業務模組由哪些底座能力支撐，點選標記，了解關聯依據與自行實作時需要承擔的工作。',
@@ -100,6 +101,22 @@ const zhTW: FoundationResource = {
     legendUnused: '尚未使用 {{count}}',
   },
   detail: {
+    collectionCount: '共 {{count}} 張資料表',
+    collectionPreview: '資料表示例',
+    collectionsTitle: '資料表',
+    noCollectionMatches: '找不到資料表',
+    noCollectionMatchesHint: '試試其他名稱，或清除搜尋。',
+    collectionRange: '第 {{from}}–{{to}} 項，共 {{total}} 項',
+    closeCollections: '關閉資料表清單',
+    viewCollections: '查看全部資料表',
+    searchCollections: '搜尋資料表',
+    collectionResults: '共 {{count}} 張符合的資料表',
+    previousPage: '上一頁',
+    nextPage: '下一頁',
+    countRecords: '統計業務資料量',
+    recordsOnDemand: '業務資料總量按需統計，資料庫較大時可能需要較長時間。',
+    recordsCountedAt: '資料量統計於 {{time}}',
+
     businessModules: '關聯業務模組',
     inThisApp: '在本系統中',
     withoutFoundation: '若沒有底座',
@@ -224,6 +241,8 @@ const zhTW: FoundationResource = {
     collectionOwnershipUnknown:
       '發現未分類的執行階段擴充，資料表歸屬尚未確認，暫不顯示業務統計。',
     noApplicationCollections: '資料層已執行，應用尚無自有資料表。',
+    applicationCollectionsPreview:
+      '本系統自有 {{count}} 張資料表，包含 {{names}} 等。',
     applicationCollections: '本應用有 {{count}} 個自有資料表：{{names}}。',
     relations: '共 {{count}} 個關聯。',
     fileCollections: '共 {{count}} 個檔案資料表：{{names}}。',

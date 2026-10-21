@@ -29,6 +29,7 @@ const zhCN: FoundationResource = {
     lowerBound: '至少为此数：部分数据未能读取。',
   },
   matrix: {
+    collections: '关联数据表：{{names}}',
     title: '业务模块与底座能力',
     description:
       '查看每个业务模块由哪些底座能力支撑，点击标记，了解关联依据和自行实现时需要承担的工作。',
@@ -101,6 +102,22 @@ const zhCN: FoundationResource = {
     legendUnused: '本系统尚未使用 {{count}}',
   },
   detail: {
+    collectionCount: '共 {{count}} 张数据表',
+    collectionPreview: '数据表示例',
+    collectionsTitle: '数据表',
+    noCollectionMatches: '未找到数据表',
+    noCollectionMatchesHint: '试试其他名称，或清空搜索。',
+    collectionRange: '第 {{from}}–{{to}} 项，共 {{total}} 项',
+    closeCollections: '关闭数据表清单',
+    viewCollections: '查看全部数据表',
+    searchCollections: '搜索数据表',
+    collectionResults: '共 {{count}} 张匹配的数据表',
+    previousPage: '上一页',
+    nextPage: '下一页',
+    countRecords: '统计业务数据量',
+    recordsOnDemand: '业务数据总量按需统计，数据库较大时可能需要更长时间。',
+    recordsCountedAt: '数据量统计于 {{time}}',
+
     businessModules: '关联业务模块',
     inThisApp: '在本系统中',
     withoutFoundation: '如果没有底座',
@@ -232,6 +249,8 @@ const zhCN: FoundationResource = {
     collectionOwnershipUnknown:
       '发现尚未归类的运行时扩展，部分数据表的归属无法确认，暂不展示业务统计数。',
     noApplicationCollections: '数据层已在运行，本系统还没有自己的数据表。',
+    applicationCollectionsPreview:
+      '本系统自有 {{count}} 张数据表，包含 {{names}} 等。',
     applicationCollections: '本系统自有 {{count}} 张数据表：{{names}}。',
     relations: '它们之间有 {{count}} 个关联关系。',
     fileCollections: '{{count}} 张文件表：{{names}}。',

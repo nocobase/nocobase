@@ -113,9 +113,21 @@ export interface FoundationOverview {
   readonly moduleSources?: FoundationModuleSources;
   /** When this result was collected, RFC 3339. A cached result keeps its original time. */
   readonly checkedAt: string;
+  /** The independent collection time of the last successful, explicitly requested business row count. */
+  readonly recordCountCheckedAt?: string;
   readonly durationMs: number;
   /** The database connection the statistics read: always the default one. */
   readonly connection: string;
+}
+
+/** One bounded, on-demand page of application-owned Collections. */
+export interface FoundationCollectionPage {
+  readonly items: readonly {
+    readonly name: string;
+    readonly title?: string;
+    readonly kind: string;
+  }[];
+  readonly total: number;
 }
 
 export interface FoundationModuleSource {
@@ -124,6 +136,7 @@ export interface FoundationModuleSource {
   /** Value imports reachable from the page; type-only imports and installed-only packages are excluded. */
   readonly providers: readonly string[];
   readonly apiProviders?: readonly string[];
+  readonly collections?: readonly string[];
   readonly complete: boolean;
 }
 
@@ -143,6 +156,7 @@ export interface FoundationModuleLink {
     | 'apiSource'
   )[];
   readonly providers: readonly string[];
+  readonly collections?: readonly string[];
 }
 
 export interface FoundationBusinessModule {

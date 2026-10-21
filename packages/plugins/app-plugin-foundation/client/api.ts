@@ -14,11 +14,14 @@ import {
 /** Reads the overview. Every call is a GET; the plugin writes nothing. */
 export async function fetchFoundationOverview(
   api: ApiClient,
-  options: { readonly refresh?: boolean } = {},
+  options: { readonly refresh?: boolean; readonly countRecords?: boolean } = {},
 ): Promise<FoundationOverview> {
   const { data } = await api.request<{ readonly data: FoundationOverview }>({
     path: `${FOUNDATION_NAMESPACE}/overview`,
-    query: options.refresh ? { refresh: 'true' } : {},
+    query: {
+      ...(options.refresh ? { refresh: 'true' } : {}),
+      ...(options.countRecords ? { countRecords: 'true' } : {}),
+    },
   });
   return data;
 }
@@ -36,6 +39,7 @@ export interface FoundationOverviewState {
   readonly loading: boolean;
   /** Collects again on the server, bypassing its cache. */
   readonly refresh: () => void;
+  readonly countRecords: () => void;
 }
 
 export function useFoundationOverview(): FoundationOverviewState {
@@ -48,15 +52,24 @@ export function useFoundationOverview(): FoundationOverviewState {
     retry: false,
     refetchOnWindowFocus: false,
   });
-  const refresh = useCallback(() => {
-    void queryClient
-      .fetchQuery({
-        queryKey: FOUNDATION_OVERVIEW_QUERY_KEY,
-        queryFn: () => fetchFoundationOverview(api, { refresh: true }),
-        staleTime: 0,
-      })
-      .catch(() => undefined);
-  }, [api, queryClient]);
+  const collect = useCallback(
+    (countRecords = false) => {
+      void queryClient
+        .fetchQuery({
+          queryKey: FOUNDATION_OVERVIEW_QUERY_KEY,
+          queryFn: () =>
+            fetchFoundationOverview(
+              api,
+              countRecords ? { countRecords: true } : { refresh: true },
+            ),
+          staleTime: 0,
+        })
+        .catch(() => undefined);
+    },
+    [api, queryClient],
+  );
+  const refresh = useCallback(() => collect(), [collect]);
+  const countRecords = useCallback(() => collect(true), [collect]);
   const error: FoundationLoadError | undefined =
     query.error === null
       ? undefined
@@ -71,5 +84,6 @@ export function useFoundationOverview(): FoundationOverviewState {
     ...(error === undefined ? {} : { error }),
     loading: query.isFetching,
     refresh,
+    countRecords,
   };
 }

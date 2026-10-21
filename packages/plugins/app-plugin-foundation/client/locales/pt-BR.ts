@@ -32,6 +32,7 @@ const ptBR: FoundationResource = {
     lowerBound: 'Valor mínimo: parte dos dados não pôde ser lida.',
   },
   matrix: {
+    collections: 'Coleções de dados: {{names}}',
     title: 'Módulos de negócio e recursos da base',
     description:
       'Veja quais recursos sustentam cada módulo. Selecione uma marca para conhecer a relação e o que precisaria implementar por conta própria.',
@@ -107,6 +108,23 @@ const ptBR: FoundationResource = {
     legendUnused: 'Ainda sem uso {{count}}',
   },
   detail: {
+    collectionCount: '{{count}} tabelas',
+    collectionPreview: 'Prévia das tabelas',
+    collectionsTitle: 'Tabelas',
+    noCollectionMatches: 'Nenhuma tabela encontrada',
+    noCollectionMatchesHint: 'Tente outro nome ou limpe a busca.',
+    collectionRange: '{{from}}–{{to}} de {{total}}',
+    closeCollections: 'Fechar tabelas',
+    viewCollections: 'Ver todas as coleções',
+    searchCollections: 'Pesquisar coleções',
+    collectionResults: '{{count}} coleções encontradas',
+    previousPage: 'Anterior',
+    nextPage: 'Próxima',
+    countRecords: 'Contar registros de negócio',
+    recordsOnDemand:
+      'Os registros de negócio são contados sob demanda. Bancos de dados grandes podem demorar mais.',
+    recordsCountedAt: 'Registros contados {{time}}',
+
     businessModules: 'Módulos de negócio relacionados',
     inThisApp: 'Neste aplicativo',
     withoutFoundation: 'Sem a base',
@@ -261,6 +279,8 @@ const ptBR: FoundationResource = {
       'Foi encontrada uma extensão em execução sem classificação. A origem das coleções é incerta; os totais de negócio foram omitidos.',
     noApplicationCollections:
       'A camada de dados funciona, mas ainda não há coleções próprias do aplicativo.',
+    applicationCollectionsPreview:
+      'Este aplicativo tem {{count}} coleções, incluindo {{names}}.',
     applicationCollections: '{{count}} coleções próprias: {{names}}.',
     relations: '{{count}} relações entre elas.',
     fileCollections: '{{count}} coleções de arquivos: {{names}}.',

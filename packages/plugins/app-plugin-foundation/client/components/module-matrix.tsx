@@ -9,6 +9,12 @@ import { CAPABILITY_ICONS } from './capability-icons.js';
 import { useFoundationTranslation } from './foundation-translation.js';
 import { Button } from './ui/button.js';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './ui/tooltip.js';
+import {
   Table,
   TableHeader,
   TableBody,
@@ -114,35 +120,44 @@ export function ModuleMatrix({
                   <col key={capability.key} />
                 ))}
               </colgroup>
-              <TableHeader className='bg-transparent!'>
-                <TableRow className='hover:bg-transparent!'>
-                  <TableHead className='h-8! px-0! text-xs font-normal! text-muted-foreground!'>
-                    {t('matrix.modules')}
-                  </TableHead>
-                  {capabilities.map((capability) => {
-                    const Icon = CAPABILITY_ICONS[capability.key] ?? Plug;
-                    return (
-                      <TableHead
-                        key={capability.key}
-                        className='h-8! px-1! text-center'
-                      >
-                        <span
-                          title={name(capability)}
-                          className={cn(
-                            'inline-flex p-1',
-                            capability.status === 'active'
-                              ? 'text-primary'
-                              : 'text-muted-foreground/50',
-                          )}
+              <TooltipProvider>
+                <TableHeader className='bg-transparent!'>
+                  <TableRow className='hover:bg-transparent!'>
+                    <TableHead className='h-8! px-0! text-xs font-normal! text-muted-foreground!'>
+                      {t('matrix.modules')}
+                    </TableHead>
+                    {capabilities.map((capability) => {
+                      const Icon = CAPABILITY_ICONS[capability.key] ?? Plug;
+                      return (
+                        <TableHead
+                          key={capability.key}
+                          className='h-8! px-1! text-center'
                         >
-                          <Icon className='size-4' aria-hidden />
-                          <span className='sr-only'>{name(capability)}</span>
-                        </span>
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              </TableHeader>
+                          <Tooltip>
+                            <TooltipTrigger
+                              aria-label={name(capability)}
+                              aria-describedby={`foundation-column-${capability.key}`}
+                              className={cn(
+                                'inline-flex rounded p-1 focus-visible:outline-2 focus-visible:outline-ring',
+                                capability.status === 'active'
+                                  ? 'text-primary'
+                                  : 'text-muted-foreground/50',
+                              )}
+                            >
+                              <Icon className='size-4' aria-hidden />
+                            </TooltipTrigger>
+                            <TooltipContent
+                              id={`foundation-column-${capability.key}`}
+                            >
+                              {name(capability)}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                </TableHeader>
+              </TooltipProvider>
               <TableBody>
                 {modules.map((item) => (
                   <TableRow
@@ -240,6 +255,13 @@ export function ModuleMatrix({
               {link.providers.length ? (
                 <p className='break-words font-mono text-xs text-muted-foreground'>
                   {link.providers.join(' · ')}
+                </p>
+              ) : null}
+              {link.collections?.length ? (
+                <p className='break-words text-xs text-muted-foreground'>
+                  {t('matrix.collections', {
+                    names: link.collections.join(', '),
+                  })}
                 </p>
               ) : null}
               {selected.reason !== 'unrecognizedExtension' ? (

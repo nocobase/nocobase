@@ -30,6 +30,7 @@ const viVN: FoundationResource = {
     lowerBound: 'Giá trị tối thiểu: chưa đọc được một phần dữ liệu.',
   },
   matrix: {
+    collections: 'Bộ sưu tập dữ liệu: {{names}}',
     title: 'Mô-đun nghiệp vụ và khả năng nền tảng',
     description:
       'Xem khả năng nào hỗ trợ từng mô-đun. Chọn dấu tích để xem căn cứ liên kết và công việc cần làm nếu tự triển khai.',
@@ -105,6 +106,23 @@ const viVN: FoundationResource = {
     legendUnused: 'Chưa dùng {{count}}',
   },
   detail: {
+    collectionCount: '{{count}} bảng dữ liệu',
+    collectionPreview: 'Xem trước bảng dữ liệu',
+    collectionsTitle: 'Bảng dữ liệu',
+    noCollectionMatches: 'Không tìm thấy bảng phù hợp',
+    noCollectionMatchesHint: 'Thử tên khác hoặc xóa tìm kiếm.',
+    collectionRange: '{{from}}–{{to}} trên {{total}}',
+    closeCollections: 'Đóng danh sách bảng',
+    viewCollections: 'Xem tất cả bộ sưu tập',
+    searchCollections: 'Tìm bộ sưu tập',
+    collectionResults: '{{count}} bộ sưu tập phù hợp',
+    previousPage: 'Trước',
+    nextPage: 'Tiếp',
+    countRecords: 'Đếm bản ghi nghiệp vụ',
+    recordsOnDemand:
+      'Tổng bản ghi nghiệp vụ được đếm khi cần. Cơ sở dữ liệu lớn có thể mất nhiều thời gian hơn.',
+    recordsCountedAt: 'Đã đếm bản ghi {{time}}',
+
     businessModules: 'Mô-đun nghiệp vụ liên quan',
     inThisApp: 'Trong ứng dụng này',
     withoutFoundation: 'Nếu không có nền tảng',
@@ -250,6 +268,8 @@ const viVN: FoundationResource = {
       'Phát hiện phần mở rộng lúc chạy chưa phân loại. Chưa xác nhận bộ sưu tập thuộc bên nào nên ẩn số liệu nghiệp vụ.',
     noApplicationCollections:
       'Lớp dữ liệu đang chạy, ứng dụng chưa có bộ sưu tập riêng.',
+    applicationCollectionsPreview:
+      'Ứng dụng có {{count}} bộ sưu tập, bao gồm {{names}}.',
     applicationCollections: '{{count}} bộ sưu tập riêng: {{names}}.',
     relations: '{{count}} quan hệ kết nối chúng.',
     fileCollections: '{{count}} bộ sưu tập tệp: {{names}}.',

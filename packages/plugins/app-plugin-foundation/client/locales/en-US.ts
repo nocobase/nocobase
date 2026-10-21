@@ -31,6 +31,7 @@ const enUS = {
     lowerBound: 'At least this many: part of it could not be read.',
   },
   matrix: {
+    collections: 'Data collections: {{names}}',
     title: 'Business modules and foundation capabilities',
     description:
       'See which foundation capabilities support each module. Select a checkmark to see the connection and what you would need to build yourself.',
@@ -107,6 +108,23 @@ const enUS = {
     legendUnused: 'Not used yet {{count}}',
   },
   detail: {
+    collectionCount: '{{count}} collections',
+    collectionPreview: 'Collection preview',
+    collectionsTitle: 'Collections',
+    noCollectionMatches: 'No matching collections',
+    noCollectionMatchesHint: 'Try another name or clear the search.',
+    collectionRange: 'Showing {{from}}–{{to}} of {{total}}',
+    closeCollections: 'Close collections',
+    viewCollections: 'View all collections',
+    searchCollections: 'Search collections',
+    collectionResults: '{{count}} matching collections',
+    previousPage: 'Previous',
+    nextPage: 'Next',
+    countRecords: 'Count business records',
+    recordsOnDemand:
+      'Business record totals are counted on demand. Large databases may take longer.',
+    recordsCountedAt: 'Records counted {{time}}',
+
     businessModules: 'Connected business modules',
     inThisApp: 'In this application',
     withoutFoundation: 'Without the foundation',
@@ -264,6 +282,8 @@ const enUS = {
       'An unclassified runtime extension was found. Collection ownership is unconfirmed, so business counts are withheld.',
     noApplicationCollections:
       'The data layer runs the application, which has no Collections of its own yet.',
+    applicationCollectionsPreview:
+      'This application has {{count}} collections, including {{names}}.',
     applicationCollections:
       '{{count}} Collections of the application’s own: {{names}}.',
     relations: '{{count}} relations connect them.',

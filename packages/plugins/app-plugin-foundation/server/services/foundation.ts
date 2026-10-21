@@ -7,6 +7,8 @@ import type {
   FoundationIssue,
   FoundationOverview,
   FoundationPackage,
+  FoundationMetric,
+  FoundationCollectionPage,
 } from '../../shared/foundation.js';
 import { availableCapabilities } from '../../shared/available-capabilities.js';
 import {
@@ -15,6 +17,12 @@ import {
   type CollectorContext,
 } from '../capabilities/index.js';
 import { Inventory, Probe } from '../inventory.js';
+import { ReadQueue } from '../read-queue.js';
+import {
+  applicationCollections,
+  dataModelingSummary,
+} from '../capabilities/data.js';
+import type { CollectionSummary } from '../inventory.js';
 import { InstalledPackages } from '../packages.js';
 import { collectModuleSources } from '../module-sources.js';
 import {
@@ -53,7 +61,17 @@ export class DefaultFoundationService implements FoundationService {
     readonly at: number;
     readonly overview: FoundationOverview;
   };
-  private pending?: Promise<FoundationOverview>;
+  private pending?: {
+    readonly counts: boolean;
+    readonly result: Promise<FoundationOverview>;
+  };
+  private readonly reads = new ReadQueue();
+  private recordCount?: {
+    readonly signature: string;
+    readonly checkedAt: string;
+    readonly metric: FoundationMetric;
+  };
+  private applicationCollections?: readonly CollectionSummary[];
   private readonly packages: InstalledPackages;
   private readonly cacheTtlMs: number;
   private readonly collectorTimeoutMs: number;
@@ -73,18 +91,28 @@ export class DefaultFoundationService implements FoundationService {
   ): Promise<FoundationOverview> {
     if (
       !options.refresh &&
+      !options.countRecords &&
       this.cached &&
       this.now() - this.cached.at < this.cacheTtlMs
     )
       return this.cached.overview;
     // Concurrent requests share one collection rather than each scanning every table.
-    this.pending ??= this.collect().finally(() => {
+    if (this.pending) {
+      const pending = this.pending;
+      const result = await pending.result;
+      return options.countRecords && !pending.counts
+        ? this.overview(options)
+        : result;
+    }
+    const counts = options.countRecords === true;
+    const result = this.collect(counts).finally(() => {
       this.pending = undefined;
     });
-    return this.pending;
+    this.pending = { counts, result };
+    return result;
   }
 
-  private async collect(): Promise<FoundationOverview> {
+  private async collect(countRecords: boolean): Promise<FoundationOverview> {
     const started = this.now();
     const { container } = this.options;
     const database = container.has(databaseManagerToken)
@@ -93,13 +121,20 @@ export class DefaultFoundationService implements FoundationService {
     let inventory: Inventory | undefined;
     let databaseUnreadable = false;
     if (database) {
+      const abort = new AbortController();
+      const timer = setTimeout(() => abort.abort(), this.collectorTimeoutMs);
       try {
-        inventory = await Inventory.read(database);
+        inventory = await Inventory.read(database, this.reads, abort.signal);
       } catch {
         databaseUnreadable = true;
+      } finally {
+        clearTimeout(timer);
       }
     }
     const applicationName = await this.packages.applicationName();
+    let ownedCollections = inventory
+      ? applicationCollections(new Probe(inventory))
+      : undefined;
     const capabilities = await mapWithConcurrency(
       this.collectors,
       CONCURRENCY,
@@ -116,6 +151,7 @@ export class DefaultFoundationService implements FoundationService {
               config: this.options.config,
               applicationName,
               hasClient: this.options.hasClient,
+              countRecords,
             }),
     );
     const inventoryOfProviders = await collectProviderInventory(
@@ -133,6 +169,7 @@ export class DefaultFoundationService implements FoundationService {
           entry.registration === 'observed',
       )
     ) {
+      ownedCollections = undefined;
       const index = capabilities.findIndex(
         (entry) => entry.key === 'dataModeling',
       );
@@ -156,6 +193,39 @@ export class DefaultFoundationService implements FoundationService {
           ],
         };
     }
+    const signature = JSON.stringify(
+      inventory?.collections
+        .filter((item) => item.kind === 'table')
+        .map((item) => item.name)
+        .sort(),
+    );
+    const data = capabilities.find((item) => item.key === 'dataModeling');
+    const recordMetric = data?.metrics.find(
+      (item) => item.key === 'businessRecords',
+    );
+    if (this.recordCount?.signature !== signature) this.recordCount = undefined;
+    if (countRecords && recordMetric?.complete && recordMetric.value !== null) {
+      this.recordCount = {
+        signature,
+        metric: recordMetric,
+        checkedAt: new Date(this.now()).toISOString(),
+      };
+    } else if (
+      this.recordCount &&
+      data?.completeness !== 'failed' &&
+      !data?.facts.some((item) => item.code === 'collectionOwnershipUnknown')
+    ) {
+      const index = capabilities.findIndex(
+        (item) => item.key === 'dataModeling',
+      );
+      if (data)
+        capabilities[index] = {
+          ...data,
+          metrics: data.metrics.map((item) =>
+            item.key === 'businessRecords' ? this.recordCount!.metric : item,
+          ),
+        };
+    }
     const moduleSources = await collectModuleSources(
       this.options.rootDir,
       this.options.runtimeProviders?.(),
@@ -170,11 +240,42 @@ export class DefaultFoundationService implements FoundationService {
         inventoryOfProviders,
       ),
       checkedAt: new Date(finished).toISOString(),
+      ...(this.recordCount &&
+      !data?.facts.some((item) => item.code === 'collectionOwnershipUnknown')
+        ? { recordCountCheckedAt: this.recordCount.checkedAt }
+        : {}),
       durationMs: finished - started,
       connection: 'default',
     };
+    this.applicationCollections = ownedCollections;
     this.cached = { at: finished, overview };
     return overview;
+  }
+
+  public async collections(options: {
+    readonly offset: number;
+    readonly search: string;
+  }): Promise<FoundationCollectionPage | undefined> {
+    await this.overview();
+    if (!this.applicationCollections) return undefined;
+    const search = options.search.trim().toLocaleLowerCase();
+    const matching = this.applicationCollections
+      .filter((item) =>
+        `${item.name}\n${item.title ?? ''}`
+          .toLocaleLowerCase()
+          .includes(search),
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return {
+      items: matching
+        .slice(options.offset, options.offset + 50)
+        .map(({ name, title, kind }) => ({
+          name,
+          ...(title ? { title } : {}),
+          kind,
+        })),
+      total: matching.length,
+    };
   }
 
   private async run(
@@ -182,17 +283,31 @@ export class DefaultFoundationService implements FoundationService {
     context: CollectorContext,
   ): Promise<FoundationCapability> {
     let timer: ReturnType<typeof setTimeout> | undefined;
+    const abort = new AbortController();
+    const probe = context.probe
+      ? new Probe(context.probe.inventory, abort.signal)
+      : undefined;
     const timeout = new Promise<'timeout'>((resolve) => {
-      timer = setTimeout(() => resolve('timeout'), this.collectorTimeoutMs);
+      timer = setTimeout(() => {
+        resolve('timeout');
+        abort.abort();
+      }, this.collectorTimeoutMs);
     });
     try {
       const findings = await Promise.race([
-        collector.collect(context),
+        collector.collect({ ...context, probe }),
         timeout,
       ]);
       if (findings === 'timeout')
-        return failed(collector, [{ code: 'COLLECTOR_TIMEOUT' }]);
-      const issues: readonly FoundationIssue[] = context.probe?.issues ?? [];
+        return collector.key === 'dataModeling' && probe
+          ? {
+              ...failed(collector, [{ code: 'COLLECTOR_TIMEOUT' }]),
+              ...dataModelingSummary(probe),
+              packages: await this.resolvePackages(collector.packages),
+              completeness: 'partial',
+            }
+          : failed(collector, [{ code: 'COLLECTOR_TIMEOUT' }]);
+      const issues: readonly FoundationIssue[] = probe?.issues ?? [];
       return {
         key: collector.key,
         status: findings.status,

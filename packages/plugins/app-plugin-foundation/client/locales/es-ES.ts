@@ -32,6 +32,7 @@ const esES: FoundationResource = {
     lowerBound: 'Valor mínimo: no se ha podido leer una parte.',
   },
   matrix: {
+    collections: 'Colecciones de datos: {{names}}',
     title: 'Módulos de negocio y capacidades base',
     description:
       'Consulta qué capacidades respaldan cada módulo. Selecciona una marca para ver la relación y qué tendrías que implementar por tu cuenta.',
@@ -108,6 +109,23 @@ const esES: FoundationResource = {
     legendUnused: 'Sin utilizar {{count}}',
   },
   detail: {
+    collectionCount: '{{count}} tablas',
+    collectionPreview: 'Vista previa de tablas',
+    collectionsTitle: 'Tablas',
+    noCollectionMatches: 'No se encontraron tablas',
+    noCollectionMatchesHint: 'Prueba otro nombre o borra la búsqueda.',
+    collectionRange: '{{from}}–{{to}} de {{total}}',
+    closeCollections: 'Cerrar tablas',
+    viewCollections: 'Ver todas las colecciones',
+    searchCollections: 'Buscar colecciones',
+    collectionResults: '{{count}} colecciones coincidentes',
+    previousPage: 'Anterior',
+    nextPage: 'Siguiente',
+    countRecords: 'Contar registros de negocio',
+    recordsOnDemand:
+      'Los registros de negocio se cuentan bajo demanda. Las bases de datos grandes pueden tardar más.',
+    recordsCountedAt: 'Registros contados {{time}}',
+
     businessModules: 'Módulos de negocio relacionados',
     inThisApp: 'En esta aplicación',
     withoutFoundation: 'Sin la base',
@@ -263,6 +281,8 @@ const esES: FoundationResource = {
       'Se ha detectado una extensión en ejecución sin clasificar. No se conoce la propiedad de las colecciones; se omiten las cifras de negocio.',
     noApplicationCollections:
       'La capa de datos funciona, pero la aplicación aún no tiene colecciones propias.',
+    applicationCollectionsPreview:
+      'Esta aplicación tiene {{count}} colecciones, entre ellas {{names}}.',
     applicationCollections: '{{count}} colecciones propias: {{names}}.',
     relations: '{{count}} relaciones las conectan.',
     fileCollections: '{{count}} colecciones de archivos: {{names}}.',
