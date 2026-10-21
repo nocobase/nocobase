@@ -1,5 +1,39 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.57
+
+### Patch Changes
+
+- b805e54: Reset chat drafts and unsent attachments on every explicit new conversation, apply business-entry prefill atomically, and ignore stale uploads, context snapshots and conversation-creation callbacks while preserving drafts on ordinary close/reopen and first-send promotion.
+- b805e54: Clear carried work context when starting a fresh chat, while preserving page registrations and atomically including explicitly requested business context.
+- 4f0d96e: Expose the Agents Skills library in the Examples navigation, including its existing creation and detail pages, localized labels, and page authorization.
+- b805e54: Allow idle OnlineAgent conversations to switch models without starting a new conversation. Show a model-only picker for existing native chats, preserve conversation configuration and drafts, and prevent sends while a model change is being saved or reconciled.
+
+  Keep unspecified model restrictions absent instead of replacing them with a default-model allowlist. Treat omitted and explicit empty lists as unrestricted while preserving their distinct stored shapes, and retain nonempty business restrictions when switching models.
+
+- 62da032: Keep role list titles free of hover underlines, matching the shared Registry component while preserving navigation and keyboard focus.
+- 62da032: Update the generated role page tests to verify the standard table while retaining role ordering, search filtering, and edit-link query checks.
+- 62da032: Use the shared DataTable for role administration, matching User management with localized column headers, sortable names and identifiers, standard pagination and keyboard-accessible edit links without hover underlines. Keep the installed template components aligned with the UI Registry source.
+- a420dde: Include the Knowledge base plugin as an application template dependency without enabling it by default.
+- 62da032: Guide application builders to assign business roles to explicit users and keep assignments visible and editable in administration. Require an explicit request and management controls before introducing a global default role. Ship an isolated application initialization test that rejects unexpected wildcard role assignments and hidden business grants in the inherited member role.
+- Updated dependencies [62da032]
+- Updated dependencies [b805e54]
+- Updated dependencies [b805e54]
+- Updated dependencies [8b30952]
+- Updated dependencies [301d309]
+- Updated dependencies [1fcc7a8]
+- Updated dependencies [4f0d96e]
+- Updated dependencies [4f0d96e]
+- Updated dependencies [4f0d96e]
+- Updated dependencies [4f0d96e]
+- Updated dependencies [b805e54]
+- Updated dependencies [0b5a9c1]
+- Updated dependencies [799c227]
+  - @nocobase/app-server@3.0.0-beta.1
+  - @nocobase/app-plugin-agents@1.0.0-beta.17
+  - @nocobase/app-cli@1.0.0-beta.26
+  - @nocobase/app-plugin-users@2.0.0-beta.8
+
 ## 1.0.0-beta.56
 
 ### Patch Changes
