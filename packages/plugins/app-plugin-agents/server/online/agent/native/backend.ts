@@ -1,3 +1,4 @@
+import type { OnlineAgentSandboxProvider } from '../../sandbox/types.js';
 import { nativeInputParts } from '../messages/validation.js';
 import {
   NativeRealtimeOnlineAgent,
@@ -61,6 +62,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
     private deps: {
       sessions: OnlineAgentSessionManager;
       configurator: OnlineAgentConfigurator;
+      sandboxProvider?: OnlineAgentSandboxProvider;
       ids: IdSource;
       resolver?: ServiceResolver;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;

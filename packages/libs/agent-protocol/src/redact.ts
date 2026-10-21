@@ -33,6 +33,7 @@ export const MIN_SECRET_LENGTH = 6;
 export const CREDENTIAL_PREFIXES = {
   runnerKey: 'fgk_',
   runToken: 'fgr_',
+  onlineAgent: 'fgo_',
   registration: 'fgreg_',
   download: 'fgdl_',
 } as const;
@@ -59,7 +60,7 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
   },
   {
     name: 'agents credential',
-    pattern: /\bfg(?:k|r|reg|dl)_[A-Za-z0-9_-]{20,}/gu,
+    pattern: /\bfg(?:k|r|o|reg|dl)_[A-Za-z0-9_-]{20,}/gu,
   },
   {
     name: 'GitHub token',

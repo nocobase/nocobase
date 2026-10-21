@@ -23,11 +23,49 @@ export interface TaskGitOptions extends GitInvocationOptions {
   readonly auth?: GitAuth;
 }
 
+/** Linked worktrees can change their common config with ordinary `git config`; validate it before cache operations. */
+export async function cacheGit(
+  cache: string,
+  url: string,
+  args: string[],
+  env: Record<string, string> = {},
+  options: GitInvocationOptions = {},
+): Promise<string> {
+  await checkConfig(path.join(cache, 'config'), { cache, url, dir: cache });
+  const helper =
+    Object.keys(env).length === 0
+      ? await git(
+          ['config', '--global', '--get-urlmatch', 'credential.helper', url],
+          path.dirname(cache),
+        ).catch(() => '')
+      : '';
+  return git(
+    [
+      '-c',
+      `core.hooksPath=${path.join(cache, 'hooks')}`,
+      '-c',
+      'core.fsmonitor=false',
+      '-c',
+      'core.sshCommand=ssh',
+      '-c',
+      'credential.helper=',
+      ...(helper
+        ? ['--config-env=credential.helper=NOCOBASE_RUNNER_CACHE_HELPER']
+        : []),
+      ...args,
+    ],
+    cache,
+    { ...env, NOCOBASE_RUNNER_CACHE_HELPER: helper },
+    options,
+  );
+}
+
 // Keep this list narrow: new Git configuration can introduce new ways to execute code or redirect credentials.
 // Overrides below neutralize the explicitly listed executable settings. Multi-valued URL rewrites and includes
 // cannot reliably be erased with -c; reject those (and unknown settings) before invoking Git in the checkout.
 const SAFE_KEYS = [
-  /^core\.(repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode|symlinks|autocrlf|safecrlf|eol|hooksPath|fsmonitor|sshCommand|sparsecheckout|sparsecheckoutcone)$/iu,
+  /^core\.(repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode|symlinks|autocrlf|safecrlf|eol|hooksPath|fsmonitor|sshCommand|sparsecheckout|sparsecheckoutcone|fsync|fsyncmethod)$/iu,
+  /^protocol\.file\.allow$/iu,
   /^user\.(name|email)$/iu,
   /^remote\.[^.]+\.(url|pushurl|fetch)$/iu,
   /^branch\..+\.(remote|merge|rebase|vscode-merge-base)$/iu,
@@ -97,7 +135,7 @@ async function checkConfig(
   // --file + --no-includes, in the protected cache: parsing never loads checkout includes or executes its settings.
   const entries = await git(
     ['config', '--file', config, '--no-includes', '--null', '--list'],
-    context.cache,
+    path.dirname(context.cache),
   );
   for (const entry of entries.split('\0')) {
     if (entry === '') continue;
@@ -134,6 +172,8 @@ async function checkMetadata(
   dir: string,
   context: TaskGitContext,
 ): Promise<void> {
+  if (dir !== path.join(context.dir, '.git'))
+    await checkConfig(path.join(context.cache, 'config'), context);
   await checkConfig(path.join(dir, 'config'), context);
   await checkConfig(path.join(dir, 'config.worktree'), context);
   const modules = path.join(dir, 'modules');
@@ -217,13 +257,19 @@ export async function taskGit(
   const trustedHelpers =
     options.auth === undefined
       ? await git(
-          ['config', '--get-urlmatch', 'credential.helper', context.url],
-          context.cache,
+          [
+            'config',
+            '--global',
+            '--get-urlmatch',
+            'credential.helper',
+            context.url,
+          ],
+          path.dirname(context.cache),
         ).catch(() => '')
       : '';
   const fileTransport = await git(
-    ['config', '--get', 'protocol.file.allow'],
-    context.cache,
+    ['config', '--global', '--get', 'protocol.file.allow'],
+    path.dirname(context.cache),
   ).catch(() => 'user');
   const settings = [
     `core.hooksPath=${path.join(context.cache, 'hooks')}`,
@@ -254,10 +300,11 @@ export async function taskGit(
       helperEnv[name] = helper;
       return `--config-env=credential.helper=${name}`;
     });
+  // Shared workspaces may have an Agent committing: host status must not refresh or lock the index.
   return git(
     settings
       .flatMap((value) => ['-c', value])
-      .concat(GIT_LOW_SPEED_CONFIG, helperArgs, args),
+      .concat(['--no-optional-locks'], GIT_LOW_SPEED_CONFIG, helperArgs, args),
     context.dir,
     {
       ...env,

@@ -17,7 +17,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { runnerPaths, runLogPath } from '../src/lib/home.ts';
 import { runnerVersion } from '../src/core/loop.ts';
-import { runnerPaths, runLogPath } from '../src/lib/home.ts';
 import { RESTART_EXIT_CODE } from '../src/core/update.ts';
 import { FakeServer, waitFor, type FakeRun } from './fake-server.ts';
 import {
@@ -189,7 +188,7 @@ describe('leftover processes', () => {
         readFileSync(
           runLogPath(runnerPaths(home), run.payload.run.id),
           'utf8',
-        ).includes('process(es) the run left behind before saving'),
+        ).includes('process(es) the run left behind before finishing'),
       5_000,
       'the cleanup to be logged',
     );
@@ -197,7 +196,7 @@ describe('leftover processes', () => {
     expect(daemon.child.exitCode).toBeNull();
   }, 60_000);
 
-  it('stops a detached writer before deleting its read-only workspace', async () => {
+  it('stops a detached writer while retaining its shared read-only workspace', async () => {
     const writer =
       "import { mkdirSync, writeFileSync } from 'node:fs'; import path from 'node:path'; const dir = process.cwd(); setInterval(() => { mkdirSync(dir, { recursive: true }); writeFileSync(path.join(dir, 'still-writing'), 'data'); }, 10);";
     const script =
@@ -220,23 +219,19 @@ describe('leftover processes', () => {
     const leftover = await leftoverPid();
     await waitFor(() => run.complete, 20_000, 'read-only completion');
     const workDir = String(run.start?.workDir);
-    await waitFor(() => !existsSync(workDir), 15_000, 'read-only removal');
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    expect(existsSync(workDir)).toBe(false);
+    await waitFor(() => !alive(leftover), 15_000, 'detached writer stopped');
+    expect(existsSync(workDir)).toBe(true);
     expect(alive(leftover)).toBe(false);
     const output = readFileSync(
       runLogPath(runnerPaths(home), run.payload.run.id),
       'utf8',
     );
-    expect(output.indexOf('the run left behind before saving')).toBeGreaterThan(
-      -1,
-    );
-    expect(output.indexOf(`workspace: removed ${workDir}`)).toBeGreaterThan(
-      output.indexOf('the run left behind before saving'),
-    );
+    expect(
+      output.indexOf('the run left behind before finishing'),
+    ).toBeGreaterThan(-1);
   }, 60_000);
 
-  it('defers read-only removal during shutdown for the next GC', async () => {
+  it('preserves read-only workspace contents through shutdown', async () => {
     const run = server.enqueue({
       workspace: { dirs: [], env: [], readOnly: true },
       prompt: {
@@ -257,10 +252,7 @@ describe('leftover processes', () => {
     await stopDaemon(daemon);
     const workDir = String(run.start?.workDir);
     expect(existsSync(path.join(workDir, 'kept.txt'))).toBe(true);
-    expect(
-      readFileSync(runLogPath(runnerPaths(home), run.payload.run.id), 'utf8'),
-    ).toContain('deferred read-only cleanup to GC');
-    expect(existsSync(`${workDir}.lock`)).toBe(false);
+    expect(run.fail?.reason).toBe('runnerOffline');
   }, 60_000);
 
   it('stops what cleared its environment by the process group it was seen in', async () => {
@@ -282,7 +274,7 @@ describe('leftover processes', () => {
         readFileSync(
           runLogPath(runnerPaths(home), run.payload.run.id),
           'utf8',
-        ).includes('process group(s) before saving'),
+        ).includes('process group(s) before finishing'),
       5_000,
       'the cleanup to be logged',
     );

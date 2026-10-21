@@ -360,6 +360,13 @@ describe('historical Runner conversation domain', () => {
     expect(resumed.prompt.system).not.toContain('Earlier in this conversation');
     // Back to the queue, as if the runner went away; another runner takes it.
     await runner(one).post(second.run.id, 'fail', { reason: 'runnerOffline' });
+    await h.database
+      .connection()
+      .repository('agRunners')
+      .updateMany({
+        filter: { id: one.runnerId },
+        values: { status: 'offline' },
+      });
     const two = await h.registerRunner({ name: 'two' });
     const [fresh] = await claim(h, two);
     expect(fresh.run.id).toBe(second.run.id);

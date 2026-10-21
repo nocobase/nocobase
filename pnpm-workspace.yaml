@@ -159,6 +159,9 @@ allowBuilds:
   # Arrives through swagger-ui-dist, a development dependency of @nocobase/app-server; its install script only
   # reports download analytics.
   '@scarf/scarf': false
+  # just-bash's optional archive codecs are outside the configured virtual command set.
+  '@mongodb-js/zstd': false
+  node-liblzma: false
 
 # Use msgpackr without its optional native accelerator or platform binary packages.
 ignoredOptionalDependencies:

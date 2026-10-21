@@ -277,7 +277,7 @@ describe('served tarballs', () => {
   });
 
   it.each(['graceful', 'forced'] as const)(
-    'interrupts a running tool (%s), preserves its local head and removes worktrees before installing, reporting zero capacity',
+    'interrupts a running tool (%s), preserves its worktree and uncommitted files before installing, reporting zero capacity',
     async (mode) => {
       vi.stubEnv('NOCOBASE_RUNNER_ADAPTER', 'echo');
       const remote = makeRemote(home);
@@ -304,7 +304,7 @@ describe('served tarballs', () => {
       const paths = runnerPaths(home, `${home}-work`);
       const apply = vi.fn(async () => {
         expect(run.fail?.reason).toBe('runnerUpgrade');
-        expect(existsSync(String(run.start?.workDir))).toBe(false);
+        expect(existsSync(String(run.start?.workDir))).toBe(true);
       });
       const daemon = new RunnerDaemon({
         paths,
@@ -364,10 +364,19 @@ describe('served tarballs', () => {
         )
           .split('\n')
           .filter(Boolean);
-        expect(refs).toHaveLength(1);
-        expect(git(['show', `${refs[0]}:upgrade.txt`], cache)).toBe(
-          'preserved',
-        );
+        expect(refs).toEqual([]);
+        expect(
+          readFileSync(
+            path.join(String(run.start?.workDir), 'repo/upgrade.txt'),
+            'utf8',
+          ),
+        ).toBe('preserved');
+        expect(
+          git(
+            ['status', '--porcelain'],
+            path.join(String(run.start?.workDir), 'repo'),
+          ),
+        ).toContain('upgrade.txt');
         const heartbeats = [...server.runners.values()]
           .flatMap((runner) => runner.heartbeats)
           .filter((heartbeat) => heartbeat.load.draining === 'updatePending');
@@ -417,7 +426,7 @@ describe('served tarballs', () => {
     const apply = vi.fn(async () => {
       for (const run of [existing, late]) {
         expect(run.fail?.reason).toBe('runnerUpgrade');
-        expect(existsSync(String(run.start?.workDir))).toBe(false);
+        expect(existsSync(String(run.start?.workDir))).toBe(true);
       }
       expect(daemon.activeRuns).toEqual([]);
     });
@@ -534,15 +543,18 @@ describe('served tarballs', () => {
       )
         .split('\n')
         .filter(Boolean);
-      expect(refs).toHaveLength(2);
-      for (const key of ['existing', 'late']) {
-        const ref = refs.find((ref) =>
-          git(['ls-tree', '--name-only', ref], cache).includes(`${key}.txt`),
-        );
-        expect(ref).toBeDefined();
-        expect(git(['show', `${ref}:${key}.txt`], cache)).toBe('preserved');
-      }
-      expect(existsSync(String(late.start?.workDir))).toBe(false);
+      expect(refs).toEqual([]);
+      for (const [key, run] of [
+        ['existing', existing],
+        ['late', late],
+      ] as const)
+        expect(
+          readFileSync(
+            path.join(String(run.start?.workDir), `repo/${key}.txt`),
+            'utf8',
+          ),
+        ).toBe('preserved');
+      expect(existsSync(String(late.start?.workDir))).toBe(true);
       expect(server.lastHeartbeat()?.load).toMatchObject({
         free: 0,
         draining: 'updatePending',

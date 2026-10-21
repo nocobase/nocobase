@@ -101,6 +101,13 @@ describe('execution history', () => {
       ],
     });
     h.clock.advance(30_000);
+    await h.database
+      .connection()
+      .repository('agRunners')
+      .updateMany({
+        filter: { id: first.runnerId },
+        values: { status: 'offline' },
+      });
     await claim(h, second);
     expect((await h.services.runs.get(runId)).actualModels).toEqual([]);
     await h.services.reports.start({ id: second.runnerId }, runId, {

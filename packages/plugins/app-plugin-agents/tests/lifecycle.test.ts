@@ -580,7 +580,7 @@ describe('run lifecycle', () => {
     expect(h.finished).toHaveLength(1);
   });
 
-  it('requeues live workspace contention with a delay and releases its runner slot', async () => {
+  it('requeues workspace cleanup and cache-lock timeouts reported as workspaceBusy', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ maxAttempts: 3 });
     const runId = await h.enqueue(agentId);
@@ -591,7 +591,8 @@ describe('run lifecycle', () => {
       (
         await post(runner, runId, 'fail', {
           reason: 'workspaceBusy',
-          detail: 'Another live process holds this workspace.',
+          detail:
+            'The runner timed out waiting for workspace cleanup or cache preparation.',
         })
       ).body.data,
     ).toMatchObject({ status: 'queued' });

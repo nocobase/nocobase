@@ -250,7 +250,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && nocobase-db-manifests",
+    "build": "tsc -p tsconfig.json && node ./scripts/bundle-just-bash.mjs && nocobase-db-manifests",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.type-tests.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint . --max-warnings 0",
@@ -315,6 +315,7 @@
     "remark-gfm": "catalog:"
   },
   "devDependencies": {
+    "@nocobase/agent-runner": "workspace:*",
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/db-postgres": "workspace:*",
     "@nocobase/db-sqlite": "workspace:*",
@@ -324,8 +325,10 @@
     "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "esbuild": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
+    "just-bash": "3.6.0",
     "prettier": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",

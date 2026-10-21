@@ -141,7 +141,7 @@ export interface RunnerService {
   /** The runners that are online now, read on `conn`. */
   online(conn: DatabaseConnection): Promise<Runner[]>;
   /** Every runner, whatever its status, read on `conn` (without owners' names). */
-  all(conn: DatabaseConnection): Promise<Runner[]>;
+  all(conn: DatabaseConnection, ids?: readonly string[]): Promise<Runner[]>;
   /** Of `ids`, the runners that are not online (offline, revoked, or gone), read on `conn`. */
   absent(conn: DatabaseConnection, ids: readonly string[]): Promise<string[]>;
   /** The runner, read on `conn`; null when there is none. */
@@ -812,8 +812,14 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         (record) => toRunner(record),
       ),
 
-    all: async (conn) =>
-      (await runnersRepo(conn).findMany({})).map((record) => toRunner(record)),
+    all: async (conn, ids) =>
+      (
+        await runnersRepo(conn).findMany({
+          ...(ids
+            ? { filter: (f) => f.or(ids.map((id) => f.string('id').eq(id))) }
+            : {}),
+        })
+      ).map((record) => toRunner(record, null, false)),
 
     absent: (conn, ids) => absentRunners(conn, ids),
 

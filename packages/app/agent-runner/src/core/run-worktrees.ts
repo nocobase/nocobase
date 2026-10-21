@@ -1,3 +1,4 @@
+import { workspaceInUse } from './workspace-use.ts';
 // Per-attempt worktrees. Resume advances only by fast-forward; divergent heads are listed for manual integration.
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
@@ -75,6 +76,28 @@ export function sessionWorkDir(
     paths.workRoot,
     '.sessions',
     identity([app, subject, agent, tool, scope]),
+  );
+}
+
+export function taskSessionRoot(
+  paths: RunnerPaths,
+  app: string,
+  subject: string,
+): string {
+  return path.join(paths.workRoot, '.sessions', identity([app, subject]));
+}
+
+export function taskSessionWorkDir(
+  paths: RunnerPaths,
+  app: string,
+  subject: string,
+  agent: string,
+  tool: string,
+  scope = 'root',
+): string {
+  return path.join(
+    taskSessionRoot(paths, app, subject),
+    identity([agent, tool, scope]),
   );
 }
 
@@ -350,7 +373,11 @@ export async function retryWorkspaceRemoval(
   log: (message: string) => void,
   lockHeld = false,
 ): Promise<boolean> {
-  if (!isInside(paths.workRoot, workDir)) return false;
+  if (
+    !isInside(paths.workRoot, workDir) ||
+    (await workspaceInUse(paths, workDir))
+  )
+    return false;
   const lock = lockHeld
     ? undefined
     : await acquireLock(`${workDir}.lock`, { timeoutMs: 0 }).catch(
