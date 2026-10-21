@@ -440,3 +440,28 @@ it('limits legacy chat persistence to the callback and requires enabled chat', a
     ).toThrow(),
   );
 });
+
+it('lists physical table choices without protected or deployment-managed tables', async () => {
+  const { config, container, guard } = await setup();
+  expect(await config.availableTables()).toEqual(
+    expect.arrayContaining(['demoitems', 'demonotes']),
+  );
+  expect(await config.availableTables()).not.toContain(
+    'demo_mode_configuration',
+  );
+  const settings = resolveDemoModeSettings(app.application.config, {
+    NOCOBASE_DEMO_ALLOW_TABLES: ' demonotes, DEMONOTES ',
+  });
+  const deployed = new DemoConfigurationService(
+    container.resolve(databaseManagerToken),
+    settings,
+    guard,
+    async () => ({ importing: null, languages: ['en-US'] }),
+  );
+  expect((await deployed.read()).fixedTables).toEqual([
+    'session',
+    'verification',
+    'demonotes',
+  ]);
+  expect(await deployed.availableTables()).not.toContain('demonotes');
+});

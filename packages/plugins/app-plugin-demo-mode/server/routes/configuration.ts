@@ -15,6 +15,7 @@ import {
   describeRoute,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
+import { z } from 'zod';
 import { createMiddleware } from 'hono/factory';
 import {
   ConfigurationInput,
@@ -69,6 +70,21 @@ export const configurationRoutes: AppApiRouteContribution<AppPluginApplication> 
         responses,
       }),
       async (c) => c.json({ data: await service.read() }),
+    );
+    routes.get(
+      '/tables',
+      allowed('read'),
+      describeRoute({
+        tags: ['DemoMode'],
+        summary: 'List selectable physical tables in the default database',
+        operationId: 'demoModeListTables',
+        responses: {
+          ...apiErrorResponses,
+          404: apiErrorResponse(404),
+          200: dataResponse(z.array(z.string())),
+        },
+      }),
+      async (c) => c.json({ data: await service.availableTables() }),
     );
     for (const [path, section] of [
       ['writeRules', 'rules'],

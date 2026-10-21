@@ -26,6 +26,8 @@ The plugin is off until the deployment switches it on, through the environment o
 
 `session` and `verification`, the Better Auth tables signing in and out writes, are always allowed, except to routes that end or change other sessions — any path ending in `revoke-sessions`, `revoke-other-sessions`, `revoke-session`, `update-session` or their camelCase forms, such as the users plugin's `users/:userId/revokeSessions` — so a visitor of a shared demo account cannot sign everyone else out.
 
+For deployment defaults, set `NOCOBASE_DEMO_ALLOW_TABLES=crm_user_preferences,crm_plans` and restart the application. Names are comma-separated, trimmed, lowercased and deduplicated. The variable replaces `demoMode.allowTables` when set (an empty value clears that deployment list); built-in authentication exceptions remain. These deployment-owned `fixedTables` combine with the administrator's saved `tables`, so removing a UI selection does not revoke a deployment exception. Business authorization still applies.
+
 ## What it does
 
 A root-router middleware runs every HTTP request, including the WebSocket upgrade, inside an async-local context. The plugin listens to the `query` event of every connection's knex client, which knex emits synchronously before sending a statement, from transactions too. A statement that writes — `INSERT`, `UPDATE`, `DELETE`, DDL, or anything it does not recognize as a read — made inside a request is refused unless it targets an allowed table. Work outside requests, such as migrations, seeds, jobs, schedules and startup tasks, is never refused.
@@ -140,6 +142,8 @@ pnpm --filter @nocobase/app-plugin-demo-mode build
 Applications can build a management UI on `/api/demoMode/configuration`, with independent `demoMode.configuration` read/configure permissions. Register explicit write capabilities and mock adapters through `demoConfigurationToken`; no business write rules are enabled by default. Configuration uses optimistic revisions, daily reset supports IANA timezones, and disabled mocks fail closed. The published [integration Skill](skills/nocobase-app-plugin-demo-mode/SKILL.md) documents scope validation, scheduling and application-owned adapters.
 
 ### Exception tables
+
+The authenticated GET `/api/demoMode/configuration/tables` lists physical tables in the default application database for a searchable multi-select. It excludes views, protected tables and deployment-owned exceptions. Keep saved selections visible even when absent from the catalog, so administrators can remove stale entries.
 
 Administrators can PUT `/api/demoMode/configuration/tables` with `{ expectedRevision, value: ["crm_plans"] }`. Each entry is a lowercase physical table name, not a Collection alias. Adding a table allows its INSERT, UPDATE and DELETE statements; removing it restores read-only protection unless another exception still grants access. There is no operation selector and no application capability registration. The list defaults to empty, persists across restarts and applies to subsequent HTTP requests, including implicit writes from GET routes. Normal application authorization remains in force.
 

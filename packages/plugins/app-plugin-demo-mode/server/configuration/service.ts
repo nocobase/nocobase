@@ -163,6 +163,29 @@ export class DemoConfigurationService {
       nextRun: nextDailyRun(value.schedule, new Date(), row.lastDay),
     };
   }
+  /** Physical tables in the default application database, for the settings picker only. */
+  public async availableTables(): Promise<string[]> {
+    this.requireEnabled();
+    const names = new Set<string>();
+    let cursor: string | undefined;
+    do {
+      const page = await this.database
+        .connection()
+        .collections.list({ limit: 100, cursor });
+      for (const item of page.items) {
+        const name = item.tableName;
+        if (
+          item.kind === 'table' &&
+          /^[a-z][a-z0-9_]*$/u.test(name) &&
+          !protectedTable.test(name) &&
+          !this.settings.allowTables.has(name)
+        )
+          names.add(name);
+      }
+      cursor = page.nextCursor;
+    } while (cursor);
+    return [...names].sort();
+  }
   public async save(
     section: 'rules' | 'tables' | 'mocks' | 'schedule' | 'chat',
     expectedRevision: number,
