@@ -91,7 +91,8 @@ describe('workspaceNotes', () => {
     expect(notes).toContain(
       'Never rewrite already-pushed history or force push',
     );
-    expect(notes).toContain('pr open --head <branch>');
+    expect(notes).toContain("with the code host's command line");
+    expect(notes).not.toContain('pr open');
     expect(notes).toContain(
       'old attempt directories and sessions are not migrated',
     );

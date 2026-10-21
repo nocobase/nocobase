@@ -186,7 +186,7 @@ export function workspaceNotes(options: {
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
           : options.readOnly === true
             ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a shared workspace for a read-only run: change no tracked file, commit and push nothing).`
-            : `- ${dir.dir}${name}: ${dir.repo.url}, starting target branch ${dir.repo.branch} from ${dir.repo.defaultBranch}, local branch ${dir.repo.localBranch ?? dir.repo.branch}. You may switch or create branches and push any branch of this repository after checking the current branch, with git push origin HEAD:refs/heads/<branch> (requested initial target: ${dir.repo.branch}). Never rewrite already-pushed history or force push. Use ${options.cli} pr open --head <branch>, pr link and pr unlink to manage pull requests; check their --help for arguments.`,
+            : `- ${dir.dir}${name}: ${dir.repo.url}, starting target branch ${dir.repo.branch} from ${dir.repo.defaultBranch}, local branch ${dir.repo.localBranch ?? dir.repo.branch}. You may switch or create branches and push any branch of this repository after checking the current branch, with git push origin HEAD:refs/heads/<branch> (requested initial target: ${dir.repo.branch}). Never rewrite already-pushed history or force push. Open and update change requests (pull or merge requests) with the code host's command line, such as gh or glab, when one is available; ${options.cli} pr link and pr unlink manage the task's other associations. Check each command's --help for arguments.`,
       );
     }
     for (const dir of dirs)
