@@ -348,20 +348,6 @@ export async function serveGitCredentials(
         broker.erase(url, { token: request.password });
       return { ok: true, erased, url };
     }
-    if (request.action === 'refresh') {
-      try {
-        await broker.get(url, { refresh: true });
-        return { ok: true, url };
-      } catch (error) {
-        return {
-          ok: false,
-          message:
-            error instanceof Error
-              ? error.message
-              : 'No credential is available.',
-        };
-      }
-    }
     if (request.action !== 'get')
       return {
         ok: false,
@@ -442,7 +428,6 @@ export const HELPER_FILE = 'git-credential-nocobase-runner.mjs';
  */
 export const HELPER_SCRIPT: string = `// Installed by nocobase-runner: answers git's credential requests for a run's repository from the runner.
 // \`<index> env <spec>\` prints shell assignments of the variables \`spec\` (JSON) names instead, for a code host CLI.
-// \`<index> refresh\` has the runner fetch a fresh credential after the code host refused one.
 import net from 'node:net';
 
 const [index, action, spec] = process.argv.slice(2);
@@ -496,15 +481,6 @@ if (action === 'env') {
     out += name + '=' + quote(resolved) + '\\nexport ' + name + '\\n';
   }
   process.stdout.write(out);
-  process.exit(0);
-}
-
-if (action === 'refresh') {
-  if (!socket || !nonce) process.exit(0);
-  const response = await ask({ action: 'refresh', index: Number(index) });
-  say(response.ok
-    ? "the code host refused the run's credential for " + response.url + '; the runner fetched a fresh one. Run the command again once.'
-    : response.message);
   process.exit(0);
 }
 

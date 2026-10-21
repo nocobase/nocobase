@@ -5,7 +5,6 @@
 //   the worker through the credential helper (`<index> env <spec>`), exports the variables and execs the real binary.
 //   Outside a run it runs as it is; when the runner cannot give a credential it fails with the runner's reason rather
 //   than falling back to this machine's login;
-//   After `gh` says the code host refused the credential (`AUTH_EXIT_CODES`), the runner fetches a fresh one;
 // - every run refuses what would store or show a credential beyond it: `gh`/`glab` logins and token output
 //   (`HOST_LOGIN_COMMANDS`), `credential.*` set with `-c`/`--config-env` or written outside the repository's own config,
 //   and git URLs with a user in them (`GUARD_SCRIPT`).
@@ -54,6 +53,7 @@ const URL_WITH_USER = /^(?:-[^=]*=)?(?:https?:\\/\\/[^\\/\\s@]+@|[a-z][a-z0-9+.-
 const GLOBAL_WITH_VALUE = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env', '--exec-path']);
 const READS = new Set(['--get', '--get-all', '--get-regexp', '--get-urlmatch', '-l', '--list', '--get-color', '--get-colorbool']);
 const CREDENTIAL_KEY = /^credential(\\.|=|$)/i;
+const EXTRA_HEADER_KEY = /^http\\..*extraheader$/i;
 const BECAUSE = ' The run\\'s git already authenticates through the runner.';
 
 export function refusal(args) {
@@ -72,10 +72,16 @@ export function refusal(args) {
   if (command === 'credential' && (rest[0] === 'approve' || rest[0] === 'store'))
     return 'refused: the run may not store credentials with git.' + BECAUSE;
   if (command !== 'config') return null;
-  const words = rest.filter((arg, index) => !arg.startsWith('-') && rest[index - 1] !== '-f' && rest[index - 1] !== '--file');
-  if (!words.some((word) => CREDENTIAL_KEY.test(word))) return null;
-  if (rest.some((arg) => READS.has(arg)) || words[0] === 'get' || words[0] === 'list') return null;
   const outside = rest.some((arg) => arg === '--global' || arg === '--system' || arg === '-f' || arg === '--file' || arg.startsWith('--file='));
+  if (outside && rest.some((arg) => arg === '--edit' || arg === '-e') || (outside && rest.filter((arg) => !arg.startsWith('-'))[0] === 'edit'))
+    return 'refused: the run may not edit git configuration outside the repository.' + BECAUSE;
+  const words = rest.filter((arg, index) => !arg.startsWith('-') && rest[index - 1] !== '-f' && rest[index - 1] !== '--file');
+  if (rest.some((arg) => READS.has(arg)) || words[0] === 'get' || words[0] === 'list') return null;
+  // The task's working directory is shared across runs, so a header is refused in the repository's config too.
+  const unset = words[0] === 'unset' || rest.some((arg) => arg === '--unset' || arg === '--unset-all');
+  if (!unset && words.some((word) => EXTRA_HEADER_KEY.test(word)))
+    return 'refused: the run may not set http.*.extraHeader in git configuration.' + BECAUSE;
+  if (!words.some((word) => CREDENTIAL_KEY.test(word))) return null;
   if (!outside) return null;
   return 'refused: the run may change credential settings only in the repository (not with --global, --system or --file).' + BECAUSE;
 }
@@ -120,12 +126,6 @@ export function gitWrapperScript(
   ].join('\n');
 }
 
-/**
- * The exit code with which a tool says the code host refused its credential (`gh help exit-codes`). After it the
- * wrapper has the runner fetch a fresh credential for the next call; a tool without one keeps the runner's margin.
- */
-export const AUTH_EXIT_CODES: Readonly<Record<string, number>> = { gh: 4 };
-
 /** Where a code host CLI wrapper gets the run's credential: the helper and the repository's index in the broker. */
 export interface ToolCredential {
   readonly helper: string;
@@ -164,16 +164,7 @@ export function hostToolWrapperScript(
       `exports=$(${quote(node)} ${quote(credential.helper)} ${credential.index} env ${quote(JSON.stringify(credential.env))}) || exit 1`,
       'eval "$exports"',
     );
-  const authExit = AUTH_EXIT_CODES[bin];
-  if (credential !== undefined && authExit !== undefined)
-    lines.push(
-      `${quote(real)} "$@"`,
-      'status=$?',
-      `[ "$status" -eq ${authExit} ] && ${quote(node)} ${quote(credential.helper)} ${credential.index} refresh`,
-      'exit "$status"',
-      '',
-    );
-  else lines.push(`exec ${quote(real)} "$@"`, '');
+  lines.push(`exec ${quote(real)} "$@"`, '');
   return lines.join('\n');
 }
 

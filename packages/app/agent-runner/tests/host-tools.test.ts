@@ -215,54 +215,6 @@ describe('code host CLI wrappers', () => {
     expect(status.stdout).toContain('token=\n');
   });
 
-  it('has the runner fetch a fresh credential after gh says the code host refused it', async () => {
-    const refreshes: boolean[] = [];
-    answers = [
-      () => ({
-        username: 'x-access-token',
-        password: 'ghs-revoked',
-        expiresAt: new Date(Date.now() + 60 * MINUTE).toISOString(),
-      }),
-      () => ({
-        username: 'x-access-token',
-        password: 'ghs-fresh',
-        expiresAt: new Date(Date.now() + 60 * MINUTE).toISOString(),
-      }),
-    ];
-    const gh: RunGitTool = {
-      bin: 'gh',
-      url: REPO,
-      env: { GH_TOKEN: { credential: 'password' } },
-    };
-    const { binDir, realDir, env } = await setUp([gh]);
-    // A gh that answers 4 (authentication required) to the revoked token.
-    await writeFile(
-      path.join(realDir, 'gh'),
-      '#!/bin/sh\n[ "$GH_TOKEN" = ghs-revoked ] && exit 4\necho "token=$GH_TOKEN"\n',
-    );
-    const originalPost = client.post.bind(client);
-    (client as { post: unknown }).post = async (
-      route: string,
-      body: { refresh?: boolean },
-      ...rest: unknown[]
-    ) => {
-      refreshes.push(body.refresh === true);
-      return (originalPost as (...args: unknown[]) => unknown)(
-        route,
-        body,
-        ...rest,
-      );
-    };
-    const refused = await run(path.join(binDir, 'gh'), ['pr', 'list'], env);
-    expect(refused.code).toBe(4);
-    expect(refused.stderr).toContain('the runner fetched a fresh one');
-    const again = await run(path.join(binDir, 'gh'), ['pr', 'list'], env);
-    expect(again.code).toBe(0);
-    expect(again.stdout).toContain('token=ghs-fresh');
-    expect(refreshes).toEqual([false, true]);
-    (client as { post: unknown }).post = originalPost;
-  });
-
   it('writes no wrapper for a tool that is not installed, and replaces an earlier run’s wrappers', async () => {
     const binDir = path.join(root, 'bin');
     await mkdir(binDir, { recursive: true });
@@ -296,6 +248,12 @@ describe('the git guard', () => {
       refusal: (args: string[]) => string | null;
     };
     const refused = [
+      ['config', 'http.extraHeader', 'Authorization: Basic x'],
+      ['config', '--add', 'http.https://h/.extraheader', 'x'],
+      ['config', 'set', '--local', 'http.extraHeader', 'x'],
+      ['config', '--global', '--edit'],
+      ['config', '--system', '-e'],
+      ['config', 'edit', '--global'],
       ['-c', 'credential.helper=store', 'push'],
       ['-C', 'repo', '-c', 'Credential.https://h.helper=store', 'fetch'],
       ['--config-env=credential.helper=HELPER', 'push'],
@@ -341,6 +299,10 @@ describe('the git guard', () => {
       ['-c', 'user.name=A', 'commit'],
       ['config', '--local', 'credential.helper', 'cache'],
       ['config', '--file', 'credential.cfg', 'user.name', 'A'],
+      ['config', '--edit'],
+      ['config', '--get', 'http.extraheader'],
+      ['config', 'http.postBuffer', '524288000'],
+      ['config', '--unset', 'http.extraheader'],
     ];
     expect(allowed.filter((args) => refusal(args) !== null)).toEqual([]);
   });
