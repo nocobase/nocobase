@@ -747,12 +747,7 @@ async function ensureCheckoutLocked(
     try {
       await cacheGit(cache, repo.url, args);
       return true;
-    } catch (error) {
-      if (
-        error instanceof CheckoutError &&
-        error.message.includes('unsafe or unsupported')
-      )
-        throw error;
+    } catch {
       return false;
     }
   };
