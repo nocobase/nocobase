@@ -1,5 +1,14 @@
 # @nocobase/app-plugin-lifecycle-example
 
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- f152ed4: Use compact process cards, filled type-colored icons for ordinary steps, outcome pills and auxiliary transition capsules in workflow examples, preserve history replay and complete graph fitting, and synchronize the optional process presentation into both application templates.
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-server@3.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+
 ## 0.1.0-beta.10
 
 ### Patch Changes
