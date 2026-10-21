@@ -340,13 +340,57 @@ export const RepoCredentialSchema: z.ZodType<RepoCredential> = z.object({
  * - `onDemand` (runners with the `gitCredentials` feature): repository URLs, each exactly as a `RepoDir` names it, whose
  *   credential the runner asks for whenever git needs one (`RUNNER_ROUTES.gitCredential`) rather than receiving it
  *   here. For these URLs the runner uses nothing else: no credential of the claim and none of the host's.
+ * - `tools` (runners with the `gitTools` feature): code host CLIs (`gh`, `glab`) the runner wraps so every call runs
+ *   with the current credential of one of the run's repositories, which must be in `credentials` or `onDemand`.
  */
 export interface RunGit {
   readonly author?: { readonly name: string; readonly email: string };
   readonly trailers?: readonly string[];
   readonly credentials?: readonly RepoCredential[];
   readonly onDemand?: readonly string[];
+  readonly tools?: readonly RunGitTool[];
 }
+
+/** A wrapper variable's value: a literal, or a field of the repository's current credential. */
+export type RunGitToolValue =
+  string | { readonly credential: 'username' | 'password' };
+
+/**
+ * A code host CLI the runner wraps for the run. When `bin` is installed, the runner puts a wrapper of that name first
+ * on the agent's PATH: each call gets `url`'s current credential, sets `env` and runs the real binary.
+ */
+export interface RunGitTool {
+  /** The executable's name, such as `gh` or `glab`. */
+  readonly bin: string;
+  /** A repository of the run, exactly as its `RepoDir` names it, whose credential the wrapper uses. */
+  readonly url: string;
+  readonly env: Readonly<Record<string, RunGitToolValue>>;
+}
+
+export const RUN_GIT_TOOL_BIN_PATTERN: RegExp = /^[a-z][a-z0-9-]{0,31}$/u;
+export const RUN_GIT_TOOL_ENV_PATTERN: RegExp = /^[A-Z_][A-Z0-9_]{0,127}$/u;
+/** Names a wrapper may not set: what the runner owns, and what decides how a process or git runs. */
+const RESERVED_TOOL_ENV =
+  /^(PATH|HOME|USER|SHELL|TMPDIR|TMP|TEMP|IFS|ENV|BASH_ENV|LD_.*|DYLD_.*|NODE_OPTIONS|GIT_.*|NOCOBASE_RUNNER_.*|AGENT_RUN_.*)$/u;
+
+export const RunGitToolValueSchema: z.ZodType<RunGitToolValue> = z.union([
+  z.string().max(1000),
+  z.strictObject({ credential: z.enum(['username', 'password']) }),
+]);
+
+export const RunGitToolSchema: z.ZodType<RunGitTool> = z.object({
+  bin: z.string().regex(RUN_GIT_TOOL_BIN_PATTERN),
+  url: z.string().min(1),
+  env: z
+    .record(
+      z
+        .string()
+        .regex(RUN_GIT_TOOL_ENV_PATTERN)
+        .refine((name) => !RESERVED_TOOL_ENV.test(name), 'is reserved'),
+      RunGitToolValueSchema,
+    )
+    .refine((env) => Object.keys(env).length <= 16, 'at most 16 variables'),
+});
 
 export const RunGitSchema: z.ZodType<RunGit> = z.object({
   author: z
@@ -358,6 +402,14 @@ export const RunGitSchema: z.ZodType<RunGit> = z.object({
   trailers: z.array(z.string().min(1).max(500)).max(20).optional(),
   credentials: z.array(RepoCredentialSchema).optional(),
   onDemand: z.array(z.string().min(1)).optional(),
+  tools: z
+    .array(RunGitToolSchema)
+    .max(8)
+    .refine(
+      (tools) => new Set(tools.map((tool) => tool.bin)).size === tools.length,
+      'one entry per bin',
+    )
+    .optional(),
 });
 
 /**

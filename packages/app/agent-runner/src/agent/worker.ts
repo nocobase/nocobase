@@ -94,6 +94,7 @@ import { isDiskFull } from '../lib/disk-full.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { ensurePnpmStore } from '../core/pnpm-store.ts';
 import { writeRunnerTools } from './runner-tools.ts';
+import { removeHostToolWrappers, writeHostTools } from './host-tools.ts';
 import {
   agentCwd,
   PREPARE_STEPS,
@@ -185,7 +186,7 @@ export function workspaceNotes(options: {
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
           : options.readOnly === true
             ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a shared workspace for a read-only run: change no tracked file, commit and push nothing).`
-            : `- ${dir.dir}${name}: ${dir.repo.url}, starting target branch ${dir.repo.branch} from ${dir.repo.defaultBranch}, local branch ${dir.repo.localBranch ?? dir.repo.branch}. You may switch or create branches and push any branch of this repository after checking the current branch, with git push origin HEAD:refs/heads/<branch> (requested initial target: ${dir.repo.branch}). Never rewrite already-pushed history or force push. Use ${options.cli} pr open --head <branch>, pr link and pr unlink to manage pull requests; check their --help for arguments.`,
+            : `- ${dir.dir}${name}: ${dir.repo.url}, starting target branch ${dir.repo.branch} from ${dir.repo.defaultBranch}, local branch ${dir.repo.localBranch ?? dir.repo.branch}. You may switch or create branches and push any branch of this repository after checking the current branch, with git push origin HEAD:refs/heads/<branch> (requested initial target: ${dir.repo.branch}). Never rewrite already-pushed history or force push. Open and update change requests (pull or merge requests) with the code host's command line, such as gh or glab, when one is available; ${options.cli} pr link and pr unlink manage the task's other associations. Check each command's --help for arguments.`,
       );
     }
     for (const dir of dirs)
@@ -343,6 +344,8 @@ export class RunWorker {
   private readonly redactor: GrowingRedactor;
   private readonly broker: GitCredentialBroker | undefined;
   private credentialServer: CredentialServer | undefined;
+  /** Where the run's host tool wrappers are (host-tools.ts), removed when it ends. */
+  private hostToolsDir: string | undefined;
   private readonly runId: string;
   private readonly record: RunRecord;
   private readonly spool: EventSpool;
@@ -632,6 +635,8 @@ export class RunWorker {
       this.lease.stop();
       this.broker?.close();
       await this.credentialServer?.close().catch(() => undefined);
+      if (this.hostToolsDir !== undefined)
+        await removeHostToolWrappers(this.hostToolsDir).catch(() => undefined);
       if (this.statusTimer !== undefined) clearInterval(this.statusTimer);
       if (this.idleTimer !== undefined) clearInterval(this.idleTimer);
       this.spool.stop();
@@ -796,6 +801,22 @@ export class RunWorker {
             urls: this.broker.urls,
           }
         : undefined;
+    this.hostToolsDir = binDir;
+    const hostTools = await writeHostTools({
+      binDir,
+      helpersDir: path.join(deps.paths.home, 'helpers'),
+      ...(credentialHelper === undefined
+        ? {}
+        : { helper: credentialHelper.helper, urls: credentialHelper.urls }),
+      ...(payload.workspace.git?.tools === undefined
+        ? {}
+        : { tools: payload.workspace.git.tools }),
+      log: deps.log,
+    });
+    if (hostTools.credentialed.length > 0)
+      deps.log(
+        `host tools: ${hostTools.credentialed.join(', ')} use the run's credential`,
+      );
     const env = buildAgentEnv({
       source: process.env,
       binDir,
