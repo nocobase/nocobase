@@ -47,6 +47,33 @@ describe('application life cycle', () => {
       expect(decode(app.snowflakeIdGenerator.generate()).workerId).toBe(secondWorkerId);
     });
 
+    it('should rebind the generator when a new worker id is adopted at runtime', async () => {
+      vi.spyOn(WorkerIdAllocator.prototype, 'getWorkerId').mockResolvedValue(11);
+
+      app = mockServer({ skipSupervisor: true });
+      await app.load();
+      expect(decode(app.snowflakeIdGenerator.generate()).workerId).toBe(11);
+
+      // The allocator lost its lease on 11 and acquired 19; ids minted from here on belong to 19.
+      app.setInstanceId(19);
+
+      expect(app.instanceId).toBe(19);
+      expect(decode(app.snowflakeIdGenerator.generate()).workerId).toBe(19);
+    });
+
+    it('should not restart the sequence when the worker id is unchanged', async () => {
+      vi.spyOn(WorkerIdAllocator.prototype, 'getWorkerId').mockResolvedValue(11);
+
+      app = mockServer({ skipSupervisor: true });
+      await app.load();
+      const before = app.snowflakeIdGenerator.generate();
+
+      // Rebuilding restarts the sequence at 0, so re-adopting the same worker id would re-issue ids already handed out.
+      app.setInstanceId(11);
+
+      expect(Number(app.snowflakeIdGenerator.generate())).toBeGreaterThan(Number(before));
+    });
+
     it('should honor an explicitly configured worker id of 0', async () => {
       vi.spyOn(WorkerIdAllocator.prototype, 'getWorkerId').mockResolvedValue(7);
 

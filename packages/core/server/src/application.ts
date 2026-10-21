@@ -302,6 +302,22 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._instanceId;
   }
 
+  /**
+   * Adopt a worker id handed out at runtime, after the allocator loses its lease and acquires a different one. Ids may
+   * only be minted under a worker id this process currently holds, so the generator is rebuilt to match.
+   *
+   * Returning early on an unchanged id is required rather than an optimisation: rebuilding restarts the sequence at 0,
+   * so doing it for the same worker id inside one second would re-issue ids this process has already handed out.
+   */
+  setInstanceId(instanceId: number) {
+    if (this._instanceId === instanceId) {
+      return;
+    }
+    this._instanceId = instanceId;
+    this.snowflakeIdGenerator = new Snowflake({ workerId: instanceId });
+    this.log.info(`adopt worker id: ${instanceId}`, { method: 'setInstanceId' });
+  }
+
   get sqlLogger() {
     return this._sqlLogger;
   }
