@@ -50,6 +50,8 @@ export interface AgentSessionsPanelAttach {
 }
 
 export interface AgentSessionsPanelProps extends AgentSessionsRouteOptions {
+  /** Let the host show the text or resolve the reference carried by a context tag. */
+  readonly onInspectAttachment?: ((attachment: Attachment) => void) | undefined;
   readonly view: AgentSessionsPanelView;
   readonly onViewChange: (view: AgentSessionsPanelView) => void;
   readonly attach?: AgentSessionsPanelAttach | undefined;
@@ -71,6 +73,7 @@ function Panel({
   activeLink,
   actions,
   onFullScreen,
+  onInspectAttachment,
 }: Omit<
   AgentSessionsPanelProps,
   keyof AgentSessionsRouteOptions
@@ -184,6 +187,7 @@ function Panel({
   );
   const surface: SessionSurface = {
     panel: true,
+    onInspectAttachment,
     actions: buttons,
     onCreated: (sessionId) => onViewChange({ kind: 'session', sessionId }),
     onOpenSession: (sessionId) => onViewChange({ kind: 'session', sessionId }),

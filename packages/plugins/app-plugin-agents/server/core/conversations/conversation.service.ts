@@ -317,11 +317,6 @@ export function createConversationService(
     toMessage(record, deps.basePath?.() ?? '');
   const rules: ConversationRules[] = [];
   const sources = createSources();
-  const systemChatAgents = new Set<string>();
-  const allowedSystemAgent = (agent: Agent): boolean =>
-    agent.source === 'system' && systemChatAgents.has(agent.id);
-  const callableAgent = (agent: Agent): boolean =>
-    agent.source === 'runner' || allowedSystemAgent(agent);
 
   // -------------------------------------------------------------------------------------------------------------------
   // Reading
@@ -1206,9 +1201,8 @@ export function createConversationService(
           throw conflict('This conversation is busy.');
         const agent = await pickAgent(unit.conn, userId, record.agentId);
         if (
-          !callableAgent(agent) ||
-          (!allowedSystemAgent(agent) &&
-            !(await canAnswer(unit.conn, agent, userId)))
+          agent.source !== 'runner' ||
+          !(await canAnswer(unit.conn, agent, userId))
         )
           throw conflict('This agent has no available execution environment.');
         if (!isDeepStrictEqual(binding.config, realtime.config))
@@ -1291,12 +1285,6 @@ export function createConversationService(
   }
 
   const service: ConversationService = {
-    allowSystemAgent(agentId) {
-      systemChatAgents.add(agentId);
-      return () => {
-        systemChatAgents.delete(agentId);
-      };
-    },
     binding,
     contextKinds: deps.contextKinds,
     sources,
@@ -1378,14 +1366,10 @@ export function createConversationService(
         const agent = await pickAgent(unit.conn, userId, request.agentId);
         if (
           runnerConfig &&
-          (!callableAgent(agent) || runnerConfig.agentId !== agent.id)
+          (agent.source !== 'runner' || runnerConfig.agentId !== agent.id)
         )
           throw invalid('Select a callable Runner agent.');
-        if (
-          runnerConfig &&
-          !allowedSystemAgent(agent) &&
-          !(await canAnswer(unit.conn, agent, userId))
-        )
+        if (runnerConfig && !(await canAnswer(unit.conn, agent, userId)))
           throw conflict('This agent has no available execution environment.');
         const title =
           request.title === undefined
@@ -1805,10 +1789,10 @@ export function createConversationService(
       const now = clock.now().getTime();
       const catalog = await Promise.all(
         agents
-          // Applications explicitly opt their own agents in; all other system agents remain private.
+          // People talk to the agents discovered from runners; an application's own agents do work of its own.
           .filter(
             (agent) =>
-              callableAgent(agent) && deps.agents.mayInvoke(agent, userId),
+              agent.source === 'runner' && deps.agents.mayInvoke(agent, userId),
           )
           .map(async (agent): Promise<ChatAgent> => {
             const fitting = runners.filter((runner) =>

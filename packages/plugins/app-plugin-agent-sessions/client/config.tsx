@@ -6,6 +6,7 @@ import {
 } from 'react';
 import { useHref } from 'react-router';
 
+import type { Attachment } from './lib/attachments.js';
 import type { SessionLink } from '../shared/api.js';
 
 /**
@@ -73,6 +74,8 @@ export function useLinkOpen():
  * their header, opening records at their own address and telling the application which session to show.
  */
 export interface SessionSurface {
+  /** Inspect the exact attached text or reference without removing it. */
+  readonly onInspectAttachment?: ((attachment: Attachment) => void) | undefined;
   readonly placeholder?: string | undefined;
   readonly panel: boolean;
   readonly activeLink?: Pick<SessionLink, 'kind' | 'refId'> | null | undefined;

@@ -1,6 +1,6 @@
 ---
-'@nocobase/app-plugin-agents': minor
+'@nocobase/app-plugin-agent-sessions': minor
 '@nocobase/app-plugin-projects': minor
 ---
 
-Let applications explicitly offer an application-owned agent in Runner chat with offline queueing, and retain manual issue forms without the AI intake tabs.
+Let hosts inspect session context tags and transfer draft text and context through the existing memory cache. Allow applications to retain manual issue forms without AI intake tabs.
