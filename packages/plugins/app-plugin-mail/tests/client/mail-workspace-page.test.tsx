@@ -81,8 +81,8 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       await user.selectOptions(element, value);
       return;
     }
-    await user.clear(element);
-    if (value) await user.type(element, value);
+    // Seed form state in one change so a timeout cannot leave pending keystrokes for the next test.
+    fireEvent.change(element, { target: { value } });
   };
 
   const seedRichTextHtml = (editor: HTMLElement, html: string) => {
