@@ -760,6 +760,36 @@
           "target": "client/extensions/nocobase-default-access-editor-demo/default-access-editor.tsx"
         }
       ]
+    },
+    {
+      "name": "setup-readiness-demo",
+      "type": "registry:example",
+      "title": "Setup Readiness Demo",
+      "description": "Usage example of @nocobase/setup-readiness with local fixture configuration and missing-to-ready inspection. Connect real authorized reads in applications.",
+      "registryDependencies": ["button", "@nocobase/setup-readiness"],
+      "files": [
+        {
+          "path": "components/setup-readiness.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-setup-readiness-demo/setup-readiness.tsx"
+        }
+      ]
+    },
+    {
+      "name": "record-link-demo",
+      "type": "registry:example",
+      "title": "Record Link Demo",
+      "description": "Usage example of @nocobase/record-link with native navigation, preserved query context, hover and keyboard focus.",
+      "categories": ["data-display"],
+      "dependencies": ["react-router@^7.0.2"],
+      "registryDependencies": ["@nocobase/record-link"],
+      "files": [
+        {
+          "path": "components/record-link.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-record-link-demo/record-link.tsx"
+        }
+      ]
     }
   ]
 }

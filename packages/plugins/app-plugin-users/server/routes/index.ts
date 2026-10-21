@@ -24,6 +24,7 @@ import {
   type ApiErrorStatus,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
+import { AuthorizationDeniedError } from '@nocobase/authorization/core';
 import { PermissionSetLastAssignmentError } from '@nocobase/authorization/permission-sets';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
@@ -366,7 +367,23 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.patch(
       '/:userId',
-      allowed('update'),
+      createMiddleware<AuthorizationEnv>(async (context, next) => {
+        try {
+          await requireUserAction(
+            context,
+            context.req.param('userId') ?? '',
+            'update',
+          );
+        } catch (error) {
+          if (!(error instanceof AuthorizationDeniedError)) throw error;
+          await requireUserAction(
+            context,
+            context.req.param('userId') ?? '',
+            'assign-role',
+          );
+        }
+        await next();
+      }),
       describeRoute({
         tags,
         summary: 'Update a user',
@@ -376,7 +393,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           flags: { userId: { name: 'user' } },
         }),
         description:
-          'Changes name, username or email. `username: null` removes the username.',
+          'Changes name, username or email with `update` permission. `username: null` removes the username. Optional `roleScopes` requires `assign-role`; all submitted profile fields and role scopes commit or roll back together, and omitted scopes stay unchanged.',
         responses: {
           200: dataResponse(ManagedUserSchema),
           ...apiErrorResponses,
@@ -395,12 +412,27 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('json', UpdateUserInput),
       async (context) => {
         const { userId } = context.req.valid('param');
-        const user = await users.update(
-          userId,
-          context.req.valid('json'),
-          actorOf(context),
-        );
+        const input = context.req.valid('json');
+        if (
+          input.roleScopes === undefined ||
+          Object.keys(input).some((key) => key !== 'roleScopes')
+        )
+          await requireUserAction(context, userId, 'update');
+        if (input.roleScopes !== undefined)
+          await requireUserAction(context, userId, 'assign-role');
+        const user = await users.update(userId, input, actorOf(context));
         logSecurityEvent(securityLogger, context, 'user.update', userId);
+        for (const [roleScope, value] of Object.entries(input.roleScopes ?? {}))
+          logSecurityEvent(
+            securityLogger,
+            context,
+            'user.role.update',
+            userId,
+            {
+              roleScope,
+              roles: typeof value === 'string' ? [value] : [...value],
+            },
+          );
         return context.json({ data: user });
       },
     );

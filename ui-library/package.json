@@ -209,6 +209,9 @@
     "#components/data-table/column-header": "./registry/components/data-table/column-header.tsx",
     "#components/data-table": "./registry/components/data-table/index.ts",
     "#components/role-list": "./registry/authorization/role-list.tsx",
-    "#components/default-access-editor": "./registry/authorization/default-access-editor.tsx"
+    "#components/default-access-editor": "./registry/authorization/default-access-editor.tsx",
+    "#components/setup-readiness": "./registry/components/setup-readiness.tsx",
+    "#components/setup-readiness-state": "./registry/components/setup-readiness-state.ts",
+    "#components/record-link": "./registry/components/record-link.tsx"
   }
 }

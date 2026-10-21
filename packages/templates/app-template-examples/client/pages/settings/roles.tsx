@@ -10,6 +10,7 @@ import { ShieldCheckIcon, PlusIcon } from 'lucide-react';
 import { PermissionManagementPage } from './permission-management-page.js';
 import { Input } from '#components/ui/input';
 import { Button } from '#components/ui/button';
+import { useTableUrlState } from '#hooks/use-table-url-state';
 import { RoleList } from '#components/role-list';
 import {
   Empty,
@@ -48,6 +49,13 @@ export default function RolesPage(): ReactElement {
         i18n.language,
       ),
     );
+  const tableState = useTableUrlState({
+    sortColumns: ['title', 'key'],
+    rowCount:
+      request.data && !request.loading && !request.error
+        ? rows.length
+        : undefined,
+  });
   const create = canCreate ? (
     <Button
       nativeButton={false}
@@ -70,16 +78,31 @@ export default function RolesPage(): ReactElement {
             placeholder={t('settings.roleSearch')}
             aria-label={t('settings.roleSearch')}
             onChange={(event) => {
-              setParams(event.target.value ? { q: event.target.value } : {}, {
-                replace: true,
-              });
+              setParams(
+                (old) => {
+                  const next = new URLSearchParams(old);
+                  next.delete('page');
+                  if (event.target.value) next.set('q', event.target.value);
+                  else next.delete('q');
+                  return next;
+                },
+                { replace: true },
+              );
             }}
           />
           {search && (
             <Button
               variant='ghost'
               onClick={() => {
-                setParams({});
+                setParams(
+                  (old) => {
+                    const next = new URLSearchParams(old);
+                    next.delete('q');
+                    next.delete('page');
+                    return next;
+                  },
+                  { replace: true },
+                );
               }}
             >
               {t('settings.clear')}
@@ -93,6 +116,7 @@ export default function RolesPage(): ReactElement {
           !request.error &&
           (rows.length ? (
             <RoleList
+              tableState={tableState}
               ariaLabel={t('settings.roles')}
               roles={rows.map((role) => ({
                 key: role.key,
@@ -120,14 +144,28 @@ export default function RolesPage(): ReactElement {
                 {t(search ? 'settings.noResults' : 'settings.noRoles')}
               </EmptyTitle>
               <EmptyDescription>
-                {t(search ? 'settings.clearHint' : 'settings.rolesDescription')}
+                {t(
+                  search
+                    ? 'settings.clearHint'
+                    : canCreate
+                      ? 'settings.rolesDescription'
+                      : 'settings.rolesReadOnlyEmpty',
+                )}
               </EmptyDescription>
               <EmptyContent>
                 {search ? (
                   <Button
                     variant='outline'
                     onClick={() => {
-                      setParams({});
+                      setParams(
+                        (old) => {
+                          const next = new URLSearchParams(old);
+                          next.delete('q');
+                          next.delete('page');
+                          return next;
+                        },
+                        { replace: true },
+                      );
                     }}
                   >
                     {t('settings.clear')}
