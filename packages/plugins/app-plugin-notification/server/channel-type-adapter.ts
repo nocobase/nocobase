@@ -45,12 +45,12 @@ export function legacyChannelConfig(
 
 // Preserve the persisted message-family column and existing response descriptors for built-in types.
 // New extensions need only a concrete type; they have no historical message-family identifier.
-const historicalMessageTypes: Readonly<Record<string, string>> = {
-  smtp: 'email',
-  resend: 'email',
-  'feishu-webhook': 'im',
-  'dingtalk-webhook': 'im',
-};
+const historicalMessageTypes: ReadonlyMap<string, string> = new Map([
+  ['smtp', 'email'],
+  ['resend', 'email'],
+  ['feishu-webhook', 'im'],
+  ['dingtalk-webhook', 'im'],
+]);
 
 export function adaptChannelType<
   TConfig extends ChannelConfig,
@@ -60,7 +60,7 @@ export function adaptChannelType<
 >(
   Channel: ChannelTypeClass<TConfig, TMessage, TRecipient, TPrepared>,
 ): RegisteredChannelType {
-  const messageType = historicalMessageTypes[Channel.type] ?? Channel.type;
+  const messageType = historicalMessageTypes.get(Channel.type) ?? Channel.type;
   const test = Channel.test;
   return {
     type: Channel.type,
