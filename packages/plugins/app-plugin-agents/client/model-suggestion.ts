@@ -26,7 +26,12 @@ export function modelSuggestion(
       ? catalogEntry(agent.tool, agent.model)
       : undefined;
   const key = entry && MODEL_SUGGESTION_KEYS[entry.id];
-  if (key) return t(key);
-  // Suggestions from a server with a newer catalog remain external data in its declared languages.
+  if (
+    key &&
+    agent.suggestion.en === entry.goodAt.en &&
+    agent.suggestion.zh === entry.goodAt.zh
+  )
+    return t(key);
+  // Application overrides and suggestions from a newer catalog use their declared languages.
   return locale.startsWith('zh') ? agent.suggestion.zh : agent.suggestion.en;
 }
