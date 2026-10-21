@@ -120,7 +120,7 @@ Check them in the order "failed → first load → empty → data or no results"
 ## 8. Column definitions and row actions
 
 - Create `columns` with `useMemo`, and put everything it uses (`t`, the formatters, `location.search`) in the dependency array.
-- **The first column is the name** (guideline T1.3), a `Link` to the detail child route: `to={{ pathname: row.original.id, search: location.search }}`. The path is relative and keeps the query parameters, so closing the detail view returns to the same filtered result.
+- **The first column is the name** (guideline T1.3), a `RecordLink` from `#components/record-link` to the detail child route: `to={{ pathname: row.original.id, search: location.search }}`. The path is relative and keeps the query parameters, so closing the detail view returns to the same filtered result.
 - **Sortable columns** (guideline T1.8): make every date and time column (created, updated, due) and every number column sortable without being asked, and the name column when it sorts in the current language's order. Leave statuses, types, tags, people, long text and yes/no values as plain titles unless the business asks for them and the order means something.
 - A sortable column uses `DataTableColumnHeader` as its `header` and sets `enableHiding: false` (see [section 3](#3-known-datatable-behavior)); a plain column uses the translated text directly. In a server-paginated list, the endpoint must accept the column in `orderBy`.
 - Sorting Chinese names in the browser: `sortingFn` compares with `Intl.Collator(locale)`.
@@ -129,7 +129,7 @@ Check them in the order "failed → first load → empty → data or no results"
 - **Format times in the current language** (guideline T1.6): get `locale` from `useLocale()` and create the `Intl.DateTimeFormat` with `useMemo`, so it updates when the language switches.
 - **Right-align numbers** (guideline T1.6): `DataTable` has no per-column alignment option, so align inside the header and the cell, in a `div` (`text-right` does nothing on an inline `span`): `header: () => <div className='text-right'>{t('projects.fields.budget')}</div>` and `cell: ({ row }) => <div className='text-right tabular-nums'>{amountFormat.format(row.original.budget)}</div>`, with `amountFormat` an `Intl.NumberFormat` created in `useMemo` from `locale`. For a sortable number column, pass the alignment to the header itself, with no wrapper: `<DataTableColumnHeader column={column} title={…} className='justify-end text-right' />` (its root is a flex row when the column sorts and a plain `div` when it does not, so both classes are needed). The sort button keeps its padding, so the title sits slightly left of the numbers.
 - **Show a cut-off cell's full content on hover** (guideline T1.11): a cell does not wrap and the table widens to fit it, so content is cut off only where a column limits its width. There it ends in an ellipsis, and hovering shows the full value, but only when it is cut off:
-  - Text, or a link such as the name column, uses a `Tooltip` whose trigger is the truncated element; `TooltipTrigger` leaves a `Link` a link. `onOpenChange` cancels the tooltip when the value fits:
+  - Text, or a link such as the name column, uses a `Tooltip` whose trigger is the truncated element; `TooltipTrigger` leaves a `RecordLink` a native link. `onOpenChange` cancels the tooltip when the value fits:
 
     ```tsx
     <Tooltip
@@ -143,7 +143,7 @@ Check them in the order "failed → first load → empty → data or no results"
     >
       <TooltipTrigger
         render={
-          <Link
+          <RecordLink
             to={{ pathname: row.original.id, search: location.search }}
             className='block max-w-60 truncate'
           />
@@ -155,7 +155,7 @@ Check them in the order "failed → first load → empty → data or no results"
     </Tooltip>
     ```
 
-    For plain text, render `<span className='block max-w-60 truncate' />` in place of the `Link`.
+    For plain text, render `<span className='block max-w-60 truncate' />` in place of the `RecordLink`.
 
   - A `Badge` or other styled content goes in a `Popover` that opens on hover (`openOnHover delay={0}` on the trigger) instead: the tooltip surface is inverted, so a badge on it is unreadable.
   - `truncate` shows the ellipsis only on a block element. On a flex element such as `Badge` it clips without one, and the centered text loses both ends, so put the text in a `<span className='truncate'>` inside the badge and give the badge `min-w-0 shrink`. Do not use `line-clamp` in a cell: it needs text that wraps, which the cell prevents, so it only clips.

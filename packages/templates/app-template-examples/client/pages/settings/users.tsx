@@ -1,3 +1,4 @@
+import { RecordLink } from '#components/record-link';
 import { BackButton } from '#components/back-button';
 import { safeReturnTo } from '../../lib/return-to.js';
 import { useTableUrlState } from '#hooks/use-table-url-state';
@@ -53,12 +54,9 @@ function UserName({ user }: { readonly user: ManagedUser }): ReactElement {
   const canAssign = useUserPermission('assign-role', user.id);
   const location = useLocation();
   return canUpdate || canAssign ? (
-    <Link
-      to={{ pathname: `${user.id}/edit`, search: location.search }}
-      className='font-medium underline underline-offset-4 hover:text-primary focus-visible:outline-2 focus-visible:outline-ring'
-    >
+    <RecordLink to={{ pathname: `${user.id}/edit`, search: location.search }}>
       {user.name}
-    </Link>
+    </RecordLink>
   ) : (
     <span className='font-medium'>{user.name}</span>
   );

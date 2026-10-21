@@ -178,7 +178,7 @@ it.each(['/users', '/settings/users'])(
       name: 'Alice',
       exact: true,
     });
-    expect(edit).toHaveClass('underline');
+    expect(edit).toHaveAttribute('href', `${base}/alice/edit${search}`);
     expect(
       screen.getByRole('button', { name: 'Disable', exact: true }),
     ).toBeVisible();
@@ -191,7 +191,10 @@ it.each(['/users', '/settings/users'])(
     expect(
       screen.queryByRole('button', { name: 'Actions for Alice' }),
     ).not.toBeInTheDocument();
-    await user.click(edit);
+    if (base === '/users') {
+      edit.focus();
+      await user.keyboard('{Enter}');
+    } else await user.click(edit);
     const panel = await screen.findByRole('dialog', { name: 'Edit user' });
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
     expect(panel).toHaveAttribute('data-presentation', 'dialog');

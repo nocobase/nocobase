@@ -1,3 +1,4 @@
+import { RecordLink } from '#components/record-link';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { useApiClient, useToaster } from '@nocobase/app-client';
 import {
@@ -120,15 +121,14 @@ export default function DefaultAccessPage(): ReactElement {
         />
       ),
       cell: ({ row }) => (
-        <Link
-          className='text-foreground underline-offset-4 hover:underline'
+        <RecordLink
           to={{
             pathname: `${encodeURIComponent(row.original.key)}/edit`,
             search: location.search,
           }}
         >
           {name(row.original)}
-        </Link>
+        </RecordLink>
       ),
     },
     {

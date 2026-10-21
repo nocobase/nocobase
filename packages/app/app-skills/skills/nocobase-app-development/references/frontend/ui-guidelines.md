@@ -56,7 +56,7 @@ Structure, top to bottom: PageHeader (primary action "New X") → toolbar (searc
 
 - **T1.1 [Must]** The search box has a placeholder that says which fields it searches, for example "Search by name or email".
 - **T1.2 [Must]** Filter controls show their current value; while a search or filter is applied, show "Clear filters".
-- **T1.3 [Must]** The first column is the record's name or number; when there is a detail view, clicking it opens the detail view.
+- **T1.3 [Must]** The first column is the record's name or number; when there is a detail view, clicking it opens the detail view. Use the template’s `RecordLink` for record names and identifiers: foreground text with medium weight, no permanent underline, underline on hover, and underline plus a visible focus outline for keyboard navigation. Preserve native link behavior; action buttons and menu items keep their own styling.
 - **T1.4 [Must]** Enumerated values such as status and type are shown as text in a Badge; color is only an aid, and values must never be distinguished by color alone.
 - **T1.5 [Must]** A row's actions sit at the end of the row behind one icon-only ghost "…" button (`MoreHorizontalIcon`, `size='icon-sm'`, labelled "Actions for <name>") opening a `DropdownMenu`. Destructive items come last, after a `DropdownMenuSeparator`, with `variant='destructive'`, and are confirmed with an AlertDialog (I2). A table whose rows have exactly one non-destructive action may show it as a single ghost button instead, the same way on every row.
 - **T1.6 [Must]** Dates and times are formatted for the current language; numbers and amounts are right-aligned, with thousands separators.

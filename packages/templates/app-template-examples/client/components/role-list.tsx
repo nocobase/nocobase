@@ -1,6 +1,7 @@
 import { useMemo, type ReactElement } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Link, type To } from 'react-router';
+import type { To } from 'react-router';
+import { RecordLink } from '#components/record-link';
 import {
   DataTable,
   DataTableColumnHeader,
@@ -50,13 +51,13 @@ export function RoleList({
           <DataTableColumnHeader column={column} title={labels.name} />
         ),
         cell: ({ row }) => (
-          <Link
+          <RecordLink
             to={row.original.to}
-            className='inline-block max-w-72 truncate align-middle font-medium text-foreground'
+            className='inline-block max-w-72 truncate align-middle'
             title={row.original.title}
           >
             {row.original.title}
-          </Link>
+          </RecordLink>
         ),
       },
       {

@@ -1,7 +1,8 @@
+import { RecordLink } from '#components/record-link';
 import { useMatch, useLocation } from 'react-router';
 import { CategoryManager, type Category } from './categories.js';
 import type { ReactElement } from 'react';
-import { Link, Outlet } from 'react-router';
+import { Outlet } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Input } from '#components/ui/input';
 import { useUrlSearch } from '#hooks/use-url-search';
@@ -50,21 +51,19 @@ export default function DefinitionsPage(): ReactElement {
         name:
           workflow.name === labels.title(workflow) ? undefined : workflow.name,
         title: (
-          <Link
-            className='font-medium underline-offset-4 hover:underline'
+          <RecordLink
             to={{
               pathname: `/workflows/definitions/${workflow.id}`,
               search: location.search,
             }}
           >
             {labels.title(workflow)}
-          </Link>
+          </RecordLink>
         ),
         activity:
           workflow.executionCount > 0 ? (
             <>
-              <Link
-                className='underline-offset-4 hover:underline'
+              <RecordLink
                 to={{
                   pathname: '/workflows/executions',
                   search: new URLSearchParams({
@@ -76,7 +75,7 @@ export default function DefinitionsPage(): ReactElement {
                 {t('workflows.executionCountLink', {
                   count: workflow.executionCount,
                 })}
-              </Link>
+              </RecordLink>
               {workflow.lastExecutedAt && (
                 <p className='text-xs text-muted-foreground'>
                   {t('workflows.lastExecutedAt', {
