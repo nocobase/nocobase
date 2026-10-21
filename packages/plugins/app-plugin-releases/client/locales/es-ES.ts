@@ -220,10 +220,18 @@ const esES: LocaleResource<typeof enUS> = {
       },
       idleLabel: 'Detener cuando no haya sido visitado por',
       dormantLabel: 'Hibernar cuando no sea visitado durante',
+      idleModeLabel: 'Comportamiento del temporizador de inactividad',
+      dormantModeLabel: 'Comportamiento del temporizador de hibernación',
       minutes: 'minutos',
       hours: 'horas',
       neverIdle: 'Nunca',
       neverDormant: 'Nunca',
+      timerMode: {
+        inherit: 'Usar el valor predeterminado del entorno',
+        custom: 'Establecer un valor personalizado',
+      },
+      customTimerHint:
+        'Un valor personalizado vacío desactiva este temporizador; no utiliza el valor predeterminado del entorno.',
       idleSummary: 'se detiene después de {{minutes}} min sin visitar',
       dormantSummary: 'hiberna después de {{hours}} h',
       timersHint:
