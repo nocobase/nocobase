@@ -59,6 +59,9 @@ export interface AgentSessionsPanelProps extends AgentSessionsRouteOptions {
   readonly activeLink?: Pick<SessionLink, 'kind' | 'refId'> | null | undefined;
   /** After the panel's own buttons, such as the host's close button. */
   readonly actions?: ReactNode;
+  /** Replace panel header controls, retaining session commands in the host menu. */
+  readonly renderHeaderActions?:
+    ((menuItems: ReactNode) => ReactNode) | undefined;
   /** Opens the full page at `path`; left out, it navigates there. */
   readonly onFullScreen?: ((path: string) => void) | undefined;
 }
@@ -74,6 +77,7 @@ function Panel({
   actions,
   onFullScreen,
   onInspectAttachment,
+  renderHeaderActions,
 }: Omit<
   AgentSessionsPanelProps,
   keyof AgentSessionsRouteOptions
@@ -147,7 +151,7 @@ function Panel({
       : view.kind === 'new'
         ? '/agent-sessions?new'
         : '/agent-sessions';
-  const buttons = (
+  const defaultButtons = (
     <div className='flex shrink-0 items-center gap-0.5'>
       {view.kind !== 'new' && (
         <Button
@@ -185,7 +189,11 @@ function Panel({
       {actions}
     </div>
   );
+  const buttons = renderHeaderActions
+    ? renderHeaderActions(null)
+    : defaultButtons;
   const surface: SessionSurface = {
+    renderHeaderActions,
     panel: true,
     onInspectAttachment,
     actions: buttons,
@@ -205,12 +213,12 @@ function Panel({
         )}
         {view.kind === 'new' && (
           <>
-            <div className='flex items-center gap-2 border-b px-3.5 py-2'>
+            <header className='flex items-center gap-2 border-b px-3.5 py-2'>
               <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
                 {t('list.new')}
               </h2>
               {buttons}
-            </div>
+            </header>
             <div className='min-h-0 flex-1'>
               <NewSession />
             </div>

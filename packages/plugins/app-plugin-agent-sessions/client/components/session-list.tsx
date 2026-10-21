@@ -146,7 +146,13 @@ function FullSessionList({
       )}
       aria-label={t('list.label')}
     >
-      <div className='flex flex-col gap-2.5 px-3.5 pt-3.5 pb-2'>
+      <div
+        className={
+          surface.renderHeaderActions
+            ? 'flex flex-col gap-2.5 px-3.5 py-2'
+            : 'flex flex-col gap-2.5 px-3.5 pt-3.5 pb-2'
+        }
+      >
         <div className='flex items-center gap-2'>
           {archived && (
             <Button
@@ -161,7 +167,11 @@ function FullSessionList({
             </Button>
           )}
           <h1
-            className='min-w-0 flex-1 truncate text-base font-semibold'
+            className={
+              surface.renderHeaderActions
+                ? 'min-w-0 flex-1 truncate text-sm font-semibold'
+                : 'min-w-0 flex-1 truncate text-base font-semibold'
+            }
             title={archived ? t('list.archived') : t('list.title')}
           >
             {archived ? t('list.archived') : t('list.title')}

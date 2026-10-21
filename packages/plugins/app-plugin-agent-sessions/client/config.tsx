@@ -81,6 +81,9 @@ export interface SessionSurface {
   readonly activeLink?: Pick<SessionLink, 'kind' | 'refId'> | null | undefined;
   /** At the end of a view's header, such as the panel's own buttons. */
   readonly actions?: ReactNode;
+  /** Host-owned panel controls; session-specific commands are supplied as menu items. */
+  readonly renderHeaderActions?:
+    ((menuItems: ReactNode) => ReactNode) | undefined;
   /** A new session was created: show it. Left out, the page opens its address. */
   readonly onCreated?: ((sessionId: string) => void) | undefined;
   /** A session was picked in the list: show it. Left out, the list links to its address. */

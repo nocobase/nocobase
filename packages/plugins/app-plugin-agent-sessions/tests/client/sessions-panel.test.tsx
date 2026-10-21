@@ -21,6 +21,11 @@ import {
 } from '../../client/panel.js';
 import plugin from '../../client/plugin.js';
 import { ApplicationCacheContext } from '../../client/query-cache.js';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '../../client/components/ui/dropdown-menu.js';
 import type { Computer, Session } from '../../shared/api.js';
 
 const session: Session = {
@@ -460,4 +465,41 @@ describe('the sessions panel', () => {
       }),
     );
   });
+});
+
+it('lets a host replace controls across panel views while retaining session commands', async () => {
+  const { update, requests } = await setup({
+    renderHeaderActions: (items) => (
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<button type='button' />}>
+          Host controls
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>{items}</DropdownMenuContent>
+      </DropdownMenu>
+    ),
+  });
+  const title = await screen.findByRole('heading', { name: session.title });
+  expect(within(title.parentElement!).getAllByRole('button')).toHaveLength(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Host controls' }));
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Rename' }));
+  const rename = await screen.findByRole('textbox', { name: 'Rename' });
+  fireEvent.change(rename, { target: { value: 'Host toolbar conversation' } });
+  fireEvent.keyDown(rename, { key: 'Enter' });
+  await waitFor(() =>
+    expect(requests).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: 'agentSessions/sessions/session',
+        method: 'PATCH',
+        json: { title: 'Host toolbar conversation' },
+      }),
+    ),
+  );
+  update({ view: { kind: 'new' } });
+  expect(
+    await screen.findByRole('button', { name: 'Host controls' }),
+  ).toBeVisible();
+  update({ view: { kind: 'list' } });
+  expect(
+    await screen.findByRole('button', { name: 'Host controls' }),
+  ).toBeVisible();
 });
