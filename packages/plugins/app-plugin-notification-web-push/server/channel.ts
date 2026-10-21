@@ -4,58 +4,21 @@ import type {
   ChannelPreparationInput,
   ChannelSendInput,
   ChannelSendResult,
-  NotificationChannelDefinition,
   ValidatedChannelMessage,
 } from '@nocobase/app-plugin-notification/server';
 import { webPushServiceToken } from './tokens.js';
 import type { WebPushMessage } from './service.js';
-import type { NotificationExtensionRegistry } from '@nocobase/app-plugin-notification/server';
 import {
   PushMessage,
   type PreparedPush,
   type WebPushService,
 } from './service.js';
 
-export function createWebPushChannelDefinition(
-  service: () => WebPushService,
-): NotificationChannelDefinition {
-  return {
-    type: 'web-push',
-    async createChannel() {
-      return {
-        type: 'web-push',
-        validateMessage(input) {
-          const message = service().validateMessage(input);
-          return { message, recipients: message.to };
-        },
-        async prepare({ recipient, message }) {
-          const { to: _to, ...data } = PushMessage.parse(message);
-          return { device: recipient, message: data };
-        },
-      };
-    },
-  };
-}
-
-/** @deprecated Register WebPushChannel with registerChannelType. */
-export function registerWebPushChannel(
-  registry: NotificationExtensionRegistry,
-  service: () => WebPushService,
-): void {
-  registry
-    .registerChannel(createWebPushChannelDefinition(service))
-    .registerProvider({
-      type: 'web-push',
-      messageType: 'web-push',
-      async createProvider() {
-        return {
-          type: 'web-push',
-          send: ({ message, signal }) =>
-            service().deliver(message as PreparedPush, signal),
-        };
-      },
-    });
-}
+// Retain the legacy module exports for existing callers.
+export {
+  createWebPushChannelDefinition,
+  registerWebPushChannel,
+} from './compatibility.js';
 
 export class WebPushChannel implements ChannelInstance<
   WebPushMessage,

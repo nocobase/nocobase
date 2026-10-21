@@ -1,22 +1,13 @@
 import type { NotificationExtensionRegistry } from '@nocobase/app-plugin-notification';
-import {
-  createEmailChannelDefinition,
-  SmtpChannel,
-  ResendChannel,
-} from './email/index.js';
-import {
-  createImChannelDefinition,
-  FeishuWebhookChannel,
-  DingTalkWebhookChannel,
-} from './im/index.js';
+import { SmtpChannel, ResendChannel } from './email/index.js';
+import { FeishuWebhookChannel, DingTalkWebhookChannel } from './im/index.js';
+import { installLegacyMessageHandlers } from './compatibility.js';
 
 export function registerBuiltInNotificationProviders(
   registry: NotificationExtensionRegistry,
 ): void {
-  // Legacy providers can still reuse the built-in message handlers.
+  installLegacyMessageHandlers(registry);
   registry
-    .registerChannel(createEmailChannelDefinition())
-    .registerChannel(createImChannelDefinition())
     .registerChannelType(SmtpChannel)
     .registerChannelType(ResendChannel)
     .registerChannelType(FeishuWebhookChannel)

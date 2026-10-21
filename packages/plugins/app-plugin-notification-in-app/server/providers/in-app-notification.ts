@@ -7,7 +7,8 @@ import {
   type RealtimeUserTopic,
 } from '@nocobase/app-server/realtime';
 
-import { createInAppChannelDefinition, InAppChannel } from '../definition.js';
+import { InAppChannel } from '../definition.js';
+import { installLegacyMessageHandler } from '../compatibility.js';
 import {
   createRealtimeInAppStore,
   IN_APP_NOTIFICATION_REALTIME_TOPIC,
@@ -51,10 +52,8 @@ export class InAppNotificationProvider<
     const { container } = this.app;
     if (!container.has(notificationExtensionRegistryToken)) return;
     const registry = container.resolve(notificationExtensionRegistryToken);
-    // Keep the message handler available to third-party legacy Providers.
-    registry
-      .registerChannel(createInAppChannelDefinition())
-      .registerChannelType(InAppChannel);
+    installLegacyMessageHandler(registry);
+    registry.registerChannelType(InAppChannel);
   }
 
   public override shutdown(): Promise<void> {

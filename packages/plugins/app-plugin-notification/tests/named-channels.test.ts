@@ -1,6 +1,13 @@
 import type { DatabaseManager } from '@nocobase/db';
 import { createLogger } from '@nocobase/logging';
 import { expect, it, vi } from 'vitest';
+import type {
+  ChannelConfig,
+  ChannelContext,
+  ChannelInstance,
+  ChannelPreparationInput,
+  ChannelSendInput,
+} from '../server/channel-type.js';
 import { createNotificationManager } from '../server/manager.js';
 import { createNotificationRegistry } from '../server/registry.js';
 import type {
@@ -22,49 +29,47 @@ function harness(
       _message: object,
     ): Promise<ProviderSendResult> => ({ status: 'accepted' }),
   );
-  const registry = createNotificationRegistry().registerChannel({
-    type: 'email',
-    async createChannel() {
-      return {
-        type: 'email',
-        validateMessage(value: unknown) {
-          const message = value as {
-            to: string | readonly string[];
-            text: string;
-          };
-          const recipients =
-            typeof message?.to === 'string' ? [message.to] : message?.to;
-          if (
-            !Array.isArray(recipients) ||
-            !recipients.length ||
-            recipients.some(
-              (to: unknown) => typeof to !== 'string' || !to.includes('@'),
-            ) ||
-            typeof message.text !== 'string'
-          )
-            throw new Error('Invalid message');
-          return {
-            message,
-            recipients: recipients.map((address: string) => ({ address })),
-          };
-        },
-        async prepare({ recipient, message }) {
-          return { ...message, ...recipient };
-        },
-      };
-    },
-  });
-  for (const type of ['fake', 'replacement'])
-    registry.registerProvider({
-      type,
-      messageType: 'email',
-      async createProvider(_context, providerConfig) {
-        return {
-          type,
-          send: async ({ message }) => sent(type, providerConfig, message),
+  const registry = createNotificationRegistry();
+  for (const type of ['fake', 'replacement']) {
+    class FakeChannel implements ChannelInstance {
+      static readonly type = type;
+      constructor(
+        _context: ChannelContext,
+        private readonly config: ChannelConfig,
+      ) {}
+      validateMessage(value: unknown) {
+        const message = value as {
+          to: string | readonly string[];
+          text: string;
         };
-      },
-    });
+        const recipients =
+          typeof message?.to === 'string' ? [message.to] : message?.to;
+        if (
+          !Array.isArray(recipients) ||
+          !recipients.length ||
+          recipients.some(
+            (to: unknown) => typeof to !== 'string' || !to.includes('@'),
+          ) ||
+          typeof message.text !== 'string'
+        )
+          throw new Error('Invalid message');
+        return {
+          message,
+          recipients: recipients.map((address: string) => ({ address })),
+        };
+      }
+      async prepare({
+        recipient,
+        message,
+      }: ChannelPreparationInput): Promise<object> {
+        return { ...message, ...recipient };
+      }
+      send({ message }: ChannelSendInput): Promise<ProviderSendResult> {
+        return sent(type, this.config, message);
+      }
+    }
+    registry.registerChannelType(FakeChannel);
+  }
   const manager = createNotificationManager({
     database: {} as DatabaseManager,
     executor,
@@ -88,8 +93,8 @@ function harness(
 it('isolates Channel configurations and sends each native address independently', async () => {
   const config = {
     channels: {
-      system: { provider: 'fake', from: 'system@example.com' },
-      marketing: { provider: 'fake', from: 'marketing@example.com' },
+      system: { type: 'fake', from: 'system@example.com' },
+      marketing: { type: 'fake', from: 'marketing@example.com' },
     },
   };
   const h = harness(config);
@@ -250,21 +255,6 @@ it.each(['', ' padded', 'padded ', 'x'.repeat(101)])(
   },
 );
 
-it('requires globally unique Provider identifiers', () => {
-  const registry = createNotificationRegistry();
-  const definition = {
-    type: 'smtp',
-    messageType: 'email',
-    async createProvider(): Promise<never> {
-      throw new Error('unused');
-    },
-  };
-  registry.registerProvider(definition);
-  expect(() =>
-    registry.registerProvider({ ...definition, messageType: 'im' }),
-  ).toThrow('already registered');
-});
-
 it('allows disabled Channels whose Provider is not registered', () => {
   const registry = createNotificationRegistry();
   expect(() =>
@@ -310,7 +300,7 @@ it('does not start persistence or job resources with an empty Channel map', asyn
   }
 });
 
-it('closes already-created Providers when a later Channel fails startup', async () => {
+it('closes already-created Channels when a later Channel fails startup', async () => {
   const h = harness({
     channels: {
       working: { provider: 'working' },
@@ -318,48 +308,32 @@ it('closes already-created Providers when a later Channel fails startup', async 
     },
   });
   const close = vi.fn(async () => undefined);
-  h.registry.registerProvider({
-    type: 'working',
-    messageType: 'email',
-    async createProvider() {
-      return {
-        type: 'working',
-        close,
-        async send() {
-          return { status: 'accepted' };
-        },
-      };
-    },
-  });
-  h.registry.registerProvider({
-    type: 'broken',
-    messageType: 'email',
-    async createProvider() {
+  class WorkingChannel implements ChannelInstance {
+    static readonly type: string = 'working';
+    validateMessage(message: unknown) {
+      return { message: message as object, recipients: [{}] };
+    }
+    async prepare({ message }: ChannelPreparationInput): Promise<object> {
+      return message;
+    }
+    async send(): Promise<ProviderSendResult> {
+      return { status: 'accepted' };
+    }
+    close = close;
+  }
+  class BrokenChannel extends WorkingChannel {
+    static override readonly type = 'broken';
+    constructor() {
+      super();
       throw new Error('startup failed');
-    },
-  });
+    }
+  }
+  h.registry
+    .registerChannelType(WorkingChannel)
+    .registerChannelType(BrokenChannel);
   try {
     await expect(h.manager.start()).rejects.toThrow('startup failed');
     expect(close).toHaveBeenCalledOnce();
-  } finally {
-    await h.close();
-  }
-});
-
-it('normalizes type for legacy extension factories', async () => {
-  const config = {
-    channels: { email: { type: 'fake', from: 'system@example.com' } },
-  };
-  const h = harness(config);
-  try {
-    await h.manager.sendTransient({
-      channel: 'email',
-      message: { to: 'a@example.com', text: 'hello' },
-    });
-    expect(h.sent.mock.calls[0][1]).toEqual({
-      provider: 'fake',
-      from: 'system@example.com',
-    });
   } finally {
     await h.close();
   }

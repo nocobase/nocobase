@@ -10,6 +10,11 @@ import { createLogger, type Logging } from '@nocobase/logging';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { describe, expect, it, vi } from 'vitest';
 
+import type {
+  ChannelInstance,
+  ChannelPreparationInput,
+  ChannelSendResult,
+} from '../server/channel-type.js';
 import { NotificationProvider } from '../server/providers/notification.js';
 import { notificationRuntimeToken } from '../server/runtime.js';
 import {
@@ -24,7 +29,7 @@ describe('@nocobase/app-plugin-notification provider', () => {
     const provider = new NotificationProvider({
       config: {
         get: () => ({
-          channels: { email: { provider: 'fake', enabled: true } },
+          channels: { email: { type: 'fake', enabled: true } },
         }),
       },
       container,
@@ -34,34 +39,19 @@ describe('@nocobase/app-plugin-notification provider', () => {
     expect(container.has(notificationServiceToken)).toBe(true);
     expect(container.has(notificationExtensionRegistryToken)).toBe(true);
     const registry = container.resolve(notificationExtensionRegistryToken);
-    registry
-      .registerChannel({
-        type: 'email',
-        async createChannel() {
-          return {
-            type: 'email',
-            validateMessage: (message: object) => ({
-              message,
-              recipients: [{}],
-            }),
-            async prepare(input): Promise<object> {
-              return input.message;
-            },
-          };
-        },
-      })
-      .registerProvider({
-        messageType: 'email',
-        type: 'fake',
-        async createProvider(_context, config) {
-          return {
-            type: config.provider,
-            async send() {
-              return { status: 'accepted' } as const;
-            },
-          };
-        },
-      });
+    class FakeChannel implements ChannelInstance {
+      static readonly type = 'fake';
+      validateMessage(message: unknown) {
+        return { message: message as object, recipients: [{}] };
+      }
+      async prepare({ message }: ChannelPreparationInput): Promise<object> {
+        return message;
+      }
+      async send(): Promise<ChannelSendResult> {
+        return { status: 'accepted' };
+      }
+    }
+    registry.registerChannelType(FakeChannel);
     const notification = container.resolve(notificationRuntimeToken);
     expect(container.resolve(notificationServiceToken)).toBe(notification);
     const activate = vi.spyOn(notification, 'activate');
