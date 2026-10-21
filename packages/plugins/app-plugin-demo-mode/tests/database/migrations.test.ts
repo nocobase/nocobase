@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+import { expect } from 'vitest';
 import { describeMigration } from '@nocobase/app-testing/server';
 
 const sources = [
@@ -67,5 +68,42 @@ describeMigration('202610210002_demo_mode_environment_model', {
   },
   down: async ({ expectCollection }) => {
     await expectCollection('demoModeModel').not.toExist();
+  },
+});
+
+describeMigration('202610210003_demo_mode_adopt_environment_model', {
+  sources,
+  before: async ({ connection }) => {
+    await connection.query
+      .insertInto('demoModeDatasets')
+      .values({
+        id: 'old',
+        state: 'ready',
+        modelKey: 'fixture-key',
+        modelService: 'existing-model',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .execute();
+  },
+  up: async ({ connection }) => {
+    expect(
+      await connection.query
+        .selectFrom('demoModeModel')
+        .selectAll()
+        .executeTakeFirst(),
+    ).toMatchObject({
+      id: 'default',
+      modelKey: 'fixture-key',
+      modelService: 'existing-model',
+    });
+  },
+  down: async ({ connection }) => {
+    expect(
+      await connection.query
+        .selectFrom('demoModeModel')
+        .select('modelService')
+        .executeTakeFirst(),
+    ).toMatchObject({ modelService: 'existing-model' });
   },
 });
