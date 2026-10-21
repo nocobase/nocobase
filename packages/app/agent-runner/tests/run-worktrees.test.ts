@@ -28,7 +28,7 @@ import {
   updateContinuationState,
   readContinuationState,
 } from '../src/core/run-worktrees.ts';
-import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
+import { git, makeRemote, publishSeed, removeDir, tempDir } from './helpers.ts';
 
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>();
@@ -1039,6 +1039,168 @@ describe('per-attempt worktrees', () => {
     ).toHaveLength(2);
     await finalizeRunWorktrees(paths, c.workDir, () => {});
   });
+  function seedSubmodule() {
+    const child = makeRemote(root, 'child');
+    const seed = path.join(root, 'origin-repo-seed');
+    git(
+      [
+        '-c',
+        'protocol.file.allow=always',
+        'submodule',
+        'add',
+        child,
+        'vendor/core',
+      ],
+      seed,
+    );
+    git([...COMMIT, 'commit', '-am', 'Add submodule fixture'], seed);
+    publishSeed(root);
+  }
+  const oldSubmoduleReason =
+    'Initialized submodules require recovery in the original worktree; their objects are not saved by a parent commit';
+  async function oldSubmoduleRecovery(a: Awaited<ReturnType<typeof start>>) {
+    await writeWorkspaceMeta(paths, a.workDir, {
+      ...(await readWorkspaceMeta(paths, a.workDir))!,
+      recoveryRequired: true,
+      recoveryReason: oldSubmoduleReason,
+    });
+  }
+  it('saves parent changes with uninitialized submodules and resumes without a recovery warning', async () => {
+    seedSubmodule();
+    const a = await start('uninitialized');
+    expect(git(['submodule', 'status', '--recursive'], a.repo.dir)).toMatch(
+      /^-/,
+    );
+    expect(git(['status', '--porcelain'], a.repo.dir)).toBe('');
+    writeFileSync(path.join(a.repo.dir, 'pending.txt'), 'parent work');
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved[0].saved).toBe(true);
+    const b = await start('uninitialized-resume');
+    expect(readFileSync(path.join(b.repo.dir, 'pending.txt'), 'utf8')).toBe(
+      'parent work',
+    );
+    expect(b.repo.warnings?.join(' ')).not.toContain('Resolve or recover');
+    expect(
+      (await finalizeRunWorktrees(paths, b.workDir, () => {}))[0].saved,
+    ).toBe(true);
+  });
+  it('still retains initialized submodules and their uncommitted contents', async () => {
+    seedSubmodule();
+    const a = await start('initialized');
+    git(
+      ['-c', 'protocol.file.allow=always', 'submodule', 'update', '--init'],
+      a.repo.dir,
+    );
+    const pending = path.join(a.repo.dir, 'vendor/core/pending.txt');
+    writeFileSync(pending, 'submodule work');
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved[0]).toMatchObject({
+      saved: false,
+      reason: oldSubmoduleReason,
+    });
+    expect(readFileSync(pending, 'utf8')).toBe('submodule work');
+    const b = await start('initialized-next');
+    expect(b.repo.warnings?.join(' ')).toContain('Resolve or recover');
+    expect(readFileSync(pending, 'utf8')).toBe('submodule work');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+  it('retains a deinitialized submodule object store with unpublished commits', async () => {
+    seedSubmodule();
+    const a = await start('deinitialized');
+    git(
+      ['-c', 'protocol.file.allow=always', 'submodule', 'update', '--init'],
+      a.repo.dir,
+    );
+    const child = path.join(a.repo.dir, 'vendor/core');
+    const head = commitFile(child, 'unpublished.txt');
+    const childGitDir = git(['rev-parse', '--absolute-git-dir'], child);
+    git(['submodule', 'deinit', '--force', '--', 'vendor/core'], a.repo.dir);
+    expect(git(['submodule', 'status', '--recursive'], a.repo.dir)).toMatch(
+      /^-/,
+    );
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved[0]).toMatchObject({
+      saved: false,
+      reason: oldSubmoduleReason,
+    });
+    const b = await start('deinitialized-next');
+    expect(b.repo.warnings?.join(' ')).toContain('Resolve or recover');
+    expect(
+      git(['--git-dir', childGitDir, 'show', `${head}:unpublished.txt`], root),
+    ).toBe('unpublished.txt');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+  it('rechecks an inactive clean legacy submodule false alarm and preserves unpublished commits', async () => {
+    seedSubmodule();
+    const a = await start('legacy-submodule');
+    commitFile(a.repo.dir, 'unpublished.txt');
+    await oldSubmoduleRecovery(a);
+    const b = await start('legacy-resume');
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(b.repo.warnings?.join(' ')).not.toContain('Resolve or recover');
+    expect(readFileSync(path.join(b.repo.dir, 'unpublished.txt'), 'utf8')).toBe(
+      'unpublished.txt',
+    );
+    expect(
+      (await readContinuationState(paths, 'app', 'PM-300'))?.activeWorkDirs,
+    ).not.toContain(a.workDir);
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+  it('defers a legacy submodule false alarm while its original attempt is locked', async () => {
+    seedSubmodule();
+    const a = await start('locked-legacy');
+    await oldSubmoduleRecovery(a);
+    const lock = await acquireLock(`${a.workDir}.lock`, { timeoutMs: 0 });
+    let b: Awaited<ReturnType<typeof start>>;
+    try {
+      b = await start('locked-next');
+      expect(existsSync(a.workDir)).toBe(true);
+      expect(b.repo.warnings?.join(' ')).toContain('Resolve or recover');
+    } finally {
+      await lock.release();
+    }
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+    const c = await start('unlocked-next');
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(c.repo.warnings?.join(' ')).not.toContain('Resolve or recover');
+    await finalizeRunWorktrees(paths, c.workDir, () => {});
+  });
+  it.each(['dirty', 'initialized', 'otherReason', 'otherSubject', 'otherApp'])(
+    'does not auto-finalize an unsafe or unrelated legacy recovery: %s',
+    async (condition) => {
+      seedSubmodule();
+      const a = await start('retained-legacy');
+      await oldSubmoduleRecovery(a);
+      if (condition === 'dirty')
+        writeFileSync(path.join(a.repo.dir, 'pending.txt'), 'retain');
+      if (condition === 'initialized')
+        git(
+          ['-c', 'protocol.file.allow=always', 'submodule', 'update', '--init'],
+          a.repo.dir,
+        );
+      if (['otherReason', 'otherSubject', 'otherApp'].includes(condition)) {
+        await writeWorkspaceMeta(paths, a.workDir, {
+          ...(await readWorkspaceMeta(paths, a.workDir))!,
+          ...(condition === 'otherReason'
+            ? { recoveryReason: 'Unresolved Git operation' }
+            : {}),
+          ...(condition === 'otherSubject' ? { subjectKey: 'OTHER' } : {}),
+          ...(condition === 'otherApp' ? { appKey: 'other-app' } : {}),
+        });
+      }
+      const b = await start('retained-next');
+      expect(existsSync(a.workDir)).toBe(true);
+      expect(
+        (await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired,
+      ).toBe(true);
+      expect(b.repo.warnings?.join(' ')).toContain('Resolve or recover');
+      if (condition === 'dirty')
+        expect(readFileSync(path.join(a.repo.dir, 'pending.txt'), 'utf8')).toBe(
+          'retain',
+        );
+      await finalizeRunWorktrees(paths, b.workDir, () => {});
+    },
+  );
   it('keeps an unresolved user merge instead of committing or deleting it', async () => {
     const a = await start('a');
     git(['checkout', '-b', 'other'], a.repo.dir);

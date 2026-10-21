@@ -85,6 +85,24 @@ The overlays' close button names itself with `useTranslation()` from `@nocobase/
 | -------------------- | ------- | ------- |
 | `routeOverlay.close` | Close   | 关闭    |
 
+The shared DataTable and its column header and pagination controls use these keys, including when composed by `role-list`:
+
+| Key                        | English                                    | Chinese                              |
+| -------------------------- | ------------------------------------------ | ------------------------------------ |
+| `dataTable.sortAscending`  | Asc                                        | 升序                                 |
+| `dataTable.sortDescending` | Desc                                       | 降序                                 |
+| `dataTable.hideColumn`     | Hide                                       | 隐藏                                 |
+| `dataTable.noResults`      | No results.                                | 暂无结果。                           |
+| `dataTable.selectedCount`  | {{selected}} of {{total}} row(s) selected. | 已选择 {{selected}} / {{total}} 行。 |
+| `dataTable.rowsPerPage`    | Rows per page                              | 每页行数                             |
+| `dataTable.pageOf`         | Page {{page}} of {{pageCount}}             | 第 {{page}} 页，共 {{pageCount}} 页  |
+| `dataTable.firstPage`      | Go to first page                           | 第一页                               |
+| `dataTable.previousPage`   | Go to previous page                        | 上一页                               |
+| `dataTable.nextPage`       | Go to next page                            | 下一页                               |
+| `dataTable.lastPage`       | Go to last page                            | 最后一页                             |
+| `dataTable.view`           | View                                       | 视图                                 |
+| `dataTable.toggleColumns`  | Toggle columns                             | 切换列                               |
+
 `page-container`, `page-header` and `route-child-page` render no text of their own.
 
 | Key                        | English                                      | Chinese                     |

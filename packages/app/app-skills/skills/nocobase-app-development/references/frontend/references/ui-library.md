@@ -147,14 +147,15 @@ A compact permission workspace with category navigation, individual action check
 
 ### role-list
 
-A compact role content list with aligned names, identifiers and protected/custom labels. Use it on role administration pages backed by the Authorization plugin; the host supplies authorized data and edit destinations. Preinstalled in both application templates.
+A role administration table built with the standard DataTable: localized column headers, sortable names and identifiers, protected/custom badges, and pagination. The host supplies authorized rows and edit destinations. Preinstalled in both application templates.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/role-list`
 - Installs to: `client/components/role-list.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/data-table`
 - Example: `@nocobase/role-list-demo` (`pnpm exec shadcn view @nocobase/role-list-demo`)
-- After installing: Render inside a React Router with roles containing key, localized title, edit destination (to) and protected state. Pass localized protected/custom labels and an optional ariaLabel. The host owns loading, empty/error states, filtering, sorting and authorization. Rows use body-sized text and compact spacing; identifiers move under the name on narrow containers. Publishing the Registry does not replace installed source; existing apps merge role-list.tsx and the roles page integration through a template source upgrade.
+- After installing: Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. The host owns loading, empty/error states, filtering and authorization. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.
 
 ### default-access-editor
 

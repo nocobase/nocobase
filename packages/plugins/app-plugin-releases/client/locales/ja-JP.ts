@@ -219,16 +219,16 @@ const jaJP: LocaleResource<typeof enUS> = {
       dormantLabel: '訪問者がいない場合は休止状態にします',
       idleModeLabel: 'アイドルタイマーの動作',
       dormantModeLabel: '休止タイマーの動作',
+      minutes: '分',
+      hours: '時間',
+      neverIdle: '決して',
+      neverDormant: '決して',
       timerMode: {
         inherit: '環境の既定値を使用',
         custom: 'カスタム値を設定',
       },
       customTimerHint:
-        'カスタム値を空にすると、そのタイマーは無効になります。環境の既定値は使用されません。',
-      minutes: '分',
-      hours: '時間',
-      neverIdle: '決して',
-      neverDormant: '決して',
+        'カスタム値を空欄にすると、このタイマーは無効になります。環境の既定値は使用されません。',
       idleSummary: 'アクセスがないまま {{minutes}} 分経過すると停止します',
       dormantSummary: '{{hours}} h 後に休止状態になります',
       timersHint:

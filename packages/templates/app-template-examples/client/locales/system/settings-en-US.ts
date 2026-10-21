@@ -104,6 +104,7 @@ const settings = {
   username: 'Username',
   email: 'Email',
   password: 'Initial password',
+  roleType: 'Role type',
   roleName: 'Role name',
   key: 'Key',
   status: 'Status',
