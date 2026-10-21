@@ -22,7 +22,7 @@ type ChannelSchemaForType<T extends string> =
     : NotificationChannelSchema;
 
 export type ConfiguredNotificationChannels<
-  T extends Readonly<Record<string, NotificationChannelConfig>>,
+  T extends Readonly<Record<string, NotificationChannelConfigInput>>,
 > = {
   [N in keyof T]: ChannelSchemaForType<
     T[N] extends { readonly type: infer K extends string }
@@ -154,7 +154,7 @@ export interface NotificationTestSendRequest {
 export type NotificationTestSendInput = object;
 
 export interface NotificationTestAdapter<
-  TConfig extends NotificationChannelConfig = NotificationChannelConfig,
+  TConfig extends NotificationChannelConfigInput = NotificationChannelConfig,
 > {
   readonly label: string | NotificationI18nText;
   readonly fields: readonly NotificationTestFieldDescriptor[];
@@ -249,11 +249,14 @@ export interface NotificationProviderConfig {
   readonly enabled?: boolean;
 }
 
-export type NotificationChannelConfig =
-  NotificationProviderConfig | ChannelConfig;
+export type NotificationChannelConfig = NotificationProviderConfig;
+
+/** Named channel configuration before normalization for class or legacy extensions. */
+export type NotificationChannelConfigInput =
+  NotificationChannelConfig | ChannelConfig;
 
 export interface NotificationConfig {
-  readonly channels: Readonly<Record<string, NotificationChannelConfig>>;
+  readonly channels: Readonly<Record<string, NotificationChannelConfigInput>>;
   /**
    * The `jobs` configuration Delivery tasks run on. Omitted, they follow
    * `jobs.default`, like every other consumer of the jobs service.

@@ -1026,7 +1026,7 @@ function initialNotificationStatus(
 
 export function createNotificationManager<
   const TConfig extends Readonly<
-    Record<string, import('./types.js').NotificationChannelConfig>
+    Record<string, import('./types.js').NotificationChannelConfigInput>
   >,
 >(
   options: Omit<

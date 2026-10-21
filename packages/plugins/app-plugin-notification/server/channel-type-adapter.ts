@@ -6,7 +6,7 @@ import type {
   ChannelTypeClass,
 } from './channel-type.js';
 import type {
-  NotificationChannelConfig,
+  NotificationChannelConfigInput,
   NotificationI18nText,
   NotificationProviderConfig,
   NotificationTestAdapter,
@@ -16,28 +16,28 @@ export interface RegisteredChannelType {
   readonly type: string;
   readonly label?: string | NotificationI18nText;
   readonly messageType: string;
-  readonly test?: NotificationTestAdapter;
-  validateConfig(config: NotificationChannelConfig): void;
+  readonly test?: NotificationTestAdapter<NotificationChannelConfigInput>;
+  validateConfig(config: NotificationChannelConfigInput): void;
   create(
     context: ChannelContext,
-    config: NotificationChannelConfig,
+    config: NotificationChannelConfigInput,
   ): Promise<ChannelRuntime>;
 }
 
 export function channelConfig(
-  config: NotificationChannelConfig,
+  config: NotificationChannelConfigInput,
 ): ChannelConfig {
   const { provider: _provider, ...rest } =
-    config as NotificationChannelConfig & {
+    config as NotificationChannelConfigInput & {
       readonly provider?: string;
     };
   return { ...rest, type: resolveChannelType(config) };
 }
 
 export function legacyChannelConfig(
-  config: NotificationChannelConfig,
+  config: NotificationChannelConfigInput,
 ): NotificationProviderConfig {
-  const { type: _type, ...rest } = config as NotificationChannelConfig & {
+  const { type: _type, ...rest } = config as NotificationChannelConfigInput & {
     readonly type?: string;
   };
   return { ...rest, provider: resolveChannelType(config) };

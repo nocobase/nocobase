@@ -119,7 +119,8 @@ export class FeishuWebhookChannel implements ChannelInstance<
     'test.providers.feishuWebhook',
     'Feishu webhook',
   );
-  static readonly test: NotificationTestAdapter = imTestAdapter;
+  static readonly test: NotificationTestAdapter<FeishuWebhookChannelConfig> =
+    imTestAdapter;
   static validateConfig(config: FeishuWebhookChannelConfig): void {
     validateFeishuConfig({ ...config, provider: 'feishu-webhook' });
   }

@@ -81,7 +81,8 @@ export class SmtpChannel implements ChannelInstance<
     'test.providers.smtp',
     'SMTP',
   );
-  static readonly test: NotificationTestAdapter = emailTestAdapter;
+  static readonly test: NotificationTestAdapter<SmtpChannelConfig> =
+    emailTestAdapter;
   static validateConfig(config: SmtpChannelConfig): void {
     validateSmtpProviderConfig({ ...config, provider: 'smtp' });
   }

@@ -7,6 +7,7 @@ import {
 } from './channel-type-adapter.js';
 import type {
   NotificationChannelDefinition,
+  NotificationChannelConfigInput,
   NotificationTestAdapter,
   NotificationConfig,
   NotificationExtensionRegistry,
@@ -52,7 +53,9 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
     return this.channelTypes.get(type);
   }
 
-  testAdapter(type: string): NotificationTestAdapter | undefined {
+  testAdapter(
+    type: string,
+  ): NotificationTestAdapter<NotificationChannelConfigInput> | undefined {
     const registered = this.channelType(type);
     if (registered) return registered.test;
     const provider = this.provider(type);

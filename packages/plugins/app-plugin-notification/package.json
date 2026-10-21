@@ -77,7 +77,7 @@
   "scripts": {
     "clean": "node ./scripts/clean-dist.mjs",
     "build": "node ./scripts/clean-dist.mjs && tsc -p tsconfig.json && nocobase-db-manifests",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.type-tests.json --noEmit",
     "test": "vitest run",
     "registry:build": "node ../../../scripts/registry.mjs build --package .",
     "registry:materialize": "node ../../../scripts/registry.mjs materialize --package .",

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import {
   notificationServiceToken,
-  type NotificationChannelConfig,
+  type NotificationChannelConfigInput,
   type NotificationSendInput,
   type NotificationChannelMap,
 } from '@nocobase/app-plugin-notification/server';
@@ -27,7 +27,7 @@ let stop: () => void;
 
 /** An application that binds its own notices and translates keys as `key(values)`. */
 function application(
-  channel?: NotificationChannelConfig,
+  channel?: NotificationChannelConfigInput,
   send?: (
     input: NotificationSendInput<NotificationChannelMap>,
   ) => Promise<void>,

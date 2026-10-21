@@ -120,7 +120,8 @@ export class DingTalkWebhookChannel implements ChannelInstance<
     'test.providers.dingtalkWebhook',
     'DingTalk webhook',
   );
-  static readonly test: NotificationTestAdapter = imTestAdapter;
+  static readonly test: NotificationTestAdapter<DingTalkWebhookChannelConfig> =
+    imTestAdapter;
   static validateConfig(config: DingTalkWebhookChannelConfig): void {
     validateDingTalkConfig({ ...config, provider: 'dingtalk-webhook' });
   }

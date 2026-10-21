@@ -86,7 +86,8 @@ export class ResendChannel implements ChannelInstance<
     'test.providers.resend',
     'Resend',
   );
-  static readonly test: NotificationTestAdapter = emailTestAdapter;
+  static readonly test: NotificationTestAdapter<ResendChannelConfig> =
+    emailTestAdapter;
   static validateConfig(config: ResendChannelConfig): void {
     validateResendProviderConfig({ ...config, provider: 'resend' });
   }
