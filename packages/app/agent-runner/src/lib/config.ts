@@ -166,6 +166,8 @@ function storedFreeSpace(value: unknown): FreeSpace | null | undefined {
 export type RevocationReason = 'RUNNER_REVOKED' | 'RUNNER_KEY_INVALID';
 
 export interface AppRegistration {
+  /** Last tool selection received from the server; never a local override. */
+  enabledTools?: readonly AgentTool[];
   /** The file name: the application's id, or its address when it sent none. */
   key: string;
   app: RunApp;

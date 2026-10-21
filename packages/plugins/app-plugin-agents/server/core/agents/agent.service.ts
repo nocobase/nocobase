@@ -27,6 +27,7 @@ import {
 } from '../../../shared/agents.js';
 import {
   agentNameOf,
+  TOOL_LABELS,
   catalogEntry,
   discoveryKey,
   normalizeModel,
@@ -273,6 +274,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
     tool: AgentTool,
     model: string,
     now: string,
+    displayModel?: string,
   ): Promise<boolean> {
     const id = runnerAgentId(tool, model);
     const { instructions, actions } = currentDefaults();
@@ -281,7 +283,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       await unit.conn.transaction((conn) =>
         insertAgent(conn, {
           id,
-          name: agentNameOf(tool, model),
+          name: agentNameOf(tool, model, displayModel),
           description: null,
           nameText: null,
           descriptionText: null,
@@ -290,8 +292,10 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
           source: 'runner',
           status: 'pending',
           tool,
-          model,
-          modelEntries: [{ tool, model, effort: initialEffort(tool) }],
+          model: model || null,
+          modelEntries: [
+            { tool, model: model || null, effort: initialEffort(tool) },
+          ],
           instructions,
           runnerIds: [],
           actions: [...actions],
@@ -570,25 +574,37 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       if (combos.length === 0) return;
       const now = clock.now();
       const nowText = now.toISOString();
-      const known = new Map<string, AgentRecord>(
-        (
-          await agentsRepo(unit.conn).findMany({
-            filter: (f) =>
-              f.or(
-                combos.map((combo) =>
-                  f.string('id').eq(runnerAgentId(combo.tool, combo.model)),
-                ),
+      const known = new Map<string, AgentRecord>();
+      // Several selected ACP tools can each report 256 models. Bound SQL parameters and OR depth on every dialect.
+      for (let offset = 0; offset < combos.length; offset += 200) {
+        const batch = combos.slice(offset, offset + 200);
+        const records = await agentsRepo(unit.conn).findMany({
+          filter: (f) =>
+            f.or(
+              batch.map((combo) =>
+                f.string('id').eq(runnerAgentId(combo.tool, combo.model)),
               ),
-          })
-        ).map((record) => [record.id, record]),
-      );
+            ),
+        });
+        for (const record of records) known.set(record.id, record);
+      }
       const created: string[] = [];
       const stale: string[] = [];
       for (const combo of combos) {
         const id = runnerAgentId(combo.tool, combo.model);
         const record = known.get(id);
         if (!record) {
-          if (await createRunnerAgent(unit, combo.tool, combo.model, nowText))
+          if (
+            await createRunnerAgent(
+              unit,
+              combo.tool,
+              combo.model,
+              nowText,
+              runner.tools
+                .find((tool) => tool.kind === combo.tool)
+                ?.models?.find((model) => model.id === combo.model)?.name,
+            )
+          )
             created.push(id);
           continue;
         }
@@ -596,7 +612,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         if (
           record.status === 'pending' &&
           record.name ===
-            `${{ claude: 'Claude', codex: 'Codex', pi: 'Pi', opencode: 'OpenCode' }[combo.tool]} · ${combo.model.split('/').at(-1)}` &&
+            `${TOOL_LABELS[combo.tool]} · ${combo.model.split('/').at(-1)}` &&
           record.name !== generated
         )
           await updateAgent(unit.conn, id, { name: generated });
@@ -606,11 +622,13 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         )
           stale.push(id);
       }
-      if (stale.length > 0)
+      for (let offset = 0; offset < stale.length; offset += 200) {
+        const batch = stale.slice(offset, offset + 200);
         await agentsRepo(unit.conn).updateMany({
-          filter: (f) => f.or(stale.map((id) => f.string('id').eq(id))),
+          filter: (f) => f.or(batch.map((id) => f.string('id').eq(id))),
           values: { lastReportedAt: nowText },
         });
+      }
       for (const id of created)
         unit.emit({ type: 'agent.changed', agentId: id });
     },

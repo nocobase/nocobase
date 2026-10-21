@@ -41,6 +41,7 @@ import { detectionEnv, providedNames } from '../agent/env.ts';
 import type { loadAdapters } from '../agent/adapters/registry.ts';
 import {
   readConnection,
+  writeConnection,
   markRevoked,
   type RevocationReason,
   passEnvNames,
@@ -117,7 +118,7 @@ import {
   type UpdateTarget,
 } from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
-import { ToolCapabilitiesCache, detectTools } from './tool-capabilities.ts';
+import { ToolCapabilitiesCache } from './tool-capabilities.ts';
 export { detectTools } from './tool-capabilities.ts';
 import { reportedModels } from './model-list.ts';
 
@@ -213,6 +214,8 @@ interface AppLink {
   revoked: boolean;
   /** The application cannot work with this runner's protocol: heartbeats only, no claims. */
   upgradeRequired: boolean;
+  /** Fetch the server selection before the first inspection after a daemon restart. */
+  selectionConfirmed?: boolean;
   heartbeatTimer?: NodeJS.Timeout;
   /** The owner's local policy for this application, as last read (every heartbeat and claim reads it again). */
   policy?: PolicyReport;
@@ -494,23 +497,42 @@ export class RunnerDaemon {
       this.options.settings;
     const passEnv = passEnvNames(settings.passEnv);
     const localVariables = (stored ?? link.connection).registration.variables;
+    const selected = link.selectionConfirmed
+      ? (link.connection.registration.enabledTools ?? [])
+      : [];
     const key = createHash('sha256')
       .update(
-        JSON.stringify(
+        JSON.stringify([
+          selected,
           Object.entries(
             detectionEnv(process.env, passEnv, localVariables),
           ).sort(([a], [b]) => a.localeCompare(b)),
-        ),
+        ]),
       )
       .digest('hex');
     if (link.detection?.key !== key) {
       const previous = link.detection;
       previous?.controller.abort();
       const controller = new AbortController();
-      const adaptersFor = () =>
-        this.options.adaptersFor?.(process.env, passEnv, localVariables) ??
-        this.options.adapters;
-      const tools = detectTools(adaptersFor(), controller.signal);
+      const adaptersFor = () => {
+        const adapters =
+          this.options.adaptersFor?.(
+            process.env,
+            passEnv,
+            localVariables,
+            selected,
+          ) ?? this.options.adapters;
+        return new Map(
+          [...adapters].filter(([kind]) => selected.includes(kind)),
+        );
+      };
+      const tools = Promise.resolve(
+        selected.map((kind): ToolInfo => ({
+          kind,
+          authenticated: false,
+          status: 'checking',
+        })),
+      );
       link.detection = {
         key,
         controller,
@@ -781,7 +803,7 @@ export class RunnerDaemon {
                         free:
                           this.pendingUpdate || this.pruning || this.diskPaused
                             ? 0
-                            : free,
+                            : (free ?? 0),
                       } satisfies ToolLoad,
                     ]),
                   ),
@@ -797,6 +819,18 @@ export class RunnerDaemon {
         response.compatibility !== undefined,
         response.compatibility?.message,
       );
+      if (response.enabledTools !== undefined) link.selectionConfirmed = true;
+      if (
+        response.enabledTools !== undefined &&
+        JSON.stringify(response.enabledTools) !==
+          JSON.stringify(link.connection.registration.enabledTools)
+      ) {
+        link.connection.registration.enabledTools = response.enabledTools;
+        await writeConnection(link.connection, this.options.paths);
+      }
+      if (response.detectTools) {
+        (await link.detection?.capabilities)?.invalidate();
+      }
       link.workspaceReporting = response.workspaces;
       const { upgrade, npmUpgrade } = response;
       if (upgrade !== undefined)
@@ -1059,7 +1093,11 @@ export class RunnerDaemon {
     }
     for (const payload of response.runs) {
       if (this.stopping.signal.aborted) break;
-      const refused = refuseRun(policy.policy, payload);
+      const refused = !(
+        link.connection.registration.enabledTools ?? []
+      ).includes(payload.tool.kind)
+        ? 'The coding tool is disabled for this runner.'
+        : refuseRun(policy.policy, payload);
       if (refused !== undefined) {
         this.options.log(`run ${payload.run.id}: refused: ${refused}`);
         await link.client

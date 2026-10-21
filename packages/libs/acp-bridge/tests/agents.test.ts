@@ -1,3 +1,4 @@
+import { CATALOG_IDS } from '../src/catalog.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import {
@@ -521,6 +522,7 @@ describe('resolveAgent', () => {
   it('knows every agent by an id the application accepts, with a way to sign in', () => {
     const ids = AGENTS.map((spec) => spec.id);
     expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toEqual(CATALOG_IDS);
     for (const spec of AGENTS) {
       expect(spec.id).toMatch(/^[a-z0-9][a-z0-9-]{0,39}$/u);
       expect(spec.launchers.length).toBeGreaterThan(0);

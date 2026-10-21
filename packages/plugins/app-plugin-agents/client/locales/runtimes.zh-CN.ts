@@ -197,7 +197,7 @@ const runtimesZhCN: RuntimesLocale = {
       general: '常规',
       tools: '工具',
       toolsDescription:
-        '它上报的编码工具。关闭的工具的工作不会派到这里。开关和上限点「保存」后一起生效。',
+        '只检测勾选的工具，并接收这些工具的任务。开关和上限点「保存」后一起生效。',
       version: 'runner {{version}}',
       runs: '最近的运行',
       runsEmpty: '还没有运行。',
@@ -227,8 +227,12 @@ const runtimesZhCN: RuntimesLocale = {
         '它的 runner 没有说明安装方式。请在它所在的主机上用“添加运行环境”中的命令重新安装。',
     },
     tool: {
+      checking: '等待检测',
+      failed: '检测失败',
+      redetect: '重新检测',
+      notProvided: '未提供',
       signedIn: '已登录',
-      signedOut: '未登录',
+      signedOut: '需要登录',
       notInstalled: '未安装',
       off: '已关闭',
       offHint: '已关闭：这个工具的工作不会派到这个运行环境。',

@@ -61,7 +61,7 @@ export const MAX_MODEL_ENTRIES = 20;
 export function effortsFor(entry: {
   readonly tool: AgentTool;
 }): readonly string[] {
-  return TOOL_EFFORTS[entry.tool];
+  return TOOL_EFFORTS[entry.tool] ?? [];
 }
 
 /** The coding tools an agent's entries name, in order and once each. */

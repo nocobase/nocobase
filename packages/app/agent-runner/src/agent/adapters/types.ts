@@ -93,6 +93,7 @@ export interface ToolDetection {
   version?: string;
   path?: string;
   authenticated: boolean;
+  status?: 'checking' | 'notInstalled' | 'needsLogin' | 'ready' | 'failed';
 }
 
 export interface AdapterSession {
@@ -153,6 +154,8 @@ export interface AdapterHandle {
 
 export interface AgentAdapter {
   kind: ToolKind;
+  /** Checks program identity without starting it. */
+  fingerprint?(): Promise<string>;
   detect(signal?: AbortSignal): Promise<ToolDetection>;
   /** Fresh capability discovery, independent of cached installation detection. No method means unsupported. */
   detectModels?(signal: AbortSignal): Promise<ToolCapabilities>;

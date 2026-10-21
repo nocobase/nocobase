@@ -3,8 +3,6 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AGENT_TOOLS, type AgentTool } from '@nocobase/agent-protocol';
 import {
-  listedTools,
-  toolEnabled,
   toolState,
   type RunnerSummary,
   type UnavailableModel,
@@ -67,11 +65,7 @@ export function ToolTable({
     },
     onError: (error) => notify.error(error),
   });
-  const enabledTools = AGENT_TOOLS.filter((tool) =>
-    listedTools(runner).includes(tool)
-      ? switched.has(tool)
-      : toolEnabled(runner, tool),
-  );
+  const enabledTools = AGENT_TOOLS.filter((tool) => switched.has(tool));
   const nameOf = (tool: AgentTool, target: string) =>
     target
       ? quotaTargetLabel(
@@ -121,7 +115,9 @@ export function ToolTable({
   const toggle = (tool: AgentTool) => (
     <Switch
       checked={enabledTools.includes(tool)}
-      disabled={!editable}
+      disabled={
+        runner.status === 'revoked' || !(runner.canManageTools ?? editable)
+      }
       aria-label={t('runtimes.tool.enableLabel', {
         tool: t(`tools.${tool}`),
         name: runner.name,

@@ -286,7 +286,8 @@
     "resumable-stream": "2.2.13",
     "sqlite-vec": "^0.1.9",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@nocobase/acp-bridge": "workspace:^"
   },
   "peerDependencies": {
     "@ai-sdk/react": "catalog:",

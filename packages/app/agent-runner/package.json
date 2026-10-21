@@ -52,7 +52,8 @@
     "@nocobase/cli-envelope": "workspace:^",
     "@oclif/core": "catalog:",
     "pnpm": "11.7.0",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@nocobase/acp-bridge": "workspace:^"
   },
   "devDependencies": {
     "@hono/node-server": "catalog:",

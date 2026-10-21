@@ -206,7 +206,7 @@ const runtimesEnUS = {
       general: 'General',
       tools: 'Tools',
       toolsDescription:
-        'The coding tools it reported. Work for a tool that is off, or whose quota is exhausted, is not sent here. Switches and limits are saved with “Save”.',
+        'Only selected tools are detected and offered work. Switches and limits are saved with “Save”.',
       version: 'Runner {{version}}',
       runs: 'Recent runs',
       runsEmpty: 'No runs yet.',
@@ -236,8 +236,12 @@ const runtimesEnUS = {
         'Its runner does not say how it was installed. Install it again on its host with the command from Add runtime.',
     },
     tool: {
+      checking: 'Waiting for detection',
+      failed: 'Detection failed',
+      redetect: 'Detect again',
+      notProvided: 'Not provided',
       signedIn: 'Signed in',
-      signedOut: 'Not signed in',
+      signedOut: 'Login required',
       notInstalled: 'Not installed',
       off: 'Off',
       offHint: 'Off: work for this tool is not sent to this runtime.',
@@ -312,7 +316,7 @@ const runtimesEnUS = {
     tokenTools: 'Coding tools: {{tools}}.',
     tools: 'Coding tools',
     toolsHint:
-      'This runtime is offered work only for the checked tools. You can change it on the Runtimes page at any time.',
+      'Only checked tools are detected and offered work. You can change it on the Runtimes page at any time.',
     toolsRequired: 'Choose at least one coding tool.',
     slots: 'Max concurrent runs',
     slotsHint:

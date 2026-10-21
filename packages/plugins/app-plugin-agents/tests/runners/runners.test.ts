@@ -584,16 +584,15 @@ describe('runners', () => {
     const runner = await h.services.runners.get(only.runnerId);
     expect(runner.enabledTools).toEqual(['codex']);
     // Every reported tool stays visible, enabled or not.
-    expect(runner.tools.map((tool) => tool.kind)).toEqual(['claude', 'codex']);
+    expect(runner.tools.map((tool) => tool.kind)).toEqual(['codex']);
 
-    // No choice offers every tool.
+    // New tokens default to the two common tools; explicit selections never grow with the catalog.
     const plain = await h.services.runners.createRegistrationToken('alice', {});
-    expect(plain.enabledTools).toBeNull();
+    expect(plain.enabledTools).toEqual(['claude', 'codex']);
     expect(
       (await h.services.runners.get((await register({})).runnerId))
         .enabledTools,
-    ).toBeNull();
-    // Choosing every tool is the same as not choosing: a tool added later is offered too.
+    ).toEqual(['claude', 'codex']);
     expect(
       (
         await h.services.runners.get(
@@ -604,7 +603,7 @@ describe('runners', () => {
           ).runnerId,
         )
       ).enabledTools,
-    ).toBeNull();
+    ).toEqual(['claude', 'codex', 'opencode', 'pi']);
   });
 
   it('gives the runner the slots its token carries unless it names its own', async () => {
@@ -673,7 +672,7 @@ describe('runners', () => {
     expect(
       (await h.services.runners.update(runner.runnerId, { enabledTools: null }))
         .enabledTools,
-    ).toBeNull();
+    ).toEqual(['claude', 'codex', 'opencode', 'pi']);
   });
 
   it('keeps the variable names a runner reports it provides, names only', async () => {

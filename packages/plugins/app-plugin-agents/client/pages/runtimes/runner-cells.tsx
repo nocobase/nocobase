@@ -118,6 +118,8 @@ export function RunnerStatusCell({
 
 const TOOL_STATE_TONE: Readonly<Record<ToolState, Tone>> = {
   off: 'grey',
+  checking: 'grey',
+  failed: 'red',
   notInstalled: 'amber',
   signedOut: 'amber',
   signedIn: 'green',

@@ -98,7 +98,7 @@ describe('runner end to end', () => {
         'steer',
       ]),
     );
-    expect(runner?.register.tools.map((tool) => tool.kind)).toContain('claude');
+    expect(runner?.register.tools).toEqual([]);
     // The key is in the runner's own directory, private, and apart from the registration.
     const keyFile = path.join(home, 'credentials', 'test-app.json');
     expect(statSync(keyFile).mode & 0o777).toBe(0o600);

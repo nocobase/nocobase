@@ -31,6 +31,8 @@ export interface AgentProcessOptions {
   readonly client: acp.Implementation;
   readonly handlers: AgentClientHandlers;
   readonly initializeTimeoutMs?: number;
+  /** False for an inspection that must not grant full-access environment defaults. */
+  readonly permissionDefaults?: boolean;
 }
 
 /** Long enough for an adapter that npx fetches on first use, when no managed one can run. */
@@ -140,6 +142,10 @@ export class AgentProcess {
             .finally(cleanup);
         },
       ).finally(() => cleanup());
+      if (initialize.protocolVersion !== acp.PROTOCOL_VERSION)
+        throw new Error(
+          'The agent selected an unsupported ACP protocol version.',
+        );
       return new AgentProcess(
         child,
         connection,
@@ -220,7 +226,13 @@ export function errorMessage(error: unknown): string {
 
 /** Whether `error` is ACP's "authentication required". */
 export function isAuthRequired(error: unknown): boolean {
-  return error instanceof acp.RequestError && error.code === -32000;
+  return (
+    (error instanceof acp.RequestError && error.code === -32000) ||
+    (error instanceof Error &&
+      error.cause !== undefined &&
+      error.cause !== error &&
+      isAuthRequired(error.cause))
+  );
 }
 
 function withOutput(message: string, output: string): string {
@@ -238,7 +250,12 @@ function startProgram(
 ): ChildProcessByStdio<Writable, Readable, Readable> {
   const common = {
     cwd: options.cwd,
-    env: { ...options.env, ...agent.spec.env, ...agent.env },
+    env: {
+      ...options.env,
+      ...agent.spec.env,
+      ...(options.permissionDefaults === false ? {} : agent.spec.permissionEnv),
+      ...agent.env,
+    },
     stdio: ['pipe', 'pipe', 'pipe'] as ['pipe', 'pipe', 'pipe'],
   };
   if (!windows)

@@ -29,7 +29,7 @@ import {
 } from '../protocol/index.ts';
 import { isolationProblem } from '../core/isolation.ts';
 import { policyReport } from '../core/local-policy.ts';
-import { detectTools, runnerFeatures, runnerVersion } from '../core/loop.ts';
+import { runnerFeatures, runnerVersion } from '../core/loop.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
 
 /** `acme=/path/to/acme` → ['acme', '/path/to/acme']. */
@@ -158,7 +158,7 @@ export default class Register extends RunnerCommand {
       product: runnerHost().product,
       protocolVersion: PROTOCOL_VERSION,
       features: policy.features,
-      tools: await detectTools(adapters),
+      tools: [],
       // Only an explicit --slots overrides the token's, its total and its limits per tool each on their own.
       ...(slotsFlag.slots === undefined ? {} : { slots: slotsFlag.slots }),
       ...(slotsFlag.toolSlots === undefined
@@ -205,6 +205,7 @@ export default class Register extends RunnerCommand {
         ...overrides,
       },
       registeredAt: new Date().toISOString(),
+      ...(response.enabledTools ? { enabledTools: response.enabledTools } : {}),
     };
     // Slots are shared by every application: raise them to what this one gave, never lower another's.
     if (slotsFlag.slots === undefined && response.slots !== undefined)

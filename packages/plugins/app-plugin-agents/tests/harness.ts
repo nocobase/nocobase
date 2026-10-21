@@ -632,7 +632,7 @@ export async function createHarness(
           trust: options.trust ?? 'team',
           ...(options.enabledTools !== undefined
             ? { enabledTools: options.enabledTools }
-            : {}),
+            : { enabledTools: ['claude', 'codex', 'opencode', 'pi'] }),
         },
       );
       const registration: RegisterRequest = {

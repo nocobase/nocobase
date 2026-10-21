@@ -658,7 +658,10 @@ export class RunWorker {
   private async execute(): Promise<WorkerOutcome> {
     const { payload, deps } = this;
     const adapter = deps.adapters.get(payload.tool.kind);
-    if (adapter === undefined) {
+    if (
+      adapter === undefined ||
+      !deps.connection.registration.enabledTools?.includes(payload.tool.kind)
+    ) {
       return this.finishFailed(
         'setupFailed',
         `This runner has no adapter for ${payload.tool.kind}.`,

@@ -45,6 +45,7 @@ import {
 } from './run.js';
 import {
   AgentToolSchema,
+  isNativeTool,
   RunnerFeatureSchema,
   type AgentTool,
   type RunnerFeature,
@@ -58,6 +59,7 @@ export const MAX_EFFORT_LENGTH = 40;
 
 export interface ToolModel {
   readonly id: string;
+  readonly name?: string;
   /** Absent when the tool cannot report this model's supported efforts. */
   readonly efforts?: readonly string[];
 }
@@ -76,6 +78,18 @@ const capabilityIdentifier = (max: number) =>
 
 export const ToolModelSchema: z.ZodType<ToolModel> = z.object({
   id: capabilityIdentifier(MAX_MODEL_ID_LENGTH),
+  name: z
+    .string()
+    .min(1)
+    .max(200)
+    .refine(
+      (value) =>
+        [...value].every(
+          (character) =>
+            character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127,
+        ) && modelRedactor.text(value) === value,
+    )
+    .optional(),
   efforts: z
     .array(capabilityIdentifier(MAX_EFFORT_LENGTH))
     .max(MAX_MODEL_EFFORTS)
@@ -84,6 +98,18 @@ export const ToolModelSchema: z.ZodType<ToolModel> = z.object({
 
 const reportedToolModelSchema = z.object({
   id: capabilityIdentifier(MAX_MODEL_ID_LENGTH),
+  name: z
+    .string()
+    .min(1)
+    .max(200)
+    .refine(
+      (value) =>
+        [...value].every(
+          (character) =>
+            character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127,
+        ) && modelRedactor.text(value) === value,
+    )
+    .optional(),
   efforts: z
     .unknown()
     .transform((value) => {
@@ -141,6 +167,8 @@ export interface ToolInfo extends ToolCapabilities {
   readonly version?: string;
   readonly path?: string;
   readonly authenticated: boolean;
+  readonly status?:
+    'checking' | 'notInstalled' | 'needsLogin' | 'ready' | 'failed';
 }
 
 const toolInfoFields = {
@@ -148,34 +176,77 @@ const toolInfoFields = {
   version: z.string().optional(),
   path: z.string().optional(),
   authenticated: z.boolean(),
+  status: z
+    .enum(['checking', 'notInstalled', 'needsLogin', 'ready', 'failed'])
+    .optional(),
 };
 
-export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
-  ...toolInfoFields,
-  models: z.array(ToolModelSchema).max(MAX_TOOL_MODELS).optional(),
-  modelsSource: ModelsSourceSchema.optional(),
-  modelsDetectedAt: z.iso.datetime().optional(),
-  modelsDetectionStatus: ModelsDetectionStatusSchema.optional(),
-  modelsDetectionError: ModelsDetectionErrorSchema.optional(),
+/** ACP model ids are opaque: preserve spelling, spaces and provider punctuation without accepting controls or secrets. */
+export const AcpToolModelSchema: z.ZodType<ToolModel> = z.object({
+  id: z
+    .string()
+    .min(1)
+    .max(MAX_MODEL_ID_LENGTH)
+    .refine(
+      (value) =>
+        value.trim() === value &&
+        [...value].every(
+          (character) =>
+            character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127,
+        ) &&
+        !value.includes('://') &&
+        modelRedactor.text(value) === value,
+    ),
+  name: reportedToolModelSchema.shape.name,
+  efforts: z
+    .array(capabilityIdentifier(MAX_EFFORT_LENGTH))
+    .max(MAX_MODEL_EFFORTS)
+    .optional(),
 });
+
+export const ToolInfoSchema: z.ZodType<ToolInfo> = z
+  .object({
+    ...toolInfoFields,
+    models: z.array(AcpToolModelSchema).max(MAX_TOOL_MODELS).optional(),
+    modelsSource: ModelsSourceSchema.optional(),
+    modelsDetectedAt: z.iso.datetime().optional(),
+    modelsDetectionStatus: ModelsDetectionStatusSchema.optional(),
+    modelsDetectionError: ModelsDetectionErrorSchema.optional(),
+  })
+  .superRefine((tool, context) => {
+    if (isNativeTool(tool.kind))
+      for (const [index, model] of (tool.models ?? []).entries()) {
+        if (!ToolModelSchema.safeParse(model).success)
+          context.addIssue({
+            code: 'custom',
+            message: 'Invalid native tool model',
+            path: ['models', index],
+          });
+      }
+  });
+
+function reportedModelsOf(
+  kind: AgentTool,
+  value: unknown,
+): ToolModel[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const schema = isNativeTool(kind)
+    ? reportedToolModelSchema
+    : AcpToolModelSchema;
+  const models = (value as unknown[])
+    .slice(0, MAX_TOOL_MODELS)
+    .flatMap((model) => {
+      const parsed = schema.safeParse(model);
+      return parsed.success ? [parsed.data] : [];
+    });
+  return value.length > 0 && models.length === 0 ? undefined : models;
+}
 
 /** Keep a runner connected when an independently released sender reports unfamiliar advisory capabilities. */
 export const ReportedToolInfoSchema: z.ZodType<ToolInfo> = z
   .object({
     ...toolInfoFields,
-    models: z
-      .unknown()
-      .transform((value) => {
-        if (!Array.isArray(value)) return undefined;
-        const models = (value as unknown[])
-          .slice(0, MAX_TOOL_MODELS)
-          .flatMap((model) => {
-            const parsed = reportedToolModelSchema.safeParse(model);
-            return parsed.success ? [parsed.data] : [];
-          });
-        return value.length > 0 && models.length === 0 ? undefined : models;
-      })
-      .optional(),
+    models: z.unknown().optional(),
     modelsSource: ModelsSourceSchema.optional().catch(undefined),
     modelsDetectedAt: z.iso.datetime().optional().catch(undefined),
     modelsDetectionStatus:
@@ -183,13 +254,17 @@ export const ReportedToolInfoSchema: z.ZodType<ToolInfo> = z
     modelsDetectionError:
       ModelsDetectionErrorSchema.optional().catch(undefined),
   })
-  .transform((tool) => ({
-    ...tool,
-    modelsDetectionStatus:
-      tool.modelsDetectionStatus === 'detected' && tool.models === undefined
-        ? undefined
-        : tool.modelsDetectionStatus,
-  }));
+  .transform((tool) => {
+    const models = reportedModelsOf(tool.kind, tool.models);
+    return {
+      ...tool,
+      models,
+      modelsDetectionStatus:
+        tool.modelsDetectionStatus === 'detected' && models === undefined
+          ? undefined
+          : tool.modelsDetectionStatus,
+    };
+  });
 
 /**
  * How many runs of each coding tool a runner may hold at once, beside its total slots: `{ claude: 2, codex: 1 }`. A tool
@@ -277,6 +352,7 @@ export const RegisterRequestSchema: z.ZodType<RegisterRequest> = z.object({
 });
 
 export interface RegisterResponse {
+  readonly enabledTools?: readonly AgentTool[];
   /** The application the runner registered with; a runner keeps one registration per application `id`. */
   readonly app?: RunApp;
   readonly runnerId: string;
@@ -294,6 +370,7 @@ export interface RegisterResponse {
 }
 
 export const RegisterResponseSchema: z.ZodType<RegisterResponse> = z.object({
+  enabledTools: z.array(AgentToolSchema).optional(),
   app: RunAppSchema.optional(),
   runnerId: z.string(),
   runnerKey: z.string(),
@@ -423,6 +500,8 @@ export const UpgradeRequiredSchema: z.ZodType<UpgradeRequired> = z.object({
 });
 
 export interface HeartbeatResponse {
+  readonly enabledTools?: readonly AgentTool[];
+  readonly detectTools?: boolean;
   readonly ok: true;
   readonly serverTime: string;
   readonly upgrade?: UpgradeNotice;
@@ -449,6 +528,8 @@ export interface HeartbeatResponse {
 }
 
 export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
+  enabledTools: z.array(AgentToolSchema).optional(),
+  detectTools: z.boolean().optional(),
   ok: z.literal(true),
   serverTime: z.string(),
   upgrade: z

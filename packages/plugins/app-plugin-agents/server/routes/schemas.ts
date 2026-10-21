@@ -499,6 +499,10 @@ export const RunnerPatchInput: z.ZodType<RunnerPatch> = z
       description:
         'How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own.',
     }),
+    redetectTools: z
+      .boolean()
+      .optional()
+      .describe('Request a fresh inspection of the selected tools.'),
     enabledTools: z
       .array(AgentToolSchema)
       .max(AGENT_TOOLS.length)
@@ -1856,6 +1860,7 @@ const runnerSummaryObject = runnerObject
     takes: z.array(z.object({ id: z.string(), name: z.string() })),
     canSeeMachine: z.boolean().optional(),
     canManage: z.boolean(),
+    canManageTools: z.boolean().optional(),
     canChangeTrust: z.boolean(),
     canRevoke: z.boolean(),
     canClearQuota: z
