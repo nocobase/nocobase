@@ -41,3 +41,9 @@ Write exceptions remain separate: register only the tables and operations needed
 ### Host model service registration
 
 The default integration uses `agents.models.services`. A host that exposes the same model registration operations through another public facade can call `demoData.registerModelServices(services)` during its provider's `boot()`. The adapter implements `create`, `update`, `remove` and `setDefaultChat`; the plugin still owns the durable model binding and its key. This is an explicit host adapter, not automatic legacy API detection. Bind application Agents in `ready()` after the plugin has initialized its model; `start()` runs earlier. Missing model services on an installed Agents host fail startup with an actionable error.
+
+## Online chat without changing Agents
+
+Use the plugin's `chat` configuration for native online conversations. Call `chatModel(simulatedRef)` before admitting work and before model I/O; it returns undefined outside demo mode, rejects disabled demo chat, and otherwise returns the configured model or simulated fallback. Read this policy before entering a business transaction to avoid nested-connection deadlocks. The host verifies model availability through its normal model service. Do not reuse a cached configuration for subsequent turns.
+
+Wrap each business tool with `runChatTool(id, { readOnly, run, mock })` after authorization. Administrators select `read`, `mock`, or `deny` per tool. Only mark local data queries `readOnly`; even a webpage fetch needs a mock adapter. No matching rule or missing mock means rejection. Keep normal conversation ownership and explicit scoped persistence rules; this policy intentionally does not bypass the SQL guard or modify Agents. Include the token-cost explanation when exposing a real model in the management UI.

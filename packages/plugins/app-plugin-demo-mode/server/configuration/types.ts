@@ -1,3 +1,9 @@
+/** Online chat policy; credentials stay in the host model service. */
+export interface DemoChatConfiguration {
+  enabled: boolean;
+  model: { modelService: string; model: string } | null;
+  tools: Record<string, 'read' | 'mock' | 'deny'>;
+}
 /** Application-owned, explicitly registered write capabilities. This is not business authorization. */
 export interface DemoWriteCapability {
   readonly id: string;
@@ -34,6 +40,7 @@ export interface DemoConfiguration {
   rules: DemoWriteRule[];
   mocks: Record<string, boolean>;
   schedule: DemoDailySchedule | null;
+  chat: DemoChatConfiguration;
 }
 export interface DemoConfigurationView extends DemoConfiguration {
   busy: boolean;

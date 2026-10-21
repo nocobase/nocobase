@@ -261,3 +261,48 @@ it('uses the real Agent only in an off deployment and refuses direct queued demo
     reason: 'DEMO_MODE_REQUIRED',
   });
 });
+
+it('keeps online chat opt-in and rechecks models and tool policies without real fallbacks', async () => {
+  const { config } = await setup();
+  const simulated = { modelService: 'demo', model: 'demo-chat' };
+  await expect(config.chatModel(simulated)).rejects.toMatchObject({
+    reason: 'DEMO_CHAT_DISABLED',
+  });
+  const live = { modelService: 'existing-service', model: 'chat' };
+  await config.save('chat', 0, {
+    enabled: true,
+    model: live,
+    tools: { query: 'read', send: 'mock', unsafe: 'read' },
+  });
+  expect(await config.chatModel(simulated)).toEqual(live);
+  let writes = 0;
+  const run = async () => ++writes;
+  expect(
+    await config.runChatTool('query', {
+      readOnly: true,
+      run: async () => 'records',
+    }),
+  ).toBe('records');
+  expect(await config.runChatTool('send', { run, mock: async () => 42 })).toBe(
+    42,
+  );
+  for (const id of ['send', 'unsafe', 'unknown'])
+    await expect(config.runChatTool(id, { run })).rejects.toMatchObject({
+      reason: 'DEMO_TOOL_UNAVAILABLE',
+    });
+  expect(writes).toBe(0);
+  await config.runWithPolicy(async () => {
+    await config.save('chat', 1, { enabled: false, model: null, tools: {} });
+    await expect(config.chatModel(simulated)).rejects.toMatchObject({
+      reason: 'DEMO_CHAT_DISABLED',
+    });
+    await expect(
+      config.runChatTool('query', { readOnly: true, run }),
+    ).rejects.toMatchObject({ reason: 'DEMO_CHAT_DISABLED' });
+  });
+  await expect(
+    config.save('chat', 1, { enabled: true, model: null, tools: {} }),
+  ).rejects.toMatchObject({ reason: 'DEMO_CONFIGURATION_CONFLICT' });
+  await config.save('chat', 2, { enabled: true, model: null, tools: {} });
+  expect(await config.chatModel(simulated)).toEqual(simulated);
+});

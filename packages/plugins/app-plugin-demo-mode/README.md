@@ -150,3 +150,11 @@ The isolated-environment contract intentionally removes mixed-data compatibility
 ### Host model service registration
 
 The default integration uses `agents.models.services`. A host that exposes the same model registration operations through another public facade can call `demoData.registerModelServices(services)` during its provider's `boot()`. The adapter implements `create`, `update`, `remove` and `setDefaultChat`; the plugin still owns the durable model binding and its key. This is an explicit host adapter, not automatic legacy API detection. Bind application Agents in `ready()` after the plugin has initialized its model; `start()` runs earlier. Missing model services on an installed Agents host fail startup with an actionable error.
+
+### Online demo chat
+
+Administrators configure `chat` through `PUT /api/demoMode/configuration/chat` using the same permissions and optimistic revision as other settings. It defaults to `{ enabled: false, model: null, tools: {} }`. A null model selects the host's simulated model; an explicit `{ modelService, model }` selects an existing real model service and incurs its normal token charges. Credentials remain in model services. The environment's simulated default remains available to scripted dataset operations.
+
+The host calls `chatModel(simulatedModel)` before admission and every model request, and `runChatTool(id, { readOnly, run, mock })` after normal business authorization. Policies are read fresh, including background work and restored sessions. Unknown tools are denied. `read` only invokes a host-declared local read; `mock` only invokes an explicit adapter; missing adapters never fall back to real execution. Mark neither outbound network reads nor business mutations as local reads. A host should stop an active conversation when its selected model changes. Disabled demo mode returns normal host behavior.
+
+This policy does not intercept Agents, grant permissions, or open internal tables. Hosts retain conversation ownership and register narrowly scoped conversation persistence capabilities through the existing write-rule API. Never allow all `ag_*` tables. Application adapters must guard every external side effect, including queued work. Model/tool policy and persistence permissions are independent; both must be configured to enable a read-only demo chat.

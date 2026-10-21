@@ -3,6 +3,7 @@ import type {
   DemoConfigurationView,
   DemoWriteRule,
   DemoDailySchedule,
+  DemoChatConfiguration,
 } from './types.js';
 
 const operation = z.enum(['insert', 'update', 'delete']);
@@ -18,13 +19,35 @@ export const DailySchedule: z.ZodType<DemoDailySchedule> = z.strictObject({
   timezone: z.string().min(1).max(128),
   language: z.string().min(1).max(16),
 });
+export const ChatConfiguration: z.ZodType<DemoChatConfiguration> =
+  z.strictObject({
+    enabled: z.boolean(),
+    model: z
+      .strictObject({
+        modelService: z.string().min(1).max(256),
+        model: z.string().min(1).max(256),
+      })
+      .nullable(),
+    tools: z.record(
+      z.string().min(1).max(128),
+      z.enum(['read', 'mock', 'deny']),
+    ),
+  });
 export const ConfigurationInput: Record<
-  'rules' | 'mocks' | 'schedule',
+  'rules' | 'mocks' | 'schedule' | 'chat',
   z.ZodType<{
     expectedRevision: number;
-    value: DemoWriteRule[] | Record<string, boolean> | DemoDailySchedule;
+    value:
+      | DemoWriteRule[]
+      | Record<string, boolean>
+      | DemoDailySchedule
+      | DemoChatConfiguration;
   }>
 > = {
+  chat: z.strictObject({
+    expectedRevision: z.number().int().nonnegative(),
+    value: ChatConfiguration,
+  }),
   rules: z.strictObject({
     expectedRevision: z.number().int().nonnegative(),
     value: z.array(WriteRule).max(200),
@@ -45,6 +68,7 @@ export const ConfigurationView: z.ZodType<DemoConfigurationView> = z
     rules: z.array(WriteRule),
     mocks: z.record(z.string(), z.boolean()),
     schedule: DailySchedule.nullable(),
+    chat: ChatConfiguration,
     mode: z.enum(['off', 'read-only', 'observe']),
     fixedTables: z.array(z.string()),
     capabilities: z.array(

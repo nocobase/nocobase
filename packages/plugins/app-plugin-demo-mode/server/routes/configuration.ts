@@ -74,6 +74,7 @@ export const configurationRoutes: AppApiRouteContribution<AppPluginApplication> 
       ['writeRules', 'rules'],
       ['mocks', 'mocks'],
       ['schedule', 'schedule'],
+      ['chat', 'chat'],
     ] as const) {
       routes.put(
         `/${path}`,

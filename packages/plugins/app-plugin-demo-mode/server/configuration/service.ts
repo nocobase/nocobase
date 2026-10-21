@@ -123,6 +123,7 @@ export class DemoConfigurationService {
       revision: Number(row.revision),
       rules: stored.rules,
       schedule: stored.schedule,
+      chat: stored.chat ?? { enabled: false, model: null, tools: {} },
       mocks: {
         ...Object.fromEntries(
           [...this.adapters.values()].map((a) => [
@@ -162,7 +163,7 @@ export class DemoConfigurationService {
     };
   }
   public async save(
-    section: 'rules' | 'mocks' | 'schedule',
+    section: 'rules' | 'mocks' | 'schedule' | 'chat',
     expectedRevision: number,
     input: unknown,
   ): Promise<DemoConfigurationView> {
@@ -206,7 +207,7 @@ export class DemoConfigurationService {
       if (Object.keys(input as object).some((id) => !this.adapters.has(id)))
         throw invalid('Unknown mock adapter.');
       value = { ...current.mocks, ...(input as object) };
-    } else {
+    } else if (section === 'schedule') {
       const schedule = input as DemoDailySchedule;
       if (schedule.enabled) {
         try {
@@ -222,6 +223,7 @@ export class DemoConfigurationService {
       rules: current.rules,
       mocks: current.mocks,
       schedule: current.schedule,
+      chat: current.chat,
       [section]: value,
     };
     const result = await this.database
@@ -238,6 +240,45 @@ export class DemoConfigurationService {
         'ALREADY_EXISTS',
       );
     return this.read();
+  }
+  /** Read fresh at admission and before model/tool I/O, including restored sessions and workers. */
+  public async chatModel(simulated: {
+    modelService: string;
+    model: string;
+  }): Promise<{ modelService: string; model: string } | undefined> {
+    if (!this.enabled) return undefined;
+    const { chat } = await this.read(false);
+    if (!chat.enabled)
+      throw demoDataError(
+        'DEMO_CHAT_DISABLED',
+        'Online demo chat is disabled.',
+      );
+    return chat.model ?? simulated;
+  }
+  /** Host authorization must run first. Only explicitly marked local reads may execute normally. */
+  public async runChatTool<T>(
+    id: string,
+    operation: {
+      readOnly?: boolean;
+      run: () => Promise<T>;
+      mock?: () => Promise<T>;
+    },
+  ): Promise<T> {
+    if (!this.enabled) return operation.run();
+    const { chat } = await this.read(false);
+    if (!chat.enabled)
+      throw demoDataError(
+        'DEMO_CHAT_DISABLED',
+        'Online demo chat is disabled.',
+      );
+    const policy = chat.tools[id] ?? 'deny';
+    if (policy === 'read' && operation.readOnly === true)
+      return operation.run();
+    if (policy === 'mock' && operation.mock) return operation.mock();
+    throw demoDataError(
+      'DEMO_TOOL_UNAVAILABLE',
+      'This tool is unavailable in demo chat.',
+    );
   }
   /** Rules usable by the SQL guard without application row context. */
   public async wholeTableRules(): Promise<
