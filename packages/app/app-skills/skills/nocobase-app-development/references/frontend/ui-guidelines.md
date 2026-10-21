@@ -65,6 +65,7 @@ Structure, top to bottom: PageHeader (primary action "New X") → toolbar (searc
 - **T1.9 [Must]** A list page must have a design for all four states S1–S4.
 - **T1.10 [Must]** When a list shows only part of the matching results, because it sorts and paginates one capped page in the browser or because the endpoint returns no total, show a notice when the results reach the cap ("Only the first N records are shown. Use search or filters to narrow the results."); records beyond the cap must not silently disappear.
 - **T1.11 [Must]** When a table cell is too narrow for its content, the content ends in an ellipsis where it is cut off, and hovering over it shows the full content. Content that fits shows nothing on hover.
+- **T1.12 [Must]** Pagination labels size to their localized text rather than a fixed English-sized width. Keep each short page summary, page-size control and navigation button group intact; at narrow widths, wrap whole groups onto another row instead of splitting labels or shrinking controls. Verify Chinese and English with large page counts at 375px and desktop widths.
 
 ### T2 Detail view
 

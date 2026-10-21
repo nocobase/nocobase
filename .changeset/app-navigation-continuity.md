@@ -14,3 +14,5 @@ Explain empty user and role lists when creation is unavailable, report the speci
 Simplify user management to one edit dialog for basic information and roles, with underlined names as the edit entry and inline account controls, a searchable role picker, one atomic Save and shared leave guards. Preserve legacy URLs and resolve return paths from the actual route mount so remapped settings pages retain their list context.
 
 Allow user profile fields and submitted role scopes to be updated in one transaction, requiring each affected action independently and preserving omitted scopes and legacy profile-only callers.
+
+Keep localized pagination summaries on one line with content-sized widths and wrap complete control groups at narrow widths, preventing Chinese labels from splitting under desktop table layouts.
