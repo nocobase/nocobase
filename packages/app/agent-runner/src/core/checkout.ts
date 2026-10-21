@@ -58,6 +58,8 @@ import {
 import { installGitHooks } from './git-hooks.ts';
 import { isAlive } from './supervisor.ts';
 import { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
+import { WorkspaceBusyError } from './workspace-errors.ts';
+export { WorkspaceBusyError } from './workspace-errors.ts';
 import { cacheGit, taskGit, taskGitDir, taskGitOk } from './task-git.ts';
 
 export { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
@@ -116,11 +118,6 @@ export async function withRepoAuth<T>(
 
 export interface Lock {
   release(): Promise<void>;
-}
-
-/** A live process still holds a working directory; another attempt may take it later. */
-export class WorkspaceBusyError extends CheckoutError {
-  override name = 'WorkspaceBusyError';
 }
 
 export async function acquireLock(
@@ -186,11 +183,21 @@ export function taskWorkDir(
 /** The runner's own files in a working directory: tmp, Codex's home, the CLI shim and the workspace record. */
 export const RUNNER_DIR = '.nocobase-runner';
 
+/** Maximum time a run waits for repository cache preparation. */
+export const CACHE_LOCK_WAIT_TIMEOUT_MS = 120_000;
+
 /** Locks a repository's cache (fetching, creating reference clones, or removing legacy worktrees). */
-export async function lockCache(cache: string): Promise<Lock> {
+export async function lockCache(
+  cache: string,
+  options: { timeoutMs?: number; pollMs?: number } = {},
+): Promise<Lock> {
   try {
-    return await acquireLock(`${cache}.lock`, { timeoutMs: 120_000 });
+    return await acquireLock(`${cache}.lock`, {
+      timeoutMs: options.timeoutMs ?? CACHE_LOCK_WAIT_TIMEOUT_MS,
+      ...(options.pollMs === undefined ? {} : { pollMs: options.pollMs }),
+    });
   } catch (error) {
+    if (error instanceof WorkspaceBusyError) throw error;
     throw new CheckoutError(
       `Cache preparation failed: ${error instanceof Error ? error.message : String(error)}`,
     );

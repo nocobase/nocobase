@@ -5,6 +5,7 @@ import path from 'node:path';
 import { writeJsonAtomic, type RunnerPaths } from '../lib/home.ts';
 import { isAlive } from './supervisor.ts';
 import { delay } from '../lib/http.ts';
+import { WorkspaceBusyError } from './workspace-errors.ts';
 
 async function recordsDir(paths: RunnerPaths, dir: string): Promise<string> {
   // Startup registers before mkdir. Resolve the nearest existing ancestor so creating a directory under a
@@ -72,10 +73,17 @@ export async function workspaceInUse(
   return false;
 }
 
+/** Maximum time a run waits for an existing workspace cleanup. */
+export const WORKSPACE_CLEANUP_WAIT_TIMEOUT_MS = 120_000;
+
 /** Observe the existing cleanup mutex without acquiring a run lock. Register before calling this. */
-export async function waitForWorkspaceCleanup(dir: string): Promise<void> {
+export async function waitForWorkspaceCleanup(
+  dir: string,
+  options: { timeoutMs?: number; pollMs?: number } = {},
+): Promise<void> {
   const lock = `${dir}.lock`;
-  const deadline = Date.now() + 30_000;
+  const deadline =
+    Date.now() + (options.timeoutMs ?? WORKSPACE_CLEANUP_WAIT_TIMEOUT_MS);
   for (;;) {
     const info = await stat(lock).catch((error: NodeJS.ErrnoException) => {
       if (error.code !== 'ENOENT') throw error;
@@ -96,8 +104,10 @@ export async function waitForWorkspaceCleanup(dir: string): Promise<void> {
     )
       return;
     if (Date.now() >= deadline)
-      throw new Error(`Workspace cleanup is still running: ${dir}`);
-    await delay(20);
+      throw new WorkspaceBusyError(
+        `Workspace cleanup is still running: ${dir}`,
+      );
+    await delay(options.pollMs ?? 20);
   }
 }
 

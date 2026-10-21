@@ -9,7 +9,11 @@
 // the last error.
 import path from 'node:path';
 
-import { prepareDirs, RepoAccessFailure } from '../../core/checkout.ts';
+import {
+  prepareDirs,
+  RepoAccessFailure,
+  WorkspaceBusyError,
+} from '../../core/checkout.ts';
 import { GitNetworkError } from '../../core/git-retry.ts';
 import { acceptedFailure } from '../../protocol/index.ts';
 import {
@@ -60,6 +64,7 @@ async function prepare(
     });
   } catch (error) {
     // A repository whose credential the application could not issue says why, so the run is retried or not.
+    if (error instanceof WorkspaceBusyError) throw error;
     if (error instanceof RepoAccessFailure && error.kind !== 'leaseLost')
       throw new PrepareError(
         error.kind === 'denied' ? 'repoAccessDenied' : 'repoAccessUnavailable',

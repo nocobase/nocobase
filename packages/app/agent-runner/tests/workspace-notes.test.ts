@@ -84,7 +84,8 @@ describe('workspaceNotes', () => {
       ],
     });
     expect(notes).toContain('local branch fix/current');
-    expect(notes).toContain('git push origin <branch>');
+    expect(notes).toContain('git push origin HEAD:refs/heads/<branch>');
+    expect(notes).toContain('(requested initial target: fix/human)');
     expect(notes).toContain('switch or create branches');
     expect(notes).toContain('push any branch of this repository');
     expect(notes).toContain(
