@@ -336,7 +336,7 @@ export default function UsersPage(): ReactElement {
         header: t('settings.status'),
         enableSorting: false,
         cell: ({ row }) => (
-          <StatusBadge tone={row.original.disabledAt ? 'danger' : 'success'}>
+          <StatusBadge tone={row.original.disabledAt ? 'neutral' : 'success'}>
             {t(
               row.original.disabledAt
                 ? 'settings.disabled'
