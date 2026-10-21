@@ -9,14 +9,12 @@ import type {
   NotificationChannelConfigInput,
   NotificationI18nText,
   NotificationProviderConfig,
-  NotificationTestAdapter,
 } from './types.js';
 
 export interface RegisteredChannelType {
   readonly type: string;
   readonly label?: string | NotificationI18nText;
   readonly messageType: string;
-  readonly test?: NotificationTestAdapter<NotificationChannelConfigInput>;
   validateConfig(config: NotificationChannelConfigInput): void;
   create(
     context: ChannelContext,
@@ -61,20 +59,10 @@ export function adaptChannelType<
   Channel: ChannelTypeClass<TConfig, TMessage, TRecipient, TPrepared>,
 ): RegisteredChannelType {
   const messageType = historicalMessageTypes.get(Channel.type) ?? Channel.type;
-  const test = Channel.test;
   return {
     type: Channel.type,
     label: Channel.label,
     messageType,
-    test: test && {
-      label: test.label,
-      fields: test.fields,
-      toSendInput: (input) =>
-        test.toSendInput({
-          ...input,
-          channelConfig: channelConfig(input.channelConfig) as TConfig,
-        }),
-    },
     validateConfig(config) {
       Channel.validateConfig?.(channelConfig(config) as TConfig);
     },

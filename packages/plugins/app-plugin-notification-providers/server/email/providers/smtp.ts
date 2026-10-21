@@ -1,28 +1,23 @@
-import type { MailTransport } from '@nocobase/mailer';
 import type {
   ChannelContext,
   ChannelInstance,
   ChannelPreparationInput,
   ChannelSendInput,
-  NotificationTestAdapter,
   NotificationI18nText,
   ValidatedChannelMessage,
 } from '@nocobase/app-plugin-notification';
 import {
-  emailTestAdapter,
-  validateEmailMessage,
-  prepareEmailMessage,
-} from '../channel.js';
-import type { EmailMessage, EmailRecipient } from '../types.js';
+  type NotificationProviderDefinition,
+  type ProviderSendResult,
+} from '@nocobase/app-plugin-notification';
+import type { MailTransport } from '@nocobase/mailer';
 import {
   createSmtpTransport,
   validateSmtpProviderConfig,
 } from '@nocobase/mailer';
-import {
-  type NotificationProviderDefinition,
-  type ProviderSendResult,
-} from '@nocobase/app-plugin-notification';
 import { notificationProviderText } from '../../i18n.js';
+import { prepareEmailMessage, validateEmailMessage } from '../channel.js';
+import type { EmailMessage, EmailRecipient } from '../types.js';
 
 import type { PreparedEmailMessage, SmtpProviderConfig } from '../types.js';
 
@@ -40,7 +35,7 @@ export function createSmtpProviderDefinition(): NotificationProviderDefinition<
   return {
     type: 'smtp',
     messageType: 'email',
-    label: notificationProviderText('test.providers.smtp', 'SMTP'),
+    label: notificationProviderText('providers.smtp', 'SMTP'),
     validateConfig: validateSmtpProviderConfig,
 
     async createProvider(_context, config) {
@@ -78,11 +73,9 @@ export class SmtpChannel implements ChannelInstance<
 > {
   static readonly type = 'smtp';
   static readonly label: NotificationI18nText = notificationProviderText(
-    'test.providers.smtp',
+    'providers.smtp',
     'SMTP',
   );
-  static readonly test: NotificationTestAdapter<SmtpChannelConfig> =
-    emailTestAdapter;
   static validateConfig(config: SmtpChannelConfig): void {
     validateSmtpProviderConfig({ ...config, provider: 'smtp' });
   }

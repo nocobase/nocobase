@@ -3,18 +3,16 @@ import type {
   ChannelInstance,
   ChannelPreparationInput,
   ChannelSendInput,
-  NotificationTestAdapter,
   NotificationI18nText,
   ValidatedChannelMessage,
 } from '@nocobase/app-plugin-notification';
+import { createHmac } from 'node:crypto';
 import {
-  imTestAdapter,
-  validateImMessage,
   prepareImMessage,
+  validateImMessage,
   type ImMessage,
   type ImRecipient,
 } from '../channel.js';
-import { createHmac } from 'node:crypto';
 
 import {
   type NotificationProviderDefinition,
@@ -49,7 +47,7 @@ export function createDingTalkWebhookProviderDefinition(): NotificationProviderD
     type: 'dingtalk-webhook',
     messageType: 'im',
     label: notificationProviderText(
-      'test.providers.dingtalkWebhook',
+      'providers.dingtalkWebhook',
       'DingTalk webhook',
     ),
     validateConfig: validateDingTalkConfig,
@@ -117,11 +115,9 @@ export class DingTalkWebhookChannel implements ChannelInstance<
 > {
   static readonly type = 'dingtalk-webhook';
   static readonly label: NotificationI18nText = notificationProviderText(
-    'test.providers.dingtalkWebhook',
+    'providers.dingtalkWebhook',
     'DingTalk webhook',
   );
-  static readonly test: NotificationTestAdapter<DingTalkWebhookChannelConfig> =
-    imTestAdapter;
   static validateConfig(config: DingTalkWebhookChannelConfig): void {
     validateDingTalkConfig({ ...config, provider: 'dingtalk-webhook' });
   }

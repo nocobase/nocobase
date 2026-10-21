@@ -3,18 +3,16 @@ import type {
   ChannelInstance,
   ChannelPreparationInput,
   ChannelSendInput,
-  NotificationTestAdapter,
   NotificationI18nText,
   ValidatedChannelMessage,
 } from '@nocobase/app-plugin-notification';
+import { createHmac } from 'node:crypto';
 import {
-  imTestAdapter,
-  validateImMessage,
   prepareImMessage,
+  validateImMessage,
   type ImMessage,
   type ImRecipient,
 } from '../channel.js';
-import { createHmac } from 'node:crypto';
 
 import {
   type NotificationProviderDefinition,
@@ -49,7 +47,7 @@ export function createFeishuWebhookProviderDefinition(): NotificationProviderDef
     type: 'feishu-webhook',
     messageType: 'im',
     label: notificationProviderText(
-      'test.providers.feishuWebhook',
+      'providers.feishuWebhook',
       'Feishu webhook',
     ),
     validateConfig: validateFeishuConfig,
@@ -116,11 +114,9 @@ export class FeishuWebhookChannel implements ChannelInstance<
 > {
   static readonly type = 'feishu-webhook';
   static readonly label: NotificationI18nText = notificationProviderText(
-    'test.providers.feishuWebhook',
+    'providers.feishuWebhook',
     'Feishu webhook',
   );
-  static readonly test: NotificationTestAdapter<FeishuWebhookChannelConfig> =
-    imTestAdapter;
   static validateConfig(config: FeishuWebhookChannelConfig): void {
     validateFeishuConfig({ ...config, provider: 'feishu-webhook' });
   }

@@ -1,18 +1,15 @@
 import { resolveChannelType } from '@nocobase/app-server/config';
-import type { ChannelConfig, ChannelTypeClass } from './channel-type.js';
 import {
   adaptChannelType,
   legacyChannelConfig,
   type RegisteredChannelType,
 } from './channel-type-adapter.js';
+import type { ChannelConfig, ChannelTypeClass } from './channel-type.js';
 import type {
   NotificationChannelDefinition,
-  NotificationChannelConfigInput,
-  NotificationTestAdapter,
   NotificationConfig,
   NotificationExtensionRegistry,
   NotificationProviderDefinition,
-  NotificationTestTargetDescriptor,
 } from './types.js';
 
 /** Collects definitions without creating runtime resources. */
@@ -53,25 +50,6 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
     return this.channelTypes.get(type);
   }
 
-  testAdapter(
-    type: string,
-  ): NotificationTestAdapter<NotificationChannelConfigInput> | undefined {
-    const registered = this.channelType(type);
-    if (registered) return registered.test;
-    const provider = this.provider(type);
-    const test = provider && this.channel(provider.messageType)?.test;
-    return (
-      test && {
-        ...test,
-        toSendInput: (input) =>
-          test.toSendInput({
-            ...input,
-            channelConfig: legacyChannelConfig(input.channelConfig),
-          }),
-      }
-    );
-  }
-
   /** @deprecated Register a ChannelInstance class with registerChannelType instead. */
   registerChannel(definition: NotificationChannelDefinition): this {
     if (this.channelDefinitions.has(definition.type))
@@ -109,28 +87,6 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
 
   provider(type: string): NotificationProviderDefinition | undefined {
     return this.providerDefinitions.get(type);
-  }
-
-  testTargets(
-    config: NotificationConfig,
-  ): readonly NotificationTestTargetDescriptor[] {
-    return Object.entries(config.channels).flatMap(([name, channelConfig]) => {
-      if (channelConfig.enabled === false) return [];
-      const type = resolveChannelType(channelConfig);
-      const provider = this.channelType(type) ?? this.provider(type);
-      const test = this.testAdapter(type);
-      if (!test || !provider) return [];
-      return [
-        {
-          channel: { name, type: provider.messageType, label: name },
-          provider: {
-            type: provider.type,
-            label: provider.label ?? provider.type,
-          },
-          fields: test.fields,
-        },
-      ];
-    });
   }
 
   validate(config: NotificationConfig): void {

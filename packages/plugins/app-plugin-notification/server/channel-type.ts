@@ -3,7 +3,6 @@ import type {
   NotificationI18nText,
   NotificationProviderCapabilities,
   NotificationProviderSendInput,
-  NotificationTestAdapter,
   ProviderSendResult,
 } from './types.js';
 
@@ -67,7 +66,6 @@ export interface ChannelTypeClass<
 > {
   readonly type: TConfig['type'];
   readonly label?: string | NotificationI18nText;
-  readonly test?: NotificationTestAdapter<TConfig>;
   validateConfig?(config: TConfig): void;
   new (
     context: ChannelContext,

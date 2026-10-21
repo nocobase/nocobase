@@ -1,29 +1,24 @@
-import type { MailTransport } from '@nocobase/mailer';
 import type {
+  ChannelCapabilities,
   ChannelContext,
   ChannelInstance,
   ChannelPreparationInput,
   ChannelSendInput,
-  ChannelCapabilities,
-  NotificationTestAdapter,
   NotificationI18nText,
   ValidatedChannelMessage,
 } from '@nocobase/app-plugin-notification';
 import {
-  emailTestAdapter,
-  validateEmailMessage,
-  prepareEmailMessage,
-} from '../channel.js';
-import type { EmailMessage, EmailRecipient } from '../types.js';
+  type NotificationProviderDefinition,
+  type ProviderSendResult,
+} from '@nocobase/app-plugin-notification';
+import type { MailTransport } from '@nocobase/mailer';
 import {
   createResendTransport,
   validateResendProviderConfig,
 } from '@nocobase/mailer';
-import {
-  type NotificationProviderDefinition,
-  type ProviderSendResult,
-} from '@nocobase/app-plugin-notification';
 import { notificationProviderText } from '../../i18n.js';
+import { prepareEmailMessage, validateEmailMessage } from '../channel.js';
+import type { EmailMessage, EmailRecipient } from '../types.js';
 
 import type { PreparedEmailMessage, ResendProviderConfig } from '../types.js';
 
@@ -41,7 +36,7 @@ export function createResendProviderDefinition(): NotificationProviderDefinition
   return {
     type: 'resend',
     messageType: 'email',
-    label: notificationProviderText('test.providers.resend', 'Resend'),
+    label: notificationProviderText('providers.resend', 'Resend'),
     validateConfig: validateResendProviderConfig,
     capabilities: {
       idempotency: { supported: true, retentionMs: 24 * 60 * 60 * 1000 },
@@ -83,11 +78,9 @@ export class ResendChannel implements ChannelInstance<
 > {
   static readonly type = 'resend';
   static readonly label: NotificationI18nText = notificationProviderText(
-    'test.providers.resend',
+    'providers.resend',
     'Resend',
   );
-  static readonly test: NotificationTestAdapter<ResendChannelConfig> =
-    emailTestAdapter;
   static validateConfig(config: ResendChannelConfig): void {
     validateResendProviderConfig({ ...config, provider: 'resend' });
   }

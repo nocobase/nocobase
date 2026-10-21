@@ -1,14 +1,9 @@
-import type {
-  NotificationTestAdapter,
-  NotificationChannelConfigInput,
-  ValidatedChannelMessage,
-} from '@nocobase/app-plugin-notification';
+import type { ValidatedChannelMessage } from '@nocobase/app-plugin-notification';
 import {
   validateNotificationTarget,
+  type NotificationChannelDefinition,
   type NotificationTarget,
 } from '@nocobase/app-plugin-notification';
-import { type NotificationChannelDefinition } from '@nocobase/app-plugin-notification';
-import { notificationProviderText } from '../i18n.js';
 
 export interface ImRecipient {
   readonly webhook: true;
@@ -36,57 +31,6 @@ export interface ImProviderConfig {
   readonly enabled?: boolean;
 }
 export type ImChannelConfig = ImProviderConfig;
-
-export const imTestAdapter: NotificationTestAdapter<NotificationChannelConfigInput> =
-  {
-    label: notificationProviderText('test.channels.im', 'IM'),
-    fields: [
-      {
-        name: 'title',
-        label: notificationProviderText('test.fields.title', 'Title'),
-        type: 'text',
-        defaultValue: notificationProviderText(
-          'test.defaults.title',
-          'NocoBase notification test',
-        ),
-        maxLength: 200,
-      },
-      {
-        name: 'text',
-        label: notificationProviderText('test.fields.message', 'Message'),
-        type: 'textarea',
-        required: true,
-        defaultValue: notificationProviderText(
-          'test.defaults.body',
-          'This is a test notification from NocoBase.',
-        ),
-        maxLength: 2000,
-      },
-      {
-        name: 'url',
-        label: notificationProviderText('test.fields.url', 'Full HTTP(S) URL'),
-        type: 'text',
-        maxLength: 2000,
-      },
-    ],
-    toSendInput({ values }) {
-      const title = values.title?.trim();
-      const text = values.text?.trim();
-      if (!text) throw new Error('IM text is required.');
-      return {
-        title,
-        text,
-        ...(values.url?.trim()
-          ? {
-              target: validateNotificationTarget({
-                type: 'url',
-                url: values.url.trim(),
-              }),
-            }
-          : {}),
-      };
-    },
-  };
 
 export function validateImMessage(
   value: unknown,
@@ -170,7 +114,6 @@ export function createImChannelDefinition(): NotificationChannelDefinition<
 > {
   return {
     type: 'im',
-    test: imTestAdapter,
     async createChannel() {
       return {
         type: 'im',

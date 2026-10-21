@@ -1,8 +1,8 @@
 import type { DatabaseManager } from '@nocobase/db';
 import { createLogger } from '@nocobase/logging';
 import {
-  createServiceToken,
   ServiceContainer,
+  createServiceToken,
 } from '@nocobase/service-provider';
 import { describe, expect, it, vi } from 'vitest';
 import type {
@@ -48,14 +48,6 @@ function harness(channels: NotificationConfig['channels']) {
     static validateConfig(config: Config): void {
       if (!config.prefix) throw new Error('prefix is required');
     }
-    static readonly test = {
-      label: 'Custom',
-      fields: [],
-      toSendInput: ({ channelConfig }: { channelConfig: Config }): Message => ({
-        to: 'test',
-        text: channelConfig.prefix,
-      }),
-    };
     constructor(
       private readonly context: ChannelContext,
       private readonly config: Config,
@@ -157,12 +149,6 @@ describe('class channel types', () => {
       );
       expect((await h.manager.send(input)).deduplicated).toBe(true);
       expect(h.sent).toHaveBeenCalledTimes(3);
-      expect(h.manager.listTestTargets()).toHaveLength(3);
-      await h.manager.sendTest(
-        { channel: 'second', values: {} },
-        { userId: 'actor' },
-      );
-      expect(h.sent.mock.lastCall?.[0].message.text).toBe('B:B:');
     } finally {
       await h.manager.close();
     }

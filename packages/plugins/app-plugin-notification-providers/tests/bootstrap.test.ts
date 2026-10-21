@@ -1,9 +1,9 @@
 import { createNotificationRegistry } from '@nocobase/app-plugin-notification';
 import { describe, expect, it, vi } from 'vitest';
 
+import { ServiceContainer } from '@nocobase/service-provider';
 import { registerBuiltInNotificationProviders } from '../server/bootstrap.js';
 import NotificationProvidersProvider from '../server/provider.js';
-import { ServiceContainer } from '@nocobase/service-provider';
 
 describe('@nocobase/app-plugin-notification-providers bootstrap', () => {
   it('registers concrete channel classes', () => {
@@ -52,10 +52,6 @@ describe('@nocobase/app-plugin-notification-providers bootstrap', () => {
       expect(validateConfig.mock.calls).toEqual([
         [{ provider: type }],
         [{ provider: type }],
-      ]);
-      expect(registry.testTargets(config)).toMatchObject([
-        { channel: { name: 'legacy', type: messageType }, provider: { type } },
-        { channel: { name: 'current', type: messageType }, provider: { type } },
       ]);
     },
   );

@@ -1,13 +1,8 @@
-import { databaseManagerToken } from '@nocobase/db';
-import {
-  authorizationToken,
-  grantBacked,
-  type Authorization,
-} from '@nocobase/app-plugin-authorization';
-import { loggingToken } from '@nocobase/app-server/logging';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
-import { ServiceProvider } from '@nocobase/service-provider';
+import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import { databaseManagerToken } from '@nocobase/db';
+import { ServiceProvider } from '@nocobase/service-provider';
 
 import { createNotificationManager } from '../manager.js';
 import { createNotificationRegistry } from '../registry.js';
@@ -69,17 +64,6 @@ export class NotificationProvider<
     );
   }
 
-  public override async boot(): Promise<void> {
-    if (!this.app.container.has(authorizationToken)) {
-      throw new Error(
-        'Notification core requires the authorization dependency.',
-      );
-    }
-    registerNotificationAuthorization(
-      this.app.container.resolve(authorizationToken),
-    );
-  }
-
   public override async start(): Promise<void> {
     // Install mode starts providers before notification tables are migrated,
     // so this sets the executor up without touching them.
@@ -111,17 +95,4 @@ export class NotificationProvider<
     }
     return name;
   }
-}
-
-export function registerNotificationAuthorization(
-  authorization: Pick<Authorization, 'resourceTypes'>,
-): void {
-  // A record type: only `send` exists, and only the `test` notification sends.
-  authorization.resourceTypes.add({
-    type: 'notification',
-    actions: ['send'],
-    authorize: grantBacked({
-      also: async (request) => request.resource.id === 'test',
-    }),
-  });
 }

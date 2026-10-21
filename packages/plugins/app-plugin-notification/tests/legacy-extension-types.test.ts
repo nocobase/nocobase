@@ -4,7 +4,6 @@ import type {
   NotificationChannelDefinition,
   NotificationConfig,
   NotificationProviderConfig,
-  NotificationTestAdapter,
 } from '../server/index.js';
 
 interface LegacyConfig extends NotificationChannelConfig {
@@ -15,17 +14,8 @@ it('preserves provider-based types for legacy extension callbacks', () => {
   expectTypeOf<NotificationChannelConfig>().toEqualTypeOf<NotificationProviderConfig>();
   expectTypeOf<LegacyConfig['provider']>().toEqualTypeOf<string>();
 
-  const test: NotificationTestAdapter = {
-    label: 'Legacy',
-    fields: [],
-    toSendInput({ channelConfig }) {
-      expectTypeOf(channelConfig.provider).toEqualTypeOf<string>();
-      return { provider: channelConfig.provider };
-    },
-  };
   const definition: NotificationChannelDefinition = {
     type: 'legacy',
-    test,
     validateConfig(config) {
       expectTypeOf(config.provider).toEqualTypeOf<string>();
     },
@@ -51,11 +41,7 @@ it('preserves provider-based types for legacy extension callbacks', () => {
     },
   };
   expect(config.channels.current).toEqual({ type: 'custom' });
-  expect(
-    definition.test?.toSendInput({
-      actor: { userId: 'tester' },
-      values: {},
-      channelConfig: { provider: 'custom' },
-    }),
-  ).toEqual({ provider: 'custom' });
+  expect(() =>
+    definition.validateConfig?.({ provider: 'custom' }),
+  ).not.toThrow();
 });

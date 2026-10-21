@@ -1,27 +1,22 @@
 import { userAdministrationServiceToken } from '@nocobase/app-plugin-authentication';
 import type {
+  ChannelCapabilities,
   ChannelContext,
-  ChannelConfig,
   ChannelInstance,
   ChannelPreparationInput,
   ChannelSendInput,
   ChannelSendResult,
-  ChannelCapabilities,
   NotificationI18nText,
-} from '@nocobase/app-plugin-notification';
-import { inAppNotificationStoreToken } from './tokens.js';
-import type {
-  NotificationTestAdapter,
-  NotificationChannelConfigInput,
   ValidatedChannelMessage,
 } from '@nocobase/app-plugin-notification';
-import { validateNotificationTarget } from '@nocobase/app-plugin-notification';
 import {
+  validateNotificationTarget,
   type NotificationChannelDefinition,
   type NotificationProviderDefinition,
 } from '@nocobase/app-plugin-notification';
 import { inAppNotificationText } from './i18n.js';
 import type { InAppStore } from './store.js';
+import { inAppNotificationStoreToken } from './tokens.js';
 import type { InAppMessage, InAppRecipient } from './types.js';
 
 export interface InAppProviderConfig {
@@ -36,86 +31,6 @@ export interface PreparedInAppMessage {
   readonly recipient: InAppRecipient;
   readonly content: InAppMessage;
 }
-
-export const inAppTestAdapter: NotificationTestAdapter<NotificationChannelConfigInput> =
-  {
-    label: inAppNotificationText('test.channels.inApp', 'In-app'),
-    fields: [
-      {
-        name: 'recipient',
-        label: inAppNotificationText(
-          'test.fields.recipientUserId',
-          'Recipient user ID',
-        ),
-        type: 'text',
-        required: true,
-        placeholder: inAppNotificationText(
-          'test.placeholders.currentUser',
-          'Application user ID',
-        ),
-        maxLength: 255,
-      },
-      {
-        name: 'title',
-        label: inAppNotificationText('test.fields.title', 'Title'),
-        type: 'text',
-        required: true,
-        defaultValue: inAppNotificationText(
-          'test.defaults.title',
-          'NocoBase notification test',
-        ),
-        maxLength: 200,
-      },
-      {
-        name: 'body',
-        label: inAppNotificationText('test.fields.message', 'Message'),
-        type: 'textarea',
-        required: true,
-        defaultValue: inAppNotificationText(
-          'test.defaults.body',
-          'This is a test notification from NocoBase.',
-        ),
-        maxLength: 2000,
-      },
-      {
-        name: 'route',
-        label: inAppNotificationText(
-          'test.fields.route',
-          'Internal route (without deployment prefix)',
-        ),
-        type: 'text',
-        maxLength: 2000,
-      },
-      {
-        name: 'url',
-        label: inAppNotificationText('test.fields.url', 'Full HTTP(S) URL'),
-        type: 'text',
-        maxLength: 2000,
-      },
-    ],
-    toSendInput({ values }) {
-      const title = values.title?.trim();
-      const body = values.body?.trim();
-      if (!title || !body) throw new Error('Title and Message are required.');
-      const route = values.route?.trim();
-      const url = values.url?.trim();
-      if (route && url)
-        throw new Error('Choose either an internal route or a full URL.');
-      const target = validateNotificationTarget(
-        route
-          ? { type: 'route', path: route }
-          : url
-            ? { type: 'url', url }
-            : undefined,
-      );
-      return {
-        to: values.recipient?.trim(),
-        title,
-        body,
-        ...(target ? { target } : {}),
-      };
-    },
-  };
 
 export function validateInAppMessage(
   value: unknown,
@@ -183,7 +98,6 @@ export function createInAppChannelDefinition(): NotificationChannelDefinition<
 > {
   return {
     type: 'in-app',
-    test: inAppTestAdapter,
     async createChannel() {
       return {
         type: 'in-app',
@@ -205,7 +119,7 @@ export function createDatabaseProviderDefinition(options: {
     capabilities: {
       idempotency: { supported: true },
     },
-    label: inAppNotificationText('test.providers.builtIn', 'Built-in'),
+    label: inAppNotificationText('providers.builtIn', 'Built-in'),
     async createProvider(context) {
       return {
         type: 'in-app',
@@ -276,11 +190,9 @@ export class InAppChannel implements ChannelInstance<
 > {
   static readonly type = 'in-app';
   static readonly label: NotificationI18nText = inAppNotificationText(
-    'test.providers.builtIn',
+    'providers.builtIn',
     'Built-in',
   );
-  static readonly test: NotificationTestAdapter<ChannelConfig> =
-    inAppTestAdapter;
   readonly capabilities: ChannelCapabilities = {
     idempotency: { supported: true },
   };

@@ -27,10 +27,7 @@ it.each([
       channels: { alerts: { type, webhookUrl, secret: 'test-secret' } },
     };
     registry.validate(config);
-    expect(registry.testTargets(config)[0]).toMatchObject({
-      channel: { name: 'alerts', type: 'im' },
-      provider: { type },
-    });
+
     const runtime = await registry
       .channelType(type)!
       .create(

@@ -1,22 +1,22 @@
-import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import {
   authorizationToken,
   type Authorization,
 } from '@nocobase/app-plugin-authorization';
-import { loggingToken } from '@nocobase/app-server/logging';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
-import { createLogger, type Logging } from '@nocobase/logging';
+import { loggingToken } from '@nocobase/app-server/logging';
+import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import type { JobExecutorService } from '@nocobase/jobs';
+import { createLogger, type Logging } from '@nocobase/logging';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { describe, expect, it, vi } from 'vitest';
 
 import { NotificationProvider } from '../server/providers/notification.js';
-import { InlineJobExecutor } from './helpers/inline-job-executor.js';
 import { notificationRuntimeToken } from '../server/runtime.js';
 import {
   notificationExtensionRegistryToken,
   notificationServiceToken,
 } from '../server/tokens.js';
+import { InlineJobExecutor } from './helpers/inline-job-executor.js';
 
 describe('@nocobase/app-plugin-notification provider', () => {
   it('registers, activates, and closes the core manager', async () => {
@@ -92,42 +92,7 @@ describe('@nocobase/app-plugin-notification provider', () => {
     expect(close).toHaveBeenCalledOnce();
     expect(executorShutdown).toHaveBeenCalledOnce();
     const authorization = container.resolve(authorizationToken);
-    expect(authorization.resourceTypes.add).toHaveBeenCalledOnce();
-    const add = authorization.resourceTypes.add as unknown as ReturnType<
-      typeof vi.fn
-    >;
-    const handler = add.mock.calls[0]?.[0] as {
-      type: string;
-      actions: readonly string[];
-      authorize(
-        request: object,
-        context: object,
-      ): Promise<{ readonly effect: string }>;
-    };
-    expect(handler).toMatchObject({ type: 'notification', actions: ['send'] });
-    const context = {
-      grants: {
-        resolve: () =>
-          Promise.resolve([
-            {
-              source: { plugin: 'permission-sets', id: 'operators' },
-              resource: { type: 'notification', id: '*' },
-              action: 'send',
-            },
-          ]),
-      },
-    };
-    const request = (id: string) => ({
-      principal: { type: 'user', id: 'user-1' },
-      resource: { type: 'notification', id },
-      action: 'send',
-    });
-    await expect(
-      handler.authorize(request('test'), context),
-    ).resolves.toMatchObject({ effect: 'permit' });
-    await expect(
-      handler.authorize(request('other'), context),
-    ).resolves.toMatchObject({ effect: 'deny' });
+    expect(authorization.resourceTypes.add).not.toHaveBeenCalled();
   });
 
   it('runs Deliveries on the jobs configuration notification.jobs names', () => {

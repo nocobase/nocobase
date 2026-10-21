@@ -1,19 +1,18 @@
-import { randomUUID } from 'node:crypto';
-import { ServiceContainer } from '@nocobase/service-provider';
 import { resolveChannelType } from '@nocobase/app-server/config';
+import { ServiceContainer } from '@nocobase/service-provider';
+import { randomUUID } from 'node:crypto';
 import { legacyChannelConfig } from './channel-type-adapter.js';
 
 import { Hono } from 'hono';
 
 import { ChannelManager } from './channel-manager.js';
 import { createDeliveryJob, type DeliveryJobClass } from './delivery-job.js';
-import { NotificationLogs } from './logs.js';
-import { NotificationReconcileJob } from './notification-reconcile-job.js';
 import {
   notificationRequestFingerprint,
   validateNotificationIdempotencyKey,
 } from './idempotency.js';
-import { notificationTestError } from './types.js';
+import { NotificationLogs } from './logs.js';
+import { NotificationReconcileJob } from './notification-reconcile-job.js';
 import {
   createNotificationRegistry,
   type NotificationRegistry,
@@ -30,7 +29,6 @@ import {
   type NotificationStore,
 } from './store.js';
 import type {
-  ProviderSendResult,
   NotificationDeliveryStatusSnapshot,
   NotificationManagerOptions,
   NotificationProviderIdentity,
@@ -41,9 +39,7 @@ import type {
   NotificationStatusChangedFilter,
   NotificationStatusChangedListener,
   NotificationStatusSnapshot,
-  NotificationTestActor,
-  NotificationTestSendRequest,
-  NotificationTestTargetDescriptor,
+  ProviderSendResult,
 } from './types.js';
 
 interface ExpandedRecipientTarget {
@@ -77,8 +73,7 @@ export class NotificationIdempotencyConflictError extends Error {
 
 /**
  * A Channel cannot reach its transport: it is not enabled, its Provider changed or is not registered, or creating the
- * Channel or Provider runtime failed (an SMTP transport that cannot be built, for example). Routes answer it with 503;
- * any other error is a defect and is left to the application.
+ * Channel or Provider runtime failed (an SMTP transport that cannot be built, for example).
  */
 export class NotificationTransportUnavailableError extends Error {
   readonly code = 'NOTIFICATION_TRANSPORT_UNAVAILABLE';
@@ -178,87 +173,6 @@ export class NotificationManager<
     await this.options.executor.setup();
     this.activated = true;
     this.reconcileJob.start();
-  }
-
-  listTestTargets(): readonly NotificationTestTargetDescriptor[] {
-    return this.registry.testTargets(this.options.config);
-  }
-
-  async sendTest(
-    request: NotificationTestSendRequest,
-    actor: NotificationTestActor,
-  ): Promise<NotificationSendResult> {
-    const target = this.resolveTestTarget(request);
-    const channelConfig = this.options.config.channels[request.channel];
-    const test = this.registry.testAdapter(resolveChannelType(channelConfig));
-    if (!test)
-      throw new NotificationTransportUnavailableError(
-        'Notification test target is unavailable.',
-      );
-    const message = test.toSendInput({
-      actor,
-      values: request.values,
-      channelConfig,
-    });
-    return this.send({
-      idempotencyKey: `notification-test:${randomUUID()}`,
-      messages: {
-        [target.channel.name]: message,
-      } as NotificationSendInput<TChannels>['messages'],
-      source: { type: 'notification-test', referenceId: actor.userId },
-    });
-  }
-
-  async getTestStatus(
-    notificationId: string,
-    actor: NotificationTestActor,
-  ): Promise<import('./logs.js').NotificationLogDetails | undefined> {
-    const details = await this.logs.get(notificationId);
-    return details?.log.sourceType === 'notification-test' &&
-      details.log.sourceReferenceId === actor.userId
-      ? details
-      : undefined;
-  }
-
-  private resolveTestTarget(
-    request: NotificationTestSendRequest,
-  ): NotificationTestTargetDescriptor {
-    const target = this.listTestTargets().find(
-      (candidate) => candidate.channel.name === request.channel,
-    );
-    if (!target)
-      throw notificationTestError(
-        'NOTIFICATION_TEST_TARGET_UNAVAILABLE',
-        'errors.testTargetUnavailable',
-      );
-    const fieldNames = new Set(target.fields.map((field) => field.name));
-    for (const name of Object.keys(request.values)) {
-      if (!fieldNames.has(name)) {
-        throw notificationTestError(
-          'NOTIFICATION_TEST_UNKNOWN_FIELD',
-          'errors.testUnknownField',
-          { params: { name } },
-        );
-      }
-    }
-    for (const field of target.fields) {
-      const value = request.values[field.name]?.trim() ?? '';
-      if (field.required && !value) {
-        throw notificationTestError(
-          'NOTIFICATION_TEST_REQUIRED_FIELD',
-          'errors.testRequiredField',
-          { params: { name: field.name } },
-        );
-      }
-      if (field.maxLength !== undefined && value.length > field.maxLength) {
-        throw notificationTestError(
-          'NOTIFICATION_TEST_FIELD_TOO_LONG',
-          'errors.testFieldTooLong',
-          { params: { name: field.name, maxLength: field.maxLength } },
-        );
-      }
-    }
-    return target;
   }
 
   async start(): Promise<void> {
