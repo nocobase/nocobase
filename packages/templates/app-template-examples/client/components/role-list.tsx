@@ -1,7 +1,11 @@
 import { useMemo, type ReactElement } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Link, type To } from 'react-router';
-import { DataTable, DataTableColumnHeader } from '#components/data-table';
+import {
+  DataTable,
+  DataTableColumnHeader,
+  type DataTableProps,
+} from '#components/data-table';
 import { Badge } from '#components/ui/badge';
 
 export interface RoleListRole {
@@ -21,6 +25,14 @@ export interface RoleListProps {
     readonly custom: string;
   };
   readonly ariaLabel?: string;
+  readonly tableState?: Pick<
+    DataTableProps<RoleListRole>,
+    | 'paginationState'
+    | 'onPaginationChange'
+    | 'sortingState'
+    | 'onSortingChange'
+    | 'pageSizeOptions'
+  >;
 }
 
 /** Standard role table; the host owns authorization, loading and filtering. */
@@ -28,6 +40,7 @@ export function RoleList({
   roles,
   labels,
   ariaLabel,
+  tableState,
 }: RoleListProps): ReactElement {
   const columns = useMemo<ColumnDef<RoleListRole>[]>(
     () => [
@@ -62,6 +75,7 @@ export function RoleList({
       },
       {
         accessorKey: 'protected',
+        enableSorting: false,
         header: labels.type,
         cell: ({ row }) => (
           <Badge variant='secondary'>
@@ -75,6 +89,7 @@ export function RoleList({
   return (
     <div role='region' aria-label={ariaLabel}>
       <DataTable
+        {...tableState}
         columns={columns}
         data={roles}
         getRowId={(role) => role.key}

@@ -11,7 +11,7 @@ import { DataTable } from '#components/data-table/data-table';
 
 export interface WorkflowDefinitionRow {
   id: string;
-  name: string;
+  name?: string;
   title: ReactNode;
   activity: ReactNode;
 }
@@ -30,7 +30,7 @@ export interface WorkflowDefinitionListProps {
     executionActivity: string;
   };
   sort?: { ascending: boolean };
-  onSort: () => void;
+  onSort?: () => void;
   onRefresh: () => void;
 }
 
@@ -91,7 +91,7 @@ export function WorkflowDefinitionList({
                 {
                   id: 'activity',
                   accessorFn: (row) => row.activity,
-                  enableSorting: true,
+                  enableSorting: Boolean(onSort),
                   meta: activityMeta,
                   header: DefinitionActivityHeader,
                   cell: DefinitionActivityCell,
@@ -118,7 +118,9 @@ function DefinitionTitleCell({
   return (
     <>
       {row.original.title}
-      <p className='text-xs text-muted-foreground'>{row.original.name}</p>
+      {row.original.name && row.original.name !== row.original.title && (
+        <p className='text-xs text-muted-foreground'>{row.original.name}</p>
+      )}
     </>
   );
 }
@@ -134,15 +136,19 @@ function DefinitionActivityHeader({
     .meta as DefinitionActivityMeta;
   return (
     <div className='text-right'>
-      <Button
-        variant='ghost'
-        size='sm'
-        title={labels.executionCount}
-        onClick={onSort}
-      >
-        {labels.executionActivity}
-        {sort && (sort.ascending ? <ArrowUp /> : <ArrowDown />)}
-      </Button>
+      {onSort ? (
+        <Button
+          variant='ghost'
+          size='sm'
+          title={labels.executionCount}
+          onClick={onSort}
+        >
+          {labels.executionActivity}
+          {sort && (sort.ascending ? <ArrowUp /> : <ArrowDown />)}
+        </Button>
+      ) : (
+        <span>{labels.executionActivity}</span>
+      )}
     </div>
   );
 }

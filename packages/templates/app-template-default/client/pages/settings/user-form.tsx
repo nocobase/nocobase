@@ -257,7 +257,7 @@ function UserEditor(): ReactElement {
         }),
       });
       leave.allow();
-      void navigate(closeTo);
+      void navigate(closeTo, { replace: true });
     } catch (next) {
       if (
         next instanceof ApiClientError &&

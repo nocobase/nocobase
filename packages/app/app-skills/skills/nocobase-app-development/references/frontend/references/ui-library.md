@@ -155,7 +155,7 @@ A role administration table built with the standard DataTable: localized column 
 - Plugin dependencies: none
 - Also installs: `@nocobase/data-table`
 - Example: `@nocobase/role-list-demo` (`pnpm exec shadcn view @nocobase/role-list-demo`)
-- After installing: Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. The host owns loading, empty/error states, filtering and authorization. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.
+- After installing: Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. Optional tableState accepts controlled pagination/sorting and page-size choices from the host URL adapter. The host owns loading, empty/error states, filtering and authorization. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.
 
 ### default-access-editor
 
@@ -348,6 +348,17 @@ A settings dialog after shadcn's sidebar-13: grouped categories in a sidebar on 
 - Plugin dependencies: none
 - Example: `@nocobase/settings-dialog-demo` (`pnpm exec shadcn view @nocobase/settings-dialog-demo`)
 - After installing: Pass groups of { id, label, icon } items, the activeId and onSelect (or renderItem to draw each entry as a router link), and render the open entry as children, optionally in a SettingsDialogSection. Every word comes from the props; the component ships no locale keys.
+
+### setup-readiness
+
+Contextual prerequisite checks for a feature, with missing, ready and unavailable states. Connect real authorized business reads; never infer readiness from installed plugins. Preinstalled in application templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/setup-readiness`
+- Installs to: `client/components/setup-readiness.tsx`, `client/components/setup-readiness-state.ts`
+- Plugin dependencies: none
+- Example: `@nocobase/setup-readiness-demo` (`pnpm exec shadcn view @nocobase/setup-readiness-demo`)
+- After installing: Memoize SetupCheck descriptors and the async inspect callback; wire useSetupReadiness to the feature’s authorized aggregate read and pass its state to SetupReadiness. Supply translated labels, stable ids and authorized configuration links. No checks or disabled inspection causes no reads. Refresh on the host route key and after configuration saves; focus rechecks mounted checks. Unknown reason is unavailable, signIn, forbidden or invalid. Only missing checks render configuration links; denied/invalid reads are not missing. Initial all-ready hides; explicit refresh keeps a compact confirmation and the refresh control. This is informational; execution still validates prerequisites server-side. Templates also include RequiredRoleSetup for explicitly declared business roles.
 
 ## Projects
 

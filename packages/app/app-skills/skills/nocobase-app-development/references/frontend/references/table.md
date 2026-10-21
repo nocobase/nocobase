@@ -245,3 +245,7 @@ Try it by hand in a browser; static checks cannot find input method and focus pr
 - The date and number columns sort, and a server-paginated list keeps the sort in the URL and starts it on the first page.
 - Delete a record in the detail drawer: after the list refreshes, focus is on the search box.
 - At a width of 375px, the toolbar wraps and the table scrolls horizontally; everything is legible in both the light and dark themes (guidelines A4 and F6).
+
+### Restore list position
+
+The template's `#hooks/use-table-url-state` adapts standard `DataTable` controlled pagination/sorting to `page`, `pageSize`, `sort` and `order` query parameters. Pass an explicit allowlist of sortable column IDs. Use it with `RoleList.tableState` or spread its result into `DataTable`; server lists also set `manualPagination`/`manualSorting` and send those values to the real API. Supply `rowCount` only for the current successful query, never cached rows during loading/errors. Client lists retain the full dataset for the table's local sorting/paging. Filter changes reset `page` while preserving unrelated URL context, page size and ordering. Links to child details carry `location.search` and close to the same view. Test reload/history and removal of the last row on a page. A controlled table delegates page resets to the host so refreshed data cannot silently jump back to page one.

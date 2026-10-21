@@ -1,4 +1,25 @@
 const settings = {
+  setup: {
+    title: 'Feature prerequisites',
+    checking: 'Checking current configuration…',
+    checkAgain: 'Check again',
+    ready: 'The checked prerequisites are ready.',
+    missing: 'Review the configuration items below.',
+    manageMembers: 'Manage members',
+    manageMembersFor: 'Manage {{role}} members',
+    unavailable: 'Unable to check right now. Try again.',
+    signIn: 'Your session expired. Sign in again to check configuration.',
+    forbidden:
+      'You do not have access to check this configuration. Contact an administrator.',
+    invalid:
+      'This prerequisite could not be verified. Ask the application maintainer to check its configuration.',
+  },
+  roleFilterIncomplete:
+    'Choose both a role scope and a role, or clear the filters.',
+  backToSource: 'Return to previous page',
+  roleFilter: 'Filter by role',
+  allRoles: 'All roles',
+
   permissionManagement: 'Permission management',
   defaultAccess: {
     noResourcesShort: 'No configurable objects available',

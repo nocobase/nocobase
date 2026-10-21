@@ -92,6 +92,7 @@ import { ApprovalDemo } from './demo/approval';
 import { AuthenticationDemo } from './demo/auth';
 import { DeviceApprovalDemo } from './demo/auth/device-approval';
 import { PageContainerDemo } from './demo/components/page-container';
+import { SetupReadinessDemo } from './demo/components/setup-readiness.js';
 import { PageHeaderDemo } from './demo/components/page-header';
 import { DefaultAccessEditorDemo } from './demo/authorization/default-access-editor.js';
 import { RoleListDemo } from './demo/authorization/role-list.js';
@@ -156,6 +157,10 @@ const itemPreviews: Record<string, ItemPreview> = {
     icon: LayoutTemplate,
   },
   'page-header': { path: '/demo/components/page-header', icon: Heading },
+  'setup-readiness': {
+    path: '/demo/components/setup-readiness',
+    icon: ListChecks,
+  },
   // The three route overlays share one demo; each preview opens the route that presents its component.
   'route-dialog': {
     path: '/demo/components/route-overlays/new',
@@ -286,6 +291,8 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/components/page-container')) {
     return <PageContainerDemo />;
   }
+  if (pathname.startsWith('/demo/components/setup-readiness'))
+    return <SetupReadinessDemo />;
   if (pathname.startsWith('/demo/components/page-header')) {
     return <PageHeaderDemo />;
   }

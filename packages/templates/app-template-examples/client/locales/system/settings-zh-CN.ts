@@ -1,4 +1,22 @@
 const settings = {
+  setup: {
+    title: '功能前置配置',
+    checking: '正在检查当前配置…',
+    checkAgain: '重新检查',
+    ready: '已检查的前置配置已就绪。',
+    missing: '请检查以下配置项。',
+    manageMembers: '管理成员',
+    manageMembersFor: '管理{{role}}成员',
+    unavailable: '暂时无法检查，请稍后重试。',
+    signIn: '登录已失效，请重新登录后检查配置。',
+    forbidden: '没有权限检查此配置，请联系管理员。',
+    invalid: '无法确认此前置配置，请应用维护者检查其配置声明。',
+  },
+  roleFilterIncomplete: '请同时指定角色范围与角色，或清除筛选条件。',
+  backToSource: '返回原页面',
+  roleFilter: '按角色筛选',
+  allRoles: '全部角色',
+
   permissionManagement: '权限管理',
   defaultAccess: {
     noResourcesShort: '暂无可配置的业务对象',

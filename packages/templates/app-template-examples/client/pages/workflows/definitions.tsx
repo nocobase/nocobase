@@ -1,6 +1,6 @@
-import { useMatch } from 'react-router';
+import { useMatch, useLocation } from 'react-router';
 import { CategoryManager, type Category } from './categories.js';
-import { useState, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Link, Outlet } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Input } from '#components/ui/input';
@@ -11,9 +11,7 @@ import { DataState } from './shared.js';
 import { useWorkflowData, useWorkflowLabels, workflowDate } from './hooks.js';
 
 export default function DefinitionsPage(): ReactElement {
-  const [sort, setSort] = useState<{
-    ascending: boolean;
-  }>();
+  const location = useLocation();
   const detail = useMatch({
     path: '/workflows/definitions/:workflowId',
     end: false,
@@ -22,6 +20,11 @@ export default function DefinitionsPage(): ReactElement {
   const labels = useWorkflowLabels();
   const nameFilter = useUrlSearch({ param: 'name' });
   const search = nameFilter.searchParams;
+  const activityOrder = search.get('activityOrder');
+  const sort =
+    activityOrder === 'asc' || activityOrder === 'desc'
+      ? { ascending: activityOrder === 'asc' }
+      : undefined;
   const category = search.get('category') ?? 'all';
   const normalizedName = nameFilter.search;
   const categories = useWorkflowData<{ data: Category[] }>(
@@ -44,11 +47,15 @@ export default function DefinitionsPage(): ReactElement {
     <WorkflowDefinitionList
       rows={rows.map((workflow) => ({
         id: workflow.id,
-        name: workflow.name,
+        name:
+          workflow.name === labels.title(workflow) ? undefined : workflow.name,
         title: (
           <Link
             className='font-medium underline-offset-4 hover:underline'
-            to={{ pathname: `/workflows/definitions/${workflow.id}` }}
+            to={{
+              pathname: `/workflows/definitions/${workflow.id}`,
+              search: location.search,
+            }}
           >
             {labels.title(workflow)}
           </Link>
@@ -131,7 +138,11 @@ export default function DefinitionsPage(): ReactElement {
           : 'workflows.noDefinitions',
       )}
       sort={sort}
-      onSort={() => setSort({ ascending: sort ? !sort.ascending : true })}
+      onSort={() =>
+        nameFilter.updateParams((next) =>
+          next.set('activityOrder', sort?.ascending ? 'desc' : 'asc'),
+        )
+      }
       onRefresh={() => {
         request.reload();
         categories.reload();

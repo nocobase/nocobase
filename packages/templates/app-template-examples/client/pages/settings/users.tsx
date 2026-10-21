@@ -1,3 +1,6 @@
+import { BackButton } from '#components/back-button';
+import { safeReturnTo } from '../../lib/return-to.js';
+import { useTableUrlState } from '#hooks/use-table-url-state';
 import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useSettingsData, useUserPermission } from './hooks.js';
@@ -6,9 +9,11 @@ import { useTranslation } from '@nocobase/i18n/client';
 import {
   UsersClient,
   type ManagedUser,
+  type UsersOptions,
 } from '@nocobase/app-plugin-users/client/user-client';
 import {
   useCallback,
+  useRef,
   useMemo,
   useState,
   useEffect,
@@ -83,6 +88,8 @@ function UserActions({
       setBusy(false);
     }
   };
+  if (!canUpdate && !canRevoke && !(user.disabledAt ? canEnable : canDisable))
+    return <></>;
   return (
     <>
       <DropdownMenu>
@@ -166,6 +173,23 @@ export default function UsersPage(): ReactElement {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
   const location = useLocation();
+  const searchRef = useRef<HTMLInputElement>(null);
+  const previousPathRef = useRef(location.pathname);
+  useEffect(() => {
+    const returned =
+      previousPathRef.current !== location.pathname &&
+      location.pathname === '/settings/users';
+    previousPathRef.current = location.pathname;
+    if (!returned) return;
+    const frame = requestAnimationFrame(() => {
+      if (
+        document.activeElement === document.body ||
+        !document.activeElement?.isConnected
+      )
+        searchRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [location.pathname]);
   const [queryDraft, setQueryDraft] = useState<{
     key: string;
     value: string;
@@ -177,7 +201,43 @@ export default function UsersPage(): ReactElement {
   const setQuery = (value: string) =>
     setQueryDraft({ key: location.key, value });
   const [composing, setComposing] = useState(false);
-  const page = Math.max(1, Number(params.get('page')) || 1);
+  const options = useSettingsData<{ data: UsersOptions }>('users/options');
+  const roleScopes = useMemo(
+    () => options.data?.data.roleScopes ?? [],
+    [options.data],
+  );
+  const returnTo = safeReturnTo(params.get('returnTo'));
+  const roleScope = params.get('roleScope') ?? '';
+  const role = params.get('role') ?? '';
+  const roleText = useCallback(
+    (option: { label: string; labelI18nKey?: string; labelI18nNs?: string }) =>
+      option.labelI18nKey
+        ? t(option.labelI18nKey, {
+            ns: option.labelI18nNs,
+            defaultValue: option.label,
+          })
+        : option.label,
+    [t],
+  );
+  const roleChoices = roleScopes.flatMap((scope) =>
+    scope.options.map((option) => ({
+      value: JSON.stringify([scope.key, option.value]),
+      label: `${roleText(scope)} · ${roleText(option)}`,
+    })),
+  );
+  const selectedRole =
+    roleScope && role ? JSON.stringify([roleScope, role]) : 'all';
+  if (
+    selectedRole !== 'all' &&
+    !roleChoices.some((option) => option.value === selectedRole)
+  )
+    roleChoices.push({ value: selectedRole, label: `${roleScope} · ${role}` });
+  const page = Math.max(
+    1,
+    Number.isSafeInteger(Number(params.get('page')))
+      ? Number(params.get('page'))
+      : 1,
+  );
   const status = params.get('status') ?? 'all';
   const pageSize = [20, 50, 100].includes(Number(params.get('pageSize')))
     ? Number(params.get('pageSize'))
@@ -215,6 +275,8 @@ export default function UsersPage(): ReactElement {
     pageSize: String(pageSize),
     ...(params.get('q') ? { q: params.get('q')! } : {}),
     ...(status !== 'all' ? { status } : {}),
+    ...(roleScope ? { roleScope } : {}),
+    ...(role ? { role } : {}),
     ...(params.get('order')
       ? { sort: 'name', order: params.get('order')! }
       : {}),
@@ -223,6 +285,25 @@ export default function UsersPage(): ReactElement {
     data: readonly ManagedUser[];
     meta: { total: number };
   }>(`users?${remote}`, true);
+  const tableState = useTableUrlState({
+    defaultPageSize: 20,
+    pageSizeOptions: [20, 50, 100],
+    sortColumns: ['name'],
+    rowCount:
+      !request.loading && !request.error ? request.data?.meta.total : undefined,
+  });
+  const clearFilters = () => {
+    setQuery('');
+    setParams(
+      (old) => {
+        const next = new URLSearchParams(old);
+        for (const key of ['q', 'status', 'roleScope', 'role', 'page'])
+          next.delete(key);
+        return next;
+      },
+      { replace: true },
+    );
+  };
   const { data: pageData, replaceData, reload: refreshUsers } = request;
   const reload = useCallback(
     (updated?: ManagedUser) => {
@@ -234,8 +315,10 @@ export default function UsersPage(): ReactElement {
           ),
         });
       refreshUsers();
+      if (updated && location.pathname === '/settings/users')
+        requestAnimationFrame(() => searchRef.current?.focus());
     },
-    [pageData, replaceData, refreshUsers],
+    [pageData, replaceData, refreshUsers, location.pathname],
   );
   const canCreate = useUserPermission('create');
   const canAssign = useUserPermission('assign-role');
@@ -289,7 +372,19 @@ export default function UsersPage(): ReactElement {
         header: t('settings.assignedRoles'),
         enableSorting: false,
         cell: ({ row }) =>
-          Object.values(row.original.roleScopes).flat().join(', ') || '—',
+          Object.entries(row.original.roleScopes)
+            .flatMap(([scopeKey, value]) => {
+              const scope = roleScopes.find((entry) => entry.key === scopeKey);
+              return (typeof value === 'string' ? [value] : value).map(
+                (key) => {
+                  const option = scope?.options.find(
+                    (entry) => entry.value === key,
+                  );
+                  return option ? roleText(option) : key;
+                },
+              );
+            })
+            .join(', ') || '—',
       },
       {
         id: 'actions',
@@ -298,7 +393,7 @@ export default function UsersPage(): ReactElement {
         cell: ({ row }) => <UserActions user={row.original} reload={reload} />,
       },
     ],
-    [t, location.search, reload],
+    [t, location.search, reload, roleScopes, roleText],
   );
   const create =
     canCreate && canAssign ? (
@@ -310,10 +405,14 @@ export default function UsersPage(): ReactElement {
         {t('settings.newUser')}
       </Button>
     ) : null;
-  const filtered = Boolean(params.get('q')) || status !== 'all';
+  const filtered =
+    Boolean(params.get('q') || roleScope || role) || status !== 'all';
   return (
     <>
       <PageContainer>
+        {returnTo && (
+          <BackButton to={returnTo}>{t('settings.backToSource')}</BackButton>
+        )}
         <PageHeader
           title={t('settings.users')}
           description={t('settings.usersDescription')}
@@ -321,6 +420,7 @@ export default function UsersPage(): ReactElement {
         />
         <div className='flex flex-wrap items-center gap-3'>
           <Input
+            ref={searchRef}
             className='w-full sm:max-w-xs'
             value={query}
             aria-label={t('settings.userSearch')}
@@ -348,14 +448,48 @@ export default function UsersPage(): ReactElement {
               ))}
             </SelectContent>
           </Select>
+          <Select
+            items={[
+              { value: 'all', label: t('settings.allRoles') },
+              ...roleChoices,
+            ]}
+            value={selectedRole}
+            onValueChange={(value) => {
+              if (!value) return;
+              setParams(
+                (old) => {
+                  const next = new URLSearchParams(old);
+                  next.delete('page');
+                  if (value === 'all') {
+                    next.delete('roleScope');
+                    next.delete('role');
+                  } else {
+                    const [scope, key] = JSON.parse(value) as [string, string];
+                    next.set('roleScope', scope);
+                    next.set('role', key);
+                  }
+                  return next;
+                },
+                { replace: true },
+              );
+            }}
+          >
+            <SelectTrigger aria-label={t('settings.roleFilter')}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+              {[
+                { value: 'all', label: t('settings.allRoles') },
+                ...roleChoices,
+              ].map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {filtered && (
-            <Button
-              variant='ghost'
-              onClick={() => {
-                setQuery('');
-                setParams({});
-              }}
-            >
+            <Button variant='ghost' onClick={clearFilters}>
               {t('settings.clear')}
             </Button>
           )}
@@ -365,6 +499,12 @@ export default function UsersPage(): ReactElement {
             {t('settings.loading')}
           </span>
         )}
+        {Boolean(roleScope) !== Boolean(role) && (
+          <p role='alert' className='text-sm text-destructive'>
+            {t('settings.roleFilterIncomplete')}
+          </p>
+        )}
+        <SettingsError error={options.error} retry={options.reload} />
         <SettingsError error={request.error} retry={request.reload} />
         {request.loading && !request.data ? (
           <SettingsLoading />
@@ -377,34 +517,8 @@ export default function UsersPage(): ReactElement {
               getRowId={(row) => row.id}
               manualPagination
               rowCount={request.data?.meta.total ?? 0}
-              paginationState={{ pageIndex: page - 1, pageSize }}
-              onPaginationChange={(updater) => {
-                const next =
-                  typeof updater === 'function'
-                    ? updater({ pageIndex: page - 1, pageSize })
-                    : updater;
-                setParams((old) => {
-                  const result = new URLSearchParams(old);
-                  result.set('page', String(next.pageIndex + 1));
-                  result.set('pageSize', String(next.pageSize));
-                  return result;
-                });
-              }}
+              {...tableState}
               manualSorting
-              sortingState={
-                params.get('order')
-                  ? [{ id: 'name', desc: params.get('order') === 'desc' }]
-                  : []
-              }
-              onSortingChange={(updater) => {
-                const previous = params.get('order')
-                  ? [{ id: 'name', desc: params.get('order') === 'desc' }]
-                  : [];
-                const next =
-                  typeof updater === 'function' ? updater(previous) : updater;
-                update('order', next[0] ? (next[0].desc ? 'desc' : 'asc') : '');
-              }}
-              pageSizeOptions={[20, 50, 100]}
               showSelectedCount={false}
               loading={request.loading}
             />
@@ -423,13 +537,7 @@ export default function UsersPage(): ReactElement {
               </EmptyDescription>
               <EmptyContent>
                 {filtered ? (
-                  <Button
-                    variant='outline'
-                    onClick={() => {
-                      setQuery('');
-                      setParams({});
-                    }}
-                  >
+                  <Button variant='outline' onClick={clearFilters}>
                     {t('settings.clear')}
                   </Button>
                 ) : (

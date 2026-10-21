@@ -760,6 +760,20 @@
           "target": "client/extensions/nocobase-default-access-editor-demo/default-access-editor.tsx"
         }
       ]
+    },
+    {
+      "name": "setup-readiness-demo",
+      "type": "registry:example",
+      "title": "Setup Readiness Demo",
+      "description": "Usage example of @nocobase/setup-readiness with local fixture configuration and missing-to-ready inspection. Connect real authorized reads in applications.",
+      "registryDependencies": ["button", "@nocobase/setup-readiness"],
+      "files": [
+        {
+          "path": "components/setup-readiness.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-setup-readiness-demo/setup-readiness.tsx"
+        }
+      ]
     }
   ]
 }

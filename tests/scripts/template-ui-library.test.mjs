@@ -23,6 +23,7 @@ const preinstalled = [
   { group: 'auth', item: 'device-approval' },
   { group: 'components', item: 'page-container' },
   { group: 'components', item: 'page-header' },
+  { group: 'components', item: 'setup-readiness' },
   { group: 'components', item: 'route-dialog' },
   { group: 'components', item: 'route-drawer' },
   { group: 'components', item: 'route-child-page' },

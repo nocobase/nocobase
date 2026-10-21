@@ -1,3 +1,4 @@
+import { BackButton } from '../../client/components/back-button.js';
 import {
   OfficeParameterEditor,
   OfficePeoplePicker,
@@ -935,7 +936,7 @@ it('keeps a failed category draft and saves its trimmed name and order', async (
   });
 });
 
-it('filters workflow categories from the URL without adding the filter to detail links', async () => {
+it('preserves the category filter in definition detail links', async () => {
   api.request.mockImplementation(async ({ path }) => ({
     data: path.endsWith('categories')
       ? [{ id: 'finance', title: 'Finance', sortOrder: 0 }]
@@ -951,7 +952,7 @@ it('filters workflow categories from the URL without adding the filter to detail
   });
   expect(link).toHaveAttribute(
     'href',
-    `/workflows/definitions/${detail.workflow.id}`,
+    `/workflows/definitions/${detail.workflow.id}?category=finance`,
   );
   expect(
     screen.queryByRole('link', { name: 'Order payment' }),
@@ -1104,7 +1105,10 @@ it.each(['en-US', 'zh-CN'])(
     );
     expect(
       screen.getByRole('link', { name: copy.names.orders }),
-    ).toHaveAttribute('href', '/workflows/definitions/orders');
+    ).toHaveAttribute(
+      'href',
+      `/workflows/definitions/orders?${new URLSearchParams({ category: 'finance', name: copy.names.orders })}`,
+    );
     await userEvent.clear(input);
     await userEvent.type(input, '  EXPENSES  ');
     await userEvent.keyboard('{Enter}');
@@ -1741,4 +1745,56 @@ it('disables shared and workflow controls when the parameter pane is read only',
     screen.getByRole('button', { name: 'Save parameters' }),
   ).toBeDisabled();
   expect(api.request).not.toHaveBeenCalled();
+});
+
+it('carries definition search and activity ordering into detail and restores them on return', async () => {
+  api.request.mockImplementation(async ({ path }) => ({
+    data: path === 'workflows/categories' ? [] : [detail.workflow],
+  }));
+  await view(
+    <Routes>
+      <Route path='/workflows/definitions' element={<DefinitionsPage />}>
+        <Route path=':workflowId' element={<BackButton />} />
+      </Route>
+    </Routes>,
+    'en-US',
+    '/workflows/definitions?name=expense&activityOrder=desc',
+  );
+  const workflow = await screen.findByRole('link', {
+    name: enUS.workflows.names.expenses,
+  });
+  expect(workflow.getAttribute('href')).toContain(
+    'name=expense&activityOrder=desc',
+  );
+  await userEvent.click(
+    screen.getByRole('button', { name: enUS.workflows.executionActivity }),
+  );
+  expect(workflow.getAttribute('href')).toContain('activityOrder=asc');
+  await userEvent.click(workflow);
+  await userEvent.click(screen.getByRole('link', { name: 'Back' }));
+  expect(
+    (
+      await screen.findByRole('link', { name: enUS.workflows.names.expenses })
+    ).getAttribute('href'),
+  ).toContain('name=expense&activityOrder=asc');
+});
+
+it('does not repeat a definition name when localization falls back to that name', async () => {
+  api.request.mockImplementation(async ({ path }) => ({
+    data:
+      path === 'workflows/categories'
+        ? []
+        : [
+            {
+              ...detail.workflow,
+              id: 'custom.workflow',
+              name: 'Custom workflow',
+            },
+          ],
+  }));
+  await view(<DefinitionsPage />, 'en-US', '/workflows/definitions');
+  expect(
+    await screen.findByRole('link', { name: 'Custom workflow' }),
+  ).toBeVisible();
+  expect(screen.getAllByText('Custom workflow')).toHaveLength(1);
 });
