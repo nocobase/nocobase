@@ -2,6 +2,10 @@ import type { Reference } from '../../shared/api.js';
 import type { QueryClient } from '@tanstack/react-query';
 import { sessionMemoryKey } from '../use-session-memory.js';
 
+/** How a selected reference reads in the message. */
+export const mentionText = (reference: Reference): string =>
+  `#${reference.key ?? reference.title}`;
+
 /** What the host attached to the next message, such as the record a panel was opened beside. */
 export interface Attachment {
   readonly id: string;

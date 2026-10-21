@@ -33,6 +33,7 @@ import type { PromptContent, Reference } from '../../shared/api.js';
 import { useMentions, type Mention } from '../api.js';
 import {
   attachedKey,
+  mentionText,
   stopAutomaticAttachment,
   type Attachment,
 } from '../lib/attachments.js';
@@ -99,10 +100,6 @@ const MOD_KEY =
   /Mac|iPhone|iPad/u.test(navigator.userAgent)
     ? '⌘'
     : 'Ctrl';
-
-/** How a mention reads in the message. */
-const mentionText = (reference: Reference): string =>
-  `#${reference.key ?? reference.title}`;
 
 export function Composer({
   placeholder,
