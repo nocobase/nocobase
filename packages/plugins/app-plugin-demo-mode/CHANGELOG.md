@@ -1,0 +1,20 @@
+# @nocobase/app-plugin-demo-mode
+
+## 0.0.1
+
+### Patch Changes
+
+- Add the Demo Mode plugin: a read-only demo by registration alone.
+
+- Add application-owned demo datasets with import, progress, clear, reset, scheduled resets, relative dates, bilingual account summaries, and an OpenAI-compatible simulated model.
+- Track account ownership and reject existing-account collisions. Preserve later administrator model choices, recover interrupted imports, and coordinate competing lifecycle operations.
+- Add `demo-mode data` CLI commands, refresh model bindings across processes, and keep client status polling ordered.
+- Permit authorized demo lifecycle actions in read-only mode with an async-local exemption; retain normal request write guards.
+- Add an optional demo-only `clearAll` hook for explicit full-application cleanup, including before the first import, while keeping failure rollback and interrupted-import recovery scoped.
+
+## Unreleased configuration
+
+- Add persisted revisioned configuration, scoped write capabilities, adapter switches and daily reset scheduling with DST handling.
+- Expose deterministic daily fixture seeds and integration guidance; enforce enabled demo mode for lifecycle operations.
+- Let demo account specs carry the users plugin's `roleScopes`, for applications with a role scope required on create, and apply them again when an import reuses an account.
+- Add the dataset option `keepAccounts`, which disables demo accounts on clear instead of deleting them, since a deleted account's username stays reserved.

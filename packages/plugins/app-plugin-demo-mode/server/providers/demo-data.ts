@@ -1,0 +1,228 @@
+import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
+import { authorizationToken } from '@nocobase/app-plugin-authorization';
+import { schedulerServiceToken } from '@nocobase/app-plugin-scheduler/server/tokens';
+import { userManagementServiceToken } from '@nocobase/app-plugin-users/server/tokens';
+import type { AppIdentityConfig } from '@nocobase/app-server/config';
+import { loggingToken } from '@nocobase/app-server/logging';
+import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import { databaseManagerToken } from '@nocobase/db';
+import { ServiceProvider } from '@nocobase/service-provider';
+
+import { DemoConfigurationService } from '../configuration/service.js';
+import { demoWriteGuardToken } from '../guard.js';
+import { DEMO_CONFIGURATION_SETTINGS } from '../routes/configuration.js';
+import { resolveDemoModeSettings } from '../config.js';
+import { DemoModels } from '../data/models.js';
+import { DefaultDemoDataService } from '../data/service.js';
+import { DEMO_MODE_NAMESPACE } from '../namespace.js';
+import { DEMO_DATA_SETTINGS } from '../routes/data.js';
+import {
+  demoDataToken,
+  demoModeServiceToken,
+  demoConfigurationToken,
+} from '../tokens.js';
+
+/** The Scheduler target a configured reset schedule points at. */
+export const DEMO_DATA_RESET_TARGET = 'demoMode.resetData';
+
+/**
+ * The demo dataset service. Applications register their dataset on `demoDataToken`; this provider gives it the
+ * accounts, roles and model services of the official plugins it finds, the settings item that guards its routes,
+ * and, when the deployment configures one, the Scheduler schedule that resets it.
+ */
+export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
+  public readonly name: string = '@nocobase/app-plugin-demo-mode/data';
+  private service: DefaultDemoDataService | undefined;
+
+  public override register(): void {
+    const container = this.app.container;
+    const settings = resolveDemoModeSettings(this.app.config).data;
+    const optional = <T>(token: Parameters<typeof container.resolve<T>>[0]) =>
+      container.has(token) ? container.resolve(token) : undefined;
+    this.service = new DefaultDemoDataService({
+      withPolicy: (run) =>
+        container.resolve(demoConfigurationToken).runWithPolicy(run),
+      database: container.resolve(databaseManagerToken),
+      settings,
+      mode: () => container.resolve(demoModeServiceToken).mode,
+      models: new DemoModels(),
+      modelBaseUrl: () => settings.modelBaseUrl ?? this.loopbackModelUrl(),
+      users: () => optional(userManagementServiceToken),
+      authorization: () => optional(authorizationToken),
+      agents: () => optional(agentsToken),
+      logger: {
+        info: (details, message) => this.logger()?.info(details, message),
+        warn: (details, message) => this.logger()?.warn(details, message),
+      },
+    });
+    container.instance(demoDataToken, this.service);
+    const configuration = new DemoConfigurationService(
+      container.resolve(databaseManagerToken),
+      resolveDemoModeSettings(this.app.config),
+      container.resolve(demoWriteGuardToken),
+      () => this.service!.status(),
+    );
+    container.instance(demoConfigurationToken, configuration);
+    const models = this.service.models;
+    configuration.registerMock({
+      id: 'dataset.model',
+      title: 'Dataset model',
+      kind: 'model',
+      scope: 'demo-model',
+      defaultEnabled: true,
+      invoke: (input) =>
+        models.simulate(input as Parameters<typeof models.simulate>[0]),
+    });
+    models.setAdapter((request) =>
+      configuration.invokeMock('dataset.model', request),
+    );
+  }
+
+  public override async boot(): Promise<void> {
+    const container = this.app.container;
+    if (container.resolve(demoModeServiceToken).mode === 'off') return;
+    if (container.has(authorizationToken)) {
+      const authz = container.resolve(authorizationToken);
+      authz.ui.sections.add({
+        name: 'demo-mode',
+        title: { key: 'authorization.configuration', ns: DEMO_MODE_NAMESPACE },
+        parent: 'administration',
+      });
+      authz.settings.add({
+        id: DEMO_CONFIGURATION_SETTINGS,
+        title: { key: 'authorization.configuration', ns: DEMO_MODE_NAMESPACE },
+        actions: [
+          {
+            name: 'read',
+            title: { key: 'authorization.read', ns: DEMO_MODE_NAMESPACE },
+          },
+          {
+            name: 'configure',
+            title: { key: 'authorization.configure', ns: DEMO_MODE_NAMESPACE },
+          },
+        ],
+      });
+      for (const id of [DEMO_DATA_SETTINGS, DEMO_CONFIGURATION_SETTINGS])
+        authz.ui.place({ type: 'settings', id }, { section: 'demo-mode' });
+      authz.settings.add({
+        id: DEMO_DATA_SETTINGS,
+        title: { key: 'authorization.title', ns: DEMO_MODE_NAMESPACE },
+        actions: [
+          {
+            name: 'read',
+            title: { key: 'authorization.read', ns: DEMO_MODE_NAMESPACE },
+          },
+          {
+            name: 'manage',
+            title: { key: 'authorization.manage', ns: DEMO_MODE_NAMESPACE },
+          },
+        ],
+      });
+    }
+    if (container.has(schedulerServiceToken)) this.schedule();
+  }
+
+  public override async ready(): Promise<void> {
+    await this.app.container.resolve(demoConfigurationToken).initialize();
+    await this.service?.load();
+  }
+
+  private schedule(): void {
+    const service = this.service!;
+    const configuration = this.app.container.resolve(demoConfigurationToken);
+    const scheduler = this.app.container.resolve(schedulerServiceToken);
+    const handle = scheduler.registerTarget<{
+      language?: string;
+      daily?: boolean;
+    }>({
+      type: DEMO_DATA_RESET_TARGET,
+      title: 'Reset demo data',
+      validate: (config) =>
+        config && typeof config === 'object'
+          ? { valid: true }
+          : { valid: false, reason: 'config-must-be-an-object' },
+      async start(config, context) {
+        try {
+          let language = config.language;
+          if (config.daily) {
+            const due = await configuration.claimDaily(new Date());
+            if (!due) return { state: 'skipped', reason: 'not-due' };
+            language = due.language;
+          } else if ((await configuration.read()).schedule !== null) {
+            return { state: 'skipped', reason: 'replaced-by-managed-schedule' };
+          }
+          await service.reset(undefined, language);
+        } catch (error) {
+          return {
+            state: 'failed',
+            reason: error instanceof Error ? error.message : String(error),
+          };
+        }
+        const reference = { type: 'demoModeData', id: context.occurrenceId };
+        void service.whenIdle().then(async () => {
+          const status = await service.status();
+          await handle.reportCompletion(context.occurrenceId, reference, {
+            status: status.present ? 'succeeded' : 'failed',
+            ...(status.failure ? { reason: status.failure.message } : {}),
+          });
+        });
+        return { state: 'accepted', reference };
+      },
+      async inspect() {
+        const status = await service.status();
+        if (status.importing) return { state: 'running' };
+        return {
+          state: 'completed',
+          completion: {
+            status: status.present ? 'succeeded' : 'failed',
+            ...(status.failure ? { reason: status.failure.message } : {}),
+          },
+        };
+      },
+    });
+    scheduler.defineSchedule({
+      key: 'demoMode.dailyReset',
+      title: 'Check configured daily demo reset',
+      schedule: { cron: '* * * * *', timezone: 'UTC' },
+      target: { type: DEMO_DATA_RESET_TARGET, config: { daily: true } },
+    });
+    const reset = resolveDemoModeSettings(this.app.config).data.reset;
+    if (!reset) return;
+    scheduler.defineSchedule({
+      key: DEMO_DATA_RESET_TARGET,
+      title: 'Reset demo data',
+      description:
+        'Clears the demo data and imports it again, as the account that imported it last.',
+      schedule: {
+        cron: reset.cron,
+        ...(reset.timezone ? { timezone: reset.timezone } : {}),
+      },
+      target: {
+        type: DEMO_DATA_RESET_TARGET,
+        config: reset.language ? { language: reset.language } : {},
+      },
+    });
+  }
+
+  /** This process's own address, so the gateway's calls to the simulated model never leave the machine. */
+  private loopbackModelUrl(): string {
+    const server =
+      this.app.config.get<{ host?: string; port?: number }>('server') ?? {};
+    const host =
+      !server.host || ['0.0.0.0', '::', '[::]'].includes(server.host)
+        ? '127.0.0.1'
+        : server.host.includes(':') && !server.host.startsWith('[')
+          ? `[${server.host}]`
+          : server.host;
+    const api =
+      this.app.config.get<AppIdentityConfig>('app')?.publicApiUrl ?? '/api';
+    return `http://${host}:${server.port ?? 13000}${api.replace(/\/+$/u, '')}/demoMode/models/v1`;
+  }
+
+  private logger() {
+    const container = this.app.container;
+    return container.has(loggingToken)
+      ? container.resolve(loggingToken).getLogger('demo-mode')
+      : undefined;
+  }
+}
