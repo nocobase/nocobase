@@ -84,7 +84,7 @@ async function setup(items: ModelPrice[] = [], canManage = true) {
           ],
         },
       };
-    if (call.path === 'agents/services') return { data: [service] };
+    if (call.path === 'agents/models') return { data: [service] };
     if (call.path === 'agents/prices') {
       if (call.method === 'PUT') {
         const body = call.json as PricesInput;

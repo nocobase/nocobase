@@ -184,6 +184,8 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
     mail.listAccounts.mockResolvedValue(accounts);
     const app = await renderPage(<MailAccountsPage />);
     await screen.findByRole('button', { name: 'Removing…' });
+    // The rendered row can precede the effect that subscribes to removal updates.
+    await waitFor(() => expect(subscriptions.size).toBe(1));
     mail.listAccounts
       .mockClear()
       .mockRejectedValue(new Error('Temporary account outage'));
