@@ -7,6 +7,7 @@
 import type { ToolInfo } from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { catalogEntry } from '../shared/model-catalog.js';
 import { runnerAgentId } from '../server/core/agents/index.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
@@ -106,6 +107,72 @@ describe('agents discovered from runners', () => {
       actions: [],
     });
     expect(await h.services.agents.applyDefaults()).toBe(0);
+  });
+
+  it('prefers application suggestions in list and detail without storing or replacing descriptions', async () => {
+    h = await createHarness();
+    const suggestion = { en: 'Application suggestion', zh: '应用建议' };
+    const remove = h.services.agents.setDefaults(() => ({
+      instructions: null,
+      actions: [],
+      modelDescriptions: {
+        claude: {
+          'claude-sonnet-5': suggestion,
+          'future-model': suggestion,
+        },
+      },
+    }));
+    await h.registerRunner({
+      tools: [
+        claude('sonnet', 'claude-haiku-4-5', 'future-model'),
+        {
+          kind: 'codex',
+          authenticated: true,
+          models: [{ id: 'claude-sonnet-5' }],
+        },
+      ],
+    });
+    const id = runnerAgentId('claude', 'claude-sonnet-5');
+    const views = await h.services.views(h.services.tx.read(), 'alice', {
+      canEdit: true,
+    });
+    expect(views.find((agent) => agent.id === id)).toMatchObject({
+      description: null,
+      suggestion,
+    });
+    expect(
+      views.find((agent) => agent.model === 'future-model')?.suggestion,
+    ).toEqual(suggestion);
+    expect(
+      views.find((agent) => agent.model === 'claude-haiku-4-5')?.suggestion,
+    ).toEqual(catalogEntry('claude', 'claude-haiku-4-5')!.goodAt);
+    expect(views.find((agent) => agent.tool === 'codex')?.suggestion).toEqual(
+      catalogEntry('codex', 'claude-sonnet-5')!.goodAt,
+    );
+    const detail = () =>
+      h.request('GET', `/agents/${id}`, {
+        user: 'alice',
+        can: ['agents.agents/read'],
+      });
+    expect((await detail()).body.data).toMatchObject({
+      description: null,
+      suggestion,
+    });
+    await enable(id, 'My existing description');
+    const before = await h.services.agents.get(id);
+    const history = await h.services.agents.history(id);
+    expect(await h.services.agents.applyDefaults()).toBe(0);
+    expect(await h.services.agents.get(id)).toEqual(before);
+    expect(await h.services.agents.history(id)).toEqual(history);
+    expect((await detail()).body.data).toMatchObject({
+      description: 'My existing description',
+      suggestion,
+    });
+    remove();
+    expect((await detail()).body.data.suggestion).toEqual(
+      catalogEntry('claude', 'claude-sonnet-5')!.goodAt,
+    );
+    expect(h.services.agents.suggestion('claude', 'unknown')).toBeNull();
   });
 
   it('says where an agent can run for whom, and hides one no runner reported for 14 days', async () => {

@@ -678,7 +678,13 @@ export function createAgents(deps: AgentsDeps): Agents {
       agentViews(
         conn,
         (await listAgents(conn)).filter((agent) => agent.source === 'runner'),
-        { availability, userId, canEdit: options.canEdit, now: clock.now() },
+        {
+          availability,
+          userId,
+          canEdit: options.canEdit,
+          now: clock.now(),
+          suggestion: agents.suggestion,
+        },
       ),
     eligibility,
     app,

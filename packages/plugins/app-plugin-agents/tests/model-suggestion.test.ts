@@ -27,7 +27,8 @@ it('localizes every catalog suggestion in all ten languages, including provider-
         {
           tool: 'codex',
           model: 'gpt-6.1-sol',
-          suggestion: { en: 'external', zh: '外部' },
+          suggestion: MODEL_CATALOG.find((entry) => entry.id === 'gpt-6.1-sol')!
+            .goodAt,
         },
         language,
         runtime.getFixedT(namespace),
@@ -38,7 +39,9 @@ it('localizes every catalog suggestion in all ten languages, including provider-
         {
           tool: 'pi',
           model: 'anthropic/opus',
-          suggestion: { en: 'external', zh: '外部' },
+          suggestion: MODEL_CATALOG.find(
+            (entry) => entry.id === 'claude-opus-5-5',
+          )!.goodAt,
         },
         language,
         runtime.getFixedT(namespace),
@@ -73,3 +76,27 @@ it('preserves coding tool and operating system product names in every locale', a
     expect(copy.connect.system.windows).toBe('Windows');
   }
 });
+
+it.each([
+  ['en-US', 'Application description'],
+  ['zh-CN', '应用说明'],
+  ['zh-TW', '应用说明'],
+  ['de-DE', 'Application description'],
+])(
+  'uses the application suggestion for a catalog model in %s',
+  (locale, expected) => {
+    expect(
+      modelSuggestion(
+        {
+          tool: 'codex',
+          model: 'gpt-6.1-sol',
+          suggestion: { en: 'Application description', zh: '应用说明' },
+        },
+        locale,
+        () => {
+          throw new Error('Unexpected catalog translation');
+        },
+      ),
+    ).toBe(expected);
+  },
+);
