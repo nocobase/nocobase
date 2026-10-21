@@ -906,6 +906,9 @@ describe('every shipped Skill', () => {
       'nb-studio-cli',
       'studio-memory',
     ]);
+    // The single-Skill result's fields name the primary Skill, for readers of the earlier result.
+    expect(dry.skill).toBe('nb-studio-cli');
+    expect(dry.hash).toBe(dry.skills[0]?.hash);
     expect(
       dry.targets.map(
         (target) => `${target.skill}:${target.tool}:${target.action}`,

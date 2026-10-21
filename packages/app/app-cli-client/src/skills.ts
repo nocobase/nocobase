@@ -73,8 +73,27 @@ export interface SkillStatus extends Target {
 
 export interface SkillsResult {
   readonly skills: readonly { readonly skill: string; readonly hash: string }[];
+  /**
+   * The first shipped Skill's slug and hash, as the single-Skill result named them (`nb-studio-cli` when it is shipped);
+   * kept so readers of the earlier result keep working. `skills` lists every one.
+   */
+  readonly skill: string;
+  readonly hash: string;
   readonly cliVersion: string;
   readonly targets: readonly SkillStatus[];
+}
+
+/** `skills`, and the earlier result's `skill` and `hash` for the primary Skill. */
+function shippedSummary(
+  sources: ReadonlyMap<string, { readonly hash: string }>,
+): Pick<SkillsResult, 'skills' | 'skill' | 'hash'> {
+  const skills = [...sources].map(([skill, source]) => ({
+    skill,
+    hash: source.hash,
+  }));
+  const primary =
+    skills.find(({ skill }) => skill === 'nb-studio-cli') ?? skills[0];
+  return { skills, skill: primary?.skill ?? '', hash: primary?.hash ?? '' };
 }
 
 export interface SkillInstall extends SkillStatus {
@@ -471,10 +490,7 @@ export async function skillsStatus(
     (target) => selected.length === 0 || selected.includes(target.tool),
   );
   return {
-    skills: [...sources].map(([skill, source]) => ({
-      skill,
-      hash: source.hash,
-    })),
+    ...shippedSummary(sources),
     cliVersion: environment.cliVersion,
     targets: await Promise.all(
       targets.map((target) =>
@@ -691,10 +707,7 @@ export async function installSkills(
     ),
   );
   const result = (targets: SkillInstall[]): SkillsInstallResult => ({
-    skills: [...sources].map(([skill, source]) => ({
-      skill,
-      hash: source.hash,
-    })),
+    ...shippedSummary(sources),
     cliVersion: environment.cliVersion,
     dryRun,
     targets,
