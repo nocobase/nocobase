@@ -192,6 +192,36 @@ it('claims one daily reset, skips DST gaps and does not repeat a folded minute',
     nextDailyRun(schedule, new Date('2026-11-01T05:31:00Z'), '2026-11-01'),
   ).toBe('2026-11-02T06:30:00.000Z');
 });
+it('shares durable daily claims across service instances and honors disabling', async () => {
+  const { config, container, guard } = await setup();
+  const schedule = {
+    enabled: true,
+    hour: 4,
+    minute: 0,
+    timezone: 'Asia/Shanghai',
+    language: 'en-US',
+  };
+  const other = new DemoConfigurationService(
+    container.resolve(databaseManagerToken),
+    resolveDemoModeSettings(app.application.config),
+    guard,
+    async () => ({ importing: null, languages: ['en-US'] }),
+  );
+  const due = new Date('2026-10-21T20:00:00Z');
+  expect(await config.claimDaily(due)).toBeNull();
+  await config.save('schedule', 0, schedule);
+  expect(await other.claimDaily(new Date('2026-10-21T19:59:00Z'))).toBeNull();
+  expect(await config.claimDaily(due)).toEqual(schedule);
+  expect(await other.claimDaily(due)).toBeNull();
+  await other.save('schedule', 1, { ...schedule, enabled: false });
+  expect(await config.claimDaily(new Date('2026-10-22T20:00:00Z'))).toBeNull();
+  expect((await config.read()).nextRun).toBeNull();
+  await config.save('schedule', 2, schedule);
+  expect(await other.claimDaily(due)).toBeNull();
+  expect(await other.claimDaily(new Date('2026-10-22T20:00:00Z'))).toEqual(
+    schedule,
+  );
+});
 it('provides deterministic daily samples independent of record iteration order', () => {
   const a = createDemoClock(
     new Date('2026-10-21T01:00:00Z'),
