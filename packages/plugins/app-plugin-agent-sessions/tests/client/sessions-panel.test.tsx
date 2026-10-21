@@ -479,7 +479,9 @@ it('lets a host replace controls across panel views while retaining session comm
     ),
   });
   const title = await screen.findByRole('heading', { name: session.title });
-  expect(within(title.parentElement!).getAllByRole('button')).toHaveLength(1);
+  expect(
+    within(title).getByRole('button', { name: session.title }),
+  ).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Host controls' }));
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Rename' }));
   const rename = await screen.findByRole('textbox', { name: 'Rename' });
@@ -502,4 +504,40 @@ it('lets a host replace controls across panel views while retaining session comm
   expect(
     await screen.findByRole('button', { name: 'Host controls' }),
   ).toBeVisible();
+});
+
+it('adds side history without remounting the draft, keeps its context and selects sessions in place', async () => {
+  const { update, onViewChange } = await setup({
+    view: { kind: 'new' },
+    attach: {
+      id: 'note',
+      attachments: [
+        { id: 'note', label: 'Keep this context', text: 'Context details' },
+      ],
+    },
+    renderHeaderActions: () => <button>Host controls</button>,
+  });
+  const box = await screen.findByRole('textbox');
+  fireEvent.change(box, { target: { value: 'Unsent draft' } });
+  update({ showHistory: true });
+  const history = await screen.findByRole('region', { name: 'Sessions' });
+  expect(screen.getByDisplayValue('Unsent draft')).toBe(box);
+  expect(box).toHaveValue('Unsent draft');
+  expect(screen.getByText('Keep this context')).toBeVisible();
+  fireEvent.click(within(history).getByText(session.title));
+  expect(onViewChange).toHaveBeenLastCalledWith({
+    kind: 'session',
+    sessionId: 'session',
+  });
+  update({ showHistory: false });
+  expect(screen.getByRole('textbox')).toBe(box);
+  update({
+    view: { kind: 'session', sessionId: 'session' },
+    showHistory: true,
+  });
+  const title = await screen.findByRole('heading', { name: session.title });
+  fireEvent.click(within(title).getByRole('button', { name: session.title }));
+  expect(await screen.findByRole('menuitem', { name: 'Rename' })).toBeVisible();
+  expect(screen.getByRole('menuitem', { name: 'Archive' })).toBeVisible();
+  expect(screen.getByRole('menuitem', { name: 'Show details' })).toBeVisible();
 });

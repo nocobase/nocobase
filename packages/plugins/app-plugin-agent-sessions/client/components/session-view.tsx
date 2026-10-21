@@ -11,6 +11,7 @@ import {
   AlertTriangleIcon,
   ArchiveIcon,
   ArchiveRestoreIcon,
+  ChevronDownIcon,
   FolderIcon,
   FolderKanbanIcon,
   LaptopIcon,
@@ -537,6 +538,37 @@ function Header({
       update.mutate({ title: title.trim() || null });
   };
 
+  const sessionCommands = (
+    <>
+      {session.running && session.computerOnline && (
+        <DropdownMenuItem onClick={onStop}>
+          <SquareIcon />
+          {t('session.stop')}
+        </DropdownMenuItem>
+      )}
+      <DropdownMenuItem onClick={onToggleDetails}>
+        <PanelRightIcon />
+        {details ? t('session.hideDetails') : t('session.showDetails')}
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => {
+          setTitle(session.title);
+          // The host menu restores focus when closing; mount the editor after that handoff.
+          requestAnimationFrame(() => setRenaming(true));
+        }}
+      >
+        <PencilIcon />
+        {t('session.rename')}
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => update.mutate({ archived: session.archivedAt === null })}
+      >
+        {session.archivedAt === null ? <ArchiveIcon /> : <ArchiveRestoreIcon />}
+        {session.archivedAt === null ? t('list.archive') : t('list.restore')}
+      </DropdownMenuItem>
+    </>
+  );
+
   return (
     <header
       className={
@@ -575,7 +607,26 @@ function Header({
                   )
             }
           >
-            {session.title}
+            {surface.renderHeaderActions ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <button
+                      type='button'
+                      className='flex max-w-full items-center gap-1 rounded-md text-left hover:bg-muted'
+                    />
+                  }
+                >
+                  <span className='truncate'>{session.title}</span>
+                  <ChevronDownIcon className='size-3.5 shrink-0' />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align='start'>
+                  {sessionCommands}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              session.title
+            )}
           </h2>
         )}
         {!surface.renderHeaderActions && collapsed && (
@@ -606,44 +657,7 @@ function Header({
           )
         )}
         {surface.renderHeaderActions ? (
-          surface.renderHeaderActions(
-            <>
-              {session.running && session.computerOnline && (
-                <DropdownMenuItem onClick={onStop}>
-                  <SquareIcon />
-                  {t('session.stop')}
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={onToggleDetails}>
-                <PanelRightIcon />
-                {details ? t('session.hideDetails') : t('session.showDetails')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  setTitle(session.title);
-                  // The host menu restores focus when closing; mount the editor after that handoff.
-                  requestAnimationFrame(() => setRenaming(true));
-                }}
-              >
-                <PencilIcon />
-                {t('session.rename')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() =>
-                  update.mutate({ archived: session.archivedAt === null })
-                }
-              >
-                {session.archivedAt === null ? (
-                  <ArchiveIcon />
-                ) : (
-                  <ArchiveRestoreIcon />
-                )}
-                {session.archivedAt === null
-                  ? t('list.archive')
-                  : t('list.restore')}
-              </DropdownMenuItem>
-            </>,
-          )
+          surface.renderHeaderActions(sessionCommands)
         ) : (
           <>
             {session.running && session.computerOnline && (
