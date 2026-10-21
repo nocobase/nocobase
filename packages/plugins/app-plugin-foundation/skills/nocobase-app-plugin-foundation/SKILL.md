@@ -36,6 +36,7 @@ The authentication and authorization plugins are registered, as in the default t
 - In use means wired in: a persisted lifecycle, an enabled schedule, a connected mailbox, a configured notification channel, an API key that has been used. Zero uses still count as in use.
 - Needs setup names what is missing in its reason, such as `noChannel` or `noDrive`.
 - Undetermined means the evidence could not be read this time, never that it is unused; the details list what could not be read.
+- AI and agents are in use with an enabled model service or a registered Runner. Native OnlineAgent and model gateway calls do not require an `agAgents` record. Stored Agent definitions and historical usage alone do not prove current configuration. If neither execution path is confirmed and a required read failed, leave the status undetermined. Preserve another confirmed active path when optional statistics fail; never turn a failed read into zero or a missing-configuration claim.
 - Business record ownership uses `server/catalog.ts`. If an unclassified runtime extension makes ownership uncertain, business counts are withheld; add a supported ownership adapter rather than interpreting them as zero.
 
 ## Verification

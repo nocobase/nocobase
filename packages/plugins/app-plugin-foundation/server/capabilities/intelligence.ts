@@ -16,11 +16,14 @@ export const aiAgents: CapabilityCollector = {
   ],
   async collect({ probe }) {
     if (!probe) return NO_DATABASE;
-    if (!probe.has('agModelServices'))
+    const hasModelServices = probe.has('agModelServices');
+    if (!hasModelServices && !probe.has('agRunners'))
       return { status: 'unused', reason: 'notRegistered' };
     const [services, agents, runners, runs, modelCalls, input, output] =
       await Promise.all([
-        probe.count('agModelServices', { enabled: true }),
+        hasModelServices
+          ? probe.count('agModelServices', { enabled: true })
+          : Promise.resolve(0),
         probe.has('agAgents') ? probe.count('agAgents') : Promise.resolve(0),
         probe.has('agRunners') ? probe.count('agRunners') : Promise.resolve(0),
         probe.has('agRuns') ? probe.count('agRuns') : Promise.resolve(0),
@@ -35,30 +38,37 @@ export const aiAgents: CapabilityCollector = {
           : Promise.resolve(0),
       ]);
     const tokens = total([input, output]);
-    // Two paths run an agent: an online one calls a model service, a runner one runs a coding tool on a runner.
-    const online = (services ?? 0) > 0 && (agents ?? 0) > 0;
-    const runner = (runners ?? 0) > 0;
-    const parts: FoundationPart[] = [
-      (services ?? 0) > 0
-        ? { key: 'modelServices', status: 'active' }
-        : {
-            key: 'modelServices',
-            status: 'needsSetup',
-            reason: 'noModelService',
-          },
-      (agents ?? 0) > 0
-        ? { key: 'agents', status: 'active' }
-        : { key: 'agents', status: 'needsSetup', reason: 'noAgent' },
-      runner
-        ? { key: 'runners', status: 'active' }
-        : { key: 'runners', status: 'unused' },
-    ];
+    // Native OnlineAgent and gateway calls use model services directly, without an agAgents record.
+    const online = services !== null && services > 0;
+    const runner = runners !== null && runners > 0;
+    const parts: FoundationPart[] = [];
+    if (hasModelServices && services !== null)
+      parts.push(
+        online
+          ? { key: 'modelServices', status: 'active' }
+          : {
+              key: 'modelServices',
+              status: 'needsSetup',
+              reason: 'noModelService',
+            },
+      );
+    if (agents !== null)
+      parts.push({ key: 'agents', status: agents > 0 ? 'active' : 'unused' });
+    if (runners !== null)
+      parts.push({ key: 'runners', status: runner ? 'active' : 'unused' });
     const active = online || runner;
+    const unknown = services === null || runners === null;
     return {
-      status: active ? 'active' : 'needsSetup',
-      ...(active ? {} : { reason: 'noModelOrRunner' }),
+      status: active ? 'active' : unknown ? null : 'needsSetup',
+      ...(active || unknown ? {} : { reason: 'noModelOrRunner' }),
       facts: active
-        ? [fact('agents', { count: agents ?? 0, runs: runs ?? 0 })]
+        ? [
+            ...(online ? [fact('modelServices', { count: services })] : []),
+            ...(runner ? [fact('runners', { count: runners })] : []),
+            ...(agents !== null && runs !== null && (agents > 0 || runs > 0)
+              ? [fact('agents', { count: agents, runs })]
+              : []),
+          ]
         : [],
       metrics: [
         metric('agents', agents),

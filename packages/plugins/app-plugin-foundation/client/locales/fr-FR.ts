@@ -188,7 +188,7 @@ const frFR: FoundationResource = {
       without:
         'Il faudrait intégrer les modèles, protéger les clés, suivre la consommation et exécuter les agents en sécurité.',
       onceInUse:
-        'Configurez modèles et agents une fois, avec suivi d’utilisation.',
+        'Activez des services de modèles pour OnlineAgent et la passerelle de modèles, ou enregistrez des exécuteurs pour les agents.',
     },
     knowledge: {
       name: 'Base de connaissances',
@@ -263,8 +263,7 @@ const frFR: FoundationResource = {
       'Seuls les administrateurs ont un accès illimité ; aucun droit n’est encore accordé aux autres utilisateurs.',
     noWorkflows: 'Aucun cycle de vie persistant ni planification active.',
     noSchedules: 'Aucune planification active.',
-    noModelOrRunner:
-      'Un modèle actif et un agent, ou un exécuteur, sont nécessaires.',
+    noModelOrRunner: 'Aucun service de modèles activé ni exécuteur enregistré.',
     noModelService: 'Aucun service de modèle actif.',
     noAgent: 'Aucun agent défini.',
     noDocuments: 'Aucun document dans les espaces de connaissances.',
@@ -295,6 +294,9 @@ const frFR: FoundationResource = {
     lifecycles:
       '{{count}} cycles de vie avec {{transitions}} transitions : {{names}}.',
     schedules: '{{count}} planifications actives.',
+    modelServices:
+      '{{count}} services de modèles activés prennent en charge OnlineAgent et la passerelle de modèles.',
+    runners: '{{count}} exécuteurs enregistrés prennent en charge les agents.',
     agents: '{{count}} agents, {{runs}} exécutions.',
     documents: '{{count}} documents de connaissances.',
     mailboxes: '{{count}} boîtes connectées.',

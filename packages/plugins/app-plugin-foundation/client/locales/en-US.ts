@@ -189,7 +189,7 @@ const enUS = {
       without:
         'Integrating each model provider, storing keys, recording usage and running agents safely, all by hand.',
       onceInUse:
-        'Configure model services and agents once and let them work in the application, with usage recorded.',
+        'Use enabled model services for OnlineAgent and model gateway calls, or register runners for agent execution.',
     },
     knowledge: {
       name: 'Knowledge base',
@@ -264,8 +264,7 @@ const enUS = {
       'Only the unrestricted administrators have access; no permission set grants anything to anyone else yet.',
     noWorkflows: 'No lifecycle is persisted and no schedule is enabled.',
     noSchedules: 'No schedule is enabled.',
-    noModelOrRunner:
-      'No agent can run yet: it needs an enabled model service and an agent, or a runner.',
+    noModelOrRunner: 'No model service is enabled and no runner is registered.',
     noModelService: 'No model service is enabled.',
     noAgent: 'No agent is defined.',
     noDocuments: 'No document has been added to a knowledge space.',
@@ -297,6 +296,9 @@ const enUS = {
     lifecycles:
       '{{count}} lifecycles have recorded {{transitions}} transitions: {{names}}.',
     schedules: '{{count}} schedules are enabled.',
+    modelServices:
+      '{{count}} enabled model services support OnlineAgent and model gateway calls.',
+    runners: '{{count}} registered runners support agent execution.',
     agents: '{{count}} agents, {{runs}} runs so far.',
     documents: '{{count}} documents in knowledge spaces.',
     mailboxes: '{{count}} mailboxes are connected.',

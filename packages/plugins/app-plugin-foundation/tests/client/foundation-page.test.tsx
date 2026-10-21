@@ -328,6 +328,44 @@ describe('App Foundation page', () => {
     });
   });
 
+  it('explains active model services without asking native OnlineAgent users to define an Agent', async () => {
+    await render(() => ({
+      data: {
+        ...OVERVIEW,
+        capabilities: OVERVIEW.capabilities.map((item) =>
+          item.key === 'aiAgents'
+            ? capability('aiAgents', {
+                status: 'active',
+                facts: [
+                  { code: 'modelServices', params: { count: 1 } },
+                  { code: 'runners', params: { count: 1 } },
+                ],
+                parts: [
+                  { key: 'modelServices', status: 'active' },
+                  { key: 'agents', status: 'unused' },
+                ],
+              })
+            : item,
+        ),
+      },
+    }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: /^AI & agents:/ }),
+    );
+    const detail = await screen.findByRole('region', { name: /AI & agents/ });
+    expect(
+      within(detail).getByText(
+        '1 enabled model services support OnlineAgent and model gateway calls.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(detail).getByText('1 registered runners support agent execution.'),
+    ).toBeInTheDocument();
+    expect(
+      within(detail).queryByText('No agent is defined.'),
+    ).not.toBeInTheDocument();
+  });
+
   it('counts business records only when explicitly requested', async () => {
     const calls = await render();
     fireEvent.click(

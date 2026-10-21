@@ -168,7 +168,8 @@ const zhTW: FoundationResource = {
       name: 'AI 與 Agent',
       tagline: '模型服務、Agent 與執行器',
       without: '須自行整合模型、儲存金鑰、記錄用量並安全執行 Agent。',
-      onceInUse: '統一設定模型與 Agent，並記錄執行用量。',
+      onceInUse:
+        '啟用模型服務即可支援 Online agent 與模型閘道呼叫，也可接入執行器執行 Agent 任務。',
     },
     knowledge: {
       name: '知識庫',
@@ -226,7 +227,7 @@ const zhTW: FoundationResource = {
       '目前僅管理員具完整權限，尚無授予其他人員的權限集。',
     noWorkflows: '尚無持久化生命週期或已啟用排程。',
     noSchedules: '尚未啟用排程。',
-    noModelOrRunner: '尚無可執行的 Agent；需要模型服務與 Agent，或執行器。',
+    noModelOrRunner: '尚無已啟用的模型服務，也沒有已註冊的執行器。',
     noModelService: '尚未啟用模型服務。',
     noAgent: '尚未定義 Agent。',
     noDocuments: '知識空間尚無文件。',
@@ -253,6 +254,9 @@ const zhTW: FoundationResource = {
     lifecycles:
       '{{count}} 個生命週期記錄了 {{transitions}} 次轉換：{{names}}。',
     schedules: '已啟用 {{count}} 個排程。',
+    modelServices:
+      '{{count}} 個已啟用的模型服務，支援 Online agent 與模型閘道。',
+    runners: '已註冊 {{count}} 個執行器，支援 Agent 執行。',
     agents: '共 {{count}} 個 Agent，已執行 {{runs}} 次。',
     documents: '知識空間共有 {{count}} 份文件。',
     mailboxes: '已連接 {{count}} 個信箱。',

@@ -188,7 +188,7 @@ const deDE: FoundationResource = {
       without:
         'Modelle, Schlüsselverwaltung, Nutzungsprotokolle und sichere Agentenausführung müssten selbst integriert werden.',
       onceInUse:
-        'Modelle und Agenten einmal konfigurieren und mit Nutzungsaufzeichnung betreiben.',
+        'Aktivieren Sie Modelldienste für OnlineAgent und das Modell-Gateway oder registrieren Sie Ausführungsdienste für Agenten.',
     },
     knowledge: {
       name: 'Wissensdatenbank',
@@ -264,7 +264,7 @@ const deDE: FoundationResource = {
     noWorkflows: 'Keine gespeicherten Lebenszyklen oder aktivierten Zeitpläne.',
     noSchedules: 'Kein Zeitplan aktiviert.',
     noModelOrRunner:
-      'Ein aktives Modell und ein Agent oder ein Ausführungsdienst sind erforderlich.',
+      'Kein Modelldienst ist aktiviert und kein Ausführungsdienst registriert.',
     noModelService: 'Kein Modelldienst aktiviert.',
     noAgent: 'Kein Agent definiert.',
     noDocuments: 'Keine Dokumente in Wissensbereichen.',
@@ -295,6 +295,10 @@ const deDE: FoundationResource = {
     lifecycles:
       '{{count}} Lebenszyklen mit {{transitions}} Übergängen: {{names}}.',
     schedules: '{{count}} Zeitpläne aktiviert.',
+    modelServices:
+      '{{count}} aktivierte Modelldienste unterstützen OnlineAgent und Modell-Gateway-Aufrufe.',
+    runners:
+      '{{count}} registrierte Ausführungsdienste unterstützen die Agentenausführung.',
     agents: '{{count}} Agenten, {{runs}} Ausführungen.',
     documents: '{{count}} Wissensdokumente.',
     mailboxes: '{{count}} Postfächer verbunden.',

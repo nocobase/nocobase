@@ -184,7 +184,8 @@ const viVN: FoundationResource = {
       tagline: 'Dịch vụ mô hình, tác tử và trình chạy',
       without:
         'Phải tự tích hợp mô hình, bảo vệ khóa, ghi mức sử dụng và chạy tác tử an toàn.',
-      onceInUse: 'Cấu hình mô hình và tác tử một lần, có ghi nhận mức sử dụng.',
+      onceInUse:
+        'Bật dịch vụ mô hình cho OnlineAgent và cổng mô hình, hoặc đăng ký trình chạy để thực thi tác tử.',
     },
     knowledge: {
       name: 'Cơ sở tri thức',
@@ -252,7 +253,7 @@ const viVN: FoundationResource = {
       'Chỉ quản trị viên có quyền không giới hạn; chưa cấp quyền cho người dùng khác.',
     noWorkflows: 'Chưa có vòng đời lưu bền hoặc lịch đã bật.',
     noSchedules: 'Chưa bật lịch nào.',
-    noModelOrRunner: 'Cần mô hình đã bật và tác tử, hoặc trình chạy.',
+    noModelOrRunner: 'Chưa bật dịch vụ mô hình nào và chưa đăng ký trình chạy.',
     noModelService: 'Chưa bật dịch vụ mô hình nào.',
     noAgent: 'Chưa định nghĩa tác tử.',
     noDocuments: 'Không gian tri thức chưa có tài liệu.',
@@ -281,6 +282,9 @@ const viVN: FoundationResource = {
     lifecycles:
       '{{count}} vòng đời có {{transitions}} lần chuyển đổi: {{names}}.',
     schedules: 'Đã bật {{count}} lịch.',
+    modelServices:
+      '{{count}} dịch vụ mô hình đã bật hỗ trợ OnlineAgent và cổng mô hình.',
+    runners: '{{count}} trình chạy đã đăng ký hỗ trợ thực thi tác tử.',
     agents: '{{count}} tác tử, {{runs}} lần chạy.',
     documents: '{{count}} tài liệu tri thức.',
     mailboxes: 'Đã kết nối {{count}} hộp thư.',

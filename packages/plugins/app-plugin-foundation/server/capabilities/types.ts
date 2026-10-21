@@ -26,7 +26,8 @@ export interface CollectorContext {
 
 /** What one capability's collector established. The service adds packages, completeness and issues. */
 export interface CapabilityFindings {
-  readonly status: FoundationStatus;
+  /** Unknown when no execution path can be confirmed and a required read failed. */
+  readonly status: FoundationStatus | null;
   readonly reason?: string;
   readonly facts?: readonly FoundationFact[];
   readonly metrics?: readonly FoundationMetric[];

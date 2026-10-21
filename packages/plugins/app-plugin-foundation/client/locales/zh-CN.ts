@@ -174,7 +174,8 @@ const zhCN: FoundationResource = {
       tagline: '模型服务、Agent 与 Runner',
       without:
         '要自己对接每家模型服务、保管密钥、记录用量，并安全地运行 Agent。',
-      onceInUse: '一次配置模型服务和 Agent，就能在系统里工作，用量自动记录。',
+      onceInUse:
+        '启用模型服务即可支持 Online agent 和模型网关调用，也可接入 Runner 执行 Agent 任务。',
     },
     knowledge: {
       name: '知识库',
@@ -233,8 +234,7 @@ const zhCN: FoundationResource = {
       '目前只有拥有全部权限的管理员能访问，还没有权限集给其他人授予任何权限。',
     noWorkflows: '没有已持久化的生命周期，也没有已启用的定时任务。',
     noSchedules: '没有已启用的定时任务。',
-    noModelOrRunner:
-      '还没有可运行的 Agent：需要已启用的模型服务加上 Agent，或一个 Runner。',
+    noModelOrRunner: '还没有已启用的模型服务，也没有已注册的 Runner。',
     noModelService: '没有已启用的模型服务。',
     noAgent: '还没有定义 Agent。',
     noDocuments: '知识空间里还没有文档。',
@@ -261,6 +261,9 @@ const zhCN: FoundationResource = {
     lifecycles:
       '{{count}} 个生命周期共记录了 {{transitions}} 次流转：{{names}}。',
     schedules: '已启用 {{count}} 个定时任务。',
+    modelServices:
+      '{{count}} 个已启用的模型服务，为 Online agent 和模型网关提供支持。',
+    runners: '已注册 {{count}} 个 Runner，为 Agent 执行提供支持。',
     agents: '{{count}} 个 Agent，累计运行 {{runs}} 次。',
     documents: '知识空间里有 {{count}} 篇文档。',
     mailboxes: '已连接 {{count}} 个邮箱。',

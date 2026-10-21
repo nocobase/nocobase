@@ -189,7 +189,8 @@ const esES: FoundationResource = {
       tagline: 'Servicios de modelos, agentes y ejecutores',
       without:
         'Habría que integrar modelos, proteger claves, registrar consumo y ejecutar agentes de forma segura.',
-      onceInUse: 'Configura modelos y agentes una vez, con registro de uso.',
+      onceInUse:
+        'Habilita servicios de modelos para OnlineAgent y la pasarela de modelos, o registra ejecutores para ejecutar agentes.',
     },
     knowledge: {
       name: 'Base de conocimiento',
@@ -265,7 +266,8 @@ const esES: FoundationResource = {
     noWorkflows:
       'No hay ciclos de vida persistidos ni programaciones habilitadas.',
     noSchedules: 'No hay programaciones habilitadas.',
-    noModelOrRunner: 'Falta un modelo habilitado y un agente, o un ejecutor.',
+    noModelOrRunner:
+      'No hay servicios de modelos habilitados ni ejecutores registrados.',
     noModelService: 'No hay servicios de modelos habilitados.',
     noAgent: 'No se ha definido ningún agente.',
     noDocuments: 'No hay documentos en los espacios de conocimiento.',
@@ -297,6 +299,9 @@ const esES: FoundationResource = {
     lifecycles:
       '{{count}} ciclos de vida con {{transitions}} transiciones: {{names}}.',
     schedules: '{{count}} programaciones habilitadas.',
+    modelServices:
+      '{{count}} servicios de modelos habilitados respaldan OnlineAgent y las llamadas a la pasarela de modelos.',
+    runners: '{{count}} ejecutores registrados permiten ejecutar agentes.',
     agents: '{{count}} agentes, {{runs}} ejecuciones.',
     documents: '{{count}} documentos de conocimiento.',
     mailboxes: '{{count}} buzones conectados.',

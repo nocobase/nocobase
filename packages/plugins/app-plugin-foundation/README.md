@@ -35,6 +35,8 @@ The rules every capability follows:
 - A capability whose evidence cannot be read has no status rather than a guessed one, and a count that could only be read in part is marked as a lower bound. No driver error reaches the response.
 - Accepted notification deliveries are accepted by the provider, which is not the same as received.
 
+AI and agents are in use when a model service is enabled or a Runner is registered. Native OnlineAgent sessions and model gateway calls use model services directly and do not require an `agAgents` record; persisted Agent definitions are optional evidence, not a prerequisite. Enabled services establish configuration before the first call, while old usage records alone do not prove current configuration. Unreadable configuration leaves the status unconfirmed unless another execution path is confirmed active; unknown subparts are omitted and their metrics remain unavailable. Collection and usage reads remain read-only and never call a model provider or expose credentials.
+
 ## What it does not do yet
 
 - It does not claim exhaustive module associations: opaque service wiring, computed requests and unsupported source layouts remain unassociated.

@@ -185,7 +185,7 @@ const idID: FoundationResource = {
       without:
         'Perlu mengintegrasikan model, melindungi kunci, mencatat penggunaan, dan menjalankan agen secara aman.',
       onceInUse:
-        'Konfigurasikan model dan agen sekali dengan pencatatan penggunaan.',
+        'Aktifkan layanan model untuk OnlineAgent dan gateway model, atau daftarkan pelaksana untuk menjalankan agen.',
     },
     knowledge: {
       name: 'Basis pengetahuan',
@@ -256,7 +256,7 @@ const idID: FoundationResource = {
       'Hanya administrator memiliki akses tak terbatas; belum ada izin untuk pengguna lain.',
     noWorkflows: 'Belum ada siklus hidup tersimpan atau jadwal aktif.',
     noSchedules: 'Belum ada jadwal aktif.',
-    noModelOrRunner: 'Diperlukan model aktif dan agen, atau pelaksana.',
+    noModelOrRunner: 'Belum ada layanan model aktif atau pelaksana terdaftar.',
     noModelService: 'Belum ada layanan model aktif.',
     noAgent: 'Belum ada agen yang didefinisikan.',
     noDocuments: 'Ruang pengetahuan belum memiliki dokumen.',
@@ -286,6 +286,9 @@ const idID: FoundationResource = {
     lifecycles:
       '{{count}} siklus hidup mencatat {{transitions}} transisi: {{names}}.',
     schedules: '{{count}} jadwal aktif.',
+    modelServices:
+      '{{count}} layanan model aktif mendukung OnlineAgent dan panggilan gateway model.',
+    runners: '{{count}} pelaksana terdaftar mendukung eksekusi agen.',
     agents: '{{count}} agen, {{runs}} eksekusi.',
     documents: '{{count}} dokumen pengetahuan.',
     mailboxes: '{{count}} kotak surat terhubung.',
