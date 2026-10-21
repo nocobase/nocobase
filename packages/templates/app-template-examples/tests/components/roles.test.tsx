@@ -4,7 +4,7 @@ import {
   AuthorizationClient,
   authorizationClientToken,
 } from '@nocobase/app-plugin-authorization/client';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route } from 'react-router';
 import { expect, it } from 'vitest';
@@ -24,7 +24,7 @@ const namespaces = {
   },
 };
 
-it('keeps the compact role list sorted, searchable and linked to the current query', async () => {
+it('keeps the standard role table sorted, searchable and linked to the current query', async () => {
   const user = userEvent.setup();
   await renderWithApp(
     <Routes>
@@ -54,11 +54,15 @@ it('keeps the compact role list sorted, searchable and linked to the current que
     },
   );
   await screen.findByTitle('Customer');
-  const list = screen.getByRole('list', { name: 'Roles and permissions' });
+  const region = screen.getByRole('region', {
+    name: 'Roles and permissions',
+  });
+  const table = within(region).getByRole('table');
+  expect(within(table).getAllByRole('columnheader')).toHaveLength(3);
   expect(
-    Array.from(list.querySelectorAll('li')).map((item) =>
-      item.querySelector('[title]')?.getAttribute('title'),
-    ),
+    within(table)
+      .getAllByRole('link')
+      .map((link) => link.textContent),
   ).toEqual(['Customer', 'Member', 'NocoBase team']);
   expect(
     screen.queryByRole('heading', { name: 'Customer' }),
@@ -70,7 +74,10 @@ it('keeps the compact role list sorted, searchable and linked to the current que
     screen.getByRole('textbox', { name: 'Search role names' }),
     'Customer',
   );
-  await waitFor(() => expect(list.querySelectorAll('li')).toHaveLength(1));
+  await waitFor(() => {
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+    expect(within(table).getAllByRole('link')).toHaveLength(1);
+  });
   expect(screen.getByTitle('Customer').closest('a')).toHaveAttribute(
     'href',
     '/settings/roles/cp-customer/edit?q=Customer',
