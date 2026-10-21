@@ -11,7 +11,6 @@ Implement `ChannelInstance` in a class, and register the class once with `regist
 | Static `type`                   | Required, globally unique, non-empty trimmed identifier.                                                                                        |
 | Static `label`                  | Optional safe display label or translation descriptor.                                                                                          |
 | Static `validateConfig(config)` | Optional synchronous configuration validation, before constructing instances.                                                                   |
-| Static `test`                   | Optional safe test fields and `toSendInput`; receives normalized config and must return the normal message input.                               |
 | Constructor `(context, config)` | Receive this named channel's context and normalized configuration. Avoid allocating resources that cannot be cleaned up if construction throws. |
 | `initialize()`                  | Optional asynchronous resource initialization.                                                                                                  |
 | `validateMessage(unknown)`      | Validate and normalize the complete message; expand native recipient snapshots before persistence.                                              |
@@ -46,7 +45,6 @@ import {
   type ChannelPreparationInput,
   type ChannelSendInput,
   type ChannelSendResult,
-  type NotificationTestAdapter,
   type ValidatedChannelMessage,
 } from '@nocobase/app-plugin-notification';
 import { ServiceProvider } from '@nocobase/service-provider';
@@ -71,20 +69,6 @@ export class TeamWebhookChannel implements ChannelInstance<
 > {
   static readonly type = 'team-webhook';
   static readonly label = 'Team webhook';
-  static readonly test: NotificationTestAdapter<TeamWebhookConfig> = {
-    label: 'Team webhook',
-    fields: [
-      {
-        name: 'text',
-        label: 'Text',
-        type: 'textarea',
-        required: true,
-        maxLength: 2000,
-      },
-    ],
-    toSendInput: ({ values }) => ({ text: values.text }),
-  };
-
   static validateConfig(config: TeamWebhookConfig): void {
     if (typeof config.endpoint !== 'string' || !URL.canParse(config.endpoint))
       throw new Error('A valid team webhook endpoint is required.');
@@ -231,9 +215,9 @@ await notification.send({
 
 `provider`-only config continues to work; both keys are accepted when equal and rejected when different. The host mailer uses the same rule. Old `registerChannel` and `registerProvider` APIs and built-in factory exports remain available, and legacy factories receive normalized `provider` config even when the user supplied `type`. Legacy registration methods, definition types and factory functions carry `@deprecated` annotations identifying their replacements. New extensions should use classes.
 
-`NotificationChannelConfig` and the default legacy factory/test adapter callback types keep their required `provider` field. Use `NotificationChannelConfigInput` for unnormalized configuration accepting either discriminator, and `ChannelConfig` for a class constructor's normalized `type` config. The built-in providers plugin still registers the legacy `email` and `im` handlers so third-party Providers can reuse them through `messageType`.
+`NotificationChannelConfig` and the default legacy factory callback types keep their required `provider` field. Use `NotificationChannelConfigInput` for unnormalized configuration accepting either discriminator, and `ChannelConfig` for a class constructor's normalized `type` config. The built-in providers plugin still registers the legacy `email` and `im` handlers so third-party Providers can reuse them through `messageType`.
 
-Built-in class registration preserves historical `channelType` (`email` for SMTP/Resend, `im` for the two webhooks) and `providerType`, so pending deliveries, retries, status results and test descriptors retain their identities. These storage and response fields are compatibility details, not additional registration concepts. Custom legacy extensions can keep their existing factories to retain their historical message-family identity; migrating a custom type with a different historical message family requires an explicit history migration or draining that work first.
+Built-in class registration preserves historical `channelType` (`email` for SMTP/Resend, `im` for the two webhooks) and `providerType`, so pending deliveries, retries, status results retain their identities. These storage and response fields are compatibility details, not additional registration concepts. Custom legacy extensions can keep their existing factories to retain their historical message-family identity; migrating a custom type with a different historical message family requires an explicit history migration or draining that work first.
 
 `send()` and `sendTransient()` inputs, outputs, message maps, recipient rules, queue behavior and retry classification are unchanged. There is no new `submit()` API. SMTP and Resend still share email helpers; Feishu and DingTalk share IM helpers. No new SMS transport is bundled.
 

@@ -19,7 +19,6 @@ Channel and Provider contribution is skipped in that case.
 The plugin registers:
 
 - the `in-app` Channel and database Provider;
-- a test adapter requiring an explicit application user ID;
 - the `notificationInAppItems` migration;
 - authenticated inbox routes under `/api/notificationInApp`.
 

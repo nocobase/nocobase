@@ -53,7 +53,7 @@ await notification.send({
 });
 ```
 
-Email requires native email addresses and subject plus text or HTML. Arrays create separate emails and retries. Webhooks forbid recipients and accept only complete HTTP(S) targets. There is no user-to-address resolution, common content renderer, Provider instance name, or Provider routing. The core test API exposes Channel names and safe message fields, never configuration or secrets.
+Email requires native email addresses and subject plus text or HTML. Arrays create separate emails and retries. Webhooks forbid recipients and accept only complete HTTP(S) targets. There is no user-to-address resolution, common content renderer, Provider instance name, or Provider routing. Use the normal `send()` API for delivery verification and keep credentials on the server.
 
 Register one class directly with `registry.registerChannelType(SmtpChannel)`, or use the Server plugin to register all four. `SmtpChannelConfig`, `ResendChannelConfig`, `FeishuWebhookChannelConfig` and `DingTalkWebhookChannelConfig` describe their normalized `type` configurations. See the [complete extension example](../app-plugin-notification/skills/nocobase-app-plugin-notification/references/channel-and-provider-extensions.md).
 

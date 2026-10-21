@@ -57,7 +57,7 @@ All messages are validated before persistence. Email and in-app arrays produce o
 
 Extend notifications with a class implementing `ChannelInstance`, then call `registry.registerChannelType(MyChannel)`. Its context contains only `channelName` and `container`. Existing `registerChannel` / `registerProvider` factories remain supported for compatibility. This extension change preserves `send()`, `sendTransient()`, `messages`, result DTOs and stored delivery identities; it adds no `submit()` API or database migration.
 
-See the [integration guide](skills/nocobase-app-plugin-notification/references/integration-and-configuration.md), [sending contract](skills/nocobase-app-plugin-notification/references/sending-notifications.md), and [extension guide](skills/nocobase-app-plugin-notification/references/channel-and-provider-extensions.md). The protected test-send form selects one Channel and shows its message fields.
+See the [integration guide](skills/nocobase-app-plugin-notification/references/integration-and-configuration.md), [sending contract](skills/nocobase-app-plugin-notification/references/sending-notifications.md), and [extension guide](skills/nocobase-app-plugin-notification/references/channel-and-provider-extensions.md). Verify delivery through a normal business flow or server-side `send()` call and inspect the returned notification ID in the protected logs API.
 
 ### Sensitive messages
 
