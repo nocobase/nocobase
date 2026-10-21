@@ -93,6 +93,7 @@ import { AuthenticationDemo } from './demo/auth';
 import { DeviceApprovalDemo } from './demo/auth/device-approval';
 import { PageContainerDemo } from './demo/components/page-container';
 import { SetupReadinessDemo } from './demo/components/setup-readiness.js';
+import { RecordLinkDemo } from './demo/components/record-link.js';
 import { PageHeaderDemo } from './demo/components/page-header';
 import { DefaultAccessEditorDemo } from './demo/authorization/default-access-editor.js';
 import { RoleListDemo } from './demo/authorization/role-list.js';
@@ -156,6 +157,7 @@ const itemPreviews: Record<string, ItemPreview> = {
     path: '/demo/components/page-container',
     icon: LayoutTemplate,
   },
+  'record-link': { path: '/demo/components/record-link', icon: Table2 },
   'page-header': { path: '/demo/components/page-header', icon: Heading },
   'setup-readiness': {
     path: '/demo/components/setup-readiness',
@@ -293,6 +295,8 @@ function AppContent(): ReactElement {
   }
   if (pathname.startsWith('/demo/components/setup-readiness'))
     return <SetupReadinessDemo />;
+  if (pathname.startsWith('/demo/components/record-link'))
+    return <RecordLinkDemo />;
   if (pathname.startsWith('/demo/components/page-header')) {
     return <PageHeaderDemo />;
   }

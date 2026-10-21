@@ -40,6 +40,26 @@
       ]
     },
     {
+      "name": "record-link",
+      "type": "registry:component",
+      "title": "Record Link",
+      "description": "A native router link for record names and identifiers in tables and lists: foreground text at rest, underline on hover and visible keyboard focus. Preinstalled in both application templates.",
+      "categories": ["data-display"],
+      "meta": {
+        "group": "Data display",
+        "iframeHeight": 300
+      },
+      "dependencies": ["react-router@^7.0.2", "cn@^0.4.0"],
+      "docs": "Render inside a React Router and pass the record route through to. Carry the current list query in to.search when opening a child route. Supports native Link props and refs; use action buttons and menu items separately.",
+      "files": [
+        {
+          "path": "record-link.tsx",
+          "type": "registry:component",
+          "target": "client/components/record-link.tsx"
+        }
+      ]
+    },
+    {
       "name": "settings-dialog",
       "type": "registry:component",
       "title": "Settings Dialog",
