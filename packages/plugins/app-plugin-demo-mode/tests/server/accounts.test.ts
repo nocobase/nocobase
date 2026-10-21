@@ -11,6 +11,7 @@ import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
 let app: TestApp;
 let calls: string[];
 let disabled: Set<string>;
+let revokedSessions: string[];
 
 beforeAll(async () => {
   app = await createTestApp({
@@ -22,6 +23,7 @@ afterAll(() => app.close());
 beforeEach(async () => {
   calls = [];
   disabled = new Set();
+  revokedSessions = [];
   await app.connection.query.deleteFrom('user').allowAllRows().execute();
   await app.connection.query
     .deleteFrom('demoModeAccounts')
@@ -67,7 +69,9 @@ function users(): UserManagementService {
       calls.push(`role ${id} ${scope} ${JSON.stringify(value)}`);
       return user(id);
     },
-    async revokeSessions() {},
+    async revokeSessions(id: string) {
+      revokedSessions.push(id);
+    },
     async remove(id: string) {
       calls.push(`remove ${id}`);
     },
@@ -127,4 +131,25 @@ it('always disables demo accounts so usernames remain reusable', async () => {
   calls = [];
   await demo.clear('admin');
   expect(calls).toEqual(['disable u1']);
+});
+
+it('disables and revokes sessions of a demo account that initiates cleanup', async () => {
+  const demo = service();
+  demo.register(dataset());
+  await demo.importNow('admin');
+  calls = [];
+  await demo.clear('u1');
+  expect(calls).toEqual(['disable u1']);
+  expect(disabled.has('u1')).toBe(true);
+  expect(revokedSessions).toEqual(['u1']);
+  expect(
+    await app.connection.query
+      .selectFrom('demoModeRecords')
+      .selectAll()
+      .execute(),
+  ).toEqual([]);
+  // Clearing as a demo user must not disable the real administrator or prevent account reuse.
+  expect(await demo.importNow('admin')).toMatchObject({ state: 'ready' });
+  expect(disabled.has('u1')).toBe(false);
+  await demo.clear('admin');
 });

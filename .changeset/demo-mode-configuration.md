@@ -17,3 +17,5 @@ Support explicitly scoped persistence for legacy online conversation adapters wi
 Add administrator-configured physical-table exceptions with a simple table-name list, protected-table validation and request-boundary revocation, without application capability registration.
 
 Expose selectable physical tables for searchable exception pickers and document deployment defaults through NOCOBASE_DEMO_ALLOW_TABLES.
+
+Renew cleanup leases and fence dataset updates with unique operation IDs so stale lifecycle workers cannot overwrite a replacement operation. Record initialization failures immediately for retry, and disable tracked demo accounts even when they initiate cleanup.

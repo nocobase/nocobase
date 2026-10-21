@@ -107,3 +107,42 @@ describeMigration('202610210003_demo_mode_adopt_environment_model', {
     ).toMatchObject({ modelService: 'existing-model' });
   },
 });
+
+describeMigration('202610210004_demo_mode_operation_lease', {
+  sources,
+  before: async ({ connection }) => {
+    await connection.query
+      .insertInto('demoModeDatasets')
+      .values({
+        id: 'before-lease',
+        state: 'ready',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .execute();
+  },
+  up: async ({ connection, expectCollection }) => {
+    await expectCollection('demoModeDatasets').toHaveField('operationId', {
+      type: 'string',
+      length: 36,
+      nullable: true,
+    });
+    expect(
+      await connection.query
+        .selectFrom('demoModeDatasets')
+        .select(['state', 'operationId'])
+        .where('id', '=', 'before-lease')
+        .executeTakeFirst(),
+    ).toMatchObject({ state: 'ready', operationId: null });
+  },
+  down: async ({ connection, expectCollection }) => {
+    await expectCollection('demoModeDatasets').not.toHaveField('operationId');
+    expect(
+      await connection.query
+        .selectFrom('demoModeDatasets')
+        .select('state')
+        .where('id', '=', 'before-lease')
+        .executeTakeFirst(),
+    ).toMatchObject({ state: 'ready' });
+  },
+});

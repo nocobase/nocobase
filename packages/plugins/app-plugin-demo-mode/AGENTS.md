@@ -147,3 +147,7 @@ Every Server plugin declaration requires an absolute `baseDir`. In `server/plugi
 After compiling database tasks and finishing JavaScript rewriting, run `nocobase-db-manifests` from `@nocobase/dev-config`. Publish the generated `.manifest.json` alongside the marked JavaScript in each migrations and seeds directory. Do not edit historical migration sources or bypass checksums to accommodate compilation differences.
 
 The application must explicitly provide required shared server peers in its production dependencies because deployment disables automatic peer installation. Peer ranges must be compatible; the declaration alone does not guarantee one module across incompatible installed versions.
+
+## Demo lifecycle leases
+
+Imports and cleanup both renew their persisted operation lease every 30 seconds. Keep dataset status updates, lease renewal and final deletion conditional on the operation ID, and check ownership before continuing plugin-owned cleanup after application callbacks. A resumed stale owner must not finalize or compensate a replacement operation. Application callbacks own their business writes and external cancellation; the plugin cannot interrupt an arbitrary in-flight callback. Keep fixture factories, clock construction and policy initialization inside import failure handling so an error becomes a retryable failed state immediately. Demo-account cleanup includes the initiating account when it belongs to the dataset; administrator identities outside demo tracking remain untouched.

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
 import type {
   Agents,
@@ -86,6 +87,7 @@ export interface DemoDataDependencies {
 interface DatasetRow {
   id: string;
   state: DemoDataState;
+  operationId: string | null;
   language: string | null;
   actorId: string | null;
   percent: number;
@@ -371,6 +373,7 @@ export class DefaultDemoDataService implements DemoDataService {
         .values({
           id: dataset.id,
           state: 'clearing',
+          operationId: randomUUID(),
           language: language ?? dataset.languages[0],
           actorId,
           percent: 0,
@@ -446,12 +449,14 @@ export class DefaultDemoDataService implements DemoDataService {
       await this.exclusive(() => this.remove(dataset, existing, actorId));
     }
     const now = new Date();
+    const operationId = randomUUID();
     try {
       await this.deps.database
         .query()
         .insertInto('demoModeDatasets')
         .values({
           id: dataset.id,
+          operationId,
           state: 'importing',
           language: chosen,
           actorId,
@@ -468,10 +473,9 @@ export class DefaultDemoDataService implements DemoDataService {
       );
     }
     this.percent = 0;
-    const populate = () => this.populate(dataset, chosen, actorId, now);
-    const job = this.deps.withPolicy
-      ? this.deps.withPolicy(populate)
-      : populate();
+    const job = this.withLease(dataset.id, operationId, () =>
+      this.populate(dataset, chosen, actorId, now, operationId),
+    );
     this.running = job
       .catch(() => undefined)
       .finally(() => {
@@ -480,11 +484,54 @@ export class DefaultDemoDataService implements DemoDataService {
     return { job };
   }
 
+  /** Every initialization failure settles the claimed row, including policy, step factories and clocks. */
   private async populate(
     dataset: DemoDataset,
     language: string,
     actorId: string,
     startedAt: Date,
+    operationId: string,
+  ): Promise<void> {
+    try {
+      const run = () =>
+        this.populateSteps(dataset, language, actorId, startedAt, operationId);
+      if (this.deps.withPolicy) await this.deps.withPolicy(run);
+      else await run();
+    } catch (error) {
+      // A replaced operation must neither clean the new owner's data nor overwrite its status.
+      await this.assertLease(dataset.id, operationId);
+      const failure = {
+        ...(error instanceof ApiError ? { code: error.reason } : {}),
+        message: error instanceof Error ? error.message : String(error),
+      };
+      this.deps.logger?.warn(
+        { dataset: dataset.id, failure },
+        'Demo data import failed; taking back what it wrote',
+      );
+      const row = await this.row();
+      if (row)
+        await this.undo(dataset, row, actorId, operationId).catch(
+          (cause: unknown) =>
+            this.deps.logger?.warn(
+              { dataset: dataset.id, cause: String(cause) },
+              'Could not take back all of a failed demo data import',
+            ),
+        );
+      await this.touch(dataset.id, operationId, {
+        state: 'failed',
+        failure: JSON.stringify(failure),
+        finishedAt: new Date(),
+      });
+      throw error;
+    }
+  }
+
+  private async populateSteps(
+    dataset: DemoDataset,
+    language: string,
+    actorId: string,
+    startedAt: Date,
+    operationId: string,
   ): Promise<void> {
     const steps = dataset.steps(language);
     const total = steps.reduce((sum, step) => sum + (step.weight ?? 1), 0) || 1;
@@ -493,7 +540,7 @@ export class DefaultDemoDataService implements DemoDataService {
     let data: Record<string, unknown> = {};
     const reached = async (fraction: number): Promise<void> => {
       this.percent = Math.min(99, Math.floor(fraction * 100));
-      await this.touch(dataset.id, { percent: this.percent });
+      await this.touch(dataset.id, operationId, { percent: this.percent });
       // The SQLite driver is synchronous: without a turn of the event loop the status requests wait for the import.
       await new Promise<void>((resolve) => setImmediate(resolve));
     };
@@ -502,8 +549,10 @@ export class DefaultDemoDataService implements DemoDataService {
       ids: string | readonly string[],
       keyField = 'id',
     ): Promise<void> => {
+      await this.assertLease(dataset.id, operationId);
       const list = (typeof ids === 'string' ? [ids] : [...ids]).map(String);
-      for (const recordId of list)
+      for (const recordId of list) {
+        await this.assertLease(dataset.id, operationId);
         await this.deps.database
           .query()
           .insertInto('demoModeRecords')
@@ -516,6 +565,7 @@ export class DefaultDemoDataService implements DemoDataService {
             createdAt: new Date(),
           })
           .execute();
+      }
     };
     const clock = createDemoClock(
       startedAt,
@@ -533,12 +583,21 @@ export class DefaultDemoDataService implements DemoDataService {
       },
       setData: async (patch) => {
         data = { ...data, ...patch };
-        await this.touch(dataset.id, { data: JSON.stringify(data) });
+        await this.touch(dataset.id, operationId, {
+          data: JSON.stringify(data),
+        });
       },
       track: (collection, ids, options) => track(collection, ids, options?.key),
-      createAccount: (spec) => this.createAccount(spec, track),
-      createPermissionSet: (spec) => this.createPermissionSet(spec, track),
+      createAccount: async (spec) => {
+        await this.assertLease(dataset.id, operationId);
+        return this.createAccount(spec, track);
+      },
+      createPermissionSet: async (spec) => {
+        await this.assertLease(dataset.id, operationId);
+        await this.createPermissionSet(spec, track);
+      },
       assignPermissionSet: async (userId, permissionSet) => {
+        await this.assertLease(dataset.id, operationId);
         const id = await this.assign(userId, permissionSet);
         await track(ASSIGNMENT, id);
       },
@@ -548,61 +607,26 @@ export class DefaultDemoDataService implements DemoDataService {
             total,
         ),
     };
-    const heartbeat = setInterval(() => {
-      void this.touch(dataset.id, {}).catch((cause: unknown) =>
-        this.deps.logger?.warn(
-          { dataset: dataset.id, cause: String(cause) },
-          'Could not renew demo import progress',
-        ),
-      );
-    }, 30_000);
-    heartbeat.unref();
-    try {
-      for (step of steps) {
-        this.deps.logger?.info(
-          { dataset: dataset.id, step: step.key },
-          'Importing demo data',
-        );
-        await step.run(context);
-        done += step.weight ?? 1;
-        await reached(done / total);
-      }
-      this.percent = 100;
-      await this.touch(dataset.id, {
-        state: 'ready',
-        percent: 100,
-        finishedAt: new Date(),
-      });
+    for (step of steps) {
+      await this.assertLease(dataset.id, operationId);
       this.deps.logger?.info(
-        { dataset: dataset.id, language },
-        'Imported demo data',
+        { dataset: dataset.id, step: step.key },
+        'Importing demo data',
       );
-    } catch (error) {
-      const failure = {
-        ...(error instanceof ApiError ? { code: error.reason } : {}),
-        message: error instanceof Error ? error.message : String(error),
-      };
-      this.deps.logger?.warn(
-        { dataset: dataset.id, step: step?.key, failure },
-        'Demo data import failed; taking back what it wrote',
-      );
-      const row = await this.row();
-      if (row)
-        await this.undo(dataset, row, actorId).catch((cause: unknown) =>
-          this.deps.logger?.warn(
-            { dataset: dataset.id, cause: String(cause) },
-            'Could not take back all of a failed demo data import',
-          ),
-        );
-      await this.touch(dataset.id, {
-        state: 'failed',
-        failure: JSON.stringify(failure),
-        finishedAt: new Date(),
-      });
-      throw error;
-    } finally {
-      clearInterval(heartbeat);
+      await step.run(context);
+      done += step.weight ?? 1;
+      await reached(done / total);
     }
+    this.percent = 100;
+    await this.touch(dataset.id, operationId, {
+      state: 'ready',
+      percent: 100,
+      finishedAt: new Date(),
+    });
+    this.deps.logger?.info(
+      { dataset: dataset.id, language },
+      'Imported demo data',
+    );
   }
 
   /** Clears everything the import created and forgets it. */
@@ -611,13 +635,24 @@ export class DefaultDemoDataService implements DemoDataService {
     row: DatasetRow,
     actorId: string,
   ): Promise<void> {
+    const operationId = randomUUID();
     const claimed = await this.deps.database
       .query()
       .updateTable('demoModeDatasets')
-      .set({ state: 'clearing', percent: 0, updatedAt: new Date() })
+      .set({
+        state: 'clearing',
+        operationId,
+        percent: 0,
+        updatedAt: new Date(),
+      })
       .where('id', '=', dataset.id)
       .where('state', '=', row.state)
       .where('updatedAt', '=', row.updatedAt)
+      .where(
+        'operationId',
+        row.operationId == null ? 'is' : '=',
+        row.operationId ?? null,
+      )
       .execute();
     if (claimed.updatedCount !== 1)
       throw demoDataError(
@@ -625,25 +660,31 @@ export class DefaultDemoDataService implements DemoDataService {
         'Another process changed the demo dataset.',
       );
     this.percent = 0;
-    try {
-      await this.undo(dataset, row, actorId);
-    } catch (cause) {
-      await this.touch(dataset.id, {
-        state: 'failed',
-        failure: JSON.stringify({
-          code:
-            cause instanceof ApiError ? cause.reason : 'DEMO_DATA_CLEAR_FAILED',
-          message:
-            'Demo data cleanup did not complete. Retry to finish cleanup.',
-        }),
-      });
-      throw cause;
-    }
-    await this.deps.database
+    await this.withLease(dataset.id, operationId, async () => {
+      try {
+        await this.undo(dataset, row, actorId, operationId);
+      } catch (cause) {
+        await this.touch(dataset.id, operationId, {
+          state: 'failed',
+          failure: JSON.stringify({
+            code:
+              cause instanceof ApiError
+                ? cause.reason
+                : 'DEMO_DATA_CLEAR_FAILED',
+            message:
+              'Demo data cleanup did not complete. Retry to finish cleanup.',
+          }),
+        });
+        throw cause;
+      }
+    });
+    const removed = await this.deps.database
       .query()
       .deleteFrom('demoModeDatasets')
       .where('id', '=', dataset.id)
+      .where('operationId', '=', operationId)
       .execute();
+    if (removed.deletedCount !== 1) throw this.leaseLost();
     this.deps.logger?.info({ dataset: dataset.id }, 'Cleared demo data');
   }
 
@@ -651,21 +692,26 @@ export class DefaultDemoDataService implements DemoDataService {
     dataset: DemoDataset,
     row: DatasetRow,
     actorId: string,
+    operationId: string,
   ): Promise<void> {
+    await this.assertLease(dataset.id, operationId);
     const records = await this.records(dataset.id);
     const context = this.clearContext(row, records, actorId);
     await dataset.clear(context);
+    await this.assertLease(dataset.id, operationId);
     this.percent = 70;
     const of = (collection: string) =>
       records
         .filter((record) => record.collection === collection)
         .map((record) => record.recordId);
     const sets = this.deps.authorization?.()?.permissionSets;
-    for (const id of of(ASSIGNMENT))
+    for (const id of of(ASSIGNMENT)) {
+      await this.assertLease(dataset.id, operationId);
       await sets?.revoke(id).catch(() => undefined);
+    }
     const users = this.deps.users?.();
     for (const id of of(USER)) {
-      if (id === actorId) continue;
+      await this.assertLease(dataset.id, operationId);
       await sets
         ?.replaceSubjectAssignments({
           subject: { type: 'user', id },
@@ -678,8 +724,11 @@ export class DefaultDemoDataService implements DemoDataService {
       // Keep identities reusable: the Users plugin reserves deleted usernames and email addresses.
       await users.disable(id);
     }
-    for (const key of of(PERMISSION_SET))
+    for (const key of of(PERMISSION_SET)) {
+      await this.assertLease(dataset.id, operationId);
       await sets?.delete(key).catch(() => undefined);
+    }
+    await this.assertLease(dataset.id, operationId);
     await this.deps.database
       .query()
       .deleteFrom('demoModeRecords')
@@ -833,16 +882,66 @@ export class DefaultDemoDataService implements DemoDataService {
     return sets;
   }
 
+  private leaseLost(): ApiError {
+    return demoDataError(
+      'DEMO_DATA_LEASE_LOST',
+      'Another process took over this demo data operation.',
+    );
+  }
+
+  private async assertLease(id: string, operationId: string): Promise<void> {
+    const row = await this.deps.database
+      .query()
+      .selectFrom('demoModeDatasets')
+      .select('operationId')
+      .where('id', '=', id)
+      .where('operationId', '=', operationId)
+      .executeTakeFirst();
+    if (!row) throw this.leaseLost();
+  }
+
+  /** Renew imports and full cleanup alike; drain an in-flight renewal before releasing the operation. */
+  private async withLease<T>(
+    id: string,
+    operationId: string,
+    work: () => Promise<T>,
+  ): Promise<T> {
+    let renewing: Promise<void> | undefined;
+    const heartbeat = setInterval(() => {
+      if (renewing) return;
+      renewing = this.touch(id, operationId, {})
+        .catch((cause: unknown) =>
+          this.deps.logger?.warn(
+            { dataset: id, cause: String(cause) },
+            'Could not renew demo data operation',
+          ),
+        )
+        .finally(() => {
+          renewing = undefined;
+        });
+    }, 30_000);
+    heartbeat.unref();
+    try {
+      return await work();
+    } finally {
+      clearInterval(heartbeat);
+      await renewing;
+    }
+  }
+
   private async touch(
     id: string,
+    operationId: string,
     values: Record<string, unknown>,
   ): Promise<void> {
-    await this.deps.database
+    const result = await this.deps.database
       .query()
       .updateTable('demoModeDatasets')
       .set({ ...values, updatedAt: new Date() })
       .where('id', '=', id)
+      .where('operationId', '=', operationId)
       .execute();
+    if (result.updatedCount !== 1) throw this.leaseLost();
   }
 
   private async row(): Promise<DatasetRow | undefined> {

@@ -21,6 +21,9 @@
 
 ## Unreleased
 
+- Renew long-running cleanup leases, fence lifecycle status changes by operation ID, and preserve existing datasets through an additive lease migration.
+- Settle fixture and policy initialization failures immediately so imports can be retried; disable and revoke sessions for tracked demo accounts that initiate cleanup.
+
 - Keep request and chat policy checks separate from management schedule previews; Scheduler remains the independent reset trigger. Describe dataset execution as generation and update localized management labels while retaining existing API/CLI names.
 
 - Distinguish optional sample data from dedicated demo systems in application and plugin guidance. Clarify compensating full-business cleanup, model persistence and explicit host model adapters in the public contracts.
