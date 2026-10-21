@@ -1,5 +1,5 @@
 import { createNotificationRegistry } from '@nocobase/app-plugin-notification';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { registerBuiltInNotificationProviders } from '../server/bootstrap.js';
 import NotificationProvidersProvider from '../server/provider.js';
@@ -11,15 +11,54 @@ describe('@nocobase/app-plugin-notification-providers bootstrap', () => {
 
     registerBuiltInNotificationProviders(registry);
 
-    expect(registry.channel('email')).toBeUndefined();
+    expect(registry.channel('email')?.type).toBe('email');
     expect(registry.channelType('smtp')?.type).toBe('smtp');
     expect(registry.channelType('resend')?.type).toBe('resend');
-    expect(registry.channel('im')).toBeUndefined();
+    expect(registry.channel('im')?.type).toBe('im');
     expect(registry.channelType('feishu-webhook')?.type).toBe('feishu-webhook');
     expect(registry.channelType('dingtalk-webhook')?.type).toBe(
       'dingtalk-webhook',
     );
   });
+
+  it.each(['email', 'im'])(
+    'keeps the built-in %s handler available to legacy providers',
+    (messageType) => {
+      const registry = createNotificationRegistry();
+      registerBuiltInNotificationProviders(registry);
+      const type = `custom-${messageType}`;
+      const validateConfig = vi.fn();
+      registry.registerProvider({
+        type,
+        messageType,
+        validateConfig,
+        async createProvider() {
+          return {
+            type,
+            async send() {
+              return { status: 'accepted' as const };
+            },
+          };
+        },
+      });
+      const config = {
+        channels: {
+          legacy: { provider: type },
+          current: { type },
+        },
+      };
+
+      expect(() => registry.validate(config)).not.toThrow();
+      expect(validateConfig.mock.calls).toEqual([
+        [{ provider: type }],
+        [{ provider: type }],
+      ]);
+      expect(registry.testTargets(config)).toMatchObject([
+        { channel: { name: 'legacy', type: messageType }, provider: { type } },
+        { channel: { name: 'current', type: messageType }, provider: { type } },
+      ]);
+    },
+  );
 
   it('fails fast when the required extension registry is absent', async () => {
     const provider = new NotificationProvidersProvider({
