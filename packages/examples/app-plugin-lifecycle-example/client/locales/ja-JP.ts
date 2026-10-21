@@ -378,6 +378,16 @@ const jaJP: LocaleResource<typeof enUS> = {
     withdraw: '取り下げ',
   },
   flowDiagram: {
+    controls: '図の操作',
+    fitView: '全体を表示',
+    fullscreen: '全画面表示',
+    exitFullscreen: '全画面表示を終了',
+    escapeHint: 'Escape キーで終了',
+    leavesTo: '遷移先',
+    arrivesFrom: '遷移元',
+    otherRoutes: 'その他の遷移',
+    minimap: '図の概要',
+
     overview: '図の概要',
     actualSize: '実寸',
     states: '州',

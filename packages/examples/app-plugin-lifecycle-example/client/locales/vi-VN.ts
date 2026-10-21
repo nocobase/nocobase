@@ -381,6 +381,16 @@ const viVN: LocaleResource<typeof enUS> = {
     withdraw: 'Rút lại',
   },
   flowDiagram: {
+    controls: 'Điều khiển sơ đồ',
+    fitView: 'Vừa khung nhìn',
+    fullscreen: 'Toàn màn hình',
+    exitFullscreen: 'Thoát toàn màn hình',
+    escapeHint: 'Nhấn Escape để thoát',
+    leavesTo: 'Chuyển đến',
+    arrivesFrom: 'Đến từ',
+    otherRoutes: 'Tuyến khác',
+    minimap: 'Tổng quan sơ đồ',
+
     overview: 'Tổng quan về sơ đồ',
     actualSize: 'Kích thước thực tế',
     states: 'Kỳ',
