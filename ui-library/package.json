@@ -207,6 +207,7 @@
     "#components/permission-filter": "./registry/authorization/permission-filter.tsx",
     "#components/data-table/data-table": "./registry/components/data-table/data-table.tsx",
     "#components/data-table/column-header": "./registry/components/data-table/column-header.tsx",
+    "#components/data-table": "./registry/components/data-table/index.ts",
     "#components/role-list": "./registry/authorization/role-list.tsx",
     "#components/default-access-editor": "./registry/authorization/default-access-editor.tsx"
   }

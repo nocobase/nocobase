@@ -104,6 +104,9 @@ export default function RolesPage(): ReactElement {
                 protected: Boolean(role.protection),
               }))}
               labels={{
+                name: t('settings.roleName'),
+                key: t('settings.key'),
+                type: t('settings.roleType'),
                 protected: t('settings.protected'),
                 custom: t('settings.custom'),
               }}
