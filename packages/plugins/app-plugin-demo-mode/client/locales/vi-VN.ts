@@ -80,11 +80,18 @@ const resource: DemoModeResource = {
       state: {
         importing: 'Đang tạo',
         clearing: 'Đang xóa',
+        resetting: 'Đang đặt lại',
         failed: 'Thất bại',
         ready: 'Sẵn sàng',
         none: 'Chưa tạo',
       },
       presentSummary: 'Tạo bằng {{language}} · {{time}}',
+      resettingSummary:
+        'Đang xóa dữ liệu hiện tại rồi tạo lại bằng {{language}}.',
+      phase: {
+        clearing: 'Đang xóa',
+        generating: 'Đang tạo lại',
+      },
       absentSummary:
         'Tạo dữ liệu demo để khách khám phá ứng dụng qua một câu chuyện hoàn chỉnh.',
       language: 'Ngôn ngữ',
@@ -122,6 +129,7 @@ const resource: DemoModeResource = {
       description:
         'Khách vào bất kỳ tài khoản nào dưới đây mà không cần mật khẩu và có thể chuyển đổi từ góc của mọi trang.',
       off: 'Đăng nhập nhanh đang tắt trong bản triển khai này (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      pending: 'Các tài khoản sẽ hiện ở đây khi dữ liệu demo sẵn sàng.',
       noData: 'Hãy tạo dữ liệu demo trước; các tài khoản sẽ hiện ở đây.',
       credentials: 'Tên người dùng {{username}} · mật khẩu {{password}}',
       copyLink: 'Sao chép liên kết',

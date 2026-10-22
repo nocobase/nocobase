@@ -15,6 +15,7 @@ import type {
   DemoAccountSummary,
   DemoClearContext,
   DemoDataset,
+  DemoDataOperation,
   DemoDataState,
   DemoDataStatus,
   DemoImportContext,
@@ -26,6 +27,31 @@ import type {
 const USER = '@user';
 const PERMISSION_SET = '@permissionSet';
 const ASSIGNMENT = '@permissionSetAssignment';
+
+/** What a reset carries from the import it clears into the one it runs, by `carriedKey`. */
+interface Carried {
+  /** The accounts, Permission Sets and assignments the cleared import tracked. */
+  readonly records: ReadonlySet<string>;
+  /** Those the new import created again; the rest are released once it finishes. */
+  readonly touched: Set<string>;
+  /** The password the cleared import gave each account, by username. */
+  readonly passwords: ReadonlyMap<string, string>;
+}
+
+const carriedKey = (collection: string, recordId: string): string =>
+  `${collection}\u0000${recordId}`;
+
+/** A reset's progress runs through both of its phases: the clear takes the first 30%, generating the rest. */
+const overall = (
+  operation: DemoDataOperation | null,
+  state: DemoDataState,
+  percent: number,
+): number =>
+  operation !== 'reset'
+    ? percent
+    : state === 'clearing'
+      ? Math.floor(percent * 0.3)
+      : 30 + Math.floor(percent * 0.7);
 
 /** An import or clear no process has moved on for this long was cut off, as when the server stopped mid-import. */
 const STALE_MS = 10 * 60 * 1000;
@@ -44,7 +70,10 @@ export interface DemoDataService {
   importNow(actorId: string, language?: string): Promise<DemoDataStatus>;
   /** Clears application business data and disables demo accounts; environment configuration stays. */
   clear(actorId: string): Promise<DemoDataStatus>;
-  /** Clears what is there and imports again; waits when `wait` is set. */
+  /**
+   * Clears the business data and imports again, answering once the reset is claimed; waits when `wait` is set. Demo
+   * accounts the new import creates again keep their sessions and Permission Sets throughout.
+   */
   reset(
     actorId?: string,
     language?: string,
@@ -77,6 +106,7 @@ interface DatasetRow {
   id: string;
   state: DemoDataState;
   operationId: string | null;
+  operation: DemoDataOperation | null;
   language: string | null;
   actorId: string | null;
   percent: number;
@@ -217,9 +247,19 @@ export class DefaultDemoDataService implements DemoDataService {
           ? (accountsByLanguage[language] ?? [])
           : [],
       accountsByLanguage,
+      operation:
+        state === 'importing' || state === 'clearing'
+          ? (row?.operation ?? null)
+          : null,
       importing:
         state === 'importing' || state === 'clearing'
-          ? { percent: this.running ? this.percent : (row?.percent ?? 0) }
+          ? {
+              percent: overall(
+                row?.operation ?? null,
+                state,
+                this.running ? this.percent : (row?.percent ?? 0),
+              ),
+            }
           : null,
       failure:
         state === 'failed'
@@ -322,16 +362,28 @@ export class DefaultDemoDataService implements DemoDataService {
         `The demo data is not written in ${target}.`,
         'INVALID_ARGUMENT',
       );
-    await this.exclusive(async () =>
-      this.remove(
-        dataset,
-        row ?? (await this.claimEmptyClear(dataset, actor, target)),
-        actor,
-      ),
+    const chosen = target ?? dataset.languages[0];
+    this.percent = 0;
+    // Claimed before answering, so a second reset is refused; the clear and the import run on in the background.
+    const claiming = (async () => {
+      const current =
+        row ?? (await this.claimEmptyClear(dataset, actor, chosen, 'reset'));
+      return {
+        current,
+        operationId: await this.claimRemoval(dataset, current, 'reset'),
+      };
+    })();
+    const job = claiming.then(({ current, operationId }) =>
+      this.replace(dataset, current, actor, chosen, operationId),
     );
-    return options.wait
-      ? this.importNow(actor, target)
-      : this.start(actor, target);
+    this.running = job
+      .catch(() => undefined)
+      .finally(() => {
+        this.running = undefined;
+      });
+    await claiming;
+    if (options.wait) await job;
+    return this.status();
   }
 
   private requireDataset(): DemoDataset {
@@ -354,6 +406,7 @@ export class DefaultDemoDataService implements DemoDataService {
     dataset: DemoDataset,
     actorId: string,
     language?: string,
+    operation: DemoDataOperation = 'clear',
   ): Promise<DatasetRow> {
     const now = new Date();
     try {
@@ -363,6 +416,7 @@ export class DefaultDemoDataService implements DemoDataService {
         .values({
           id: dataset.id,
           state: 'clearing',
+          operation,
           operationId: randomUUID(),
           language: language ?? dataset.languages[0],
           actorId,
@@ -448,6 +502,7 @@ export class DefaultDemoDataService implements DemoDataService {
           id: dataset.id,
           operationId,
           state: 'importing',
+          operation: 'import',
           language: chosen,
           actorId,
           percent: 0,
@@ -474,6 +529,60 @@ export class DefaultDemoDataService implements DemoDataService {
     return { job };
   }
 
+  /**
+   * A reset after its claim: clears the business data but carries the demo accounts, Permission Sets and assignments
+   * into the import, which takes over the same row, so whoever is signed in to a demo account stays signed in.
+   */
+  private async replace(
+    dataset: DemoDataset,
+    row: DatasetRow,
+    actorId: string,
+    language: string,
+    clearOperationId: string,
+  ): Promise<void> {
+    await this.clearClaimed(dataset, row, actorId, clearOperationId, true);
+    const carried: Carried = {
+      records: new Set(
+        (await this.records(dataset.id)).map((record) =>
+          carriedKey(record.collection, record.recordId),
+        ),
+      ),
+      touched: new Set(),
+      passwords: new Map(
+        (row.language && dataset.languages.includes(row.language)
+          ? dataset.accounts(row.language)
+          : []
+        ).map((account) => [account.username, account.password]),
+      ),
+    };
+    const now = new Date();
+    const operationId = randomUUID();
+    const handed = await this.deps.database
+      .query()
+      .updateTable('demoModeDatasets')
+      .set({
+        state: 'importing',
+        operation: 'reset',
+        operationId,
+        language,
+        actorId,
+        percent: 0,
+        data: JSON.stringify({}),
+        failure: null,
+        createdAt: now,
+        finishedAt: null,
+        updatedAt: now,
+      })
+      .where('id', '=', dataset.id)
+      .where('operationId', '=', clearOperationId)
+      .execute();
+    if (handed.updatedCount !== 1) throw this.leaseLost();
+    this.percent = 0;
+    await this.withLease(dataset.id, operationId, () =>
+      this.populate(dataset, language, actorId, now, operationId, carried),
+    );
+  }
+
   /** Every initialization failure settles the claimed row, including policy, step factories and clocks. */
   private async populate(
     dataset: DemoDataset,
@@ -481,10 +590,18 @@ export class DefaultDemoDataService implements DemoDataService {
     actorId: string,
     startedAt: Date,
     operationId: string,
+    carried?: Carried,
   ): Promise<void> {
     try {
       const run = () =>
-        this.populateSteps(dataset, language, actorId, startedAt, operationId);
+        this.populateSteps(
+          dataset,
+          language,
+          actorId,
+          startedAt,
+          operationId,
+          carried,
+        );
       if (this.deps.withPolicy) await this.deps.withPolicy(run);
       else await run();
     } catch (error) {
@@ -522,6 +639,7 @@ export class DefaultDemoDataService implements DemoDataService {
     actorId: string,
     startedAt: Date,
     operationId: string,
+    carried?: Carried,
   ): Promise<void> {
     const steps = dataset.generate
       ? [
@@ -533,7 +651,11 @@ export class DefaultDemoDataService implements DemoDataService {
       : dataset.steps!(language);
     const total = steps.reduce((sum, step) => sum + (step.weight ?? 1), 0) || 1;
     let done = 0;
-    let ordinal = (await this.records(dataset.id)).length;
+    // After the records a reset carries, which keep their places.
+    let ordinal = (await this.records(dataset.id)).reduce(
+      (next, record) => Math.max(next, record.ordinal + 1),
+      0,
+    );
     let data: Record<string, unknown> = {};
     const reached = async (fraction: number): Promise<void> => {
       this.percent = Math.min(99, Math.floor(fraction * 100));
@@ -550,6 +672,11 @@ export class DefaultDemoDataService implements DemoDataService {
       const list = (typeof ids === 'string' ? [ids] : [...ids]).map(String);
       for (const recordId of list) {
         await this.assertLease(dataset.id, operationId);
+        const key = carriedKey(collection, recordId);
+        if (carried?.records.has(key)) {
+          carried.touched.add(key);
+          continue;
+        }
         await this.deps.database
           .query()
           .insertInto('demoModeRecords')
@@ -587,15 +714,15 @@ export class DefaultDemoDataService implements DemoDataService {
       track: (collection, ids, options) => track(collection, ids, options?.key),
       createAccount: async (spec) => {
         await this.assertLease(dataset.id, operationId);
-        return this.createAccount(spec, track);
+        return this.createAccount(spec, track, carried);
       },
       createPermissionSet: async (spec) => {
         await this.assertLease(dataset.id, operationId);
-        await this.createPermissionSet(spec, track);
+        await this.createPermissionSet(spec, track, carried);
       },
       assignPermissionSet: async (userId, permissionSet) => {
         await this.assertLease(dataset.id, operationId);
-        const id = await this.assign(userId, permissionSet);
+        const id = await this.assign(userId, permissionSet, carried);
         await track(ASSIGNMENT, id);
       },
       progress: (fraction) =>
@@ -613,6 +740,23 @@ export class DefaultDemoDataService implements DemoDataService {
       await step.run(context);
       done += step.weight ?? 1;
       await reached(done / total);
+    }
+    if (carried) {
+      // What the cleared import had and this one did not create again goes as a clear would take it.
+      const left = (await this.records(dataset.id)).filter(
+        (record) =>
+          carried.records.has(carriedKey(record.collection, record.recordId)) &&
+          !carried.touched.has(carriedKey(record.collection, record.recordId)),
+      );
+      await this.release(dataset.id, operationId, left);
+      for (const record of left)
+        await this.deps.database
+          .query()
+          .deleteFrom('demoModeRecords')
+          .where('datasetId', '=', dataset.id)
+          .where('collection', '=', record.collection)
+          .where('recordId', '=', record.recordId)
+          .execute();
     }
     this.percent = 100;
     await this.touch(dataset.id, operationId, {
@@ -632,12 +776,31 @@ export class DefaultDemoDataService implements DemoDataService {
     row: DatasetRow,
     actorId: string,
   ): Promise<void> {
+    const operationId = await this.claimRemoval(dataset, row);
+    await this.clearClaimed(dataset, row, actorId, operationId);
+    const removed = await this.deps.database
+      .query()
+      .deleteFrom('demoModeDatasets')
+      .where('id', '=', dataset.id)
+      .where('operationId', '=', operationId)
+      .execute();
+    if (removed.deletedCount !== 1) throw this.leaseLost();
+    this.deps.logger?.info({ dataset: dataset.id }, 'Cleared demo data');
+  }
+
+  /** Moves the row to `clearing` under a new operation, unless another process changed it since it was read. */
+  private async claimRemoval(
+    dataset: DemoDataset,
+    row: DatasetRow,
+    operation: DemoDataOperation = 'clear',
+  ): Promise<string> {
     const operationId = randomUUID();
     const claimed = await this.deps.database
       .query()
       .updateTable('demoModeDatasets')
       .set({
         state: 'clearing',
+        operation,
         operationId,
         percent: 0,
         updatedAt: new Date(),
@@ -657,9 +820,20 @@ export class DefaultDemoDataService implements DemoDataService {
         'Another process changed the demo dataset.',
       );
     this.percent = 0;
+    return operationId;
+  }
+
+  /** Runs the clear an operation claimed; a failure leaves the row `failed`, for a retry. */
+  private async clearClaimed(
+    dataset: DemoDataset,
+    row: DatasetRow,
+    actorId: string,
+    operationId: string,
+    carry = false,
+  ): Promise<void> {
     await this.withLease(dataset.id, operationId, async () => {
       try {
-        await this.undo(dataset, row, actorId, operationId);
+        await this.undo(dataset, row, actorId, operationId, carry);
       } catch (cause) {
         await this.touch(dataset.id, operationId, {
           state: 'failed',
@@ -675,40 +849,71 @@ export class DefaultDemoDataService implements DemoDataService {
         throw cause;
       }
     });
-    const removed = await this.deps.database
-      .query()
-      .deleteFrom('demoModeDatasets')
-      .where('id', '=', dataset.id)
-      .where('operationId', '=', operationId)
-      .execute();
-    if (removed.deletedCount !== 1) throw this.leaseLost();
-    this.deps.logger?.info({ dataset: dataset.id }, 'Cleared demo data');
   }
 
+  /**
+   * Clears the business data, then the accounts, Permission Sets and assignments the import created and its tracking.
+   * With `carry`, those three stay with their tracking for the import a reset runs next.
+   */
   private async undo(
     dataset: DemoDataset,
     row: DatasetRow,
     actorId: string,
     operationId: string,
+    carry = false,
   ): Promise<void> {
     await this.assertLease(dataset.id, operationId);
     const records = await this.records(dataset.id);
-    const context = this.clearContext(row, records, actorId);
+    const reached = async (percent: number): Promise<void> => {
+      this.percent = percent;
+      await this.touch(dataset.id, operationId, { percent });
+      // As for imports: let the status requests through while the SQLite driver works.
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    };
+    const context = this.clearContext(row, records, actorId, (fraction) =>
+      reached(Math.min(69, Math.floor(Math.max(0, fraction) * 70))),
+    );
     await dataset.clear(context);
     await this.assertLease(dataset.id, operationId);
-    this.percent = 70;
+    await reached(70);
+    if (carry) {
+      await this.deps.database
+        .query()
+        .deleteFrom('demoModeRecords')
+        .where('datasetId', '=', dataset.id)
+        .where('collection', 'not in', [USER, PERMISSION_SET, ASSIGNMENT])
+        .execute();
+      this.percent = 100;
+      return;
+    }
+    await this.release(dataset.id, operationId, records);
+    await this.assertLease(dataset.id, operationId);
+    await this.deps.database
+      .query()
+      .deleteFrom('demoModeRecords')
+      .where('datasetId', '=', dataset.id)
+      .execute();
+    this.percent = 100;
+  }
+
+  /** Revokes the assignments, signs out and disables the accounts and deletes the Permission Sets among `records`. */
+  private async release(
+    datasetId: string,
+    operationId: string,
+    records: readonly DemoTrackedRecord[],
+  ): Promise<void> {
     const of = (collection: string) =>
       records
         .filter((record) => record.collection === collection)
         .map((record) => record.recordId);
     const sets = this.deps.authorization?.()?.permissionSets;
     for (const id of of(ASSIGNMENT)) {
-      await this.assertLease(dataset.id, operationId);
+      await this.assertLease(datasetId, operationId);
       await sets?.revoke(id).catch(() => undefined);
     }
     const users = this.deps.users?.();
     for (const id of of(USER)) {
-      await this.assertLease(dataset.id, operationId);
+      await this.assertLease(datasetId, operationId);
       await sets
         ?.replaceSubjectAssignments({
           subject: { type: 'user', id },
@@ -722,16 +927,9 @@ export class DefaultDemoDataService implements DemoDataService {
       await users.disable(id);
     }
     for (const key of of(PERMISSION_SET)) {
-      await this.assertLease(dataset.id, operationId);
+      await this.assertLease(datasetId, operationId);
       await sets?.delete(key).catch(() => undefined);
     }
-    await this.assertLease(dataset.id, operationId);
-    await this.deps.database
-      .query()
-      .deleteFrom('demoModeRecords')
-      .where('datasetId', '=', dataset.id)
-      .execute();
-    this.percent = 100;
   }
 
   private clearContext(
@@ -741,6 +939,7 @@ export class DefaultDemoDataService implements DemoDataService {
       ordinal: number;
     })[],
     actorId?: string,
+    progress: (fraction: number) => Promise<void> = async () => {},
   ): DemoClearContext {
     return {
       datasetId: row.id,
@@ -751,6 +950,7 @@ export class DefaultDemoDataService implements DemoDataService {
         collection,
         recordId,
       })),
+      progress,
     };
   }
 
@@ -773,6 +973,7 @@ export class DefaultDemoDataService implements DemoDataService {
       ids: string | readonly string[],
       keyField?: string,
     ) => Promise<void>,
+    carried?: Carried,
   ): Promise<string> {
     const users = this.deps.users?.();
     if (!users)
@@ -808,7 +1009,12 @@ export class DefaultDemoDataService implements DemoDataService {
         );
       id = String(existing.id);
       await users.update(id, { name: spec.name });
-      await users.resetPassword(id, password);
+      // Setting a password signs the account out; an account a reset carries keeps its sessions while it stays the same.
+      if (
+        !carried?.records.has(carriedKey(USER, id)) ||
+        carried.passwords.get(spec.username) !== password
+      )
+        await users.resetPassword(id, password);
       await users.enable(id);
       // Clearing dropped the account's assignments; its role scopes come back as a new account would get them.
       for (const [scope, value] of Object.entries(spec.roleScopes ?? {}))
@@ -833,7 +1039,7 @@ export class DefaultDemoDataService implements DemoDataService {
     }
     await track(USER, id);
     for (const permissionSet of spec.permissionSets ?? [])
-      await track(ASSIGNMENT, await this.assign(id, permissionSet));
+      await track(ASSIGNMENT, await this.assign(id, permissionSet, carried));
     return id;
   }
 
@@ -844,24 +1050,41 @@ export class DefaultDemoDataService implements DemoDataService {
       ids: string | readonly string[],
       keyField?: string,
     ) => Promise<void>,
+    carried?: Carried,
   ): Promise<void> {
     const sets = this.permissionSets();
-    if (await sets.get(spec.key))
-      throw demoDataError(
-        'DEMO_DATA_PERMISSION_SET_EXISTS',
-        `A Permission Set ${spec.key} exists already.`,
-        'ALREADY_EXISTS',
-      );
-    await sets.create({
-      key: spec.key,
-      title: spec.title,
-      grants: spec.grants as Parameters<typeof sets.create>[0]['grants'],
-    });
+    const grants = spec.grants as Parameters<typeof sets.create>[0]['grants'];
+    if (await sets.get(spec.key)) {
+      if (!carried?.records.has(carriedKey(PERMISSION_SET, spec.key)))
+        throw demoDataError(
+          'DEMO_DATA_PERMISSION_SET_EXISTS',
+          `A Permission Set ${spec.key} exists already.`,
+          'ALREADY_EXISTS',
+        );
+      // Updated in place, so the accounts a reset carries keep what they may do throughout.
+      await sets.update(spec.key, { key: spec.key, title: spec.title, grants });
+      await track(PERMISSION_SET, spec.key);
+      return;
+    }
+    await sets.create({ key: spec.key, title: spec.title, grants });
     await track(PERMISSION_SET, spec.key);
   }
 
-  private async assign(userId: string, permissionSet: string): Promise<string> {
+  private async assign(
+    userId: string,
+    permissionSet: string,
+    carried?: Carried,
+  ): Promise<string> {
     const sets = this.permissionSets();
+    if (carried) {
+      const kept = (await sets.listAssignments(permissionSet)).find(
+        (assignment) =>
+          assignment.subject.type === 'user' &&
+          String(assignment.subject.id) === userId &&
+          carried.records.has(carriedKey(ASSIGNMENT, String(assignment.id))),
+      );
+      if (kept) return String(kept.id);
+    }
     const assignment = await sets.assign({
       subject: { type: 'user', id: userId },
       permissionSet,

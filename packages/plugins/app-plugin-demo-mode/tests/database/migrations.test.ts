@@ -146,3 +146,35 @@ describeMigration('202610210004_demo_mode_operation_lease', {
     ).toMatchObject({ state: 'ready' });
   },
 });
+
+describeMigration('202610220001_demo_mode_dataset_operation', {
+  sources,
+  before: async ({ connection }) => {
+    await connection.query
+      .insertInto('demoModeDatasets')
+      .values({
+        id: 'before-operation',
+        state: 'ready',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .execute();
+  },
+  up: async ({ connection, expectCollection }) => {
+    await expectCollection('demoModeDatasets').toHaveField('operation', {
+      type: 'string',
+      length: 16,
+      nullable: true,
+    });
+    expect(
+      await connection.query
+        .selectFrom('demoModeDatasets')
+        .select(['state', 'operation'])
+        .where('id', '=', 'before-operation')
+        .executeTakeFirst(),
+    ).toMatchObject({ state: 'ready', operation: null });
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('demoModeDatasets').not.toHaveField('operation');
+  },
+});

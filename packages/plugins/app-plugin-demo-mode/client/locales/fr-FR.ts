@@ -87,11 +87,18 @@ const resource: DemoModeResource = {
       state: {
         importing: 'Génération',
         clearing: 'Effacement',
+        resetting: 'Réinitialisation',
         failed: 'Échec',
         ready: 'Prêtes',
         none: 'Non générées',
       },
       presentSummary: 'Générées en {{language}} · {{time}}',
+      resettingSummary:
+        'Effacement des données actuelles, puis nouvelle génération en {{language}}.',
+      phase: {
+        clearing: 'Effacement',
+        generating: 'Nouvelle génération',
+      },
       absentSummary:
         'Générez les données de démonstration pour que les visiteurs explorent l’application à travers une histoire complète.',
       language: 'Langue',
@@ -130,6 +137,8 @@ const resource: DemoModeResource = {
       description:
         'Les visiteurs entrent dans l’un de ces comptes sans mot de passe et peuvent passer de l’un à l’autre depuis le coin de chaque page.',
       off: 'La connexion rapide est désactivée pour ce déploiement (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      pending:
+        'Les comptes apparaissent ici une fois les données de démonstration prêtes.',
       noData:
         'Générez d’abord les données de démonstration ; leurs comptes apparaîtront ici.',
       credentials: 'Utilisateur {{username}} · mot de passe {{password}}',

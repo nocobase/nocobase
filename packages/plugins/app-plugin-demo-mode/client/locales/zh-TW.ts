@@ -78,11 +78,17 @@ const resource: DemoModeResource = {
       state: {
         importing: '產生中',
         clearing: '清除中',
+        resetting: '重設中',
         failed: '失敗',
         ready: '已就緒',
         none: '未產生',
       },
       presentSummary: '{{language}} · {{time}} 產生',
+      resettingSummary: '正在清除現有資料，然後以{{language}}重新產生。',
+      phase: {
+        clearing: '清除現有資料',
+        generating: '重新產生',
+      },
       absentSummary: '產生示範資料後，訪客就能在完整的業務情境中體驗應用。',
       language: '語言',
       clear: '清除',
@@ -117,6 +123,7 @@ const resource: DemoModeResource = {
       description:
         '訪客無需密碼即可進入下方任一帳號，並能在每個頁面角落隨時切換。',
       off: '這個部署關閉了快速進入（NOCOBASE_DEMO_QUICK_SIGN_IN=false）。',
+      pending: '示範資料就緒後，帳號會顯示在這裡。',
       noData: '請先產生示範資料，帳號會顯示在這裡。',
       credentials: '使用者名稱 {{username}} · 密碼 {{password}}',
       copyLink: '複製連結',

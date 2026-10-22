@@ -96,6 +96,8 @@ export interface DemoClearContext {
   readonly data: Readonly<Record<string, unknown>>;
   /** Import membership for application lookups; the application owns deletion of business rows. */
   readonly records: readonly DemoTrackedRecord[];
+  /** How far the cleanup has got, 0 to 1, for the progress bar; optional to call. */
+  progress(fraction: number): Promise<void>;
 }
 
 export interface DemoTrackedRecord {
@@ -195,6 +197,9 @@ export interface DemoAnswer {
 
 export type DemoDataState = 'importing' | 'ready' | 'clearing' | 'failed';
 
+/** What an import or clear under way was started as; a reset clears, then imports. */
+export type DemoDataOperation = 'import' | 'clear' | 'reset';
+
 export interface DemoDataStatus {
   /** Whether an application registered a dataset. */
   readonly available: boolean;
@@ -213,7 +218,9 @@ export interface DemoDataStatus {
   readonly accountsByLanguage: Readonly<
     Record<string, readonly DemoAccountSummary[]>
   >;
-  /** An import or clear under way: how far it has got, 0 to 100. */
+  /** What the import or clear under way was started as; null when none runs. */
+  readonly operation: DemoDataOperation | null;
+  /** An import or clear under way: how far it has got, 0 to 100, across both phases of a reset. */
   readonly importing: { readonly percent: number } | null;
   /** Why the last import stopped, when it did. */
   readonly failure: { readonly code?: string; readonly message: string } | null;

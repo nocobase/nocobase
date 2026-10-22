@@ -80,11 +80,18 @@ const resource: DemoModeResource = {
       state: {
         importing: '生成中',
         clearing: 'クリア中',
+        resetting: 'リセット中',
         failed: '失敗',
         ready: '準備完了',
         none: '未生成',
       },
       presentSummary: '{{language}} · {{time}} に生成',
+      resettingSummary:
+        '現在のデータをクリアし、{{language}}で再生成しています。',
+      phase: {
+        clearing: 'クリア中',
+        generating: '再生成中',
+      },
       absentSummary:
         'デモデータを生成すると、訪問者が一連の業務シナリオでアプリを試せます。',
       language: '言語',
@@ -122,6 +129,7 @@ const resource: DemoModeResource = {
       description:
         '訪問者はパスワードなしでこれらのアカウントに入り、各ページの隅からいつでも切り替えられます。',
       off: 'このデプロイではクイックサインインがオフです（NOCOBASE_DEMO_QUICK_SIGN_IN=false）。',
+      pending: 'デモデータの準備ができると、アカウントがここに表示されます。',
       noData:
         '先にデモデータを生成してください。アカウントがここに表示されます。',
       credentials: 'ユーザー名 {{username}} · パスワード {{password}}',

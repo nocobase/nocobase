@@ -81,11 +81,18 @@ const resource: DemoModeResource = {
       state: {
         importing: 'Gerando',
         clearing: 'Limpando',
+        resetting: 'Redefinindo',
         failed: 'Falhou',
         ready: 'Prontos',
         none: 'Não gerados',
       },
       presentSummary: 'Gerados em {{language}} · {{time}}',
+      resettingSummary:
+        'Limpando os dados atuais para gerá-los novamente em {{language}}.',
+      phase: {
+        clearing: 'Limpando',
+        generating: 'Gerando novamente',
+      },
       absentSummary:
         'Gere os dados de demonstração para que os visitantes explorem o aplicativo com uma história completa.',
       language: 'Idioma',
@@ -124,6 +131,8 @@ const resource: DemoModeResource = {
       description:
         'Os visitantes entram em qualquer uma destas contas sem senha e podem alternar entre elas no canto de cada página.',
       off: 'O acesso rápido está desligado nesta implantação (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      pending:
+        'As contas aparecem aqui quando os dados de demonstração estiverem prontos.',
       noData:
         'Gere primeiro os dados de demonstração; as contas aparecerão aqui.',
       credentials: 'Usuário {{username}} · senha {{password}}',

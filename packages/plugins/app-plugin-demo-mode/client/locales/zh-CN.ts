@@ -78,11 +78,17 @@ const resource: DemoModeResource = {
       state: {
         importing: '生成中',
         clearing: '清空中',
+        resetting: '重置中',
         failed: '失败',
         ready: '已就绪',
         none: '未生成',
       },
       presentSummary: '{{language}} · {{time}} 生成',
+      resettingSummary: '正在清空现有数据，然后以{{language}}重新生成。',
+      phase: {
+        clearing: '清空现有数据',
+        generating: '重新生成',
+      },
       absentSummary: '生成演示数据后，访客就能在一套完整的业务场景里体验应用。',
       language: '语言',
       clear: '清空',
@@ -117,6 +123,7 @@ const resource: DemoModeResource = {
       description:
         '访客无需密码即可进入下面任一账号，并能在每个页面角落随时切换。',
       off: '这个部署关闭了快速进入（NOCOBASE_DEMO_QUICK_SIGN_IN=false）。',
+      pending: '演示数据就绪后，账号会显示在这里。',
       noData: '请先生成演示数据，账号会显示在这里。',
       credentials: '用户名 {{username}} · 密码 {{password}}',
       copyLink: '复制链接',

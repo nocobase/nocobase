@@ -5,6 +5,7 @@ import type { DemoDataStatus } from '../server/data/types.js';
 
 export type {
   DemoAccountSummary,
+  DemoDataOperation,
   DemoDataState,
   DemoDataStatus,
 } from '../server/data/types.js';

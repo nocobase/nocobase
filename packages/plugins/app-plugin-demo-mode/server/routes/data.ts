@@ -53,6 +53,10 @@ const DemoDataStatusSchema: z.ZodType<DemoDataStatus> = z
     counts: z.record(z.string(), z.number()),
     accounts: z.array(Account),
     accountsByLanguage: z.record(z.string(), z.array(Account)),
+    operation: z.enum(['import', 'clear', 'reset']).nullable().meta({
+      description:
+        'What the import or clear under way was started as; a reset clears, then generates again.',
+    }),
     importing: z.object({ percent: z.number() }).nullable(),
     failure: z
       .object({ code: z.string().optional(), message: z.string() })
@@ -205,7 +209,7 @@ export const dataRoutes: AppApiRouteContribution<AppPluginApplication> =
         summary: 'Reset the demo data',
         operationId: 'demoModeResetData',
         description: description(
-          'Runs the required application-wide business cleanup, then generates the dataset again. Preserves system configuration and the environment model. Requires enabled demo mode; this does not restore previous business data if the import fails.',
+          'Runs the required application-wide business cleanup, then generates the dataset again, and answers once the reset is claimed; read the status for its progress. Demo accounts the new import creates again keep their sessions and Permission Sets throughout. Preserves system configuration and the environment model. Requires enabled demo mode; this does not restore previous business data if the import fails.',
         ),
         responses: {
           200: dataResponse(DemoDataStatusSchema),

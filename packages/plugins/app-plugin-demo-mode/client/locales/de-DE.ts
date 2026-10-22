@@ -83,11 +83,18 @@ const resource: DemoModeResource = {
       state: {
         importing: 'Wird erzeugt',
         clearing: 'Wird gelöscht',
+        resetting: 'Wird zurückgesetzt',
         failed: 'Fehlgeschlagen',
         ready: 'Bereit',
         none: 'Nicht erzeugt',
       },
       presentSummary: 'Erzeugt auf {{language}} · {{time}}',
+      resettingSummary:
+        'Die aktuellen Daten werden gelöscht und auf {{language}} neu erzeugt.',
+      phase: {
+        clearing: 'Wird gelöscht',
+        generating: 'Wird neu erzeugt',
+      },
       absentSummary:
         'Erzeugen Sie die Demo-Daten, damit Besucher die Anwendung anhand einer vollständigen Geschichte erkunden können.',
       language: 'Sprache',
@@ -125,6 +132,7 @@ const resource: DemoModeResource = {
       description:
         'Besucher öffnen jedes dieser Konten ohne Passwort und können in der Ecke jeder Seite zwischen ihnen wechseln.',
       off: 'Die Schnellanmeldung ist in dieser Bereitstellung ausgeschaltet (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      pending: 'Die Konten erscheinen hier, sobald die Demodaten bereit sind.',
       noData:
         'Erzeugen Sie zuerst die Demo-Daten; ihre Konten erscheinen dann hier.',
       credentials: 'Benutzername {{username}} · Passwort {{password}}',

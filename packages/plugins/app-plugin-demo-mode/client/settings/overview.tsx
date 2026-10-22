@@ -65,6 +65,8 @@ function StateBadge({
   readonly status: DemoDataStatus;
 }): ReactElement {
   const t = useT();
+  if (status.importing && status.operation === 'reset')
+    return <Badge variant='secondary'>{t('data.state.resetting')}</Badge>;
   if (status.state === 'importing')
     return <Badge variant='secondary'>{t('data.state.importing')}</Badge>;
   if (status.state === 'clearing')
@@ -133,7 +135,13 @@ export function DataCard({
   const language =
     chosen ?? status.language ?? reader ?? status.languages[0] ?? '';
   const working = Boolean(status.importing) || demo.pending;
-  const counts = Object.entries(status.counts);
+  // A reset keeps the page's shape: the data is being replaced, not generated for the first time.
+  const resetting = Boolean(status.importing) && status.operation === 'reset';
+  // While a reset clears, the counts are of what is being removed.
+  const counts =
+    resetting && status.state === 'clearing'
+      ? []
+      : Object.entries(status.counts);
   const run = async () => {
     const action = intent;
     setFailure(undefined);
@@ -166,14 +174,18 @@ export function DataCard({
           <StateBadge status={status} />
         </CardTitle>
         <CardDescription>
-          {status.present && status.language
-            ? t('data.presentSummary', {
-                language: languageName(status.language),
-                time: status.finishedAt
-                  ? new Date(status.finishedAt).toLocaleString()
-                  : '—',
+          {resetting
+            ? t('data.resettingSummary', {
+                language: languageName(status.language ?? language),
               })
-            : t('data.absentSummary')}
+            : status.present && status.language
+              ? t('data.presentSummary', {
+                  language: languageName(status.language),
+                  time: status.finishedAt
+                    ? new Date(status.finishedAt).toLocaleString()
+                    : '—',
+                })
+              : t('data.absentSummary')}
         </CardDescription>
         {canManage ? (
           <CardAction className='flex flex-wrap items-center gap-2'>
@@ -197,7 +209,7 @@ export function DataCard({
                 </SelectContent>
               </Select>
             ) : null}
-            {status.present ? (
+            {status.present || resetting ? (
               <>
                 <Button
                   size='sm'
@@ -244,9 +256,13 @@ export function DataCard({
           <div className='flex items-center gap-3 text-sm'>
             <span className='shrink-0'>
               {t(
-                status.state === 'clearing'
-                  ? 'data.state.clearing'
-                  : 'data.state.importing',
+                resetting
+                  ? status.state === 'clearing'
+                    ? 'data.phase.clearing'
+                    : 'data.phase.generating'
+                  : status.state === 'clearing'
+                    ? 'data.state.clearing'
+                    : 'data.state.importing',
               )}
             </span>
             <Progress
@@ -404,7 +420,13 @@ export function VisitorsCard({
           <Skeleton className='h-24 w-full' />
         ) : !accounts.length ? (
           <p className='text-sm text-muted-foreground'>
-            {status?.present ? t('visitors.off') : t('visitors.noData')}
+            {t(
+              status?.importing
+                ? 'visitors.pending'
+                : status?.present
+                  ? 'visitors.off'
+                  : 'visitors.noData',
+            )}
           </p>
         ) : (
           <>

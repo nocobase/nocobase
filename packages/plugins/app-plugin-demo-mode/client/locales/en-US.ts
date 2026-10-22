@@ -80,11 +80,18 @@ const resource = {
       state: {
         importing: 'Generating',
         clearing: 'Clearing',
+        resetting: 'Resetting',
         failed: 'Failed',
         ready: 'Ready',
         none: 'Not generated',
       },
       presentSummary: 'Generated in {{language}} · {{time}}',
+      resettingSummary:
+        'Clearing the current data, then generating it again in {{language}}.',
+      phase: {
+        clearing: 'Clearing',
+        generating: 'Generating again',
+      },
       absentSummary:
         'Generate the demo data to fill the application with a story visitors can explore.',
       language: 'Language',
@@ -122,6 +129,7 @@ const resource = {
       description:
         'Visitors enter any of these accounts without a password and can switch between them from the corner of every page.',
       off: 'Quick sign-in is turned off for this deployment (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      pending: 'The accounts appear here once the demo data is ready.',
       noData: 'Generate the demo data first; its accounts appear here.',
       credentials: 'Username {{username}} · password {{password}}',
       copyLink: 'Copy link',

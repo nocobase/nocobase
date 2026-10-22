@@ -80,11 +80,18 @@ const resource: DemoModeResource = {
       state: {
         importing: 'Sedang dibuat',
         clearing: 'Sedang dihapus',
+        resetting: 'Sedang diatur ulang',
         failed: 'Gagal',
         ready: 'Siap',
         none: 'Belum dibuat',
       },
       presentSummary: 'Dibuat dalam {{language}} · {{time}}',
+      resettingSummary:
+        'Menghapus data saat ini, lalu membuatnya lagi dalam {{language}}.',
+      phase: {
+        clearing: 'Sedang dihapus',
+        generating: 'Membuat ulang',
+      },
       absentSummary:
         'Buat data demo agar pengunjung bisa menjelajahi aplikasi lewat cerita yang lengkap.',
       language: 'Bahasa',
@@ -122,6 +129,7 @@ const resource: DemoModeResource = {
       description:
         'Pengunjung masuk ke salah satu akun ini tanpa kata sandi dan bisa berpindah akun dari sudut setiap halaman.',
       off: 'Masuk cepat dinonaktifkan untuk deployment ini (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      pending: 'Akun akan muncul di sini setelah data demo siap.',
       noData: 'Buat data demo terlebih dahulu; akunnya akan muncul di sini.',
       credentials: 'Nama pengguna {{username}} · kata sandi {{password}}',
       copyLink: 'Salin tautan',

@@ -107,6 +107,7 @@ const status = {
     },
   ],
   accountsByLanguage: {},
+  operation: null,
   importing: null,
   failure: null,
   mode: 'read-only',
@@ -131,7 +132,9 @@ function demoApi({
   configuration = view(),
   onPut,
   onRead,
+  data = status,
 }: {
+  data?: typeof status;
   mode?: string;
   permissions?: readonly object[];
   configuration?: ReturnType<typeof view>;
@@ -143,7 +146,10 @@ function demoApi({
     if (call.path === 'authorization/permissions')
       return { data: { unrestricted: false, permissions } };
     if (call.path === 'demoMode/status') return { data: { mode } };
-    if (call.path === 'demoMode/data') return { data: status };
+    if (call.path === 'demoMode/data') return { data };
+    // Quick sign-in offers no account while the data is being replaced.
+    if (call.path === 'demoMode/accounts' && data.importing)
+      return { data: [] };
     if (call.path === 'demoMode/accounts')
       return {
         data: [
@@ -377,6 +383,35 @@ describe.each(['default', 'host'] as const)(
       ).toBeInTheDocument();
       fireEvent.click(within(dialog).getByRole('button', { name: '清空' }));
       await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1));
+    });
+
+    it('shows a reset as replacing the data, with one progress across its phases', async () => {
+      await render(
+        demoApi({
+          data: {
+            ...status,
+            present: false,
+            state: 'clearing',
+            operation: 'reset',
+            importing: { percent: 9 },
+          } as typeof status,
+        }),
+      );
+      expect(await screen.findByText('重置中')).toBeInTheDocument();
+      expect(
+        screen.getByText('正在清空现有数据，然后以中文（中国）重新生成。'),
+      ).toBeInTheDocument();
+      expect(screen.getByText('清空现有数据')).toBeInTheDocument();
+      expect(screen.getByText('9%')).toBeInTheDocument();
+      // The counts are of what is being removed, and the actions stay those of existing data.
+      expect(screen.queryByText('11')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '重置' })).toBeDisabled();
+      expect(
+        screen.queryByRole('button', { name: '生成' }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByText('演示数据就绪后，账号会显示在这里。'),
+      ).toBeInTheDocument();
     });
 
     it('explains when the application is not a demo', async () => {
