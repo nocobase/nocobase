@@ -3,6 +3,7 @@
  * choices, and beside it that work in detail, where the session runs and what it has used. A session whose computer is
  * offline, or that is archived, reads as before and takes no new messages.
  */
+import { useNavigate } from 'react-router';
 import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
@@ -65,7 +66,7 @@ import {
 import { LinkOpenContext, useSessionSurface } from '../config.js';
 import { NARROW_PX } from '../lib/size.js';
 import { valueName } from '../lib/choices.js';
-import { errorText } from '../lib/errors.js';
+import { errorText, suggestionAction } from '../lib/errors.js';
 import { dateTime, shortTime, tokens } from '../lib/format.js';
 import { displayPath } from '../lib/paths.js';
 import { byIcon, linkIcon, linkNeedsYou } from '../lib/tones.js';
@@ -223,6 +224,7 @@ function Conversation({
 }): ReactElement {
   const { t, i18n } = useTranslation();
   const toaster = useToaster();
+  const navigate = useNavigate();
   const prompt = usePrompt(session.id);
   const submission = useSubmission<{
     content: PromptContent[];
@@ -246,6 +248,11 @@ function Conversation({
     void toaster.show({
       type: 'error',
       title: errorText(error, t('errors.generic')),
+      ...suggestionAction(
+        error,
+        t('links.configure', { defaultValue: 'Configure' }),
+        (href) => void navigate(href),
+      ),
     });
 
   const sectionRef = useRef<HTMLElement>(null);
@@ -908,6 +915,7 @@ function Details({
   const surface = useSessionSurface();
   const decide = useDecideLinks(session.id);
   const toaster = useToaster();
+  const navigate = useNavigate();
   const context = session.state?.context;
   const used = usage(items);
   const mode = modeName(session);
@@ -1010,6 +1018,13 @@ function Details({
                                 toaster.show({
                                   type: 'error',
                                   title: errorText(error, t('errors.generic')),
+                                  ...suggestionAction(
+                                    error,
+                                    t('links.configure', {
+                                      defaultValue: 'Configure',
+                                    }),
+                                    (href) => void navigate(href),
+                                  ),
                                 }),
                             },
                           )

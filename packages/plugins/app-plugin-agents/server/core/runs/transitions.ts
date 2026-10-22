@@ -42,7 +42,7 @@ export interface FinishOutcome {
   readonly detail?: string;
   readonly summary?: string;
   readonly sessionId?: string;
-  readonly cancelledById?: string;
+  readonly cancelledById?: string | null;
   readonly failureSource?: 'sweeper';
 }
 

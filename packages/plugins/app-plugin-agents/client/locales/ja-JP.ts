@@ -529,6 +529,14 @@ const jaJP: LocaleResource<typeof enUS> = {
     unknown: '実行に失敗しました。',
   },
   runtimes: {
+    capacity: {
+      actual: 'Last effective slots: {{slots}}',
+      online: 'Effective slots · online settings',
+      pending: 'Waiting for runner to sync online settings',
+      legacy: 'Legacy local slots · upgrade the application server',
+      upgrade: 'Sync status unavailable · upgrade the runner',
+      lastReported: 'Last reported: {{time}}',
+    },
     quota: {
       workspaceStatus: {
         active: '仕事は続く',

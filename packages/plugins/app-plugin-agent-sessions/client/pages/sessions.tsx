@@ -13,6 +13,9 @@ import {
   useSearchParams,
 } from 'react-router';
 
+import { useTranslation } from '@nocobase/i18n/client';
+import { ArchiveIcon } from 'lucide-react';
+
 import { useSessions } from '../api.js';
 
 import { NewSession } from '../components/new-session.js';
@@ -68,6 +71,16 @@ export default function AgentSessionsPage(): ReactElement {
   const wide = useMatches('(min-width: 768px)');
   const sessions = useSessions(false);
   const latest = sessions.data?.pages[0]?.data[0];
+  // While the list shows archived sessions, an open session that is not one of them, or a new draft, stays mounted but
+  // hidden, so the main area matches the list and an unsent draft survives the trip back.
+  const [archived, setArchived] = useState(false);
+  const archivedSessions = useSessions(archived);
+  const openId = open?.params.sessionId;
+  const showsArchived =
+    archived &&
+    !archivedSessions.data?.pages.some((page) =>
+      page.data.some((session) => session.id === openId),
+    );
   if (!open && !params.has('new') && wide && latest)
     return (
       <Navigate
@@ -81,19 +94,41 @@ export default function AgentSessionsPage(): ReactElement {
   return (
     <div className='flex h-full min-h-0'>
       <SessionList
-        activeId={open?.params.sessionId}
+        activeId={openId}
         className={cn(focused && 'hidden md:flex')}
         rail={panel && !roomy && !expanded}
         onExpand={() => setExpandedFor(opened)}
+        archived={archived}
+        onArchivedChange={setArchived}
+        onNewSession={() => setArchived(false)}
       />
       <main className={cn('min-w-0 flex-1', !focused && 'hidden md:block')}>
-        {outlet ?? (
-          <NewSession
-            onStart={startNew}
-            deferDiscovery={!params.has('new') && wide && sessions.isPending}
-          />
-        )}
+        {showsArchived && <ArchivedView />}
+        <div
+          className={showsArchived ? undefined : 'contents'}
+          hidden={showsArchived}
+        >
+          {outlet ?? (
+            <NewSession
+              onStart={startNew}
+              deferDiscovery={!params.has('new') && wide && sessions.isPending}
+            />
+          )}
+        </div>
       </main>
+    </div>
+  );
+}
+
+function ArchivedView(): ReactElement {
+  const { t } = useTranslation();
+  return (
+    <div className='text-muted-foreground flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm'>
+      <ArchiveIcon className='size-5' aria-hidden />
+      <h2 className='text-foreground text-base font-semibold'>
+        {t('list.archived')}
+      </h2>
+      <p>{t('list.archivedView')}</p>
     </div>
   );
 }

@@ -65,6 +65,7 @@ export interface RunnerPaths {
   appsDir: string;
   credentialsDir: string;
   daemonPid: string;
+  capacity: string;
   runsDir: string;
   logsDir: string;
   daemonLog: string;
@@ -93,6 +94,7 @@ export function runnerPaths(
     appsDir: path.join(home, 'apps'),
     credentialsDir: path.join(home, 'credentials'),
     daemonPid: path.join(home, 'daemon.pid'),
+    capacity: path.join(home, 'capacity.json'),
     runsDir: path.join(home, 'runs'),
     logsDir,
     daemonLog: path.join(logsDir, 'runner.log'),

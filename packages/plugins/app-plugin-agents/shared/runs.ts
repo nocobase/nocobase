@@ -206,6 +206,7 @@ export interface Run {
   readonly finishedAt: string | null;
   readonly lastActivityAt: string | null;
   readonly cancelRequestedAt: string | null;
+  readonly cancelledById: string | null;
   readonly failureReason: FailureReason | null;
   readonly failureDetail: string | null;
   readonly summary: string | null;

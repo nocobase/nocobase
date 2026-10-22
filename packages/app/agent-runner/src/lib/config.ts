@@ -35,12 +35,9 @@ import { DEFAULT_MIN_FREE_DISK, type FreeSpace } from './size.ts';
 export interface RunnerSettings {
   /** Shown in every application; the host name by default. */
   name: string;
-  /** Runs at once across every application; `start --slots` overrides it. */
-  slots: number;
-  /**
-   * Runs of each coding tool at once across every application, beside `slots` (`register --slots claude=2,codex=1`); a
-   * tool left out is bounded by `slots` only.
-   */
+  /** Legacy fallback for servers that do not send capacity. New commands never configure this. */
+  slots?: number;
+  /** Legacy tool limits, retained until every existing connection supports online capacity. */
   toolSlots?: ToolSlots;
   /**
    * The Node.js and pnpm agents get (`config set agent-tools`): the runner's own, first on their PATH (`runner`, the
@@ -198,7 +195,7 @@ export async function readSettings(
   const minFree = storedFreeSpace(stored?.minFreeDisk);
   return {
     name: stored?.name ?? defaultRunnerName(),
-    slots: stored?.slots ?? 1,
+    ...(stored?.slots === undefined ? {} : { slots: stored.slots }),
     ...(toolSlots.success &&
     toolSlots.data !== undefined &&
     Object.keys(toolSlots.data).length > 0

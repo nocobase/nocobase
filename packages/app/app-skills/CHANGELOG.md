@@ -1,5 +1,12 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.45
+
+### Patch Changes
+
+- e913522: Add notification upgrade planning and acceptance guidance for TestAdapter removal, class-based channel extensions and deprecated configuration compatibility. Cover application-owned forms, log pages, permissions and E2E fixtures while preserving send contracts, delivery identities and historical records.
+- 99b5ad2: List the new `task-center-ui` block in the UI Library catalog: presentational components for a personal task center layered as source, subject, status and task cards, with per-type summaries, one-type batch selection and a detail drawer whose form the task's business supplies.
+
 ## 0.1.0-beta.44
 
 ### Patch Changes
