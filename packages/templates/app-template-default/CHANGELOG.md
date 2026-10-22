@@ -1,5 +1,50 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.76
+
+### Patch Changes
+
+- d3d4c5d: Preserve standard settings list position across details and edits, display localized role names, and support scoped member configuration with a safe return destination. Keep unsupported workflow ordering static and document the shared navigation contract without changing stored permissions or business configuration.
+
+  Provide contextual setup readiness components and a live required-role membership adapter in both templates, with typed unavailable states and safe configuration links. Guide builders to connect feature-specific initialization checks to authorized business services without startup scans, automatic grants or fabricated relationship defaults.
+
+  Explain empty user and role lists when creation is unavailable, report the specific completed account action, and distinguish invalid requests and generic data conflicts from retryable failures without changing permissions or discarding input.
+
+  Simplify user management to one edit drawer for basic information and roles, with underlined names as the edit entry and inline account controls, a searchable role picker, one atomic Save and shared leave guards. Preserve legacy URLs and resolve return paths from the actual route mount so remapped settings pages retain their list context.
+
+  Allow user profile fields and submitted role scopes to be updated in one transaction, requiring each affected action independently and preserving omitted scopes and legacy profile-only callers.
+
+  Keep localized pagination summaries on one line with content-sized widths and wrap complete control groups at narrow widths, preventing Chinese labels from splitting under desktop table layouts.
+
+  Use quiet, consistent outlined account-action buttons and semantic green enabled/gray disabled status badges in user management, keeping existing action confirmations and authorization.
+
+  Standardize clickable record fields through RecordLink: foreground text at rest, an underline on hover, and visible keyboard focus. Reuse it for user, role, data-scope and example workflow record links while preserving native navigation and list query context.
+
+- f8f64ad: Use the notification channel `type` discriminator in application configuration examples and explain its compatibility with `provider` in application development guidance.
+- f8f64ad: Remove the Notification TestAdapter protocol, built-in form descriptors, generic test-send routes and permission, and test client methods. Channel classes now implement only their delivery lifecycle. Existing send/sendTransient contracts, retries, logs, and inbox records remain unchanged.
+
+  Applications should remove test buttons and test API clients, then verify delivery through their business flows or a server-side send() call. Log pages must read provider identities from recorded deliveries rather than test target metadata. Update the notification Skill and example guidance to match, and republish consumers against the new notification package line.
+
+  Explicitly include Node.js types in both application templates' client typechecks, whose shared contracts reference server package sources in the workspace, so compilation no longer depends on the removed notification test imports to load those types.
+
+- f152ed4: Give workflow definition diagrams two thirds of the desktop layout and parameter forms one third while retaining stacked cards on smaller screens.
+- f152ed4: Use compact process cards, filled type-colored icons for ordinary steps, outcome pills and auxiliary transition capsules in workflow examples, preserve history replay and complete graph fitting, and synchronize the optional process presentation into both application templates.
+- Updated dependencies [5d49614]
+- Updated dependencies [d3d4c5d]
+- Updated dependencies [4c23514]
+- Updated dependencies [f2712b9]
+- Updated dependencies [fb3b3c5]
+- Updated dependencies [f8f64ad]
+- Updated dependencies [f8f64ad]
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-plugin-agents@1.0.0-beta.18
+  - @nocobase/app-plugin-users@2.0.0-beta.9
+  - @nocobase/app-plugin-foundation@0.1.0-beta.1
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.15
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.0
+  - @nocobase/app-plugin-notification@2.0.0-beta.0
+  - @nocobase/app-server@3.0.0-beta.2
+
 ## 1.0.0-beta.75
 
 ### Patch Changes

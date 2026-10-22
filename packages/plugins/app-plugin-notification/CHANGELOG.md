@@ -1,5 +1,27 @@
 # @nocobase/app-plugin-notification
 
+## 2.0.0-beta.0
+
+### Major Changes
+
+- f8f64ad: Remove the Notification TestAdapter protocol, built-in form descriptors, generic test-send routes and permission, and test client methods. Channel classes now implement only their delivery lifecycle. Existing send/sendTransient contracts, retries, logs, and inbox records remain unchanged.
+
+  Applications should remove test buttons and test API clients, then verify delivery through their business flows or a server-side send() call. Log pages must read provider identities from recorded deliveries rather than test target metadata. Update the notification Skill and example guidance to match, and republish consumers against the new notification package line.
+
+  Explicitly include Node.js types in both application templates' client typechecks, whose shared contracts reference server package sources in the workspace, so compilation no longer depends on the removed notification test imports to load those types.
+
+### Minor Changes
+
+- f8f64ad: Add class-based notification channel registration with `registerChannelType`, per-channel lifecycle management, and container access. Accept `type` in channel configuration while preserving the `provider` alias and legacy extension factories. Keep the provider-based `NotificationChannelConfig` and legacy callback types compatible, and expose `NotificationChannelConfigInput` for configuration accepting either discriminator. Mark legacy registration methods and definition types as deprecated with migration guidance. Keep send contracts and persisted delivery identities compatible, including custom type names matching JavaScript prototype properties, and drain active requests before closing channels. Support the same configuration aliases in the host mailer.
+
+  Normalize notification channel aliases in application configuration snapshots, including defaults, environment overlays, and reloads. Preserve legacy `config.provider` reads and their required-string type, mark the field deprecated in favor of `type`, and expose `NotificationConfigInput` for unnormalized configuration. Keep source layers and conflict validation unchanged.
+
+### Patch Changes
+
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-server@3.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+
 ## 2.0.0-beta
 
 ### Major Changes
