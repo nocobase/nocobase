@@ -36,6 +36,7 @@ import {
   NATIVE_AGENT_TOOLS,
   DIST_ACCEPT_NPM,
   distAccepts,
+  type AgentTool,
   type WorkspaceReporting,
   type WorkspacesRequest,
   type WorkspacesResponse,
@@ -210,6 +211,9 @@ export class FakeServer {
   uploadStatus: number | undefined;
   /** The slots the registration token carries; registration answers the runner's own, else these, else 1. */
   tokenSlots: number | undefined;
+  capacity:
+    | { slots: number; toolSlots: Partial<Record<AgentTool, number>> }
+    | undefined = { slots: 1, toolSlots: {} };
   /**
    * While set, heartbeat answers announce workspace reports and the workspaces route answers `workspaceAnswer`;
    * otherwise the route does not exist, as on an application that predates it.
@@ -577,6 +581,7 @@ export class FakeServer {
         .map(([id]) => id);
       return ok(c, {
         ok: true,
+        ...(this.capacity ? { capacity: this.capacity } : {}),
         serverTime: new Date().toISOString(),
         enabledTools: this.enabledTools,
         detectTools: this.detectTools,

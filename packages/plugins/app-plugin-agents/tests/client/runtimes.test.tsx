@@ -629,6 +629,11 @@ describe('runtimes page', () => {
         slots: 3,
         activeRuns: 3,
         toolSlots: { claude: 2, codex: 1 },
+        reportedSlots: 3,
+        toolLoad: {
+          claude: { slots: 2, free: 0 },
+          codex: { slots: 1, free: 0 },
+        },
         activeByTool: { claude: 2, codex: 1 },
       }),
       runner('r3', { slots: 2 }),
@@ -808,7 +813,7 @@ describe('runtimes page', () => {
     ).toEqual({
       trust: 'ownerOnly',
       enabledTools: ['codex', 'claude'],
-      slots: 1,
+      slots: 4,
     });
     expect(within(dialog).getAllByText(/fgreg_secret/u).length).toBeGreaterThan(
       0,
@@ -859,7 +864,7 @@ describe('runtimes page', () => {
       ).toEqual({
         trust: 'team',
         enabledTools: ['codex', 'claude'],
-        slots: 1,
+        slots: 4,
       }),
     );
   });
@@ -981,7 +986,7 @@ describe('runtimes page', () => {
       within(dialog).getByRole('checkbox', { name: 'tools.codex' }),
     );
     const slots = within(dialog).getByLabelText('connect.slots');
-    expect(slots).toHaveValue('1');
+    expect(slots).toHaveValue('4');
     fireEvent.change(slots, { target: { value: '65' } });
     fireEvent.click(
       within(dialog).getByRole('button', { name: 'connect.createCredential' }),

@@ -215,11 +215,10 @@ describe('served tarballs', () => {
 
   beforeEach(async () => {
     server = new FakeServer();
+    server.capacity = { slots: 2, toolSlots: {} };
     await server.listen();
     home = tempDir('nocobase-runner-update-home-');
     await registerRunner(server.url, cliEnv(home), [
-      '--slots',
-      '2',
       '--cli',
       `appcli=${writeFakeCli(home)}`,
     ]);
@@ -301,6 +300,8 @@ describe('served tarballs', () => {
           turn: `write upgrade.txt preserved\n${mode === 'forced' ? 'hang-hard' : 'hang'}`,
         },
       });
+      // The Claude limit is the application's own, sent in heartbeat answers.
+      server.capacity = { slots: 2, toolSlots: { claude: 2 } };
       const paths = runnerPaths(home, `${home}-work`);
       const apply = vi.fn(async () => {
         expect(run.fail?.reason).toBe('runnerUpgrade');
@@ -316,7 +317,6 @@ describe('served tarballs', () => {
           cancelGraceMs: mode === 'forced' ? 1 : 10_000,
           killGraceMs: mode === 'forced' ? 1 : 5_000,
         },
-        toolSlots: { claude: 2 },
         log: () => {},
         selfUpdate: {
           installation: { prefix: home, current: path.join(home, 'current') },
@@ -484,6 +484,7 @@ describe('served tarballs', () => {
     let pendingClaim: Promise<number> | undefined;
     let responseSpy: ReturnType<typeof vi.spyOn> | undefined;
     try {
+      await daemon.heartbeat(link);
       await daemon['claimFrom'](link, 1, false);
       await waitFor(
         () =>
@@ -567,6 +568,71 @@ describe('served tarballs', () => {
       responseSpy?.mockRestore();
       cancelSpy.mockRestore();
       exitSpy.mockRestore();
+    }
+  });
+
+  it('reports draining with zero total and tool capacity before installing, one heartbeat at a time', async () => {
+    server.capacity = { slots: 2, toolSlots: { claude: 1 } };
+    const paths = runnerPaths(home, `${home}-work`);
+    const reported = () =>
+      server.runners.values().next().value!.heartbeats.at(-1)?.load;
+    let atInstall: ReturnType<typeof reported>;
+    const apply = vi.fn(async () => {
+      atInstall = reported();
+    });
+    const daemon = new RunnerDaemon({
+      paths,
+      settings: await readSettings(paths),
+      connections: [await connection()],
+      adapters: new Map(),
+      timings: FAST_TIMINGS,
+      log: () => {},
+      selfUpdate: {
+        installation: { prefix: home, current: path.join(home, 'current') },
+        apply,
+      },
+    });
+    const link = daemon['links'][0]!;
+    const request = link.client.request.bind(link.client);
+    let inFlight = 0;
+    let overlapped = false;
+    const requestSpy = vi
+      .spyOn(link.client, 'request')
+      .mockImplementation(async (...args) => {
+        if (args[1] !== RUNNER_ROUTES.heartbeat) return request(...args);
+        overlapped ||= inFlight > 0;
+        inFlight += 1;
+        try {
+          return await request(...args);
+        } finally {
+          inFlight -= 1;
+        }
+      });
+    try {
+      await daemon.heartbeat(link);
+      expect(reported()).toMatchObject({ slots: 2, free: 2 });
+      server.upgrade = {
+        minVersion: '0.0.0',
+        latestVersion: '99.0.0',
+        downloadUrl: '/update',
+        sha256: 'a'.repeat(64),
+        reason: 'test',
+      };
+      // The heartbeat that learns of the update has already reported free capacity.
+      await daemon.heartbeat(link);
+      await waitFor(() => daemon.updatedTo === '99.0.0', 30_000);
+      await daemon.wait();
+      expect(apply).toHaveBeenCalledOnce();
+      expect(atInstall).toMatchObject({
+        draining: 'updatePending',
+        slots: 2,
+        free: 0,
+        tools: { claude: { slots: 1, free: 0 } },
+      });
+      expect(overlapped).toBe(false);
+    } finally {
+      await daemon.stop();
+      requestSpy.mockRestore();
     }
   });
 

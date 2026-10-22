@@ -56,12 +56,20 @@ export function SessionList({
   className,
   rail = false,
   onExpand,
+  archived,
+  onArchivedChange,
+  onNewSession,
 }: {
   readonly activeId: string | undefined;
   readonly className?: string | undefined;
   /** Folded to a narrow rail, to make room for an open record's panel; `onExpand` unfolds it. */
   readonly rail?: boolean;
   readonly onExpand?: () => void;
+  /** Whether the archived sessions show, when the caller follows it; otherwise the list keeps it itself. */
+  readonly archived?: boolean;
+  readonly onArchivedChange?: (archived: boolean) => void;
+  /** Leaves an archived view before opening a new session from either list layout. */
+  readonly onNewSession?: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   if (rail)
@@ -88,6 +96,7 @@ export function SessionList({
           size='icon-sm'
           aria-label={t('list.new')}
           title={t('list.new')}
+          onClick={onNewSession}
           nativeButton={false}
           render={<Link to='/agent-sessions?new' />}
         >
@@ -95,18 +104,37 @@ export function SessionList({
         </Button>
       </section>
     );
-  return <FullSessionList activeId={activeId} className={className} />;
+  return (
+    <FullSessionList
+      activeId={activeId}
+      className={className}
+      archived={archived}
+      onArchivedChange={onArchivedChange}
+      onNewSession={onNewSession}
+    />
+  );
 }
 
 function FullSessionList({
   activeId,
   className,
+  archived: controlled,
+  onArchivedChange,
+  onNewSession,
 }: {
   readonly activeId: string | undefined;
   readonly className?: string | undefined;
+  readonly archived?: boolean | undefined;
+  readonly onArchivedChange?: ((archived: boolean) => void) | undefined;
+  readonly onNewSession?: (() => void) | undefined;
 }): ReactElement {
   const { t, i18n } = useTranslation();
-  const [archived, setArchived] = useState(false);
+  const [own, setOwn] = useState(false);
+  const archived = controlled ?? own;
+  const setArchived = (value: boolean): void => {
+    setOwn(value);
+    onArchivedChange?.(value);
+  };
   const [filter, setFilter] = useState<Filter>('all');
   const [project, setProject] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -114,9 +142,12 @@ function FullSessionList({
   const surface = useSessionSurface();
   // The standalone page shares the compact history layout with host-owned panels.
   const compact = !surface.panel || Boolean(surface.renderHeaderActions);
+  // The standalone page names the archived view; a host panel keeps its mode title.
   const title =
     surface.panelTitle ??
-    (compact || !archived ? t('list.title') : t('list.archived'));
+    (archived && (!compact || !surface.panel)
+      ? t('list.archived')
+      : t('list.title'));
   const query = useSessions(archived);
   const archive = useArchive();
 
@@ -197,6 +228,7 @@ function FullSessionList({
               className='size-9 shrink-0 [&_svg]:size-4'
               aria-label={t('list.new')}
               title={t('list.new')}
+              onClick={onNewSession}
               nativeButton={false}
               render={<Link to='/agent-sessions?new' />}
             >

@@ -1,5 +1,15 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.10
+
+### Patch Changes
+
+- dfe2318: Wait for post-commit file cleanup before completing knowledge proposal rejection or withdrawal, preventing stale file records and cleanup races on MySQL.
+- Updated dependencies [9eea184]
+  - @nocobase/db@1.0.0-beta.22
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
 ## 0.1.0-beta.9
 
 ### Patch Changes

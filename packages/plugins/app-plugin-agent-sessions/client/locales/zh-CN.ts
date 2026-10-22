@@ -21,6 +21,8 @@ const zhCN: AgentSessionsResource = {
     label: '会话',
     title: '我的 Agent',
     archived: '已归档',
+    archivedView:
+      '选择一个已归档会话查看内容。当前打开的会话和未发送的草稿会保留。',
     back: '返回会话',
     new: '新会话',
     search: '搜索会话',
@@ -77,9 +79,6 @@ const zhCN: AgentSessionsResource = {
     settingsRetry: '重试设置',
     settingsUnsupported: '此智能体不提供设置，将使用默认值。',
     settingsEmpty: '此智能体没有可配置的设置，将使用默认值。',
-    title: '新会话',
-    subtitle:
-      '在自己的电脑上与 Agent 讨论并澄清需求、记录任务、跟进进展。开始任务后，Studio 项目经理会协调 Agent 进行开发。',
     pickComputer: '选择电脑',
     noAgent: '没有可用的 Agent',
     folder: '电脑上的目录',

@@ -6,17 +6,21 @@ import {
   type AppRegistration,
 } from '../lib/config.ts';
 import { formatToolSlots } from '../lib/slots.ts';
-import type { ToolSlots } from '../protocol/index.ts';
+import type { RunnerCapacity } from '../protocol/index.ts';
+import { readJson } from '../lib/home.ts';
 import { readDaemonPid } from '../core/loop.ts';
 import { readRecords, type RunRecord } from '../core/supervisor.ts';
 import { runnerCommandLine } from '../host.ts';
 
+type EffectiveCapacity = RunnerCapacity & {
+  source: 'online' | 'legacyLocal';
+  connected: boolean;
+  reportedAt?: string;
+};
+
 interface RunnerStatus {
   registered: boolean;
   name: string;
-  slots: number;
-  /** Limits per coding tool beside `slots`; absent when none is set. */
-  toolSlots?: ToolSlots;
   agentTools: AgentTools;
   apps: {
     key: string;
@@ -24,6 +28,8 @@ interface RunnerStatus {
     server: string;
     runnerId: string;
     cli: Record<string, string>;
+    capacity?: EffectiveCapacity;
+    reportedAt?: string;
     revoked?: AppRegistration['revoked'];
   }[];
   running: boolean;
@@ -41,6 +47,17 @@ export default class Status extends RunnerCommand {
     const settings = await readSettings(this.paths);
     const connections = await readConnections(this.paths);
     const daemon = await readDaemonPid(this.paths);
+    const stored = await readJson<{
+      pid: number;
+      startedAt: string;
+      apps: Record<string, EffectiveCapacity>;
+    }>(this.paths.capacity).catch(() => undefined);
+    const snapshot =
+      daemon &&
+      stored?.pid === daemon.pid &&
+      stored.startedAt === daemon.startedAt
+        ? stored
+        : undefined;
     const runs = (await readRecords(this.paths)).map(
       ({ runId, appKey, pid, phase, startedAt, workDir }) => ({
         runId,
@@ -57,14 +74,17 @@ export default class Status extends RunnerCommand {
       server: registration.server,
       runnerId: registration.runnerId,
       cli: registration.cli,
+      ...(snapshot?.apps[registration.key]?.source
+        ? {
+            capacity: snapshot.apps[registration.key],
+            reportedAt: snapshot.apps[registration.key]?.reportedAt,
+          }
+        : {}),
       ...(registration.revoked === undefined
         ? {}
         : { revoked: registration.revoked }),
     }));
     this.log(`Runner   ${settings.name}`);
-    this.log(
-      `Slots    ${settings.slots}${settings.toolSlots === undefined ? '' : ` (${formatToolSlots(settings.toolSlots)})`}`,
-    );
     this.log(
       'Access   agents run with full access and your real home; the runner is not a sandbox',
     );
@@ -73,10 +93,25 @@ export default class Status extends RunnerCommand {
     );
     if (apps.length === 0)
       this.log(`Not registered. Run \`${runnerCommandLine('register')}\`.`);
-    for (const app of apps)
+    for (const app of apps) {
       this.log(
         `App      ${app.name || app.key} at ${app.server} as ${app.runnerId}${app.revoked === undefined ? '' : ` — revoked at ${app.revoked.at} (${app.revoked.reason}); run ${runnerCommandLine('register')} to register again`}`,
       );
+      this.log(
+        app.capacity
+          ? 'Slots    ' +
+              app.capacity.slots +
+              ' (' +
+              app.capacity.source +
+              (app.capacity.connected ? ')' : ', disconnected)') +
+              (Object.keys(app.capacity.toolSlots).length
+                ? ' ' + formatToolSlots(app.capacity.toolSlots)
+                : '') +
+              ' · last reported ' +
+              (app.reportedAt ?? 'unknown')
+          : 'Slots    unknown (daemon stopped or awaiting heartbeat)',
+      );
+    }
     this.log(
       `Daemon   ${daemon === undefined ? 'stopped' : `running (pid ${daemon.pid}, since ${daemon.startedAt})`}`,
     );
@@ -87,10 +122,6 @@ export default class Status extends RunnerCommand {
     return {
       registered: apps.length > 0,
       name: settings.name,
-      slots: settings.slots,
-      ...(settings.toolSlots === undefined
-        ? {}
-        : { toolSlots: settings.toolSlots }),
       agentTools: settings.agentTools,
       apps,
       running: daemon !== undefined,

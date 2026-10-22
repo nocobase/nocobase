@@ -355,6 +355,16 @@ export const ToolLoadSchema: z.ZodType<ToolLoad> = z.object({
  * runner offers is reported, never configured: its system, its features and its coding tools with whether each is
  * signed in.
  */
+/** Complete capacity for one application; omitted tools have no additional limit. */
+export interface RunnerCapacity {
+  readonly slots: number;
+  readonly toolSlots: ToolSlots;
+}
+export const RunnerCapacitySchema: z.ZodType<RunnerCapacity> = z.object({
+  slots: z.number().int().positive().max(64),
+  toolSlots: ToolSlotsSchema,
+});
+
 export interface RegisterRequest {
   /** The one-time token from "Add runner"; it decides the runner's trust level and owner. */
   readonly registrationToken: string;
@@ -372,9 +382,9 @@ export interface RegisterRequest {
   readonly protocolVersion: number;
   readonly features: readonly RunnerFeature[];
   readonly tools: readonly ToolInfo[];
-  /** How many runs it may hold at once; absent to take its registration token's (else 1). */
+  /** Legacy registration hint; current servers use only the online token configuration (default four). */
   readonly slots?: number;
-  /** Its own limits per coding tool (`ToolSlots`); absent to take its registration token's (else none). */
+  /** Legacy registration hint; current servers use the online token tool limits. */
   readonly toolSlots?: ToolSlots;
   /** What its owner's local policy lets it take (protocol 7); absent for anything. */
   readonly policy?: RunnerPolicy;
@@ -423,7 +433,7 @@ export interface RegisterResponse {
   readonly leaseRenewMs: number;
   /** ISO 8601, for the runner to notice clock skew. */
   readonly serverTime: string;
-  /** The slots the application gave it: its own `slots` when it sent them, else its registration token's, else 1. */
+  /** Online registration capacity; current servers default to four. */
   readonly slots?: number;
   /** The limits per coding tool the application gave it: its own when it sent them, else its registration token's. */
   readonly toolSlots?: ToolSlots;
@@ -469,12 +479,13 @@ export interface HeartbeatRequest {
   readonly jobs?: readonly ActiveJob[];
   /**
    * Slots are shared by runs and jobs. `tools` holds, for each coding tool it has a limit for, how many runs of it the
-   * runner holds at most and could take now, across every application it serves; absent from runners that keep no
+   * runner holds at most and could take now within this application; absent from runners that keep no
    * limits per tool.
    */
   readonly load: {
     /** diskLow reports no intake while workspace disk capacity is below its configured threshold. */
     readonly draining?: 'updatePending' | 'pruning' | 'diskLow';
+    readonly capacitySource?: 'online' | 'legacyLocal';
     readonly slots: number;
     readonly free: number;
     readonly tools?: Readonly<Partial<Record<AgentTool, ToolLoad>>>;
@@ -494,6 +505,7 @@ export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
   active: z.array(ActiveRunSchema),
   jobs: z.array(ActiveJobSchema).optional(),
   load: z.object({
+    capacitySource: z.enum(['online', 'legacyLocal']).optional(),
     draining: z.enum(['updatePending', 'pruning', 'diskLow']).optional(),
     slots: z.number().int().nonnegative(),
     free: z.number().int().nonnegative(),
@@ -562,6 +574,7 @@ export const UpgradeRequiredSchema: z.ZodType<UpgradeRequired> = z.object({
 export interface HeartbeatResponse {
   readonly enabledTools?: readonly AgentTool[];
   readonly detectTools?: boolean;
+  readonly capacity?: RunnerCapacity;
   readonly ok: true;
   readonly serverTime: string;
   readonly upgrade?: UpgradeNotice;
@@ -590,6 +603,7 @@ export interface HeartbeatResponse {
 export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
   enabledTools: z.array(AgentToolSchema).optional(),
   detectTools: z.boolean().optional(),
+  capacity: RunnerCapacitySchema.optional(),
   ok: z.literal(true),
   serverTime: z.string(),
   upgrade: z

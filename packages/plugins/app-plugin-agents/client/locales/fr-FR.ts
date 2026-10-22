@@ -585,6 +585,14 @@ const frFR: LocaleResource<typeof enUS> = {
     unknown: "L'exécution a échoué.",
   },
   runtimes: {
+    capacity: {
+      actual: 'Last effective slots: {{slots}}',
+      online: 'Effective slots · online settings',
+      pending: 'Waiting for runner to sync online settings',
+      legacy: 'Legacy local slots · upgrade the application server',
+      upgrade: 'Sync status unavailable · upgrade the runner',
+      lastReported: 'Last reported: {{time}}',
+    },
     quota: {
       workspaceStatus: {
         active: 'Les travaux continuent',

@@ -60,6 +60,9 @@ describe('claiming and pruning the shared store', () => {
       pruneStore,
       ...(readDisk ? { readDisk } : {}),
     });
+    // These tests exercise claim internals without start(), after an initial configuration handshake.
+    runner['links'][0]!.capacity = { slots: 1, toolSlots: {} };
+    runner['links'][0]!.heartbeatHealthy = true;
     daemons.push(runner);
     return runner;
   };
@@ -252,11 +255,7 @@ describe('claiming and pruning the shared store', () => {
       async () => ({ freeBytes, totalBytes: 100 * 1024 ** 3 }),
     );
     const link = runner['links'][0]!;
-    vi.spyOn(
-      runner as unknown as { readonly limitedTools: 'claude'[] },
-      'limitedTools',
-      'get',
-    ).mockReturnValue(['claude']);
+    server.capacity = { slots: 1, toolSlots: { claude: 1 } };
     await runner.heartbeat(link);
     const collect = vi.spyOn(runner, 'collectGarbage');
     freeBytes = 0;

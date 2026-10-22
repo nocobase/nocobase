@@ -42,6 +42,17 @@ export interface AgentSpec {
    * no model list for this agent rather than one entry per choice, and names its agent after the tool alone.
    */
   readonly modelsAreNotModels?: boolean;
+  /**
+   * Confirms a program found under this agent's expected name actually is it, before trying to speak ACP to it:
+   * run it with `args`; if the combined stdout and stderr match `reject`, the program found is something else
+   * (Goose, the AI agent, and the unrelated `pressly/goose` database migration tool share a name on PATH).
+   */
+  readonly identify?: {
+    readonly args: readonly string[];
+    readonly reject: RegExp;
+    /** Default 5000. */
+    readonly timeoutMs?: number;
+  };
 }
 
 const localBin = '~/.local/bin';
@@ -200,6 +211,15 @@ export const AGENTS: readonly (AgentSpec & { readonly id: CatalogAgentId })[] =
       allowAll: true,
       signIn: 'goose configure',
       permissionEnv: { GOOSE_MODE: 'auto' },
+      identify: {
+        args: ['--help'],
+        // The unrelated `pressly/goose` database migration CLI of the same name documents these subcommands and
+        // flags (`up`, `down`, `-dir`, a DSN); the AI agent's own CLI vocabulary (session, acp, mcp, configure,
+        // recipe) does not use them. A negative match, not a positive one: it only rejects the known other
+        // program, so an agent CLI surface this list has not seen still passes. Not verified against either
+        // program's real --help output in this environment.
+        reject: /\bdbstring\b|-dir string|\bup-by-one\b|\bgoose:\s*version\b/iu,
+      },
     },
     {
       id: 'auggie',

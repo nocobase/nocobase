@@ -7,8 +7,7 @@ import {
  * (name, trust, slots, which coding tools it may run, revocation). What a runner has (its system, features and coding
  * tools, each with whether it is signed in), what its owner's local policy lets it take (`policy`) and the names of the
  * variables it provides to runs (`variables`) are what it reports, never configured here; which of its tools it is offered work for is chosen on the web (`enabledTools`,
- * carried over from the registration token, as are its slots and its limits per coding tool unless the runner names
- * its own).
+ * carried over from the registration token, as are its slots and its limits per coding tool).
  *
  * A runner speaking a protocol this application does not serve is not turned away: it registers and stays connected
  * as `upgrade_required`, is given no work (claims want `online`), and its owner is told once per protocol
@@ -25,6 +24,7 @@ import { quotaBlocks, runnerTakesAgent } from '../../shared/runners.js';
 import type { QuotaMarkTarget } from '../../shared/quota.js';
 
 import {
+  AGENT_TOOLS,
   isProtocolSupported,
   MIN_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
@@ -505,14 +505,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           });
           emit({ type: 'runner.changed', runnerId: runner.id });
         }
-        // The runner's explicit `--slots`, else the token's, else 1.
-        const slots =
-          request.slots ?? (token.slots === null ? 1 : Number(token.slots));
-        // Its own limits per tool when it sent them, else the token's.
-        const toolSlots =
-          request.toolSlots === undefined
-            ? storedToolSlots(token.toolSlots)
-            : storedToolSlots(request.toolSlots);
+        // Capacity belongs to the application; legacy registration requests cannot override it.
+        const slots = token.slots === null ? 4 : Number(token.slots);
+        const toolSlots = storedToolSlots(token.toolSlots);
         await runnersRepo(conn).createOne({
           values: {
             id: runnerId,
@@ -610,6 +605,13 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         const kept = keptMarks(marks, tools);
         const workspaceUsage = current.workspaceUsage;
         const changed =
+          current.reportedSlots !== request.load.slots ||
+          current.capacitySource !== request.load.capacitySource ||
+          AGENT_TOOLS.some(
+            (tool) =>
+              current.toolLoad?.[tool]?.slots !==
+              request.load.tools?.[tool]?.slots,
+          ) ||
           (request.disk !== undefined &&
             diskMoved(workspaceUsage?.disk ?? null, request.disk)) ||
           kept.length !== marks.length ||
@@ -644,6 +646,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
               ...storedToolLoad(request.load.tools ?? null),
               free: request.load.free,
               slots: request.load.slots,
+              reportedAt: now,
+              ...(request.load.capacitySource
+                ? { capacitySource: request.load.capacitySource }
+                : {}),
               ...(request.load.draining
                 ? { draining: request.load.draining }
                 : {}),

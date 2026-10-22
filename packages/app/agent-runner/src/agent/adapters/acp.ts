@@ -1,6 +1,8 @@
 /** Drives a catalog agent through the same ACP client used by personal sessions. */
+import { execFile } from 'node:child_process';
 import { AGENTS } from '@nocobase/acp-bridge/catalog';
 import type { AgentSpec } from '@nocobase/acp-bridge/catalog';
+import type { ResolvedAgent } from '@nocobase/acp-bridge/client';
 import {
   AgentProcess,
   configureSession,
@@ -93,6 +95,32 @@ export function classifyHandshakeFailure(error: unknown): {
   return { status: 'failed', reason: 'startFailed' };
 }
 
+/**
+ * Whether `resolved` really is `spec`'s agent, when it declares `identify`: false when the program's own output to
+ * the identify probe matches the reject pattern (another program of the same name). True when it declares none, or
+ * the probe itself could not be run or timed out — an agent CLI that does not answer `identify.args` cleanly is for
+ * its own handshake to fail on, not for this heuristic to guess about.
+ */
+export function identifyProgram(
+  resolved: ResolvedAgent,
+  spec: AgentSpec,
+  env: Record<string, string>,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (!spec.identify) return Promise.resolve(true);
+  const { args, reject, timeoutMs = 5000 } = spec.identify;
+  return new Promise((resolvePromise) => {
+    const child = execFile(
+      resolved.command,
+      args,
+      { env, timeout: timeoutMs, windowsHide: true },
+      (_error, stdout, stderr) =>
+        resolvePromise(!reject.test(`${stdout}${stderr}`)),
+    );
+    signal.addEventListener('abort', () => child.kill(), { once: true });
+  });
+}
+
 export function createAcpAdapter(
   spec: AgentSpec,
   env: Record<string, string>,
@@ -120,6 +148,16 @@ async function inspect(
   const resolved = await resolveAgent(spec, env);
   if (!resolved)
     return { installed: false, authenticated: false, status: 'notInstalled' };
+  if (!(await identifyProgram(resolved, spec, env, signal)))
+    return {
+      installed: false,
+      authenticated: false,
+      status: 'notInstalled',
+      statusReason: 'otherProgram',
+      statusDetail: statusDetailOf(
+        `${resolved.command} answers to ${spec.identify!.args.join(' ')} like a different program.`,
+      ),
+    };
   return withDetectionEnvironment(
     signal,
     async (cwd) => {

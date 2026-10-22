@@ -330,6 +330,20 @@ export function toRunner(
     slots: Number(record.slots),
     toolSlots: storedToolSlots(record.toolSlots),
     toolLoad: storedToolLoad(record.load),
+    capacityReportedAt:
+      typeof jsonObject(record.load).reportedAt === 'string'
+        ? String(jsonObject(record.load).reportedAt)
+        : undefined,
+    reportedSlots:
+      typeof jsonObject(record.load).slots === 'number'
+        ? Number(jsonObject(record.load).slots)
+        : undefined,
+    capacitySource:
+      jsonObject(record.load).capacitySource === 'online'
+        ? 'online'
+        : jsonObject(record.load).capacitySource === 'legacyLocal'
+          ? 'legacyLocal'
+          : undefined,
     globalFree:
       typeof jsonObject(record.load).free === 'number'
         ? Number(jsonObject(record.load).free)

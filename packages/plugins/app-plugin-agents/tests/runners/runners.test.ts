@@ -606,7 +606,7 @@ describe('runners', () => {
     ).toEqual(['claude', 'codex', 'opencode', 'pi']);
   });
 
-  it('gives the runner the slots its token carries unless it names its own', async () => {
+  it('uses only online registration slots, defaulting to four', async () => {
     h = await createHarness();
     const register = async (
       tokenSlots: number | null | undefined,
@@ -629,9 +629,9 @@ describe('runners', () => {
       return runner.slots;
     };
     expect(await register(4)).toBe(4);
-    expect(await register(4, 2)).toBe(2);
-    expect(await register(null)).toBe(1);
-    expect(await register(undefined, 3)).toBe(3);
+    expect(await register(4, 2)).toBe(4);
+    expect(await register(null)).toBe(4);
+    expect(await register(undefined, 3)).toBe(4);
 
     const created = await h.request(
       'POST',
