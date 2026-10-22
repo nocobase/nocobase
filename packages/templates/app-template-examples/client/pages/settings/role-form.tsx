@@ -11,17 +11,19 @@ import {
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   useAuthorizationClient,
-  useCan,
   type AuthorizationOptionsResponse,
   type LocalizedText,
   type PermissionGrant,
   type PermissionSet,
 } from '@nocobase/app-plugin-authorization/client';
-import { pagePermissionResources } from './page-permissions.js';
+import {
+  permissionNavigationSections,
+  pagePermissionResources,
+} from './page-permissions.js';
 import { pagePermissionTitles } from './page-permission-titles.js';
+import { permissionWorkspaceCatalog } from './permission-workspace.js';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
-  Link,
   useLocation,
   useNavigate,
   useOutletContext,
@@ -74,10 +76,6 @@ function RoleEditor(): ReactElement {
   const options = useSettingsData<{ data: AuthorizationOptionsResponse }>(
     'authorization/permissionSets/options',
   );
-  const canReadDefaults = useCan({
-    resource: { type: 'settings', id: 'authorization.default-access' },
-    action: 'read',
-  }).can;
   const canCreate = useRolePermission('create');
   const canUpdate = useRolePermission('update');
   const [nameDraft, setNameDraft] = useState<string>();
@@ -105,87 +103,16 @@ function RoleEditor(): ReactElement {
   const grants = grantsDraft ?? initial?.grants ?? [];
   const catalog = useMemo(() => {
     if (!options.data) return undefined;
-    const source = options.data.data;
     const pages = pagePermissionResources(
       app.runtime.routes,
       pagePermissionTitles,
       (path) => t('settings.unnamedPage', { path }),
     );
-    return {
-      ...source,
-      sections: [
-        {
-          name: 'users',
-          title: { key: 'settings.userPermissions' },
-          order: 0,
-          subsections: [
-            ...[
-              {
-                name: 'users.information',
-                title: 'userInformation',
-                actions: ['read', 'create', 'update', 'invite', 'delete'],
-              },
-              {
-                name: 'users.security',
-                title: 'accountSecurity',
-                actions: [
-                  'reset-password',
-                  'disable',
-                  'enable',
-                  'revoke-sessions',
-                ],
-              },
-              {
-                name: 'users.roles',
-                title: 'roleAssignment',
-                actions: ['assign-role'],
-              },
-            ].map((group) => ({
-              name: group.name,
-              title: { key: `settings.${group.title}` },
-              resources: [
-                {
-                  type: 'user',
-                  id: '*',
-                  title: { key: `settings.${group.title}` },
-                  actions: [
-                    { name: 'read', title: { key: 'settings.readUsers' } },
-                    { name: 'create', title: { key: 'settings.createUsers' } },
-                    { name: 'update', title: { key: 'settings.updateUsers' } },
-                    { name: 'invite', title: { key: 'settings.inviteUsers' } },
-                    { name: 'delete', title: { key: 'settings.deleteUsers' } },
-                    {
-                      name: 'reset-password',
-                      title: { key: 'settings.resetUserPassword' },
-                    },
-                    { name: 'disable', title: { key: 'settings.disable' } },
-                    { name: 'enable', title: { key: 'settings.enable' } },
-                    {
-                      name: 'assign-role',
-                      title: { key: 'settings.assignRole' },
-                    },
-                    {
-                      name: 'revoke-sessions',
-                      title: { key: 'settings.revokeSessions' },
-                    },
-                  ].filter((action) => group.actions.includes(action.name)),
-                },
-              ],
-            })),
-          ],
-        },
-        ...source.sections.map((section) => ({
-          ...section,
-          subsections: section.subsections.map((sub) => ({
-            ...sub,
-            resources:
-              sub.recordType?.type === 'page'
-                ? [...sub.resources, ...pages]
-                : sub.resources,
-          })),
-        })),
-      ],
-    };
+    return permissionWorkspaceCatalog(
+      options.data.data,
+      app.runtime.routes,
+      pages,
+    );
   }, [options.data, app, t]);
   const allowed = creating
     ? canCreate
@@ -247,7 +174,13 @@ function RoleEditor(): ReactElement {
   };
   const sections = catalog
     ? configurePermissionScopes(
-        permissionSections(catalog, grants, text),
+        permissionNavigationSections(
+          permissionSections(catalog, grants, text),
+          app.runtime.routes,
+          pagePermissionTitles,
+          (path) => t('settings.unnamedPage', { path }),
+          text,
+        ),
         catalog,
         grants,
         (key, fallback) => t(key, { defaultValue: fallback ?? key }),
@@ -343,16 +276,9 @@ function RoleEditor(): ReactElement {
                   {t('settings.protectedHint')}
                 </p>
               )}
-              {canReadDefaults && (
-                <div>
-                  <Link
-                    to='/default-access'
-                    className='text-sm text-foreground underline-offset-4 hover:underline'
-                  >
-                    {t('settings.defaultAccess.manage')}
-                  </Link>
-                </div>
-              )}
+              <p className='text-xs text-muted-foreground'>
+                {t('settings.permissionSaveHint')}
+              </p>
               <PermissionEditor
                 sections={sections}
                 readOnly={!allowed || busy}
@@ -365,8 +291,15 @@ function RoleEditor(): ReactElement {
                   enabledOnly: t('settings.enabledOnly'),
                   clear: t('settings.clear'),
                   empty: t('settings.noPermissions'),
+                  emptyDescription: t('settings.permissionEmptyHint'),
+                  readOnly: t('settings.permissionReadOnlyHint'),
+                  managedPermission: t('settings.permissionManagedHint'),
                   noResults: t('settings.noResults'),
                   navigation: t('settings.permissionCategories'),
+                  expandGroup: (name) =>
+                    t('settings.expandPermissionGroup', { name }),
+                  collapseGroup: (name) =>
+                    t('settings.collapsePermissionGroup', { name }),
                 }}
                 onEnabledChange={(id, enabled) => {
                   if (!catalog) return;

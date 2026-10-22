@@ -39,7 +39,9 @@ export function configurePermissionScopes(
             const definition = resources
               .find(
                 (resource) =>
-                  resource.type === type && resource.id === resourceId,
+                  resource.type === type &&
+                  resource.id === resourceId &&
+                  resource.actions.some((item) => item.name === action),
               )
               ?.dataScopes?.[action ?? '']?.find((item) => item.key === key);
             const value = getScopeSelection(grants, scope.id);

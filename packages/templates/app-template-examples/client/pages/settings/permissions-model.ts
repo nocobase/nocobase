@@ -64,7 +64,7 @@ const sectionDescriptions: Readonly<Record<string, string>> = {
   pages: 'pageAccessHint',
   business: 'businessOperationsHint',
   users: 'userAccountsHint',
-  administration: 'systemToolsHint',
+  configuration: 'configurationPermissionsHint',
 };
 
 export function permissionSections(

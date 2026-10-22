@@ -174,6 +174,7 @@ function DefaultAccessFormBody(): ReactElement {
       id: scope.id,
       error: scopeErrors[scope.id],
       action: text(scope.actionTitle),
+      actionId: scope.action,
       scope: text(scope.title),
       value: selectedValue,
       options: choices,
@@ -210,6 +211,7 @@ function DefaultAccessFormBody(): ReactElement {
       controls.push({
         id: actionKey(action),
         action: action.action,
+        actionId: action.action,
         scope: action.scopeKey ?? value.resource.id,
         value: JSON.stringify(action.selection),
         options: [

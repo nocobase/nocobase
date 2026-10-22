@@ -6,6 +6,7 @@ export function DefaultAccessEditorDemo(): ReactElement {
   const [resource, setResource] = useState('projects');
   const [view, setView] = useState('own');
   const [edit, setEdit] = useState('');
+  const [quotes, setQuotes] = useState('');
   const options = [
     { value: '', label: 'No default scope' },
     { value: 'own', label: 'Records I own' },
@@ -24,13 +25,23 @@ export function DefaultAccessEditorDemo(): ReactElement {
         scopes={[
           {
             id: 'view',
+            actionId: 'view',
             action: 'View',
             scope: 'Projects',
             value: view,
             options,
           },
           {
+            id: 'view-quotes',
+            actionId: 'view',
+            action: 'View',
+            scope: 'Quotes',
+            value: quotes,
+            options,
+          },
+          {
             id: 'edit',
+            actionId: 'edit',
             action: 'Edit',
             scope: 'Projects',
             value: edit,
@@ -49,6 +60,7 @@ export function DefaultAccessEditorDemo(): ReactElement {
         onResourceChange={setResource}
         onScopeChange={(id, value) => {
           if (id === 'view') setView(value);
+          else if (id === 'view-quotes') setQuotes(value);
           else setEdit(value);
         }}
       />

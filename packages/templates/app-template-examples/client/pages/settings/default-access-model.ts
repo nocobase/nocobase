@@ -3,6 +3,7 @@ import type {
   LocalizedText,
 } from '@nocobase/app-plugin-authorization/client';
 import type { CatalogResource } from './permissions-model.js';
+import { permissionScopeTitle } from './permission-workspace.js';
 
 export type ScopeSelection =
   | { readonly type: 'all' }
@@ -51,7 +52,10 @@ export function ruleResources(
     ...catalog.collections.map((collection) => ({
       type: 'database.collection',
       id: collection.name,
-      title: collection.name,
+      title: permissionScopeTitle(
+        { type: 'database.collection', id: collection.name },
+        { collection: collection.name, title: collection.name },
+      ),
       actions: ['read', 'update', 'delete'].map((name) => ({
         name,
         title: {
@@ -98,7 +102,7 @@ export function ruleScopes(
           action: action.name,
           scopeKey: scope.key,
           actionTitle: action.title,
-          title: scope.title,
+          title: permissionScopeTitle(resource, scope),
           collection: scope.collection,
           fields: scope.fields,
           recordAccess: scope.recordAccess,
