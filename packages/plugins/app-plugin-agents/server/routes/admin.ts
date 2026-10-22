@@ -546,6 +546,7 @@ export function createAdminRoutes(
       ...cliRoute({
         command: 'agent create',
         bodyFile: 'input',
+        flags: { description: { name: 'good-at', contentFile: true } },
         examples: [
           'agent create --tool gemini --model gemini-2.5-pro --good-at "..."',
         ],
