@@ -44,7 +44,7 @@
         {
           "id": "deployment-prepare",
           "title": "Prepare the server",
-          "html": "<p>The server needs access to the image registry and related external services. Before deploying, prepare server access, a domain, and registry credentials, and check the existing reverse proxy and persistent data directories.</p>",
+          "html": "<p>Prepare a server that can access npm, Docker registries, and Git services.</p>",
           "topics": []
         },
         {
