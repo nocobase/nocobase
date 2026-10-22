@@ -190,6 +190,30 @@ describe('claiming', () => {
     await h.services.runners.update(runner.runnerId, {
       enabledTools: ['claude', 'codex'],
     });
+    // Enabling a tool requires a new inspection report before it can receive work.
+    expect(await claim(h, runner, 4)).toEqual([]);
+    const heartbeat = await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: runner.key,
+      body: {
+        version: '0.0.1',
+        features: [
+          'workspaceKey',
+          'input',
+          'checkout',
+          'directories',
+          'attachments',
+          'skills',
+          'secrets',
+        ],
+        tools: [
+          { kind: 'claude', authenticated: true },
+          { kind: 'codex', authenticated: true },
+        ],
+        active: [],
+        load: { slots: 4, free: 3 },
+      },
+    });
+    expect(heartbeat.status).toBe(200);
     expect((await claim(h, runner, 4)).map((run) => run.subject.key)).toEqual([
       'SMP-1',
     ]);
