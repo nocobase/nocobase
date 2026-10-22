@@ -7,7 +7,7 @@ import {
 
 /** A real, local OpenAI-compatible HTTP endpoint; no provider credentials or external traffic. */
 export async function createOnlineAgentModelFixture(
-  options: { initialText?: string; scene?: 'chat' | 'form' } = {},
+  options: { initialText?: string; scene?: 'chat' | 'form' | 'reasoning' } = {},
 ) {
   const requests: {
     messages: unknown[];
@@ -94,7 +94,9 @@ export async function createOnlineAgentModelFixture(
     chunk(response, {
       content:
         options.initialText ??
-        (options.scene === 'form' ? '' : 'Hello from the local model fixture.'),
+        (options.scene === 'form' || options.scene === 'reasoning'
+          ? ''
+          : 'Hello from the local model fixture.'),
     });
     // The test explicitly completes or stops each stream; there is no timing-dependent fast completion.
   });
@@ -108,6 +110,9 @@ export async function createOnlineAgentModelFixture(
     streams,
     append(index: number, text: string) {
       chunk(streams[index]!, { content: text });
+    },
+    reasoning(index: number, text: string) {
+      chunk(streams[index]!, { reasoning_content: text });
     },
     tools(index: number, calls: { id: string; value: string }[]) {
       toolCalls(

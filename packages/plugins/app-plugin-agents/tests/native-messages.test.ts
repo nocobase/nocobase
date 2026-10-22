@@ -229,6 +229,7 @@ describe('NativeMessages private SDK originals', () => {
     const visible = await messages.public([original]);
     expect(visible[0].parts).toEqual([
       { type: 'text', text: 'hello' },
+      { type: 'reasoning', text: 'private' },
       {
         type: 'tool-business',
         toolCallId: 'business',
@@ -247,6 +248,7 @@ describe('NativeMessages private SDK originals', () => {
     expect(original).toEqual(before);
     expect((await messages.public([original], []))[0].parts).toEqual([
       { type: 'text', text: 'hello' },
+      { type: 'reasoning', text: 'private' },
     ]);
     const replacement = new OnlineAgentConfigurator();
     replacement.registerTool('business', {
@@ -498,7 +500,7 @@ describe('NativeMessages stream projection', () => {
         toolCallId: 'business',
         output: { display: 'visible' },
       },
-      undefined,
+      { type: 'reasoning-delta', id: 'reason', delta: 'private' },
       { type: 'text-delta', id: 'text', delta: 'hello' },
     ]);
     expect(chunks).toEqual(before);
@@ -861,4 +863,53 @@ describe('NativeMessages model conversion', () => {
     ]);
     expect(original.parts).toHaveLength(6);
   });
+});
+
+it('whitelists all reasoning chunk fields without changing SDK originals', async () => {
+  const { messages } = fixture();
+  const adapter = messages.stream([]);
+  const chunks: UIMessageChunk[] = [
+    {
+      type: 'reasoning-start',
+      id: 'r',
+      providerMetadata: { fixture: { signature: 'secret' } },
+    },
+    {
+      type: 'reasoning-delta',
+      id: 'r',
+      delta: 'Reasoning',
+      providerMetadata: { fixture: { signature: 'secret' } },
+    },
+    {
+      type: 'reasoning-end',
+      id: 'r',
+      providerMetadata: { fixture: { signature: 'secret' } },
+    },
+  ];
+  const original = structuredClone(chunks);
+  expect(
+    await Promise.all(chunks.map((chunk) => adapter.project(chunk))),
+  ).toEqual([
+    { type: 'reasoning-start', id: 'r' },
+    { type: 'reasoning-delta', id: 'r', delta: 'Reasoning' },
+    { type: 'reasoning-end', id: 'r' },
+  ]);
+  expect(chunks).toEqual(original);
+  for (const state of [undefined, 'streaming', 'done'] as const) {
+    const part = {
+      type: 'reasoning' as const,
+      text: 'Existing history',
+      ...(state ? { state } : {}),
+      providerMetadata: { fixture: { signature: 'secret' } },
+    };
+    const original = message([part]);
+    expect((await messages.public([original], []))[0].parts).toEqual([
+      {
+        type: 'reasoning',
+        text: 'Existing history',
+        ...(state ? { state } : {}),
+      },
+    ]);
+    expect(original.parts[0]).toEqual(part);
+  }
 });

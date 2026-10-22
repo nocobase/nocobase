@@ -559,3 +559,198 @@ test('keeps partial approvals pending and renders advisory uncertainty', async (
     await fixture.close();
   }
 });
+
+for (const width of [1440, 375]) {
+  test(`displays reasoning with stable manual choice, history and Stop at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const app = applicationUrl!.replace(/\/$/, '');
+    const fixture = await createOnlineAgentModelFixture({ scene: 'reasoning' });
+    const headers = { origin: new URL(app).origin };
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    let serviceName: string | undefined;
+    const shot = async (phase: string) => {
+      if (!process.env.E2E_SCREENSHOT_DIR) return;
+      await mkdir(process.env.E2E_SCREENSHOT_DIR, { recursive: true });
+      await page.screenshot({
+        path: path.join(
+          process.env.E2E_SCREENSHOT_DIR,
+          `reasoning-${width}-${phase}.png`,
+        ),
+        fullPage: true,
+      });
+    };
+    try {
+      await page.goto(app + '/login');
+      await page
+        .getByLabel('Username or email')
+        .fill(process.env.E2E_USERNAME!);
+      await page
+        .getByLabel('Password', { exact: true })
+        .fill(process.env.E2E_PASSWORD!);
+      await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+      await page.waitForURL((url) => !url.pathname.endsWith('/login'));
+      const service = await page.request.post(app + '/api/agents/services', {
+        headers,
+        data: {
+          title: `Reasoning fixture ${width}`,
+          provider: 'openai-compatible',
+          baseUrl: fixture.url,
+          apiKey: 'isolated-local-fixture-only',
+          enabled: true,
+          models: [{ value: 'fixture-chat', kind: 'chat' }],
+        },
+      });
+      expect(service.status()).toBe(201);
+      serviceName = (await service.json()).data.name;
+      await page.reload();
+      await page.getByTestId('chat-header-button').click();
+      const panel = page.getByTestId('chat-panel');
+      await panel.locator('textarea').fill('Reason, then answer.');
+      const created = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          response.url().endsWith('/api/agents/conversations'),
+      );
+      await panel.getByTestId('chat-send').click();
+      const conversationId: string = (await (await created).json()).data.id;
+      const endpoint = app + '/api/agents/conversations/' + conversationId;
+      const detail = async () =>
+        (await (await page.request.get(endpoint)).json()).data;
+      const history = async () =>
+        (await (await page.request.get(endpoint + '/messages?after=0')).json())
+          .data as { id: string; role: string; parts: unknown[] }[];
+      await expect.poll(() => fixture.streams.length).toBe(1);
+      await expect(panel.locator('[data-chat-part=reasoning]')).toHaveCount(0);
+      fixture.reasoning(0, 'Model reasoning begins.');
+      const reasoning = panel.locator('[data-chat-part=reasoning]');
+      const toggle = reasoning.getByRole('button');
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      await expect(reasoning).toHaveAttribute(
+        'data-reasoning-streaming',
+        'true',
+      );
+      await expect(panel.locator('[data-chat-feedback=thinking]')).toHaveCount(
+        0,
+      );
+      await expect(panel.locator('[data-streaming]')).toHaveCount(0);
+      const longLine = 'reasoning_code_'.repeat(100);
+      fixture.reasoning(0, '\n\n```text\n' + longLine + '\n```');
+      await expect(reasoning.locator('pre code')).toHaveText(longLine);
+      const transcript = panel.getByTestId('chat-message-scroll');
+      const geometry = await transcript.evaluate((node) => {
+        // The Node test config deliberately has no DOM library; describe only the sampled browser properties.
+        const element = node as unknown as {
+          scrollWidth: number;
+          clientWidth: number;
+          querySelector(selector: string): {
+            scrollWidth: number;
+            clientWidth: number;
+            scrollLeft: number;
+          } | null;
+        };
+        const code = element.querySelector('[data-chat-part=reasoning] pre');
+        if (!code) throw new Error('Missing reasoning code block.');
+        code.scrollLeft = code.scrollWidth;
+        return {
+          width: element.clientWidth,
+          scroll: element.scrollWidth,
+          codeScroll: code.scrollLeft,
+        };
+      });
+      expect(geometry.scroll).toBeLessThanOrEqual(geometry.width + 1);
+      expect(geometry.codeScroll).toBeGreaterThan(0);
+      await shot('streaming-light');
+      fixture.append(0, 'Final answer.');
+      await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await expect(panel.getByTestId('chat-stop')).toBeEnabled();
+      fixture.complete(0);
+      await expect
+        .poll(async () => (await detail()).execution?.status)
+        .toBe('idle');
+      const saved = await history();
+      expect(JSON.stringify(saved)).toContain('Model reasoning begins.');
+      expect(JSON.stringify(saved)).not.toContain('providerMetadata');
+      await page.goto(app + '/?chat=' + conversationId);
+      await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await expect(reasoning).not.toHaveAttribute(
+        'data-reasoning-streaming',
+        'true',
+      );
+      expect((await history()).map((message) => message.id)).toEqual(
+        saved.map((message) => message.id),
+      );
+      await toggle.focus();
+      await page.keyboard.press('Enter');
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      await page.keyboard.press('Space');
+      await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await panel.locator('textarea').fill('Keep my manual choice.');
+      await panel.getByTestId('chat-send').click();
+      await expect.poll(() => fixture.streams.length).toBe(2);
+      fixture.reasoning(1, 'Second reasoning');
+      const second = panel.locator('[data-chat-part=reasoning]').nth(1);
+      const secondToggle = second.getByRole('button');
+      await expect(secondToggle).toHaveAttribute('aria-expanded', 'true');
+      await secondToggle.click();
+      fixture.reasoning(1, ' delta');
+      await expect(secondToggle).toHaveAttribute('aria-expanded', 'false');
+      await secondToggle.click();
+      fixture.append(1, 'Second answer');
+      await expect(secondToggle).toHaveAttribute('aria-expanded', 'true');
+      fixture.complete(1);
+      await expect
+        .poll(async () => (await detail()).execution?.status)
+        .toBe('idle');
+      await expect(secondToggle).toHaveAttribute('aria-expanded', 'true');
+      await panel.locator('textarea').fill('Stop during reasoning.');
+      await panel.getByTestId('chat-send').click();
+      await expect.poll(() => fixture.streams.length).toBe(3);
+      fixture.reasoning(2, 'Partial reasoning saved on Stop');
+      await expect(
+        panel.getByText('Partial reasoning saved on Stop'),
+      ).toBeVisible();
+      await panel.getByTestId('chat-stop').click();
+      await expect
+        .poll(async () => (await detail()).execution?.outcome)
+        .toBe('cancelled');
+      await expect(
+        panel.locator('[data-reasoning-streaming=true]'),
+      ).toHaveCount(0);
+      await page.goto(app + '/?chat=' + conversationId);
+      const partial = panel.locator('[data-chat-part=reasoning]').nth(2);
+      await expect(partial.getByRole('button')).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
+      await partial.getByRole('button').click();
+      await expect(
+        partial.getByText('Partial reasoning saved on Stop'),
+      ).toBeVisible();
+      expect(fixture.streams).toHaveLength(3);
+      // Exercise the real application language control, not a mocked translation provider.
+      await panel.getByRole('button', { name: 'Close', exact: true }).click();
+      await page.getByRole('button', { name: 'Open account menu' }).click();
+      await page.getByRole('menuitem', { name: /Language/ }).hover();
+      await page
+        .getByRole('menuitemradio', { name: '中文', exact: true })
+        .click();
+      await page.getByTestId('chat-header-button').click();
+      await expect(panel.getByRole('button', { name: '推理过程' })).toHaveCount(
+        3,
+      );
+      await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+      await expect(page.locator('html')).toHaveClass(/dark/);
+      await shot('history-dark-zh');
+      expect(errors).toEqual([]);
+    } finally {
+      if (serviceName)
+        await page.request.delete(app + '/api/agents/services/' + serviceName, {
+          headers,
+        });
+      await fixture.close();
+    }
+  });
+}
