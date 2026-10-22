@@ -467,6 +467,19 @@ A child route presented as a non-modal page covering the content area, keeping t
 - Example: `@nocobase/route-child-page-demo` (`pnpm exec shadcn view @nocobase/route-child-page-demo`)
 - After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole.
 
+## Task Center
+
+### task-center-ui
+
+Presentational components for a personal task center layered as source → subject → status → task cards: a source navigation with subjects folded under each source, pending counts and a client-side subject search; To do / Done / All tabs; day-grouped task cards whose summary each task type contributes; one-type-at-a-time batch selection with a floating action bar and confirmation; and a right-side detail drawer whose form and actions the task's business supplies. Takes data already shaped and translated; pairs with a task index such as @nocobase/app-plugin-task-center.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/task-center-ui`
+- Installs to: `client/extensions/nocobase-task-center-ui/`
+- Plugin dependencies: none
+- Example: `@nocobase/task-center-ui-demo` (`pnpm exec shadcn view @nocobase/task-center-ui-demo`)
+- After installing: Pure presentation: map your task index into TaskNavSource and TaskCardData (types.ts) with translated labels, render each task type's summary with TaskSummaryFields, its batch actions through useTaskSelection, TaskBulkBar and TaskBulkConfirm, and its detail form and actions inside TaskDetailSheet. Merge locales/ into your locale resources.
+
 ## Workflows
 
 ### workflow-management
