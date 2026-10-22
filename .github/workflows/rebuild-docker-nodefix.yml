@@ -13,11 +13,12 @@ on:
         default: '22'
         type: string
       variant:
-        description: 'Docker image variant'
+        description: 'Docker image variant (all = build all four variants)'
         required: true
         default: 'full'
         type: choice
         options:
+          - all
           - full
           - full-no-nginx
           - default
@@ -57,8 +58,13 @@ env:
   BUILDX_NO_DEFAULT_ATTESTATIONS: 1
 
 jobs:
-  rebuild:
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.prepare.outputs.matrix }}
+      version: ${{ steps.prepare.outputs.version }}
+      ref: ${{ steps.prepare.outputs.ref }}
+      node_version: ${{ steps.prepare.outputs.node_version }}
     steps:
       - name: Prepare build parameters
         id: prepare
@@ -82,26 +88,17 @@ jobs:
             exit 1
           fi
 
+          if [[ "$INPUT_TAG_MODE" != "nodefix" && "$INPUT_TAG_MODE" != "same-version" ]]; then
+            echo "Unsupported tag mode: $INPUT_TAG_MODE" >&2
+            exit 1
+          fi
+
           case "$INPUT_VARIANT" in
-            full)
-              DOCKERFILE=./docker/nocobase/Dockerfile-full
-              SUFFIX=-full
-              INSTALL_NGINX=1
+            all)
+              VARIANTS="full full-no-nginx default no-nginx"
               ;;
-            full-no-nginx)
-              DOCKERFILE=./docker/nocobase/Dockerfile-full
-              SUFFIX=-full-no-nginx
-              INSTALL_NGINX=0
-              ;;
-            default)
-              DOCKERFILE=./docker/nocobase/Dockerfile
-              SUFFIX=
-              INSTALL_NGINX=1
-              ;;
-            no-nginx)
-              DOCKERFILE=./docker/nocobase/Dockerfile
-              SUFFIX=-no-nginx
-              INSTALL_NGINX=0
+            full|full-no-nginx|default|no-nginx)
+              VARIANTS="$INPUT_VARIANT"
               ;;
             *)
               echo "Unsupported variant: $INPUT_VARIANT" >&2
@@ -109,31 +106,77 @@ jobs:
               ;;
           esac
 
-          BASE_TAG="${VERSION}${SUFFIX}"
-          if [[ "$INPUT_TAG_MODE" == "same-version" ]]; then
-            IMAGE_TAG="$BASE_TAG"
-          else
-            IMAGE_TAG="${BASE_TAG}-nodefix"
+          TAG_SUFFIX=""
+          if [[ "$INPUT_TAG_MODE" == "nodefix" ]]; then
+            TAG_SUFFIX="-nodefix"
           fi
 
+          MATRIX='{"include":['
+          FIRST=1
+          for VARIANT in $VARIANTS; do
+            case "$VARIANT" in
+              full)
+                DOCKERFILE=./docker/nocobase/Dockerfile-full
+                SUFFIX=-full
+                INSTALL_NGINX=1
+                ;;
+              full-no-nginx)
+                DOCKERFILE=./docker/nocobase/Dockerfile-full
+                SUFFIX=-full-no-nginx
+                INSTALL_NGINX=0
+                ;;
+              default)
+                DOCKERFILE=./docker/nocobase/Dockerfile
+                SUFFIX=
+                INSTALL_NGINX=1
+                ;;
+              no-nginx)
+                DOCKERFILE=./docker/nocobase/Dockerfile
+                SUFFIX=-no-nginx
+                INSTALL_NGINX=0
+                ;;
+            esac
+
+            IMAGE_TAG="${VERSION}${SUFFIX}${TAG_SUFFIX}"
+            ENTRY=$(jq -cn \
+              --arg variant "$VARIANT" \
+              --arg dockerfile "$DOCKERFILE" \
+              --arg install_nginx "$INSTALL_NGINX" \
+              --arg image_tag "$IMAGE_TAG" \
+              '{variant:$variant,dockerfile:$dockerfile,install_nginx:$install_nginx,image_tag:$image_tag}')
+
+            if [[ "$FIRST" == "1" ]]; then
+              FIRST=0
+            else
+              MATRIX="${MATRIX},"
+            fi
+            MATRIX="${MATRIX}${ENTRY}"
+          done
+          MATRIX="${MATRIX}]}"
+
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "ref=v$VERSION" >> "$GITHUB_OUTPUT"
           echo "node_version=$INPUT_NODE_VERSION" >> "$GITHUB_OUTPUT"
-          echo "dockerfile=$DOCKERFILE" >> "$GITHUB_OUTPUT"
-          echo "install_nginx=$INSTALL_NGINX" >> "$GITHUB_OUTPUT"
-          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
 
+  rebuild:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
       - name: Checkout NocoBase release tag
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.prepare.outputs.ref }}
+          ref: ${{ needs.prepare.outputs.ref }}
           fetch-depth: 1
 
       - name: Pin Node.js base image
         shell: bash
         env:
-          NODE_VERSION: ${{ steps.prepare.outputs.node_version }}
-          DOCKERFILE: ${{ steps.prepare.outputs.dockerfile }}
+          NODE_VERSION: ${{ needs.prepare.outputs.node_version }}
+          DOCKERFILE: ${{ matrix.dockerfile }}
         run: |
           set -euo pipefail
           sed -i -E "s|node:[0-9]+(\.[0-9]+)*-bookworm-slim|node:${NODE_VERSION}-bookworm-slim|g" "$DOCKERFILE"
@@ -169,7 +212,7 @@ jobs:
         id: images
         shell: bash
         env:
-          IMAGE_TAG: ${{ steps.prepare.outputs.image_tag }}
+          IMAGE_TAG: ${{ matrix.image_tag }}
           PUSH_ALIYUN: ${{ inputs.push_image && inputs.push_aliyun }}
           ALI_REGISTRY: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
         run: |
@@ -195,14 +238,14 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ./docker/nocobase
-          file: ${{ steps.prepare.outputs.dockerfile }}
+          file: ${{ matrix.dockerfile }}
           platforms: ${{ inputs.platforms }}
           pull: true
           push: ${{ inputs.push_image }}
           tags: ${{ steps.images.outputs.tags }}
           build-args: |
-            CNA_VERSION=${{ steps.prepare.outputs.version }}
-            INSTALL_NGINX=${{ steps.prepare.outputs.install_nginx }}
+            CNA_VERSION=${{ needs.prepare.outputs.version }}
+            INSTALL_NGINX=${{ matrix.install_nginx }}
             COMMIT_HASH=${{ steps.commit.outputs.hash }}
 
       - name: Verify published image
@@ -211,7 +254,7 @@ jobs:
         shell: bash
         env:
           IMAGE: ${{ steps.images.outputs.docker_image }}
-          REQUESTED_NODE: ${{ steps.prepare.outputs.node_version }}
+          REQUESTED_NODE: ${{ needs.prepare.outputs.node_version }}
         run: |
           set -euo pipefail
           docker pull --platform linux/amd64 "$IMAGE"
@@ -247,9 +290,9 @@ jobs:
           {
             echo "### Rebuild Docker image with patched Node"
             echo ""
-            echo "- NocoBase: ${{ steps.prepare.outputs.version }}"
-            echo "- Node: ${{ steps.prepare.outputs.node_version }} (actual: ${{ steps.verify.outputs.actual_node }})"
-            echo "- Variant: ${{ inputs.variant }}"
+            echo "- NocoBase: ${{ needs.prepare.outputs.version }}"
+            echo "- Node: ${{ needs.prepare.outputs.node_version }} (actual: ${{ steps.verify.outputs.actual_node }})"
+            echo "- Variant: ${{ matrix.variant }}"
             echo "- Tag mode: ${{ inputs.tag_mode }}"
             echo "- Image: ${{ steps.images.outputs.docker_image }}"
             echo "- Pushed: ${{ inputs.push_image }}"
