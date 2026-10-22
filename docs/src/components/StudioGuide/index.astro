@@ -64,6 +64,15 @@ const home = language === 'cn' ? '/zh-CN/' : '/';
             <strong>{content.chapters.length}</strong> {content.chapterLabel}
           </span>
           <span>
+            <strong>
+              {content.chapters.reduce(
+                (total, chapter) => total + chapter.sections.length,
+                0,
+              )}
+            </strong>{' '}
+            {content.sectionLabel}
+          </span>
+          <span>
             <strong>{Object.keys(assets).length}</strong> {content.imageLabel}
           </span>
         </p>
@@ -110,13 +119,45 @@ const home = language === 'cn' ? '/zh-CN/' : '/';
           </summary>
           <nav aria-label={content.toc}>
             <p class='toc-title'>{content.toc}</p>
-            <ol>
+            <ol class='toc-chapters'>
               {content.chapters.map((chapter, index) => (
                 <li>
-                  <a href={`#${chapter.id}`} data-chapter-link>
-                    <span>{number(index)}</span>
-                    {chapter.title}
-                  </a>
+                  <details class='toc-chapter' open={index === 0}>
+                    <summary
+                      aria-label={`${chapter.title}: ${content.subsectionsLabel}`}
+                    >
+                      <a href={`#${chapter.id}`} data-chapter-link>
+                        <span>{number(index)}</span>
+                        {chapter.title}
+                      </a>
+                      <span class='toc-chevron' aria-hidden='true'>
+                        ⌄
+                      </span>
+                    </summary>
+                    <ol class='toc-sections'>
+                      {chapter.sections.map((section, sectionIndex) => (
+                        <li>
+                          <a href={`#${section.id}`} data-section-link>
+                            <span>
+                              {index + 1}.{sectionIndex + 1}
+                            </span>
+                            {section.title}
+                          </a>
+                          {section.topics.length > 0 && (
+                            <ol class='toc-topics'>
+                              {section.topics.map((topic) => (
+                                <li>
+                                  <a href={`#${topic.id}`} data-section-link>
+                                    {topic.title}
+                                  </a>
+                                </li>
+                              ))}
+                            </ol>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
                 </li>
               ))}
             </ol>
@@ -170,7 +211,33 @@ const home = language === 'cn' ? '/zh-CN/' : '/';
                 <p class='chapter-summary'>{chapter.summary}</p>
               </div>
             </header>
-            <div class='chapter-body' set:html={withAssets(chapter.html)} />
+            <div class='chapter-body'>
+              {chapter.sections.map((section, sectionIndex) => (
+                <section
+                  class='guide-section'
+                  id={section.id}
+                  aria-labelledby={`${section.id}-title`}
+                >
+                  <h3 id={`${section.id}-title`}>
+                    <span class='section-number' aria-hidden='true'>
+                      {index + 1}.{sectionIndex + 1}
+                    </span>
+                    {section.title}
+                  </h3>
+                  <Fragment set:html={withAssets(section.html)} />
+                  {section.topics.map((topic) => (
+                    <section
+                      class='guide-topic'
+                      id={topic.id}
+                      aria-labelledby={`${topic.id}-title`}
+                    >
+                      <h4 id={`${topic.id}-title`}>{topic.title}</h4>
+                      <Fragment set:html={withAssets(topic.html)} />
+                    </section>
+                  ))}
+                </section>
+              ))}
+            </div>
           </section>
         ))}
         <section class='guide-finish' aria-labelledby='finish-title'>

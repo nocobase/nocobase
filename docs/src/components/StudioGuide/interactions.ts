@@ -117,26 +117,70 @@ export function initializeStudioGuide(root: HTMLElement) {
   const links = [
     ...root.querySelectorAll<HTMLAnchorElement>('[data-chapter-link]'),
   ];
+  const sectionLinks = [
+    ...root.querySelectorAll<HTMLAnchorElement>('[data-section-link]'),
+  ];
+  const sections = sectionLinks.map((link) => ({
+    link,
+    target: document.getElementById(link.hash.slice(1)),
+  }));
+  const groups = [...root.querySelectorAll<HTMLDetailsElement>('.toc-chapter')];
+  const manuallyToggled = new Set<HTMLDetailsElement>();
+  for (const group of groups) {
+    group.querySelector('summary')?.addEventListener('click', (event) => {
+      if (event.target instanceof Element && event.target.closest('a')) return;
+      manuallyToggled.add(group);
+    });
+  }
   const progress = root.querySelector<HTMLProgressElement>('#guide-progress');
   const progressLabel = root.querySelector<HTMLElement>(
     '[data-progress-label]',
   );
   let pending = false;
+  let previousChapter = -1;
+  let previousLink: HTMLAnchorElement | undefined;
   function updateChapter() {
     let active = 0;
     chapters.forEach((chapter, index) => {
       if (chapter.getBoundingClientRect().top <= 160) active = index;
     });
-    links.forEach((link, index) => {
-      if (index === active) link.setAttribute('aria-current', 'location');
+    let currentLink = links[active];
+    for (const { link, target } of sections) {
+      if (
+        target?.closest('.chapter') === chapters[active] &&
+        target.getBoundingClientRect().top <= 160
+      )
+        currentLink = link;
+    }
+    links.forEach((link, index) =>
+      link.toggleAttribute('data-active', index === active),
+    );
+    for (const link of [...links, ...sectionLinks]) {
+      if (link === currentLink) link.setAttribute('aria-current', 'location');
       else link.removeAttribute('aria-current');
-    });
+    }
+    if (previousChapter !== active) {
+      groups.forEach((group, index) => {
+        if (!manuallyToggled.has(group)) group.open = index === active;
+      });
+      previousChapter = active;
+    }
+    if (currentLink && currentLink !== previousLink && !mobile.matches) {
+      const sidebar = root.querySelector<HTMLElement>('.guide-sidebar');
+      if (sidebar && currentLink.getClientRects().length) {
+        const bounds = sidebar.getBoundingClientRect();
+        const item = currentLink.getBoundingClientRect();
+        if (item.top < bounds.top || item.bottom > bounds.bottom)
+          sidebar.scrollTop += item.top - bounds.top - bounds.height / 2;
+      }
+    }
+    previousLink = currentLink;
     if (progress) progress.value = active + 1;
     if (progressLabel)
       progressLabel.textContent = `${String(active + 1).padStart(2, '0')} / ${String(chapters.length).padStart(2, '0')}`;
     pending = false;
   }
-  for (const link of links) {
+  for (const link of [...links, ...sectionLinks]) {
     link.addEventListener('click', (event) => {
       if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)
         return;
@@ -153,6 +197,7 @@ export function initializeStudioGuide(root: HTMLElement) {
     { passive: true },
   );
   window.addEventListener('resize', updateChapter);
+  window.addEventListener('hashchange', updateChapter);
   updateChapter();
 }
 
