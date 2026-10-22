@@ -1,0 +1,121 @@
+{
+  "title": "NocoBase Studio 使用指南",
+  "description": "从部署 Studio 到连接电脑、配置团队 Agent、创建项目与接入 CI，一步步搭建可用的开发环境。",
+  "eyebrow": "STUDIO / GETTING STARTED",
+  "heading": "从这里开始，",
+  "headingAccent": "搭建你的 Studio。",
+  "intro": "部署、连接、协作、交付。跟随这份指南，把服务器、Coding Agent 和代码仓库连接起来，完成第一次项目预览。",
+  "guideLabel": "使用指南",
+  "home": "文档首页",
+  "start": "开始配置",
+  "print": "打印 / 保存 PDF",
+  "chapterLabel": "个配置章节",
+  "imageLabel": "张操作截图",
+  "imageHint": "点击截图可放大查看",
+  "flowLabel": "配置流程",
+  "flowTitle": "从部署到第一次交付",
+  "flow": [
+    {
+      "title": "部署 Studio",
+      "description": "准备好团队工作空间"
+    },
+    {
+      "title": "连接 Agent",
+      "description": "接入电脑与运行环境"
+    },
+    {
+      "title": "关联项目",
+      "description": "连接 Git 与代码仓库"
+    },
+    {
+      "title": "验证交付",
+      "description": "通过 CI 创建预览"
+    }
+  ],
+  "toc": "配置路线",
+  "tocToggle": "查看章节目录",
+  "tocTip": "首次配置建议按顺序完成。已有环境可直接跳到对应章节。",
+  "overviewTitle": "开始之前，分清三种连接",
+  "overviewDescription": "它们分别解决不同的问题，可以按你的工作方式组合使用。",
+  "connections": [
+    {
+      "title": "Studio CLI",
+      "label": "管理工作空间",
+      "description": "让本地 Agent 通过 nb-studio 管理 Studio 的项目、任务等数据。"
+    },
+    {
+      "title": "My agents",
+      "label": "连接自己的电脑",
+      "description": "从 Studio 页面使用自己电脑上的 Coding Agent。"
+    },
+    {
+      "title": "Runtime + 团队 Agent",
+      "label": "协作执行任务",
+      "description": "提供任务执行环境，启用团队 Agent 并配置项目经理。"
+    }
+  ],
+  "chapters": [
+    {
+      "id": "deployment",
+      "title": "安装部署 Studio",
+      "summary": "先准备可访问外网的服务器，再部署 Studio。",
+      "html": "<p>\n              服务器需要能访问镜像仓库及相关外部服务。部署前准备服务器登录方式、域名、镜像仓库凭据，并确认现有反向代理和持久化目录。\n            </p>\n            <h3>可交给 Agent 的部署提示词</h3>\n            <p>\n              以下使用示例域名和部署路径；执行前替换服务器 IP、目录和域名。\n            </p>\n            <div class=\"code-block\">\n              <div class=\"code-heading\">\n                <span>部署提示词</span\n                ><button\n                  type=\"button\"\n                  class=\"copy-button\"\n                  data-copy=\"deployment-prompt\"\n                >\n                  复制\n                </button>\n              </div>\n              <pre\n                id=\"deployment-prompt\"\n              ><code>请通过 SSH 登录 root@YOUR_SERVER_IP，安装并部署 NocoBase Studio。\n\n部署配置：\n- Docker 镜像：pkg-v3.nocobase.com/nocobase/studio:latest\n- 镜像仓库 Token：通过私密方式提供\n- 部署目录：/root/deploy/apps/studio\n- 访问地址：https://studio.example.com/main/\n- Studio 部署路径：/main\n- 现有 Caddy Compose 文件：/root/deploy/docker-compose.yml\n\n部署要求：\n1. 先检查现有部署、Docker 网络及 Caddy 配置，避免影响其他服务。\n2. 如果已有 Studio 实例，保留数据库、上传文件和管理员账号；如果是首次部署，管理员使用 nocobase，生成随机密码并保存到权限为 600 的服务器配置文件中。\n3. 配置数据持久化、容器自动重启，以及 Caddy 反向代理和 HTTPS。\n4. 使用独立的容器名称和网络别名，避免与其他 Studio 实例冲突。\n5. 将 Studio、CLI、Agent 和仓库 CI 的站点地址统一为上述 /main 地址，并同步 Git 服务的回调与 Webhook 地址。\n6. 完成后验证容器健康状态、HTTPS 访问、管理员登录，以及重启后的数据持久化。\n7. 汇报部署版本、访问地址、配置文件位置、密码查看方式和验证结果。</code></pre>\n            </div>\n            <aside class=\"note\">\n              <strong>统一使用完整的站点地址</strong>\n              <p>\n                本示例的 Studio 入口是\n                <a\n                  href=\"https://studio.example.com/main/\"\n                  target=\"_blank\"\n                  rel=\"noopener noreferrer\"\n                  >https://studio.example.com/main/</a\n                >。后续 CLI、电脑连接、Runtime 和 CI 配置均使用这个入口，保留\n                <code>/main</code>。\n              </p>\n            </aside>\n            <p class=\"done\">\n              <strong>完成标志</strong> HTTPS\n              可访问、管理员可登录，容器重启后数据仍保留。\n            </p>"
+    },
+    {
+      "id": "cli",
+      "title": "配置 NocoBase Studio CLI",
+      "summary": "让本地 Coding Agent 通过命令行管理 Studio 的项目和任务。",
+      "html": "<ol class=\"steps\">\n              <li>\n                打开右上角账号菜单，选择\n                <strong>Use Studio in your agent</strong>。\n              </li>\n              <li>\n                在弹窗中点击\n                <strong>Copy setup instructions</strong>，将提示词交给本地\n                Coding Agent。\n              </li>\n            </ol>\n            <figure>\n              <a\n                class=\"screenshot\"\n                href=\"./assets/cli-entry.png\"\n                aria-label=\"放大图 1：打开账号菜单，选择 Use Studio in your agent。\"\n              >\n                <img\n                  src=\"./assets/cli-entry.png\"\n                  width=\"3456\"\n                  height=\"1992\"\n                  alt=\"打开账号菜单，选择 Use Studio in your agent。\"\n                  decoding=\"async\" loading=\"lazy\"\n                />\n                <span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span>\n              </a>\n              <figcaption>\n                <span>图 01</span>打开账号菜单，选择 Use Studio in your agent。\n              </figcaption>\n            </figure>\n            <figure>\n              <a\n                class=\"screenshot\"\n                href=\"./assets/cli-setup.png\"\n                aria-label=\"放大图 2：复制当前站点生成的 CLI 配置提示词，交给本地 Coding Agent。\"\n              >\n                <img\n                  src=\"./assets/cli-setup.png\"\n                  width=\"3456\"\n                  height=\"1992\"\n                  alt=\"复制当前站点生成的 CLI 配置提示词，交给本地 Coding Agent。\"\n                  decoding=\"async\" loading=\"lazy\"\n                />\n                <span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span>\n              </a>\n              <figcaption>\n                <span>图 02</span>复制当前站点生成的 CLI 配置提示词，交给本地\n                Coding Agent。\n              </figcaption>\n            </figure>\n            <ol class=\"steps\" start=\"3\">\n              <li>\n                先检查 <code>node --version</code> 和 npm；CLI 需要\n                <strong>Node.js 24 或更高版本</strong>。\n              </li>\n              <li>\n                按提示词安装 CLI\n                并运行登录命令，在浏览器打开它显示的地址、输入验证码并确认授权。\n              </li>\n              <li>登录后检查身份与权限、阅读命令文档，并安装 CLI skill。</li>\n            </ol>\n            <div class=\"code-block\">\n              <div class=\"code-heading\">\n                <span>登录后的检查与配置</span\n                ><button\n                  type=\"button\"\n                  class=\"copy-button\"\n                  data-copy=\"cli-checks\"\n                >\n                  复制\n                </button>\n              </div>\n              <pre id=\"cli-checks\"><code>nb-studio whoami\nnb-studio docs\nnb-studio skills install</code></pre>\n            </div>\n            <aside class=\"note\">\n              <strong>从当前页面复制新指令</strong>\n              <p>\n                截图用来定位入口。安装链接和验证码可能过期，请使用当前站点生成的提示词；连接多个\n                Studio 时，执行命令前确认所用 profile 指向目标站点。\n              </p>\n            </aside>\n            <p class=\"done\">\n              <strong>完成标志</strong>\n              <code>whoami</code> 显示目标站点的身份与权限，Agent 已安装 CLI\n              skill。\n            </p>"
+    },
+    {
+      "id": "my-agents",
+      "title": "连接 My agents",
+      "summary": "把自己的电脑连接到 Studio，在浏览器里使用电脑上的 Coding Agent。",
+      "html": "<ol class=\"steps\">\n              <li>\n                进入 <strong>My agents</strong>，点击\n                <strong>Connect your computer</strong>。\n              </li>\n              <li>复制连接提示词，交给准备接入的电脑上的 Agent 执行。</li>\n            </ol>\n            <figure>\n              <a\n                class=\"screenshot\"\n                href=\"./assets/my-agents.png\"\n                aria-label=\"放大图 3：在 My agents 中点击 Connect your computer。\"\n              >\n                <img\n                  src=\"./assets/my-agents.png\"\n                  width=\"3456\"\n                  height=\"1992\"\n                  alt=\"在 My agents 中点击 Connect your computer。\"\n                  decoding=\"async\" loading=\"lazy\"\n                />\n                <span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span>\n              </a>\n              <figcaption>\n                <span>图 03</span>在 My agents 中点击 Connect your computer。\n              </figcaption>\n            </figure>\n            <figure>\n              <a\n                class=\"screenshot\"\n                href=\"./assets/computer-setup.png\"\n                aria-label=\"放大图 4：复制连接电脑的提示词，并在电脑上完成安装与浏览器授权。\"\n              >\n                <img\n                  src=\"./assets/computer-setup.png\"\n                  width=\"3456\"\n                  height=\"1992\"\n                  alt=\"复制连接电脑的提示词，并在电脑上完成安装与浏览器授权。\"\n                  decoding=\"async\" loading=\"lazy\"\n                />\n                <span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span>\n              </a>\n              <figcaption>\n                <span>图 04</span\n                >复制连接电脑的提示词，并在电脑上完成安装与浏览器授权。\n              </figcaption>\n            </figure>\n            <p>\n              完成安装与浏览器登录后，按提示词安装常驻服务，让电脑持续在线；仅临时连接时可使用\n              <code>nb-studio acp start</code\n              >。在「我的电脑」中确认在线状态，并检查可用的 Coding Agent。\n            </p>\n            <aside class=\"note\">\n              <strong>电脑访问目录</strong>\n              <p>\n                默认允许访问整个用户目录，可以在「我的电脑」中调整允许访问的文件夹。\n              </p>\n            </aside>\n            <p class=\"done\">\n              <strong>完成标志</strong> 电脑显示在线，所选 Coding Agent\n              已完成自身授权并可启动会话。\n            </p>"
+    },
+    {
+      "id": "runtimes",
+      "title": "配置运行环境与团队 Agent",
+      "summary": "接入 Runtime，启用 Agent，再为项目经理选择执行模型。",
+      "html": "<h3>1. 添加 Runtime</h3>\n            <p>\n              进入 <strong>Agent team → Runtimes</strong>，点击\n              <strong>Add runtime</strong>，按使用范围选择 Personal 或 Team。\n            </p>\n            <figure>\n              <a\n                class=\"screenshot\"\n                href=\"./assets/runtime-list.png\"\n                aria-label=\"放大图 5：在 Agent team → Runtimes 中添加运行环境。\"\n              >\n                <img\n                  src=\"./assets/runtime-list.png\"\n                  width=\"3456\"\n                  height=\"1992\"\n                  alt=\"在 Agent team → Runtimes 中添加运行环境。\"\n                  decoding=\"async\" loading=\"lazy\"\n                />\n                <span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span>\n              </a>\n              <figcaption>\n                <span>图 05</span>在 Agent team → Runtimes 中添加运行环境。\n              </figcaption>\n            </figure>\n            <p>\n              选择机器上准备使用的 Coding Agent 工具，设置\n              <strong>Max concurrent runs</strong\n              >。这个字段控制最大并发运行数量，应结合机器资源和模型使用额度调整。生成安装命令后，在目标机器执行并完成所选工具的授权。\n            </p>\n            <figure>\n              <a\n                class=\"screenshot\"\n                href=\"./assets/runtime-setup.png\"\n                aria-label=\"放大图 6：选择可用工具，并根据机器能力设置 Max concurrent runs。\"\n              >\n                <img\n                  src=\"./assets/runtime-setup.png\"\n                  width=\"3456\"\n                  height=\"1992\"\n                  alt=\"选择可用工具，并根据机器能力设置 Max concurrent runs。\"\n                  decoding=\"async\" loading=\"lazy\"\n                />\n                <span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span>\n              </a>\n              <figcaption>\n                <span>图 06</span>选择可用工具，并根据机器能力设置 Max\n                concurrent runs。\n              </figcaption>\n            </figure>\n            <h3>2. 配置并启用 Agent</h3>\n            <p>\n              Runtime 在线后，进入\n              <strong>Agent team → Agents</strong>，为发现的 Agent 点击\n              <strong>Fill in and enable</strong>，完成配置并启用。\n            </p>\n            <figure>\n              <a\n                class=\"screenshot\"\n                href=\"./assets/enable-agents.png\"\n                aria-label=\"放大图 7：运行环境连接成功后，在 Agents 中配置并启用发现的 Agent。\"\n              >\n                <img\n                  src=\"./assets/enable-agents.png\"\n                  width=\"3456\"\n                  height=\"1992\"\n                  alt=\"运行环境连接成功后，在 Agents 中配置并启用发现的 Agent。\"\n                  decoding=\"async\" loading=\"lazy\"\n                />\n                <span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span>\n              </a>\n              <figcaption>\n                <span>图 07</span>运行环境连接成功后，在 Agents\n                中配置并启用发现的 Agent。\n              </figcaption>\n            </figure>\n            <h3>3. 为项目经理指定执行 Agent</h3>\n            <p>\n              打开 <strong>Project manager</strong>，在\n              <strong>The agent it runs with → First choice</strong>\n              中选择已启用、可用的 Agent；如有需要再选择 Fallback，最后保存。\n            </p>\n            <figure>\n              <a\n                class=\"screenshot\"\n                href=\"./assets/project-manager.png\"\n                aria-label=\"放大图 8：为项目经理选择 First choice 执行 Agent，并保存配置。\"\n              >\n                <img\n                  src=\"./assets/project-manager.png\"\n                  width=\"3456\"\n                  height=\"1992\"\n                  alt=\"为项目经理选择 First choice 执行 Agent，并保存配置。\"\n                  decoding=\"async\" loading=\"lazy\"\n                />\n                <span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span>\n              </a>\n              <figcaption>\n                <span>图 08</span>为项目经理选择 First choice 执行\n                Agent，并保存配置。\n              </figcaption>\n            </figure>\n            <aside class=\"note\">\n              <strong>项目经理也需要配置</strong>\n              <p>\n                仅让 Runtime 在线，还需要启用团队 Agent 并为项目经理选择执行\n                Agent。新站点缺少这项配置时，项目经理可能无法接手任务。\n              </p>\n            </aside>\n            <p class=\"done\">\n              <strong>完成标志</strong> Runtime 在线、团队 Agent\n              可用，项目经理的 First choice 已保存。\n            </p>"
+    },
+    {
+      "id": "git",
+      "title": "配置 Git 连接",
+      "summary": "为项目接入代码仓库。",
+      "html": "<p>\n              进入 <strong>Settings → Git</strong>，点击\n              <strong>Add connection</strong>。支持 GitHub 和\n              GitLab，按所选平台的页面指引完成连接。\n            </p>\n            <figure>\n              <a\n                class=\"screenshot\"\n                href=\"./assets/git-connection.png\"\n                aria-label=\"放大图 9：在 Settings → Git 中添加 GitHub 或 GitLab 连接。\"\n              >\n                <img\n                  src=\"./assets/git-connection.png\"\n                  width=\"3456\"\n                  height=\"1992\"\n                  alt=\"在 Settings → Git 中添加 GitHub 或 GitLab 连接。\"\n                  decoding=\"async\" loading=\"lazy\"\n                />\n                <span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span>\n              </a>\n              <figcaption>\n                <span>图 09</span>在 Settings → Git 中添加 GitHub 或 GitLab\n                连接。\n              </figcaption>\n            </figure>\n            <p>\n              确认连接的账号或组织能够访问目标仓库。如果需要由 Studio\n              新建仓库，也要确认连接具备相应权限。\n            </p>\n            <p class=\"done\">\n              <strong>完成标志</strong> Git\n              连接可用，创建项目时能选择目标账号或仓库。\n            </p>"
+    },
+    {
+      "id": "projects",
+      "title": "创建项目",
+      "summary": "先准备代码仓库和 CI 所需配置，再建立 Studio 项目。",
+      "html": "<p>\n              准备好项目的 Git 仓库、目标分支，以及配置仓库 CI 所需的权限。进入\n              <strong>Projects</strong>，点击\n              <strong>New project</strong>，按向导选择 Git 连接和代码来源。\n            </p>\n            <figure>\n              <a\n                class=\"screenshot\"\n                href=\"./assets/new-project.png\"\n                aria-label=\"放大图 10：准备好仓库后，从 Projects → New project 创建项目。\"\n              >\n                <img\n                  src=\"./assets/new-project.png\"\n                  width=\"3456\"\n                  height=\"1992\"\n                  alt=\"准备好仓库后，从 Projects → New project 创建项目。\"\n                  decoding=\"async\" loading=\"lazy\"\n                />\n                <span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span>\n              </a>\n              <figcaption>\n                <span>图 10</span>准备好仓库后，从 Projects → New project\n                创建项目。\n              </figcaption>\n            </figure>\n            <p>\n              根据项目选择已有仓库或创建新仓库；需要初始化代码时，选择可用的执行\n              Agent。项目建立后，进入下一章完成 CI 接入和预览配置。\n            </p>\n            <p class=\"done\">\n              <strong>完成标志</strong> 项目创建成功，关联的仓库和代码来源正确。\n            </p>"
+    },
+    {
+      "id": "ci",
+      "title": "接入 CI 与预览环境",
+      "summary": "让仓库构建结果回传 Studio，并为 Pull request 配置预览。",
+      "html": "<h3>1. 打开项目的 CI 向导</h3>\n            <p>\n              进入项目的 <strong>Settings → Deployment</strong>，点击\n              <strong>Set up CI</strong>。\n            </p>\n            <figure>\n              <a\n                class=\"screenshot\"\n                href=\"./assets/deployment-settings.png\"\n                aria-label=\"放大图 11：打开项目的 Settings → Deployment，点击 Set up CI。\"\n              >\n                <img\n                  src=\"./assets/deployment-settings.png\"\n                  width=\"3456\"\n                  height=\"1992\"\n                  alt=\"打开项目的 Settings → Deployment，点击 Set up CI。\"\n                  decoding=\"async\" loading=\"lazy\"\n                />\n                <span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span>\n              </a>\n              <figcaption>\n                <span>图 11</span>打开项目的 Settings → Deployment，点击 Set up\n                CI。\n              </figcaption>\n            </figure>\n            <h3>2. 设置触发方式与应用信息</h3>\n            <p>\n              按需要选择 Pull request、Push to a branch 或\n              Tag，并填写环境、应用目录和 App ID。图中以 Pull request\n              和预览环境为例，应用位于仓库根目录时，Directory 填\n              <code>.</code>。\n            </p>\n            <figure>\n              <a\n                class=\"screenshot\"\n                href=\"./assets/ci-setup.png\"\n                aria-label=\"放大图 12：选择触发方式、环境、应用目录和 App ID，按向导配置仓库 CI。\"\n              >\n                <img\n                  src=\"./assets/ci-setup.png\"\n                  width=\"3456\"\n                  height=\"1992\"\n                  alt=\"选择触发方式、环境、应用目录和 App ID，按向导配置仓库 CI。\"\n                  decoding=\"async\" loading=\"lazy\"\n                />\n                <span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span>\n              </a>\n              <figcaption>\n                <span>图 12</span>选择触发方式、环境、应用目录和 App\n                ID，按向导配置仓库 CI。\n              </figcaption>\n            </figure>\n            <h3>3. 把 CI 配置写入仓库</h3>\n            <ol class=\"steps\">\n              <li>\n                使用向导生成的模板，或复制\n                <strong>Prompt for your agent</strong>，把 CI\n                配置文件添加到仓库。GitHub 通常放在\n                <code>.github/workflows/</code>；GitLab 按向导从\n                <code>.gitlab-ci.yml</code> 引入。\n              </li>\n              <li>\n                按当前向导配置仓库 Secret，示例名称为\n                <code>NB_STUDIO_API_KEY</code\n                >。使用当前项目生成的密钥和站点地址。\n              </li>\n              <li>\n                提交配置，触发一次符合条件的构建。回到 Deployment 查看第一条 CI\n                回报和预览结果。\n              </li>\n            </ol>\n            <aside class=\"note\">\n              <strong>任务预览与应用的关系</strong>\n              <p>\n                任务对应的 Pull request 触发 CI 后，向导示例会按\n                <code>&lt;app-id&gt;-pr-&lt;number&gt;</code> 创建预览应用，并在\n                PR 合并或关闭时删除它。先把项目 CI 与预览环境配置好，再通过 PR\n                验证自动创建和清理。\n              </p>\n            </aside>\n            <p class=\"done\">\n              <strong>完成标志</strong> CI 成功回报，预览地址可访问，相关 PR\n              的构建与预览状态可在 Studio 查看。\n            </p>"
+    }
+  ],
+  "finishTitle": "配置完成后，逐项确认",
+  "finishDescription": "完成以下检查，你的团队就可以开始在 Studio 中协作。",
+  "checklist": [
+    "Studio 可访问并能登录",
+    "CLI 身份和目标站点正确",
+    "My agents 中电脑在线",
+    "Runtime 在线且工具已授权",
+    "团队 Agent 与项目经理已配置",
+    "Git 连接与项目仓库可访问",
+    "CI 回报成功，预览可访问"
+  ],
+  "footerNote": "截图为操作示例，以当前界面为准。",
+  "backTop": "返回顶部",
+  "originalImage": "打开原图",
+  "close": "关闭",
+  "skip": "跳到正文",
+  "copied": "已复制",
+  "copyStatus": "内容已复制",
+  "copyFallback": "内容已选中，请按 Ctrl+C 或 ⌘C 复制",
+  "progress": "阅读进度"
+}

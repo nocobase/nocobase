@@ -1,0 +1,218 @@
+---
+import chinese from './content.json';
+import english from './content.en.json';
+import './index.scss';
+
+interface Props {
+  language: string;
+}
+
+const { language } = Astro.props;
+const content = language === 'cn' ? chinese : english;
+const assets = import.meta.glob<string>('./assets/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+const withAssets = (html: string) =>
+  html.replace(/\.\/assets\/[\w-]+\.png/g, (path) => {
+    const asset = assets[path];
+    if (!asset) throw new Error(`Missing Studio guide asset: ${path}`);
+    return asset;
+  });
+const number = (index: number) => String(index + 1).padStart(2, '0');
+const home = language === 'cn' ? '/zh-CN/' : '/';
+---
+
+<div
+  class='studio-guide'
+  id='top'
+  data-copy-status={content.copyStatus}
+  data-copy-fallback={content.copyFallback}
+  data-copied={content.copied}
+>
+  <a class='guide-skip' href='#main-content'>
+    {content.skip}
+  </a>
+  <div class='guide-container'>
+    <nav class='guide-breadcrumb' aria-label={content.home}>
+      <a href={home}>{content.home}</a>
+      <span aria-hidden='true'>/</span>
+      <span>NocoBase Studio</span>
+      <span class='guide-badge'>{content.guideLabel}</span>
+    </nav>
+    <header class='guide-intro'>
+      <div>
+        <p class='guide-eyebrow'>{content.eyebrow}</p>
+        <h1>
+          {content.heading}
+          <br />
+          <span>{content.headingAccent}</span>
+        </h1>
+        <p class='guide-lead'>{content.intro}</p>
+        <div class='guide-actions'>
+          <a class='guide-primary' href='#deployment'>
+            {content.start}
+            <span aria-hidden='true'>↗</span>
+          </a>
+          <button type='button' class='guide-print'>
+            {content.print}
+          </button>
+        </div>
+        <p class='guide-meta'>
+          <span>
+            <strong>{content.chapters.length}</strong> {content.chapterLabel}
+          </span>
+          <span>
+            <strong>{Object.keys(assets).length}</strong> {content.imageLabel}
+          </span>
+        </p>
+      </div>
+      <div class='guide-flow' aria-label={content.flowLabel}>
+        <div class='flow-heading'>
+          <span class='flow-mark' aria-hidden='true'>
+            S
+          </span>
+          <span>NocoBase Studio</span>
+          <span class='flow-label'>SETUP</span>
+        </div>
+        <p class='flow-title'>{content.flowTitle}</p>
+        <ol>
+          {content.flow.map((stage, index) => (
+            <li>
+              <span class='flow-number' aria-hidden='true'>
+                {number(index)}
+              </span>
+              <div>
+                <strong>{stage.title}</strong>
+                <p>{stage.description}</p>
+              </div>
+              <span class='flow-arrow' aria-hidden='true'>
+                ↗
+              </span>
+            </li>
+          ))}
+        </ol>
+        <div class='flow-tools'>
+          <span>CLI</span>
+          <span>AGENT</span>
+          <span>GIT</span>
+          <span>CI / CD</span>
+        </div>
+      </div>
+    </header>
+    <div class='guide-layout'>
+      <aside class='guide-sidebar'>
+        <details class='guide-directory' open>
+          <summary>
+            {content.tocToggle}
+            <span aria-hidden='true'>⌄</span>
+          </summary>
+          <nav aria-label={content.toc}>
+            <p class='toc-title'>{content.toc}</p>
+            <ol>
+              {content.chapters.map((chapter, index) => (
+                <li>
+                  <a href={`#${chapter.id}`} data-chapter-link>
+                    <span>{number(index)}</span>
+                    {chapter.title}
+                  </a>
+                </li>
+              ))}
+            </ol>
+            <p class='toc-tip'>{content.tocTip}</p>
+            <div class='guide-progress'>
+              <label for='guide-progress'>
+                {content.progress}
+                <span data-progress-label>
+                  01 / {number(content.chapters.length - 1)}
+                </span>
+              </label>
+              <progress
+                id='guide-progress'
+                max={content.chapters.length}
+                value='1'
+              ></progress>
+            </div>
+          </nav>
+        </details>
+      </aside>
+      <main id='main-content' data-pagefind-body>
+        <section class='guide-overview' aria-labelledby='connections-title'>
+          <p class='guide-eyebrow'>BEFORE YOU BEGIN</p>
+          <h2 id='connections-title'>{content.overviewTitle}</h2>
+          <p class='overview-description'>{content.overviewDescription}</p>
+          <div class='connection-grid'>
+            {content.connections.map((connection, index) => (
+              <div class='connection'>
+                <span class='connection-number' aria-hidden='true'>
+                  {number(index)}
+                </span>
+                <p class='connection-label'>{connection.label}</p>
+                <h3>{connection.title}</h3>
+                <p>{connection.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+        {content.chapters.map((chapter, index) => (
+          <section
+            class='chapter'
+            id={chapter.id}
+            aria-labelledby={`${chapter.id}-title`}
+          >
+            <header class='chapter-header'>
+              <span class='chapter-number' aria-hidden='true'>
+                {number(index)}
+              </span>
+              <div>
+                <h2 id={`${chapter.id}-title`}>{chapter.title}</h2>
+                <p class='chapter-summary'>{chapter.summary}</p>
+              </div>
+            </header>
+            <div class='chapter-body' set:html={withAssets(chapter.html)} />
+          </section>
+        ))}
+        <section class='guide-finish' aria-labelledby='finish-title'>
+          <span class='finish-mark' aria-hidden='true'>
+            ✓
+          </span>
+          <h2 id='finish-title'>{content.finishTitle}</h2>
+          <p>{content.finishDescription}</p>
+          <ul>
+            {content.checklist.map((item) => (
+              <li>
+                <span aria-hidden='true'>✓</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </section>
+        <footer class='guide-footer'>
+          <span>{content.footerNote}</span>
+          <a href='#top'>{content.backTop} ↑</a>
+        </footer>
+      </main>
+    </div>
+  </div>
+  <dialog class='guide-lightbox' aria-labelledby='image-caption'>
+    <div class='lightbox-head'>
+      <p id='image-caption'></p>
+      <div class='lightbox-actions'>
+        <a data-original-image target='_blank' rel='noopener noreferrer'>
+          {content.originalImage} ↗
+        </a>
+        <button type='button' data-close-image autofocus>
+          {content.close} <kbd>Esc</kbd>
+        </button>
+      </div>
+    </div>
+    <img class='lightbox-image' alt='' />
+  </dialog>
+  <div class='guide-status' role='status' aria-live='polite'></div>
+</div>
+<script>
+  import { initializeStudioGuide } from './interactions.ts';
+  const root = document.querySelector<HTMLElement>('.studio-guide');
+  if (root) initializeStudioGuide(root);
+</script>
