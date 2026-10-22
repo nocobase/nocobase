@@ -68,14 +68,14 @@ const settings = {
   scopeExplanation:
     '每项范围分别约束对应数据，实际操作还需通过相应的权限检查。',
   noAdditionalScopeHint:
-    '此操作在这里不额外授予数据访问权限，实际可访问范围仍取决于默认数据范围、共享与限制规则。',
+    '此角色不增加记录范围；实际访问还取决于其他角色及默认、共享和限制规则。',
   systemToolsHint: '管理系统配置与工具，授权前请确认每项操作包含的能力。',
   userAccountsHint:
     '管理用户资料、账号安全和角色分配，请逐项确认需要授予的权限。',
   businessOperationsHint:
     '设置此角色可以执行的业务操作，以及每项操作可使用的数据范围。',
   pageAccessHint:
-    '控制此角色可以进入哪些页面。页面中的数据和操作仍需单独授权。',
+    '设置此角色可访问的业务页面。系统设置（包括用户管理、业务配置项）统一在“配置项权限”中控制。页面内的数据和业务操作仍需单独授权。',
   roleAssignment: '角色分配',
   accountSecurity: '账号安全',
   userInformation: '用户资料',
@@ -181,15 +181,25 @@ const settings = {
   total_one: '共 {{count}} 位用户',
   total_other: '共 {{count}} 位用户',
   access: '访问',
+  expandPermissionGroup: '展开“{{name}}”',
+  collapsePermissionGroup: '收起“{{name}}”',
+  pagesOutsideNavigation: '未显示在菜单中的页面',
+  configurationPermissions: '配置项权限',
+  configurationPermissionsHint:
+    '统一设置系统设置、用户管理和业务配置项的访问与操作权限，仅显示应用实际开放的功能。',
   permissionSearch: '搜索分类、分组或权限',
   enabledOnly: '仅显示已授权',
   noPermissions: '暂无可配置权限',
+  permissionEmptyHint: '请联系应用开发者，开放此角色需要配置的权限。',
+  permissionReadOnlyHint: '当前权限配置为只读。',
+  permissionManagedHint: '此权限由应用管理。',
+  permissionSaveHint: '权限修改保存后生效。',
   permissionCategories: '权限分类',
   selectAllPermissions: '全选',
   dataRanges: '数据范围（{{count}}）',
   selectVisiblePermissions: '选择“{{name}}”中显示的权限',
   permissionSummary: '已授权 {{enabled}} / {{total}}',
-  noRecordScope: '不额外授权数据范围',
+  noRecordScope: '按默认规则',
   preservedRecordScope: '保留现有配置',
   permissionFilter: {
     limit: '最多支持 20 个条件',

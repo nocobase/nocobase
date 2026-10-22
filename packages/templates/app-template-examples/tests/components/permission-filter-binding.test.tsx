@@ -20,6 +20,25 @@ const catalog = {
       title: 'Business',
       subsections: [
         {
+          name: 'other',
+          title: 'Other',
+          resources: [
+            {
+              type: 'composite',
+              id: 'expenses.records',
+              title: 'Expenses',
+              actions: [{ name: 'other', title: 'Other' }],
+              dataScopes: {},
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'configuration',
+      title: 'Configuration',
+      subsections: [
+        {
           name: 'expenses',
           title: 'Expenses',
           resources: [
@@ -108,6 +127,7 @@ it('collects native custom filter parameters before changing the draft, then sav
     );
   }
   render(<Role />);
+  await user.click(screen.getByRole('button', { name: 'Configuration' }));
   const scope = screen.getByRole('combobox', {
     name: 'How far View · Records reaches',
   });

@@ -78,7 +78,7 @@ const settings = {
   scopeExplanation:
     'Each range applies to its corresponding data. The operation must also pass its authorization checks.',
   noAdditionalScopeHint:
-    'This action grants no additional record access here. Default access, sharing and restriction rules still determine actual access.',
+    'This role adds no records. Effective access also depends on other roles and default, sharing and restriction rules.',
   systemToolsHint:
     'Manage system configuration and tools. Review the capabilities each action includes before granting access.',
   userAccountsHint:
@@ -86,7 +86,7 @@ const settings = {
   businessOperationsHint:
     'Choose the operations this role can perform and the data each operation can use.',
   pageAccessHint:
-    'Controls which pages this role can open. Data and actions on each page require their own permissions.',
+    'Choose the business pages this role can open. All system settings, including user management and business configuration, are controlled under Configuration permissions. Data and business actions require separate permissions.',
   roleAssignment: 'Role assignment',
   accountSecurity: 'Account security',
   userInformation: 'User information',
@@ -197,16 +197,27 @@ const settings = {
   total_one: '{{count}} user',
   total_other: '{{count}} users',
   access: 'Access',
+  expandPermissionGroup: 'Expand {{name}}',
+  collapsePermissionGroup: 'Collapse {{name}}',
+  pagesOutsideNavigation: 'Pages outside navigation',
+  configurationPermissions: 'Configuration permissions',
+  configurationPermissionsHint:
+    'Control access and actions for system settings, user management and business configuration. Only actual application features are shown.',
   permissionSearch: 'Search categories, groups or permissions',
   enabledOnly: 'Enabled only',
   noPermissions: 'No permissions to configure',
+  permissionEmptyHint:
+    'Ask the application developer to expose the permissions this role can configure.',
+  permissionReadOnlyHint: 'These permissions are read-only.',
+  permissionManagedHint: 'This permission is managed by the application.',
+  permissionSaveHint: 'Permission changes take effect after saving.',
   permissionCategories: 'Permission categories',
   selectAllPermissions: 'All',
   dataRanges: 'Data ranges ({{count}})',
   selectVisiblePermissions: 'Select visible permissions in {{name}}',
   permissionSummary: '{{enabled}} of {{total}} enabled',
   preservedRecordScope: 'Keep existing configuration',
-  noRecordScope: 'No additional record access',
+  noRecordScope: 'Use default rules',
   permissionFilter: {
     limit: 'Up to 20 conditions',
     configure: 'Conditions',
