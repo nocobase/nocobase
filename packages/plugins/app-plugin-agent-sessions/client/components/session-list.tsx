@@ -84,6 +84,7 @@ export function SessionList({
           <PanelLeftOpenIcon />
         </Button>
         <Button
+          variant='ghost'
           size='icon-sm'
           aria-label={t('list.new')}
           title={t('list.new')}
@@ -111,6 +112,11 @@ function FullSessionList({
   const [search, setSearch] = useState('');
   const [computersOpen, setComputersOpen] = useState(false);
   const surface = useSessionSurface();
+  // The standalone page shares the compact history layout with host-owned panels.
+  const compact = !surface.panel || Boolean(surface.renderHeaderActions);
+  const title =
+    surface.panelTitle ??
+    (compact || !archived ? t('list.title') : t('list.archived'));
   const query = useSessions(archived);
   const archive = useArchive();
 
@@ -142,14 +148,14 @@ function FullSessionList({
       className={cn(
         '@container/session-list flex h-full min-h-0 w-full shrink-0 flex-col',
         !surface.panel && 'md:w-[264px] md:border-r',
-        surface.renderHeaderActions && 'bg-muted/30',
+        compact && 'bg-muted/30',
         className,
       )}
       aria-label={t('list.label')}
     >
       <div
         className={
-          surface.renderHeaderActions
+          compact
             ? 'flex flex-col gap-3 pb-3'
             : 'flex flex-col gap-2.5 px-3.5 pt-3.5 pb-2'
         }
@@ -157,10 +163,10 @@ function FullSessionList({
         <div
           className={cn(
             'flex items-center gap-2',
-            surface.renderHeaderActions && 'border-b px-3.5 py-2',
+            compact && 'border-b px-3.5 py-2',
           )}
         >
-          {archived && !surface.renderHeaderActions && (
+          {archived && !compact && (
             <Button
               variant='ghost'
               size='icon-sm'
@@ -174,33 +180,31 @@ function FullSessionList({
           )}
           <h1
             className={
-              surface.renderHeaderActions
+              compact
                 ? 'min-w-0 flex-1 truncate text-sm font-semibold'
                 : 'min-w-0 flex-1 truncate text-base font-semibold'
             }
-            title={archived ? t('list.archived') : t('list.title')}
+            title={title}
           >
-            {surface.panelTitle ??
-              (archived ? t('list.archived') : t('list.title'))}
+            {title}
           </h1>
-          {/* The application's primary button, as "New issue" is: its default size and text. A panel has its own. */}
           {surface.panel ? (
             surface.actions
           ) : (
             <Button
-              className='min-w-0 shrink'
+              variant='ghost'
+              size='icon-sm'
+              className='size-9 shrink-0 [&_svg]:size-4'
+              aria-label={t('list.new')}
               title={t('list.new')}
               nativeButton={false}
               render={<Link to='/agent-sessions?new' />}
             >
-              <PlusIcon data-icon='inline-start' />
-              <span className='truncate'>{t('list.new')}</span>
+              <PlusIcon />
             </Button>
           )}
         </div>
-        <div
-          className={cn('relative', surface.renderHeaderActions && 'mx-3.5')}
-        >
+        <div className={cn('relative', compact && 'mx-3.5')}>
           <SearchIcon className='text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2' />
           <Input
             className='bg-card h-8 pl-8 text-base md:text-sm'
@@ -210,12 +214,9 @@ function FullSessionList({
             aria-label={t('list.search')}
           />
         </div>
-        {(!archived || surface.renderHeaderActions) && (
+        {(!archived || compact) && (
           <div
-            className={cn(
-              'flex flex-wrap gap-1',
-              surface.renderHeaderActions && 'mx-3.5',
-            )}
+            className={cn('flex flex-wrap gap-1', compact && 'mx-3.5')}
             role='group'
             aria-label={t('list.filter')}
           >
@@ -242,7 +243,7 @@ function FullSessionList({
                   : t(`list.filters.${value}`, { count: counts[value] })}
               </button>
             ))}
-            {!surface.renderHeaderActions && (
+            {!compact && (
               <ProjectFilter
                 projects={[
                   ...new Set(
@@ -268,7 +269,7 @@ function FullSessionList({
           </div>
         ) : shown.length === 0 ? (
           <p className='text-muted-foreground p-3 text-sm'>
-            {surface.renderHeaderActions
+            {compact
               ? t('list.panelEmpty')
               : sessions.length === 0
                 ? archived
@@ -284,7 +285,7 @@ function FullSessionList({
             if (rows.length === 0) return null;
             return (
               <div key={group}>
-                {!surface.renderHeaderActions && (
+                {!compact && (
                   <h2 className='text-muted-foreground px-2.5 pt-3 pb-1 text-xs'>
                     {t(`list.groups.${group}`)}
                   </h2>
@@ -325,9 +326,7 @@ function FullSessionList({
         </FooterButton>
         <FooterButton
           title={t('list.archived')}
-          onClick={() =>
-            setArchived(surface.renderHeaderActions ? !archived : true)
-          }
+          onClick={() => setArchived(compact ? !archived : true)}
           pressed={archived}
         >
           <ArchiveIcon className='size-4 shrink-0' />
