@@ -1,6 +1,6 @@
 /**
  * The model services UI without React: the services in list order, a new service's title, a service's models as one
- * list, and the base URL as it is checked, saved and shown.
+ * list, the chat models its row names, and the base URL as it is checked, saved and shown.
  */
 import {
   guessModelKind,
@@ -10,6 +10,7 @@ import {
   type ModelKind,
   type ModelOption,
   type ModelProviderOption,
+  type ModelRef,
   type ModelServiceView,
   type ProviderModel,
 } from '../../shared/models.js';
@@ -144,6 +145,41 @@ export function kindCounts(
     kind,
     count: models.filter((model) => model.kind === kind).length,
   })).filter((entry) => entry.count > 0);
+}
+
+/** A service's chat models as its row in the list names them. */
+export interface ChatModelSummary {
+  /** The names the row shows: the system default chat model first when the service offers it, then in order. */
+  readonly shown: readonly string[];
+  /** Whether the first name shown is the system default chat model. */
+  readonly firstIsDefault: boolean;
+  /** How many more chat models the service offers than it shows. */
+  readonly more: number;
+  /** Every chat model's name, in the order shown. */
+  readonly all: readonly string[];
+}
+
+/** At most `limit` of a service's chat model names, the default chat model (`defaultChat`) first when it is one. */
+export function chatModelSummary(
+  service: ModelServiceView,
+  defaultChat: ModelRef | null,
+  limit = 2,
+): ChatModelSummary {
+  const chat = service.models.filter((model) => model.kind === 'chat');
+  const isDefault = (model: ModelOption) =>
+    defaultChat?.modelService === service.name &&
+    defaultChat.model === model.value;
+  const ordered = [
+    ...chat.filter(isDefault),
+    ...chat.filter((model) => !isDefault(model)),
+  ];
+  const all = ordered.map((model) => model.label || model.value);
+  return {
+    shown: all.slice(0, limit),
+    firstIsDefault: ordered[0] !== undefined && isDefault(ordered[0]),
+    more: Math.max(0, all.length - limit),
+    all,
+  };
 }
 
 /** The model the connection test tries: the first chat model, else the first model of any kind. */

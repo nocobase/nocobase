@@ -1,8 +1,8 @@
 /**
  * `ModelServicesPage`: the Models page, laid out like the Apps page: a page header with "Add service", then a table of
  * the model services the application calls models of (a knowledge base's embeddings, reranking and context), one row
- * per service with its name, base URL host, provider type with how many chat, embedding and rerank models it offers,
- * and status.
+ * per service with its name, base URL host, the chat models it offers by name (the system default chat model first and
+ * marked, a few names and how many more) with how many embedding and rerank models, provider type and status.
  * Several services of one provider are normal (two OpenAI-compatible endpoints, two keys of one provider). Clicking a
  * row, or Edit in its menu, opens its editor in a dialog (`service-editor.tsx`); "Add service" opens the same dialog
  * empty. The menu also turns a service on or off or deletes it. It reads and manages behind `agents.services`: who
@@ -21,7 +21,11 @@ import {
 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import { MODEL_PROVIDERS, type ModelServiceView } from '../../shared/models.js';
+import {
+  MODEL_PROVIDERS,
+  type ModelRef,
+  type ModelServiceView,
+} from '../../shared/models.js';
 import { agentsKeys } from '../api/keys.js';
 import {
   AgEmpty,
@@ -60,6 +64,7 @@ import {
 import { useAgentsApi } from '../hooks/use-agents-api.js';
 import { useNotify } from '../hooks/use-notify.js';
 import {
+  chatModelSummary,
   hostOf,
   kindCounts,
   serviceStatus,
@@ -89,6 +94,12 @@ export function ModelServicesPage(): ReactElement {
     queryKey: agentsKeys.services,
     queryFn: () => api.services(),
   });
+  // Which chat model the rows mark as the default; without it they mark none.
+  const defaults = useQuery({
+    queryKey: agentsKeys.defaultModels,
+    queryFn: () => api.defaultModels(),
+  });
+  const defaultChat = defaults.data?.effectiveChat ?? null;
   // The dialog's service (null adds one), kept while it closes so its content does not change as it fades out.
   const [editor, setEditor] = useState<{
     readonly open: boolean;
@@ -132,6 +143,7 @@ export function ModelServicesPage(): ReactElement {
           <TableHeader>
             <TableRow>
               <TableHead>{t('services.columns.name')}</TableHead>
+              <TableHead>{t('services.columns.models')}</TableHead>
               <TableHead className='w-48'>
                 {t('services.columns.provider')}
               </TableHead>
@@ -146,6 +158,7 @@ export function ModelServicesPage(): ReactElement {
               <ServiceRow
                 key={service.name}
                 service={service}
+                defaultChat={defaultChat}
                 canManage={canManage}
                 onEdit={() => openEditor(service.name)}
               />
@@ -181,13 +194,15 @@ export function ModelServicesPage(): ReactElement {
   );
 }
 
-/** One service: its name, host, provider and status, and its actions; clicking it opens its editor. */
+/** One service: its name, host, models, provider and status, and its actions; clicking it opens its editor. */
 function ServiceRow({
   service,
+  defaultChat,
   canManage,
   onEdit,
 }: {
   readonly service: ModelServiceView;
+  readonly defaultChat: ModelRef | null;
   readonly canManage: boolean;
   readonly onEdit: () => void;
 }): ReactElement {
@@ -251,15 +266,9 @@ function ServiceRow({
         </div>
       </TableCell>
       <TableCell>
-        <div>{providerTitle(service)}</div>
-        <div className='text-xs text-muted-foreground'>
-          {kindCounts(service.models)
-            .map(({ kind, count }) =>
-              t(`services.models.counts.${kind}`, { count }),
-            )
-            .join(' · ')}
-        </div>
+        <ServiceModels service={service} defaultChat={defaultChat} />
       </TableCell>
+      <TableCell>{providerTitle(service)}</TableCell>
       <TableCell>
         <Badge variant={STATUS_BADGE[status]}>
           {t(`services.status.${status}`)}
@@ -334,6 +343,58 @@ function ServiceRow({
         </AlertDialog>
       </TableCell>
     </TableRow>
+  );
+}
+
+/**
+ * What a service offers: its chat models by name, the system default chat model first and marked, with how many more
+ * (all of them on hover), then how many embedding and rerank models.
+ */
+function ServiceModels({
+  service,
+  defaultChat,
+}: {
+  readonly service: ModelServiceView;
+  readonly defaultChat: ModelRef | null;
+}): ReactElement {
+  const { t } = useTranslation();
+  const chat = chatModelSummary(service, defaultChat);
+  const [first, ...rest] = chat.shown;
+  const others = kindCounts(service.models)
+    .filter(({ kind }) => kind !== 'chat')
+    .map(({ kind, count }) => t(`services.models.counts.${kind}`, { count }))
+    .join(' · ');
+  return (
+    <div className='max-w-96 min-w-0'>
+      {first === undefined ? null : (
+        // The later names give way first, the first only past half the width; the mark and the count stay.
+        <div className='flex min-w-0 items-center' title={chat.all.join(', ')}>
+          <span className='max-w-1/2 shrink-0 truncate'>{first}</span>
+          {chat.firstIsDefault ? (
+            <Badge
+              variant='outline'
+              className='ml-1.5'
+              title={t('defaultModel.title')}
+            >
+              {t('services.models.default')}
+            </Badge>
+          ) : null}
+          {rest.length > 0 ? (
+            <span className='min-w-0 shrink-100 truncate whitespace-pre'>
+              {rest.map((name) => `, ${name}`).join('')}
+            </span>
+          ) : null}
+          {chat.more > 0 ? (
+            <span className='ml-1.5 shrink-0 text-muted-foreground'>
+              {t('services.models.more', { count: chat.more })}
+            </span>
+          ) : null}
+        </div>
+      )}
+      {others ? (
+        <div className='truncate text-xs text-muted-foreground'>{others}</div>
+      ) : null}
+    </div>
   );
 }
 

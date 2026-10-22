@@ -1,11 +1,12 @@
 /**
  * The model services UI without React: services in list order, a new service's title, a service's models as one list,
- * and the base URL as it is checked, sent and shown.
+ * the chat models its row names, and the base URL as it is checked, sent and shown.
  */
 import { describe, expect, it } from 'vitest';
 
 import {
   baseUrlOf,
+  chatModelSummary,
   guessKind,
   hostOf,
   kindCounts,
@@ -22,6 +23,7 @@ import {
 import {
   guessModelKind,
   providerOf,
+  type ModelKind,
   type ModelProviderName,
   type ModelServiceView,
 } from '../../shared/models.js';
@@ -143,6 +145,52 @@ describe('the model services UI model', () => {
     ]);
     expect(kindCounts(embedding)).toEqual([{ kind: 'embedding', count: 1 }]);
     expect(testModelOf(embedding)).toEqual(embedding[0]);
+  });
+
+  it('names a service’s chat models, the default chat model first, and counts the rest', () => {
+    const model = (value: string, kind: ModelKind = 'chat') => ({
+      value,
+      label: value,
+      kind,
+      dimensions: null,
+    });
+    const team = service('team', 'openai-compatible', {
+      models: [
+        model('qwen-max'),
+        model('bge-m3', 'embedding'),
+        model('deepseek-v4.1-flash'),
+        model('kimi-k2'),
+        model('glm-5'),
+      ],
+    });
+    // The default chat model comes first and is marked; two names are shown, the others counted.
+    expect(
+      chatModelSummary(team, {
+        modelService: 'team',
+        model: 'deepseek-v4.1-flash',
+      }),
+    ).toEqual({
+      shown: ['deepseek-v4.1-flash', 'qwen-max'],
+      firstIsDefault: true,
+      more: 2,
+      all: ['deepseek-v4.1-flash', 'qwen-max', 'kimi-k2', 'glm-5'],
+    });
+    // Another service's default, or none, marks nothing and keeps the service's order.
+    for (const defaultChat of [
+      { modelService: 'lab', model: 'qwen-max' },
+      null,
+    ])
+      expect(chatModelSummary(team, defaultChat)).toMatchObject({
+        shown: ['qwen-max', 'deepseek-v4.1-flash'],
+        firstIsDefault: false,
+        more: 2,
+      });
+    expect(
+      chatModelSummary(
+        service('e', 'openai', { models: [model('e', 'embedding')] }),
+        null,
+      ),
+    ).toEqual({ shown: [], firstIsDefault: false, more: 0, all: [] });
   });
 
   it('checks, sends and shows a base URL', () => {

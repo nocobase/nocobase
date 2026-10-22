@@ -950,6 +950,7 @@ const idID: LocaleResource<typeof enUS> = {
     list: 'Layanan model',
     columns: {
       name: 'Nama',
+      models: 'Model',
       provider: 'Jenis penyedia',
       status: 'Status',
     },
@@ -1041,6 +1042,8 @@ const idID: LocaleResource<typeof enUS> = {
       },
       dimensions: 'Ukuran vektor {{model}}',
       dimensionsPlaceholder: 'Default',
+      default: 'Default',
+      more: '+{{count}}',
       counts: {
         chat: 'Obrolan {{count}}',
         embedding: 'penyematan {{count}}',

@@ -948,6 +948,7 @@ const viVN: LocaleResource<typeof enUS> = {
     list: 'Dịch vụ kiểu mẫu',
     columns: {
       name: 'Tên',
+      models: 'Mô hình',
       provider: 'Loại nhà cung cấp',
       status: 'Trạng thái',
     },
@@ -1040,6 +1041,8 @@ const viVN: LocaleResource<typeof enUS> = {
       },
       dimensions: 'Kích thước vectơ của {{model}}',
       dimensionsPlaceholder: 'Mặc định',
+      default: 'Mặc định',
+      more: '+{{count}}',
       counts: {
         chat: 'Trò chuyện {{count}}',
         embedding: 'Nhúng {{count}}',

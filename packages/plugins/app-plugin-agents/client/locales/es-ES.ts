@@ -977,6 +977,7 @@ const esES: LocaleResource<typeof enUS> = {
     list: 'Servicios modelo',
     columns: {
       name: 'Nombre',
+      models: 'Modelos',
       provider: 'Tipo de proveedor',
       status: 'Estado',
     },
@@ -1069,6 +1070,8 @@ const esES: LocaleResource<typeof enUS> = {
       },
       dimensions: 'Tamaño del vector de {{model}}',
       dimensionsPlaceholder: 'Predeterminado',
+      default: 'Predeterminado',
+      more: '+{{count}}',
       counts: {
         chat: 'charla {{count}}',
         embedding: 'Incrustación {{count}}',
