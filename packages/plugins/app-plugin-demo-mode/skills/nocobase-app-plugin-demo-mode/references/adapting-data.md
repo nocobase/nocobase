@@ -25,7 +25,7 @@ Implement `id`, `languages`, `accounts(language)`, `generate(context)` and `clea
 
 Use `context.clock` throughout a step: `now`, `timeZone`, `daysAgo`, `dateAgo` and `isoAgo`. Avoid hard-coded calendar dates and uncoordinated calls to `new Date()`, especially near local midnight. Date ranges, summaries, activity feeds and task deadlines must share the same import clock.
 
-An application that needs daily variation can derive a deterministic seed from `datasetId`, `language` and `clock.dateAgo(0)`. Derive each record's variation from that seed plus a stable record key, rather than consuming global randomness whose results change with step order. Keep the seed algorithm application-owned unless the installed plugin exposes a documented helper. Store the seed in `context.setData` when later cleanup or diagnostics needs it. Variation should remain bounded and preserve totals, references and domain invariants.
+Use `context.clock.seed` and `context.clock.sample(stableRecordKey)` for daily variation. The seed includes the dataset, language, time zone and local import day; each key produces a stable value in `[0, 1)` independent of iteration order. Do not add a second random-seed implementation. Keep variation bounded and preserve totals, references and domain invariants. See the [dataset example](dataset-example.md) for dates and account reuse.
 
 Relative dates become current when the dataset is imported or reset. They do not advance in persisted records merely because the page is opened the next day. Configure the daily schedule through the demo configuration API/UI if daily regeneration is needed, with an explicit timezone and language. Explain the deletion scope before enabling automatic reset. Do not replace an administrator's existing schedule or clear live data just to make a preview look recent.
 
@@ -43,8 +43,8 @@ The installed version's documented deployment table allowlist is separate from b
 
 ## Verify the adapter, not just its compilation
 
-- Import into an isolated database and inspect the actual principal pages: coherent relations, useful charts, role-appropriate accounts and recent dates in each supported language.
-- Test the same seed/date twice and a different date/timezone; assert invariants and visible variation rather than random snapshots.
+- Import into an isolated database and inspect the actual principal pages: coherent relations, useful charts, role-appropriate accounts and recent dates in each language the demo supports.
+- If the dataset uses daily variation, verify stable results for the same date and meaningful bounded changes on another date; test business invariants rather than snapshots of every generated value.
 - Inject a middle-step failure, then retry; business data is cleared while credentials and administrator assignments survive. Test username collisions and restart recovery.
 - Add visitor content within demo scope, clear it, then reset; verify blobs and cached views as well as rows. Verify failure recovery uses the same full cleanup contract.
 - Exercise anonymous, read-only administrator and managing administrator access, including direct API calls and concurrent ordinary requests during lifecycle exemption.

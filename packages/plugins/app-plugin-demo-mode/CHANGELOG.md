@@ -21,6 +21,8 @@
 
 ## Unreleased
 
+- Streamline the generic demo integration Skill, add a typed dataset example, and consolidate redundant account lifecycle assertions.
+
 - Add `DemoDataset.generate(context)` for application-owned generators shared with core sample data. Reset calls the generator directly after cleanup and leaves all seed history unchanged; existing step-based datasets remain supported.
 
 - Add `DemoAccountMenu` (`client/account-menu`), the demo account switch as a submenu of an application's account menu, and the client option `accountSwitcher: 'menu'`, which then keeps the corner button for visitors who have not signed in.

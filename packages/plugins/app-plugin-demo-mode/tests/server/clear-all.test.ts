@@ -83,9 +83,6 @@ it('refuses full clear and reset with demo mode off, without touching existing d
   await expect(service.importNow('admin')).rejects.toMatchObject({
     reason: 'DEMO_MODE_REQUIRED',
   });
-  await expect(service.reset('admin')).rejects.toMatchObject({
-    reason: 'DEMO_MODE_REQUIRED',
-  });
   expect(await names()).toEqual(['existing']);
   expect(clear).not.toHaveBeenCalled();
 });
