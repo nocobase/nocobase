@@ -91,7 +91,21 @@ const home = language === 'cn' ? '/zh-CN/' : '/';
         <details class='guide-directory' open>
           <summary>
             {content.tocToggle}
-            <span aria-hidden='true'>⌄</span>
+            <svg
+              class='directory-chevron'
+              width='16'
+              height='16'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              stroke-width='1.75'
+              stroke-linecap='round'
+              stroke-linejoin='round'
+              aria-hidden='true'
+              focusable='false'
+            >
+              <path d='m6 9 6 6 6-6' />
+            </svg>
           </summary>
           <nav aria-label={content.toc}>
             <p class='toc-title'>{content.toc}</p>
@@ -107,7 +121,19 @@ const home = language === 'cn' ? '/zh-CN/' : '/';
                         {chapter.title}
                       </a>
                       <span class='toc-chevron' aria-hidden='true'>
-                        ⌄
+                        <svg
+                          width='16'
+                          height='16'
+                          viewBox='0 0 24 24'
+                          fill='none'
+                          stroke='currentColor'
+                          stroke-width='1.75'
+                          stroke-linecap='round'
+                          stroke-linejoin='round'
+                          focusable='false'
+                        >
+                          <path d='m9 5 7 7-7 7' />
+                        </svg>
                       </span>
                     </summary>
                     <ol class='toc-sections'>

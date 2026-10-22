@@ -240,9 +240,24 @@
   .toc-chapter > summary {
     display: flex;
     align-items: center;
+    padding-right: 4px;
     list-style: none;
     cursor: pointer;
-    border-radius: 6px;
+    color: var(--guide-muted);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    &:hover {
+      color: var(--guide-ink);
+      background: var(--guide-soft);
+    }
+    &:has([data-active]) {
+      color: var(--guide-blue);
+      background: var(--guide-tint);
+      border-color: color-mix(in srgb, var(--guide-blue) 12%, transparent);
+    }
+    &:focus-visible {
+      outline-offset: -2px;
+    }
   }
   .toc-chapter > summary::-webkit-details-marker {
     display: none;
@@ -252,18 +267,29 @@
     min-width: 0;
   }
   .toc-chevron {
+    display: grid;
+    place-items: center;
     flex: none;
-    padding: 10px 8px;
-    color: var(--guide-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    &:hover {
+      background: color-mix(in srgb, var(--guide-blue) 8%, transparent);
+    }
   }
-  .toc-chapter[open] > summary > .toc-chevron {
-    transform: rotate(180deg);
+  .toc-chevron svg,
+  .directory-chevron {
+    flex: none;
+    transition: transform 150ms ease;
+  }
+  .toc-chapter[open] > summary > .toc-chevron svg {
+    transform: rotate(90deg);
   }
   .guide-directory .toc-sections,
   .guide-directory .toc-topics {
     grid-template-columns: 1fr;
     gap: 2px;
-    margin: 4px 0 10px 12px;
+    margin: 8px 0 12px 20px;
     padding-left: 12px;
     border-left: 1px solid var(--guide-line);
   }
@@ -294,11 +320,11 @@
   [data-chapter-link] {
     display: flex;
     align-items: baseline;
-    gap: 12px;
+    gap: 10px;
+    min-height: 44px;
     padding: 10px;
-    border-left: 2px solid transparent;
-    border-radius: 0 6px 6px 0;
-    color: var(--guide-muted);
+    border-radius: 7px;
+    color: inherit;
     font-size: 14px;
     line-height: 1.65;
     span {
@@ -311,8 +337,6 @@
     &[aria-current='location'],
     &[data-active] {
       color: var(--guide-blue);
-      background: var(--guide-tint);
-      border-left-color: var(--guide-blue);
       text-decoration: none;
     }
     &[aria-current='location'] span,
@@ -768,7 +792,7 @@
     .guide-directory[open] > summary {
       border-bottom: 1px solid var(--guide-line);
     }
-    .guide-directory[open] > summary span {
+    .guide-directory[open] > summary .directory-chevron {
       transform: rotate(180deg);
     }
     .guide-directory nav {
