@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.30](https://github.com/nocobase/nocobase/compare/v2.2.29...v2.2.30) - 2026-10-22
+
+### 🐛 Bug Fixes
+
+- **[cli-v1]** Fixed NocoBase CLI initialization failing with a missing chokidar module during fresh production installations. ([#11083](https://github.com/nocobase/nocobase/pull/11083)) by @cgyrock
+
 ## [v2.2.29](https://github.com/nocobase/nocobase/compare/v2.2.28...v2.2.29) - 2026-10-21
 
 ### 🐛 Bug Fixes
