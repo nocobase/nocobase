@@ -1,8 +1,11 @@
 import type { ToastOptions } from '@nocobase/app-client';
-import { useNavigate } from 'react-router';
+import {
+  UNSAFE_DataRouterContext,
+  UNSAFE_NavigationContext,
+} from 'react-router';
 import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 
@@ -20,7 +23,22 @@ export interface Notify {
 /** Toasts through the application's toaster, with one reading of API errors for every page. */
 export function useNotify(): Notify {
   const toaster = useToaster();
-  const navigate = useNavigate();
+  const navigation = useContext(UNSAFE_NavigationContext);
+  const dataRouter = useContext(UNSAFE_DataRouterContext);
+  // Suggestions are app-absolute; data routers restore their own basename.
+  const navigate = useMemo(
+    () =>
+      navigation
+        ? (href: string) => {
+            navigation.navigator.push(
+              dataRouter
+                ? href
+                : `${navigation.basename.replace(/\/$/u, '')}${href}`,
+            );
+          }
+        : undefined,
+    [navigation, dataRouter],
+  );
   // Named: the issues hooks the application composes its pages from (`client/issues.ts`) call this in its namespace.
   const { t } = useTranslation(ACCESS_NAMESPACE);
   return useMemo(
@@ -36,7 +54,7 @@ export function useNotify(): Notify {
         void toaster.show({
           type: 'error',
           title: errorText(t, error, fallback ?? t('common.requestFailed')),
-          ...suggestionAction(error, t, (href) => void navigate(href)),
+          ...(navigate ? suggestionAction(error, t, navigate) : {}),
         }),
     }),
     [toaster, t, navigate],
@@ -63,6 +81,11 @@ export function errorText(
       t(`errors.${error.reason}`, { defaultValue: error.message || fallback });
     const suggestions = metadata?.suggestions;
     const hint =
+      [
+        'noEnabledAgents',
+        'managerNotConfigured',
+        'managerAgentUnavailable',
+      ].includes(typeof reason === 'string' ? reason : '') &&
       Array.isArray(suggestions) &&
       !suggestions.some(
         (item: unknown) =>

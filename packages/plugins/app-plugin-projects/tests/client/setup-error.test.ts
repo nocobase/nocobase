@@ -1,5 +1,7 @@
 import { ApiClientError } from '@nocobase/app-client';
 import { expect, it, vi } from 'vitest';
+import { errorText, suggestionAction } from '../../client/hooks/use-notify.js';
+
 function error(href: string) {
   return new ApiClientError('Missing model', {
     status: 400,
@@ -14,7 +16,6 @@ function error(href: string) {
     },
   });
 }
-import { errorText, suggestionAction } from '../../client/hooks/use-notify.js';
 const t = (key: string, options?: Record<string, unknown>) =>
   key === 'errors.PROJECT_MANAGER_NOT_STARTED.managerNotConfigured'
     ? 'Choose a model'
@@ -64,3 +65,32 @@ it('uses the host’s administrator guidance when there is no configuration acti
   );
   expect(suggestionAction(failure, t, vi.fn())).toEqual({});
 });
+
+it.each(['denied', 'unavailable'])(
+  'does not append setup advice to %s errors',
+  (reason) => {
+    const failure = new ApiClientError(
+      'Contact the administrator for permission.',
+      {
+        status: 400,
+        reason: 'PROJECT_MANAGER_NOT_STARTED',
+        method: 'POST',
+        url: '/api/start',
+        payload: {
+          error: {
+            metadata: { reason, suggestions: [{ message: 'Administrator' }] },
+          },
+        },
+      },
+    );
+    const translate = (key: string, options?: Record<string, unknown>) =>
+      key.endsWith('.suggestion')
+        ? 'Configure a model'
+        : key.endsWith(`.${reason}`)
+          ? 'Contact the administrator for permission.'
+          : String(options?.defaultValue ?? key);
+    expect(errorText(translate, failure, 'Failed')).toBe(
+      'Contact the administrator for permission.',
+    );
+  },
+);

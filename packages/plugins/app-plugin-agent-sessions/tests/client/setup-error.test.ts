@@ -1,5 +1,7 @@
 import { ApiClientError } from '@nocobase/app-client';
 import { expect, it, vi } from 'vitest';
+import { errorText, suggestionAction } from '../../client/lib/errors.js';
+
 function error(href: string) {
   return new ApiClientError('Missing model', {
     status: 400,
@@ -14,7 +16,6 @@ function error(href: string) {
     },
   });
 }
-import { errorText, suggestionAction } from '../../client/lib/errors.js';
 it('prefers the localized message and navigates the setup action', () => {
   const failure = error('/agents');
   const navigate = vi.fn();
