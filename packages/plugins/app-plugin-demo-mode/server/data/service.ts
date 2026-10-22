@@ -1,9 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
-import type {
-  Agents,
-  ModelServices,
-} from '@nocobase/app-plugin-agents/server/tokens';
+import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 import type { UserManagementService } from '@nocobase/app-plugin-users/server/tokens';
 import { ApiError } from '@nocobase/app-server/router';
 import type { DatabaseManager } from '@nocobase/db';
@@ -33,15 +30,7 @@ const ASSIGNMENT = '@permissionSetAssignment';
 /** An import or clear no process has moved on for this long was cut off, as when the server stopped mid-import. */
 const STALE_MS = 10 * 60 * 1000;
 
-/** Model registration boundary supplied by hosts whose model services live elsewhere. */
-export type DemoModelServices = Pick<
-  ModelServices,
-  'create' | 'update' | 'remove' | 'setDefaultChat'
->;
-
 export interface DemoDataService {
-  /** Register from boot, before the environment model is initialized in ready. */
-  registerModelServices(services: DemoModelServices): void;
   /** Registers the application's dataset, once, from a service provider's `register()` or `boot()`. */
   register(dataset: DemoDataset): void;
   /** Re-read the environment model binding, without changing it. */
@@ -147,10 +136,6 @@ export class DefaultDemoDataService implements DemoDataService {
   public constructor(private readonly deps: DemoDataDependencies) {
     this.models = deps.models;
     this.runtime = new DemoModelRuntime(deps);
-  }
-
-  public registerModelServices(services: DemoModelServices): void {
-    this.runtime.registerModelServices(services);
   }
 
   public async whenIdle(): Promise<void> {

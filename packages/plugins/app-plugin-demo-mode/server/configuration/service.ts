@@ -320,31 +320,19 @@ export class DemoConfigurationService {
     );
   }
   /**
-   * Persistence boundary for the legacy Agents online conversation service. The host must verify ownership and
-   * online-agent invocation first, then call only the original conversation operation inside this callback.
-   * Never wrap a route dispatcher, tool, model call, attachment upload or agent configuration operation.
-   * This is not a global allowlist: parallel requests and later commands remain guarded.
+   * Persistence boundary for an Agents OnlineAgent chat session. The host must verify ownership and the agent scope
+   * first, then call only the public session operation (create, send, abort, finalize, configure, rename, mark read)
+   * inside this callback; the session's continuation inherits it. Never wrap a route dispatcher, tool, model call,
+   * attachment upload or agent configuration operation. This is not a global allowlist: parallel requests and later
+   * commands remain guarded.
    */
-  public async runLegacyOnlineConversation<T>(
-    run: () => Promise<T>,
-  ): Promise<T> {
+  public async runOnlineConversation<T>(run: () => Promise<T>): Promise<T> {
     if (!this.enabled) return run();
     await this.chatModel({ modelService: 'demo', model: 'demo' });
     return this.guard.runAllowed(
-      [
-        ...[
-          'ag_conversations',
-          'ag_conversation_messages',
-          'ag_runs',
-          'ag_run_inputs',
-        ].flatMap((table) =>
-          ['insert', 'update'].map((statement) => ({ table, statement })),
-        ),
-        // The legacy service locks the invoked agent by updating lastClaimAt before enqueueing.
-        { table: 'ag_agents', statement: 'update' },
-        // Stopping an owned queued run revokes existing tokens; it never issues one.
-        { table: 'ag_run_tokens', statement: 'update' },
-      ],
+      ['ag_conversations', 'ag_conversation_messages'].flatMap((table) =>
+        ['insert', 'update'].map((statement) => ({ table, statement })),
+      ),
       run,
     );
   }

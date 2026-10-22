@@ -38,9 +38,9 @@ A replacement that returns its result at once has no process to show. Let `execu
 
 Write exceptions remain separate: register only the tables and operations needed to create tasks and persist results, and require explicit UI rules. Use the same normal workflow for human review and mark any demo publication as simulated. Do not manufacture PR URLs, live deployment evidence or real effect metrics. Application Skills should inspect the input/result schemas, build useful task-specific fixtures, register the proxy at the execution boundary, and test handoff through review as well as failure and non-demo paths.
 
-### Host model service registration
+### Model services
 
-The default integration uses `agents.models.services`. A host that exposes the same model registration operations through another public facade can call `demoData.registerModelServices(services)` during its provider's `boot()`. The adapter implements `create`, `update`, `remove` and `setDefaultChat`; the plugin still owns the durable model binding and its key. This is an explicit host adapter, not automatic legacy API detection. Bind application Agents in `ready()` after the plugin has initialized its model; `start()` runs earlier. Missing model services on an installed Agents host fail startup with an actionable error.
+The plugin supports Agents 1.0 only and provisions the model through `agents.models.services`; it owns the durable model binding and its key. Point application Agents or works at the model in `ready()` after the plugin has initialized it; `start()` runs earlier. An installed Agents host without model services fails startup with an actionable error.
 
 ## Online chat without changing Agents
 
@@ -48,6 +48,6 @@ Use the plugin's `chat` configuration for native online conversations. Call `cha
 
 Wrap each business tool with `runChatTool(id, { readOnly, run, mock })` after authorization. Administrators select `read`, `mock`, or `deny` per tool. Only mark local data queries `readOnly`; even a webpage fetch needs a mock adapter. No matching rule or missing mock means rejection. Keep normal conversation ownership and explicit scoped persistence rules; this policy intentionally does not bypass the SQL guard or modify Agents. Declare each served tool to the administration page through its `chatTools` option; the page explains the token cost of a real model.
 
-### Legacy online conversation persistence
+### Online conversation persistence
 
-Applications using the legacy Agents online service can call `runLegacyOnlineConversation(callback)` around the original public conversation operation only, after checking ownership, online agent type and invocation permission. Chat must be enabled. This grants scoped conversation/message/run/input writes and the enqueue lock update; it never opens global table rules. Do not put an HTTP dispatcher, tool, model call, upload or agent configuration inside it. Keep fixture creation independent of the visitor chat switch. The host still enforces tool permissions at execution and must refuse consultations or other unadapted side effects even if they are hidden from the model.
+Applications chatting through the Agents OnlineAgent service call `runOnlineConversation(callback)` around the public session operation only (create, send, abort, finalize, configure, rename, mark read), after checking ownership and the agent scope. Chat must be enabled. This grants scoped conversation and message writes, inherited by the session's continuation; it never opens global table rules. Do not put an HTTP dispatcher, tool, model call, upload or agent configuration inside it. Refuse other agents, runner conversations, attachments, approvals and configuration overrides. Keep fixture creation outside the HTTP boundary, independent of the visitor chat switch. The host still enforces tool permissions at execution.

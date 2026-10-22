@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 
-import type { DemoDataDependencies, DemoModelServices } from './service.js';
+import type { DemoDataDependencies } from './service.js';
 import { DEMO_CHAT_MODEL, DEMO_MODEL_SERVICE_TITLE } from './models.js';
 
 interface ModelBinding {
@@ -11,16 +11,8 @@ interface ModelBinding {
 
 /** Environment infrastructure: provision at startup and retain across every dataset clear/reset. */
 export class DemoModelRuntime {
-  private services: DemoModelServices | undefined;
-
-  registerModelServices(services: DemoModelServices): void {
-    if (this.services && this.services !== services)
-      throw new Error('Demo model services are already registered.');
-    this.services = services;
-  }
-
   get available(): boolean {
-    return Boolean(this.services ?? this.deps.agents?.()?.models?.services);
+    return Boolean(this.deps.agents?.()?.models?.services);
   }
 
   constructor(private readonly deps: DemoDataDependencies) {}
@@ -49,11 +41,11 @@ export class DemoModelRuntime {
   async initialize(): Promise<void> {
     if (!this.enabled) return this.load();
     const agents = this.deps.agents?.();
-    const services = this.services ?? agents?.models?.services;
+    const services = agents?.models?.services;
     if (!services) {
       if (agents)
         throw new Error(
-          'Demo models require Agents model services. Register a model services adapter during application boot.',
+          'Demo models require the Agents 1.0 model services (`agents.models.services`).',
         );
       return;
     }
