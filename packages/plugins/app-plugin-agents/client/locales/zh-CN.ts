@@ -226,7 +226,8 @@ const zhCN: AgentsResource = {
       addedCount_one: '已添加 {{count}} 个 Agent。',
       addedCount_other: '已添加 {{count}} 个 Agent。',
       addedPartial:
-        '已添加 {{succeeded}} 个，{{failed}} 个未能添加（已存在）。',
+        '已添加 {{succeeded}} 个，{{failed}} 个未能添加，原因见各自下方。',
+      addFailed: '{{failed}} 个未能添加，原因见各自下方，请重试。',
     },
     cleanup: {
       open: '清理',
@@ -250,6 +251,8 @@ const zhCN: AgentsResource = {
         '涉及 {{tools}}。删除前会重新校验，期间已不再符合条件的会被跳过，不会被删除。',
       confirmAction: '删除 {{count}} 项',
       done: '已删除 {{removed}} 项，跳过 {{skipped}} 项',
+      partialFailure:
+        '已删除 {{removed}} 项，跳过 {{skipped}} 项；{{failed}} 项未能删除（{{reason}}），已保留选中以便重试。',
     },
   },
   agentTypes: {

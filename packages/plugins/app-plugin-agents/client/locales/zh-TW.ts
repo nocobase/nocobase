@@ -223,7 +223,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       addedCount_one: '已新增 {{count}} 個 Agent。',
       addedCount_other: '已新增 {{count}} 個 Agent。',
       addedPartial:
-        '已新增 {{succeeded}} 個，{{failed}} 個無法新增（已存在）。',
+        '已新增 {{succeeded}} 個，{{failed}} 個無法新增，原因見各自下方。',
+      addFailed: '{{failed}} 個無法新增，原因見各自下方，請重試。',
     },
     cleanup: {
       open: '清理',
@@ -247,6 +248,8 @@ const zhTW: LocaleResource<typeof enUS> = {
         '涉及 {{tools}}。移除前會重新驗證，期間已不符合條件的項目會被跳過，不會被移除。',
       confirmAction: '移除 {{count}} 項',
       done: '已移除 {{removed}} 項，跳過 {{skipped}} 項',
+      partialFailure:
+        '已移除 {{removed}} 項，跳過 {{skipped}} 項；{{failed}} 項無法移除（{{reason}}），已保留選取以便重試。',
     },
   },
   agentTypes: {

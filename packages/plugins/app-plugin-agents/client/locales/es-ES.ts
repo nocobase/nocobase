@@ -242,7 +242,9 @@ const esES: LocaleResource<typeof enUS> = {
       addedCount_other: 'Se añadieron {{count}} agentes.',
       addedCount_many: 'Se añadieron {{count}} agentes.',
       addedPartial:
-        'Se añadieron {{succeeded}}; {{failed}} no se pudieron añadir (ya existían).',
+        'Se añadieron {{succeeded}}; {{failed}} no se pudieron añadir. El motivo está debajo de cada uno.',
+      addFailed:
+        '{{failed}} no se pudieron añadir. El motivo está debajo de cada uno; inténtelo de nuevo.',
     },
     cleanup: {
       open: 'Limpiar',
@@ -269,6 +271,8 @@ const esES: LocaleResource<typeof enUS> = {
         'En {{tools}}. Seguro de eliminar: se vuelve a comprobar justo antes de eliminar, y lo que ya no cumpla se omite, no se elimina.',
       confirmAction: 'Eliminar {{count}}',
       done: 'Eliminados {{removed}}, omitidos {{skipped}}',
+      partialFailure:
+        'Eliminados {{removed}}, omitidos {{skipped}}; {{failed}} no se pudieron eliminar ({{reason}}). Permanecen seleccionados para volver a intentarlo.',
     },
   },
   agentTypes: {

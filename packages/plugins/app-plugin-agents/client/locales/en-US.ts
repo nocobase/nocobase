@@ -231,7 +231,9 @@ const pages = {
       addedCount_one: 'Added {{count}} agent.',
       addedCount_other: 'Added {{count}} agents.',
       addedPartial:
-        'Added {{succeeded}}, {{failed}} could not be added (already existed).',
+        'Added {{succeeded}}, {{failed}} could not be added. See the reason under each.',
+      addFailed:
+        '{{failed}} could not be added. See the reason under each; try again.',
     },
     cleanup: {
       open: 'Clean up',
@@ -255,6 +257,8 @@ const pages = {
         'Across {{tools}}. Safe to remove: re-checked just before removal, and anything no longer eligible is skipped, not removed.',
       confirmAction: 'Remove {{count}}',
       done: 'Removed {{removed}}, skipped {{skipped}}',
+      partialFailure:
+        'Removed {{removed}}, skipped {{skipped}}; {{failed}} could not be removed ({{reason}}). They stay selected to try again.',
     },
   },
   agentTypes: {

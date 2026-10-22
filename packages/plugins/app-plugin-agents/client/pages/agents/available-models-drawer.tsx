@@ -49,7 +49,7 @@ import {
 } from '../../components/ui/sheet.js';
 import { Textarea } from '../../components/ui/textarea.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
-import { useNotify } from '../../hooks/use-notify.js';
+import { errorText, useNotify } from '../../hooks/use-notify.js';
 
 /** Exactly the drawer's four filter buttons. */
 const STATUS_FILTERS: readonly ModelAvailabilityStatus[] = [
@@ -219,6 +219,18 @@ export function AvailableModelsDrawer({
             onDraftChange={(key, value) =>
               setDrafts((current) => new Map(current).set(key, value))
             }
+            onRemoveSucceeded={(keys) => {
+              setSelected((current) => {
+                const next = new Map(current);
+                for (const key of keys) next.delete(key);
+                return next;
+              });
+              setDrafts((current) => {
+                const next = new Map(current);
+                for (const key of keys) next.delete(key);
+                return next;
+              });
+            }}
             onBack={() => setStep('select')}
             onDone={() => {
               reset();
@@ -387,9 +399,12 @@ function ToolGroup({
           </AgTag>
         </CollapsibleTrigger>
         <CollapsibleContent className='border-t px-3 pb-3'>
-          {group.status !== 'available' && group.modelCount === 0 ? (
+          {/* Shown independently of modelCount: a tool that already has models with an agent (so this group is not
+              empty) can still need setup or be failing now, and that guidance must not disappear behind its rows. */}
+          {group.status !== 'available' ? (
             <ExpandableText text={setupGuidance(group, t)} />
-          ) : (
+          ) : null}
+          {group.modelCount === 0 ? null : (
             <>
               {group.modelCount > DEFAULT_EXPAND_THRESHOLD ? (
                 <Input
@@ -540,12 +555,14 @@ function ConfirmStep({
   selected,
   drafts,
   onDraftChange,
+  onRemoveSucceeded,
   onBack,
   onDone,
 }: {
   readonly selected: ReadonlyMap<string, AvailableModel>;
   readonly drafts: ReadonlyMap<string, string>;
   readonly onDraftChange: (key: string, value: string) => void;
+  readonly onRemoveSucceeded: (keys: ReadonlySet<string>) => void;
   readonly onBack: () => void;
   readonly onDone: () => void;
 }): ReactElement {
@@ -554,35 +571,66 @@ function ConfirmStep({
   const notify = useNotify();
   const queryClient = useQueryClient();
   const [submitted, setSubmitted] = useState(false);
+  const [rowErrors, setRowErrors] = useState<ReadonlyMap<string, string>>(
+    () => new Map(),
+  );
   const entries = [...selected.values()];
   const bulkCreate = useMutation({
     mutationFn: async () => {
-      const outcomes = await Promise.allSettled(
-        entries.map((model) =>
-          api.createRunnerAgent({
-            tool: model.tool,
-            model: model.model,
-            ...(model.displayModel ? { displayModel: model.displayModel } : {}),
-            description: (
-              drafts.get(rowKey(model.tool, model.model)) ?? ''
-            ).trim(),
-          }),
-        ),
+      const results = await Promise.all(
+        entries.map((model) => {
+          const key = rowKey(model.tool, model.model);
+          return api
+            .createRunnerAgent({
+              tool: model.tool,
+              model: model.model,
+              ...(model.displayModel
+                ? { displayModel: model.displayModel }
+                : {}),
+              description: (drafts.get(key) ?? '').trim(),
+            })
+            .then(
+              () => ({ key, ok: true as const }),
+              (error: unknown) => ({ key, ok: false as const, error }),
+            );
+        }),
       );
-      return outcomes;
+      return results;
     },
-    onSuccess: (outcomes) => {
-      const succeeded = outcomes.filter((o) => o.status === 'fulfilled').length;
-      const failed = outcomes.length - succeeded;
+    onSuccess: (results) => {
+      const succeeded = new Set(results.filter((r) => r.ok).map((r) => r.key));
+      const failed = results.filter((r) => !r.ok);
       void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
       void queryClient.invalidateQueries({
         queryKey: agentsKeys.availableModelsAll,
       });
-      if (failed === 0)
-        notify.success(t('agents.available.addedCount', { count: succeeded }));
-      else
-        notify.error(t('agents.available.addedPartial', { succeeded, failed }));
-      onDone();
+      if (failed.length === 0) {
+        notify.success(
+          t('agents.available.addedCount', { count: succeeded.size }),
+        );
+        onDone();
+        return;
+      }
+      // Partial (or total) failure: drop only what succeeded from the selection and drafts, so the failed rows stay
+      // on screen with what was typed and their own real reason, instead of discarding everything and closing.
+      setRowErrors(
+        new Map(
+          failed.map((r) => [
+            r.key,
+            errorText(t, r.error, t('common.requestFailed')),
+          ]),
+        ),
+      );
+      onRemoveSucceeded(succeeded);
+      notify.error(
+        undefined,
+        succeeded.size === 0
+          ? t('agents.available.addFailed', { failed: failed.length })
+          : t('agents.available.addedPartial', {
+              succeeded: succeeded.size,
+              failed: failed.length,
+            }),
+      );
     },
     onError: (error) => notify.error(error),
   });
@@ -603,6 +651,7 @@ function ConfirmStep({
         className='min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-1 sm:px-6'
         onSubmit={(event) => {
           event.preventDefault();
+          if (bulkCreate.isPending) return;
           setSubmitted(true);
           if (invalid.length > 0) return;
           bulkCreate.mutate();
@@ -612,6 +661,7 @@ function ConfirmStep({
           const key = rowKey(model.tool, model.model);
           const goodAt = drafts.get(key) ?? '';
           const missing = submitted && goodAt.trim() === '';
+          const rowError = rowErrors.get(key);
           return (
             <Field key={key} data-invalid={missing ? true : undefined}>
               <FieldLabel htmlFor={`confirm-good-at-${key}`}>
@@ -628,6 +678,13 @@ function ConfirmStep({
                 }
                 data-testid={`available-model-good-at-${model.tool}-${model.model}`}
               />
+              {rowError ? (
+                <FieldError
+                  data-testid={`available-model-error-${model.tool}-${model.model}`}
+                >
+                  {rowError}
+                </FieldError>
+              ) : null}
               {missing ? (
                 <FieldError>{t('agents.enable.goodAtRequired')}</FieldError>
               ) : null}

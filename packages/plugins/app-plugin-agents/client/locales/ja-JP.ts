@@ -227,7 +227,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       addedCount_one: '{{count}} 件のエージェントを追加しました。',
       addedCount_other: '{{count}} 件のエージェントを追加しました。',
       addedPartial:
-        '{{succeeded}} 件を追加しました。{{failed}} 件は追加できませんでした（既に存在）。',
+        '{{succeeded}} 件を追加しました。{{failed}} 件は追加できませんでした。理由は各項目の下に表示されています。',
+      addFailed:
+        '{{failed}} 件を追加できませんでした。理由は各項目の下に表示されています。もう一度お試しください。',
     },
     cleanup: {
       open: '整理',
@@ -251,6 +253,8 @@ const jaJP: LocaleResource<typeof enUS> = {
         '{{tools}} にまたがります。削除は安全です：削除直前に再確認し、条件を満たさなくなったものはスキップされ、削除されません。',
       confirmAction: '{{count}} 件を削除',
       done: '{{removed}} 件削除、{{skipped}} 件スキップ',
+      partialFailure:
+        '{{removed}} 件削除、{{skipped}} 件スキップ。{{failed}} 件は削除できませんでした（{{reason}}）。再試行できるよう選択は保持されます。',
     },
   },
   agentTypes: {

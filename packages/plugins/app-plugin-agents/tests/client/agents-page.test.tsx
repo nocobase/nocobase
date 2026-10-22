@@ -17,7 +17,13 @@ import type {
   CleanupCandidate,
   CleanupGroup,
 } from '../../shared/agents.js';
-import { callsTo, clientMocks, resetApi } from './fake-client.js';
+import {
+  api,
+  callsTo,
+  clientMocks,
+  FakeApiError,
+  resetApi,
+} from './fake-client.js';
 import { agent } from './fixtures.js';
 import { renderPage } from './render.js';
 
@@ -224,6 +230,41 @@ describe('the Agent page', () => {
     );
   });
 
+  it('shows a group’s setup guidance even when it already has a model with an agent', async () => {
+    availableGroups = [
+      {
+        tool: 'goose',
+        modelCount: 1,
+        runnerCount: 1,
+        status: 'needsSetup',
+        statusDetail: 'No provider configured; run `goose configure`.',
+        recommendedCount: 0,
+      },
+    ];
+    availableRows.goose = [
+      {
+        tool: 'goose',
+        model: 'already-added',
+        agentId: 'goose-already-added',
+        status: 'enabled',
+        recommended: false,
+        suggestion: null,
+        availability: 'needsSetup',
+        runners: { ready: 0, total: 1, names: [] },
+      },
+    ];
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-available-open'));
+    const drawer = await screen.findByTestId('available-models-drawer');
+    // One model is at or under the default-expand threshold, so the group opens without a click.
+    expect(
+      await within(drawer).findByText(/goose configure/u),
+    ).toBeInTheDocument();
+    expect(
+      await within(drawer).findByTestId('available-model-goose-already-added'),
+    ).toBeInTheDocument();
+  });
+
   it('selects several models across the group, edits one good-at, and adds them at once from the confirm step', async () => {
     availableGroups = [
       {
@@ -282,6 +323,137 @@ describe('the Agent page', () => {
     expect(
       bodies.find((body) => body.model === 'claude-fable-5-1')?.description,
     ).toBe('Fable good at');
+  });
+
+  it('keeps a failed row’s typed text and real error on screen instead of closing when every add fails', async () => {
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-available-open'));
+    const drawer = await screen.findByTestId('available-models-drawer');
+    fireEvent.click(
+      await within(drawer).findByTestId(
+        'available-model-create-claude-claude-opus-5-5',
+      ),
+    );
+    api.routes['POST agents/runnerAgents'] = () => {
+      throw new FakeApiError(409, 'AGENT_NAME_TAKEN');
+    };
+    fireEvent.click(
+      within(drawer).getByTestId('available-models-confirm-submit'),
+    );
+    // The drawer stays open at the confirm step, with the typed text and the real reason still showing, instead of
+    // being discarded by a close that assumed the failure meant the agent already existed.
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('available-model-error-claude-claude-opus-5-5'),
+      ).toHaveTextContent('errors.AGENT_NAME_TAKEN'),
+    );
+    expect(
+      await within(drawer).findByTestId(
+        'available-model-good-at-claude-claude-opus-5-5',
+      ),
+    ).toHaveValue('modelSuggestions.design');
+    expect(screen.queryByTestId('available-models-drawer')).toBeInTheDocument();
+  });
+
+  it('drops only the models that were added after a partial failure, keeping the failed one selected with its own error', async () => {
+    availableGroups = [
+      {
+        tool: 'claude',
+        modelCount: 2,
+        runnerCount: 1,
+        status: 'available',
+        recommendedCount: 0,
+      },
+    ];
+    availableRows.claude = [
+      ...availableRows.claude!,
+      {
+        tool: 'claude',
+        model: 'claude-fable-5-1',
+        agentId: null,
+        status: null,
+        recommended: false,
+        suggestion: null,
+        availability: 'available',
+        runners: { ready: 1, total: 1, names: ['runner-1'] },
+      },
+    ];
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-available-open'));
+    const drawer = await screen.findByTestId('available-models-drawer');
+    const opus = await within(drawer).findByTestId(
+      'available-model-claude-claude-opus-5-5',
+    );
+    fireEvent.click(within(opus).getByRole('checkbox'));
+    const fable = await within(drawer).findByTestId(
+      'available-model-claude-claude-fable-5-1',
+    );
+    fireEvent.click(within(fable).getByRole('checkbox'));
+    fireEvent.click(
+      within(drawer).getByTestId('available-models-add-selected'),
+    );
+    const fableGoodAt = await within(drawer).findByTestId(
+      'available-model-good-at-claude-claude-fable-5-1',
+    );
+    fireEvent.change(fableGoodAt, { target: { value: 'Fable good at' } });
+    // Opus succeeds; Fable fails with a real, specific reason.
+    api.routes['POST agents/runnerAgents'] = (request) => {
+      const body = request.json as { model: string; description: string };
+      if (body.model === 'claude-fable-5-1')
+        throw new FakeApiError(400, 'GOOD_AT_REQUIRED');
+      return {
+        id: `claude-${body.model}`,
+        name: `Created · ${body.model}`,
+        status: 'enabled',
+        description: body.description,
+      };
+    };
+    fireEvent.click(
+      within(drawer).getByTestId('available-models-confirm-submit'),
+    );
+    // Opus is gone from the confirm step (it succeeded); Fable remains, with its typed text and its own real error.
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('available-model-good-at-claude-claude-opus-5-5'),
+      ).not.toBeInTheDocument(),
+    );
+    expect(
+      within(drawer).getByTestId(
+        'available-model-good-at-claude-claude-fable-5-1',
+      ),
+    ).toHaveValue('Fable good at');
+    expect(
+      within(drawer).getByTestId(
+        'available-model-error-claude-claude-fable-5-1',
+      ),
+    ).toHaveTextContent('errors.GOOD_AT_REQUIRED');
+    // Retrying submits only what remains (Fable), and it now succeeds.
+    api.routes['POST agents/runnerAgents'] = (request) => {
+      const body = request.json as { model: string; description: string };
+      return {
+        id: `claude-${body.model}`,
+        name: `Created · ${body.model}`,
+        status: 'enabled',
+        description: body.description,
+      };
+    };
+    fireEvent.click(
+      within(drawer).getByTestId('available-models-confirm-submit'),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('available-models-drawer'),
+      ).not.toBeInTheDocument(),
+    );
+    const bodies = callsTo('POST', 'agents/runnerAgents').map(
+      (call) => (call.json as { model: string }).model,
+    );
+    expect(bodies.filter((model) => model === 'claude-fable-5-1')).toHaveLength(
+      2,
+    );
+    expect(bodies.filter((model) => model === 'claude-opus-5-5')).toHaveLength(
+      1,
+    );
   });
 
   it('keeps the selection and typed good-at text when going back from the confirm step', async () => {
@@ -445,6 +617,47 @@ describe('the Agent page', () => {
       (call) => (call.json as { agentIds: string[] }).agentIds,
     );
     expect(new Set(allIds).size).toBe(278);
+  });
+
+  it('keeps a batch’s successful removals when a later batch fails, and leaves only the failed ids selected to retry', async () => {
+    cleanupGroups = [{ tool: 'kilo', count: 278 }];
+    cleanupRows.kilo = Array.from({ length: 278 }, (_, i) => ({
+      id: `stray-${i}`,
+      name: `Kilo Code · Stray ${i}`,
+      tool: 'kilo',
+      model: `stray-${i}`,
+      createdAt: '2026-10-01T08:00:00.000Z',
+    }));
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-cleanup-open'));
+    const drawer = await screen.findByTestId('cleanup-drawer');
+    fireEvent.click(await within(drawer).findByTestId('cleanup-group-kilo'));
+    fireEvent.click(
+      await within(drawer).findByTestId('cleanup-group-select-all-kilo'),
+    );
+    await waitFor(() =>
+      expect(
+        within(drawer).getByTestId('cleanup-open-confirm'),
+      ).toHaveTextContent('278'),
+    );
+    // The first 256-item batch succeeds; the second (the remaining 22) fails, as a network error would.
+    let calls = 0;
+    api.routes['POST agents/cleanup'] = (request) => {
+      calls += 1;
+      if (calls === 2) throw new FakeApiError(500, 'SERVER_ERROR');
+      const body = request.json as { agentIds: string[] };
+      return { removed: body.agentIds, skipped: [] };
+    };
+    fireEvent.click(within(drawer).getByTestId('cleanup-open-confirm'));
+    const confirm = await screen.findByTestId('cleanup-confirm');
+    fireEvent.click(within(confirm).getByTestId('cleanup-confirm-submit'));
+    // The 256 that succeeded are gone from the selection; only the 22 that failed remain, ready to retry.
+    await waitFor(() =>
+      expect(
+        within(drawer).getByTestId('cleanup-open-confirm'),
+      ).toHaveTextContent('22'),
+    );
+    expect(screen.queryByTestId('cleanup-confirm')).toBeInTheDocument();
   });
 
   it('offers no change to who does not manage agents', async () => {

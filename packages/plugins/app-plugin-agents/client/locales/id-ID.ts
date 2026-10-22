@@ -228,7 +228,9 @@ const idID: LocaleResource<typeof enUS> = {
       addedCount_one: '{{count}} agen ditambahkan.',
       addedCount_other: '{{count}} agen ditambahkan.',
       addedPartial:
-        '{{succeeded}} ditambahkan, {{failed}} tidak dapat ditambahkan (sudah ada).',
+        '{{succeeded}} ditambahkan, {{failed}} tidak dapat ditambahkan. Alasan ada di bawah masing-masing.',
+      addFailed:
+        '{{failed}} tidak dapat ditambahkan. Alasan ada di bawah masing-masing; coba lagi.',
     },
     cleanup: {
       open: 'Bersihkan',
@@ -252,6 +254,8 @@ const idID: LocaleResource<typeof enUS> = {
         'Mencakup {{tools}}. Aman dihapus: diperiksa ulang tepat sebelum dihapus, dan yang sudah tidak memenuhi syarat akan dilewati, tidak dihapus.',
       confirmAction: 'Hapus {{count}}',
       done: '{{removed}} dihapus, {{skipped}} dilewati',
+      partialFailure:
+        '{{removed}} dihapus, {{skipped}} dilewati; {{failed}} tidak dapat dihapus ({{reason}}). Tetap dipilih untuk dicoba lagi.',
     },
   },
   agentTypes: {

@@ -233,7 +233,9 @@ const deDE: LocaleResource<typeof enUS> = {
       addedCount_one: '{{count}} Agent hinzugefügt.',
       addedCount_other: '{{count}} Agenten hinzugefügt.',
       addedPartial:
-        '{{succeeded}} hinzugefügt, {{failed}} konnten nicht hinzugefügt werden (bereits vorhanden).',
+        '{{succeeded}} hinzugefügt, {{failed}} konnten nicht hinzugefügt werden. Grund jeweils darunter.',
+      addFailed:
+        '{{failed}} konnten nicht hinzugefügt werden. Grund jeweils darunter; bitte erneut versuchen.',
     },
     cleanup: {
       open: 'Aufräumen',
@@ -257,6 +259,8 @@ const deDE: LocaleResource<typeof enUS> = {
         'Über {{tools}}. Sicher zu entfernen: wird unmittelbar vor dem Entfernen erneut geprüft; alles nicht mehr Zutreffende wird übersprungen, nicht entfernt.',
       confirmAction: '{{count}} entfernen',
       done: '{{removed}} entfernt, {{skipped}} übersprungen',
+      partialFailure:
+        '{{removed}} entfernt, {{skipped}} übersprungen; {{failed}} konnten nicht entfernt werden ({{reason}}). Sie bleiben ausgewählt, um es erneut zu versuchen.',
     },
   },
   agentTypes: {

@@ -241,7 +241,9 @@ const frFR: LocaleResource<typeof enUS> = {
       addedCount_other: '{{count}} agents ajoutés.',
       addedCount_many: '{{count}} agents ajoutés.',
       addedPartial:
-        '{{succeeded}} ajoutés, {{failed}} n’ont pas pu être ajoutés (déjà existants).',
+        '{{succeeded}} ajoutés, {{failed}} n’ont pas pu être ajoutés. Raison sous chacun.',
+      addFailed:
+        '{{failed}} n’ont pas pu être ajoutés. Raison sous chacun ; réessayez.',
     },
     cleanup: {
       open: 'Nettoyer',
@@ -268,6 +270,8 @@ const frFR: LocaleResource<typeof enUS> = {
         'Dans {{tools}}. Sans risque : revérifié juste avant la suppression, et tout ce qui n’est plus éligible est ignoré, pas supprimé.',
       confirmAction: 'Supprimer {{count}}',
       done: '{{removed}} supprimés, {{skipped}} ignorés',
+      partialFailure:
+        '{{removed}} supprimés, {{skipped}} ignorés ; {{failed}} n’ont pas pu être supprimés ({{reason}}). Ils restent sélectionnés pour réessayer.',
     },
   },
   agentTypes: {

@@ -227,7 +227,9 @@ const viVN: LocaleResource<typeof enUS> = {
       addedCount_one: 'Đã thêm {{count}} agent.',
       addedCount_other: 'Đã thêm {{count}} agent.',
       addedPartial:
-        'Đã thêm {{succeeded}}, {{failed}} không thể thêm (đã tồn tại).',
+        'Đã thêm {{succeeded}}, {{failed}} không thể thêm. Lý do ở dưới mỗi mục.',
+      addFailed:
+        '{{failed}} không thể thêm. Lý do ở dưới mỗi mục; hãy thử lại.',
     },
     cleanup: {
       open: 'Dọn dẹp',
@@ -251,6 +253,8 @@ const viVN: LocaleResource<typeof enUS> = {
         'Trong {{tools}}. An toàn để xóa: được kiểm tra lại ngay trước khi xóa, và những mục không còn đủ điều kiện sẽ bị bỏ qua, không bị xóa.',
       confirmAction: 'Xóa {{count}}',
       done: 'Đã xóa {{removed}}, bỏ qua {{skipped}}',
+      partialFailure:
+        'Đã xóa {{removed}}, bỏ qua {{skipped}}; {{failed}} không thể xóa ({{reason}}). Vẫn được chọn để thử lại.',
     },
   },
   agentTypes: {

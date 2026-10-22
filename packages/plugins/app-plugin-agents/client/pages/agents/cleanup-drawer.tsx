@@ -49,7 +49,7 @@ import {
 } from '../../components/ui/sheet.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useFormatters } from '../../lib/format.js';
-import { useNotify } from '../../hooks/use-notify.js';
+import { errorText, useNotify } from '../../hooks/use-notify.js';
 
 const VIRTUALIZE_THRESHOLD = 30;
 const PAGE_SIZE = 50;
@@ -131,25 +131,62 @@ export function CleanupDrawer({
     mutationFn: async () => {
       const ids = [...selected.keys()];
       const batches = chunk(ids, CLEANUP_BATCH_SIZE);
-      const outcomes = await Promise.all(
+      // `allSettled`, not `all`: one batch's request failing (network, a 500) must not discard the ids another
+      // batch already removed. Each outcome is matched back to its own batch by index to know which ids to retry.
+      const outcomes = await Promise.allSettled(
         batches.map((batch) => api.cleanup(batch)),
       );
-      return {
-        removed: outcomes.flatMap((outcome) => outcome.removed),
-        skipped: outcomes.flatMap((outcome) => outcome.skipped),
-      };
+      const removed: string[] = [];
+      const skipped: string[] = [];
+      const failed: string[] = [];
+      let lastError: unknown;
+      outcomes.forEach((outcome, index) => {
+        if (outcome.status === 'fulfilled') {
+          removed.push(...outcome.value.removed);
+          skipped.push(...outcome.value.skipped);
+        } else {
+          failed.push(...batches[index]);
+          lastError = outcome.reason;
+        }
+      });
+      return { removed, skipped, failed, lastError };
     },
-    onSuccess: ({ removed, skipped }) => {
-      setSelected(new Map());
-      setConfirming(false);
+    onSuccess: ({ removed, skipped, failed, lastError }) => {
       void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
       void queryClient.invalidateQueries({
         queryKey: agentsKeys.cleanupCandidatesAll,
       });
-      notify.success(
-        t('agents.cleanup.done', {
+      if (failed.length === 0) {
+        setSelected(new Map());
+        setConfirming(false);
+        notify.success(
+          t('agents.cleanup.done', {
+            removed: removed.length,
+            skipped: skipped.length,
+          }),
+        );
+        return;
+      }
+      // Partial (or total) failure: keep only the ids whose batch failed selected, so the confirmation that stays
+      // open names exactly what is left to retry, and a removed or skipped id is never reported as untouched.
+      setSelected((current) => {
+        const next = new Map<string, CleanupCandidate>();
+        for (const id of failed) {
+          const candidate = current.get(id);
+          if (candidate) next.set(id, candidate);
+        }
+        return next;
+      });
+      // `notify.error`'s own fallback logic would replace this count summary with a bare reason translation when
+      // `lastError` is a recognized API error; call it with no error so the summary (which already embeds the real
+      // reason) is always what shows.
+      notify.error(
+        undefined,
+        t('agents.cleanup.partialFailure', {
           removed: removed.length,
           skipped: skipped.length,
+          failed: failed.length,
+          reason: errorText(t, lastError, t('common.requestFailed')),
         }),
       );
     },
