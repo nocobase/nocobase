@@ -71,7 +71,6 @@ export function ScheduleCard({
     draft.setDraft({ ...value, ...patch });
   return (
     <SettingsCard
-      title={t('schedule.title')}
       description={t('schedule.description')}
       draft={draft}
       canEdit={configuration.canEdit}

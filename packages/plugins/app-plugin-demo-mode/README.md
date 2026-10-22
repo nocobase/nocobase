@@ -55,7 +55,7 @@ At startup the plugin sends a probe write through every connection and refuses t
 
 ## Finding what to allow
 
-Use `NOCOBASE_DEMO_MODE=true` only in the isolated demo deployment. Browse the intended visitor journeys and inspect refused requests in the `demo-mode` log, which records their method, path and writes. Some pages write while being read, for example to refresh a cache. Add only the collection or scoped operation exceptions those journeys need, then verify them again. Ordinary application development leaves the flag unset or sets it to `false`.
+Use `NOCOBASE_DEMO_MODE=true` only in the isolated demo deployment. Browse the intended visitor journeys and inspect refused requests in the `demo-mode` log, which records their method, path and writes. Some pages write while being read, for example to refresh a cache. Add only the collection exceptions those journeys need, then verify them again. Ordinary application development leaves the flag unset or sets it to `false`.
 
 ## Limits
 
@@ -170,15 +170,14 @@ Set `showFloatingAccountSwitcher: false` in the client registration to hide the 
 - `GET /api/demoMode/accounts`, public, lists the accounts `accounts(language)` lists for the imported language, limited to users the dataset created and has not disabled, as `{ username, name, role, current }` without passwords.
 - `POST /api/demoMode/accounts/{username}/signIn` ends the request's own session, signs in through Better Auth's email-and-password sign-in with the password the dataset lists, and answers with Better Auth's session cookie. The authentication plugin is unchanged, and the session is an ordinary one. An account the list does not offer is `404 DEMO_ACCOUNT_NOT_FOUND`; a listed password that is wrong is `400 DEMO_ACCOUNT_SIGN_IN_FAILED`.
 - `accounts(language)` must therefore list each account's real password, and every listed account, an administrator included, is open to anyone who reaches the demo.
-- To embed a demo in another page, open `<base path>/demo-sign-in?as=<username>&redirect=/path` in an iframe; without `as` the page lists the accounts. Session cookies are `SameSite=Lax`, so the demo must be on the same site as the embedding page, such as a subdomain of its domain.
 
 ## Administration page
 
 `DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` is the whole demo administration: an application mounts it on a route of its own, inside its own page layout, and protects that route with `authz: { resource: { type: 'settings', id: 'demoMode.data' }, action: 'read' }`. Management uses the settings grants below, without an additional page grant. It has four tabs, the current one kept in `?tab=`:
 
-- **Overview** — the dataset's state, language, time and counts, with Generate, Reset and Clear (each confirmed, with its exact consequence), and the visitor entry: the accounts quick sign-in offers, their credentials, a copyable entry link for each and an iframe snippet.
+- **Overview** — the dataset's state, language, time and counts, with Generate, Reset and Clear (each confirmed, with its exact consequence), and demo accounts, their credentials and a copyable sign-in link for each.
 - **Daily reset** — on or off, the time, a searchable IANA time zone, the dataset language and the next run.
-- **Visitor writes** — the registered write capabilities with each operation and scope, and the collection exceptions with the deployment's fixed collections.
+- **Visitor writes** — collection exceptions with the deployment's fixed collections.
 - **Simulation & AI** — online chat (on or off, simulated or a real model, a policy per tool) and the registered simulations.
 
 Each card saves on its own with the revision it was started from and says when another administrator saved first; leaving with unsaved changes asks first. What the viewer lacks the grant for is shown without its actions.
@@ -199,7 +198,7 @@ import { DemoModeSettings } from '@nocobase/app-plugin-demo-mode/client/settings
 />;
 ```
 
-`label` receives `count` (a key of the dataset's `counts`), `capability`, `scope`, `adapter` or `chatTool` with its id. `onDataChange` is called when a clear answers or a watched import or reset finishes, for the application to refresh what it caches. The data language defaults to the reader's interface language when the dataset is written in it.
+`label` receives `count` (a key of the dataset's `counts`), `adapter` or `chatTool` with its id. `onDataChange` is called when a clear answers or a watched import or reset finishes, for the application to refresh what it caches. The data language defaults to the reader's interface language when the dataset is written in it.
 
 ### Host presentation components
 
@@ -230,9 +229,8 @@ The command waits for completion. `--dry-run` previews only the operation and ar
 
 ## Demo configuration
 
-When Demo Mode is enabled, administrators adjust it from the plugin's administration page, through `GET /api/demoMode/configuration` and `PUT /api/demoMode/configuration/writeRules|collections|mocks|schedule` (`settings:demoMode.configuration`: `read` / `configure`). Every save carries `expectedRevision` and is refused with `DEMO_CONFIGURATION_CONFLICT` when another administrator saved first.
+When Demo Mode is enabled, administrators adjust it from the plugin's administration page, through `GET /api/demoMode/configuration` and `PUT /api/demoMode/configuration/collections|mocks|schedule|chat` (`settings:demoMode.configuration`: `read` / `configure`). Every save carries `expectedRevision` and is refused with `DEMO_CONFIGURATION_CONFLICT` when another administrator saved first.
 
-- **Visitor write exceptions.** An application registers what may be opened with `demoConfigurationToken.registerWrite({ id, title, collection, operations, scopes, checkScope })`; identity, authorization, secret and plugin tables are refused. Rules start empty. The application wraps exactly the authorized business mutation in `runWrite(id, operation, input, run)`, or `runWrites([[id, operation], …], input, run)` when one mutation writes through several capabilities: an entry without a rule allows nothing, and a configured entry whose `checkScope` refuses the input refuses the whole mutation with `DEMO_SCOPE_DENIED`.
 - **Simulations.** `registerMock` registers model/tool/Runner adapters. `registerAgent({ id, title, defaultEnabled, execute })` supplies an environment-wide Agent proxy: demo mode always uses the application’s replacement, while `NOCOBASE_DEMO_MODE=false` uses the normal Agent. Disabled adapters fail closed; unmarked or visitor-created business records never fall through to a real Agent in demo mode.
 - **Daily reset.** Scheduler triggers resets independently of HTTP traffic. Normal request policy checks do not calculate the next reset time; `nextRun` is only a management-view preview. Configure `{ enabled, hour, minute, timezone, language }` through the management API/UI. This is the only schedule source; there is no deployment-cron override. A durable claim permits one reset per local day, including across processes and repeated DST minutes. Configure it after the first import, whose administrator is used for subsequent resets. Register the Scheduler plugin in the host: Demo Mode owns the `demoMode.dailyReset` target and minute tick; applications supply only the dataset adapter. The default is disabled. Expose `nextRun` from the saved configuration and execution failures in Scheduler. Missed minutes are skipped, including downtime; a failed claimed run is not retried automatically that day.
 
@@ -249,13 +247,13 @@ pnpm --filter @nocobase/app-plugin-demo-mode build
 
 ## Runtime configuration
 
-The administration page is built on `/api/demoMode/configuration`, with independent `demoMode.configuration` read/configure permissions. Register explicit write capabilities and mock adapters through `demoConfigurationToken`; no business write rules are enabled by default. Configuration uses optimistic revisions, daily reset supports IANA timezones, and disabled mocks fail closed. The published [integration Skill](skills/nocobase-app-plugin-demo-mode/SKILL.md) documents scope validation, scheduling and application-owned adapters.
+The administration page is built on `/api/demoMode/configuration`, with independent `demoMode.configuration` read/configure permissions. Configure writable collections through the administration page and register mock adapters through `demoConfigurationToken`; the writable collection list starts empty. Configuration uses optimistic revisions, daily reset supports IANA timezones, and disabled mocks fail closed. The published [integration Skill](skills/nocobase-app-plugin-demo-mode/SKILL.md) documents collection exceptions, scheduling and application-owned adapters.
 
 ### Collection exceptions
 
 The authenticated GET `/api/demoMode/configuration/collections` lists collections in the default application database (objects with `name` and optional `title`) for a searchable multi-select. It excludes views, protected tables and deployment-owned exceptions. Keep saved selections visible even when absent from the catalog, so administrators can remove stale entries.
 
-Administrators can PUT `/api/demoMode/configuration/collections` with `{ expectedRevision, value: ["orderItems"] }`. Each entry is a logical collection name, such as `orderItems`, exactly as used in migrations. The plugin resolves physical names from collection metadata, including naming strategies and table prefixes. Exceptions apply only to the default database connection; an identically named table on another connection stays guarded. Adding a collection allows its INSERT, UPDATE and DELETE statements; removing it restores read-only protection unless another exception still grants access. There is no operation selector and no application capability registration. The list defaults to empty, persists across restarts and applies to subsequent HTTP requests, including implicit writes from GET routes. Normal application authorization remains in force.
+Administrators can PUT `/api/demoMode/configuration/collections` with `{ expectedRevision, value: ["orderItems"] }`. Each entry is a logical collection name, such as `orderItems`, exactly as used in migrations. The plugin resolves physical names from collection metadata, including naming strategies and table prefixes. Exceptions apply only to the default database connection; an identically named table on another connection stays guarded. Adding a collection allows its INSERT, UPDATE and DELETE statements; removing it restores read-only protection unless another exception still grants access. The list defaults to empty, persists across restarts and applies to subsequent HTTP requests, including implicit writes from GET routes. Normal application authorization remains in force.
 
 Protected identity, authorization, Agent and Demo configuration tables cannot be added through this API. Deployment-level exceptions (including sign-in sessions) remain visible as `fixedCollections` and are managed by deployment configuration. Runtime exception collections are returned as `collections`. These runtime exceptions never permit DDL or unknown statements.
 
@@ -277,9 +275,9 @@ Administrators configure `chat` through `PUT /api/demoMode/configuration/chat` u
 
 The host calls `chatModel(simulatedModel)` before admission and every model request, and `runChatTool(id, { readOnly, run, mock })` after normal business authorization. Policies are read fresh, including background work and restored sessions. Unknown tools are denied. `read` only invokes a host-declared local read; `mock` only invokes an explicit adapter; missing adapters never fall back to real execution. Mark neither outbound network reads nor business mutations as local reads. A host should stop an active conversation when its selected model changes. Disabled demo mode returns normal host behavior.
 
-For an application chatting through the Agents OnlineAgent service, `runOnlineConversation(callback)` provides a narrow persistence boundary: when chat is enabled, it permits conversation and message inserts and updates only inside that callback and the session continuation it starts. Verify ownership and the agent scope first, then call only the public session operation (create, send, abort, finalize, configure, rename, mark read). Refuse other agents, runner conversations, attachments, approvals and configuration overrides. Never wrap dispatchers, model/tool execution, uploads, agent configuration or arbitrary database work. Other requests remain guarded and these protected tables are never exposed as global UI write rules. Keep fixture import outside the HTTP boundary, independent of visitor chat enablement. This boundary is deliberately separate from `runChatTool` and is unnecessary for applications with their own conversation persistence.
+For an application chatting through the Agents OnlineAgent service, `runOnlineConversation(callback)` provides a narrow persistence boundary: when chat is enabled, it permits conversation and message inserts and updates only inside that callback and the session continuation it starts. Verify ownership and the agent scope first, then call only the public session operation (create, send, abort, finalize, configure, rename, mark read). Refuse other agents, runner conversations, attachments, approvals and configuration overrides. Never wrap dispatchers, model/tool execution, uploads, agent configuration or arbitrary database work. Other requests remain guarded and these protected tables are never exposed as global collection exceptions. Keep fixture import outside the HTTP boundary, independent of visitor chat enablement. This boundary is deliberately separate from `runChatTool` and is unnecessary for applications with their own conversation persistence.
 
-This policy does not intercept Agents, grant permissions, or open internal tables. Hosts retain conversation ownership and use `runOnlineConversation` for the authorized session operation; protected Agent tables cannot be enabled through write rules. Application adapters must guard every external side effect, including queued work. Model/tool policy and persistence permissions are independent; both must be configured to enable a read-only demo chat.
+This policy does not intercept Agents, grant permissions, or open internal tables. Hosts retain conversation ownership and use `runOnlineConversation` for the authorized session operation; protected Agent tables cannot be enabled through collection exceptions. Application adapters must guard every external side effect, including queued work. Model/tool policy and persistence permissions are independent; both must be configured to enable a read-only demo chat.
 
 ## Integration contracts
 

@@ -121,9 +121,7 @@ const resource = {
       },
     },
     visitors: {
-      title: 'Visitor entry',
-      description:
-        'Visitors enter any of these accounts without a password and can switch between them from the corner of every page.',
+      title: 'Demo accounts',
       off: 'Quick sign-in is turned off for this deployment.',
       pending: 'The accounts appear here once the demo data is ready.',
       noData: 'Generate the demo data first; its accounts appear here.',
@@ -133,13 +131,8 @@ const resource = {
       openFor: 'Open the demo as {{name}}',
       copied: 'Copied',
       copyFailed: 'Could not copy. Copy the link from the address bar instead.',
-      embed: 'Embed in a web page',
-      copyEmbed: 'Copy the embed code',
-      embedHelp:
-        'The page must be on the same site as this demo, such as another subdomain of its domain; otherwise the browser does not keep visitors signed in inside the frame.',
     },
     schedule: {
-      title: 'Daily reset',
       description:
         'Once a day, delete what visitors changed and generate the demo data again.',
       confirmTitle: 'Save the daily reset?',
@@ -160,30 +153,16 @@ const resource = {
     },
     writes: {
       intro:
-        'When Demo Mode is enabled, changes are refused by default. Open only what visitors need to try, and only for records the demo owns; business permissions still apply.',
+        'When Demo Mode is enabled, writes are refused by default. Select the collections visitors need to write; application permissions control operations and record access.',
       allow: 'Allow',
       revoke: 'Refuse again',
-      scope: 'Scope',
       confirmTitle: 'Change what visitors may write?',
       confirmDescription:
         'Visitors’ changes to these become real and stay until the next reset.',
-      operation: {
-        insert: 'Create',
-        update: 'Edit',
-        delete: 'Delete',
-      },
-      capabilities: {
-        title: 'Business operations',
-        description:
-          'Operations the application marked as safe to open, each limited to a scope.',
-        empty: 'No operations registered',
-        emptyHelp:
-          'The application has not registered any operation that may be opened in a demo.',
-      },
       collections: {
         title: 'Collections',
         description:
-          'Any authorized request may write these collections. Use it for state nobody can misuse, such as view preferences.',
+          'Requests authorized by the application may write these collections.',
         label: 'Collections visitors may write',
         placeholder: 'Search collections',
         noMatch: 'No matching collection',

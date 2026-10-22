@@ -5,7 +5,7 @@
 
 Add Demo Mode for isolated demonstration deployments, enabled by the boolean `NOCOBASE_DEMO_MODE` environment variable or `demoMode.enabled` configuration and disabled by default, with application-owned repeatable datasets, full business cleanup, reusable visitor accounts, application-scoped quick sign-in redirects, progress reporting and daily scheduled resets. Track applied credentials across restarts so reset preserves unchanged sessions and applies password changes.
 
-Provide request-scoped read-only protection, logical-collection exceptions and scoped write capabilities without replacing business authorization. Expose permission-gated data management, revision-safe policy APIs, CLI commands and composable settings components.
+Provide request-scoped write protection with logical-collection exceptions while preserving business authorization. Expose permission-gated data management, revision-safe policy APIs, CLI commands and composable settings components.
 
 Support optional official Agents integration with a persistent simulated model, application-owned Agent simulations and explicitly authorized online conversation policies. Preserve existing global defaults and disable the owned model when Demo Mode is disabled. Document raw OpenAI JSON and streaming response contracts. Non-AI applications can use demo data without installing Agents. Publish structural service contracts and browser-safe shared types.
 

@@ -55,7 +55,6 @@ import type { DemoConfigurationView } from '../../shared/configuration.js';
 
 const view = (patch: Partial<DemoConfigurationView> = {}) => ({
   revision: 4,
-  rules: [],
   collections: [],
   mocks: { 'dataset.model': true },
   schedule: null,
@@ -63,18 +62,6 @@ const view = (patch: Partial<DemoConfigurationView> = {}) => ({
   busy: false,
   enabled: true,
   fixedCollections: ['session', 'verification'],
-  capabilities: [
-    {
-      id: 'crm.leads',
-      title: 'Leads',
-      collection: 'crm_leads',
-      operations: ['insert', 'update'],
-      scopes: [
-        { id: 'demo', title: 'Demo records' },
-        { id: 'all', title: 'All records' },
-      ],
-    },
-  ],
   adapters: [
     {
       id: 'dataset.model',
@@ -161,7 +148,10 @@ function demoApi({
           },
         ],
       };
-    if (call.path === 'demoMode/configuration/collections')
+    if (
+      call.method === 'GET' &&
+      call.path === 'demoMode/configuration/collections'
+    )
       return { data: [{ name: 'userPreferences', title: 'View preferences' }] };
     if (call.method === 'GET' && call.path === 'demoMode/configuration')
       return { data: configuration };
@@ -252,9 +242,6 @@ describe.each(['default', 'host'] as const)(
       expect(
         screen.getByRole('button', { name: '复制 李明 的进入链接' }),
       ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: '复制嵌入代码' }),
-      ).toHaveTextContent('复制嵌入代码');
     });
 
     it('saves the daily reset with the revision it started from, after confirming', async () => {
@@ -333,13 +320,10 @@ describe.each(['default', 'host'] as const)(
               { status: 409 },
             ),
         }),
-        '/?tab=writes',
+        '/?tab=schedule',
       );
-      fireEvent.click(await screen.findByRole('switch', { name: '新建' }));
-      const card = screen
-        .getByText('业务操作')
-        .closest('[data-slot="card"]') as HTMLElement;
-      fireEvent.click(within(card).getByRole('button', { name: '保存' }));
+      fireEvent.click(await screen.findByRole('switch', { name: '每天重置' }));
+      fireEvent.click(screen.getByRole('button', { name: '保存' }));
       fireEvent.click(
         within(await screen.findByRole('alertdialog')).getByRole('button', {
           name: '确认修改',
@@ -399,7 +383,7 @@ describe.each(['default', 'host'] as const)(
       );
       expect(await screen.findByText('重置中')).toBeInTheDocument();
       expect(
-        screen.getByText('正在清空现有数据，然后以中文（中国）重新生成。'),
+        screen.getByText('正在清空现有数据，然后以简体中文重新生成。'),
       ).toBeInTheDocument();
       expect(screen.getByText('清空现有数据')).toBeInTheDocument();
       expect(screen.getByText('9%')).toBeInTheDocument();

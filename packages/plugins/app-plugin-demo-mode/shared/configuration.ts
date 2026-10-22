@@ -4,21 +4,6 @@ export interface DemoChatConfiguration {
   model: { modelService: string; model: string } | null;
   tools: Record<string, 'read' | 'mock' | 'deny'>;
 }
-/** Application-owned, explicitly registered write capabilities. This is not business authorization. */
-export interface DemoWriteCapability {
-  readonly id: string;
-  readonly title: string;
-  readonly collection: string;
-  readonly operations: readonly ('insert' | 'update' | 'delete')[];
-  readonly scopes: readonly { readonly id: string; readonly title: string }[];
-  /** Called only by runWrite, after the application's normal authorization. Validate persisted record ownership. */
-  checkScope?(scope: string, input: unknown): Promise<boolean>;
-}
-export interface DemoWriteRule {
-  capability: string;
-  operation: 'insert' | 'update' | 'delete';
-  scope: string;
-}
 export interface DemoMockAdapter {
   readonly id: string;
   readonly title: string;
@@ -37,7 +22,6 @@ export interface DemoDailySchedule {
 }
 export interface DemoConfiguration {
   revision: number;
-  rules: DemoWriteRule[];
   collections: string[];
   mocks: Record<string, boolean>;
   schedule: DemoDailySchedule | null;
@@ -47,7 +31,6 @@ export interface DemoConfigurationView extends DemoConfiguration {
   busy: boolean;
   enabled: boolean;
   fixedCollections: readonly string[];
-  capabilities: readonly Omit<DemoWriteCapability, 'checkScope'>[];
   adapters: readonly Omit<DemoMockAdapter, 'invoke'>[];
   nextRun: string | null;
 }

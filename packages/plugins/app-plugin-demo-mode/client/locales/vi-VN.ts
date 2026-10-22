@@ -121,9 +121,7 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: 'Lối vào cho khách',
-      description:
-        'Khách vào bất kỳ tài khoản nào dưới đây mà không cần mật khẩu và có thể chuyển đổi từ góc của mọi trang.',
+      title: 'Tài khoản demo',
       off: 'Đăng nhập nhanh đang tắt trong bản triển khai này.',
       pending: 'Các tài khoản sẽ hiện ở đây khi dữ liệu demo sẵn sàng.',
       noData: 'Hãy tạo dữ liệu demo trước; các tài khoản sẽ hiện ở đây.',
@@ -134,13 +132,8 @@ const resource: DemoModeResource = {
       copied: 'Đã sao chép',
       copyFailed:
         'Không sao chép được. Hãy sao chép liên kết từ thanh địa chỉ.',
-      embed: 'Nhúng vào trang web',
-      copyEmbed: 'Sao chép mã nhúng',
-      embedHelp:
-        'Trang phải cùng site với bản demo này, ví dụ một tên miền phụ khác của cùng tên miền; nếu không, trình duyệt sẽ không giữ khách đăng nhập trong khung.',
     },
     schedule: {
-      title: 'Đặt lại hằng ngày',
       description:
         'Mỗi ngày một lần, xóa những gì khách đã thay đổi và tạo lại dữ liệu demo.',
       confirmTitle: 'Lưu đặt lại hằng ngày?',
@@ -161,30 +154,16 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        'Khi bật bản demo, các thay đổi mặc định bị từ chối. Chỉ mở những gì khách cần thử, và chỉ cho bản ghi của demo; quyền nghiệp vụ vẫn áp dụng.',
+        'Khi bật bản demo, các thao tác ghi mặc định bị từ chối. Chọn các bộ sưu tập mà khách cần ghi; quyền của ứng dụng kiểm soát thao tác và quyền truy cập bản ghi.',
       allow: 'Cho phép',
       revoke: 'Từ chối lại',
-      scope: 'Phạm vi',
       confirmTitle: 'Thay đổi những gì khách được ghi?',
       confirmDescription:
         'Thay đổi của khách đối với các mục này được lưu thật cho đến lần đặt lại tiếp theo.',
-      operation: {
-        insert: 'Tạo',
-        update: 'Sửa',
-        delete: 'Xóa',
-      },
-      capabilities: {
-        title: 'Thao tác nghiệp vụ',
-        description:
-          'Các thao tác ứng dụng đánh dấu là an toàn để mở, mỗi thao tác giới hạn trong một phạm vi.',
-        empty: 'Chưa đăng ký thao tác nào',
-        emptyHelp:
-          'Ứng dụng chưa đăng ký thao tác nào có thể mở trong bản demo.',
-      },
       collections: {
         title: 'Bộ sưu tập',
         description:
-          'Mọi yêu cầu được phép đều có thể ghi vào các bộ sưu tập này. Chỉ dùng cho trạng thái không ai lạm dụng được, như tùy chọn hiển thị.',
+          'Các yêu cầu được ứng dụng cấp quyền có thể ghi vào các bộ sưu tập này.',
         label: 'Bộ sưu tập khách được ghi',
         placeholder: 'Tìm bộ sưu tập',
         noMatch: 'Không có bộ sưu tập phù hợp',

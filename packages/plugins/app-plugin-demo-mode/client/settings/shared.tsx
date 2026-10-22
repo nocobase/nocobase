@@ -56,7 +56,7 @@ export function SettingsCard({
   confirmation,
   children,
 }: {
-  readonly title: string;
+  readonly title?: string;
   readonly description: ReactNode;
   readonly draft?: DraftControls;
   readonly canEdit?: boolean;
@@ -73,7 +73,7 @@ export function SettingsCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        {title ? <CardTitle>{title}</CardTitle> : null}
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className='flex flex-col gap-4'>

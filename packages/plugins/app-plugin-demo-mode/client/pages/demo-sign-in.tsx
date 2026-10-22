@@ -6,7 +6,7 @@ import { useDemoAccounts } from '../accounts.js';
 import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 
 /**
- * Where a visitor enters a demo without a password, and what a page embedding the demo opens in its iframe:
+ * Where a visitor enters a demo without a password:
  * `?as=<username>` enters that account at once, `?redirect=/path` is where it lands. Without `as`, or when the account
  * cannot be entered, the page lists the accounts to choose from.
  */

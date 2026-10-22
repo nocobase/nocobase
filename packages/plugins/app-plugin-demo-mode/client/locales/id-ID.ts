@@ -121,9 +121,7 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: 'Akses pengunjung',
-      description:
-        'Pengunjung masuk ke salah satu akun ini tanpa kata sandi dan bisa berpindah akun dari sudut setiap halaman.',
+      title: 'Akun demo',
       off: 'Masuk cepat dinonaktifkan untuk deployment ini.',
       pending: 'Akun akan muncul di sini setelah data demo siap.',
       noData: 'Buat data demo terlebih dahulu; akunnya akan muncul di sini.',
@@ -133,13 +131,8 @@ const resource: DemoModeResource = {
       openFor: 'Buka demo sebagai {{name}}',
       copied: 'Disalin',
       copyFailed: 'Gagal menyalin. Salin tautan dari bilah alamat.',
-      embed: 'Sematkan di halaman web',
-      copyEmbed: 'Salin kode sematan',
-      embedHelp:
-        'Halaman harus berada di situs yang sama dengan demo ini, misalnya subdomain lain dari domain yang sama; jika tidak, browser tidak mempertahankan login pengunjung di dalam bingkai.',
     },
     schedule: {
-      title: 'Reset harian',
       description:
         'Sekali sehari, hapus perubahan pengunjung dan buat ulang data demo.',
       confirmTitle: 'Simpan reset harian?',
@@ -160,30 +153,16 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        'Saat demo aktif, perubahan ditolak secara default. Buka hanya yang perlu dicoba pengunjung, dan hanya untuk catatan milik demo; izin bisnis tetap berlaku.',
+        'Saat demo aktif, penulisan ditolak secara default. Pilih koleksi yang perlu ditulis pengunjung; izin aplikasi mengontrol operasi dan akses catatan.',
       allow: 'Izinkan',
       revoke: 'Tolak lagi',
-      scope: 'Cakupan',
       confirmTitle: 'Ubah apa yang boleh ditulis pengunjung?',
       confirmDescription:
         'Perubahan pengunjung pada hal ini benar-benar tersimpan sampai reset berikutnya.',
-      operation: {
-        insert: 'Buat',
-        update: 'Ubah',
-        delete: 'Hapus',
-      },
-      capabilities: {
-        title: 'Operasi bisnis',
-        description:
-          'Operasi yang ditandai aplikasi aman untuk dibuka, masing-masing dibatasi pada suatu cakupan.',
-        empty: 'Tidak ada operasi terdaftar',
-        emptyHelp:
-          'Aplikasi belum mendaftarkan operasi yang bisa dibuka di demo.',
-      },
       collections: {
         title: 'Koleksi',
         description:
-          'Setiap permintaan yang berizin bisa menulis ke koleksi ini. Gunakan hanya untuk status yang tidak bisa disalahgunakan, seperti preferensi tampilan.',
+          'Permintaan yang diizinkan aplikasi dapat menulis ke koleksi ini.',
         label: 'Koleksi yang boleh ditulis pengunjung',
         placeholder: 'Cari koleksi',
         noMatch: 'Tidak ada koleksi yang cocok',

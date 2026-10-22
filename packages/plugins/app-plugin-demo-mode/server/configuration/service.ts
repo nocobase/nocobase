@@ -20,8 +20,6 @@ import type {
   DemoConfigurationView,
   DemoDailySchedule,
   DemoMockAdapter,
-  DemoWriteCapability,
-  DemoWriteRule,
 } from '../../shared/configuration.js';
 
 const protectedCollection =
@@ -44,7 +42,6 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
   private async currentPolicy(): Promise<DemoConfiguration> {
     return this.policy.getStore() ?? this.readPolicy();
   }
-  private readonly writes = new Map<string, DemoWriteCapability>();
   private readonly adapters = new Map<string, DemoMockAdapter>();
   public constructor(
     private readonly database: DatabaseManager,
@@ -65,24 +62,6 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         'Demo management is unavailable in this deployment.',
         'NOT_FOUND',
       );
-  }
-  public registerWrite(capability: DemoWriteCapability): void {
-    if (this.writes.has(capability.id))
-      throw new Error(`Duplicate demo capability: ${capability.id}`);
-    if (
-      !/^[a-z][a-z0-9_]*$/iu.test(capability.collection) ||
-      protectedCollection.test(capability.collection)
-    )
-      throw invalid('A protected or invalid collection cannot be exposed.');
-    if (
-      !capability.operations.length ||
-      !capability.scopes.length ||
-      capability.scopes.some(
-        (scope) => scope.id !== 'all' && !capability.checkScope,
-      )
-    )
-      throw invalid('Each scoped capability needs a scope resolver.');
-    this.writes.set(capability.id, capability);
   }
   public registerMock(adapter: DemoMockAdapter): void {
     if (this.adapters.has(adapter.id))
@@ -156,7 +135,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         .values({
           id: 'default',
           revision: 0,
-          value: JSON.stringify({ rules: [], mocks: {}, schedule: null }),
+          value: JSON.stringify({ collections: [], mocks: {}, schedule: null }),
         })
         .execute();
     } catch (error) {
@@ -178,7 +157,6 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         : (row.value as Omit<DemoConfiguration, 'revision'>);
     return {
       revision: Number(row.revision),
-      rules: stored.rules,
       collections: stored.collections ?? [],
       schedule: stored.schedule,
       chat: stored.chat ?? { enabled: false, model: null, tools: {} },
@@ -210,13 +188,6 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
       busy: includeBusy && Boolean((await this.data()).importing),
       enabled: this.settings.enabled,
       fixedCollections: [...this.settings.allowCollections],
-      capabilities: [...this.writes.values()].map((item) => ({
-        id: item.id,
-        title: item.title,
-        collection: item.collection,
-        operations: item.operations,
-        scopes: item.scopes,
-      })),
       adapters: [...this.adapters.values()].map((item) => ({
         id: item.id,
         title: item.title,
@@ -253,7 +224,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     return names.sort((a, b) => a.name.localeCompare(b.name));
   }
   public async save(
-    section: 'rules' | 'collections' | 'mocks' | 'schedule' | 'chat',
+    section: 'collections' | 'mocks' | 'schedule' | 'chat',
     expectedRevision: number,
     input: unknown,
   ): Promise<DemoConfigurationView> {
@@ -291,21 +262,6 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
           );
         collections.add(table);
       }
-    } else if (section === 'rules') {
-      const rules = input as DemoWriteRule[];
-      const keys = new Set<string>();
-      for (const rule of rules) {
-        const capability = this.writes.get(rule.capability);
-        const key = `${rule.capability}:${rule.operation}`;
-        if (
-          !capability ||
-          !capability.operations.includes(rule.operation) ||
-          !capability.scopes.some((scope) => scope.id === rule.scope) ||
-          keys.has(key)
-        )
-          throw invalid('Unknown or duplicate write rule.');
-        keys.add(key);
-      }
     } else if (section === 'mocks') {
       if (Object.keys(input as object).some((id) => !this.adapters.has(id)))
         throw invalid('Unknown mock adapter.');
@@ -323,7 +279,6 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
       }
     }
     const updated = {
-      rules: current.rules,
       collections: current.collections,
       mocks: current.mocks,
       schedule: current.schedule,
@@ -432,79 +387,11 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
   /** Rules usable by the SQL guard without application row context, restricted to the default connection. */
   public async wholeCollectionRules(): Promise<readonly DemoSqlRule[]> {
     if (!this.enabled) return [];
-    const { rules, collections } = await this.currentPolicy();
-    const allowed = await this.collectionRules(
+    const { collections } = await this.currentPolicy();
+    return this.collectionRules(
       new Set([...this.settings.allowCollections, ...collections]),
       ['insert', 'update', 'delete'],
     );
-    for (const rule of rules) {
-      const capability = this.writes.get(rule.capability);
-      if (
-        capability &&
-        rule.scope === 'all' &&
-        capability.scopes.some((scope) => scope.id === 'all') &&
-        capability.operations.includes(rule.operation)
-      ) {
-        allowed.push(
-          ...(await this.collectionRules(
-            [capability.collection],
-            [rule.operation],
-          )),
-        );
-      }
-    }
-    return allowed;
-  }
-  /** Call only around the declared, already-authorized business operation, never around a general dispatcher. */
-  public runWrite<T>(
-    id: string,
-    operation: DemoWriteRule['operation'],
-    input: unknown,
-    run: () => Promise<T>,
-  ): Promise<T> {
-    return this.runWrites([[id, operation]], input, run);
-  }
-  /**
-   * As `runWrite`, for an operation that writes through several capabilities: each configured, in-scope rule adds
-   * its table and statement to what the guard lets through; an entry with no rule allows nothing. One entry whose
-   * rule is configured but out of scope refuses the whole operation.
-   */
-  public async runWrites<T>(
-    entries: readonly (readonly [
-      id: string,
-      operation: DemoWriteRule['operation'],
-    ])[],
-    input: unknown,
-    run: () => Promise<T>,
-  ): Promise<T> {
-    if (!this.enabled) return run();
-    const { rules } = await this.currentPolicy();
-    const allowed: DemoSqlRule[] = [];
-    for (const [id, operation] of entries) {
-      const capability = this.writes.get(id);
-      const rule = rules.find(
-        (item) => item.capability === id && item.operation === operation,
-      );
-      if (
-        !capability ||
-        !rule ||
-        !capability.operations.includes(operation) ||
-        !capability.scopes.some((scope) => scope.id === rule.scope)
-      )
-        continue;
-      if (
-        rule.scope !== 'all' &&
-        !(await capability.checkScope?.(rule.scope, input))
-      )
-        throw demoDataError(
-          'DEMO_SCOPE_DENIED',
-          'This operation is outside the configured demo scope.',
-        );
-      allowed.push(
-        ...(await this.collectionRules([capability.collection], [operation])),
-      );
-    }
-    return allowed.length ? this.guard.runAllowed(allowed, run) : run();
   }
   public async requireMock(id: string): Promise<void> {
     this.requireEnabled();

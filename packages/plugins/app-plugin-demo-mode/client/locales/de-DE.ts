@@ -124,9 +124,7 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: 'Zugang für Besucher',
-      description:
-        'Besucher öffnen jedes dieser Konten ohne Passwort und können in der Ecke jeder Seite zwischen ihnen wechseln.',
+      title: 'Demokonten',
       off: 'Die Schnellanmeldung ist in dieser Bereitstellung ausgeschaltet.',
       pending: 'Die Konten erscheinen hier, sobald die Demodaten bereit sind.',
       noData:
@@ -138,13 +136,8 @@ const resource: DemoModeResource = {
       copied: 'Kopiert',
       copyFailed:
         'Kopieren fehlgeschlagen. Kopieren Sie den Link aus der Adressleiste.',
-      embed: 'In eine Webseite einbetten',
-      copyEmbed: 'Einbettungscode kopieren',
-      embedHelp:
-        'Die Seite muss auf derselben Website wie diese Demo liegen, etwa einer anderen Subdomain derselben Domain; sonst hält der Browser Besucher im Rahmen nicht angemeldet.',
     },
     schedule: {
-      title: 'Tägliches Zurücksetzen',
       description:
         'Einmal am Tag löschen, was Besucher geändert haben, und die Demo-Daten neu erzeugen.',
       confirmTitle: 'Tägliches Zurücksetzen speichern?',
@@ -166,30 +159,16 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        'Bei aktivierter Demo werden Änderungen standardmäßig abgelehnt. Öffnen Sie nur, was Besucher ausprobieren sollen, und nur für Datensätze der Demo; Geschäftsberechtigungen gelten weiterhin.',
+        'Bei aktivierter Demo werden Schreibzugriffe standardmäßig abgelehnt. Wählen Sie die Sammlungen aus, die Besucher bearbeiten dürfen; die Anwendungsberechtigungen steuern die Vorgänge und den Zugriff auf Datensätze.',
       allow: 'Erlauben',
       revoke: 'Wieder ablehnen',
-      scope: 'Bereich',
       confirmTitle: 'Ändern, was Besucher schreiben dürfen?',
       confirmDescription:
         'Änderungen der Besucher daran werden tatsächlich gespeichert und bleiben bis zum nächsten Zurücksetzen.',
-      operation: {
-        insert: 'Erstellen',
-        update: 'Bearbeiten',
-        delete: 'Löschen',
-      },
-      capabilities: {
-        title: 'Geschäftsvorgänge',
-        description:
-          'Vorgänge, die die Anwendung als sicher zum Öffnen markiert hat, jeweils auf einen Bereich begrenzt.',
-        empty: 'Keine Vorgänge registriert',
-        emptyHelp:
-          'Die Anwendung hat keinen Vorgang registriert, der in einer Demo geöffnet werden kann.',
-      },
       collections: {
         title: 'Collections',
         description:
-          'Jede berechtigte Anfrage darf in diese Collections schreiben. Nur für Zustand, den niemand missbrauchen kann, etwa Ansichtseinstellungen.',
+          'Von der Anwendung autorisierte Anfragen dürfen diese Sammlungen ändern.',
         label: 'Collections, die Besucher schreiben dürfen',
         placeholder: 'Collections suchen',
         noMatch: 'Keine passende Collection',

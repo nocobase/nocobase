@@ -129,9 +129,7 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: 'Accès des visiteurs',
-      description:
-        'Les visiteurs entrent dans l’un de ces comptes sans mot de passe et peuvent passer de l’un à l’autre depuis le coin de chaque page.',
+      title: 'Comptes de démonstration',
       off: 'La connexion rapide est désactivée pour ce déploiement.',
       pending:
         'Les comptes apparaissent ici une fois les données de démonstration prêtes.',
@@ -143,13 +141,8 @@ const resource: DemoModeResource = {
       openFor: 'Ouvrir la démonstration en tant que {{name}}',
       copied: 'Copié',
       copyFailed: 'Copie impossible. Copiez le lien depuis la barre d’adresse.',
-      embed: 'Intégrer dans une page web',
-      copyEmbed: 'Copier le code d’intégration',
-      embedHelp:
-        'La page doit être sur le même site que cette démonstration, par exemple un autre sous-domaine du même domaine ; sinon le navigateur ne garde pas les visiteurs connectés dans le cadre.',
     },
     schedule: {
-      title: 'Réinitialisation quotidienne',
       description:
         'Une fois par jour, supprime ce que les visiteurs ont modifié et régénère les données de démonstration.',
       confirmTitle: 'Enregistrer la réinitialisation quotidienne ?',
@@ -171,30 +164,16 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        'Lorsque la démonstration est activée, les modifications sont refusées par défaut. N’ouvrez que ce que les visiteurs doivent essayer, et seulement pour les enregistrements de la démonstration ; les autorisations métier s’appliquent toujours.',
+        'Lorsque la démonstration est activée, les écritures sont refusées par défaut. Sélectionnez les collections que les visiteurs doivent modifier ; les autorisations de l’application contrôlent les opérations et l’accès aux enregistrements.',
       allow: 'Autoriser',
       revoke: 'Refuser à nouveau',
-      scope: 'Portée',
       confirmTitle: 'Modifier ce que les visiteurs peuvent écrire ?',
       confirmDescription:
         'Les modifications des visiteurs sur ces éléments sont réellement enregistrées jusqu’à la prochaine réinitialisation.',
-      operation: {
-        insert: 'Créer',
-        update: 'Modifier',
-        delete: 'Supprimer',
-      },
-      capabilities: {
-        title: 'Opérations métier',
-        description:
-          'Opérations que l’application a déclarées sûres à ouvrir, chacune limitée à une portée.',
-        empty: 'Aucune opération enregistrée',
-        emptyHelp:
-          'L’application n’a enregistré aucune opération pouvant être ouverte en démonstration.',
-      },
       collections: {
         title: 'Collections',
         description:
-          'Toute requête autorisée peut écrire dans ces collections. À réserver à un état que personne ne peut détourner, comme les préférences d’affichage.',
+          'Les requêtes autorisées par l’application peuvent écrire dans ces collections.',
         label: 'Collections que les visiteurs peuvent écrire',
         placeholder: 'Rechercher des collections',
         noMatch: 'Aucune collection ne correspond',

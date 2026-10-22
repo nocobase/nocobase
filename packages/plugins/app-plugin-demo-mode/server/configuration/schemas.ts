@@ -1,22 +1,15 @@
 import { z } from 'zod';
 import type {
   DemoConfigurationView,
-  DemoWriteRule,
   DemoDailySchedule,
   DemoChatConfiguration,
 } from '../../shared/configuration.js';
 
-const operation = z.enum(['insert', 'update', 'delete']);
 const tableName = z
   .string()
   .min(1)
   .max(128)
   .regex(/^[a-z][a-z0-9_]*$/iu);
-export const WriteRule: z.ZodType<DemoWriteRule> = z.strictObject({
-  capability: z.string().min(1).max(128),
-  operation,
-  scope: z.string().min(1).max(128),
-});
 export const DailySchedule: z.ZodType<DemoDailySchedule> = z.strictObject({
   enabled: z.boolean(),
   hour: z.number().int().min(0).max(23),
@@ -39,11 +32,10 @@ export const ChatConfiguration: z.ZodType<DemoChatConfiguration> =
     ),
   });
 export const ConfigurationInput: Record<
-  'rules' | 'collections' | 'mocks' | 'schedule' | 'chat',
+  'collections' | 'mocks' | 'schedule' | 'chat',
   z.ZodType<{
     expectedRevision: number;
     value:
-      | DemoWriteRule[]
       | string[]
       | Record<string, boolean>
       | DemoDailySchedule
@@ -58,10 +50,6 @@ export const ConfigurationInput: Record<
     expectedRevision: z.number().int().nonnegative(),
     value: ChatConfiguration,
   }),
-  rules: z.strictObject({
-    expectedRevision: z.number().int().nonnegative(),
-    value: z.array(WriteRule).max(200),
-  }),
   mocks: z.strictObject({
     expectedRevision: z.number().int().nonnegative(),
     value: z.record(z.string().max(128), z.boolean()),
@@ -75,22 +63,12 @@ export const ConfigurationView: z.ZodType<DemoConfigurationView> = z
   .object({
     busy: z.boolean(),
     revision: z.number(),
-    rules: z.array(WriteRule),
     collections: z.array(tableName),
     mocks: z.record(z.string(), z.boolean()),
     schedule: DailySchedule.nullable(),
     chat: ChatConfiguration,
     enabled: z.boolean(),
     fixedCollections: z.array(z.string()),
-    capabilities: z.array(
-      z.object({
-        id: z.string(),
-        title: z.string(),
-        collection: z.string(),
-        operations: z.array(operation),
-        scopes: z.array(z.object({ id: z.string(), title: z.string() })),
-      }),
-    ),
     adapters: z.array(
       z.object({
         id: z.string(),

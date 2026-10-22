@@ -115,9 +115,7 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: '访客入口',
-      description:
-        '访客无需密码即可进入下面任一账号，并能在每个页面角落随时切换。',
+      title: '演示账号',
       off: '这个部署关闭了快速进入。',
       pending: '演示数据就绪后，账号会显示在这里。',
       noData: '请先生成演示数据，账号会显示在这里。',
@@ -127,13 +125,8 @@ const resource: DemoModeResource = {
       openFor: '以 {{name}} 打开演示',
       copied: '已复制',
       copyFailed: '复制失败，请从地址栏复制链接。',
-      embed: '嵌入网页',
-      copyEmbed: '复制嵌入代码',
-      embedHelp:
-        '嵌入的网页需要和演示环境属于同一个站点（例如同一域名下的子域名），否则浏览器不会在框架内保持访客登录。',
     },
     schedule: {
-      title: '每日重置',
       description: '每天删除访客的改动，并重新生成演示数据。',
       confirmTitle: '保存每日重置？',
       confirmDescription:
@@ -153,27 +146,14 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        '开启演示后，默认拒绝写入。只放开访客需要体验的操作，并只限演示自己的记录；业务权限依然生效。',
+        '开启演示后，默认拒绝写入。请选择访客需要写入的数据表；操作权限和记录范围由应用的业务权限控制。',
       allow: '放开',
       revoke: '恢复拒绝',
-      scope: '范围',
       confirmTitle: '修改访客可以写入的内容？',
       confirmDescription: '访客对这些内容的改动会真实保存，直到下次重置。',
-      operation: {
-        insert: '新建',
-        update: '编辑',
-        delete: '删除',
-      },
-      capabilities: {
-        title: '业务操作',
-        description: '应用标记为可以放开的操作，每项都限定范围。',
-        empty: '没有注册业务操作',
-        emptyHelp: '这个应用没有注册可以在演示中放开的操作。',
-      },
       collections: {
         title: '数据表',
-        description:
-          '任何有权限的请求都能写入这些数据表，只用于不会被滥用的状态，例如视图偏好。',
+        description: '允许通过业务权限检查的请求写入这些数据表。',
         label: '访客可以写入的数据表',
         placeholder: '搜索数据表',
         noMatch: '没有匹配的数据表',

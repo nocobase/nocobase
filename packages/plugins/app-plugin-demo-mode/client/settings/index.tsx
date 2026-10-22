@@ -28,7 +28,7 @@ import {
 } from './context.js';
 import { ErrorAlert } from './shared.js';
 import { ChatCard, MocksCard } from './simulation.js';
-import { CapabilitiesCard, CollectionsCard } from './writes.js';
+import { CollectionsCard } from './writes.js';
 
 export type {
   DemoSettingsComponents,
@@ -287,7 +287,6 @@ export function DemoModeSettings(
             <p className='text-sm text-muted-foreground'>{t('writes.intro')}</p>
             {configured((value) => (
               <>
-                <CapabilitiesCard configuration={value} />
                 <CollectionsCard configuration={value} />
               </>
             ))}

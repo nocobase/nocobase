@@ -124,9 +124,7 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: 'Acceso de visitantes',
-      description:
-        'Los visitantes entran en cualquiera de estas cuentas sin contraseña y pueden cambiar entre ellas desde la esquina de cada página.',
+      title: 'Cuentas de demostración',
       off: 'El acceso rápido está desactivado en este despliegue.',
       pending:
         'Las cuentas aparecerán aquí cuando los datos de demostración estén listos.',
@@ -139,13 +137,8 @@ const resource: DemoModeResource = {
       copied: 'Copiado',
       copyFailed:
         'No se pudo copiar. Copia el enlace desde la barra de direcciones.',
-      embed: 'Insertar en una página web',
-      copyEmbed: 'Copiar el código de inserción',
-      embedHelp:
-        'La página debe estar en el mismo sitio que esta demostración, por ejemplo otro subdominio de su dominio; si no, el navegador no mantiene la sesión de los visitantes dentro del marco.',
     },
     schedule: {
-      title: 'Restablecimiento diario',
       description:
         'Una vez al día, elimina lo que cambiaron los visitantes y vuelve a generar los datos de demostración.',
       confirmTitle: '¿Guardar el restablecimiento diario?',
@@ -167,30 +160,16 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        'Cuando la demo está activada, los cambios se rechazan de forma predeterminada. Abre solo lo que los visitantes necesiten probar y solo para los registros de la demostración; los permisos de negocio siguen aplicándose.',
+        'Cuando la demo está activada, las escrituras se rechazan de forma predeterminada. Selecciona las colecciones que los visitantes necesitan modificar; los permisos de la aplicación controlan las operaciones y el acceso a los registros.',
       allow: 'Permitir',
       revoke: 'Volver a rechazar',
-      scope: 'Ámbito',
       confirmTitle: '¿Cambiar lo que pueden escribir los visitantes?',
       confirmDescription:
         'Los cambios de los visitantes en esto se guardan de verdad hasta el próximo restablecimiento.',
-      operation: {
-        insert: 'Crear',
-        update: 'Editar',
-        delete: 'Eliminar',
-      },
-      capabilities: {
-        title: 'Operaciones de negocio',
-        description:
-          'Operaciones que la aplicación marcó como seguras de abrir, cada una limitada a un ámbito.',
-        empty: 'No hay operaciones registradas',
-        emptyHelp:
-          'La aplicación no ha registrado ninguna operación que pueda abrirse en una demostración.',
-      },
       collections: {
         title: 'Colecciones',
         description:
-          'Cualquier solicitud autorizada puede escribir en estas colecciones. Úsalo para estado que nadie pueda usar mal, como las preferencias de vista.',
+          'Las solicitudes autorizadas por la aplicación pueden escribir en estas colecciones.',
         label: 'Colecciones que pueden escribir los visitantes',
         placeholder: 'Buscar colecciones',
         noMatch: 'Ninguna colección coincide',

@@ -123,9 +123,7 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: 'Entrada de visitantes',
-      description:
-        'Os visitantes entram em qualquer uma destas contas sem senha e podem alternar entre elas no canto de cada página.',
+      title: 'Contas de demonstração',
       off: 'O acesso rápido está desligado nesta implantação.',
       pending:
         'As contas aparecem aqui quando os dados de demonstração estiverem prontos.',
@@ -138,13 +136,8 @@ const resource: DemoModeResource = {
       copied: 'Copiado',
       copyFailed:
         'Não foi possível copiar. Copie o link da barra de endereços.',
-      embed: 'Incorporar em uma página',
-      copyEmbed: 'Copiar o código de incorporação',
-      embedHelp:
-        'A página precisa estar no mesmo site desta demonstração, como outro subdomínio do mesmo domínio; caso contrário, o navegador não mantém os visitantes conectados dentro do quadro.',
     },
     schedule: {
-      title: 'Redefinição diária',
       description:
         'Uma vez por dia, exclui o que os visitantes alteraram e gera os dados de demonstração novamente.',
       confirmTitle: 'Salvar a redefinição diária?',
@@ -166,30 +159,16 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        'Quando a demonstração está ativada, as alterações são recusadas por padrão. Abra apenas o que os visitantes precisam experimentar e apenas para os registros da demonstração; as permissões de negócio continuam valendo.',
+        'Quando a demonstração está ativada, as gravações são recusadas por padrão. Selecione as coleções que os visitantes precisam modificar; as permissões do aplicativo controlam as operações e o acesso aos registros.',
       allow: 'Permitir',
       revoke: 'Recusar novamente',
-      scope: 'Escopo',
       confirmTitle: 'Alterar o que os visitantes podem gravar?',
       confirmDescription:
         'As alterações dos visitantes nisto são salvas de verdade até a próxima redefinição.',
-      operation: {
-        insert: 'Criar',
-        update: 'Editar',
-        delete: 'Excluir',
-      },
-      capabilities: {
-        title: 'Operações de negócio',
-        description:
-          'Operações que o aplicativo marcou como seguras para abrir, cada uma limitada a um escopo.',
-        empty: 'Nenhuma operação registrada',
-        emptyHelp:
-          'O aplicativo não registrou nenhuma operação que possa ser aberta em uma demonstração.',
-      },
       collections: {
         title: 'Koleksias',
         description:
-          'Qualquer solicitação autorizada pode gravar nestas koleksias. Use para estado que ninguém possa usar indevidamente, como preferências de visualização.',
+          'As solicitações autorizadas pelo aplicativo podem gravar nestas coleções.',
         label: 'Koleksias que os visitantes podem gravar',
         placeholder: 'Pesquisar koleksias',
         noMatch: 'Nenhuma koleksia corresponde',

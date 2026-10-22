@@ -355,13 +355,10 @@ export function DataCard({
 function CopyButton({
   value,
   label,
-  text,
 }: {
   readonly value: string;
   /** The button's accessible name. */
   readonly label: string;
-  /** What the button reads; "Copy link" when absent. */
-  readonly text?: string;
 }): ReactElement {
   const t = useT();
   const toaster = useToaster();
@@ -385,15 +382,12 @@ function CopyButton({
       }}
     >
       {copied ? <Check /> : <Copy />}
-      {copied ? t('visitors.copied') : (text ?? t('visitors.copyLink'))}
+      {copied ? t('visitors.copied') : t('visitors.copyLink')}
     </Button>
   );
 }
 
-/**
- * How visitors get in: the accounts quick sign-in offers, each with the link that enters it, and the snippet that
- * embeds the demo in another page.
- */
+/** Demo accounts and their sign-in links. */
 export function VisitorsCard({
   status,
 }: {
@@ -408,12 +402,10 @@ export function VisitorsCard({
   const listed = new Map(
     (status?.accounts ?? []).map((account) => [account.username, account]),
   );
-  const first = accounts?.[0];
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t('visitors.title')}</CardTitle>
-        <CardDescription>{t('visitors.description')}</CardDescription>
       </CardHeader>
       <CardContent className='flex flex-col gap-4'>
         {accounts === null ? (
@@ -429,68 +421,51 @@ export function VisitorsCard({
             )}
           </p>
         ) : (
-          <>
-            <ul className='divide-y rounded-lg border'>
-              {accounts.map((account) => (
-                <li
-                  key={account.username}
-                  className='flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between'
-                >
-                  <div className='min-w-0'>
-                    <p className='truncate text-sm font-medium'>
-                      {account.name}
-                      <span className='ml-2 text-muted-foreground font-normal'>
-                        {account.role}
-                      </span>
-                    </p>
-                    <p className='truncate text-xs text-muted-foreground'>
-                      {t('visitors.credentials', {
-                        username: account.username,
-                        password: listed.get(account.username)?.password ?? '—',
-                      })}
-                    </p>
-                  </div>
-                  <div className='flex shrink-0 gap-2'>
-                    <CopyButton
-                      value={entry(account.username)}
-                      label={t('visitors.copyLinkFor', { name: account.name })}
-                    />
-                    <Button
-                      size='sm'
-                      variant='ghost'
-                      render={
-                        <a
-                          href={entry(account.username)}
-                          target='_blank'
-                          rel='noopener'
-                          aria-label={t('visitors.openFor', {
-                            name: account.name,
-                          })}
-                        />
-                      }
-                    >
-                      <ExternalLink />
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            {first ? (
-              <div className='flex flex-col gap-2'>
-                <div className='flex items-center justify-between gap-2'>
-                  <p className='text-sm font-medium'>{t('visitors.embed')}</p>
-                  <CopyButton
-                    value={`<iframe src="${entry(first.username)}" title="Demo" style="width:100%;height:780px;border:0"></iframe>`}
-                    label={t('visitors.copyEmbed')}
-                    text={t('visitors.copyEmbed')}
-                  />
+          <ul className='divide-y rounded-lg border'>
+            {accounts.map((account) => (
+              <li
+                key={account.username}
+                className='flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between'
+              >
+                <div className='min-w-0'>
+                  <p className='truncate text-sm font-medium'>
+                    {account.name}
+                    <span className='ml-2 text-muted-foreground font-normal'>
+                      {account.role}
+                    </span>
+                  </p>
+                  <p className='truncate text-xs text-muted-foreground'>
+                    {t('visitors.credentials', {
+                      username: account.username,
+                      password: listed.get(account.username)?.password ?? '—',
+                    })}
+                  </p>
                 </div>
-                <p className='text-sm text-muted-foreground'>
-                  {t('visitors.embedHelp')}
-                </p>
-              </div>
-            ) : null}
-          </>
+                <div className='flex shrink-0 gap-2'>
+                  <CopyButton
+                    value={entry(account.username)}
+                    label={t('visitors.copyLinkFor', { name: account.name })}
+                  />
+                  <Button
+                    size='sm'
+                    variant='ghost'
+                    render={
+                      <a
+                        href={entry(account.username)}
+                        target='_blank'
+                        rel='noopener'
+                        aria-label={t('visitors.openFor', {
+                          name: account.name,
+                        })}
+                      />
+                    }
+                  >
+                    <ExternalLink />
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </CardContent>
     </Card>

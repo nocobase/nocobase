@@ -6,7 +6,7 @@ import type { DemoSignInAccount } from '../shared/accounts.js';
 
 export type { DemoSignInAccount } from '../shared/accounts.js';
 
-/** The route a visitor, or an embedding page's iframe, opens to enter a demo account: `?as=<username>&redirect=/path`. */
+/** The route a visitor opens to enter a demo account: `?as=<username>&redirect=/path`. */
 export const DEMO_SIGN_IN_PATH = '/demo-sign-in';
 
 export interface DemoAccounts {

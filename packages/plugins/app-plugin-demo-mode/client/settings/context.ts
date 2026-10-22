@@ -13,8 +13,7 @@ import type { DemoSettingsComponents } from './components.js';
 import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 
 /** What a registered item is called in the application's language. */
-export type DemoLabelKind =
-  'count' | 'capability' | 'scope' | 'adapter' | 'chatTool';
+export type DemoLabelKind = 'count' | 'adapter' | 'chatTool';
 
 /** An online chat tool the application lets administrators allow, and the policies it supports. */
 export interface DemoChatTool {
@@ -26,8 +25,8 @@ export interface DemoSettingsOptions {
   /** Optional host page chrome and primitives; keep component identities stable across renders. */
   readonly components?: DemoSettingsComponents;
   /**
-   * The application's name for a registered item, such as a dataset count (`count`, `companies`) or a write
-   * capability (`capability`, `crm.leads`); `undefined` falls back to the title it registered with, or its id.
+   * The application's name for a registered item, such as a dataset count (`count`, `companies`) or a mock
+   * adapter (`adapter`, `dataset.model`); `undefined` falls back to the title it registered with, or its id.
    */
   readonly label?: (kind: DemoLabelKind, id: string) => string | undefined;
   /** The online chat tools the application serves; tools a saved policy names are shown too. */
@@ -62,6 +61,8 @@ export function useLabel(): (
 
 /** A language's own name, such as 简体中文 for zh-CN. */
 export function languageName(language: string): string {
+  if (language === 'zh-CN') return '简体中文';
+  if (language === 'en-US') return 'English';
   try {
     return (
       new Intl.DisplayNames([language], { type: 'language' }).of(language) ??
@@ -110,8 +111,7 @@ export interface Configuration {
   readonly onDirty: (id: string, dirty: boolean) => void;
 }
 
-export type ConfigurationPath =
-  'writeRules' | 'collections' | 'mocks' | 'schedule' | 'chat';
+export type ConfigurationPath = 'collections' | 'mocks' | 'schedule' | 'chat';
 
 /** What a settings card needs from a section's draft to show its save bar. */
 export interface DraftControls {

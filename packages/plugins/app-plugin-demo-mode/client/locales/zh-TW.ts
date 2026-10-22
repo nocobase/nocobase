@@ -115,9 +115,7 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: '訪客入口',
-      description:
-        '訪客無需密碼即可進入下方任一帳號，並能在每個頁面角落隨時切換。',
+      title: '示範帳號',
       off: '這個部署關閉了快速進入。',
       pending: '示範資料就緒後，帳號會顯示在這裡。',
       noData: '請先產生示範資料，帳號會顯示在這裡。',
@@ -127,13 +125,8 @@ const resource: DemoModeResource = {
       openFor: '以 {{name}} 開啟示範',
       copied: '已複製',
       copyFailed: '複製失敗，請從網址列複製連結。',
-      embed: '嵌入網頁',
-      copyEmbed: '複製嵌入程式碼',
-      embedHelp:
-        '嵌入的網頁需要和示範環境屬於同一個網站（例如同一網域下的子網域），否則瀏覽器不會在框架內保持訪客登入。',
     },
     schedule: {
-      title: '每日重設',
       description: '每天刪除訪客的變更，並重新產生示範資料。',
       confirmTitle: '儲存每日重設？',
       confirmDescription:
@@ -153,27 +146,14 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        '啟用示範後，預設拒絕寫入。只開放訪客需要體驗的操作，並只限示範自己的記錄；業務權限依然有效。',
+        '啟用示範後，預設拒絕寫入。請選擇訪客需要寫入的資料表；操作權限和記錄範圍由應用的業務權限控制。',
       allow: '開放',
       revoke: '恢復拒絕',
-      scope: '範圍',
       confirmTitle: '變更訪客可以寫入的內容？',
       confirmDescription: '訪客對這些內容的變更會真實儲存，直到下次重設。',
-      operation: {
-        insert: '新增',
-        update: '編輯',
-        delete: '刪除',
-      },
-      capabilities: {
-        title: '業務操作',
-        description: '應用標記為可以開放的操作，每項都限定範圍。',
-        empty: '沒有註冊業務操作',
-        emptyHelp: '這個應用沒有註冊可以在示範中開放的操作。',
-      },
       collections: {
         title: '資料表',
-        description:
-          '任何有權限的請求都能寫入這些資料表，只用於不會被濫用的狀態，例如檢視偏好。',
+        description: '允許通過業務權限檢查的請求寫入這些資料表。',
         label: '訪客可以寫入的資料表',
         placeholder: '搜尋資料表',
         noMatch: '沒有符合的資料表',

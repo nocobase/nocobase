@@ -75,7 +75,7 @@ Wrap each top-level page in the application's existing `PageContainer`, followin
 2. Generate `en-US`. Expect one project, two tasks and two visitor accounts. Open `/demo-sign-in?as=demo_alex&redirect=/demo-projects`: Alex sees “Review the first issue”. Sam sees “Prepare the next issue”. The server filters by assignee even if the caller changes the URL.
 3. Confirm a visitor cannot call `POST /api/demoMode/data/reset`; authenticated access alone is insufficient. Add the application's base path to API URLs.
 4. Reset as the administrator. Expect one project and two tasks again, with no duplicates; an existing visitor session remains valid. Clear, then generate again to exercise account disable/reuse separately.
-5. For a writable demo, add an authorized business mutation through the application's normal API workflow, enable only its collection/capability, create visitor content and verify reset removes it. The minimal example intentionally exposes only reading.
+5. For a writable demo, add an authorized business mutation through the application's normal API workflow, enable only its collection, create visitor content and verify reset removes it. The minimal example intentionally exposes only reading.
 
 Alternatively use `pnpm nocobase demo-mode data import --actor <existing-admin-id> --language en-US --dry-run`, then replace `--dry-run` with `--force` after reviewing the target deployment. Record the real application URL and the runtime checks performed. The package's automated example test exercises real authentication, Users, Authorization, generation, visitor entry, record filtering, denied visitor reset and account reuse; it does not replace browser validation in the consuming application.
 

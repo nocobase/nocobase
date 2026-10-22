@@ -19,17 +19,6 @@ async function setup() {
   });
   const container = app.application.container;
   const config = container.resolve(demoConfigurationRuntimeToken);
-  config.registerWrite({
-    id: 'items',
-    collection: 'demoitems',
-    title: 'Items',
-    operations: ['insert'],
-    scopes: [
-      { id: 'all', title: 'All' },
-      { id: 'own', title: 'Own' },
-    ],
-    checkScope: async (_scope, input) => input === 'owned',
-  });
   container.resolve(demoDataToken).register({
     id: 'test',
     languages: ['en-US'],
@@ -39,40 +28,6 @@ async function setup() {
   });
   return { config, guard: container.resolve(demoWriteGuardToken), container };
 }
-it('persists explicit rules, rejects stale updates and protected/unknown capabilities', async () => {
-  const { config, container, guard } = await setup();
-  expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
-  await expect(
-    config.save('rules', 0, [
-      { capability: 'unknown', operation: 'insert', scope: 'all' },
-    ]),
-  ).rejects.toMatchObject({ reason: 'DEMO_CONFIGURATION_INVALID' });
-  expect(() =>
-    config.registerWrite({
-      id: 'bad',
-      collection: 'user',
-      title: 'bad',
-      operations: ['update'],
-      scopes: [{ id: 'all', title: 'All' }],
-    }),
-  ).toThrow();
-  await config.save('rules', 0, [
-    { capability: 'items', operation: 'insert', scope: 'all' },
-  ]);
-  expect((await app.request('/items', { method: 'POST' })).status).toBe(200);
-  await expect(config.save('mocks', 0, {})).rejects.toMatchObject({
-    reason: 'DEMO_CONFIGURATION_CONFLICT',
-  });
-  const other = new DefaultDemoConfigurationService(
-    container.resolve(databaseManagerToken),
-    resolveDemoModeSettings(app.application.config),
-    guard,
-    async () => ({ importing: null, languages: ['en-US'] }),
-  );
-  expect((await other.read()).revision).toBe(1);
-  await other.save('rules', 1, []);
-  expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
-});
 it('configures exception collections without application registration and revokes them across instances', async () => {
   const { config, container, guard } = await setup();
   const other = new DefaultDemoConfigurationService(
@@ -124,84 +79,6 @@ it('configures exception collections without application registration and revoke
   await other.save('collections', 1, []);
   expect((await app.request('/notes', { method: 'POST' })).status).toBe(400);
   expect((await other.read()).collections).toEqual([]);
-});
-it('allows only the registered scoped operation and isolates parallel requests', async () => {
-  const { config, guard } = await setup();
-  await config.save('rules', 0, [
-    { capability: 'items', operation: 'insert', scope: 'own' },
-  ]);
-  const insert = () =>
-    app.connection.query
-      .insertInto('demoitems')
-      .values({ name: 'owned' })
-      .execute();
-  await guard.run({ method: 'POST', path: '', blocked: [] }, () =>
-    config.runWrite('items', 'insert', 'owned', insert),
-  );
-  await expect(
-    guard.run({ method: 'POST', path: '', blocked: [] }, () =>
-      config.runWrite('items', 'insert', 'other', insert),
-    ),
-  ).rejects.toMatchObject({ reason: 'DEMO_SCOPE_DENIED' });
-  expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
-});
-it('combines several capabilities in one operation and refuses it when one is out of scope', async () => {
-  const { config, guard } = await setup();
-  config.registerWrite({
-    id: 'notes',
-    collection: 'demonotes',
-    title: 'Notes',
-    operations: ['insert'],
-    scopes: [{ id: 'own', title: 'Own' }],
-    checkScope: async (_scope, input) => input === 'owned',
-  });
-  await config.save('rules', 0, [
-    { capability: 'items', operation: 'insert', scope: 'own' },
-    { capability: 'notes', operation: 'insert', scope: 'own' },
-  ]);
-  const both = (name: string) => async () => {
-    await app.connection.query
-      .insertInto('demoitems')
-      .values({ name })
-      .execute();
-    await app.connection.query
-      .insertInto('demonotes')
-      .values({ name })
-      .execute();
-  };
-  const request = { method: 'POST', path: '', blocked: [] };
-  await guard.run(request, () =>
-    config.runWrites(
-      [
-        ['items', 'insert'],
-        ['notes', 'insert'],
-      ],
-      'owned',
-      both('pair'),
-    ),
-  );
-  await expect(
-    guard.run(request, () =>
-      config.runWrites(
-        [
-          ['items', 'insert'],
-          ['notes', 'insert'],
-        ],
-        'other',
-        both('refused'),
-      ),
-    ),
-  ).rejects.toMatchObject({ reason: 'DEMO_SCOPE_DENIED' });
-  // An entry without a configured rule allows nothing, so its write is still refused.
-  await expect(
-    guard.run(request, () =>
-      config.runWrites(
-        [['notes', 'delete' as 'insert']],
-        'owned',
-        both('none'),
-      ),
-    ),
-  ).rejects.toMatchObject({ reason: 'DEMO_READ_ONLY' });
 });
 it('never falls through disabled or missing mock adapters', async () => {
   const { config } = await setup();
@@ -633,7 +510,6 @@ it('converts persisted preview table selections to logical collection names once
     .set({
       revision: 4,
       value: JSON.stringify({
-        rules: [],
         tables: ['order_items'],
         mocks: {},
         schedule: null,

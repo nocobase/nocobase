@@ -90,20 +90,19 @@ export const configurationRoutes: AppApiRouteContribution<AppPluginApplication> 
       }),
       async (c) => c.json({ data: await service.availableCollections() }),
     );
-    for (const [path, section] of [
-      ['writeRules', 'rules'],
-      ['collections', 'collections'],
-      ['mocks', 'mocks'],
-      ['schedule', 'schedule'],
-      ['chat', 'chat'],
+    for (const section of [
+      'collections',
+      'mocks',
+      'schedule',
+      'chat',
     ] as const) {
       routes.put(
-        `/${path}`,
+        `/${section}`,
         allowed('configure'),
         describeRoute({
           tags: ['DemoMode'],
-          summary: `Configure demo ${path}`,
-          operationId: `demoModeConfigure${path}`,
+          summary: `Configure demo ${section}`,
+          operationId: `demoModeConfigure${section}`,
           responses: {
             ...responses,
             400: apiErrorResponse(400),
