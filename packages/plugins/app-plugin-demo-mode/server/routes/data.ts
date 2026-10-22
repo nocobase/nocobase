@@ -99,7 +99,7 @@ export const dataRoutes: AppApiRouteContribution<AppPluginApplication> =
     const service = container.resolve(demoDataToken);
     data.onError(apiErrorHandler);
     data.use('*', authentication.required(), authorization.middleware());
-    const require =
+    const requireAccess =
       (action: 'read' | 'manage') =>
       async (context: Context<AuthorizationEnv>, next: () => Promise<void>) => {
         container.resolve(demoConfigurationToken).requireEnabled();
@@ -125,7 +125,7 @@ export const dataRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     data.get(
       '/',
-      require('read'),
+      requireAccess('read'),
       describeRoute({
         tags,
         summary: 'Get the demo data status',
@@ -142,7 +142,7 @@ export const dataRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     data.post(
       '/import',
-      require('manage'),
+      requireAccess('manage'),
       describeRoute({
         tags,
         summary: 'Generate demo data',
@@ -176,7 +176,7 @@ export const dataRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     data.post(
       '/clear',
-      require('manage'),
+      requireAccess('manage'),
       describeRoute({
         tags,
         summary: 'Clear the demo data',
@@ -203,7 +203,7 @@ export const dataRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     data.post(
       '/reset',
-      require('manage'),
+      requireAccess('manage'),
       describeRoute({
         tags,
         summary: 'Reset the demo data',
