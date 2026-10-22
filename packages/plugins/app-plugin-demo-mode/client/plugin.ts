@@ -14,6 +14,8 @@ export interface DemoModeClientOptions {
    * showing only to visitors who have not signed in.
    */
   readonly accountSwitcher?: 'floating' | 'menu';
+  /** Whether to render the floating entry at all. Account-menu and direct sign-in routes remain available. */
+  readonly showFloatingAccountSwitcher?: boolean;
 }
 
 const demoMode: AppClientPluginFactory<DemoModeClientOptions> =

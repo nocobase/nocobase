@@ -35,8 +35,10 @@ function isRefusedEntry(entry: PerformanceEntry): boolean {
 export function DemoModeNotice({
   children,
   accountSwitcher = 'floating',
+  showFloatingAccountSwitcher = true,
 }: PropsWithChildren<{
   readonly accountSwitcher?: 'floating' | 'menu';
+  readonly showFloatingAccountSwitcher?: boolean;
 }>): ReactElement {
   const api = useApiClient();
   const toaster = useToaster();
@@ -77,7 +79,7 @@ export function DemoModeNotice({
   return (
     <>
       {children}
-      {mode === 'off' ? null : (
+      {mode === 'off' || !showFloatingAccountSwitcher ? null : (
         <DemoAccountSwitcher signedOutOnly={accountSwitcher === 'menu'} />
       )}
     </>

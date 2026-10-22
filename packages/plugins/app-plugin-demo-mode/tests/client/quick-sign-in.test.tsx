@@ -177,3 +177,21 @@ describe('demo accounts in the account menu', () => {
     expect(await screen.findByText('当前：Ann · 切换')).toBeInTheDocument();
   });
 });
+
+it('can hide the floating entry without removing the page content', async () => {
+  const paths: string[] = [];
+  await renderWithApp(<p>Login form</p>, {
+    plugins: [
+      demoMode({ accountSwitcher: 'menu', showFloatingAccountSwitcher: false }),
+    ],
+    fetch: answerApi((call) => {
+      paths.push(call.path);
+      return demoApiAnswer(call);
+    }),
+    locale: 'zh-CN',
+  });
+  await waitFor(() => expect(paths).toContain('demoMode/status'));
+  expect(screen.getByText('Login form')).toBeVisible();
+  expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  expect(paths).not.toContain('demoMode/accounts');
+});

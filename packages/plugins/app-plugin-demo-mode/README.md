@@ -157,6 +157,8 @@ import { DemoAccountMenu } from '@nocobase/app-plugin-demo-mode/client/account-m
 <DemoAccountMenu />;
 ```
 
+Set `showFloatingAccountSwitcher: false` in the client registration to hide the floating entry for both guests and signed-in visitors. This does not disable `DemoAccountMenu` or the direct `/demo-sign-in` route. The default remains `true`.
+
 `DemoAccountMenu` is a submenu of the demo accounts with the current one checked, followed by a separator; it renders nothing outside a demo.
 
 - `GET /api/demoMode/accounts`, public, lists the accounts `accounts(language)` lists for the imported language, limited to users the dataset created and has not disabled, as `{ username, name, role, current }` without passwords.

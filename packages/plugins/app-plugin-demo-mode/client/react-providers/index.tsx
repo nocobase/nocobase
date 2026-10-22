@@ -15,7 +15,10 @@ export function demoModeReactProviders(
     {
       name: 'demo-mode',
       component: ({ children }: PropsWithChildren): ReactElement => (
-        <DemoModeNotice accountSwitcher={accountSwitcher}>
+        <DemoModeNotice
+          accountSwitcher={accountSwitcher}
+          showFloatingAccountSwitcher={options.showFloatingAccountSwitcher}
+        >
           {children}
         </DemoModeNotice>
       ),
