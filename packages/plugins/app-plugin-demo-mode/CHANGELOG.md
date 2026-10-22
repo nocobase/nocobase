@@ -1,46 +1,9 @@
 # @nocobase/app-plugin-demo-mode
 
-## 0.0.1
-
-### Patch Changes
-
-- Add the Demo Mode plugin: a read-only demo by registration alone.
-
-- Add application-owned demo datasets with import, progress, clear, reset, scheduled resets, relative dates, bilingual account summaries, and an OpenAI-compatible simulated model.
-- Track account ownership and reject existing-account collisions. Preserve later administrator model choices, recover interrupted imports, and coordinate competing lifecycle operations.
-- Add `demo-mode data` CLI commands, refresh model bindings across processes, and keep client status polling ordered.
-- Permit authorized demo lifecycle actions in read-only mode with an async-local exemption; retain normal request write guards.
-- Add an optional demo-only `clearAll` hook for explicit full-application cleanup, including before the first import, while keeping failure rollback and interrupted-import recovery scoped.
-
-## Unreleased configuration
-
-- Add persisted revisioned configuration, scoped write capabilities, adapter switches and daily reset scheduling with DST handling.
-- Expose deterministic daily fixture seeds and integration guidance; enforce enabled demo mode for lifecycle operations.
-- Let demo account specs carry the users plugin's `roleScopes`, for applications with a role scope required on create, and apply them again when an import reuses an account.
-- Add the dataset option `keepAccounts`, which disables demo accounts on clear instead of deleting them, since a deleted account's username stays reserved.
-
 ## Unreleased
 
-- Use logical collection names for deployment and UI write exceptions and capability registrations. Resolve physical names through database metadata, restrict exemptions to the default connection, display collection titles, and convert persisted preview selections.
-
-- Add the public demo configuration factory and application-scoped environment mappings. Rename the writable-collection variable to `NOCOBASE_DEMO_WRITABLE_COLLECTIONS`; remove quick-sign-in and model environment overrides. Derive the local simulated endpoint automatically and retain UI-owned model policies. Applications must register the configuration factory on upgrade.
-
-- Streamline the generic demo integration Skill, add a typed dataset example, and consolidate redundant account lifecycle assertions.
-
-- Add `DemoDataset.generate(context)` for application-owned generators shared with core sample data. Reset calls the generator directly after cleanup and leaves all seed history unchanged; existing step-based datasets remain supported.
-
-- Add `DemoAccountMenu` (`client/account-menu`), the demo account switch as a submenu of an application's account menu, and the client option `accountSwitcher: 'menu'`, which then keeps the corner button for visitors who have not signed in.
-
-- Ship the demo administration page, `DemoModeSettings` (`client/settings`): overview with data lifecycle and visitor entry links, daily reset, visitor writes (capabilities and tables) and simulation & online chat, each saved on its own with conflict detection. Applications pass their names (`label`) and chat tools (`chatTools`) instead of building their own page. The account switcher moves to the bottom right, clear of application sidebars.
-
-- Add quick sign-in for demo visitors: a public list of the imported demo accounts, password-free sign-in through Better Auth's own email sign-in, a `/demo-sign-in` page for embedding (`?as=`, `?redirect=`) and a corner account switcher. On by default in demo mode; `demoMode.quickSignIn` turns it off.
-
-- Renew long-running cleanup leases, fence lifecycle status changes by operation ID, and preserve existing datasets through an additive lease migration.
-- Settle fixture and policy initialization failures immediately so imports can be retried; disable and revoke sessions for tracked demo accounts that initiate cleanup.
-
-- Keep request and chat policy checks separate from management schedule previews; Scheduler remains the independent reset trigger. Describe dataset execution as generation and update localized management labels while retaining existing API/CLI names.
-
-- Distinguish optional sample data from dedicated demo systems in application and plugin guidance. Clarify compensating full-business cleanup, model persistence and explicit host model adapters in the public contracts.
-
-- Simplify the plugin for isolated demo deployments: one business cleanup contract, reusable disabled accounts, an environment-owned model, environment-wide Agent routing and one persisted reset schedule.
-- Remove mixed-data rollback, prior-model restoration, legacy Agents compatibility and deployment-cron overrides. See the published Skill's adapter migration checklist before upgrading a vendored snapshot.
+- Introduce isolated demo deployments with request-scoped write protection, logical-collection exceptions and application-owned repeatable data generation and cleanup.
+- Provide reusable visitor accounts, quick sign-in, permission-gated lifecycle APIs and CLI, reset progress, persisted operation leases and one daily Scheduler integration.
+- Offer optional official Agents integration, a persistent simulated model, application-owned simulations and explicit online conversation policies.
+- Publish structural service contracts, composable management components and a progressive integration Skill with prerequisites and an executable non-AI example.
+- Preserve additive migrations required by existing preview deployments; release notes describe the final feature rather than intermediate preview APIs.

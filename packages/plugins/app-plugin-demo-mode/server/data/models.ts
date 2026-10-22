@@ -7,7 +7,7 @@ import type {
   DemoModelRequest,
   DemoModelTool,
   DemoToolCall,
-} from './types.js';
+} from '../../shared/data.js';
 
 /** The model the simulated service offers. */
 export const DEMO_CHAT_MODEL = 'demo-chat';

@@ -1,13 +1,14 @@
+import { demoConfigurationRuntimeToken } from '../../server/configuration/runtime-token.js';
 import { createTestApp, type TestApp } from '@nocobase/app-testing/server';
 import { afterEach, expect, it, vi } from 'vitest';
-import { demoConfigurationToken, demoDataToken } from '../../server/tokens.js';
-import { DemoConfigurationService } from '../../server/configuration/service.js';
+import { demoDataToken } from '../../server/tokens.js';
+import { DefaultDemoConfigurationService } from '../../server/configuration/service.js';
 import { demoWriteGuardToken } from '../../server/guard.js';
 import { databaseManagerToken } from '@nocobase/db';
 import { resolveDemoModeSettings } from '../../server/config.js';
 import { createDemoClock } from '../../server/data/clock.js';
-import { nextDailyRun } from '../../server/configuration/schedule.js';
-import * as scheduleHelpers from '../../server/configuration/schedule.js';
+import { nextDailyRun } from '../../shared/schedule.js';
+import * as scheduleHelpers from '../../shared/schedule.js';
 import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
 let app: TestApp;
 afterEach(async () => app?.close());
@@ -17,7 +18,7 @@ async function setup() {
     config: { demoMode: { mode: 'read-only' } },
   });
   const container = app.application.container;
-  const config = container.resolve(demoConfigurationToken);
+  const config = container.resolve(demoConfigurationRuntimeToken);
   config.registerWrite({
     id: 'items',
     collection: 'demoitems',
@@ -62,7 +63,7 @@ it('persists explicit rules, rejects stale updates and protected/unknown capabil
   await expect(config.save('mocks', 0, {})).rejects.toMatchObject({
     reason: 'DEMO_CONFIGURATION_CONFLICT',
   });
-  const other = new DemoConfigurationService(
+  const other = new DefaultDemoConfigurationService(
     container.resolve(databaseManagerToken),
     resolveDemoModeSettings(app.application.config),
     guard,
@@ -74,7 +75,7 @@ it('persists explicit rules, rejects stale updates and protected/unknown capabil
 });
 it('configures exception collections without application registration and revokes them across instances', async () => {
   const { config, container, guard } = await setup();
-  const other = new DemoConfigurationService(
+  const other = new DefaultDemoConfigurationService(
     container.resolve(databaseManagerToken),
     resolveDemoModeSettings(app.application.config),
     guard,
@@ -254,7 +255,7 @@ it('shares durable daily claims across service instances and honors disabling', 
     timezone: 'Asia/Shanghai',
     language: 'en-US',
   };
-  const other = new DemoConfigurationService(
+  const other = new DefaultDemoConfigurationService(
     container.resolve(databaseManagerToken),
     resolveDemoModeSettings(app.application.config),
     guard,
@@ -327,7 +328,7 @@ it('proxies every Agent call in the demo environment and rechecks disabled proxi
 
 it('uses the real Agent only in an off deployment and refuses direct queued demo execution there', async () => {
   const { container, guard } = await setup();
-  const config = new DemoConfigurationService(
+  const config = new DefaultDemoConfigurationService(
     container.resolve(databaseManagerToken),
     resolveDemoModeSettings({ get: () => ({ mode: 'off' }) } as never),
     guard,
@@ -470,7 +471,7 @@ it('lists physical table choices without protected or deployment-managed collect
       allowCollections: [' demonotes', 'demonotes '],
     }),
   } as never);
-  const deployed = new DemoConfigurationService(
+  const deployed = new DefaultDemoConfigurationService(
     container.resolve(databaseManagerToken),
     settings,
     guard,
@@ -554,7 +555,7 @@ it('resolves migration collection names with prefixes and isolates same-name tab
   });
   const container = app.application.container;
   const database = container.resolve(databaseManagerToken);
-  const config = container.resolve(demoConfigurationToken);
+  const config = container.resolve(demoConfigurationRuntimeToken);
   const guard = container.resolve(demoWriteGuardToken);
   for (const name of ['main', 'secondary']) {
     await database

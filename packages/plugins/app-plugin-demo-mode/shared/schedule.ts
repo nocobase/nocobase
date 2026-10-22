@@ -1,4 +1,4 @@
-import type { DemoDailySchedule } from './types.js';
+import type { DemoDailySchedule } from './configuration.js';
 
 const formatters = new Map<string, Intl.DateTimeFormat>();
 

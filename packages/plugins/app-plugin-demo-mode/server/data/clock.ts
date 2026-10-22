@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { DemoClock } from './types.js';
+import type { DemoClock } from '../../shared/data.js';
 
 /** The offset of `timeZone` from UTC at `date`, in minutes, without a calendar library. */
 function offsetMinutes(timeZone: string, date: Date): number {

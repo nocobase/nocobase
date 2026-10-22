@@ -51,7 +51,7 @@ const hostComponents: DemoSettingsComponents = {
   TabsList: (props) => <TabsList {...props} variant='line' />,
   TabsTrigger,
 };
-import type { DemoConfigurationView } from '../../server/configuration/types.js';
+import type { DemoConfigurationView } from '../../shared/configuration.js';
 
 const view = (patch: Partial<DemoConfigurationView> = {}) => ({
   revision: 4,

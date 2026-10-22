@@ -146,7 +146,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json && nocobase-db-manifests",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p skills/nocobase-app-plugin-demo-mode/assets/minimal-demo/tsconfig.json",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
@@ -194,6 +194,12 @@
     "prettier": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@nocobase/app-plugin-agents": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@nocobase/app-plugin-agents": {
+      "optional": true
+    }
   }
 }

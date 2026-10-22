@@ -13,6 +13,24 @@ Use `@nocobase/app-plugin-demo-mode` to build a dedicated demo deployment with f
 - For a dedicated demo system, use this Skill. Its database and storage are separate from production; clear/reset may remove all business data, including visitor additions.
 - Reuse decisions already in the user's request or application documentation. Ask only when the unresolved choice changes the deployment or cleanup scope. Do not turn a request for example records into an environment-wide cleanup feature.
 
+## Choose only the prerequisites you need
+
+Installation supplies code; registration supplies runtime services. Retain the host's existing framework configuration and use its application Skill for registration.
+
+| Requested capability                                     | Host prerequisites                                                                                              |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Dataset generation through CLI, with no accounts         | Database, Demo Mode Server/configuration and CLI registrations                                                  |
+| Reusable visitor accounts                                | Official Users and Authentication; Authorization for Permission Sets and role scopes                            |
+| Quick sign-in                                            | Authentication with password sign-in, a generated dataset, and Demo Mode Client registration for the entry UI   |
+| Management APIs/page                                     | Authentication + Authorization; Demo Mode Client for locales/UI and an application-owned protected route        |
+| Daily reset                                              | Register the official Scheduler; import once before enabling the schedule                                       |
+| Simulated environment model / online Agent conversations | Install and register official Agents 1.0 (`agents.models.services`); see [simulation](references/simulation.md) |
+| Application-owned mock callbacks                         | No Agents installation required; register only the adapters the demo uses                                       |
+
+Agents is an optional peer loaded at the integration boundary. A non-AI application does not need to install it. Installing Agents alone does not register it; a registered unsupported or broken Agents integration fails visibly rather than silently using a real model. Other host peers remain part of this package's installation contract even when a particular runtime service is unused.
+
+For the first working non-AI demo, follow the [executable minimal example](references/minimal-example.md). For an existing business application, use the data adaptation reference below instead of copying the example schema.
+
 ## Shortest useful workflow
 
 1. **Inspect the installed application.** Read its development, database and authorization Skills. Confirm the installed plugin's public exports and the Server, Client and CLI composition roots. Inspect the main pages, business services, relationships and roles; choose a small fictional story that makes those pages useful.
@@ -55,6 +73,7 @@ Only `@nocobase/db` writes within requests are guarded. Background jobs, schedul
 
 | Task                                                         | Reference                                                     |
 | ------------------------------------------------------------ | ------------------------------------------------------------- |
+| Run a complete small non-AI example                          | [Minimal application example](references/minimal-example.md)  |
 | Design fictional records, shared generation and cleanup      | [Data adaptation](references/adapting-data.md)                |
 | Implement a typed adapter with shared account definitions    | [Dataset example](references/dataset-example.md)              |
 | Integrate external boundaries and background services        | [Integration checklist](references/integration-checklist.md)  |

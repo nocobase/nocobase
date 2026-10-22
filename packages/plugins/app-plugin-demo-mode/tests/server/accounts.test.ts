@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 
 import { DemoModels } from '../../server/data/models.js';
 import { DefaultDemoDataService } from '../../server/data/service.js';
-import type { DemoDataset } from '../../server/data/types.js';
+import type { DemoDataset } from '../../shared/data.js';
 import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
 
 let app: TestApp;

@@ -4,7 +4,7 @@ import type {
   DemoWriteRule,
   DemoDailySchedule,
   DemoChatConfiguration,
-} from './types.js';
+} from '../../shared/configuration.js';
 
 const operation = z.enum(['insert', 'update', 'delete']);
 const tableName = z

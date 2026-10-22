@@ -1,3 +1,4 @@
+import { demoConfigurationRuntimeToken } from '../configuration/runtime-token.js';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
@@ -15,7 +16,7 @@ import {
   type DemoModeLogger,
 } from '../middleware.js';
 import { DefaultDemoModeService } from '../services/demo-mode.js';
-import { demoModeServiceToken, demoConfigurationToken } from '../tokens.js';
+import { demoModeServiceToken } from '../tokens.js';
 
 /** A table that never exists: if the guard ever fails to refuse the probe, the database rejects it instead. */
 const PROBE_SQL = 'DELETE FROM __nocobase_demo_mode_probe__ WHERE 1 = 0';
@@ -47,10 +48,12 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
         guard,
         settings,
         runWithPolicy: (run) =>
-          this.app.container.resolve(demoConfigurationToken).runWithPolicy(run),
+          this.app.container
+            .resolve(demoConfigurationRuntimeToken)
+            .runWithPolicy(run),
         allowed: () =>
           this.app.container
-            .resolve(demoConfigurationToken)
+            .resolve(demoConfigurationRuntimeToken)
             .wholeCollectionRules(),
         attachConnections: () => this.attachConnections(),
         logger: {

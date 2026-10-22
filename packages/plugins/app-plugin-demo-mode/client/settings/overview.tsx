@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { useHref } from 'react-router';
 
-import type { DemoDataStatus } from '../../server/data/types.js';
+import type { DemoDataStatus } from '../../shared/data.js';
 import { useDemoAccounts } from '../accounts.js';
 import { DEMO_SIGN_IN_PATH } from '../accounts.js';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert.js';

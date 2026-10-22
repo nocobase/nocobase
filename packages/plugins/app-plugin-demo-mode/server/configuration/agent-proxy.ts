@@ -1,4 +1,4 @@
-import type { DemoConfigurationService } from './service.js';
+import type { DemoConfigurationService } from './contract.js';
 
 /** The application owns the result contract, including streaming if needed. */
 export interface DemoAgentAdapter<Input, Output> {
@@ -9,7 +9,18 @@ export interface DemoAgentAdapter<Input, Output> {
 }
 
 /** An environment-wide replacement at the Agent boundary. Disabled demo calls never fall back to a real Agent. */
-export class DemoAgentProxy<Input, Output> {
+export interface DemoAgentProxy<Input, Output> {
+  readonly id: string;
+  readonly title: string;
+  prepare(): Promise<boolean>;
+  execute(input: Input): Promise<Output>;
+  run(input: Input, realAgent: () => Promise<Output>): Promise<Output>;
+}
+
+export class DefaultDemoAgentProxy<Input, Output> implements DemoAgentProxy<
+  Input,
+  Output
+> {
   constructor(
     private readonly configuration: DemoConfigurationService,
     private readonly adapter: DemoAgentAdapter<Input, Output>,

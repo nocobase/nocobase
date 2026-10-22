@@ -4,5 +4,5 @@ export type {
   DemoChatConfiguration,
   DemoDailySchedule,
   DemoWriteRule,
-} from '../server/configuration/types.js';
-export { nextDailyRun as nextDemoReset } from '../server/configuration/schedule.js';
+} from '../shared/configuration.js';
+export { nextDailyRun as nextDemoReset } from '../shared/schedule.js';

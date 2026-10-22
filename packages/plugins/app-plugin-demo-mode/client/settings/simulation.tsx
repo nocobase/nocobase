@@ -1,6 +1,6 @@
 import { useContext, type ReactElement } from 'react';
 
-import type { DemoChatConfiguration } from '../../server/configuration/types.js';
+import type { DemoChatConfiguration } from '../../shared/configuration.js';
 import { Alert, AlertTitle } from '../components/ui/alert.js';
 import { Badge } from '../components/ui/badge.js';
 import {

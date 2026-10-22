@@ -4,7 +4,7 @@ import { generateText, jsonSchema, stepCountIs, streamText, tool } from 'ai';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { demoDataToken, type DemoDataService } from '../../server/tokens.js';
-import type { DemoDataset } from '../../server/data/types.js';
+import type { DemoDataset } from '../../shared/data.js';
 import { createDemoClock } from '../../server/data/clock.js';
 import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
 

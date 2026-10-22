@@ -8,7 +8,7 @@ import {
   type Context,
 } from 'react';
 
-import type { DemoConfigurationView } from '../../server/configuration/types.js';
+import type { DemoConfigurationView } from '../../shared/configuration.js';
 import type { DemoSettingsComponents } from './components.js';
 import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 

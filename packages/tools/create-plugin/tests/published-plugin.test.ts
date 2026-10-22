@@ -28,10 +28,10 @@ const shadcn = path.join(uiRoot, 'node_modules/shadcn/dist/index.js');
 const primitiveNames = [
   'button',
   'checkbox',
-  'empty',
   'input',
   'popover',
   'select',
+  'switch',
   'tooltip',
 ];
 
@@ -390,9 +390,7 @@ it('installs a real registry item, builds and packs a generated plugin, and load
       await readFile(path.join(directory, 'components.json'), 'utf8'),
     ).toBe(originalComponents);
     for (const name of ['permission-editor', ...primitiveNames])
-      expect(requested.map((url) => path.basename(url, '.json'))).toContain(
-        name,
-      );
+      expect(requested.some((url) => url.endsWith(`/${name}.json`))).toBe(true);
     const declaredPackages = new Set(
       Object.keys({
         ...manifest.dependencies,
@@ -525,7 +523,7 @@ createRoot(document.getElementById('root')).render(createElement(PermissionEdito
     await expect(
       run(
         process.execPath,
-        ['--input-type=module', '-e', 'await import("#components/ui/empty")'],
+        ['--input-type=module', '-e', 'await import("#components/ui/switch")'],
         host,
       ),
     ).rejects.toThrow('Host imports captured a plugin primitive');
@@ -555,21 +553,23 @@ createRoot(document.getElementById('root')).render(createElement(PermissionEdito
     );
     const declaration = path.join(
       packageDirectory,
-      'dist/client/components/ui/empty.d.ts',
+      'dist/client/components/ui/switch.d.ts',
     );
     const declarationContent = await readFile(declaration, 'utf8');
     await rm(declaration);
     await expect(validatePublished(packageDirectory)).rejects.toThrow(
-      'Published plugin is missing dist/client/components/ui/empty.d.ts',
+      'Published plugin is missing dist/client/components/ui/switch.d.ts',
     );
     await writeFile(declaration, declarationContent);
-    await rm(path.join(packageDirectory, 'dist/client/components/ui/empty.js'));
+    await rm(
+      path.join(packageDirectory, 'dist/client/components/ui/switch.js'),
+    );
     await expect(validatePublished(packageDirectory)).rejects.toThrow(
-      'Published plugin is missing dist/client/components/ui/empty.js',
+      'Published plugin is missing dist/client/components/ui/switch.js',
     );
     await expect(
       run(process.execPath, ['--conditions=development', 'entry.js'], host),
-    ).rejects.toThrow('empty.js');
+    ).rejects.toThrow('switch.js');
     console.info(
       'Generated plugin publish acceptance rejects development source targets, missing declarations and missing JavaScript with explicit diagnostics.',
     );

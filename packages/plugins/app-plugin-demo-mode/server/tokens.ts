@@ -5,19 +5,19 @@ import {
 
 import type { DemoMode } from './config.js';
 import type { DemoDataService } from './data/service.js';
-import type { DemoConfigurationService } from './configuration/service.js';
+import type { DemoConfigurationService } from './configuration/contract.js';
 
 export const demoConfigurationToken: ServiceToken<DemoConfigurationService> =
   createServiceToken<DemoConfigurationService>(
     '@nocobase/app-plugin-demo-mode/configuration',
   );
-export type { DemoConfigurationService } from './configuration/service.js';
-export type * from './configuration/types.js';
+export type { DemoConfigurationService } from './configuration/contract.js';
+export type * from '../shared/configuration.js';
 
 /** Which demo mode this application runs in, for plugins that want to adapt, such as by skipping outbound calls. */
 export interface DemoModeService {
   readonly mode: DemoMode;
-  /** Physical tables, lower-cased, whose writes requests may still make. */
+  /** Logical collections in the default connection whose writes requests may still make. */
   readonly allowCollections: readonly string[];
 }
 
@@ -32,7 +32,7 @@ export const demoDataToken: ServiceToken<DemoDataService> =
   createServiceToken<DemoDataService>('@nocobase/app-plugin-demo-mode/data');
 
 export type { DemoDataService } from './data/service.js';
-export type * from './data/types.js';
+export type * from '../shared/data.js';
 export type { DemoModels } from './data/models.js';
 
 export type {

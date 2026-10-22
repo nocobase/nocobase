@@ -1,11 +1,20 @@
-import { DemoAgentProxy, type DemoAgentAdapter } from './agent-proxy.js';
+import type { DemoConfigurationRuntime } from './contract.js';
+import {
+  DefaultDemoAgentProxy,
+  type DemoAgentAdapter,
+  type DemoAgentProxy,
+} from './agent-proxy.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { DatabaseManager } from '@nocobase/db';
 import { DEFAULT_ALLOW_COLLECTIONS, type DemoModeSettings } from '../config.js';
 import type { DemoWriteGuard, DemoSqlRule } from '../guard.js';
-import { demoDataError } from '../data/service.js';
+import { demoDataError } from '../errors.js';
 import { ConfigurationInput } from './schemas.js';
-import { firstWallMinute, localMinute, nextDailyRun } from './schedule.js';
+import {
+  firstWallMinute,
+  localMinute,
+  nextDailyRun,
+} from '../../shared/schedule.js';
 import type {
   DemoConfiguration,
   DemoConfigurationView,
@@ -13,7 +22,7 @@ import type {
   DemoMockAdapter,
   DemoWriteCapability,
   DemoWriteRule,
-} from './types.js';
+} from '../../shared/configuration.js';
 
 const protectedCollection =
   /^(?:user|account|session|verification|auth|ag(?:_|[a-z])|demoMode|demo_mode_|permission|role|secret|apiKey|api_key)/iu;
@@ -26,7 +35,7 @@ interface Stored {
 }
 
 /** All instances read shared configuration; no process-local policy cache can retain revoked access. */
-export class DemoConfigurationService {
+export class DefaultDemoConfigurationService implements DemoConfigurationRuntime {
   private readonly policy = new AsyncLocalStorage<DemoConfiguration>();
   public async runWithPolicy<T>(run: () => Promise<T>): Promise<T> {
     if (!this.enabled || this.policy.getStore()) return run();
@@ -83,7 +92,7 @@ export class DemoConfigurationService {
   public registerAgent<Input, Output>(
     adapter: DemoAgentAdapter<Input, Output>,
   ): DemoAgentProxy<Input, Output> {
-    return new DemoAgentProxy(this, adapter);
+    return new DefaultDemoAgentProxy(this, adapter);
   }
   /** Async workers must not inherit the originating HTTP request's stale policy snapshot. */
   public withFreshPolicy<T>(run: () => Promise<T>): Promise<T> {

@@ -2,9 +2,9 @@ import { useApiClient } from '@nocobase/app-client';
 import { useCallback, useEffect, useState } from 'react';
 import { useHref } from 'react-router';
 
-import type { DemoSignInAccount } from '../server/accounts.js';
+import type { DemoSignInAccount } from '../shared/accounts.js';
 
-export type { DemoSignInAccount } from '../server/accounts.js';
+export type { DemoSignInAccount } from '../shared/accounts.js';
 
 /** The route a visitor, or an embedding page's iframe, opens to enter a demo account: `?as=<username>&redirect=/path`. */
 export const DEMO_SIGN_IN_PATH = '/demo-sign-in';

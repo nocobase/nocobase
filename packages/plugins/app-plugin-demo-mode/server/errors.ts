@@ -26,3 +26,20 @@ export class DemoReadOnlyError extends ApiError {
     this.writes = writes;
   }
 }
+
+export function demoDataError(
+  reason: string,
+  message: string,
+  status:
+    | 'FAILED_PRECONDITION'
+    | 'NOT_FOUND'
+    | 'ALREADY_EXISTS'
+    | 'INVALID_ARGUMENT' = 'FAILED_PRECONDITION',
+): ApiError {
+  return new ApiError({
+    status,
+    reason,
+    domain: DEMO_MODE_ERROR_DOMAIN,
+    message,
+  });
+}

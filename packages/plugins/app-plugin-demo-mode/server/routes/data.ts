@@ -21,7 +21,7 @@ import { z } from 'zod';
 import { DEMO_MODE_ERROR_DOMAIN } from '../errors.js';
 import { demoWriteGuardToken } from '../guard.js';
 import { demoDataToken, demoConfigurationToken } from '../tokens.js';
-import type { DemoDataStatus } from '../data/types.js';
+import type { DemoDataStatus } from '../../shared/data.js';
 
 /** The settings item whose grants open the demo data: `read` for its status, `manage` to import, clear and reset. */
 export const DEMO_DATA_SETTINGS = 'demoMode.data';

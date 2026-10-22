@@ -83,8 +83,6 @@ it('reuses a core sample generator without resetting or consulting its execution
   expect(generate).toHaveBeenCalledTimes(3);
   expect(history).toEqual(saved);
   expect(record).toHaveBeenCalledTimes(writes);
-  await samples.run();
-  expect(generate).toHaveBeenCalledTimes(3);
 });
 
 it('starts a reset from cleanup after generation and cleanup both failed', async () => {

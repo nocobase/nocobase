@@ -1,4 +1,5 @@
-import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
+import { demoConfigurationRuntimeToken } from '../configuration/runtime-token.js';
+import { resolveDemoAgents, type DemoAgents } from '../integrations/agents.js';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import { schedulerServiceToken } from '@nocobase/app-plugin-scheduler/server/tokens';
 import { userManagementServiceToken } from '@nocobase/app-plugin-users/server/tokens';
@@ -8,7 +9,7 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
 import { ServiceProvider } from '@nocobase/service-provider';
 
-import { DemoConfigurationService } from '../configuration/service.js';
+import { DefaultDemoConfigurationService } from '../configuration/service.js';
 import { demoWriteGuardToken } from '../guard.js';
 import { DEMO_CONFIGURATION_SETTINGS } from '../routes/configuration.js';
 import { resolveDemoModeSettings } from '../config.js';
@@ -33,6 +34,7 @@ export const DEMO_DATA_RESET_TARGET = 'demoMode.resetData';
 export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-demo-mode/data';
   private service: DefaultDemoDataService | undefined;
+  private agents: DemoAgents | undefined;
 
   public override register(): void {
     const container = this.app.container;
@@ -40,27 +42,28 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
       container.has(token) ? container.resolve(token) : undefined;
     this.service = new DefaultDemoDataService({
       withPolicy: (run) =>
-        container.resolve(demoConfigurationToken).runWithPolicy(run),
+        container.resolve(demoConfigurationRuntimeToken).runWithPolicy(run),
       database: container.resolve(databaseManagerToken),
       mode: () => container.resolve(demoModeServiceToken).mode,
       models: new DemoModels(),
       modelBaseUrl: () => this.loopbackModelUrl(),
       users: () => optional(userManagementServiceToken),
       authorization: () => optional(authorizationToken),
-      agents: () => optional(agentsToken),
+      agents: () => this.agents,
       logger: {
         info: (details, message) => this.logger()?.info(details, message),
         warn: (details, message) => this.logger()?.warn(details, message),
       },
     });
     container.instance(demoDataToken, this.service);
-    const configuration = new DemoConfigurationService(
+    const configuration = new DefaultDemoConfigurationService(
       container.resolve(databaseManagerToken),
       resolveDemoModeSettings(this.app.config),
       container.resolve(demoWriteGuardToken),
       () => this.service!.status(),
     );
     container.instance(demoConfigurationToken, configuration);
+    container.instance(demoConfigurationRuntimeToken, configuration);
     const models = this.service.models;
     configuration.registerMock({
       id: 'dataset.model',
@@ -121,13 +124,19 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   public override async ready(): Promise<void> {
-    await this.app.container.resolve(demoConfigurationToken).initialize();
+    if (this.app.container.resolve(demoModeServiceToken).mode !== 'off')
+      this.agents = await resolveDemoAgents(this.app.container);
+    await this.app.container
+      .resolve(demoConfigurationRuntimeToken)
+      .initialize();
     await this.service?.initialize();
   }
 
   private schedule(): void {
     const service = this.service!;
-    const configuration = this.app.container.resolve(demoConfigurationToken);
+    const configuration = this.app.container.resolve(
+      demoConfigurationRuntimeToken,
+    );
     const scheduler = this.app.container.resolve(schedulerServiceToken);
     const handle = scheduler.registerTarget<Record<string, never>>({
       type: DEMO_DATA_RESET_TARGET,

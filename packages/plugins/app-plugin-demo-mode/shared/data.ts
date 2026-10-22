@@ -1,3 +1,5 @@
+import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
+
 /**
  * The contract between this plugin and the demo dataset an application registers. The plugin owns the lifecycle —
  * claiming, progress, clearing and accounts; the environment owns the simulated model — and the application owns what the
@@ -35,7 +37,9 @@ export interface DemoAccountSpec {
 export interface DemoPermissionSetSpec {
   readonly key: string;
   readonly title: string;
-  readonly grants: readonly unknown[];
+  readonly grants: Parameters<
+    AppAuthorization['permissionSets']['create']
+  >[0]['grants'];
 }
 
 /** Calendar helpers relative to the moment the import started, so a demo always reads as recent. */

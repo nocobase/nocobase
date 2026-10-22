@@ -1,6 +1,6 @@
 import { AppCommand, CommandError } from '@nocobase/app-cli';
 import { Args, Flags, type Interfaces } from '@oclif/core';
-import type { DemoDataStatus } from '../server/data/types.js';
+import type { DemoDataStatus } from '../shared/data.js';
 
 type Result =
   | Pick<

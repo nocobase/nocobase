@@ -1,17 +1,11 @@
 import type { Auth } from '@nocobase/app-plugin-authentication';
 import type { DatabaseManager } from '@nocobase/db';
 
-import { demoDataError } from './data/service.js';
-import type { DemoAccountSummary } from './data/types.js';
+import { demoDataError } from './errors.js';
+import type { DemoAccountSummary } from '../shared/data.js';
 
-/** A demo account a visitor may enter without typing its password. */
-export interface DemoSignInAccount {
-  readonly username: string;
-  readonly name: string;
-  readonly role: string;
-  /** Whether the request is signed in as this account. */
-  readonly current: boolean;
-}
+import type { DemoSignInAccount } from '../shared/accounts.js';
+export type { DemoSignInAccount } from '../shared/accounts.js';
 
 export interface DemoAccountSignInDependencies {
   readonly auth: Auth;

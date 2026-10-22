@@ -1,17 +1,25 @@
+import {
+  DemoIdentities,
+  USER,
+  PERMISSION_SET,
+  ASSIGNMENT,
+  carriedKey,
+  type Carried,
+} from './identities.js';
+import { DemoOperationLease } from './lease.js';
 import { randomUUID } from 'node:crypto';
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
-import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
+import type { DemoAgents } from '../integrations/agents.js';
 import type { UserManagementService } from '@nocobase/app-plugin-users/server/tokens';
 import { ApiError } from '@nocobase/app-server/router';
 import type { DatabaseManager } from '@nocobase/db';
 
 import type { DemoMode } from '../config.js';
-import { DEMO_MODE_ERROR_DOMAIN } from '../errors.js';
+import { demoDataError } from '../errors.js';
 import { createDemoClock } from './clock.js';
 import type { DemoModels } from './models.js';
 import { DemoModelRuntime } from './model-runtime.js';
 import type {
-  DemoAccountSpec,
   DemoAccountSummary,
   DemoClearContext,
   DemoDataset,
@@ -19,27 +27,8 @@ import type {
   DemoDataState,
   DemoDataStatus,
   DemoImportContext,
-  DemoPermissionSetSpec,
   DemoTrackedRecord,
-} from './types.js';
-
-/** Bookkeeping the plugin tracks besides an application's rows; each is undone through its owning plugin. */
-const USER = '@user';
-const PERMISSION_SET = '@permissionSet';
-const ASSIGNMENT = '@permissionSetAssignment';
-
-/** What a reset carries from the import it clears into the one it runs, by `carriedKey`. */
-interface Carried {
-  /** The accounts, Permission Sets and assignments the cleared import tracked. */
-  readonly records: ReadonlySet<string>;
-  /** Those the new import created again; the rest are released once it finishes. */
-  readonly touched: Set<string>;
-  /** The password the cleared import gave each account, by username. */
-  readonly passwords: ReadonlyMap<string, string>;
-}
-
-const carriedKey = (collection: string, recordId: string): string =>
-  `${collection}\u0000${recordId}`;
+} from '../../shared/data.js';
 
 /** A reset's progress runs through both of its phases: the clear takes the first 30%, generating the rest. */
 const overall = (
@@ -94,7 +83,7 @@ export interface DemoDataDependencies {
   readonly modelBaseUrl: () => string;
   readonly users?: () => UserManagementService | undefined;
   readonly authorization?: () => AppAuthorization | undefined;
-  readonly agents?: () => Agents | undefined;
+  readonly agents?: () => DemoAgents | undefined;
   readonly logger?: {
     info(details: object, message: string): void;
     warn(details: object, message: string): void;
@@ -137,23 +126,6 @@ const iso = (value: unknown): string | null => {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
-export function demoDataError(
-  reason: string,
-  message: string,
-  status:
-    | 'FAILED_PRECONDITION'
-    | 'NOT_FOUND'
-    | 'ALREADY_EXISTS'
-    | 'INVALID_ARGUMENT' = 'FAILED_PRECONDITION',
-): ApiError {
-  return new ApiError({
-    status,
-    reason,
-    domain: DEMO_MODE_ERROR_DOMAIN,
-    message,
-  });
-}
-
 export class DefaultDemoDataService implements DemoDataService {
   public readonly models: DemoModels;
   private dataset: DemoDataset | undefined;
@@ -161,10 +133,18 @@ export class DefaultDemoDataService implements DemoDataService {
   private running: Promise<unknown> | undefined;
   private percent = 0;
   private readonly runtime: DemoModelRuntime;
+  private readonly identities: DemoIdentities;
+  private readonly lease: DemoOperationLease;
 
   public constructor(private readonly deps: DemoDataDependencies) {
     this.models = deps.models;
     this.runtime = new DemoModelRuntime(deps);
+    this.lease = new DemoOperationLease(deps);
+    this.identities = new DemoIdentities(
+      deps,
+      () => this.requireDataset().id,
+      (id, operationId) => this.lease.assertLease(id, operationId),
+    );
   }
 
   public async whenIdle(): Promise<void> {
@@ -514,7 +494,7 @@ export class DefaultDemoDataService implements DemoDataService {
       );
     }
     this.percent = 0;
-    const job = this.withLease(dataset.id, operationId, () =>
+    const job = this.lease.withLease(dataset.id, operationId, () =>
       this.populate(dataset, chosen, actorId, now, operationId),
     );
     this.running = job
@@ -572,9 +552,9 @@ export class DefaultDemoDataService implements DemoDataService {
       .where('id', '=', dataset.id)
       .where('operationId', '=', clearOperationId)
       .execute();
-    if (handed.updatedCount !== 1) throw this.leaseLost();
+    if (handed.updatedCount !== 1) throw this.lease.leaseLost();
     this.percent = 0;
-    await this.withLease(dataset.id, operationId, () =>
+    await this.lease.withLease(dataset.id, operationId, () =>
       this.populate(dataset, language, actorId, now, operationId, carried),
     );
   }
@@ -602,7 +582,7 @@ export class DefaultDemoDataService implements DemoDataService {
       else await run();
     } catch (error) {
       // A replaced operation must neither clean the new owner's data nor overwrite its status.
-      await this.assertLease(dataset.id, operationId);
+      await this.lease.assertLease(dataset.id, operationId);
       const failure = {
         ...(error instanceof ApiError ? { code: error.reason } : {}),
         message: error instanceof Error ? error.message : String(error),
@@ -620,7 +600,7 @@ export class DefaultDemoDataService implements DemoDataService {
               'Could not take back all of a failed demo data import',
             ),
         );
-      await this.touch(dataset.id, operationId, {
+      await this.lease.touch(dataset.id, operationId, {
         state: 'failed',
         failure: JSON.stringify(failure),
         finishedAt: new Date(),
@@ -655,7 +635,9 @@ export class DefaultDemoDataService implements DemoDataService {
     let data: Record<string, unknown> = {};
     const reached = async (fraction: number): Promise<void> => {
       this.percent = Math.min(99, Math.floor(fraction * 100));
-      await this.touch(dataset.id, operationId, { percent: this.percent });
+      await this.lease.touch(dataset.id, operationId, {
+        percent: this.percent,
+      });
       // The SQLite driver is synchronous: without a turn of the event loop the status requests wait for the import.
       await new Promise<void>((resolve) => setImmediate(resolve));
     };
@@ -664,10 +646,10 @@ export class DefaultDemoDataService implements DemoDataService {
       ids: string | readonly string[],
       keyField = 'id',
     ): Promise<void> => {
-      await this.assertLease(dataset.id, operationId);
+      await this.lease.assertLease(dataset.id, operationId);
       const list = (typeof ids === 'string' ? [ids] : [...ids]).map(String);
       for (const recordId of list) {
-        await this.assertLease(dataset.id, operationId);
+        await this.lease.assertLease(dataset.id, operationId);
         const key = carriedKey(collection, recordId);
         if (carried?.records.has(key)) {
           carried.touched.add(key);
@@ -703,22 +685,22 @@ export class DefaultDemoDataService implements DemoDataService {
       },
       setData: async (patch) => {
         data = { ...data, ...patch };
-        await this.touch(dataset.id, operationId, {
+        await this.lease.touch(dataset.id, operationId, {
           data: JSON.stringify(data),
         });
       },
       track: (collection, ids, options) => track(collection, ids, options?.key),
       createAccount: async (spec) => {
-        await this.assertLease(dataset.id, operationId);
-        return this.createAccount(spec, track, carried);
+        await this.lease.assertLease(dataset.id, operationId);
+        return this.identities.createAccount(spec, track, carried);
       },
       createPermissionSet: async (spec) => {
-        await this.assertLease(dataset.id, operationId);
-        await this.createPermissionSet(spec, track, carried);
+        await this.lease.assertLease(dataset.id, operationId);
+        await this.identities.createPermissionSet(spec, track, carried);
       },
       assignPermissionSet: async (userId, permissionSet) => {
-        await this.assertLease(dataset.id, operationId);
-        const id = await this.assign(userId, permissionSet, carried);
+        await this.lease.assertLease(dataset.id, operationId);
+        const id = await this.identities.assign(userId, permissionSet, carried);
         await track(ASSIGNMENT, id);
       },
       progress: (fraction) =>
@@ -728,7 +710,7 @@ export class DefaultDemoDataService implements DemoDataService {
         ),
     };
     for (step of steps) {
-      await this.assertLease(dataset.id, operationId);
+      await this.lease.assertLease(dataset.id, operationId);
       this.deps.logger?.info(
         { dataset: dataset.id, step: step.key },
         'Importing demo data',
@@ -744,7 +726,7 @@ export class DefaultDemoDataService implements DemoDataService {
           carried.records.has(carriedKey(record.collection, record.recordId)) &&
           !carried.touched.has(carriedKey(record.collection, record.recordId)),
       );
-      await this.release(dataset.id, operationId, left);
+      await this.identities.release(dataset.id, operationId, left);
       for (const record of left)
         await this.deps.database
           .query()
@@ -755,7 +737,7 @@ export class DefaultDemoDataService implements DemoDataService {
           .execute();
     }
     this.percent = 100;
-    await this.touch(dataset.id, operationId, {
+    await this.lease.touch(dataset.id, operationId, {
       state: 'ready',
       percent: 100,
       finishedAt: new Date(),
@@ -780,7 +762,7 @@ export class DefaultDemoDataService implements DemoDataService {
       .where('id', '=', dataset.id)
       .where('operationId', '=', operationId)
       .execute();
-    if (removed.deletedCount !== 1) throw this.leaseLost();
+    if (removed.deletedCount !== 1) throw this.lease.leaseLost();
     this.deps.logger?.info({ dataset: dataset.id }, 'Cleared demo data');
   }
 
@@ -827,11 +809,11 @@ export class DefaultDemoDataService implements DemoDataService {
     operationId: string,
     carry = false,
   ): Promise<void> {
-    await this.withLease(dataset.id, operationId, async () => {
+    await this.lease.withLease(dataset.id, operationId, async () => {
       try {
         await this.undo(dataset, row, actorId, operationId, carry);
       } catch (cause) {
-        await this.touch(dataset.id, operationId, {
+        await this.lease.touch(dataset.id, operationId, {
           state: 'failed',
           failure: JSON.stringify({
             code:
@@ -858,11 +840,11 @@ export class DefaultDemoDataService implements DemoDataService {
     operationId: string,
     carry = false,
   ): Promise<void> {
-    await this.assertLease(dataset.id, operationId);
+    await this.lease.assertLease(dataset.id, operationId);
     const records = await this.records(dataset.id);
     const reached = async (percent: number): Promise<void> => {
       this.percent = percent;
-      await this.touch(dataset.id, operationId, { percent });
+      await this.lease.touch(dataset.id, operationId, { percent });
       // As for imports: let the status requests through while the SQLite driver works.
       await new Promise<void>((resolve) => setImmediate(resolve));
     };
@@ -870,7 +852,7 @@ export class DefaultDemoDataService implements DemoDataService {
       reached(Math.min(69, Math.floor(Math.max(0, fraction) * 70))),
     );
     await dataset.clear(context);
-    await this.assertLease(dataset.id, operationId);
+    await this.lease.assertLease(dataset.id, operationId);
     await reached(70);
     if (carry) {
       await this.deps.database
@@ -882,50 +864,14 @@ export class DefaultDemoDataService implements DemoDataService {
       this.percent = 100;
       return;
     }
-    await this.release(dataset.id, operationId, records);
-    await this.assertLease(dataset.id, operationId);
+    await this.identities.release(dataset.id, operationId, records);
+    await this.lease.assertLease(dataset.id, operationId);
     await this.deps.database
       .query()
       .deleteFrom('demoModeRecords')
       .where('datasetId', '=', dataset.id)
       .execute();
     this.percent = 100;
-  }
-
-  /** Revokes the assignments, signs out and disables the accounts and deletes the Permission Sets among `records`. */
-  private async release(
-    datasetId: string,
-    operationId: string,
-    records: readonly DemoTrackedRecord[],
-  ): Promise<void> {
-    const of = (collection: string) =>
-      records
-        .filter((record) => record.collection === collection)
-        .map((record) => record.recordId);
-    const sets = this.deps.authorization?.()?.permissionSets;
-    for (const id of of(ASSIGNMENT)) {
-      await this.assertLease(datasetId, operationId);
-      await sets?.revoke(id).catch(() => undefined);
-    }
-    const users = this.deps.users?.();
-    for (const id of of(USER)) {
-      await this.assertLease(datasetId, operationId);
-      await sets
-        ?.replaceSubjectAssignments({
-          subject: { type: 'user', id },
-          managedPermissionSets: (await sets.list()).map((set) => set.key),
-          permissionSets: [],
-        })
-        .catch(() => undefined);
-      if (!users) continue;
-      await users.revokeSessions(id).catch(() => undefined);
-      // Keep identities reusable: the Users plugin reserves deleted usernames and email addresses.
-      await users.disable(id);
-    }
-    for (const key of of(PERMISSION_SET)) {
-      await this.assertLease(datasetId, operationId);
-      await sets?.delete(key).catch(() => undefined);
-    }
   }
 
   private clearContext(
@@ -960,204 +906,6 @@ export class DefaultDemoDataService implements DemoDataService {
       counts[name] = (counts[name] ?? 0) + 1;
     }
     return counts;
-  }
-
-  private async createAccount(
-    spec: DemoAccountSpec,
-    track: (
-      collection: string,
-      ids: string | readonly string[],
-      keyField?: string,
-    ) => Promise<void>,
-    carried?: Carried,
-  ): Promise<string> {
-    const users = this.deps.users?.();
-    if (!users)
-      throw demoDataError(
-        'DEMO_DATA_ACCOUNTS_UNAVAILABLE',
-        'Demo accounts need the users plugin.',
-      );
-    const password = spec.password ?? `${spec.username}123`;
-    const existing = await this.deps.database
-      .query()
-      .selectFrom('user')
-      .select(['id', 'email'])
-      .where('username', '=', spec.username)
-      .executeTakeFirst<{ id: unknown; email: unknown }>();
-    let id: string;
-    if (existing) {
-      const ownership = await this.deps.database
-        .query()
-        .selectFrom('demoModeAccounts')
-        .select(['userId'])
-        .where('userId', '=', String(existing.id))
-        .where('datasetId', '=', this.requireDataset().id)
-        .executeTakeFirst();
-      // A matching username and email do not prove ownership of an existing account.
-      if (
-        !ownership ||
-        String(existing.email).toLowerCase() !== spec.email.toLowerCase()
-      )
-        throw demoDataError(
-          'DEMO_DATA_ACCOUNT_CONFLICT',
-          `The username ${spec.username} belongs to another account.`,
-          'ALREADY_EXISTS',
-        );
-      id = String(existing.id);
-      await users.update(id, { name: spec.name });
-      // Setting a password signs the account out; an account a reset carries keeps its sessions while it stays the same.
-      if (
-        !carried?.records.has(carriedKey(USER, id)) ||
-        carried.passwords.get(spec.username) !== password
-      )
-        await users.resetPassword(id, password);
-      await users.enable(id);
-      // Clearing dropped the account's assignments; its role scopes come back as a new account would get them.
-      for (const [scope, value] of Object.entries(spec.roleScopes ?? {}))
-        await users.replaceRoleScope(id, scope, value);
-    } else {
-      id = String(
-        (
-          await users.create({
-            name: spec.name,
-            username: spec.username,
-            email: spec.email,
-            password,
-            ...(spec.roleScopes ? { roleScopes: spec.roleScopes } : {}),
-          })
-        ).id,
-      );
-      await this.deps.database
-        .query()
-        .insertInto('demoModeAccounts')
-        .values({ userId: id, datasetId: this.requireDataset().id })
-        .execute();
-    }
-    await track(USER, id);
-    for (const permissionSet of spec.permissionSets ?? [])
-      await track(ASSIGNMENT, await this.assign(id, permissionSet, carried));
-    return id;
-  }
-
-  private async createPermissionSet(
-    spec: DemoPermissionSetSpec,
-    track: (
-      collection: string,
-      ids: string | readonly string[],
-      keyField?: string,
-    ) => Promise<void>,
-    carried?: Carried,
-  ): Promise<void> {
-    const sets = this.permissionSets();
-    const grants = spec.grants as Parameters<typeof sets.create>[0]['grants'];
-    if (await sets.get(spec.key)) {
-      if (!carried?.records.has(carriedKey(PERMISSION_SET, spec.key)))
-        throw demoDataError(
-          'DEMO_DATA_PERMISSION_SET_EXISTS',
-          `A Permission Set ${spec.key} exists already.`,
-          'ALREADY_EXISTS',
-        );
-      // Updated in place, so the accounts a reset carries keep what they may do throughout.
-      await sets.update(spec.key, { key: spec.key, title: spec.title, grants });
-      await track(PERMISSION_SET, spec.key);
-      return;
-    }
-    await sets.create({ key: spec.key, title: spec.title, grants });
-    await track(PERMISSION_SET, spec.key);
-  }
-
-  private async assign(
-    userId: string,
-    permissionSet: string,
-    carried?: Carried,
-  ): Promise<string> {
-    const sets = this.permissionSets();
-    if (carried) {
-      const kept = (await sets.listAssignments(permissionSet)).find(
-        (assignment) =>
-          assignment.subject.type === 'user' &&
-          String(assignment.subject.id) === userId &&
-          carried.records.has(carriedKey(ASSIGNMENT, String(assignment.id))),
-      );
-      if (kept) return String(kept.id);
-    }
-    const assignment = await sets.assign({
-      subject: { type: 'user', id: userId },
-      permissionSet,
-    });
-    return String(assignment.id);
-  }
-
-  private permissionSets(): AppAuthorization['permissionSets'] {
-    const sets = this.deps.authorization?.()?.permissionSets;
-    if (!sets)
-      throw demoDataError(
-        'DEMO_DATA_PERMISSIONS_UNAVAILABLE',
-        'Demo roles need the authorization plugin.',
-      );
-    return sets;
-  }
-
-  private leaseLost(): ApiError {
-    return demoDataError(
-      'DEMO_DATA_LEASE_LOST',
-      'Another process took over this demo data operation.',
-    );
-  }
-
-  private async assertLease(id: string, operationId: string): Promise<void> {
-    const row = await this.deps.database
-      .query()
-      .selectFrom('demoModeDatasets')
-      .select('operationId')
-      .where('id', '=', id)
-      .where('operationId', '=', operationId)
-      .executeTakeFirst();
-    if (!row) throw this.leaseLost();
-  }
-
-  /** Renew imports and full cleanup alike; drain an in-flight renewal before releasing the operation. */
-  private async withLease<T>(
-    id: string,
-    operationId: string,
-    work: () => Promise<T>,
-  ): Promise<T> {
-    let renewing: Promise<void> | undefined;
-    const heartbeat = setInterval(() => {
-      if (renewing) return;
-      renewing = this.touch(id, operationId, {})
-        .catch((cause: unknown) =>
-          this.deps.logger?.warn(
-            { dataset: id, cause: String(cause) },
-            'Could not renew demo data operation',
-          ),
-        )
-        .finally(() => {
-          renewing = undefined;
-        });
-    }, 30_000);
-    heartbeat.unref();
-    try {
-      return await work();
-    } finally {
-      clearInterval(heartbeat);
-      await renewing;
-    }
-  }
-
-  private async touch(
-    id: string,
-    operationId: string,
-    values: Record<string, unknown>,
-  ): Promise<void> {
-    const result = await this.deps.database
-      .query()
-      .updateTable('demoModeDatasets')
-      .set({ ...values, updatedAt: new Date() })
-      .where('id', '=', id)
-      .where('operationId', '=', operationId)
-      .execute();
-    if (result.updatedCount !== 1) throw this.leaseLost();
   }
 
   private async row(): Promise<DatasetRow | undefined> {

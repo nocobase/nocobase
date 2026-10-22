@@ -16,7 +16,7 @@ import { Hono } from 'hono';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { DemoMode } from '../../server/config.js';
-import type { DemoAccountSummary } from '../../server/data/types.js';
+import type { DemoAccountSummary } from '../../shared/data.js';
 import { accountRoutes } from '../../server/routes/accounts.js';
 import { demoDataToken, demoModeServiceToken } from '../../server/tokens.js';
 

@@ -3,7 +3,7 @@ import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { useSearchParams } from 'react-router';
 
-import type { DemoConfigurationView } from '../../server/configuration/types.js';
+import type { DemoConfigurationView } from '../../shared/configuration.js';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert.js';
 import {
   AlertDialog,

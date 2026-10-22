@@ -3934,9 +3934,6 @@ importers:
       '@nocobase/app-client':
         specifier: workspace:^
         version: link:../../app/app-client
-      '@nocobase/app-plugin-agents':
-        specifier: workspace:^
-        version: link:../app-plugin-agents
       '@nocobase/app-plugin-authentication':
         specifier: workspace:^
         version: link:../app-plugin-authentication
@@ -3989,6 +3986,9 @@ importers:
       '@ai-sdk/openai-compatible':
         specifier: 'catalog:'
         version: 3.0.63(zod@4.6.5)
+      '@nocobase/app-plugin-agents':
+        specifier: workspace:*
+        version: link:../app-plugin-agents
       '@nocobase/app-testing':
         specifier: workspace:*
         version: link:../../tools/app-testing

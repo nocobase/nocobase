@@ -1,7 +1,7 @@
 import { useApiClient } from '@nocobase/app-client';
 import { useEffect, useState, type ReactElement } from 'react';
 
-import type { DemoWriteRule } from '../../server/configuration/types.js';
+import type { DemoWriteRule } from '../../shared/configuration.js';
 import { MultiSelect } from '../components/multi-select.js';
 import { Badge } from '../components/ui/badge.js';
 import {
