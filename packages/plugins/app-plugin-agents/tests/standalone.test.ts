@@ -150,7 +150,7 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
     vocabulary.body.data.scopes.map((scope: { key: string }) => scope.key),
   ).toEqual(['workdir']);
 
-  // A runner connects with the echo tool signed in to one model, which becomes an agent to enable.
+  // A runner connects with the echo tool signed in to one model, from which an agent is created and enabled.
   const token = await agents.runners.createRegistrationToken('admin', {
     trust: 'team',
   });
@@ -178,20 +178,30 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
   });
   expect(registered.status).toBe(200);
   const runnerKey = registered.body.data.runnerKey as string;
-  const listed = await call('GET', '/agents', { user: 'admin' });
-  expect(listed.body.data).toEqual([
+  expect((await call('GET', '/agents', { user: 'admin' })).body.data).toEqual(
+    [],
+  );
+  const available = await call('GET', '/agents/availableModels', {
+    user: 'admin',
+  });
+  expect(available.body.data).toEqual([
     expect.objectContaining({
-      name: 'Claude · Sonnet 5',
-      status: 'pending',
       tool: 'claude',
       model: 'claude-sonnet-5',
+      agentId: null,
     }),
   ]);
-  const agent = await call('PATCH', `/agents/${listed.body.data[0].id}`, {
+  const agent = await call('POST', '/agents/runnerAgents', {
     user: 'admin',
-    body: { description: 'Answers', enabled: true, expectedRevision: 1 },
+    body: { tool: 'claude', model: 'claude-sonnet-5', description: 'Answers' },
   });
-  expect(agent.status).toBe(200);
+  expect(agent.status).toBe(201);
+  expect(agent.body.data).toMatchObject({
+    name: 'Claude · Sonnet 5',
+    status: 'enabled',
+    tool: 'claude',
+    model: 'claude-sonnet-5',
+  });
 
   // Historical Runner conversations remain a domain capability, outside the OnlineAgent HTTP cutover.
   const conversation = await agents.conversations.create('alice', {

@@ -198,6 +198,26 @@ const esES: LocaleResource<typeof enUS> = {
       enabled: 'Habilitado',
       done: '{{name}} guardado',
     },
+    available: {
+      open: 'Crear agente',
+      title: 'Modelos disponibles',
+      description:
+        'Cada herramienta y modelo que un ejecutor ha reportado con sesión iniciada. Las combinaciones recomendadas por la aplicación se crean y habilitan solas en cuanto un ejecutor las reporta; cree un agente a partir de cualquier otra.',
+      recommended: 'Se habilita automáticamente al reportarse',
+      create: 'Crear',
+      createTitle: 'Crear un agente para {{name}}',
+    },
+    cleanup: {
+      open: 'Limpiar',
+      title: 'Eliminar agentes descubiertos sin usar',
+      description:
+        'Agentes creados por el reporte de un ejecutor que nadie habilitó y que nunca se ejecutaron: se pueden eliminar sin riesgo. Lo que haya cambiado desde que se cargó esta lista se omite, no se elimina.',
+      none: 'Nada para eliminar.',
+      select: 'Seleccionar {{name}}',
+      createdAt: 'Descubierto {{when}}',
+      remove: 'Eliminar {{count}}',
+      done: 'Eliminados {{removed}}, omitidos {{skipped}}',
+    },
   },
   agentTypes: {
     label: 'Tipo de agente',

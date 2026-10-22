@@ -57,7 +57,11 @@ import type { Run } from '../../shared/runs.js';
 import type { VariableScope } from '../../shared/variables.js';
 import type { AgentsVocabulary } from '../../shared/vocabulary.js';
 import type { Agents } from '../composition.js';
-import { AgentPatchSchema, agentViews } from '../core/agents/index.js';
+import {
+  AgentPatchSchema,
+  agentViews,
+  availableModels,
+} from '../core/agents/index.js';
 import { ModelPricesSchema } from '../core/reports/index.js';
 import {
   runMachineViewerFor,
@@ -87,7 +91,10 @@ import {
   AgentNameSchema,
   AgentSchema,
   AgentViewSchema,
+  AvailableModelSchema,
   BriefPreviewSchema,
+  CleanupCandidateSchema,
+  RunnerAgentCreateInputSchema,
   ModelUsageReportSchema,
   PageTokenMetaSchema,
   PricesSchema,
@@ -492,6 +499,142 @@ export function createAdminRoutes(
       const { groups, ignored } = context.req.valid('json');
       const data = await services.agents.setIgnored(groups, ignored);
       return context.json({ data, meta: { total: data.length } });
+    },
+  );
+
+  router.get(
+    '/availableModels',
+    guard,
+    can('agents.agents', 'read'),
+    describeRoute({
+      tags,
+      summary: 'List tools and models to create an agent from',
+      operationId: 'agentsListAvailableModels',
+      ...cliRoute({
+        command: 'agent model list',
+        columns: ['tool', 'model', 'displayModel', 'status', 'recommended'],
+      }),
+      description:
+        'Every tool and model a runner has signed in reported, whether an agent exists for it yet or not, grouped by tool for the enable dialog. The application’s recommended combinations create and enable themselves as soon as a runner reports them; create the rest with `POST /runnerAgents`. Needs `agents.agents` read.',
+      responses: {
+        200: listResponse(AvailableModelSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    async (context) => {
+      const conn = services.tx.read();
+      const [runners, agents] = await Promise.all([
+        services.runners.all(conn),
+        services.agents.list(),
+      ]);
+      const data = availableModels(runners, agents, {
+        recommendedModels: services.agents.recommended(),
+        suggestion: services.agents.suggestion,
+      });
+      return context.json({ data, meta: { total: data.length } });
+    },
+  );
+
+  router.post(
+    '/runnerAgents',
+    scoped,
+    can('agents.agents', 'manage'),
+    describeRoute({
+      tags,
+      summary: 'Create an agent from an available model',
+      operationId: 'agentsCreateRunnerAgent',
+      ...cliRoute({
+        command: 'agent create',
+        bodyFile: 'input',
+        examples: [
+          'agent create --tool gemini --model gemini-2.5-pro --good-at "..."',
+        ],
+      }),
+      description:
+        'Creates and enables an agent for a tool and model from the available models list. Needs `agents.agents` manage.',
+      responses: {
+        201: dataResponse(AgentSchema),
+        400: apiErrorResponse(
+          400,
+          'An agent for this tool and model already exists (`AGENT_EXISTS`), no description was given (`GOOD_AT_REQUIRED`), or the effort is not one its tool takes (`EFFORT_UNSUPPORTED`).',
+        ),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('json', RunnerAgentCreateInputSchema),
+    async (context) => {
+      const data = await services.agents.createFromAvailable(
+        context.req.valid('json'),
+        caller(context).userId,
+      );
+      context.status(201);
+      return context.json({ data });
+    },
+  );
+
+  router.get(
+    '/cleanupCandidates',
+    guard,
+    can('agents.agents', 'manage'),
+    describeRoute({
+      tags,
+      summary: 'List runner-discovered agents safe to remove outright',
+      operationId: 'agentsListCleanupCandidates',
+      ...cliRoute({
+        command: 'agent cleanup list',
+        columns: ['id', 'name', 'tool', 'model', 'createdAt'],
+      }),
+      description:
+        'Agents a runner’s report created that nobody enabled and that never ran: safe to remove outright, such as a batch left from before the application stopped creating one agent per reported model. Needs `agents.agents` manage.',
+      responses: {
+        200: listResponse(CleanupCandidateSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    async (context) => {
+      const data = await services.agents.cleanupCandidates();
+      return context.json({ data, meta: { total: data.length } });
+    },
+  );
+
+  router.post(
+    '/cleanup',
+    scoped,
+    can('agents.agents', 'manage'),
+    describeRoute({
+      tags,
+      summary: 'Remove chosen cleanup candidates outright',
+      operationId: 'agentsCleanup',
+      ...cliRoute({ command: 'agent cleanup run', bodyFile: 'input' }),
+      description:
+        'Removes the named agents, each re-checked against the cleanup rule first (still pending, never run): anything changed since it was listed is left alone and reported back skipped, never removed. Needs `agents.agents` manage.',
+      responses: {
+        200: dataResponse(
+          z.object({
+            removed: z.array(z.string()),
+            skipped: z.array(z.string()),
+          }),
+        ),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator(
+      'json',
+      z.strictObject({
+        agentIds: z
+          .array(z.string().min(1).max(256))
+          .min(1)
+          .max(256)
+          .meta({ description: 'The ids from `GET /cleanupCandidates`.' }),
+      }),
+    ),
+    async (context) => {
+      const { agentIds } = context.req.valid('json');
+      const data = await services.agents.cleanup(
+        agentIds,
+        caller(context).userId,
+      );
+      return context.json({ data });
     },
   );
 

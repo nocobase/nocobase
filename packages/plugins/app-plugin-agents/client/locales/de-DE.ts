@@ -195,6 +195,26 @@ const deDE: LocaleResource<typeof enUS> = {
       enabled: 'Aktiviert',
       done: '{{name}} gespeichert',
     },
+    available: {
+      open: 'Agent erstellen',
+      title: 'Verfügbare Modelle',
+      description:
+        'Jedes Tool und Modell, das ein Runner angemeldet gemeldet hat. Die von der Anwendung empfohlenen Kombinationen erstellen und aktivieren sich selbst, sobald ein Runner sie meldet; erstellen Sie aus jeder anderen einen Agenten.',
+      recommended: 'Wird beim Melden automatisch aktiviert',
+      create: 'Erstellen',
+      createTitle: 'Einen Agenten für {{name}} erstellen',
+    },
+    cleanup: {
+      open: 'Aufräumen',
+      title: 'Ungenutzte entdeckte Agenten entfernen',
+      description:
+        'Agenten, die ein Runner-Bericht erstellt hat, die niemand aktiviert hat und die nie gelaufen sind: können bedenkenlos entfernt werden. Alles, was sich seit dem Laden dieser Liste geändert hat, wird übersprungen, nicht entfernt.',
+      none: 'Nichts zu entfernen.',
+      select: '{{name}} auswählen',
+      createdAt: 'Entdeckt {{when}}',
+      remove: '{{count}} entfernen',
+      done: '{{removed}} entfernt, {{skipped}} übersprungen',
+    },
   },
   agentTypes: {
     label: 'Agententyp',

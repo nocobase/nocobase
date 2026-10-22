@@ -1,6 +1,7 @@
 import type { Knex } from 'knex';
 import { afterEach, expect, it } from 'vitest';
 import { createHarness, claim, type Harness } from './harness.js';
+import { availableModels } from '../../server/core/agents/available-models.js';
 import { runnerAgentId } from '../../server/core/agents/agent.service.js';
 import { PROTOCOL_VERSION } from '@nocobase/agent-protocol';
 let h: Harness;
@@ -26,6 +27,32 @@ it('discovers separate catalog tools, preserves opaque model ids, and names the 
       },
     ],
   });
+  // Neither combination is recommended: a runner's report lists them as available, creating no agent by itself.
+  const available = availableModels(
+    await h.services.runners.all(h.services.tx.read()),
+    [],
+    { recommendedModels: [], suggestion: h.services.agents.suggestion },
+  );
+  expect(available).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ tool: 'gemini', model: 'model-latest' }),
+      expect.objectContaining({ tool: 'kimi', model: '' }),
+    ]),
+  );
+  expect(available.every((model) => model.agentId === null)).toBe(true);
+  await h.services.agents.createFromAvailable(
+    {
+      tool: 'gemini',
+      model: 'model-latest',
+      displayModel: 'Current model',
+      description: 'Reviews',
+    },
+    'alice',
+  );
+  const defaultAgent = await h.services.agents.createFromAvailable(
+    { tool: 'kimi', model: '', description: 'Reviews' },
+    'alice',
+  );
   const agents = await h.services.agents.list();
   expect(agents).toEqual(
     expect.arrayContaining([
@@ -42,8 +69,8 @@ it('discovers separate catalog tools, preserves opaque model ids, and names the 
       }),
     ]),
   );
-  const defaultId = runnerAgentId('kimi', '');
-  await h.enableAgent(defaultId);
+  const defaultId = defaultAgent.id;
+  expect(defaultId).toBe(runnerAgentId('kimi', ''));
   await h.enqueue(defaultId);
   const [payload] = await claim(h, first);
   expect(payload.tool.kind).toBe('kimi');
@@ -59,8 +86,15 @@ it('discovers separate catalog tools, preserves opaque model ids, and names the 
       },
     ],
   });
-  expect((await h.services.agents.list()).map((agent) => agent.id)).toContain(
-    runnerAgentId('kimi', 'model-latest'),
+  const afterSecond = availableModels(
+    await h.services.runners.all(h.services.tx.read()),
+    await h.services.agents.list(),
+    { recommendedModels: [], suggestion: h.services.agents.suggestion },
+  );
+  expect(afterSecond).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ tool: 'kimi', model: 'model-latest' }),
+    ]),
   );
   expect((await h.services.runners.get(second.runnerId)).enabledTools).toEqual([
     'kimi',

@@ -16,6 +16,9 @@ import type {
   AgentName,
   AgentPatch,
   AgentView,
+  AvailableModel,
+  CleanupCandidate,
+  RunnerAgentCreateInput,
   UserRef,
 } from '../../shared/agents.js';
 import type { BriefPreview, RunBrief } from '../../shared/briefs.js';
@@ -184,6 +187,29 @@ export class AgentsApi {
 
   public agents(): Promise<AgentView[]> {
     return this.list('');
+  }
+
+  /** Every tool and model any runner has reported, whether an agent exists for it yet or not. */
+  public availableModels(): Promise<AvailableModel[]> {
+    return this.list('availableModels');
+  }
+
+  /** Creates and enables an agent for a tool and model from the available models list. */
+  public createRunnerAgent(input: RunnerAgentCreateInput): Promise<Agent> {
+    return this.send('runnerAgents', 'POST', input);
+  }
+
+  /** Runner-discovered agents nobody enabled and that never ran: safe to remove outright. */
+  public cleanupCandidates(): Promise<CleanupCandidate[]> {
+    return this.list('cleanupCandidates');
+  }
+
+  /** Removes the named cleanup candidates; anything no longer eligible is reported back skipped, not removed. */
+  public cleanup(agentIds: readonly string[]): Promise<{
+    readonly removed: readonly string[];
+    readonly skipped: readonly string[];
+  }> {
+    return this.send('cleanup', 'POST', { agentIds });
   }
 
   public agent(agentId: string): Promise<AgentView> {

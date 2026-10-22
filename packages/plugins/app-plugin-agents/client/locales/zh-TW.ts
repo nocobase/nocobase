@@ -186,6 +186,26 @@ const zhTW: LocaleResource<typeof enUS> = {
       enabled: '已啟用',
       done: '{{name}} 已儲存',
     },
+    available: {
+      open: '新增 Agent',
+      title: '可用模型',
+      description:
+        '執行機已登入回報的每個工具與模型。應用程式的建議組合會在執行機回報時自動建立並啟用；其餘的可以從這裡選一個建立。',
+      recommended: '回報後自動啟用',
+      create: '建立',
+      createTitle: '為 {{name}} 建立 Agent',
+    },
+    cleanup: {
+      open: '清理',
+      title: '移除未使用的發現項目',
+      description:
+        '執行機回報建立、沒人啟用、也從未執行過的 Agent：可以直接移除。預覽之後有變動的項目會跳過，不會被移除。',
+      none: '沒有可移除的項目。',
+      select: '選擇 {{name}}',
+      createdAt: '發現於 {{when}}',
+      remove: '移除 {{count}} 項',
+      done: '已移除 {{removed}} 項，跳過 {{skipped}} 項',
+    },
   },
   agentTypes: {
     label: '代理型別',

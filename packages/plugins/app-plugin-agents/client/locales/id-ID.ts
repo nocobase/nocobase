@@ -190,6 +190,26 @@ const idID: LocaleResource<typeof enUS> = {
       enabled: 'Aktif',
       done: '{{name}} disimpan',
     },
+    available: {
+      open: 'Buat agen',
+      title: 'Model yang tersedia',
+      description:
+        'Setiap alat dan model yang pernah dilaporkan sudah masuk oleh runner. Kombinasi yang direkomendasikan aplikasi akan membuat dan mengaktifkan dirinya sendiri begitu runner melaporkannya; buat agen dari yang lainnya.',
+      recommended: 'Diaktifkan otomatis saat dilaporkan',
+      create: 'Buat',
+      createTitle: 'Buat agen untuk {{name}}',
+    },
+    cleanup: {
+      open: 'Bersihkan',
+      title: 'Hapus agen temuan yang tidak terpakai',
+      description:
+        'Agen yang dibuat dari laporan runner, tidak diaktifkan siapa pun, dan belum pernah berjalan: aman untuk dihapus langsung. Yang berubah sejak daftar ini dimuat akan dilewati, tidak dihapus.',
+      none: 'Tidak ada yang perlu dihapus.',
+      select: 'Pilih {{name}}',
+      createdAt: 'Ditemukan {{when}}',
+      remove: 'Hapus {{count}}',
+      done: '{{removed}} dihapus, {{skipped}} dilewati',
+    },
   },
   agentTypes: {
     label: 'Tipe agen',

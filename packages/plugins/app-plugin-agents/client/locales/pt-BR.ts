@@ -193,6 +193,26 @@ const ptBR: LocaleResource<typeof enUS> = {
       enabled: 'Habilitado',
       done: '{{name}} salvo',
     },
+    available: {
+      open: 'Criar agente',
+      title: 'Modelos disponíveis',
+      description:
+        'Toda ferramenta e modelo que um executor relatou estar conectado. As combinações recomendadas pela aplicação se criam e habilitam por conta própria assim que um executor as relata; crie um agente a partir de qualquer outra.',
+      recommended: 'Habilitado automaticamente ao ser relatado',
+      create: 'Criar',
+      createTitle: 'Criar um agente para {{name}}',
+    },
+    cleanup: {
+      open: 'Limpar',
+      title: 'Remover agentes descobertos não usados',
+      description:
+        'Agentes criados pelo relatório de um executor, que ninguém habilitou e que nunca foram executados: podem ser removidos sem risco. Qualquer coisa que tenha mudado desde que esta lista foi carregada é ignorada, não removida.',
+      none: 'Nada para remover.',
+      select: 'Selecionar {{name}}',
+      createdAt: 'Descoberto {{when}}',
+      remove: 'Remover {{count}}',
+      done: '{{removed}} removidos, {{skipped}} ignorados',
+    },
   },
   agentTypes: {
     label: 'Tipo de agente',

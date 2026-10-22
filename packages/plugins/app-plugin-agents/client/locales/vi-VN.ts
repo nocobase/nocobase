@@ -189,6 +189,26 @@ const viVN: LocaleResource<typeof enUS> = {
       enabled: 'Đã bật',
       done: '{{name}} đã lưu',
     },
+    available: {
+      open: 'Tạo agent',
+      title: 'Các mô hình khả dụng',
+      description:
+        'Mọi công cụ và mô hình mà một runner đã báo cáo là đã đăng nhập. Các tổ hợp được ứng dụng đề xuất sẽ tự tạo và tự bật ngay khi một runner báo cáo chúng; hãy tạo agent từ bất kỳ tổ hợp nào khác.',
+      recommended: 'Tự động bật khi được báo cáo',
+      create: 'Tạo',
+      createTitle: 'Tạo agent cho {{name}}',
+    },
+    cleanup: {
+      open: 'Dọn dẹp',
+      title: 'Xóa các agent được phát hiện nhưng không dùng',
+      description:
+        'Các agent do báo cáo của runner tạo ra, chưa ai bật và chưa từng chạy: có thể xóa thẳng mà an toàn. Mọi thứ đã thay đổi từ khi danh sách này được tải sẽ bị bỏ qua, không bị xóa.',
+      none: 'Không có gì để xóa.',
+      select: 'Chọn {{name}}',
+      createdAt: 'Phát hiện {{when}}',
+      remove: 'Xóa {{count}}',
+      done: 'Đã xóa {{removed}}, bỏ qua {{skipped}}',
+    },
   },
   agentTypes: {
     label: 'Loại tác nhân',

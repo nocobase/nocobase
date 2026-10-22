@@ -63,6 +63,8 @@ export const agentsKeys: {
     agentId: string,
     scenario: string | null,
   ) => readonly ['agents', 'brief-preview', string, string | null];
+  readonly availableModels: readonly ['agents', 'available-models'];
+  readonly cleanupCandidates: readonly ['agents', 'cleanup-candidates'];
 } = {
   available: ['agents', 'available'],
   chatAgents: ['agents', 'chat', 'agents'],
@@ -103,4 +105,6 @@ export const agentsKeys: {
     agentId,
     scenario,
   ],
+  availableModels: ['agents', 'available-models'],
+  cleanupCandidates: ['agents', 'cleanup-candidates'],
 };

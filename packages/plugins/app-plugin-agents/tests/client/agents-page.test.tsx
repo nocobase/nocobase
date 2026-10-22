@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 /**
- * The Agent page: the agents discovered from runners, filtered by state, a pending one enabled with what it is good at
- * (started from the catalog's suggestion), an enabled one edited, and only readable for who does not manage agents.
+ * The Agent page: agents filtered by state, an enabled or disabled one edited (`agent-dialog.tsx`), only readable for
+ * who does not manage agents; an agent created from the available models list (`available-models-dialog.tsx`,
+ * replacing the old discoveries section a runner's report filled on its own); and leftover never-enabled, never-run
+ * agents removed through the cleanup dialog (`cleanup-dialog.tsx`).
  */
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { vi } from 'vitest';
 
-import type { AgentView } from '../../shared/agents.js';
+import type { AgentView, AvailableModel, CleanupCandidate } from '../../shared/agents.js';
 import { callsTo, clientMocks, resetApi } from './fake-client.js';
 import { agent } from './fixtures.js';
 import { renderPage } from './render.js';
@@ -22,20 +24,12 @@ const { default: AgentsPage } =
   await import('../../client/pages/agents/index.js');
 
 let agents: AgentView[] = [];
+let available: AvailableModel[] = [];
+let candidates: CleanupCandidate[] = [];
 
 describe('the Agent page', () => {
   beforeEach(() => {
     agents = [
-      agent('opus', {
-        name: 'Claude · Opus 5.5',
-        model: 'claude-opus-5-5',
-        status: 'pending',
-        unusable: 'pending',
-        suggestion: {
-          en: 'Designs, architecture, hard investigations and reviews of important changes.',
-          zh: '方案、架构、疑难排查、重要改动的评审。',
-        },
-      }),
       agent('sonnet', {
         name: 'Claude · Sonnet 5',
         description: 'Small changes',
@@ -50,242 +44,129 @@ describe('the Agent page', () => {
         unusable: 'unreported',
         runners: { team: 0, personal: 0, mine: 0, names: [] },
       }),
+      agent('old', { name: 'Old Codex', status: 'disabled' }),
+    ];
+    available = [
+      {
+        tool: 'claude',
+        model: 'claude-opus-5-5',
+        agentId: null,
+        status: null,
+        recommended: false,
+        suggestion: {
+          en: 'Designs, architecture, hard investigations and reviews of important changes.',
+          zh: '方案、架构、疑难排查、重要改动的评审。',
+        },
+      },
+    ];
+    candidates = [
+      {
+        id: 'stray-1',
+        name: 'Kilo Code · Stray',
+        tool: 'kilo',
+        model: 'stray',
+        createdAt: '2026-10-01T08:00:00.000Z',
+      },
     ];
     resetApi({
       agents: () => agents,
-      'PATCH agents/opus': (request) => ({
+      'agents/availableModels': () => available,
+      'agents/cleanupCandidates': () => candidates,
+      'PATCH agents/sonnet': (request) => ({
         ...agents[0],
         ...(request.json as object),
-        status: 'enabled',
       }),
+      'POST agents/runnerAgents': (request) => {
+        const body = request.json as { tool: string; model: string; description: string };
+        return {
+          id: `${body.tool}-${body.model}`,
+          name: `Created · ${body.model}`,
+          status: 'enabled',
+          description: body.description,
+        };
+      },
+      'POST agents/cleanup': (request) => {
+        const body = request.json as { agentIds: string[] };
+        return { removed: body.agentIds, skipped: [] };
+      },
     });
   });
 
-  it('defaults to enabled, keeping discoveries collapsed and disabled reachable', async () => {
+  it('defaults to enabled, with disabled reachable', async () => {
     renderPage(<AgentsPage />);
-    const rows = await screen.findAllByTestId(/^agent-(opus|sonnet|kimi)$/u);
+    const rows = await screen.findAllByTestId(/^agent-(sonnet|kimi|old)$/u);
     expect(rows.map((row) => row.dataset.state)).toEqual([
       'enabled',
       'unreported',
     ]);
-    expect(screen.getByTestId('agents-discovery-toggle')).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
-    fireEvent.click(screen.getByTestId('agents-discovery-toggle'));
-    expect(
-      await screen.findByTestId('agent-discovery-opus'),
-    ).toBeInTheDocument();
     fireEvent.click(screen.getByText('agents.discovery.disabled'));
     await waitFor(() =>
-      expect(screen.queryByTestId('agent-opus')).not.toBeInTheDocument(),
+      expect(screen.getByTestId('agent-old')).toBeInTheDocument(),
     );
-    expect(screen.queryByTestId('agent-kimi')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('agent-sonnet')).not.toBeInTheDocument();
   });
 
-  it('enables a pending agent with what it is good at, starting from the suggestion', async () => {
+  it('edits an enabled agent', async () => {
     renderPage(<AgentsPage />);
-    await screen.findByTestId('agent-sonnet');
-    fireEvent.click(screen.getByTestId('agents-discovery-toggle'));
-    fireEvent.click(await screen.findByTestId('agent-edit-opus'));
+    fireEvent.click(await screen.findByTestId('agent-edit-sonnet'));
     const dialog = await screen.findByTestId('agent-dialog');
-    const goodAt = within(dialog).getByTestId('agent-good-at');
-    expect(goodAt).toHaveValue('modelSuggestions.design');
-    fireEvent.change(goodAt, { target: { value: '' } });
-    fireEvent.click(within(dialog).getByTestId('agent-dialog-save'));
-    expect(
-      await within(dialog).findByText('agents.enable.goodAtRequired'),
-    ).toBeInTheDocument();
-    expect(callsTo('PATCH', 'agents/opus')).toHaveLength(0);
-    fireEvent.change(goodAt, { target: { value: 'Hard problems' } });
-    fireEvent.click(within(dialog).getByTestId('agent-dialog-save'));
-    await waitFor(() =>
-      expect(callsTo('PATCH', 'agents/opus').map((call) => call.json)).toEqual([
-        {
-          description: 'Hard problems',
-          effort: null,
-          enabled: true,
-          expectedRevision: 1,
-        },
-      ]),
-    );
-  });
-
-  it('prefills an application suggestion for a known model and saves it on enable', async () => {
-    agents[0] = {
-      ...agents[0]!,
-      suggestion: { en: 'Application description', zh: '应用描述' },
-    };
-    renderPage(<AgentsPage />);
-    fireEvent.click(await screen.findByTestId('agents-discovery-toggle'));
-    fireEvent.click(await screen.findByTestId('agent-edit-opus'));
-    const dialog = await screen.findByTestId('agent-dialog');
-    expect(within(dialog).getByTestId('agent-good-at')).toHaveValue(
-      'Application description',
-    );
-    fireEvent.click(within(dialog).getByTestId('agent-dialog-save'));
-    await waitFor(() =>
-      expect(callsTo('PATCH', 'agents/opus').map((call) => call.json)).toEqual([
-        {
-          description: 'Application description',
-          effort: null,
-          enabled: true,
-          expectedRevision: 1,
-        },
-      ]),
-    );
-  });
-
-  it('labels provider choices before and after switching while saving the original ID', async () => {
-    agents = ['openai', 'rightapi'].map((provider) =>
-      agent(provider, {
-        name: 'Pi · GPT-6 Astra',
-        tool: 'pi',
-        model: `${provider}/gpt-6-astra`,
-        status: 'pending',
-        discoveryKey: 'pi:gpt-6-astra',
-        runners: {
-          team: 1,
-          personal: 0,
-          mine: 0,
-          names: [`${provider}-runner`],
-        },
-      }),
-    );
-    resetApi({
-      agents: () => agents,
-      'PATCH agents/rightapi': (request) => ({
-        ...agents[1],
-        ...(request.json as object),
-      }),
+    fireEvent.change(within(dialog).getByTestId('agent-good-at'), {
+      target: { value: 'Updated description' },
     });
-    renderPage(<AgentsPage />);
-    await screen.findByTestId('agents-discovery-toggle');
-    fireEvent.click(screen.getByTestId('agents-discovery-toggle'));
-    fireEvent.click(await screen.findByTestId('agent-edit-openai'));
-    const dialog = await screen.findByTestId('agent-dialog');
-    const provider = within(dialog).getByLabelText('agents.discovery.provider');
-    expect(provider).toHaveTextContent('openai/gpt-6-astra · openai-runner');
-    const user = userEvent.setup();
-    await user.click(provider);
-    await user.click(
-      await screen.findByRole('option', {
-        name: 'rightapi/gpt-6-astra · rightapi-runner',
-      }),
-    );
+    fireEvent.click(within(dialog).getByTestId('agent-dialog-save'));
     await waitFor(() =>
-      expect(provider).toHaveTextContent(
-        'rightapi/gpt-6-astra · rightapi-runner',
+      expect(callsTo('PATCH', 'agents/sonnet').map((call) => call.json)).toEqual([
+        expect.objectContaining({ description: 'Updated description' }),
+      ]),
+    );
+  });
+
+  it('creates an agent from the available models list, starting from the suggestion', async () => {
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-available-open'));
+    const dialog = await screen.findByTestId('available-models-dialog');
+    fireEvent.click(
+      await within(dialog).findByTestId(
+        'available-model-create-claude-claude-opus-5-5',
       ),
     );
-    fireEvent.change(within(dialog).getByTestId('agent-good-at'), {
-      target: { value: 'Provider fixture' },
-    });
-    fireEvent.click(within(dialog).getByTestId('agent-dialog-save'));
+    const goodAt = await within(dialog).findByTestId('available-model-good-at');
+    expect(goodAt).toHaveValue('modelSuggestions.design');
+    fireEvent.click(within(dialog).getByTestId('available-model-create-submit'));
     await waitFor(() =>
-      expect(callsTo('PATCH', 'agents/rightapi')).toHaveLength(1),
+      expect(
+        callsTo('POST', 'agents/runnerAgents').map((call) => call.json),
+      ).toEqual([
+        {
+          tool: 'claude',
+          model: 'claude-opus-5-5',
+          description: 'modelSuggestions.design',
+        },
+      ]),
     );
-    expect(callsTo('PATCH', 'agents/openai')).toHaveLength(0);
-    expect(agents[1].model).toBe('rightapi/gpt-6-astra');
   });
 
-  it.each([
-    { ignored: false, count: 256 },
-    { ignored: false, count: 257 },
-    { ignored: true, count: 256 },
-    { ignored: true, count: 257 },
-  ])(
-    'caps selection for $count groups with ignored=$ignored, including search and deselection',
-    async ({ ignored, count }) => {
-      agents = Array.from({ length: count }, (_, i) =>
-        agent(`batch-${i}`, {
-          name: `Batch ${i}`,
-          model: `unknown-${i}`,
-          status: 'pending',
-          discoveryKey: `claude:unknown-${i}`,
-          ignored,
-        }),
-      );
-      resetApi({
-        agents: () => agents,
-        'PUT agents/discoveryPreferences': (request) => {
-          const body = request.json as {
-            groups: { key: string }[];
-            ignored: boolean;
-          };
-          expect(body.groups).toHaveLength(256);
-          expect(body.ignored).toBe(!ignored);
-          return [];
-        },
-      });
-      renderPage(<AgentsPage />);
-      fireEvent.click(
-        await screen.findByTestId(
-          ignored ? 'agents-ignored-toggle' : 'agents-discovery-toggle',
-        ),
-      );
-      fireEvent.click(
-        await screen.findByText(
-          count > 256
-            ? 'agents.discovery.selectFirst(limit=256)'
-            : 'agents.discovery.selectAll(limit=256)',
-        ),
-      );
-      expect(
-        screen.getByText(
-          'agents.discovery.selectionCount(count=256,limit=256)',
-        ),
-      ).toBeInTheDocument();
-      const boxes = screen.getAllByRole('checkbox');
-      expect(
-        boxes.filter((box) => box.getAttribute('aria-checked') === 'true'),
-      ).toHaveLength(256);
-      const unchecked = boxes.find(
-        (box) => box.getAttribute('aria-checked') !== 'true',
-      )!;
-      if (unchecked) expect(unchecked).toHaveAttribute('aria-disabled', 'true');
-      fireEvent.click(boxes[0]);
-      const available = unchecked ?? boxes[0];
-      expect(available).not.toHaveAttribute('aria-disabled', 'true');
-      fireEvent.click(available);
-      expect(
-        screen.getByText(
-          'agents.discovery.selectionCount(count=256,limit=256)',
-        ),
-      ).toBeInTheDocument();
-      fireEvent.click(
-        screen.getByText(
-          ignored
-            ? 'agents.discovery.restoreSelected'
-            : 'agents.discovery.ignoreSelected',
-        ),
-      );
-      await waitFor(() =>
-        expect(callsTo('PUT', 'agents/discoveryPreferences')).toHaveLength(1),
-      );
-      fireEvent.change(screen.getByPlaceholderText('agents.discovery.search'), {
-        target: { value: `unknown-${count - 1}` },
-      });
-      expect(
-        screen.getByText('agents.discovery.selectionCount(count=0,limit=256)'),
-      ).toBeInTheDocument();
-      expect(screen.getAllByRole('checkbox')).toHaveLength(1);
-      fireEvent.click(
-        screen.getByText('agents.discovery.selectAll(limit=256)'),
-      );
-      expect(
-        screen.getByText('agents.discovery.selectionCount(count=1,limit=256)'),
-      ).toBeInTheDocument();
-    },
-  );
+  it('removes chosen cleanup candidates', async () => {
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-cleanup-open'));
+    const dialog = await screen.findByTestId('cleanup-dialog');
+    fireEvent.click(
+      within(await within(dialog).findByTestId('cleanup-candidate-stray-1'))
+        .getByRole('checkbox'),
+    );
+    fireEvent.click(within(dialog).getByTestId('cleanup-submit'));
+    await waitFor(() =>
+      expect(callsTo('POST', 'agents/cleanup').map((call) => call.json)).toEqual([
+        { agentIds: ['stray-1'] },
+      ]),
+    );
+  });
 
   it('offers no change to who does not manage agents', async () => {
     agents = agents.map((each) => ({ ...each, canEdit: false }));
     renderPage(<AgentsPage />);
     await screen.findByTestId('agent-sonnet');
-    fireEvent.click(screen.getByTestId('agents-discovery-toggle'));
-    await screen.findByTestId('agent-discovery-opus');
-    expect(screen.queryByTestId('agent-edit-opus')).not.toBeInTheDocument();
     expect(screen.queryByTestId('agent-edit-sonnet')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('agent-edit-kimi')).not.toBeInTheDocument();
   });
 });

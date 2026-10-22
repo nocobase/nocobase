@@ -190,6 +190,26 @@ const jaJP: LocaleResource<typeof enUS> = {
       enabled: '有効',
       done: '{{name}} が保存されました',
     },
+    available: {
+      open: 'エージェントを作成',
+      title: '利用可能なモデル',
+      description:
+        'ランナーがサインイン済みと報告したすべてのツールとモデル。アプリケーションの推奨組み合わせは、ランナーが報告すると自動的に作成・有効化されます。その他のものはここから選んでエージェントを作成してください。',
+      recommended: '報告されると自動的に有効化されます',
+      create: '作成',
+      createTitle: '{{name}} のエージェントを作成',
+    },
+    cleanup: {
+      open: '整理',
+      title: '未使用の発見済みエージェントを削除',
+      description:
+        'ランナーの報告によって作成され、誰も有効化せず、一度も実行されていないエージェント: そのまま削除しても安全です。このリストを読み込んだ後に変わったものはスキップされ、削除されません。',
+      none: '削除するものはありません。',
+      select: '{{name}} を選択',
+      createdAt: '{{when}} に発見',
+      remove: '{{count}} 件を削除',
+      done: '{{removed}} 件削除、{{skipped}} 件スキップ',
+    },
   },
   agentTypes: {
     label: 'エージェントの種類',

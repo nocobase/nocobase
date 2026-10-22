@@ -210,6 +210,52 @@ export interface AgentPatch {
 }
 
 /**
+ * A tool and model a runner has reported, whether or not an agent exists for it yet (`GET /api/agents/availableModels`,
+ * replacing the discovery list a runner's report used to create one pending agent per combination for): the enable
+ * dialog groups these by tool and lets someone create an agent from one that has none, instead of a runner's report
+ * creating one for every model it lists.
+ */
+export interface AvailableModel {
+  readonly tool: AgentTool;
+  /** Normalized; empty for a tool that cannot list models (one entry stands for the whole tool). */
+  readonly model: string;
+  /** As the tool names it, when known and different from `model`. */
+  readonly displayModel?: string;
+  /** The agent already kept for this tool and model, if any. */
+  readonly agentId: string | null;
+  readonly status: AgentStatus | null;
+  /** In the application's recommended list: a runner reporting it signed in creates and enables it on its own. */
+  readonly recommended: boolean;
+  /** What the model catalog or the application's own list says it is good at; null for a model neither knows. */
+  readonly suggestion: { readonly en: string; readonly zh: string } | null;
+}
+
+/** What creating an agent from an available model takes (`POST /api/agents/runnerAgents`). */
+export interface RunnerAgentCreateInput {
+  readonly tool: AgentTool;
+  readonly model: string;
+  /** As the tool names it (`AvailableModel.displayModel`), for the agent's name; `model` itself when absent. */
+  readonly displayModel?: string;
+  /** What it is good at: required, as enabling any agent needs one. */
+  readonly description: string;
+  /** Its default reasoning effort, one of its tool's; the tool's default (`medium` when it takes one) when absent. */
+  readonly effort?: string | null;
+}
+
+/**
+ * A runner-discovered agent nobody enabled and that never ran (`GET /api/agents/cleanupCandidates`): safe for an
+ * administrator to remove outright, such as a batch a tool reporting far too many models created before the
+ * application stopped creating one agent per reported model.
+ */
+export interface CleanupCandidate {
+  readonly id: string;
+  readonly name: string;
+  readonly tool: AgentTool | null;
+  readonly model: string | null;
+  readonly createdAt: string;
+}
+
+/**
  * What the application keeps of an agent of its own (`AgentService.ensureSystem`): its fixed id, name, description,
  * instructions, actions and the tools and models it runs with (none until it is configured).
  */

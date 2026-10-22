@@ -197,6 +197,26 @@ const frFR: LocaleResource<typeof enUS> = {
       enabled: 'Activé',
       done: '{{name}} enregistré',
     },
+    available: {
+      open: 'Créer un agent',
+      title: 'Modèles disponibles',
+      description:
+        'Chaque outil et modèle qu’un exécuteur a signalé être connecté. Les combinaisons recommandées par l’application se créent et s’activent d’elles-mêmes dès qu’un exécuteur les signale ; créez-en un agent à partir de n’importe quelle autre.',
+      recommended: 'Activé automatiquement dès le signalement',
+      create: 'Créer',
+      createTitle: 'Créer un agent pour {{name}}',
+    },
+    cleanup: {
+      open: 'Nettoyer',
+      title: 'Supprimer les agents découverts inutilisés',
+      description:
+        'Agents créés par le rapport d’un exécuteur, que personne n’a activés et qui n’ont jamais été exécutés : peuvent être supprimés sans risque. Tout ce qui a changé depuis le chargement de cette liste est ignoré, pas supprimé.',
+      none: 'Rien à supprimer.',
+      select: 'Sélectionner {{name}}',
+      createdAt: 'Découvert {{when}}',
+      remove: 'Supprimer {{count}}',
+      done: '{{removed}} supprimés, {{skipped}} ignorés',
+    },
   },
   agentTypes: {
     label: "Type d'agent",

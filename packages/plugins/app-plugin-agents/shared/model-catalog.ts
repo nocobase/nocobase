@@ -188,6 +188,20 @@ export function modelLabel(tool: AgentTool, model: string): string {
   return label;
 }
 
+/**
+ * An agent's name is shown as a markdown mention link (`[@name](mention://…)`); a `[` or `]` in it closes that link
+ * early, breaking the mention. Model names an ACP tool reports sometimes carry them (a "Token Plan" option in
+ * brackets) or newlines: replace the former with the visually closest safe punctuation and the rest with spaces.
+ */
+export function sanitizeAgentNamePart(value: string): string {
+  return value
+    .replace(/\[/gu, '(')
+    .replace(/\]/gu, ')')
+    .replace(/[\u0000-\u001f\u007f]/gu, ' ')
+    .replace(/\s+/gu, ' ')
+    .trim();
+}
+
 /** An agent's name for a tool and model: "Claude · Opus 5.5". */
 export function agentNameOf(
   tool: AgentTool,
@@ -195,7 +209,8 @@ export function agentNameOf(
   displayModel?: string,
 ): string {
   if (!model) return TOOL_DISPLAY_NAMES[tool] ?? tool;
-  return `${TOOL_LABELS[tool]} · ${displayModel ?? modelLabel(tool, model)}`;
+  const label = sanitizeAgentNamePart(displayModel ?? modelLabel(tool, model));
+  return `${TOOL_LABELS[tool]} · ${label || model}`;
 }
 
 /** Whether two ids of one tool's model name the same model. */

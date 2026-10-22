@@ -189,6 +189,26 @@ const zhCN: AgentsResource = {
       enabled: '启用',
       done: '{{name}} 已保存',
     },
+    available: {
+      open: '新建 Agent',
+      title: '可用模型',
+      description:
+        '执行机已登录上报的每个工具和模型。应用常用清单里的组合在上报时自动创建并启用；其余的可以从这里选一个创建。',
+      recommended: '上报后自动启用',
+      create: '创建',
+      createTitle: '为 {{name}} 创建 Agent',
+    },
+    cleanup: {
+      open: '清理',
+      title: '清理未使用的发现项',
+      description:
+        '执行机上报产生、没人启用、也从未运行过的 Agent：可以直接删除。预览之后发生变化的项会跳过，不会被删除。',
+      none: '没有可清理的项。',
+      select: '选择 {{name}}',
+      createdAt: '发现于 {{when}}',
+      remove: '删除 {{count}} 项',
+      done: '已删除 {{removed}} 项，跳过 {{skipped}} 项',
+    },
   },
   agentTypes: {
     label: 'Agent 类型',

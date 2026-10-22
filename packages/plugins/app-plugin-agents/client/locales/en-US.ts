@@ -193,6 +193,26 @@ const pages = {
       enabled: 'Enabled',
       done: '{{name}} saved',
     },
+    available: {
+      open: 'Create agent',
+      title: 'Available models',
+      description:
+        'Every tool and model a runner has signed in reported. The application’s recommended ones create and enable themselves as soon as a runner reports them; create an agent from any other one.',
+      recommended: 'Enabled automatically when reported',
+      create: 'Create',
+      createTitle: 'Create an agent for {{name}}',
+    },
+    cleanup: {
+      open: 'Clean up',
+      title: 'Remove unused discovered agents',
+      description:
+        'Agents a runner’s report created that nobody enabled and that never ran: safe to remove outright. Anything changed since this list loaded is skipped, not removed.',
+      none: 'Nothing to remove.',
+      select: 'Select {{name}}',
+      createdAt: 'Discovered {{when}}',
+      remove: 'Remove {{count}}',
+      done: 'Removed {{removed}}, skipped {{skipped}}',
+    },
   },
   agentTypes: {
     label: 'Agent type',

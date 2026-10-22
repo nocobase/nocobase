@@ -44,6 +44,9 @@ import {
   type AgentName,
   type AgentView,
   type AvailableAgent,
+  type AvailableModel,
+  type CleanupCandidate,
+  type RunnerAgentCreateInput,
   type UserRef,
 } from '../../shared/agents.js';
 import type { BriefPreview, RunBrief } from '../../shared/briefs.js';
@@ -731,6 +734,53 @@ export const AvailableAgentSchema: z.ZodType<AvailableAgent> = z
       .meta({ description: 'Its runs that have not finished.' }),
   })
   .meta({ ref: 'AgentsAvailableAgent' });
+
+export const AvailableModelSchema: z.ZodType<AvailableModel> = z
+  .object({
+    tool: AgentToolSchema,
+    model: z.string().meta({
+      description:
+        'Normalized; empty for a tool that cannot list models (one entry stands for the whole tool).',
+    }),
+    displayModel: z.string().optional().meta({
+      description: 'As the tool names it, when known and different from `model`.',
+    }),
+    agentId: z.string().nullable().meta({
+      description: 'The agent already kept for this tool and model, if any.',
+    }),
+    status: z.enum(AGENT_STATUSES).nullable(),
+    recommended: z.boolean().meta({
+      description:
+        'In the application’s recommended list: a runner reporting it signed in creates and enables it on its own.',
+    }),
+    suggestion: z.object({ en: z.string(), zh: z.string() }).nullable(),
+  })
+  .meta({ ref: 'AgentsAvailableModel' });
+
+export const RunnerAgentCreateInputSchema: z.ZodType<RunnerAgentCreateInput> =
+  z.strictObject({
+    tool: AgentToolSchema,
+    model: z.string().max(200),
+    displayModel: z.string().min(1).max(200).optional(),
+    description: z.string().min(1).max(10_000).meta({
+      description:
+        'What it is good at: the project manager hands it work by this.',
+    }),
+    effort: z.string().trim().max(32).nullable().optional().meta({
+      description:
+        "Its default reasoning effort, one of its tool's; the tool's default when absent.",
+    }),
+  });
+
+export const CleanupCandidateSchema: z.ZodType<CleanupCandidate> = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    tool: AgentToolSchema.nullable(),
+    model: z.string().nullable(),
+    createdAt: dateTime,
+  })
+  .meta({ ref: 'AgentsCleanupCandidate' });
 
 export const AgentChangeSchema: z.ZodType<AgentChange> = z.object({
   id: z.string(),
