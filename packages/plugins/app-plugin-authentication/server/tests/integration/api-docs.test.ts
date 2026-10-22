@@ -219,10 +219,10 @@ describe('API documentation access and the Better Auth fragment', () => {
       cookieAuth: expect.objectContaining({
         type: 'apiKey',
         in: 'cookie',
-        name: 'main.session_token',
+        name: 'main__%2F.session_token',
       }),
     });
-    expect(session.cookie).toContain('main.session_token=');
+    expect(session.cookie).toContain('main__%2F.session_token=');
     expect(document.security).toEqual([{ cookieAuth: [] }]);
     for (const [pathname, item] of Object.entries(paths)) {
       if (!pathname.startsWith('/api/auth/')) continue;
