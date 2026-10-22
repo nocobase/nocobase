@@ -108,15 +108,16 @@ export async function issueVisibleTo(
   );
 }
 
-/** Whether the viewer may see the issue: it is live, and in no project or one they may see. */
+/** Whether the viewer's action reaches this live issue and its project. Defaults to visibility. */
 export async function canSee(
   conn: DatabaseConnection,
   viewer: Viewer,
   issue: Issue,
+  action: 'view' | 'edit' | 'comment' = 'view',
 ): Promise<boolean> {
   if (issue.deletedAt) return false;
   if (!inProjectScope(viewer, issue.projectId)) return false;
-  const scope = scopeOf(viewer, 'pm.issues', 'view');
+  const scope = scopeOf(viewer, 'pm.issues', action);
   if (scope === 'all' || scope === 'none') return scope === 'all';
   if (!issue.projectId) return true;
   return (

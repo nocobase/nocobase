@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createHarness, type Harness } from '../harness.js';
+import type { MentionContext } from '../../server/kernel/kinds.js';
 
 let h: Harness;
 beforeEach(async () => {
@@ -31,6 +32,72 @@ function addBots(): void {
 }
 
 describe('kinds', () => {
+  it('passes validated issue permissions and the actual actor to mentions and candidate queries', async () => {
+    const seen: MentionContext[] = [];
+    h.services.kinds.add({
+      key: 'bot',
+      mention: {
+        async candidates(_conn, input) {
+          if (input.context) seen.push(input.context);
+          return [];
+        },
+        async mayMention(_conn, _id, input) {
+          if (input.context) seen.push(input.context);
+          return true;
+        },
+      },
+    });
+    const issue = await h.services.issues.create(alice(), { title: 'A' });
+    const viewer = {
+      ...alice(),
+      actor: {
+        type: 'user',
+        id: 'alice',
+        via: 'agent' as const,
+        trace: { agentId: 'worker' },
+      },
+      permissions: {
+        ...alice().permissions,
+        scopes: {
+          ...alice().permissions.scopes,
+          'pm.issues/edit': 'none' as const,
+        },
+      },
+    };
+    const created = await h.services.comments.create(viewer, issue.id, {
+      content: '[@Bot](mention://bot/one)',
+    });
+    await h.services.comments.update(viewer, created.comment.id, {
+      content: '[@Other](mention://bot/two)',
+    });
+    await h.services.commentQueries.mentionCandidates(viewer, {
+      issueId: issue.id,
+    });
+    expect(seen).toHaveLength(3);
+    for (const context of seen)
+      expect(context).toMatchObject({
+        issue: { id: issue.id },
+        viewer: {
+          userId: 'alice',
+          actor: {
+            type: 'user',
+            id: 'alice',
+            via: 'agent',
+            trace: { agentId: 'worker' },
+          },
+        },
+        canEditIssue: false,
+        canCommentIssue: true,
+      });
+    await expect(
+      h.services.commentQueries.mentionCandidates(
+        { ...viewer, projectIds: [] },
+        { issueId: issue.id },
+      ),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(seen).toHaveLength(3);
+  });
+
   it('knows people and the system only, until a plugin registers more', async () => {
     expect(h.services.kinds.info().map((kind) => kind.key)).toEqual([
       'user',

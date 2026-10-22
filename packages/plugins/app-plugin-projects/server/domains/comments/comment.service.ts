@@ -20,6 +20,7 @@ import type { Issue } from '../../../shared/issues.js';
 import { requireAction, type Viewer } from '../../access/viewer.js';
 import type { ActivityRecorder } from '../../kernel/activity.js';
 import type { Actor } from '../../kernel/actor.js';
+import { mentionContext } from './mention-context.js';
 import { forbidden, invalid, notFound } from '../../kernel/errors.js';
 import type { IdSource } from '../../kernel/ids.js';
 import type { KindRegistry } from '../../kernel/kinds.js';
@@ -189,10 +190,13 @@ export function createCommentService(deps: CommentDeps): CommentService {
     }
     const note = isNote(content);
     const refs = mentions(content);
-    if (options.userId)
+    if (options.userId && refs.length > 0)
       await deps.kinds.requireMentions(tx.conn, refs, {
         userId: options.userId,
         note,
+        ...(options.viewer
+          ? { context: await mentionContext(tx.conn, options.viewer, issue) }
+          : {}),
       });
     const id = deps.ids.next();
     const now = new Date();
@@ -330,10 +334,12 @@ export function createCommentService(deps: CommentDeps): CommentService {
           throw forbidden('Only its author may edit a comment.');
         if (content === comment.content) return mapOne(tx, comment.id, viewer);
         const added = newMentions(comment.content, content);
-        await deps.kinds.requireMentions(tx.conn, added, {
-          userId: viewer.userId,
-          note: isNote(content),
-        });
+        if (added.length > 0)
+          await deps.kinds.requireMentions(tx.conn, added, {
+            userId: viewer.userId,
+            note: isNote(content),
+            context: await mentionContext(tx.conn, viewer, issue),
+          });
         const editedAt = new Date();
         await updateComment(tx.conn, comment.id, { content, editedAt });
         await record(tx, issue.id, viewer.actor, 'comment_edited', {

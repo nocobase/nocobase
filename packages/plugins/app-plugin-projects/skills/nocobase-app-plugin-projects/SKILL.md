@@ -83,7 +83,7 @@ grants from before roles moved to the App; the App converts them (for example, `
 - Comments (`/api/projects/issues/{issueId}/comments`, `/api/projects/comments/{commentId}…`): posting, replying and resolving need
   `pm.issues` `comment`; only the author edits a comment (403 otherwise); deleting another's needs
   `moderate-comments`. Content is 1 to 200,000 characters (400 `INVALID_COMMENT`); a reply's parent must be a comment of the
-  same issue (400 `INVALID_PARENT`); resolving a reply is 400 `NOT_THREAD_ROOT`; mentioning what a kind refuses is 403 `MENTION_FORBIDDEN`.
+  same issue (400 `INVALID_PARENT`); resolving a reply is 400 `NOT_THREAD_ROOT`; mentioning what a kind refuses is 403 `MENTION_FORBIDDEN`, or a kind-specific refusal reason.
   Reactions (`POST …/react` and `…/unreact` with `{ emoji }`) take one of the fixed emoji (400 `INVALID_INPUT`).
 - Files (`shared/attachments.ts`): stored through `@nocobase/app-plugin-file` on the App's default Drive disk (400
   `FILES_UNAVAILABLE` without it), any type, at most 20 MiB each (413 `FILE_TOO_LARGE`). Uploading needs
@@ -97,6 +97,8 @@ grants from before roles moved to the App; the App converts them (for example, `
   `/api/acme/members`, `/api/acme/access/settings`).
 
 ## Verification
+
+Kinds receive optional `MentionContext` in both mention validation and candidate lookup for an existing issue. It includes the validated visible issue, the actual `Viewer` and actor, and whether the viewer's comment and edit scopes reach the issue. Keep application-specific mention policy in the kind; `mayMention` may throw a `DomainError` to explain a refusal. Existing kinds using only `userId`, `note`, `issueId`, `q` and `limit` remain compatible. No issue context is supplied for a candidate search before an issue exists, and internal `comments.post()` bypasses public mention validation, so a work handler must enforce its own loop protection.
 
 Work handlers receive the original optional `actor` on `onOwnerChanged`, `onUnblocked` and `onSubtasksFinished`, including `actor.trace.runId` when supplied. A status event moves as the system but records the actor it was fired with; pass the real actor when firing one, since an omitted actor defaults to the system.
 
