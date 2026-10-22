@@ -718,6 +718,7 @@ describe('the Agent page', () => {
     );
     fireEvent.click(within(drawer).getByTestId('cleanup-open-confirm'));
     const confirm = await screen.findByTestId('cleanup-confirm');
+    expect(screen.getByTestId('cleanup-confirm-overlay')).toBeVisible();
     fireEvent.click(within(confirm).getByTestId('cleanup-confirm-submit'));
     await waitFor(() =>
       expect(

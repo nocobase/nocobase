@@ -29,6 +29,8 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogPortal,
+  AlertDialogOverlay,
   AlertDialogTitle,
 } from '../../components/ui/alert-dialog.js';
 import { Button } from '../../components/ui/button.js';
@@ -271,6 +273,13 @@ export function CleanupDrawer({
       </SheetContent>
       {/* Render the confirmation portal after the sheet portal so its backdrop and popup cover virtualized rows. */}
       <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        {/* Base UI omits a nested backdrop unless explicitly requested. */}
+        <AlertDialogPortal>
+          <AlertDialogOverlay
+            forceRender
+            data-testid='cleanup-confirm-overlay'
+          />
+        </AlertDialogPortal>
         <AlertDialogContent data-testid='cleanup-confirm'>
           <AlertDialogHeader>
             <AlertDialogTitle>
