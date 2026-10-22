@@ -15,6 +15,7 @@ import {
   Layers,
   LayoutTemplate,
   ListChecks,
+  ListTodo,
   Monitor,
   MonitorSmartphone,
   Moon,
@@ -89,6 +90,7 @@ import { WorkflowManagementDemo } from './demo/lifecycle/workflow-management';
 import { LifecycleDiagramDemo } from './demo/lifecycle/lifecycle-diagram';
 import { KanbanDemo } from './demo/components/kanban';
 import { ApprovalDemo } from './demo/approval';
+import { TaskCenterUiDemo } from './demo/task-center';
 import { AuthenticationDemo } from './demo/auth';
 import { DeviceApprovalDemo } from './demo/auth/device-approval';
 import { PageContainerDemo } from './demo/components/page-container';
@@ -240,6 +242,10 @@ const itemPreviews: Record<string, ItemPreview> = {
   inbox: { path: '/demo/inbox/inbox', icon: Inbox },
   'inbox-button': { path: '/demo/inbox/inbox-button', icon: BellDot },
   'approval-ui': { path: '/demo/approval/approval-ui', icon: ListChecks },
+  'task-center-ui': {
+    path: '/demo/task-center/task-center-ui',
+    icon: ListTodo,
+  },
 };
 
 type ThemePreference = 'light' | 'dark' | 'system';
@@ -289,6 +295,9 @@ function AppContent(): ReactElement {
   }
   if (pathname.startsWith('/demo/approval/')) {
     return <ApprovalDemo />;
+  }
+  if (pathname.startsWith('/demo/task-center/')) {
+    return <TaskCenterUiDemo />;
   }
   if (pathname.startsWith('/demo/components/page-container')) {
     return <PageContainerDemo />;
