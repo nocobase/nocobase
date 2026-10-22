@@ -1,3 +1,4 @@
+import { deliverFixtureRepos as reportRepos } from './delivery-fixture.ts';
 // Collecting working directories: what is counted as unpushed, which directories the application's word and a low disk
 // remove, and which are never removed.
 import {
@@ -19,7 +20,6 @@ import {
   legacyMetaPath,
   markWorkspaceEnded,
   readWorkspaceMeta,
-  reportRepos,
   workspaceRecordPath,
   type Checkout,
   type WorkspaceMeta,

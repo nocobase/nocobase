@@ -1,10 +1,17 @@
+import {
+  userAdministrationServiceToken,
+  type UserAdministrationService,
+} from '@nocobase/app-plugin-authentication';
 import type {
   NotificationChannelContext,
   NotificationProviderContext,
 } from '@nocobase/app-plugin-notification';
+import { ServiceContainer } from '@nocobase/service-provider';
 import { describe, expect, it, vi } from 'vitest';
+import { inAppNotificationStoreToken } from '../server/tokens.js';
 
 import {
+  InAppChannel,
   createDatabaseProviderDefinition,
   createInAppChannelDefinition,
 } from '../server/definition.js';
@@ -68,81 +75,6 @@ describe('In-app Channel common input', () => {
       }),
     ).resolves.toMatchObject({ status: 'failed', disposition: 'never' });
     expect(deliver).toHaveBeenCalledOnce();
-  });
-
-  it('describes its test target without exposing storage terminology', () => {
-    const store = new MemoryInAppStore();
-
-    expect(createInAppChannelDefinition().test?.label).toMatchObject({
-      key: 'test.channels.inApp',
-      defaultValue: 'In-app',
-    });
-    expect(
-      createDatabaseProviderDefinition({
-        store,
-        recipientExists: async () => true,
-      }).label,
-    ).toMatchObject({
-      key: 'test.providers.builtIn',
-      defaultValue: 'Built-in',
-    });
-  });
-
-  it('uses the explicitly provided user ID for test delivery', () => {
-    const adapter = createInAppChannelDefinition().test;
-    expect(
-      adapter?.toSendInput({
-        actor: { userId: 'user-1' },
-        values: { recipient: 'user-1', title: 'Test', body: 'Hello' },
-        channelConfig: { provider: 'in-app' as const },
-      }),
-    ).toEqual({
-      to: 'user-1',
-      title: 'Test',
-      body: 'Hello',
-    });
-  });
-
-  it('builds validated targets from test-send fields', async () => {
-    const adapter = createInAppChannelDefinition().test!;
-    const input = {
-      actor: { userId: 'u' },
-      channelConfig: { provider: 'in-app' as const },
-    };
-    for (const [fields, target] of [
-      [
-        { route: '/topics/123?q=1#reply' },
-        { type: 'route', path: '/topics/123?q=1#reply' },
-      ],
-      [
-        { url: 'https://example.com/main/topics/123' },
-        { type: 'url', url: 'https://example.com/main/topics/123' },
-      ],
-    ] as const) {
-      expect(
-        await adapter.toSendInput({
-          ...input,
-          values: { title: 'Test', body: 'Body', ...fields },
-        }),
-      ).toMatchObject({ target });
-    }
-    expect(() =>
-      adapter.toSendInput({
-        ...input,
-        values: {
-          title: 'Test',
-          body: 'Body',
-          route: '/topic',
-          url: 'https://example.com',
-        },
-      }),
-    ).toThrow('Choose either');
-    expect(() =>
-      adapter.toSendInput({
-        ...input,
-        values: { title: 'Test', body: 'Body', url: 'javascript:alert(1)' },
-      }),
-    ).toThrow('Invalid notification target');
   });
 
   it('validates native IDs, complete content and targets before enqueueing', async () => {
@@ -214,4 +146,42 @@ describe('In-app Channel common input', () => {
       }),
     ]);
   });
+});
+
+it('resolves class dependencies through the container and stores one item per delivery', async () => {
+  const store = new MemoryInAppStore();
+  const users = { get: vi.fn().mockResolvedValue({ id: 'user' }) };
+  const container = new ServiceContainer();
+  container.instance(inAppNotificationStoreToken, store);
+  container.instance(
+    userAdministrationServiceToken,
+    users as unknown as UserAdministrationService,
+  );
+  const channel = new InAppChannel({ channelName: 'inbox', container });
+  const validated = channel.validateMessage({
+    to: 'user',
+    title: 'Notice',
+    body: 'Hello',
+  });
+  const identity = {
+    deliveryId: 'delivery',
+    notificationId: 'notification',
+    signal: new AbortController().signal,
+  };
+  const message = await channel.prepare({
+    ...identity,
+    message: validated.message,
+    recipient: validated.recipients[0],
+  });
+  expect(await store.countUnread('user')).toBe(0);
+  const input = {
+    ...identity,
+    message,
+    attemptId: 'attempt',
+    deadline: new Date(Date.now() + 10000).toISOString(),
+  };
+  expect(await channel.send(input)).toEqual({ status: 'accepted' });
+  expect(await channel.send(input)).toEqual({ status: 'accepted' });
+  expect(await store.countUnread('user')).toBe(1);
+  expect(users.get).toHaveBeenCalledWith('user');
 });

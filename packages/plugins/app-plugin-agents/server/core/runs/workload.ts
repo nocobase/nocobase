@@ -41,6 +41,7 @@ import {
   toRun,
   type RunRecord,
 } from './run.store.js';
+import type { ClaimService } from './claim.js';
 
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 1000;
@@ -179,7 +180,8 @@ export function explainWait(
     (runner) =>
       !runner.draining &&
       (runner.globalFree ?? 1) > 0 &&
-      (context.runnerUsed.get(runner.id) ?? 0) < runner.slots,
+      (context.runnerUsed.get(runner.id) ?? 0) <
+        Math.min(runner.slots, runner.reportedSlots ?? runner.slots),
   );
   if (free.length === 0)
     return wait('runnersBusy', { params: { runners: trusted.length } });
@@ -646,7 +648,7 @@ export async function readQueueWait(
   clock: Clock,
   runnerSource: WorkloadRunners,
   runId: string,
-  diagnose?: import('./claim.js').ClaimService['diagnose'],
+  diagnose?: ClaimService['diagnose'],
 ): Promise<RunWait | null> {
   const record = await runsRepo(conn).findOne({ filter: { id: runId } });
   if (!record || record.status !== 'queued') return null;

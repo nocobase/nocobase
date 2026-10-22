@@ -65,6 +65,7 @@ export function createChatSettingsService(deps: {
   readonly tx: TxRunner;
   readonly clock: Clock;
   readonly agents: Pick<AgentService, 'mayInvoke'>;
+  readonly nativeAvailable: () => Promise<boolean>;
 }): ChatSettingsService {
   const { tx, clock } = deps;
 
@@ -89,14 +90,28 @@ export function createChatSettingsService(deps: {
     };
   }
 
+  async function validateOnlineDefault(
+    patch: ChatSettingsPatch,
+  ): Promise<void> {
+    if (patch.defaultAgentId === 'online' && !(await deps.nativeAvailable()))
+      throw invalid('No enabled chat model is configured.', {
+        field: 'defaultAgentId',
+      });
+  }
+
   return {
     settings: (conn) => readSettings(conn ?? tx.read()),
 
-    updateSettings: (byUserId, patch) =>
-      tx.run(async ({ conn }) => {
+    updateSettings: async (byUserId, patch) => {
+      await validateOnlineDefault(patch);
+      return tx.run(async ({ conn }) => {
         const current = await readSettings(conn);
         const next: ChatSettings = { ...current, ...patch };
-        if (next.defaultAgentId !== null) {
+        if (
+          patch.defaultAgentId !== undefined &&
+          next.defaultAgentId !== null &&
+          next.defaultAgentId !== 'online'
+        ) {
           const agent = await findAgent(conn, next.defaultAgentId);
           if (!agent || agent.status !== 'enabled')
             throw invalid('defaultAgentId names no enabled agent.', {
@@ -122,17 +137,20 @@ export function createChatSettingsService(deps: {
             values: { key: CHAT_SETTINGS_KEY, ...values },
           });
         return next;
-      }),
+      });
+    },
 
     preferences: (userId, conn) => readPreferences(conn ?? tx.read(), userId),
 
-    updatePreferences: (userId, patch) =>
-      tx.run(async ({ conn }) => {
+    updatePreferences: async (userId, patch) => {
+      await validateOnlineDefault(patch);
+      return tx.run(async ({ conn }) => {
         const current = await readPreferences(conn, userId);
         const next: ChatPreferences = { ...current, ...patch };
         if (
           patch.defaultAgentId !== undefined &&
-          next.defaultAgentId !== null
+          next.defaultAgentId !== null &&
+          next.defaultAgentId !== 'online'
         ) {
           const agent = await findAgent(conn, next.defaultAgentId);
           if (!agent)
@@ -159,6 +177,7 @@ export function createChatSettingsService(deps: {
             values: { userId, ...values },
           });
         return next;
-      }),
+      });
+    },
   };
 }

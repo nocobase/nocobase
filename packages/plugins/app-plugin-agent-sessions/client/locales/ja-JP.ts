@@ -1,0 +1,362 @@
+import type { LocaleResource } from '@nocobase/i18n';
+
+import type enUS from './en-US.js';
+
+const jaJP: LocaleResource<typeof enUS> = {
+  navigation: {
+    agentSessions: '私のエージェント',
+  },
+  actions: {
+    close: '閉じる',
+    copy: 'コピー',
+    cancel: 'キャンセル',
+  },
+  status: {
+    permission: '許可を待っています',
+    loading: '読み込み中',
+    offline: 'コンピューターがオフラインです',
+    waiting: 'あなたが必要です',
+    active: '進行中',
+  },
+  errors: {
+    generic: '問題が発生しました。もう一度やり直してください。',
+    copy: 'クリップボードにコピーできませんでした。',
+    sessionNotFound:
+      'このセッションは存在しないか、あなたのものではありません。',
+  },
+  list: {
+    panelEmpty: '会話はありません',
+    expand: 'ショーセッション',
+    label: 'セッション',
+    title: '私のエージェント',
+    archived: 'アーカイブ済み',
+    archivedView:
+      'アーカイブ済みのセッションを選ぶと内容を表示します。開いているセッションと未送信の下書きはそのまま残ります。',
+    back: 'セッションに戻る',
+    new: '新しいセッション',
+    search: '検索セッション',
+    filter: 'ショー',
+    filters: {
+      all: 'すべて',
+      waiting_one: '私が必要です {{count}}',
+      waiting_other: '私が必要です {{count}}',
+      active_one: '進行中 {{count}}',
+      active_other: '進行中 {{count}}',
+    },
+    groups: {
+      today: '今日',
+      yesterday: '昨日',
+      week: '今週',
+      earlier: '以前',
+    },
+    empty:
+      'まだセッションがありません。エージェントを開始して、コンピュータ上のエージェントと会話します。',
+    noArchived: 'アーカイブされたセッションはありません。',
+    noMatch: '一致するセッションはありません。',
+    more: 'もっと見る',
+    allProjects: 'すべてのプロジェクト',
+    archive: 'アーカイブ',
+    restore: '復元',
+    archivedToast: '「{{title}}」をアーカイブしました',
+    restoredToast: '「{{title}}」を復元しました',
+    undo: '元に戻す',
+  },
+  links: {
+    title: 'タスク',
+    count_one: '{{count}}タスク',
+    count_other: '{{count}}タスク',
+    none: 'タスクはありません',
+    empty:
+      'このセッションにはまだタスクがありません。エージェントに、話し合った内容をタスクに変換するよう依頼します。',
+    created_one: '{{count}}タスクを作成しました',
+    created_other: '{{count}} タスクを作成しました',
+    start_one: '{{count}}タスクを開始します',
+    start_other: '{{count}} タスクを開始します',
+    startOne: '開始',
+    skip: '今ではありません',
+    startHint: '実行時のエージェントは計画を立て、作業を実行します。',
+    notStarted: '未開始',
+    started_one: '{{count}} 件を開始しました',
+    started_other: '{{count}} 件を開始しました',
+    left: '{{keys}} が {{status}} に残されました',
+    separator: ', ',
+    comma: ', ',
+    waiting: 'あなたが必要です {{count}}',
+    unknown: '不明',
+  },
+  newSession: {
+    sendUnconfirmed:
+      '送信が確認できませんでした。確認を回復するには、「元の送信を再試行」を使用します。',
+    settingsOutdated:
+      'このコンピュータのコマンド ラインは、このアプリケーションには古すぎます。 「マイコンピュータ」に表示されているように、そこで更新してください。',
+    settingsOffline:
+      'このコンピュータはオフラインです。ブリッジを再接続して設定をロードし、送信します。',
+    settingsLoading: '設定を読み込み中…',
+    settingsFailed: 'エージェント設定を読み込めませんでした。',
+    settingsRetry: 'リトライ設定',
+    settingsReset: 'エージェントのデフォルトを使用する',
+    settingsUnsupported:
+      'このエージェントは設定を公開しません。デフォルトが使用されます。',
+    settingsEmpty:
+      'このエージェントには構成可能な設定がありません。デフォルトが使用されます。',
+    pickComputer: 'コンピュータを選択してください',
+    noAgent: '利用可能なエージェントがいません',
+    folder: 'コンピュータ上のディレクトリ',
+    placeholder:
+      '必要なことを言ってください。一度に複数のことを行ったり、スクリーンショットを撮ったりしても問題ありません。',
+    accessHint:
+      'エージェントは、自分の端末と同様に、選択したディレクトリ内でフルアクセスで実行されます。',
+    noComputer: 'まずコンピュータを接続してください',
+    noComputerHint:
+      'セッションは自分のコンピュータ上で実行されます。エージェントは自分のアカウントでサインインし、許可されたフォルダ内で作業し、会話はここに保存されます。一度接続すれば、コンピュータの電源が入っているときはいつでもオンラインになります。私のエージェントは、要件について話し合い、明確にし、タスクを記録し、進捗状況を追跡するのに役立ちます。それらを開始すると、Studio のプロジェクト マネージャーがエージェントを調整して開発します。',
+    allOffline: 'コンピューターがオフラインです',
+    offlineHint:
+      'ログインするたびに接続を維持するには、これをコンピュータ上で実行します。',
+    noAgentTitle:
+      'このコンピュータでは準備ができているエージェントがありません',
+    noAgentHint:
+      'それらのいずれかをそこにインストールし、独自のコマンドでサインインします。ブリッジは 1 分ごとにチェックし、セットアップと起動が成功した後に再接続することなくリストします。',
+    supported: 'サポート: {{names}}',
+    failedAgent: '{{name}} を開始できませんでした: {{detail}}',
+    modelHint:
+      '使用できる最も強力なモデルを選択してください。作業を最適に分析して分解します。',
+    computers: '私のコンピューター',
+    manageComputers: 'コンピューターを管理してください…',
+    agents: 'このコンピュータ上のエージェント',
+    availableAgents: '利用可能なエージェント',
+    agentsHint:
+      'インストールされているエージェントのみがリストされます。ブリッジは毎分チェックします。エージェントの準備が整う前に、セットアップと起動を完了する必要があります。',
+    alsoSupported: '{{names}} もサポートされています',
+    thisComputer: 'このコンピュータ',
+    recentFolders: '最近使用した',
+    browseFolders: 'このコンピュータを参照…',
+    manageFolders: '許可するフォルダーを選択してください…',
+    foldersDefault: '今: ホームディレクトリすべて',
+    foldersDefaultRoots: '現在: ブリッジが許可するすべて',
+    foldersChosen_one: '現在: {{count}} フォルダー',
+    foldersChosen_other: '現在: {{count}} フォルダー',
+    changeFolders: '変更',
+    chooseFolder: '作業するフォルダーを選択してください',
+    project: 'セッションが機能するプロジェクト',
+    noProject: 'プロジェクトなし',
+  },
+  session: {
+    info: 'セッション情報',
+    archived:
+      'このセッションはアーカイブされています。続行するには復元してください。',
+    offline: '{{computer}} はオフラインです',
+    offlineBody:
+      '会話とそのタスクは、通常どおり読むためにここに保存されます。コンピュータが戻ってもセッションは継続します。',
+    working: 'エージェントは動作しています…',
+    startup: {
+      starting: 'コンピュータ上でエージェントを開始しています…',
+      opening: 'エージェントのセッションを開始しています…',
+      configuring: '設定を適用中…',
+    },
+    answering: '応答する',
+    asking: 'あなたの承認が必要です',
+    stop: '停止',
+    more: 'もっと見る',
+    rename: '名前を変更する',
+    showDetails: '詳細を見る',
+    hideDetails: '詳細を隠す',
+    details: 'セッション詳細',
+    removedComputer: 'コンピュータを削除しました',
+    about: 'セッション',
+    computer: 'コンピューター',
+    agent: 'エージェント',
+    mode: 'モード',
+    project: 'プロジェクト',
+    directory: 'ディレクトリ',
+    started: '開始しました',
+    usage: '使い方',
+    contextLabel: 'コンテキスト',
+    context: '{{size}} トークンのコンテキスト {{used}}',
+    cost: 'これまでのコスト: {{cost}}',
+    tokens: {
+      input: '入力',
+      cached: 'キャッシュ済み',
+      output: '出力',
+    },
+    record: 'レコード',
+    recordBody:
+      '完全な記録はここに保管されており、あなただけが見ることができます。',
+  },
+  composer: {
+    unconfirmed:
+      '配送は未確認です。元の送信を再試行するか、新しいメッセージとして編集してください (元のメッセージがすでに到着している可能性があります)。',
+    retrySubmission: '元の送信を再試行します',
+    editAsNew: '新しいメッセージとして編集',
+    sendUnconfirmed:
+      '送信が確認できませんでした。確認を回復するには、「元の送信を再試行」を使用します。',
+    sending: '送信中…',
+    expand: '拡張入力',
+    collapse: '入力を折りたたむ',
+    placeholder: '返信したり、次のことを聞いたり…',
+    busy: 'エージェントが応答中です。完了するとメッセージが送信されます。',
+    waiting:
+      '上記のリクエストに答えるか、その後に送信するメッセージを書いてください。',
+    offline: 'コンピューターはオフラインです。',
+    archived: 'セッションはアーカイブされます。',
+    send: '送信',
+    queue: 'このターン後に送信',
+    addImage: '画像追加',
+    removeImage: '画像を削除',
+    attached: 'メッセージと一緒です',
+    removeAttached: '{{name}}を削除',
+    commands: 'エージェントのコマンド',
+    mentions: 'タスクについて言及する',
+    keys: {
+      send: '送信',
+      queue: 'このターンが終わったら送信',
+      newline: '新しい行',
+      interrupt: 'このターンを停止して今すぐ送信',
+    },
+  },
+  choices: {
+    more: 'その他のオプション',
+  },
+  panel: {
+    fullScreen: '全ページを開く',
+  },
+  transcript: {
+    image: {
+      open: '画像プレビューを開く',
+      preview: '画像プレビュー',
+      zoomIn: '拡大してみる',
+      zoomOut: 'ズームアウト',
+      fit: '画面に合わせる',
+    },
+    thought: '思考',
+    plan: 'プラン {{done}}/{{total}}',
+    prompt: {
+      withdrawing: '出金中、コンピュータの確認を待っています',
+      withdrawn: '取り下げ済み',
+      withdraw: '取り下げ',
+      retry: '再試行',
+      copy: 'コピー',
+      edit: '編集して再送信',
+      editBody:
+        'このメッセージを別の下書きとして編集します。現在の下書きはそのまま残ります。',
+      attachmentError:
+        '元の添付ファイルを読み込めませんでした。編集する前に再試行してください。',
+      loading: 'メッセージと添付ファイルを読み込んでいます…',
+      unsupported:
+        'この古いメッセージは安全に取り消すことができません。コマンドラインを更新し、コンピュータ接続を再起動します。',
+      queued: 'キューに登録され、このターン終了時に送信されます',
+      cancelled: 'キャンセル済み',
+      failed: '未回答',
+    },
+    tools: {
+      separator: ', ',
+      read_one: '{{count}} ファイルを読み取ります',
+      read_other: '{{count}} ファイルを読み取ります',
+      edit_one: '編集された{{count}}ファイル',
+      edit_other: '編集された {{count}} ファイル',
+      delete_one: '{{count}} ファイルを削除しました',
+      delete_other: '{{count}} ファイルを削除しました',
+      move_one: '{{count}} ファイルを移動しました',
+      move_other: '{{count}} ファイルを移動しました',
+      search_one: '1 回検索しました',
+      search_other: '{{count}} 回検索しました',
+      execute_one: '{{count}} コマンドを実行しました',
+      execute_other: '{{count}} コマンドを実行しました',
+      think_one: '1 回思考しました',
+      think_other: '{{count}} 回思考しました',
+      fetch_one: '{{count}} ページをフェッチしました',
+      fetch_other: '{{count}} ページをフェッチしました',
+      other_one: '使用済み {{count}} ツール',
+      other_other: '中古 {{count}} ツール',
+    },
+    kinds: {
+      read: '読み取り',
+      edit: '編集',
+      delete: '削除',
+      move: '移動',
+      search: '検索',
+      execute: '実行',
+      think: '考える',
+      fetch: 'フェッチ',
+      other: 'ツール',
+    },
+    permission: {
+      title: '{{agent}} は続行する前に尋ねます',
+      timeout: '30分以内に誰も応答しない場合は拒否されます。',
+      declined: '拒否されました',
+      cancelled: '不要になりました',
+      timedOut: '30分間応答がなかった後、拒否されました',
+    },
+    turn: {
+      cancelled: '停止しました',
+      seconds_one: '所要時間 {{count}} 秒',
+      seconds_other: '所要時間 {{count}} 秒',
+      minutes: '所要時間 {{minutes}} 分 {{seconds}} 秒',
+      input: '入力 {{count}}',
+      cached: 'キャッシュされた{{count}}',
+      output: '出力 {{count}}',
+    },
+  },
+  folders: {
+    hint: '{{computer}} 上のフォルダー (一覧表示)。',
+    up: 'アップ',
+    choose: 'このフォルダーを選択してください',
+    empty: 'ここにはフォルダーがありません。',
+    failed: 'コンピューターはこのフォルダーを一覧表示できませんでした。',
+    truncated: '最初の 500 フォルダのみが表示されます。',
+  },
+  computers: {
+    outdated: {
+      title: 'このコンピュータのコマンド ラインを更新します ({{host}})',
+      body: 'アプリケーションは接続を拒否しました。アプリケーションはブリッジ プロトコル {{bridgeProtocol}} を話し、アプリケーションは {{protocol}} を必要とします。コンピューター上でこれを実行します。',
+      restart:
+        '最新のコマンド ラインはバックグラウンド接続を自動的に再開します。数分以内に再接続しない場合は、次を実行します。',
+    },
+    offline: 'オフライン',
+    title: '私のコンピューター',
+    description:
+      'これらのコンピュータは自分のセッションのみを実行し、エージェントはあなたと同じように動作します。チームのバックグラウンド作業を実行するマシンは個別に管理されます。',
+    none: 'まだコンピュータが接続されていません。',
+    online: 'オンライン',
+    lastSeen: '最後に見た {{time}}',
+    remove: '削除',
+    confirmRemove: '削除してください',
+    problems: {
+      notInstalled: 'はインストールされていません',
+      failed: 'を開始できませんでした',
+    },
+    recheckHint:
+      '接続中、ブリッジは 1 分ごとにエージェントを自動的に再度チェックします。',
+    ready: '準備完了',
+    name: '名前',
+    system: 'システム',
+    cli: 'コマンドライン',
+    folders: 'ディレクトリ',
+    allowedFolders: 'セッションが機能する場所',
+    defaultFolders: 'ホームディレクトリ',
+    defaultRoots: 'ブリッジで許可されているすべてのルート',
+    addFolder: 'フォルダーを追加する',
+    removeFolder: 'フォルダーを削除する',
+    resetFolders: 'ホームディレクトリ全体に戻る',
+    browseOffline: 'コンピュータがオンラインのときにフォルダを参照できます。',
+    foldersHint:
+      'セッションは、これらの下のどのフォルダーでも機能します。フォルダーを追加して、それらのフォルダーのみを許可します。',
+    foldersChosenHint:
+      'セッションはこれらのフォルダー内でのみ機能する可能性があります。',
+    add: 'コンピューターを接続する',
+    steps: {
+      agent: 'コーディング エージェントをインストールし、サインインします。',
+      agentHint:
+        'Codex、Claude Code、Gemini CLI、GitHub Copilot、Cursor、Qwen Code、Kimi CLI など: 独自のコマンドでサインインします。可能な限り強力なモデルを使用してください。',
+      login: 'アカウントでサインインする',
+      start: 'このコンピュータを接続したままにしてください',
+      startHint:
+        'バックグラウンドで実行され、ログインするたびに接続し、ネットワークが切断されるかコンピュータがスリープ状態になった後にも接続します。',
+      foreground:
+        'ターミナルを閉じるまでのみ接続するには、代わりに次を実行します。',
+      foldersHint:
+        'セッションはホーム ディレクトリのどこでも機能します。接続したら、「マイコンピュータ」内の他のフォルダを選択します。',
+    },
+  },
+};
+
+export default jaJP;

@@ -1,5 +1,37 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.13
+
+### Minor Changes
+
+- ab68344: Make `skills install`, `skills status` and the Skill synchronization in `update` handle every Skill a branded CLI package ships, discovered from `skills/*/SKILL.md` at run time, instead of only `nb-studio-cli`. The installation record `skills.json` becomes `{ version: 2, targets }` with a `skill` on each target; the original single-Skill file is still read and migrated on the next write. The result gains a `skills` list and a `skill` on each target; its `skill` and `hash` keep naming `nb-studio-cli`. When an update no longer ships a Skill, its registered copy is removed only if it still matches what was installed; an edited copy is kept with a warning.
+
+### Patch Changes
+
+- Updated dependencies [f2712b9]
+  - @nocobase/agent-protocol@0.1.0-beta.12
+
+## 0.1.0-beta.12
+
+### Patch Changes
+
+- Updated dependencies [301d309]
+- Updated dependencies [4f0d96e]
+  - @nocobase/agent-protocol@0.1.0-beta.11
+
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- c63a6e8: Reuse current registered session Skills without filesystem writes and wait for concurrent Skill installation instead of failing immediately. Record each lock owner and safely recover locks belonging to exited local processes, while preserving locks whose owners cannot be verified.
+
+## 0.1.0-beta.10
+
+### Patch Changes
+
+- Updated dependencies [32ed5e2]
+  - @nocobase/agent-protocol@0.1.0-beta.10
+
 ## 0.1.0-beta.9
 
 ### Patch Changes

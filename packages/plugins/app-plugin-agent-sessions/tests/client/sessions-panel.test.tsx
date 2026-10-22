@@ -21,6 +21,11 @@ import {
 } from '../../client/panel.js';
 import plugin from '../../client/plugin.js';
 import { ApplicationCacheContext } from '../../client/query-cache.js';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '../../client/components/ui/dropdown-menu.js';
 import type { Computer, Session } from '../../shared/api.js';
 
 const session: Session = {
@@ -460,4 +465,123 @@ describe('the sessions panel', () => {
       }),
     );
   });
+});
+
+it('lets a host replace controls across panel views while retaining session commands', async () => {
+  const { update, requests } = await setup({
+    renderHeaderActions: (items) => (
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<button type='button' />}>
+          Host controls
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>{items}</DropdownMenuContent>
+      </DropdownMenu>
+    ),
+  });
+  const title = await screen.findByRole('heading', { name: session.title });
+  expect(
+    within(title).getByRole('button', { name: session.title }),
+  ).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Host controls' }));
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Rename' }));
+  const rename = await screen.findByRole('textbox', { name: 'Rename' });
+  fireEvent.change(rename, { target: { value: 'Host toolbar conversation' } });
+  fireEvent.keyDown(rename, { key: 'Enter' });
+  await waitFor(() =>
+    expect(requests).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: 'agentSessions/sessions/session',
+        method: 'PATCH',
+        json: { title: 'Host toolbar conversation' },
+      }),
+    ),
+  );
+  update({ view: { kind: 'new' } });
+  expect(
+    await screen.findByRole('button', { name: 'Host controls' }),
+  ).toBeVisible();
+  update({ view: { kind: 'list' } });
+  expect(
+    await screen.findByRole('button', { name: 'Host controls' }),
+  ).toBeVisible();
+});
+
+it('adds side history without remounting the draft, keeps its context and selects sessions in place', async () => {
+  const { update, onViewChange } = await setup({
+    view: { kind: 'new' },
+    attach: {
+      id: 'note',
+      attachments: [
+        { id: 'note', label: 'Keep this context', text: 'Context details' },
+      ],
+    },
+    renderHeaderActions: () => <button>Host controls</button>,
+  });
+  const box = await screen.findByRole('textbox');
+  fireEvent.change(box, { target: { value: 'Unsent draft' } });
+  update({ showHistory: true });
+  const history = await screen.findByRole('region', { name: 'Sessions' });
+  expect(screen.getByDisplayValue('Unsent draft')).toBe(box);
+  expect(box).toHaveValue('Unsent draft');
+  expect(screen.getByText('Keep this context')).toBeVisible();
+  fireEvent.click(within(history).getByText(session.title));
+  expect(onViewChange).toHaveBeenLastCalledWith({
+    kind: 'session',
+    sessionId: 'session',
+  });
+  update({ showHistory: false });
+  expect(screen.getByRole('textbox')).toBe(box);
+  update({
+    view: { kind: 'session', sessionId: 'session' },
+    showHistory: true,
+  });
+  const title = await screen.findByRole('heading', { name: session.title });
+  fireEvent.click(within(title).getByRole('button', { name: session.title }));
+  expect(await screen.findByRole('menuitem', { name: 'Rename' })).toBeVisible();
+  expect(screen.getByRole('menuitem', { name: 'Archive' })).toBeVisible();
+  expect(screen.getByRole('menuitem', { name: 'Show details' })).toBeVisible();
+});
+
+it('uses the host mode title and new action above search and state filters, with a plain empty row', async () => {
+  const { update } = await setup({
+    view: { kind: 'new' },
+    showHistory: true,
+    title: 'My Agent',
+    historyActions: <button>New conversation</button>,
+    renderHeaderActions: () => <button>Host controls</button>,
+  });
+  const history = await screen.findByRole('region', { name: 'Sessions' });
+  expect(
+    within(history).getByRole('heading', { name: 'My Agent' }),
+  ).toBeVisible();
+  expect(
+    within(history).getByRole('button', { name: 'New conversation' }),
+  ).toBeVisible();
+  expect(screen.queryByRole('heading', { name: 'New session' })).toBeNull();
+  expect(within(history).queryByRole('combobox')).toBeNull();
+  fireEvent.click(within(history).getByRole('button', { name: 'Needs me 0' }));
+  expect(await within(history).findByText('No conversations')).toBeVisible();
+  fireEvent.click(
+    within(history).getByRole('button', { name: 'All', exact: true }),
+  );
+  fireEvent.change(
+    within(history).getByRole('textbox', { name: 'Search sessions' }),
+    { target: { value: 'not here' } },
+  );
+  expect(within(history).getByText('No conversations')).toBeVisible();
+  fireEvent.click(
+    within(history).getByRole('button', { name: 'Archived', exact: true }),
+  );
+  expect(
+    within(history).getByRole('button', { name: 'Archived', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.click(
+    within(history).getByRole('button', { name: 'Archived', exact: true }),
+  );
+  expect(
+    within(history).getByRole('button', { name: 'My computers' }),
+  ).toBeVisible();
+  update({ showHistory: false });
+  expect(screen.queryByRole('region', { name: 'Sessions' })).toBeNull();
+  expect(screen.getByRole('heading', { name: 'My Agent' })).toBeVisible();
 });

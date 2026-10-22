@@ -76,6 +76,7 @@ export const NewIssueButton: typeof BaseNewIssueButton =
 /** The issues pages' keyboard shortcuts (`C` new issue, ⌘K search) and their help. */
 export const PmShortcuts: typeof BasePmShortcuts = bound(BasePmShortcuts);
 export { useNewIssueShortcut } from './components/use-new-issue-shortcut.js';
+export { IssueCreationModeContext } from './kit/issue-creation.js';
 export type { PlanListItemProps } from './kit/plans/plan-list-item.js';
 /**
  * Operation plans, headless: the UI Library's `plan-card` block draws the card, the confirmation, the undo preview
@@ -132,6 +133,8 @@ export { IntakeAgentSlot, PageContextProvider } from './kit/page-slots.js';
 export { useViewer } from './hooks/use-viewer.js';
 export { canManageProject, canUseSetting } from './lib/permissions.js';
 export { pmKeys } from './api/keys.js';
+/** Use the same history pagination protection in an application's own query cache. */
+export { PmQueryClient } from './api/invalidate-queries.js';
 export {
   announcedIssueIds,
   changedIssueSegments,

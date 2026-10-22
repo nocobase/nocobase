@@ -2,6 +2,10 @@
 
 Read this before changing the build, packing a deployment archive, building or editing the Docker image, setting `CDN_BASE_URL`, or building for another platform. The deployment process itself is in the [deployment Skill](../skills/nocobase-deployment/SKILL.md), and dependency placement and the build failure table are in [where to declare a dependency](../skills/nocobase-app-development/references/dependencies.md).
 
+## Client typechecking
+
+Keep `types: ["node"]` in the client `tsconfig.json`. Shared contracts from database and lifecycle packages resolve to their TypeScript sources in a workspace and require Node.js declarations during typechecking. Declare that requirement explicitly instead of relying on unrelated plugin imports to load the declarations; type-only imports still disappear from the browser bundle.
+
 ## CDN assets at build time
 
 `CDN_BASE_URL` sets Vite's `base` only during a production build: `CDN_BASE_URL=https://cdn.example.com/my-app/v1/ pnpm build`. Use a full HTTPS URL ending in `/`; unset, empty or whitespace-only values keep the default `./`. `pnpm build` reads it from the process environment, then `.env.local`, then `.env`; development ignores it and continues using `APP_BASE_PATH`. It is a build parameter, absent from `config variables` and `dist/variables.json`, with no `config.yml` setting. Changing it requires rebuilding.

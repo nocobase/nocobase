@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -5,7 +6,7 @@ import {
   createTestAppConfig,
   runAppCommand,
 } from '@nocobase/app-testing/cli';
-import { expect, it, vi } from 'vitest';
+import { expect, it } from 'vitest';
 
 import CountEntries from '../../cli/count.js';
 import cliPlugin from '../../cli/index.js';
@@ -14,7 +15,6 @@ import { createApp as createFixtureApp } from '../fixtures/app/server/app.js';
 it('runs the contributed command with an isolated database and storage', async () => {
   const config = await createTestAppConfig();
   let storageDir: string | undefined;
-  vi.stubEnv('APP_STORAGE_DIR', config.directory);
   try {
     expect(cliPlugin.commands?.count).toBe(CountEntries);
     const run = await runAppCommand(
@@ -37,9 +37,8 @@ it('runs the contributed command with an isolated database and storage', async (
       command: 'reading-list count',
       result: { count: 0 },
     });
-    expect(storageDir).toBe(config.directory);
+    expect(storageDir).toBe(path.join(config.directory, 'storage'));
   } finally {
-    vi.unstubAllEnvs();
     await config.dispose();
   }
 });

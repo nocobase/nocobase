@@ -1,11 +1,9 @@
+import type { DatabasePolicyMap } from '../../policy-map.js';
 import type { CollectionBuilder } from '../../../collection/builder/builder.js';
 import type { ConnectionCollections } from '../../../collection/registry/types.js';
 import type { CollectionMetadataService } from '../../../metadata/service.js';
 import type { QueryAdapter } from '../../../query/types.js';
-import type {
-  NormalizedRepositoryPolicy,
-  RepositoryPolicy,
-} from '../../../repository/policy/types.js';
+import type { NormalizedRepositoryPolicy } from '../../../repository/policy/types.js';
 import { normalizeRepositoryPolicy } from '../../../repository/policy/normalize.js';
 import { expandPolicyRefs } from '../../../repository/policy/refs.js';
 import type {
@@ -100,8 +98,8 @@ export class PolicyBoundConnection implements ScopedDatabaseConnection {
 
   /**
    * A collection the map does not cover returns an unbound Repository, which
-   * is why this cannot promise a ScopedRepository. Tightening that is what
-   * `requireScope` on the Collection is for.
+   * is why this cannot promise a ScopedRepository. Use connection.restrict()
+   * when unlisted collections must be denied.
    */
   repository<
     TRecord extends object = RepositoryRecord,
@@ -185,9 +183,7 @@ export class PolicyBoundConnection implements ScopedDatabaseConnection {
 /** Bind normalized Policies, per Collection, to a connection for one principal. */
 export function bindPolicies<P>(
   connection: PolicyBindableConnection,
-  policies: Readonly<
-    Record<string, RepositoryPolicy | ((principal: P) => RepositoryPolicy)>
-  >,
+  policies: DatabasePolicyMap<P>,
   principal: P,
 ): ScopedDatabaseConnection {
   const normalized = Object.fromEntries(

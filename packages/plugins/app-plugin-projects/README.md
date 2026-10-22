@@ -24,7 +24,7 @@ Projects, issues, fixed statuses, labels and members for a NocoBase application.
   also do work (`work`, an `IssueWorkHandler`, `server/kernel/work.ts`): unless a plugin binds `projectsTriggersToken`,
   every change, comment and release is handed, in its transaction, to the work handler of each kind it concerns (the
   executor before and after, the kinds a comment mentions or answers), which answers what it started (`RunAttempt[]`;
-  `collectRunAttempts` gathers them around a call). A handler asks `projects.subtasks.blockersOf` whether the issue
+  `collectRunAttempts` gathers them around a call). A handler that opts into `observesIssueChanges` also receives creations and updates with an empty or different executor kind, once per change. Service writes pass their already authorized viewer to the observer, so nested routing need not acquire a second connection for permission reads. Issue responses and update events use the final snapshot after these transactional handlers. Creation in `in_progress` or a transition into it starts work; there is no separate start option. A handler asks `projects.subtasks.blockersOf` whether the issue
   waits for unfinished issues and then starts nothing (`skipped: 'blocked'`); it starts nothing either for an issue in
   backlog (`BACKLOG_STATUS`, `skipped: 'dormant'`), or for a principal's comment past a limit the kind keeps
   (`skipped: 'limited'`). A comment of anyone but the system reaches the handlers, with the person it
@@ -233,6 +233,8 @@ The plugin seeds no roles: the application that assembles it seeds its own (the 
 | `/projects`, `/projects/new`          | Projects; a new one (a project's page is the application's) |
 
 My tasks combines owned and executed issues, and the New issue dialog opens on its "AI draft" tab (the last tab used is remembered in the browser): requirements typed or uploaded are split into a draft of issues, edited row by row and created together, after which the dialog closes. Its manual tab asks when the issue starts: "Start now" (`in_progress`) or "Later" (`backlog`), and preselects the default executor. Nothing asks "Start now?" any more: moving an issue to `in_progress` starts its work.
+
+Applications that create tasks through conversation can render the retained create and subtask pages under `IssueCreationModeContext.Provider` (from `client/kit`) with `value='manual'`. This shows only the original guarded form, ignoring old AI tab parameters and preferences, without changing the default plugin pages.
 
 The settings pages are exported for the application to route under its own `/config` (`client/config.ts`: the issue
 prefix and labels), and components it reuses on its member pages are exported from

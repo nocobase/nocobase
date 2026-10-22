@@ -59,7 +59,7 @@ Maintained executable fixtures also live in `packages/tools/app-testing/tests/`,
 | Routes and Tabs           | Paths, parents, navigation/access, actual lazy loaders, direct URLs, reload, history, parent redirect, query preservation |
 | Components                | Props, interactions, accessibility, public exports, target App rendering and themes                                       |
 | React Providers           | Context values, composition order, cleanup, App-owned consumers                                                           |
-| Client ServiceProviders   | Service/Refine registration, options, lifecycle, startup failure and reverse cleanup                                      |
+| Client ServiceProviders   | Service registration, options, lifecycle, startup failure and reverse cleanup                                             |
 | Server Services/Providers | Original Token, lazy singleton behavior, lifecycle, failure cleanup                                                       |
 | HTTP contributions        | Production router requests, validation, status/body, authentication, allowed and denied authorization paths, and every route declared in the API document (`findUndeclaredApiRoutes`, `findApiDocumentSchemaProblems`) |
 | Migration/Seed            | Real database schema and metadata, `up`, reversible `down`, required records and repeat behavior                          |
@@ -89,7 +89,7 @@ Call actual component loaders and render public components through their support
 
 For UI work, verify shadcn interaction and keyboard behavior, the shared theme in light/dark modes, and loading, empty, error, and success states. An App alias resolving in one development environment does not prove compiled plugin imports resolve for an installed consumer.
 
-Use `en-US` as the locale key-shape source, run the relevant `i18n:check`/strict check, and render at least two supported languages. Public components must also work outside their plugin's render subtree. Server request tests cover session/header/default locale resolution and stable `code/ns/key/params` plus translated messages. Jobs, mail, and notifications must load resources before obtaining a fixed translator for a non-default recipient locale. Ensure emitted locale chunks are present in the build and tarball. See [internationalization](i18n.md).
+Use `en-US` as the locale key-shape source, confirm every locale manifest of the plugin and of libraries it depends on that ship translations lists all ten [supported languages](i18n.md#ship-all-ten-supported-languages) with complete resources, run the relevant `i18n:check`/strict check, and render at least two supported languages. Public components must also work outside their plugin's render subtree. Server request tests cover session/header/default locale resolution and stable `code/ns/key/params` plus translated messages. Jobs, mail, and notifications must load resources before obtaining a fixed translator for a non-default recipient locale. Ensure emitted locale chunks are present in the build and tarball. See [internationalization](i18n.md).
 
 ## Registry and Skill verification
 

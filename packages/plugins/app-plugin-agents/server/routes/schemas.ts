@@ -408,8 +408,19 @@ export const ConversationListQuerySchema: z.ZodType<
 
 /** Messages, newest page first; `after` reads what arrived since a `seq`. Up to 200 for a whole short chat. */
 export const MessageListQuerySchema: z.ZodType<
-  Paging & { readonly after?: number | undefined }
+  Paging & {
+    readonly after?: number | undefined;
+    readonly ids?: string | undefined;
+  }
 > = z.object({
+  ids: z
+    .string()
+    .min(1)
+    .max(4000)
+    .optional()
+    .describe(
+      'Comma-separated native UI message IDs to refresh revisions; at most 100.',
+    ),
   after: z.coerce
     .number()
     .int()
@@ -509,11 +520,11 @@ export const RegistrationTokenInputSchema: z.ZodType<RegistrationTokenInput> =
       .describe('The agent tools this runner accepts.'),
     slots: z.number().int().min(1).max(64).nullable().optional().meta({
       description:
-        "How many runs at once the runner takes; omitted or null leaves it to the runner. A runner's own `--slots` overrides it.",
+        'How many runs at once the runner takes from this application; omitted or null registers it with 4. The application keeps this setting and sends it to the runner in heartbeat answers.',
     }),
     toolSlots: ToolSlotsSchema.nullable().optional().meta({
       description:
-        "How many runs of each coding tool the runner takes at once; omitted or null for no limits per tool. A runner's own limits per tool (`--slots claude=2`) override it.",
+        'How many runs of each coding tool the runner takes from this application at once; omitted or null for no limits per tool. The application keeps these limits and sends them to the runner in heartbeat answers.',
     }),
   });
 
@@ -1097,6 +1108,7 @@ const runObject = z.object({
   finishedAt: dateTime.nullable(),
   lastActivityAt: dateTime.nullable(),
   cancelRequestedAt: dateTime.nullable(),
+  cancelledById: z.string().nullable(),
   failureReason: FailureReasonSchema.nullable(),
   failureDetail: z.string().nullable(),
   summary: z.string().nullable(),
@@ -1187,12 +1199,20 @@ export const RunEventItemSchema: z.ZodType<RunEvent> = RunEventSchema;
 /** The `meta` of a page read after a `seq`: the highest `seq` returned, and a token for the next page. */
 export const SeqPageMetaSchema: z.ZodType<{
   lastSeq: number;
+  nextAfter?: number;
   nextPageToken?: string | undefined;
 }> = z
   .object({
+    nextAfter: z
+      .number()
+      .int()
+      .optional()
+      .describe(
+        'Continue an incomplete forward page with after=nextAfter; lastSeq is the current conversation watermark.',
+      ),
     lastSeq: z.number().int().meta({
       description:
-        'The highest `seq` returned; ask for what follows with `after`.',
+        'The current conversation sequence watermark; when nextAfter is present, drain further pages first.',
     }),
     nextPageToken: z.string().optional(),
   })
@@ -1387,10 +1407,22 @@ const availability = z.object({
 });
 
 const conversationSummaryObject = z.object({
+  execution: z
+    .object({
+      status: z.enum(['running', 'idle']),
+      outcome: z.enum(['completed', 'cancelled', 'failed']).optional(),
+      requiresEffectReview: z.boolean().optional(),
+      waitingApproval: z.boolean().optional(),
+      interrupted: z.boolean().optional(),
+      messageId: z.string().optional(),
+      revision: z.number().int().nonnegative().optional(),
+    })
+    .optional(),
   id: z.string(),
   title: z.string().nullable(),
   titleSource: z.enum(TITLE_SOURCES),
   category: z.literal('chat'),
+  showInChatList: z.boolean(),
   source: z.string(),
   mode: z.enum(['online', 'runner']),
   agent: conversationAgent,
@@ -1703,17 +1735,20 @@ const runnerObject = z.object({
     description:
       'How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own.',
   }),
-  draining: z.enum(['updatePending', 'pruning']).optional().meta({
+  reportedSlots: z.number().int().nonnegative().optional(),
+  capacitySource: z.enum(['online', 'legacyLocal']).optional(),
+  capacityReportedAt: z.iso.datetime().optional(),
+  draining: z.enum(['updatePending', 'pruning', 'diskLow']).optional().meta({
     description:
       'Why the runner temporarily accepts no new work, regardless of available slots.',
   }),
   globalFree: z.number().nonnegative().optional().meta({
     description:
-      'Free slots reported in the latest heartbeat across all applications; absent before a heartbeat.',
+      'Free slots from the latest heartbeat; updated runners report this application only. Absent before a heartbeat.',
   }),
   toolLoad: z.partialRecord(AgentToolSchema, ToolLoadSchema).nullable().meta({
     description:
-      'What it last reported per coding tool it limits on its own side, across every application it serves: how many runs of each it holds at most and could take now.',
+      'Actual tool capacity and free slots from the latest heartbeat; updated runners report this application only.',
   }),
   acceptJobs: z.boolean(),
   policy: RunnerPolicySchema.nullable(),

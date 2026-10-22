@@ -121,8 +121,13 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
           audience: 'public',
           authenticated: true,
         });
-      const announcer = createChangeAnnouncer((change) =>
-        topic.publish(change),
+      const announcer = createChangeAnnouncer(
+        (change) =>
+          void topic
+            .publish(change)
+            .catch((error: unknown) =>
+              console.error('Projects realtime announcement failed.', error),
+            ),
       );
       this.releases.push(
         events.onAny((event) => {

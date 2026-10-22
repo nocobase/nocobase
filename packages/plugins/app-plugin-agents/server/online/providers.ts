@@ -24,7 +24,7 @@ import type {
   LanguageModel,
   RerankingModel,
 } from 'ai';
-import { APICallError } from 'ai';
+import { APICallError, wrapLanguageModel } from 'ai';
 import packageMetadata from '@nocobase/app-plugin-agents/package.json' with { type: 'json' };
 import { randomUUID } from 'node:crypto';
 import { createOllama } from 'ollama-ai-provider-v2';
@@ -150,7 +150,35 @@ export function languageModel(
     case 'alibaba':
       return createAlibaba(settings)(model);
     case 'moonshotai':
-      return createMoonshotAI(settings)(model);
+      return wrapLanguageModel({
+        model: createMoonshotAI(settings)(model),
+        middleware: {
+          specificationVersion: 'v4',
+          transformParams: async ({ params }) => {
+            // The SDK silently drops schemas for Moonshot model IDs outside this list.
+            const supported =
+              model.startsWith('kimi-k') ||
+              [
+                'moonshot-v1-8k',
+                'moonshot-v1-32k',
+                'moonshot-v1-128k',
+                'moonshot-v1-auto',
+                'moonshot-v1-8k-vision-preview',
+                'moonshot-v1-32k-vision-preview',
+                'moonshot-v1-128k-vision-preview',
+              ].includes(model);
+            if (
+              params.responseFormat?.type === 'json' &&
+              params.responseFormat.schema &&
+              !supported
+            )
+              throw new Error(
+                'The Moonshot model does not support structured output.',
+              );
+            return params;
+          },
+        },
+      });
     case 'cohere':
       return createCohere(settings)(model);
     case 'ollama':
@@ -160,6 +188,7 @@ export function languageModel(
         name: 'openai-compatible',
         baseURL: settings.baseURL ?? '',
         includeUsage: true,
+        supportsStructuredOutputs: true,
         headers: settings.headers,
         fetch: settings.fetch,
         ...(settings.apiKey ? { apiKey: settings.apiKey } : {}),

@@ -49,6 +49,7 @@ import {
 import { RealtimeProvider } from '../realtime/provider.js';
 import {
   createAppDatabaseTaskContributions,
+  type AppServerPluginSnapshot,
   type AppServerPluginLocales,
   type ResolvedAppServerPlugins,
 } from '../plugins/index.js';
@@ -150,6 +151,7 @@ export class Application<
   private startPromise: Promise<void> | undefined;
   private websocketHandler: AppWebSocketHandler | undefined;
   private appPackageName: string | undefined;
+  private registeredServerPluginsValue: readonly AppServerPluginSnapshot[] = [];
   /** Defaults match an application that registered no server plugins. */
   private databaseTaskContributionsValue: AppDatabaseTaskContributions = {
     appPackageName: 'app',
@@ -237,10 +239,35 @@ export class Application<
     return this.databaseTaskContributionsValue;
   }
 
+  /** Static registration facts only: reading this never constructs Providers or executes Route factories. */
+  public get registeredServerPlugins(): readonly AppServerPluginSnapshot[] {
+    return this.registeredServerPluginsValue;
+  }
+
   public addServerPlugins(serverPlugins: ResolvedAppServerPlugins): void {
     this.appPackageName = serverPlugins.appPackageName;
     this.databaseTaskContributionsValue =
       createAppDatabaseTaskContributions(serverPlugins);
+    this.registeredServerPluginsValue = Object.freeze([
+      ...this.registeredServerPluginsValue,
+      ...serverPlugins.plugins.map(({ definition, metadata }, index) =>
+        Object.freeze({
+          order: this.registeredServerPluginsValue.length + index + 1,
+          packageName: metadata.packageName,
+          version: metadata.version,
+          rootDir: metadata.rootDir,
+          baseDir: metadata.baseDir,
+          contributions: Object.freeze({
+            serviceProviders: definition.serviceProviders.length,
+            routes: definition.routes.length,
+            locales: Boolean(definition.locales),
+            migrations: Boolean(definition.database?.migrations),
+            seeds: Boolean(definition.database?.seeds),
+            jobLocations: definition.queue?.jobs?.length ?? 0,
+          }),
+        }),
+      ),
+    ]);
     for (const plugin of serverPlugins.plugins) {
       for (const Provider of plugin.definition.serviceProviders) {
         this.addServiceProvider(Provider);

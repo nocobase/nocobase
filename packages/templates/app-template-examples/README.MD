@@ -1,6 +1,6 @@
 # NocoBase 3 Examples
 
-A full-stack NocoBase 3 application. The server runs on `@nocobase/app-server` and the browser client is React with Refine, shadcn/ui, and Tailwind CSS.
+A full-stack NocoBase 3 application. The server runs on `@nocobase/app-server` and the browser client is React with shadcn/ui and Tailwind CSS.
 
 You own everything in this directory. Add pages, API routes, database tables, and business logic directly here — this is your application's source code, not a framework you extend from the outside.
 
@@ -32,6 +32,10 @@ Article migration and seed sources create six articles on a fresh managed defaul
 Every `/api` route the application writes declares itself for the API document that signed-in users and API keys read at `/api/swagger/docs`. `server/routes/articles.ts` shows the pattern: `describeRoute()` from `@nocobase/app-server/router` with the application's `Examples` tag, a summary, an `operationId` such as `examplesCreateArticle`, and the responses through `dataResponse()`, `listResponse()` and `apiErrorResponse()` for each status the route can produce; `apiValidator()` validates the query, path and body and documents them along with the `400` it answers, so a route lists `400` itself only for another reason; the response schemas live in `server/routes/schemas.ts` with `.meta({ ref })`. The public `GET /api/example` declares `security: []`, and the stand-ins that answer `503 DATABASE_UNAVAILABLE` while no database is configured are hidden with `describeRoute({ hide: true })`. Data endpoints such as the analytics and CRM exposures are documented by the framework without a declaration. `tests/logic/openapi.test.ts` starts the whole application and checks that every route is declared, every `operationId` is present and unique, and `findApiDocumentSchemaProblems()` finds nothing.
 
 Business lists reuse the template's standard `DataTable` and companions from `#components/data-table`. The template declares the compatible TanStack Table v8 dependency and provides controlled server pagination/sorting; application agents should not generate an independent table engine. See the [table guide](.agents/skills/nocobase-app-development/references/frontend/references/table.md).
+
+## OnlineAgent example
+
+Open **Agents → Models** to configure a service and enable a chat model, then open the header chat button, press Cmd/Ctrl+J or use the homepage Online Agent card. [OnlineAgent usage and verification](online-agent.md) explains model configuration, permissions, saved history and the distinction between the local HTTP fixture and a real model service.
 
 ## Internationalization example
 
@@ -569,11 +573,13 @@ An environment variable a section declares takes precedence over the file, and t
 
 Tests live in `tests/`, never beside the source they cover. Put logic and integration tests under `tests/logic/` and component tests under `tests/components/`. Browser tests belong in `tests/playwright/`, which Vitest skips. Playwright does not start the application: start it first (`pnpm dev`, or `pnpm build` and then the built application), then run `pnpm test:e2e`; each test reads the application URL, including its base path, from `APP_URL`. Tests that only need a real server, real authentication, or a real database run under Vitest with `createAppTest()` from `@nocobase/app-testing/server`.
 
-### Notification testing
+Application tests use the `/server`, `/client` and `/cli` entries of `@nocobase/app-testing`. Start page tests from `tests/components/page-harness.test.tsx`: it uses `renderWithApp()` with real application hooks, strict translations, permission checks and a test toaster. Answer requests through `answerApi()` and replace external services through `services`, without also registering their owning plugins. The template's Vitest configuration includes client plugins in custom package scopes so their contexts and service tokens remain shared. See `.agents/skills/nocobase-app-development/references/testing.md` for fixture ownership and complete server, migration and CLI examples.
 
-After signing in with the `notification:test` `send` permission, send a real message through the durable Notification Manager with `POST <APP_BASE_PATH>/api/notifications/testSends`; `GET <APP_BASE_PATH>/api/notifications/testTargets` lists each channel and the fields its test takes. Examples enables the built-in database-backed In-app channel by default: choose it, give a title and message, and leave the recipient blank to send to yourself. Read the message in the **Inbox** at `/inbox`. An explicit `notification.channels` setting in `config.yml` overrides the defaults; include the In-app channel there if you configure other channels.
+### Notification verification
 
-The form is generated from safe Channel test metadata; Email tests require an address and IM tests use the configured logical target. The button remains visible so configuration problems are discoverable. The server enforces the `notification:test` `send` permission only when the message is submitted.
+Exercise the application's business notification flow, or use a server-side command resolving `notificationServiceToken` and calling `send()` with complete messages and explicit recipients. Inspect the returned notification ID through the protected `/api/notifications/logs` API or the logs page installed by the application. Log access requires `page:notification.logs` `access`.
+
+Examples enables the database-backed `in-app` channel named `inbox` by default. Send to an explicit application user ID and read the delivered message at `/inbox`. A `notification.channels` setting in `config.yml` replaces the defaults; include `inbox` when configuring other channels.
 
 ## API documentation
 

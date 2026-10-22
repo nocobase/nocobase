@@ -34,7 +34,7 @@ describe('read-only workspace cleanup', () => {
   });
 
   it.each(['missing-git', 'remnants', 'lost-registration'])(
-    'rebuilds %s once and clears prepared state',
+    'preserves a damaged historical read-only directory (%s) until explicit cleanup',
     async (damage) => {
       const remote = makeRemote(root);
       const options = {
@@ -54,15 +54,9 @@ describe('read-only workspace cleanup', () => {
       const first = await checkout(options);
       await markDirsPrepared(paths, first.workDir, first.dirs);
       const dir = first.dirs[0]!.dir;
-      const cache = first.repos[0]!.cache;
       await first.release();
       if (damage === 'lost-registration') {
-        rmSync(dir, { recursive: true });
-        git(
-          ['worktree', 'add', '--detach', dir, 'refs/remotes/origin/main'],
-          cache,
-        );
-        rmSync(path.join(cache, 'worktrees'), { recursive: true });
+        rmSync(first.repos[0]!.gitDir, { recursive: true });
       } else {
         rmSync(damage === 'remnants' ? dir : path.join(dir, '.git'), {
           recursive: true,
@@ -70,17 +64,8 @@ describe('read-only workspace cleanup', () => {
         mkdirSync(dir, { recursive: true });
       }
       writeFileSync(path.join(dir, 'remnant'), 'left by interrupted cleanup');
-      const log = vi.fn();
-      const next = await checkout({ ...options, log });
-      expect(git(['rev-parse', '--is-inside-work-tree'], dir)).toBe('true');
-      expect(existsSync(path.join(dir, 'remnant'))).toBe(false);
-      expect(next.dirs[0]!.fresh).toBe(true);
-      expect(
-        log.mock.calls.filter(([line]) =>
-          String(line).includes('rebuilding read-only'),
-        ),
-      ).toHaveLength(1);
-      await next.release();
+      await expect(checkout(options)).rejects.toThrow();
+      expect(existsSync(path.join(dir, 'remnant'))).toBe(true);
     },
   );
 
@@ -193,17 +178,14 @@ describe('read-only workspace cleanup', () => {
       paths,
       appKey: 'app',
       subjectKey: 'PM-304',
-      dirs,
+      dirs: [{ ...dirs[0]!, branch: 'agent/neighbor' }],
     });
     const dir = first.dirs[0]!.dir;
     const cache = first.repos[0]!.cache;
     await first.release();
     rmSync(dir, { recursive: true });
-    git(
-      ['worktree', 'add', '--detach', dir, 'refs/remotes/origin/main'],
-      cache,
-    );
-    rmSync(path.join(dir, '.git'));
+    mkdirSync(dir, { recursive: true });
+
     try {
       await Promise.all([
         collectWorkspaces({ paths }),

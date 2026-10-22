@@ -1,39 +1,35 @@
 // @vitest-environment node
 
-import { fileURLToPath } from 'node:url';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import type { AuthorizationConfig } from '@nocobase/app-plugin-authorization/server';
+import {
+  type AppDriveConfig,
+  type AppLoggingConfig,
+  type AppQueueConfig,
+  type AppSessionConfigInput,
+  type CachingConfig,
+} from '@nocobase/app-server';
 import { type AppIdentityConfig } from '@nocobase/app-server/config';
 import {
   planAppDatabaseTasks,
   resolveAppMetadataStore,
   type AppDatabaseConfig,
 } from '@nocobase/app-server/database';
-import { createAppDatabaseTaskContributions } from '@nocobase/app-server/plugins';
-import { resolveStandaloneAppRuntime } from '@nocobase/app-server/node';
 import type { AppJobsConfig } from '@nocobase/app-server/jobs';
-import {
-  type CachingConfig,
-  type AppDriveConfig,
-  type AppLoggingConfig,
-  type AppQueueConfig,
-  type AppSessionConfigInput,
-} from '@nocobase/app-server';
+import { resolveStandaloneAppRuntime } from '@nocobase/app-server/node';
+import { createAppDatabaseTaskContributions } from '@nocobase/app-server/plugins';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { InAppChannel } from '@nocobase/app-plugin-notification-in-app/server';
 import {
   createNotificationRegistry,
   type NotificationConfig,
 } from '@nocobase/app-plugin-notification/server';
-import {
-  createInAppChannelDefinition,
-  createDatabaseProviderDefinition,
-  MemoryInAppStore,
-} from '@nocobase/app-plugin-notification-in-app/server';
 
 import appRuntime from '../../server/runtime.ts';
 
@@ -51,7 +47,7 @@ describe('application config', () => {
     await rm(configRoot, { recursive: true, force: true });
   });
 
-  it('offers in-app test sending by default and honors an explicit disabled configuration', async () => {
+  it('enables the in-app channel by default and honors an explicit disabled configuration', async () => {
     const directory = mkdtempSync(
       path.join(tmpdir(), 'examples-notification-config-'),
     );
@@ -65,46 +61,20 @@ describe('application config', () => {
           env: { AUTH_SECRET: 'test-auth-secret-at-least-32-characters' },
         });
       const runtime = await resolve();
-      const definition = createInAppChannelDefinition();
-      const registry = createNotificationRegistry()
-        .registerChannel(definition)
-        .registerProvider(
-          createDatabaseProviderDefinition({
-            store: new MemoryInAppStore(),
-            recipientExists: async () => true,
-          }),
-        );
+      const registry =
+        createNotificationRegistry().registerChannelType(InAppChannel);
       const config = runtime.config.get<NotificationConfig>('notification')!;
-      expect(registry.testTargets(config)).toEqual([
-        expect.objectContaining({
-          channel: expect.objectContaining({ type: 'in-app' }),
-          provider: expect.objectContaining({
-            type: 'in-app',
-          }),
-        }),
-      ]);
-      const channelConfig = config.channels.inbox!;
-      for (const recipient of ['current-user', 'another-user']) {
-        expect(
-          definition.test?.toSendInput({
-            actor: { userId: 'current-user' },
-            values: { recipient, title: 'Test', body: 'Hello' },
-            channelConfig,
-          }),
-        ).toMatchObject({
-          to: recipient,
-        });
-      }
+      expect(config.channels.inbox).toMatchObject({ provider: 'in-app' });
+      expect(() => registry.validate(config)).not.toThrow();
       writeFileSync(
         configPath,
         'notification:\n  channels:\n    inbox:\n      provider: in-app\n      enabled: false\n',
       );
       const disabled = await resolve();
-      expect(
-        registry.testTargets(
-          disabled.config.get<NotificationConfig>('notification')!,
-        ),
-      ).toEqual([]);
+      const disabledConfig =
+        disabled.config.get<NotificationConfig>('notification')!;
+      expect(disabledConfig.channels.inbox).toMatchObject({ enabled: false });
+      expect(() => registry.validate(disabledConfig)).not.toThrow();
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }

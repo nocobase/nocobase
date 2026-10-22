@@ -12,7 +12,8 @@ import {
   type AgentView,
   type AvailableAgent,
 } from '../../../shared/agents.js';
-import { catalogEntry, discoveryKey } from '../../../shared/model-catalog.js';
+import { discoveryKey } from '../../../shared/model-catalog.js';
+import type { AgentService } from './agent.service.js';
 import { discoveryPreferences } from './discovery.js';
 import type { AgentAvailability, Availability } from '../runs/availability.js';
 
@@ -51,6 +52,7 @@ export async function agentViews(
     readonly availability: Availability;
     readonly userId: string;
     readonly canEdit: boolean;
+    readonly suggestion: AgentService['suggestion'];
     readonly now: Date;
   },
 ): Promise<AgentView[]> {
@@ -58,8 +60,6 @@ export async function agentViews(
   const preferences = await discoveryPreferences(conn);
   return agents.map((agent): AgentView => {
     const entry = agent.modelEntries[0];
-    const known =
-      agent.tool && agent.model ? catalogEntry(agent.tool, agent.model) : null;
     const load = availability.get(agent.id);
     return {
       ...agent,
@@ -82,7 +82,10 @@ export async function agentViews(
       personalOnly: load?.personalOnly ?? false,
       unusable: unusableReason(agent, load, options.now),
       busy: load?.busy ?? 0,
-      suggestion: known ? known.goodAt : null,
+      suggestion:
+        agent.tool && agent.model
+          ? options.suggestion(agent.tool, agent.model)
+          : null,
       canEdit: options.canEdit && agent.source === 'runner',
     };
   });

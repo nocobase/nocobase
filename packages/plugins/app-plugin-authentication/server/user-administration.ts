@@ -373,7 +373,7 @@ class DefaultUserAdministrationService implements UserAdministrationService {
     await this.requireUser(userId);
     const context = await this.options.auth.administrationContext();
     await context.internalAdapter.deleteUserSessions(userId);
-    this.options.realtime?.disconnectUser(userId);
+    await this.options.realtime?.disconnectUser(userId);
   }
 
   async remove(userId: string, actorId: string): Promise<void> {
@@ -392,7 +392,7 @@ class DefaultUserAdministrationService implements UserAdministrationService {
       .deleteFrom('account')
       .where('userId', '=', userId)
       .execute();
-    this.options.realtime?.disconnectUser(userId);
+    await this.options.realtime?.disconnectUser(userId);
   }
 
   private async requireUser(userId: string): Promise<AdministratedUser> {

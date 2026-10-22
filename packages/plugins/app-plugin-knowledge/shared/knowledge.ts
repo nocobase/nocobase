@@ -487,6 +487,7 @@ export interface KnowledgeSearchProviderRank {
 export const KNOWLEDGE_TOPIC = 'knowledge';
 
 export interface KnowledgeChanged {
+  readonly spaceId?: string;
   readonly kind: 'knowledge.changed';
   readonly docId?: string;
   readonly proposalId?: string;
@@ -645,6 +646,14 @@ export interface KnowledgeChunkInfo {
   readonly state: KnowledgeIndexState | null;
   /** Why it failed, when it did. */
   readonly error: string | null;
+}
+
+/** How completely the indexer reports committed queue, progress and terminal state changes. */
+export type KnowledgeIndexNotifications = 'none' | 'partial' | 'complete';
+
+/** Optional response metadata: old servers and undeclared indexers require polling. */
+export interface KnowledgeIndexRefreshMeta {
+  readonly notifications?: KnowledgeIndexNotifications;
 }
 
 /** A document's sections and where they stand in the semantic index. */

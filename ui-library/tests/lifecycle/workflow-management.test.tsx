@@ -494,3 +494,54 @@ it('preserves execution links and sorting focus while using fresh callbacks', ()
   expect(props.onSort).not.toHaveBeenCalled();
   expect(nextSort).toHaveBeenCalledOnce();
 });
+
+it('renders static activity when ordering is unavailable and omits redundant secondary names', () => {
+  const labels = {
+    refresh: 'Refresh',
+    workflow: 'Workflow',
+    executionCount: 'Count',
+    executionActivity: 'Activity',
+  };
+  const props = {
+    loaded: true,
+    loading: false,
+    search: null,
+    empty: 'Empty',
+    labels,
+    onRefresh: vi.fn(),
+  };
+  const view = render(
+    <WorkflowDefinitionList
+      {...props}
+      rows={[
+        {
+          id: 'loan',
+          title: 'Loan approval',
+          name: 'Loan approval',
+          activity: 'View executions',
+        },
+      ]}
+    />,
+  );
+  expect(
+    screen.queryByRole('button', { name: 'Activity' }),
+  ).not.toBeInTheDocument();
+  expect(screen.getAllByText('Loan approval')).toHaveLength(1);
+  expect(
+    screen.getByRole('columnheader', { name: 'Activity' }),
+  ).not.toHaveAttribute('aria-sort');
+  const onSort = vi.fn();
+  view.rerender(
+    <WorkflowDefinitionList
+      {...props}
+      onSort={onSort}
+      sort={{ ascending: false }}
+      rows={[
+        { id: 'loan', title: <a href='/loan'>Loan approval</a>, activity: 3 },
+      ]}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Activity' }));
+  expect(onSort).toHaveBeenCalledOnce();
+  expect(screen.getByRole('link', { name: 'Loan approval' })).toBeVisible();
+});

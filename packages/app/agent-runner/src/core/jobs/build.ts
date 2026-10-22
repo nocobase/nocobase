@@ -32,6 +32,9 @@ import { NO_ISOLATION } from '../isolation.ts';
 import { runCommand } from './process.ts';
 import { JobFailure, type JobContext } from './types.ts';
 
+/** A build job's token without a username, as applications sent before usernames came with credentials. */
+export const LEGACY_JOB_GIT_USERNAME = 'x-access-token';
+
 /** The job directories of one application. */
 export function jobsRoot(workRoot: string): string {
   return path.join(workRoot, '.jobs');
@@ -113,15 +116,19 @@ export async function runBuild(
   try {
     context.phase('checkout');
     context.log('runner', `fetch ${spec.repo.url}`);
+    const repo = {
+      ...spec.repo,
+      auth: spec.repo.auth && {
+        username: spec.repo.auth.username ?? LEGACY_JOB_GIT_USERNAME,
+        token: spec.repo.auth.token,
+      },
+    };
     cache = await fetchRepo(
       context.paths,
-      {
-        url: spec.repo.url,
-        ...(spec.repo.auth ? { auth: spec.repo.auth } : {}),
-      },
+      { url: repo.url, ...(repo.auth ? { auth: repo.auth } : {}) },
       spec.repo.sha ? [spec.repo.sha] : [],
     );
-    const sha = await targetCommit(cache, spec.repo);
+    const sha = await targetCommit(cache, repo);
     await addJobWorktree(cache, src, sha);
     context.log('runner', `checked out ${sha}`);
     if (context.signal.aborted) throw context.signal.reason;

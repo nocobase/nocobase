@@ -9,14 +9,13 @@ import type {
   RepositoryMutationListeners,
   RepositoryMutationSubscriptionOptions,
 } from '../repository/events/types.js';
-import type {
-  NormalizedRepositoryPolicy,
-  RepositoryPolicy,
-} from '../repository/policy/types.js';
+import type { NormalizedRepositoryPolicy } from '../repository/policy/types.js';
 import type { DatabaseCapabilities, SchemaAdapter } from '../schema/adapter.js';
 import type { SchemaInspector } from '../schema/inspector/types.js';
 import type { DatabaseDriver, SchemaManagementMode } from './config.js';
 import type { DatabaseDriverRuntime } from './runtime.js';
+import type { RestrictedDatabase } from './restricted-database.js';
+import type { DatabasePolicyMap } from './policy-map.js';
 
 export interface DatabaseConnection {
   name: string;
@@ -43,18 +42,23 @@ export interface DatabaseConnection {
   >(
     collection: string,
   ): Repository<TRecord, TCreate, TUpdate>;
+  /** Create a RestrictedDatabase for one principal; unlisted collections are denied. */
+  restrict<P, const TCollection extends string>(
+    policies: DatabasePolicyMap<P, TCollection>,
+    principal: P,
+  ): RestrictedDatabase<TCollection>;
   /**
    * Bind a Policy per Collection for one principal.
    *
    * Binding lives here rather than on each Repository because a request
    * usually touches several Collections and takes fresh Repositories inside a
-   * transaction; one place to bind is also one place to see what this request
-   * was authorized to touch.
+   * transaction; one place to bind keeps those Repository policies together.
+   *
+   * The returned connection retains raw database access and permits unlisted
+   * collections. Use restrict() when those capabilities must not be exposed.
    */
   withPolicies<P>(
-    policies: Readonly<
-      Record<string, RepositoryPolicy | ((principal: P) => RepositoryPolicy)>
-    >,
+    policies: DatabasePolicyMap<P>,
     principal: P,
   ): ScopedDatabaseConnection;
   schema: SchemaAdapter;
@@ -129,13 +133,12 @@ export interface DatabaseConnection {
 }
 
 /**
- * A Connection carrying Policy bindings. It has no `withPolicies` of its own,
- * so the bindings cannot be replaced by a second call — narrowing them is
- * `narrow` on the Repository, and widening is not on offer.
+ * A connection carrying policy bindings while retaining raw access.
+ * Use DatabaseConnection.restrict() to create a RestrictedDatabase.
  */
 export interface ScopedDatabaseConnection extends Omit<
   DatabaseConnection,
-  'withPolicies' | 'transaction' | 'connect' | 'reconnect'
+  'restrict' | 'withPolicies' | 'transaction' | 'connect' | 'reconnect'
 > {
   /** The Policies in force, by Collection name. */
   explainPolicies(): Readonly<Record<string, NormalizedRepositoryPolicy>>;

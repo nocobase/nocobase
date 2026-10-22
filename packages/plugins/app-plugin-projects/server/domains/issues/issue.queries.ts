@@ -174,8 +174,8 @@ function listFilter(viewer: Viewer, query: IssueListQuery) {
     if (q)
       nodes.push(
         f.or([
-          f.string('title').includes(q),
-          f.string('identifier').includes(q),
+          f.string('title').includes(q, { mode: 'insensitive' }),
+          f.string('identifier').includes(q, { mode: 'insensitive' }),
         ]),
       );
     return f.and(nodes);

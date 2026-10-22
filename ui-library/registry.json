@@ -11,6 +11,7 @@
     "registry/inbox/registry.json",
     "registry/lifecycle/registry.json",
     "registry/projects/registry.json",
+    "registry/task-center/registry.json",
     "website/demo/registry.json"
   ]
 }

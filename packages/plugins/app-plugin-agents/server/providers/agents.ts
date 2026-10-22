@@ -1,9 +1,11 @@
+import type { OnlineAgentRecoveryConfig } from '../online/agent/types.js';
+import { mayAccessRun } from '../core/runs/access.js';
 /**
  * Binds the plugin's services, and at boot connects them to the platform: realtime announcements of runs and
  * conversations, and the vector queue's worker. The runners' side (their announcements, the sweeper and the wake-ups of
  * work sent back with a back-off) is `runners.ts`.
  */
-import type { RunApp } from '@nocobase/agent-protocol';
+import { HEADERS, type RunApp } from '@nocobase/agent-protocol';
 import { runRetentionDays } from '../core/runs/run-data-purge.js';
 import { retryBaseDelayMs } from '../core/runs/policy.js';
 import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
@@ -32,14 +34,21 @@ import { directoryDisk } from '../core/skills/index.js';
 import { createAgentsSecretsStores } from '../secrets-stores.js';
 import type { VectorsConfig } from '../vectors/index.js';
 import type { DistConfig } from '../distribution/index.js';
-import type { AgentCli } from '../core/runs/index.js';
+import { resolveAgentCli, type AgentCli } from '../core/runs/index.js';
 import { runCredentialResolver } from '../cli/run-credential.js';
-import { bindCliSurface } from '../cli/surface.js';
+import { bindCliSurface, type CliSurface } from '../cli/surface.js';
 import { agentsSecurityFragment } from '../routes/openapi.js';
 import { agentsToken } from '../tokens.js';
+import type { CallerIdentity } from '../core/callers/index.js';
+import type { CommandSurface } from '../online/sandbox/types.js';
+import {
+  OnlineAgentCredentials,
+  onlineAgentCredentialsToken,
+} from '../cli/online-credential.js';
 
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
+  readonly uiRecovery?: OnlineAgentRecoveryConfig;
   /**
    * Completed runs' events and prompt snapshots are kept `retentionDays`: 14 days by default, 0 disables cleanup. A
    * failed attempt waits `retryBaseDelayMs` before the next, doubling up to ten minutes: 30 seconds by default.
@@ -87,6 +96,53 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = ACCESS_NAMESPACE;
   private readonly releases: (() => void)[] = [];
   private stoppingVectors: Promise<void> | undefined;
+  private surface: CliSurface | undefined;
+
+  /** Historical command surface, with execution-local authentication and cancellation. */
+  private commandsOf(
+    identity: CallerIdentity,
+    token: string,
+  ): Promise<CommandSurface | undefined> {
+    const { container } = this.app;
+    const surface = this.surface;
+    if (!surface || !container.has(cliToken) || !container.has(apiDocsToken))
+      return Promise.resolve(undefined);
+    const cli = container.resolve(cliToken);
+    const base = this.app.publicBasePath.replace(/\/+$/u, '');
+    const config = this.app.config.get<AgentsConfig>('agents');
+    const bin = resolveAgentCli(config?.cli, this.runApp(config)).name;
+    return (async () => {
+      const manifest = cli.manifestFor(
+        await container.resolve(apiDocsToken).getDocument(),
+        await surface.callerOf(identity),
+      );
+      return {
+        bin,
+        commands: manifest.commands,
+        send: async (request, signal) => {
+          const path =
+            base && request.path.startsWith(`${base}/`)
+              ? request.path.slice(base.length)
+              : request.path;
+          return this.app.router.fetch(
+            new Request(`http://application${path}`, {
+              method: request.method,
+              headers: {
+                [HEADERS.runToken]: token,
+                accept: 'application/json',
+                'x-nocobase-client': 'cli',
+                ...(typeof request.body === 'string'
+                  ? { 'content-type': 'application/json' }
+                  : {}),
+              },
+              ...(request.body === undefined ? {} : { body: request.body }),
+              signal,
+            }),
+          );
+        },
+      };
+    })();
+  }
 
   public override register(): void {
     runRetentionDays(
@@ -95,9 +151,25 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     retryBaseDelayMs(
       this.app.config.get<AgentsConfig>('agents')?.runs?.retryBaseDelayMs,
     );
+    this.app.container.singleton(
+      onlineAgentCredentialsToken,
+      () => new OnlineAgentCredentials(),
+    );
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
+        resolver,
+        sandbox: {
+          bin: () => {
+            const config = this.app.config.get<AgentsConfig>('agents');
+            return resolveAgentCli(config?.cli, this.runApp(config)).name;
+          },
+          cli: () => ({
+            auth: resolver.resolve(authenticationToken),
+            credentials: resolver.resolve(onlineAgentCredentialsToken),
+            commandsOf: (identity, token) => this.commandsOf(identity, token),
+          }),
+        },
         retryBaseDelayMs: retryBaseDelayMs(config?.runs?.retryBaseDelayMs),
         runRetentionDays: () =>
           runRetentionDays(
@@ -116,6 +188,7 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
           ? { secrets: resolver.resolve(secretsServiceToken) }
           : {}),
         ...(config?.cli ? { cli: config.cli } : {}),
+        uiRecovery: config?.uiRecovery,
         manifestUrl: `${this.app.publicBasePath}/api/cli/manifest`,
         ...(config?.vectors ? { vectors: config.vectors } : {}),
         paths: {
@@ -174,10 +247,15 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       secrets.registerStore(store);
   }
 
-  public override boot(): Promise<void> {
-    if (this.releases.length > 0) return Promise.resolve();
+  public override async boot(): Promise<void> {
+    if (this.releases.length > 0) return;
     const { container } = this.app;
     const services = container.resolve(agentsToken);
+    // Command hosts also start Providers, but do not replace the serving process. Detected by
+    // `consoleLogStream`, which `app-cli` sets to `stderr` for a command and leaves unset for
+    // `start`/`dev`; a host that changes this logging configuration would need another signal.
+    if (this.app.consoleLogStream !== 'stderr')
+      await services.onlineAgent.recoverAtStartup();
     this.announce(services);
     // The run token, runner key and registration token as security schemes of the API document.
     if (container.has(apiDocsToken))
@@ -220,6 +298,9 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     const auth = container.resolve(authenticationToken);
     this.releases.push(
       auth.addCredentialResolver(runCredentialResolver(services)),
+      auth.addCredentialResolver(
+        container.resolve(onlineAgentCredentialsToken).resolve,
+      ),
     );
     if (!container.has(cliToken) || !container.has(authorizationToken)) return;
     const authorization = container.resolve(authorizationToken);
@@ -232,13 +313,23 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       ),
       gate: services.gate,
     });
-    this.releases.push(() => surface.release());
+    this.surface = surface;
+    this.releases.push(() => {
+      surface.release();
+      this.surface = undefined;
+    });
   }
 
   public override async shutdown(): Promise<void> {
-    for (const release of this.releases.splice(0)) release();
-    await this.stoppingVectors;
-    this.stoppingVectors = undefined;
+    try {
+      await this.app.container
+        .resolveIfCreated(agentsToken)
+        ?.onlineAgent.shutdown();
+    } finally {
+      for (const release of this.releases.splice(0)) release();
+      await this.stoppingVectors;
+      this.stoppingVectors = undefined;
+    }
   }
 
   /** Tells open pages what changed; they fetch the details through the API, which checks access. */
@@ -247,12 +338,42 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     if (!container.has(realtimeServiceToken)) return;
     const realtime = container.resolve(realtimeServiceToken);
     const publish = (topic: string, payload: RunChanged) => {
-      try {
-        realtime.publish(topic, payload);
-      } catch (error) {
-        console.error('Agents realtime announcement failed.', error);
-      }
+      void realtime
+        .publish(topic, payload)
+        .catch((error: unknown) =>
+          console.error('Agents realtime announcement failed.', error),
+        );
     };
+    const runsTopic = realtime.defineTopicFamily<{ runId: string }, RunChanged>(
+      'agents:runs:{runId}',
+      {
+        audience: 'public',
+        authenticated: true,
+        authorize: async ({ principal, params }) => {
+          if (!principal) return false;
+          const run = await services.runs.get(params.runId);
+          return mayAccessRun(
+            run,
+            principal.userId,
+            services.subjects.get(run.subject.kind)?.private === true,
+            async () => {
+              if (!container.has(authorizationToken)) return false;
+              const authorization = container.resolve(authorizationToken);
+              const identity = { type: 'user', id: principal.userId };
+              const subjects = [
+                { type: 'authenticated', id: '*' },
+                ...(await authorization.subjects.resolveFor(identity)),
+              ];
+              return authorization.for({ principal: identity, subjects }).can({
+                resource: { type: 'settings', id: 'agents.agents' },
+                action: 'read',
+              });
+            },
+          );
+        },
+      },
+    );
+    this.releases.push(() => runsTopic.close());
     let conversationsTopic = false;
     try {
       this.releases.push(
@@ -270,11 +391,11 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       payload: ConversationChanged,
     ) => {
       if (!conversationsTopic) return;
-      try {
-        realtime.publish(CONVERSATIONS_TOPIC, payload, { userId });
-      } catch (error) {
-        console.error('Agents realtime announcement failed.', error);
-      }
+      void realtime
+        .publish(CONVERSATIONS_TOPIC, payload, { userId })
+        .catch((error: unknown) =>
+          console.error('Agents realtime announcement failed.', error),
+        );
     };
     this.releases.push(
       services.events.onAny((event) => {
@@ -282,16 +403,23 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
           case 'conversation.changed':
             announceConversation(
               event.userId,
-              event.lastSeq === undefined
+              event.messageId !== undefined && event.revision !== undefined
                 ? {
-                    kind: 'conversation.changed',
+                    kind: 'conversation.messageUpdated',
                     conversationId: event.conversationId,
+                    messageId: event.messageId,
+                    revision: event.revision,
                   }
-                : {
-                    kind: 'conversation.messages',
-                    conversationId: event.conversationId,
-                    lastSeq: event.lastSeq,
-                  },
+                : event.lastSeq === undefined
+                  ? {
+                      kind: 'conversation.changed',
+                      conversationId: event.conversationId,
+                    }
+                  : {
+                      kind: 'conversation.messages',
+                      conversationId: event.conversationId,
+                      lastSeq: event.lastSeq,
+                    },
             );
             return;
           case 'run.changed':

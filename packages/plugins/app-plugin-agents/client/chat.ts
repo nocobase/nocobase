@@ -11,7 +11,7 @@
  * - for pages: `useChatPanel().openChat(…)`, and `useChatContextSource` / `useChatFilterSource` to tell the panel what
  *   the page shows (the chips above the composer);
  * - `ChatExtensionsContext`: what the application adds among a conversation's messages, and how it words its news;
- * - the data hooks (`useChatAgents`, `useConversation`, `useConversationMessages`, `useConversationList`,
+ * - the data hooks (`useChatAgents`, `useChatModels`, `useConversation`, `useConversationMessages`, `useConversationList`,
  *   `useConsultationIdentity` for current consultation labels without rewriting loaded messages, `useSendMessage`, `useConversationActions`, keyed by `chatKeys`, and `useLiveRunEvents`, `useConversationSources`),
  *   the pure models of the timeline and the context chips, the panel's state helpers, and `ChatPanelScope` /
  *   `useChatPageTracking` for a full-page view.
@@ -24,12 +24,61 @@ import type {
   AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
 
+export type {
+  AppUIData,
+  AppUIJson,
+  AppUIMessage,
+  AppUIMessageMetadata,
+  AppUITools,
+} from '../shared/online-agent.js';
+export { appUIMessageText } from '../shared/online-agent.js';
+
+export {
+  AIToolRendererProvider,
+  useAIToolRenderer,
+  getAIToolSourceMessage,
+  type AIToolPart,
+  type AIToolRendererContext,
+  type AIToolRendererMap,
+  type AIToolRendererProps,
+  type AIToolRendererProviderProps,
+} from './chat/tool-renderer.js';
+export {
+  AIFormRegistry,
+  AIFormRegistryError,
+  type AIFormValues,
+  type AIFormFieldType,
+  type AIFormField,
+  type AIFormOperationContext,
+  type AIFormSetResult,
+  type AIFormRegistration,
+  type AIFormDescriptor,
+  type AIFormSnapshot,
+  type AIFormRegistrationHandle,
+  type AIFormApplyStatus,
+  type AIFormApplyResult,
+  type AIFormApplyRequest,
+} from './chat/form-registry.js';
+export {
+  AIFormRegistryProvider,
+  useAIFormRegistry,
+  useAIForm,
+  type AIFormRegistryProviderProps,
+} from './chat/ai-form.js';
+export {
+  clonePageUIContext,
+  PAGE_UI_CONTEXT_LIMITS,
+  pageUIContextSchema,
+  type PageUIItem,
+  type PageUIContext,
+} from '../shared/page-ui-context.js';
 export {
   CHAT_PANEL_ATTRIBUTE,
   CHAT_PANEL_ID,
   ChatPanelScope,
   ChatProvider,
   useChatContextSource,
+  useChatUIContextSource,
   useChatFilterSource,
   useChatPageTracking,
   useChatPanel,
@@ -42,8 +91,8 @@ export {
 } from './chat/provider.js';
 export {
   CHAT_POLL_MS,
-  CHAT_STREAM_POLL_MS,
   useChatAgents,
+  useChatModels,
   useChatApi,
   useChatRealtime,
   useConversation,
@@ -58,7 +107,11 @@ export {
   type ConversationMessages,
   type SendInput,
 } from './chat/use-chat.js';
-export type { ChatApi } from './chat/api.js';
+export { ChatApi } from './chat/api.js';
+export {
+  useConversationModel,
+  type ConversationModel,
+} from './chat/use-conversation-model.js';
 export {
   useConversationSources,
   useLiveRunEvents,
@@ -78,12 +131,16 @@ export {
   ChatExtensionsContext,
   type ChatExtensions,
   type ChatTimelineItem,
+  type ChatDataPart,
 } from './chat/extensions.js';
 export {
   buildPageContext,
   contextChips,
   filterText,
   itemKey,
+  uiItemKey,
+  snapshotUIContext,
+  type ChatUIContextSource,
   selectionPreview,
   SOURCE_ATTRIBUTE,
   type ChatContextChip,
@@ -93,6 +150,9 @@ export {
   type ChatSelection,
 } from './chat/context-model.js';
 export {
+  chatMessageSegments,
+  type ChatMessageSegment,
+  type UIMessagePage,
   liveStepsView,
   newConversationAgent,
   noticeText,
@@ -159,3 +219,28 @@ export {
   useConsultationIdentity,
   type ConsultationIdentity,
 } from './chat/consultation-identity.js';
+
+export {
+  ChatSubmissions,
+  type ChatSubmission,
+  type SubmissionInput,
+} from './chat/submissions.js';
+export {
+  ChatController,
+  useChatController,
+  useChatStream,
+} from './chat/controller.js';
+
+export {
+  chatFeedback,
+  chatIsRunning,
+  chatNearBottom,
+  type ChatFeedback,
+} from './chat/feedback.js';
+
+export { useChatScroll } from './chat/use-chat-scroll.js';
+
+export {
+  appUIToolApprovalInputSchema,
+  type AppUIToolApprovalInput,
+} from '../shared/online-agent.js';

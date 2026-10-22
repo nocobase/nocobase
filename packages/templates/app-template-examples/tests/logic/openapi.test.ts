@@ -146,6 +146,7 @@ describe('API document of the examples application', () => {
       'examplesCreateArticle',
       'examplesCreateWorkflowCategory',
       'examplesDeleteWorkflowCategory',
+      'examplesExtractStructuredInformation',
       'examplesGetGreeting',
       'examplesGetNumericExamples',
       'examplesGetWorkflowDefinition',
@@ -157,6 +158,7 @@ describe('API document of the examples application', () => {
       'examplesListWorkflowExecutions',
       'examplesReorderWorkflowCategories',
       'examplesSaveWorkflowParameters',
+      'examplesTranslateText',
       'examplesUpdateArticle',
       'examplesUpdateWorkflowCategory',
     ]);

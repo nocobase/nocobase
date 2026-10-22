@@ -1,3 +1,4 @@
+export { refreshRealtimeQueries } from './realtime-query.js';
 export {
   apiClientToken,
   ClientApplication,
@@ -53,6 +54,10 @@ export {
 } from './toaster.js';
 export type {
   RealtimeClient,
+  RealtimeSubscription,
+  RealtimeSubscriptionState,
+  RealtimeConnectionState,
+  RealtimeWatchOptions,
   RealtimeErrorEvent,
   RealtimeEvent,
   RealtimeListener,
@@ -72,7 +77,6 @@ export {
   type AppClientConfigValue,
   type AppClientPublicConfig,
   type AppClientReactProvider,
-  type AppClientRefineConfig,
   type AppClientRenderConfig,
 } from './config.js';
 export type {
@@ -111,9 +115,6 @@ export type {
   AppClientReactProviderDefinition,
   AppClientReactProviderLayer,
   AppClientReactProviders,
-  AppClientRefineRegistry,
-  AppClientRefineSetterValue,
-  AppClientRefineSetters,
   AppClientRegisteredReactProvider,
   AppClientRegisteredRoute,
   AppClientRegisteredServiceProvider,
@@ -137,3 +138,16 @@ export type {
 
 export { NavigationGuardProvider } from './navigation-guard-provider.js';
 export { useNavigationGuard } from './navigation-guard.js';
+
+export {
+  useRealtimeTopic,
+  useRealtimeRefresh,
+  useRealtimeConnectionState,
+  createRealtimeRefresh,
+  type UseRealtimeTopicOptions,
+  type UseRealtimeRefreshOptions,
+  type RealtimeRefresh,
+  type RealtimeRefreshOptions,
+  type RealtimeRefreshSnapshot,
+  type UseRealtimeRefreshResult,
+} from './realtime.js';

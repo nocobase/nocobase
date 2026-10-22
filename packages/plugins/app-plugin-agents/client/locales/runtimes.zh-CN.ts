@@ -7,6 +7,14 @@ const runtimesZhCN: RuntimesLocale = {
       checking: '检测中…',
       restart: '请重启 runner 以刷新状态。',
     },
+    capacity: {
+      actual: '最后生效槽位：{{slots}}',
+      online: '实际生效槽位 · 线上设置',
+      pending: '等待执行机同步线上设置',
+      legacy: '旧版兼容本地槽位 · 请升级应用服务端',
+      upgrade: '未报告同步状态 · 请升级执行机',
+      lastReported: '最后上报：{{time}}',
+    },
     quota: {
       workspaceStatus: {
         active: '工作进行中',
@@ -77,6 +85,7 @@ const runtimesZhCN: RuntimesLocale = {
       clearMark: '清除标记',
       confirm: '清除此标记？{{target}} 将可继续领取工作。',
       observed: '上次报告 {{time}}',
+      usedPercent: '已用 {{percent}}%',
       ok: '正常',
       hint: '已知恢复时间到点后自动恢复领取资格；未知时请在额度恢复后手动清除。只有执行机主人和管理员可以清除。',
     },

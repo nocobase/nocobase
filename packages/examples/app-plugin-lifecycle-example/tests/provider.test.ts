@@ -989,9 +989,9 @@ describe('pushes instead of polling', () => {
       defineTopic: (topic: string) => {
         topics.push(topic);
         return {
-          publish: (payload: unknown) => {
+          publish: async (payload: unknown) => {
             published.push(payload);
-            return { topic, subscriberCount: 1 };
+            return { topic, eventId: 'event-1' };
           },
           close: () => {},
         };
@@ -1036,4 +1036,61 @@ describe('pushes instead of polling', () => {
       await stop();
     }
   });
+});
+
+test('publishes a committed email effect outcome without a follow-up transition', async ({
+  database,
+}) => {
+  const observed: string[] = [];
+  let inspect: (() => Promise<void>) | undefined;
+  const realtime = {
+    defineTopic: (topic: string) => ({
+      publish: async () => {
+        await inspect?.();
+        return { topic, eventId: 'effect-change' };
+      },
+      close: () => {},
+    }),
+  };
+  const { container, stop } = await start(database, (services) =>
+    services.instance(realtimeServiceToken, realtime as never),
+  );
+  try {
+    const service = container.resolve(lifecycleExampleServiceToken);
+    const ticket = await service.createTicket(
+      {
+        subject: 'Cannot sign in',
+        category: 'account',
+        priority: 'high',
+        description: 'Session expired',
+        failNotifications: 0,
+      },
+      'customer-li',
+    );
+    const id = String(ticket.id);
+    inspect = async () => {
+      const view = await service.runtime.view('tickets', id, {
+        id: 'agent-zhou',
+      });
+      for (const run of view.history.effectRuns)
+        observed.push(`${view.state}:${run.status}`);
+    };
+    await service.runtime.fire('tickets', id, 'reply', {
+      actor: { id: 'agent-zhou' },
+      input: { message: 'Please try again.' },
+    });
+    await eventually(
+      async () => observed,
+      (values) => values.includes('awaitingCustomer:succeeded'),
+    );
+    const view = await service.runtime.view('tickets', id, {
+      id: 'agent-zhou',
+    });
+    expect(view.history.transitions.map((entry) => entry.transition)).toEqual([
+      CREATE_TRANSITION,
+      'reply',
+    ]);
+  } finally {
+    await stop();
+  }
 });

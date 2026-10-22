@@ -37,6 +37,7 @@ The current entries:
 | `@nocobase/i18n`             | Exports the React contexts backing the i18n runtime                                                                                                                                                                                                |
 | `@nocobase/queue`            | Plugins receive the host-owned `QueueService` and type their published declarations against it, so a second copy describes that service with another contract version                                                                              |
 | `@nocobase/lifecycle`        | A `LifecycleRuntime` is shared between plugins through `addGuard()`, and `EffectFailure` and `LifecycleError` are recognised with `instanceof`, so a second copy neither registers into the runtime it is handed nor recognises the other's errors |
+| `@tanstack/react-query`      | The routes' query cache reaches pages through its React context, so the hooks of a second copy read another context and find no `QueryClient`, or a different one, instead of the routes'                                                          |
 | any `@nocobase/app-plugin-*` | Plugins export tokens for one another, such as `authenticationToken` and `notificationServiceToken`                                                                                                                                                |
 
 ### Why a second copy is worth this much trouble

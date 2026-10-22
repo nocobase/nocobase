@@ -395,6 +395,13 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
   const links: ChatAttachmentLinks = {
     async attach(conn, userId, target, ids) {
       if (ids.length === 0) return [];
+      if (
+        ids.length > CHAT_ATTACHMENTS_PER_MESSAGE_MAX ||
+        new Set(ids).size !== ids.length
+      )
+        throw invalid(
+          'Send at most the allowed number of distinct attachments.',
+        );
       const rows = await findFiles(conn, ids);
       const ordered = ids.map((id) => {
         const row = rows.find((candidate) => candidate.id === id);
@@ -405,7 +412,7 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
           });
         return row;
       });
-      await files(conn).updateMany({
+      const bound = await files(conn).updateMany({
         filter: (f) =>
           f.and([
             f.or(ids.map((id) => f.string('id').eq(id))),
@@ -413,6 +420,8 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
           ]),
         values: { ...target, updatedAt: now() },
       });
+      if (bound.updatedCount !== ids.length)
+        throw invalid('An upload was already attached to another message.');
       return ordered.map(stored);
     },
   };

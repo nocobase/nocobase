@@ -88,6 +88,8 @@ describe('buildAllowBuildsYaml', () => {
 
     expect(yaml).toContain('  better-sqlite3: false');
     expect(yaml).toContain('  tesseract.js: false');
+    expect(yaml).toContain("  '@mongodb-js/zstd': false");
+    expect(yaml).toContain('  node-liblzma: false');
   });
 
   /** A leading `@` starts a reserved indicator in YAML, so a scoped name has to be quoted to parse. */

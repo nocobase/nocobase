@@ -129,7 +129,7 @@ export const FAILURE_REASONS = [
    * `checkoutFailed` otherwise.
    */
   'prepareNetwork',
-  /** A live process holds the workspace lock. Requeued with backoff when announced; older applications receive checkoutFailed. */
+  /** A workspace cleanup or repository cache lock remains held. Requeued with backoff when announced; older applications receive checkoutFailed. */
   'workspaceBusy',
   /** The runner interrupted the attempt to install an update; retry without consuming the failure budget. */
   'runnerUpgrade',

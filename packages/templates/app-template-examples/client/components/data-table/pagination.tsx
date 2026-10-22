@@ -69,9 +69,9 @@ export function DataTablePagination<TData>({
             })
           : null}
       </div>
-      <div className='flex flex-wrap items-center gap-6 lg:gap-8'>
-        <div className='flex items-center gap-2'>
-          <p className='text-sm font-medium'>
+      <div className='flex min-w-0 flex-wrap items-center justify-end gap-x-6 gap-y-3 lg:gap-x-8'>
+        <div className='flex shrink-0 items-center gap-2'>
+          <p className='text-sm font-medium whitespace-nowrap'>
             {t('dataTable.rowsPerPage', { defaultValue: 'Rows per page' })}
           </p>
           <Select
@@ -83,7 +83,7 @@ export function DataTablePagination<TData>({
           >
             <SelectTrigger
               size='sm'
-              className='w-[70px]'
+              className='w-[70px] shrink-0'
               aria-label={t('dataTable.rowsPerPage', {
                 defaultValue: 'Rows per page',
               })}
@@ -102,14 +102,14 @@ export function DataTablePagination<TData>({
             </SelectContent>
           </Select>
         </div>
-        <div className='flex w-[100px] items-center justify-center text-sm font-medium'>
+        <div className='shrink-0 text-sm font-medium whitespace-nowrap tabular-nums'>
           {t('dataTable.pageOf', {
             defaultValue: 'Page {{page}} of {{pageCount}}',
             page: pageIndex + 1,
             pageCount,
           })}
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex shrink-0 items-center gap-2'>
           <Button
             variant='outline'
             size='icon-sm'

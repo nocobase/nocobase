@@ -268,14 +268,18 @@ test('global paths run everything', () => {
   }
 });
 
-test('a plugin without dependents selects only itself', () => {
-  const result = plan(
-    'packages/plugins/app-plugin-knowledge/server/index.ts',
-    '.changeset/knowledge.md',
+test('a plugin without dependents selects only itself', (t) => {
+  const repo = createRepository(t);
+  const result = planFromChanges(
+    ['packages/plugins/other/server/index.ts', '.changeset/other.md'],
+    {
+      packages: readWorkspace(repo.cwd),
+      devDbPackages: readDevDbPackages(repo.cwd),
+    },
   );
   assert.equal(result.full, false);
-  assert.deepEqual(result.packages, ['@nocobase/app-plugin-knowledge']);
-  assert.deepEqual(result.packPackages, ['@nocobase/app-plugin-knowledge']);
+  assert.deepEqual(result.packages, ['@nocobase/other']);
+  assert.deepEqual(result.packPackages, ['@nocobase/other']);
   assert.equal(result.runBuild, true);
   assert.equal(result.buildFull, false);
   assert.equal(result.runCreateApp, false);
@@ -306,7 +310,10 @@ test('a library many packages depend on selects its dependents and the generated
 
 test('a template change selects the template, its path consumers and the smoke tests it needs', () => {
   const examples = plan('packages/templates/app-template-examples/README.MD');
-  assert.deepEqual(examples.packages, ['@nocobase/app-template-examples']);
+  assert.deepEqual(examples.packages, [
+    '@nocobase/app-template-examples',
+    '@nocobase/ui-library',
+  ]);
   assert.equal(examples.runCreateApp, true);
   assert.equal(examples.runAppInstaller, false);
   assert.equal(examples.buildFull, true);
@@ -325,6 +332,21 @@ test('a template change selects the template, its path consumers and the smoke t
   assert.equal(createApp.runCreateApp, true);
   assert.equal(createApp.runAppInstaller, false);
 });
+
+for (const template of ['app-template-default', 'app-template-examples']) {
+  for (const file of ['vitest.config.ts', 'tests/setup/client-config.ts']) {
+    test(`${template}'s ${file} selects the installed-client regression`, () => {
+      const result = plan(`packages/templates/${template}/${file}`);
+      assert.equal(result.full, false);
+      assert.ok(result.packages.includes('@nocobase/app-testing'));
+      const otherTemplate =
+        template === 'app-template-default'
+          ? '@nocobase/app-template-examples'
+          : '@nocobase/app-template-default';
+      assert.ok(!result.packages.includes(otherTemplate));
+    });
+  }
+}
 
 test('paths read without a declared dependency select their consumers but not the consumers’ dependents', () => {
   const ui = plan(
@@ -373,7 +395,7 @@ test('reads declared as dependencies select their readers through the workspace 
       'packages/templates/app-template-default/client/styles.css',
     ).packages.includes('@nocobase/ui-library'),
   );
-  // Nothing reads the scheduler plugin or the examples template by path any more.
+  // app-cli no longer reads the scheduler plugin by path.
   assert.ok(
     !plan('packages/plugins/app-plugin-scheduler/README.md').packages.includes(
       '@nocobase/app-cli',

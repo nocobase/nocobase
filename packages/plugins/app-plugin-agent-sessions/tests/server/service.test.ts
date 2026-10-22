@@ -326,6 +326,49 @@ describe('AgentSessionsService', () => {
     expect((await service.listComputers('u1'))[0]?.online).toBe(true);
   });
 
+  test('ignores discovered agent key order but publishes changed values', async ({
+    database,
+  }) => {
+    const { service, register, changes } = setup(database);
+    const computer = {
+      name: 'Laptop',
+      platform: 'linux',
+      arch: 'x64',
+      host: 'test-bridge',
+      roots: ['/workspace'],
+      agents: [{ id: 'codex', name: 'Codex', version: '1.0.0' }],
+    };
+    const { computerId } = await register('u1', { computer });
+    changes.length = 0;
+    await register(
+      'u1',
+      {
+        computerId,
+        computer: {
+          ...computer,
+          agents: [{ version: '1.0.0', name: 'Codex', id: 'codex' }],
+        },
+      },
+      true,
+    );
+    expect(changes).toEqual([]);
+    await register(
+      'u1',
+      {
+        computerId,
+        computer: {
+          ...computer,
+          agents: [{ version: '2.0.0', name: 'Codex', id: 'codex' }],
+        },
+      },
+      true,
+    );
+    expect(changes).toEqual([['u1', { kind: 'computers' }]]);
+    expect((await service.listComputers('u1'))[0]?.agents[0]?.version).toBe(
+      '2.0.0',
+    );
+  });
+
   test('stops waiting after discovery cancellation without assuming the queued command was cancelled', async ({
     database,
   }) => {
@@ -1035,6 +1078,21 @@ describe('AgentSessionsService', () => {
         skip: [],
       }),
     ).rejects.toMatchObject({ key: 'linkNotFound' });
+    start.mockRejectedValueOnce(
+      new Error('Configure the project manager first.'),
+    );
+    await expect(
+      service.decideLinks(owner, session.id, {
+        kind: 'issue',
+        start: ['ST-1'],
+        skip: ['ST-2'],
+      }),
+    ).rejects.toThrow('Configure the project manager first.');
+    expect(
+      (await service.getSession(owner, session.id)).links.map(
+        (link) => link.decidedAt,
+      ),
+    ).toEqual([null, null]);
     const decided = await service.decideLinks(owner, session.id, {
       kind: 'issue',
       start: ['ST-1'],

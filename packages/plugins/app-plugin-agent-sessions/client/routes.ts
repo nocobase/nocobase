@@ -42,6 +42,7 @@ export function agentSessionsRoute(
         cli: options.cli,
         connectPrompt: options.connectPrompt ?? null,
         linkPanels: options.linkPanels ?? {},
+        ...(options.sessionMarks ? { sessionMarks: options.sessionMarks } : {}),
       };
       const Configured = (): ReactElement =>
         createElement(

@@ -15,8 +15,9 @@ export const cliStep: PrepareStep = {
   name: 'cli',
   failure: 'setupFailed',
   async run(context) {
-    const workDir = context.workspace?.workDir;
-    if (workDir === undefined) throw new Error('The workspace is not locked.');
+    const workDir = context.privateDir;
+    if (workDir === undefined)
+      throw new Error('The workspace was not prepared.');
     const { cli } = context.payload;
     let entry: string;
     try {

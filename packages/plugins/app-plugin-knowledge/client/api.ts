@@ -5,9 +5,9 @@
  * application composes these hooks into pages of its own as well as the plugin's.
  */
 import {
-  realtimeClientToken,
+  useRealtimeRefresh,
+  refreshRealtimeQueries,
   useApiClient,
-  useService,
   type ApiClient,
 } from '@nocobase/app-client';
 import {
@@ -15,7 +15,7 @@ import {
   useQueryClient,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import {
   KNOWLEDGE_TOPIC,
@@ -25,6 +25,7 @@ import {
   type KnowledgeChunkingConfig,
   type KnowledgeDoc,
   type KnowledgeDocIndex,
+  type KnowledgeIndexRefreshMeta,
   type KnowledgeEffectiveAccess,
   type KnowledgePermissions,
   type KnowledgeProposal,
@@ -41,6 +42,15 @@ import {
   type SpaceRef,
   type UpdateKnowledgeDocRequest,
 } from '../shared/knowledge.js';
+
+import {
+  hasIndexRefresh,
+  recordIndexNotifications,
+  useIndexRefresh,
+  type KnowledgeIndexRefreshOptions,
+} from './index-refresh.js';
+
+export type { KnowledgeIndexRefreshOptions } from './index-refresh.js';
 
 const spaceKey = (space: SpaceRef) => `${space.scope}:${space.scopeId}`;
 
@@ -190,14 +200,22 @@ export class KnowledgeApi {
   }
 
   /** A document's sections and where they stand in the semantic index. */
-  public docIndex(
+  public async docIndex(
     id: string,
     signal?: AbortSignal,
   ): Promise<KnowledgeDocIndex> {
-    return this.data<KnowledgeDocIndex>({
-      path: `${docPath(id)}/index`,
-      signal,
-    });
+    return (await this.docIndexSnapshot(id, signal)).data;
+  }
+
+  /** Includes optional notification metadata without changing docIndex's return shape. */
+  public docIndexSnapshot(
+    id: string,
+    signal?: AbortSignal,
+  ): Promise<{
+    readonly data: KnowledgeDocIndex;
+    readonly meta?: KnowledgeIndexRefreshMeta;
+  }> {
+    return this.api.request({ path: `${docPath(id)}/index`, signal });
   }
 
   /** Queues a document's sections for the semantic index again. */
@@ -213,15 +231,28 @@ export class KnowledgeApi {
     space: SpaceRef,
     signal?: AbortSignal,
   ): Promise<KnowledgeUnindexedDoc[] | null> {
+    return (await this.unindexedSnapshot(space, signal)).data;
+  }
+
+  public async unindexedSnapshot(
+    space: SpaceRef,
+    signal?: AbortSignal,
+  ): Promise<{
+    readonly data: KnowledgeUnindexedDoc[] | null;
+    readonly meta: KnowledgeIndexRefreshMeta;
+  }> {
     const answer = await this.api.request<{
       readonly data: KnowledgeUnindexedDoc[];
-      readonly meta: { readonly enabled: boolean };
+      readonly meta: KnowledgeIndexRefreshMeta & { readonly enabled: boolean };
     }>({
       path: `${base}/indexing`,
       query: { scope: space.scope, scopeId: space.scopeId },
       signal,
     });
-    return answer.meta.enabled ? answer.data : null;
+    return {
+      data: answer.meta.enabled ? answer.data : null,
+      meta: answer.meta,
+    };
   }
 
   /** How a space is cut into sections. */
@@ -532,14 +563,17 @@ export function useKnowledgeApi(): KnowledgeApi {
 
 /** Refetches open knowledge views when the server announces a change. */
 export function useKnowledgeRefresh(): void {
-  const realtime = useService(realtimeClientToken);
   const queryClient = useQueryClient();
-  useEffect(() => {
-    const stop = realtime.subscribe<unknown>(KNOWLEDGE_TOPIC, () => {
-      void queryClient.invalidateQueries({ queryKey: knowledgeKeys.all });
-    });
-    return () => stop?.();
-  }, [realtime, queryClient]);
+  useRealtimeRefresh(KNOWLEDGE_TOPIC, (signal) =>
+    refreshRealtimeQueries(
+      queryClient,
+      {
+        queryKey: knowledgeKeys.all,
+        predicate: (query) => !hasIndexRefresh(query),
+      },
+      signal,
+    ),
+  );
 }
 
 export function useKnowledgeTree(
@@ -604,35 +638,53 @@ export function useKnowledgeSearch(
   });
 }
 
-/** While sections wait for the semantic index, how often their state is read again. */
-const INDEX_POLL_MS = 5000;
-
+/** Index snapshots share one event and fallback scheduler per cached query. */
 export function useKnowledgeDocIndex(
   id: string | null,
+  options: KnowledgeIndexRefreshOptions = {},
 ): UseQueryResult<KnowledgeDocIndex> {
   const api = useKnowledgeApi();
-  return useQuery({
-    queryKey: knowledgeKeys.docIndex(id ?? ''),
-    queryFn: ({ signal }) => api.docIndex(id!, signal),
+  const client = useQueryClient();
+  const key = knowledgeKeys.docIndex(id ?? '');
+  const result = useQuery({
+    queryKey: key,
+    queryFn: async ({ signal }) => {
+      const answer = await api.docIndexSnapshot(id!, signal);
+      signal.throwIfAborted();
+      recordIndexNotifications(client, key, answer.meta?.notifications);
+      return answer.data;
+    },
     enabled: Boolean(id),
     retry: false,
-    refetchInterval: (query) =>
-      query.state.data?.state === 'pending' ? INDEX_POLL_MS : false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
+  useIndexRefresh(key, Boolean(id), options);
+  return result;
 }
 
 export function useKnowledgeUnindexed(
   space: SpaceRef | null,
+  options: KnowledgeIndexRefreshOptions = {},
 ): UseQueryResult<KnowledgeUnindexedDoc[] | null> {
   const api = useKnowledgeApi();
-  return useQuery({
-    queryKey: knowledgeKeys.unindexed(space ?? { scope: '', scopeId: '' }),
-    queryFn: ({ signal }) => api.unindexed(space!, signal),
+  const client = useQueryClient();
+  const key = knowledgeKeys.unindexed(space ?? { scope: '', scopeId: '' });
+  const result = useQuery({
+    queryKey: key,
+    queryFn: async ({ signal }) => {
+      const answer = await api.unindexedSnapshot(space!, signal);
+      signal.throwIfAborted();
+      recordIndexNotifications(client, key, answer.meta.notifications);
+      return answer.data;
+    },
     enabled: space !== null,
     retry: false,
-    refetchInterval: (query) =>
-      query.state.data?.some((doc) => doc.pending > 0) ? INDEX_POLL_MS : false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
+  useIndexRefresh(key, space !== null, options);
+  return result;
 }
 
 export function useKnowledgeChunking(
@@ -645,7 +697,8 @@ export function useKnowledgeChunking(
     enabled: space !== null,
     retry: false,
     refetchInterval: (query) =>
-      query.state.data?.rechunking ? INDEX_POLL_MS : false,
+      // Chunking announces start and completion; retain low-frequency reconciliation.
+      query.state.data?.rechunking ? 60_000 : false,
   });
 }
 

@@ -15,6 +15,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ai-sdk/react": "catalog:",
+    "ai": "catalog:",
     "@base-ui/react": "^1.7.0",
     "@dnd-kit/core": "catalog:",
     "@dnd-kit/sortable": "catalog:",
@@ -59,6 +61,7 @@
     "@nocobase/app-plugin-notification-in-app": "workspace:^",
     "@nocobase/app-plugin-projects": "workspace:^",
     "@nocobase/app-template-default": "workspace:*",
+    "@nocobase/app-template-examples": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/lifecycle": "workspace:^",
     "@tailwindcss/vite": "catalog:",
@@ -203,6 +206,26 @@
     "#extensions/nocobase-workflow-management/execution-list": "./registry/lifecycle/workflow-management/execution-list.tsx",
     "#components/permission-filter": "./registry/authorization/permission-filter.tsx",
     "#components/data-table/data-table": "./registry/components/data-table/data-table.tsx",
-    "#components/data-table/column-header": "./registry/components/data-table/column-header.tsx"
+    "#components/data-table/column-header": "./registry/components/data-table/column-header.tsx",
+    "#components/data-table": "./registry/components/data-table/index.ts",
+    "#components/role-list": "./registry/authorization/role-list.tsx",
+    "#components/default-access-editor": "./registry/authorization/default-access-editor.tsx",
+    "#components/setup-readiness": "./registry/components/setup-readiness.tsx",
+    "#components/setup-readiness-state": "./registry/components/setup-readiness-state.ts",
+    "#components/record-link": "./registry/components/record-link.tsx",
+    "#extensions/nocobase-task-center-ui/index": "./registry/task-center/task-center-ui/index.ts",
+    "#extensions/nocobase-task-center-ui/types": "./registry/task-center/task-center-ui/types.ts",
+    "#extensions/nocobase-task-center-ui/use-task-selection": "./registry/task-center/task-center-ui/use-task-selection.ts",
+    "#extensions/nocobase-task-center-ui/use-task-time": "./registry/task-center/task-center-ui/use-task-time.ts",
+    "#extensions/nocobase-task-center-ui/task-center-layout": "./registry/task-center/task-center-ui/task-center-layout.tsx",
+    "#extensions/nocobase-task-center-ui/task-source-nav": "./registry/task-center/task-center-ui/task-source-nav.tsx",
+    "#extensions/nocobase-task-center-ui/task-status-tabs": "./registry/task-center/task-center-ui/task-status-tabs.tsx",
+    "#extensions/nocobase-task-center-ui/task-card": "./registry/task-center/task-center-ui/task-card.tsx",
+    "#extensions/nocobase-task-center-ui/task-list": "./registry/task-center/task-center-ui/task-list.tsx",
+    "#extensions/nocobase-task-center-ui/task-bulk-bar": "./registry/task-center/task-center-ui/task-bulk-bar.tsx",
+    "#extensions/nocobase-task-center-ui/task-detail-sheet": "./registry/task-center/task-center-ui/task-detail-sheet.tsx",
+    "#extensions/nocobase-task-center-ui/locales/en-US": "./registry/task-center/task-center-ui/locales/en-US.ts",
+    "#extensions/nocobase-task-center-ui/locales/zh-CN": "./registry/task-center/task-center-ui/locales/zh-CN.ts",
+    "#extensions/nocobase-task-center-ui/status": "./registry/task-center/task-center-ui/status.ts"
   }
 }

@@ -19,6 +19,7 @@ import {
   installSkills,
   prepareSessionSkill,
   sessionSkillInstructions,
+  shippedSkills,
   skillsStatus,
   syncInstalledSkills,
   type SkillsEnvironment,
@@ -68,7 +69,13 @@ function claude(env: SkillsEnvironment): string {
   return path.join(env.home!, '.claude/skills/nb-studio-cli');
 }
 function record(env: SkillsEnvironment): {
-  targets: { path: string; tool: string; cliVersion: string; hash: string }[];
+  targets: {
+    skill: string;
+    path: string;
+    tool: string;
+    cliVersion: string;
+    hash: string;
+  }[];
 } {
   return JSON.parse(
     readFileSync(path.join(env.stateHome, 'skills.json'), 'utf8'),
@@ -220,7 +227,7 @@ describe('overlapping Skill destinations', () => {
     ).toHaveLength(1);
     expect(
       results.find((result) => result.status === 'rejected'),
-    ).toMatchObject({ reason: { code: 'SKILLS_BUSY' } });
+    ).toMatchObject({ reason: { code: 'SKILLS_TARGET_OVERLAP' } });
     const parentWon = results[0]?.status === 'fulfilled';
     const before = readFileSync(
       path.join(env.stateHome, 'skills.json'),
@@ -253,6 +260,7 @@ describe('overlapping Skill destinations', () => {
         const conflicted = [
           original,
           {
+            skill: 'nb-studio-cli',
             tool: childTool,
             path: child,
             hash: 'child-hash',
@@ -471,7 +479,7 @@ describe('local Skill installation', () => {
     );
   });
 
-  it('exposes commands only when the package ships nb-studio-cli, not arbitrary Skills', () => {
+  it('exposes commands only when the package ships a Skill directory holding SKILL.md', () => {
     const env = fixture();
     defineCommands({
       ...TEST_CLI,
@@ -482,12 +490,18 @@ describe('local Skill installation', () => {
     rmSync(path.join(env.packageRoot, 'skills/nb-studio-cli'), {
       recursive: true,
     });
-    copy(path.join(env.packageRoot, 'skills/other'));
+    mkdirSync(path.join(env.packageRoot, 'skills/empty'), { recursive: true });
     defineCommands({
       ...TEST_CLI,
       selfUpdate: { packageRoot: env.packageRoot },
     });
     expect(COMMANDS['skills:install']).toBeUndefined();
+    copy(path.join(env.packageRoot, 'skills/other'));
+    defineCommands({
+      ...TEST_CLI,
+      selfUpdate: { packageRoot: env.packageRoot },
+    });
+    expect(COMMANDS['skills:install']).toBeDefined();
   });
 });
 
@@ -540,13 +554,19 @@ describe('Skill synchronization and filesystem boundaries', () => {
     );
     const synced = await syncInstalledSkills({ ...env, cliVersion: '2.0.0' });
     expect(synced.targets).toEqual([
-      { tool: 'codex', path: codex(env), action: 'updated' },
+      {
+        skill: 'nb-studio-cli',
+        tool: 'codex',
+        path: codex(env),
+        action: 'updated',
+      },
     ]);
     expect(synced.warnings.join('\n')).toContain(legacy);
     expect(synced.warnings.join('\n')).toContain(claude(env));
     expect(synced.warnings.join('\n')).toContain('acme skills install');
     const registry = record(env);
     registry.targets.push({
+      skill: 'nb-studio-cli',
       tool: 'codex',
       path: legacy,
       hash: 'old',
@@ -559,8 +579,18 @@ describe('Skill synchronization and filesystem boundaries', () => {
     expect(
       (await syncInstalledSkills({ ...env, cliVersion: '2.0.0' })).targets,
     ).toEqual([
-      { tool: 'codex', path: codex(env), action: 'unchanged' },
-      { tool: 'codex', path: legacy, action: 'updated' },
+      {
+        skill: 'nb-studio-cli',
+        tool: 'codex',
+        path: codex(env),
+        action: 'unchanged',
+      },
+      {
+        skill: 'nb-studio-cli',
+        tool: 'codex',
+        path: legacy,
+        action: 'updated',
+      },
     ]);
     expect(readFileSync(path.join(legacy, 'SKILL.md'), 'utf8')).toBe(
       'new instructions',
@@ -686,7 +716,7 @@ describe('Skill synchronization and filesystem boundaries', () => {
     expect(readdirSync(path.dirname(codex(env)))).toEqual(['nb-studio-cli']);
   });
 
-  it('serializes concurrent installs without dropping registrations and refuses existing locks', async () => {
+  it('serializes concurrent installs without dropping registrations and reuses current copies without locks', async () => {
     const env = fixture();
     const attempts = await Promise.allSettled([
       installSkills(env, ['claude']),
@@ -694,19 +724,63 @@ describe('Skill synchronization and filesystem boundaries', () => {
     ]);
     expect(
       attempts.filter((attempt) => attempt.status === 'fulfilled'),
-    ).toHaveLength(1);
-    const failed = attempts.find((attempt) => attempt.status === 'rejected');
-    expect(failed).toMatchObject({ reason: { code: 'SKILLS_BUSY', exit: 6 } });
+    ).toHaveLength(2);
     await installSkills(env, ['all']);
     expect(record(env).targets).toHaveLength(2);
     mkdirSync(path.join(path.dirname(codex(env)), '.nb-studio-cli.lock'));
-    await expect(installSkills(env, ['codex'])).rejects.toMatchObject({
-      code: 'SKILLS_BUSY',
+    await expect(installSkills(env, ['codex'])).resolves.toMatchObject({
+      targets: [{ action: 'unchanged' }],
     });
     expect(readFileSync(path.join(codex(env), 'SKILL.md'), 'utf8')).toBe(
       'current instructions',
     );
   });
+});
+
+it('reuses registered, current session Skills without writes even while a lock exists', async () => {
+  const env = fixture();
+  await installSkills(env, ['all']);
+  const registry = path.join(env.stateHome, 'skills.json');
+  const before = statSync(registry);
+  const beforeClaude = statSync(path.dirname(claude(env)));
+  const beforeCodex = statSync(path.dirname(codex(env)));
+  mkdirSync(path.join(env.stateHome, '.skills.lock'));
+  await Promise.all(
+    Array.from({ length: 5 }, (_, index) =>
+      prepareSessionSkill(env, index % 2 ? 'claude' : 'codex'),
+    ),
+  );
+  expect(statSync(registry).mtimeMs).toBe(before.mtimeMs);
+  expect(statSync(path.dirname(claude(env))).mtimeMs).toBe(
+    beforeClaude.mtimeMs,
+  );
+  expect(statSync(path.dirname(codex(env))).mtimeMs).toBe(beforeCodex.mtimeMs);
+  expect(readdirSync(path.join(env.stateHome, '.skills.lock'))).toEqual([]);
+});
+
+it('installs concurrent new and resumed session Skills and shares update synchronization', async () => {
+  const env = fixture();
+  await Promise.all(
+    ['claude', 'claude', 'codex', 'codex', 'claude'].map((id) =>
+      prepareSessionSkill(env, id),
+    ),
+  );
+  expect(record(env).targets).toHaveLength(2);
+  writeFileSync(
+    path.join(env.packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+    'updated instructions',
+  );
+  const [sync] = await Promise.all([
+    syncInstalledSkills(env),
+    prepareSessionSkill(env, 'claude'),
+    prepareSessionSkill(env, 'codex'),
+  ]);
+  expect(sync.warnings).toEqual([]);
+  expect(
+    (await skillsStatus(env)).targets
+      .filter((target) => target.registered)
+      .every((target) => target.upToDate),
+  ).toBe(true);
 });
 
 it.each(['claude', 'codex'])(
@@ -781,3 +855,184 @@ it.each(['missing', 'empty'])(
     ).rejects.toThrow('Update or reinstall acme');
   },
 );
+
+function ship(
+  env: SkillsEnvironment,
+  slug: string,
+  text = `${slug} text`,
+): void {
+  copy(path.join(env.packageRoot, 'skills', slug), text);
+}
+function dest(
+  env: SkillsEnvironment,
+  tool: 'claude' | 'codex',
+  slug: string,
+): string {
+  return path.join(
+    env.home!,
+    tool === 'claude' ? '.claude' : '.agents',
+    'skills',
+    slug,
+  );
+}
+function slugs(env: SkillsEnvironment): string[] {
+  return record(env)
+    .targets.map((target) => `${target.skill}:${target.tool}`)
+    .sort();
+}
+
+describe('every shipped Skill', () => {
+  it('discovers valid slugs sorted, ignoring files, dot directories, unsafe names and directories without SKILL.md', () => {
+    const env = fixture();
+    ship(env, 'studio-memory');
+    ship(env, '.hidden');
+    ship(env, 'bad name');
+    mkdirSync(path.join(env.packageRoot, 'skills/no-skill-md'));
+    writeFileSync(path.join(env.packageRoot, 'skills/file.md'), 'x');
+    expect(shippedSkills(env.packageRoot)).toEqual([
+      'nb-studio-cli',
+      'studio-memory',
+    ]);
+    expect(shippedSkills(path.join(env.packageRoot, 'missing'))).toEqual([]);
+  });
+
+  it('installs each Skill for each tool, reports them, and leaves neighbours and a dry run alone', async () => {
+    const env = fixture();
+    ship(env, 'studio-memory');
+    const neighbor = path.join(path.dirname(dest(env, 'claude', 'x')), 'mine');
+    copy(neighbor, 'mine');
+    const dry = await installSkills(env, ['all'], true);
+    expect(dry.skills.map((item) => item.skill)).toEqual([
+      'nb-studio-cli',
+      'studio-memory',
+    ]);
+    // The single-Skill result's fields name the primary Skill, for readers of the earlier result.
+    expect(dry.skill).toBe('nb-studio-cli');
+    expect(dry.hash).toBe(dry.skills[0]?.hash);
+    expect(
+      dry.targets.map(
+        (target) => `${target.skill}:${target.tool}:${target.action}`,
+      ),
+    ).toEqual([
+      'nb-studio-cli:claude:install',
+      'nb-studio-cli:codex:install',
+      'studio-memory:claude:install',
+      'studio-memory:codex:install',
+    ]);
+    expect(existsSync(env.stateHome)).toBe(false);
+    expect(existsSync(dest(env, 'claude', 'studio-memory'))).toBe(false);
+    await installSkills(env, ['all']);
+    for (const tool of ['claude', 'codex'] as const)
+      expect(
+        readFileSync(
+          path.join(dest(env, tool, 'studio-memory'), 'SKILL.md'),
+          'utf8',
+        ),
+      ).toBe('studio-memory text');
+    expect(readFileSync(path.join(neighbor, 'SKILL.md'), 'utf8')).toBe('mine');
+    expect(record(env)).toMatchObject({ version: 2 });
+    expect(slugs(env)).toHaveLength(4);
+    const status = await skillsStatus(env, ['codex']);
+    expect(
+      status.targets
+        .filter((target) => !target.legacy)
+        .map((target) => [target.skill, target.upToDate]),
+    ).toEqual([
+      ['nb-studio-cli', true],
+      ['studio-memory', true],
+    ]);
+  });
+
+  it('migrates the original registry shape to version 2 without reinstalling', async () => {
+    const env = fixture();
+    await installSkills(env, ['codex']);
+    const original = record(env).targets[0]!;
+    writeFileSync(
+      path.join(env.stateHome, 'skills.json'),
+      JSON.stringify({
+        skill: 'nb-studio-cli',
+        targets: [
+          {
+            tool: original.tool,
+            path: original.path,
+            cliVersion: original.cliVersion,
+            hash: original.hash,
+          },
+        ],
+      }),
+    );
+    expect((await skillsStatus(env, ['codex'])).targets[0]).toMatchObject({
+      registered: true,
+      upToDate: true,
+    });
+    ship(env, 'studio-memory');
+    const result = await installSkills(env, ['codex']);
+    expect(result.targets.map((target) => target.action)).toEqual([
+      'unchanged',
+      'install',
+    ]);
+    expect(record(env)).toMatchObject({ version: 2 });
+    expect(slugs(env)).toEqual(['nb-studio-cli:codex', 'studio-memory:codex']);
+  });
+
+  it('synchronizes new content for every registered Skill', async () => {
+    const env = fixture();
+    ship(env, 'studio-memory');
+    await installSkills(env, ['codex']);
+    ship(env, 'studio-memory', 'v2');
+    const synced = await syncInstalledSkills({ ...env, cliVersion: '2.0.0' });
+    expect(
+      synced.targets.map((target) => `${target.skill}:${target.action}`),
+    ).toEqual(['nb-studio-cli:unchanged', 'studio-memory:updated']);
+    expect(
+      readFileSync(
+        path.join(dest(env, 'codex', 'studio-memory'), 'SKILL.md'),
+        'utf8',
+      ),
+    ).toBe('v2');
+  });
+
+  it('removes an unmodified copy of a dropped Skill and its record, and keeps an edited one with a warning', async () => {
+    const env = fixture();
+    ship(env, 'studio-memory');
+    ship(env, 'old-one');
+    await installSkills(env, ['all']);
+    writeFileSync(
+      path.join(dest(env, 'codex', 'old-one'), 'SKILL.md'),
+      'edited by hand',
+    );
+    rmSync(path.join(env.packageRoot, 'skills/old-one'), { recursive: true });
+    const synced = await syncInstalledSkills({ ...env, cliVersion: '2.0.0' });
+    const dropped = synced.targets.filter(
+      (target) => target.skill === 'old-one',
+    );
+    expect(dropped.map((target) => `${target.tool}:${target.action}`)).toEqual([
+      'claude:removed',
+      'codex:kept',
+    ]);
+    expect(existsSync(dest(env, 'claude', 'old-one'))).toBe(false);
+    expect(
+      readFileSync(
+        path.join(dest(env, 'codex', 'old-one'), 'SKILL.md'),
+        'utf8',
+      ),
+    ).toBe('edited by hand');
+    expect(synced.warnings.join('\n')).toContain(dest(env, 'codex', 'old-one'));
+    expect(slugs(env).some((entry) => entry.startsWith('old-one'))).toBe(false);
+    expect(existsSync(dest(env, 'claude', 'studio-memory'))).toBe(true);
+    // The record is gone, so the next sync is quiet about it.
+    expect(
+      (
+        await syncInstalledSkills({ ...env, cliVersion: '2.0.0' })
+      ).warnings.join(''),
+    ).not.toContain('old-one');
+  });
+
+  it('does not delete an unregistered copy of a Skill it never installed', async () => {
+    const env = fixture();
+    await installSkills(env, ['codex']);
+    copy(dest(env, 'codex', 'someone-elses'), 'theirs');
+    await syncInstalledSkills({ ...env, cliVersion: '2.0.0' });
+    expect(existsSync(dest(env, 'codex', 'someone-elses'))).toBe(true);
+  });
+});

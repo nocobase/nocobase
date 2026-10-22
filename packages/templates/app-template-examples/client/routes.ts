@@ -1,6 +1,19 @@
 import systemSettingsRoutes from './pages/settings/routes.js';
 import {
+  agentsRoute,
+  modelsRoute,
+  runtimesRoute,
+  skillsRoute,
+} from '@nocobase/app-plugin-agents/client/routes';
+import {
+  BrainCircuit,
+  BotMessageSquare,
+  Bot,
+  Server,
+  Sparkles,
+  ScanText,
   FileText,
+  FilePenLine,
   Home,
   Hash,
   Languages,
@@ -224,6 +237,61 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     name: 'external-crm',
     navigation: { title: 'navigation.externalCrm', icon: Plug },
     path: '/external-crm',
+  },
+  {
+    name: 'agentsNavigation',
+    auth: 'required',
+    navigation: { title: 'onlineAgent.group', icon: BotMessageSquare },
+    children: [
+      {
+        ...agentsRoute,
+        navigation: { title: 'onlineAgent.agents', icon: Bot },
+        breadcrumb: { title: 'onlineAgent.agents' },
+      },
+      {
+        ...runtimesRoute,
+        navigation: { title: 'onlineAgent.runtimes', icon: Server },
+        breadcrumb: { title: 'onlineAgent.runtimes' },
+      },
+      {
+        ...skillsRoute,
+        navigation: { title: 'onlineAgent.skills', icon: Sparkles },
+        breadcrumb: { title: 'onlineAgent.skills' },
+      },
+      {
+        ...modelsRoute,
+        navigation: { title: 'onlineAgent.models', icon: BrainCircuit },
+        breadcrumb: { title: 'onlineAgent.models' },
+      },
+      {
+        name: 'ai-translation',
+        path: '/ai-translation',
+        authz: 'skip',
+        navigation: { title: 'aiTranslation.title', icon: Languages },
+        breadcrumb: { title: 'aiTranslation.title' },
+        componentLoader: () => import('./pages/ai-translation/index.js'),
+      },
+      {
+        name: 'ai-structured-extraction',
+        path: '/ai-structured-extraction',
+        auth: 'required',
+        authz: 'skip',
+        navigation: { title: 'structuredExtraction.title', icon: ScanText },
+        breadcrumb: { title: 'structuredExtraction.title' },
+        componentLoader: () =>
+          import('./pages/ai-structured-extraction/index.js'),
+      },
+      {
+        name: 'ai-form-fill',
+        path: '/ai-form-fill',
+        auth: 'required',
+        // This browser-only demonstration has no business persistence or page grant.
+        authz: 'skip',
+        navigation: { title: 'aiFormFill.title', icon: FilePenLine },
+        breadcrumb: { title: 'aiFormFill.title' },
+        componentLoader: () => import('./pages/ai-form-fill/index.js'),
+      },
+    ],
   },
   {
     auth: 'guest',

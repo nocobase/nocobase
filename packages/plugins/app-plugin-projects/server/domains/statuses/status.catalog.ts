@@ -158,6 +158,10 @@ export function createStatusService(deps: {
         category: statusCategory,
         machine,
         rules,
+        eventTarget(from, key) {
+          const event = deps.events.get(key);
+          return event?.from.includes(from) ? event.to : null;
+        },
       },
     };
     return built.catalog;

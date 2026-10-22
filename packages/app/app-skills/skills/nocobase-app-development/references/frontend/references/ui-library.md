@@ -136,16 +136,50 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 
 ### permission-editor
 
-A compact resource permission workspace with horizontal action checkboxes, adjacent data scopes and atomic visible selection.
+A compact permission workspace with category navigation, individual action checkboxes, scoped data controls and accessible scope help.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/permission-editor`
 - Installs to: `client/components/permission-editor.tsx`, `client/components/permission-filter.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/permission-editor-demo` (`pnpm exec shadcn view @nocobase/permission-editor-demo`)
-- After installing: Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default. Resource groups render as compact rows with wrapping action checkboxes. Optional row.scopes bind independent scope selectors to their owning action. Pass onEnabledBatchChange to enable atomic group selection of visible toggleable permissions; omit it to keep single-action controls. Filtering never mutates the draft. Pass labels.selectVisible for the localized group checkbox name. Use group.accessOnly for a page with a single access action to show one title checkbox without redundant action text. Provide scope.configuration for parameterized scopes; PermissionFilter edits validated condition drafts and keeps role saving in the host form. Never save customFilter as a bare key: bind its native params.filter object.
+- After installing: Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default. Resource groups render as compact rows with wrapping action checkboxes. Optional row.scopes bind independent scope selectors to their owning action. Actions are configured individually; category names and groups omit authorization counts and bulk selection. Filtering never mutates the draft. Use scope.hint for contextual scope help shown on hover, keyboard focus or tap, and labels.scopeHintFor for the accessible trigger name. Use group.accessOnly for a page with a single access action to show one title checkbox without redundant action text. Provide scope.configuration for parameterized scopes; PermissionFilter edits validated condition drafts and keeps role saving in the host form. Never save customFilter as a bare key: bind its native params.filter object.
+
+### role-list
+
+A role administration table built with the standard DataTable: localized column headers, sortable names and identifiers, protected/custom badges, and pagination. The host supplies authorized rows and edit destinations. Preinstalled in both application templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/role-list`
+- Installs to: `client/components/role-list.tsx`
+- Plugin dependencies: none
+- Also installs: `@nocobase/data-table`, `@nocobase/record-link`
+- Example: `@nocobase/role-list-demo` (`pnpm exec shadcn view @nocobase/role-list-demo`)
+- After installing: Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. Optional tableState accepts controlled pagination/sorting and page-size choices from the host URL adapter. The host owns loading, empty/error states, filtering and authorization. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.
+
+### default-access-editor
+
+Controlled default data scope rule fields with business-object selection, independent operation scopes and native custom-filter slots. The host supplies current rules and performs authorized writes. Preinstalled in both application templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/default-access-editor`
+- Installs to: `client/components/default-access-editor.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/default-access-editor-demo` (`pnpm exec shadcn view @nocobase/default-access-editor-demo`)
+- After installing: Pass localized labels, a stable rule key, resource choices and scope controls. Explain that default data scopes combine with role-granted scopes for users who already hold the operation permission, and that restriction rules still constrain final access. The host loads authorization/defaultAccess and authorization/defaultAccess/options, enforces settings:authorization.default-access read/create/update/delete, and owns draft preservation, custom filters, validation, confirmation and writes. Existing apps reconcile the editor, default-access pages/model/routes, locales and contextual role-form link from the updated template. No existing rule is seeded or rewritten on upgrade. Both templates expose one Permission management sidebar entry with Roles and permissions and Default data scopes tabs, without changing their route ids, URLs, settings guards or stored rules. This navigation organization does not add sharing or restriction editors.
 
 ## Data display
+
+### record-link
+
+A native router link for record names and identifiers in tables and lists: foreground text at rest, underline on hover and visible keyboard focus. Preinstalled in both application templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/record-link`
+- Installs to: `client/components/record-link.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/record-link-demo` (`pnpm exec shadcn view @nocobase/record-link-demo`)
+- After installing: Render inside a React Router and pass the record route through to. Carry the current list query in to.search when opening a child route. Supports native Link props and refs; use action buttons and menu items separately.
 
 ### kanban
 
@@ -326,6 +360,17 @@ A settings dialog after shadcn's sidebar-13: grouped categories in a sidebar on 
 - Example: `@nocobase/settings-dialog-demo` (`pnpm exec shadcn view @nocobase/settings-dialog-demo`)
 - After installing: Pass groups of { id, label, icon } items, the activeId and onSelect (or renderItem to draw each entry as a router link), and render the open entry as children, optionally in a SettingsDialogSection. Every word comes from the props; the component ships no locale keys.
 
+### setup-readiness
+
+Contextual prerequisite checks for a feature, with missing, ready and unavailable states. Connect real authorized business reads; never infer readiness from installed plugins. Preinstalled in application templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/setup-readiness`
+- Installs to: `client/components/setup-readiness.tsx`, `client/components/setup-readiness-state.ts`
+- Plugin dependencies: none
+- Example: `@nocobase/setup-readiness-demo` (`pnpm exec shadcn view @nocobase/setup-readiness-demo`)
+- After installing: Memoize SetupCheck descriptors and the async inspect callback; wire useSetupReadiness to the feature’s authorized aggregate read and pass its state to SetupReadiness. Supply translated labels, stable ids and authorized configuration links. No checks or disabled inspection causes no reads. Refresh on the host route key and after configuration saves; focus rechecks mounted checks. Unknown reason is unavailable, signIn, forbidden or invalid. Only missing checks render configuration links; denied/invalid reads are not missing. Initial all-ready hides; explicit refresh keeps a compact confirmation and the refresh control. This is informational; execution still validates prerequisites server-side. Templates also include RequiredRoleSetup for explicitly declared business roles.
+
 ## Projects
 
 ### issue-table
@@ -421,6 +466,19 @@ A child route presented as a non-modal page covering the content area, keeping t
 - Plugin dependencies: none
 - Example: `@nocobase/route-child-page-demo` (`pnpm exec shadcn view @nocobase/route-child-page-demo`)
 - After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole.
+
+## Task Center
+
+### task-center-ui
+
+Presentational components for a personal task center layered as source → subject → status → task cards: a source navigation with subjects folded under each source, pending counts and a client-side subject search; To do / Done / All tabs; day-grouped task cards whose summary each task type contributes; one-type-at-a-time batch selection with a floating action bar and confirmation; and a right-side detail drawer whose form and actions the task's business supplies. Takes data already shaped and translated; pairs with a task index such as @nocobase/app-plugin-task-center.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/task-center-ui`
+- Installs to: `client/extensions/nocobase-task-center-ui/`
+- Plugin dependencies: none
+- Example: `@nocobase/task-center-ui-demo` (`pnpm exec shadcn view @nocobase/task-center-ui-demo`)
+- After installing: Pure presentation: map your task index into TaskNavSource and TaskCardData (types.ts) with translated labels, render each task type's summary with TaskSummaryFields, its batch actions through useTaskSelection, TaskBulkBar and TaskBulkConfirm, and its detail form and actions inside TaskDetailSheet. Merge locales/ into your locale resources.
 
 ## Workflows
 

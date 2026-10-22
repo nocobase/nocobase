@@ -61,6 +61,16 @@ function serve(permissions: readonly string[] = ALL): void {
   resetApi(
     {
       'agents/services': () => state.services,
+      'agents/models': () =>
+        state.services
+          .filter((service) => service.enabled)
+          .map((service) => ({
+            ...service,
+            models: service.models.filter(
+              (model) => !model.kind || model.kind === 'chat',
+            ),
+          }))
+          .filter((service) => service.models.length > 0),
       'POST agents/services': () => ({ ...state.services[0], name: 'new' }),
       'PATCH agents/services/team': () => state.services[0],
       'POST agents/discoverModels': () => ({
@@ -229,6 +239,39 @@ describe('Agent team › Usage › Prices', () => {
       expect(sent('PUT', 'agents/prices')[0]).toEqual(
         expect.objectContaining({ subscriptions: ['claude'] }),
       ),
+    );
+  });
+
+  it('hides online prices with no chat models and preserves them when saving a coding tool', async () => {
+    state.services = [
+      service({
+        models: [{ value: 'embedding', label: 'Embedding', kind: 'embedding' }],
+      }),
+    ];
+    state.prices = { items: [price({})], subscriptions: [], seen: [] };
+    serve(['agents.prices/read', 'agents.prices/manage']);
+    renderPrices();
+    const tools = await screen.findByRole('list', {
+      name: 'prices.section.runner',
+    });
+    expect(screen.queryByText('prices.section.online')).toBeNull();
+    await userEvent.click(
+      within(tools).getByRole('button', { name: /tools\.claude/u }),
+    );
+    await userEvent.click(
+      screen.getByRole('switch', { name: 'prices.tool.subscription' }),
+    );
+    await waitFor(() =>
+      expect(sent('PUT', 'agents/prices')[0]).toMatchObject({
+        subscriptions: ['claude'],
+        prices: [
+          expect.objectContaining({
+            tool: 'online',
+            modelService: 'team',
+            model: 'mock-model',
+          }),
+        ],
+      }),
     );
   });
 

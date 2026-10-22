@@ -1,6 +1,6 @@
-// Local installation of the one Studio Skill shipped by a branded CLI. No session, credential, or network is read.
+// Local installation of the Skills shipped by a branded CLI (every `skills/<slug>/SKILL.md` in its package). No session, credential, or network is read.
 import { createHash } from 'node:crypto';
-import { constants, existsSync } from 'node:fs';
+import { constants, lstatSync, readdirSync } from 'node:fs';
 import {
   access,
   lstat,
@@ -24,8 +24,12 @@ import { appCliHome, type AppCliConfig } from './config.ts';
 import { AppCommand } from './lib/command.ts';
 import { findRunCredentials } from './lib/credentials.ts';
 import { CliCommandError } from './lib/envelope.ts';
+import { withSkillLock } from './skills-lock.ts';
 
+// The Skill every Studio CLI has shipped since the commands existed. It alone has a legacy Codex location and feeds ACP sessions.
 const SKILL = 'nb-studio-cli';
+// A slug names a directory below a tool's skills root, so it may not hold a separator and may not start with a dot.
+const SLUG = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const TOOLS = ['claude', 'codex'] as const;
 type Tool = (typeof TOOLS)[number];
 
@@ -39,6 +43,7 @@ export interface SkillsEnvironment {
 }
 
 interface Target {
+  skill: string;
   tool: Tool;
   path: string;
 }
@@ -48,13 +53,17 @@ interface InstalledTarget extends Target {
   hash: string;
 }
 
+// skills.json version 2 is `{ version: 2, targets }` with each target naming its Skill. The original file was
+// `{ skill: 'nb-studio-cli', targets }` without a `skill` on the targets; it is still read and is rewritten as version 2.
 interface Registry {
-  skill: typeof SKILL;
+  version: 2;
   targets: InstalledTarget[];
 }
 
 export interface SkillStatus extends Target {
   readonly legacy: boolean;
+  /** The registry records this copy but the package no longer ships its Skill. */
+  readonly dropped?: boolean;
   readonly registered: boolean;
   readonly present: boolean;
   readonly upToDate: boolean;
@@ -63,10 +72,28 @@ export interface SkillStatus extends Target {
 }
 
 export interface SkillsResult {
+  readonly skills: readonly { readonly skill: string; readonly hash: string }[];
+  /**
+   * The first shipped Skill's slug and hash, as the single-Skill result named them (`nb-studio-cli` when it is shipped);
+   * kept so readers of the earlier result keep working. `skills` lists every one.
+   */
   readonly skill: string;
-  readonly cliVersion: string;
   readonly hash: string;
+  readonly cliVersion: string;
   readonly targets: readonly SkillStatus[];
+}
+
+/** `skills`, and the earlier result's `skill` and `hash` for the primary Skill. */
+function shippedSummary(
+  sources: ReadonlyMap<string, { readonly hash: string }>,
+): Pick<SkillsResult, 'skills' | 'skill' | 'hash'> {
+  const skills = [...sources].map(([skill, source]) => ({
+    skill,
+    hash: source.hash,
+  }));
+  const primary =
+    skills.find(({ skill }) => skill === 'nb-studio-cli') ?? skills[0];
+  return { skills, skill: primary?.skill ?? '', hash: primary?.hash ?? '' };
 }
 
 export interface SkillInstall extends SkillStatus {
@@ -80,23 +107,41 @@ export interface SkillsInstallResult extends SkillsResult {
 
 export interface SkillsSyncResult {
   readonly targets: readonly (Target & {
-    action: 'updated' | 'unchanged' | 'failed';
+    action: 'updated' | 'unchanged' | 'removed' | 'kept' | 'failed';
     error?: string;
   })[];
   readonly warnings: readonly string[];
 }
 
-function sourceOf(environment: SkillsEnvironment): string {
-  return path.resolve(environment.packageRoot, 'skills', SKILL);
+function sourceOf(environment: SkillsEnvironment, skill: string): string {
+  return path.resolve(environment.packageRoot, 'skills', skill);
 }
 
-/** Only packages shipping this Skill expose the two commands. */
+/** The Skills a package ships: directories of `<packageRoot>/skills` holding SKILL.md, sorted by slug. */
+export function shippedSkills(packageRoot: string): string[] {
+  const root = path.join(packageRoot, 'skills');
+  try {
+    return readdirSync(root, { withFileTypes: true })
+      .filter((entry) => {
+        if (!entry.isDirectory() || !SLUG.test(entry.name)) return false;
+        try {
+          return lstatSync(path.join(root, entry.name, 'SKILL.md')).isFile();
+        } catch {
+          return false;
+        }
+      })
+      .map((entry) => entry.name)
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+/** Only packages shipping at least one Skill expose the two commands. */
 export function hasStudioSkill(config: AppCliConfig): boolean {
   return (
     config.selfUpdate !== undefined &&
-    existsSync(
-      path.join(config.selfUpdate.packageRoot, 'skills', SKILL, 'SKILL.md'),
-    )
+    shippedSkills(config.selfUpdate.packageRoot).length > 0
   );
 }
 
@@ -111,10 +156,14 @@ export function skillsEnvironment(config: AppCliConfig): SkillsEnvironment {
   };
 }
 
-function locations(environment: SkillsEnvironment): {
+function locations(
+  environment: SkillsEnvironment,
+  skills: readonly string[] = shippedSkills(environment.packageRoot),
+): {
   defaults: Target[];
-  legacy: Target;
+  legacy: Target[];
   configs: Record<Tool, string>;
+  roots: Record<Tool, string>;
 } {
   const home = environment.home ?? os.homedir();
   const env = environment.env ?? process.env;
@@ -122,13 +171,30 @@ function locations(environment: SkillsEnvironment): {
     claude: path.resolve(env.CLAUDE_CONFIG_DIR || path.join(home, '.claude')),
     codex: path.resolve(env.CODEX_HOME || path.join(home, '.codex')),
   };
+  const roots = {
+    claude: path.join(configs.claude, 'skills'),
+    codex: path.resolve(home, '.agents', 'skills'),
+  };
   return {
     configs,
-    defaults: [
-      { tool: 'claude', path: path.join(configs.claude, 'skills', SKILL) },
-      { tool: 'codex', path: path.resolve(home, '.agents', 'skills', SKILL) },
-    ],
-    legacy: { tool: 'codex', path: path.join(configs.codex, 'skills', SKILL) },
+    roots,
+    defaults: skills.flatMap((skill) =>
+      TOOLS.map((tool) => ({
+        skill,
+        tool,
+        path: path.join(roots[tool], skill),
+      })),
+    ),
+    // Only nb-studio-cli was ever installed below CODEX_HOME; newer Skills have no legacy location.
+    legacy: skills.includes(SKILL)
+      ? [
+          {
+            skill: SKILL,
+            tool: 'codex',
+            path: path.join(configs.codex, 'skills', SKILL),
+          },
+        ]
+      : [],
   };
 }
 
@@ -258,15 +324,32 @@ async function snapshot(root: string): Promise<Snapshot> {
   return { entries, hash };
 }
 
-async function bundled(environment: SkillsEnvironment): Promise<Snapshot> {
-  const result = await snapshot(sourceOf(environment));
+async function bundled(
+  environment: SkillsEnvironment,
+  skill: string,
+): Promise<Snapshot> {
+  const result = await snapshot(sourceOf(environment, skill));
   if (
     !result.entries.some(
       (entry) => entry.name === 'SKILL.md' && entry.bytes !== undefined,
     )
   )
-    throw new Error('The packaged nb-studio-cli Skill has no SKILL.md.');
+    throw new Error(`The packaged ${skill} Skill has no SKILL.md.`);
   return result;
+}
+
+type Sources = ReadonlyMap<string, Snapshot>;
+
+async function bundledAll(environment: SkillsEnvironment): Promise<Sources> {
+  const slugs = shippedSkills(environment.packageRoot);
+  if (slugs.length === 0) throw new Error('This CLI package ships no Skills.');
+  return new Map(
+    await Promise.all(
+      slugs.map(
+        async (slug) => [slug, await bundled(environment, slug)] as const,
+      ),
+    ),
+  );
 }
 
 function registryFile(environment: SkillsEnvironment): string {
@@ -276,31 +359,46 @@ function registryFile(environment: SkillsEnvironment): string {
 async function readRegistry(environment: SkillsEnvironment): Promise<Registry> {
   const file = registryFile(environment);
   await safePath(file, false);
-  if ((await stat(file)) === undefined) return { skill: SKILL, targets: [] };
-  const data = JSON.parse(await readFile(file, 'utf8')) as Registry;
+  if ((await stat(file)) === undefined) return { version: 2, targets: [] };
+  const invalid = (): CliCommandError =>
+    new CliCommandError(
+      'SKILLS_INVALID_REGISTRY',
+      `Invalid Skill installation record: ${file}`,
+      { exit: EXIT_CODES.validation },
+    );
+  const data = JSON.parse(await readFile(file, 'utf8')) as {
+    version?: unknown;
+    skill?: unknown;
+    targets?: unknown;
+  } | null;
+  if (data === null || typeof data !== 'object' || !Array.isArray(data.targets))
+    throw invalid();
+  // The original file has no version and one top-level `skill`; its targets inherit it.
+  const legacy = data.version === undefined;
+  if (legacy ? data.skill !== SKILL : data.version !== 2) throw invalid();
+  const targets = (data.targets as Partial<InstalledTarget>[]).map(
+    (target) => ({
+      ...target,
+      skill: legacy ? SKILL : target?.skill,
+    }),
+  ) as InstalledTarget[];
   if (
-    data === null ||
-    typeof data !== 'object' ||
-    data.skill !== SKILL ||
-    !Array.isArray(data.targets) ||
-    data.targets.some(
+    targets.some(
       (target) =>
         !target ||
+        typeof target.skill !== 'string' ||
+        !SLUG.test(target.skill) ||
         !TOOLS.includes(target.tool) ||
         typeof target.path !== 'string' ||
         !path.isAbsolute(target.path) ||
-        path.basename(target.path) !== SKILL ||
+        path.basename(target.path) !== target.skill ||
         path.basename(path.dirname(target.path)) !== 'skills' ||
         typeof target.cliVersion !== 'string' ||
         typeof target.hash !== 'string',
     )
   )
-    throw new CliCommandError(
-      'SKILLS_INVALID_REGISTRY',
-      `Invalid Skill installation record: ${file}`,
-      { exit: EXIT_CODES.validation },
-    );
-  return data;
+    throw invalid();
+  return { version: 2, targets };
 }
 
 async function writeRegistry(
@@ -325,29 +423,13 @@ async function writeRegistry(
 
 async function lock<T>(file: string, work: () => Promise<T>): Promise<T> {
   await safePath(path.dirname(file));
-  await mkdir(path.dirname(file), { recursive: true });
-  try {
-    await mkdir(file);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'EEXIST')
-      throw new CliCommandError(
-        'SKILLS_BUSY',
-        `Another Skill operation holds ${file}. Retry after it finishes; if it was interrupted, remove this lock directory before retrying.`,
-        { exit: EXIT_CODES.conflict },
-      );
-    throw error;
-  }
-  try {
-    return await work();
-  } finally {
-    await rm(file, { recursive: true, force: true });
-  }
+  return withSkillLock(file, work);
 }
 
 async function statusOf(
   target: Target,
   environment: SkillsEnvironment,
-  source: Snapshot,
+  source: Snapshot | undefined,
   registry: Registry,
 ): Promise<SkillStatus> {
   const record = registry.targets.find(
@@ -357,7 +439,9 @@ async function statusOf(
     ...target,
     legacy:
       target.tool === 'codex' &&
-      target.path !== locations(environment).defaults[1].path,
+      target.path !==
+        path.join(locations(environment).roots.codex, target.skill),
+    ...(source === undefined ? { dropped: true } : {}),
     registered: record !== undefined,
     ...(record ? { installedCliVersion: record.cliVersion } : {}),
   };
@@ -367,7 +451,10 @@ async function statusOf(
     return {
       ...base,
       present,
-      upToDate: present && (await snapshot(target.path)).hash === source.hash,
+      upToDate:
+        source !== undefined &&
+        present &&
+        (await snapshot(target.path)).hash === source.hash,
     };
   } catch (error) {
     return {
@@ -396,18 +483,19 @@ export async function skillsStatus(
   tools: readonly string[] = [],
 ): Promise<SkillsResult> {
   const selected = selection(tools);
-  const source = await bundled(environment);
+  const sources = await bundledAll(environment);
   const registry = await readRegistry(environment);
   const { defaults, legacy } = locations(environment);
-  const targets = unique([...defaults, legacy, ...registry.targets]).filter(
+  const targets = unique([...defaults, ...legacy, ...registry.targets]).filter(
     (target) => selected.length === 0 || selected.includes(target.tool),
   );
   return {
-    skill: SKILL,
+    ...shippedSummary(sources),
     cliVersion: environment.cliVersion,
-    hash: source.hash,
     targets: await Promise.all(
-      targets.map((target) => statusOf(target, environment, source, registry)),
+      targets.map((target) =>
+        statusOf(target, environment, sources.get(target.skill), registry),
+      ),
     ),
   };
 }
@@ -462,10 +550,14 @@ async function replace(
       { exit: EXIT_CODES.validation },
     );
   await safePath(target.path);
+  const ready = await reusable(target, environment, source, registry);
+  if (ready !== undefined) return ready;
   return lock(
     path.join(path.dirname(target.path), '.nb-studio-cli.lock'),
     async () => {
       await safePath(target.path);
+      const ready = await reusable(target, environment, source, registry);
+      if (ready !== undefined) return ready;
       const before = await statusOf(target, environment, source, registry);
       if (before.error)
         throw new CliCommandError('SKILLS_UNSAFE_PATH', before.error, {
@@ -476,13 +568,13 @@ async function replace(
         : before.present
           ? 'update'
           : 'install';
-      const record = {
+      const record: InstalledTarget = {
         ...target,
         cliVersion: environment.cliVersion,
         hash: source.hash,
       };
       const next: Registry = {
-        skill: SKILL,
+        version: 2,
         targets: [
           ...registry.targets.filter(
             (item) => path.resolve(item.path) !== path.resolve(target.path),
@@ -495,7 +587,7 @@ async function replace(
         const temporary = await mkdtemp(
           path.join(path.dirname(target.path), '.nb-studio-cli-stage-'),
         );
-        const staged = path.join(temporary, SKILL);
+        const staged = path.join(temporary, target.skill);
         const backup = path.join(temporary, 'previous');
         let moved = false;
         let activated = false;
@@ -558,13 +650,33 @@ async function replace(
   );
 }
 
-/** Replaces only nb-studio-cli and registers successful installations for self-update. */
+async function reusable(
+  target: Target,
+  environment: SkillsEnvironment,
+  source: Snapshot,
+  registry: Registry,
+): Promise<SkillInstall | undefined> {
+  const record = registry.targets.find(
+    (record) => path.resolve(record.path) === path.resolve(target.path),
+  );
+  if (
+    record?.tool !== target.tool ||
+    record.hash !== source.hash ||
+    record.cliVersion !== environment.cliVersion
+  )
+    return undefined;
+  const status = await statusOf(target, environment, source, registry);
+  if (!status.upToDate || status.error) return undefined;
+  return { ...status, action: 'unchanged' };
+}
+
+/** Replaces only the Skills the package ships and registers successful installations for self-update. */
 export async function installSkills(
   environment: SkillsEnvironment,
   tools: readonly string[] = [],
   dryRun = false,
 ): Promise<SkillsInstallResult> {
-  const source = await bundled(environment);
+  const sources = await bundledAll(environment);
   let selected = selection(tools);
   if (selected.length === 0)
     selected = (
@@ -594,6 +706,12 @@ export async function installSkills(
       selected.includes(target.tool),
     ),
   );
+  const result = (targets: SkillInstall[]): SkillsInstallResult => ({
+    ...shippedSummary(sources),
+    cliVersion: environment.cliVersion,
+    dryRun,
+    targets,
+  });
   const perform = async (): Promise<SkillsInstallResult> => {
     const registry = await readRegistry(environment);
     const conflict = targetConflicts([...targets, ...registry.targets])
@@ -612,7 +730,12 @@ export async function installSkills(
           { exit: EXIT_CODES.validation },
         );
       if (dryRun) {
-        const status = await statusOf(target, environment, source, registry);
+        const status = await statusOf(
+          target,
+          environment,
+          sources.get(target.skill),
+          registry,
+        );
         if (status.error)
           throw new CliCommandError('SKILLS_UNSAFE_PATH', status.error, {
             exit: EXIT_CODES.validation,
@@ -625,16 +748,41 @@ export async function installSkills(
               ? 'update'
               : 'install',
         });
-      } else results.push(await replace(target, environment, source, registry));
+      } else
+        results.push(
+          await replace(
+            target,
+            environment,
+            sources.get(target.skill)!,
+            registry,
+          ),
+        );
     }
-    return {
-      skill: SKILL,
-      cliVersion: environment.cliVersion,
-      hash: source.hash,
-      dryRun,
-      targets: results,
-    };
+    return result(results);
   };
+  if (!dryRun) {
+    const registry = await readRegistry(environment);
+    const conflict = targetConflicts([...targets, ...registry.targets])
+      .values()
+      .next().value;
+    if (conflict !== undefined) throw conflict;
+    const ready = await Promise.all(
+      targets.map(async (target) => {
+        if (
+          overlaps(target.path, environment.packageRoot) ||
+          overlaps(target.path, environment.stateHome)
+        )
+          return undefined;
+        return reusable(
+          target,
+          environment,
+          sources.get(target.skill)!,
+          registry,
+        );
+      }),
+    );
+    if (ready.every((target) => target !== undefined)) return result(ready);
+  }
   return dryRun
     ? perform()
     : lock(path.join(environment.stateHome, '.skills.lock'), perform);
@@ -656,14 +804,14 @@ export async function sessionSkillInstructions(
 ): Promise<string | undefined> {
   if (TOOLS.some((tool) => tool === agentId)) return undefined;
   try {
-    const source = await bundled(environment);
+    const source = await bundled(environment, SKILL);
     const skill = source.entries.find((entry) => entry.name === 'SKILL.md')!;
     const text = skill.bytes!.toString('utf8');
     if (!text.trim()) throw new Error('The packaged Skill is empty.');
     return [
       '# Studio session instructions',
       'The shared nb-studio-cli Skill is supplied below for this session. Follow it directly; no Skill installation is needed.',
-      `Resolve any relative Skill references from ${sourceOf(environment)}.`,
+      `Resolve any relative Skill references from ${sourceOf(environment, SKILL)}.`,
       'Keep the bridge-selected profile and agent session environment. Do not switch identity or remove session context to bypass a refusal.',
       text,
       '# Current message',
@@ -676,15 +824,35 @@ export async function sessionSkillInstructions(
   }
 }
 
+type SyncTarget = SkillsSyncResult['targets'][number];
+
+// A Skill the new package no longer ships. Only a copy we registered whose content still matches what we wrote is
+// removed; an edited copy is kept with a warning, and either way the record is dropped so the warning is not repeated.
+async function retire(
+  record: InstalledTarget,
+  environment: SkillsEnvironment,
+): Promise<{ action: 'removed' | 'kept'; message?: string }> {
+  await safePath(record.path);
+  if ((await stat(record.path)) === undefined) return { action: 'removed' };
+  if (
+    overlaps(record.path, environment.packageRoot) ||
+    overlaps(record.path, environment.stateHome) ||
+    (await snapshot(record.path)).hash !== record.hash
+  )
+    return {
+      action: 'kept',
+      message: `The ${record.skill} Skill is no longer shipped; its copy at ${record.path} was changed or cannot be removed safely, so it was left in place.`,
+    };
+  await rm(record.path, { recursive: true });
+  return { action: 'removed' };
+}
+
 /** Called after CLI activation, reading the new package. Failures are warnings, never CLI update failures. */
 export async function syncInstalledSkills(
   environment: SkillsEnvironment,
 ): Promise<SkillsSyncResult> {
   const warnings: string[] = [];
-  const targets: (Target & {
-    action: 'updated' | 'unchanged' | 'failed';
-    error?: string;
-  })[] = [];
+  const targets: SyncTarget[] = [];
   const advise = (message: string): void => {
     warnings.push(
       `${message} Run \`${environment.bin} skills install\` (use --tool claude or --tool codex to select explicitly).`,
@@ -693,8 +861,9 @@ export async function syncInstalledSkills(
   try {
     // Do not create state or tool directories on machines that never installed this Skill.
     const registry = await readRegistry(environment);
-    const { defaults, legacy } = locations(environment);
-    for (const target of unique([...defaults, legacy])) {
+    const shipped = shippedSkills(environment.packageRoot);
+    const { defaults, legacy } = locations(environment, shipped);
+    for (const target of unique([...defaults, ...legacy])) {
       try {
         if (
           (await stat(target.path)) !== undefined &&
@@ -703,7 +872,7 @@ export async function syncInstalledSkills(
           )
         )
           advise(
-            `An unregistered nb-studio-cli copy at ${target.path} was left unchanged.`,
+            `An unregistered ${target.skill} copy at ${target.path} was left unchanged.`,
           );
       } catch (error) {
         advise(
@@ -714,9 +883,15 @@ export async function syncInstalledSkills(
     if (registry.targets.length > 0)
       await lock(path.join(environment.stateHome, '.skills.lock'), async () => {
         const current = await readRegistry(environment);
-        const destinations = unique(current.targets);
+        const kept = current.targets.filter((target) =>
+          shipped.includes(target.skill),
+        );
+        const dropped = current.targets.filter(
+          (target) => !shipped.includes(target.skill),
+        );
+        const destinations = unique(kept);
         const conflicts = targetConflicts(destinations);
-        // Read the new source inside each attempt so every registered target has a failure result if it is missing.
+        // Read each source inside its attempt so every registered target has a failure result if it is missing.
         for (const target of destinations) {
           try {
             const conflict = conflicts.get(target.path);
@@ -724,10 +899,11 @@ export async function syncInstalledSkills(
             const result = await replace(
               target,
               environment,
-              await bundled(environment),
+              await bundled(environment, target.skill),
               current,
             );
             targets.push({
+              skill: target.skill,
               tool: target.tool,
               path: target.path,
               action: result.action === 'unchanged' ? 'unchanged' : 'updated',
@@ -736,16 +912,53 @@ export async function syncInstalledSkills(
             const message =
               error instanceof Error ? error.message : String(error);
             targets.push({
+              skill: target.skill,
               tool: target.tool,
               path: target.path,
               action: 'failed',
               error: message,
             });
             advise(
-              `Could not update nb-studio-cli at ${target.path}: ${message}.`,
+              `Could not update ${target.skill} at ${target.path}: ${message}.`,
             );
           }
         }
+        if (dropped.length === 0) return;
+        const retired = new Set<InstalledTarget>();
+        for (const record of dropped) {
+          try {
+            const outcome = await retire(record, environment);
+            retired.add(record);
+            targets.push({
+              skill: record.skill,
+              tool: record.tool,
+              path: record.path,
+              action: outcome.action,
+            });
+            if (outcome.message !== undefined) warnings.push(outcome.message);
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : String(error);
+            targets.push({
+              skill: record.skill,
+              tool: record.tool,
+              path: record.path,
+              action: 'failed',
+              error: message,
+            });
+            warnings.push(
+              `Could not remove the retired ${record.skill} Skill at ${record.path}: ${message}.`,
+            );
+          }
+        }
+        // Re-read: replace() rewrote the record for each updated target.
+        const latest = await readRegistry(environment);
+        await writeRegistry(environment, {
+          version: 2,
+          targets: latest.targets.filter(
+            (target) => ![...retired].some((gone) => gone.path === target.path),
+          ),
+        });
       });
   } catch (error) {
     advise(
@@ -771,7 +984,7 @@ export function skillsCommands(
       return super.toSuccessJson({ data: result });
     }
     static override summary =
-      'Install the packaged nb-studio-cli Skill in local agent tools.';
+      'Install the Skills packaged with this CLI in local agent tools.';
     static override supportsDryRun = true;
     static override flags = flags;
     async run(): Promise<SkillsInstallResult> {
@@ -779,7 +992,7 @@ export function skillsCommands(
       if (findRunCredentials(process.cwd(), app) !== undefined)
         throw new CliCommandError(
           'SKILLS_RUN_FORBIDDEN',
-          'The runner already supplies this Skill. Install it outside an agent run.',
+          'The runner already supplies these Skills. Install it outside an agent run.',
           { exit: EXIT_CODES.auth },
         );
       const result = await installSkills(
@@ -789,7 +1002,7 @@ export function skillsCommands(
       );
       for (const target of result.targets)
         this.log(
-          `${this.dryRun ? 'Would ' : ''}${target.action}: ${target.tool} ${target.path}`,
+          `${this.dryRun ? 'Would ' : ''}${target.action}: ${target.skill} ${target.tool} ${target.path}`,
         );
       return result;
     }
@@ -799,14 +1012,14 @@ export function skillsCommands(
       return super.toSuccessJson({ data: result });
     }
     static override summary =
-      'Compare local nb-studio-cli copies with the packaged Skill.';
+      'Compare local copies with the Skills packaged with this CLI.';
     static override flags = flags;
     async run(): Promise<SkillsResult> {
       const { flags } = await this.parse(Status);
       const result = await skillsStatus(skillsEnvironment(app), flags.tool);
       for (const target of result.targets)
         this.log(
-          `${target.tool} ${target.path}: ${target.error ?? (target.present ? (target.upToDate ? 'up to date' : 'outdated') : 'not installed')}${target.legacy ? ' (legacy)' : ''}${target.registered ? ' (registered)' : ''}`,
+          `${target.skill} ${target.tool} ${target.path}: ${target.error ?? (target.present ? (target.dropped ? 'no longer shipped' : target.upToDate ? 'up to date' : 'outdated') : 'not installed')}${target.legacy ? ' (legacy)' : ''}${target.registered ? ' (registered)' : ''}`,
         );
       return result;
     }

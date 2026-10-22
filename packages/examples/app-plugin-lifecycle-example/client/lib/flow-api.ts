@@ -13,11 +13,11 @@ const PAGE_SIZE = 100;
  * field of it.
  */
 export function flowApi(client: ApiClient): {
-  list(flow: DurableFlow): Promise<RecordList>;
+  list(flow: DurableFlow, signal?: AbortSignal): Promise<RecordList>;
   create(flow: DurableFlow, values: Plain): Promise<Plain>;
 } {
   return {
-    list: async (flow) => {
+    list: async (flow, signal) => {
       const { data, meta } = await client.request<{
         readonly data: readonly Plain[];
         readonly meta: {
@@ -25,6 +25,7 @@ export function flowApi(client: ApiClient): {
         };
       }>({
         path: `${LIFECYCLE_ROUTES}/${flow}`,
+        signal,
         query: { pageSize: String(PAGE_SIZE) },
       });
       return { records: data, parameters: meta.parameters };

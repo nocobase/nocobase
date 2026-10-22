@@ -6,6 +6,14 @@ const runtimesEnUS = {
       checking: 'Checking…',
       restart: 'Please restart the runner to refresh its status.',
     },
+    capacity: {
+      actual: 'Last effective slots: {{slots}}',
+      online: 'Effective slots · online settings',
+      pending: 'Waiting for runner to sync online settings',
+      legacy: 'Legacy local slots · upgrade the application server',
+      upgrade: 'Sync status unavailable · upgrade the runner',
+      lastReported: 'Last reported: {{time}}',
+    },
     quota: {
       workspaceStatus: {
         active: 'Work continues',
@@ -77,6 +85,7 @@ const runtimesEnUS = {
       clearMark: 'Clear mark',
       confirm: 'Clear this mark? {{target}} gets work again.',
       observed: 'Last reported {{time}}',
+      usedPercent: '{{percent}}% used',
       ok: 'OK',
       hint: 'Known reset times restore eligibility automatically. For unknown resets, restore the quota and clear the mark. Only the runtime owner and administrators can clear marks.',
     },

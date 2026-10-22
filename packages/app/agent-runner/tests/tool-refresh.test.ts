@@ -131,12 +131,13 @@ it('refreshes stale detection before claiming even when the next heartbeat is no
   expect(detect).toHaveBeenCalledTimes(initial + 2);
 });
 
-// Protocol 11 receivers predating requested detection validate this closed vocabulary before ignoring unknown fields.
+// Protocol 12 receivers predating requested detection validate this closed vocabulary before ignoring unknown fields.
 const legacyFeatures = z.object({
   features: z.array(
     z.enum([
       'workspaceKey',
       'gitCredentials',
+      'gitTools',
       'input',
       'steer',
       'attachments',
@@ -283,6 +284,8 @@ it('withholds claims after a failed fresh report and retries reporting on the ne
   });
   const link = daemon['links'][0]!;
   await daemon.heartbeat(link);
+  // The online capacity handshake reports the newly applied limit in a second heartbeat.
+  expect(server.runners.values().next().value!.heartbeats).toHaveLength(2);
   const now = Date.now.bind(Date);
   vi.spyOn(Date, 'now').mockImplementation(() => now() + 10 * 60_000 + 1000);
   const request = vi
@@ -291,8 +294,9 @@ it('withholds claims after a failed fresh report and retries reporting on the ne
   expect(await daemon['claimAndStart'](link, 1, false)).toBe(0);
   expect(server.runners.values().next().value!.claims).toBe(0);
   expect(request).toHaveBeenCalledOnce();
+  expect(server.runners.values().next().value!.heartbeats).toHaveLength(2);
   request.mockRestore();
   expect(await daemon['claimAndStart'](link, 1, false)).toBe(0);
   expect(server.runners.values().next().value!.claims).toBe(1);
-  expect(server.runners.values().next().value!.heartbeats).toHaveLength(2);
+  expect(server.runners.values().next().value!.heartbeats).toHaveLength(3);
 });

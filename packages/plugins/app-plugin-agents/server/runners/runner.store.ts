@@ -332,6 +332,20 @@ export function toRunner(
     slots: Number(record.slots),
     toolSlots: storedToolSlots(record.toolSlots),
     toolLoad: storedToolLoad(record.load),
+    capacityReportedAt:
+      typeof jsonObject(record.load).reportedAt === 'string'
+        ? String(jsonObject(record.load).reportedAt)
+        : undefined,
+    reportedSlots:
+      typeof jsonObject(record.load).slots === 'number'
+        ? Number(jsonObject(record.load).slots)
+        : undefined,
+    capacitySource:
+      jsonObject(record.load).capacitySource === 'online'
+        ? 'online'
+        : jsonObject(record.load).capacitySource === 'legacyLocal'
+          ? 'legacyLocal'
+          : undefined,
     globalFree:
       typeof jsonObject(record.load).free === 'number'
         ? Number(jsonObject(record.load).free)
@@ -341,7 +355,9 @@ export function toRunner(
         ? 'updatePending'
         : jsonObject(record.load).draining === 'pruning'
           ? 'pruning'
-          : undefined,
+          : jsonObject(record.load).draining === 'diskLow'
+            ? 'diskLow'
+            : undefined,
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
     variables: storedVariableNames(record.variables),

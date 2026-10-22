@@ -79,8 +79,13 @@ import { z } from 'zod';
  * QuotaReport on FailRequest and event meta.quota are optional additions within version 11.
  * Older runners retain failure-only behavior; receivers ignore absent quota observations.
  */
-/** Version 11 adds runnerUpgrade reports, which older servers cannot parse; version 10 added workspace.key. */
-export const PROTOCOL_VERSION = 11;
+/**
+ * Version 11 adds runnerUpgrade reports, which older servers cannot parse; version 10 added workspace.key.
+ *
+ * Version 12 added code host CLI wrappers (`RunGit.tools`, the `gitTools` feature) and made a run credential's
+ * username the only one git uses. Nothing else of version 11 changed; update the application first.
+ */
+export const PROTOCOL_VERSION = 12;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -114,6 +119,7 @@ export function isProtocolSupported(version: number): boolean {
  *   package and exact version (`HeartbeatResponse.npmUpgrade`) instead of serving a tarball.
  * - `gitCredentials`: asks for a repository's credential whenever git needs one (`RunGit.onDemand`,
  *   `RUNNER_ROUTES.gitCredential`), instead of keeping the one the claim handed out for the whole run.
+ * - `gitTools` (protocol 12): wraps the code host CLIs a run names (`RunGit.tools`) with the run's credential.
  */
 export const RUNNER_FEATURES = [
   'workspaceKey',
@@ -130,6 +136,7 @@ export const RUNNER_FEATURES = [
   'tools.refresh',
   'npm',
   'gitCredentials',
+  'gitTools',
 ] as const;
 
 export type RunnerFeature = (typeof RUNNER_FEATURES)[number];
