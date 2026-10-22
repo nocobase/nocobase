@@ -8,9 +8,7 @@
 import type { ToolInfo } from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import {
-  availableModelRows,
-} from '../server/core/agents/available-models.js';
+import { availableModelRows } from '../server/core/agents/available-models.js';
 import { catalogEntry } from '../shared/model-catalog.js';
 import { runnerAgentId } from '../server/core/agents/index.js';
 import { claim, createHarness, type Harness } from './harness.js';

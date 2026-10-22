@@ -97,16 +97,36 @@ describe('the Agent page', () => {
       'agents/availableModels': (request) => {
         const tool = request.query.tool as string | undefined;
         if (!tool)
-          return { data: availableGroups, meta: { total: availableGroups.length, page: 1, pageSize: availableGroups.length } };
+          return {
+            data: availableGroups,
+            meta: {
+              total: availableGroups.length,
+              page: 1,
+              pageSize: availableGroups.length,
+            },
+          };
         const rows = availableRows[tool] ?? [];
-        return { data: rows, meta: { total: rows.length, page: 1, pageSize: 50 } };
+        return {
+          data: rows,
+          meta: { total: rows.length, page: 1, pageSize: 50 },
+        };
       },
       'agents/cleanupCandidates': (request) => {
         const tool = request.query.tool as string | undefined;
         if (!tool)
-          return { data: cleanupGroups, meta: { total: cleanupGroups.length, page: 1, pageSize: cleanupGroups.length } };
+          return {
+            data: cleanupGroups,
+            meta: {
+              total: cleanupGroups.length,
+              page: 1,
+              pageSize: cleanupGroups.length,
+            },
+          };
         const rows = cleanupRows[tool] ?? [];
-        return { data: rows, meta: { total: rows.length, page: 1, pageSize: 50 } };
+        return {
+          data: rows,
+          meta: { total: rows.length, page: 1, pageSize: 50 },
+        };
       },
       'PATCH agents/sonnet': (request) => ({
         ...agents[0],
@@ -225,7 +245,9 @@ describe('the Agent page', () => {
       'available-model-claude-claude-fable-5-1',
     );
     fireEvent.click(within(fable).getByRole('checkbox'));
-    fireEvent.click(within(drawer).getByTestId('available-models-add-selected'));
+    fireEvent.click(
+      within(drawer).getByTestId('available-models-add-selected'),
+    );
     await waitFor(() =>
       expect(callsTo('POST', 'agents/runnerAgents')).toHaveLength(2),
     );
@@ -277,9 +299,9 @@ describe('the Agent page', () => {
       await within(drawer).findByTestId('cleanup-group-select-all-kilo'),
     );
     await waitFor(() =>
-      expect(within(drawer).getByTestId('cleanup-open-confirm')).toHaveTextContent(
-        '2',
-      ),
+      expect(
+        within(drawer).getByTestId('cleanup-open-confirm'),
+      ).toHaveTextContent('2'),
     );
   });
 
