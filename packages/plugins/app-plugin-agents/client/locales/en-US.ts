@@ -211,6 +211,8 @@ const pages = {
       setupCommand: 'Run `{{command}}` on the runtime.',
       setupUnknown:
         'This tool needs setting up, but we don’t know the command for it.',
+      minimumVersionUnknown:
+        'Minimum supported tool release: unknown. Consult the tool’s compatibility documentation.',
       noDetail: 'The tool gave no further detail.',
       showMore: 'Show more',
       showLess: 'Show less',

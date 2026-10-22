@@ -207,6 +207,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       },
       setupCommand: 'ランタイムで `{{command}}` を実行してください。',
       setupUnknown: 'このツールには設定が必要ですが、コマンドが分かりません。',
+      minimumVersionUnknown:
+        '対応するツールの最小リリースは不明です。互換性のドキュメントを確認してください。',
       noDetail: 'ツールから追加の詳細はありませんでした。',
       showMore: 'もっと見る',
       showLess: '閉じる',

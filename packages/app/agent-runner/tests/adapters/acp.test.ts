@@ -119,63 +119,102 @@ it.each(['', 'legacy', 'unsupported', 'auth', 'initializeAuth', 'permission'])(
   },
 );
 
-it('reads a signInUnconfirmable agent’s own authMethods instead of taking a bare successful handshake at face value (Amp)', async () => {
-  // The fixture's handshake always succeeds, modelling the owner's tested report that Amp opens a session the same
-  // way whether or not it is actually signed in: `signInUnconfirmable` reads `authMethods` instead.
-  const signedOut = await fixture(
-    '',
-    { signInUnconfirmable: true, signIn: 'amp login' },
-    { ACP_FIXTURE_AUTH_METHODS: 'populated' },
-  );
-  const notLoggedIn = await signedOut.adapter.detect(
-    new AbortController().signal,
-  );
-  expect(notLoggedIn).toMatchObject({
-    installed: true,
-    authenticated: false,
-    status: 'needsLogin',
-    statusReason: 'notLoggedIn',
+it.each(['populated', 'empty', 'absent'])(
+  'never treats authMethods=%s as evidence of authentication',
+  async (methods) => {
+    const f = await fixture(
+      '',
+      { signInUnconfirmable: true },
+      { ACP_FIXTURE_AUTH_METHODS: methods },
+    );
+    const result = await f.adapter.detect();
+    expect(result).toMatchObject({
+      installed: true,
+      authenticated: false,
+      status: 'failed',
+      statusReason: 'signInUnconfirmed',
+    });
+    expect(result.models).toBeUndefined();
+    expect(result.statusDetail).toContain('cannot confirm login');
+  },
+);
+
+it('uses the reviewed Amp adapter check and recovers after its configuration changes without interpreting its constant authMethods', async () => {
+  const spec = {
+    signInUnconfirmable: true,
+    authenticationCheck: {
+      agentName: 'amp-acp',
+      versions: ['0.9.0'],
+      methodId: 'setup',
+      unconfirmedDetail:
+        'Native CLI login is unconfirmed. Configure the adapter with amp-acp --setup, then detect again.',
+    },
+  };
+  // Matches upstream v0.9.0 server.ts:157,218: setup is always advertised and authenticate only checks adapter key presence.
+  const f = await fixture('', spec, {
+    ACP_FIXTURE_AGENT_NAME: 'amp-acp',
+    ACP_FIXTURE_AGENT_VERSION: '0.9.0',
+    ACP_FIXTURE_AUTH_METHODS: 'setup',
   });
-  expect(notLoggedIn.statusDetail).toContain('amp login');
-
-  const signedIn = await fixture(
-    '',
-    { signInUnconfirmable: true, signIn: 'amp login' },
-    { ACP_FIXTURE_AUTH_METHODS: 'empty' },
-  );
-  const ready = await signedIn.adapter.detect(new AbortController().signal);
-  // No sign-in method left unused: read as signed in, the recovery path the plain "always unavailable" fix lacked.
-  expect(ready).toMatchObject({ installed: true, status: 'ready' });
-
-  const unconfirmable = await fixture(
-    '',
-    { signInUnconfirmable: true, signIn: 'amp login' },
-    { ACP_FIXTURE_AUTH_METHODS: 'absent' },
-  );
-  const unknown = await unconfirmable.adapter.detect(
-    new AbortController().signal,
-  );
-  // The handshake says nothing either way: stays distinct from a confirmed need to sign in, never promoted to ready.
-  expect(unknown).toMatchObject({
-    installed: true,
+  expect(await f.adapter.detect()).toMatchObject({
     authenticated: false,
-    status: 'needsLogin',
+    status: 'failed',
     statusReason: 'signInUnconfirmed',
   });
-  expect(unknown.statusDetail).toContain('amp login');
-  expect(unknown.models).toBeUndefined();
+  expect((await f.adapter.detect()).statusDetail).toContain('amp-acp --setup');
+  f.session.env.ACP_FIXTURE_AUTH_RESULT = 'configured';
+  expect(await f.adapter.detect()).toMatchObject({
+    authenticated: true,
+    status: 'ready',
+  });
+  const calls = await f.messages();
+  expect(calls.filter((call) => call.method === 'authenticate')).toHaveLength(
+    3,
+  );
+  expect(calls.find((call) => call.method === 'authenticate')?.params).toEqual({
+    methodId: 'setup',
+  });
+  expect(calls.some((call) => call.method === 'session/prompt')).toBe(false);
+
+  const unknown = await fixture('', spec, {
+    ACP_FIXTURE_AGENT_NAME: 'amp-acp',
+    ACP_FIXTURE_AGENT_VERSION: '99.0.0',
+    ACP_FIXTURE_AUTH_RESULT: 'configured',
+  });
+  expect(await unknown.adapter.detect()).toMatchObject({
+    status: 'failed',
+    statusReason: 'signInUnconfirmed',
+  });
+  expect(
+    (await unknown.messages()).some((call) => call.method === 'authenticate'),
+  ).toBe(false);
 });
 
-it('names both the agent’s answered protocol version and the one this host requires, not a bare "unsupported" claim', async () => {
-  const f = await fixture('', {}, { ACP_FIXTURE_PROTOCOL_VERSION: '99' });
-  const detected = await f.adapter.detect(new AbortController().signal);
-  expect(detected).toMatchObject({
-    status: 'failed',
-    statusReason: 'versionTooOld',
-  });
-  expect(detected.statusDetail).toContain('99');
-  expect(detected.statusDetail).toContain('1');
-});
+it.each(['0', '99'])(
+  'reports incompatible ACP %s as detection failure, with protocol and tool releases kept separate',
+  async (protocol) => {
+    const f = await fixture(
+      '',
+      {},
+      {
+        ACP_FIXTURE_PROTOCOL_VERSION: protocol,
+        ACP_FIXTURE_AGENT_VERSION: '0.9.0',
+      },
+    );
+    const detected = await f.adapter.detect();
+    expect(detected).toMatchObject({
+      status: 'failed',
+      statusReason: 'startFailed',
+    });
+    expect(detected.statusDetail).toContain(
+      `agent selected ${protocol}; this host supports ACP 1`,
+    );
+    expect(detected.statusDetail).toContain('Reported tool release: 0.9.0');
+    expect(detected.statusDetail).toContain(
+      'Minimum supported tool release: unknown',
+    );
+  },
+);
 
 it('never lists an agent’s non-model options as models when its spec says they are not (amp’s reasoning modes)', async () => {
   const f = await fixture('', { modelsAreNotModels: true });

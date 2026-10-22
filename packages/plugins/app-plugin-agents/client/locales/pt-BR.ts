@@ -211,6 +211,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       setupCommand: 'Execute `{{command}}` no ambiente de execução.',
       setupUnknown:
         'Esta ferramenta precisa ser configurada, mas não sabemos o comando para isso.',
+      minimumVersionUnknown:
+        'A versão mínima compatível da ferramenta é desconhecida. Consulte a documentação de compatibilidade.',
       noDetail: 'A ferramenta não deu mais detalhes.',
       showMore: 'Mostrar mais',
       showLess: 'Mostrar menos',

@@ -323,6 +323,40 @@ describe('available models groups', () => {
     ]);
   });
 
+  it('keeps unconfirmed sign-in in detection failure rather than claiming setup is missing', async () => {
+    h = await createHarness();
+    await h.registerRunner({
+      enabledTools: ['amp'],
+      tools: [
+        {
+          kind: 'amp',
+          authenticated: false,
+          status: 'failed',
+          statusReason: 'signInUnconfirmed',
+          statusDetail: 'The adapter cannot confirm native CLI login.',
+        },
+      ],
+    });
+    const failed = await h.request(
+      'GET',
+      '/agents/availableModels?status=failed',
+      { user: 'admin', can: ['agents.agents/read'] },
+    );
+    expect(failed.body.data).toEqual([
+      expect.objectContaining({
+        tool: 'amp',
+        status: 'failed',
+        statusReason: 'signInUnconfirmed',
+      }),
+    ]);
+    const setup = await h.request(
+      'GET',
+      '/agents/availableModels?status=needsSetup',
+      { user: 'admin', can: ['agents.agents/read'] },
+    );
+    expect(setup.body.data).toEqual([]);
+  });
+
   it('refuses the list to someone without agents.agents read', async () => {
     h = await createHarness();
     const denied = await h.request('GET', '/agents/availableModels', {

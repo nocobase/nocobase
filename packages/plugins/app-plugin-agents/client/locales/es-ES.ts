@@ -216,6 +216,8 @@ const esES: LocaleResource<typeof enUS> = {
       setupCommand: 'Ejecute `{{command}}` en el tiempo de ejecución.',
       setupUnknown:
         'Esta herramienta necesita configuración, pero no conocemos el comando para ello.',
+      minimumVersionUnknown:
+        'Se desconoce la versión mínima compatible de la herramienta. Consulte su documentación de compatibilidad.',
       noDetail: 'La herramienta no dio más detalles.',
       showMore: 'Mostrar más',
       showLess: 'Mostrar menos',

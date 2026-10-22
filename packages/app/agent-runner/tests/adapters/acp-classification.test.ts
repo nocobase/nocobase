@@ -14,13 +14,13 @@ it('classifies an auth-required error as needing login', () => {
   });
 });
 
-it('classifies an unsupported ACP protocol version as a tool too old for this integration', () => {
+it('does not infer a tool release minimum from incompatible ACP protocols', () => {
   const error = new Error(
     'The agent selected an unsupported ACP protocol version.',
   );
   expect(classifyHandshakeFailure(error)).toEqual({
     status: 'failed',
-    reason: 'versionTooOld',
+    reason: 'startFailed',
   });
 });
 

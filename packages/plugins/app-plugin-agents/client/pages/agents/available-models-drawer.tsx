@@ -17,7 +17,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { useMemo, useState, type ReactElement } from 'react';
+import { useMemo, useRef, useState, type ReactElement } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import type {
@@ -93,7 +93,14 @@ function setupGuidance(
       ? `${instruction} ${group.statusDetail}`
       : instruction;
   }
-  return group.statusDetail ?? t('agents.available.noDetail');
+  return (
+    group.statusDetail ??
+    t(
+      group.status === 'versionTooOld'
+        ? 'agents.available.minimumVersionUnknown'
+        : 'agents.available.noDetail',
+    )
+  );
 }
 
 function ExpandableText({ text }: { readonly text: string }): ReactElement {
@@ -133,6 +140,8 @@ export function AvailableModelsDrawer({
 }: AvailableModelsDrawerProps): ReactElement {
   const { t, i18n } = useTranslation();
   const api = useAgentsApi();
+  const notify = useNotify();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<ModelAvailabilityStatus>('available');
   const [toggled, setToggled] = useState<ReadonlySet<AgentTool>>(
@@ -145,6 +154,10 @@ export function AvailableModelsDrawer({
   const [drafts, setDrafts] = useState<ReadonlyMap<string, string>>(
     () => new Map(),
   );
+  const submittingRef = useRef(false);
+  const [rowErrors, setRowErrors] = useState<ReadonlyMap<string, string>>(
+    () => new Map(),
+  );
   const q = search.trim();
   const forceExpand = q !== '';
 
@@ -155,6 +168,86 @@ export function AvailableModelsDrawer({
     setSelected(new Map());
     setDrafts(new Map());
     setStep('select');
+    setRowErrors(new Map());
+  };
+
+  const removeSucceeded = (keys: ReadonlySet<string>): void => {
+    setSelected(
+      (current) => new Map([...current].filter(([key]) => !keys.has(key))),
+    );
+    setDrafts(
+      (current) => new Map([...current].filter(([key]) => !keys.has(key))),
+    );
+  };
+  // Both steps and every dismissal share one request owner. The ref also closes the same-tick submit race.
+  const entries = [...selected.values()];
+  const bulkCreate = useMutation({
+    mutationFn: async () => {
+      const results = await Promise.all(
+        entries.map((model) => {
+          const key = rowKey(model.tool, model.model);
+          return api
+            .createRunnerAgent({
+              tool: model.tool,
+              model: model.model,
+              ...(model.displayModel
+                ? { displayModel: model.displayModel }
+                : {}),
+              description: (drafts.get(key) ?? '').trim(),
+            })
+            .then(
+              () => ({ key, ok: true as const }),
+              (error: unknown) => ({ key, ok: false as const, error }),
+            );
+        }),
+      );
+      return results;
+    },
+    onSuccess: (results) => {
+      const succeeded = new Set(results.filter((r) => r.ok).map((r) => r.key));
+      const failed = results.filter((r) => !r.ok);
+      void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
+      void queryClient.invalidateQueries({
+        queryKey: agentsKeys.availableModelsAll,
+      });
+      if (failed.length === 0) {
+        notify.success(
+          t('agents.available.addedCount', { count: succeeded.size }),
+        );
+        reset();
+        onClose();
+        return;
+      }
+      // Partial (or total) failure: drop only what succeeded from the selection and drafts, so the failed rows stay
+      // on screen with what was typed and their own real reason, instead of discarding everything and closing.
+      setRowErrors(
+        new Map(
+          failed.map((r) => [
+            r.key,
+            errorText(t, r.error, t('common.requestFailed')),
+          ]),
+        ),
+      );
+      removeSucceeded(succeeded);
+      notify.error(
+        undefined,
+        succeeded.size === 0
+          ? t('agents.available.addFailed', { failed: failed.length })
+          : t('agents.available.addedPartial', {
+              succeeded: succeeded.size,
+              failed: failed.length,
+            }),
+      );
+    },
+    onError: (error) => notify.error(error),
+    onSettled: () => {
+      submittingRef.current = false;
+    },
+  });
+  const submit = (): void => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    bulkCreate.mutate();
   };
 
   const groups = useQuery({
@@ -201,7 +294,11 @@ export function AvailableModelsDrawer({
   return (
     <Sheet
       open={open}
-      onOpenChange={(next) => {
+      onOpenChange={(next, details) => {
+        if (!next && submittingRef.current) {
+          details.cancel();
+          return;
+        }
         if (!next) {
           reset();
           onClose();
@@ -211,6 +308,8 @@ export function AvailableModelsDrawer({
       <SheetContent
         className='flex w-full flex-col gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[780px]'
         data-testid='available-models-drawer'
+        aria-busy={bulkCreate.isPending}
+        showCloseButton={!bulkCreate.isPending}
       >
         {step === 'confirm' ? (
           <ConfirmStep
@@ -219,23 +318,10 @@ export function AvailableModelsDrawer({
             onDraftChange={(key, value) =>
               setDrafts((current) => new Map(current).set(key, value))
             }
-            onRemoveSucceeded={(keys) => {
-              setSelected((current) => {
-                const next = new Map(current);
-                for (const key of keys) next.delete(key);
-                return next;
-              });
-              setDrafts((current) => {
-                const next = new Map(current);
-                for (const key of keys) next.delete(key);
-                return next;
-              });
-            }}
+            pending={bulkCreate.isPending}
+            rowErrors={rowErrors}
+            onSubmit={submit}
             onBack={() => setStep('select')}
-            onDone={() => {
-              reset();
-              onClose();
-            }}
           />
         ) : (
           <>
@@ -313,7 +399,13 @@ export function AvailableModelsDrawer({
                   : null}
               </div>
               <div className='flex gap-2'>
-                <Button variant='outline' onClick={onClose}>
+                <Button
+                  variant='outline'
+                  onClick={() => {
+                    reset();
+                    onClose();
+                  }}
+                >
                   {t('actions.close')}
                 </Button>
                 <Button
@@ -555,85 +647,22 @@ function ConfirmStep({
   selected,
   drafts,
   onDraftChange,
-  onRemoveSucceeded,
+  pending,
+  rowErrors,
+  onSubmit,
   onBack,
-  onDone,
 }: {
   readonly selected: ReadonlyMap<string, AvailableModel>;
   readonly drafts: ReadonlyMap<string, string>;
   readonly onDraftChange: (key: string, value: string) => void;
-  readonly onRemoveSucceeded: (keys: ReadonlySet<string>) => void;
+  readonly pending: boolean;
+  readonly rowErrors: ReadonlyMap<string, string>;
+  readonly onSubmit: () => void;
   readonly onBack: () => void;
-  readonly onDone: () => void;
 }): ReactElement {
   const { t } = useTranslation();
-  const api = useAgentsApi();
-  const notify = useNotify();
-  const queryClient = useQueryClient();
   const [submitted, setSubmitted] = useState(false);
-  const [rowErrors, setRowErrors] = useState<ReadonlyMap<string, string>>(
-    () => new Map(),
-  );
   const entries = [...selected.values()];
-  const bulkCreate = useMutation({
-    mutationFn: async () => {
-      const results = await Promise.all(
-        entries.map((model) => {
-          const key = rowKey(model.tool, model.model);
-          return api
-            .createRunnerAgent({
-              tool: model.tool,
-              model: model.model,
-              ...(model.displayModel
-                ? { displayModel: model.displayModel }
-                : {}),
-              description: (drafts.get(key) ?? '').trim(),
-            })
-            .then(
-              () => ({ key, ok: true as const }),
-              (error: unknown) => ({ key, ok: false as const, error }),
-            );
-        }),
-      );
-      return results;
-    },
-    onSuccess: (results) => {
-      const succeeded = new Set(results.filter((r) => r.ok).map((r) => r.key));
-      const failed = results.filter((r) => !r.ok);
-      void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
-      void queryClient.invalidateQueries({
-        queryKey: agentsKeys.availableModelsAll,
-      });
-      if (failed.length === 0) {
-        notify.success(
-          t('agents.available.addedCount', { count: succeeded.size }),
-        );
-        onDone();
-        return;
-      }
-      // Partial (or total) failure: drop only what succeeded from the selection and drafts, so the failed rows stay
-      // on screen with what was typed and their own real reason, instead of discarding everything and closing.
-      setRowErrors(
-        new Map(
-          failed.map((r) => [
-            r.key,
-            errorText(t, r.error, t('common.requestFailed')),
-          ]),
-        ),
-      );
-      onRemoveSucceeded(succeeded);
-      notify.error(
-        undefined,
-        succeeded.size === 0
-          ? t('agents.available.addFailed', { failed: failed.length })
-          : t('agents.available.addedPartial', {
-              succeeded: succeeded.size,
-              failed: failed.length,
-            }),
-      );
-    },
-    onError: (error) => notify.error(error),
-  });
   const invalid = entries.filter(
     (model) =>
       (drafts.get(rowKey(model.tool, model.model)) ?? '').trim() === '',
@@ -651,10 +680,10 @@ function ConfirmStep({
         className='min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-1 sm:px-6'
         onSubmit={(event) => {
           event.preventDefault();
-          if (bulkCreate.isPending) return;
+          if (pending) return;
           setSubmitted(true);
           if (invalid.length > 0) return;
-          bulkCreate.mutate();
+          onSubmit();
         }}
       >
         {entries.map((model) => {
@@ -670,6 +699,7 @@ function ConfirmStep({
               <Textarea
                 id={`confirm-good-at-${key}`}
                 rows={3}
+                disabled={pending}
                 value={goodAt}
                 onChange={(event) => onDraftChange(key, event.target.value)}
                 aria-invalid={missing ? true : undefined}
@@ -693,13 +723,18 @@ function ConfirmStep({
         })}
       </form>
       <SheetFooter className='shrink-0 flex-row justify-end border-t'>
-        <Button variant='outline' type='button' onClick={onBack}>
+        <Button
+          variant='outline'
+          type='button'
+          onClick={onBack}
+          disabled={pending}
+        >
           {t('actions.back')}
         </Button>
         <Button
           type='submit'
           form='available-models-confirm-form'
-          disabled={bulkCreate.isPending}
+          disabled={pending}
           data-testid='available-models-confirm-submit'
         >
           {t('agents.available.confirmAction', { count: entries.length })}

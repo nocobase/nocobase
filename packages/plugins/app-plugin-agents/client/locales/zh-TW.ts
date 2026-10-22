@@ -203,6 +203,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       },
       setupCommand: '在執行機上執行 `{{command}}`。',
       setupUnknown: '這個工具需要設定，但我們不知道對應的指令。',
+      minimumVersionUnknown:
+        '最低支援的工具發行版本未知，請查閱工具的相容性文件。',
       noDetail: '工具沒有提供更多資訊。',
       showMore: '展開',
       showLess: '收合',

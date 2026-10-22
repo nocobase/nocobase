@@ -55,7 +55,6 @@ function bucketOf(
 ): ModelAvailabilityStatus {
   switch (reason) {
     case 'notLoggedIn':
-    case 'signInUnconfirmed':
     case 'notConfigured':
       return 'needsSetup';
     case 'versionTooOld':

@@ -206,6 +206,8 @@ const zhCN: AgentsResource = {
       },
       setupCommand: '在执行机上运行 `{{command}}`。',
       setupUnknown: '这个工具需要设置，但我们不知道对应的命令。',
+      minimumVersionUnknown:
+        '最低支持的工具发布版本未知，请查阅工具的兼容性文档。',
       noDetail: '工具没有提供更多信息。',
       showMore: '展开',
       showLess: '收起',

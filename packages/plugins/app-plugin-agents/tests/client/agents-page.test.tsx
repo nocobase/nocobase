@@ -6,7 +6,13 @@
  * replacing the old discoveries section a runner's report filled on its own, and the single-dialog list before it);
  * and leftover never-enabled, never-run agents removed through the cleanup drawer (`cleanup-drawer.tsx`).
  */
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { vi } from 'vitest';
 
@@ -353,6 +359,129 @@ describe('the Agent page', () => {
       ),
     ).toHaveValue('modelSuggestions.design');
     expect(screen.queryByTestId('available-models-drawer')).toBeInTheDocument();
+  });
+
+  it('owns delayed submissions across both steps, blocks dismissal and preserves failed drafts until retry succeeds', async () => {
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-available-open'));
+    const drawer = await screen.findByTestId('available-models-drawer');
+    fireEvent.click(
+      await within(drawer).findByTestId(
+        'available-model-create-claude-claude-opus-5-5',
+      ),
+    );
+    const input = within(drawer).getByTestId(
+      'available-model-good-at-claude-claude-opus-5-5',
+    );
+    fireEvent.change(input, {
+      target: { value: 'Preserved custom description' },
+    });
+    let reject!: (reason: unknown) => void;
+    api.routes['POST agents/runnerAgents'] = () =>
+      new Promise((_resolve, fail) => {
+        reject = fail;
+      });
+    const submit = within(drawer).getByTestId(
+      'available-models-confirm-submit',
+    );
+    const form = submit.getAttribute('form')!;
+    fireEvent.submit(document.getElementById(form)!);
+    fireEvent.submit(document.getElementById(form)!);
+    await waitFor(() =>
+      expect(callsTo('POST', 'agents/runnerAgents')).toHaveLength(1),
+    );
+    expect(submit).toBeDisabled();
+    const back = within(drawer).getByRole('button', { name: 'actions.back' });
+    expect(back).toBeDisabled();
+    fireEvent.click(back);
+    fireEvent.keyDown(drawer, { key: 'Escape' });
+    expect(drawer).toBeInTheDocument();
+    expect(drawer).toHaveAttribute('aria-busy', 'true');
+    expect(
+      within(drawer).queryByRole('button', { name: 'actions.close' }),
+    ).not.toBeInTheDocument();
+    await act(async () => {
+      reject(new FakeApiError(409, 'AGENT_NAME_TAKEN'));
+    });
+    await waitFor(() => expect(submit).toBeEnabled());
+    fireEvent.click(back);
+    fireEvent.click(
+      await within(drawer).findByTestId('available-models-add-selected'),
+    );
+    expect(
+      within(drawer).getByTestId(
+        'available-model-good-at-claude-claude-opus-5-5',
+      ),
+    ).toHaveValue('Preserved custom description');
+    expect(
+      within(drawer).getByTestId(
+        'available-model-error-claude-claude-opus-5-5',
+      ),
+    ).toHaveTextContent('errors.AGENT_NAME_TAKEN');
+    api.routes['POST agents/runnerAgents'] = () => {
+      agents.push(agent('created', { name: 'Added from retry' }));
+      return { id: 'created' };
+    };
+    fireEvent.click(
+      within(drawer).getByTestId('available-models-confirm-submit'),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('available-models-drawer'),
+      ).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByTestId('agent-created')).toHaveTextContent(
+      'Added from retry',
+    );
+    expect(callsTo('POST', 'agents/runnerAgents')).toHaveLength(2);
+    fireEvent.click(screen.getByTestId('agents-available-open'));
+    expect(
+      await screen.findByTestId('available-models-add-selected'),
+    ).toBeDisabled();
+  });
+
+  it('discards cancelled selections and drafts when closing and entering the flow again', async () => {
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-available-open'));
+    const drawer = await screen.findByTestId('available-models-drawer');
+    fireEvent.click(
+      await within(drawer).findByTestId(
+        'available-model-create-claude-claude-opus-5-5',
+      ),
+    );
+    fireEvent.change(
+      within(drawer).getByTestId(
+        'available-model-good-at-claude-claude-opus-5-5',
+      ),
+      { target: { value: 'Cancelled draft' } },
+    );
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'actions.back' }),
+    );
+    fireEvent.click(
+      within(drawer).getAllByRole('button', { name: 'actions.close' }).at(-1)!,
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('available-models-drawer'),
+      ).not.toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByTestId('agents-available-open'));
+    const reopened = await screen.findByTestId('available-models-drawer');
+    expect(
+      within(reopened).getByTestId('available-models-add-selected'),
+    ).toBeDisabled();
+    fireEvent.click(
+      await within(reopened).findByTestId(
+        'available-model-create-claude-claude-opus-5-5',
+      ),
+    );
+    expect(
+      within(reopened).getByTestId(
+        'available-model-good-at-claude-claude-opus-5-5',
+      ),
+    ).toHaveValue('modelSuggestions.design');
+    expect(callsTo('POST', 'agents/runnerAgents')).toHaveLength(0);
   });
 
   it('drops only the models that were added after a partial failure, keeping the failed one selected with its own error', async () => {

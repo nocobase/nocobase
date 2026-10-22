@@ -215,6 +215,8 @@ const frFR: LocaleResource<typeof enUS> = {
       setupCommand: 'Exécutez `{{command}}` sur l’environnement d’exécution.',
       setupUnknown:
         'Cet outil doit être configuré, mais nous ne connaissons pas la commande correspondante.',
+      minimumVersionUnknown:
+        'La version minimale compatible de l’outil est inconnue. Consultez sa documentation de compatibilité.',
       noDetail: 'L’outil n’a donné aucun détail supplémentaire.',
       showMore: 'Afficher plus',
       showLess: 'Afficher moins',

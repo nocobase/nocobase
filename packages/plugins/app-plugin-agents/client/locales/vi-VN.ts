@@ -207,6 +207,8 @@ const viVN: LocaleResource<typeof enUS> = {
       setupCommand: 'Chạy `{{command}}` trên môi trường chạy.',
       setupUnknown:
         'Công cụ này cần được thiết lập, nhưng chúng tôi không biết lệnh tương ứng.',
+      minimumVersionUnknown:
+        'Chưa rõ phiên bản công cụ tối thiểu được hỗ trợ. Xem tài liệu tương thích của công cụ.',
       noDetail: 'Công cụ không cung cấp thêm chi tiết.',
       showMore: 'Xem thêm',
       showLess: 'Thu gọn',

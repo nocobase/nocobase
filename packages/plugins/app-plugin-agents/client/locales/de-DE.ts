@@ -213,6 +213,8 @@ const deDE: LocaleResource<typeof enUS> = {
       setupCommand: 'Führen Sie `{{command}}` auf der Laufzeit aus.',
       setupUnknown:
         'Dieses Tool muss eingerichtet werden, aber wir kennen den Befehl dafür nicht.',
+      minimumVersionUnknown:
+        'Die unterstützte Mindestversion des Tools ist unbekannt. Lesen Sie die Kompatibilitätsdokumentation.',
       noDetail: 'Das Tool hat keine weiteren Details angegeben.',
       showMore: 'Mehr anzeigen',
       showLess: 'Weniger anzeigen',

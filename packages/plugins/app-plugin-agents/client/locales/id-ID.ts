@@ -208,6 +208,8 @@ const idID: LocaleResource<typeof enUS> = {
       setupCommand: 'Jalankan `{{command}}` di runtime.',
       setupUnknown:
         'Alat ini perlu disiapkan, tetapi kami tidak tahu perintahnya.',
+      minimumVersionUnknown:
+        'Versi minimum alat yang didukung tidak diketahui. Lihat dokumentasi kompatibilitas alat.',
       noDetail: 'Alat ini tidak memberikan detail lebih lanjut.',
       showMore: 'Tampilkan lebih banyak',
       showLess: 'Tampilkan lebih sedikit',

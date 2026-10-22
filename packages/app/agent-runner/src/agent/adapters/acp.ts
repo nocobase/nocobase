@@ -76,8 +76,6 @@ export function classifyHandshakeFailure(error: unknown): {
   if (isAuthRequired(error))
     return { status: 'needsLogin', reason: 'notLoggedIn' };
   const message = error instanceof Error ? error.message : String(error);
-  if (/unsupported acp protocol version/iu.test(message))
-    return { status: 'failed', reason: 'versionTooOld' };
   if (
     /did not answer within|detection cancelled|agent exited before/iu.test(
       message,
@@ -208,39 +206,40 @@ async function inspect(
           createRedactor().text(version) === version
             ? version
             : undefined;
-        // A successful handshake alone does not confirm sign-in for an agent marked `signInUnconfirmable`: read its
-        // own `authMethods` instead of either assuming `ready` or getting permanently stuck. Three distinguishable
-        // outcomes, each reachable by a controlled fixture: the field naming unused sign-in methods (confirmed not
-        // signed in), an explicit empty list (nothing left unauthenticated, read as signed in), and the field being
-        // absent altogether (the handshake says nothing either way, kept distinct from a confirmed need to sign in
-        // rather than silently promoted to `ready`).
+        // Amp v0.9.0 initializes and opens sessions without checking credentials. Its authenticate implementation
+        // acknowledges a configured adapter key, but AUTH_REQUIRED says nothing about the native CLI's accounts.
+        // See https://github.com/tao12345666333/amp-acp/blob/v0.9.0/src/server.ts#L218 and src/index.ts#L171.
+        // Never infer state from authMethods, including an empty list. Unknown implementations remain failed.
         if (spec.signInUnconfirmable) {
-          const authMethods = process.initialize.authMethods;
-          if (authMethods === undefined)
+          const check = spec.authenticationCheck;
+          const supported =
+            check &&
+            process.initialize.agentInfo?.name === check.agentName &&
+            check.versions.includes(safeVersion ?? '');
+          let confirmed = false;
+          let detail = `${spec.name} ${safeVersion ?? '(release unknown)'} has no reviewed noninteractive authentication check. The handshake cannot confirm login; use an adapter with a supported authentication check, then detect again.`;
+          if (supported) {
+            try {
+              await process.agent.request(methods.agent.authenticate, {
+                methodId: check.methodId,
+              });
+              confirmed = true;
+            } catch (error) {
+              detail = isAuthRequired(error)
+                ? check.unconfirmedDetail
+                : `${spec.name}'s authentication check failed: ${errorMessage(error)}`;
+            }
+          }
+          if (!confirmed)
             return {
               installed: true,
               path: resolved.command,
               version: safeVersion,
               authenticated: false,
-              status: 'needsLogin',
+              status: 'failed',
               statusReason: 'signInUnconfirmed',
-              statusDetail: statusDetailOf(
-                `${spec.name}'s handshake does not say whether it is signed in; run \`${spec.signIn}\` to make sure, then detect again.`,
-              ),
+              statusDetail: statusDetailOf(detail),
             };
-          if (authMethods.length > 0)
-            return {
-              installed: true,
-              path: resolved.command,
-              version: safeVersion,
-              authenticated: false,
-              status: 'needsLogin',
-              statusReason: 'notLoggedIn',
-              statusDetail: statusDetailOf(
-                `${spec.name} still lists ${authMethods.length} sign-in method${authMethods.length === 1 ? '' : 's'} it has not used yet; run \`${spec.signIn}\`.`,
-              ),
-            };
-          // An explicit empty list: no sign-in method remains unused, so this handshake is read as signed in.
         }
         return {
           installed: true,

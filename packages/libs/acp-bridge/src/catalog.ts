@@ -55,13 +55,17 @@ export interface AgentSpec {
   };
   /**
    * A successful detection handshake (`initialize` and `session/new`) does not mean this agent is signed in: it
-   * opens a session the same way whether or not it is (Amp, by the owner's own tested report). Detection reads this
-   * agent's own `initialize.authMethods` instead of taking the handshake's success at face value: a populated list
-   * names sign-in methods not yet used (`needsLogin`/`notLoggedIn`), an empty list is read as signed in (`ready`),
-   * and an absent field — the handshake saying nothing either way — stays `needsLogin`/`signInUnconfirmed` rather
-   * than a `ready` it cannot back up.
+   * opens a session the same way whether or not it is. Authentication methods advertise supported flows, never
+   * authentication state. Without a confirmed check below, detection reports failure rather than guessing.
    */
   readonly signInUnconfirmable?: boolean;
+  /** A reviewed, noninteractive authentication check, restricted to the implementation versions reviewed. */
+  readonly authenticationCheck?: {
+    readonly agentName: string;
+    readonly versions: readonly string[];
+    readonly methodId: string;
+    readonly unconfirmedDetail: string;
+  };
 }
 
 const localBin = '~/.local/bin';
@@ -279,6 +283,15 @@ export const AGENTS: readonly (AgentSpec & { readonly id: CatalogAgentId })[] =
       modelsAreNotModels: true,
       // A successful handshake happens whether or not Amp is signed in; see `AgentSpec.signInUnconfirmable`.
       signInUnconfirmable: true,
+      // v0.9.0/src/server.ts:218 checks only the adapter's configured API key, without launching login or a prompt.
+      // Its CLI-account fallback is not checked; AUTH_REQUIRED therefore leaves that account's state unknown.
+      authenticationCheck: {
+        agentName: 'amp-acp',
+        versions: ['0.9.0'],
+        methodId: 'setup',
+        unconfirmedDetail:
+          'The adapter could not confirm an API-key configuration; native CLI login is unconfirmed. Configure the adapter with amp-acp --setup or its supported AMP_API_KEY environment, then detect again.',
+      },
     },
     {
       id: 'vibe',
