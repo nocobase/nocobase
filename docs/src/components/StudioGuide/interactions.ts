@@ -16,18 +16,23 @@ export function initializeStudioGuide(root: HTMLElement) {
   )) {
     const block = document.getElementById(button.dataset.copy ?? '');
     if (!block) continue;
-    const label = button.textContent;
+    const labelElement =
+      button.querySelector<HTMLElement>('[data-copy-label]') ?? button;
+    const label = labelElement.textContent;
     let resetTimer: ReturnType<typeof setTimeout> | undefined;
     button.addEventListener('click', () => {
       void copyText(block.textContent).then((copied) => {
         clearTimeout(resetTimer);
+        button.toggleAttribute('data-copied', copied);
         if (copied) {
-          button.textContent = root.dataset.copied ?? '';
-          announce(root.dataset.copyStatus ?? '');
+          labelElement.textContent = root.dataset.copied ?? '';
+          announce(button.dataset.copyStatus ?? root.dataset.copyStatus ?? '');
           resetTimer = setTimeout(() => {
-            button.textContent = label;
+            labelElement.textContent = label;
+            button.removeAttribute('data-copied');
           }, 2000);
         } else {
+          labelElement.textContent = label;
           const range = document.createRange();
           range.selectNodeContents(block);
           const selection = window.getSelection();

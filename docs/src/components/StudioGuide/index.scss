@@ -524,6 +524,42 @@
   .copy-button:hover {
     border-color: var(--guide-blue);
   }
+  .prompt-card {
+    border-color: var(--guide-line);
+    background: var(--guide-paper);
+    .code-title,
+    .copy-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    svg {
+      flex: none;
+    }
+    .copy-button {
+      flex: none;
+      min-height: 30px;
+      padding: 3px 8px;
+      border-color: var(--guide-line);
+      border-radius: 5px;
+      color: var(--guide-ink-secondary);
+      &:hover,
+      &[data-copied] {
+        border-color: var(--guide-border);
+        color: var(--guide-blue);
+      }
+    }
+    .copy-check,
+    [data-copied] .copy-icon {
+      display: none;
+    }
+    [data-copied] .copy-check {
+      display: block;
+    }
+    pre {
+      color: var(--guide-ink-secondary);
+    }
+  }
   pre {
     margin: 0;
     padding: 20px;
@@ -729,14 +765,16 @@
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
+    width: max-content;
     max-width: calc(100% - 32px);
-    padding: 10px 18px;
+    padding: 14px 20px;
     z-index: 100;
-    color: #fff;
-    background: #233652;
-    border-radius: 6px;
-    box-shadow: 0 4px 20px #15243b25;
-    font-size: 12px;
+    color: var(--guide-ink);
+    background: #fff;
+    border: 1px solid var(--guide-border);
+    border-radius: 9px;
+    box-shadow: var(--guide-shadow);
+    font-size: 14px;
   }
   .guide-status:empty {
     display: none;
