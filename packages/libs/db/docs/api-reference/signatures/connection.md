@@ -155,11 +155,11 @@ export interface DatabaseConnection {
   >(
     collection: string,
   ): Repository<TRecord, TCreate, TUpdate>;
-  /** Create a restricted DatabaseScope for one principal; unlisted collections are denied. */
+  /** Create a RestrictedDatabase for one principal; unlisted collections are denied. */
   restrict<P, const TCollection extends string>(
-    policies: DatabaseScopePolicies<P, TCollection>,
+    policies: DatabasePolicyMap<P, TCollection>,
     principal: P,
-  ): DatabaseScope<TCollection>;
+  ): RestrictedDatabase<TCollection>;
   /**
    * Bind a Policy per Collection for one principal.
    *
@@ -171,9 +171,7 @@ export interface DatabaseConnection {
    * collections. Use restrict() when those capabilities must not be exposed.
    */
   withPolicies<P>(
-    policies: Readonly<
-      Record<string, RepositoryPolicy | ((principal: P) => RepositoryPolicy)>
-    >,
+    policies: DatabasePolicyMap<P>,
     principal: P,
   ): ScopedDatabaseConnection;
   schema: SchemaAdapter;
@@ -241,7 +239,7 @@ export interface DatabaseConnection {
 }
 ```
 
-Related declarations: [CollectionBuilder](./builder.md#collectionbuilder), [CollectionMetadataService](./metadata.md#collectionmetadataservice), [ConnectionCollections](./collections.md#connectioncollections), [DatabaseCapabilities](./drivers.md#databasecapabilities), [DatabaseDriver](./connection.md#databasedriver), [DatabaseDriverRuntime](./drivers.md#databasedriverruntime), [DatabaseScope](./policies.md#databasescope), [DatabaseScopePolicies](./policies.md#databasescopepolicies), [ExplainRepositoryEventsOptions](./events.md#explainrepositoryeventsoptions), [QueryAdapter](./query.md#queryadapter), [Repository](./repository.md#repository), [RepositoryEventsExplanation](./events.md#repositoryeventsexplanation), [RepositoryMutationListeners](./events.md#repositorymutationlisteners), [RepositoryMutationSubscriptionOptions](./events.md#repositorymutationsubscriptionoptions), [RepositoryPolicy](./policies.md#repositorypolicy), [RepositoryRecord](./inputs.md#repositoryrecord), [SchemaAdapter](./drivers.md#schemaadapter), [SchemaInspector](./schema.md#schemainspector), [SchemaManagementMode](./connection.md#schemamanagementmode), [ScopedDatabaseConnection](./policies.md#scopeddatabaseconnection).
+Related declarations: [CollectionBuilder](./builder.md#collectionbuilder), [CollectionMetadataService](./metadata.md#collectionmetadataservice), [ConnectionCollections](./collections.md#connectioncollections), [DatabaseCapabilities](./drivers.md#databasecapabilities), [DatabaseDriver](./connection.md#databasedriver), [DatabaseDriverRuntime](./drivers.md#databasedriverruntime), [DatabasePolicyMap](./policies.md#databasepolicymap), [ExplainRepositoryEventsOptions](./events.md#explainrepositoryeventsoptions), [QueryAdapter](./query.md#queryadapter), [Repository](./repository.md#repository), [RepositoryEventsExplanation](./events.md#repositoryeventsexplanation), [RepositoryMutationListeners](./events.md#repositorymutationlisteners), [RepositoryMutationSubscriptionOptions](./events.md#repositorymutationsubscriptionoptions), [RepositoryRecord](./inputs.md#repositoryrecord), [RestrictedDatabase](./policies.md#restricteddatabase), [SchemaAdapter](./drivers.md#schemaadapter), [SchemaInspector](./schema.md#schemainspector), [SchemaManagementMode](./connection.md#schemamanagementmode), [ScopedDatabaseConnection](./policies.md#scopeddatabaseconnection).
 
 ## DatabaseDialect
 

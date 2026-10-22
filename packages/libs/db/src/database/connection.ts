@@ -9,15 +9,13 @@ import type {
   RepositoryMutationListeners,
   RepositoryMutationSubscriptionOptions,
 } from '../repository/events/types.js';
-import type {
-  NormalizedRepositoryPolicy,
-  RepositoryPolicy,
-} from '../repository/policy/types.js';
+import type { NormalizedRepositoryPolicy } from '../repository/policy/types.js';
 import type { DatabaseCapabilities, SchemaAdapter } from '../schema/adapter.js';
 import type { SchemaInspector } from '../schema/inspector/types.js';
 import type { DatabaseDriver, SchemaManagementMode } from './config.js';
 import type { DatabaseDriverRuntime } from './runtime.js';
-import type { DatabaseScope, DatabaseScopePolicies } from './scope.js';
+import type { RestrictedDatabase } from './restricted-database.js';
+import type { DatabasePolicyMap } from './policy-map.js';
 
 export interface DatabaseConnection {
   name: string;
@@ -44,11 +42,11 @@ export interface DatabaseConnection {
   >(
     collection: string,
   ): Repository<TRecord, TCreate, TUpdate>;
-  /** Create a restricted DatabaseScope for one principal; unlisted collections are denied. */
+  /** Create a RestrictedDatabase for one principal; unlisted collections are denied. */
   restrict<P, const TCollection extends string>(
-    policies: DatabaseScopePolicies<P, TCollection>,
+    policies: DatabasePolicyMap<P, TCollection>,
     principal: P,
-  ): DatabaseScope<TCollection>;
+  ): RestrictedDatabase<TCollection>;
   /**
    * Bind a Policy per Collection for one principal.
    *
@@ -60,9 +58,7 @@ export interface DatabaseConnection {
    * collections. Use restrict() when those capabilities must not be exposed.
    */
   withPolicies<P>(
-    policies: Readonly<
-      Record<string, RepositoryPolicy | ((principal: P) => RepositoryPolicy)>
-    >,
+    policies: DatabasePolicyMap<P>,
     principal: P,
   ): ScopedDatabaseConnection;
   schema: SchemaAdapter;
@@ -138,7 +134,7 @@ export interface DatabaseConnection {
 
 /**
  * A connection carrying policy bindings while retaining raw access.
- * Use DatabaseConnection.restrict() to create a restricted DatabaseScope.
+ * Use DatabaseConnection.restrict() to create a RestrictedDatabase.
  */
 export interface ScopedDatabaseConnection extends Omit<
   DatabaseConnection,

@@ -8,13 +8,14 @@ import type {
   ScopedRepository,
 } from '../../repository/types.js';
 import type { DatabaseConnection } from '../connection.js';
-import type { DatabaseScope, DatabaseScopePolicies } from '../scope.js';
+import type { RestrictedDatabase } from '../restricted-database.js';
+import type { DatabasePolicyMap } from '../policy-map.js';
 
-export function createDatabaseScope<P, TCollection extends string>(
+export function createRestrictedDatabase<P, TCollection extends string>(
   connection: DatabaseConnection,
-  policies: DatabaseScopePolicies<P, TCollection>,
+  policies: DatabasePolicyMap<P, TCollection>,
   principal: P,
-): DatabaseScope<TCollection> {
+): RestrictedDatabase<TCollection> {
   if (
     typeof policies !== 'object' ||
     policies === null ||
@@ -31,13 +32,16 @@ export function createDatabaseScope<P, TCollection extends string>(
       ),
     ]),
   );
-  return scopeFromPolicies(connection, expandPolicyRefs(normalized));
+  return restrictedDatabaseFromPolicies(
+    connection,
+    expandPolicyRefs(normalized),
+  );
 }
 
-function scopeFromPolicies<TCollection extends string>(
+function restrictedDatabaseFromPolicies<TCollection extends string>(
   connection: DatabaseConnection,
   policies: Readonly<Record<string, NormalizedRepositoryPolicy>>,
-): DatabaseScope<TCollection> {
+): RestrictedDatabase<TCollection> {
   // Keep capabilities in closures, not TypeScript-private object properties.
   return Object.freeze({
     repository<
@@ -50,7 +54,7 @@ function scopeFromPolicies<TCollection extends string>(
       if (!Object.hasOwn(policies, collection)) {
         throw new RepositoryError(
           'POLICY_REQUIRED',
-          `Collection "${collection}" has no policy in this scope.`,
+          `Collection "${collection}" has no policy in this restricted database.`,
           { collection },
         );
       }
@@ -61,10 +65,10 @@ function scopeFromPolicies<TCollection extends string>(
       );
     },
     transaction<T>(
-      fn: (scope: DatabaseScope<TCollection>) => Promise<T>,
+      fn: (database: RestrictedDatabase<TCollection>) => Promise<T>,
     ): Promise<T> {
       return connection.transaction((transaction) =>
-        fn(scopeFromPolicies<TCollection>(transaction, policies)),
+        fn(restrictedDatabaseFromPolicies<TCollection>(transaction, policies)),
       );
     },
     afterCommit(callback: () => void | Promise<void>): void {

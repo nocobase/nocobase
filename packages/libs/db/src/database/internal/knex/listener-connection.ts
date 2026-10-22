@@ -25,8 +25,9 @@ import type {
   ScopedDatabaseConnection,
 } from '../../connection.js';
 import type { DatabaseDriverRuntime } from '../../runtime.js';
-import type { DatabaseScope, DatabaseScopePolicies } from '../../scope.js';
-import { createDatabaseScope } from '../scope.js';
+import type { RestrictedDatabase } from '../../restricted-database.js';
+import type { DatabasePolicyMap } from '../../policy-map.js';
+import { createRestrictedDatabase } from '../restricted-database.js';
 import type { KnexDatabaseConnection } from './connection.js';
 import {
   bindPolicies,
@@ -111,14 +112,14 @@ export class RepositoryListenerConnection implements PolicyBindableConnection {
   }
 
   restrict<P, const TCollection extends string>(
-    policies: DatabaseScopePolicies<P, TCollection>,
+    policies: DatabasePolicyMap<P, TCollection>,
     principal: P,
-  ): DatabaseScope<TCollection> {
-    return createDatabaseScope(this, policies, principal);
+  ): RestrictedDatabase<TCollection> {
+    return createRestrictedDatabase(this, policies, principal);
   }
 
   withPolicies<P>(
-    policies: Parameters<DatabaseConnection['withPolicies']>[0],
+    policies: DatabasePolicyMap<P>,
     principal: P,
   ): ScopedDatabaseConnection {
     return bindPolicies(this, policies, principal);

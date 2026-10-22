@@ -6,20 +6,20 @@ Permissions bind read/create/update/delete rules to repositories and derived con
 
 ## Binding and access boundaries
 
-| API                                         | Return and boundary                                                                                               |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `repository.withPolicy(policy)`             | One policy-bound `ScopedRepository`                                                                               |
-| `repository.withPolicy(factory, principal)` | Evaluate a principal-dependent policy for one repository                                                          |
-| `connection.withPolicies(map, principal)`   | A `ScopedDatabaseConnection`; retains full connection capabilities and allows unlisted repositories               |
-| `connection.restrict(map, principal)`       | A `DatabaseScope`; rejects unlisted direct repository access and exposes restricted repositories and transactions |
-| `scopedRepository.narrow(patch)`            | A derived repository whose policy cannot widen the original                                                       |
-| `explainPolicy()` / `explainPolicies()`     | The effective repository policy or collection policy map                                                          |
+| API                                         | Return and boundary                                                                                                    |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `repository.withPolicy(policy)`             | One policy-bound `ScopedRepository`                                                                                    |
+| `repository.withPolicy(factory, principal)` | Evaluate a principal-dependent policy for one repository                                                               |
+| `connection.withPolicies(map, principal)`   | A `ScopedDatabaseConnection`; retains full connection capabilities and allows unlisted repositories                    |
+| `connection.restrict(map, principal)`       | A `RestrictedDatabase`; rejects unlisted direct repository access and exposes restricted repositories and transactions |
+| `scopedRepository.narrow(patch)`            | A derived repository whose policy cannot widen the original                                                            |
+| `explainPolicy()` / `explainPolicies()`     | The effective repository policy or collection policy map                                                               |
 
-`withPolicy()`, `withPolicies()` and `ScopedDatabaseConnection` remain supported without deprecation. Use `withPolicies()` for policy binding with full connection capabilities, or `restrict()` for a restricted `DatabaseScope`. These APIs provide different access boundaries, so adopting `restrict()` requires an explicit policy for every directly accessed collection and keeping raw operations on the trusted connection.
+`withPolicy()`, `withPolicies()` and `ScopedDatabaseConnection` remain supported without deprecation. Use `withPolicies()` for policy binding with full connection capabilities, or `restrict()` for a `RestrictedDatabase`. These APIs provide different access boundaries, so adopting `restrict()` requires an explicit policy for every directly accessed collection and keeping raw operations on the trusted connection.
 
 Policies require read/create/update/delete nodes. A rule object's `scope` constrains rows; `fields` is an allowlist, and omission does not mean every field is allowed. `create.defaults` assigns values, while `create.scope` checks them. `ref()` explicitly reuses another entry's read rules in a policy map. Relation writes are authorized by the originating policy rather than automatically inheriting the target collection's policy.
 
-Principal factories in a bound connection/scope run once when binding occurs. Repositories obtained from a scope can only narrow, expose no `withPolicy()` and use conservative partial record types. A scope's runtime surface is `repository`, `transaction`, `afterCommit`, `afterRollback` and `explainPolicies`. Keep full-connection capabilities in trusted code. See [policy signatures](./signatures/policies.md) and [scope behavior](../database-scope.md) for the complete contract.
+Both methods accept `DatabasePolicyMap<P, TCollection>`. Principal factories run once when binding occurs. Repositories obtained from a restricted database can only narrow, expose no `withPolicy()` and use conservative partial record types. A restricted database's runtime surface is `repository`, `transaction`, `afterCommit`, `afterRollback` and `explainPolicies`. Keep full-connection capabilities in trusted code. See [policy signatures](./signatures/policies.md) and [restricted database behavior](../restricted-database.md) for the complete contract.
 
 Known typing limitations: narrowing a repository initially bound with `read: true` can remove fields while its return type still promises a complete record. `withPolicies().repository()` also retains the unbound `Repository` type: mapped collections can return partial records, and calling the type-visible `withPolicy()` on an already-bound repository throws. These are unresolved contracts described in [review finding F3](./release-review.md#f3-policy-derived-repositories-overstate-their-records-and-methods).
 
@@ -43,6 +43,6 @@ Mutation options can carry a server-side `writePolicy` independently of a bound 
 
 ## Transactions and event boundaries
 
-A scope transaction retains the same policy bindings. See [Transactions](./transactions.md) for propagation and callbacks. A scope has no mutation subscription API; subscriptions belong to the full connection and are covered in [Events](./events.md).
+A restricted database transaction retains the same policy bindings. See [Transactions](./transactions.md) for propagation and callbacks. A restricted database has no mutation subscription API; subscriptions belong to the full connection and are covered in [Events](./events.md).
 
 [Contents](./README.md) · [Previous: Repository](./repository.md) · [Next: Transactions](./transactions.md)

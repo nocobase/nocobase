@@ -93,7 +93,7 @@ const groups = {
   ],
   transactions: [
     'Transactions',
-    'Transaction methods are declared on DatabaseManager, DatabaseConnection and DatabaseScope. This page contains the shared callback phase contract; the chapter explains propagation, savepoints and completion callbacks.',
+    'Transaction methods are declared on DatabaseManager, DatabaseConnection and RestrictedDatabase. This page contains the shared callback phase contract; the chapter explains propagation, savepoints and completion callbacks.',
     'transactions',
   ],
   events: [
@@ -304,8 +304,8 @@ function groupFor(record) {
     return /errors|json/.test(file) ? 'values' : 'inputs';
   if (
     [
-      'DatabaseScope',
-      'DatabaseScopePolicies',
+      'RestrictedDatabase',
+      'DatabasePolicyMap',
       'ScopedDatabaseConnection',
       'PolicyRecord',
       'RepositoryOperations',

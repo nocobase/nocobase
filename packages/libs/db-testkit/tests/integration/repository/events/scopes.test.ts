@@ -77,7 +77,7 @@ describeIntegrationDatabases(
       ]);
     });
 
-    it('preserves event ancestry when a listener creates a scope and a savepoint', async () => {
+    it('preserves event ancestry when a listener creates a restricted database and a savepoint', async () => {
       await createEventsFixture(context);
       const seen = collectEvents();
       let parentOperationId: string | undefined;
@@ -87,7 +87,7 @@ describeIntegrationDatabases(
           {
             inTransaction: async (event, connection) => {
               parentOperationId = event.operationId;
-              const scope = connection.restrict(
+              const database = connection.restrict(
                 {
                   notes: {
                     read: true,
@@ -98,11 +98,11 @@ describeIntegrationDatabases(
                 },
                 undefined,
               );
-              await scope.transaction(async (savepoint) => {
+              await database.transaction(async (savepoint) => {
                 expect(savepoint).not.toHaveProperty('client');
                 await savepoint
                   .repository('notes')
-                  .createOne({ values: { body: 'Scoped audit' } });
+                  .createOne({ values: { body: 'Restricted audit' } });
               });
             },
           },
@@ -130,7 +130,7 @@ describeIntegrationDatabases(
       expect(await context.connection.repository('notes').count()).toBe(3);
     });
 
-    it('retains the listener recursion limit through scopes', async () => {
+    it('retains the listener recursion limit through restricted databases', async () => {
       await createEventsFixture(context);
       subscriptions.push(
         context.connection.onRepositoryMutation(

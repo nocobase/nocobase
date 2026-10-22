@@ -1,8 +1,8 @@
 import { expectTypeOf } from 'vitest';
 import type {
   DatabaseConnection,
-  DatabaseScope,
-  DatabaseScopePolicies,
+  RestrictedDatabase,
+  DatabasePolicyMap,
   RepositoryQuery,
   ScopedDatabaseConnection,
 } from '../../../src/index.js';
@@ -16,7 +16,7 @@ interface Project {
 export async function restrictContract(
   connection: DatabaseConnection,
 ): Promise<void> {
-  const scope = connection.restrict(
+  const database = connection.restrict(
     {
       projects: (principal) => ({
         read: {
@@ -31,8 +31,8 @@ export async function restrictContract(
     { tenantId: 'T1' },
   );
 
-  expectTypeOf(scope).toEqualTypeOf<DatabaseScope<'projects'>>();
-  const projects = scope.repository<
+  expectTypeOf(database).toEqualTypeOf<RestrictedDatabase<'projects'>>();
+  const projects = database.repository<
     Project,
     { name: string },
     { name: string }
@@ -43,41 +43,41 @@ export async function restrictContract(
   expectTypeOf(
     projects.narrow({ read: { scope: true, fields: ['id'] } }).findMany(),
   ).toEqualTypeOf<RepositoryQuery<Partial<Project>>>();
-  // @ts-expect-error the scope cannot promise a complete record
+  // @ts-expect-error the restricted database cannot promise a complete record
   const full: RepositoryQuery<Project> = projects.findMany();
   void full;
   // @ts-expect-error only collections in the policy map are accessible
-  scope.repository('tasks');
+  database.repository('tasks');
   // @ts-expect-error supplying a record type cannot widen the collection allowlist
-  scope.repository<Project>('tasks');
-  // @ts-expect-error raw database access is not part of a scope
-  scope.query;
-  // @ts-expect-error the client cannot be recovered from a scope
-  scope.client();
-  // @ts-expect-error a scope cannot replace its policies
-  scope.restrict({}, undefined);
+  database.repository<Project>('tasks');
+  // @ts-expect-error raw database access is not part of a database
+  database.query;
+  // @ts-expect-error the client cannot be recovered from a database
+  database.client();
+  // @ts-expect-error a restricted database cannot replace its policies
+  database.restrict({}, undefined);
   // @ts-expect-error subscriptions hand out full connections and are not exposed
-  scope.onRepositoryMutation;
+  database.onRepositoryMutation;
   // @ts-expect-error a scoped repository can narrow but cannot rebind its policy
   projects.withPolicy({ read: true, create: true, update: true, delete: true });
   // @ts-expect-error explicit create input types remain enforced
   projects.createOne({ values: { tenantId: 'T2' } });
-  // @ts-expect-error a scope is not a full connection
-  const raw: DatabaseConnection = scope;
+  // @ts-expect-error a restricted database is not a full connection
+  const raw: DatabaseConnection = database;
   void raw;
 
-  await scope.transaction(async (transaction) => {
-    expectTypeOf(transaction).toEqualTypeOf<typeof scope>();
-    // @ts-expect-error transaction scopes retain the collection allowlist
+  await database.transaction(async (transaction) => {
+    expectTypeOf(transaction).toEqualTypeOf<typeof database>();
+    // @ts-expect-error restricted transactions retain the collection allowlist
     transaction.repository('tasks');
-    // @ts-expect-error transaction scopes do not expose raw clients
+    // @ts-expect-error restricted transactions do not expose raw clients
     transaction.client();
     await transaction.transaction(async (savepoint) => {
-      expectTypeOf(savepoint).toEqualTypeOf<typeof scope>();
+      expectTypeOf(savepoint).toEqualTypeOf<typeof database>();
     });
   });
 
-  const dynamic: DatabaseScopePolicies<undefined> = {};
+  const dynamic: DatabasePolicyMap<undefined> = {};
   connection.restrict(dynamic, undefined).repository('runtime-checked');
   // @ts-expect-error an empty static map permits no collection
   connection.restrict({}, undefined).repository('projects');
@@ -88,10 +88,19 @@ export async function restrictContract(
 export async function policyBindingContract(
   connection: DatabaseConnection,
 ): Promise<void> {
-  const bound = connection.withPolicies(
-    { projects: { read: true, create: false, update: false, delete: false } },
-    undefined,
-  );
+  const policies: DatabasePolicyMap<{ tenantId: string }, 'projects'> = {
+    projects: (principal) => ({
+      read: { scope: { tenantId: principal.tenantId }, fields: ['id'] },
+      create: false,
+      update: false,
+      delete: false,
+    }),
+  };
+  const principal = { tenantId: 'T1' };
+  const bound = connection.withPolicies(policies, principal);
+  expectTypeOf(connection.restrict(policies, principal)).toEqualTypeOf<
+    RestrictedDatabase<'projects'>
+  >();
   expectTypeOf(bound).toEqualTypeOf<ScopedDatabaseConnection>();
   // @ts-expect-error policy-bound connections cannot replace their bindings
   bound.restrict({}, undefined);

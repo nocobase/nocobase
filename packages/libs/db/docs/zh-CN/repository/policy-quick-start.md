@@ -129,7 +129,7 @@ WHERE 只挡住「能碰哪一行」，挡不住「改完跑到哪去」。这�
 A request often touches several Collections and takes fresh repositories inside a transaction. Bind the policy map with `connection.restrict()` to carry the same restrictions through both:
 
 ```ts
-const scoped = db.connection().restrict(
+const restricted = db.connection().restrict(
   {
     projects: projectPolicy,
     tasks: (principal: Principal) => taskPolicyFor(principal),
@@ -137,16 +137,16 @@ const scoped = db.connection().restrict(
   principal,
 );
 
-scoped.repository('projects'); // Bound to the projects policy.
-// scoped.repository('users'); // Type error; POLICY_REQUIRED at runtime.
-await scoped.transaction(async (tx) => tx.repository('projects'));
+restricted.repository('projects'); // Bound to the projects policy.
+// restricted.repository('users'); // Type error; POLICY_REQUIRED at runtime.
+await restricted.transaction(async (tx) => tx.repository('projects'));
 ```
 
-The returned `DatabaseScope` only exposes repositories, transactions, commit/rollback callbacks, and policy explanations. Unlisted direct Collection access throws `POLICY_REQUIRED`. Its repositories can `narrow()` their policies, but cannot replace them, and conservatively return `Partial<TRecord>`.
+The returned `RestrictedDatabase` only exposes repositories, transactions, commit/rollback callbacks, and policy explanations. Unlisted direct Collection access throws `POLICY_REQUIRED`. Its repositories can `narrow()` their policies, but cannot replace them, and conservatively return `Partial<TRecord>`.
 
-Policy functions run once at binding with the supplied principal; their results are normalized and frozen. Transactions reuse those results. Do not share a principal-bound scope across requests.
+Policy functions run once at binding with the supplied principal; their results are normalized and frozen. Transactions reuse those results. Do not share a principal-bound restricted database across requests.
 
-`withPolicies()` remains supported without deprecation for policy binding with full connection capabilities, including raw database access and unbound repositories for unlisted Collections. See [Restricted database access](../../database-scope.md) to choose between `withPolicies()` and `restrict()`.
+`withPolicies()` remains supported without deprecation for policy binding with full connection capabilities, including raw database access and unbound repositories for unlisted Collections. See [Restricted database access](../../restricted-database.md) to choose between `withPolicies()` and `restrict()`.
 
 ## 6. 关系
 

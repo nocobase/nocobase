@@ -10,8 +10,7 @@ Signatures below are extracted from declaration output. Generic parameters, over
 | --------------------------------------------------------------------- | -------------------- |
 | [CreateNode](#createnode)                                             | `@nocobase/db` type  |
 | [CreatePolicyNodeBuilder](#createpolicynodebuilder)                   | `@nocobase/db` type  |
-| [DatabaseScope](#databasescope)                                       | `@nocobase/db` type  |
-| [DatabaseScopePolicies](#databasescopepolicies)                       | `@nocobase/db` type  |
+| [DatabasePolicyMap](#databasepolicymap)                               | `@nocobase/db` type  |
 | [DeleteNode](#deletenode)                                             | `@nocobase/db` type  |
 | [DeletePolicyNodeBuilder](#deletepolicynodebuilder)                   | `@nocobase/db` type  |
 | [FieldWritePolicy](#fieldwritepolicy)                                 | `@nocobase/db` type  |
@@ -48,6 +47,7 @@ Signatures below are extracted from declaration output. Generic parameters, over
 | [RepositoryOperations](#repositoryoperations)                         | `@nocobase/db` type  |
 | [RepositoryPolicy](#repositorypolicy)                                 | `@nocobase/db` type  |
 | [RepositoryPolicyBuilder](#repositorypolicybuilder)                   | `@nocobase/db` type  |
+| [RestrictedDatabase](#restricteddatabase)                             | `@nocobase/db` type  |
 | [ScopedDatabaseConnection](#scopeddatabaseconnection)                 | `@nocobase/db` type  |
 | [ScopedRepository](#scopedrepository)                                 | `@nocobase/db` type  |
 | [ThroughFieldsPolicyBuilder](#throughfieldspolicybuilder)             | `@nocobase/db` type  |
@@ -104,61 +104,20 @@ export interface CreatePolicyNodeBuilder<
 
 Related declarations: [PolicyScalarValue](./policies.md#policyscalarvalue), [RepositoryRecord](./inputs.md#repositoryrecord), [WritePolicyNodeBuilder](./policies.md#writepolicynodebuilder).
 
-## DatabaseScope
+## DatabasePolicyMap
 
-[Source](../../../src/database/scope.ts)
+[Source](../../../src/database/policy-map.ts)
 
-Import: `import type { DatabaseScope } from '@nocobase/db'`.
+Import: `import type { DatabasePolicyMap } from '@nocobase/db'`.
 
-Repository access limited to an explicit policy map, created by connection.restrict(). This is not a DatabaseConnection: it exposes no raw client, query builder, schema management, connection lifecycle, or mutation subscriptions. Relations follow the originating repository's policy; a target collection's entry is reused only through an explicit read policy ref().
+Policies keyed by collection, evaluated once for one principal by connection.restrict() or connection.withPolicies().
 
 ```ts
 /**
- * Repository access limited to an explicit policy map, created by connection.restrict().
- *
- * This is not a DatabaseConnection: it exposes no raw client, query builder,
- * schema management, connection lifecycle, or mutation subscriptions.
- * Relations follow the originating repository's policy; a target collection's
- * entry is reused only through an explicit read policy ref().
+ * Policies keyed by collection, evaluated once for one principal by
+ * connection.restrict() or connection.withPolicies().
  */
-export interface DatabaseScope<TCollection extends string = string> {
-  /**
-   * Access a collection covered by this scope, or throw POLICY_REQUIRED.
-   * Records are partial because policy field allowlists can omit properties.
-   */
-  repository<
-    TRecord extends object = RepositoryRecord,
-    TCreate extends object = Partial<TRecord>,
-    TUpdate extends object = Partial<TRecord>,
-  >(
-    collection: TCollection,
-  ): ScopedRepository<Partial<TRecord>, TCreate, TUpdate>;
-  /** Run a transaction or savepoint with the same policy bindings. */
-  transaction<T>(
-    fn: (scope: DatabaseScope<TCollection>) => Promise<T>,
-  ): Promise<T>;
-  /** Uses the underlying connection's outermost-commit callback semantics. */
-  afterCommit(callback: () => void | Promise<void>): void;
-  /** Uses the underlying connection's transaction/savepoint rollback semantics. */
-  afterRollback(callback: (error: unknown) => void | Promise<void>): void;
-  /** A detached snapshot of the policies in force, by collection name. */
-  explainPolicies(): Readonly<Record<TCollection, NormalizedRepositoryPolicy>>;
-}
-```
-
-Related declarations: [NormalizedRepositoryPolicy](./policies.md#normalizedrepositorypolicy), [RepositoryRecord](./inputs.md#repositoryrecord), [ScopedRepository](./policies.md#scopedrepository).
-
-## DatabaseScopePolicies
-
-[Source](../../../src/database/scope.ts)
-
-Import: `import type { DatabaseScopePolicies } from '@nocobase/db'`.
-
-Policies evaluated once for one principal when a database scope is created.
-
-```ts
-/** Policies evaluated once for one principal when a database scope is created. */
-export type DatabaseScopePolicies<
+export type DatabasePolicyMap<
   P,
   TCollection extends string = string,
 > = Readonly<
@@ -861,18 +820,62 @@ export interface RepositoryPolicyBuilder<
 
 Related declarations: [CreatePolicyNodeBuilder](./policies.md#createpolicynodebuilder), [DeletePolicyNodeBuilder](./policies.md#deletepolicynodebuilder), [ReadPolicyNodeBuilder](./policies.md#readpolicynodebuilder), [RepositoryRecord](./inputs.md#repositoryrecord), [WritePolicyNodeBuilder](./policies.md#writepolicynodebuilder).
 
+## RestrictedDatabase
+
+[Source](../../../src/database/restricted-database.ts)
+
+Import: `import type { RestrictedDatabase } from '@nocobase/db'`.
+
+Repository access limited to an explicit policy map, created by connection.restrict(). This is not a DatabaseConnection: it exposes no raw client, query builder, schema management, connection lifecycle, or mutation subscriptions. Relations follow the originating repository's policy; a target collection's entry is reused only through an explicit read policy ref().
+
+```ts
+/**
+ * Repository access limited to an explicit policy map, created by connection.restrict().
+ *
+ * This is not a DatabaseConnection: it exposes no raw client, query builder,
+ * schema management, connection lifecycle, or mutation subscriptions.
+ * Relations follow the originating repository's policy; a target collection's
+ * entry is reused only through an explicit read policy ref().
+ */
+export interface RestrictedDatabase<TCollection extends string = string> {
+  /**
+   * Access a collection covered by this restricted database, or throw POLICY_REQUIRED.
+   * Records are partial because policy field allowlists can omit properties.
+   */
+  repository<
+    TRecord extends object = RepositoryRecord,
+    TCreate extends object = Partial<TRecord>,
+    TUpdate extends object = Partial<TRecord>,
+  >(
+    collection: TCollection,
+  ): ScopedRepository<Partial<TRecord>, TCreate, TUpdate>;
+  /** Run a transaction or savepoint with the same policy bindings. */
+  transaction<T>(
+    fn: (database: RestrictedDatabase<TCollection>) => Promise<T>,
+  ): Promise<T>;
+  /** Uses the underlying connection's outermost-commit callback semantics. */
+  afterCommit(callback: () => void | Promise<void>): void;
+  /** Uses the underlying connection's transaction/savepoint rollback semantics. */
+  afterRollback(callback: (error: unknown) => void | Promise<void>): void;
+  /** A detached snapshot of the policies in force, by collection name. */
+  explainPolicies(): Readonly<Record<TCollection, NormalizedRepositoryPolicy>>;
+}
+```
+
+Related declarations: [NormalizedRepositoryPolicy](./policies.md#normalizedrepositorypolicy), [RepositoryRecord](./inputs.md#repositoryrecord), [ScopedRepository](./policies.md#scopedrepository).
+
 ## ScopedDatabaseConnection
 
 [Source](../../../src/database/connection.ts)
 
 Import: `import type { ScopedDatabaseConnection } from '@nocobase/db'`.
 
-A connection carrying policy bindings while retaining raw access. Use DatabaseConnection.restrict() to create a restricted DatabaseScope.
+A connection carrying policy bindings while retaining raw access. Use DatabaseConnection.restrict() to create a RestrictedDatabase.
 
 ```ts
 /**
  * A connection carrying policy bindings while retaining raw access.
- * Use DatabaseConnection.restrict() to create a restricted DatabaseScope.
+ * Use DatabaseConnection.restrict() to create a RestrictedDatabase.
  */
 export interface ScopedDatabaseConnection extends Omit<
   DatabaseConnection,

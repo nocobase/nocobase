@@ -94,11 +94,10 @@ This index covers every name exported by the two package entries. A value can be
 | [DatabaseManager](./signatures/database-manager.md#databasemanager)                                           | type  | [DatabaseManager](./database-manager.md)                     |
 | [DatabaseMigratorOptions](./signatures/migration.md#databasemigratoroptions)                                  | type  | [Migrations and task locks](./migration-and-seed.md)         |
 | [DatabaseNumericRuntimeStrategy](./signatures/drivers.md#databasenumericruntimestrategy)                      | type  | [Driver and runtime extension](./driver-extension.md)        |
+| [DatabasePolicyMap](./signatures/policies.md#databasepolicymap)                                               | type  | [Repository policies](./permissions.md)                      |
 | [DatabaseQueryRuntimeStrategy](./signatures/drivers.md#databasequeryruntimestrategy)                          | type  | [Driver and runtime extension](./driver-extension.md)        |
 | [DatabaseRepositoryRuntimeStrategy](./signatures/drivers.md#databaserepositoryruntimestrategy)                | type  | [Driver and runtime extension](./driver-extension.md)        |
 | [DatabaseSchemaRuntimeStrategy](./signatures/drivers.md#databaseschemaruntimestrategy)                        | type  | [Driver and runtime extension](./driver-extension.md)        |
-| [DatabaseScope](./signatures/policies.md#databasescope)                                                       | type  | [Repository policies](./permissions.md)                      |
-| [DatabaseScopePolicies](./signatures/policies.md#databasescopepolicies)                                       | type  | [Repository policies](./permissions.md)                      |
 | [DatabaseSeederOptions](./signatures/seed.md#databaseseederoptions)                                           | type  | [Seeds and sample data](./migration-and-seed.md)             |
 | [DatabaseTaskConfig](./signatures/migration.md#databasetaskconfig)                                            | type  | [Migrations and task locks](./migration-and-seed.md)         |
 | [DateFilterOperators](./signatures/inputs.md#datefilteroperators)                                             | type  | [Repository inputs and result types](./repository.md)        |
@@ -296,6 +295,7 @@ This index covers every name exported by the two package entries. A value can be
 | [RepositorySelect](./signatures/inputs.md#repositoryselect)                                                   | type  | [Repository inputs and result types](./repository.md)        |
 | [RepositorySort](./signatures/inputs.md#repositorysort)                                                       | type  | [Repository inputs and result types](./repository.md)        |
 | [RepositoryUniqueFieldSetDescription](./signatures/repository.md#repositoryuniquefieldsetdescription)         | type  | [Repository operations](./repository.md)                     |
+| [RestrictedDatabase](./signatures/policies.md#restricteddatabase)                                             | type  | [Repository policies](./permissions.md)                      |
 | [Row](./signatures/query.md#row)                                                                              | type  | [Query and expressions](./query.md)                          |
 | [RowChange](./signatures/events.md#rowchange)                                                                 | type  | [Repository mutation events](./events.md)                    |
 | [RowChangeKind](./signatures/events.md#rowchangekind)                                                         | type  | [Repository mutation events](./events.md)                    |

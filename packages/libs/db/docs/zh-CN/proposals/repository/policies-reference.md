@@ -899,13 +899,15 @@ const projects = conn.repository('projects').withPolicy({ ... });
 ### 2.2 多表：绑在 Connection 上
 
 ```ts
-const scoped = conn.restrict(
+const restricted = conn.restrict(
   { projects: projectPolicy, tasks: taskPolicy },
   principal,
 );
 
-await scoped.repository('projects').findMany({ filter: { status: 'draft' } });
-await scoped.repository('tasks').updateOne({ filter: { id }, values });
+await restricted
+  .repository('projects')
+  .findMany({ filter: { status: 'draft' } });
+await restricted.repository('tasks').updateOne({ filter: { id }, values });
 ```
 
 map 里也可以混用两种形态——字面量的那些不消费 `principal`：
@@ -928,18 +930,18 @@ conn.restrict(
 Unlisted direct Collection access is denied:
 
 ```ts
-// scoped.repository('users'); // Type error for this literal map.
+// restricted.repository('users'); // Type error for this literal map.
 // Dynamic maps are checked at runtime and throw POLICY_REQUIRED.
 ```
 
-The returned `DatabaseScope` exposes restricted repositories, transactions, commit/rollback callbacks, and policy explanations. It has no raw connection capabilities. `withPolicies()` remains supported without deprecation for policy binding with full connection capabilities, including unlisted-Collection and raw access. See [Restricted database access](../../../database-scope.md) to choose the appropriate access boundary.
+The returned `RestrictedDatabase` exposes restricted repositories, transactions, commit/rollback callbacks, and policy explanations. It has no raw connection capabilities. `withPolicies()` remains supported without deprecation for policy binding with full connection capabilities, including unlisted-Collection and raw access. See [Restricted database access](../../../restricted-database.md) to choose the appropriate access boundary.
 
 ### 2.3 事务
 
 事务内派生的 Repository 自动携带同一份 policy，不需要重新绑：
 
 ```ts
-await scoped.transaction(async (tx) => {
+await restricted.transaction(async (tx) => {
   await tx.repository('projects').updateOne({ filter: { id }, values });
   await tx.repository('tasks').createOne({ values });
 });
@@ -1044,8 +1046,8 @@ conn.repository('projects').withPolicy({
 ### 6.3 同一请求，不同接口不同收窄
 
 ```ts
-const scoped = conn.restrict({ projects: projectPolicy }, principal);
-const base = scoped.repository('projects');
+const restricted = conn.restrict({ projects: projectPolicy }, principal);
+const base = restricted.repository('projects');
 
 const listEndpoint = base.narrow({ read: { fields: ['id', 'title'] } });
 const detailEndpoint = base; // 完整字段
