@@ -29,8 +29,8 @@ export interface TaskBulkBarProps {
 }
 
 /**
- * The top of the list, kept in view while it scrolls: normally its children, usually the status tabs, and while tasks
- * are checked a toolbar in their place — how many, a button that clears them, and one button per contributed action
+ * The top of the list: normally its children, usually the status tabs, on the page's own background, and while tasks
+ * are checked an opaque toolbar in their place, kept in view while the list scrolls — how many, a button that clears them, and one button per contributed action
  * with the count it applies to. Taking the row's place rather than adding one keeps the cards from moving under the
  * pointer when the first task is checked.
  */
@@ -46,7 +46,7 @@ export function TaskBulkBar({
     defaultValue: 'Clear selection',
   });
   return (
-    <div className='sticky top-0 z-10 bg-background'>
+    <div className={cn('relative', count > 0 && 'sticky top-0 z-10')}>
       <div
         inert={count > 0}
         aria-hidden={count > 0 || undefined}
@@ -60,7 +60,7 @@ export function TaskBulkBar({
           aria-label={t('taskCenterUi.bulk.label', {
             defaultValue: 'Batch actions',
           })}
-          className='absolute inset-0 flex items-center gap-2 overflow-x-auto border-b border-primary/40 bg-primary/5 px-2'
+          className='absolute inset-0 flex items-center gap-2 overflow-x-auto border-b border-primary/40 bg-background bg-linear-to-r from-primary/5 to-primary/5 px-2'
         >
           <Button
             variant='ghost'
