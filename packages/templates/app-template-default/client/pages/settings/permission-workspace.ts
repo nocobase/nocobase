@@ -12,6 +12,11 @@ export interface PermissionWorkspaceSelection {
     readonly actions: readonly string[];
     readonly actionDescriptions?: Readonly<Record<string, LocalizedText>>;
     readonly scopeTitles?: Readonly<Record<string, LocalizedText>>;
+    readonly actionScopeTitles?: Readonly<
+      Record<string, Readonly<Record<string, LocalizedText>>>
+    >;
+    /** UI-only omission; registered and stored scope values remain unchanged. */
+    readonly hiddenActionScopes?: Readonly<Record<string, readonly string[]>>;
     readonly configurationActions?: readonly {
       readonly name: string;
       readonly routes: readonly string[];
@@ -22,6 +27,9 @@ export interface PermissionWorkspaceSelection {
     readonly id: string;
     readonly actions: readonly string[];
   }[];
+  readonly filterFieldTitles?: Readonly<
+    Record<string, Readonly<Record<string, LocalizedText>>>
+  >;
 }
 
 /** Add only business operations and configuration controls this application exposes. */
@@ -44,13 +52,45 @@ export function permissionScopeTitle(
   resource: { readonly type: string; readonly id: string },
   scope: { readonly collection: string; readonly title: LocalizedText },
   selection: PermissionWorkspaceSelection = permissionWorkspaceSelection,
+  action?: string,
 ): LocalizedText {
   const selected = selection.business.find((entry) =>
     resource.type === 'database.collection'
       ? entry.scopeTitles?.[scope.collection] !== undefined
       : entry.type === resource.type && entry.id === resource.id,
   );
-  return selected?.scopeTitles?.[scope.collection] ?? scope.title;
+  return (
+    (action
+      ? selected?.actionScopeTitles?.[action]?.[scope.collection]
+      : undefined) ??
+    selected?.scopeTitles?.[scope.collection] ??
+    scope.title
+  );
+}
+
+export function permissionScopeVisible(
+  resource: { readonly type: string; readonly id: string },
+  action: string,
+  scopeKey: string,
+  selection: PermissionWorkspaceSelection = permissionWorkspaceSelection,
+): boolean {
+  return !selection.business
+    .find((entry) => entry.type === resource.type && entry.id === resource.id)
+    ?.hiddenActionScopes?.[action]?.includes(scopeKey);
+}
+
+export function permissionFilterFieldLabel(
+  collection: string,
+  field: string,
+  text: (key: string, fallback?: string) => string,
+  selection: PermissionWorkspaceSelection = permissionWorkspaceSelection,
+): string {
+  const title = selection.filterFieldTitles?.[collection]?.[field];
+  return title
+    ? typeof title === 'string'
+      ? title
+      : text(title.key, title.defaultValue ?? field)
+    : field;
 }
 
 function hasConfigurationPage(
@@ -229,6 +269,7 @@ export function permissionWorkspaceCatalog(
                                       resource,
                                       scope,
                                       selection,
+                                      action,
                                     ),
                                   })),
                                 ],

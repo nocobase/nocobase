@@ -102,7 +102,7 @@ export function ruleScopes(
           action: action.name,
           scopeKey: scope.key,
           actionTitle: action.title,
-          title: permissionScopeTitle(resource, scope),
+          title: permissionScopeTitle(resource, scope, undefined, action.name),
           collection: scope.collection,
           fields: scope.fields,
           recordAccess: scope.recordAccess,

@@ -21,7 +21,10 @@ import {
   pagePermissionResources,
 } from './page-permissions.js';
 import { pagePermissionTitles } from './page-permission-titles.js';
-import { permissionWorkspaceCatalog } from './permission-workspace.js';
+import {
+  permissionScopeVisible,
+  permissionWorkspaceCatalog,
+} from './permission-workspace.js';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
   useLocation,
@@ -175,7 +178,7 @@ function RoleEditor(): ReactElement {
   const sections = catalog
     ? configurePermissionScopes(
         permissionNavigationSections(
-          permissionSections(catalog, grants, text),
+          permissionSections(catalog, grants, text, permissionScopeVisible),
           app.runtime.routes,
           pagePermissionTitles,
           (path) => t('settings.unnamedPage', { path }),

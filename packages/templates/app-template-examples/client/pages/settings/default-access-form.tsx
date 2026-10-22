@@ -25,6 +25,7 @@ import { Alert, AlertDescription } from '#components/ui/alert';
 import { SettingsError, SettingsLoading } from './shared.js';
 import { useSettingsData, useSettingsLeave } from './hooks.js';
 import { permissionFilterLabels } from './permission-filters.js';
+import { permissionFilterFieldLabel } from './permission-workspace.js';
 import {
   actionKey,
   resourceKey,
@@ -189,7 +190,13 @@ function DefaultAccessFormBody(): ReactElement {
             value={params}
             fields={scope.fields.map((field) => ({
               value: field,
-              label: fieldLabels[field] ?? field,
+              label:
+                fieldLabels[field] ??
+                permissionFilterFieldLabel(
+                  scope.collection,
+                  field,
+                  (key, fallback) => t(key, { defaultValue: fallback ?? key }),
+                ),
             }))}
             labels={labels}
             disabled={readOnly}

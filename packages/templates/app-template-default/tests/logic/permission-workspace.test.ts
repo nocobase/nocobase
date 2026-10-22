@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import type { AuthorizationOptionsResponse } from '@nocobase/app-plugin-authorization/client';
-import { permissionWorkspaceCatalog } from '../../client/pages/settings/permission-workspace.js';
+import {
+  permissionWorkspaceCatalog,
+  permissionScopeVisible,
+  permissionFilterFieldLabel,
+} from '../../client/pages/settings/permission-workspace.js';
 import {
   permissionSections,
   setPermissions,
@@ -113,6 +117,100 @@ const configurationRoutes = [
 ] as unknown as AppClientRegisteredRoute[];
 
 describe('application-owned permission presentation', () => {
+  it('can hide a created-record selector while retaining a related-record selector and stored policy', () => {
+    const resource = {
+      type: 'composite',
+      id: 'requests',
+      title: 'Requests',
+      actions: [{ name: 'create', title: 'Submit' }],
+      dataScopes: {
+        create: [
+          {
+            key: 'requests',
+            collection: 'requests',
+            title: 'Requests',
+            fields: ['id'],
+            recordAccess: ['allRecords'],
+          },
+          {
+            key: 'equipment',
+            collection: 'equipment',
+            title: 'Equipment',
+            fields: ['assetCode'],
+            recordAccess: ['allRecords'],
+          },
+        ],
+      },
+    };
+    const selection = {
+      settings: [],
+      business: [
+        {
+          type: 'composite',
+          id: 'requests',
+          actions: ['create'],
+          hiddenActionScopes: { create: ['requests'] },
+          actionScopeTitles: { create: { equipment: 'Borrowable equipment' } },
+        },
+      ],
+      filterFieldTitles: { equipment: { assetCode: 'Asset number' } },
+    };
+    const catalog = permissionWorkspaceCatalog(
+      {
+        ...source,
+        sections: [
+          {
+            name: 'business',
+            title: 'Business',
+            order: 1,
+            subsections: [
+              { name: 'requests', title: 'Requests', resources: [resource] },
+            ],
+          },
+        ],
+      } as AuthorizationOptionsResponse,
+      [],
+      [],
+      selection,
+    );
+    const grants = [
+      {
+        resource: { type: 'composite', id: 'requests' },
+        actions: [
+          {
+            action: 'create',
+            policy: {
+              type: 'composite',
+              scopes: { requests: 'allRecords', equipment: 'allRecords' },
+            },
+          },
+        ],
+      },
+    ];
+    const rows = permissionSections(
+      catalog,
+      grants,
+      (value) => (typeof value === 'string' ? value : value.key),
+      (item, action, scopeKey) =>
+        permissionScopeVisible(item, action, scopeKey, selection),
+    );
+    expect(
+      rows[0]?.groups[0]?.rows[0]?.scopes?.map((scope) => scope.label),
+    ).toEqual(['Borrowable equipment']);
+    expect(
+      catalog.sections[0]?.subsections[0]?.resources[0]?.dataScopes?.create,
+    ).toHaveLength(2);
+    expect(grants[0]?.actions[0]?.policy.scopes.requests).toBe('allRecords');
+    expect(
+      permissionFilterFieldLabel(
+        'equipment',
+        'assetCode',
+        (key) => key,
+        selection,
+      ),
+    ).toBe('Asset number');
+  });
+
   it('does not expose registered business or plugin capabilities without application opt-in', () => {
     const before = structuredClone(source);
     expect(permissionWorkspaceCatalog(source, [], []).sections).toEqual([]);

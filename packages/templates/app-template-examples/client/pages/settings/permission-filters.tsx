@@ -8,6 +8,7 @@ import type {
   AuthorizationOptionsResponse,
 } from '@nocobase/app-plugin-authorization/client';
 import { getScopeSelection } from './permissions-model.js';
+import { permissionFilterFieldLabel } from './permission-workspace.js';
 
 export function configurePermissionScopes(
   sections: readonly PermissionEditorSection[],
@@ -64,7 +65,11 @@ export function configurePermissionScopes(
                   value={filter}
                   fields={(definition?.fields ?? []).map((field) => ({
                     value: field,
-                    label: text(`settings.permissionFields.${field}`, field),
+                    label: permissionFilterFieldLabel(
+                      definition?.collection ?? '',
+                      field,
+                      text,
+                    ),
                   }))}
                   labels={labels}
                   disabled={disabled}
