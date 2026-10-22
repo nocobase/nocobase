@@ -23,6 +23,13 @@ on:
           - full-no-nginx
           - default
           - no-nginx
+      tag_mode:
+        description: 'Image tag mode'
+        required: true
+        default: 'same-version'
+        type: choice
+        options:
+          - same-version
       platforms:
         description: 'Build platforms'
         required: true
@@ -43,7 +50,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: rebuild-docker-nodefix-${{ inputs.nocobase_version }}-${{ inputs.variant }}
+  group: rebuild-docker-nodefix-${{ inputs.nocobase_version }}-${{ inputs.variant }}-${{ inputs.tag_mode }}
   cancel-in-progress: false
 
 env:
@@ -65,6 +72,7 @@ jobs:
           INPUT_VERSION: ${{ inputs.nocobase_version }}
           INPUT_NODE_VERSION: ${{ inputs.node_version }}
           INPUT_VARIANT: ${{ inputs.variant }}
+          INPUT_TAG_MODE: ${{ inputs.tag_mode }}
         run: |
           set -euo pipefail
 
@@ -76,6 +84,11 @@ jobs:
 
           if [[ ! "$INPUT_NODE_VERSION" =~ ^[0-9]+(\.[0-9]+\.[0-9]+)?$ ]]; then
             echo "Invalid Node.js version: $INPUT_NODE_VERSION (use a major like 22 or an exact version like 22.23.4)" >&2
+            exit 1
+          fi
+
+          if [[ "$INPUT_TAG_MODE" != "same-version" ]]; then
+            echo "Unsupported tag mode: $INPUT_TAG_MODE" >&2
             exit 1
           fi
 
@@ -274,6 +287,7 @@ jobs:
             echo "- NocoBase: ${{ needs.prepare.outputs.version }}"
             echo "- Node: ${{ needs.prepare.outputs.node_version }} (actual: ${{ steps.verify.outputs.actual_node }})"
             echo "- Variant: ${{ matrix.variant }}"
+            echo "- Tag mode: ${{ inputs.tag_mode }}"
             echo "- Image: ${{ steps.images.outputs.docker_image }}"
             echo "- Pushed: ${{ inputs.push_image }}"
           } >> "$GITHUB_STEP_SUMMARY"
