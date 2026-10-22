@@ -630,6 +630,8 @@ export async function createHarness(
         options.ownerUserId === undefined ? 'owner' : options.ownerUserId,
         {
           trust: options.trust ?? 'team',
+          slots: options.slots ?? 2,
+          ...(options.toolSlots ? { toolSlots: options.toolSlots } : {}),
           ...(options.enabledTools !== undefined
             ? { enabledTools: options.enabledTools }
             : {}),

@@ -26,8 +26,17 @@ export function runner(
     ownerName: 'Alice',
     status: 'online',
     slots: 1,
+    reportedSlots: overrides.slots ?? 1,
+    capacitySource: 'online',
     toolSlots: null,
-    toolLoad: null,
+    toolLoad: overrides.toolSlots
+      ? Object.fromEntries(
+          Object.entries(overrides.toolSlots).map(([tool, slots]) => [
+            tool,
+            { slots: Math.min(slots!, overrides.slots ?? 1), free: 0 },
+          ]),
+        )
+      : null,
     acceptJobs: false,
     policy: null,
     lastSeenAt: AT,

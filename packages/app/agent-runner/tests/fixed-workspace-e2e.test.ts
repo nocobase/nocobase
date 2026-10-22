@@ -17,14 +17,13 @@ import {
 
 it('shares a fixed directory across tools and read-only runs, isolates cancellation, and resumes Claude on the same path', async () => {
   const server = new FakeServer();
+  server.capacity = { slots: 3, toolSlots: {} };
   await server.listen();
   const root = tempDir('fixed-workers-');
   const home = path.join(root, 'home');
   const env = cliEnv(home);
   const remote = makeRemote(root);
   await registerRunner(server.url, env, [
-    '--slots',
-    '3',
     '--cli',
     `appcli=${writeFakeCli(root)}`,
   ]);

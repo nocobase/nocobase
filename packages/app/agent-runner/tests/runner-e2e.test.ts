@@ -110,7 +110,16 @@ describe('runner end to end', () => {
     ).not.toContain('runner-key');
     daemon();
     await waitFor(() => server.lastHeartbeat(), 10_000, 'a heartbeat');
-    expect(server.lastHeartbeat()?.load).toEqual({ slots: 1, free: 1 });
+    await waitFor(
+      () => server.lastHeartbeat()?.load.capacitySource === 'online',
+      10_000,
+      'capacity confirmation',
+    );
+    expect(server.lastHeartbeat()?.load).toEqual({
+      slots: 1,
+      free: 1,
+      capacitySource: 'online',
+    });
   });
 
   it('reports the installed Pi model table on a later heartbeat while continuing to claim', async () => {
@@ -1268,7 +1277,7 @@ describe('working directories, initialization prompts and skills', () => {
 });
 
 describe('one runner, several applications', () => {
-  it('claims from each application, sharing its slots, and reports each run to its own', async () => {
+  it('claims with independent application slots and reports each run to its own', async () => {
     const first = new FakeServer();
     const second = new FakeServer({ app: { id: 'crm', name: 'CRM' } });
     await first.listen();
@@ -1331,22 +1340,13 @@ describe('limits per coding tool', () => {
     const env = cliEnv(home);
     const started: Daemon[] = [];
     try {
+      server.capacity = { slots: 2, toolSlots: { claude: 1 } };
       await registerRunner(server.url, env, [
-        '--slots',
-        '2,claude=1',
         '--cli',
         `appcli=${writeFakeCli(scratch)}`,
       ]);
       const registered = [...server.runners.values()][0];
-      expect(registered?.register).toMatchObject({
-        slots: 2,
-        toolSlots: { claude: 1 },
-      });
-      const status = await cli(['status', '--json'], env);
-      expect(JSON.parse(status.stdout).result).toMatchObject({
-        slots: 2,
-        toolSlots: { claude: 1 },
-      });
+      expect(registered?.register.slots).toBeUndefined();
       started.push(startDaemon(env));
       await waitFor(
         () => (registered?.claimBodies.length ?? 0) > 0,
@@ -1357,8 +1357,13 @@ describe('limits per coding tool', () => {
         free: 2,
         tools: { claude: 1 },
       });
-      await waitFor(() => server.lastHeartbeat(), 10_000, 'a heartbeat');
+      await waitFor(
+        () => server.lastHeartbeat()?.load.capacitySource === 'online',
+        10_000,
+        'capacity confirmation',
+      );
       expect(server.lastHeartbeat()?.load).toEqual({
+        capacitySource: 'online',
         slots: 2,
         free: 2,
         tools: { claude: { slots: 1, free: 1 } },

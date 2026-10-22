@@ -759,7 +759,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         const hasRoom =
           !runner.draining &&
           (runner.globalFree ?? 1) > 0 &&
-          used < runner.slots &&
+          used < Math.min(runner.slots, runner.reportedSlots ?? runner.slots) &&
           (byTool[entry.tool] ?? 0) < toolLimit(runner, entry.tool) &&
           (runner.toolLoad?.[entry.tool]?.free ?? 1) > 0;
         ready ||= hasRoom && runner.globalFree !== undefined;
@@ -778,9 +778,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
               : 'busy',
           lastSeenAt: runner.lastSeenAt,
           used,
-          limit: runner.slots,
+          limit: Math.min(runner.slots, runner.reportedSlots ?? runner.slots),
           toolUsed: byTool[entry.tool] ?? 0,
-          toolLimit: toolLimit(runner, entry.tool),
+          toolLimit: Math.min(
+            toolLimit(runner, entry.tool),
+            runner.toolLoad?.[entry.tool]?.slots ?? runner.slots,
+          ),
           reportedFree: runner.toolLoad?.[entry.tool]?.free,
           reportedTotalFree: runner.globalFree,
         });

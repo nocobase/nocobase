@@ -81,3 +81,5 @@ An application without a tarball of a product may name the npm package and exact
 ## Quota observations
 
 `FailRequest.quota` and event `meta.quota` optionally carry validated `QuotaReport` windows (scope, target, window, usedPercent, resetsAt, exhausted). They are compatible additions to protocol 11. Reset timestamps are ISO UTC; null means unknown. A window reports account/provider/model limits, never a per-run budget. Older runners retain failure-only behavior.
+
+HeartbeatResponse.capacity is an optional complete per-application configuration (slots and toolSlots). Absence identifies a legacy server; an empty toolSlots map clears all additional tool limits. HeartbeatRequest.load.capacitySource optionally confirms online or legacyLocal capacity; slots, free and tools describe the actual application allowance, shared by its tasks and jobs. These optional fields do not change the minimum protocol version.
