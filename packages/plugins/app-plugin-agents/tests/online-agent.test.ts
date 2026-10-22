@@ -616,7 +616,10 @@ it.each(['realtime', 'background'] as const)(
     ]);
     const history = await agent.history();
     expect(history.map(appUIMessageText)).toEqual(['Question', 'Public']);
-    expect(history[1].parts).toEqual([{ type: 'text', text: 'Public' }]);
+    expect(history[1].parts).toEqual([
+      { type: 'text', text: 'Public' },
+      { type: 'reasoning', text: 'Private' },
+    ]);
     expect(JSON.stringify(history)).not.toContain('secret');
     const internal = await f.history(agent);
     expect(JSON.stringify(internal)).toContain('Private');
@@ -2996,4 +2999,40 @@ it('validates HTTP variables across selected scope schemas while keeping trusted
     systemPrompt: 'Trusted prompt',
     variable: { arbitrary: true },
   });
+});
+
+it('projects background reasoning history without changing structured results or requiring browser streams', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: streamed([
+          { type: 'reasoning-start', id: 'r' },
+          {
+            type: 'reasoning-delta',
+            id: 'r',
+            delta: 'Background reasoning',
+            providerMetadata: { fixture: { signature: 'private-signature' } },
+          },
+          { type: 'reasoning-end', id: 'r' },
+          ...text('{"count":2}'),
+        ]),
+      }),
+    }),
+  );
+  const job = await f.service.background(context());
+  await job.run([{ role: 'user', content: 'Count' }], {
+    type: 'object',
+    properties: { count: { type: 'integer' } },
+    required: ['count'],
+  });
+  await settle(job);
+  expect(await job.get()).toEqual({ count: 2 });
+  expect(await job.try()).toEqual({ ok: true, data: { count: 2 } });
+  const history = await job.history();
+  expect(history.at(-1)!.parts).toContainEqual({
+    type: 'reasoning',
+    text: 'Background reasoning',
+    state: 'done',
+  });
+  expect(JSON.stringify(history)).not.toContain('private-signature');
 });
