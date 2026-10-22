@@ -17,7 +17,10 @@ afterEach(async () => {
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
   );
 });
-async function fixture(variant = '') {
+async function fixture(
+  variant = '',
+  specOverrides: Record<string, unknown> = {},
+) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'runner-acp-'));
   roots.push(root);
   const trace = path.join(root, 'trace');
@@ -40,6 +43,7 @@ async function fixture(variant = '') {
     signIn: 'gemini',
     allowAll: true,
     permissionEnv: { ACP_FIXTURE_PERMISSION_DEFAULT: 'on' },
+    ...specOverrides,
   };
   const adapter = createAcpAdapter(spec, env);
   const session: AdapterSession = {
@@ -112,6 +116,17 @@ it.each(['', 'legacy', 'unsupported', 'auth', 'initializeAuth', 'permission'])(
     ).toBe(false);
   },
 );
+
+it('never lists an agent’s non-model options as models when its spec says they are not (amp’s reasoning modes)', async () => {
+  const f = await fixture('', { modelsAreNotModels: true });
+  const detected = await f.adapter.detect(new AbortController().signal);
+  expect(detected).toMatchObject({
+    installed: true,
+    status: 'ready',
+    modelsDetectionStatus: 'unsupported',
+  });
+  expect(detected.models).toBeUndefined();
+});
 
 it('reports a selected missing program without starting anything', async () => {
   const adapter = createAcpAdapter(
@@ -194,6 +209,33 @@ it.each(['misapply', 'network', 'auth', 'promptAuth'])(
     if (variant === 'network') expect(methods).not.toContain('session/new');
   },
 );
+
+it('keeps the tool’s own words on a run failure instead of a one-size-fits-all placeholder', async () => {
+  const f = await fixture('network');
+  const handle = f.adapter.start({
+    ...f.session,
+    model: 'two',
+    resumeSessionId: 'previous',
+  });
+  const result = await handle.result;
+  expect(result.error?.message).toContain('Fixture error');
+  expect(result.error?.message).not.toBe(
+    'The ACP agent could not complete the request.',
+  );
+});
+
+it('merges a turn’s small consecutive text chunks into about one event instead of one per chunk', async () => {
+  const f = await fixture('chunky');
+  const handle = f.adapter.start(f.session);
+  const events: AdapterEvent[] = [];
+  for await (const event of handle.events) events.push(event);
+  await handle.result;
+  const text = events.filter((event) => event.type === 'text');
+  expect(text.length).toBeLessThan(5);
+  expect(text.map((event) => event.content).join('')).toBe(
+    Array.from({ length: 30 }, (_, i) => `chunk-${i} `).join(''),
+  );
+});
 
 it('cancels a running turn before reaping its process', async () => {
   const f = await fixture('hang');

@@ -139,6 +139,10 @@ readline.createInterface({ input: process.stdin }).on('line', async (line) => {
       update('running');
       return;
     }
+    if (variant === 'chunky') {
+      for (let i = 0; i < 30; i++) update(`chunk-${i} `);
+      return result({ stopReason: 'end_turn' });
+    }
     update(`cwd=${process.cwd()} model=${model}`);
     update(params.prompt.map((item) => item.text).join('\n'));
     send({

@@ -37,6 +37,11 @@ export interface AgentSpec {
   readonly env?: Readonly<Record<string, string>>;
   /** Full-access defaults for real sessions; never applied during runner detection. */
   readonly permissionEnv?: Readonly<Record<string, string>>;
+  /**
+   * The session's `configOptions`/model-like choices are not models (Amp's are reasoning modes): the runner reports
+   * no model list for this agent rather than one entry per choice, and names its agent after the tool alone.
+   */
+  readonly modelsAreNotModels?: boolean;
 }
 
 const localBin = '~/.local/bin';
@@ -241,6 +246,8 @@ export const AGENTS: readonly (AgentSpec & { readonly id: CatalogAgentId })[] =
       launchers: [program('amp-acp', [], [localBin])],
       allowAll: true,
       signIn: 'amp login',
+      // Amp's ACP session reports its reasoning modes (low/medium/high/ultra) as configOptions, not models.
+      modelsAreNotModels: true,
     },
     {
       id: 'vibe',

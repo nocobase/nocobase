@@ -83,6 +83,11 @@ import { AGENTS, type CatalogAgentId } from '@nocobase/acp-bridge/catalog';
  * Version 12 added code host CLI wrappers (`RunGit.tools`, the `gitTools` feature) and made a run credential's
  * username the only one git uses. Nothing else of version 11 changed; update the application first.
  */
+/**
+ * `ToolInfo.statusReason` and `ToolInfo.statusDetail` were added within version 13 as optional fields: why a tool's
+ * status is what it is, beyond the status itself, and the tool's own redacted words about it. Older servers ignore
+ * them; a runner that does not send them is shown by status alone, as before.
+ */
 /** Version 13 expands tool identities to the shared ACP catalog and adds server-selected detection. Update servers first. */
 export const PROTOCOL_VERSION = 13;
 

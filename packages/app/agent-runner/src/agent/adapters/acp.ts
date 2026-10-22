@@ -5,6 +5,7 @@ import {
   AgentProcess,
   configureSession,
   continueSession,
+  errorMessage,
   isAuthRequired,
   ModelSelectionError,
   methods,
@@ -27,12 +28,57 @@ import type {
 import {
   AcpToolModelSchema,
   MAX_TOOL_MODELS,
+  MAX_STATUS_DETAIL_LENGTH,
   createRedactor,
   type ToolCapabilities,
   type AgentTool,
+  type ToolStatusReason,
 } from '../../protocol/index.ts';
 
 const CLIENT = { name: 'nocobase-runner', version: '1' };
+
+/** `message`, redacted and with its control characters stripped; empty becomes absent. */
+function sanitizeMessage(message: string, maxLength: number): string | undefined {
+  const redacted = createRedactor()
+    .text(message)
+    // eslint-disable-next-line no-control-regex -- stripping the control characters the protocol schemas refuse.
+    .replace(/[\u0000-\u001f\u007f]/gu, ' ')
+    .trim();
+  return redacted ? redacted.slice(0, maxLength) : undefined;
+}
+
+/** The tool's own words about a detection failure, cut to what `ToolInfo.statusDetail` accepts. */
+export function statusDetailOf(message: string): string | undefined {
+  return sanitizeMessage(message, MAX_STATUS_DETAIL_LENGTH);
+}
+
+/** How long a run failure's message may be: generous enough for an ACP error's own detail, far under `FailRequest.detail`. */
+const MAX_RUN_FAILURE_MESSAGE_LENGTH = 2000;
+
+/** The tool's own words about a run failure, in place of a one-size-fits-all placeholder. */
+export function runFailureMessage(error: unknown, fallback: string): string {
+  return (
+    sanitizeMessage(errorMessage(error), MAX_RUN_FAILURE_MESSAGE_LENGTH) ??
+    fallback
+  );
+}
+
+/** How the ACP handshake or first session failed, when `error` says enough to tell. */
+export function classifyHandshakeFailure(
+  error: unknown,
+): { status: 'needsLogin' | 'failed'; reason?: ToolStatusReason } {
+  if (isAuthRequired(error)) return { status: 'needsLogin', reason: 'notLoggedIn' };
+  const message = error instanceof Error ? error.message : String(error);
+  if (/unsupported acp protocol version/iu.test(message))
+    return { status: 'failed', reason: 'versionTooOld' };
+  if (/did not answer within|detection cancelled|agent exited before/iu.test(message))
+    return { status: 'failed', reason: 'timeout' };
+  // A generic heuristic, not tool-specific wording confirmed against a real handshake failure (goose with no
+  // provider set, for one): most agents name the missing piece when they refuse to start a session over it.
+  if (/\bno (?:model|provider)\b|\bprovider\b.{0,20}\b(?:missing|not set|required)\b|\bnot configured\b/iu.test(message))
+    return { status: 'failed', reason: 'notConfigured' };
+  return { status: 'failed', reason: 'startFailed' };
+}
 
 export function createAcpAdapter(
   spec: AgentSpec,
@@ -83,7 +129,9 @@ async function inspect(
           cwd,
           mcpServers: [],
         });
-        const models = sessionModels(opened);
+        const models = spec.modelsAreNotModels
+          ? undefined
+          : sessionModels(opened);
         const safe =
           models === undefined
             ? undefined
@@ -125,19 +173,31 @@ async function inspect(
           modelsDetectedAt: new Date().toISOString(),
         };
       } catch (error) {
+        const classified = classifyHandshakeFailure(error);
+        const detail = statusDetailOf(
+          error instanceof Error ? error.message : String(error),
+        );
         return {
           installed: true,
           path: resolved.command,
           authenticated: false,
-          status: isAuthRequired(error) ? 'needsLogin' : 'failed',
+          status: classified.status,
+          ...(classified.reason ? { statusReason: classified.reason } : {}),
+          ...(detail ? { statusDetail: detail } : {}),
         };
       } finally {
         await process?.stop();
       }
     },
     env,
+    { guardHostCli: true },
   );
 }
+
+/** How long a run of same-typed text/thinking chunks may accumulate before it becomes one event. */
+const MERGE_FLUSH_MS = 1000;
+/** How large the accumulated text of one merged event may grow before it flushes early. */
+const MERGE_FLUSH_BYTES = 4 * 1024;
 
 function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
   const events = new EventQueue<AdapterEvent>();
@@ -173,6 +233,33 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
       at: new Date().toISOString(),
     });
   };
+  // Zed-style agents stream a text or thinking turn as dozens of small chunks, one `session/update` each. Buffering
+  // consecutive same-typed chunks into one event cuts that to about one a second, in the order they arrived; anything
+  // else (a tool call, the run ending) flushes what is pending first, so order never changes.
+  let pendingChunk: { type: 'text' | 'thinking'; content: string } | undefined;
+  let pendingTimer: ReturnType<typeof setTimeout> | undefined;
+  const flushPendingChunk = (): void => {
+    if (pendingTimer !== undefined) {
+      clearTimeout(pendingTimer);
+      pendingTimer = undefined;
+    }
+    if (!pendingChunk) return;
+    const chunk = pendingChunk;
+    pendingChunk = undefined;
+    emit({ type: chunk.type, content: chunk.content });
+  };
+  const emitChunk = (type: 'text' | 'thinking', text: string): void => {
+    if (replaying || finished) return;
+    pendingChunk =
+      pendingChunk && pendingChunk.type === type
+        ? { type, content: pendingChunk.content + text }
+        : (flushPendingChunk(), { type, content: text });
+    if (pendingChunk.content.length >= MERGE_FLUSH_BYTES) {
+      flushPendingChunk();
+      return;
+    }
+    pendingTimer ??= setTimeout(flushPendingChunk, MERGE_FLUSH_MS);
+  };
   const update = ({ update }: SessionNotification): void => {
     if (replaying) return;
     if (
@@ -183,15 +270,15 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
       const text = update.content.text;
       if (update.sessionUpdate === 'agent_message_chunk')
         summary = (summary + text).slice(-64 * 1024);
-      emit({
-        type:
-          update.sessionUpdate === 'agent_message_chunk' ? 'text' : 'thinking',
-        content: text,
-      });
+      emitChunk(
+        update.sessionUpdate === 'agent_message_chunk' ? 'text' : 'thinking',
+        text,
+      );
     } else if (
       update.sessionUpdate === 'tool_call' ||
       update.sessionUpdate === 'tool_call_update'
     ) {
+      flushPendingChunk();
       const previous = toolCalls.get(update.toolCallId);
       const call = {
         name: update.title ?? previous?.name ?? 'Tool',
@@ -227,22 +314,25 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
         });
       }
       toolCalls.set(update.toolCallId, call);
-    } else if (update.sessionUpdate === 'plan')
+    } else if (update.sessionUpdate === 'plan') {
+      flushPendingChunk();
       emit({
         type: 'status',
         content: 'plan',
         meta: { plan: capInput(update.entries).input },
       });
-    else if (
+    } else if (
       ['config_option_update', 'current_mode_update', 'usage_update'].includes(
         update.sessionUpdate,
       )
-    )
+    ) {
+      flushPendingChunk();
       emit({
         type: 'status',
         content: update.sessionUpdate,
         meta: { update: capInput(update).input },
       });
+    }
   };
   let stopping: Promise<void> | undefined;
   const stop = (): Promise<void> =>
@@ -287,6 +377,7 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
             );
             if (cancelled || signal.aborted)
               return { outcome: { outcome: 'cancelled' } };
+            flushPendingChunk();
             const option =
               decision === 'allow'
                 ? (request.options.find(
@@ -335,12 +426,14 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
           ? String(opened.sessionId)
           : undefined;
       if (!sessionId) throw new Error('The agent did not return a session id.');
-      if (session.resumeSessionId && !resumed)
+      if (session.resumeSessionId && !resumed) {
+        flushPendingChunk();
         emit({
           type: 'status',
           content: 'sessionRecovery',
           meta: { reason: 'The agent could not continue the earlier session.' },
         });
+      }
       await configureSession(process, sessionId, opened, spec, session.model);
       if (cancelled) return { exit: 'aborted', usage: [], sessionId };
       const response = await process.agent.request(
@@ -380,6 +473,7 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
             },
           ]
         : [];
+      flushPendingChunk();
       if (usage.length) emit({ type: 'usage', meta: { usage } });
       if (cancelled || response.stopReason === 'cancelled')
         return { exit: 'aborted', usage, sessionId };
@@ -412,10 +506,14 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
             ? `${spec.name} requires login on the runner. Run ${spec.signIn} there, then detect again.`
             : error instanceof ModelSelectionError
               ? error.message
-              : 'The ACP agent could not complete the request.',
+              : runFailureMessage(
+                  error,
+                  'The ACP agent could not complete the request.',
+                ),
         },
       };
     } finally {
+      flushPendingChunk();
       session.abort.removeEventListener('abort', aborted);
       await process?.stop();
       finished = true;

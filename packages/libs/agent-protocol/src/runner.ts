@@ -161,6 +161,58 @@ export interface ToolCapabilities {
   readonly modelsDetectionError?: ModelsDetectionError;
 }
 
+/**
+ * Why `status` is what it is, when the runner can say more than the status alone: the tool is installed but its
+ * version answers that it predates ACP support (`versionTooOld`), its handshake failed because it has no provider or
+ * model configured (`notConfigured`), the program found under the expected name is not this tool (`otherProgram`),
+ * detection ran out of time (`timeout`), it started but the handshake or first session failed for another reason
+ * (`startFailed`), or it is simply not signed in (`notLoggedIn`). Added within version 13: absent from a runner that
+ * predates it, or when the runner has nothing more specific to say than `status` itself.
+ */
+export type ToolStatusReason =
+  | 'notLoggedIn'
+  | 'versionTooOld'
+  | 'notConfigured'
+  | 'otherProgram'
+  | 'timeout'
+  | 'startFailed';
+
+export const TOOL_STATUS_REASONS: readonly ToolStatusReason[] = [
+  'notLoggedIn',
+  'versionTooOld',
+  'notConfigured',
+  'otherProgram',
+  'timeout',
+  'startFailed',
+];
+
+export const ToolStatusReasonSchema: z.ZodType<ToolStatusReason> = z.enum([
+  'notLoggedIn',
+  'versionTooOld',
+  'notConfigured',
+  'otherProgram',
+  'timeout',
+  'startFailed',
+]);
+
+/** How much of a tool's own words about its status the runner keeps, redacted and cut to this length. */
+export const MAX_STATUS_DETAIL_LENGTH = 300;
+
+const statusDetailRedactor = createRedactor();
+
+/** The tool's own words, redacted, control characters stripped, cut to {@link MAX_STATUS_DETAIL_LENGTH}. */
+export const ToolStatusDetailSchema: z.ZodType<string> = z
+  .string()
+  .min(1)
+  .max(MAX_STATUS_DETAIL_LENGTH)
+  .refine(
+    (value) =>
+      [...value].every(
+        (character) =>
+          character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127,
+      ) && statusDetailRedactor.text(value) === value,
+  );
+
 /** A coding tool found on the runner's host. */
 export interface ToolInfo extends ToolCapabilities {
   readonly kind: AgentTool;
@@ -169,6 +221,10 @@ export interface ToolInfo extends ToolCapabilities {
   readonly authenticated: boolean;
   readonly status?:
     'checking' | 'notInstalled' | 'needsLogin' | 'ready' | 'failed';
+  /** Why `status` is what it is, when the runner can say more (protocol 7); absent when it cannot. */
+  readonly statusReason?: ToolStatusReason;
+  /** The tool's own words about its status, redacted and bounded (protocol 7); absent when it said nothing useful. */
+  readonly statusDetail?: string;
 }
 
 const toolInfoFields = {
@@ -179,6 +235,8 @@ const toolInfoFields = {
   status: z
     .enum(['checking', 'notInstalled', 'needsLogin', 'ready', 'failed'])
     .optional(),
+  statusReason: ToolStatusReasonSchema.optional(),
+  statusDetail: ToolStatusDetailSchema.optional(),
 };
 
 /** ACP model ids are opaque: preserve spelling, spaces and provider punctuation without accepting controls or secrets. */
@@ -253,6 +311,8 @@ export const ReportedToolInfoSchema: z.ZodType<ToolInfo> = z
       ModelsDetectionStatusSchema.optional().catch(undefined),
     modelsDetectionError:
       ModelsDetectionErrorSchema.optional().catch(undefined),
+    statusReason: ToolStatusReasonSchema.optional().catch(undefined),
+    statusDetail: ToolStatusDetailSchema.optional().catch(undefined),
   })
   .transform((tool) => {
     const models = reportedModelsOf(tool.kind, tool.models);

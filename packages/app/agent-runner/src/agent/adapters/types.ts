@@ -15,6 +15,7 @@ import type {
   RunEventType,
   RunnerFeature,
   ToolCapabilities,
+  ToolStatusReason,
 } from '../../protocol/index.ts';
 
 export type { FailureReason, RunEventType, RunnerFeature };
@@ -94,6 +95,10 @@ export interface ToolDetection {
   path?: string;
   authenticated: boolean;
   status?: 'checking' | 'notInstalled' | 'needsLogin' | 'ready' | 'failed';
+  /** Why `status` is what it is, when known; reported on as `ToolInfo.statusReason`. Optional: no adapter must set it. */
+  statusReason?: ToolStatusReason;
+  /** The tool's own words about its status, redacted and bounded; reported on as `ToolInfo.statusDetail`. */
+  statusDetail?: string;
 }
 
 export interface AdapterSession {
