@@ -58,7 +58,7 @@
     {
       "id": "runtimes",
       "title": "Runner Agent",
-      "summary": "Add a runtime, set its concurrency, and configure execution tools for team agents and the project manager.",
+      "summary": "Add a runtime, set its concurrency, enable the agents used by the Runner, and select an execution agent for the project manager.",
       "sections": [
         {
           "id": "runtime-connect",
@@ -69,7 +69,7 @@
         {
           "id": "agents-enable",
           "title": "Enable agents",
-          "html": "<p>Once the runtime is online, open <strong>Agent team → Agents</strong>. Click <strong>Fill in and enable</strong> for a discovered agent, complete its configuration, and enable it.</p><figure><a class=\"screenshot\" href=\"./assets/enable-agents.png\" aria-label=\"Enlarge: Configure and enable the agents provided by the runtime.\"><img src=\"./assets/enable-agents.png\" width=\"3456\" height=\"1992\" alt=\"Configure and enable the agents provided by the runtime.\" decoding=\"async\" loading=\"lazy\" /><span class=\"zoom-hint\" aria-hidden=\"true\">↗ Enlarge</span></a><figcaption><span>Figure 04</span>Configure and enable the agents provided by the runtime.</figcaption></figure><p>Also configure the execution agent for <strong>Project manager</strong>: select an available agent under <strong>The agent it runs with → First choice</strong>, optionally choose a fallback, and save.</p><figure><a class=\"screenshot\" href=\"./assets/project-manager.png\" aria-label=\"Enlarge: Select and save the execution agent for the project manager.\"><img src=\"./assets/project-manager.png\" width=\"3456\" height=\"1992\" alt=\"Select and save the execution agent for the project manager.\" decoding=\"async\" loading=\"lazy\" /><span class=\"zoom-hint\" aria-hidden=\"true\">↗ Enlarge</span></a><figcaption><span>Figure 05</span>Select and save the execution agent for the project manager.</figcaption></figure>",
+          "html": "<p>Once the runtime is online, open <strong>Agent team → Agents</strong>. Click <strong>Fill in and enable</strong> for a discovered agent, complete its configuration, and enable it for the Runner to use when executing tasks.</p><figure><a class=\"screenshot\" href=\"./assets/enable-agents.png\" aria-label=\"Enlarge: Configure and enable the agents provided by the runtime.\"><img src=\"./assets/enable-agents.png\" width=\"3456\" height=\"1992\" alt=\"Configure and enable the agents provided by the runtime.\" decoding=\"async\" loading=\"lazy\" /><span class=\"zoom-hint\" aria-hidden=\"true\">↗ Enlarge</span></a><figcaption><span>Figure 04</span>Configure and enable the agents provided by the runtime.</figcaption></figure><p>Also configure the execution agent for <strong>Project manager</strong>: select an available agent under <strong>The agent it runs with → First choice</strong>, optionally choose a fallback, and save.</p><figure><a class=\"screenshot\" href=\"./assets/project-manager.png\" aria-label=\"Enlarge: Select and save the execution agent for the project manager.\"><img src=\"./assets/project-manager.png\" width=\"3456\" height=\"1992\" alt=\"Select and save the execution agent for the project manager.\" decoding=\"async\" loading=\"lazy\" /><span class=\"zoom-hint\" aria-hidden=\"true\">↗ Enlarge</span></a><figcaption><span>Figure 05</span>Select and save the execution agent for the project manager.</figcaption></figure>",
           "topics": []
         }
       ]
@@ -205,7 +205,7 @@
   "checklist": [
     "Studio is accessible, sign-in works, and data persists",
     "The runtime is online with suitable concurrency",
-    "Team agents and the project manager are configured",
+    "The agents used by the Runner and the project manager are configured",
     "Global Git access and your personal Git account are configured",
     "The project is linked to the correct repository",
     "The CI workflow and deployment secret are configured and previews are accessible",

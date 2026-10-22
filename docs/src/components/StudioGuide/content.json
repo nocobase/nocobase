@@ -58,7 +58,7 @@
     {
       "id": "runtimes",
       "title": "Runner Agent",
-      "summary": "添加运行环境、设置并发数量，并为团队 Agent 和项目经理配置执行工具。",
+      "summary": "添加运行环境、设置并发数量，启用 Runner 使用的 Agent，并为项目经理选择执行 Agent。",
       "sections": [
         {
           "id": "runtime-connect",
@@ -69,7 +69,7 @@
         {
           "id": "agents-enable",
           "title": "启动 Agents",
-          "html": "<p>运行环境在线后，进入 <strong>Agent team → Agents</strong>。为发现的 Agent 点击 <strong>Fill in and enable</strong>，完成配置并启用。</p><figure><a class=\"screenshot\" href=\"./assets/enable-agents.png\" aria-label=\"放大查看：配置并启用运行环境提供的 Agents。\"><img src=\"./assets/enable-agents.png\" width=\"3456\" height=\"1992\" alt=\"配置并启用运行环境提供的 Agents。\" decoding=\"async\" loading=\"lazy\" /><span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span></a><figcaption><span>图 04</span>配置并启用运行环境提供的 Agents。</figcaption></figure><p>还需要给 <strong>Project manager</strong> 配置执行 Agent：在 <strong>The agent it runs with → First choice</strong> 选择可用 Agent，按需设置 Fallback，然后保存。</p><figure><a class=\"screenshot\" href=\"./assets/project-manager.png\" aria-label=\"放大查看：为项目经理选择执行 Agent 并保存。\"><img src=\"./assets/project-manager.png\" width=\"3456\" height=\"1992\" alt=\"为项目经理选择执行 Agent 并保存。\" decoding=\"async\" loading=\"lazy\" /><span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span></a><figcaption><span>图 05</span>为项目经理选择执行 Agent 并保存。</figcaption></figure>",
+          "html": "<p>运行环境在线后，进入 <strong>Agent team → Agents</strong>。为发现的 Agent 点击 <strong>Fill in and enable</strong>，完成配置并启用，供 Runner 执行任务时使用。</p><figure><a class=\"screenshot\" href=\"./assets/enable-agents.png\" aria-label=\"放大查看：配置并启用运行环境提供的 Agents。\"><img src=\"./assets/enable-agents.png\" width=\"3456\" height=\"1992\" alt=\"配置并启用运行环境提供的 Agents。\" decoding=\"async\" loading=\"lazy\" /><span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span></a><figcaption><span>图 04</span>配置并启用运行环境提供的 Agents。</figcaption></figure><p>还需要给 <strong>Project manager</strong> 配置执行 Agent：在 <strong>The agent it runs with → First choice</strong> 选择可用 Agent，按需设置 Fallback，然后保存。</p><figure><a class=\"screenshot\" href=\"./assets/project-manager.png\" aria-label=\"放大查看：为项目经理选择执行 Agent 并保存。\"><img src=\"./assets/project-manager.png\" width=\"3456\" height=\"1992\" alt=\"为项目经理选择执行 Agent 并保存。\" decoding=\"async\" loading=\"lazy\" /><span class=\"zoom-hint\" aria-hidden=\"true\">↗ 放大查看</span></a><figcaption><span>图 05</span>为项目经理选择执行 Agent 并保存。</figcaption></figure>",
           "topics": []
         }
       ]
@@ -205,7 +205,7 @@
   "checklist": [
     "Studio 可访问、能登录且数据持久化",
     "Runtime 在线，并发数量已按需配置",
-    "团队 Agent 与项目经理已配置",
+    "Runner 使用的 Agent 与项目经理已配置",
     "全局 Git 连接与个人 Git 账号已配置",
     "项目已关联正确的代码仓库",
     "CI 工作流与部署 Secret 已配置，预览可访问",
