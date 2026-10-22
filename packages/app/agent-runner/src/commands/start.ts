@@ -9,7 +9,6 @@ import { detectInstallation } from '../lib/install.ts';
 import { delay } from '../lib/http.ts';
 import { selfCommand } from '../lib/self.ts';
 import { passEnvFlag, rememberPassEnv } from '../lib/pass-env.ts';
-import { parseSlotsFlag } from '../lib/slots.ts';
 import { runnerCommandLine } from '../host.ts';
 import { EXIT_CODES } from '../protocol/index.ts';
 import { readDaemonPid, RunnerDaemon } from '../core/loop.ts';
@@ -32,15 +31,10 @@ export default class Start extends RunnerCommand {
     `\`${runnerCommandLine('stop')}\` stops it. One daemon serves every application this runner is registered with.`;
   static override flags: {
     foreground: Interfaces.BooleanFlag<boolean>;
-    slots: Interfaces.OptionFlag<string | undefined>;
     'pass-env': Interfaces.OptionFlag<string[] | undefined>;
   } = {
     foreground: Flags.boolean({
       description: 'Run in this terminal until interrupted.',
-    }),
-    slots: Flags.string({
-      description:
-        'How many runs at once, for this start: a total (3), limits per coding tool (claude=2,codex=1), or both. Defaults to the registered ones.',
     }),
     'pass-env': passEnvFlag,
   };
@@ -72,8 +66,6 @@ export default class Start extends RunnerCommand {
 
   async run(): Promise<{ pid: number }> {
     const { flags } = await this.parse(Start);
-    const slotsFlag =
-      flags.slots === undefined ? {} : parseSlotsFlag(flags.slots);
     const paths = this.paths;
     const registered = await readConnections(paths);
     const connections = registered.filter(
@@ -113,16 +105,11 @@ export default class Start extends RunnerCommand {
     if (!flags.foreground) {
       await ensureHome(paths);
       const [command = process.execPath, ...args] = selfCommand();
-      const child = spawn(
-        command,
-        [
-          ...args,
-          'service',
-          'run',
-          ...(flags.slots === undefined ? [] : ['--slots', flags.slots]),
-        ],
-        { detached: true, stdio: 'ignore', env: process.env },
-      );
+      const child = spawn(command, [...args, 'service', 'run'], {
+        detached: true,
+        stdio: 'ignore',
+        env: process.env,
+      });
       child.unref();
       const deadline = Date.now() + 10_000;
       while (Date.now() < deadline) {
@@ -160,10 +147,6 @@ export default class Start extends RunnerCommand {
       connections,
       adapters: loadAdapters(process.env, settings.passEnv),
       adaptersFor: loadAdapters,
-      ...(slotsFlag.slots === undefined ? {} : { slots: slotsFlag.slots }),
-      ...(slotsFlag.toolSlots === undefined
-        ? {}
-        : { toolSlots: slotsFlag.toolSlots }),
       timings: timingsFromEnv(),
       log,
       ...(selfUpdate === undefined ? {} : { selfUpdate }),

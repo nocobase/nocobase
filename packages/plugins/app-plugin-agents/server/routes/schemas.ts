@@ -1730,17 +1730,20 @@ const runnerObject = z.object({
     description:
       'How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own.',
   }),
+  reportedSlots: z.number().int().nonnegative().optional(),
+  capacitySource: z.enum(['online', 'legacyLocal']).optional(),
+  capacityReportedAt: z.iso.datetime().optional(),
   draining: z.enum(['updatePending', 'pruning', 'diskLow']).optional().meta({
     description:
       'Why the runner temporarily accepts no new work, regardless of available slots.',
   }),
   globalFree: z.number().nonnegative().optional().meta({
     description:
-      'Free slots reported in the latest heartbeat across all applications; absent before a heartbeat.',
+      'Free slots from the latest heartbeat; updated runners report this application only. Absent before a heartbeat.',
   }),
   toolLoad: z.partialRecord(AgentToolSchema, ToolLoadSchema).nullable().meta({
     description:
-      'What it last reported per coding tool it limits on its own side, across every application it serves: how many runs of each it holds at most and could take now.',
+      'Actual tool capacity and free slots from the latest heartbeat; updated runners report this application only.',
   }),
   acceptJobs: z.boolean(),
   policy: RunnerPolicySchema.nullable(),

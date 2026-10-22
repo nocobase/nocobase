@@ -215,11 +215,10 @@ describe('served tarballs', () => {
 
   beforeEach(async () => {
     server = new FakeServer();
+    server.capacity = { slots: 2, toolSlots: {} };
     await server.listen();
     home = tempDir('nocobase-runner-update-home-');
     await registerRunner(server.url, cliEnv(home), [
-      '--slots',
-      '2',
       '--cli',
       `appcli=${writeFakeCli(home)}`,
     ]);
@@ -484,6 +483,7 @@ describe('served tarballs', () => {
     let pendingClaim: Promise<number> | undefined;
     let responseSpy: ReturnType<typeof vi.spyOn> | undefined;
     try {
+      await daemon.heartbeat(link);
       await daemon['claimFrom'](link, 1, false);
       await waitFor(
         () =>

@@ -180,7 +180,8 @@ export function explainWait(
     (runner) =>
       !runner.draining &&
       (runner.globalFree ?? 1) > 0 &&
-      (context.runnerUsed.get(runner.id) ?? 0) < runner.slots,
+      (context.runnerUsed.get(runner.id) ?? 0) <
+        Math.min(runner.slots, runner.reportedSlots ?? runner.slots),
   );
   if (free.length === 0)
     return wait('runnersBusy', { params: { runners: trusted.length } });
