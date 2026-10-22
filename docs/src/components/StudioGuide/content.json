@@ -35,25 +35,6 @@
   "toc": "章节目录",
   "tocToggle": "查看章节目录",
   "tocTip": "先完成环境、Git 和项目配置，再开始任务协作。展开章节可直接跳到具体操作。",
-  "overviewTitle": "开始之前，分清三种连接",
-  "overviewDescription": "它们分别解决不同的问题，可以按你的工作方式组合使用。",
-  "connections": [
-    {
-      "title": "Studio CLI",
-      "label": "管理工作空间",
-      "description": "让本地 Agent 通过 nb-studio 管理 Studio 的项目、任务等数据。"
-    },
-    {
-      "title": "My agents",
-      "label": "连接自己的电脑",
-      "description": "从 Studio 页面使用自己电脑上的 Coding Agent。"
-    },
-    {
-      "title": "Runtime + 团队 Agent",
-      "label": "协作执行任务",
-      "description": "提供任务执行环境，启用团队 Agent 并配置项目经理。"
-    }
-  ],
   "chapters": [
     {
       "id": "deployment",

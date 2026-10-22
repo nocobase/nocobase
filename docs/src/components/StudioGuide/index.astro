@@ -179,23 +179,6 @@ const home = language === 'cn' ? '/zh-CN/' : '/';
         </details>
       </aside>
       <main id='main-content' data-pagefind-body>
-        <section class='guide-overview' aria-labelledby='connections-title'>
-          <p class='guide-eyebrow'>BEFORE YOU BEGIN</p>
-          <h2 id='connections-title'>{content.overviewTitle}</h2>
-          <p class='overview-description'>{content.overviewDescription}</p>
-          <div class='connection-grid'>
-            {content.connections.map((connection, index) => (
-              <div class='connection'>
-                <span class='connection-number' aria-hidden='true'>
-                  {number(index)}
-                </span>
-                <p class='connection-label'>{connection.label}</p>
-                <h3>{connection.title}</h3>
-                <p>{connection.description}</p>
-              </div>
-            ))}
-          </div>
-        </section>
         {content.chapters.map((chapter, index) => (
           <section
             class='chapter'

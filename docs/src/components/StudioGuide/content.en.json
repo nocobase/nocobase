@@ -35,25 +35,6 @@
   "toc": "CONTENTS",
   "tocToggle": "Browse chapters",
   "tocTip": "Configure the environment, Git, and project before starting work. Expand a chapter to jump to an individual step.",
-  "overviewTitle": "First, understand the three connections",
-  "overviewDescription": "Each serves a different purpose. Combine them to fit the way you work.",
-  "connections": [
-    {
-      "title": "Studio CLI",
-      "label": "Manage your workspace",
-      "description": "Let your local agent manage Studio projects, issues, and other data through nb-studio."
-    },
-    {
-      "title": "My agents",
-      "label": "Connect your computer",
-      "description": "Use the Coding Agents on your own computer from the Studio interface."
-    },
-    {
-      "title": "Runtime + team agents",
-      "label": "Run work together",
-      "description": "Provide an execution environment, enable team agents, and configure the project manager."
-    }
-  ],
   "chapters": [
     {
       "id": "deployment",

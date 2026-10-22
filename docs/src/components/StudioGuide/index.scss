@@ -385,56 +385,15 @@
   main {
     min-width: 0;
   }
-  .guide-overview {
-    padding-bottom: 44px;
-  }
-  .guide-overview .guide-eyebrow {
-    margin-bottom: 10px;
-  }
-  .guide-overview h2 {
-    font-size: 22px;
-  }
-  .overview-description {
-    color: var(--guide-muted);
-    font-size: 13px;
-  }
-  .connection-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 24px;
-  }
-  .connection {
-    padding: 18px;
-    background: #f8f9fc;
-    border: 1px solid #e6eaf2;
-    border-radius: 8px;
-  }
-  .connection-number {
-    display: inline-block;
-    color: var(--guide-blue);
-    font: 11px var(--docs-font-mono);
-    margin-bottom: 10px;
-  }
-  .connection h3 {
-    font-size: 14px;
-    letter-spacing: -0.01em;
-    margin: 4px 0 10px;
-  }
-  .connection p {
-    color: var(--guide-muted);
-    font-size: 12px;
-    line-height: 1.85;
-    margin: 0;
-  }
-  .connection .connection-label {
-    font-size: 10px;
-  }
   .chapter {
     scroll-margin-top: 92px;
     border-top: 1px solid var(--guide-line);
     padding-top: 36px;
     padding-bottom: 40px;
+  }
+  .chapter:first-child {
+    border-top: 0;
+    padding-top: 0;
   }
   .chapter-header {
     display: flex;
@@ -793,15 +752,6 @@
       grid-template-columns: 208px minmax(0, 1fr);
       gap: 28px;
     }
-    .connection-grid {
-      grid-template-columns: 1fr;
-    }
-    .connection {
-      padding: 16px;
-    }
-    .connection-number {
-      float: right;
-    }
   }
   @media (max-width: 900px) {
     .guide-intro {
@@ -852,12 +802,6 @@
     .toc-tip,
     .guide-progress {
       display: none;
-    }
-    .connection-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .connection-number {
-      float: none;
     }
   }
   @media (max-width: 640px) {
@@ -927,25 +871,6 @@
     .guide-directory .toc-chapters {
       grid-template-columns: 1fr;
     }
-    .connection-grid {
-      grid-template-columns: 1fr;
-      gap: 8px;
-      margin-top: 20px;
-    }
-    .connection {
-      padding: 16px 18px;
-    }
-    .connection-number {
-      float: right;
-      margin: 0;
-    }
-    .connection h3 {
-      margin-bottom: 6px;
-    }
-    .guide-overview {
-      padding-bottom: 32px;
-    }
-    .guide-overview h2,
     .guide-finish h2 {
       font-size: 20px;
     }
@@ -1065,9 +990,6 @@
     .guide-layout {
       display: block;
       padding-top: 24px;
-    }
-    .connection-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .chapter {
       padding-top: 24px;
