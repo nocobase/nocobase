@@ -115,6 +115,19 @@ While demo mode is `read-only` or `observe`, visitors enter the imported demo ac
 | ----------------------------- | ---------------------- | ------------------------------------------ |
 | `NOCOBASE_DEMO_QUICK_SIGN_IN` | `demoMode.quickSignIn` | `true` (default) or `false` to turn it off |
 
+Signed-in visitors switch accounts from a corner button by default. An application with an account menu puts the switch there instead, before signing out, and keeps the corner button for visitors who have not signed in:
+
+```tsx
+// client/plugins.ts
+demoMode({ accountSwitcher: 'menu' });
+
+// the account menu, inside its Base UI DropdownMenuContent, before the sign-out item
+import { DemoAccountMenu } from '@nocobase/app-plugin-demo-mode/client/account-menu';
+<DemoAccountMenu />;
+```
+
+`DemoAccountMenu` is a submenu of the demo accounts with the current one checked, followed by a separator; it renders nothing outside a demo.
+
 - `GET /api/demoMode/accounts`, public, lists the accounts `accounts(language)` lists for the imported language, limited to users the dataset created and has not disabled, as `{ username, name, role, current }` without passwords.
 - `POST /api/demoMode/accounts/{username}/signIn` ends the request's own session, signs in through Better Auth's email-and-password sign-in with the password the dataset lists, and answers with Better Auth's session cookie. The authentication plugin is unchanged, and the session is an ordinary one. An account the list does not offer is `404 DEMO_ACCOUNT_NOT_FOUND`; a listed password that is wrong is `400 DEMO_ACCOUNT_SIGN_IN_FAILED`.
 - `accounts(language)` must therefore list each account's real password, and every listed account, an administrator included, is open to anyone who reaches the demo.

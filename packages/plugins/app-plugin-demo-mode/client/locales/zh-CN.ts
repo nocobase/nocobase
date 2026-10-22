@@ -8,6 +8,7 @@ const resource: DemoModeResource = {
     configure: '配置',
   },
   accounts: {
+    menu: '演示账号：{{name}}',
     title: '演示账号',
     description: '以下面任一账号进入演示，看看每个角色看到的系统。',
     enter: '进入',

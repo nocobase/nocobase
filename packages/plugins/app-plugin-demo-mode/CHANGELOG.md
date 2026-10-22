@@ -21,6 +21,8 @@
 
 ## Unreleased
 
+- Add `DemoAccountMenu` (`client/account-menu`), the demo account switch as a submenu of an application's account menu, and the client option `accountSwitcher: 'menu'`, which then keeps the corner button for visitors who have not signed in.
+
 - Ship the demo administration page, `DemoModeSettings` (`client/settings`): overview with data lifecycle and visitor entry links, daily reset, visitor writes (capabilities and tables) and simulation & online chat, each saved on its own with conflict detection. Applications pass their names (`label`) and chat tools (`chatTools`) instead of building their own page. The account switcher moves to the bottom right, clear of application sidebars.
 
 - Add quick sign-in for demo visitors: a public list of the imported demo accounts, password-free sign-in through Better Auth's own email sign-in, a `/demo-sign-in` page for embedding (`?as=`, `?redirect=`) and a corner account switcher. On by default in demo mode; `demoMode.quickSignIn` or `NOCOBASE_DEMO_QUICK_SIGN_IN` turns it off.

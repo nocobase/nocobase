@@ -8,6 +8,7 @@ const resource: DemoModeResource = {
     configure: 'Configurar',
   },
   accounts: {
+    menu: 'Conta de demonstração: {{name}}',
     title: 'Contas de demonstração',
     description:
       'Entre na demonstração com qualquer uma destas contas para ver o que cada uma vê.',

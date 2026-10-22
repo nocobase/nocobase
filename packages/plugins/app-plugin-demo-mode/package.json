@@ -31,8 +31,8 @@
       "import": "./client/plugin.ts"
     },
     "./client/react-providers": {
-      "types": "./client/react-providers/index.ts",
-      "import": "./client/react-providers/index.ts"
+      "types": "./client/react-providers/index.tsx",
+      "import": "./client/react-providers/index.tsx"
     },
     "./client/demo-data": {
       "types": "./client/demo-data.ts",
@@ -50,6 +50,10 @@
     "./client/settings": {
       "types": "./client/settings/index.tsx",
       "import": "./client/settings/index.tsx"
+    },
+    "./client/account-menu": {
+      "types": "./client/account-menu.ts",
+      "import": "./client/account-menu.ts"
     }
   },
   "imports": {
@@ -120,6 +124,10 @@
       "./client/settings": {
         "types": "./dist/client/settings/index.d.ts",
         "import": "./dist/client/settings/index.js"
+      },
+      "./client/account-menu": {
+        "types": "./dist/client/account-menu.d.ts",
+        "import": "./dist/client/account-menu.js"
       }
     },
     "imports": {

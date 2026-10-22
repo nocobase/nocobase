@@ -8,6 +8,7 @@ const resource = {
     configure: 'Configure',
   },
   accounts: {
+    menu: 'Demo account: {{name}}',
     title: 'Demo accounts',
     description:
       'Enter the demo as any of these accounts to see what each of them sees.',

@@ -1,4 +1,4 @@
-import { useToaster } from '@nocobase/app-client';
+import { useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { useLocation } from 'react-router';
@@ -9,11 +9,34 @@ import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 /**
  * A corner button on every page of a demo, the sign-in page included, that enters or switches between the demo
  * accounts, so a visitor can see how the application looks to each of them. Bottom right, where application sidebars
- * keep nothing.
+ * keep nothing. With `signedOutOnly`, when the application's account menu carries the switch, it shows only to
+ * visitors who have not signed in, such as on the sign-in page.
  */
-export function DemoAccountSwitcher(): ReactElement | null {
+export function DemoAccountSwitcher({
+  signedOutOnly = false,
+}: {
+  readonly signedOutOnly?: boolean;
+}): ReactElement | null {
   const location = useLocation();
+  const api = useApiClient();
   const { accounts, signIn } = useDemoAccounts(location.pathname);
+  // Whether someone is signed in, read again on every page; unknown until answered.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!signedOutOnly) return;
+    let active = true;
+    api
+      .request<{ user?: unknown } | null>({ path: '/auth/get-session' })
+      .then((session) => {
+        if (active) setSignedIn(Boolean(session?.user));
+      })
+      .catch(() => {
+        if (active) setSignedIn(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [api, signedOutOnly, location.pathname]);
   const toaster = useToaster();
   const { t } = useTranslation(DEMO_MODE_NAMESPACE);
   const [open, setOpen] = useState(false);
@@ -39,7 +62,12 @@ export function DemoAccountSwitcher(): ReactElement | null {
     };
   }, [open]);
 
-  if (!accounts?.length || location.pathname === DEMO_SIGN_IN_PATH) return null;
+  if (
+    !accounts?.length ||
+    location.pathname === DEMO_SIGN_IN_PATH ||
+    (signedOutOnly && signedIn !== false)
+  )
+    return null;
   const current = accounts.find((account) => account.current);
 
   const enter = async (username: string) => {

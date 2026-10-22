@@ -8,6 +8,7 @@ const resource: DemoModeResource = {
     configure: 'Konfigurasi',
   },
   accounts: {
+    menu: 'Akun demo: {{name}}',
     title: 'Akun demo',
     description:
       'Masuk ke demo dengan salah satu akun ini untuk melihat apa yang dilihat masing-masing.',

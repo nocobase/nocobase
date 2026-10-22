@@ -8,6 +8,7 @@ const resource: DemoModeResource = {
     configure: 'Cấu hình',
   },
   accounts: {
+    menu: 'Tài khoản demo: {{name}}',
     title: 'Tài khoản demo',
     description:
       'Vào bản demo bằng bất kỳ tài khoản nào dưới đây để xem mỗi vai trò thấy gì.',

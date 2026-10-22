@@ -32,7 +32,12 @@ function isRefusedEntry(entry: PerformanceEntry): boolean {
  * finished requests' `Server-Timing`, so this works whichever client made the request and however the application
  * shows its own errors. In a demo it also offers the demo accounts to enter or switch to.
  */
-export function DemoModeNotice({ children }: PropsWithChildren): ReactElement {
+export function DemoModeNotice({
+  children,
+  accountSwitcher = 'floating',
+}: PropsWithChildren<{
+  readonly accountSwitcher?: 'floating' | 'menu';
+}>): ReactElement {
   const api = useApiClient();
   const toaster = useToaster();
   const { t } = useTranslation(DEMO_MODE_NAMESPACE);
@@ -72,7 +77,9 @@ export function DemoModeNotice({ children }: PropsWithChildren): ReactElement {
   return (
     <>
       {children}
-      {mode === 'off' ? null : <DemoAccountSwitcher />}
+      {mode === 'off' ? null : (
+        <DemoAccountSwitcher signedOutOnly={accountSwitcher === 'menu'} />
+      )}
     </>
   );
 }

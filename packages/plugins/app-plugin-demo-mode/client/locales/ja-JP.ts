@@ -8,6 +8,7 @@ const resource: DemoModeResource = {
     configure: '設定',
   },
   accounts: {
+    menu: 'デモアカウント：{{name}}',
     title: 'デモアカウント',
     description:
       'いずれかのアカウントでデモに入り、それぞれの役割から見た画面を確認できます。',
