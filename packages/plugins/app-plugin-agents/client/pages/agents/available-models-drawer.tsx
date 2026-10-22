@@ -390,7 +390,10 @@ export function AvailableModelsDrawer({
                 ))
               )}
             </div>
-            <SheetFooter className='shrink-0 flex-row items-center justify-between border-t'>
+            <SheetFooter
+              data-fixed-sheet-footer
+              className='shrink-0 flex-row items-center justify-between border-t'
+            >
               <div className='text-sm text-muted-foreground'>
                 {selected.size > 0
                   ? t('agents.available.selectedCount', {
@@ -722,7 +725,10 @@ function ConfirmStep({
           );
         })}
       </form>
-      <SheetFooter className='shrink-0 flex-row justify-end border-t'>
+      <SheetFooter
+        data-fixed-sheet-footer
+        className='shrink-0 flex-row justify-end border-t'
+      >
         <Button
           variant='outline'
           type='button'
