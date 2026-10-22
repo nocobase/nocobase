@@ -525,7 +525,7 @@ createRoot(document.getElementById('root')).render(createElement(PermissionEdito
     await expect(
       run(
         process.execPath,
-        ['--input-type=module', '-e', 'await import("#components/ui/switch")'],
+        ['--input-type=module', '-e', 'await import("#components/ui/empty")'],
         host,
       ),
     ).rejects.toThrow('Host imports captured a plugin primitive');
@@ -555,23 +555,21 @@ createRoot(document.getElementById('root')).render(createElement(PermissionEdito
     );
     const declaration = path.join(
       packageDirectory,
-      'dist/client/components/ui/switch.d.ts',
+      'dist/client/components/ui/empty.d.ts',
     );
     const declarationContent = await readFile(declaration, 'utf8');
     await rm(declaration);
     await expect(validatePublished(packageDirectory)).rejects.toThrow(
-      'Published plugin is missing dist/client/components/ui/switch.d.ts',
+      'Published plugin is missing dist/client/components/ui/empty.d.ts',
     );
     await writeFile(declaration, declarationContent);
-    await rm(
-      path.join(packageDirectory, 'dist/client/components/ui/switch.js'),
-    );
+    await rm(path.join(packageDirectory, 'dist/client/components/ui/empty.js'));
     await expect(validatePublished(packageDirectory)).rejects.toThrow(
-      'Published plugin is missing dist/client/components/ui/switch.js',
+      'Published plugin is missing dist/client/components/ui/empty.js',
     );
     await expect(
       run(process.execPath, ['--conditions=development', 'entry.js'], host),
-    ).rejects.toThrow('switch.js');
+    ).rejects.toThrow('empty.js');
     console.info(
       'Generated plugin publish acceptance rejects development source targets, missing declarations and missing JavaScript with explicit diagnostics.',
     );
