@@ -10,24 +10,32 @@
   "start": "Start setup",
   "print": "Print / Save PDF",
   "imageHint": "Click any screenshot to enlarge",
-  "flowLabel": "Setup workflow",
-  "flowTitle": "From deployment to your first delivery",
+  "flowLabel": "Setup and usage at a glance",
+  "flowTitle": "Setup and usage at a glance",
   "flow": [
     {
       "title": "Deploy Studio",
-      "description": "Prepare your team workspace"
+      "description": "Prepare a server, install Studio, and verify the deployment"
     },
     {
-      "title": "Connect agents",
-      "description": "Add computers and runtimes"
+      "title": "Configure Runner Agent",
+      "description": "Connect a runtime, enable agents, and configure the project manager"
     },
     {
-      "title": "Create a project",
-      "description": "Connect Git and your repository"
+      "title": "Configure Git",
+      "description": "Connect the Git service and your personal account"
     },
     {
-      "title": "Issues and delivery",
-      "description": "Create issues, follow work, and review previews"
+      "title": "Set up a project and CI",
+      "description": "Create a repository, then configure the workflow and deployment key"
+    },
+    {
+      "title": "Create and review issues",
+      "description": "Use Runner or My agents to create issues, follow progress, and review previews"
+    },
+    {
+      "title": "Use Studio CLI (optional)",
+      "description": "Let your local agent manage Studio and investigate issues"
     }
   ],
   "toc": "CONTENTS",

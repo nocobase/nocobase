@@ -10,24 +10,32 @@
   "start": "开始配置",
   "print": "打印 / 保存 PDF",
   "imageHint": "点击截图可放大查看",
-  "flowLabel": "配置流程",
-  "flowTitle": "从部署到第一次交付",
+  "flowLabel": "配置与使用概览",
+  "flowTitle": "配置与使用概览",
   "flow": [
     {
       "title": "部署 Studio",
-      "description": "准备好团队工作空间"
+      "description": "准备服务器，完成安装与验证"
     },
     {
-      "title": "连接 Agent",
-      "description": "接入电脑与运行环境"
+      "title": "配置 Runner Agent",
+      "description": "接入运行环境，配置 Agent 与项目经理"
     },
     {
-      "title": "关联项目",
-      "description": "连接 Git 与代码仓库"
+      "title": "配置 Git",
+      "description": "连接全局 Git 服务与个人账号"
     },
     {
-      "title": "任务与交付",
-      "description": "创建任务、跟进与预览验收"
+      "title": "创建项目与配置 CI",
+      "description": "建立代码仓库，配置工作流和部署密钥"
+    },
+    {
+      "title": "创建与验收任务",
+      "description": "通过 Runner 或 My agents 创建任务，跟进并验收预览"
+    },
+    {
+      "title": "使用 Studio CLI（可选）",
+      "description": "让本地 Agent 管理 Studio、协助分析任务"
     }
   ],
   "toc": "章节目录",
