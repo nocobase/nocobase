@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       nocobase_version:
-        description: 'NocoBase version, e.g. 2.2.26 (requires a matching v<version> git tag)'
+        description: 'NocoBase version, e.g. 2.2.26 (requires v<version> tag; overwrites matching image tags)'
         required: true
         type: string
       node_version:
@@ -24,12 +24,11 @@ on:
           - default
           - no-nginx
       tag_mode:
-        description: 'nodefix: <version><variant>-nodefix; same-version: overwrite <version><variant>'
+        description: 'Image tag mode'
         required: true
-        default: 'nodefix'
+        default: 'same-version'
         type: choice
         options:
-          - nodefix
           - same-version
       platforms:
         description: 'Build platforms'
@@ -88,7 +87,7 @@ jobs:
             exit 1
           fi
 
-          if [[ "$INPUT_TAG_MODE" != "nodefix" && "$INPUT_TAG_MODE" != "same-version" ]]; then
+          if [[ "$INPUT_TAG_MODE" != "same-version" ]]; then
             echo "Unsupported tag mode: $INPUT_TAG_MODE" >&2
             exit 1
           fi
@@ -105,11 +104,6 @@ jobs:
               exit 1
               ;;
           esac
-
-          TAG_SUFFIX=""
-          if [[ "$INPUT_TAG_MODE" == "nodefix" ]]; then
-            TAG_SUFFIX="-nodefix"
-          fi
 
           MATRIX='{"include":['
           FIRST=1
@@ -137,7 +131,7 @@ jobs:
                 ;;
             esac
 
-            IMAGE_TAG="${VERSION}${SUFFIX}${TAG_SUFFIX}"
+            IMAGE_TAG="${VERSION}${SUFFIX}"
             ENTRY=$(jq -cn \
               --arg variant "$VARIANT" \
               --arg dockerfile "$DOCKERFILE" \
