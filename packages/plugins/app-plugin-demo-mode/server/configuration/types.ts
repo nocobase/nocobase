@@ -8,7 +8,7 @@ export interface DemoChatConfiguration {
 export interface DemoWriteCapability {
   readonly id: string;
   readonly title: string;
-  readonly table: string;
+  readonly collection: string;
   readonly operations: readonly ('insert' | 'update' | 'delete')[];
   readonly scopes: readonly { readonly id: string; readonly title: string }[];
   /** Called only by runWrite, after the application's normal authorization. Validate persisted record ownership. */
@@ -38,7 +38,7 @@ export interface DemoDailySchedule {
 export interface DemoConfiguration {
   revision: number;
   rules: DemoWriteRule[];
-  tables: string[];
+  collections: string[];
   mocks: Record<string, boolean>;
   schedule: DemoDailySchedule | null;
   chat: DemoChatConfiguration;
@@ -46,7 +46,7 @@ export interface DemoConfiguration {
 export interface DemoConfigurationView extends DemoConfiguration {
   busy: boolean;
   mode: 'off' | 'read-only' | 'observe';
-  fixedTables: readonly string[];
+  fixedCollections: readonly string[];
   capabilities: readonly Omit<DemoWriteCapability, 'checkScope'>[];
   adapters: readonly Omit<DemoMockAdapter, 'invoke'>[];
   nextRun: string | null;

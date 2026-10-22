@@ -39,7 +39,7 @@ The same cleanup runs for clear, reset and failed/interrupted imports. It must b
 
 Mount the plugin's `DemoModeSettings` page from `@nocobase/app-plugin-demo-mode/client/settings`; give it the names of the dataset's `counts` through `label('count', key)`. Grant `settings:demoMode.data` read/manage through the installed authorization plugin; reflect actual actions in the UI and preserve each endpoint's server checks. The page labels the actions Generate, Clear and Reset and shows language, progress, state, accounts and the exact clear/reset consequence. Do not grant every visitor the administrator action merely to let them try a demo.
 
-The installed version's documented deployment table allowlist is separate from business authorization. Never allow all tables to bypass errors. A physical-table allowlist cannot express “only records in this demo project”; use explicit application scope checks and the authorization system, and do not claim that the SQL guard supplies row-level policy.
+The installed version's documented deployment collection allowlist is separate from business authorization. Never allow all tables to bypass errors. A collection allowlist cannot express “only records in this demo project”; use explicit application scope checks and the authorization system, and do not claim that the SQL guard supplies row-level policy.
 
 ## Verify the adapter, not just its compilation
 

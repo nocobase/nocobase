@@ -96,7 +96,7 @@ export function CapabilitiesCard({
                   {label('capability', item.id, item.title)}
                 </span>
                 <code className='text-xs text-muted-foreground'>
-                  {item.table}
+                  {item.collection}
                 </code>
               </div>
               <div className='grid gap-2 sm:grid-cols-3'>
@@ -187,10 +187,10 @@ export function CapabilitiesCard({
 }
 
 /**
- * Physical tables any authorized request may write, for state no visitor can harm such as a user's view preferences;
+ * Physical collections any authorized request may write, for state no visitor can harm such as a user's view preferences;
  * the deployment's own exceptions are listed and stay as they are.
  */
-export function TablesCard({
+export function CollectionsCard({
   configuration,
 }: {
   readonly configuration: Configuration;
@@ -198,13 +198,22 @@ export function TablesCard({
   const t = useT();
   const api = useApiClient();
   const { view } = configuration;
-  const draft = useDraft('tables', 'tables', view.tables, configuration);
-  const [catalog, setCatalog] = useState<readonly string[] | null>(null);
+  const draft = useDraft(
+    'collections',
+    'collections',
+    view.collections,
+    configuration,
+  );
+  const [catalog, setCatalog] = useState<
+    readonly { name: string; title?: string }[] | null
+  >(null);
   const [catalogError, setCatalogError] = useState<unknown>();
   useEffect(() => {
     let active = true;
     api
-      .request<{ data: string[] }>({ path: '/demoMode/configuration/tables' })
+      .request<{ data: { name: string; title?: string }[] }>({
+        path: '/demoMode/configuration/collections',
+      })
       .then(({ data }) => {
         if (active) setCatalog(data);
       })
@@ -215,13 +224,19 @@ export function TablesCard({
       active = false;
     };
   }, [api]);
-  const tables = draft.draft;
-  const before = new Set(view.tables);
-  const options = [...new Set([...(catalog ?? []), ...tables])].sort();
+  const collections = draft.draft;
+  const before = new Set(view.collections);
+  const options = [
+    ...new Set([...(catalog ?? []).map((item) => item.name), ...collections]),
+  ].sort();
+  const collectionLabel = (name: string) => {
+    const title = catalog?.find((item) => item.name === name)?.title;
+    return title ? `${title} (${name})` : name;
+  };
   return (
     <SettingsCard
-      title={t('writes.tables.title')}
-      description={t('writes.tables.description')}
+      title={t('writes.collections.title')}
+      description={t('writes.collections.description')}
       draft={draft}
       canEdit={configuration.canEdit}
       busy={view.busy}
@@ -229,39 +244,40 @@ export function TablesCard({
         title: t('writes.confirmTitle'),
         description: t('writes.confirmDescription'),
         changes: [
-          ...tables
+          ...collections
             .filter((table) => !before.has(table))
             .map((table) => `${t('writes.allow')}: ${table}`),
-          ...view.tables
-            .filter((table) => !tables.includes(table))
+          ...view.collections
+            .filter((table) => !collections.includes(table))
             .map((table) => `${t('writes.revoke')}: ${table}`),
         ],
-        destructive: tables.some((table) => !before.has(table)),
+        destructive: collections.some((table) => !before.has(table)),
       }}
     >
       <ErrorAlert error={catalogError} />
       <MultiSelect
-        aria-label={t('writes.tables.label')}
-        placeholder={t('writes.tables.placeholder')}
-        emptyText={t('writes.tables.noMatch')}
+        aria-label={t('writes.collections.label')}
+        placeholder={t('writes.collections.placeholder')}
+        emptyText={t('writes.collections.noMatch')}
         options={options}
-        value={tables}
+        label={collectionLabel}
+        value={collections}
         disabled={
           !configuration.canEdit || draft.saving || view.busy || !catalog
         }
         onChange={(value) => draft.setDraft(value.slice(0, 100))}
       />
       <div className='flex flex-col gap-2'>
-        <p className='text-sm font-medium'>{t('writes.tables.fixed')}</p>
+        <p className='text-sm font-medium'>{t('writes.collections.fixed')}</p>
         <div className='flex flex-wrap gap-1.5'>
-          {view.fixedTables.map((table) => (
+          {view.fixedCollections.map((table) => (
             <Badge key={table} variant='secondary'>
               {table}
             </Badge>
           ))}
         </div>
         <p className='text-sm text-muted-foreground'>
-          {t('writes.tables.fixedHelp')}
+          {t('writes.collections.fixedHelp')}
         </p>
       </div>
     </SettingsCard>

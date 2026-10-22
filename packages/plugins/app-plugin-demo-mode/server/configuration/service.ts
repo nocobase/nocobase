@@ -1,8 +1,8 @@
 import { DemoAgentProxy, type DemoAgentAdapter } from './agent-proxy.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { DatabaseManager } from '@nocobase/db';
-import type { DemoModeSettings } from '../config.js';
-import type { DemoWriteGuard } from '../guard.js';
+import { DEFAULT_ALLOW_COLLECTIONS, type DemoModeSettings } from '../config.js';
+import type { DemoWriteGuard, DemoSqlRule } from '../guard.js';
 import { demoDataError } from '../data/service.js';
 import { ConfigurationInput } from './schemas.js';
 import { firstWallMinute, localMinute, nextDailyRun } from './schedule.js';
@@ -15,8 +15,8 @@ import type {
   DemoWriteRule,
 } from './types.js';
 
-const protectedTable =
-  /^(?:user|account|session|verification|auth|ag_|demo_mode_|permission|role|secret|api_key)/u;
+const protectedCollection =
+  /^(?:user|account|session|verification|auth|ag(?:_|[a-z])|demoMode|demo_mode_|permission|role|secret|apiKey|api_key)/iu;
 const invalid = (message: string) =>
   demoDataError('DEMO_CONFIGURATION_INVALID', message, 'INVALID_ARGUMENT');
 interface Stored {
@@ -61,10 +61,10 @@ export class DemoConfigurationService {
     if (this.writes.has(capability.id))
       throw new Error(`Duplicate demo capability: ${capability.id}`);
     if (
-      !/^[a-z][a-z0-9_]*$/u.test(capability.table) ||
-      protectedTable.test(capability.table)
+      !/^[a-z][a-z0-9_]*$/iu.test(capability.collection) ||
+      protectedCollection.test(capability.collection)
     )
-      throw invalid('A protected or invalid table cannot be exposed.');
+      throw invalid('A protected or invalid collection cannot be exposed.');
     if (
       !capability.operations.length ||
       !capability.scopes.length ||
@@ -91,7 +91,55 @@ export class DemoConfigurationService {
   }
   public async initialize(): Promise<void> {
     if (!this.enabled) return;
-    if (await this.row()) return;
+    for (const name of this.settings.allowCollections) {
+      if (
+        !DEFAULT_ALLOW_COLLECTIONS.includes(name) &&
+        !(await this.resolveCollection(name))
+      )
+        throw invalid(
+          `Unknown demoMode.allowCollections collection in the default database: ${name}`,
+        );
+    }
+    const existing = await this.row();
+    if (existing) {
+      // Earlier previews stored physical names. Resolve them once without changing their target.
+      const value = (
+        typeof existing.value === 'string'
+          ? JSON.parse(existing.value)
+          : existing.value
+      ) as Record<string, unknown>;
+      if (Array.isArray(value.tables) && value.collections === undefined) {
+        const names = new Map<string, string>();
+        for await (const collection of this.database
+          .connection()
+          .collections.scan()) {
+          if (collection.name) {
+            const physical = await this.database
+              .connection()
+              .collections.getPhysical(collection.name);
+            if (physical) names.set(physical.tableName, collection.name);
+          }
+        }
+        value.collections = value.tables.map((table: string) => {
+          const name = names.get(table);
+          if (!name)
+            throw invalid(`Cannot migrate demo table exception: ${table}`);
+          return name;
+        });
+        delete value.tables;
+        await this.database
+          .query()
+          .updateTable('demoModeConfiguration')
+          .set({
+            value: JSON.stringify(value),
+            revision: Number(existing.revision) + 1,
+          })
+          .where('id', '=', 'default')
+          .where('revision', '=', existing.revision)
+          .execute();
+      }
+      return;
+    }
     try {
       await this.database
         .query()
@@ -122,7 +170,7 @@ export class DemoConfigurationService {
     return {
       revision: Number(row.revision),
       rules: stored.rules,
-      tables: stored.tables ?? [],
+      collections: stored.collections ?? [],
       schedule: stored.schedule,
       chat: stored.chat ?? { enabled: false, model: null, tools: {} },
       mocks: {
@@ -152,11 +200,11 @@ export class DemoConfigurationService {
       ...value,
       busy: includeBusy && Boolean((await this.data()).importing),
       mode: this.settings.mode,
-      fixedTables: [...this.settings.allowTables],
+      fixedCollections: [...this.settings.allowCollections],
       capabilities: [...this.writes.values()].map((item) => ({
         id: item.id,
         title: item.title,
-        table: item.table,
+        collection: item.collection,
         operations: item.operations,
         scopes: item.scopes,
       })),
@@ -170,31 +218,33 @@ export class DemoConfigurationService {
       nextRun: nextDailyRun(value.schedule, new Date(), row.lastDay),
     };
   }
-  /** Physical tables in the default application database, for the settings picker only. */
-  public async availableTables(): Promise<string[]> {
+  /** Logical collections in the default application database, for the settings picker only. */
+  public async availableCollections(): Promise<
+    { name: string; title?: string }[]
+  > {
     this.requireEnabled();
-    const names = new Set<string>();
+    const names: { name: string; title?: string }[] = [];
     let cursor: string | undefined;
     do {
       const page = await this.database
         .connection()
         .collections.list({ limit: 100, cursor });
       for (const item of page.items) {
-        const name = item.tableName;
+        const name = item.name;
         if (
           item.kind === 'table' &&
-          /^[a-z][a-z0-9_]*$/u.test(name) &&
-          !protectedTable.test(name) &&
-          !this.settings.allowTables.has(name)
+          /^[a-z][a-z0-9_]*$/iu.test(name) &&
+          !protectedCollection.test(name) &&
+          !this.settings.allowCollections.has(name)
         )
-          names.add(name);
+          names.push({ name, ...(item.title ? { title: item.title } : {}) });
       }
       cursor = page.nextCursor;
     } while (cursor);
-    return [...names].sort();
+    return names.sort((a, b) => a.name.localeCompare(b.name));
   }
   public async save(
-    section: 'rules' | 'tables' | 'mocks' | 'schedule' | 'chat',
+    section: 'rules' | 'collections' | 'mocks' | 'schedule' | 'chat',
     expectedRevision: number,
     input: unknown,
   ): Promise<DemoConfigurationView> {
@@ -219,12 +269,18 @@ export class DemoConfigurationService {
         'ALREADY_EXISTS',
       );
     let value: unknown = input;
-    if (section === 'tables') {
-      const tables = new Set<string>();
+    if (section === 'collections') {
+      const collections = new Set<string>();
       for (const table of input as string[]) {
-        if (protectedTable.test(table) || tables.has(table))
-          throw invalid('Protected or duplicate tables cannot be configured.');
-        tables.add(table);
+        if (
+          protectedCollection.test(table) ||
+          collections.has(table) ||
+          !(await this.resolveCollection(table))
+        )
+          throw invalid(
+            'Unknown, protected or duplicate collections cannot be configured.',
+          );
+        collections.add(table);
       }
     } else if (section === 'rules') {
       const rules = input as DemoWriteRule[];
@@ -259,7 +315,7 @@ export class DemoConfigurationService {
     }
     const updated = {
       rules: current.rules,
-      tables: current.tables,
+      collections: current.collections,
       mocks: current.mocks,
       schedule: current.schedule,
       chat: current.chat,
@@ -330,35 +386,65 @@ export class DemoConfigurationService {
     if (!this.enabled) return run();
     await this.chatModel({ modelService: 'demo', model: 'demo' });
     return this.guard.runAllowed(
-      ['ag_conversations', 'ag_conversation_messages'].flatMap((table) =>
-        ['insert', 'update'].map((statement) => ({ table, statement })),
+      await this.collectionRules(
+        ['agConversations', 'agConversationMessages'],
+        ['insert', 'update'],
       ),
       run,
     );
   }
-  /** Rules usable by the SQL guard without application row context. */
-  public async wholeTableRules(): Promise<
-    readonly { table: string; statement: string }[]
-  > {
+  /** Resolve logical names through the default connection's collection metadata. */
+  private async resolveCollection(
+    name: string,
+  ): Promise<{ connection: string; table: string } | undefined> {
+    const connection = this.database.connection();
+    const collection = await connection.collections.get(name);
+    if (collection?.name !== name || collection.kind !== 'table')
+      return undefined;
+    const physical = await connection.collections.getPhysical(name);
+    return physical
+      ? { connection: connection.name, table: physical.tableName.toLowerCase() }
+      : undefined;
+  }
+  private async collectionRules(
+    names: Iterable<string>,
+    statements: readonly string[],
+  ): Promise<DemoSqlRule[]> {
+    const rules: DemoSqlRule[] = [];
+    for (const name of names) {
+      const target = await this.resolveCollection(name);
+      if (target)
+        rules.push(
+          ...statements.map((statement) => ({ ...target, statement })),
+        );
+    }
+    return rules;
+  }
+  /** Rules usable by the SQL guard without application row context, restricted to the default connection. */
+  public async wholeCollectionRules(): Promise<readonly DemoSqlRule[]> {
     if (!this.enabled) return [];
-    const { rules, tables } = await this.currentPolicy();
-    return [
-      ...tables.flatMap((table) =>
-        ['insert', 'update', 'delete'].map((statement) => ({
-          table,
-          statement,
-        })),
-      ),
-      ...rules.flatMap((rule) => {
-        const capability = this.writes.get(rule.capability);
-        return capability &&
-          rule.scope === 'all' &&
-          capability.scopes.some((scope) => scope.id === 'all') &&
-          capability.operations.includes(rule.operation)
-          ? [{ table: capability.table, statement: rule.operation }]
-          : [];
-      }),
-    ];
+    const { rules, collections } = await this.currentPolicy();
+    const allowed = await this.collectionRules(
+      new Set([...this.settings.allowCollections, ...collections]),
+      ['insert', 'update', 'delete'],
+    );
+    for (const rule of rules) {
+      const capability = this.writes.get(rule.capability);
+      if (
+        capability &&
+        rule.scope === 'all' &&
+        capability.scopes.some((scope) => scope.id === 'all') &&
+        capability.operations.includes(rule.operation)
+      ) {
+        allowed.push(
+          ...(await this.collectionRules(
+            [capability.collection],
+            [rule.operation],
+          )),
+        );
+      }
+    }
+    return allowed;
   }
   /** Call only around the declared, already-authorized business operation, never around a general dispatcher. */
   public runWrite<T>(
@@ -384,7 +470,7 @@ export class DemoConfigurationService {
   ): Promise<T> {
     if (!this.enabled) return run();
     const { rules } = await this.currentPolicy();
-    const allowed: { table: string; statement: string }[] = [];
+    const allowed: DemoSqlRule[] = [];
     for (const [id, operation] of entries) {
       const capability = this.writes.get(id);
       const rule = rules.find(
@@ -405,7 +491,9 @@ export class DemoConfigurationService {
           'DEMO_SCOPE_DENIED',
           'This operation is outside the configured demo scope.',
         );
-      allowed.push({ table: capability.table, statement: operation });
+      allowed.push(
+        ...(await this.collectionRules([capability.collection], [operation])),
+      );
     }
     return allowed.length ? this.guard.runAllowed(allowed, run) : run();
   }

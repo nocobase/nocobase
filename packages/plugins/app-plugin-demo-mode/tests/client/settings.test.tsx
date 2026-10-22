@@ -56,18 +56,18 @@ import type { DemoConfigurationView } from '../../server/configuration/types.js'
 const view = (patch: Partial<DemoConfigurationView> = {}) => ({
   revision: 4,
   rules: [],
-  tables: [],
+  collections: [],
   mocks: { 'dataset.model': true },
   schedule: null,
   chat: { enabled: false, model: null, tools: {} },
   busy: false,
   mode: 'read-only',
-  fixedTables: ['session', 'verification'],
+  fixedCollections: ['session', 'verification'],
   capabilities: [
     {
       id: 'crm.leads',
       title: 'Leads',
-      table: 'crm_leads',
+      collection: 'crm_leads',
       operations: ['insert', 'update'],
       scopes: [
         { id: 'demo', title: 'Demo records' },
@@ -161,8 +161,8 @@ function demoApi({
           },
         ],
       };
-    if (call.path === 'demoMode/configuration/tables')
-      return { data: ['crm_user_preferences'] };
+    if (call.path === 'demoMode/configuration/collections')
+      return { data: [{ name: 'userPreferences', title: 'View preferences' }] };
     if (call.method === 'GET' && call.path === 'demoMode/configuration')
       return { data: configuration };
     if (call.method === 'PUT' && onPut) return onPut(call);

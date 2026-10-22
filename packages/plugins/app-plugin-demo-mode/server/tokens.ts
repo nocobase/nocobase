@@ -18,7 +18,7 @@ export type * from './configuration/types.js';
 export interface DemoModeService {
   readonly mode: DemoMode;
   /** Physical tables, lower-cased, whose writes requests may still make. */
-  readonly allowTables: readonly string[];
+  readonly allowCollections: readonly string[];
 }
 
 export const demoModeServiceToken: ServiceToken<DemoModeService> =

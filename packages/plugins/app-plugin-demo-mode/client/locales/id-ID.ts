@@ -184,16 +184,16 @@ const resource: DemoModeResource = {
         emptyHelp:
           'Aplikasi belum mendaftarkan operasi yang bisa dibuka di demo.',
       },
-      tables: {
-        title: 'Tabel',
+      collections: {
+        title: 'Koleksi',
         description:
-          'Setiap permintaan yang berizin bisa menulis ke tabel ini. Gunakan hanya untuk status yang tidak bisa disalahgunakan, seperti preferensi tampilan.',
-        label: 'Tabel yang boleh ditulis pengunjung',
-        placeholder: 'Cari tabel',
-        noMatch: 'Tidak ada tabel yang cocok',
+          'Setiap permintaan yang berizin bisa menulis ke koleksi ini. Gunakan hanya untuk status yang tidak bisa disalahgunakan, seperti preferensi tampilan.',
+        label: 'Koleksi yang boleh ditulis pengunjung',
+        placeholder: 'Cari koleksi',
+        noMatch: 'Tidak ada koleksi yang cocok',
         fixed: 'Selalu bisa ditulis',
         fixedHelp:
-          'Sesi masuk dan pengecualian milik deployment (NOCOBASE_DEMO_WRITABLE_TABLES); tidak bisa diubah di sini.',
+          'Sesi masuk dan pengecualian milik deployment (NOCOBASE_DEMO_WRITABLE_COLLECTIONS); tidak bisa diubah di sini.',
       },
     },
     simulation: {

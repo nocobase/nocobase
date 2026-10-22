@@ -21,7 +21,9 @@
 
 ## Unreleased
 
-- Add the public demo configuration factory and application-scoped environment mappings. Rename the writable-table variable to `NOCOBASE_DEMO_WRITABLE_TABLES`; remove quick-sign-in and model environment overrides. Derive the local simulated endpoint automatically and retain UI-owned model policies. Applications must register the configuration factory on upgrade.
+- Use logical collection names for deployment and UI write exceptions and capability registrations. Resolve physical names through database metadata, restrict exemptions to the default connection, display collection titles, and convert persisted preview selections.
+
+- Add the public demo configuration factory and application-scoped environment mappings. Rename the writable-collection variable to `NOCOBASE_DEMO_WRITABLE_COLLECTIONS`; remove quick-sign-in and model environment overrides. Derive the local simulated endpoint automatically and retain UI-owned model policies. Applications must register the configuration factory on upgrade.
 
 - Streamline the generic demo integration Skill, add a typed dataset example, and consolidate redundant account lifecycle assertions.
 

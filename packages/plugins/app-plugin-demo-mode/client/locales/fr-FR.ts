@@ -195,16 +195,16 @@ const resource: DemoModeResource = {
         emptyHelp:
           'L’application n’a enregistré aucune opération pouvant être ouverte en démonstration.',
       },
-      tables: {
-        title: 'Tables',
+      collections: {
+        title: 'Collections',
         description:
-          'Toute requête autorisée peut écrire dans ces tables. À réserver à un état que personne ne peut détourner, comme les préférences d’affichage.',
-        label: 'Tables que les visiteurs peuvent écrire',
-        placeholder: 'Rechercher des tables',
-        noMatch: 'Aucune table ne correspond',
+          'Toute requête autorisée peut écrire dans ces collections. À réserver à un état que personne ne peut détourner, comme les préférences d’affichage.',
+        label: 'Collections que les visiteurs peuvent écrire',
+        placeholder: 'Rechercher des collections',
+        noMatch: 'Aucune collection ne correspond',
         fixed: 'Toujours accessibles en écriture',
         fixedHelp:
-          'Les sessions de connexion et les exceptions propres au déploiement (NOCOBASE_DEMO_WRITABLE_TABLES) ; elles ne peuvent pas être modifiées ici.',
+          'Les sessions de connexion et les exceptions propres au déploiement (NOCOBASE_DEMO_WRITABLE_COLLECTIONS) ; elles ne peuvent pas être modifiées ici.',
       },
     },
     simulation: {

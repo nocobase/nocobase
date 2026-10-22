@@ -49,7 +49,9 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
         runWithPolicy: (run) =>
           this.app.container.resolve(demoConfigurationToken).runWithPolicy(run),
         allowed: () =>
-          this.app.container.resolve(demoConfigurationToken).wholeTableRules(),
+          this.app.container
+            .resolve(demoConfigurationToken)
+            .wholeCollectionRules(),
         attachConnections: () => this.attachConnections(),
         logger: {
           info: (details, message) => this.logger()?.info(details, message),
@@ -82,12 +84,12 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
         `Demo mode could not guard database connection "${name}"; refusing to start.`,
       );
     }
-    const { mode, allowTables } =
+    const { mode, allowCollections } =
       this.app.container.resolve(demoModeServiceToken);
     this.logger()?.warn(
-      { mode, allowTables, connections: this.connections() },
+      { mode, allowCollections, connections: this.connections() },
       mode === 'read-only'
-        ? 'Demo mode is on: requests cannot change the database except authorized demo imports and allowed tables'
+        ? 'Demo mode is on: requests cannot change the database except authorized demo imports and allowed collections'
         : 'Demo mode is observing: writes requests make are logged, not refused',
     );
   }
@@ -96,7 +98,7 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
     const guard = this.guard;
     if (!guard) return;
     for (const name of this.connections()) {
-      guard.attach(await this.client(name));
+      guard.attach(await this.client(name), name);
     }
   }
 

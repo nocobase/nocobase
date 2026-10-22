@@ -37,7 +37,7 @@ Follow [Adapt demo data](adapting-data.md). In addition:
 
 ## 5. Let visitors do what the demo is for
 
-In read-only mode request writes need an exception. For disposable business tables, configure whole-table exceptions when normal application authorization is sufficient. Register capabilities and wrap the authorized operation with `runWrites` when it needs narrower operation or record scopes. See [policies](policies.md).
+In read-only mode request writes need an exception. For disposable business tables, configure whole-collection exceptions when normal application authorization is sufficient. Register capabilities and wrap the authorized operation with `runWrites` when it needs narrower operation or record scopes. See [policies](policies.md).
 
 - Typical candidates include starting a task, saving a note or updating a demo record. For Agents online conversations, use the dedicated `runOnlineConversation` persistence boundary and chat policy in [simulation](simulation.md#online-conversation-persistence); do not register protected Agent tables as business capabilities.
 - Map the actions that may write to their capabilities in one table at the dispatcher instead of nesting wrappers.

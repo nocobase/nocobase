@@ -174,16 +174,16 @@ const resource: DemoModeResource = {
         empty: '沒有註冊業務操作',
         emptyHelp: '這個應用沒有註冊可以在示範中開放的操作。',
       },
-      tables: {
+      collections: {
         title: '資料表',
         description:
-          '任何有權限的請求都能寫入這些表，只用於不會被濫用的狀態，例如檢視偏好。',
-        label: '訪客可以寫入的表',
+          '任何有權限的請求都能寫入這些資料表，只用於不會被濫用的狀態，例如檢視偏好。',
+        label: '訪客可以寫入的資料表',
         placeholder: '搜尋資料表',
         noMatch: '沒有符合的資料表',
         fixed: '一律可寫',
         fixedHelp:
-          '登入工作階段和部署自己的例外（NOCOBASE_DEMO_WRITABLE_TABLES），不能在這裡變更。',
+          '登入工作階段和部署自己的例外（NOCOBASE_DEMO_WRITABLE_COLLECTIONS），不能在這裡變更。',
       },
     },
     simulation: {

@@ -26,7 +26,10 @@ const post = (app: TestApp, path: string) =>
 describe('read-only mode', () => {
   let app: TestApp;
   beforeAll(async () => {
-    app = await startApp({ mode: 'read-only', allowTables: ['demonotes'] });
+    app = await startApp({
+      mode: 'read-only',
+      allowCollections: ['demonotes'],
+    });
     // Writes outside any request, as a seed or job makes them, are never refused.
     await app.connection.query
       .insertInto('demoitems')

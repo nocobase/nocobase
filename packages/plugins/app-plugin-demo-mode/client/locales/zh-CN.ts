@@ -174,16 +174,16 @@ const resource: DemoModeResource = {
         empty: '没有注册业务操作',
         emptyHelp: '这个应用没有注册可以在演示中放开的操作。',
       },
-      tables: {
+      collections: {
         title: '数据表',
         description:
-          '任何有权限的请求都能写入这些表，只用于不会被滥用的状态，例如视图偏好。',
-        label: '访客可以写入的表',
+          '任何有权限的请求都能写入这些数据表，只用于不会被滥用的状态，例如视图偏好。',
+        label: '访客可以写入的数据表',
         placeholder: '搜索数据表',
         noMatch: '没有匹配的数据表',
         fixed: '始终可写',
         fixedHelp:
-          '登录会话和部署自己的例外（NOCOBASE_DEMO_WRITABLE_TABLES），不能在这里修改。',
+          '登录会话和部署自己的例外（NOCOBASE_DEMO_WRITABLE_COLLECTIONS），不能在这里修改。',
       },
     },
     simulation: {

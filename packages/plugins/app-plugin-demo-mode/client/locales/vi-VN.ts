@@ -185,16 +185,16 @@ const resource: DemoModeResource = {
         emptyHelp:
           'Ứng dụng chưa đăng ký thao tác nào có thể mở trong bản demo.',
       },
-      tables: {
-        title: 'Bảng',
+      collections: {
+        title: 'Bộ sưu tập',
         description:
-          'Mọi yêu cầu được phép đều có thể ghi vào các bảng này. Chỉ dùng cho trạng thái không ai lạm dụng được, như tùy chọn hiển thị.',
-        label: 'Bảng khách được ghi',
-        placeholder: 'Tìm bảng',
-        noMatch: 'Không có bảng phù hợp',
+          'Mọi yêu cầu được phép đều có thể ghi vào các bộ sưu tập này. Chỉ dùng cho trạng thái không ai lạm dụng được, như tùy chọn hiển thị.',
+        label: 'Bộ sưu tập khách được ghi',
+        placeholder: 'Tìm bộ sưu tập',
+        noMatch: 'Không có bộ sưu tập phù hợp',
         fixed: 'Luôn được ghi',
         fixedHelp:
-          'Phiên đăng nhập và ngoại lệ riêng của bản triển khai (NOCOBASE_DEMO_WRITABLE_TABLES); không thể thay đổi ở đây.',
+          'Phiên đăng nhập và ngoại lệ riêng của bản triển khai (NOCOBASE_DEMO_WRITABLE_COLLECTIONS); không thể thay đổi ở đây.',
       },
     },
     simulation: {

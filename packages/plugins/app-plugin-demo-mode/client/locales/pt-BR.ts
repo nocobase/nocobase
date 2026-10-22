@@ -190,16 +190,16 @@ const resource: DemoModeResource = {
         emptyHelp:
           'O aplicativo não registrou nenhuma operação que possa ser aberta em uma demonstração.',
       },
-      tables: {
-        title: 'Tabelas',
+      collections: {
+        title: 'Koleksias',
         description:
-          'Qualquer solicitação autorizada pode gravar nestas tabelas. Use para estado que ninguém possa usar indevidamente, como preferências de visualização.',
-        label: 'Tabelas que os visitantes podem gravar',
-        placeholder: 'Pesquisar tabelas',
-        noMatch: 'Nenhuma tabela corresponde',
+          'Qualquer solicitação autorizada pode gravar nestas koleksias. Use para estado que ninguém possa usar indevidamente, como preferências de visualização.',
+        label: 'Koleksias que os visitantes podem gravar',
+        placeholder: 'Pesquisar koleksias',
+        noMatch: 'Nenhuma koleksia corresponde',
         fixed: 'Sempre graváveis',
         fixedHelp:
-          'Sessões de login e as exceções da própria implantação (NOCOBASE_DEMO_WRITABLE_TABLES); não podem ser alteradas aqui.',
+          'Sessões de login e as exceções da própria implantação (NOCOBASE_DEMO_WRITABLE_COLLECTIONS); não podem ser alteradas aqui.',
       },
     },
     simulation: {

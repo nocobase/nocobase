@@ -20,7 +20,7 @@ async function setup() {
   const config = container.resolve(demoConfigurationToken);
   config.registerWrite({
     id: 'items',
-    table: 'demoitems',
+    collection: 'demoitems',
     title: 'Items',
     operations: ['insert'],
     scopes: [
@@ -49,7 +49,7 @@ it('persists explicit rules, rejects stale updates and protected/unknown capabil
   expect(() =>
     config.registerWrite({
       id: 'bad',
-      table: 'user',
+      collection: 'user',
       title: 'bad',
       operations: ['update'],
       scopes: [{ id: 'all', title: 'All' }],
@@ -72,7 +72,7 @@ it('persists explicit rules, rejects stale updates and protected/unknown capabil
   await other.save('rules', 1, []);
   expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
 });
-it('configures exception tables without application registration and revokes them across instances', async () => {
+it('configures exception collections without application registration and revokes them across instances', async () => {
   const { config, container, guard } = await setup();
   const other = new DemoConfigurationService(
     container.resolve(databaseManagerToken),
@@ -80,9 +80,9 @@ it('configures exception tables without application registration and revokes the
     guard,
     async () => ({ importing: null, languages: ['en-US'] }),
   );
-  expect((await config.read()).tables).toEqual([]);
+  expect((await config.read()).collections).toEqual([]);
   expect((await app.request('/notes', { method: 'POST' })).status).toBe(400);
-  await other.save('tables', 0, ['demonotes']);
+  await other.save('collections', 0, ['demonotes']);
   expect((await app.request('/notes', { method: 'POST' })).status).toBe(200);
   expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
   await guard.run(
@@ -90,7 +90,7 @@ it('configures exception tables without application registration and revokes the
       method: 'POST',
       path: '/notes',
       blocked: [],
-      allowed: await config.wholeTableRules(),
+      allowed: await config.wholeCollectionRules(),
     },
     async () => {
       await app.connection.query
@@ -105,7 +105,7 @@ it('configures exception tables without application registration and revokes the
     },
   );
   await expect(
-    config.save('tables', 1, ['demonotes', 'demonotes']),
+    config.save('collections', 1, ['demonotes', 'demonotes']),
   ).rejects.toMatchObject({ reason: 'DEMO_CONFIGURATION_INVALID' });
   for (const table of [
     'user',
@@ -113,16 +113,16 @@ it('configures exception tables without application registration and revokes the
     'demo_mode_configuration',
     'demonotes;drop',
   ]) {
-    await expect(config.save('tables', 1, [table])).rejects.toMatchObject({
+    await expect(config.save('collections', 1, [table])).rejects.toMatchObject({
       reason: 'DEMO_CONFIGURATION_INVALID',
     });
   }
-  await expect(config.save('tables', 0, [])).rejects.toMatchObject({
+  await expect(config.save('collections', 0, [])).rejects.toMatchObject({
     reason: 'DEMO_CONFIGURATION_CONFLICT',
   });
-  await other.save('tables', 1, []);
+  await other.save('collections', 1, []);
   expect((await app.request('/notes', { method: 'POST' })).status).toBe(400);
-  expect((await other.read()).tables).toEqual([]);
+  expect((await other.read()).collections).toEqual([]);
 });
 it('allows only the registered scoped operation and isolates parallel requests', async () => {
   const { config, guard } = await setup();
@@ -148,7 +148,7 @@ it('combines several capabilities in one operation and refuses it when one is ou
   const { config, guard } = await setup();
   config.registerWrite({
     id: 'notes',
-    table: 'demonotes',
+    collection: 'demonotes',
     title: 'Notes',
     operations: ['insert'],
     scopes: [{ id: 'own', title: 'Own' }],
@@ -392,14 +392,22 @@ it('keeps online chat opt-in and rechecks models and tool policies without real 
 
 it('limits online chat persistence to the callback and requires enabled chat', async () => {
   const { config, guard } = await setup();
+  for (const name of ['agConversations', 'agConversationMessages']) {
+    await app.connection.builder.createCollection(name, (collection) => {
+      collection.string('id', { primaryKey: true });
+    });
+  }
   let inspect: (query: { sql: string }) => void = () => {};
-  guard.attach({
-    client: {
-      on(_event, listener) {
-        inspect = listener;
+  guard.attach(
+    {
+      client: {
+        on(_event, listener) {
+          inspect = listener;
+        },
       },
     },
-  });
+    app.connection.name,
+  );
   const request = <T>(run: () => T) =>
     guard.run({ method: 'POST', path: '/chat', blocked: [] }, run);
   await expect(
@@ -448,18 +456,18 @@ it('limits online chat persistence to the callback and requires enabled chat', a
   );
 });
 
-it('lists physical table choices without protected or deployment-managed tables', async () => {
+it('lists physical table choices without protected or deployment-managed collections', async () => {
   const { config, container, guard } = await setup();
-  expect(await config.availableTables()).toEqual(
-    expect.arrayContaining(['demoitems', 'demonotes']),
+  expect(await config.availableCollections()).toEqual(
+    expect.arrayContaining([{ name: 'demoitems' }, { name: 'demonotes' }]),
   );
-  expect(await config.availableTables()).not.toContain(
-    'demo_mode_configuration',
+  expect(await config.availableCollections()).not.toContainEqual(
+    expect.objectContaining({ name: 'demoModeConfiguration' }),
   );
   const settings = resolveDemoModeSettings({
     get: () => ({
       mode: 'read-only',
-      allowTables: [' demonotes', 'DEMONOTES '],
+      allowCollections: [' demonotes', 'demonotes '],
     }),
   } as never);
   const deployed = new DemoConfigurationService(
@@ -468,12 +476,14 @@ it('lists physical table choices without protected or deployment-managed tables'
     guard,
     async () => ({ importing: null, languages: ['en-US'] }),
   );
-  expect((await deployed.read()).fixedTables).toEqual([
+  expect((await deployed.read()).fixedCollections).toEqual([
     'session',
     'verification',
     'demonotes',
   ]);
-  expect(await deployed.availableTables()).not.toContain('demonotes');
+  expect(await deployed.availableCollections()).not.toContainEqual({
+    name: 'demonotes',
+  });
 });
 
 it('keeps schedule previews out of request and chat policy checks while observing policy changes', async () => {
@@ -490,7 +500,7 @@ it('keeps schedule previews out of request and chat policy checks while observin
     model: null,
     tools: { lookup: 'read' },
   });
-  await config.save('tables', 2, ['demoitems']);
+  await config.save('collections', 2, ['demoitems']);
   const preview = vi.spyOn(scheduleHelpers, 'nextDailyRun');
   try {
     expect((await app.request('/items', { method: 'POST' })).status).toBe(200);
@@ -509,7 +519,7 @@ it('keeps schedule previews out of request and chat policy checks while observin
     expect(preview).not.toHaveBeenCalled();
     expect((await config.read()).nextRun).not.toBeNull();
     expect(preview).toHaveBeenCalledTimes(1);
-    await config.save('tables', 3, []);
+    await config.save('collections', 3, []);
     await config.save('chat', 4, { enabled: false, model: null, tools: {} });
     preview.mockClear();
     expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
@@ -526,4 +536,115 @@ it('keeps schedule previews out of request and chat policy checks while observin
   } finally {
     preview.mockRestore();
   }
+});
+
+it('resolves migration collection names with prefixes and isolates same-name tables on other connections', async () => {
+  app = await createTestApp({
+    createServer: createStandaloneServer,
+    connections: ['main', 'secondary'],
+    config: {
+      demoMode: { mode: 'read-only' },
+      database: {
+        connections: {
+          main: { naming: { underscored: true, tablePrefix: 'demo_' } },
+          secondary: { naming: { underscored: true, tablePrefix: 'demo_' } },
+        },
+      },
+    },
+  });
+  const container = app.application.container;
+  const database = container.resolve(databaseManagerToken);
+  const config = container.resolve(demoConfigurationToken);
+  const guard = container.resolve(demoWriteGuardToken);
+  for (const name of ['main', 'secondary']) {
+    await database
+      .connection(name)
+      .builder.createCollection('orderItems', (collection) => {
+        collection.string('id', { primaryKey: true });
+        collection.title('Order items');
+      });
+  }
+  expect(
+    (await app.connection.collections.getPhysical('orderItems'))?.tableName,
+  ).toBe('demo_order_items');
+  expect(await config.availableCollections()).toContainEqual({
+    name: 'orderItems',
+    title: 'Order items',
+  });
+  await config.save('collections', 0, ['orderItems']);
+  const allowed = await config.wholeCollectionRules();
+  await guard.run(
+    { method: 'POST', path: '/orders', blocked: [], allowed },
+    async () => {
+      await app.connection.query
+        .insertInto('orderItems')
+        .values({ id: 'main' })
+        .execute();
+      await expect(
+        database
+          .connection('secondary')
+          .query.insertInto('orderItems')
+          .values({ id: 'secondary' })
+          .execute(),
+      ).rejects.toThrow();
+      // The built-in session exception follows the same naming strategy.
+      await app.connection.query
+        .insertInto('session')
+        .values({ name: 'visitor' })
+        .execute();
+    },
+  );
+  expect(
+    await database
+      .connection('secondary')
+      .query.selectFrom('orderItems')
+      .selectAll()
+      .execute(),
+  ).toEqual([]);
+  await expect(
+    config.save('collections', 1, ['missingCollection']),
+  ).rejects.toMatchObject({ reason: 'DEMO_CONFIGURATION_INVALID' });
+  await config.save('collections', 1, []);
+  await expect(
+    guard.run(
+      {
+        method: 'POST',
+        path: '/orders',
+        blocked: [],
+        allowed: await config.wholeCollectionRules(),
+      },
+      () =>
+        app.connection.query
+          .insertInto('orderItems')
+          .values({ id: 'revoked' })
+          .execute(),
+    ),
+  ).rejects.toThrow();
+});
+
+it('converts persisted preview table selections to logical collection names once', async () => {
+  const { config } = await setup();
+  await app.connection.builder.createCollection('orderItems', (collection) => {
+    collection.string('id', { primaryKey: true });
+  });
+  await app.connection.query
+    .updateTable('demoModeConfiguration')
+    .set({
+      revision: 4,
+      value: JSON.stringify({
+        rules: [],
+        tables: ['order_items'],
+        mocks: {},
+        schedule: null,
+      }),
+    })
+    .where('id', '=', 'default')
+    .execute();
+  await config.initialize();
+  expect(await config.read()).toMatchObject({
+    revision: 5,
+    collections: ['orderItems'],
+  });
+  await config.initialize();
+  expect((await config.read()).revision).toBe(5);
 });

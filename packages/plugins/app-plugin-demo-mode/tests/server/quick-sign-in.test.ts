@@ -51,7 +51,7 @@ async function routes(): Promise<Hono> {
         get mode() {
           return mode;
         },
-        allowTables: [],
+        allowCollections: [],
       },
     ],
     [demoDataToken, { status: async () => ({ datasetId: 'demo', accounts }) }],

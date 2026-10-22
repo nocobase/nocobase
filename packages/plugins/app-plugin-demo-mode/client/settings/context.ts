@@ -108,7 +108,7 @@ export interface Configuration {
 }
 
 export type ConfigurationPath =
-  'writeRules' | 'tables' | 'mocks' | 'schedule' | 'chat';
+  'writeRules' | 'collections' | 'mocks' | 'schedule' | 'chat';
 
 /** What a settings card needs from a section's draft to show its save bar. */
 export interface DraftControls {

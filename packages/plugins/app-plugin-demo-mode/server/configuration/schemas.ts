@@ -11,7 +11,7 @@ const tableName = z
   .string()
   .min(1)
   .max(128)
-  .regex(/^[a-z][a-z0-9_]*$/u);
+  .regex(/^[a-z][a-z0-9_]*$/iu);
 export const WriteRule: z.ZodType<DemoWriteRule> = z.strictObject({
   capability: z.string().min(1).max(128),
   operation,
@@ -39,7 +39,7 @@ export const ChatConfiguration: z.ZodType<DemoChatConfiguration> =
     ),
   });
 export const ConfigurationInput: Record<
-  'rules' | 'tables' | 'mocks' | 'schedule' | 'chat',
+  'rules' | 'collections' | 'mocks' | 'schedule' | 'chat',
   z.ZodType<{
     expectedRevision: number;
     value:
@@ -50,7 +50,7 @@ export const ConfigurationInput: Record<
       | DemoChatConfiguration;
   }>
 > = {
-  tables: z.strictObject({
+  collections: z.strictObject({
     expectedRevision: z.number().int().nonnegative(),
     value: z.array(tableName).max(100),
   }),
@@ -76,17 +76,17 @@ export const ConfigurationView: z.ZodType<DemoConfigurationView> = z
     busy: z.boolean(),
     revision: z.number(),
     rules: z.array(WriteRule),
-    tables: z.array(tableName),
+    collections: z.array(tableName),
     mocks: z.record(z.string(), z.boolean()),
     schedule: DailySchedule.nullable(),
     chat: ChatConfiguration,
     mode: z.enum(['off', 'read-only', 'observe']),
-    fixedTables: z.array(z.string()),
+    fixedCollections: z.array(z.string()),
     capabilities: z.array(
       z.object({
         id: z.string(),
         title: z.string(),
-        table: z.string(),
+        collection: z.string(),
         operations: z.array(operation),
         scopes: z.array(z.object({ id: z.string(), title: z.string() })),
       }),

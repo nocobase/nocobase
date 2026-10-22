@@ -191,16 +191,16 @@ const resource: DemoModeResource = {
         emptyHelp:
           'La aplicación no ha registrado ninguna operación que pueda abrirse en una demostración.',
       },
-      tables: {
-        title: 'Tablas',
+      collections: {
+        title: 'Colecciones',
         description:
-          'Cualquier solicitud autorizada puede escribir en estas tablas. Úsalo para estado que nadie pueda usar mal, como las preferencias de vista.',
-        label: 'Tablas que pueden escribir los visitantes',
-        placeholder: 'Buscar tablas',
-        noMatch: 'Ninguna tabla coincide',
+          'Cualquier solicitud autorizada puede escribir en estas colecciones. Úsalo para estado que nadie pueda usar mal, como las preferencias de vista.',
+        label: 'Colecciones que pueden escribir los visitantes',
+        placeholder: 'Buscar colecciones',
+        noMatch: 'Ninguna colección coincide',
         fixed: 'Siempre escribibles',
         fixedHelp:
-          'Las sesiones de inicio y las excepciones propias del despliegue (NOCOBASE_DEMO_WRITABLE_TABLES); no se pueden cambiar aquí.',
+          'Las sesiones de inicio y las excepciones propias del despliegue (NOCOBASE_DEMO_WRITABLE_COLLECTIONS); no se pueden cambiar aquí.',
       },
     },
     simulation: {

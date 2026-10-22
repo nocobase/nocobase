@@ -28,7 +28,7 @@ import {
 } from './context.js';
 import { ErrorAlert } from './shared.js';
 import { ChatCard, MocksCard } from './simulation.js';
-import { CapabilitiesCard, TablesCard } from './writes.js';
+import { CapabilitiesCard, CollectionsCard } from './writes.js';
 
 export type {
   DemoSettingsComponents,
@@ -295,7 +295,7 @@ export function DemoModeSettings(
             {configured((value) => (
               <>
                 <CapabilitiesCard configuration={value} />
-                <TablesCard configuration={value} />
+                <CollectionsCard configuration={value} />
               </>
             ))}
           </TabsContent>

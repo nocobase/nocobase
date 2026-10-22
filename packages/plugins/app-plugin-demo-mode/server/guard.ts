@@ -8,6 +8,12 @@ import type { DemoModeSettings } from './config.js';
 import { DemoReadOnlyError } from './errors.js';
 import { classifySql, type SqlWrite } from './sql.js';
 
+export interface DemoSqlRule {
+  readonly connection: string;
+  readonly table: string;
+  readonly statement: string;
+}
+
 /** What the guard knows about one HTTP request while it runs. */
 export interface DemoRequestState {
   readonly method: string;
@@ -18,7 +24,7 @@ export interface DemoRequestState {
   readonly probe?: boolean;
   /** Refuse writes to allowed tables too, for requests that would misuse them, such as ending other visitors' sessions. */
   readonly strict?: boolean;
-  readonly allowed?: readonly { table: string; statement: string }[];
+  readonly allowed?: readonly DemoSqlRule[];
 }
 
 /** The part of a knex client the guard uses: its `query` event, emitted synchronously before a query runs. */
@@ -53,10 +59,7 @@ export class DemoWriteGuard {
     return this.storage.exit(fn);
   }
 
-  public runAllowed<T>(
-    allowed: readonly { table: string; statement: string }[],
-    fn: () => T,
-  ): T {
+  public runAllowed<T>(allowed: readonly DemoSqlRule[], fn: () => T): T {
     const state = this.storage.getStore();
     return state
       ? this.storage.run(
@@ -71,14 +74,14 @@ export class DemoWriteGuard {
     return this.guarded.has(knex.client);
   }
 
-  public attach(knex: GuardedKnex): void {
+  public attach(knex: GuardedKnex, connection: string): void {
     const client = knex.client;
     if (this.guarded.has(client)) return;
     this.guarded.add(client);
-    client.on('query', (query) => this.inspect(query));
+    client.on('query', (query) => this.inspect(query, connection));
   }
 
-  private inspect(query: { sql?: unknown }): void {
+  private inspect(query: { sql?: unknown }, connection: string): void {
     const state = this.storage.getStore();
     if (!state || typeof query.sql !== 'string') return;
     const writes = classifySql(query.sql).filter(
@@ -86,11 +89,12 @@ export class DemoWriteGuard {
         state.probe ||
         state.strict ||
         !write.table ||
-        (!this.settings.allowTables.has(write.table) &&
-          !state.allowed?.some(
-            (rule) =>
-              rule.table === write.table && rule.statement === write.statement,
-          )),
+        !state.allowed?.some(
+          (rule) =>
+            rule.connection === connection &&
+            rule.table === write.table &&
+            rule.statement === write.statement,
+        ),
     );
     if (writes.length === 0) return;
     state.blocked.push(...writes);

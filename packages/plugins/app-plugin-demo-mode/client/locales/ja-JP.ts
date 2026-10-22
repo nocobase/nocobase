@@ -185,16 +185,16 @@ const resource: DemoModeResource = {
         empty: '登録された操作はありません',
         emptyHelp: 'このアプリはデモで許可できる操作を登録していません。',
       },
-      tables: {
-        title: 'テーブル',
+      collections: {
+        title: 'コレクション',
         description:
-          '権限のあるリクエストなら誰でもこれらのテーブルに書き込めます。表示設定のように悪用できない状態にだけ使ってください。',
-        label: '訪問者が書き込めるテーブル',
-        placeholder: 'テーブルを検索',
-        noMatch: '一致するテーブルがありません',
+          '権限のあるリクエストなら誰でもこれらのコレクションに書き込めます。表示設定のように悪用できない状態にだけ使ってください。',
+        label: '訪問者が書き込めるコレクション',
+        placeholder: 'コレクションを検索',
+        noMatch: '一致するコレクションがありません',
         fixed: '常に書き込み可能',
         fixedHelp:
-          'サインインセッションとデプロイ自身の例外（NOCOBASE_DEMO_WRITABLE_TABLES）です。ここでは変更できません。',
+          'サインインセッションとデプロイ自身の例外（NOCOBASE_DEMO_WRITABLE_COLLECTIONS）です。ここでは変更できません。',
       },
     },
     simulation: {

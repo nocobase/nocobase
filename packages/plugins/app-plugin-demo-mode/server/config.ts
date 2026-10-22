@@ -11,22 +11,24 @@ export type DemoMode = 'off' | 'read-only' | 'observe';
 
 export interface DemoModeSettings {
   readonly mode: DemoMode;
-  readonly allowTables: ReadonlySet<string>;
+  readonly allowCollections: ReadonlySet<string>;
   readonly quickSignIn: boolean;
 }
 
 /** Register this section separately from the Server plugin in defaultAppConfigs. */
 export interface DemoModeConfig {
   readonly mode?: DemoMode;
-  readonly allowTables?: readonly string[];
+  /** Logical collection names in the default database connection, matching migrations. */
+  readonly allowCollections?: readonly string[];
   readonly quickSignIn?: boolean;
 }
 
 export const DEMO_MODE_ENV = 'NOCOBASE_DEMO_MODE';
-export const DEMO_MODE_WRITABLE_TABLES_ENV = 'NOCOBASE_DEMO_WRITABLE_TABLES';
+export const DEMO_MODE_WRITABLE_COLLECTIONS_ENV =
+  'NOCOBASE_DEMO_WRITABLE_COLLECTIONS';
 
 /** Authentication writes needed even when the demo otherwise refuses changes. */
-export const DEFAULT_ALLOW_TABLES: readonly string[] = [
+export const DEFAULT_ALLOW_COLLECTIONS: readonly string[] = [
   'session',
   'verification',
 ];
@@ -34,29 +36,34 @@ export const DEFAULT_ALLOW_TABLES: readonly string[] = [
 /** The runtime resolves environment values in the owning application's scope. */
 export function defineDemoModeConfig(): AppConfigFactory<DemoModeConfig> {
   return defineAppConfig<DemoModeConfig>({
-    defaults: { mode: 'off', allowTables: [], quickSignIn: true },
+    defaults: { mode: 'off', allowCollections: [], quickSignIn: true },
     env: {
       [DEMO_MODE_ENV]: envString('mode', {
         description: 'Demo request policy: off, observe or read-only.',
       }),
-      [DEMO_MODE_WRITABLE_TABLES_ENV]: envStrings('allowTables', ',', {
-        description: 'Comma-separated physical tables writable in demo mode.',
-      }),
+      [DEMO_MODE_WRITABLE_COLLECTIONS_ENV]: envStrings(
+        'allowCollections',
+        ',',
+        {
+          description:
+            'Comma-separated logical collections writable in demo mode.',
+        },
+      ),
     },
     validate(value, context) {
       if (!['off', 'observe', 'read-only'].includes(value.mode ?? ''))
         context.error('mode', 'must be off, observe or read-only.');
       if (
-        !Array.isArray(value.allowTables) ||
-        value.allowTables.some(
+        !Array.isArray(value.allowCollections) ||
+        value.allowCollections.some(
           (table: unknown) =>
             typeof table !== 'string' ||
             !/^[a-z][a-z0-9_]*$/iu.test(table.trim()),
         )
       )
         context.error(
-          'allowTables',
-          'must be an array of physical table names.',
+          'allowCollections',
+          'must be an array of logical collection names.',
         );
       if (typeof value.quickSignIn !== 'boolean')
         context.error('quickSignIn', 'must be a boolean.');
@@ -71,9 +78,9 @@ export function resolveDemoModeSettings(
   const section = config.get<DemoModeConfig>('demoMode') ?? {};
   return {
     mode: section.mode ?? 'off',
-    allowTables: new Set(
-      [...DEFAULT_ALLOW_TABLES, ...(section.allowTables ?? [])].map((table) =>
-        table.trim().toLowerCase(),
+    allowCollections: new Set(
+      [...DEFAULT_ALLOW_COLLECTIONS, ...(section.allowCollections ?? [])].map(
+        (table) => table.trim(),
       ),
     ),
     quickSignIn: section.quickSignIn !== false,

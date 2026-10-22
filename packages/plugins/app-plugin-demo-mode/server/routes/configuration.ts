@@ -72,23 +72,27 @@ export const configurationRoutes: AppApiRouteContribution<AppPluginApplication> 
       async (c) => c.json({ data: await service.read() }),
     );
     routes.get(
-      '/tables',
+      '/collections',
       allowed('read'),
       describeRoute({
         tags: ['DemoMode'],
-        summary: 'List selectable physical tables in the default database',
-        operationId: 'demoModeListTables',
+        summary: 'List selectable collections in the default database',
+        operationId: 'demoModeListCollections',
         responses: {
           ...apiErrorResponses,
           404: apiErrorResponse(404),
-          200: dataResponse(z.array(z.string())),
+          200: dataResponse(
+            z.array(
+              z.object({ name: z.string(), title: z.string().optional() }),
+            ),
+          ),
         },
       }),
-      async (c) => c.json({ data: await service.availableTables() }),
+      async (c) => c.json({ data: await service.availableCollections() }),
     );
     for (const [path, section] of [
       ['writeRules', 'rules'],
-      ['tables', 'tables'],
+      ['collections', 'collections'],
       ['mocks', 'mocks'],
       ['schedule', 'schedule'],
       ['chat', 'chat'],

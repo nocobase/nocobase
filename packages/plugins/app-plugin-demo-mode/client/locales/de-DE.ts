@@ -190,16 +190,16 @@ const resource: DemoModeResource = {
         emptyHelp:
           'Die Anwendung hat keinen Vorgang registriert, der in einer Demo geöffnet werden kann.',
       },
-      tables: {
-        title: 'Tabellen',
+      collections: {
+        title: 'Collections',
         description:
-          'Jede berechtigte Anfrage darf in diese Tabellen schreiben. Nur für Zustand, den niemand missbrauchen kann, etwa Ansichtseinstellungen.',
-        label: 'Tabellen, die Besucher schreiben dürfen',
-        placeholder: 'Tabellen suchen',
-        noMatch: 'Keine passende Tabelle',
+          'Jede berechtigte Anfrage darf in diese Collections schreiben. Nur für Zustand, den niemand missbrauchen kann, etwa Ansichtseinstellungen.',
+        label: 'Collections, die Besucher schreiben dürfen',
+        placeholder: 'Collections suchen',
+        noMatch: 'Keine passende Collection',
         fixed: 'Immer beschreibbar',
         fixedHelp:
-          'Anmeldesitzungen und die eigenen Ausnahmen der Bereitstellung (NOCOBASE_DEMO_WRITABLE_TABLES); sie lassen sich hier nicht ändern.',
+          'Anmeldesitzungen und die eigenen Ausnahmen der Bereitstellung (NOCOBASE_DEMO_WRITABLE_COLLECTIONS); sie lassen sich hier nicht ändern.',
       },
     },
     simulation: {

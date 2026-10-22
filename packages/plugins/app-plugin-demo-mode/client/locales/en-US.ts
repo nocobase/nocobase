@@ -184,16 +184,16 @@ const resource = {
         emptyHelp:
           'The application has not registered any operation that may be opened in a demo.',
       },
-      tables: {
-        title: 'Tables',
+      collections: {
+        title: 'Collections',
         description:
-          'Any authorized request may write these tables. Use it for state nobody can misuse, such as view preferences.',
-        label: 'Tables visitors may write',
-        placeholder: 'Search tables',
-        noMatch: 'No matching table',
+          'Any authorized request may write these collections. Use it for state nobody can misuse, such as view preferences.',
+        label: 'Collections visitors may write',
+        placeholder: 'Search collections',
+        noMatch: 'No matching collection',
         fixed: 'Always writable',
         fixedHelp:
-          'Sign-in sessions and the deployment’s own exceptions (NOCOBASE_DEMO_WRITABLE_TABLES); they cannot be changed here.',
+          'Sign-in sessions and the deployment’s own exceptions (NOCOBASE_DEMO_WRITABLE_COLLECTIONS); they cannot be changed here.',
       },
     },
     simulation: {

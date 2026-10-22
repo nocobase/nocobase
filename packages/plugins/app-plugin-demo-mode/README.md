@@ -36,14 +36,14 @@ The factory declares defaults, validation and two environment mappings. The runt
 
 The plugin is off until the deployment switches it on:
 
-| Environment                     | Configuration          | Meaning                                                       |
-| ------------------------------- | ---------------------- | ------------------------------------------------------------- |
-| `NOCOBASE_DEMO_MODE`            | `demoMode.mode`        | `off` (default), `read-only` or `observe`                     |
-| `NOCOBASE_DEMO_WRITABLE_TABLES` | `demoMode.allowTables` | Comma-separated physical table names requests may still write |
+| Environment                          | Configuration               | Meaning                                                           |
+| ------------------------------------ | --------------------------- | ----------------------------------------------------------------- |
+| `NOCOBASE_DEMO_MODE`                 | `demoMode.mode`             | `off` (default), `read-only` or `observe`                         |
+| `NOCOBASE_DEMO_WRITABLE_COLLECTIONS` | `demoMode.allowCollections` | Comma-separated logical collection names requests may still write |
 
 `session` and `verification`, the Better Auth tables signing in and out writes, are always allowed, except to routes that end or change other sessions — any path ending in `revoke-sessions`, `revoke-other-sessions`, `revoke-session`, `update-session` or their camelCase forms, such as the users plugin's `users/:userId/revokeSessions` — so a visitor of a shared demo account cannot sign everyone else out.
 
-For deployment defaults, set `NOCOBASE_DEMO_WRITABLE_TABLES=crm_user_preferences,crm_plans` and restart the application. Names are comma-separated, trimmed, lowercased and deduplicated. The variable replaces `demoMode.allowTables` when set (an empty value clears that deployment list); built-in authentication exceptions remain. These deployment-owned `fixedTables` combine with the administrator's saved `tables`, so removing a UI selection does not revoke a deployment exception. Business authorization still applies.
+For deployment defaults, set `NOCOBASE_DEMO_WRITABLE_COLLECTIONS=userPreferences,orderItems` and restart the application. Names are comma-separated, trimmed and deduplicated; case is preserved. The variable replaces `demoMode.allowCollections` when set (an empty value clears that deployment list); built-in authentication exceptions remain. These deployment-owned `fixedCollections` combine with the administrator's saved `collections`, so removing a UI selection does not revoke a deployment exception. Business authorization still applies.
 
 ## What it does
 
@@ -178,7 +178,7 @@ Set `showFloatingAccountSwitcher: false` in the client registration to hide the 
 
 - **Overview** — the dataset's state, language, time and counts, with Generate, Reset and Clear (each confirmed, with its exact consequence), and the visitor entry: the accounts quick sign-in offers, their credentials, a copyable entry link for each and an iframe snippet.
 - **Daily reset** — on or off, the time, a searchable IANA time zone, the dataset language and the next run.
-- **Visitor writes** — the registered write capabilities with each operation and scope, and the table exceptions with the deployment's fixed tables.
+- **Visitor writes** — the registered write capabilities with each operation and scope, and the collection exceptions with the deployment's fixed collections.
 - **Simulation & AI** — online chat (on or off, simulated or a real model, a policy per tool) and the registered simulations.
 
 Each card saves on its own with the revision it was started from and says when another administrator saved first; leaving with unsaved changes asks first. What the viewer lacks the grant for is shown without its actions.
@@ -230,9 +230,9 @@ The command waits for completion. `--dry-run` previews only the operation and ar
 
 ## Demo configuration
 
-While demo mode is `read-only` or `observe`, administrators adjust a demo from the plugin's administration page, through `GET /api/demoMode/configuration` and `PUT /api/demoMode/configuration/writeRules|tables|mocks|schedule` (`settings:demoMode.configuration`: `read` / `configure`). Every save carries `expectedRevision` and is refused with `DEMO_CONFIGURATION_CONFLICT` when another administrator saved first.
+While demo mode is `read-only` or `observe`, administrators adjust a demo from the plugin's administration page, through `GET /api/demoMode/configuration` and `PUT /api/demoMode/configuration/writeRules|collections|mocks|schedule` (`settings:demoMode.configuration`: `read` / `configure`). Every save carries `expectedRevision` and is refused with `DEMO_CONFIGURATION_CONFLICT` when another administrator saved first.
 
-- **Read-only write exceptions.** An application registers what may be opened with `demoConfigurationToken.registerWrite({ id, title, table, operations, scopes, checkScope })`; identity, authorization, secret and plugin tables are refused. Rules start empty. The application wraps exactly the authorized business mutation in `runWrite(id, operation, input, run)`, or `runWrites([[id, operation], …], input, run)` when one mutation writes through several capabilities: an entry without a rule allows nothing, and a configured entry whose `checkScope` refuses the input refuses the whole mutation with `DEMO_SCOPE_DENIED`.
+- **Read-only write exceptions.** An application registers what may be opened with `demoConfigurationToken.registerWrite({ id, title, collection, operations, scopes, checkScope })`; identity, authorization, secret and plugin tables are refused. Rules start empty. The application wraps exactly the authorized business mutation in `runWrite(id, operation, input, run)`, or `runWrites([[id, operation], …], input, run)` when one mutation writes through several capabilities: an entry without a rule allows nothing, and a configured entry whose `checkScope` refuses the input refuses the whole mutation with `DEMO_SCOPE_DENIED`.
 - **Simulations.** `registerMock` registers model/tool/Runner adapters. `registerAgent({ id, title, defaultEnabled, execute })` supplies an environment-wide Agent proxy: demo mode always uses the application’s replacement, while mode `off` uses the normal Agent. Disabled adapters fail closed; unmarked or visitor-created business records never fall through to a real Agent in demo mode.
 - **Daily reset.** Scheduler triggers resets independently of HTTP traffic. Normal request policy checks do not calculate the next reset time; `nextRun` is only a management-view preview. Configure `{ enabled, hour, minute, timezone, language }` through the management API/UI. This is the only schedule source; there is no deployment-cron override. A durable claim permits one reset per local day, including across processes and repeated DST minutes. Configure it after the first import, whose administrator is used for subsequent resets. Register the Scheduler plugin in the host: Demo Mode owns the `demoMode.dailyReset` target and minute tick; applications supply only the dataset adapter. The default is disabled. Expose `nextRun` from the saved configuration and execution failures in Scheduler. Missed minutes are skipped, including downtime; a failed claimed run is not retried automatically that day.
 
@@ -251,13 +251,13 @@ pnpm --filter @nocobase/app-plugin-demo-mode build
 
 The administration page is built on `/api/demoMode/configuration`, with independent `demoMode.configuration` read/configure permissions. Register explicit write capabilities and mock adapters through `demoConfigurationToken`; no business write rules are enabled by default. Configuration uses optimistic revisions, daily reset supports IANA timezones, and disabled mocks fail closed. The published [integration Skill](skills/nocobase-app-plugin-demo-mode/SKILL.md) documents scope validation, scheduling and application-owned adapters.
 
-### Exception tables
+### Collection exceptions
 
-The authenticated GET `/api/demoMode/configuration/tables` lists physical tables in the default application database for a searchable multi-select. It excludes views, protected tables and deployment-owned exceptions. Keep saved selections visible even when absent from the catalog, so administrators can remove stale entries.
+The authenticated GET `/api/demoMode/configuration/collections` lists collections in the default application database (objects with `name` and optional `title`) for a searchable multi-select. It excludes views, protected tables and deployment-owned exceptions. Keep saved selections visible even when absent from the catalog, so administrators can remove stale entries.
 
-Administrators can PUT `/api/demoMode/configuration/tables` with `{ expectedRevision, value: ["crm_plans"] }`. Each entry is a lowercase physical table name, not a Collection alias. Adding a table allows its INSERT, UPDATE and DELETE statements; removing it restores read-only protection unless another exception still grants access. There is no operation selector and no application capability registration. The list defaults to empty, persists across restarts and applies to subsequent HTTP requests, including implicit writes from GET routes. Normal application authorization remains in force.
+Administrators can PUT `/api/demoMode/configuration/collections` with `{ expectedRevision, value: ["orderItems"] }`. Each entry is a logical collection name, such as `orderItems`, exactly as used in migrations. The plugin resolves physical names from collection metadata, including naming strategies and table prefixes. Exceptions apply only to the default database connection; an identically named table on another connection stays guarded. Adding a collection allows its INSERT, UPDATE and DELETE statements; removing it restores read-only protection unless another exception still grants access. There is no operation selector and no application capability registration. The list defaults to empty, persists across restarts and applies to subsequent HTTP requests, including implicit writes from GET routes. Normal application authorization remains in force.
 
-Protected identity, authorization, Agent and Demo configuration tables cannot be added through this API. Deployment-level exceptions (including sign-in sessions) remain visible as `fixedTables` and are managed by deployment configuration. Runtime exception tables are returned as `tables`. These runtime exceptions never permit DDL or unknown statements.
+Protected identity, authorization, Agent and Demo configuration tables cannot be added through this API. Deployment-level exceptions (including sign-in sessions) remain visible as `fixedCollections` and are managed by deployment configuration. Runtime exception collections are returned as `collections`. These runtime exceptions never permit DDL or unknown statements.
 
 ### Demo Agent replacement
 

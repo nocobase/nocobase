@@ -11,7 +11,7 @@ import {
   DEMO_READ_ONLY_MESSAGE,
   DEMO_READ_ONLY_REASON,
 } from './errors.js';
-import type { DemoRequestState, DemoWriteGuard } from './guard.js';
+import type { DemoRequestState, DemoWriteGuard, DemoSqlRule } from './guard.js';
 import { DEMO_MODE_NAMESPACE } from './namespace.js';
 
 /**
@@ -42,9 +42,7 @@ export interface DemoModeMiddlewareOptions {
   readonly attachConnections: () => Promise<void>;
   readonly logger?: DemoModeLogger;
   readonly runWithPolicy?: (run: () => Promise<void>) => Promise<void>;
-  readonly allowed?: () => Promise<
-    readonly { table: string; statement: string }[]
-  >;
+  readonly allowed?: () => Promise<readonly DemoSqlRule[]>;
 }
 
 /**

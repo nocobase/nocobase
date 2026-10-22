@@ -16,6 +16,7 @@ import {
 /** A searchable chips multi-select over plain string values, such as table names. */
 export function MultiSelect({
   options,
+  label = (value: string) => value,
   value,
   onChange,
   placeholder,
@@ -23,6 +24,7 @@ export function MultiSelect({
   disabled,
   'aria-label': ariaLabel,
 }: {
+  readonly label?: (value: string) => string;
   readonly options: readonly string[];
   readonly value: readonly string[];
   readonly onChange: (value: string[]) => void;
@@ -34,6 +36,7 @@ export function MultiSelect({
   const anchor = useComboboxAnchor();
   return (
     <Combobox
+      itemToStringLabel={label}
       multiple
       autoHighlight
       items={[...options]}
@@ -44,7 +47,7 @@ export function MultiSelect({
       <ComboboxChips ref={anchor} className='min-h-9'>
         <ComboboxValue>
           {value.map((item) => (
-            <ComboboxChip key={item}>{item}</ComboboxChip>
+            <ComboboxChip key={item}>{label(item)}</ComboboxChip>
           ))}
         </ComboboxValue>
         <ComboboxChipsInput
@@ -57,7 +60,7 @@ export function MultiSelect({
         <ComboboxList>
           {(item: string) => (
             <ComboboxItem key={item} value={item}>
-              {item}
+              {label(item)}
             </ComboboxItem>
           )}
         </ComboboxList>
