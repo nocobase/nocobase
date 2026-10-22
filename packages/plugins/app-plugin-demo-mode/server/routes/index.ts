@@ -17,7 +17,7 @@ import { dataRoutes } from './data.js';
 import { modelRoutes } from './models.js';
 
 const DemoModeStatusSchema = z.object({
-  mode: z.enum(['off', 'read-only', 'observe']),
+  enabled: z.boolean(),
 });
 
 const routes: readonly AppRouteContribution<AppPluginApplication>[] = [
@@ -28,12 +28,12 @@ const routes: readonly AppRouteContribution<AppPluginApplication>[] = [
       '/demoMode/status',
       describeRoute({
         tags: ['Demo mode'],
-        summary: 'Read whether the application is a read-only demo',
+        summary: 'Read whether the application is a demo',
         operationId: 'demoModeStatus',
-        // The sign-in page shows the demo notice before anyone signs in; the mode is no secret.
+        // The sign-in page shows the demo notice before anyone signs in; this flag is public.
         security: [],
         description:
-          'The demo mode this application runs in. Needs no session or API key.',
+          'Whether Demo Mode is enabled. Needs no session or API key.',
         responses: {
           200: dataResponse(DemoModeStatusSchema),
           500: apiErrorResponse(500),
@@ -41,7 +41,7 @@ const routes: readonly AppRouteContribution<AppPluginApplication>[] = [
       }),
       (context) =>
         context.json({
-          data: { mode: container.resolve(demoModeServiceToken).mode },
+          data: { enabled: container.resolve(demoModeServiceToken).enabled },
         }),
     );
     return router;

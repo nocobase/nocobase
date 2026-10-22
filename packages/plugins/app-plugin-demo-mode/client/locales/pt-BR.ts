@@ -32,7 +32,7 @@ const resource: DemoModeResource = {
     busyHelp: 'Você poderá salvar as configurações novamente quando terminar.',
     disabled: {
       title: 'Este aplicativo não é uma demonstração',
-      help: 'O modo de demonstração está desligado. A implantação o liga com NOCOBASE_DEMO_MODE.',
+      help: 'O modo de demonstração está desligado. A implantação o liga com NOCOBASE_DEMO_MODE=true.',
     },
     cancel: 'Cancelar',
     save: 'Salvar',
@@ -43,13 +43,9 @@ const resource: DemoModeResource = {
       on: 'Ligado',
       off: 'Desligado',
     },
-    mode: {
-      readOnly: 'Somente leitura',
-      observe: 'Observação',
-      readOnlyHelp:
-        'Os visitantes podem abrir todas as páginas, mas as alterações não são salvas, a menos que uma exceção abaixo permita.',
-      observeHelp:
-        'Nada é recusado: as gravações que o modo somente leitura recusaria são apenas registradas, para descobrir o que permitir.',
+    status: {
+      enabled: 'Demo ativada',
+      help: 'Os visitantes podem abrir todas as páginas, mas as alterações não são salvas, a menos que uma exceção abaixo permita.',
     },
     tabs: {
       overview: 'Visão geral',
@@ -170,7 +166,7 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        'No modo somente leitura, toda alteração é recusada. Abra apenas o que os visitantes precisam experimentar e apenas para os registros da demonstração; as permissões de negócio continuam valendo.',
+        'Quando a demonstração está ativada, as alterações são recusadas por padrão. Abra apenas o que os visitantes precisam experimentar e apenas para os registros da demonstração; as permissões de negócio continuam valendo.',
       allow: 'Permitir',
       revoke: 'Recusar novamente',
       scope: 'Escopo',

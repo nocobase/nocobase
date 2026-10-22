@@ -32,7 +32,7 @@ const resource: DemoModeResource = {
     busyHelp: 'Setelan bisa disimpan lagi setelah selesai.',
     disabled: {
       title: 'Aplikasi ini bukan demo',
-      help: 'Mode demo nonaktif. Deployment mengaktifkannya dengan NOCOBASE_DEMO_MODE.',
+      help: 'Mode demo nonaktif. Deployment mengaktifkannya dengan NOCOBASE_DEMO_MODE=true.',
     },
     cancel: 'Batal',
     save: 'Simpan',
@@ -43,13 +43,9 @@ const resource: DemoModeResource = {
       on: 'Aktif',
       off: 'Nonaktif',
     },
-    mode: {
-      readOnly: 'Hanya baca',
-      observe: 'Pengamatan',
-      readOnlyHelp:
-        'Pengunjung bisa membuka setiap halaman, tetapi perubahan tidak disimpan kecuali diizinkan pengecualian di bawah.',
-      observeHelp:
-        'Tidak ada yang ditolak: penulisan yang akan ditolak mode hanya baca hanya dicatat, untuk mengetahui apa yang perlu diizinkan.',
+    status: {
+      enabled: 'Demo aktif',
+      help: 'Pengunjung bisa membuka setiap halaman, tetapi perubahan tidak disimpan kecuali diizinkan pengecualian di bawah.',
     },
     tabs: {
       overview: 'Ringkasan',
@@ -164,7 +160,7 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        'Dalam mode hanya baca, setiap perubahan ditolak. Buka hanya yang perlu dicoba pengunjung, dan hanya untuk catatan milik demo; izin bisnis tetap berlaku.',
+        'Saat demo aktif, perubahan ditolak secara default. Buka hanya yang perlu dicoba pengunjung, dan hanya untuk catatan milik demo; izin bisnis tetap berlaku.',
       allow: 'Izinkan',
       revoke: 'Tolak lagi',
       scope: 'Cakupan',

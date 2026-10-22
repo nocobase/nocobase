@@ -32,7 +32,7 @@ const resource = {
     busyHelp: 'Settings can be saved again once it finishes.',
     disabled: {
       title: 'This application is not a demo',
-      help: 'Demo mode is off. A deployment turns it on with NOCOBASE_DEMO_MODE.',
+      help: 'Demo mode is off. A deployment turns it on with NOCOBASE_DEMO_MODE=true.',
     },
     cancel: 'Cancel',
     save: 'Save',
@@ -43,13 +43,9 @@ const resource = {
       on: 'On',
       off: 'Off',
     },
-    mode: {
-      readOnly: 'Read-only',
-      observe: 'Observe',
-      readOnlyHelp:
-        'Visitors can open every page, but changes are not saved unless an exception below allows them.',
-      observeHelp:
-        'Nothing is refused: writes that read-only mode would refuse are only logged, to find what to allow.',
+    status: {
+      enabled: 'Demo enabled',
+      help: 'Visitors can open every page, but changes are not saved unless an exception below allows them.',
     },
     tabs: {
       overview: 'Overview',
@@ -164,7 +160,7 @@ const resource = {
     },
     writes: {
       intro:
-        'In read-only mode every change is refused. Open only what visitors need to try, and only for records the demo owns; business permissions still apply.',
+        'When Demo Mode is enabled, changes are refused by default. Open only what visitors need to try, and only for records the demo owns; business permissions still apply.',
       allow: 'Allow',
       revoke: 'Refuse again',
       scope: 'Scope',

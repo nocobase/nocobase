@@ -45,10 +45,10 @@ it('refuses normalized and encoded paths that escape the application base', () =
 const ann = { username: 'ann', name: 'Ann', role: '管理员' };
 const bob = { username: 'bob', name: 'Bob', role: '审核人' };
 
-/** The read-only demo `demoApiAnswer` answers as: Ann, signed in, and Bob. */
+/** The demo `demoApiAnswer` answers as: Ann, signed in, and Bob. */
 const demoApiAnswer = (call: { method: string; path: string }) => {
   if (call.method === 'GET' && call.path === 'demoMode/status')
-    return { data: { mode: 'read-only' } };
+    return { data: { enabled: true } };
   if (call.method === 'GET' && call.path === 'demoMode/accounts')
     return {
       data: [
@@ -59,12 +59,12 @@ const demoApiAnswer = (call: { method: string; path: string }) => {
   return new Response(null, { status: 404 });
 };
 
-/** A read-only demo offering `accounts`; records each sign-in it is asked for. */
+/** A demo offering `accounts`; records each sign-in it is asked for. */
 function demoApi(accounts: readonly object[], signIns: string[] = []) {
   return vi.fn(
     answerApi((call) => {
       if (call.method === 'GET' && call.path === 'demoMode/status')
-        return { data: { mode: 'read-only' } };
+        return { data: { enabled: true } };
       if (call.method === 'GET' && call.path === 'demoMode/accounts')
         return { data: accounts };
       const signIn = /^demoMode\/accounts\/([^/]+)\/signIn$/u.exec(call.path);

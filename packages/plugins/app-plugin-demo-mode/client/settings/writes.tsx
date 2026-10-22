@@ -24,7 +24,7 @@ import { ErrorAlert, SettingsCard } from './shared.js';
 const OPERATIONS = ['insert', 'update', 'delete'] as const;
 
 /**
- * The business operations the application registered as safe to open in a read-only demo, each allowed per operation
+ * The business operations the application registered as safe to open in a demo, each allowed per operation
  * and limited to a scope such as the demo's own records.
  */
 export function CapabilitiesCard({

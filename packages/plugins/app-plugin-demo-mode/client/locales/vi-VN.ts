@@ -32,7 +32,7 @@ const resource: DemoModeResource = {
     busyHelp: 'Có thể lưu cài đặt lại khi hoàn tất.',
     disabled: {
       title: 'Ứng dụng này không phải bản demo',
-      help: 'Chế độ demo đang tắt. Bản triển khai bật nó bằng NOCOBASE_DEMO_MODE.',
+      help: 'Chế độ demo đang tắt. Bản triển khai bật nó bằng NOCOBASE_DEMO_MODE=true.',
     },
     cancel: 'Hủy',
     save: 'Lưu',
@@ -43,13 +43,9 @@ const resource: DemoModeResource = {
       on: 'Bật',
       off: 'Tắt',
     },
-    mode: {
-      readOnly: 'Chỉ đọc',
-      observe: 'Quan sát',
-      readOnlyHelp:
-        'Khách có thể mở mọi trang, nhưng thay đổi không được lưu trừ khi một ngoại lệ bên dưới cho phép.',
-      observeHelp:
-        'Không từ chối gì: các lần ghi mà chế độ chỉ đọc sẽ từ chối chỉ được ghi nhật ký, để tìm ra điều cần cho phép.',
+    status: {
+      enabled: 'Đã bật bản demo',
+      help: 'Khách có thể mở mọi trang, nhưng thay đổi không được lưu trừ khi một ngoại lệ bên dưới cho phép.',
     },
     tabs: {
       overview: 'Tổng quan',
@@ -165,7 +161,7 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        'Ở chế độ chỉ đọc, mọi thay đổi đều bị từ chối. Chỉ mở những gì khách cần thử, và chỉ cho bản ghi của demo; quyền nghiệp vụ vẫn áp dụng.',
+        'Khi bật bản demo, các thay đổi mặc định bị từ chối. Chỉ mở những gì khách cần thử, và chỉ cho bản ghi của demo; quyền nghiệp vụ vẫn áp dụng.',
       allow: 'Cho phép',
       revoke: 'Từ chối lại',
       scope: 'Phạm vi',

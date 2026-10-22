@@ -15,7 +15,7 @@ afterEach(async () => app?.close());
 async function setup() {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'read-only' } },
+    config: { demoMode: { enabled: true } },
   });
   const container = app.application.container;
   const config = container.resolve(demoConfigurationRuntimeToken);
@@ -330,7 +330,7 @@ it('uses the real Agent only in an off deployment and refuses direct queued demo
   const { container, guard } = await setup();
   const config = new DefaultDemoConfigurationService(
     container.resolve(databaseManagerToken),
-    resolveDemoModeSettings({ get: () => ({ mode: 'off' }) } as never),
+    resolveDemoModeSettings({ get: () => ({ enabled: false }) } as never),
     guard,
     async () => ({ importing: null, languages: ['en-US'] }),
   );
@@ -467,7 +467,7 @@ it('lists physical table choices without protected or deployment-managed collect
   );
   const settings = resolveDemoModeSettings({
     get: () => ({
-      mode: 'read-only',
+      enabled: true,
       allowCollections: [' demonotes', 'demonotes '],
     }),
   } as never);
@@ -544,7 +544,7 @@ it('resolves migration collection names with prefixes and isolates same-name tab
     createServer: createStandaloneServer,
     connections: ['main', 'secondary'],
     config: {
-      demoMode: { mode: 'read-only' },
+      demoMode: { enabled: true },
       database: {
         connections: {
           main: { naming: { underscored: true, tablePrefix: 'demo_' } },

@@ -18,7 +18,7 @@ export class DemoModelRuntime {
   constructor(private readonly deps: DemoDataDependencies) {}
 
   private get enabled(): boolean {
-    return this.deps.mode() !== 'off';
+    return this.deps.enabled();
   }
 
   private row(): Promise<ModelBinding | undefined> {

@@ -83,7 +83,7 @@ export function DemoModeSettings(
     reads: number;
     importing: boolean;
   }>();
-  const [mode, setMode] = useState<string>();
+  const [enabled, setEnabled] = useState<boolean>();
   // Bumped to read the configuration again; a later read supersedes an earlier one still in flight.
   const [reads, setReads] = useState(0);
   const load = useCallback(async () => {
@@ -93,12 +93,12 @@ export function DemoModeSettings(
   useEffect(() => {
     let active = true;
     api
-      .request<{ data: { mode: string } }>({ path: '/demoMode/status' })
+      .request<{ data: { enabled: boolean } }>({ path: '/demoMode/status' })
       .then(({ data }) => {
-        if (active) setMode(data.mode);
+        if (active) setEnabled(data.enabled);
       })
       .catch(() => {
-        if (active) setMode('off');
+        if (active) setEnabled(false);
       });
     return () => {
       active = false;
@@ -107,8 +107,7 @@ export function DemoModeSettings(
 
   // A finished import or reset changes the configuration's `busy`, and may change what the reset schedule names.
   const importing = Boolean(demo.status?.importing);
-  const readable =
-    access.readConfiguration && mode !== undefined && mode !== 'off';
+  const readable = access.readConfiguration && enabled === true;
   useEffect(() => {
     if (!readable) return;
     let active = true;
@@ -161,14 +160,14 @@ export function DemoModeSettings(
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirtyCount]);
 
-  if (access.pending || mode === undefined)
+  if (access.pending || enabled === undefined)
     return (
       <div className='flex flex-col gap-4'>
         <Skeleton className='h-10 w-64' />
         <Skeleton className='h-48 w-full' />
       </div>
     );
-  if (mode === 'off')
+  if (!enabled)
     return (
       <Alert>
         <AlertTitle>{t('disabled.title')}</AlertTitle>
@@ -218,14 +217,8 @@ export function DemoModeSettings(
       <div className='flex flex-col gap-6'>
         <Header
           title={t('title')}
-          description={t(
-            mode === 'observe' ? 'mode.observeHelp' : 'mode.readOnlyHelp',
-          )}
-          badge={
-            <Badge variant={mode === 'observe' ? 'secondary' : 'default'}>
-              {t(mode === 'observe' ? 'mode.observe' : 'mode.readOnly')}
-            </Badge>
-          }
+          description={t('status.help')}
+          badge={<Badge>{t('status.enabled')}</Badge>}
           refreshLabel={t('refresh')}
           refreshDisabled={Boolean(dirtyCount)}
           refreshing={

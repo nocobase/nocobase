@@ -22,10 +22,10 @@ class FakePerformanceObserver {
   }
 }
 
-const statusApi = (mode: string) =>
+const statusApi = (enabled: boolean) =>
   answerApi((call) => {
     if (call.method === 'GET' && call.path === 'demoMode/status') {
-      return { data: { mode } };
+      return { data: { enabled } };
     }
     return new Response(null, { status: 404 });
   });
@@ -36,11 +36,11 @@ afterEach(() => {
 });
 
 describe('demo mode notice', () => {
-  it('tells visitors of a read-only demo when a change is refused', async () => {
+  it('tells visitors of a demo when a change is refused', async () => {
     vi.stubGlobal('PerformanceObserver', FakePerformanceObserver);
     const rendered = await renderWithApp(<p>page</p>, {
       plugins: [demoMode()],
-      fetch: statusApi('read-only'),
+      fetch: statusApi(true),
       locale: 'zh-CN',
     });
 
@@ -61,7 +61,7 @@ describe('demo mode notice', () => {
 
   it('stays out of the way when the application is not a demo', async () => {
     vi.stubGlobal('PerformanceObserver', FakePerformanceObserver);
-    const fetch = vi.fn(statusApi('off'));
+    const fetch = vi.fn(statusApi(false));
     await renderWithApp(<p>page</p>, {
       plugins: [demoMode()],
       fetch,

@@ -3,7 +3,6 @@ import {
   type ServiceToken,
 } from '@nocobase/service-provider';
 
-import type { DemoMode } from './config.js';
 import type { DemoDataService } from './data/service.js';
 import type { DemoConfigurationService } from './configuration/contract.js';
 
@@ -14,9 +13,9 @@ export const demoConfigurationToken: ServiceToken<DemoConfigurationService> =
 export type { DemoConfigurationService } from './configuration/contract.js';
 export type * from '../shared/configuration.js';
 
-/** Which demo mode this application runs in, for plugins that want to adapt, such as by skipping outbound calls. */
+/** Whether this application is a demo, for plugins that adapt by skipping outbound calls or other effects. */
 export interface DemoModeService {
-  readonly mode: DemoMode;
+  readonly enabled: boolean;
   /** Logical collections in the default connection whose writes requests may still make. */
   readonly allowCollections: readonly string[];
 }

@@ -3,7 +3,6 @@ export {
   DEFAULT_ALLOW_COLLECTIONS,
   DEMO_MODE_WRITABLE_COLLECTIONS_ENV,
   DEMO_MODE_ENV,
-  type DemoMode,
   type DemoModeConfig,
 } from './config.js';
 export { DEMO_READ_ONLY_REASON, DemoReadOnlyError } from './errors.js';

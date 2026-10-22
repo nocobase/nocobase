@@ -56,7 +56,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     }>,
   ) {}
   public get enabled(): boolean {
-    return this.settings.mode !== 'off';
+    return this.settings.enabled;
   }
   public requireEnabled(): void {
     if (!this.enabled)
@@ -208,7 +208,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     return {
       ...value,
       busy: includeBusy && Boolean((await this.data()).importing),
-      mode: this.settings.mode,
+      enabled: this.settings.enabled,
       fixedCollections: [...this.settings.allowCollections],
       capabilities: [...this.writes.values()].map((item) => ({
         id: item.id,

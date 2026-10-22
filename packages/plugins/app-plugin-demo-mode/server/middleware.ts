@@ -5,7 +5,6 @@ import {
 } from '@nocobase/i18n/server';
 import type { Context, MiddlewareHandler } from 'hono';
 
-import type { DemoModeSettings } from './config.js';
 import {
   DEMO_MODE_ERROR_DOMAIN,
   DEMO_READ_ONLY_MESSAGE,
@@ -37,10 +36,9 @@ export interface DemoModeLogger {
 
 export interface DemoModeMiddlewareOptions {
   readonly guard: DemoWriteGuard;
-  readonly settings: DemoModeSettings;
   /** Guards every connection's current knex client; a reconnect since the last request leaves a new one unguarded. */
   readonly attachConnections: () => Promise<void>;
-  readonly logger?: DemoModeLogger;
+  readonly logger?: Pick<DemoModeLogger, 'info'>;
   readonly runWithPolicy?: (run: () => Promise<void>) => Promise<void>;
   readonly allowed?: () => Promise<readonly DemoSqlRule[]>;
 }
@@ -54,7 +52,7 @@ export interface DemoModeMiddlewareOptions {
 export function createDemoModeMiddleware(
   options: DemoModeMiddlewareOptions,
 ): MiddlewareHandler {
-  const { guard, settings, attachConnections, logger } = options;
+  const { guard, attachConnections, logger } = options;
   return async (context, next) => {
     await attachConnections();
     let state!: DemoRequestState;
@@ -78,10 +76,6 @@ export function createDemoModeMiddleware(
       status: context.res.status,
       writes: state.blocked,
     };
-    if (settings.mode === 'observe') {
-      logger?.warn(details, 'Demo mode would refuse this request’s writes');
-      return;
-    }
     logger?.info(details, 'Demo mode refused a write');
     if (context.res.status < 400) return;
     await replaceWithDemoError(context);

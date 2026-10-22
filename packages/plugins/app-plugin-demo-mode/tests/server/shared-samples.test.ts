@@ -12,7 +12,7 @@ afterEach(async () => app?.close());
 async function fixture() {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'observe' } },
+    config: { demoMode: { enabled: true } },
   });
   const query = app.connection.query;
   let failGeneration = false;

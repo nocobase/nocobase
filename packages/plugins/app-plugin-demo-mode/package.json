@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-plugin-demo-mode",
   "displayName": "Demo Mode",
-  "description": "Turns a NocoBase app into a demo: an application's demo dataset imported, cleared and reset from its pages or a schedule, a simulated model for its agents, and an optional read-only mode in which visitors browse everything and every change is refused.",
+  "description": "Enables isolated demo deployments with application-owned repeatable datasets, visitor accounts, request-scoped write protection, scheduled resets and optional simulated models for agents.",
   "version": "0.0.1",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

@@ -4,7 +4,6 @@ import {
   type ServiceToken,
 } from '@nocobase/service-provider';
 
-import type { DemoModeSettings } from './config.js';
 import { DemoReadOnlyError } from './errors.js';
 import { classifySql, type SqlWrite } from './sql.js';
 
@@ -18,10 +17,8 @@ export interface DemoSqlRule {
 export interface DemoRequestState {
   readonly method: string;
   readonly path: string;
-  /** Writes refused, or in `observe` mode the writes that would have been. */
+  /** Writes refused before reaching the database. */
   readonly blocked: SqlWrite[];
-  /** Set only by the startup probe, which must be refused in every mode. */
-  readonly probe?: boolean;
   /** Refuse writes to allowed tables too, for requests that would misuse them, such as ending other visitors' sessions. */
   readonly strict?: boolean;
   readonly allowed?: readonly DemoSqlRule[];
@@ -47,8 +44,6 @@ export interface GuardedKnex {
 export class DemoWriteGuard {
   private readonly storage = new AsyncLocalStorage<DemoRequestState>();
   private readonly guarded = new WeakSet<QueryEventSource>();
-
-  public constructor(private readonly settings: DemoModeSettings) {}
 
   public run<T>(state: DemoRequestState, fn: () => T): T {
     return this.storage.run(state, fn);
@@ -86,7 +81,6 @@ export class DemoWriteGuard {
     if (!state || typeof query.sql !== 'string') return;
     const writes = classifySql(query.sql).filter(
       (write) =>
-        state.probe ||
         state.strict ||
         !write.table ||
         !state.allowed?.some(
@@ -98,9 +92,7 @@ export class DemoWriteGuard {
     );
     if (writes.length === 0) return;
     state.blocked.push(...writes);
-    if (state.probe || this.settings.mode === 'read-only') {
-      throw new DemoReadOnlyError(writes);
-    }
+    throw new DemoReadOnlyError(writes);
   }
 }
 

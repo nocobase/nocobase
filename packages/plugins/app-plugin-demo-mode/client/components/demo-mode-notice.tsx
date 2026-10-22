@@ -13,8 +13,6 @@ import {
   DEMO_SERVER_TIMING_METRIC,
 } from '../namespace.js';
 
-type DemoMode = 'off' | 'read-only' | 'observe';
-
 const REFUSED_TOAST_ID = 'demo-mode-refused';
 
 /** Whether a finished request's response says the server refused one of its writes. */
@@ -28,7 +26,7 @@ function isRefusedEntry(entry: PerformanceEntry): boolean {
 }
 
 /**
- * Tells visitors of a read-only demo, with a toast, whenever the server refuses a change. Refusals are read from
+ * Tells visitors of a demo, with a toast, whenever the server refuses a change. Refusals are read from
  * finished requests' `Server-Timing`, so this works whichever client made the request and however the application
  * shows its own errors. In a demo it also offers the demo accounts to enter or switch to.
  */
@@ -43,14 +41,14 @@ export function DemoModeNotice({
   const api = useApiClient();
   const toaster = useToaster();
   const { t } = useTranslation(DEMO_MODE_NAMESPACE);
-  const [mode, setMode] = useState<DemoMode>('off');
+  const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
     let active = true;
     api
-      .request<{ data: { mode: DemoMode } }>({ path: '/demoMode/status' })
+      .request<{ data: { enabled: boolean } }>({ path: '/demoMode/status' })
       .then((payload) => {
-        if (active) setMode(payload.data.mode);
+        if (active) setEnabled(payload.data.enabled);
       })
       // Without the status no toast is shown; the server still refuses writes.
       .catch(() => undefined);
@@ -60,7 +58,7 @@ export function DemoModeNotice({
   }, [api]);
 
   useEffect(() => {
-    if (mode !== 'read-only' || typeof PerformanceObserver === 'undefined') {
+    if (!enabled || typeof PerformanceObserver === 'undefined') {
       return;
     }
     const observer = new PerformanceObserver((list) => {
@@ -74,12 +72,12 @@ export function DemoModeNotice({
     });
     observer.observe({ type: 'resource' });
     return () => observer.disconnect();
-  }, [mode, toaster, t]);
+  }, [enabled, toaster, t]);
 
   return (
     <>
       {children}
-      {mode === 'off' || !showFloatingAccountSwitcher ? null : (
+      {!enabled || !showFloatingAccountSwitcher ? null : (
         <DemoAccountSwitcher signedOutOnly={accountSwitcher === 'menu'} />
       )}
     </>

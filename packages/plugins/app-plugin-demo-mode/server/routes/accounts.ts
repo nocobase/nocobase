@@ -55,8 +55,7 @@ export const accountRoutes: AppApiRouteContribution<AppPluginApplication> =
       auth,
       database: container.resolve(databaseManagerToken),
       enabled: () =>
-        settings.quickSignIn &&
-        container.resolve(demoModeServiceToken).mode !== 'off',
+        settings.quickSignIn && container.resolve(demoModeServiceToken).enabled,
       accounts: async () => {
         const status = await container.resolve(demoDataToken).status();
         return { datasetId: status.datasetId, accounts: status.accounts };

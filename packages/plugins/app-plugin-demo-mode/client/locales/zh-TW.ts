@@ -31,7 +31,7 @@ const resource: DemoModeResource = {
     busyHelp: '完成後才能再次儲存設定。',
     disabled: {
       title: '這個應用不是示範環境',
-      help: '示範模式未開啟，部署時以 NOCOBASE_DEMO_MODE 開啟。',
+      help: '示範模式未開啟，部署時以 NOCOBASE_DEMO_MODE=true 開啟。',
     },
     cancel: '取消',
     save: '儲存',
@@ -42,13 +42,9 @@ const resource: DemoModeResource = {
       on: '開啟',
       off: '關閉',
     },
-    mode: {
-      readOnly: '唯讀',
-      observe: '觀察',
-      readOnlyHelp:
-        '訪客可以開啟所有頁面，但變更不會儲存，除非下方的例外允許。',
-      observeHelp:
-        '不拒絕任何寫入：唯讀模式會拒絕的寫入只記入日誌，用來找出需要開放的地方。',
+    status: {
+      enabled: '示範已啟用',
+      help: '訪客可以開啟所有頁面，但變更不會儲存，除非下方的例外允許。',
     },
     tabs: {
       overview: '概覽',
@@ -157,7 +153,7 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        '唯讀模式下所有變更都會被拒絕。只開放訪客需要體驗的操作，並只限示範自己的記錄；業務權限依然有效。',
+        '啟用示範後，預設拒絕寫入。只開放訪客需要體驗的操作，並只限示範自己的記錄；業務權限依然有效。',
       allow: '開放',
       revoke: '恢復拒絕',
       scope: '範圍',

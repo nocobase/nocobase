@@ -35,7 +35,7 @@ const resource: DemoModeResource = {
       'Les réglages pourront être enregistrés à nouveau une fois l’opération terminée.',
     disabled: {
       title: 'Cette application n’est pas une démonstration',
-      help: 'Le mode démonstration est désactivé. Le déploiement l’active avec NOCOBASE_DEMO_MODE.',
+      help: 'Le mode démonstration est désactivé. Le déploiement l’active avec NOCOBASE_DEMO_MODE=true.',
     },
     cancel: 'Annuler',
     save: 'Enregistrer',
@@ -46,13 +46,9 @@ const resource: DemoModeResource = {
       on: 'Activé',
       off: 'Désactivé',
     },
-    mode: {
-      readOnly: 'Lecture seule',
-      observe: 'Observation',
-      readOnlyHelp:
-        'Les visiteurs peuvent ouvrir toutes les pages, mais leurs modifications ne sont pas enregistrées, sauf si une exception ci-dessous le permet.',
-      observeHelp:
-        'Rien n’est refusé : les écritures que le mode lecture seule refuserait sont seulement journalisées, pour savoir quoi autoriser.',
+    status: {
+      enabled: 'Démo activée',
+      help: 'Les visiteurs peuvent ouvrir toutes les pages, mais leurs modifications ne sont pas enregistrées, sauf si une exception ci-dessous le permet.',
     },
     tabs: {
       overview: 'Vue d’ensemble',
@@ -175,7 +171,7 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        'En lecture seule, toute modification est refusée. N’ouvrez que ce que les visiteurs doivent essayer, et seulement pour les enregistrements de la démonstration ; les autorisations métier s’appliquent toujours.',
+        'Lorsque la démonstration est activée, les modifications sont refusées par défaut. N’ouvrez que ce que les visiteurs doivent essayer, et seulement pour les enregistrements de la démonstration ; les autorisations métier s’appliquent toujours.',
       allow: 'Autoriser',
       revoke: 'Refuser à nouveau',
       scope: 'Portée',

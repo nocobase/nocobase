@@ -12,7 +12,7 @@ export class DemoProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = 'app/demo-projects';
   public override async boot(): Promise<void> {
     const container = this.app.container;
-    if (container.resolve(demoModeServiceToken).mode === 'off') return;
+    if (!container.resolve(demoModeServiceToken).enabled) return;
     container
       .resolve(demoDataToken)
       .register(

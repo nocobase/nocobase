@@ -45,7 +45,7 @@ export interface DemoConfiguration {
 }
 export interface DemoConfigurationView extends DemoConfiguration {
   busy: boolean;
-  mode: 'off' | 'read-only' | 'observe';
+  enabled: boolean;
   fixedCollections: readonly string[];
   capabilities: readonly Omit<DemoWriteCapability, 'checkScope'>[];
   adapters: readonly Omit<DemoMockAdapter, 'invoke'>[];

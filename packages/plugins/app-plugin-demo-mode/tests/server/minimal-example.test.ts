@@ -8,7 +8,7 @@ import { createStandaloneServer } from '../helpers/minimal-app.js';
 it('runs the published non-AI example through authorized HTTP, visitor entry and repeatable cleanup', async () => {
   const app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'read-only' } },
+    config: { demoMode: { enabled: true } },
   });
   try {
     const container = app.application.container;

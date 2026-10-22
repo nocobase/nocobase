@@ -61,7 +61,7 @@ const DemoDataStatusSchema: z.ZodType<DemoDataStatus> = z
     failure: z
       .object({ code: z.string().optional(), message: z.string() })
       .nullable(),
-    mode: z.enum(['off', 'read-only', 'observe']),
+    enabled: z.boolean(),
     model: z.object({ enabled: z.boolean(), service: z.string().nullable() }),
   })
   .meta({ ref: 'DemoModeDataStatus' });
@@ -148,7 +148,7 @@ export const dataRoutes: AppApiRouteContribution<AppPluginApplication> =
         summary: 'Generate demo data',
         operationId: 'demoModeImportData',
         description: description(
-          'Runs the application-defined dataset steps and answers at once, including in read-only mode; read the status for generation progress. This endpoint accepts no uploaded data. Existing generated data is refused with `DEMO_DATA_EXISTS`.',
+          'Runs the application-defined dataset steps and answers at once, with request write protection enabled; read the status for generation progress. This endpoint accepts no uploaded data. Existing generated data is refused with `DEMO_DATA_EXISTS`.',
         ),
         responses: {
           200: dataResponse(DemoDataStatusSchema),

@@ -32,7 +32,7 @@ const resource: DemoModeResource = {
     busyHelp: 'Danach lassen sich die Einstellungen wieder speichern.',
     disabled: {
       title: 'Diese Anwendung ist keine Demo',
-      help: 'Der Demo-Modus ist aus. Eine Bereitstellung schaltet ihn mit NOCOBASE_DEMO_MODE ein.',
+      help: 'Der Demo-Modus ist aus. Eine Bereitstellung schaltet ihn mit NOCOBASE_DEMO_MODE=true ein.',
     },
     cancel: 'Abbrechen',
     save: 'Speichern',
@@ -43,13 +43,9 @@ const resource: DemoModeResource = {
       on: 'Ein',
       off: 'Aus',
     },
-    mode: {
-      readOnly: 'Schreibgeschützt',
-      observe: 'Beobachten',
-      readOnlyHelp:
-        'Besucher können jede Seite öffnen, aber Änderungen werden nicht gespeichert, außer eine Ausnahme unten erlaubt sie.',
-      observeHelp:
-        'Nichts wird abgelehnt: Schreibvorgänge, die der schreibgeschützte Modus ablehnen würde, werden nur protokolliert, um herauszufinden, was erlaubt werden soll.',
+    status: {
+      enabled: 'Demo aktiviert',
+      help: 'Besucher können jede Seite öffnen, aber Änderungen werden nicht gespeichert, außer eine Ausnahme unten erlaubt sie.',
     },
     tabs: {
       overview: 'Übersicht',
@@ -170,7 +166,7 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        'Im schreibgeschützten Modus wird jede Änderung abgelehnt. Öffnen Sie nur, was Besucher ausprobieren sollen, und nur für Datensätze der Demo; Geschäftsberechtigungen gelten weiterhin.',
+        'Bei aktivierter Demo werden Änderungen standardmäßig abgelehnt. Öffnen Sie nur, was Besucher ausprobieren sollen, und nur für Datensätze der Demo; Geschäftsberechtigungen gelten weiterhin.',
       allow: 'Erlauben',
       revoke: 'Wieder ablehnen',
       scope: 'Bereich',

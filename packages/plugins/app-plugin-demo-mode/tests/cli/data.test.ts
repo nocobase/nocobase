@@ -5,7 +5,7 @@ import DemoData from '../../cli/data.js';
 
 const Bound = bindAppCommand(DemoData, {
   rootDir: fileURLToPath(new URL('../../', import.meta.url)),
-  id: 'demo-mode:data',
+  id: 'demo-enabled:data',
 });
 
 it('previews a reset without loading an application or exposing credentials', async () => {

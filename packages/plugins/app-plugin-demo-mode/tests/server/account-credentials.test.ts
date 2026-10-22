@@ -10,7 +10,7 @@ import { createStandaloneServer } from '../helpers/minimal-app.js';
 it('applies changed shared passwords across restart while keeping unchanged accounts signed in', async () => {
   const app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'observe' } },
+    config: { demoMode: { enabled: true } },
   });
   try {
     const container = app.application.container;
@@ -24,7 +24,7 @@ it('applies changed shared passwords across restart while keeping unchanged acco
     const make = () => {
       const demo = new DefaultDemoDataService({
         database: container.resolve(databaseManagerToken),
-        mode: () => 'observe',
+        enabled: () => true,
         models: new DemoModels(),
         modelBaseUrl: () => 'http://localhost/demo',
         users: () => container.resolve(userManagementServiceToken),

@@ -15,7 +15,6 @@ import { createMigrator, databaseManagerToken } from '@nocobase/db';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import type { DemoMode } from '../../server/config.js';
 import type { DemoAccountSummary } from '../../shared/data.js';
 import { accountRoutes } from '../../server/routes/accounts.js';
 import { demoDataToken, demoModeServiceToken } from '../../server/tokens.js';
@@ -36,7 +35,7 @@ const listed: DemoAccountSummary[] = [
 
 let testDatabase: TestDatabase;
 let auth: Auth;
-let mode: DemoMode;
+let enabled: boolean;
 let quickSignIn: boolean;
 let accounts: DemoAccountSummary[];
 let ids: Record<string, string>;
@@ -48,8 +47,8 @@ async function routes(): Promise<Hono> {
     [
       demoModeServiceToken,
       {
-        get mode() {
-          return mode;
+        get enabled() {
+          return enabled;
         },
         allowCollections: [],
       },
@@ -154,7 +153,7 @@ beforeAll(async () => {
 });
 afterAll(() => testDatabase.destroy());
 beforeEach(() => {
-  mode = 'read-only';
+  enabled = true;
   quickSignIn = true;
   accounts = listed;
 });
@@ -223,8 +222,11 @@ describe('demo quick sign-in', () => {
   });
 
   it('offers nothing outside demo mode or when switched off', async () => {
-    for (const setup of [() => (mode = 'off'), () => (quickSignIn = false)]) {
-      mode = 'read-only';
+    for (const setup of [
+      () => (enabled = false),
+      () => (quickSignIn = false),
+    ]) {
+      enabled = true;
       quickSignIn = true;
       setup();
       expect(await (await call('GET', '/demoMode/accounts')).json()).toEqual({

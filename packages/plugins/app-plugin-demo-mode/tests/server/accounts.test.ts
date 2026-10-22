@@ -17,7 +17,7 @@ let revokedSessions: string[];
 beforeAll(async () => {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'observe' } },
+    config: { demoMode: { enabled: true } },
   });
 });
 afterAll(() => app.close());
@@ -89,7 +89,7 @@ function service(
     authorization,
     database: app.application.container.resolve(databaseManagerToken),
 
-    mode: () => 'observe',
+    enabled: () => true,
     models: new DemoModels(),
     modelBaseUrl: () => 'http://127.0.0.1/demoMode/models/v1',
     users,

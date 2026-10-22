@@ -23,11 +23,11 @@ async function names(app: TestApp, table: string): Promise<string[]> {
 const post = (app: TestApp, path: string) =>
   app.request(path, { method: 'POST' });
 
-describe('read-only mode', () => {
+describe('Demo Mode enabled', () => {
   let app: TestApp;
   beforeAll(async () => {
     app = await startApp({
-      mode: 'read-only',
+      enabled: true,
       allowCollections: ['demonotes'],
     });
     // Writes outside any request, as a seed or job makes them, are never refused.
@@ -38,11 +38,11 @@ describe('read-only mode', () => {
   });
   afterAll(() => app.close());
 
-  it('reports the mode to the browser without a session', async () => {
+  it('reports the enabled flag to the browser without a session', async () => {
     const response = await app.request('/demoMode/status');
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      data: { mode: 'read-only' },
+      data: { enabled: true },
     });
   });
 
@@ -100,7 +100,7 @@ describe('read-only mode', () => {
 });
 
 it('isolates an asynchronous demo import from other requests and restores its guard after failure', async () => {
-  const app = await startApp({ mode: 'read-only' });
+  const app = await startApp({ enabled: true });
   const guard = app.application.container.resolve(demoWriteGuardToken);
   let release!: () => void;
   let started!: () => void;
@@ -149,22 +149,7 @@ it('isolates an asynchronous demo import from other requests and restores its gu
   }
 });
 
-describe('observe mode', () => {
-  let app: TestApp;
-  beforeAll(async () => {
-    app = await startApp({ mode: 'observe' });
-  });
-  afterAll(() => app.close());
-
-  it('lets writes through', async () => {
-    const response = await post(app, '/items');
-    expect(response.status).toBe(200);
-    expect(response.headers.get('server-timing')).toBeNull();
-    expect(await names(app, 'demoitems')).toEqual(['builder']);
-  });
-});
-
-describe('off', () => {
+describe('Demo Mode disabled', () => {
   let app: TestApp;
   beforeAll(async () => {
     app = await startApp({});
@@ -174,7 +159,7 @@ describe('off', () => {
   it('changes nothing', async () => {
     await expect(
       (await app.request('/demoMode/status')).json(),
-    ).resolves.toEqual({ data: { mode: 'off' } });
+    ).resolves.toEqual({ data: { enabled: false } });
     expect((await post(app, '/items')).status).toBe(200);
     expect(await names(app, 'demoitems')).toEqual(['builder']);
   });

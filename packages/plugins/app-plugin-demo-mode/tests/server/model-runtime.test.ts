@@ -31,12 +31,12 @@ const services = {
   }),
 };
 let sequence = 0;
-let mode: 'off' | 'observe' = 'observe';
+let enabled = true;
 const make = (agents: DemoAgents = { models: { services } }) =>
   new DefaultDemoDataService({
     database: app.application.container.resolve(databaseManagerToken),
 
-    mode: () => mode,
+    enabled: () => enabled,
     models: new DemoModels(),
     modelBaseUrl: () => 'http://127.0.0.1:13000/api/demoMode/models/v1',
     agents: () => agents,
@@ -45,7 +45,7 @@ const make = (agents: DemoAgents = { models: { services } }) =>
 beforeAll(async () => {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'observe' } },
+    config: { demoMode: { enabled: true } },
   });
 });
 afterAll(() => app.close());
@@ -54,7 +54,7 @@ beforeEach(async () => {
     await app.connection.query.deleteFrom(table).allowAllRows().execute();
   vi.clearAllMocks();
   models.clear();
-  mode = 'observe';
+  enabled = true;
 });
 
 it('provisions before import and keeps the same model and credentials after clear, reset and restart', async () => {
@@ -119,14 +119,14 @@ it('disables the owned service when off and reuses it when enabled again', async
   const demo = make();
   await demo.initialize();
   const name = demo.models.serviceName!;
-  mode = 'off';
+  enabled = false;
   await demo.initialize();
   expect(demo.models.serviceName).toBeNull();
   expect(models.get(name)?.enabled).toBe(false);
   services.create.mockClear();
   await make().initialize();
   expect(services.create).not.toHaveBeenCalled();
-  mode = 'observe';
+  enabled = true;
   const restarted = make();
   await restarted.initialize();
   expect(restarted.models.serviceName).toBe(name);
@@ -134,11 +134,11 @@ it('disables the owned service when off and reuses it when enabled again', async
   expect(services.create).not.toHaveBeenCalled();
 });
 
-it('can start in off mode after the owned model was removed', async () => {
+it('can start with Demo Mode disabled after the owned model was removed', async () => {
   await make().initialize();
   models.clear();
   services.update.mockClear();
-  mode = 'off';
+  enabled = false;
   await make().initialize();
   expect(services.update).not.toHaveBeenCalled();
 });
@@ -175,9 +175,9 @@ it('preserves real Agents defaults and retires a legacy demo default on shutdown
     modelService: demo.models.serviceName!,
     model: 'demo-chat',
   };
-  // Older previews persisted this default; off mode must make it ineligible.
+  // Older previews persisted this default; disabling Demo Mode must make it ineligible.
   await api.setDefaultChat(demoRef, null);
-  mode = 'off';
+  enabled = false;
   await make(agents).initialize();
   expect((await api.defaults()).effectiveChat).toMatchObject(original);
   expect(
@@ -185,7 +185,7 @@ it('preserves real Agents defaults and retires a legacy demo default on shutdown
   ).toBe(true);
   // An administrator's subsequent selection survives re-enabling Demo Mode.
   await api.setDefaultChat(original, null);
-  mode = 'observe';
+  enabled = true;
   await make(agents).initialize();
   expect((await api.defaults()).chat).toEqual(original);
 });

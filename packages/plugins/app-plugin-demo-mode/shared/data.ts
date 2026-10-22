@@ -228,8 +228,8 @@ export interface DemoDataStatus {
   readonly importing: { readonly percent: number } | null;
   /** Why the last import stopped, when it did. */
   readonly failure: { readonly code?: string; readonly message: string } | null;
-  /** Whether normal requests may change data; application-wide clear/reset require a mode other than `off`. */
-  readonly mode: 'off' | 'read-only' | 'observe';
+  /** Whether Demo Mode is enabled; application-wide clear/reset require it. */
+  readonly enabled: boolean;
   /** The environment model service, independent of whether business data is imported. */
   readonly model: {
     readonly enabled: boolean;

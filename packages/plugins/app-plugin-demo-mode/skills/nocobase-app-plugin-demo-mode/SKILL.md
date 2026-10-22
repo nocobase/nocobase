@@ -57,18 +57,18 @@ import { defineDemoModeConfig } from '@nocobase/app-plugin-demo-mode/config';
 defaultAppConfigs({ demoMode: defineDemoModeConfig() });
 ```
 
-Configure the isolated deployment and restart:
+Set `NOCOBASE_DEMO_MODE=true` in the isolated deployment's environment and restart. The equivalent application configuration is:
 
 ```yaml
 demoMode:
-  mode: observe
+  enabled: true
   quickSignIn: true
   allowCollections: []
 ```
 
-Use `observe` while adapting existing flows: writes proceed and the `demo-mode` logger reports those read-only mode would refuse. Select only needed exceptions, switch to `read-only` and repeat the visitor checks. `off` disables demo operations. Neither mode replaces business authorization.
+Demo Mode has one boolean switch, defaulting to `false`. When enabled, request writes are refused unless an explicit exception permits them. Verify the intended visitor journeys, inspect refused writes in the `demo-mode` log and add only the needed exceptions. Business authorization still applies. Leave the flag unset or set it to `false` for ordinary application development; example records use the sample-data workflow above.
 
-`NOCOBASE_DEMO_MODE` maps to `mode`; `NOCOBASE_DEMO_WRITABLE_COLLECTIONS` maps to a comma-separated list of logical `allowCollections` names from migrations. These are the only mapped environment variables. Values resolve per application: environment overrides configuration files, then defaults. `quickSignIn` defaults to `true`; `session` and `verification` writes are allowed for sign-in. Configure reset schedules, simulation and chat through the management UI/API. Model URLs and credentials belong to Agents model services.
+`NOCOBASE_DEMO_MODE` maps to boolean `demoMode.enabled`; `NOCOBASE_DEMO_WRITABLE_COLLECTIONS` maps to a comma-separated list of logical `allowCollections` names from migrations. These are the only mapped environment variables. Values resolve per application: environment overrides configuration files, then defaults. `quickSignIn` defaults to `true` and is effective only when Demo Mode is enabled; `session` and `verification` writes are allowed for sign-in. Configure reset schedules, simulation and chat through the management UI/API. Model URLs and credentials belong to Agents model services.
 
 ## Lifecycle boundaries
 
@@ -78,9 +78,9 @@ The application implements retry-safe `clear(context)` for all demo business rec
 
 When sample installation and demo reset share a story, share an application-owned generator and adapt its identities, language and clock at each entry. Never invoke demo reset from `sampleDataToken` or modify seed execution history.
 
-Authorized lifecycle operations can write in read-only mode. `GET /api/demoMode/data` needs data read permission; `POST /api/demoMode/data/import|clear|reset` needs read and manage. CLI commands are `pnpm nocobase demo-mode data status|import|clear|reset`: read the application's CLI guidance, review mutations with `--dry-run`, then use `--force`; import and clear require the real administrator's `--actor` ID. Reset can reuse the last importer and language.
+Authorized lifecycle operations can write with Demo Mode enabled. `GET /api/demoMode/data` needs data read permission; `POST /api/demoMode/data/import|clear|reset` needs read and manage. CLI commands are `pnpm nocobase demo-mode data status|import|clear|reset`: read the application's CLI guidance, review mutations with `--dry-run`, then use `--force`; import and clear require the real administrator's `--actor` ID. Reset can reuse the last importer and language.
 
-Request protection covers `@nocobase/db` writes; background work and external effects need application adaptation. With Agents registered, startup provisions a persistent demo model that survives clear/reset without overriding an existing global default. Select the demo model explicitly in application-owned AI flows; switching mode off disables that service. Model simulation does not simulate tools or Runners. Use the plugin's Scheduler integration for daily resets, not a second application timer.
+Request protection covers `@nocobase/db` writes; background work and external effects need application adaptation. With Agents registered, startup provisions a persistent demo model that survives clear/reset without overriding an existing global default. Select the demo model explicitly in application-owned AI flows; disabling Demo Mode disables that service. Model simulation does not simulate tools or Runners. Use the plugin's Scheduler integration for daily resets, not a second application timer.
 
 ## Finish with observable evidence
 

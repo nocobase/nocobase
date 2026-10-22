@@ -61,7 +61,7 @@ const view = (patch: Partial<DemoConfigurationView> = {}) => ({
   schedule: null,
   chat: { enabled: false, model: null, tools: {} },
   busy: false,
-  mode: 'read-only',
+  enabled: true,
   fixedCollections: ['session', 'verification'],
   capabilities: [
     {
@@ -110,7 +110,7 @@ const status = {
   operation: null,
   importing: null,
   failure: null,
-  mode: 'read-only',
+  enabled: true,
   model: { enabled: true, service: 'demo' },
   reset: null,
 };
@@ -127,7 +127,7 @@ const everything = [
 ];
 
 function demoApi({
-  mode = 'read-only',
+  enabled = true,
   permissions = everything,
   configuration = view(),
   onPut,
@@ -135,7 +135,7 @@ function demoApi({
   data = status,
 }: {
   data?: typeof status;
-  mode?: string;
+  enabled?: boolean;
   permissions?: readonly object[];
   configuration?: ReturnType<typeof view>;
   onPut?: (call: ApiCall) => unknown;
@@ -145,7 +145,7 @@ function demoApi({
     if (call.method === 'GET') await onRead?.(call.path);
     if (call.path === 'authorization/permissions')
       return { data: { unrestricted: false, permissions } };
-    if (call.path === 'demoMode/status') return { data: { mode } };
+    if (call.path === 'demoMode/status') return { data: { enabled } };
     if (call.path === 'demoMode/data') return { data };
     // Quick sign-in offers no account while the data is being replaced.
     if (call.path === 'demoMode/accounts' && data.importing)
@@ -415,7 +415,7 @@ describe.each(['default', 'host'] as const)(
     });
 
     it('explains when the application is not a demo', async () => {
-      await render(demoApi({ mode: 'off' }));
+      await render(demoApi({ enabled: false }));
       expect(
         await screen.findByText('这个应用不是演示环境'),
       ).toBeInTheDocument();

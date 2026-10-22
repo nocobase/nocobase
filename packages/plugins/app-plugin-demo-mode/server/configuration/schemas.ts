@@ -80,7 +80,7 @@ export const ConfigurationView: z.ZodType<DemoConfigurationView> = z
     mocks: z.record(z.string(), z.boolean()),
     schedule: DailySchedule.nullable(),
     chat: ChatConfiguration,
-    mode: z.enum(['off', 'read-only', 'observe']),
+    enabled: z.boolean(),
     fixedCollections: z.array(z.string()),
     capabilities: z.array(
       z.object({

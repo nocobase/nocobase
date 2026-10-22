@@ -31,7 +31,7 @@ const resource: DemoModeResource = {
     busyHelp: '完成后才能再次保存设置。',
     disabled: {
       title: '这个应用不是演示环境',
-      help: '演示模式未开启，部署时用 NOCOBASE_DEMO_MODE 开启。',
+      help: '演示模式未开启，部署时用 NOCOBASE_DEMO_MODE=true 开启。',
     },
     cancel: '取消',
     save: '保存',
@@ -42,13 +42,9 @@ const resource: DemoModeResource = {
       on: '开启',
       off: '关闭',
     },
-    mode: {
-      readOnly: '只读',
-      observe: '观察',
-      readOnlyHelp:
-        '访客可以打开所有页面，但改动不会保存，除非下面的例外允许。',
-      observeHelp:
-        '不拒绝任何写入：只读模式会拒绝的写入只记入日志，用来找出需要放开的地方。',
+    status: {
+      enabled: '演示已开启',
+      help: '访客可以打开所有页面，但改动不会保存，除非下面的例外允许。',
     },
     tabs: {
       overview: '概览',
@@ -157,7 +153,7 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        '只读模式下所有改动都会被拒绝。只放开访客需要体验的操作，并只限演示自己的记录；业务权限依然生效。',
+        '开启演示后，默认拒绝写入。只放开访客需要体验的操作，并只限演示自己的记录；业务权限依然生效。',
       allow: '放开',
       revoke: '恢复拒绝',
       scope: '范围',

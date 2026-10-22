@@ -12,19 +12,19 @@ afterEach(async () => {
 });
 
 it('resolves defaults, file values and per-application environment without leaking between apps', async () => {
-  vi.stubEnv('NOCOBASE_DEMO_MODE', 'observe');
-  for (const mode of ['read-only', 'off'] as const) {
+  vi.stubEnv('NOCOBASE_DEMO_MODE', 'false');
+  for (const enabled of [true, false]) {
     const app = await createTestApp({
       createServer: createStandaloneServer,
       server: {
         env: {
-          NOCOBASE_DEMO_MODE: mode,
+          NOCOBASE_DEMO_MODE: String(enabled),
           NOCOBASE_DEMO_WRITABLE_COLLECTIONS: ' demonotes, demonotes ',
         },
       },
       config: {
         demoMode: {
-          mode: 'observe',
+          enabled: !enabled,
           allowCollections: ['demoitems'],
           quickSignIn: false,
         },
@@ -33,15 +33,15 @@ it('resolves defaults, file values and per-application environment without leaki
     apps.push(app);
   }
   for (const [index, app] of apps.entries()) {
-    const mode = index === 0 ? 'read-only' : 'off';
+    const enabled = index === 0;
     expect(app.application.config.get('demoMode')).toEqual({
-      mode,
+      enabled,
       allowCollections: ['demonotes', 'demonotes'],
       quickSignIn: false,
     });
-    expect(app.application.container.resolve(demoModeServiceToken).mode).toBe(
-      mode,
-    );
+    expect(
+      app.application.container.resolve(demoModeServiceToken).enabled,
+    ).toBe(enabled);
     expect(
       app.application.container.resolve(demoModeServiceToken).allowCollections,
     ).toEqual(['session', 'verification', 'demonotes']);
@@ -64,7 +64,7 @@ it('uses defaults and ignores removed environment controls', async () => {
   });
   apps.push(app);
   expect(app.application.config.get('demoMode')).toEqual({
-    mode: 'off',
+    enabled: false,
     allowCollections: [],
     quickSignIn: true,
   });
@@ -75,7 +75,7 @@ it('uses defaults and ignores removed environment controls', async () => {
 });
 
 it.each([
-  { mode: 'invalid' },
+  { enabled: 'invalid' },
   { quickSignIn: 'false' },
   { allowCollections: ['invalid table'] },
 ])('rejects invalid resolved configuration %j at startup', async (demoMode) => {

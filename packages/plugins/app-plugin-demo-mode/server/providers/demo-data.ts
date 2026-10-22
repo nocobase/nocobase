@@ -44,7 +44,7 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
       withPolicy: (run) =>
         container.resolve(demoConfigurationRuntimeToken).runWithPolicy(run),
       database: container.resolve(databaseManagerToken),
-      mode: () => container.resolve(demoModeServiceToken).mode,
+      enabled: () => container.resolve(demoModeServiceToken).enabled,
       models: new DemoModels(),
       modelBaseUrl: () => this.loopbackModelUrl(),
       users: () => optional(userManagementServiceToken),
@@ -81,7 +81,7 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
 
   public override async boot(): Promise<void> {
     const container = this.app.container;
-    if (container.resolve(demoModeServiceToken).mode === 'off') return;
+    if (!container.resolve(demoModeServiceToken).enabled) return;
     if (container.has(authorizationToken)) {
       const authz = container.resolve(authorizationToken);
       authz.ui.sections.add({
@@ -133,7 +133,7 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
       .where('id', '=', 'default')
       .executeTakeFirst();
     if (
-      container.resolve(demoModeServiceToken).mode !== 'off' ||
+      container.resolve(demoModeServiceToken).enabled ||
       existingModel?.modelService
     )
       this.agents = await resolveDemoAgents(container);

@@ -1,23 +1,20 @@
 import {
   defineAppConfig,
-  envString,
+  envBoolean,
   envStrings,
   type AppConfigAccessor,
   type AppConfigFactory,
 } from '@nocobase/app-server/config';
 
-/** Deployment-level request policy; business authorization remains independent. */
-export type DemoMode = 'off' | 'read-only' | 'observe';
-
 export interface DemoModeSettings {
-  readonly mode: DemoMode;
+  readonly enabled: boolean;
   readonly allowCollections: ReadonlySet<string>;
   readonly quickSignIn: boolean;
 }
 
 /** Register this section separately from the Server plugin in defaultAppConfigs. */
 export interface DemoModeConfig {
-  readonly mode?: DemoMode;
+  readonly enabled?: boolean;
   /** Logical collection names in the default database connection, matching migrations. */
   readonly allowCollections?: readonly string[];
   readonly quickSignIn?: boolean;
@@ -36,10 +33,10 @@ export const DEFAULT_ALLOW_COLLECTIONS: readonly string[] = [
 /** The runtime resolves environment values in the owning application's scope. */
 export function defineDemoModeConfig(): AppConfigFactory<DemoModeConfig> {
   return defineAppConfig<DemoModeConfig>({
-    defaults: { mode: 'off', allowCollections: [], quickSignIn: true },
+    defaults: { enabled: false, allowCollections: [], quickSignIn: true },
     env: {
-      [DEMO_MODE_ENV]: envString('mode', {
-        description: 'Demo request policy: off, observe or read-only.',
+      [DEMO_MODE_ENV]: envBoolean('enabled', {
+        description: 'Whether this deployment is a demo environment.',
       }),
       [DEMO_MODE_WRITABLE_COLLECTIONS_ENV]: envStrings(
         'allowCollections',
@@ -51,8 +48,10 @@ export function defineDemoModeConfig(): AppConfigFactory<DemoModeConfig> {
       ),
     },
     validate(value, context) {
-      if (!['off', 'observe', 'read-only'].includes(value.mode ?? ''))
-        context.error('mode', 'must be off, observe or read-only.');
+      if ('mode' in value)
+        context.error('mode', 'Use enabled (boolean) instead.');
+      if (typeof value.enabled !== 'boolean')
+        context.error('enabled', 'must be a boolean.');
       if (
         !Array.isArray(value.allowCollections) ||
         value.allowCollections.some(
@@ -76,8 +75,11 @@ export function resolveDemoModeSettings(
   config: Pick<AppConfigAccessor, 'get'>,
 ): DemoModeSettings {
   const section = config.get<DemoModeConfig>('demoMode') ?? {};
+  const enabled = section.enabled ?? false;
+  if (typeof enabled !== 'boolean')
+    throw new Error('demoMode.enabled must be a boolean.');
   return {
-    mode: section.mode ?? 'off',
+    enabled,
     allowCollections: new Set(
       [...DEFAULT_ALLOW_COLLECTIONS, ...(section.allowCollections ?? [])].map(
         (table) => table.trim(),

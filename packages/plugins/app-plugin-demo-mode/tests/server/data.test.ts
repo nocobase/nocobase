@@ -76,7 +76,7 @@ let cleared: string[] = [];
 beforeAll(async () => {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'observe' } },
+    config: { demoMode: { enabled: true } },
   });
   service = app.application.container.resolve(demoDataToken);
 });
@@ -216,17 +216,17 @@ describe('demo data lifecycle', () => {
   });
 });
 
-it('lets scheduled or CLI resets write outside HTTP while read-only mode is enabled', async () => {
-  const readonly = await createTestApp({
+it('lets scheduled or CLI resets write outside HTTP while Demo Mode is enabled', async () => {
+  const demoApp = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'read-only' } },
+    config: { demoMode: { enabled: true } },
   });
   try {
-    const demo = readonly.application.container.resolve(demoDataToken);
+    const demo = demoApp.application.container.resolve(demoDataToken);
     demo.register({
       id: 'scheduled',
       clear: async () => {
-        await readonly.connection.query
+        await demoApp.connection.query
           .deleteFrom('demoitems')
           .allowAllRows()
           .execute();
@@ -237,7 +237,7 @@ it('lets scheduled or CLI resets write outside HTTP while read-only mode is enab
         {
           key: 'row',
           run: async (context) => {
-            await readonly.connection.query
+            await demoApp.connection.query
               .insertInto('demoitems')
               .values({ name: 'scheduled' })
               .execute();
@@ -251,12 +251,12 @@ it('lets scheduled or CLI resets write outside HTTP while read-only mode is enab
       await demo.reset(undefined, undefined, { wait: true }),
     ).toMatchObject({
       present: true,
-      mode: 'read-only',
+      enabled: true,
       language: 'en-US',
     });
-    expect(await names(readonly)).toEqual(['scheduled']);
+    expect(await names(demoApp)).toEqual(['scheduled']);
   } finally {
-    await readonly.close();
+    await demoApp.close();
   }
 });
 

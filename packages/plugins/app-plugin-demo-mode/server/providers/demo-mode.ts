@@ -36,9 +36,9 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
       demoModeServiceToken,
       new DefaultDemoModeService(settings),
     );
-    const guard = new DemoWriteGuard(settings);
+    const guard = new DemoWriteGuard();
     this.app.container.instance(demoWriteGuardToken, guard);
-    if (settings.mode === 'off') return;
+    if (!settings.enabled) return;
 
     this.guard = guard;
     // The root router runs this before every route, including those contributed later and the WebSocket upgrade.
@@ -46,7 +46,6 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
       '*',
       createDemoModeMiddleware({
         guard,
-        settings,
         runWithPolicy: (run) =>
           this.app.container
             .resolve(demoConfigurationRuntimeToken)
@@ -58,7 +57,6 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
         attachConnections: () => this.attachConnections(),
         logger: {
           info: (details, message) => this.logger()?.info(details, message),
-          warn: (details, message) => this.logger()?.warn(details, message),
         },
       }),
     );
@@ -73,7 +71,7 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
       const knex = await this.client(name);
       try {
         await guard.run(
-          { method: 'PROBE', path: '', blocked: [], probe: true },
+          { method: 'PROBE', path: '', blocked: [] },
           async () => await knex.raw(PROBE_SQL),
         );
       } catch (error) {
@@ -87,13 +85,11 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
         `Demo mode could not guard database connection "${name}"; refusing to start.`,
       );
     }
-    const { mode, allowCollections } =
+    const { enabled, allowCollections } =
       this.app.container.resolve(demoModeServiceToken);
     this.logger()?.warn(
-      { mode, allowCollections, connections: this.connections() },
-      mode === 'read-only'
-        ? 'Demo mode is on: requests cannot change the database except authorized demo imports and allowed collections'
-        : 'Demo mode is observing: writes requests make are logged, not refused',
+      { enabled, allowCollections, connections: this.connections() },
+      'Demo mode is on: requests cannot change the database except authorized demo imports and allowed collections',
     );
   }
 

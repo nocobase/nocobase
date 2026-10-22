@@ -32,7 +32,7 @@ const resource: DemoModeResource = {
     busyHelp: '完了すると設定を再び保存できます。',
     disabled: {
       title: 'このアプリはデモではありません',
-      help: 'デモモードはオフです。デプロイ時に NOCOBASE_DEMO_MODE でオンにします。',
+      help: 'デモモードはオフです。デプロイ時に NOCOBASE_DEMO_MODE=true でオンにします。',
     },
     cancel: 'キャンセル',
     save: '保存',
@@ -43,13 +43,9 @@ const resource: DemoModeResource = {
       on: 'オン',
       off: 'オフ',
     },
-    mode: {
-      readOnly: '読み取り専用',
-      observe: '観察',
-      readOnlyHelp:
-        '訪問者はすべてのページを開けますが、下の例外で許可しない限り変更は保存されません。',
-      observeHelp:
-        '何も拒否しません。読み取り専用モードで拒否される書き込みはログに記録するだけで、許可すべきものを見つけるために使います。',
+    status: {
+      enabled: 'デモ有効',
+      help: '訪問者はすべてのページを開けますが、下の例外で許可しない限り変更は保存されません。',
     },
     tabs: {
       overview: '概要',
@@ -166,7 +162,7 @@ const resource: DemoModeResource = {
     },
     writes: {
       intro:
-        '読み取り専用モードではすべての変更が拒否されます。訪問者が試す必要のある操作だけを、デモ自身のレコードに限って許可してください。業務権限は引き続き適用されます。',
+        'デモを有効にすると、変更はデフォルトで拒否されます。訪問者が試す必要のある操作だけを、デモ自身のレコードに限って許可してください。業務権限は引き続き適用されます。',
       allow: '許可',
       revoke: '再び拒否',
       scope: '範囲',

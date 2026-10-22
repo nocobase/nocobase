@@ -7,14 +7,14 @@ The order of work when an application adopts this plugin, and the observable res
 Confirm that the user needs a dedicated demo system, not only sample records in an existing application. The latter uses sample seeds or `sampleDataToken` without this plugin.
 
 - Register the Server plugin and `defineDemoModeConfig()` in the application's existing defaults map. Add the Client factory for UI and `@nocobase/app-plugin-demo-mode/cli` when commands are needed. Use the application's normal package build workflow.
-- Infer from the request and existing application guidance: which languages, which roles and how many accounts, the full business cleanup boundary (this is a dedicated demo instance), whether visitors may write anything in read-only mode, and whether Agents answer from scripts. Record those decisions in the application's development guide.
+- Infer from the request and existing application guidance: which languages, which roles and how many accounts, the full business cleanup boundary (this is a dedicated demo instance), whether visitors may write anything with Demo Mode enabled, and whether Agents answer from scripts. Record those decisions in the application's development guide.
 
 ## 2. Inventory every external boundary first
 
 List every way the application's code can reach outside the process, then decide for each what a demo record gets. Search the code for the transports, not only the obvious client: `fetch`, `undici`, `node:https`/`node:http`, `node:dns`, sockets, SDK clients, mail and notification channels, drive uploads, queue producers, model gateways, Runner dispatch. Include transports that bypass the application's usual network layer.
 
 - Route requests made for demo records to an in-process responder at one layer every caller already uses, selected by the server’s demo environment configuration, never by a client flag. Persisted markers may select fixture content, but an unmarked record in a demo environment must not reach a real provider. A request the fixtures do not cover fails with a clear error; it never falls through to the network.
-- Recognize demo scope in every process: use the server environment mode, including for unmarked visitor-created records and queued work.
+- Recognize demo scope in every process: use the server-side Demo Mode flag, including for unmarked visitor-created records and queued work.
 - Give fixture data real shapes by running the application's own collection, parsing and saving code against the responder, rather than writing finished results directly. Pages that query upstream services on view keep working, and the stored formats follow the code as it changes.
 - Mail, notifications, payments, repository pushes and publication must refuse or be simulated explicitly in demo scope; a disabled simulation never means "use the real one".
 
@@ -37,7 +37,7 @@ Follow [Adapt demo data](adapting-data.md). In addition:
 
 ## 5. Let visitors do what the demo is for
 
-In read-only mode request writes need an exception. For disposable business tables, configure whole-collection exceptions when normal application authorization is sufficient. Register capabilities and wrap the authorized operation with `runWrites` when it needs narrower operation or record scopes. See [policies](policies.md).
+With Demo Mode enabled, request writes need an exception. For disposable business tables, configure whole-collection exceptions when normal application authorization is sufficient. Register capabilities and wrap the authorized operation with `runWrites` when it needs narrower operation or record scopes. See [policies](policies.md).
 
 - Typical candidates include starting a task, saving a note or updating a demo record. For Agents online conversations, use the dedicated `runOnlineConversation` persistence boundary and chat policy in [simulation](simulation.md#online-conversation-persistence); do not register protected Agent tables as business capabilities.
 - Map the actions that may write to their capabilities in one table at the dispatcher instead of nesting wrappers.
@@ -57,6 +57,6 @@ Follow [Model and execution simulation](simulation.md). When showing task progre
 Automated tests cover contracts; verify the requested user journeys in a browser too.
 
 - Import, then open each principal page as each demo account in the supported languages; clear and reset. If the demo includes tasks or online Agents, exercise those flows too.
-- Run the demo in read-only mode as a visitor would. Confirm that what should work works and that everything else is refused.
+- Run the demo with Demo Mode enabled as a visitor would. Confirm that what should work works and that everything else is refused.
 - If background jobs are enabled, observe a relevant run and check that curated content is not unexpectedly rewritten.
 - Trace one request per external boundary and confirm it stayed in process; report boundaries you could not exercise.

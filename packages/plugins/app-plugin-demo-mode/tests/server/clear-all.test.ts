@@ -7,10 +7,10 @@ import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
 let app: TestApp;
 afterEach(async () => app?.close());
 
-async function fixture(mode: 'off' | 'read-only' | 'observe') {
+async function fixture(enabled: boolean) {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode } },
+    config: { demoMode: { enabled } },
   });
   const service = app.application.container.resolve(demoDataToken);
   const clear = vi.fn(async () => {
@@ -51,31 +51,29 @@ async function fixture(mode: 'off' | 'read-only' | 'observe') {
   return { service, dataset, clear, names };
 }
 
-it.each(['read-only', 'observe'] as const)(
-  'allows explicit full cleanup in %s mode, before and after imports',
-  async (mode) => {
-    const { service, clear, names } = await fixture(mode);
-    expect(await service.clear('admin')).toMatchObject({
-      state: null,
-      present: false,
-    });
-    expect(await names()).toEqual([]);
-    await app.connection.query
-      .insertInto('demoitems')
-      .values({ name: 'another-project' })
-      .execute();
-    expect(await service.reset('admin', 'zh-CN', { wait: true })).toMatchObject(
-      { present: true, language: 'zh-CN' },
-    );
-    expect(await names()).toEqual(['zh-CN']);
-    await service.clear('admin');
-    await service.clear('admin');
-    expect(clear).toHaveBeenCalledTimes(4);
-  },
-);
+it('allows explicit full cleanup with Demo Mode enabled, before and after imports', async () => {
+  const { service, clear, names } = await fixture(true);
+  expect(await service.clear('admin')).toMatchObject({
+    state: null,
+    present: false,
+  });
+  expect(await names()).toEqual([]);
+  await app.connection.query
+    .insertInto('demoitems')
+    .values({ name: 'another-project' })
+    .execute();
+  expect(await service.reset('admin', 'zh-CN', { wait: true })).toMatchObject({
+    present: true,
+    language: 'zh-CN',
+  });
+  expect(await names()).toEqual(['zh-CN']);
+  await service.clear('admin');
+  await service.clear('admin');
+  expect(clear).toHaveBeenCalledTimes(4);
+});
 
 it('refuses full clear and reset with demo mode off, without touching existing data', async () => {
-  const { service, clear, names } = await fixture('off');
+  const { service, clear, names } = await fixture(false);
   for (const operation of ['clear', 'reset'] as const)
     await expect(service[operation]('admin')).rejects.toMatchObject({
       reason: 'DEMO_MODE_REQUIRED',
@@ -88,7 +86,7 @@ it('refuses full clear and reset with demo mode off, without touching existing d
 });
 
 it('uses the same full cleanup for failed and interrupted imports', async () => {
-  const { service, dataset, clear, names } = await fixture('read-only');
+  const { service, dataset, clear, names } = await fixture(true);
   service.register({
     ...dataset,
     steps: (language) => [
@@ -116,7 +114,7 @@ it('uses the same full cleanup for failed and interrupted imports', async () => 
 });
 
 it('persists a lease for full cleanup even when no dataset was imported', async () => {
-  const { service, dataset, clear } = await fixture('read-only');
+  const { service, dataset, clear } = await fixture(true);
   let finish!: () => void;
   let entered!: () => void;
   const held = new Promise<void>((resolve) => {
