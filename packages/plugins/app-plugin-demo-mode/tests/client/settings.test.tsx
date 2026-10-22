@@ -174,6 +174,9 @@ describe('demo settings page', () => {
     expect(
       screen.getByRole('button', { name: '复制 李明 的进入链接' }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '复制嵌入代码' }),
+    ).toHaveTextContent('复制嵌入代码');
   });
 
   it('saves the daily reset with the revision it started from, after confirming', async () => {

@@ -339,9 +339,13 @@ export function DataCard({
 function CopyButton({
   value,
   label,
+  text,
 }: {
   readonly value: string;
+  /** The button's accessible name. */
   readonly label: string;
+  /** What the button reads; "Copy link" when absent. */
+  readonly text?: string;
 }): ReactElement {
   const t = useT();
   const toaster = useToaster();
@@ -365,7 +369,7 @@ function CopyButton({
       }}
     >
       {copied ? <Check /> : <Copy />}
-      {copied ? t('visitors.copied') : t('visitors.copyLink')}
+      {copied ? t('visitors.copied') : (text ?? t('visitors.copyLink'))}
     </Button>
   );
 }
@@ -456,6 +460,7 @@ export function VisitorsCard({
                   <CopyButton
                     value={`<iframe src="${entry(first.username)}" title="Demo" style="width:100%;height:780px;border:0"></iframe>`}
                     label={t('visitors.copyEmbed')}
+                    text={t('visitors.copyEmbed')}
                   />
                 </div>
                 <p className='text-sm text-muted-foreground'>
