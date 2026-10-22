@@ -784,6 +784,16 @@ export class RunnerDaemon {
     return link.heartbeatInFlight;
   }
 
+  /**
+   * Sends a heartbeat that reflects the state from now on: one already in flight may have read its load before a change
+   * (such as a pending update), so it is awaited first rather than joined, keeping one heartbeat per application at a
+   * time.
+   */
+  private async reportNow(link: AppLink): Promise<void> {
+    while (link.heartbeatInFlight !== undefined) await link.heartbeatInFlight;
+    await this.heartbeat(link);
+  }
+
   private async sendHeartbeat(link: AppLink): Promise<void> {
     if (this.stopping.signal.aborted || link.revoked) return;
     const { log } = this.options;
@@ -1022,7 +1032,7 @@ export class RunnerDaemon {
       return;
     this.updating = true;
     try {
-      await Promise.all(this.live.map((app) => this.heartbeat(app)));
+      await Promise.all(this.live.map((app) => this.reportNow(app)));
       const cancellations = new Map<string, Promise<void>>();
       const interruptAgents = (): void => {
         for (const run of this.supervisor.runs.values()) {

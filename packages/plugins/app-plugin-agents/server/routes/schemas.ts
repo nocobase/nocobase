@@ -520,11 +520,11 @@ export const RegistrationTokenInputSchema: z.ZodType<RegistrationTokenInput> =
       .describe('The agent tools this runner accepts.'),
     slots: z.number().int().min(1).max(64).nullable().optional().meta({
       description:
-        "How many runs at once the runner takes; omitted or null leaves it to the runner. A runner's own `--slots` overrides it.",
+        'How many runs at once the runner takes from this application; omitted or null registers it with 4. The application keeps this setting and sends it to the runner in heartbeat answers.',
     }),
     toolSlots: ToolSlotsSchema.nullable().optional().meta({
       description:
-        "How many runs of each coding tool the runner takes at once; omitted or null for no limits per tool. A runner's own limits per tool (`--slots claude=2`) override it.",
+        'How many runs of each coding tool the runner takes from this application at once; omitted or null for no limits per tool. The application keeps these limits and sends them to the runner in heartbeat answers.',
     }),
   });
 
