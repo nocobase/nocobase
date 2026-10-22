@@ -968,6 +968,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     list: 'Serviços modelo',
     columns: {
       name: 'Nome',
+      models: 'Modelos',
       provider: 'Tipo de provedor',
       status: 'Status',
     },
@@ -1059,6 +1060,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       },
       dimensions: 'Tamanho do vetor de {{model}}',
       dimensionsPlaceholder: 'Padrão',
+      default: 'Padrão',
+      more: '+{{count}}',
       counts: {
         chat: 'Bate-papo {{count}}',
         embedding: 'Incorporação {{count}}',

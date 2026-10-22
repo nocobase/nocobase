@@ -16,6 +16,7 @@ const servicesEnUS = {
     list: 'Model services',
     columns: {
       name: 'Name',
+      models: 'Models',
       provider: 'Provider type',
       status: 'Status',
     },
@@ -106,6 +107,8 @@ const servicesEnUS = {
       },
       dimensions: 'Vector size of {{model}}',
       dimensionsPlaceholder: 'Default',
+      default: 'Default',
+      more: '+{{count}}',
       counts: {
         chat: '{{count}} chat',
         embedding: '{{count}} embedding',

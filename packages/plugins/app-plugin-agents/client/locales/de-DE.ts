@@ -977,6 +977,7 @@ const deDE: LocaleResource<typeof enUS> = {
     list: 'Musterdienste',
     columns: {
       name: 'Name',
+      models: 'Modelle',
       provider: 'Anbietertyp',
       status: 'Status',
     },
@@ -1071,6 +1072,8 @@ const deDE: LocaleResource<typeof enUS> = {
       },
       dimensions: 'Vektorgröße von {{model}}',
       dimensionsPlaceholder: 'Standard',
+      default: 'Standard',
+      more: '+{{count}}',
       counts: {
         chat: '{{count}}-Chat',
         embedding: '{{count}}-Einbettung',

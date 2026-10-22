@@ -973,6 +973,7 @@ const frFR: LocaleResource<typeof enUS> = {
     list: 'Services modèles',
     columns: {
       name: 'Nom',
+      models: 'Modèles',
       provider: 'Type de fournisseur',
       status: 'Statut',
     },
@@ -1065,6 +1066,8 @@ const frFR: LocaleResource<typeof enUS> = {
       },
       dimensions: 'Taille du vecteur de {{model}}',
       dimensionsPlaceholder: 'Par défaut',
+      default: 'Par défaut',
+      more: '+{{count}}',
       counts: {
         chat: 'Discussion {{count}}',
         embedding: 'Intégration {{count}}',

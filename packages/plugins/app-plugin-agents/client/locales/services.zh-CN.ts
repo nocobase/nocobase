@@ -17,6 +17,7 @@ const servicesZhCN: ServicesLocale = {
     list: '模型服务',
     columns: {
       name: '名称',
+      models: '模型',
       provider: '服务商',
       status: '状态',
     },
@@ -105,6 +106,8 @@ const servicesZhCN: ServicesLocale = {
       },
       dimensions: '{{model}} 的向量维度',
       dimensionsPlaceholder: '默认',
+      default: '默认',
+      more: '+{{count}}',
       counts: {
         chat: '{{count}} 个对话',
         embedding: '{{count}} 个向量',

@@ -950,6 +950,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     list: 'モデルサービス',
     columns: {
       name: '名前',
+      models: 'モデル',
       provider: 'プロバイダーの種類',
       status: '状態',
     },
@@ -1041,6 +1042,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       },
       dimensions: '{{model}}のベクトルサイズ',
       dimensionsPlaceholder: 'デフォルト',
+      default: 'デフォルト',
+      more: '+{{count}}',
       counts: {
         chat: '{{count}} チャット',
         embedding: '{{count}}埋め込み',

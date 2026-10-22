@@ -329,6 +329,19 @@ describe('model services', () => {
         ],
       },
     ]);
+    // So is the default chat model: the first chat model enabled became it.
+    expect(
+      (await h.request('GET', '/agents/defaultModels', { user: 'eve' })).body
+        .data,
+    ).toEqual({
+      chat: { modelService: 'local', model: 'mock-model' },
+      effectiveChat: {
+        modelService: 'local',
+        model: 'mock-model',
+        serviceTitle: 'Local',
+        modelLabel: 'mock-model',
+      },
+    });
     expect(
       (await h.request('DELETE', '/agents/services/local', ADMIN)).status,
     ).toBe(204);

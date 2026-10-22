@@ -8,7 +8,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { ModelServiceView } from '../../shared/models.js';
+import type { ModelRef, ModelServiceView } from '../../shared/models.js';
 import { callsTo, clientMocks, resetApi } from './fake-client.js';
 import { renderPage } from './render.js';
 
@@ -28,7 +28,11 @@ const ALL = [
   'agents.prices/manage',
 ];
 
-const state = { services: [] as ModelServiceView[] };
+const state = {
+  services: [] as ModelServiceView[],
+  // The default chat model the server answers; the first service's first model when null.
+  defaultChat: null as ModelRef | null,
+};
 
 function serve(permissions: readonly string[] = ALL): void {
   resetApi(
@@ -58,23 +62,17 @@ function serve(permissions: readonly string[] = ALL): void {
           models: item.models.filter((model) => model.kind === 'chat'),
         })),
       'agents/defaultModels': () => ({
-        chat: null,
-        effectiveChat: state.services[0]
-          ? {
-              modelService: state.services[0].name,
-              model: state.services[0].models[0]!.value,
-              serviceTitle: state.services[0].title,
-              modelLabel: state.services[0].models[0]!.label,
-            }
-          : null,
-      }),
-      'PUT agents/defaultModels/chat': (request) => ({
-        chat: request.json,
-        effectiveChat: {
-          ...(request.json as object),
-          serviceTitle: 'Lab',
-          modelLabel: 'lab-model',
-        },
+        chat: state.defaultChat,
+        effectiveChat: state.defaultChat
+          ? { ...state.defaultChat, serviceTitle: '', modelLabel: '' }
+          : state.services[0]
+            ? {
+                modelService: state.services[0].name,
+                model: state.services[0].models[0]!.value,
+                serviceTitle: state.services[0].title,
+                modelLabel: state.services[0].models[0]!.label,
+              }
+            : null,
       }),
     },
     permissions,
@@ -110,6 +108,7 @@ const servicesList = () =>
 describe('Agent team › Models', () => {
   beforeEach(() => {
     state.services = [];
+    state.defaultChat = null;
     serve();
   });
 
@@ -147,6 +146,64 @@ describe('Agent team › Models', () => {
     expect(rows[1]).toHaveTextContent('services.status.noKey');
     expect(rows[2]).toHaveTextContent('127.0.0.1:9999');
     expect(rows[2]).toHaveTextContent('services.status.on');
+  });
+
+  it('names each service’s chat models, the default chat model first and marked, and counts the other kinds', async () => {
+    const model = (value: string, kind: 'chat' | 'embedding' = 'chat') => ({
+      value,
+      label: value,
+      kind,
+      dimensions: null,
+    });
+    state.services = [
+      service({
+        models: [
+          model('qwen-max'),
+          model('bge-m3', 'embedding'),
+          model('deepseek-v4.1-flash'),
+          model('kimi-k2'),
+          model('glm-5'),
+        ],
+      }),
+      service({
+        name: 'lab',
+        title: 'Lab',
+        provider: 'deepseek',
+        models: [model('deepseek-chat')],
+      }),
+    ];
+    state.defaultChat = { modelService: 'team', model: 'deepseek-v4.1-flash' };
+    renderPage(<ModelsPage />);
+    const table = await servicesList();
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((cell) => cell.textContent),
+    ).toEqual([
+      'services.columns.name',
+      'services.columns.models',
+      'services.columns.provider',
+      'services.columns.status',
+      '',
+    ]);
+    const team = within(table).getByRole('row', { name: 'Team' });
+    const models = await within(team).findByTitle(
+      'deepseek-v4.1-flash, qwen-max, kimi-k2, glm-5',
+    );
+    expect(models).toHaveTextContent(
+      /^deepseek-v4\.1-flashservices\.models\.default, qwen-maxservices\.models\.more\(count=2\)$/u,
+    );
+    expect(within(models).getByTitle('defaultModel.title')).toHaveTextContent(
+      'services.models.default',
+    );
+    expect(team).toHaveTextContent('services.models.counts.embedding(count=1)');
+    expect(team).not.toHaveTextContent('services.models.counts.chat');
+    // Another service's models are named without the mark.
+    const lab = within(table).getByRole('row', { name: 'Lab' });
+    expect(within(lab).getByTitle('deepseek-chat')).toHaveTextContent(
+      /^deepseek-chat$/u,
+    );
+    expect(within(lab).queryByTitle('defaultModel.title')).toBeNull();
   });
 
   it('adds a service in one dialog: provider type, name, key, base URL and models', async () => {

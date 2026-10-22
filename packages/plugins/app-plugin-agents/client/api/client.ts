@@ -22,6 +22,7 @@ import type { BriefPreview, RunBrief } from '../../shared/briefs.js';
 import type { PricesAnswer, PricesInput } from '../../shared/reports.js';
 import type {
   CreateModelServiceRequest,
+  DefaultModels,
   ModelCatalog,
   ModelCheck,
   ModelConnectionCheckRequest,
@@ -113,6 +114,11 @@ export class AgentsApi {
       kind && kind !== 'chat' ? { kind } : {},
     );
     return { services };
+  }
+
+  /** The default chat model, as set and as used now. */
+  public defaultModels(): Promise<DefaultModels> {
+    return this.get('defaultModels');
   }
 
   /** Whether a model answers a short test request. */

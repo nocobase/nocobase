@@ -16,6 +16,7 @@ export const agentsKeys: {
   ) => readonly ['agents', 'agent-history', string];
   readonly users: readonly ['agents', 'users'];
   readonly models: readonly ['agents', 'models'];
+  readonly defaultModels: readonly ['agents', 'default-models'];
   readonly services: readonly ['agents', 'services'];
   readonly prices: readonly ['agents', 'prices'];
   readonly providerModels: (
@@ -74,6 +75,7 @@ export const agentsKeys: {
   agentHistory: (agentId) => ['agents', 'agent-history', agentId],
   users: ['agents', 'users'],
   models: ['agents', 'models'],
+  defaultModels: ['agents', 'default-models'],
   services: ['agents', 'services'],
   prices: ['agents', 'prices'],
   providerModels: (service) => ['agents', 'provider-models', service],

@@ -263,6 +263,7 @@ describe('agents API document', () => {
         'agentsListRunEvents',
         'agentsSendConversationMessage',
         'agentsListModelServices',
+        'agentsGetDefaultModels',
         'agentsListRunners',
         'agentsRunnerRegister',
         'agentsRunnerClaimWork',

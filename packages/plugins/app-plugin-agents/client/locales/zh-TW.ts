@@ -907,6 +907,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     list: '模特兒服務',
     columns: {
       name: '名稱',
+      models: '模型',
       provider: '提供者型別',
       status: '狀態',
     },
@@ -995,6 +996,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       },
       dimensions: '{{model}} 的向量大小',
       dimensionsPlaceholder: '預設',
+      default: '預設',
+      more: '+{{count}}',
       counts: {
         chat: '{{count}} 聊天',
         embedding: '{{count}} 嵌入',

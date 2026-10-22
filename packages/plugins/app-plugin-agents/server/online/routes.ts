@@ -23,6 +23,7 @@ import { domainRouter } from '../kernel/http.js';
 import type { AdminEnv } from '../routes/admin.js';
 import { tags } from '../routes/openapi.js';
 import {
+  DefaultModelsSchema,
   ModelCatalogQuery,
   ModelCatalogServiceSchema,
   ModelCheckSchema,
@@ -96,6 +97,24 @@ export function createModelRoutes(
       );
       return context.json({ data: services, meta: { total: services.length } });
     },
+  );
+  // The default chat model, as set and as used now; names only, like the catalog.
+  router.get(
+    '/defaultModels',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Get the default models',
+      operationId: 'agentsGetDefaultModels',
+      ...cliRoute({ command: 'model defaults' }),
+      description:
+        'The default chat model as set (`chat`, null when none is) and the one used now (`effectiveChat`): the one set while an enabled service offers it, else the first chat model offered. Names only, never keys.',
+      responses: {
+        200: dataResponse(DefaultModelsSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    async (context) => context.json({ data: await online.services.defaults() }),
   );
   router.post(
     '/checkModel',

@@ -14,7 +14,6 @@
  * | POST   | `agents/discoverModels`              | `agents.services` manage | `ModelConnectionRequest`      | `ProviderModels`           |
  * | POST   | `agents/checkConnection`             | `agents.services` manage | `ModelConnectionCheckRequest` | `ModelCheck`               |
  * | GET    | `agents/defaultModels`               | a session                |                               | `DefaultModels`            |
- * | PUT    | `agents/defaultModels/chat`          | `agents.services` manage | `ModelRef`                    | `DefaultModels`            |
  *
  * The catalog names services and models, never keys or URLs. An API key is write-only: a service answers whether it
  * has one (`apiKeySet`). Listing models and checking take a connection being edited (`provider`, `baseUrl`, `apiKey`)
@@ -206,8 +205,8 @@ export interface DefaultChatModel extends ModelRef {
 
 /**
  * The models used where nothing names one: online agents with no models of their own answer with the default chat
- * model. It is set on the Models page; when none is set, the first chat model an enabled service offers is used, and
- * the first one enabled becomes the default.
+ * model. The application sets it (`models.services.setDefaultChat`); when none is set, the first chat model an enabled
+ * service offers is used, and the first one enabled becomes the default.
  */
 export interface DefaultModels {
   /** The default chat model as set; null when none is. */
