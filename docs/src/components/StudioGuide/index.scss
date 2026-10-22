@@ -91,40 +91,6 @@
     font-size: 16px;
     color: var(--guide-muted);
   }
-  .guide-actions {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 14px;
-    margin-top: 28px;
-  }
-  .guide-primary,
-  .guide-print {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    gap: 22px;
-    padding: 11px 20px;
-    font-size: 13px;
-    border-radius: 6px;
-    border: 1px solid var(--guide-line);
-    transition:
-      background 150ms,
-      border-color 150ms;
-  }
-  .guide-primary {
-    background: var(--guide-blue);
-    border-color: var(--guide-blue);
-    color: #fff;
-  }
-  .guide-primary:hover {
-    background: #2746bf;
-    text-decoration: none;
-  }
-  .guide-print:hover {
-    background: var(--guide-soft);
-    border-color: #bbc6d9;
-  }
   .guide-flow {
     padding: 24px;
     border: 1px solid #dce3f3;
@@ -808,15 +774,6 @@
       font-size: 14px;
       margin-top: 18px;
     }
-    .guide-actions {
-      gap: 10px;
-      margin-top: 22px;
-    }
-    .guide-primary,
-    .guide-print {
-      padding: 10px 14px;
-      font-size: 12px;
-    }
     .guide-flow {
       padding: 18px;
     }
@@ -958,7 +915,6 @@
       font-size: 26pt;
     }
     .guide-flow,
-    .guide-actions,
     .guide-sidebar,
     .guide-breadcrumb,
     .zoom-hint,

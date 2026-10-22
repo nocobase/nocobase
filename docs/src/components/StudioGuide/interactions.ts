@@ -39,9 +39,6 @@ export function initializeStudioGuide(root: HTMLElement) {
       });
     });
   }
-  root
-    .querySelector('.guide-print')
-    ?.addEventListener('click', () => window.print());
 
   const dialog = root.querySelector<HTMLDialogElement>('.guide-lightbox');
   const largeImage = root.querySelector<HTMLImageElement>('.lightbox-image');

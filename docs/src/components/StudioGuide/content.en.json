@@ -7,8 +7,6 @@
   "intro": "Install NocoBase Studio, connect your Coding Agent and code repository, and review the first task completed by your agent in a preview environment.",
   "guideLabel": "User guide",
   "home": "Documentation",
-  "start": "Start setup",
-  "print": "Print / Save PDF",
   "imageHint": "Click any screenshot to enlarge",
   "flowLabel": "Setup and usage at a glance",
   "flowTitle": "Setup and usage at a glance",
