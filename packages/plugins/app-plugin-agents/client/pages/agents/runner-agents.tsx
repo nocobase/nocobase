@@ -4,6 +4,10 @@
  * can run now (team and personal runners, with a few names), its default reasoning effort and its state: a pending
  * agent offers "Fill in and enable", an enabled or disabled one "Edit" (`agent-dialog.tsx`), for someone who manages
  * agents; everyone else reads. Under the table, how to add an agent: connect a runner whose tool has the model.
+ *
+ * Its heading row carries "Show disabled" and whatever actions the page adds. The heading is the section's `h2`, the
+ * page's `h1` for a page that is this list (the Agents page), or an `h2` for screen readers only under an
+ * application's own tab or heading.
  */
 import { AgentQuotaHint, QuotaLabel } from '../../components/quota-status.js';
 import { modelLabel, TOOL_LABELS } from '../../../shared/model-catalog.js';
@@ -11,7 +15,7 @@ import { modelLabel, TOOL_LABELS } from '../../../shared/model-catalog.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDownIcon } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
 import { discoveryKey } from '../../../shared/model-catalog.js';
@@ -30,6 +34,7 @@ import {
   SectionHeading,
 } from '../../components/ag-states.js';
 import { AgTag, type Tone } from '../../components/ag-tag.js';
+import { PageHeader } from '../../components/page-header.js';
 import { Button } from '../../components/ui/button.js';
 import {
   Table,
@@ -67,7 +72,28 @@ function groupDiscoveries(agents: readonly AgentView[]): AgentView[][] {
   return [...groups.values()];
 }
 
-export function RunnerAgentsSection(): ReactElement {
+export interface RunnerAgentsSectionProps {
+  /** The heading; "Local agents reported by runtimes" when absent. */
+  readonly title?: ReactNode;
+  /** A sentence under the heading, on the row of the actions. */
+  readonly description?: ReactNode;
+  /** More actions on the heading's row, before "Show disabled". */
+  readonly actions?: ReactNode;
+  /**
+   * How the heading shows: `section` (the default), an `h2` above the list; `page`, the page's `h1` as a page header
+   * shows it, for a page that is this list; `screenReaderOnly`, an `h2` read by screen readers only, for an application
+   * whose own tab or heading already names the list. In the last two the description and the actions take the
+   * heading's row, as on the other pages.
+   */
+  readonly heading?: 'section' | 'page' | 'screenReaderOnly';
+}
+
+export function RunnerAgentsSection({
+  title,
+  description,
+  actions,
+  heading = 'section',
+}: RunnerAgentsSectionProps = {}): ReactElement {
   const { t } = useTranslation();
   const api = useAgentsApi();
   const notify = useNotify();
@@ -282,72 +308,85 @@ export function RunnerAgentsSection(): ReactElement {
   const candidates = editing
     ? groups.find((group) => group.some((agent) => agent.id === editing.id))
     : undefined;
+  const toolbar = (
+    <>
+      {actions}
+      <Button variant='outline' onClick={() => setDisabled((value) => !value)}>
+        {t(disabled ? 'agents.discovery.enabled' : 'agents.discovery.disabled')}
+      </Button>
+    </>
+  );
   return (
     <section
-      className='min-w-0 space-y-3'
+      // As a page or under the application's heading, the list sits as far below the heading row as on other pages.
+      className={
+        heading === 'section' ? 'min-w-0 space-y-3' : 'min-w-0 space-y-6'
+      }
       aria-labelledby='agents-runner-heading'
     >
-      <SectionHeading
-        id='agents-runner-heading'
-        title={t('agents.fromRunners')}
-        actions={
-          <Button
-            variant='outline'
-            onClick={() => setDisabled((value) => !value)}
-          >
-            {t(
-              disabled
-                ? 'agents.discovery.enabled'
-                : 'agents.discovery.disabled',
-            )}
-          </Button>
-        }
-      />
-      {agents.isError && !agents.data ? (
-        <AgLoadError
-          title={t('agents.loadFailed')}
-          error={agents.error}
-          onRetry={() => void agents.refetch()}
+      {heading === 'page' ? (
+        <PageHeader
+          titleId='agents-runner-heading'
+          title={title ?? t('agents.fromRunners')}
+          description={description}
+          actions={toolbar}
         />
-      ) : !agents.data ? (
-        <AgListSkeleton />
       ) : (
-        <AgentTable
-          agents={ordered(
-            agents.data.filter(
-              (agent) => agent.status === (disabled ? 'disabled' : 'enabled'),
-            ),
-          )}
-          onEdit={setEditing}
+        <SectionHeading
+          id='agents-runner-heading'
+          title={title ?? t('agents.fromRunners')}
+          description={description}
+          actions={toolbar}
+          titleHidden={heading === 'screenReaderOnly'}
         />
       )}
-      <Collapsible>
-        <CollapsibleTrigger
-          className='flex items-center gap-2 py-1 font-medium'
-          data-testid='agents-discovery-toggle'
-        >
-          <ChevronDownIcon className='size-4' aria-hidden />
-          {t('agents.discovery.new', { count: visible.length })}
-        </CollapsibleTrigger>
-        <CollapsibleContent className='pt-3'>
-          {list(visible, false)}
-        </CollapsibleContent>
-      </Collapsible>
-      {ignored.length > 0 ? (
+      <div className='min-w-0 space-y-3'>
+        {agents.isError && !agents.data ? (
+          <AgLoadError
+            title={t('agents.loadFailed')}
+            error={agents.error}
+            onRetry={() => void agents.refetch()}
+          />
+        ) : !agents.data ? (
+          <AgListSkeleton />
+        ) : (
+          <AgentTable
+            agents={ordered(
+              agents.data.filter(
+                (agent) => agent.status === (disabled ? 'disabled' : 'enabled'),
+              ),
+            )}
+            onEdit={setEditing}
+          />
+        )}
         <Collapsible>
           <CollapsibleTrigger
-            data-testid='agents-ignored-toggle'
-            className='flex items-center gap-2 py-1 text-sm text-muted-foreground'
+            className='flex items-center gap-2 py-1 font-medium'
+            data-testid='agents-discovery-toggle'
           >
             <ChevronDownIcon className='size-4' aria-hidden />
-            {t('agents.discovery.ignored', { count: ignored.length })}
+            {t('agents.discovery.new', { count: visible.length })}
           </CollapsibleTrigger>
           <CollapsibleContent className='pt-3'>
-            {list(ignored, true)}
+            {list(visible, false)}
           </CollapsibleContent>
         </Collapsible>
-      ) : null}
-      <p className='text-sm text-muted-foreground'>{t('agents.howToAdd')}</p>
+        {ignored.length > 0 ? (
+          <Collapsible>
+            <CollapsibleTrigger
+              data-testid='agents-ignored-toggle'
+              className='flex items-center gap-2 py-1 text-sm text-muted-foreground'
+            >
+              <ChevronDownIcon className='size-4' aria-hidden />
+              {t('agents.discovery.ignored', { count: ignored.length })}
+            </CollapsibleTrigger>
+            <CollapsibleContent className='pt-3'>
+              {list(ignored, true)}
+            </CollapsibleContent>
+          </Collapsible>
+        ) : null}
+        <p className='text-sm text-muted-foreground'>{t('agents.howToAdd')}</p>
+      </div>
       <AgentDialog
         agent={editing}
         candidates={candidates}
