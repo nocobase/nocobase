@@ -1,6 +1,13 @@
 import { useToaster } from '@nocobase/app-client';
 import { Check, Copy, DatabaseZap, ExternalLink } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { useTranslation } from '@nocobase/i18n/client';
+import {
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import { useHref } from 'react-router';
 
 import type { DemoDataStatus } from '../../server/data/types.js';
@@ -43,7 +50,13 @@ import {
 import { Skeleton } from '../components/ui/skeleton.js';
 import { Spinner } from '../components/ui/spinner.js';
 import type { DemoDataControls } from '../demo-data.js';
-import { languageName, useErrorText, useLabel, useT } from './context.js';
+import {
+  DemoSettingsContext,
+  languageName,
+  useErrorText,
+  useLabel,
+  useT,
+} from './context.js';
 import { ErrorAlert } from './shared.js';
 
 function StateBadge({
@@ -76,8 +89,17 @@ export function DataCard({
   const label = useLabel();
   const errorText = useErrorText();
   const toaster = useToaster();
+  const { onDataChange } = useContext(DemoSettingsContext);
+  const { i18n } = useTranslation();
   const { status } = demo;
   const [chosen, setChosen] = useState<string>();
+  // An import or reset this page watched has finished: everything the application shows changed.
+  const importing = Boolean(status?.importing);
+  const wasImportingRef = useRef(importing);
+  useEffect(() => {
+    if (wasImportingRef.current && !importing) onDataChange?.();
+    wasImportingRef.current = importing;
+  }, [importing, onDataChange]);
   const [intent, setIntent] = useState<Intent>();
   const [failure, setFailure] = useState<unknown>();
   if (!status)
@@ -102,15 +124,24 @@ export function DataCard({
         </CardContent>
       </Card>
     );
-  const language = chosen ?? status.language ?? status.languages[0] ?? '';
+  // The reader's own language when the dataset is written in it.
+  const reader = status.languages.find(
+    (item) =>
+      item === i18n.language ||
+      item.split('-')[0] === i18n.language.split('-')[0],
+  );
+  const language =
+    chosen ?? status.language ?? reader ?? status.languages[0] ?? '';
   const working = Boolean(status.importing) || demo.pending;
   const counts = Object.entries(status.counts);
   const run = async () => {
     const action = intent;
     setFailure(undefined);
     try {
-      if (action === 'clear') await demo.clear();
-      else if (action === 'reset') await demo.reset(language);
+      if (action === 'clear') {
+        await demo.clear();
+        onDataChange?.();
+      } else if (action === 'reset') await demo.reset(language);
       else await demo.importData(language);
       setIntent(undefined);
       toaster.show({

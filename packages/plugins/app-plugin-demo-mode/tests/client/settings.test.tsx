@@ -9,7 +9,7 @@ import {
   type ApiCall,
 } from '@nocobase/app-testing/client';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import demoMode from '../../client/index.js';
 import DemoModeSettings from '../../client/settings/index.js';
@@ -119,13 +119,28 @@ function demoApi({
     if (call.method === 'GET' && call.path === 'demoMode/configuration')
       return { data: configuration };
     if (call.method === 'PUT' && onPut) return onPut(call);
+    if (call.method === 'POST' && call.path === 'demoMode/data/clear')
+      return {
+        data: {
+          ...status,
+          present: false,
+          state: null,
+          counts: {},
+          accounts: [],
+        },
+      };
     return new Response(null, { status: 404 });
   });
 }
 
-const render = (fetch: ReturnType<typeof demoApi>, route = '/') =>
+const render = (
+  fetch: ReturnType<typeof demoApi>,
+  route = '/',
+  onDataChange?: () => void,
+) =>
   renderWithApp(
     <DemoModeSettings
+      onDataChange={onDataChange}
       label={(kind, id) =>
         kind === 'count' ? { companies: '公司', leads: '线索' }[id] : undefined
       }
@@ -249,6 +264,18 @@ describe('demo settings page', () => {
     expect(
       screen.queryByRole('button', { name: '重置' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('clears after confirming and tells the application its data changed', async () => {
+    const onDataChange = vi.fn();
+    await render(demoApi(), '/', onDataChange);
+    fireEvent.click(await screen.findByRole('button', { name: '清空' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(
+      within(dialog).getByText(/会删除这个实例中的全部业务数据/u),
+    ).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: '清空' }));
+    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1));
   });
 
   it('explains when the application is not a demo', async () => {

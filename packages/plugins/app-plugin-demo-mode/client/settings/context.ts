@@ -29,6 +29,11 @@ export interface DemoSettingsOptions {
   readonly label?: (kind: DemoLabelKind, id: string) => string | undefined;
   /** The online chat tools the application serves; tools a saved policy names are shown too. */
   readonly chatTools?: readonly DemoChatTool[];
+  /**
+   * Called when the demo data changed under the page: a clear answered, or an import or reset it watched finished.
+   * An application refreshes what it caches, such as its query cache.
+   */
+  readonly onDataChange?: () => void;
 }
 
 export const DemoSettingsContext: Context<DemoSettingsOptions> =
