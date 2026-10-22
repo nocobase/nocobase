@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       nocobase_version:
-        description: 'NocoBase version, e.g. 2.2.26 (requires a matching v<version> git tag)'
+        description: 'NocoBase version, e.g. 2.2.26 (requires v<version> tag; overwrites matching image tags)'
         required: true
         type: string
       node_version:
@@ -23,14 +23,6 @@ on:
           - full-no-nginx
           - default
           - no-nginx
-      tag_mode:
-        description: 'nodefix: <version><variant>-nodefix; same-version: overwrite <version><variant>'
-        required: true
-        default: 'nodefix'
-        type: choice
-        options:
-          - nodefix
-          - same-version
       platforms:
         description: 'Build platforms'
         required: true
@@ -51,7 +43,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: rebuild-docker-nodefix-${{ inputs.nocobase_version }}-${{ inputs.variant }}-${{ inputs.tag_mode }}
+  group: rebuild-docker-nodefix-${{ inputs.nocobase_version }}-${{ inputs.variant }}
   cancel-in-progress: false
 
 env:
@@ -73,7 +65,6 @@ jobs:
           INPUT_VERSION: ${{ inputs.nocobase_version }}
           INPUT_NODE_VERSION: ${{ inputs.node_version }}
           INPUT_VARIANT: ${{ inputs.variant }}
-          INPUT_TAG_MODE: ${{ inputs.tag_mode }}
         run: |
           set -euo pipefail
 
@@ -85,11 +76,6 @@ jobs:
 
           if [[ ! "$INPUT_NODE_VERSION" =~ ^[0-9]+(\.[0-9]+\.[0-9]+)?$ ]]; then
             echo "Invalid Node.js version: $INPUT_NODE_VERSION (use a major like 22 or an exact version like 22.23.4)" >&2
-            exit 1
-          fi
-
-          if [[ "$INPUT_TAG_MODE" != "nodefix" && "$INPUT_TAG_MODE" != "same-version" ]]; then
-            echo "Unsupported tag mode: $INPUT_TAG_MODE" >&2
             exit 1
           fi
 
@@ -105,11 +91,6 @@ jobs:
               exit 1
               ;;
           esac
-
-          TAG_SUFFIX=""
-          if [[ "$INPUT_TAG_MODE" == "nodefix" ]]; then
-            TAG_SUFFIX="-nodefix"
-          fi
 
           MATRIX='{"include":['
           FIRST=1
@@ -137,7 +118,7 @@ jobs:
                 ;;
             esac
 
-            IMAGE_TAG="${VERSION}${SUFFIX}${TAG_SUFFIX}"
+            IMAGE_TAG="${VERSION}${SUFFIX}"
             ENTRY=$(jq -cn \
               --arg variant "$VARIANT" \
               --arg dockerfile "$DOCKERFILE" \
@@ -293,7 +274,6 @@ jobs:
             echo "- NocoBase: ${{ needs.prepare.outputs.version }}"
             echo "- Node: ${{ needs.prepare.outputs.node_version }} (actual: ${{ steps.verify.outputs.actual_node }})"
             echo "- Variant: ${{ matrix.variant }}"
-            echo "- Tag mode: ${{ inputs.tag_mode }}"
             echo "- Image: ${{ steps.images.outputs.docker_image }}"
             echo "- Pushed: ${{ inputs.push_image }}"
           } >> "$GITHUB_STEP_SUMMARY"
