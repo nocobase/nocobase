@@ -167,7 +167,9 @@ describe('application config', () => {
       env: { APP_BASE_PATH: '/crm/' },
     });
     expect(mounted.config.get('session.cookie.path')).toBe('/crm');
-    expect(mounted.config.get('session.cookie.name')).toBe('nocobase_session');
+    expect(mounted.config.get('session.cookie.name')).toBe(
+      'nocobase_session_%2Fcrm',
+    );
   });
 
   it('loads only explicit env overrides and restores defaults on reload', async () => {

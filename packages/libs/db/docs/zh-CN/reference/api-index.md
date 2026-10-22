@@ -1,49 +1,39 @@
 ---
-title: @nocobase/db 公开 API 导航
-description: 按公开能力定位 @nocobase/db 的用法文档，并说明各入口的适用范围和类型来源。
+title: Database public API navigation
+description: Ordered chapters and complete signatures for both public entries of @nocobase/db.
 ---
 
-# `@nocobase/db` 公开 API 导航
+# Database public API navigation
 
-本页用于按公开名称找到对应的用法文档，不复制完整接口签名。所有公开 API 都从根入口 `@nocobase/db` 导入；精确参数、返回值和可用导出以 TypeScript 类型声明为准。
+The package has two public entries: `@nocobase/db` and `@nocobase/db/testing`. The [complete API reference](../../api-reference/README.md) follows the chapter order below, with method summaries, options, results and behavioral constraints. Full signatures and supporting contracts are linked from each chapter.
 
-## 按能力查找
+## Chapters in reading order
 
-| 能力                            | 主要公开入口                                                                                                                                    | 用法文档                                                                                                          |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 创建和管理连接                  | `createDatabaseManager()`、`DatabaseManager`、`DatabaseConnection`                                                                              | [Database 概览](../database/overview.md)、[连接配置](../database/connections.md)                                  |
-| 修改 Collection Schema          | `CollectionBuilder`、`BuilderExecOptions`、`BuilderResult`                                                                                      | [Builder 总览](../builder/overview.md)、[Builder 选项](./builder-options.md)                                      |
-| 查询和修改记录                  | `QueryAdapter` 及各 Query 类型                                                                                                                  | [Query 总览](../query/overview.md)、[Query 用法参考](./query-api.md)                                              |
-| Collection-aware 记录与关系操作 | `Repository`、Filter/Select/Sort Builder 与 AST                                                                                                 | [Repository](../repository/overview.md)、[Repository API](./repository-api.md)                                    |
-| 执行原子操作                    | `DatabaseManager.transaction()`、`DatabaseConnection.transaction()`、`afterCommit()`、`afterRollback()`                                         | [事务](../database/transactions.md)                                                                               |
-| 订阅 Repository 写入改动的行    | `DatabaseConnection.onRepositoryMutation()`、`explainRepositoryEvents()`、`defineRepositoryEventMeta()`、`RepositoryMutationEvent`、`RowChange` | [Repository 变更事件](../repository/events.md)                                                                    |
-| 读取完整 Collection             | `DatabaseConnection.collections`                                                                                                                | [Collections](../collections/overview.md)                                                                         |
-| 检查物理数据库结构              | `SchemaInspector`                                                                                                                               | [Schema Inspector](../schema-inspector/overview.md)                                                               |
-| 定义和执行 Migration            | `defineMigration()`、`Migrator`                                                                                                                 | [Migration 概览](../migration/overview.md)                                                                        |
-| 定义和执行 Seed                 | `defineSeed()`、`Seeder`                                                                                                                        | [Seed 概览](../seed/overview.md)                                                                                  |
-| 声明和管理补充 Metadata         | Metadata Document、Store 与 `connection.collectionMetadata`                                                                                     | [Collection Metadata](../collection-metadata/overview.md)、[Metadata Document](./collection-metadata-document.md) |
-| 转换旧 Collection 定义          | `extractLegacyCollectionMetadata()`                                                                                                             | [旧 Collection 定义转换](./legacy-collection-metadata-extraction.md)                                              |
+| Order | Chapter                                                               | Coverage                                                                                                        |
+| ----: | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+|     1 | [DatabaseManager](../../api-reference/database-manager.md)            | Configuration, driver registration, named connections, shortcuts and service-container integration              |
+|     2 | [Connection](../../api-reference/connection.md)                       | Handles, lifecycle, naming, managed/external modes, capabilities and native access                              |
+|     3 | [Migration and Seed](../../api-reference/migration-and-seed.md)       | Definitions, loading, execution, sample data, history, checksums and locks                                      |
+|     4 | [Collection and Schema](../../api-reference/collection-and-schema.md) | CollectionBuilder, fields, relations, indexes, constraints, views, registry, inspection, metadata and artifacts |
+|     5 | [Query](../../api-reference/query.md)                                 | Queries, expressions, joins, subqueries, aggregates, compilation and result decoding                            |
+|     6 | [Repository](../../api-reference/repository.md)                       | CRUD, builders and ASTs, relations, pagination, iteration, locking and validation                               |
+|     7 | [Permissions](../../api-reference/permissions.md)                     | Policy binding, scopes, builders, narrowing, references and method-level write policies                         |
+|     8 | [Transactions](../../api-reference/transactions.md)                   | Handle propagation, savepoints, callbacks and migration/seed transactions                                       |
+|     9 | [Events](../../api-reference/events.md)                               | Repository subscriptions, phases, payloads, metadata and execution strategy                                     |
+|    10 | [Testing](../../api-reference/testing.md)                             | The testing entry, provisioning and adapter helpers                                                             |
 
-## 按类型主题查找
+## Appendices
 
-- Database 配置：[DatabaseConfig](./database-config.md)
-- Collection、Field、Relation、Index 和 Constraint：[CollectionDefinition](./collection-definition.md)与 [FieldDefinition](./field-definition.md)
-- Builder 输入与结果：[CollectionOperation 结构化执行计划](./collection-operation.md)、[BuilderExecOptions](./builder-options.md)与 [BuilderResult](./builder-result.md)
-- Query 组合和终止方式：[Query 用法参考](./query-api.md)
-- Metadata 文档与 Store：[Collection Metadata Document](./collection-metadata-document.md)
+- [Driver and adapter extension](../../api-reference/driver-extension.md)
+- [Errors, values and shared helpers](../../api-reference/errors-and-values.md)
+- [Complete export index](../../api-reference/exports.md)
 
-这些页面解释类型的语义、选择和常见误用，不代替 TypeScript 声明。
+## Import boundaries
 
-## 内部实现边界
+The export index distinguishes runtime values from type-only exports and identifies their package entry. Other contracts are available through returned objects and callbacks without being importable by name. Use the signatures to check access rather than deep-importing a source module.
 
-Database 与 Transaction Metadata Store、Schema Adapter、Query Knex Adapter、Connection Factory 和 Knex Connection 都是包内实现。业务 Schema 变更使用 Builder，查询使用 `connection.query`；不要自行组合内部实现。
+Repository input builders and AST types are covered by the Repository chapter. `RelationMutationAst` describes a normalized relation plan; it is not a root-level CRUD `relations` option. The reference describes the current checkout, including `restrict()` for restricted access and `withPolicies()` for supported full-connection policy binding. Historical proposals do not define the current contract.
 
-## 非公开或尚不可用
+## Usage guides
 
-Repository 与 Select/Filter/Sort Builder、AST 已公开。RelationMutationAst 是规范化关系计划类型，不是根级 CRUD 的 relations 选项；当前调用使用 values。findUnique/findFirst/connectOrCreate、原生数组字段等尚未支持，详见 [Repository API](./repository-api.md)。历史提案不作为当前运行时契约。
-
-## 从任务开始
-
-- [任务路由](../agent/task-router.md)
-- [整体概览](../overview.md)
-- [快速开始](../quick-start.md)
+The reference chapters link to the existing usage examples. The [documentation contents](../toc.md), [task router](../agent/task-router.md), [overview](../overview.md) and [quick start](../quick-start.md) remain the entry points for task-based reading.

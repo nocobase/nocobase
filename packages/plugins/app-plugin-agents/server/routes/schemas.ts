@@ -1168,6 +1168,7 @@ const runObject = z.object({
   finishedAt: dateTime.nullable(),
   lastActivityAt: dateTime.nullable(),
   cancelRequestedAt: dateTime.nullable(),
+  cancelledById: z.string().nullable(),
   failureReason: FailureReasonSchema.nullable(),
   failureDetail: z.string().nullable(),
   summary: z.string().nullable(),

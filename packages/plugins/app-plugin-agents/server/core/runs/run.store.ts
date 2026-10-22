@@ -276,6 +276,7 @@ export function toRun(record: RunRecord): Run {
     finishedAt: record.finishedAt,
     lastActivityAt: record.lastActivityAt,
     cancelRequestedAt: record.cancelRequestedAt,
+    cancelledById: record.cancelledById,
     failureReason: record.failureReason as FailureReason | null,
     failureDetail: record.failureDetail,
     summary: record.summary,

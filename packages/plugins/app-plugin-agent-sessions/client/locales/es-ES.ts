@@ -24,6 +24,7 @@ const esES: LocaleResource<typeof enUS> = {
     sessionNotFound: 'Esta sesión no existe o no es suya.',
   },
   list: {
+    panelEmpty: 'No hay conversaciones',
     expand: 'Mostrar sesiones',
     label: 'Sesiones',
     title: 'Mis agentes',

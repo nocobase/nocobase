@@ -1,5 +1,19 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- 4c23514: Bound Foundation database reads and Collection previews, make exact business record counts explicit with retained timestamps, add protected searchable Collection pages, recognize composed APIs and explicit service dependencies in the module matrix, and label matrix icons with accessible tooltips.
+
+  Keep Collection evidence compact with bounded name tags and move the searchable catalog into a height-limited dialog with automatic, composition-aware search and fixed pagination controls.
+
+  Recognize enabled model services as AI capability use for native OnlineAgent and model gateway applications without requiring stored Agent records, preserve independent Runner evidence, and leave unreadable configuration unconfirmed.
+
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-server@3.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+
 ## 0.1.0-beta.0
 
 ### Minor Changes

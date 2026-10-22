@@ -148,6 +148,21 @@ Collection-aware 记录和关系访问请优先阅读下一节 Repository；本�
 
 ## 公开 API 导航
 
+- [Complete public API reference](../api-reference/README.md): ten ordered chapters, full signatures and every export from `@nocobase/db` and `@nocobase/db/testing`.
+
+1. [DatabaseManager](../api-reference/database-manager.md)
+2. [Connection](../api-reference/connection.md)
+3. [Migration and Seed](../api-reference/migration-and-seed.md)
+4. [Collection and Schema](../api-reference/collection-and-schema.md)
+5. [Query](../api-reference/query.md)
+6. [Repository](../api-reference/repository.md)
+7. [Permissions](../api-reference/permissions.md)
+8. [Transactions](../api-reference/transactions.md)
+9. [Events](../api-reference/events.md)
+10. [Testing](../api-reference/testing.md)
+
+Appendices: [Driver extension](../api-reference/driver-extension.md), [errors and values](../api-reference/errors-and-values.md), [complete export index](../api-reference/exports.md).
+
 - [`@nocobase/db` 公开 API 导航](./reference/api-index.md)：按能力和类型主题查找用法文档。
 - [`DatabaseConfig`](./reference/database-config.md)：查看 Manager、Connection、方言、命名和 Metadata Store 配置类型。
 - [`BuilderExecOptions`](./reference/builder-options.md)：查看 dry-run、SQL 预览、Metadata 同步和 strict 等选项。

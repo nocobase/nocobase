@@ -124,12 +124,9 @@ protocol, and cookies.
 
 **Business request CSRF.** `Auth.required()` and `Auth.optional()` reject cookie-bearing writes unless `Origin` (or, when absent, `Referer`) matches Better Auth's configured base origin or a trusted origin. Configure `app.publicOrigin` for deployed applications and add separate frontend origins through `auth.trustedOrigins`; without a trusted origin, browser writes fail closed with `403 PERMISSION_DENIED`, reason `INVALID_CSRF_ORIGIN`, in the standard error body. Cookie-free API key requests can proceed after authentication. A credential header does not exempt a request carrying cookies, including routes that skip session lookup.
 
-**Cookies.** The plugin derives the cookie prefix from the application name
-and the cookie path from the public base path. Override
-`advanced.defaultCookieAttributes` only with a reason: `secure` off is for
-local HTTP only, `sameSite` changes affect OAuth returns, and widening
-`domain` shares the cookie with every sub-domain. Two applications on one
-host need distinct prefixes.
+**Cookies.** The default prefix combines the application name, its existing public/standalone port distinction, and a `__` suffix encoding the complete public mount path. Root and nested applications therefore use different names for all default authentication cookies, including cached sessions and OAuth state. The default cookie path is the normalized public mount path (`/` at the root). Explicit `advanced.cookiePrefix`, individual `advanced.cookies` names/attributes and `advanced.defaultCookieAttributes` keep their precedence; custom names must be unique across overlapping applications. Override attributes only with a reason: `secure` off is for local HTTP, `sameSite` affects OAuth returns, and widening `domain` shares cookies with subdomains. Paths on the same origin are not a security boundary against malicious applications.
+
+**Cookie-name upgrades.** Adopting the scoped default names requires visitors to sign in again once. Old cookies and server records are not migrated or proactively deleted, so records expire normally and a rollback can recognize old logins again. Explicit names that stay unchanged do not reset solely because of the default-name change. The separate language-session cookie belongs to the application's copied `server/config/session.ts`: updating this plugin alone does not update it. Merge the updated session name/path and root handling in `server/config/app.ts` through the application upgrade Skill's `references/application-cookie-isolation.md` guide.
 
 **Shared storage.** `session.storeSessionInDatabase: true` keeps sessions in
 the database. Rate-limit counters, one-time values, and the session cache

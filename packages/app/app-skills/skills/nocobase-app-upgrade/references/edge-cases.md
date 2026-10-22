@@ -1,5 +1,7 @@
 # Edge cases
 
+For language and login isolation between applications on one host, merge the copied template configuration as well as the dependency update. Follow [application cookie isolation](application-cookie-isolation.md) for the exact source edits, preserved overrides, one-time login reset and verification steps.
+
 Things that are not ordinary source and do not follow the file-by-file process in `SKILL.md`.
 
 ## `package.json`

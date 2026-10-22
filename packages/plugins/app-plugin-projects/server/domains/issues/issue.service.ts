@@ -122,6 +122,8 @@ export type EventTarget =
 
 /** What made a status event happen, as the activity records it. */
 export interface EventCause {
+  readonly needsYou?: string | null;
+  readonly next?: string | null;
   /** The issue whose change caused it, if any. */
   readonly issueId?: string;
   /** Who the activity names; the system when left out. The move itself is always the system's. */
@@ -418,7 +420,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
       if (!issue || issue.deletedAt)
         return { issueId, to: null, reason: 'notFound' };
       const catalog = deps.statuses.catalog();
-      const to = catalog.machine.eventTarget(issue.statusKey, event);
+      const to = catalog.eventTarget(issue.statusKey, event);
       return to === null
         ? { issueId: issue.id, to: null, reason: 'noTransition' }
         : { issueId: issue.id, from: issue.statusKey, to };
@@ -431,7 +433,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
       if (!issue || issue.deletedAt)
         return { issueId, outcome: 'ignored', reason: 'notFound' };
       const catalog = deps.statuses.catalog();
-      const to = catalog.machine.eventTarget(issue.statusKey, event);
+      const to = catalog.eventTarget(issue.statusKey, event);
       if (to === null)
         return {
           issueId: issue.id,
@@ -440,7 +442,26 @@ export function createIssueService(deps: IssueDeps): IssueService {
         };
       const recorded = cause.actor ?? SYSTEM_ACTOR;
       try {
-        const progress = progressValues(issue, { statusKey: to });
+        const progress = progressValues(issue, { statusKey: to, ...cause });
+        if (to === issue.statusKey) {
+          // A repeated event refreshes progress without replaying entry actions or status activities.
+          if (
+            Object.entries(progress).some(
+              ([key, value]) => issue[key as keyof Issue] !== value,
+            )
+          ) {
+            await updateIssue(tx.conn, issue.id, {
+              ...progress,
+              updatedAt: new Date().toISOString(),
+            });
+            await announce(tx, issue, await reload(tx, issue.id), recorded);
+          }
+          return {
+            issueId: issue.id,
+            outcome: 'ignored',
+            reason: 'noTransition',
+          };
+        }
         await moveIssue(deps, tx, {
           issue,
           catalog,

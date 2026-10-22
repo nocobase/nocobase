@@ -33,11 +33,13 @@ import type { PromptContent, Reference } from '../../shared/api.js';
 import { useMentions, type Mention } from '../api.js';
 import {
   attachedKey,
+  mentionText,
   stopAutomaticAttachment,
   type Attachment,
 } from '../lib/attachments.js';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSessionMemory } from '../use-session-memory.js';
+import { useSessionSurface } from '../config.js';
 import { StatusPill } from './status-pill.js';
 
 type Image = Extract<PromptContent, { type: 'image' }>;
@@ -99,10 +101,6 @@ const MOD_KEY =
     ? '⌘'
     : 'Ctrl';
 
-/** How a mention reads in the message. */
-const mentionText = (reference: Reference): string =>
-  `#${reference.key ?? reference.title}`;
-
 export function Composer({
   placeholder,
   draftKey,
@@ -125,6 +123,7 @@ export function Composer({
 }: ComposerProps): ReactElement {
   const { t } = useTranslation();
   const client = useQueryClient();
+  const { onInspectAttachment } = useSessionSurface();
   const [text, setText] = useSessionMemory(
     draftKey && `text:${draftKey}`,
     initialContent
@@ -411,7 +410,17 @@ export function Composer({
                 ) : (
                   <FileTextIcon className='text-muted-foreground size-3 shrink-0' />
                 )}
-                <span className='truncate'>{attachment.label}</span>
+                {onInspectAttachment ? (
+                  <button
+                    type='button'
+                    className='min-w-0 truncate rounded hover:underline focus-visible:ring-2 focus-visible:ring-ring'
+                    onClick={() => onInspectAttachment(attachment)}
+                  >
+                    {attachment.label}
+                  </button>
+                ) : (
+                  <span className='truncate'>{attachment.label}</span>
+                )}
                 <button
                   type='button'
                   aria-label={t('composer.removeAttached', {

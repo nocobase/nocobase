@@ -98,6 +98,8 @@ When the upgrade changes application migrations or registered plugins that suppl
 
 When BASE → TARGET changes Realtime contracts, read [Realtime upgrades](references/realtime-upgrade.md) during planning and include application-owned consumers, custom plugins, workers and transport/test adapters in step 5. Topic authorization, ignored publication promises and recovery gaps can survive type checking; use the actual package contracts and project usage to decide which migration steps apply.
 
+When BASE → TARGET changes notification contracts, read [Notification upgrades](references/notification-upgrade.md) during planning. Include application-owned test-send forms, API clients, permissions, log pages, E2E fixtures and custom channel extensions in step 5; distinguish removed TestAdapter APIs from deprecated registration and configuration APIs that remain compatible.
+
 Then ask the project which of those files it has also touched:
 
 ```bash
@@ -162,6 +164,8 @@ pnpm typecheck && pnpm test && pnpm lint && pnpm build
 `typecheck` is doing real work here — it catches the broken import a removal left behind. Before starting the application against retained data, complete the applicable [database upgrade checks](references/database-upgrades.md); startup may apply migrations automatically. Then run the application and check what the delta touched: sign-in, the user's pages, navigation, locale switching, any new migration. Passing commands are not evidence the application still behaves. For a theme or shell change, also complete the [theme upgrade checks](references/theme-upgrade.md); token changes alone do not verify the application-owned consumers.
 
 For a Realtime contract change, complete the applicable [Realtime acceptance checks](references/realtime-upgrade.md#verify-the-migrated-application), including access denial, reconnect catch-up and publication failure; a connected socket alone is insufficient evidence.
+
+For a notification contract change, complete the applicable [notification acceptance checks](references/notification-upgrade.md#verify-the-migrated-application) through business notifications, including delivery results, log permissions and inbox ownership. Preserve historical records and report which configured transports were exercised.
 
 Report the range merged, how each contested file was decided, any manual actions and their validation, and how to roll back.
 
