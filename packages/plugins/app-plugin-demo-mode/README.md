@@ -193,6 +193,14 @@ import { DemoModeSettings } from '@nocobase/app-plugin-demo-mode/client/settings
 
 `label` receives `count` (a key of the dataset's `counts`), `capability`, `scope`, `adapter` or `chatTool` with its id. `onDataChange` is called when a clear answers or a watched import or reset finishes, for the application to refresh what it caches. The data language defaults to the reader's interface language when the dataset is written in it.
 
+### Host presentation components
+
+Pass a stable, module-level `components` map to reuse the host's page header, cards, buttons and tabs. `DemoSettingsComponents` and `DemoSettingsHeaderProps` are public types on the same `client/settings` export. Omitted slots retain the plugin defaults, so existing callers keep their presentation. Keep one `PageContainer` in the owning application.
+
+The slots are `Header`, `Button`, `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent`, `CardFooter`, `TabsList` and `TabsTrigger`. Header receives localized `title`, `description`, `badge`, `refreshLabel`, `activeTabLabel`, `refreshDisabled`, `refreshing` and `onRefresh`; preserve the badge and refresh guard, and use `refreshing` for pending feedback. A host with a parent settings heading should use its frame-aware header. `activeTabLabel` supports a host breadcrumb without coupling the plugin to private routing contexts.
+
+Define component functions outside the page render to preserve drafts and focus. Primitive replacements must forward children, refs, disabled states, events and accessibility props. Use compatible Base UI components from the same shared `@base-ui/react` peer instance; the plugin retains the Tabs root and panels, URL state, permissions, confirmation dialogs and revision-safe saves. For example, a host `TabsList` adapter can set `variant="line"` and wrap at narrow widths while forwarding all other props. Replace card parts together when the host uses a different spacing model, and allow action rows and unsaved-state footers to wrap on mobile. Do not change theme tokens or use global CSS overrides to adapt this one page.
+
 ## Command line
 
 Register the CLI plugin alongside the server and client registrations:

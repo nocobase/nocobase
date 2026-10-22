@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import type { DemoConfigurationView } from '../../server/configuration/types.js';
+import type { DemoSettingsComponents } from './components.js';
 import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 
 /** What a registered item is called in the application's language. */
@@ -22,6 +23,8 @@ export interface DemoChatTool {
 }
 
 export interface DemoSettingsOptions {
+  /** Optional host page chrome and primitives; keep component identities stable across renders. */
+  readonly components?: DemoSettingsComponents;
   /**
    * The application's name for a registered item, such as a dataset count (`count`, `companies`) or a write
    * capability (`capability`, `crm.leads`); `undefined` falls back to the title it registered with, or its id.

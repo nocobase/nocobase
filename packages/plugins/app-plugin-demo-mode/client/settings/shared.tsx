@@ -9,7 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../components/ui/alert-dialog.js';
-import { Button } from '../components/ui/button.js';
+import { Button } from './components.js';
 import {
   Card,
   CardContent,
@@ -17,7 +17,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../components/ui/card.js';
+} from './components.js';
 import { Spinner } from '../components/ui/spinner.js';
 import {
   useErrorText,

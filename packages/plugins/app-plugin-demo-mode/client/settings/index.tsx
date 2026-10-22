@@ -1,6 +1,5 @@
 import { useApiClient, useNavigationGuard } from '@nocobase/app-client';
 import { useCan } from '@nocobase/app-plugin-authorization/client';
-import { RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { useSearchParams } from 'react-router';
 
@@ -15,15 +14,10 @@ import {
   AlertDialogTitle,
 } from '../components/ui/alert-dialog.js';
 import { Badge } from '../components/ui/badge.js';
-import { Button } from '../components/ui/button.js';
 import { Skeleton } from '../components/ui/skeleton.js';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '../components/ui/tabs.js';
+import { Tabs, TabsContent } from '../components/ui/tabs.js';
 import { useDemoData } from '../demo-data.js';
+import { Button, DefaultHeader, TabsList, TabsTrigger } from './components.js';
 import { DataCard, VisitorsCard } from './overview.js';
 import { ScheduleCard } from './schedule.js';
 import {
@@ -35,6 +29,11 @@ import {
 import { ErrorAlert } from './shared.js';
 import { ChatCard, MocksCard } from './simulation.js';
 import { CapabilitiesCard, TablesCard } from './writes.js';
+
+export type {
+  DemoSettingsComponents,
+  DemoSettingsHeaderProps,
+} from './components.js';
 
 export type {
   DemoChatTool,
@@ -73,12 +72,17 @@ export function DemoModeSettings(
   options: DemoSettingsOptions = {},
 ): ReactElement {
   const t = useT();
+  const Header = options.components?.Header ?? DefaultHeader;
   const api = useApiClient();
   const access = useAccess();
   const [params, setParams] = useSearchParams();
   const demo = useDemoData({ enabled: access.readData });
   const [view, setView] = useState<DemoConfigurationView>();
   const [viewError, setViewError] = useState<unknown>();
+  const [configurationLoaded, setConfigurationLoaded] = useState<{
+    reads: number;
+    importing: boolean;
+  }>();
   const [mode, setMode] = useState<string>();
   // Bumped to read the configuration again; a later read supersedes an earlier one still in flight.
   const [reads, setReads] = useState(0);
@@ -119,6 +123,9 @@ export function DemoModeSettings(
       })
       .catch((cause: unknown) => {
         if (active) setViewError(cause);
+      })
+      .finally(() => {
+        if (active) setConfigurationLoaded({ reads, importing });
       });
     return () => {
       active = false;
@@ -209,31 +216,30 @@ export function DemoModeSettings(
   return (
     <DemoSettingsContext.Provider value={options}>
       <div className='flex flex-col gap-6'>
-        <header className='flex flex-wrap items-start justify-between gap-3'>
-          <div className='min-w-0'>
-            <h1 className='flex flex-wrap items-center gap-2 text-xl font-semibold'>
-              {t('title')}
-              <Badge variant={mode === 'observe' ? 'secondary' : 'default'}>
-                {t(mode === 'observe' ? 'mode.observe' : 'mode.readOnly')}
-              </Badge>
-            </h1>
-            <p className='mt-1 max-w-3xl text-sm text-muted-foreground'>
-              {t(mode === 'observe' ? 'mode.observeHelp' : 'mode.readOnlyHelp')}
-            </p>
-          </div>
-          <Button
-            variant='outline'
-            size='sm'
-            disabled={Boolean(dirtyCount)}
-            onClick={() => {
-              void demo.refresh();
-              if (access.readConfiguration) void load();
-            }}
-          >
-            <RefreshCw />
-            {t('refresh')}
-          </Button>
-        </header>
+        <Header
+          title={t('title')}
+          description={t(
+            mode === 'observe' ? 'mode.observeHelp' : 'mode.readOnlyHelp',
+          )}
+          badge={
+            <Badge variant={mode === 'observe' ? 'secondary' : 'default'}>
+              {t(mode === 'observe' ? 'mode.observe' : 'mode.readOnly')}
+            </Badge>
+          }
+          refreshLabel={t('refresh')}
+          refreshDisabled={Boolean(dirtyCount)}
+          refreshing={
+            demo.loading ||
+            (readable &&
+              (configurationLoaded?.reads !== reads ||
+                configurationLoaded?.importing !== importing))
+          }
+          activeTabLabel={t(`tabs.${tab}`)}
+          onRefresh={() => {
+            void demo.refresh();
+            if (access.readConfiguration) void load();
+          }}
+        />
         {view?.busy || importing ? (
           <Alert>
             <AlertTitle>{t('busy')}</AlertTitle>
@@ -253,7 +259,7 @@ export function DemoModeSettings(
             )
           }
         >
-          <TabsList>
+          <TabsList aria-label={t('title')}>
             {available.map((item) => (
               <TabsTrigger key={item} value={item}>
                 {t(`tabs.${item}`)}

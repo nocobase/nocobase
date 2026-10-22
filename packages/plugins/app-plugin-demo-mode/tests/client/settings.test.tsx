@@ -10,9 +10,47 @@ import {
 } from '@nocobase/app-testing/client';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { useLocation } from 'react-router';
+
+function LocationProbe() {
+  return <output data-testid='location'>{useLocation().search}</output>;
+}
 
 import demoMode from '../../client/index.js';
-import DemoModeSettings from '../../client/settings/index.js';
+import DemoModeSettings, {
+  type DemoSettingsComponents,
+} from '../../client/settings/index.js';
+import { Button } from '../../client/components/ui/button.js';
+import * as cards from '../../client/components/ui/card.js';
+import { TabsList, TabsTrigger } from '../../client/components/ui/tabs.js';
+
+const hostComponents: DemoSettingsComponents = {
+  ...cards,
+  Header: ({
+    title,
+    badge,
+    description,
+    refreshLabel,
+    refreshDisabled,
+    refreshing,
+    onRefresh,
+  }) => (
+    <header data-testid='host-header'>
+      <h1>
+        {title}
+        {badge}
+      </h1>
+      <p>{description}</p>
+      <Button disabled={refreshDisabled || refreshing} onClick={onRefresh}>
+        {refreshLabel}
+      </Button>
+    </header>
+  ),
+  Button: (props) => <Button {...props} data-host-button />,
+  Card: (props) => <cards.Card {...props} data-testid='host-card' />,
+  TabsList: (props) => <TabsList {...props} variant='line' />,
+  TabsTrigger,
+};
 import type { DemoConfigurationView } from '../../server/configuration/types.js';
 
 const view = (patch: Partial<DemoConfigurationView> = {}) => ({
@@ -92,13 +130,16 @@ function demoApi({
   permissions = everything,
   configuration = view(),
   onPut,
+  onRead,
 }: {
   mode?: string;
   permissions?: readonly object[];
   configuration?: ReturnType<typeof view>;
   onPut?: (call: ApiCall) => unknown;
+  onRead?: (path: string) => Promise<void>;
 } = {}) {
-  return answerApi((call) => {
+  return answerApi(async (call) => {
+    if (call.method === 'GET') await onRead?.(call.path);
     if (call.path === 'authorization/permissions')
       return { data: { unrestricted: false, permissions } };
     if (call.path === 'demoMode/status') return { data: { mode } };
@@ -133,18 +174,25 @@ function demoApi({
   });
 }
 
-const render = (
+const renderSettings = (
   fetch: ReturnType<typeof demoApi>,
   route = '/',
   onDataChange?: () => void,
+  components?: DemoSettingsComponents,
 ) =>
   renderWithApp(
-    <DemoModeSettings
-      onDataChange={onDataChange}
-      label={(kind, id) =>
-        kind === 'count' ? { companies: '公司', leads: '线索' }[id] : undefined
-      }
-    />,
+    <>
+      <LocationProbe />
+      <DemoModeSettings
+        components={components}
+        onDataChange={onDataChange}
+        label={(kind, id) =>
+          kind === 'count'
+            ? { companies: '公司', leads: '线索' }[id]
+            : undefined
+        }
+      />
+    </>,
     {
       plugins: [demoMode()],
       fetch,
@@ -160,129 +208,224 @@ const render = (
     },
   );
 
-describe('demo settings page', () => {
-  it('shows the demo data with the application’s names and how visitors enter', async () => {
-    await render(demoApi());
-    expect(await screen.findByText('演示环境')).toBeInTheDocument();
-    expect(await screen.findByText('公司')).toBeInTheDocument();
-    expect(screen.getByText('11')).toBeInTheDocument();
-    expect(screen.getByText('已就绪')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '重置' })).toBeEnabled();
-    expect(
-      await screen.findByText('用户名 liming · 密码 liming123'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: '复制 李明 的进入链接' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: '复制嵌入代码' }),
-    ).toHaveTextContent('复制嵌入代码');
-  });
-
-  it('saves the daily reset with the revision it started from, after confirming', async () => {
-    const puts: ApiCall[] = [];
-    await render(
-      demoApi({
-        onPut: (call) => {
-          puts.push(call);
-          return {
-            data: view({
-              revision: 5,
-              schedule: (call.json as { value: never }).value,
-            }),
-          };
-        },
-      }),
-      '/?tab=schedule',
-    );
-    fireEvent.click(await screen.findByRole('switch', { name: '每天重置' }));
-    fireEvent.click(screen.getByRole('button', { name: '保存' }));
-    const dialog = await screen.findByRole('alertdialog');
-    expect(within(dialog).getByText('保存每日重置？')).toBeInTheDocument();
-    fireEvent.click(within(dialog).getByRole('button', { name: '确认修改' }));
-    await waitFor(() => expect(puts).toHaveLength(1));
-    expect(puts[0]).toMatchObject({
-      path: 'demoMode/configuration/schedule',
-      json: {
-        expectedRevision: 4,
-        value: { enabled: true, hour: 3, minute: 0, language: 'zh-CN' },
-      },
+describe.each(['default', 'host'] as const)(
+  'demo settings page (%s)',
+  (presentation) => {
+    const render = (
+      fetch: ReturnType<typeof demoApi>,
+      route = '/',
+      onDataChange?: () => void,
+    ) =>
+      renderSettings(
+        fetch,
+        route,
+        onDataChange,
+        presentation === 'host' ? hostComponents : undefined,
+      );
+    it('shows the demo data with the application’s names and how visitors enter', async () => {
+      await render(demoApi());
+      expect(await screen.findByText('演示环境')).toBeInTheDocument();
+      expect(await screen.findByText('公司')).toBeInTheDocument();
+      expect(screen.getByText('11')).toBeInTheDocument();
+      if (presentation === 'host') {
+        expect(screen.getByTestId('host-header')).toBeInTheDocument();
+        expect(screen.getAllByTestId('host-card').length).toBeGreaterThan(1);
+        expect(screen.getByRole('tablist')).toHaveAttribute(
+          'data-variant',
+          'line',
+        );
+        expect(screen.getByRole('button', { name: '重置' })).toHaveAttribute(
+          'data-host-button',
+        );
+      }
+      expect(screen.getByText('已就绪')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '重置' })).toBeEnabled();
+      expect(
+        await screen.findByText('用户名 liming · 密码 liming123'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: '复制 李明 的进入链接' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: '复制嵌入代码' }),
+      ).toHaveTextContent('复制嵌入代码');
     });
-    await waitFor(() =>
-      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
-    );
-  });
 
-  it('says when another administrator saved first', async () => {
-    await render(
-      demoApi({
-        onPut: () =>
-          Response.json(
-            {
-              error: {
-                status: 'ABORTED',
-                reason: 'DEMO_CONFIGURATION_CONFLICT',
-                domain: 'demoMode',
-                message: 'Conflict',
+    it('saves the daily reset with the revision it started from, after confirming', async () => {
+      const puts: ApiCall[] = [];
+      await render(
+        demoApi({
+          onPut: (call) => {
+            puts.push(call);
+            return {
+              data: view({
+                revision: 5,
+                schedule: (call.json as { value: never }).value,
+              }),
+            };
+          },
+        }),
+        '/?tab=schedule',
+      );
+      fireEvent.click(await screen.findByRole('switch', { name: '每天重置' }));
+      fireEvent.click(screen.getByRole('button', { name: '保存' }));
+      const dialog = await screen.findByRole('alertdialog');
+      expect(within(dialog).getByText('保存每日重置？')).toBeInTheDocument();
+      fireEvent.click(within(dialog).getByRole('button', { name: '确认修改' }));
+      await waitFor(() => expect(puts).toHaveLength(1));
+      expect(puts[0]).toMatchObject({
+        path: 'demoMode/configuration/schedule',
+        json: {
+          expectedRevision: 4,
+          value: { enabled: true, hour: 3, minute: 0, language: 'zh-CN' },
+        },
+      });
+      await waitFor(() =>
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+      );
+    });
+
+    it('guards dirty navigation and preserves unrelated query parameters', async () => {
+      await render(demoApi(), '/?tab=schedule&filter=retained');
+      fireEvent.click(await screen.findByRole('switch', { name: '每天重置' }));
+      expect(screen.getByRole('button', { name: '刷新' })).toBeDisabled();
+      fireEvent.click(screen.getByRole('tab', { name: '概览' }));
+      const dialog = await screen.findByRole('alertdialog');
+      fireEvent.click(within(dialog).getByRole('button', { name: '继续编辑' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+      );
+      expect(screen.getByRole('switch', { name: '每天重置' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        'tab=schedule&filter=retained',
+      );
+      fireEvent.click(screen.getByRole('button', { name: '取消' }));
+      fireEvent.click(screen.getByRole('tab', { name: '概览' }));
+      await waitFor(() =>
+        expect(screen.getByTestId('location')).toHaveTextContent(
+          'tab=overview&filter=retained',
+        ),
+      );
+    });
+
+    it('says when another administrator saved first', async () => {
+      await render(
+        demoApi({
+          onPut: () =>
+            Response.json(
+              {
+                error: {
+                  status: 'ABORTED',
+                  reason: 'DEMO_CONFIGURATION_CONFLICT',
+                  domain: 'demoMode',
+                  message: 'Conflict',
+                },
               },
-            },
-            { status: 409 },
-          ),
-      }),
-      '/?tab=writes',
-    );
-    fireEvent.click(await screen.findByRole('switch', { name: '新建' }));
-    const card = screen
-      .getByText('业务操作')
-      .closest('[data-slot="card"]') as HTMLElement;
-    fireEvent.click(within(card).getByRole('button', { name: '保存' }));
-    fireEvent.click(
-      within(await screen.findByRole('alertdialog')).getByRole('button', {
-        name: '确认修改',
-      }),
-    );
-    expect(
-      await screen.findAllByText('其他管理员先保存了这项设置。'),
-    ).not.toHaveLength(0);
-  });
+              { status: 409 },
+            ),
+        }),
+        '/?tab=writes',
+      );
+      fireEvent.click(await screen.findByRole('switch', { name: '新建' }));
+      const card = screen
+        .getByText('业务操作')
+        .closest('[data-slot="card"]') as HTMLElement;
+      fireEvent.click(within(card).getByRole('button', { name: '保存' }));
+      fireEvent.click(
+        within(await screen.findByRole('alertdialog')).getByRole('button', {
+          name: '确认修改',
+        }),
+      );
+      expect(
+        await screen.findAllByText('其他管理员先保存了这项设置。'),
+      ).not.toHaveLength(0);
+    });
 
-  it('shows settings without save buttons to those who may only read them', async () => {
-    await render(
-      demoApi({
-        permissions: everything.map((item) => ({
-          ...item,
-          actions: ['read'],
-        })),
-      }),
-      '/?tab=simulation',
-    );
-    expect(await screen.findByText('在线聊天')).toBeInTheDocument();
-    expect(
-      screen.getByRole('switch', { name: '允许访客聊天' }),
-    ).toHaveAttribute('data-disabled');
-    expect(
-      screen.queryByRole('button', { name: '保存' }),
-    ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: '概览' }));
-    expect(
-      screen.queryByRole('button', { name: '重置' }),
-    ).not.toBeInTheDocument();
-  });
+    it('shows settings without save buttons to those who may only read them', async () => {
+      await render(
+        demoApi({
+          permissions: everything.map((item) => ({
+            ...item,
+            actions: ['read'],
+          })),
+        }),
+        '/?tab=simulation',
+      );
+      expect(await screen.findByText('在线聊天')).toBeInTheDocument();
+      expect(
+        screen.getByRole('switch', { name: '允许访客聊天' }),
+      ).toHaveAttribute('data-disabled');
+      expect(
+        screen.queryByRole('button', { name: '保存' }),
+      ).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('tab', { name: '概览' }));
+      expect(
+        screen.queryByRole('button', { name: '重置' }),
+      ).not.toBeInTheDocument();
+    });
 
-  it('clears after confirming and tells the application its data changed', async () => {
-    const onDataChange = vi.fn();
-    await render(demoApi(), '/', onDataChange);
-    fireEvent.click(await screen.findByRole('button', { name: '清空' }));
-    const dialog = await screen.findByRole('alertdialog');
-    expect(
-      within(dialog).getByText(/会删除这个实例中的全部业务数据/u),
-    ).toBeInTheDocument();
-    fireEvent.click(within(dialog).getByRole('button', { name: '清空' }));
-    await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1));
-  });
+    it('clears after confirming and tells the application its data changed', async () => {
+      const onDataChange = vi.fn();
+      await render(demoApi(), '/', onDataChange);
+      fireEvent.click(await screen.findByRole('button', { name: '清空' }));
+      const dialog = await screen.findByRole('alertdialog');
+      expect(
+        within(dialog).getByText(/会删除这个实例中的全部业务数据/u),
+      ).toBeInTheDocument();
+      fireEvent.click(within(dialog).getByRole('button', { name: '清空' }));
+      await waitFor(() => expect(onDataChange).toHaveBeenCalledTimes(1));
+    });
 
-  it('explains when the application is not a demo', async () => {
-    await render(demoApi({ mode: 'off' }));
-    expect(await screen.findByText('这个应用不是演示环境')).toBeInTheDocument();
+    it('explains when the application is not a demo', async () => {
+      await render(demoApi({ mode: 'off' }));
+      expect(
+        await screen.findByText('这个应用不是演示环境'),
+      ).toBeInTheDocument();
+    });
+  },
+);
+
+it('keeps the host refresh pending until both data and configuration settle', async () => {
+  let releaseData!: () => void;
+  let releaseConfiguration!: () => void;
+  const dataGate = new Promise<void>((resolve) => {
+    releaseData = resolve;
   });
+  const configurationGate = new Promise<void>((resolve) => {
+    releaseConfiguration = resolve;
+  });
+  let dataReads = 0;
+  let configurationReads = 0;
+  let dataSettled = false;
+  await renderSettings(
+    demoApi({
+      onRead: async (path) => {
+        if (path === 'demoMode/data' && ++dataReads > 1) {
+          await dataGate;
+          dataSettled = true;
+        }
+        if (path === 'demoMode/configuration' && ++configurationReads > 1)
+          await configurationGate;
+      },
+    }),
+    '/',
+    undefined,
+    hostComponents,
+  );
+  const refresh = await screen.findByRole('button', { name: '刷新' });
+  await waitFor(() => expect(refresh).toBeEnabled());
+  fireEvent.click(refresh);
+  await waitFor(() => {
+    expect(dataReads).toBe(2);
+    expect(configurationReads).toBe(2);
+  });
+  expect(refresh).toBeDisabled();
+  releaseData();
+  await waitFor(() => expect(dataSettled).toBe(true));
+  expect(refresh).toBeDisabled();
+  releaseConfiguration();
+  await waitFor(() => expect(refresh).toBeEnabled());
 });

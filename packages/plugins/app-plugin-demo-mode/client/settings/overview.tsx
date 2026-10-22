@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
 } from '../components/ui/alert-dialog.js';
 import { Badge } from '../components/ui/badge.js';
-import { Button } from '../components/ui/button.js';
+import { Button } from './components.js';
 import {
   Card,
   CardAction,
@@ -31,7 +31,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '../components/ui/card.js';
+} from './components.js';
 import {
   Empty,
   EmptyDescription,
