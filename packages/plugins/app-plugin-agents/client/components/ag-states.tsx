@@ -103,22 +103,38 @@ export function AgEmpty({
   );
 }
 
-/** The heading of a settings tab section: title, one sentence, and actions on the right. */
+/**
+ * The heading of a settings tab section: title, one sentence, and actions on the right. With `titleHidden` the title
+ * is read by screen readers only, for a section whose tab or page heading already names it, and the sentence and the
+ * actions share one row, centred like a page header's.
+ */
 export function SectionHeading({
   id,
   title,
   description,
   actions,
+  titleHidden = false,
 }: {
   readonly id: string;
-  readonly title: string;
-  readonly description?: string;
+  readonly title: ReactNode;
+  readonly description?: ReactNode;
   readonly actions?: ReactNode;
+  readonly titleHidden?: boolean;
 }): ReactElement {
   return (
-    <div className='flex flex-wrap items-end justify-between gap-3'>
+    <div
+      className={cn(
+        'flex flex-wrap justify-between gap-3',
+        titleHidden ? 'items-center' : 'items-end',
+      )}
+    >
       <div className='min-w-0'>
-        <h2 id={id} className='font-heading text-sm font-semibold'>
+        <h2
+          id={id}
+          className={
+            titleHidden ? 'sr-only' : 'font-heading text-sm font-semibold'
+          }
+        >
           {title}
         </h2>
         {description ? (

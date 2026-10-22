@@ -1,6 +1,8 @@
 /**
  * What the agents plugin offers the application's own pages (for example, in `client/agents/`):
  *
+ * - `RunnerAgentsSection`: the agents discovered from runners, with its heading, description and actions the page's
+ *   to set;
  * - `VariablesSection`: the variables and secrets of a scope (`workdir`, or a scope the application registers on the
  *   server), write-only and audited as on an agent;
  * - `ScopedVariablesSection`: the same for several scopes in one table with a Scope column (a project and its working
@@ -33,7 +35,10 @@ import { useQuotaExpiry } from './hooks/use-quota-expiry.js';
 import { useRealtimeTopic } from './hooks/use-realtime-topic.js';
 import { RUNNERS_TOPIC } from '../shared/realtime.js';
 import { pickerAgentOf } from './lib/agents.js';
-import { RunnerAgentsSection as RunnerAgents } from './pages/agents/runner-agents.js';
+import {
+  RunnerAgentsSection as RunnerAgents,
+  type RunnerAgentsSectionProps,
+} from './pages/agents/runner-agents.js';
 import { agentsQueryClient, withAgents } from './query.js';
 
 export {
@@ -139,11 +144,16 @@ export const VariablesSection: ComponentType<ScopeSectionProps> =
   withAgents(ScopeVariables);
 export const ScopedVariablesSection: ComponentType<ScopedVariablesSectionProps> =
   withAgents(ScopedVariables);
+export type { RunnerAgentsSectionProps };
+
 /**
  * The agents discovered from runners, as the Agent page lists them, with enabling and editing for those who manage
- * agents: for an application that composes its own Agent page.
+ * agents: for an application that composes its own Agent page. Its heading row carries "Show disabled" after the
+ * page's own `actions`, with an optional `description`; `heading` makes it the page's `h1` (`page`) or an `h2` for
+ * screen readers only under the application's own tab or heading (`screenReaderOnly`).
  */
-export const RunnerAgentsSection: ComponentType = withAgents(RunnerAgents);
+export const RunnerAgentsSection: ComponentType<RunnerAgentsSectionProps> =
+  withAgents(RunnerAgents);
 
 export const DefaultSkillsSection: ComponentType<ScopeSectionProps> =
   withAgents(ScopeSkills);

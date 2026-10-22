@@ -20,6 +20,7 @@ vi.mock('@nocobase/app-plugin-authorization/client', () =>
 
 const { default: AgentsPage } =
   await import('../../client/pages/agents/index.js');
+const { RunnerAgentsSection } = await import('../../client/kit.js');
 
 let agents: AgentView[] = [];
 
@@ -278,6 +279,51 @@ describe('the Agent page', () => {
       ).toBeInTheDocument();
     },
   );
+
+  it('puts "Show disabled" on the page header’s row, the list being the page', async () => {
+    renderPage(<AgentsPage />);
+    await screen.findByTestId('agent-sonnet');
+    const header = screen
+      .getByRole('heading', { level: 1, name: 'agents.title' })
+      .closest('header')!;
+    expect(header).toHaveTextContent('agents.description');
+    expect(
+      within(header).getByRole('button', { name: 'agents.discovery.disabled' }),
+    ).toBeInTheDocument();
+    // The page's heading names the list; it has no heading of its own.
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull();
+    expect(
+      screen.getByRole('region', { name: 'agents.title' }),
+    ).toContainElement(screen.getByTestId('agent-sonnet'));
+  });
+
+  it('lets an application compose the list with its own description and actions', async () => {
+    const { rerender } = renderPage(<RunnerAgentsSection />);
+    // By default the section has its own heading, with "Show disabled" beside it.
+    const heading = await screen.findByRole('heading', {
+      level: 2,
+      name: 'agents.fromRunners',
+    });
+    expect(heading).not.toHaveClass('sr-only');
+    rerender(
+      <RunnerAgentsSection
+        heading='screenReaderOnly'
+        description='Agents on your machines'
+        actions={<button type='button'>Connect</button>}
+      />,
+    );
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'agents.fromRunners' }),
+    ).toHaveClass('sr-only');
+    const row = screen.getByText('Agents on your machines').parentElement!
+      .parentElement!;
+    expect(
+      within(row)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Connect', 'agents.discovery.disabled']);
+    expect(await screen.findByTestId('agent-sonnet')).toBeInTheDocument();
+  });
 
   it('offers no change to who does not manage agents', async () => {
     agents = agents.map((each) => ({ ...each, canEdit: false }));
