@@ -239,7 +239,7 @@ export interface RunService {
   /** Adds input to a run that has not ended. */
   addInput(runId: string, input: NewInput, outer?: Tx): Promise<string>;
   /** A queued run ends at once; a held one is asked to stop. In `outer`, joins the caller's transaction. */
-  cancel(runId: string, byUserId: string, outer?: Tx): Promise<Run>;
+  cancel(runId: string, byUserId: string | null, outer?: Tx): Promise<Run>;
   /**
    * Ends the queued runs on a subject, of one agent or of any, or of one agent on every subject; optionally only those
    * `actorUserId` woke. Held runs are left alone. Answers the runs it ended. In `outer`, joins the caller's transaction.
@@ -425,12 +425,26 @@ export function createRunService(deps: RunServiceDeps): RunService {
     run: RunRecord,
     byUserId: string,
   ): Promise<void> {
-    const ended = await finishRun(unit, deps, run, {
-      status: 'cancelled',
-      reason: null,
-      detail: COMMENT_CANCEL_DETAIL,
-      cancelledById: byUserId,
-    });
+    const ended = await finishRun(
+      unit,
+      deps,
+      run,
+      {
+        status: 'cancelled',
+        reason: null,
+        detail: COMMENT_CANCEL_DETAIL,
+        cancelledById: byUserId,
+      },
+      false,
+      async () => {
+        await deps.subjects
+          .get(run.subjectKind)
+          ?.sink?.onCancelRequested?.(
+            unit,
+            toRun({ ...run, cancelledById: byUserId }),
+          );
+      },
+    );
     if (!ended) throw conflict('The comment work changed; read it again.');
   }
 
@@ -1422,24 +1436,48 @@ export function createRunService(deps: RunServiceDeps): RunService {
             `The run is ${run.status}.`,
           );
         if (run.status === 'queued') {
-          const ended = await finishRun(unit, deps, run, {
-            status: 'cancelled',
-            reason: 'cancelled',
-            cancelledById: byUserId,
-          });
+          const ended = await finishRun(
+            unit,
+            deps,
+            run,
+            {
+              status: 'cancelled',
+              reason: 'cancelled',
+              cancelledById: byUserId,
+            },
+            false,
+            async () => {
+              await deps.subjects
+                .get(run.subjectKind)
+                ?.sink?.onCancelRequested?.(
+                  unit,
+                  toRun({ ...run, cancelledById: byUserId }),
+                );
+            },
+          );
           if (!ended) throw conflict('The run changed; try again.');
           return toRun(ended);
         }
         if (!run.cancelRequestedAt) {
           const now = clock.now().toISOString();
-          await runsRepo(unit.conn).updateMany({
-            filter: { id: run.id },
+          const updated = await runsRepo(unit.conn).updateMany({
+            filter: { id: run.id, status: run.status, revision: run.revision },
             values: {
               cancelRequestedAt: now,
               cancelledById: byUserId,
               updatedAt: now,
             },
           });
+          if (updated.updatedCount !== 1)
+            throw conflict('The run changed; try again.');
+          await deps.subjects.get(run.subjectKind)?.sink?.onCancelRequested?.(
+            unit,
+            toRun({
+              ...run,
+              cancelRequestedAt: now,
+              cancelledById: byUserId,
+            }),
+          );
           unit.emit({ type: 'run.changed', runId: run.id, status: run.status });
         }
         return toRun(await require(unit.conn, run.id));

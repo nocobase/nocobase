@@ -1,5 +1,7 @@
 # Extension points
 
+A subject's optional `sink.onCancelRequested(tx, run)` runs once in the accepted stop transaction, before `onRunFinished` for a queued run. Its writes roll back with the stop if it throws. `run.cancelledById` identifies a human stop; `runs.cancel(id, null, tx?)` is an incidental system cancellation. An active stop request keeps its first actor and does not replay this callback on a repeated request. Personal runner request rejection uses the same callback. Terminal delivery alone must not infer a new human instruction.
+
 Everything the App contributes goes through `agentsToken` (`@nocobase/app-plugin-agents/server/tokens`), resolved in one of the App's service providers when it boots. Text people read is an `I18nText` (`{ key, ns }`) in the App's own namespace. The README's "Extension points" section describes each field; this is the map. Where the two disagree, the types exported from `server/tokens` (the `Agents` interface) are authoritative.
 
 | Extension point                                                                                                                                                | Contributes                                                                                                                                                                                                          | Typical use                                                                                                                                             |

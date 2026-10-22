@@ -691,6 +691,7 @@ describe('historical Runner conversation domain', () => {
     await claim(h, key);
     await runner(key).post(next.run!.id, 'start', start);
     await domain().stop(ALICE, id);
+    expect((await h.services.runs.get(next.run!.id)).cancelledById).toBe(ALICE);
     expect(
       (await h.services.runs.get(next.run!.id)).cancelRequestedAt,
     ).not.toBeNull();
