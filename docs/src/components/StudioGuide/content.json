@@ -96,7 +96,7 @@
         {
           "id": "git-personal",
           "title": "配置个人 Git 连接",
-          "html": "<p>位置：<strong>个人设置 → 集成 → Git</strong>。连接自己的 Git 账号，用于代码提交时的账号身份信息。</p><figure><a class=\"screenshot\" href=\"./assets/personal-git.png\" aria-label=\"放大查看：在个人设置中连接自己的 Git 账号。\"><img src=\"./assets/personal-git.png\" width=\"3456\" height=\"1992\" alt=\"在个人设置中连接自己的 Git 账号。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 07</span>在个人设置中连接自己的 Git 账号。</figcaption></figure>",
+          "html": "<p>位置：<strong>个人设置 → 集成 → Git</strong>。连接自己的 Git 账号，用于代码提交时的账号身份信息。</p><figure><a class=\"screenshot\" href=\"./assets/personal-git.png\" aria-label=\"放大查看：在个人设置中连接自己的 Git 账号。\"><img src=\"./assets/personal-git.png\" width=\"3444\" height=\"1992\" alt=\"在个人设置中连接自己的 Git 账号。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 07</span>在个人设置中连接自己的 Git 账号。</figcaption></figure>",
           "topics": []
         }
       ]

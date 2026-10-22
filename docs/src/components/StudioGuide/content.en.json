@@ -96,7 +96,7 @@
         {
           "id": "git-personal",
           "title": "Configure your personal Git account",
-          "html": "<p>Location: <strong>Account settings → Integrations → Git</strong>. Connect your own Git account to associate code contributions with your identity.</p><figure><a class=\"screenshot\" href=\"./assets/personal-git.png\" aria-label=\"Enlarge: Connect your own Git account in account settings.\"><img src=\"./assets/personal-git.png\" width=\"3456\" height=\"1992\" alt=\"Connect your own Git account in account settings.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 07</span>Connect your own Git account in account settings.</figcaption></figure>",
+          "html": "<p>Location: <strong>Account settings → Integrations → Git</strong>. Connect your own Git account to associate code contributions with your identity.</p><figure><a class=\"screenshot\" href=\"./assets/personal-git.png\" aria-label=\"Enlarge: Connect your own Git account in account settings.\"><img src=\"./assets/personal-git.png\" width=\"3444\" height=\"1992\" alt=\"Connect your own Git account in account settings.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 07</span>Connect your own Git account in account settings.</figcaption></figure>",
           "topics": []
         }
       ]
