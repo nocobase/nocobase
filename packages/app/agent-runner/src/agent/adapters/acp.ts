@@ -160,12 +160,12 @@ async function inspect(
     };
   return withDetectionEnvironment(
     signal,
-    async (cwd) => {
+    async (cwd, guardedEnv) => {
       let process: AgentProcess | undefined;
       try {
         process = await AgentProcess.start(resolved, {
           cwd,
-          env,
+          env: guardedEnv,
           client: CLIENT,
           signal,
           initializeTimeoutMs: 30_000,
@@ -208,6 +208,20 @@ async function inspect(
           createRedactor().text(version) === version
             ? version
             : undefined;
+        // A successful handshake alone does not confirm sign-in for an agent marked `signInUnconfirmable`: report
+        // the safe default (not usable yet) instead of a `ready` this detection cannot back up.
+        if (spec.signInUnconfirmable)
+          return {
+            installed: true,
+            path: resolved.command,
+            version: safeVersion,
+            authenticated: false,
+            status: 'needsLogin',
+            statusReason: 'signInUnconfirmed',
+            statusDetail: statusDetailOf(
+              `${spec.name}'s handshake succeeds whether or not it is signed in; run \`${spec.signIn}\` to confirm.`,
+            ),
+          };
         return {
           installed: true,
           path: resolved.command,
@@ -554,7 +568,7 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
               ? 'modelUnavailable'
               : 'toolProcess',
           message: isAuthRequired(error)
-            ? `${spec.name} requires login on the runner. Run ${spec.signIn} there, then detect again.`
+            ? `${spec.name} requires login on the runner. Run ${spec.signIn} there, then detect again. (${runFailureMessage(error, 'no further detail from the tool.')})`
             : error instanceof ModelSelectionError
               ? error.message
               : runFailureMessage(

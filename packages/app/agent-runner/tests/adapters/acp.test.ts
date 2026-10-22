@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, it } from 'vitest';
@@ -117,6 +117,21 @@ it.each(['', 'legacy', 'unsupported', 'auth', 'initializeAuth', 'permission'])(
   },
 );
 
+it('never reports ready from a bare successful handshake for an agent whose handshake does not confirm sign-in (Amp)', async () => {
+  // The fixture's handshake always succeeds, modelling the owner's tested report that Amp opens a session the same
+  // way whether or not it is actually signed in: `signInUnconfirmable` must still keep this from reading as ready.
+  const f = await fixture('', { signInUnconfirmable: true, signIn: 'amp login' });
+  const detected = await f.adapter.detect(new AbortController().signal);
+  expect(detected).toMatchObject({
+    installed: true,
+    authenticated: false,
+    status: 'needsLogin',
+    statusReason: 'signInUnconfirmed',
+  });
+  expect(detected.statusDetail).toContain('amp login');
+  expect(detected.models).toBeUndefined();
+});
+
 it('never lists an agent’s non-model options as models when its spec says they are not (amp’s reasoning modes)', async () => {
   const f = await fixture('', { modelsAreNotModels: true });
   const detected = await f.adapter.detect(new AbortController().signal);
@@ -224,6 +239,17 @@ it('keeps the tool’s own words on a run failure instead of a one-size-fits-all
   );
 });
 
+it('keeps the tool’s own words alongside the fixed sign-in instruction when a run fails on auth', async () => {
+  const f = await fixture('auth');
+  const handle = f.adapter.start({ ...f.session, model: 'two' });
+  const result = await handle.result;
+  expect(result.error?.reason).toBe('toolAuth');
+  // Both the actionable instruction (what to run, and where) and the tool's own raw detail must survive.
+  expect(result.error?.message).toContain('Run');
+  expect(result.error?.message).toContain('then detect again');
+  expect(result.error?.message).toContain('Fixture error');
+});
+
 it('merges a turn’s small consecutive text chunks into about one event instead of one per chunk', async () => {
   const f = await fixture('chunky');
   const handle = f.adapter.start(f.session);
@@ -284,4 +310,46 @@ it('aborts detection while the agent ignores session creation', async () => {
   expect(
     (await f.messages()).some((message) => message.method === 'session/prompt'),
   ).toBe(false);
+});
+
+it('detects behind the same host CLI guard a run gets, not the bare host PATH', async () => {
+  // A fake `gh` that always succeeds unwrapped, standing in for a signed-in host login a guard must hide from
+  // detection: if detection ever sees the host's raw PATH, the fixture's `gh auth token` call below succeeds and
+  // the bug (Copilot-style tools reporting ready from host credentials) goes undetected.
+  const root = await mkdtemp(path.join(os.tmpdir(), 'runner-acp-guard-'));
+  roots.push(root);
+  const hostBin = path.join(root, 'host-bin');
+  await import('node:fs/promises').then((fs) => fs.mkdir(hostBin));
+  const gh = path.join(hostBin, 'gh');
+  await writeFile(gh, '#!/bin/sh\necho "host-token"\n');
+  await chmod(gh, 0o755);
+  const trace = path.join(root, 'trace');
+  const env = {
+    PATH: `${hostBin}${path.delimiter}${process.env.PATH}`,
+    HOME: root,
+    ACP_FIXTURE_VARIANT: 'hostCliCheck',
+    ACP_FIXTURE_TRACE: trace,
+  };
+  const spec = {
+    id: 'copilot',
+    name: 'GitHub Copilot',
+    launchers: [
+      {
+        command: path.basename(process.execPath),
+        dirs: [path.dirname(process.execPath)],
+        args: [path.resolve(import.meta.dirname, '../fixtures/acp-agent.mjs')],
+      },
+    ],
+    signIn: 'gh',
+    allowAll: true,
+  };
+  const adapter = createAcpAdapter(spec, env);
+  await adapter.detect(new AbortController().signal);
+  const messages = (await readFile(trace, 'utf8'))
+    .trim()
+    .split('\n')
+    .map((line) => JSON.parse(line) as { method: string; params: Record<string, unknown> });
+  expect(
+    messages.find((message) => message.method === 'hostCliCheck')?.params,
+  ).toEqual({ ghRefused: true });
 });

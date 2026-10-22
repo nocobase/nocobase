@@ -53,6 +53,13 @@ export interface AgentSpec {
     /** Default 5000. */
     readonly timeoutMs?: number;
   };
+  /**
+   * A successful detection handshake (`initialize` and `session/new`) does not mean this agent is signed in: it
+   * opens a session the same way whether or not it is (Amp, by the owner's own tested report). Detection reports
+   * `needsLogin`/`signInUnconfirmed` from a bare successful handshake instead of `ready`, since claiming readiness
+   * it cannot back up is the worse of the two wrong answers.
+   */
+  readonly signInUnconfirmable?: boolean;
 }
 
 const localBin = '~/.local/bin';
@@ -268,6 +275,8 @@ export const AGENTS: readonly (AgentSpec & { readonly id: CatalogAgentId })[] =
       signIn: 'amp login',
       // Amp's ACP session reports its reasoning modes (low/medium/high/ultra) as configOptions, not models.
       modelsAreNotModels: true,
+      // A successful handshake happens whether or not Amp is signed in; see `AgentSpec.signInUnconfirmable`.
+      signInUnconfirmable: true,
     },
     {
       id: 'vibe',

@@ -166,7 +166,9 @@ export interface ToolCapabilities {
  * version answers that it predates ACP support (`versionTooOld`), its handshake failed because it has no provider or
  * model configured (`notConfigured`), the program found under the expected name is not this tool (`otherProgram`),
  * detection ran out of time (`timeout`), it started but the handshake or first session failed for another reason
- * (`startFailed`), or it is simply not signed in (`notLoggedIn`). Added within version 13: absent from a runner that
+ * (`startFailed`), it is simply not signed in (`notLoggedIn`), or its handshake succeeds whether or not it is signed
+ * in, so sign-in could not be confirmed one way or the other (`signInUnconfirmed`; reported as `needsLogin`, the safe
+ * default when unsure, never as `ready` from a handshake alone). Added within version 13: absent from a runner that
  * predates it, or when the runner has nothing more specific to say than `status` itself.
  */
 export type ToolStatusReason =
@@ -175,7 +177,8 @@ export type ToolStatusReason =
   | 'notConfigured'
   | 'otherProgram'
   | 'timeout'
-  | 'startFailed';
+  | 'startFailed'
+  | 'signInUnconfirmed';
 
 export const TOOL_STATUS_REASONS: readonly ToolStatusReason[] = [
   'notLoggedIn',
@@ -184,6 +187,7 @@ export const TOOL_STATUS_REASONS: readonly ToolStatusReason[] = [
   'otherProgram',
   'timeout',
   'startFailed',
+  'signInUnconfirmed',
 ];
 
 export const ToolStatusReasonSchema: z.ZodType<ToolStatusReason> = z.enum([
@@ -193,6 +197,7 @@ export const ToolStatusReasonSchema: z.ZodType<ToolStatusReason> = z.enum([
   'otherProgram',
   'timeout',
   'startFailed',
+  'signInUnconfirmed',
 ]);
 
 /** How much of a tool's own words about its status the runner keeps, redacted and cut to this length. */

@@ -1,6 +1,7 @@
 // A JSON-RPC fixture, not a real coding tool. Records only synthetic test inputs.
 import readline from 'node:readline';
 import { appendFileSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 const send = (value) =>
   process.stdout.write(JSON.stringify({ jsonrpc: '2.0', ...value }) + '\n');
 const update = (text) =>
@@ -69,6 +70,22 @@ readline.createInterface({ input: process.stdin }).on('line', async (line) => {
     if (process.env.ACP_FIXTURE_PID)
       writeFileSync(process.env.ACP_FIXTURE_PID, String(process.pid));
     if (variant === 'initializeAuth') return error(-32000);
+    // Like Copilot: checks sign-in by shelling out to `gh auth token`. Detection must see the same guarded PATH a
+    // run gets, so the fixture records whether that call was refused; the test reads it back from the trace file
+    // instead of inferring it from the ACP result, which this fixture otherwise reports as ready either way.
+    if (variant === 'hostCliCheck' && process.env.ACP_FIXTURE_TRACE) {
+      let ghRefused = false;
+      try {
+        execFileSync('gh', ['auth', 'token'], { stdio: 'pipe' });
+      } catch {
+        ghRefused = true;
+      }
+      appendFileSync(
+        process.env.ACP_FIXTURE_TRACE,
+        JSON.stringify({ method: 'hostCliCheck', params: { ghRefused } }) +
+          '\n',
+      );
+    }
     return result({
       protocolVersion: 1,
       agentInfo: { name: 'fixture', version: '1.2.3' },
