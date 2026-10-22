@@ -9,8 +9,6 @@
   "home": "文档首页",
   "start": "开始配置",
   "print": "打印 / 保存 PDF",
-  "chapterLabel": "个大章节",
-  "imageLabel": "张操作截图",
   "imageHint": "点击截图可放大查看",
   "flowLabel": "配置流程",
   "flowTitle": "从部署到第一次交付",
@@ -221,6 +219,5 @@
   "copyStatus": "内容已复制",
   "copyFallback": "内容已选中，请按 Ctrl+C 或 ⌘C 复制",
   "progress": "阅读进度",
-  "sectionLabel": "个小章节",
   "subsectionsLabel": "展开或收起小章节"
 }

@@ -125,22 +125,6 @@
     background: var(--guide-soft);
     border-color: #bbc6d9;
   }
-  .guide-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
-    margin: 24px 0 0;
-    font-size: 12px;
-    color: var(--guide-muted);
-    strong {
-      color: var(--guide-ink);
-      font-weight: 600;
-    }
-    span + span {
-      border-left: 1px solid var(--guide-line);
-      padding-left: 24px;
-    }
-  }
   .guide-flow {
     padding: 24px;
     border: 1px solid #dce3f3;
@@ -832,9 +816,6 @@
     .guide-print {
       padding: 10px 14px;
       font-size: 12px;
-    }
-    .guide-meta {
-      margin-top: 20px;
     }
     .guide-flow {
       padding: 18px;

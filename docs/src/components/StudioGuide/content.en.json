@@ -9,8 +9,6 @@
   "home": "Documentation",
   "start": "Start setup",
   "print": "Print / Save PDF",
-  "chapterLabel": "chapters",
-  "imageLabel": "screenshots",
   "imageHint": "Click any screenshot to enlarge",
   "flowLabel": "Setup workflow",
   "flowTitle": "From deployment to your first delivery",
@@ -221,6 +219,5 @@
   "copyStatus": "Copied to clipboard",
   "copyFallback": "Text selected. Press Ctrl+C or ⌘C to copy.",
   "progress": "Reading progress",
-  "sectionLabel": "sections",
   "subsectionsLabel": "Expand or collapse sections"
 }
