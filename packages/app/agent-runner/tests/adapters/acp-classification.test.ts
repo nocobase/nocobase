@@ -1,4 +1,4 @@
-import { RequestError } from '@agentclientprotocol/sdk';
+import { RequestError } from '@nocobase/acp-bridge/client';
 import { expect, it } from 'vitest';
 import {
   classifyHandshakeFailure,

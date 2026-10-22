@@ -12,7 +12,7 @@ export type {
 } from './agent-process.js';
 export { resolveAgent, findProgram } from './agents.js';
 export type { ResolvedAgent } from './agents.js';
-export { methods } from '@agentclientprotocol/sdk';
+export { methods, RequestError } from '@agentclientprotocol/sdk';
 export type {
   SessionNotification,
   RequestPermissionRequest,
