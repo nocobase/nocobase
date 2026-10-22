@@ -30,6 +30,7 @@ const viVN: FoundationResource = {
     lowerBound: 'Giá trị tối thiểu: chưa đọc được một phần dữ liệu.',
   },
   matrix: {
+    collections: 'Bộ sưu tập dữ liệu: {{names}}',
     title: 'Mô-đun nghiệp vụ và khả năng nền tảng',
     description:
       'Xem khả năng nào hỗ trợ từng mô-đun. Chọn dấu tích để xem căn cứ liên kết và công việc cần làm nếu tự triển khai.',
@@ -105,6 +106,23 @@ const viVN: FoundationResource = {
     legendUnused: 'Chưa dùng {{count}}',
   },
   detail: {
+    collectionCount: '{{count}} bảng dữ liệu',
+    collectionPreview: 'Xem trước bảng dữ liệu',
+    collectionsTitle: 'Bảng dữ liệu',
+    noCollectionMatches: 'Không tìm thấy bảng phù hợp',
+    noCollectionMatchesHint: 'Thử tên khác hoặc xóa tìm kiếm.',
+    collectionRange: '{{from}}–{{to}} trên {{total}}',
+    closeCollections: 'Đóng danh sách bảng',
+    viewCollections: 'Xem tất cả bộ sưu tập',
+    searchCollections: 'Tìm bộ sưu tập',
+    collectionResults: '{{count}} bộ sưu tập phù hợp',
+    previousPage: 'Trước',
+    nextPage: 'Tiếp',
+    countRecords: 'Đếm bản ghi nghiệp vụ',
+    recordsOnDemand:
+      'Tổng bản ghi nghiệp vụ được đếm khi cần. Cơ sở dữ liệu lớn có thể mất nhiều thời gian hơn.',
+    recordsCountedAt: 'Đã đếm bản ghi {{time}}',
+
     businessModules: 'Mô-đun nghiệp vụ liên quan',
     inThisApp: 'Trong ứng dụng này',
     withoutFoundation: 'Nếu không có nền tảng',
@@ -166,7 +184,8 @@ const viVN: FoundationResource = {
       tagline: 'Dịch vụ mô hình, tác tử và trình chạy',
       without:
         'Phải tự tích hợp mô hình, bảo vệ khóa, ghi mức sử dụng và chạy tác tử an toàn.',
-      onceInUse: 'Cấu hình mô hình và tác tử một lần, có ghi nhận mức sử dụng.',
+      onceInUse:
+        'Bật dịch vụ mô hình cho OnlineAgent và cổng mô hình, hoặc đăng ký trình chạy để thực thi tác tử.',
     },
     knowledge: {
       name: 'Cơ sở tri thức',
@@ -234,7 +253,7 @@ const viVN: FoundationResource = {
       'Chỉ quản trị viên có quyền không giới hạn; chưa cấp quyền cho người dùng khác.',
     noWorkflows: 'Chưa có vòng đời lưu bền hoặc lịch đã bật.',
     noSchedules: 'Chưa bật lịch nào.',
-    noModelOrRunner: 'Cần mô hình đã bật và tác tử, hoặc trình chạy.',
+    noModelOrRunner: 'Chưa bật dịch vụ mô hình nào và chưa đăng ký trình chạy.',
     noModelService: 'Chưa bật dịch vụ mô hình nào.',
     noAgent: 'Chưa định nghĩa tác tử.',
     noDocuments: 'Không gian tri thức chưa có tài liệu.',
@@ -250,6 +269,8 @@ const viVN: FoundationResource = {
       'Phát hiện phần mở rộng lúc chạy chưa phân loại. Chưa xác nhận bộ sưu tập thuộc bên nào nên ẩn số liệu nghiệp vụ.',
     noApplicationCollections:
       'Lớp dữ liệu đang chạy, ứng dụng chưa có bộ sưu tập riêng.',
+    applicationCollectionsPreview:
+      'Ứng dụng có {{count}} bộ sưu tập, bao gồm {{names}}.',
     applicationCollections: '{{count}} bộ sưu tập riêng: {{names}}.',
     relations: '{{count}} quan hệ kết nối chúng.',
     fileCollections: '{{count}} bộ sưu tập tệp: {{names}}.',
@@ -261,6 +282,9 @@ const viVN: FoundationResource = {
     lifecycles:
       '{{count}} vòng đời có {{transitions}} lần chuyển đổi: {{names}}.',
     schedules: 'Đã bật {{count}} lịch.',
+    modelServices:
+      '{{count}} dịch vụ mô hình đã bật hỗ trợ OnlineAgent và cổng mô hình.',
+    runners: '{{count}} trình chạy đã đăng ký hỗ trợ thực thi tác tử.',
     agents: '{{count}} tác tử, {{runs}} lần chạy.',
     documents: '{{count}} tài liệu tri thức.',
     mailboxes: 'Đã kết nối {{count}} hộp thư.',

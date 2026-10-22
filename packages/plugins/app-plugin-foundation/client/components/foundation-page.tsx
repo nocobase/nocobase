@@ -22,6 +22,7 @@ import { withAvailableCapabilities } from '../../shared/available-capabilities.j
 import { businessModules } from '../business-modules.js';
 import { Button } from './ui/button.js';
 import { ModuleMatrix } from './module-matrix.js';
+import { CollectionsBrowser } from './collections-browser.js';
 import { useFoundationTranslation } from './foundation-translation.js';
 
 import { useFoundationOverview } from '../api.js';
@@ -73,7 +74,8 @@ function useLighting(
 export function FoundationPage(): ReactElement {
   const { t } = useFoundationTranslation();
   const app = useClientApplication();
-  const { overview, error, loading, refresh } = useFoundationOverview();
+  const { overview, error, loading, refresh, countRecords } =
+    useFoundationOverview();
 
   return (
     <div className='mx-auto flex w-full max-w-7xl flex-col gap-4 p-4 md:p-6'>
@@ -101,6 +103,7 @@ export function FoundationPage(): ReactElement {
             registeredRoutes={app.runtime.routes}
             refreshing={loading}
             onRefresh={refresh}
+            onCountRecords={countRecords}
           />
         </>
       ) : error ? (
@@ -134,6 +137,7 @@ export interface FoundationOverviewViewProps {
   readonly overview: FoundationOverview;
   readonly refreshing?: boolean;
   readonly onRefresh?: () => void;
+  readonly onCountRecords?: () => void;
   readonly clientProviders?: readonly string[];
   readonly registeredRoutes?: Parameters<typeof businessModules>[0];
 }
@@ -143,6 +147,7 @@ export function FoundationOverviewView({
   overview: serverOverview,
   refreshing = false,
   onRefresh,
+  onCountRecords,
   clientProviders = [],
   registeredRoutes = [],
 }: FoundationOverviewViewProps): ReactElement {
@@ -329,6 +334,9 @@ export function FoundationOverviewView({
         <CapabilityDetail
           capability={selectedCapability}
           inventory={overview.inventory}
+          counting={refreshing}
+          onCountRecords={onCountRecords}
+          recordCountCheckedAt={overview.recordCountCheckedAt}
           modules={modules.filter((module) =>
             module.links.some(
               (link) => link.capability === selectedCapability.key,
@@ -571,10 +579,16 @@ function CapabilityDetail({
   capability,
   modules,
   inventory,
+  counting,
+  onCountRecords,
+  recordCountCheckedAt,
 }: {
   readonly capability: FoundationCapability;
   readonly modules: readonly FoundationBusinessModule[];
   readonly inventory?: FoundationProviderInventory;
+  readonly counting: boolean;
+  readonly onCountRecords?: () => void;
+  readonly recordCountCheckedAt?: string;
 }): ReactElement {
   const { t, word, text, locale } = useFoundationTranslation();
   const Icon = CAPABILITY_ICONS[capability.key] ?? Plug;
@@ -597,6 +611,17 @@ function CapabilityDetail({
   const packages = [...relatedPackages.values()];
   const pending = capability.reason === 'unrecognizedExtension';
   const inUse = capability.status === 'active';
+  const collectionSummary =
+    capability.key === 'dataModeling'
+      ? capability.facts.find(
+          (fact) =>
+            fact.code === 'applicationCollections' ||
+            fact.code === 'applicationCollectionsPreview',
+        )
+      : undefined;
+  const otherFacts = capability.facts.filter(
+    (fact) => fact !== collectionSummary,
+  );
   const unreadable = capability.issues
     .filter((issue) => issue.code === 'SOURCE_UNREADABLE' && issue.source)
     .map((issue) => issue.source as string);
@@ -685,9 +710,12 @@ function CapabilityDetail({
                   ))}
                 </ul>
               ) : null}
-              {capability.facts.length > 0 ? (
+              {collectionSummary ? (
+                <CollectionsBrowser summary={collectionSummary} />
+              ) : null}
+              {otherFacts.length > 0 ? (
                 <ul className='flex list-disc flex-col gap-1.5 pl-5 text-sm marker:text-primary'>
-                  {capability.facts.map((fact) => (
+                  {otherFacts.map((fact) => (
                     <li key={fact.code}>
                       {word(
                         `facts.${fact.code}`,
@@ -696,11 +724,11 @@ function CapabilityDetail({
                     </li>
                   ))}
                 </ul>
-              ) : (
+              ) : !collectionSummary ? (
                 <p className='text-sm text-muted-foreground'>
                   {t('detail.noFacts')}
                 </p>
-              )}
+              ) : null}
             </div>
           ) : null}
 
@@ -785,6 +813,27 @@ function CapabilityDetail({
                   );
                 })}
               </ul>
+              {capability.key === 'dataModeling' ? (
+                <div className='flex flex-col items-start gap-1'>
+                  {onCountRecords ? (
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      disabled={counting}
+                      onClick={onCountRecords}
+                    >
+                      {t(counting ? 'page.refreshing' : 'detail.countRecords')}
+                    </Button>
+                  ) : null}
+                  <p className='text-xs text-muted-foreground'>
+                    {recordCountCheckedAt
+                      ? t('detail.recordsCountedAt', {
+                          time: formatTime(recordCountCheckedAt, locale),
+                        })
+                      : t('detail.recordsOnDemand')}
+                  </p>
+                </div>
+              ) : null}
             </div>
           ) : null}
 

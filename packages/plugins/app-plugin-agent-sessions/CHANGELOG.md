@@ -1,5 +1,17 @@
 # @nocobase/app-plugin-agent-sessions
 
+## 1.0.0-beta.8
+
+### Patch Changes
+
+- f491fa4: Keep long conversations scrollable within an embedded panel so the reply composer stays visible.
+- Updated dependencies [f2712b9]
+- Updated dependencies [f8f64ad]
+  - @nocobase/agent-protocol@0.1.0-beta.12
+  - @nocobase/app-server@3.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
 ## 1.0.0-beta.7
 
 ### Patch Changes

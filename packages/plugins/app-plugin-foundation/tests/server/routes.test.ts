@@ -23,7 +23,7 @@ const OVERVIEW: FoundationOverview = {
 };
 
 describe('@nocobase/app-plugin-foundation API routes', () => {
-  it('contributes the overview route and nothing else', () => {
+  it('contributes the protected Foundation routes', () => {
     expect(routes).toEqual([apiRoutes]);
   });
 
@@ -67,7 +67,10 @@ describe('@nocobase/app-plugin-foundation API routes', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ data: OVERVIEW });
-    expect(overview).toHaveBeenCalledWith({ refresh: false });
+    expect(overview).toHaveBeenCalledWith({
+      refresh: false,
+      countRecords: false,
+    });
   });
 
   it('collects again when asked to refresh, and rejects a malformed flag', async () => {
@@ -79,7 +82,10 @@ describe('@nocobase/app-plugin-foundation API routes', () => {
     expect((await router.request(`${OVERVIEW_PATH}?refresh=true`)).status).toBe(
       200,
     );
-    expect(overview).toHaveBeenLastCalledWith({ refresh: true });
+    expect(overview).toHaveBeenLastCalledWith({
+      refresh: true,
+      countRecords: false,
+    });
     expect(
       (await router.request(`${OVERVIEW_PATH}?refresh=sometimes`)).status,
     ).toBe(400);
@@ -103,11 +109,62 @@ describe('@nocobase/app-plugin-foundation API routes', () => {
       ).get?.operationId,
     ).toBe('foundationGetOverview');
   });
+
+  it.each(['anonymous', 'restricted'] as const)(
+    'protects collection browsing and explicit counts from a %s identity',
+    async (identity) => {
+      const overview = vi.fn();
+      const collections = vi.fn();
+      const router = await apiRoutes.createRouter(
+        application({ identity, overview, collections }),
+      );
+      expect((await router.request('/foundation/collections')).status).toBe(
+        identity === 'anonymous' ? 401 : 403,
+      );
+      expect(
+        (await router.request(`${OVERVIEW_PATH}?countRecords=true`)).status,
+      ).toBe(identity === 'anonymous' ? 401 : 403);
+      expect(overview).not.toHaveBeenCalled();
+      expect(collections).not.toHaveBeenCalled();
+    },
+  );
+
+  it('validates collection searches, paging and the explicit count flag', async () => {
+    const overview = vi.fn().mockResolvedValue(OVERVIEW);
+    const collections = vi.fn().mockResolvedValue({
+      items: [{ name: 'orders', kind: 'table' }],
+      total: 1,
+    });
+    const router = await apiRoutes.createRouter(
+      application({ identity: 'unrestricted', overview, collections }),
+    );
+    expect(
+      (await router.request('/foundation/collections?search=orders&offset=50'))
+        .status,
+    ).toBe(200);
+    expect(collections).toHaveBeenCalledWith({ search: 'orders', offset: 50 });
+    expect(
+      (await router.request('/foundation/collections?offset=-1')).status,
+    ).toBe(400);
+    expect(
+      (await router.request(`${OVERVIEW_PATH}?countRecords=unknown`)).status,
+    ).toBe(400);
+    expect(
+      (await router.request(`${OVERVIEW_PATH}?countRecords=true`)).status,
+    ).toBe(200);
+    expect(overview).toHaveBeenCalledWith({
+      refresh: false,
+      countRecords: true,
+    });
+    collections.mockResolvedValue(undefined);
+    expect((await router.request('/foundation/collections')).status).toBe(503);
+  });
 });
 
 function application(options: {
   readonly identity: 'anonymous' | 'restricted' | 'unrestricted';
   readonly overview: ReturnType<typeof vi.fn>;
+  readonly collections?: ReturnType<typeof vi.fn>;
 }): AppPluginApplication {
   const container = new ServiceContainer();
   container.singleton(authenticationToken, () => ({
@@ -145,6 +202,7 @@ function application(options: {
   }));
   container.singleton(foundationServiceToken, () => ({
     overview: options.overview,
+    collections: options.collections,
   }));
   return {
     container,

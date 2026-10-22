@@ -32,6 +32,7 @@ const esES: FoundationResource = {
     lowerBound: 'Valor mínimo: no se ha podido leer una parte.',
   },
   matrix: {
+    collections: 'Colecciones de datos: {{names}}',
     title: 'Módulos de negocio y capacidades base',
     description:
       'Consulta qué capacidades respaldan cada módulo. Selecciona una marca para ver la relación y qué tendrías que implementar por tu cuenta.',
@@ -108,6 +109,23 @@ const esES: FoundationResource = {
     legendUnused: 'Sin utilizar {{count}}',
   },
   detail: {
+    collectionCount: '{{count}} tablas',
+    collectionPreview: 'Vista previa de tablas',
+    collectionsTitle: 'Tablas',
+    noCollectionMatches: 'No se encontraron tablas',
+    noCollectionMatchesHint: 'Prueba otro nombre o borra la búsqueda.',
+    collectionRange: '{{from}}–{{to}} de {{total}}',
+    closeCollections: 'Cerrar tablas',
+    viewCollections: 'Ver todas las colecciones',
+    searchCollections: 'Buscar colecciones',
+    collectionResults: '{{count}} colecciones coincidentes',
+    previousPage: 'Anterior',
+    nextPage: 'Siguiente',
+    countRecords: 'Contar registros de negocio',
+    recordsOnDemand:
+      'Los registros de negocio se cuentan bajo demanda. Las bases de datos grandes pueden tardar más.',
+    recordsCountedAt: 'Registros contados {{time}}',
+
     businessModules: 'Módulos de negocio relacionados',
     inThisApp: 'En esta aplicación',
     withoutFoundation: 'Sin la base',
@@ -171,7 +189,8 @@ const esES: FoundationResource = {
       tagline: 'Servicios de modelos, agentes y ejecutores',
       without:
         'Habría que integrar modelos, proteger claves, registrar consumo y ejecutar agentes de forma segura.',
-      onceInUse: 'Configura modelos y agentes una vez, con registro de uso.',
+      onceInUse:
+        'Habilita servicios de modelos para OnlineAgent y la pasarela de modelos, o registra ejecutores para ejecutar agentes.',
     },
     knowledge: {
       name: 'Base de conocimiento',
@@ -247,7 +266,8 @@ const esES: FoundationResource = {
     noWorkflows:
       'No hay ciclos de vida persistidos ni programaciones habilitadas.',
     noSchedules: 'No hay programaciones habilitadas.',
-    noModelOrRunner: 'Falta un modelo habilitado y un agente, o un ejecutor.',
+    noModelOrRunner:
+      'No hay servicios de modelos habilitados ni ejecutores registrados.',
     noModelService: 'No hay servicios de modelos habilitados.',
     noAgent: 'No se ha definido ningún agente.',
     noDocuments: 'No hay documentos en los espacios de conocimiento.',
@@ -263,6 +283,8 @@ const esES: FoundationResource = {
       'Se ha detectado una extensión en ejecución sin clasificar. No se conoce la propiedad de las colecciones; se omiten las cifras de negocio.',
     noApplicationCollections:
       'La capa de datos funciona, pero la aplicación aún no tiene colecciones propias.',
+    applicationCollectionsPreview:
+      'Esta aplicación tiene {{count}} colecciones, entre ellas {{names}}.',
     applicationCollections: '{{count}} colecciones propias: {{names}}.',
     relations: '{{count}} relaciones las conectan.',
     fileCollections: '{{count}} colecciones de archivos: {{names}}.',
@@ -277,6 +299,9 @@ const esES: FoundationResource = {
     lifecycles:
       '{{count}} ciclos de vida con {{transitions}} transiciones: {{names}}.',
     schedules: '{{count}} programaciones habilitadas.',
+    modelServices:
+      '{{count}} servicios de modelos habilitados respaldan OnlineAgent y las llamadas a la pasarela de modelos.',
+    runners: '{{count}} ejecutores registrados permiten ejecutar agentes.',
     agents: '{{count}} agentes, {{runs}} ejecuciones.',
     documents: '{{count}} documentos de conocimiento.',
     mailboxes: '{{count}} buzones conectados.',

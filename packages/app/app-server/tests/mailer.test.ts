@@ -56,6 +56,92 @@ describe('host mailer ownership', () => {
     expect(mailer.available('system-email')).toBe(false);
   });
 
+  it.each([
+    { type: 'smtp' },
+    { provider: 'smtp' },
+    { type: 'smtp', provider: 'smtp' },
+  ])('accepts a channel discriminator %j', async (discriminator) => {
+    const channels = {
+      email: { ...discriminator, host: 'localhost', port: 25 },
+    };
+    const error = vi.fn();
+    validateMailChannels(
+      { channels },
+      { error, warning: vi.fn(), isUserProvided: () => true },
+    );
+    expect(error).not.toHaveBeenCalled();
+    const mailer = createMailer({ channels });
+    try {
+      expect(mailer.available('email')).toBe(true);
+      expect(
+        await mailer.send('email', {
+          to: 'synthetic@example.test',
+          subject: 'Test',
+        }),
+      ).toEqual({ status: 'accepted' });
+    } finally {
+      await mailer.close();
+    }
+  });
+
+  it.each([true, false])(
+    'rejects conflicting aliases before constructing a transport (enabled=%s)',
+    async (enabled) => {
+      const channels = {
+        email: {
+          type: 'smtp',
+          provider: 'resend',
+          enabled,
+          host: 'localhost',
+          port: 25,
+        },
+      };
+      const error = vi.fn();
+      validateMailChannels(
+        { channels },
+        { error, warning: vi.fn(), isUserProvided: () => true },
+      );
+      expect(error).toHaveBeenCalledExactlyOnceWith(
+        'channels.email',
+        'Channel type and provider must match when both are configured.',
+      );
+      const mailer = createMailer({ channels });
+      expect(mailer.available('email')).toBe(false);
+      expect(
+        await mailer.send('email', {
+          to: 'synthetic@example.test',
+          subject: 'Test',
+        }),
+      ).toMatchObject({ status: 'failed' });
+      await mailer.close();
+    },
+  );
+
+  it('recognizes a Resend channel selected by type', async () => {
+    const channels = {
+      marketing: {
+        type: 'resend',
+        apiKey: 'synthetic-key',
+        from: 'synthetic@example.test',
+      },
+    };
+    const error = vi.fn();
+    validateMailChannels(
+      { channels },
+      { error, warning: vi.fn(), isUserProvided: () => true },
+    );
+    expect(error).not.toHaveBeenCalled();
+    const mailer = createMailer({ channels });
+    expect(mailer.available('marketing')).toBe(true);
+    expect(
+      await mailer.send('marketing', {
+        to: 'synthetic@example.test',
+        subject: 'Test',
+      }),
+    ).toEqual({ status: 'accepted' });
+    await mailer.close();
+  });
+
   it('does not offer missing, invalid, disabled or custom notification channels', () => {
     const mailer = createMailer({
       channels: {
@@ -133,6 +219,7 @@ describe('host mailer ownership', () => {
 describe('host mailer deployment variables', () => {
   it.each([
     ['no channels', {}],
+    ['disabled placeholder', { placeholder: { enabled: false } }],
     [
       'disabled channel',
       { 'system-email': { provider: 'smtp', enabled: false } },

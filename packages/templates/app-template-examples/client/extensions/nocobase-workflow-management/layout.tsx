@@ -68,7 +68,7 @@ export function WorkflowDefinitionDetail({
         className={
           parameters == null
             ? 'min-w-0'
-            : 'grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-2'
+            : 'grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'
         }
       >
         <Card className='min-w-0' role='region' aria-label={diagramTitle}>

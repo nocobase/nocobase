@@ -1,5 +1,26 @@
 # @nocobase/app-plugin-notification-providers
 
+## 1.0.0-beta.15
+
+### Major Changes
+
+- f8f64ad: Remove the Notification TestAdapter protocol, built-in form descriptors, generic test-send routes and permission, and test client methods. Channel classes now implement only their delivery lifecycle. Existing send/sendTransient contracts, retries, logs, and inbox records remain unchanged.
+
+  Applications should remove test buttons and test API clients, then verify delivery through their business flows or a server-side send() call. Log pages must read provider identities from recorded deliveries rather than test target metadata. Update the notification Skill and example guidance to match, and republish consumers against the new notification package line.
+
+  Explicitly include Node.js types in both application templates' client typechecks, whose shared contracts reference server package sources in the workspace, so compilation no longer depends on the removed notification test imports to load those types.
+
+### Minor Changes
+
+- f8f64ad: Register SMTP, Resend, Feishu webhook, DingTalk webhook, in-app and Web Push as concrete channel classes. Share message validation and preparation with the retained compatibility factories, mark these factories as deprecated with their replacement classes, and resolve host-owned inbox and push services through the channel context container. Keep the email, IM, in-app and Web Push message handlers available to existing third-party Providers through dedicated compatibility modules. Official channel registration uses registerChannelType exclusively; deprecated registration calls are confined to compatibility modules and tests.
+
+### Patch Changes
+
+- Updated dependencies [f8f64ad]
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-plugin-notification@2.0.0-beta.0
+  - @nocobase/app-server@3.0.0-beta.2
+
 ## 0.2.0-beta.14
 
 ### Patch Changes

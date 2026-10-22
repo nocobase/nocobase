@@ -1,5 +1,33 @@
 # @nocobase/app-plugin-agents
 
+## 1.0.0-beta.18
+
+### Minor Changes
+
+- f2712b9: Make run git credentials independent of the code host. Protocol 12 adds `RunGit.tools` and the `gitTools` runner feature: the runner wraps the code host CLIs a run names (such as `gh` or `glab`) so every call runs with the current credential of one of the run's repositories, fetched through the run's credential broker, and fails with the reason instead of falling back to the machine's login. A credential's username is now the only one git uses (`oauth2` for GitLab, `x-access-token` for a GitHub App); the runner no longer defaults it for runs (a build job's token without a username keeps the old default).
+
+  Every run's agent now gets `git`, `gh` and `glab` wrappers that refuse `gh`/`glab` logins and token output, `credential.*` set with `git -c`/`--config-env` or written outside the repository's own config, `http.*.extraHeader` in any git configuration, and git URLs with a user in them.
+
+  Repository access providers are told whether the runner wraps CLIs (`tools`) and who answers for the run's subject now (`responsibleUserId`), at the claim, in `prepare` and on every `issue`, so an application can issue credentials for a task's owner. `RunGit.tools` is dropped for runners without the feature and for repositories without a credential in the payload.
+
+  The runner's workspace notes now tell the agent to open and update change requests with the code host's command line rather than an application `pr open` command.
+
+  Update the application before its runners: a server speaking protocol 11 refuses a runner speaking 12.
+
+- fb3b3c5: Allow applications to supply bilingual description suggestions by tool and model through agent defaults, with model catalog fallback and existing descriptions preserved.
+
+### Patch Changes
+
+- 5d49614: Strip NUL characters from what runners report — run events, summaries, failure details and job events — before storing it. PostgreSQL refuses NUL in text and JSON columns, so one event carrying a NUL byte in tool output failed every later events upload of its run.
+- Updated dependencies [ab68344]
+- Updated dependencies [f2712b9]
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-cli-client@0.1.0-beta.13
+  - @nocobase/agent-protocol@0.1.0-beta.12
+  - @nocobase/app-server@3.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
 ## 1.0.0-beta.17
 
 ### Minor Changes

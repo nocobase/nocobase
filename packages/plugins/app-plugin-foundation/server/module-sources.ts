@@ -9,6 +9,9 @@ import type {
 import type { RuntimeProviderEvidence } from './provider-inventory.js';
 import { SourceEvidence } from './source-evidence.js';
 import { readModuleManifest } from './module-manifest.js';
+import { apiDependencies as analyzeApiDependencies } from './api-evidence.js';
+import { pageRequests } from './request-evidence.js';
+import { StaticValues } from './static-values.js';
 
 const MAX_FILES = 400;
 const MAX_BYTES = 512_000;
@@ -18,11 +21,6 @@ interface Source {
   readonly file: string;
   readonly ast: ts.SourceFile;
   readonly imports: readonly string[];
-}
-
-interface ApiReference {
-  readonly path: string;
-  readonly method: string;
 }
 
 /** Reads static declarations and value imports only. Never imports an application module or invokes a loader. */
@@ -61,17 +59,7 @@ export async function collectModuleSources(
       await graph.prepare(entry);
       const endpoints = await graph.apiDependencies();
       for (const source of declarationFiles.sources) {
-        const declarations: { name: string; loader: ts.Node }[] = [];
-        const visit = (node: ts.Node): void => {
-          if (ts.isObjectLiteralExpression(node)) {
-            const routeName = property(node, 'name');
-            const loader = property(node, 'componentLoader');
-            if (routeName && ts.isStringLiteralLike(routeName) && loader)
-              declarations.push({ name: routeName.text, loader });
-          }
-          ts.forEachChild(node, visit);
-        };
-        visit(source.ast);
+        const declarations = graph.routeDeclarations(source.ast);
         for (const declaration of declarations) {
           if (overridden.has(`${packageName}:${declaration.name}`)) {
             routes.push({
@@ -82,12 +70,16 @@ export async function collectModuleSources(
             });
             continue;
           }
-          const imports = importsIn(declaration.loader);
+          const imports = graph.loaderImports(
+            declaration.loader,
+            declaration.bindings,
+          );
           const providers = new Set<string>();
           const apiProviders = new Set<string>();
+          const collections = new Set<string>();
           let routeComplete = declarationFiles.complete && imports.length > 0;
-          for (const specifier of imports) {
-            const target = await graph.local(source.file, specifier);
+          for (const { from, specifier } of imports) {
+            const target = await graph.local(from, specifier);
             if (!target) {
               if (!isLocal(specifier)) addProvider(providers, specifier);
               else routeComplete = false;
@@ -95,15 +87,17 @@ export async function collectModuleSources(
             }
             const page = graph.evidence(target);
             for (const provider of page.providers) providers.add(provider);
-            for (const file of page.sources) {
-              for (const request of graph.requests(file)) {
-                for (const endpoint of endpoints)
-                  if (
-                    request.method === endpoint.method &&
-                    sameApiPath(request.path, endpoint.path)
-                  )
-                    for (const provider of endpoint.providers)
-                      apiProviders.add(provider);
+            for (const request of graph.requests(page.sources)) {
+              for (const endpoint of endpoints) {
+                if (
+                  request.method === endpoint.method &&
+                  sameApiPath(request.path, endpoint.path)
+                ) {
+                  for (const provider of endpoint.providers)
+                    apiProviders.add(provider);
+                  for (const collection of endpoint.collections ?? [])
+                    collections.add(collection);
+                }
               }
             }
             routeComplete &&= page.complete;
@@ -114,6 +108,9 @@ export async function collectModuleSources(
             providers: [...providers].sort(),
             ...(apiProviders.size
               ? { apiProviders: [...apiProviders].sort() }
+              : {}),
+            ...(collections.size
+              ? { collections: [...collections].sort() }
               : {}),
             complete: routeComplete,
           });
@@ -193,6 +190,18 @@ class SourceGraph {
       (await this.resolve(path.join(this.root, 'server/routes/index.js'))) ??
       (await this.resolve(path.join(this.root, 'server/routes.js')));
     if (server) await this.walk(server, false);
+    const providerEntries: string[] = [];
+    for (const name of [
+      'server/providers/index.js',
+      'server/providers.js',
+      'server/service-provider.js',
+    ]) {
+      const provider = await this.resolve(path.join(this.root, name));
+      if (provider) {
+        providerEntries.push(provider);
+        await this.walk(provider, false);
+      }
+    }
     const resolutions = new Map<string, string>();
     for (const source of this.files.values()) {
       if (!source) continue;
@@ -210,6 +219,7 @@ class SourceGraph {
       ),
       resolutions,
     );
+    this.analysis.registerServices(providerEntries);
   }
 
   public evidence(
@@ -235,11 +245,81 @@ class SourceGraph {
   }
 
   public requests(
-    source: Source & { nodes: ReadonlySet<ts.Node> },
-  ): ApiReference[] {
-    return requestPaths(source.ast, source.nodes, (node) =>
-      this.analysis?.symbol(node),
-    );
+    sources: readonly { readonly nodes: ReadonlySet<ts.Node> }[],
+  ): ReturnType<typeof pageRequests> {
+    return this.analysis ? pageRequests(sources, this.analysis) : [];
+  }
+
+  public routeDeclarations(ast: ts.SourceFile): {
+    name: string;
+    loader: ts.Node;
+    bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>;
+  }[] {
+    if (!this.analysis) return [];
+    const analysis = this.analysis;
+    const declarations: ReturnType<SourceGraph['routeDeclarations']> = [];
+    let visits = 0;
+    const visit = (
+      node: ts.Node,
+      bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
+    ): void => {
+      if (++visits > 100_000) return;
+      const literals = new StaticValues(analysis, bindings);
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === 'map'
+      ) {
+        const arrays = literals
+          .values(node.expression.expression)
+          .filter(ts.isArrayLiteralExpression);
+        const callback = node.arguments[0];
+        if (
+          arrays.length === 1 &&
+          arrays[0].elements.length <= 32 &&
+          !arrays[0].elements.some(ts.isSpreadElement) &&
+          callback &&
+          (ts.isArrowFunction(callback) || ts.isFunctionExpression(callback)) &&
+          callback.parameters[0]
+        ) {
+          for (const element of arrays[0].elements) {
+            const context = new Map(bindings);
+            context.set(callback.parameters[0], [element]);
+            visit(callback.body, context);
+          }
+          return;
+        }
+      }
+      if (ts.isObjectLiteralExpression(node)) {
+        const name = property(node, 'name');
+        const loader = property(node, 'componentLoader');
+        if (name && loader)
+          for (const routeName of literals.strings(name))
+            declarations.push({ name: routeName, loader, bindings });
+      }
+      ts.forEachChild(node, (child) => visit(child, bindings));
+    };
+    visit(ast, new Map());
+    return declarations;
+  }
+
+  public loaderImports(
+    node: ts.Node,
+    bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
+  ): { from: string; specifier: string }[] {
+    const literals = this.analysis && new StaticValues(this.analysis, bindings);
+    return (this.analysis?.values(node) ?? [node]).flatMap((value) => {
+      const body =
+        ts.isArrowFunction(value) && !ts.isBlock(value.body)
+          ? value.body
+          : value;
+      return (literals?.values(body) ?? [body]).flatMap((selected) =>
+        importsIn(selected).map((specifier) => ({
+          from: selected.getSourceFile().fileName,
+          specifier,
+        })),
+      );
+    });
   }
 
   public async overrides(): Promise<Set<string>> {
@@ -262,73 +342,21 @@ class SourceGraph {
     return ids;
   }
 
-  /** Only explicit, root-mounted Hono endpoints and literal API-client requests can establish this bridge. */
   public async apiDependencies(): Promise<
-    readonly (ApiReference & { providers: readonly string[] })[]
+    ReturnType<typeof analyzeApiDependencies>
   > {
     const entry =
       (await this.resolve(path.join(this.root, 'server/routes/index.js'))) ??
       (await this.resolve(path.join(this.root, 'server/routes.js')));
-    if (!entry) return [];
-    const graph = this.evidence(entry);
-    const endpoints: (ApiReference & { providers: readonly string[] })[] = [];
-    for (const source of graph.sources) {
-      if (!source.imports.includes('hono')) continue;
-      const mounts = new Map<string, string[]>();
-      const routes: (ApiReference & {
-        router: string;
-        handlers: readonly ts.Node[];
-      })[] = [];
-      const reachableScope = (node: ts.Node): boolean => {
-        for (let parent = node.parent; parent; parent = parent.parent)
-          if (ts.isFunctionLike(parent)) return source.nodes.has(parent);
-        return true;
-      };
-      const visit = (node: ts.Node): void => {
-        if (
-          ts.isCallExpression(node) &&
-          reachableScope(node) &&
-          ts.isPropertyAccessExpression(node.expression)
-        ) {
-          const first = node.arguments[0];
-          if (first && ts.isStringLiteralLike(first)) {
-            const method = node.expression.name.text;
-            const child = node.arguments[1];
-            if (method === 'route' && child && ts.isIdentifier(child))
-              mounts.set(child.text, [
-                ...(mounts.get(child.text) ?? []),
-                first.text,
-              ]);
-            if (
-              ['get', 'post', 'put', 'patch', 'delete'].includes(method) &&
-              first.text.startsWith('/') &&
-              ts.isIdentifier(node.expression.expression)
-            )
-              routes.push({
-                router: node.expression.expression.text,
-                path: first.text,
-                method: method.toUpperCase(),
-                handlers: node.arguments.slice(1),
-              });
-          }
-        }
-        ts.forEachChild(node, visit);
-      };
-      visit(source.ast);
-      if (!routes.length) continue;
-      for (const route of routes) {
-        // Prefixes composed elsewhere, factories and dynamic routing remain unknown rather than guessed.
-        if (!(mounts.get(route.router) ?? []).includes('/')) continue;
-        endpoints.push({
-          path: route.path,
-          method: route.method,
-          providers: [
-            ...this.evidence(source.file, route.handlers).providers,
-          ].sort(),
-        });
-      }
-    }
-    return endpoints;
+    const source = entry && this.files.get(entry);
+    if (!source || !this.analysis) return [];
+    const graph = this.evidence(source.file);
+    return analyzeApiDependencies(
+      source.ast,
+      graph.sources,
+      this.analysis,
+      (file, nodes) => [...this.evidence(file, nodes).providers].sort(),
+    );
   }
 
   public async local(
@@ -481,88 +509,6 @@ function staticImports(node: ts.SourceFile): string[] {
 
 function dynamicImports(node: ts.Node): string[] {
   return importsIn(node);
-}
-
-function requestPaths(
-  source: ts.SourceFile,
-  selected: ReadonlySet<ts.Node>,
-  symbol: (node: ts.Node) => ts.Symbol | undefined,
-): ApiReference[] {
-  const paths: ApiReference[] = [];
-  const clients = new Set<ts.Symbol | undefined>();
-  const hooks = new Set<ts.Symbol | undefined>();
-  for (const statement of source.statements) {
-    if (
-      !ts.isImportDeclaration(statement) ||
-      !ts.isStringLiteralLike(statement.moduleSpecifier) ||
-      statement.moduleSpecifier.text !== '@nocobase/app-client'
-    )
-      continue;
-    const bindings = statement.importClause?.namedBindings;
-    if (bindings && ts.isNamedImports(bindings))
-      for (const binding of bindings.elements)
-        if (
-          (binding.propertyName?.text ?? binding.name.text) === 'useApiClient'
-        )
-          hooks.add(symbol(binding.name));
-  }
-  const findClients = (node: ts.Node): void => {
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.initializer &&
-      ts.isCallExpression(node.initializer) &&
-      selected.has(node.initializer) &&
-      ts.isIdentifier(node.initializer.expression) &&
-      symbol(node.initializer.expression) &&
-      hooks.has(symbol(node.initializer.expression))
-    )
-      clients.add(symbol(node.name));
-    ts.forEachChild(node, findClients);
-  };
-  findClients(source);
-  const visit = (node: ts.Node): void => {
-    if (
-      ts.isCallExpression(node) &&
-      selected.has(node) &&
-      ts.isPropertyAccessExpression(node.expression) &&
-      node.expression.name.text === 'request' &&
-      ts.isIdentifier(node.expression.expression) &&
-      symbol(node.expression.expression) &&
-      clients.has(symbol(node.expression.expression))
-    ) {
-      const argument = node.arguments[0];
-      const value =
-        argument && ts.isObjectLiteralExpression(argument)
-          ? property(argument, 'path')
-          : undefined;
-      const declaredMethod =
-        argument && ts.isObjectLiteralExpression(argument)
-          ? property(argument, 'method')
-          : undefined;
-      const method =
-        declaredMethod === undefined
-          ? 'GET'
-          : ts.isStringLiteralLike(declaredMethod)
-            ? declaredMethod.text
-            : undefined;
-      if (!method) return;
-      if (value && ts.isStringLiteralLike(value))
-        paths.push({ path: value.text, method });
-      if (value && ts.isTemplateExpression(value))
-        paths.push({
-          method,
-          path:
-            value.head.text +
-            value.templateSpans
-              .map((span) => ':dynamic' + span.literal.text)
-              .join(''),
-        });
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(source);
-  return paths;
 }
 
 function sameApiPath(request: string, endpoint: string): boolean {

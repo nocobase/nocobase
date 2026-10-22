@@ -90,12 +90,24 @@ export const CreateUserInput: z.ZodObject<
 
 export const UpdateUserInput: z.ZodObject<
   {
+    roleScopes: z.ZodOptional<
+      z.ZodRecord<
+        z.ZodString,
+        z.ZodUnion<readonly [z.ZodString, z.ZodArray<z.ZodString>]>
+      >
+    >;
     name: z.ZodOptional<z.ZodString>;
     username: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     email: z.ZodOptional<z.ZodString>;
   },
   z.core.$strict
 > = z.strictObject({
+  roleScopes: z
+    .record(z.string().min(1), UserRoleValueInput)
+    .optional()
+    .describe(
+      'Role scopes to replace atomically with the profile. Omitted scopes remain unchanged.',
+    ),
   name: nonEmpty.optional().describe('The name to display.'),
   username: nonEmpty
     .nullable()

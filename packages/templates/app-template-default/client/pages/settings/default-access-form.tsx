@@ -79,7 +79,10 @@ function DefaultAccessFormBody(): ReactElement {
     draft !== undefined && JSON.stringify(draft) !== JSON.stringify(initial);
   const leave = useSettingsLeave(dirty, busy);
   const close = () => {
-    void navigate({ pathname: '/default-access', search: location.search });
+    void navigate(
+      { pathname: '/default-access', search: location.search },
+      { replace: true },
+    );
   };
   const text = (value: LocalizedText): string =>
     typeof value === 'string'

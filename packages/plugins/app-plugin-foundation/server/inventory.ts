@@ -6,6 +6,7 @@ import type {
 } from '@nocobase/db';
 
 import type { FoundationIssue } from '../shared/foundation.js';
+import { ReadQueue } from './read-queue.js';
 
 /** One Collection as the default connection lists it: logical name, table, kind and title. */
 export type CollectionSummary = Awaited<
@@ -22,30 +23,45 @@ export class Inventory {
   private constructor(
     public readonly database: DatabaseManager,
     public readonly collections: readonly CollectionSummary[],
+    public readonly reads: ReadQueue,
   ) {}
 
   /** Lists every Collection of the default connection. Throws when the database cannot be read at all. */
-  public static async read(database: DatabaseManager): Promise<Inventory> {
+  public static async read(
+    database: DatabaseManager,
+    reads: ReadQueue = new ReadQueue(),
+    signal?: AbortSignal,
+  ): Promise<Inventory> {
     const collections: CollectionSummary[] = [];
     let cursor: string | undefined;
     do {
-      const page = await database
-        .collections()
-        .list({ limit: 500, ...(cursor === undefined ? {} : { cursor }) });
+      const page = await reads.run(
+        () =>
+          database
+            .collections()
+            .list({ limit: 500, ...(cursor === undefined ? {} : { cursor }) }),
+        signal,
+      );
       collections.push(...page.items);
       cursor = page.nextCursor;
     } while (cursor !== undefined);
-    return new Inventory(database, collections);
+    return new Inventory(database, collections, reads);
   }
 
   public has(name: string): boolean {
     return this.collections.some((collection) => collection.name === name);
   }
 
-  public definition(name: string): Promise<CollectionDefinition | undefined> {
+  public definition(
+    name: string,
+    signal?: AbortSignal,
+  ): Promise<CollectionDefinition | undefined> {
     let pending = this.definitions.get(name);
     if (!pending) {
-      pending = this.database.collections().get(name);
+      pending = this.reads.run(
+        () => this.database.collections().get(name),
+        signal,
+      );
       this.definitions.set(name, pending);
     }
     return pending;
@@ -59,17 +75,42 @@ export class Inventory {
 export class Probe {
   public readonly issues: FoundationIssue[] = [];
 
-  public constructor(public readonly inventory: Inventory) {}
+  public constructor(
+    public readonly inventory: Inventory,
+    public readonly signal: AbortSignal | undefined = undefined,
+  ) {}
+
+  /** Schedule only a small number of table operations, and stop dispatching when the collector expires. */
+  public async map<T, R>(
+    items: readonly T[],
+    read: (item: T) => Promise<R>,
+  ): Promise<R[]> {
+    const results = new Array<R>(items.length);
+    let next = 0;
+    await Promise.all(
+      Array.from({ length: Math.min(4, items.length) }, async () => {
+        while (next < items.length) {
+          this.signal?.throwIfAborted();
+          const index = next++;
+          results[index] = await read(items[index]);
+        }
+      }),
+    );
+    return results;
+  }
 
   public has(name: string): boolean {
     return this.inventory.has(name);
   }
 
   public async fieldNames(name: string): Promise<readonly string[] | null> {
-    return this.read(name, async () => {
-      const definition = await this.inventory.definition(name);
+    try {
+      const definition = await this.inventory.definition(name, this.signal);
       return (definition?.fields ?? []).map((field) => field.name);
-    });
+    } catch {
+      this.unreadable(name);
+      return null;
+    }
   }
 
   public count(
@@ -126,6 +167,7 @@ export class Probe {
       const repository =
         this.inventory.database.repository<Record<string, unknown>>(name);
       for (let offset = 0; ; offset += pageSize) {
+        this.signal?.throwIfAborted();
         const page = await repository.findMany({
           limit: pageSize,
           offset,
@@ -172,18 +214,22 @@ export class Probe {
     run: () => Promise<T>,
   ): Promise<T | null> {
     try {
-      return await run();
+      return await this.inventory.reads.run(run, this.signal);
     } catch {
       // The cause is not kept: a driver's error can quote the host, database and account it failed to reach.
-      if (
-        !this.issues.some(
-          (issue) =>
-            issue.code === 'SOURCE_UNREADABLE' && issue.source === source,
-        )
-      )
-        this.issues.push({ code: 'SOURCE_UNREADABLE', source });
+      this.unreadable(source);
       return null;
     }
+  }
+
+  private unreadable(source: string): void {
+    if (
+      !this.issues.some(
+        (issue) =>
+          issue.code === 'SOURCE_UNREADABLE' && issue.source === source,
+      )
+    )
+      this.issues.push({ code: 'SOURCE_UNREADABLE', source });
   }
 }
 

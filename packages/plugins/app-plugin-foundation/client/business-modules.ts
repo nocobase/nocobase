@@ -72,6 +72,7 @@ export function businessModules(
         for (const key of keys) add(key, evidence, name);
       };
       let complete = true;
+      const collections = new Set<string>();
       for (const page of pages) {
         add('interface', 'page');
         if (page.auth === 'required')
@@ -88,6 +89,7 @@ export function businessModules(
         for (const name of source?.providers ?? []) provider(name, 'source');
         for (const name of source?.apiProviders ?? [])
           provider(name, 'apiSource');
+        for (const name of source?.collections ?? []) collections.add(name);
       }
       modules.push({
         id: node.id,
@@ -98,6 +100,9 @@ export function businessModules(
           capability,
           evidence: [...link.evidence],
           providers: [...link.providers].sort(),
+          ...(capability === 'dataModeling' && collections.size
+            ? { collections: [...collections].sort() }
+            : {}),
         })),
       });
     }

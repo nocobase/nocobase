@@ -31,6 +31,7 @@ const enUS = {
     lowerBound: 'At least this many: part of it could not be read.',
   },
   matrix: {
+    collections: 'Data collections: {{names}}',
     title: 'Business modules and foundation capabilities',
     description:
       'See which foundation capabilities support each module. Select a checkmark to see the connection and what you would need to build yourself.',
@@ -107,6 +108,23 @@ const enUS = {
     legendUnused: 'Not used yet {{count}}',
   },
   detail: {
+    collectionCount: '{{count}} collections',
+    collectionPreview: 'Collection preview',
+    collectionsTitle: 'Collections',
+    noCollectionMatches: 'No matching collections',
+    noCollectionMatchesHint: 'Try another name or clear the search.',
+    collectionRange: 'Showing {{from}}–{{to}} of {{total}}',
+    closeCollections: 'Close collections',
+    viewCollections: 'View all collections',
+    searchCollections: 'Search collections',
+    collectionResults: '{{count}} matching collections',
+    previousPage: 'Previous',
+    nextPage: 'Next',
+    countRecords: 'Count business records',
+    recordsOnDemand:
+      'Business record totals are counted on demand. Large databases may take longer.',
+    recordsCountedAt: 'Records counted {{time}}',
+
     businessModules: 'Connected business modules',
     inThisApp: 'In this application',
     withoutFoundation: 'Without the foundation',
@@ -171,7 +189,7 @@ const enUS = {
       without:
         'Integrating each model provider, storing keys, recording usage and running agents safely, all by hand.',
       onceInUse:
-        'Configure model services and agents once and let them work in the application, with usage recorded.',
+        'Use enabled model services for OnlineAgent and model gateway calls, or register runners for agent execution.',
     },
     knowledge: {
       name: 'Knowledge base',
@@ -246,8 +264,7 @@ const enUS = {
       'Only the unrestricted administrators have access; no permission set grants anything to anyone else yet.',
     noWorkflows: 'No lifecycle is persisted and no schedule is enabled.',
     noSchedules: 'No schedule is enabled.',
-    noModelOrRunner:
-      'No agent can run yet: it needs an enabled model service and an agent, or a runner.',
+    noModelOrRunner: 'No model service is enabled and no runner is registered.',
     noModelService: 'No model service is enabled.',
     noAgent: 'No agent is defined.',
     noDocuments: 'No document has been added to a knowledge space.',
@@ -264,6 +281,8 @@ const enUS = {
       'An unclassified runtime extension was found. Collection ownership is unconfirmed, so business counts are withheld.',
     noApplicationCollections:
       'The data layer runs the application, which has no Collections of its own yet.',
+    applicationCollectionsPreview:
+      'This application has {{count}} collections, including {{names}}.',
     applicationCollections:
       '{{count}} Collections of the application’s own: {{names}}.',
     relations: '{{count}} relations connect them.',
@@ -277,6 +296,9 @@ const enUS = {
     lifecycles:
       '{{count}} lifecycles have recorded {{transitions}} transitions: {{names}}.',
     schedules: '{{count}} schedules are enabled.',
+    modelServices:
+      '{{count}} enabled model services support OnlineAgent and model gateway calls.',
+    runners: '{{count}} registered runners support agent execution.',
     agents: '{{count}} agents, {{runs}} runs so far.',
     documents: '{{count}} documents in knowledge spaces.',
     mailboxes: '{{count}} mailboxes are connected.',
