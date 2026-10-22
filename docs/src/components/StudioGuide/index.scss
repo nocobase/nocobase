@@ -197,7 +197,7 @@
     gap: 48px;
     align-items: start;
     border-top: 1px solid var(--guide-line);
-    padding-top: 56px;
+    padding-top: 40px;
   }
   .guide-sidebar {
     position: sticky;
@@ -381,7 +381,7 @@
   .chapter {
     scroll-margin-top: 92px;
     border-top: 1px solid var(--guide-line);
-    padding-top: 56px;
+    padding-top: 40px;
     padding-bottom: 56px;
   }
   .chapter:first-child {
@@ -392,7 +392,7 @@
     display: flex;
     align-items: flex-start;
     gap: 16px;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
   }
   .chapter-number {
     display: grid;
@@ -408,9 +408,9 @@
   }
   .chapter-summary {
     color: var(--guide-muted);
-    font-size: 16px;
-    line-height: 1.8;
-    margin: 12px 0 0;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 8px 0 0;
   }
   .chapter-body > :first-child {
     margin-top: 0;
@@ -872,12 +872,12 @@
       font-size: 25px;
     }
     .chapter {
-      padding-top: 40px;
+      padding-top: 32px;
       padding-bottom: 40px;
     }
     .chapter-header {
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .chapter-number {
       width: 32px;
@@ -887,9 +887,6 @@
     }
     .chapter h2 {
       font-size: 25px;
-    }
-    .chapter-summary {
-      font-size: 15px;
     }
     h3 {
       font-size: 21px;
