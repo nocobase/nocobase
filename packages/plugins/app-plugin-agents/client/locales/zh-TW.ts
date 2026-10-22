@@ -90,6 +90,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     vibe: 'Mistral Vibe',
   },
   agents: {
+    unavailableNow: '目前無法使用',
     title: '代理',
     description:
       '執行器報告的每個編碼工具和模型都是一個代理。專案經理將議題的每一步交給與其描述相符的代理人。',

@@ -93,6 +93,7 @@ const zhCN: AgentsResource = {
     vibe: 'Mistral Vibe',
   },
   agents: {
+    unavailableNow: '当前不可用',
     title: 'Agent',
     description:
       '执行机上报的每个「工具 · 模型」就是一个 agent。项目经理按「擅长什么」把任务的每一步派给它们。',

@@ -95,6 +95,7 @@ const esES: LocaleResource<typeof enUS> = {
     vibe: 'Mistral Vibe',
   },
   agents: {
+    unavailableNow: 'No disponible ahora',
     title: 'Agentes',
     description:
       'Cada herramienta de codificación y modelo que informa un ejecutor es un agente. El director del proyecto entrega cada paso de un problema al agente cuya descripción se ajusta a él.',

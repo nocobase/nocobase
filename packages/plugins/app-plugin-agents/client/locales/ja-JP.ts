@@ -91,6 +91,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     vibe: 'Mistral Vibe',
   },
   agents: {
+    unavailableNow: '現在利用不可',
     title: 'エージェント',
     description:
       'ランナーが報告する各コーディング ツールとモデルはエージェントです。プロジェクト マネージャーは、問題の各ステップを、その説明に該当するエージェントに渡します。',

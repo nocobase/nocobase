@@ -248,13 +248,16 @@ function AgentRow({
             </AgTag>
           )}
           {agent.status === 'enabled' && agent.unusable && !quotaBlocked ? (
-            <span className='text-xs text-destructive'>
-              {t(
+            <AgTag
+              tone='red'
+              title={t(
                 agent.unusable === 'othersPersonal'
                   ? 'agents.where.personalOnly'
                   : 'agents.where.noneOnline',
               )}
-            </span>
+            >
+              {t('agents.unavailableNow')}
+            </AgTag>
           ) : null}
         </div>
       </TableCell>

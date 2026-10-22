@@ -96,6 +96,7 @@ const pages = {
     vibe: 'Mistral Vibe',
   },
   agents: {
+    unavailableNow: 'Unavailable now',
     title: 'Agents',
     description:
       'Each coding tool and model a runner reports is an agent. The project manager hands each step of an issue to the agent whose description fits it.',

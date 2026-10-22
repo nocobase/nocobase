@@ -97,6 +97,7 @@ const deDE: LocaleResource<typeof enUS> = {
     vibe: 'Mistral Vibe',
   },
   agents: {
+    unavailableNow: 'Derzeit nicht verfügbar',
     title: 'Agenten',
     description:
       'Jedes Codierungstool und jedes Modell, das ein Runner meldet, ist ein Agent. Der Projektmanager übergibt jeden Schritt eines Problems an den Agenten, dessen Beschreibung dazu passt.',

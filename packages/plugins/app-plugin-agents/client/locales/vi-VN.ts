@@ -91,6 +91,7 @@ const viVN: LocaleResource<typeof enUS> = {
     vibe: 'Mistral Vibe',
   },
   agents: {
+    unavailableNow: 'Hiện không khả dụng',
     title: 'Tác nhân',
     description:
       'Mỗi công cụ mã hóa và mô hình mà trình chạy báo cáo là một tác nhân. Người quản lý dự án giao từng bước của một vấn đề cho người đại diện có mô tả phù hợp với nó.',

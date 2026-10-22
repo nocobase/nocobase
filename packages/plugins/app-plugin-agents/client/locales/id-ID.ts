@@ -93,6 +93,7 @@ const idID: LocaleResource<typeof enUS> = {
     vibe: 'Mistral Vibe',
   },
   agents: {
+    unavailableNow: 'Tidak tersedia saat ini',
     title: 'Agen',
     description:
       'Setiap alat pengkodean dan model laporan runner adalah agen. Manajer proyek menyerahkan setiap langkah suatu masalah kepada agen yang deskripsinya sesuai.',

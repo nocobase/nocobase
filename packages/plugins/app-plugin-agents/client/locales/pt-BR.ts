@@ -93,6 +93,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     vibe: 'Mistral Vibe',
   },
   agents: {
+    unavailableNow: 'Indisponível agora',
     title: 'Agentes',
     description:
       'Cada ferramenta de codificação e modelo que um executor relata é um agente. O gerente de projeto entrega cada etapa de um problema ao agente cuja descrição se ajusta a ele.',

@@ -306,9 +306,7 @@ describe('the Agent page', () => {
     renderPage(<AgentsPage />);
     const row = await screen.findByTestId('agent-sonnet');
     expect(within(row).getByText('agents.state.enabled')).toBeInTheDocument();
-    expect(
-      within(row).getAllByText('agents.where.noneOnline').length,
-    ).toBeGreaterThan(0);
+    expect(within(row).getByText('agents.unavailableNow')).toBeVisible();
   });
 
   it('selects several models across the group, edits one good-at, and adds them at once from the confirm step', async () => {
