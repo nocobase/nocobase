@@ -1,3 +1,4 @@
+// db-test-portability: dialect-specific — classifies SQL text from several dialects without executing it.
 import { describe, expect, it } from 'vitest';
 
 import { classifySql } from '../../server/sql.js';

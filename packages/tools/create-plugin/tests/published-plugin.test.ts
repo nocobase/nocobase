@@ -28,10 +28,10 @@ const shadcn = path.join(uiRoot, 'node_modules/shadcn/dist/index.js');
 const primitiveNames = [
   'button',
   'checkbox',
+  'empty',
   'input',
   'popover',
   'select',
-  'switch',
   'tooltip',
 ];
 
@@ -390,7 +390,9 @@ it('installs a real registry item, builds and packs a generated plugin, and load
       await readFile(path.join(directory, 'components.json'), 'utf8'),
     ).toBe(originalComponents);
     for (const name of ['permission-editor', ...primitiveNames])
-      expect(requested.some((url) => url.endsWith(`/${name}.json`))).toBe(true);
+      expect(requested.map((url) => path.basename(url, '.json'))).toContain(
+        name,
+      );
     const declaredPackages = new Set(
       Object.keys({
         ...manifest.dependencies,
