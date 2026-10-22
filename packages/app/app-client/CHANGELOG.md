@@ -1,5 +1,11 @@
 # @nocobase/app-client
 
+## 4.0.0-beta.2
+
+### Patch Changes
+
+- 0c5c4ff: Store language choices separately for each application's full mount path so applications on the same origin retain their own defaults and preferences. The previous shared choice is left untouched and no longer read; after upgrading, each application starts in its default language until the visitor chooses again. Update the screenshot tool to preset the application-specific language choice.
+
 ## 4.0.0-beta.1
 
 ### Minor Changes

@@ -1,5 +1,35 @@
 # @nocobase/app-plugin-authorization
 
+## 1.0.0-beta.31
+
+### Patch Changes
+
+- 6e3d66e: Clarify how application-owned permission workspaces map independently assignable business operations to actual UI controls, server enforcement and data scopes, including compatibility requirements when splitting existing actions. Align the settings guidance with checkbox-based draft editing.
+
+  Allow applications to hide created-record range selectors while retaining registered policies, name related-record ranges per action, and localize filter field captions by collection in both templates.
+
+- 6e3d66e: Present role permissions as compact ordered action tiles with checkboxes, descriptions and named data ranges while retaining the original category navigation. Keep the visible catalog in application-owned composition, require explicit settings opt-in plus a real configuration page and registered server action, omit the default System and tools category, preserve undisplayed grants, and update the permission Registry integration and agent guidance.
+
+  Render page access using the application's actual menu hierarchy, with independent page checkboxes, disclosure-only structural groups, ancestor-aware filtering and preserved non-menu page grants.
+
+  Use checkboxes consistently for page, business and settings permission drafts and the enabled-only filter, retaining separate scope selectors and explicit host Save.
+
+  Refine menu permission trees with compact aligned rows, subtle hover and focus feedback, restrained group headings and fewer nested borders.
+
+  Keep page-access trees limited to business pages. Group actual system-settings pages and operations under Configuration permissions, explain the boundary, and preserve existing grant identifiers and values.
+
+  Remove the global default-data-scope shortcut from role editors; retain its dedicated Permission management tab.
+
+  Keep multi-scope action tiles at stable widths, show default-rule explanations visibly, and let applications classify individual composite configuration actions by their actual pages while retaining native filter editing.
+
+  Group default data scope controls under one heading per operation and reuse application-owned business captions across role and default-scope forms without rewriting stored rules.
+
+- Updated dependencies [0c5c4ff]
+- Updated dependencies [0c5c4ff]
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-client@4.0.0-beta.2
+
 ## 1.0.0-beta.30
 
 ### Patch Changes
