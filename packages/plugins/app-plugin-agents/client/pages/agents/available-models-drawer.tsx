@@ -1,10 +1,13 @@
 /**
  * Every tool a runner has selected, grouped so a tool reporting hundreds of models (the discovery bug this replaced)
- * reads as one collapsed row until someone opens it: create an agent from a model that has none, or see the state of
+ * reads as one collapsed row until someone opens it: add an agent from a model that has none, or see the state of
  * one that already does. A large drawer, not a dialog, because the group list and a tool's own models can be long —
- * search, a status filter defaulting to "Available", per-tool collapse (open by default under
- * `DEFAULT_EXPAND_THRESHOLD` models), multi-select across pages and a sticky "Add" bar. The application's recommended
- * combinations never show a checkbox here: a runner reporting one signed in creates and enables it on its own.
+ * a combined search (tool and model name), a status filter defaulting to "Available", per-tool collapse (open by
+ * default under `DEFAULT_EXPAND_THRESHOLD` models, with its own search once expanded), multi-select across pages and
+ * a sticky "Add" bar that opens a second step to confirm what each selected model is good at before creating
+ * anything. The application's recommended combinations never show a checkbox here: a runner reporting one signed in
+ * creates and enables it on its own. Only the tools a runtime has checked are ever detected, so a tool nobody checked
+ * never appears in this list at all.
  */
 import type { AgentTool } from '@nocobase/agent-protocol';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -22,7 +25,7 @@ import type {
   AvailableModelGroup,
   ModelAvailabilityStatus,
 } from '../../../shared/agents.js';
-import { TOOL_LABELS } from '../../../shared/model-catalog.js';
+import { TOOL_LABELS, TOOL_SIGN_IN } from '../../../shared/model-catalog.js';
 import { modelSuggestion } from '../../model-suggestion.js';
 import { agentsKeys } from '../../api/keys.js';
 import { AgListSkeleton, AgLoadError } from '../../components/ag-states.js';
@@ -34,13 +37,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '../../components/ui/collapsible.js';
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from '../../components/ui/field.js';
+import { Field, FieldError, FieldLabel } from '../../components/ui/field.js';
 import { Input } from '../../components/ui/input.js';
 import {
   Sheet,
@@ -54,12 +51,12 @@ import { Textarea } from '../../components/ui/textarea.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useNotify } from '../../hooks/use-notify.js';
 
-/** Exactly the drawer's four filter buttons; other reasons (timeout, a mismatched program) fall under `failed`. */
+/** Exactly the drawer's four filter buttons. */
 const STATUS_FILTERS: readonly ModelAvailabilityStatus[] = [
   'available',
-  'needsLogin',
-  'notConfigured',
+  'needsSetup',
   'versionTooOld',
+  'failed',
 ];
 
 /** A group with this many models or fewer starts open; a larger one starts collapsed. */
@@ -67,17 +64,58 @@ const DEFAULT_EXPAND_THRESHOLD = 10;
 /** Rows loaded past this count in one group switch from a plain list to a virtualized one. */
 const VIRTUALIZE_THRESHOLD = 30;
 const PAGE_SIZE = 50;
+/** A reason or detail line longer than this starts collapsed, with a toggle to read the rest. */
+const REASON_CLAMP_LENGTH = 160;
 
 const STATUS_TONE: Readonly<Record<ModelAvailabilityStatus, Tone>> = {
   available: 'green',
-  needsLogin: 'amber',
-  notConfigured: 'amber',
+  needsSetup: 'amber',
   versionTooOld: 'amber',
   failed: 'red',
 };
 
 function rowKey(tool: AgentTool, model: string): string {
   return `${tool}\u0000${model}`;
+}
+
+/** The group header's reason line: the tool's own setup command when the catalog has one, its own words when it
+ * gave any, and an honest gap instead of a guess when neither is available. */
+function setupGuidance(
+  group: Pick<AvailableModelGroup, 'tool' | 'status' | 'statusDetail'>,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  const command = TOOL_SIGN_IN[group.tool];
+  if (group.status === 'needsSetup') {
+    const instruction = command
+      ? t('agents.available.setupCommand', { command })
+      : t('agents.available.setupUnknown');
+    return group.statusDetail
+      ? `${instruction} ${group.statusDetail}`
+      : instruction;
+  }
+  return group.statusDetail ?? t('agents.available.noDetail');
+}
+
+function ExpandableText({ text }: { readonly text: string }): ReactElement {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const long = text.length > REASON_CLAMP_LENGTH;
+  return (
+    <p className='pt-3 text-sm text-muted-foreground'>
+      {long && !expanded ? `${text.slice(0, REASON_CLAMP_LENGTH)}…` : text}
+      {long ? (
+        <Button
+          type='button'
+          variant='link'
+          size='sm'
+          className='h-auto p-0 pl-1 align-baseline'
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {t(expanded ? 'agents.available.showLess' : 'agents.available.showMore')}
+        </Button>
+      ) : null}
+    </p>
+  );
 }
 
 export interface AvailableModelsDrawerProps {
@@ -91,8 +129,6 @@ export function AvailableModelsDrawer({
 }: AvailableModelsDrawerProps): ReactElement {
   const { t, i18n } = useTranslation();
   const api = useAgentsApi();
-  const notify = useNotify();
-  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<ModelAvailabilityStatus>('available');
   const [toggled, setToggled] = useState<ReadonlySet<AgentTool>>(
@@ -101,7 +137,10 @@ export function AvailableModelsDrawer({
   const [selected, setSelected] = useState<ReadonlyMap<string, AvailableModel>>(
     () => new Map(),
   );
-  const [editing, setEditing] = useState<AvailableModel | null>(null);
+  const [step, setStep] = useState<'select' | 'confirm'>('select');
+  const [drafts, setDrafts] = useState<ReadonlyMap<string, string>>(
+    () => new Map(),
+  );
   const q = search.trim();
   const forceExpand = q !== '';
 
@@ -110,13 +149,14 @@ export function AvailableModelsDrawer({
     setStatus('available');
     setToggled(new Set());
     setSelected(new Map());
-    setEditing(null);
+    setDrafts(new Map());
+    setStep('select');
   };
 
   const groups = useQuery({
     queryKey: agentsKeys.availableModelGroups(q, status),
     queryFn: () => api.availableModelGroups({ q: q || undefined, status }),
-    enabled: open,
+    enabled: open && step === 'select',
   });
 
   const toggle = (tool: AgentTool): void =>
@@ -136,41 +176,20 @@ export function AvailableModelsDrawer({
       return next;
     });
 
-  const bulkCreate = useMutation({
-    mutationFn: async () => {
-      const entries = [...selected.values()];
-      const outcomes = await Promise.allSettled(
-        entries.map((model) =>
-          api.createRunnerAgent({
-            tool: model.tool,
-            model: model.model,
-            ...(model.displayModel ? { displayModel: model.displayModel } : {}),
-            description:
-              modelSuggestion(model, i18n.language, t) ||
-              t('agents.available.genericGoodAt', {
-                tool: TOOL_LABELS[model.tool],
-                model: model.displayModel ?? model.model,
-              }),
-          }),
-        ),
-      );
-      return outcomes;
-    },
-    onSuccess: (outcomes) => {
-      const succeeded = outcomes.filter((o) => o.status === 'fulfilled').length;
-      const failed = outcomes.length - succeeded;
-      setSelected(new Map());
-      void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
-      void queryClient.invalidateQueries({
-        queryKey: agentsKeys.availableModelsAll,
-      });
-      if (failed === 0)
-        notify.success(t('agents.available.addedCount', { count: succeeded }));
-      else
-        notify.error(t('agents.available.addedPartial', { succeeded, failed }));
-    },
-    onError: (error) => notify.error(error),
-  });
+  // Pre-fills a draft from the catalog's suggestion (or leaves it for the confirm step to mark as needed) the first
+  // time a model is selected; going back and forth keeps whatever was already typed.
+  const goToConfirm = (addedModel?: AvailableModel): void => {
+    setDrafts((current) => {
+      const entries = addedModel ? [addedModel, ...selected.values()] : [...selected.values()];
+      const next = new Map(current);
+      for (const model of entries) {
+        const key = rowKey(model.tool, model.model);
+        if (!next.has(key)) next.set(key, modelSuggestion(model, i18n.language, t));
+      }
+      return next;
+    });
+    setStep('confirm');
+  };
 
   return (
     <Sheet
@@ -186,11 +205,18 @@ export function AvailableModelsDrawer({
         className='flex w-full flex-col gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[780px]'
         data-testid='available-models-drawer'
       >
-        {editing ? (
-          <CreateForm
-            model={editing}
-            onBack={() => setEditing(null)}
-            onDone={() => setEditing(null)}
+        {step === 'confirm' ? (
+          <ConfirmStep
+            selected={selected}
+            drafts={drafts}
+            onDraftChange={(key, value) =>
+              setDrafts((current) => new Map(current).set(key, value))
+            }
+            onBack={() => setStep('select')}
+            onDone={() => {
+              reset();
+              onClose();
+            }}
           />
         ) : (
           <>
@@ -251,7 +277,10 @@ export function AvailableModelsDrawer({
                     onToggle={() => toggle(group.tool)}
                     selected={selected}
                     onSelect={setRowSelected}
-                    onCustomCreate={setEditing}
+                    onAddOne={(model) => {
+                      setRowSelected(model, true);
+                      goToConfirm(model);
+                    }}
                   />
                 ))
               )}
@@ -269,8 +298,8 @@ export function AvailableModelsDrawer({
                   {t('actions.close')}
                 </Button>
                 <Button
-                  disabled={selected.size === 0 || bulkCreate.isPending}
-                  onClick={() => bulkCreate.mutate()}
+                  disabled={selected.size === 0}
+                  onClick={() => goToConfirm()}
                   data-testid='available-models-add-selected'
                 >
                   {t('agents.available.addSelected', { count: selected.size })}
@@ -293,7 +322,7 @@ function ToolGroup({
   onToggle,
   selected,
   onSelect,
-  onCustomCreate,
+  onAddOne,
 }: {
   readonly group: AvailableModelGroup;
   readonly q: string;
@@ -303,16 +332,18 @@ function ToolGroup({
   readonly onToggle: () => void;
   readonly selected: ReadonlyMap<string, AvailableModel>;
   readonly onSelect: (model: AvailableModel, checked: boolean) => void;
-  readonly onCustomCreate: (model: AvailableModel) => void;
+  readonly onAddOne: (model: AvailableModel) => void;
 }): ReactElement {
   const { t } = useTranslation();
   const api = useAgentsApi();
   const open = forceExpand || expanded;
+  const [groupQuery, setGroupQuery] = useState('');
+  const effectiveQuery = groupQuery.trim() || q;
   const rows = useInfiniteQuery({
-    queryKey: agentsKeys.availableModelRows(group.tool, q, status),
+    queryKey: agentsKeys.availableModelRows(group.tool, effectiveQuery, status),
     queryFn: ({ pageParam }) =>
       api.availableModelRows(group.tool, {
-        q: q || undefined,
+        q: effectiveQuery || undefined,
         status,
         page: pageParam,
         pageSize: PAGE_SIZE,
@@ -345,82 +376,86 @@ function ToolGroup({
             })}
           </span>
           <AgTag tone={STATUS_TONE[group.status]} dot>
-            {t(
-              `agents.available.status.${group.status === 'failed' ? 'needsLogin' : group.status}`,
-            )}
+            {t(`agents.available.status.${group.status}`)}
           </AgTag>
         </CollapsibleTrigger>
         <CollapsibleContent className='border-t px-3 pb-3'>
-          {group.status !== 'available' ? (
-            <p className='pt-3 text-sm text-muted-foreground'>
-              {t('agents.available.reason', {
-                reason:
-                  group.statusDetail ??
-                  t(
-                    `agents.available.status.${group.status === 'failed' ? 'needsLogin' : group.status}`,
-                  ),
-              })}
-            </p>
-          ) : rows.isError && !rows.data ? (
-            <AgLoadError
-              title={t('agents.loadFailed')}
-              error={rows.error}
-              onRetry={() => void rows.refetch()}
-            />
-          ) : !rows.data ? (
-            <AgListSkeleton rows={2} />
-          ) : loaded.length === 0 ? (
-            <p className='pt-3 text-sm text-muted-foreground'>
-              {t('agents.available.noModels')}
-            </p>
+          {group.status !== 'available' && group.modelCount === 0 ? (
+            <ExpandableText text={setupGuidance(group, t)} />
           ) : (
-            <div className='pt-2'>
-              {loaded.length > VIRTUALIZE_THRESHOLD ? (
-                <Virtuoso
-                  style={{ height: 320 }}
-                  data={loaded}
-                  computeItemKey={(_, model) => rowKey(model.tool, model.model)}
-                  endReached={() => {
-                    if (rows.hasNextPage && !rows.isFetchingNextPage)
-                      void rows.fetchNextPage();
-                  }}
-                  itemContent={(_, model) => (
-                    <div className='py-1'>
-                      <ModelRow
-                        model={model}
-                        checked={selected.has(rowKey(model.tool, model.model))}
-                        onSelect={onSelect}
-                        onCustomCreate={onCustomCreate}
-                      />
+            <>
+              {group.modelCount > DEFAULT_EXPAND_THRESHOLD ? (
+                <Input
+                  value={groupQuery}
+                  onChange={(event) => setGroupQuery(event.target.value)}
+                  placeholder={t('agents.available.groupSearchPlaceholder')}
+                  aria-label={t('agents.available.groupSearchPlaceholder')}
+                  className='mt-3'
+                  data-testid={`available-models-group-search-${group.tool}`}
+                />
+              ) : null}
+              {rows.isError && !rows.data ? (
+                <AgLoadError
+                  title={t('agents.loadFailed')}
+                  error={rows.error}
+                  onRetry={() => void rows.refetch()}
+                />
+              ) : !rows.data ? (
+                <AgListSkeleton rows={2} />
+              ) : loaded.length === 0 ? (
+                <p className='pt-3 text-sm text-muted-foreground'>
+                  {t('agents.available.noModels')}
+                </p>
+              ) : (
+                <div className='pt-2'>
+                  {loaded.length > VIRTUALIZE_THRESHOLD ? (
+                    <Virtuoso
+                      style={{ height: 320 }}
+                      data={loaded}
+                      computeItemKey={(_, model) => rowKey(model.tool, model.model)}
+                      endReached={() => {
+                        if (rows.hasNextPage && !rows.isFetchingNextPage)
+                          void rows.fetchNextPage();
+                      }}
+                      itemContent={(_, model) => (
+                        <div className='py-1'>
+                          <ModelRow
+                            model={model}
+                            checked={selected.has(rowKey(model.tool, model.model))}
+                            onSelect={onSelect}
+                            onAddOne={onAddOne}
+                          />
+                        </div>
+                      )}
+                    />
+                  ) : (
+                    <div className='space-y-1'>
+                      {loaded.map((model) => (
+                        <ModelRow
+                          key={rowKey(model.tool, model.model)}
+                          model={model}
+                          checked={selected.has(rowKey(model.tool, model.model))}
+                          onSelect={onSelect}
+                          onAddOne={onAddOne}
+                        />
+                      ))}
                     </div>
                   )}
-                />
-              ) : (
-                <div className='space-y-1'>
-                  {loaded.map((model) => (
-                    <ModelRow
-                      key={rowKey(model.tool, model.model)}
-                      model={model}
-                      checked={selected.has(rowKey(model.tool, model.model))}
-                      onSelect={onSelect}
-                      onCustomCreate={onCustomCreate}
-                    />
-                  ))}
+                  {rows.hasNextPage ? (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      className='mt-2'
+                      disabled={rows.isFetchingNextPage}
+                      onClick={() => void rows.fetchNextPage()}
+                    >
+                      {t('agents.loadMore')}
+                    </Button>
+                  ) : null}
                 </div>
               )}
-              {rows.hasNextPage ? (
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  className='mt-2'
-                  disabled={rows.isFetchingNextPage}
-                  onClick={() => void rows.fetchNextPage()}
-                >
-                  {t('agents.loadMore')}
-                </Button>
-              ) : null}
-            </div>
+            </>
           )}
         </CollapsibleContent>
       </div>
@@ -432,12 +467,12 @@ function ModelRow({
   model,
   checked,
   onSelect,
-  onCustomCreate,
+  onAddOne,
 }: {
   readonly model: AvailableModel;
   readonly checked: boolean;
   readonly onSelect: (model: AvailableModel, checked: boolean) => void;
-  readonly onCustomCreate: (model: AvailableModel) => void;
+  readonly onAddOne: (model: AvailableModel) => void;
 }): ReactElement {
   const { t } = useTranslation();
   const added = model.agentId !== null;
@@ -451,19 +486,25 @@ function ModelRow({
           name: model.displayModel ?? model.model,
         })}
         checked={checked}
-        disabled={added}
+        disabled={added || model.availability !== 'available'}
         onCheckedChange={(next) => onSelect(model, next === true)}
       />
       <div className='min-w-0 flex-1'>
         <div className='font-medium'>
           {model.displayModel ?? (model.model || TOOL_LABELS[model.tool])}
         </div>
-        {model.recommended ? (
-          <div className='text-xs text-muted-foreground'>
-            {t('agents.available.recommended')}
-          </div>
-        ) : null}
+        <div className='flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground'>
+          {model.recommended ? (
+            <span>{t('agents.available.recommended')}</span>
+          ) : null}
+          <span>
+            {t('agents.available.runners', { count: model.runners.ready })}
+          </span>
+        </div>
       </div>
+      <AgTag tone={STATUS_TONE[model.availability]}>
+        {t(`agents.available.status.${model.availability}`)}
+      </AgTag>
       {added ? (
         <AgTag tone='grey'>{t('agents.available.added')}</AgTag>
       ) : (
@@ -471,90 +512,112 @@ function ModelRow({
           type='button'
           size='sm'
           variant='outline'
-          onClick={() => onCustomCreate(model)}
+          disabled={model.availability !== 'available'}
+          onClick={() => onAddOne(model)}
           data-testid={`available-model-create-${model.tool}-${model.model}`}
         >
-          {t('agents.available.create')}
+          {t('agents.available.add')}
         </Button>
       )}
     </div>
   );
 }
 
-function CreateForm({
-  model,
+function ConfirmStep({
+  selected,
+  drafts,
+  onDraftChange,
   onBack,
   onDone,
 }: {
-  readonly model: AvailableModel;
+  readonly selected: ReadonlyMap<string, AvailableModel>;
+  readonly drafts: ReadonlyMap<string, string>;
+  readonly onDraftChange: (key: string, value: string) => void;
   readonly onBack: () => void;
   readonly onDone: () => void;
 }): ReactElement {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const api = useAgentsApi();
   const notify = useNotify();
   const queryClient = useQueryClient();
-  const [goodAt, setGoodAt] = useState(() =>
-    modelSuggestion(model, i18n.language, t),
-  );
   const [submitted, setSubmitted] = useState(false);
-  const create = useMutation({
-    mutationFn: () =>
-      api.createRunnerAgent({
-        tool: model.tool,
-        model: model.model,
-        ...(model.displayModel ? { displayModel: model.displayModel } : {}),
-        description: goodAt.trim(),
-      }),
-    onSuccess: (agent) => {
-      notify.success(t('agents.enable.done', { name: agent.name }));
+  const entries = [...selected.values()];
+  const bulkCreate = useMutation({
+    mutationFn: async () => {
+      const outcomes = await Promise.allSettled(
+        entries.map((model) =>
+          api.createRunnerAgent({
+            tool: model.tool,
+            model: model.model,
+            ...(model.displayModel ? { displayModel: model.displayModel } : {}),
+            description: (drafts.get(rowKey(model.tool, model.model)) ?? '').trim(),
+          }),
+        ),
+      );
+      return outcomes;
+    },
+    onSuccess: (outcomes) => {
+      const succeeded = outcomes.filter((o) => o.status === 'fulfilled').length;
+      const failed = outcomes.length - succeeded;
       void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
       void queryClient.invalidateQueries({
         queryKey: agentsKeys.availableModelsAll,
       });
+      if (failed === 0)
+        notify.success(t('agents.available.addedCount', { count: succeeded }));
+      else
+        notify.error(t('agents.available.addedPartial', { succeeded, failed }));
       onDone();
     },
     onError: (error) => notify.error(error),
   });
-  const missing = goodAt.trim() === '';
+  const invalid = entries.filter(
+    (model) => (drafts.get(rowKey(model.tool, model.model)) ?? '').trim() === '',
+  );
   return (
     <>
       <SheetHeader className='shrink-0'>
         <SheetTitle>
-          {t('agents.available.createTitle', {
-            name: model.displayModel ?? model.model,
-          })}
+          {t('agents.available.confirmTitle', { count: entries.length })}
         </SheetTitle>
+        <SheetDescription>{t('agents.enable.goodAtHint')}</SheetDescription>
       </SheetHeader>
       <form
-        id='available-model-create-form'
-        className='min-h-0 flex-1 overflow-y-auto px-4 pb-1 sm:px-6'
+        id='available-models-confirm-form'
+        className='min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-1 sm:px-6'
         onSubmit={(event) => {
           event.preventDefault();
           setSubmitted(true);
-          if (missing) return;
-          create.mutate();
+          if (invalid.length > 0) return;
+          bulkCreate.mutate();
         }}
       >
-        <FieldGroup>
-          <Field data-invalid={submitted && missing ? true : undefined}>
-            <FieldLabel htmlFor='available-model-good-at'>
-              {t('agents.columns.goodAt')}
-            </FieldLabel>
-            <Textarea
-              id='available-model-good-at'
-              rows={4}
-              value={goodAt}
-              onChange={(event) => setGoodAt(event.target.value)}
-              aria-invalid={submitted && missing ? true : undefined}
-              data-testid='available-model-good-at'
-            />
-            <FieldDescription>{t('agents.enable.goodAtHint')}</FieldDescription>
-            {submitted && missing ? (
-              <FieldError>{t('agents.enable.goodAtRequired')}</FieldError>
-            ) : null}
-          </Field>
-        </FieldGroup>
+        {entries.map((model) => {
+          const key = rowKey(model.tool, model.model);
+          const goodAt = drafts.get(key) ?? '';
+          const missing = submitted && goodAt.trim() === '';
+          return (
+            <Field key={key} data-invalid={missing ? true : undefined}>
+              <FieldLabel htmlFor={`confirm-good-at-${key}`}>
+                {model.displayModel ?? model.model} · {TOOL_LABELS[model.tool]}
+              </FieldLabel>
+              <Textarea
+                id={`confirm-good-at-${key}`}
+                rows={3}
+                value={goodAt}
+                onChange={(event) => onDraftChange(key, event.target.value)}
+                aria-invalid={missing ? true : undefined}
+                placeholder={
+                  goodAt === '' ? t('agents.available.goodAtNeeded') : undefined
+                }
+                data-testid={`available-model-good-at-${model.tool}-${model.model}`}
+              />
+              {missing ? (
+                <FieldError>{t('agents.enable.goodAtRequired')}</FieldError>
+              ) : null}
+            </Field>
+          );
+        })}
       </form>
       <SheetFooter className='shrink-0 flex-row justify-end border-t'>
         <Button variant='outline' type='button' onClick={onBack}>
@@ -562,11 +625,11 @@ function CreateForm({
         </Button>
         <Button
           type='submit'
-          form='available-model-create-form'
-          disabled={create.isPending}
-          data-testid='available-model-create-submit'
+          form='available-models-confirm-form'
+          disabled={bulkCreate.isPending}
+          data-testid='available-models-confirm-submit'
         >
-          {t('agents.available.create')}
+          {t('agents.available.confirmAction', { count: entries.length })}
         </Button>
       </SheetFooter>
     </>

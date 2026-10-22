@@ -210,16 +210,17 @@ export interface AgentPatch {
 }
 
 /**
- * Whether a tool's models can be created into agents right now, aggregated across every runner that has it selected:
- * `available` when at least one does; otherwise the most actionable reason none does, read from their own reports
- * (`ToolStatusReason`, bucketed: `notLoggedIn` to `needsLogin`, `notConfigured` unchanged, `versionTooOld` unchanged,
- * everything else — `otherProgram`, `timeout`, `startFailed`, or no reason at all — to `failed`). A row inherits its
- * group's status: the detail dialog never lists a model no runner can currently run as selectable.
+ * Whether a tool's models can be created into agents right now, computed per model from the online runners currently
+ * offering it (never an offline one, never another model's runner): `available` when at least one does; otherwise the
+ * most actionable reason none does, read from their own reports (`ToolStatusReason`, bucketed: `notLoggedIn`,
+ * `notConfigured` and the handshake-only `signInUnconfirmed` to `needsSetup`; `versionTooOld` unchanged; everything
+ * else — `otherProgram`, `timeout`, `startFailed`, a legacy report with neither a reason nor a recognized status, or
+ * no reason at all — to `failed`). A legacy runner's plain `status: 'needsLogin'`, reported before this field existed,
+ * still buckets to `needsSetup`.
  */
 export const MODEL_AVAILABILITY_STATUSES = [
   'available',
-  'needsLogin',
-  'notConfigured',
+  'needsSetup',
   'versionTooOld',
   'failed',
 ] as const;

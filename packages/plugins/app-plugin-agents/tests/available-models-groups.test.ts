@@ -265,7 +265,7 @@ describe('available models groups', () => {
     expect(groups.body.data).toEqual([
       expect.objectContaining({
         tool: 'amp',
-        status: 'needsLogin',
+        status: 'needsSetup',
         statusReason: 'notLoggedIn',
         statusDetail: 'Run `amp login` first.',
         modelCount: 0,
@@ -279,7 +279,7 @@ describe('available models groups', () => {
     expect(rows.body.data).toEqual([]);
   });
 
-  it('buckets version-too-old and not-configured reasons for the status filter', async () => {
+  it('buckets version-too-old separately from not-configured, which joins needs-setup, for the status filter', async () => {
     h = await createHarness();
     await h.registerRunner({
       name: 'gemini-old',
@@ -313,13 +313,13 @@ describe('available models groups', () => {
     expect(tooOld.body.data).toEqual([
       expect.objectContaining({ tool: 'gemini', status: 'versionTooOld' }),
     ]);
-    const notConfigured = await h.request(
+    const needsSetup = await h.request(
       'GET',
-      '/agents/availableModels?status=notConfigured',
+      '/agents/availableModels?status=needsSetup',
       { user: 'admin', can: ['agents.agents/read'] },
     );
-    expect(notConfigured.body.data).toEqual([
-      expect.objectContaining({ tool: 'goose', status: 'notConfigured' }),
+    expect(needsSetup.body.data).toEqual([
+      expect.objectContaining({ tool: 'goose', status: 'needsSetup' }),
     ]);
   });
 

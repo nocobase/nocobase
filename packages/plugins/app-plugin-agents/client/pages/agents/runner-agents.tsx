@@ -1,10 +1,11 @@
 /**
- * Enabled agents first, disabled ones behind a toggle. A row shows where it can run now (team and personal runners,
- * with a few names), its default reasoning effort and its state; an enabled or disabled one offers "Edit"
- * (`agent-dialog.tsx`), for someone who manages agents; everyone else reads. The header's "Create agent" opens the
- * available models drawer (`available-models-drawer.tsx`, replacing the old discoveries section a runner's report
- * used to fill on its own) and "Clean up" removes leftover never-enabled, never-run agents outright
- * (`cleanup-drawer.tsx`).
+ * Enabled agents, with disabled ones shown alongside (marked by their state badge) once "Show disabled" is on — a
+ * display toggle, not a separate view: it never hides the enabled agents it was showing. A row shows where it can
+ * run now (team and personal runners, with a few names), its default reasoning effort and its state; an enabled or
+ * disabled one offers "Edit" (`agent-dialog.tsx`), for someone who manages agents; everyone else reads. The header's
+ * "Add agent" opens the available models drawer (`available-models-drawer.tsx`, replacing the old discoveries
+ * section a runner's report used to fill on its own) and "Clean up" removes leftover never-enabled, never-run agents
+ * outright (`cleanup-drawer.tsx`).
  */
 import { AgentQuotaHint, QuotaLabel } from '../../components/quota-status.js';
 
@@ -47,7 +48,7 @@ const STATE_TONE: Readonly<Record<AgentState, Tone>> = {
 export function RunnerAgentsSection(): ReactElement {
   const { t } = useTranslation();
   const api = useAgentsApi();
-  const [disabled, setDisabled] = useState(false);
+  const [showDisabled, setShowDisabled] = useState(false);
   const [editing, setEditing] = useState<AgentView | null>(null);
   const [creatingOpen, setCreatingOpen] = useState(false);
   const [cleanupOpen, setCleanupOpen] = useState(false);
@@ -82,12 +83,13 @@ export function RunnerAgentsSection(): ReactElement {
             </Button>
             <Button
               variant='outline'
-              onClick={() => setDisabled((value) => !value)}
+              onClick={() => setShowDisabled((value) => !value)}
+              data-testid='agents-toggle-disabled'
             >
               {t(
-                disabled
-                  ? 'agents.discovery.enabled'
-                  : 'agents.discovery.disabled',
+                showDisabled
+                  ? 'agents.discovery.hideDisabled'
+                  : 'agents.discovery.showDisabled',
               )}
             </Button>
           </>
@@ -105,7 +107,9 @@ export function RunnerAgentsSection(): ReactElement {
         <AgentTable
           agents={ordered(
             agents.data.filter(
-              (agent) => agent.status === (disabled ? 'disabled' : 'enabled'),
+              (agent) =>
+                agent.status === 'enabled' ||
+                (showDisabled && agent.status === 'disabled'),
             ),
           )}
           onEdit={setEditing}

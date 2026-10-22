@@ -55,6 +55,15 @@ const VIRTUALIZE_THRESHOLD = 30;
 const PAGE_SIZE = 50;
 /** How many ids one "select all in group" page fetch asks for; large enough that most groups need only one call. */
 const SELECT_ALL_PAGE_SIZE = 500;
+/** `POST /agents/cleanup` refuses more ids than this at once; a bigger selection is sent in several requests. */
+const CLEANUP_BATCH_SIZE = 256;
+
+function chunk<T>(items: readonly T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size)
+    chunks.push(items.slice(index, index + size));
+  return chunks;
+}
 
 export interface CleanupDrawerProps {
   readonly open: boolean;
@@ -108,8 +117,28 @@ export function CleanupDrawer({
       return next;
     });
 
+  // Clears a whole group's selection, including ids a "select all" picked up from a page this group's own list
+  // never loaded: scans the authoritative selection map by `tool`, not the group's own (possibly partial) `loaded`.
+  const clearGroupSelection = (tool: AgentTool | null): void =>
+    setSelected((current) => {
+      const next = new Map(current);
+      for (const [id, candidate] of current)
+        if ((candidate.tool ?? null) === tool) next.delete(id);
+      return next;
+    });
+
   const remove = useMutation({
-    mutationFn: () => api.cleanup([...selected.keys()]),
+    mutationFn: async () => {
+      const ids = [...selected.keys()];
+      const batches = chunk(ids, CLEANUP_BATCH_SIZE);
+      const outcomes = await Promise.all(
+        batches.map((batch) => api.cleanup(batch)),
+      );
+      return {
+        removed: outcomes.flatMap((outcome) => outcome.removed),
+        skipped: outcomes.flatMap((outcome) => outcome.skipped),
+      };
+    },
     onSuccess: ({ removed, skipped }) => {
       setSelected(new Map());
       setConfirming(false);
@@ -175,6 +204,7 @@ export function CleanupDrawer({
                 selected={selected}
                 onSelectRow={setRowSelected}
                 onSelectGroup={setGroupSelected}
+                onClearGroup={clearGroupSelection}
               />
             ))
           )}
@@ -234,6 +264,7 @@ function CleanupToolGroup({
   selected,
   onSelectRow,
   onSelectGroup,
+  onClearGroup,
 }: {
   readonly group: CleanupGroup;
   readonly selected: ReadonlyMap<string, CleanupCandidate>;
@@ -242,6 +273,7 @@ function CleanupToolGroup({
     group: readonly CleanupCandidate[],
     checked: boolean,
   ) => void;
+  readonly onClearGroup: (tool: AgentTool | null) => void;
 }): ReactElement {
   const { t } = useTranslation();
   const format = useFormatters();
@@ -267,12 +299,19 @@ function CleanupToolGroup({
     () => rows.data?.pages.flatMap((page) => page.data) ?? [],
     [rows.data],
   );
-  const allSelected =
-    loaded.length > 0 && loaded.every((row) => selected.has(row.id));
+  // The authoritative count from the server, not `loaded`: a "select all" can have picked up ids from pages this
+  // group's own list never fetched, so checking only `loaded` would under-report (or under-clear) the selection.
+  const selectedInGroup = useMemo(
+    () =>
+      [...selected.values()].filter((c) => (c.tool ?? null) === group.tool)
+        .length,
+    [selected, group.tool],
+  );
+  const allSelected = group.count > 0 && selectedInGroup >= group.count;
 
   const selectAllInGroup = async (checked: boolean): Promise<void> => {
     if (!checked) {
-      onSelectGroup(loaded, false);
+      onClearGroup(group.tool);
       return;
     }
     if (!group.tool) return;

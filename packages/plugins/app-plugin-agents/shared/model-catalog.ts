@@ -28,6 +28,14 @@ export const TOOL_DISPLAY_NAMES: Readonly<Record<AgentTool, string>> = {
   claude: 'Claude Code',
 };
 
+/**
+ * What a person runs in a terminal on the runtime to sign a tool in, as the catalog states it for its own "not
+ * signed in" message (`acp-bridge`'s `AgentSpec.signIn`); absent for a tool the catalog does not cover (`pi`), which
+ * is shown as an honest gap rather than a guessed command.
+ */
+export const TOOL_SIGN_IN: Readonly<Partial<Record<AgentTool, string>>> =
+  Object.fromEntries(AGENTS.map((agent) => [agent.id, agent.signIn]));
+
 /** What the catalog knows about one model. */
 export interface CatalogModel {
   /** The model's id without a provider, as Claude Code or Codex take it. */
