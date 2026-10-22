@@ -14,7 +14,7 @@ import { ExecutionCanvas } from './ExecutionCanvas';
 import useStyles from './style';
 
 export const ExecutionPage = () => {
-  const params = useParams<any>();
+  const params = useParams<{ id: string }>();
   const { styles } = useStyles();
 
   return (
@@ -36,9 +36,7 @@ export const ExecutionPage = () => {
                   resource: 'executions',
                   action: 'get',
                   params: {
-                    filter: params,
-                    appends: ['jobs', 'workflow', 'workflow.nodes', 'workflow.versionStats', 'workflow.stats'],
-                    except: ['jobs.result', 'workflow.options'],
+                    filterByTk: params.id,
                   },
                 },
               },

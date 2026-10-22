@@ -318,5 +318,8 @@
   "Confirm paste": "Confirm paste",
   "This action will remove invalid variable references, otherwise the workflow cannot run correctly.": "This action will remove invalid variable references, otherwise the workflow cannot run correctly.",
   "Failed to paste node": "Failed to paste node",
-  "Available in the classic UI for now": "Available in the classic UI for now"
+  "Available in the classic UI for now": "Available in the classic UI for now",
+  "Loaded {{loaded}} of {{total}} jobs": "Loaded {{loaded}} of {{total}} jobs",
+  "Failed to load jobs": "Failed to load jobs",
+  "Retry loading jobs": "Retry loading jobs"
 }

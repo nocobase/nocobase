@@ -87,8 +87,6 @@ describe('ExecutionViewPage', () => {
     await waitFor(() => {
       expect(executions.get).toHaveBeenCalledWith({
         filterByTk: '369411612409856',
-        appends: ['jobs', 'workflow', 'workflow.nodes', 'workflow.versionStats', 'workflow.stats'],
-        except: ['jobs.result', 'workflow.options'],
       });
     });
 

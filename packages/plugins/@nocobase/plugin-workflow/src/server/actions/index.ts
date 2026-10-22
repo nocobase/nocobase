@@ -11,6 +11,7 @@ import * as workflows from './workflows';
 import * as nodes from './nodes';
 import * as jobs from './jobs';
 import * as executions from './executions';
+import * as executionJobs from './executionJobs';
 import * as userWorkflowTasks from './userWorkflowTasks';
 import * as userWorkflowTaskStats from './userWorkflowTaskStats';
 
@@ -40,6 +41,7 @@ export default function ({ app }) {
     }),
     ...make('jobs', jobs),
     ...make('executions', executions),
+    ...make('executions.jobs', { list: executionJobs.list }),
     ...make('userWorkflowTasks', userWorkflowTasks),
     ...make('userWorkflowTaskStats', userWorkflowTaskStats),
   });
