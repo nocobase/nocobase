@@ -130,7 +130,7 @@ const resource: DemoModeResource = {
       title: 'Entrada de visitantes',
       description:
         'Os visitantes entram em qualquer uma destas contas sem senha e podem alternar entre elas no canto de cada página.',
-      off: 'O acesso rápido está desligado nesta implantação (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      off: 'O acesso rápido está desligado nesta implantação.',
       pending:
         'As contas aparecem aqui quando os dados de demonstração estiverem prontos.',
       noData:
@@ -199,7 +199,7 @@ const resource: DemoModeResource = {
         noMatch: 'Nenhuma tabela corresponde',
         fixed: 'Sempre graváveis',
         fixedHelp:
-          'Sessões de login e as exceções da própria implantação (NOCOBASE_DEMO_ALLOW_TABLES); não podem ser alteradas aqui.',
+          'Sessões de login e as exceções da própria implantação (NOCOBASE_DEMO_WRITABLE_TABLES); não podem ser alteradas aqui.',
       },
     },
     simulation: {

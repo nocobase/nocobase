@@ -10,7 +10,7 @@ afterEach(async () => app?.close());
 async function fixture(mode: 'off' | 'read-only' | 'observe') {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode, data: { models: false } } },
+    config: { demoMode: { mode } },
   });
   const service = app.application.container.resolve(demoDataToken);
   const clear = vi.fn(async () => {

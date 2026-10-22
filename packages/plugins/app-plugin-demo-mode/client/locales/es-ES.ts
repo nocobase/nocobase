@@ -131,7 +131,7 @@ const resource: DemoModeResource = {
       title: 'Acceso de visitantes',
       description:
         'Los visitantes entran en cualquiera de estas cuentas sin contraseña y pueden cambiar entre ellas desde la esquina de cada página.',
-      off: 'El acceso rápido está desactivado en este despliegue (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      off: 'El acceso rápido está desactivado en este despliegue.',
       pending:
         'Las cuentas aparecerán aquí cuando los datos de demostración estén listos.',
       noData:
@@ -200,7 +200,7 @@ const resource: DemoModeResource = {
         noMatch: 'Ninguna tabla coincide',
         fixed: 'Siempre escribibles',
         fixedHelp:
-          'Las sesiones de inicio y las excepciones propias del despliegue (NOCOBASE_DEMO_ALLOW_TABLES); no se pueden cambiar aquí.',
+          'Las sesiones de inicio y las excepciones propias del despliegue (NOCOBASE_DEMO_WRITABLE_TABLES); no se pueden cambiar aquí.',
       },
     },
     simulation: {

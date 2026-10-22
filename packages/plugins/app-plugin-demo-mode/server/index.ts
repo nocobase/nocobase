@@ -1,7 +1,7 @@
 export { default } from './plugin.js';
 export {
   DEFAULT_ALLOW_TABLES,
-  DEMO_MODE_ALLOW_TABLES_ENV,
+  DEMO_MODE_WRITABLE_TABLES_ENV,
   DEMO_MODE_ENV,
   type DemoMode,
   type DemoModeConfig,

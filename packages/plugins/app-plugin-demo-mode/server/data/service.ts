@@ -5,7 +5,7 @@ import type { UserManagementService } from '@nocobase/app-plugin-users/server/to
 import { ApiError } from '@nocobase/app-server/router';
 import type { DatabaseManager } from '@nocobase/db';
 
-import type { DemoDataSettings, DemoMode } from '../config.js';
+import type { DemoMode } from '../config.js';
 import { DEMO_MODE_ERROR_DOMAIN } from '../errors.js';
 import { createDemoClock } from './clock.js';
 import type { DemoModels } from './models.js';
@@ -88,7 +88,6 @@ export interface DemoDataService {
 export interface DemoDataDependencies {
   readonly withPolicy?: (run: () => Promise<void>) => Promise<void>;
   readonly database: DatabaseManager;
-  readonly settings: DemoDataSettings;
   readonly mode: () => DemoMode;
   readonly models: DemoModels;
   /** Where the model gateway reaches the simulated model, such as `http://127.0.0.1:13000/main/api/demoMode/models/v1`. */
@@ -273,10 +272,7 @@ export class DefaultDemoDataService implements DemoDataService {
           : null,
       mode: this.deps.mode(),
       model: {
-        enabled:
-          this.deps.mode() !== 'off' &&
-          this.deps.settings.models &&
-          this.runtime.available,
+        enabled: this.deps.mode() !== 'off' && this.runtime.available,
         service: this.models.serviceName,
       },
     };

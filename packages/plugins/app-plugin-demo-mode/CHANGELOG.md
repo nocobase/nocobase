@@ -21,6 +21,8 @@
 
 ## Unreleased
 
+- Add the public demo configuration factory and application-scoped environment mappings. Rename the writable-table variable to `NOCOBASE_DEMO_WRITABLE_TABLES`; remove quick-sign-in and model environment overrides. Derive the local simulated endpoint automatically and retain UI-owned model policies. Applications must register the configuration factory on upgrade.
+
 - Streamline the generic demo integration Skill, add a typed dataset example, and consolidate redundant account lifecycle assertions.
 
 - Add `DemoDataset.generate(context)` for application-owned generators shared with core sample data. Reset calls the generator directly after cleanup and leaves all seed history unchanged; existing step-based datasets remain supported.
@@ -29,7 +31,7 @@
 
 - Ship the demo administration page, `DemoModeSettings` (`client/settings`): overview with data lifecycle and visitor entry links, daily reset, visitor writes (capabilities and tables) and simulation & online chat, each saved on its own with conflict detection. Applications pass their names (`label`) and chat tools (`chatTools`) instead of building their own page. The account switcher moves to the bottom right, clear of application sidebars.
 
-- Add quick sign-in for demo visitors: a public list of the imported demo accounts, password-free sign-in through Better Auth's own email sign-in, a `/demo-sign-in` page for embedding (`?as=`, `?redirect=`) and a corner account switcher. On by default in demo mode; `demoMode.quickSignIn` or `NOCOBASE_DEMO_QUICK_SIGN_IN` turns it off.
+- Add quick sign-in for demo visitors: a public list of the imported demo accounts, password-free sign-in through Better Auth's own email sign-in, a `/demo-sign-in` page for embedding (`?as=`, `?redirect=`) and a corner account switcher. On by default in demo mode; `demoMode.quickSignIn` turns it off.
 
 - Renew long-running cleanup leases, fence lifecycle status changes by operation ID, and preserve existing datasets through an additive lease migration.
 - Settle fixture and policy initialization failures immediately so imports can be retried; disable and revoke sessions for tracked demo accounts that initiate cleanup.

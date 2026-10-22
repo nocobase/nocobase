@@ -14,7 +14,7 @@ afterEach(async () => app?.close());
 async function setup() {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'read-only', data: { models: false } } },
+    config: { demoMode: { mode: 'read-only' } },
   });
   const container = app.application.container;
   const config = container.resolve(demoConfigurationToken);
@@ -329,7 +329,7 @@ it('uses the real Agent only in an off deployment and refuses direct queued demo
   const { container, guard } = await setup();
   const config = new DemoConfigurationService(
     container.resolve(databaseManagerToken),
-    resolveDemoModeSettings({ get: () => ({ mode: 'off' }) } as never, {}),
+    resolveDemoModeSettings({ get: () => ({ mode: 'off' }) } as never),
     guard,
     async () => ({ importing: null, languages: ['en-US'] }),
   );
@@ -456,9 +456,12 @@ it('lists physical table choices without protected or deployment-managed tables'
   expect(await config.availableTables()).not.toContain(
     'demo_mode_configuration',
   );
-  const settings = resolveDemoModeSettings(app.application.config, {
-    NOCOBASE_DEMO_ALLOW_TABLES: ' demonotes, DEMONOTES ',
-  });
+  const settings = resolveDemoModeSettings({
+    get: () => ({
+      mode: 'read-only',
+      allowTables: [' demonotes', 'DEMONOTES '],
+    }),
+  } as never);
   const deployed = new DemoConfigurationService(
     container.resolve(databaseManagerToken),
     settings,

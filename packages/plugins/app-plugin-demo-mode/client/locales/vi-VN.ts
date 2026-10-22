@@ -128,7 +128,7 @@ const resource: DemoModeResource = {
       title: 'Lối vào cho khách',
       description:
         'Khách vào bất kỳ tài khoản nào dưới đây mà không cần mật khẩu và có thể chuyển đổi từ góc của mọi trang.',
-      off: 'Đăng nhập nhanh đang tắt trong bản triển khai này (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      off: 'Đăng nhập nhanh đang tắt trong bản triển khai này.',
       pending: 'Các tài khoản sẽ hiện ở đây khi dữ liệu demo sẵn sàng.',
       noData: 'Hãy tạo dữ liệu demo trước; các tài khoản sẽ hiện ở đây.',
       credentials: 'Tên người dùng {{username}} · mật khẩu {{password}}',
@@ -194,7 +194,7 @@ const resource: DemoModeResource = {
         noMatch: 'Không có bảng phù hợp',
         fixed: 'Luôn được ghi',
         fixedHelp:
-          'Phiên đăng nhập và ngoại lệ riêng của bản triển khai (NOCOBASE_DEMO_ALLOW_TABLES); không thể thay đổi ở đây.',
+          'Phiên đăng nhập và ngoại lệ riêng của bản triển khai (NOCOBASE_DEMO_WRITABLE_TABLES); không thể thay đổi ở đây.',
       },
     },
     simulation: {

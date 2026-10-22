@@ -2,7 +2,7 @@
 
 ## Quick sign-in
 
-While demo mode is on, visitors enter the imported demo accounts without a password, and switch between them, with no application code: the Client plugin contributes the `/demo-sign-in` page and a corner switcher on every page. `demoMode.quickSignIn: false` or `NOCOBASE_DEMO_QUICK_SIGN_IN=false` turns it off.
+While demo mode is on, visitors enter the imported demo accounts without a password, and switch between them, with no application code: the Client plugin contributes the `/demo-sign-in` page and a corner switcher on every page. `demoMode.quickSignIn: false` in application configuration turns it off.
 
 - `GET /api/demoMode/accounts` (public) lists `{ username, name, role, current }` for the accounts `accounts(language)` lists for the imported language whose user the dataset created (`demoModeAccounts`) and is not disabled. Passwords are never returned. Empty when demo mode is off, quick sign-in is off or no data is imported.
 - `POST /api/demoMode/accounts/{username}/signIn` signs the request's own session out, then signs in through Better Auth's `/sign-in/email` with the email of that user and the password `accounts(language)` lists, and forwards Better Auth's `Set-Cookie`. The session is ordinary. `DEMO_ACCOUNT_NOT_FOUND` (404) for an account the list does not offer; `DEMO_ACCOUNT_SIGN_IN_FAILED` (400) when the listed password is not the account's password. Email-and-password sign-in must be enabled.

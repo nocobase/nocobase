@@ -115,7 +115,7 @@ For shared sample installation, extract the business generation into an applicat
 
 ## Run and verify
 
-1. Set the dedicated deployment's demo mode and disable model provisioning when no AI feature is needed. Start the application with its normal migration and initialization workflow.
+1. Register the configuration factory and set the dedicated deployment's demo mode. Leave online chat disabled when no AI feature is needed. Start the application with its normal migration and initialization workflow.
 2. Mount `DemoModeSettings`, grant the real administrator data read/manage access, and choose Generate. Alternatively run `pnpm nocobase demo-mode data import --actor <administrator-id> --language en-US --dry-run`, then the same command with `--force` instead of `--dry-run`. Replace the actor placeholder with an existing administrator ID.
 3. Check that generation completes, the project and both tasks appear with recent dates, and both visitor accounts can enter through `/demo-sign-in` and see the records allowed by their grants.
 4. Enable only the visitor writes needed by this demo. Add one visitor task, reset, and verify the original story returns, the visitor task is gone and accounts remain reusable. Clear and generate once more to verify the separate account-disable/reuse path.

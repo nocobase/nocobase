@@ -17,7 +17,7 @@ let revokedSessions: string[];
 beforeAll(async () => {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'observe', data: { models: false } } },
+    config: { demoMode: { mode: 'observe' } },
   });
 });
 afterAll(() => app.close());
@@ -88,7 +88,7 @@ function service(
   return new DefaultDemoDataService({
     authorization,
     database: app.application.container.resolve(databaseManagerToken),
-    settings: { models: false },
+
     mode: () => 'observe',
     models: new DemoModels(),
     modelBaseUrl: () => 'http://127.0.0.1/demoMode/models/v1',

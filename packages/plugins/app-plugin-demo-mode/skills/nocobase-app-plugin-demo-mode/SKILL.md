@@ -16,7 +16,7 @@ Use `@nocobase/app-plugin-demo-mode` to build a dedicated demo deployment with f
 ## Shortest useful workflow
 
 1. **Inspect the installed application.** Read its development, database and authorization Skills. Confirm the installed plugin's public exports and the Server, Client and CLI composition roots. Inspect the main pages, business services, relationships and roles; choose a small fictional story that makes those pages useful.
-2. **Register and configure.** Register the Server export, the Client factory `demoMode()` and, if CLI operations are needed, `@nocobase/app-plugin-demo-mode/cli`. Set `demoMode.mode` to `observe` while adapting the application, then `read-only` if visitors should have restricted writes. No AI features are required: set `demoMode.data.models: false` when the demo does not need a simulated model. Configuration details are below.
+2. **Register and configure.** Register the Server export, the Client factory `demoMode()` and, if CLI operations are needed, `@nocobase/app-plugin-demo-mode/cli`. Set `demoMode.mode` to `observe` while adapting the application, then `read-only` if visitors should have restricted writes. AI integration is optional; use the settings UI for simulation and online-chat policies when those features are needed. Configuration details are below.
 3. **Implement one dataset.** Follow [data adaptation](references/adapting-data.md) and the [typed dataset example](references/dataset-example.md). Register on `demoDataToken` from an application provider. Share one account definition between the visitor list and account creation. Use the application's services, `context.clock` for dates, and `clock.sample(key)` for reproducible variation. Implement full business cleanup alongside generation.
 4. **Adapt the interactions being demonstrated.** Inventory external calls and background jobs before running generation. Supply local fixtures or skip irrelevant jobs. For visitor writes, use [write policies](references/policies.md); for model, tool or Runner execution, use [simulation](references/simulation.md). Add only capabilities the requested demo uses. The SQL guard does not intercept external calls.
 5. **Mount the supplied management flow.** Mount `DemoModeSettings` from `client/settings` on an application-owned route. Supply `label(kind, id)` for application names, and `chatTools` only when online chat is used. Administrators need `settings:demoMode.data` read/manage and, for policy editing, `settings:demoMode.configuration` read/configure. Preserve the application's page authorization. Use [visitor entry and presentation](references/visitor-entry.md) for the account menu, embedding or host component overrides.
@@ -24,7 +24,18 @@ Use `@nocobase/app-plugin-demo-mode` to build a dedicated demo deployment with f
 
 ## Runtime configuration
 
-The optional `demoMode` section supplies `mode` (`off`, `observe`, `read-only`), `allowTables`, `quickSignIn` and `data.models` / `data.modelBaseUrl`. Process environment variables `NOCOBASE_DEMO_MODE`, `NOCOBASE_DEMO_ALLOW_TABLES`, `NOCOBASE_DEMO_QUICK_SIGN_IN`, `NOCOBASE_DEMO_DATA_MODELS` and `NOCOBASE_DEMO_DATA_MODEL_BASE_URL` override the matching values. `NOCOBASE_DEMO_ALLOW_TABLES` is comma-separated. The current plugin reads process environment directly; do not assume application-scoped environment mappings exist. For apps sharing a process, use separate configuration sections and avoid conflicting process-wide overrides.
+Register the configuration factory in the application's existing `defaultAppConfigs()` map as well as registering the Server plugin:
+
+```ts
+import { defineDemoModeConfig } from '@nocobase/app-plugin-demo-mode/config';
+
+// Add to the existing map; retain every other application section.
+defaultAppConfigs({ demoMode: defineDemoModeConfig() });
+```
+
+The factory declares defaults, validation and two environment mappings. The runtime resolves them from the owning application's environment: environment values override configuration-file values, which override defaults. There is no process-global fallback in the plugin. Registration of the Server plugin alone does not register the configuration factory. Restart after changing deployment configuration.
+
+The `demoMode` section contains `mode` (`off`, `observe`, `read-only`), `allowTables` and `quickSignIn`. Only `NOCOBASE_DEMO_MODE` and `NOCOBASE_DEMO_WRITABLE_TABLES` are mapped environment variables. The latter is a comma-separated list of physical database table names, not collection identifiers; it maps to `demoMode.allowTables`. Quick sign-in is controlled by `demoMode.quickSignIn` (default `true`). The local simulated model endpoint is derived automatically. Enable or disable model simulation and online chat, and select chat models, in the settings UI; real model URLs and credentials belong to Agents model services.
 
 `session` and `verification` writes are allowed for sign-in. Browse the intended demo flows in `observe` mode and inspect the `demo-mode` logger before selecting write exceptions. Choose whole-table exceptions for disposable business tables when normal application authorization is sufficient; use registered capabilities when a narrower operation or record scope is needed. Switch to `read-only` and verify the same flows. Neither mode replaces business authorization.
 
@@ -38,7 +49,7 @@ Keep one application-owned generator when ordinary sample installation and demo 
 
 Authorized lifecycle operations can write in read-only mode. `GET /api/demoMode/data` requires data read permission; `POST /api/demoMode/data/import|clear|reset` requires read and manage. CLI commands are `pnpm nocobase demo-mode data status|import|clear|reset`: review arguments with `--dry-run`; mutations need `--force`; import and clear need the actual administrator's `--actor` ID. Reset may reuse the last importer and language. CLI uses the lifecycle service directly. Read the application's CLI guidance before running commands.
 
-Only `@nocobase/db` writes within requests are guarded. Background jobs, schedules, files and outbound requests need application adaptation. When models are enabled and Agents is available, startup provisions the persistent demo model; clear/reset leave it in place. Model simulation does not simulate tools or Runners. Daily resets use the plugin's Scheduler integration, never a second application timer.
+Only `@nocobase/db` writes within requests are guarded. Background jobs, schedules, files and outbound requests need application adaptation. When demo mode is on and Agents is available, startup provisions the persistent demo model; clear/reset leave it in place. Model simulation does not simulate tools or Runners. Daily resets use the plugin's Scheduler integration, never a second application timer.
 
 ## References by task
 

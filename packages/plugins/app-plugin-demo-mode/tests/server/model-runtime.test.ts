@@ -19,7 +19,7 @@ let mode: 'off' | 'observe' = 'observe';
 const make = () =>
   new DefaultDemoDataService({
     database: app.application.container.resolve(databaseManagerToken),
-    settings: { models: true },
+
     mode: () => mode,
     models: new DemoModels(),
     modelBaseUrl: () => 'http://127.0.0.1:13000/api/demoMode/models/v1',
@@ -29,7 +29,7 @@ const make = () =>
 beforeAll(async () => {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'observe', data: { models: false } } },
+    config: { demoMode: { mode: 'observe' } },
   });
 });
 afterAll(() => app.close());

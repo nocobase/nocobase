@@ -19,6 +19,7 @@ import {
 } from '@nocobase/app-server/runtime';
 
 import demoMode from '../../../../server/index.js';
+import { defineDemoModeConfig } from '../../../../server/config.js';
 import { fixtureRoutes } from './routes.js';
 
 const appRuntime: AppRuntimeDefinition = defineAppRuntime({
@@ -30,6 +31,7 @@ const appRuntime: AppRuntimeDefinition = defineAppRuntime({
     return config;
   },
   defaultConfigs: defaultAppConfigs({
+    demoMode: defineDemoModeConfig(),
     app: defineAppConfig({
       defaults: ({ routing }): AppIdentityConfig => {
         const publicBasePath = normalizeBasePath(

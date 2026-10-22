@@ -122,7 +122,7 @@ const resource: DemoModeResource = {
       title: '访客入口',
       description:
         '访客无需密码即可进入下面任一账号，并能在每个页面角落随时切换。',
-      off: '这个部署关闭了快速进入（NOCOBASE_DEMO_QUICK_SIGN_IN=false）。',
+      off: '这个部署关闭了快速进入。',
       pending: '演示数据就绪后，账号会显示在这里。',
       noData: '请先生成演示数据，账号会显示在这里。',
       credentials: '用户名 {{username}} · 密码 {{password}}',
@@ -183,7 +183,7 @@ const resource: DemoModeResource = {
         noMatch: '没有匹配的数据表',
         fixed: '始终可写',
         fixedHelp:
-          '登录会话和部署自己的例外（NOCOBASE_DEMO_ALLOW_TABLES），不能在这里修改。',
+          '登录会话和部署自己的例外（NOCOBASE_DEMO_WRITABLE_TABLES），不能在这里修改。',
       },
     },
     simulation: {

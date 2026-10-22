@@ -131,7 +131,7 @@ const resource: DemoModeResource = {
       title: 'Zugang für Besucher',
       description:
         'Besucher öffnen jedes dieser Konten ohne Passwort und können in der Ecke jeder Seite zwischen ihnen wechseln.',
-      off: 'Die Schnellanmeldung ist in dieser Bereitstellung ausgeschaltet (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      off: 'Die Schnellanmeldung ist in dieser Bereitstellung ausgeschaltet.',
       pending: 'Die Konten erscheinen hier, sobald die Demodaten bereit sind.',
       noData:
         'Erzeugen Sie zuerst die Demo-Daten; ihre Konten erscheinen dann hier.',
@@ -199,7 +199,7 @@ const resource: DemoModeResource = {
         noMatch: 'Keine passende Tabelle',
         fixed: 'Immer beschreibbar',
         fixedHelp:
-          'Anmeldesitzungen und die eigenen Ausnahmen der Bereitstellung (NOCOBASE_DEMO_ALLOW_TABLES); sie lassen sich hier nicht ändern.',
+          'Anmeldesitzungen und die eigenen Ausnahmen der Bereitstellung (NOCOBASE_DEMO_WRITABLE_TABLES); sie lassen sich hier nicht ändern.',
       },
     },
     simulation: {

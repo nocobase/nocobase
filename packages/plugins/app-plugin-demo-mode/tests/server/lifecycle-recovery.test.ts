@@ -17,12 +17,12 @@ afterEach(async () => {
 async function fixture() {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'observe', data: { models: false } } },
+    config: { demoMode: { mode: 'observe' } },
   });
   const make = (withPolicy?: (run: () => Promise<void>) => Promise<void>) =>
     new DefaultDemoDataService({
       database: app.application.container.resolve(databaseManagerToken),
-      settings: { models: false },
+
       mode: () => 'observe',
       models: new DemoModels(),
       modelBaseUrl: () => 'http://127.0.0.1/demoMode/models/v1',

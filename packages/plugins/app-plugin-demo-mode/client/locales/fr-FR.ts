@@ -136,7 +136,7 @@ const resource: DemoModeResource = {
       title: 'Accès des visiteurs',
       description:
         'Les visiteurs entrent dans l’un de ces comptes sans mot de passe et peuvent passer de l’un à l’autre depuis le coin de chaque page.',
-      off: 'La connexion rapide est désactivée pour ce déploiement (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      off: 'La connexion rapide est désactivée pour ce déploiement.',
       pending:
         'Les comptes apparaissent ici une fois les données de démonstration prêtes.',
       noData:
@@ -204,7 +204,7 @@ const resource: DemoModeResource = {
         noMatch: 'Aucune table ne correspond',
         fixed: 'Toujours accessibles en écriture',
         fixedHelp:
-          'Les sessions de connexion et les exceptions propres au déploiement (NOCOBASE_DEMO_ALLOW_TABLES) ; elles ne peuvent pas être modifiées ici.',
+          'Les sessions de connexion et les exceptions propres au déploiement (NOCOBASE_DEMO_WRITABLE_TABLES) ; elles ne peuvent pas être modifiées ici.',
       },
     },
     simulation: {

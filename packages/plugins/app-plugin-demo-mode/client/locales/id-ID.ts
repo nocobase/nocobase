@@ -128,7 +128,7 @@ const resource: DemoModeResource = {
       title: 'Akses pengunjung',
       description:
         'Pengunjung masuk ke salah satu akun ini tanpa kata sandi dan bisa berpindah akun dari sudut setiap halaman.',
-      off: 'Masuk cepat dinonaktifkan untuk deployment ini (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      off: 'Masuk cepat dinonaktifkan untuk deployment ini.',
       pending: 'Akun akan muncul di sini setelah data demo siap.',
       noData: 'Buat data demo terlebih dahulu; akunnya akan muncul di sini.',
       credentials: 'Nama pengguna {{username}} · kata sandi {{password}}',
@@ -193,7 +193,7 @@ const resource: DemoModeResource = {
         noMatch: 'Tidak ada tabel yang cocok',
         fixed: 'Selalu bisa ditulis',
         fixedHelp:
-          'Sesi masuk dan pengecualian milik deployment (NOCOBASE_DEMO_ALLOW_TABLES); tidak bisa diubah di sini.',
+          'Sesi masuk dan pengecualian milik deployment (NOCOBASE_DEMO_WRITABLE_TABLES); tidak bisa diubah di sini.',
       },
     },
     simulation: {

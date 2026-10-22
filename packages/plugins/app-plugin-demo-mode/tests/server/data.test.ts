@@ -75,7 +75,7 @@ let cleared: string[] = [];
 beforeAll(async () => {
   app = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'observe', data: { models: true } } },
+    config: { demoMode: { mode: 'observe' } },
   });
   service = app.application.container.resolve(demoDataToken);
 });
@@ -218,7 +218,7 @@ describe('demo data lifecycle', () => {
 it('lets scheduled or CLI resets write outside HTTP while read-only mode is enabled', async () => {
   const readonly = await createTestApp({
     createServer: createStandaloneServer,
-    config: { demoMode: { mode: 'read-only', data: { models: false } } },
+    config: { demoMode: { mode: 'read-only' } },
   });
   try {
     const demo = readonly.application.container.resolve(demoDataToken);

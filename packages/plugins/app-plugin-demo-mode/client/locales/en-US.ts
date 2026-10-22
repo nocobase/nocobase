@@ -128,7 +128,7 @@ const resource = {
       title: 'Visitor entry',
       description:
         'Visitors enter any of these accounts without a password and can switch between them from the corner of every page.',
-      off: 'Quick sign-in is turned off for this deployment (NOCOBASE_DEMO_QUICK_SIGN_IN=false).',
+      off: 'Quick sign-in is turned off for this deployment.',
       pending: 'The accounts appear here once the demo data is ready.',
       noData: 'Generate the demo data first; its accounts appear here.',
       credentials: 'Username {{username}} · password {{password}}',
@@ -193,7 +193,7 @@ const resource = {
         noMatch: 'No matching table',
         fixed: 'Always writable',
         fixedHelp:
-          'Sign-in sessions and the deployment’s own exceptions (NOCOBASE_DEMO_ALLOW_TABLES); they cannot be changed here.',
+          'Sign-in sessions and the deployment’s own exceptions (NOCOBASE_DEMO_WRITABLE_TABLES); they cannot be changed here.',
       },
     },
     simulation: {

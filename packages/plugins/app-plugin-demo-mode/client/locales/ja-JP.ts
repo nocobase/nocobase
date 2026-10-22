@@ -128,7 +128,7 @@ const resource: DemoModeResource = {
       title: '訪問者の入口',
       description:
         '訪問者はパスワードなしでこれらのアカウントに入り、各ページの隅からいつでも切り替えられます。',
-      off: 'このデプロイではクイックサインインがオフです（NOCOBASE_DEMO_QUICK_SIGN_IN=false）。',
+      off: 'このデプロイではクイックサインインがオフです。',
       pending: 'デモデータの準備ができると、アカウントがここに表示されます。',
       noData:
         '先にデモデータを生成してください。アカウントがここに表示されます。',
@@ -194,7 +194,7 @@ const resource: DemoModeResource = {
         noMatch: '一致するテーブルがありません',
         fixed: '常に書き込み可能',
         fixedHelp:
-          'サインインセッションとデプロイ自身の例外（NOCOBASE_DEMO_ALLOW_TABLES）です。ここでは変更できません。',
+          'サインインセッションとデプロイ自身の例外（NOCOBASE_DEMO_WRITABLE_TABLES）です。ここでは変更できません。',
       },
     },
     simulation: {

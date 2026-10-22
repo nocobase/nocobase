@@ -23,16 +23,27 @@ import demoMode from '@nocobase/app-plugin-demo-mode/client';
 // defineClientPlugins([..., demoMode()])
 ```
 
-The plugin is off until the deployment switches it on, through the environment or an optional `demoMode` configuration section; the environment wins:
+Register the configuration factory in the application's existing `defaultAppConfigs()` map as well as registering the Server plugin:
 
-| Environment                  | Configuration          | Meaning                                                       |
-| ---------------------------- | ---------------------- | ------------------------------------------------------------- |
-| `NOCOBASE_DEMO_MODE`         | `demoMode.mode`        | `off` (default), `read-only` or `observe`                     |
-| `NOCOBASE_DEMO_ALLOW_TABLES` | `demoMode.allowTables` | Comma-separated physical table names requests may still write |
+```ts
+import { defineDemoModeConfig } from '@nocobase/app-plugin-demo-mode/config';
+
+// Add to the existing map; retain every other application section.
+defaultAppConfigs({ demoMode: defineDemoModeConfig() });
+```
+
+The factory declares defaults, validation and two environment mappings. The runtime resolves them from the owning application's environment: environment values override configuration-file values, which override defaults. There is no process-global fallback in the plugin. Registration of the Server plugin alone does not register the configuration factory. Restart after changing deployment configuration.
+
+The plugin is off until the deployment switches it on:
+
+| Environment                     | Configuration          | Meaning                                                       |
+| ------------------------------- | ---------------------- | ------------------------------------------------------------- |
+| `NOCOBASE_DEMO_MODE`            | `demoMode.mode`        | `off` (default), `read-only` or `observe`                     |
+| `NOCOBASE_DEMO_WRITABLE_TABLES` | `demoMode.allowTables` | Comma-separated physical table names requests may still write |
 
 `session` and `verification`, the Better Auth tables signing in and out writes, are always allowed, except to routes that end or change other sessions — any path ending in `revoke-sessions`, `revoke-other-sessions`, `revoke-session`, `update-session` or their camelCase forms, such as the users plugin's `users/:userId/revokeSessions` — so a visitor of a shared demo account cannot sign everyone else out.
 
-For deployment defaults, set `NOCOBASE_DEMO_ALLOW_TABLES=crm_user_preferences,crm_plans` and restart the application. Names are comma-separated, trimmed, lowercased and deduplicated. The variable replaces `demoMode.allowTables` when set (an empty value clears that deployment list); built-in authentication exceptions remain. These deployment-owned `fixedTables` combine with the administrator's saved `tables`, so removing a UI selection does not revoke a deployment exception. Business authorization still applies.
+For deployment defaults, set `NOCOBASE_DEMO_WRITABLE_TABLES=crm_user_preferences,crm_plans` and restart the application. Names are comma-separated, trimmed, lowercased and deduplicated. The variable replaces `demoMode.allowTables` when set (an empty value clears that deployment list); built-in authentication exceptions remain. These deployment-owned `fixedTables` combine with the administrator's saved `tables`, so removing a UI selection does not revoke a deployment exception. Business authorization still applies.
 
 ## What it does
 
@@ -54,7 +65,7 @@ Some pages write while they are only being read, for example to refresh a cache.
 - A read route that writes on the way, such as one expiring stale rows with an `UPDATE` that may change nothing, is refused like any write; allow its table only when it holds nothing a visitor could change, otherwise fix the route.
 - Code that starts a write without awaiting it turns the refusal into an unhandled rejection, which can stop the process; observe mode lists such routes so the application can handle the failure.
 - The application's request log records the status the route produced before the plugin replaced it, such as a 500 from Better Auth.
-- `process.env` is shared by every application in one process; use the configuration section to set the mode per application under an app host.
+- Register `defineDemoModeConfig()` in each application so its environment is resolved independently, including under an app host.
 
 ## Demo data generation
 
@@ -98,12 +109,9 @@ container.resolve(demoDataToken).register({
 - **Tracking and accounts.** `context.track(collection, ids)` records import membership for counts and application lookups; the application clears its business tables. `createAccount`, `createPermissionSet` and `assignPermissionSet` own the identity lifecycle. Clear revokes assignments, disables demo accounts and removes demo-owned permission sets. The next import re-enables owned accounts and applies `roleScopes` again. Usernames cannot be reused after deletion by the Users plugin, so demo accounts are always retained disabled. An unowned username collision is refused. `setData()` stores import context for steps and cleanup.
 - **Dates.** `context.clock` gives `daysAgo`, `dateAgo` and `isoAgo` relative to when the import started, in the dataset's time zone, never in the future unless asked for.
 - **Clearing.** The required `clear(context)` deletes all application business data, including visitor additions and files. It runs for manual clear, reset, failed imports and interrupted-import recovery. It must handle empty/partial context and be safe to retry, and may report how far it got with `context.progress(fraction)`. The plugin then cleans its account/role assignments and tracking. Administrator identities, authorization, demo configuration and the environment model survive. Reset clears and imports again in the background, answering once it is claimed: the accounts, Permission Sets and assignments the import creates again are carried through it, so a demo account that starts the reset, or browses during it, stays signed in and permitted; a carried password is set again only when the dataset changed it. What the new import does not create again is released afterwards as a clear would.
-- **Environment model.** Unless `demoMode.data.models` is `false`, application startup provisions the OpenAI-compatible `Demo model` and makes it the default chat model through the current Agents `models.services` API. The service and random credential live in `demoModeModel`, independently of imported data. Clear/reset/failure never remove the service or restore a previous model. Startup refreshes its local endpoint and reasserts the demo default. Real models may be explicitly selected for online chat through the administrator-controlled chat policy below; never use them as an automatic simulation fallback. HTTP callers use `/api/demoMode/models/v1`, authenticated by the generated key. Dataset `answers` supply scripts; `models.complete({ system, prompt, tag })` answers in process. Custom Agent model selections and external transports remain the application’s responsibility.
+- **Environment model.** When demo mode is on and Agents is available, application startup provisions the OpenAI-compatible `Demo model` and makes it the default chat model through the current Agents `models.services` API. The service and random credential live in `demoModeModel`, independently of imported data. Clear/reset/failure never remove the service or restore a previous model. Startup refreshes its local endpoint and reasserts the demo default. Real models may be explicitly selected for online chat through the administrator-controlled chat policy below; never use them as an automatic simulation fallback. HTTP callers use `/api/demoMode/models/v1`, authenticated by the generated key. Dataset `answers` supply scripts; `models.complete({ system, prompt, tag })` answers in process. Custom Agent model selections and external transports remain the application’s responsibility.
 
-| Environment                         | Configuration                | Meaning                                                          |
-| ----------------------------------- | ---------------------------- | ---------------------------------------------------------------- |
-| `NOCOBASE_DEMO_DATA_MODELS`         | `demoMode.data.models`       | `true` (default): provision the environment model at startup     |
-| `NOCOBASE_DEMO_DATA_MODEL_BASE_URL` | `demoMode.data.modelBaseUrl` | Where the gateway reaches the simulated model, when not loopback |
+The local simulated model endpoint is derived automatically from the application address. Use the demo settings UI to enable or disable the dataset model adapter and online chat, and to select the chat model. Real model URLs and credentials belong to the Agents model-service configuration; do not set a second endpoint in demo deployment configuration. Disabling the simulated adapter rejects calls; it never falls back to a real model.
 
 The routes require `settings:demoMode.data` (`read` for status, `manage` for changes): `GET /api/demoMode/data` and `POST /api/demoMode/data/import|clear|reset`. Import/reset accept `{ language }` and return progress through status: `operation` names what is under way (`import`, `clear` or `reset`) and `importing.percent` runs once across both phases of a reset. Every mutation requires enabled demo mode, including CLI and Scheduler calls. Authorized lifecycle work also runs in read-only mode without exempting concurrent ordinary requests. The plugin's administration page drives them; `useDemoData()` remains for an application that builds its own.
 
@@ -142,9 +150,7 @@ Demo reset always clears business data before calling the generator again. A fai
 
 While demo mode is `read-only` or `observe`, visitors enter the imported demo accounts without a password and switch between them. Registration alone enables it: the Client plugin contributes a `/demo-sign-in` page and a corner account switcher on every page, the sign-in page included.
 
-| Environment                   | Configuration          | Meaning                                    |
-| ----------------------------- | ---------------------- | ------------------------------------------ |
-| `NOCOBASE_DEMO_QUICK_SIGN_IN` | `demoMode.quickSignIn` | `true` (default) or `false` to turn it off |
+Set `demoMode.quickSignIn: false` in application configuration to disable quick sign-in. It defaults to `true` and has no environment variable.
 
 Signed-in visitors switch accounts from a corner button by default. An application with an account menu puts the switch there instead, before signing out, and keeps the corner button for visitors who have not signed in:
 

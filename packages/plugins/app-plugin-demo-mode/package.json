@@ -54,6 +54,10 @@
     "./client/account-menu": {
       "types": "./client/account-menu.ts",
       "import": "./client/account-menu.ts"
+    },
+    "./config": {
+      "types": "./server/config.ts",
+      "import": "./server/config.ts"
     }
   },
   "imports": {
@@ -127,6 +131,10 @@
       "./client/account-menu": {
         "types": "./dist/client/account-menu.d.ts",
         "import": "./dist/client/account-menu.js"
+      },
+      "./config": {
+        "types": "./dist/server/config.d.ts",
+        "import": "./dist/server/config.js"
       }
     },
     "imports": {

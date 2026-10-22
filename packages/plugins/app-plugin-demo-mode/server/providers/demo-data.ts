@@ -36,17 +36,15 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
 
   public override register(): void {
     const container = this.app.container;
-    const settings = resolveDemoModeSettings(this.app.config).data;
     const optional = <T>(token: Parameters<typeof container.resolve<T>>[0]) =>
       container.has(token) ? container.resolve(token) : undefined;
     this.service = new DefaultDemoDataService({
       withPolicy: (run) =>
         container.resolve(demoConfigurationToken).runWithPolicy(run),
       database: container.resolve(databaseManagerToken),
-      settings,
       mode: () => container.resolve(demoModeServiceToken).mode,
       models: new DemoModels(),
-      modelBaseUrl: () => settings.modelBaseUrl ?? this.loopbackModelUrl(),
+      modelBaseUrl: () => this.loopbackModelUrl(),
       users: () => optional(userManagementServiceToken),
       authorization: () => optional(authorizationToken),
       agents: () => optional(agentsToken),
