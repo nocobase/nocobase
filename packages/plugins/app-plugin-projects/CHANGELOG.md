@@ -1,5 +1,25 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.17
+
+### Minor Changes
+
+- e98d0f7: Let hosts inspect session context tags and transfer draft text, selected references and context through the existing memory cache. Let hosts supply consistent panel header controls while retaining session commands, and show history beside mounted panel drafts with host-owned labels and actions. Align the standalone My Agent history with panel history, including a neutral new-session icon, search and status filters, plain empty rows and footer archive access. Allow applications to retain manual issue forms without AI intake tabs.
+
+### Patch Changes
+
+- 5d4d4a1: Show detailed start failure messages and app-relative configuration actions supplied by the host application.
+- 5875cb9: Expose cancellation actors and a transactional stop request callback, and allow status events to refresh issue progress even when the issue already has the target status.
+- Updated dependencies [0c5c4ff]
+- Updated dependencies [6e3d66e]
+- Updated dependencies [6e3d66e]
+- Updated dependencies [0c5c4ff]
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+  - @nocobase/app-client@4.0.0-beta.2
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
 ## 0.1.0-beta.16
 
 ### Patch Changes

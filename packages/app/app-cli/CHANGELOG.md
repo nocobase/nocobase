@@ -1,5 +1,13 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.27
+
+### Patch Changes
+
+- 5b72947: Extract the Node.js that `nocobase cli build` packs inside its cache rather than the system temporary directory, so the build no longer fails with EXDEV where `/tmp` is a separate filesystem, such as on GitHub's ubuntu-26.04 runners.
+- Updated dependencies [0c5c4ff]
+  - @nocobase/app-server@3.0.0-beta.3
+
 ## 1.0.0-beta.26
 
 ### Patch Changes

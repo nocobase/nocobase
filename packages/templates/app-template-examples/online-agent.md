@@ -2,6 +2,12 @@
 
 This Examples-only integration uses the Agents plugin's public chat SDK and model configuration route. The basic native chat example runs OnlineAgent directly with a configured chat model, without a Runner, custom Agent, tools or Skills; the separate AI Form Fill demonstration below explicitly selects its application-owned proposal tool scope. It does not add a plugin API or modify the Default template.
 
+## Model reasoning
+
+When the selected native model actually returns SDK reasoning parts, the installed chat displays them separately from the answer, including saved history. It does not request, synthesize or infer hidden reasoning from models or Runner text. Active reasoning opens automatically; each part collapses when it ends, and history starts collapsed. Manual open/close choices override automatic changes for that mounted part, including message revisions. Reasoning uses the answer's safe Markdown renderer, supports keyboard toggling, and remains outside text copy/search helpers. A reasoning-only response does not also show generic thinking; Stop and execution outcomes keep their existing meaning.
+
+For an offline browser regression, build this package and run `node --experimental-import-meta-resolve --import tsx tests/fixtures/online-agent-reasoning-acceptance.ts` from its directory. Set `E2E_SCREENSHOT_DIR` to retain screenshots. The harness creates temporary configuration, isolated databases/storage, synthetic credentials and a local HTTP model fixture; it prints the actual application entry URL and disposes its owned server and data after the tests. It never calls a paid provider. This automated check does not replace acceptance against an explicitly authorized real provider or user review.
+
 ## Configure a model
 
 1. Start this application's own configuration and database as described in [Getting started](README.MD#getting-started). Open the `Local:` URL printed by `pnpm dev`, including its application base path.

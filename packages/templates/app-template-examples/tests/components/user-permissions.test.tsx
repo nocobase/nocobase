@@ -5,6 +5,10 @@ import {
   authorizationClientToken,
   type PermissionGrant,
 } from '@nocobase/app-plugin-authorization/client';
+import {
+  defineAppRoutes,
+  defineClientPlugin,
+} from '@nocobase/app-client/plugins';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route } from 'react-router';
@@ -35,7 +39,11 @@ describe('user permission configuration', () => {
         grants: [
           {
             resource: { type: 'user', id: '*' },
-            actions: [{ action: 'read' }, { action: 'disable' }],
+            actions: [
+              { action: 'read' },
+              { action: 'disable' },
+              { action: 'invite' },
+            ],
           },
         ] as readonly PermissionGrant[],
       };
@@ -83,6 +91,22 @@ describe('user permission configuration', () => {
             namespace,
             namespaces,
             locale,
+            plugins: [
+              defineClientPlugin({
+                packageName: namespace,
+                routes: defineAppRoutes([
+                  {
+                    name: 'users',
+                    path: '/users',
+                    authz: {
+                      resource: { type: 'user', id: '*' },
+                      action: 'read',
+                    },
+                    componentLoader: async () => ({ default: () => null }),
+                  },
+                ]),
+              })(),
+            ],
             services: (app: ClientApplication) =>
               app.container.instance(
                 authorizationClientToken,
@@ -93,17 +117,17 @@ describe('user permission configuration', () => {
         );
       const first = await mount();
       const labels = [
-        words.inviteUsers,
-        words.deleteUsers,
-        words.resetUserPassword,
+        words.createUsers,
+        words.updateUsers,
+        words.revokeSessions,
       ];
       for (const label of labels) {
-        const checkbox = await screen.findByRole('checkbox', { name: label });
+        const toggle = await screen.findByRole('checkbox', { name: label });
         await waitFor(() =>
-          expect(checkbox).not.toHaveAttribute('aria-disabled', 'true'),
+          expect(toggle).not.toHaveAttribute('aria-disabled', 'true'),
         );
-        expect(checkbox).not.toBeChecked();
-        await user.click(checkbox);
+        expect(toggle).not.toBeChecked();
+        await user.click(toggle);
       }
       expect(
         screen.getByRole('heading', { name: words.userInformation }),
@@ -114,9 +138,12 @@ describe('user permission configuration', () => {
       expect(
         screen.getByRole('heading', { name: words.roleAssignment }),
       ).toBeVisible();
-      expect(screen.getAllByRole('checkbox')).toHaveLength(10);
+      expect(screen.getAllByRole('checkbox')).toHaveLength(8);
+      expect(
+        screen.queryByRole('checkbox', { name: words.inviteUsers }),
+      ).not.toBeInTheDocument();
       const rowIds = screen.getAllByRole('checkbox').map((node) => node.id);
-      expect(new Set(rowIds).size).toBe(10);
+      expect(new Set(rowIds).size).toBe(8);
       await user.click(
         screen.getByRole('button', { name: words.save, exact: true }),
       );
@@ -128,7 +155,14 @@ describe('user permission configuration', () => {
           }),
         ),
       );
-      const all = ['read', 'disable', 'invite', 'delete', 'reset-password'];
+      const all = [
+        'read',
+        'disable',
+        'invite',
+        'create',
+        'update',
+        'revoke-sessions',
+      ];
       expect(role.grants[0]?.actions.map((action) => action.action)).toEqual(
         all,
       );
@@ -139,14 +173,14 @@ describe('user permission configuration', () => {
           await screen.findByRole('checkbox', { name: label }),
         ).toBeChecked();
       await user.click(
-        screen.getByRole('checkbox', { name: words.deleteUsers }),
+        screen.getByRole('checkbox', { name: words.updateUsers }),
       );
       await user.click(
         screen.getByRole('button', { name: words.save, exact: true }),
       );
       await waitFor(() =>
         expect(role.grants[0]?.actions.map((action) => action.action)).toEqual(
-          all.filter((action) => action !== 'delete'),
+          all.filter((action) => action !== 'update'),
         ),
       );
     },

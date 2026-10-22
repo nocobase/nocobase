@@ -297,7 +297,7 @@ describe('native SDK transport, persistence and approval', () => {
     );
   });
 
-  it('retains private reasoning evidence for trusted SDK conversion without publishing it', async () => {
+  it('retains private reasoning evidence for trusted SDK conversion while publishing only reasoning text', async () => {
     const f = await fixture();
     vi.spyOn(f.model, 'doStream').mockResolvedValueOnce({
       stream: chunks([
@@ -315,7 +315,7 @@ describe('native SDK transport, persistence and approval', () => {
     const chat = f.chatFor();
     await chat.sendMessage({ text: 'Think' });
     expect(chat.error).toBeUndefined();
-    expect(JSON.stringify(chat.messages)).not.toContain(
+    expect(JSON.stringify(chat.messages)).toContain(
       'Private execution thought',
     );
     expect(JSON.stringify(await f.agent.history())).not.toContain(
@@ -393,7 +393,6 @@ describe('native SDK transport, persistence and approval', () => {
     const privateMarkers = [
       'private-input',
       'model-only-value',
-      'Private reasoning evidence',
       'private-signature',
       'private-provider-token',
     ];
@@ -432,7 +431,14 @@ describe('native SDK transport, persistence and approval', () => {
       return newest.data[0] as AppUIMessage;
     };
     assertPublic(chat.messages);
-    expect(jsonSafe(chat.messages.at(-1))).toEqual(message);
+    // SDK stream construction retains its routing id; saved parts expose only the public whitelist.
+    expect(jsonSafe(chat.messages.at(-1))).toEqual({
+      ...message,
+      parts: message.parts.map((part) =>
+        part.type === 'reasoning' ? { ...part, id: 'private-reasoning' } : part,
+      ),
+    });
+    expect(JSON.stringify(message)).toContain('Private reasoning evidence');
     expect((await pages()).parts.find(isToolUIPart)).toMatchObject({
       input: { label: display },
       output: { label: display },
@@ -663,6 +669,33 @@ describe('native SDK transport, persistence and approval', () => {
 
   it('restores a persisted approval, continues the same ID, and never repeats an approved effect', async () => {
     const f = await fixture(true, true);
+    for (const [id, tail] of [
+      [
+        'before',
+        [
+          {
+            type: 'tool-call',
+            toolCallId: 'actual-call-0',
+            toolName: 'business',
+            input: '{"value":"requested-0"}',
+          },
+          finish('tool-calls'),
+        ],
+      ],
+      ['after', text()],
+    ] as const) {
+      vi.spyOn(f.model, 'doStream').mockImplementationOnce(async (options) => {
+        f.prompts.push(options.prompt);
+        return {
+          stream: chunks([
+            { type: 'reasoning-start', id },
+            { type: 'reasoning-delta', id, delta: id + ' approval reasoning' },
+            { type: 'reasoning-end', id },
+            ...tail,
+          ]),
+        };
+      });
+    }
     const chat = f.chatFor();
     await chat.sendMessage({ text: 'Act' });
     expect(chat.error).toBeUndefined();
@@ -693,6 +726,15 @@ describe('native SDK transport, persistence and approval', () => {
       sessionId: f.agent.sessionId,
     });
     const history = await saved.history();
+    expect(
+      history
+        .at(-1)!
+        .parts.filter((part) => part.type === 'reasoning')
+        .map((part) => [part.text, part.state]),
+    ).toEqual([
+      ['before approval reasoning', 'done'],
+      ['after approval reasoning', 'done'],
+    ]);
     expect(
       history.filter((message) => message.role === 'assistant'),
     ).toHaveLength(1);
@@ -1882,5 +1924,131 @@ describe.skipIf(!process.env.PM481_REDIS_PORT)(
         expect(await f.agent.history()).toHaveLength(2);
       },
     );
+  },
+);
+
+it('streams two ordered reasoning parts through the real SDK without ending occupancy at reasoning-end', async () => {
+  const f = await fixture();
+  let output!: ReadableStreamDefaultController<unknown>;
+  vi.spyOn(f.model, 'doStream').mockResolvedValueOnce({
+    stream: new ReadableStream({
+      start(controller) {
+        output = controller;
+      },
+    }),
+  });
+  const chat = f.chatFor();
+  const sending = chat.sendMessage({ text: 'Think in steps' });
+  await vi.waitFor(() => expect(output).toBeDefined());
+  output.enqueue({ type: 'reasoning-start', id: 'first' });
+  output.enqueue({
+    type: 'reasoning-delta',
+    id: 'first',
+    delta: 'First reasoning',
+  });
+  await vi.waitFor(() =>
+    expect(chat.messages.at(-1)!.parts).toContainEqual(
+      expect.objectContaining({
+        type: 'reasoning',
+        text: 'First reasoning',
+        state: 'streaming',
+      }),
+    ),
+  );
+  output.enqueue({ type: 'reasoning-end', id: 'first' });
+  await vi.waitFor(() =>
+    expect(chat.messages.at(-1)!.parts).toContainEqual(
+      expect.objectContaining({ type: 'reasoning', state: 'done' }),
+    ),
+  );
+  expect((await (await f.request(f.base)).json()).data.execution.status).toBe(
+    'running',
+  );
+  output.enqueue({ type: 'text-start', id: 'between' });
+  output.enqueue({ type: 'text-delta', id: 'between', delta: 'Between' });
+  output.enqueue({ type: 'text-end', id: 'between' });
+  output.enqueue({ type: 'reasoning-start', id: 'second' });
+  output.enqueue({
+    type: 'reasoning-delta',
+    id: 'second',
+    delta: 'Second reasoning',
+  });
+  await vi.waitFor(() =>
+    expect(
+      chat.messages
+        .at(-1)!
+        .parts.filter((part) => part.type === 'reasoning')
+        .map((part) => part.state),
+    ).toEqual(['done', 'streaming']),
+  );
+  output.enqueue({ type: 'reasoning-end', id: 'second' });
+  output.enqueue(finish());
+  output.close();
+  await sending;
+  expect(chat.error).toBeUndefined();
+  const saved = (await f.agent.history()).at(-1)!;
+  expect(saved.id).toBe(chat.messages.at(-1)!.id);
+  expect(
+    saved.parts.filter(
+      (part) => part.type === 'text' || part.type === 'reasoning',
+    ),
+  ).toEqual([
+    { type: 'reasoning', text: 'First reasoning', state: 'done' },
+    { type: 'text', text: 'Between', state: 'done' },
+    { type: 'reasoning', text: 'Second reasoning', state: 'done' },
+  ]);
+});
+
+it.each(['stop', 'failure'] as const)(
+  'retains partial reasoning after %s without another model request',
+  async (mode) => {
+    const f = await fixture();
+    let output!: ReadableStreamDefaultController<unknown>;
+    const run = vi
+      .spyOn(f.model, 'doStream')
+      .mockImplementationOnce(async (options) => ({
+        stream: new ReadableStream({
+          start(controller) {
+            output = controller;
+            options.abortSignal?.addEventListener(
+              'abort',
+              () => controller.close(),
+              { once: true },
+            );
+          },
+        }),
+      }));
+    const chat = f.chatFor();
+    const sending = chat.sendMessage({ text: 'Think until interrupted' });
+    await vi.waitFor(() => expect(output).toBeDefined());
+    output.enqueue({ type: 'reasoning-start', id: 'partial-reason' });
+    output.enqueue({
+      type: 'reasoning-delta',
+      id: 'partial-reason',
+      delta: 'Saved partial reasoning',
+    });
+    await vi.waitFor(() =>
+      expect(JSON.stringify(chat.messages)).toContain(
+        'Saved partial reasoning',
+      ),
+    );
+    if (mode === 'stop')
+      expect((await f.request(f.base + '/stop', 'POST')).status).toBe(200);
+    else {
+      output.enqueue({
+        type: 'error',
+        error: new Error('Private fixture failure'),
+      });
+      output.close();
+    }
+    await sending;
+    await vi.waitFor(async () => expect(await f.agent.status()).toBe('idle'));
+    const history = await f.agent.history();
+    expect(JSON.stringify(history)).toContain('Saved partial reasoning');
+    expect(JSON.stringify(history)).not.toContain('Private fixture failure');
+    expect(
+      (await (await f.request(f.base)).json()).data.execution.outcome,
+    ).toBe(mode === 'stop' ? 'cancelled' : 'failed');
+    expect(run).toHaveBeenCalledOnce();
   },
 );
