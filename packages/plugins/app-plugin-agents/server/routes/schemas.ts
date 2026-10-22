@@ -743,7 +743,8 @@ export const AvailableModelSchema: z.ZodType<AvailableModel> = z
         'Normalized; empty for a tool that cannot list models (one entry stands for the whole tool).',
     }),
     displayModel: z.string().optional().meta({
-      description: 'As the tool names it, when known and different from `model`.',
+      description:
+        'As the tool names it, when known and different from `model`.',
     }),
     agentId: z.string().nullable().meta({
       description: 'The agent already kept for this tool and model, if any.',

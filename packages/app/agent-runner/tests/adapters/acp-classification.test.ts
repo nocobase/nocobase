@@ -56,9 +56,9 @@ it('redacts and bounds a detection status detail, dropping an empty result', () 
 });
 
 it('keeps a run failure’s own message, falling back only when there is nothing to keep', () => {
-  expect(runFailureMessage(new Error('Provider returned 401'), 'fallback')).toBe(
-    'Provider returned 401',
-  );
+  expect(
+    runFailureMessage(new Error('Provider returned 401'), 'fallback'),
+  ).toBe('Provider returned 401');
   expect(runFailureMessage('not an Error object', 'fallback')).toBe(
     'not an Error object',
   );

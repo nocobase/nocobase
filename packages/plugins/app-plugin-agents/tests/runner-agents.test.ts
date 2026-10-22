@@ -56,7 +56,12 @@ describe('agents built from runner reports', () => {
       },
     );
     expect(
-      models.map((model) => [model.tool, model.model, model.agentId, model.status]),
+      models.map((model) => [
+        model.tool,
+        model.model,
+        model.agentId,
+        model.status,
+      ]),
     ).toEqual([
       ['claude', 'claude-haiku-4-5', null, null],
       ['claude', 'claude-sonnet-5', null, null],
@@ -220,7 +225,11 @@ describe('agents built from runner reports', () => {
       tools: [claude('claude-sonnet-5')],
     });
     const { id } = await h.services.agents.createFromAvailable(
-      { tool: 'claude', model: 'claude-sonnet-5', description: 'Small changes' },
+      {
+        tool: 'claude',
+        model: 'claude-sonnet-5',
+        description: 'Small changes',
+      },
       'alice',
     );
     const conn = h.services.tx.read();

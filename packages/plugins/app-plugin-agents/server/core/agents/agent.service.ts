@@ -224,7 +224,10 @@ export interface AgentService {
     model: string,
   ): CatalogModel['goodAt'] | null;
   /** The tool and model combinations the application auto-enables when a runner reports them (`AgentDefaults.recommendedModels`). */
-  recommended(): readonly { readonly tool: AgentTool; readonly model: string }[];
+  recommended(): readonly {
+    readonly tool: AgentTool;
+    readonly model: string;
+  }[];
   /** Writes the current defaults to every discovered agent that differs; answers how many changed. */
   applyDefaults(options?: { preserveInstructions?: boolean }): Promise<number>;
   /**
@@ -250,7 +253,10 @@ export interface AgentService {
   cleanup(
     ids: readonly string[],
     byUserId: string | null,
-  ): Promise<{ readonly removed: readonly string[]; readonly skipped: readonly string[] }>;
+  ): Promise<{
+    readonly removed: readonly string[];
+    readonly skipped: readonly string[];
+  }>;
   /** The agent's history, newest first; with `afterRevision`, the changes made after that revision. 404 when absent. */
   history(id: string, options?: HistoryOptions): Promise<AgentChange[]>;
   /** Records in the agent's history, on `conn`, that one of its variables was added, changed or removed. */

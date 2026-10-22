@@ -78,7 +78,9 @@ export function CleanupDialog({
       >
         <DialogHeader className='shrink-0'>
           <DialogTitle>{t('agents.cleanup.title')}</DialogTitle>
-          <DialogDescription>{t('agents.cleanup.description')}</DialogDescription>
+          <DialogDescription>
+            {t('agents.cleanup.description')}
+          </DialogDescription>
         </DialogHeader>
         <div className='min-h-0 flex-1 space-y-2 overflow-y-auto'>
           {candidates.isError && !candidates.data ? (

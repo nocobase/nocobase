@@ -33,7 +33,10 @@ export async function withDetectionEnvironment<T>(
       searchPath: base.PATH,
     });
     const withGuards = wrapped.length
-      ? { ...base, PATH: [binDir, base.PATH].filter(Boolean).join(path.delimiter) }
+      ? {
+          ...base,
+          PATH: [binDir, base.PATH].filter(Boolean).join(path.delimiter),
+        }
       : base;
     return await detect(cwd, withGuards);
   } finally {

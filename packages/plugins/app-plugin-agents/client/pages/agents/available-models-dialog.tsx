@@ -13,10 +13,7 @@ import type { AvailableModel } from '../../../shared/agents.js';
 import { TOOL_LABELS } from '../../../shared/model-catalog.js';
 import { modelSuggestion } from '../../model-suggestion.js';
 import { agentsKeys } from '../../api/keys.js';
-import {
-  AgListSkeleton,
-  AgLoadError,
-} from '../../components/ag-states.js';
+import { AgListSkeleton, AgLoadError } from '../../components/ag-states.js';
 import { AgTag, type Tone } from '../../components/ag-tag.js';
 import { Button } from '../../components/ui/button.js';
 import {

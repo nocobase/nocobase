@@ -194,13 +194,15 @@ export function modelLabel(tool: AgentTool, model: string): string {
  * brackets) or newlines: replace the former with the visually closest safe punctuation and the rest with spaces.
  */
 export function sanitizeAgentNamePart(value: string): string {
-  return value
-    .replace(/\[/gu, '(')
-    .replace(/\]/gu, ')')
-    // eslint-disable-next-line no-control-regex -- stripping control characters an agent mention link must not carry.
-    .replace(/[\u0000-\u001f\u007f]/gu, ' ')
-    .replace(/\s+/gu, ' ')
-    .trim();
+  return (
+    value
+      .replace(/\[/gu, '(')
+      .replace(/\]/gu, ')')
+      // eslint-disable-next-line no-control-regex -- stripping control characters an agent mention link must not carry.
+      .replace(/[\u0000-\u001f\u007f]/gu, ' ')
+      .replace(/\s+/gu, ' ')
+      .trim()
+  );
 }
 
 /** An agent's name for a tool and model: "Claude · Opus 5.5". */

@@ -9,7 +9,11 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { vi } from 'vitest';
 
-import type { AgentView, AvailableModel, CleanupCandidate } from '../../shared/agents.js';
+import type {
+  AgentView,
+  AvailableModel,
+  CleanupCandidate,
+} from '../../shared/agents.js';
 import { callsTo, clientMocks, resetApi } from './fake-client.js';
 import { agent } from './fixtures.js';
 import { renderPage } from './render.js';
@@ -77,7 +81,11 @@ describe('the Agent page', () => {
         ...(request.json as object),
       }),
       'POST agents/runnerAgents': (request) => {
-        const body = request.json as { tool: string; model: string; description: string };
+        const body = request.json as {
+          tool: string;
+          model: string;
+          description: string;
+        };
         return {
           id: `${body.tool}-${body.model}`,
           name: `Created · ${body.model}`,
@@ -115,7 +123,9 @@ describe('the Agent page', () => {
     });
     fireEvent.click(within(dialog).getByTestId('agent-dialog-save'));
     await waitFor(() =>
-      expect(callsTo('PATCH', 'agents/sonnet').map((call) => call.json)).toEqual([
+      expect(
+        callsTo('PATCH', 'agents/sonnet').map((call) => call.json),
+      ).toEqual([
         expect.objectContaining({ description: 'Updated description' }),
       ]),
     );
@@ -132,7 +142,9 @@ describe('the Agent page', () => {
     );
     const goodAt = await within(dialog).findByTestId('available-model-good-at');
     expect(goodAt).toHaveValue('modelSuggestions.design');
-    fireEvent.click(within(dialog).getByTestId('available-model-create-submit'));
+    fireEvent.click(
+      within(dialog).getByTestId('available-model-create-submit'),
+    );
     await waitFor(() =>
       expect(
         callsTo('POST', 'agents/runnerAgents').map((call) => call.json),
@@ -151,14 +163,15 @@ describe('the Agent page', () => {
     fireEvent.click(await screen.findByTestId('agents-cleanup-open'));
     const dialog = await screen.findByTestId('cleanup-dialog');
     fireEvent.click(
-      within(await within(dialog).findByTestId('cleanup-candidate-stray-1'))
-        .getByRole('checkbox'),
+      within(
+        await within(dialog).findByTestId('cleanup-candidate-stray-1'),
+      ).getByRole('checkbox'),
     );
     fireEvent.click(within(dialog).getByTestId('cleanup-submit'));
     await waitFor(() =>
-      expect(callsTo('POST', 'agents/cleanup').map((call) => call.json)).toEqual([
-        { agentIds: ['stray-1'] },
-      ]),
+      expect(
+        callsTo('POST', 'agents/cleanup').map((call) => call.json),
+      ).toEqual([{ agentIds: ['stray-1'] }]),
     );
   });
 

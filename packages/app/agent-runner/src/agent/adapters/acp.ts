@@ -38,7 +38,10 @@ import {
 const CLIENT = { name: 'nocobase-runner', version: '1' };
 
 /** `message`, redacted and with its control characters stripped; empty becomes absent. */
-function sanitizeMessage(message: string, maxLength: number): string | undefined {
+function sanitizeMessage(
+  message: string,
+  maxLength: number,
+): string | undefined {
   const redacted = createRedactor()
     .text(message)
     // eslint-disable-next-line no-control-regex -- stripping the control characters the protocol schemas refuse.
@@ -64,18 +67,28 @@ export function runFailureMessage(error: unknown, fallback: string): string {
 }
 
 /** How the ACP handshake or first session failed, when `error` says enough to tell. */
-export function classifyHandshakeFailure(
-  error: unknown,
-): { status: 'needsLogin' | 'failed'; reason?: ToolStatusReason } {
-  if (isAuthRequired(error)) return { status: 'needsLogin', reason: 'notLoggedIn' };
+export function classifyHandshakeFailure(error: unknown): {
+  status: 'needsLogin' | 'failed';
+  reason?: ToolStatusReason;
+} {
+  if (isAuthRequired(error))
+    return { status: 'needsLogin', reason: 'notLoggedIn' };
   const message = error instanceof Error ? error.message : String(error);
   if (/unsupported acp protocol version/iu.test(message))
     return { status: 'failed', reason: 'versionTooOld' };
-  if (/did not answer within|detection cancelled|agent exited before/iu.test(message))
+  if (
+    /did not answer within|detection cancelled|agent exited before/iu.test(
+      message,
+    )
+  )
     return { status: 'failed', reason: 'timeout' };
   // A generic heuristic, not tool-specific wording confirmed against a real handshake failure (goose with no
   // provider set, for one): most agents name the missing piece when they refuse to start a session over it.
-  if (/\bno (?:model|provider)\b|\bprovider\b.{0,20}\b(?:missing|not set|required)\b|\bnot configured\b/iu.test(message))
+  if (
+    /\bno (?:model|provider)\b|\bprovider\b.{0,20}\b(?:missing|not set|required)\b|\bnot configured\b/iu.test(
+      message,
+    )
+  )
     return { status: 'failed', reason: 'notConfigured' };
   return { status: 'failed', reason: 'startFailed' };
 }
