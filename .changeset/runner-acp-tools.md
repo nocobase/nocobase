@@ -12,3 +12,5 @@ A runner's report no longer creates an agent for every tool and model it lists s
 Confirm Amp authentication only through a reviewed adapter authentication check; unknown login state remains a detection failure. Keep Add agent requests owned by the full two-step flow so pending requests cannot be duplicated by returning or closing. Report ACP protocol incompatibility separately from tool release requirements, and explicitly identify unknown minimum releases.
 
 Make model selection and cleanup confirmations readable, render setup commands separately from expandable tool diagnostics, reuse catalog model names, and require Good at before adding agents. Show enabled agents with no usable runtime as unavailable without changing scheduling. Give actionable advice for incompatible ACP versions while keeping unknown minimum tool releases explicit.
+
+Filter available models by each model's status instead of its tool's aggregate state. Merge disjoint status results and counts with complete pagination, preserve per-tool searches when filters change, and show all states when no status is selected.

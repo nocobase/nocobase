@@ -15,7 +15,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import {
   useInfiniteQuery,
   useMutation,
-  useQuery,
+  useQueries,
   useQueryClient,
 } from '@tanstack/react-query';
 import { useMemo, useRef, useState, type ReactElement } from 'react';
@@ -192,6 +192,9 @@ export function AvailableModelsDrawer({
   const [selected, setSelected] = useState<ReadonlyMap<string, AvailableModel>>(
     () => new Map(),
   );
+  const [groupSearches, setGroupSearches] = useState<
+    ReadonlyMap<AgentTool, string>
+  >(() => new Map());
   const [step, setStep] = useState<'select' | 'confirm'>('select');
   const [drafts, setDrafts] = useState<ReadonlyMap<string, string>>(
     () => new Map(),
@@ -202,11 +205,20 @@ export function AvailableModelsDrawer({
   );
   const q = search.trim();
   const forceExpand = q !== '';
+  // Each status already has a server-side model filter and count. Empty (or all four) means no filter.
+  const filters = useMemo<readonly (ModelAvailabilityStatus | undefined)[]>(
+    () =>
+      statuses.size === 0 || statuses.size === STATUS_FILTERS.length
+        ? [undefined]
+        : STATUS_FILTERS.filter((status) => statuses.has(status)),
+    [statuses],
+  );
 
   const reset = (): void => {
     setSearch('');
     setStatuses(new Set(['available']));
     setToggled(new Set());
+    setGroupSearches(new Map());
     setSelected(new Map());
     setDrafts(new Map());
     setStep('select');
@@ -292,11 +304,41 @@ export function AvailableModelsDrawer({
     bulkCreate.mutate();
   };
 
-  const groups = useQuery({
-    queryKey: agentsKeys.availableModelGroups(q, ''),
-    queryFn: () => api.availableModelGroups({ q: q || undefined }),
-    enabled: open && step === 'select',
+  const groupQueries = useQueries({
+    queries: filters.map((status) => ({
+      queryKey: agentsKeys.availableModelGroups(q, status ?? ''),
+      queryFn: () => api.availableModelGroups({ q: q || undefined, status }),
+      enabled: open && step === 'select',
+    })),
   });
+  const mergedGroups = new Map<AgentTool, AvailableModelGroup>();
+  for (const query of groupQueries)
+    for (const group of query.data?.data ?? []) {
+      const previous = mergedGroups.get(group.tool);
+      mergedGroups.set(
+        group.tool,
+        previous
+          ? {
+              ...group,
+              modelCount: previous.modelCount + group.modelCount,
+              recommendedCount:
+                previous.recommendedCount + group.recommendedCount,
+            }
+          : group,
+      );
+    }
+  const groups = {
+    data: groupQueries.every((query) => query.data !== undefined)
+      ? {
+          data: [...mergedGroups.values()].sort((a, b) =>
+            a.tool.localeCompare(b.tool),
+          ),
+        }
+      : undefined,
+    isError: groupQueries.some((query) => query.isError),
+    error: groupQueries.find((query) => query.isError)?.error,
+    refetch: () => Promise.all(groupQueries.map((query) => query.refetch())),
+  };
 
   const toggle = (tool: AgentTool): void =>
     setToggled((current) => {
@@ -414,35 +456,37 @@ export function AvailableModelsDrawer({
                 />
               ) : !groups.data ? (
                 <AgListSkeleton />
-              ) : groups.data.data.every(
-                  (group) => !statuses.has(group.status),
-                ) ? (
+              ) : groups.data.data.length === 0 ? (
                 <p className='text-sm text-muted-foreground'>
                   {t('agents.noneInFilter')}
                 </p>
               ) : (
-                groups.data.data
-                  .filter((group) => statuses.has(group.status))
-                  .map((group) => (
-                    <ToolGroup
-                      key={group.tool}
-                      group={group}
-                      q={q}
-                      status={group.status}
-                      expanded={
-                        toggled.has(group.tool) !==
-                        group.modelCount <= DEFAULT_EXPAND_THRESHOLD
-                      }
-                      forceExpand={forceExpand}
-                      onToggle={() => toggle(group.tool)}
-                      selected={selected}
-                      onSelect={setRowSelected}
-                      onAddOne={(model) => {
-                        setRowSelected(model, true);
-                        goToConfirm(model);
-                      }}
-                    />
-                  ))
+                groups.data.data.map((group) => (
+                  <ToolGroup
+                    key={group.tool}
+                    group={group}
+                    q={q}
+                    filters={filters}
+                    groupQuery={groupSearches.get(group.tool) ?? ''}
+                    onGroupQueryChange={(value) =>
+                      setGroupSearches((current) =>
+                        new Map(current).set(group.tool, value),
+                      )
+                    }
+                    expanded={
+                      toggled.has(group.tool) !==
+                      group.modelCount <= DEFAULT_EXPAND_THRESHOLD
+                    }
+                    forceExpand={forceExpand}
+                    onToggle={() => toggle(group.tool)}
+                    selected={selected}
+                    onSelect={setRowSelected}
+                    onAddOne={(model) => {
+                      setRowSelected(model, true);
+                      goToConfirm(model);
+                    }}
+                  />
+                ))
               )}
             </div>
             <SheetFooter
@@ -485,7 +529,9 @@ export function AvailableModelsDrawer({
 function ToolGroup({
   group,
   q,
-  status,
+  filters,
+  groupQuery,
+  onGroupQueryChange,
   expanded,
   forceExpand,
   onToggle,
@@ -495,7 +541,9 @@ function ToolGroup({
 }: {
   readonly group: AvailableModelGroup;
   readonly q: string;
-  readonly status: ModelAvailabilityStatus;
+  readonly filters: readonly (ModelAvailabilityStatus | undefined)[];
+  readonly groupQuery: string;
+  readonly onGroupQueryChange: (value: string) => void;
   readonly expanded: boolean;
   readonly forceExpand: boolean;
   readonly onToggle: () => void;
@@ -506,26 +554,42 @@ function ToolGroup({
   const { t } = useTranslation();
   const api = useAgentsApi();
   const open = forceExpand || expanded;
-  const [groupQuery, setGroupQuery] = useState('');
   const effectiveQuery = groupQuery.trim() || q;
   const rows = useInfiniteQuery({
-    queryKey: agentsKeys.availableModelRows(group.tool, effectiveQuery, status),
-    queryFn: ({ pageParam }) =>
-      api.availableModelRows(group.tool, {
-        q: effectiveQuery || undefined,
-        status,
+    queryKey: agentsKeys.availableModelRows(
+      group.tool,
+      effectiveQuery,
+      filters.join(','),
+    ),
+    queryFn: async ({ pageParam }) => {
+      const pages = await Promise.all(
+        filters.map((status) =>
+          api.availableModelRows(group.tool, {
+            q: effectiveQuery || undefined,
+            status,
+            page: pageParam,
+            pageSize: PAGE_SIZE,
+          }),
+        ),
+      );
+      return {
+        data: pages.flatMap((page) => page.data),
+        total: pages.reduce((total, page) => total + page.meta.total, 0),
         page: pageParam,
-        pageSize: PAGE_SIZE,
-      }),
+        hasMore: pages.some(
+          (page) => page.meta.page * page.meta.pageSize < page.meta.total,
+        ),
+      };
+    },
     initialPageParam: 1,
-    getNextPageParam: (last) =>
-      last.meta.page * last.meta.pageSize < last.meta.total
-        ? last.meta.page + 1
-        : undefined,
+    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
     enabled: open && group.modelCount > 0,
   });
   const loaded = useMemo(
-    () => rows.data?.pages.flatMap((page) => page.data) ?? [],
+    () =>
+      (rows.data?.pages.flatMap((page) => page.data) ?? []).sort((a, b) =>
+        (a.displayModel ?? a.model).localeCompare(b.displayModel ?? b.model),
+      ),
     [rows.data],
   );
   return (
@@ -537,7 +601,7 @@ function ToolGroup({
         >
           <span className='font-medium'>
             {t('agents.available.group', {
-              count: group.modelCount,
+              count: rows.data?.pages[0].total ?? group.modelCount,
               tool: TOOL_LABELS[group.tool],
               runners: t('agents.available.runners', {
                 count: group.runnerCount,
@@ -556,10 +620,11 @@ function ToolGroup({
           ) : null}
           {group.modelCount === 0 ? null : (
             <>
-              {group.modelCount > DEFAULT_EXPAND_THRESHOLD ? (
+              {group.modelCount > DEFAULT_EXPAND_THRESHOLD ||
+              groupQuery !== '' ? (
                 <Input
                   value={groupQuery}
-                  onChange={(event) => setGroupQuery(event.target.value)}
+                  onChange={(event) => onGroupQueryChange(event.target.value)}
                   placeholder={t('agents.available.groupSearchPlaceholder')}
                   aria-label={t('agents.available.groupSearchPlaceholder')}
                   className='mt-3'

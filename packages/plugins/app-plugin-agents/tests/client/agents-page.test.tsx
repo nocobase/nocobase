@@ -109,16 +109,32 @@ describe('the Agent page', () => {
       agents: () => agents,
       'agents/availableModels': (request) => {
         const tool = request.query.tool as string | undefined;
-        if (!tool)
-          return {
-            data: availableGroups,
-            meta: {
-              total: availableGroups.length,
-              page: 1,
-              pageSize: availableGroups.length,
-            },
-          };
-        const rows = availableRows[tool] ?? [];
+        const status = request.query.status;
+        const q = String(request.query.q ?? '').toLowerCase();
+        const matchingRows = (tool: string): AvailableModel[] =>
+          (availableRows[tool] ?? []).filter(
+            (row) =>
+              (!status || row.availability === status) &&
+              (!q ||
+                tool.includes(q) ||
+                row.model.toLowerCase().includes(q) ||
+                row.displayModel?.toLowerCase().includes(q)),
+          );
+        if (!tool) {
+          const data = availableGroups
+            .map((group) => ({
+              ...group,
+              modelCount: matchingRows(group.tool).length,
+            }))
+            .filter(
+              (group) =>
+                group.modelCount > 0 ||
+                ((!status || group.status === status) &&
+                  (!q || group.tool.includes(q))),
+            );
+          return { data, meta: { total: data.length, page: 1, pageSize: 18 } };
+        }
+        const rows = matchingRows(tool);
         const page = Number(request.query.page ?? 1);
         const pageSize = Number(request.query.pageSize ?? 50);
         return {
@@ -307,6 +323,177 @@ describe('the Agent page', () => {
     const row = await screen.findByTestId('agent-sonnet');
     expect(within(row).getByText('agents.state.enabled')).toBeInTheDocument();
     expect(within(row).getByText('agents.unavailableNow')).toBeVisible();
+  });
+
+  it('filters mixed model states and counts through single, multiple, all and within-group searches', async () => {
+    const base = availableRows.claude![0]!;
+    availableRows.claude = [
+      ...Array.from({ length: 11 }, (_, index) => ({
+        ...base,
+        model: 'online-' + index,
+      })),
+      {
+        ...base,
+        model: 'historical-model',
+        agentId: 'historical-agent',
+        status: 'enabled',
+        availability: 'failed',
+        runners: { ready: 0, total: 1, names: [] },
+      },
+    ];
+    availableGroups[0] = { ...availableGroups[0]!, modelCount: 12 };
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-available-open'));
+    const drawer = await screen.findByTestId('available-models-drawer');
+    const group = () =>
+      within(drawer).getByTestId('available-models-group-claude');
+    const count = async (n: number): Promise<void> => {
+      await waitFor(() =>
+        expect(group()).toHaveTextContent('count=' + n + ','),
+      );
+    };
+    const filter = (name: string): void =>
+      fireEvent.click(
+        within(drawer).getByTestId('available-models-filter-' + name),
+      );
+    // A ready sibling must not hide the historical model when only failure is selected.
+    filter('failed');
+    filter('available');
+    const historical = await within(drawer).findByTestId(
+      'available-model-claude-historical-model',
+    );
+    await count(1);
+    expect(
+      within(historical).getByText('agents.available.status.failed'),
+    ).toBeInTheDocument();
+    expect(
+      within(drawer).queryByTestId('available-model-claude-online-0'),
+    ).toBeNull();
+    filter('available');
+    await count(12);
+    // The bigger group collapses by default; expand it to verify both actual rows and their different badges.
+    if (group().getAttribute('aria-expanded') === 'false')
+      fireEvent.click(group());
+    await within(drawer).findByTestId('available-model-claude-online-0');
+    await within(drawer).findByTestId(
+      'available-model-claude-historical-model',
+    );
+    expect(
+      within(drawer).getAllByTestId(/^available-model-claude-/u),
+    ).toHaveLength(12);
+    const search = () =>
+      within(drawer).getByTestId('available-models-group-search-claude');
+    fireEvent.change(search(), { target: { value: 'historical' } });
+    await count(1);
+    await waitFor(() =>
+      expect(
+        within(drawer).getAllByTestId(/^available-model-claude-/u),
+      ).toHaveLength(1),
+    );
+    fireEvent.change(search(), { target: { value: 'online' } });
+    await count(11);
+    await waitFor(() =>
+      expect(
+        within(drawer).queryByTestId('available-model-claude-historical-model'),
+      ).toBeNull(),
+    );
+    fireEvent.change(search(), { target: { value: '' } });
+    await count(12);
+    // Clear both choices: this means no status restriction, not an empty result.
+    filter('available');
+    filter('failed');
+    await count(12);
+    await within(drawer).findByTestId(
+      'available-model-claude-historical-model',
+    );
+    fireEvent.change(search(), { target: { value: 'historical' } });
+    await count(1);
+    await waitFor(() =>
+      expect(
+        within(drawer).getAllByTestId(/^available-model-claude-/u),
+      ).toHaveLength(1),
+    );
+    filter('available');
+    await count(0);
+    expect(search()).toHaveValue('historical');
+    expect(
+      within(drawer).getByText('agents.available.noModels'),
+    ).toBeInTheDocument();
+  });
+
+  it('retains no-model setup guidance with no status filter and avoids a row request', async () => {
+    availableGroups = [
+      {
+        tool: 'goose',
+        modelCount: 0,
+        runnerCount: 1,
+        status: 'needsSetup',
+        statusDetail: 'Configure a provider.',
+        recommendedCount: 0,
+      },
+    ];
+    availableRows = {};
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-available-open'));
+    const drawer = await screen.findByTestId('available-models-drawer');
+    fireEvent.click(
+      within(drawer).getByTestId('available-models-filter-available'),
+    );
+    await within(drawer).findByTestId('available-models-group-goose');
+    expect(
+      await within(drawer).findByText('goose configure', { selector: 'code' }),
+    ).toBeInTheDocument();
+    expect(
+      callsTo('GET', 'agents/availableModels').filter(
+        (call) => call.query?.tool === 'goose',
+      ),
+    ).toHaveLength(0);
+  });
+
+  it('keeps merged status pagination complete when one status runs out of pages sooner', async () => {
+    const base = availableRows.claude![0]!;
+    availableRows.claude = [
+      ...Array.from({ length: 51 }, (_, index) => ({
+        ...base,
+        model: 'online-' + index,
+      })),
+      { ...base, model: 'historical-model', availability: 'failed' },
+    ];
+    availableGroups[0] = { ...availableGroups[0]!, modelCount: 52 };
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-available-open'));
+    const drawer = await screen.findByTestId('available-models-drawer');
+    fireEvent.click(
+      within(drawer).getByTestId('available-models-filter-failed'),
+    );
+    const group = await within(drawer).findByTestId(
+      'available-models-group-claude',
+    );
+    await waitFor(() => expect(group).toHaveTextContent('count=52,'));
+    fireEvent.click(group);
+    const more = await within(drawer).findByRole('button', {
+      name: 'agents.loadMore',
+    });
+    fireEvent.click(more);
+    await waitFor(() =>
+      expect(
+        within(drawer).queryByRole('button', { name: 'agents.loadMore' }),
+      ).toBeNull(),
+    );
+    const queries = callsTo('GET', 'agents/availableModels').filter(
+      (call) => call.query?.tool === 'claude',
+    );
+    expect(
+      queries.some(
+        (call) => call.query?.page === 2 && call.query.status === 'available',
+      ),
+    ).toBe(true);
+    expect(
+      queries.some(
+        (call) => call.query?.page === 2 && call.query.status === 'failed',
+      ),
+    ).toBe(true);
+    expect(group).toHaveTextContent('count=52,');
   });
 
   it('selects several models across the group, edits one good-at, and adds them at once from the confirm step', async () => {

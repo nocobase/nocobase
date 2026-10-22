@@ -82,6 +82,68 @@ const kilo = (count: number): ToolInfo => ({
 });
 
 describe('available models groups', () => {
+  it('keeps a failed historical model in a ready tool with matching row and group counts', async () => {
+    h = await createHarness();
+    await seedPendingAgent(h, 'claude', 'historical-model');
+    await h.registerRunner({
+      enabledTools: ['claude'],
+      tools: [
+        {
+          kind: 'claude',
+          authenticated: true,
+          status: 'ready',
+          models: [{ id: 'online-model' }],
+        },
+      ],
+    });
+    const read = async (suffix: string) =>
+      (
+        await h.request('GET', '/agents/availableModels' + suffix, {
+          user: 'admin',
+          can: ['agents.agents/read'],
+        })
+      ).body;
+    for (const [status, model] of [
+      ['available', 'online-model'],
+      ['failed', 'historical-model'],
+    ]) {
+      const groups = await read('?status=' + status);
+      expect(groups.data).toEqual([
+        expect.objectContaining({
+          tool: 'claude',
+          status: 'available',
+          modelCount: 1,
+        }),
+      ]);
+      const rows = await read('?tool=claude&status=' + status);
+      expect(rows.meta.total).toBe(1);
+      expect(rows.data).toEqual([
+        expect.objectContaining({ model, availability: status }),
+      ]);
+    }
+    expect((await read('')).data).toEqual([
+      expect.objectContaining({ tool: 'claude', modelCount: 2 }),
+    ]);
+    const first = await read('?tool=claude&page=1&pageSize=1');
+    const second = await read('?tool=claude&page=2&pageSize=1');
+    expect(first.meta.total).toBe(2);
+    expect(second.meta.total).toBe(2);
+    expect(
+      [...first.data, ...second.data].map(
+        (row: { model: string }) => row.model,
+      ),
+    ).toEqual(['historical-model', 'online-model']);
+    expect((await read('?q=historical&status=failed')).data).toEqual([
+      expect.objectContaining({ modelCount: 1 }),
+    ]);
+    expect(
+      (await read('?tool=claude&q=historical&status=failed')).data,
+    ).toEqual([expect.objectContaining({ model: 'historical-model' })]);
+    expect(
+      (await read('?tool=claude&q=historical&status=available')).data,
+    ).toEqual([]);
+  });
+
   it('lists one group per tool with its model count, never shipping a large tool’s models unasked', async () => {
     h = await createHarness();
     await h.registerRunner({
