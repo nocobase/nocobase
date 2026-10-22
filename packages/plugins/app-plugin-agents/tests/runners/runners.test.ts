@@ -607,7 +607,7 @@ describe('runners', () => {
     ).toBeNull();
   });
 
-  it('gives the runner the slots its token carries unless it names its own', async () => {
+  it('uses only online registration slots, defaulting to four', async () => {
     h = await createHarness();
     const register = async (
       tokenSlots: number | null | undefined,
@@ -630,9 +630,9 @@ describe('runners', () => {
       return runner.slots;
     };
     expect(await register(4)).toBe(4);
-    expect(await register(4, 2)).toBe(2);
-    expect(await register(null)).toBe(1);
-    expect(await register(undefined, 3)).toBe(3);
+    expect(await register(4, 2)).toBe(4);
+    expect(await register(null)).toBe(4);
+    expect(await register(undefined, 3)).toBe(4);
 
     const created = await h.request(
       'POST',
@@ -827,10 +827,10 @@ describe('runners', () => {
 
   it('says whether the application gives runners jobs', async () => {
     h = await createHarness();
-    await h.registerRunner();
+    const { runnerId: id } = await h.registerRunner();
     const offers = async () =>
-      (await h.request('GET', '/agents/runners', { user: 'owner' })).body
-        .data[0].offersJobs;
+      (await h.request('GET', `/agents/runners/${id}`, { user: 'owner' })).body
+        .data.offersJobs;
     expect(await offers()).toBe(false);
     h.services.jobs.register('preview.build', { executor: 'build' });
     expect(await offers()).toBe(true);

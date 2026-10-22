@@ -29,6 +29,36 @@ import {
 } from '../server/tokens.js';
 
 describe('@nocobase/app-plugin-users API routes', () => {
+  it.each(['anonymous', 'forbidden', 'allowed'] as const)(
+    'guards latest user reads for %s callers',
+    async (mode) => {
+      const service = userService();
+      const router = await apiRoutes.createRouter(
+        createApplication(mode, service),
+      );
+      const response = await router.request('/users/user-1');
+      expect(response.status).toBe(
+        mode === 'anonymous' ? 401 : mode === 'forbidden' ? 403 : 200,
+      );
+      if (mode === 'allowed') {
+        expect(service.get).toHaveBeenCalledExactlyOnceWith('user-1');
+        expect(await response.json()).toMatchObject({
+          data: { id: 'user-1', name: 'Alice' },
+        });
+      } else expect(service.get).not.toHaveBeenCalled();
+    },
+  );
+  it('returns a missing latest user as 404', async () => {
+    const service = userService();
+    vi.mocked(service.get).mockRejectedValue(
+      new UserManagementError('USER_NOT_FOUND', 'Unknown user', 404),
+    );
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+    expect((await router.request('/users/missing')).status).toBe(404);
+  });
+
   it.each([
     { canCreateUsers: false, canAssignRoles: true },
     { canCreateUsers: true, canAssignRoles: false },
@@ -621,6 +651,21 @@ describe('@nocobase/app-plugin-users API routes', () => {
     });
   });
 
+  it.each(['asc', 'desc'] as const)(
+    'preserves name sorting in %s order through query validation',
+    async (order) => {
+      const service = userService();
+      const router = await apiRoutes.createRouter(
+        createApplication('allowed', service),
+      );
+      const response = await router.request(`/users?sort=name&order=${order}`);
+      expect(response.status).toBe(200);
+      expect(service.list).toHaveBeenCalledWith(
+        expect.objectContaining({ sort: 'name', order }),
+      );
+    },
+  );
+
   it('rejects an unknown body field and invalid paging before calling the service', async () => {
     const service = userService();
     const router = await apiRoutes.createRouter(
@@ -741,6 +786,69 @@ describe('@nocobase/app-plugin-users API routes', () => {
     },
   );
 
+  it('hands every account action the authenticated actor', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+    const send = (path: string, method: string, body?: unknown) =>
+      router.request(path, {
+        method,
+        ...(body === undefined
+          ? {}
+          : {
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify(body),
+            }),
+      });
+    await send('/users/user-1', 'PATCH', { name: 'Updated' });
+    await send('/users/user-1/disable', 'POST');
+    await send('/users/user-1/enable', 'POST');
+    await send('/users/user-1/roleScopes/hub', 'PUT', { value: 'hub-viewer' });
+    await send('/users/user-1/resetPassword', 'POST', {
+      password: 'secret123',
+    });
+    await send('/users/user-1/revokeSessions', 'POST');
+    expect(service.update).toHaveBeenCalledWith(
+      'user-1',
+      { name: 'Updated' },
+      'admin-1',
+    );
+    expect(service.disable).toHaveBeenCalledWith('user-1', 'admin-1');
+    expect(service.enable).toHaveBeenCalledWith('user-1', 'admin-1');
+    expect(service.replaceRoleScope).toHaveBeenCalledWith(
+      'user-1',
+      'hub',
+      'hub-viewer',
+      'admin-1',
+    );
+    expect(service.resetPassword).toHaveBeenCalledWith(
+      'user-1',
+      'secret123',
+      'admin-1',
+    );
+    expect(service.revokeSessions).toHaveBeenCalledWith('user-1', 'admin-1');
+  });
+
+  it('answers a role scope refusing the actor as a failed precondition', async () => {
+    const service = userService();
+    vi.mocked(service.resetPassword).mockRejectedValue(
+      new UserRoleScopeError('PROTECTED_ACCOUNT', 'Not yours to change', 409),
+    );
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+    const response = await router.request('/users/user-1/resetPassword', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: 'secret123' }),
+    });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: { status: 'FAILED_PRECONDITION', reason: 'PROTECTED_ACCOUNT' },
+    });
+  });
+
   it('requires explicit deletion confirmation and records the actor after success', async () => {
     const service = userService();
     const logger = { info: vi.fn() };
@@ -784,7 +892,73 @@ describe('@nocobase/app-plugin-users API routes', () => {
       'user-1',
       'teams',
       [],
+      'admin-1',
     );
+  });
+
+  it.each([
+    { input: { name: 'Alice' }, actions: ['update'], status: 200 },
+    { input: { name: 'Alice' }, actions: ['assign-role'], status: 403 },
+    {
+      input: { roleScopes: { hub: 'hub-viewer' } },
+      actions: ['assign-role'],
+      status: 200,
+    },
+    {
+      input: { roleScopes: { hub: 'hub-viewer' } },
+      actions: ['update'],
+      status: 403,
+    },
+    {
+      input: { name: 'Alice', roleScopes: { hub: 'hub-viewer' } },
+      actions: ['update'],
+      status: 403,
+    },
+    {
+      input: { name: 'Alice', roleScopes: { hub: 'hub-viewer' } },
+      actions: ['assign-role'],
+      status: 403,
+    },
+    {
+      input: { name: 'Alice', roleScopes: { hub: 'hub-viewer' } },
+      actions: ['update', 'assign-role'],
+      status: 200,
+    },
+  ])(
+    'authorizes every part of an atomic update: %j',
+    async ({ input, actions, status }) => {
+      const service = userService();
+      const router = await apiRoutes.createRouter(
+        createApplication('allowed', service, {
+          requireAction: async ({ action }) => {
+            if (!actions.includes(action)) throw denied();
+          },
+        }),
+      );
+      const response = await router.request('/users/user-1', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+      expect(response.status).toBe(status);
+      if (status === 200)
+        expect(service.update).toHaveBeenCalledWith('user-1', input, 'admin-1');
+      else expect(service.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rejects an unauthorized invalid PATCH before validation', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('forbidden', service),
+    );
+    const response = await router.request('/users/user-1', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ unknown: true }),
+    });
+    expect(response.status).toBe(403);
+    expect(service.update).not.toHaveBeenCalled();
   });
 
   it('declares every route in the API document', async () => {
@@ -838,6 +1012,7 @@ describe('@nocobase/app-plugin-users API routes', () => {
         'usersDeleteUser',
         'usersDisableUser',
         'usersEnableUser',
+        'usersGetUser',
         'usersInviteUsers',
         'usersListInvitations',
         'usersListMyPreferences',
@@ -940,6 +1115,7 @@ function userService(): UserManagementService {
     roleScopes: { hub: 'hub-viewer' },
   } as const;
   return {
+    get: vi.fn(() => Promise.resolve(user)),
     options: vi.fn(() => Promise.resolve({ roleScopes: [] })),
     list: vi.fn(() =>
       Promise.resolve({ items: [user], total: 1, page: 1, pageSize: 20 }),

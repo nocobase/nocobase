@@ -43,16 +43,32 @@ export function toolPolicyFor(
 }
 
 /** Failures of the runner itself retry at once, elsewhere; the tool's own failures back off. */
-const IMMEDIATE: readonly FailureReason[] = [
-  'runnerOffline',
-  'leaseExpired',
-  'startTimeout',
-];
+const IMMEDIATE: readonly FailureReason[] = ['runnerOffline', 'leaseExpired'];
 
-/** How long before attempt `attempt + 1` may start, after attempt `attempt` failed for `reason`. */
-export function retryDelayMs(reason: FailureReason, attempt: number): number {
+/** The first back-off of a failed attempt, unless `agents.runs.retryBaseDelayMs` sets another. */
+export const DEFAULT_RETRY_BASE_DELAY_MS: number = 30_000;
+
+/**
+ * How long before attempt `attempt + 1` may start, after attempt `attempt` failed for `reason`: `baseMs`, doubling up
+ * to ten minutes.
+ */
+export function retryDelayMs(
+  reason: FailureReason,
+  attempt: number,
+  baseMs: number = DEFAULT_RETRY_BASE_DELAY_MS,
+): number {
   if (IMMEDIATE.includes(reason)) return 0;
-  return Math.min(10 * 60_000, 30_000 * 2 ** Math.max(0, attempt - 1));
+  return Math.min(10 * 60_000, baseMs * 2 ** Math.max(0, attempt - 1));
+}
+
+/** `agents.runs.retryBaseDelayMs`, checked: the default when unset. */
+export function retryBaseDelayMs(value: unknown): number {
+  if (value === undefined) return DEFAULT_RETRY_BASE_DELAY_MS;
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)
+    throw new Error(
+      'agents.runs.retryBaseDelayMs must be a non-negative integer.',
+    );
+  return value;
 }
 
 /** Claims that failed to assemble a run's payload before the run fails `setupFailed`. */

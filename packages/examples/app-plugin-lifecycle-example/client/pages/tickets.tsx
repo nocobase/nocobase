@@ -32,8 +32,11 @@ import {
 } from '../lib/api.js';
 import { ago, countdown, dateTime, NAMESPACE } from '../lib/format.js';
 import { useExampleRecord, useTranslate } from '../lib/use-example-record.js';
-import { useFollowUp } from '../lib/use-follow-up.js';
-import { useLifecycleChanges } from '../lib/use-lifecycle-changes.js';
+import { RefreshNotice } from '../components/refresh-notice.js';
+import {
+  useLifecycleChanges,
+  refreshLifecycleViews,
+} from '../lib/use-lifecycle-changes.js';
 import { useLoader } from '../lib/use-loader.js';
 import { useNow } from '../lib/use-now.js';
 import { cn } from '../lib/utils.js';
@@ -79,8 +82,10 @@ export default function TicketsPage(): ReactElement {
   const isAgent = person(actor)?.role === 'agent';
 
   const list = useLoader(
-    () => client.list('tickets', actor),
+    (signal) => client.list('tickets', actor, undefined, signal),
     `tickets:${actor}`,
+    '',
+    false,
   );
   const current = useExampleRecord('tickets', selected, actor);
   const records = list.data?.records ?? [];
@@ -104,16 +109,16 @@ export default function TicketsPage(): ReactElement {
     await Promise.all([list.reload(), current.lifecycle.reload()]);
   };
 
-  // Told by the server, never by a timer: a change to a ticket reloads the
-  // list, and one to the ticket on screen reloads it too.
-  useLifecycleChanges((change) => {
-    if (change && change.lifecycle !== 'tickets') return;
-    void list.reload();
-    if (!change || change.recordId === selected)
-      void current.lifecycle.reload();
-  });
-  // Except while an effect is still under way, which says nothing when done.
-  useFollowUp(current.lifecycle.view, current.lifecycle.reload);
+  const updates = useLifecycleChanges(
+    'tickets',
+    `tickets:${actor}:${selected ?? ''}`,
+    async (signal) => {
+      await refreshLifecycleViews([
+        list.refresh(signal),
+        current.lifecycle.refresh(signal),
+      ]);
+    },
+  );
 
   return (
     <PageContainer>
@@ -134,6 +139,7 @@ export default function TicketsPage(): ReactElement {
           />
         }
       />
+      <RefreshNotice error={updates.error} retry={updates.retry} />
       <ExampleGuide page='tickets' />
 
       <div className='grid gap-6 lg:grid-cols-[minmax(18rem,24rem)_1fr]'>

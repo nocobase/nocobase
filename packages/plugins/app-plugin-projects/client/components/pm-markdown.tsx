@@ -1,5 +1,5 @@
 import { MermaidDiagram, mermaidSource } from '@nocobase/markdown-mermaid';
-import type { ComponentProps, ReactElement } from 'react';
+import { useMemo, type ComponentProps, type ReactElement } from 'react';
 import Markdown, { defaultUrlTransform, type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -125,39 +125,41 @@ const baseComponents: Components = {
   hr: ({ node: _node, ...props }) => <hr className='my-3' {...props} />,
 };
 
-/**
- * `h1`/`h2`/`h3` renderers that hand out `headings[]`'s ids in document order, one per heading rendered. Built fresh
- * on every `PmMarkdown` render (not memoized) so the counter starts over each time; react-markdown re-invokes every
- * component on every render regardless, so memoizing this object would only leave the counter stuck past the end
- * of `headings` after the first render.
- */
-function headingComponents(
-  headings?: readonly TocHeading[],
-): Pick<Components, 'h1' | 'h2' | 'h3'> {
-  let index = 0;
-  const nextId = (): string | undefined => headings?.[index++]?.id;
-  return {
-    h1: ({ node: _node, ...props }) => (
-      <h1
-        id={nextId()}
-        className='mt-4 mb-2 text-lg font-semibold first:mt-0'
-        {...props}
-      />
-    ),
-    h2: ({ node: _node, ...props }) => (
-      <h2
-        id={nextId()}
-        className='mt-4 mb-2 text-base font-semibold first:mt-0'
-        {...props}
-      />
-    ),
-    h3: ({ node: _node, ...props }) => (
-      <h3
-        id={nextId()}
-        className='mt-3 mb-1.5 text-sm font-semibold first:mt-0'
-        {...props}
-      />
-    ),
+const components: Components = {
+  ...baseComponents,
+  h1: ({ node: _node, ...props }) => (
+    <h1 className='mt-4 mb-2 text-lg font-semibold first:mt-0' {...props} />
+  ),
+  h2: ({ node: _node, ...props }) => (
+    <h2 className='mt-4 mb-2 text-base font-semibold first:mt-0' {...props} />
+  ),
+  h3: ({ node: _node, ...props }) => (
+    <h3 className='mt-3 mb-1.5 text-sm font-semibold first:mt-0' {...props} />
+  ),
+};
+
+interface HeadingNode {
+  type: string;
+  depth?: number;
+  children?: HeadingNode[];
+  data?: { hProperties?: Record<string, unknown> };
+}
+
+/** Assign ids in document order while parsing, independently of React's render order. */
+function remarkHeadingIds(ids: readonly string[]) {
+  return (tree: HeadingNode): void => {
+    let heading = 0;
+    const visit = (node: HeadingNode): void => {
+      if (node.type === 'heading' && node.depth && node.depth <= 3) {
+        const id = ids[heading++];
+        if (id !== undefined) {
+          node.data ??= {};
+          node.data.hProperties = { ...node.data.hProperties, id };
+        }
+      }
+      node.children?.forEach(visit);
+    };
+    visit(tree);
   };
 }
 
@@ -167,11 +169,21 @@ export function PmMarkdown({
   className,
   headings,
 }: PmMarkdownProps): ReactElement {
-  const components = { ...baseComponents, ...headingComponents(headings) };
+  const remarkPlugins = useMemo(
+    () => [
+      remarkGfm,
+      remarkCjkAutolink,
+      [remarkHeadingIds, headings?.map((heading) => heading.id) ?? []] as [
+        typeof remarkHeadingIds,
+        readonly string[],
+      ],
+    ],
+    [headings],
+  );
   return (
     <div className={cn('min-w-0 text-sm wrap-anywhere', className)}>
       <Markdown
-        remarkPlugins={[remarkGfm, remarkCjkAutolink]}
+        remarkPlugins={remarkPlugins}
         urlTransform={urlTransform}
         components={components}
       >

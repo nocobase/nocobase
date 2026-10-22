@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "1.0.0-beta.50",
+  "version": "1.0.0-beta.58",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,14 +10,23 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.50"
+    "defaultTemplateVersion": "1.0.0-beta.58",
+    "cli": {
+      "bin": "nocobase-examples",
+      "displayName": "NocoBase Examples",
+      "auth": {
+        "clientId": "nocobase-cli"
+      }
+    }
   },
   "devDependencies": {
-    "@ai-sdk/react": "2.0.0",
+    "@ai-sdk/react": "catalog:",
     "@base-ui/react": "catalog:",
     "@dicebear/core": "^9.4.3",
     "@gchust/agent-annotations": "0.1.9",
     "@hookform/resolvers": "^5.0.1",
+    "@nocobase/agent-runner": "workspace:^",
+    "@nocobase/app-cli-client": "workspace:^",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-template-print": "workspace:*",
     "@nocobase/app-skills": "workspace:*",
@@ -29,14 +38,10 @@
     "@nocobase/markdown-mermaid": "workspace:^",
     "@nocobase/session": "workspace:^",
     "@playwright/test": "catalog:",
-    "@refinedev/cli": "^2.16.48",
-    "@refinedev/core": "catalog:",
-    "@refinedev/react-hook-form": "^5.0.0",
-    "@refinedev/react-router": "^2.0.0",
-    "@refinedev/react-table": "^6.0.0",
     "@tailwindcss/postcss": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/react-table": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
@@ -52,9 +57,10 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "ai": "5.0.0",
+    "ai": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
+    "date-fns": "catalog:",
     "dayjs": "^1.10.7",
     "dingtalk-jsapi": "3.1.1",
     "echarts": "^5.5.0",
@@ -69,6 +75,7 @@
     "postcss": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
+    "react-day-picker": "^10.0.2",
     "react-dom": "catalog:",
     "react-error-boundary": "^6.0.0",
     "react-hook-form": "^7.57.0",
@@ -84,7 +91,9 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "tar": "catalog:"
+    "tar": "catalog:",
+    "@xyflow/react": "^12.11.5",
+    "elkjs": "^0.10.2"
   },
   "files": [
     ".prettierignore",
@@ -116,6 +125,7 @@
     "docker-compose.yml",
     "config.example.yml",
     "README.MD",
+    "online-agent.md",
     "AGENTS.md",
     ".agents/rules",
     "CLAUDE.md",
@@ -160,6 +170,7 @@
   },
   "dependencies": {
     "zod": "catalog:",
+    "@nocobase/app-plugin-agents": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
@@ -171,6 +182,7 @@
     "@nocobase/app-plugin-file": "workspace:^",
     "@nocobase/app-plugin-file-example": "workspace:^",
     "@nocobase/app-plugin-i18n": "workspace:^",
+    "@nocobase/app-plugin-knowledge": "workspace:^",
     "@nocobase/app-plugin-jobs-example": "workspace:^",
     "@nocobase/app-plugin-lifecycle-example": "workspace:^",
     "@nocobase/app-plugin-notification": "workspace:^",
@@ -207,7 +219,8 @@
     "@nocobase/caching": "workspace:^",
     "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-plugin-mail": "workspace:^",
-    "@nocobase/app-plugin-mail-example": "workspace:^"
+    "@nocobase/app-plugin-mail-example": "workspace:^",
+    "@nocobase/realtime": "workspace:^"
   },
   "description": "Runnable NocoBase 3 examples for application development.",
   "license": "Apache-2.0",
@@ -216,6 +229,7 @@
     "#hooks/*": "./client/hooks/*.js",
     "#lib/*": "./client/lib/*.js",
     "#extensions/*": "./client/extensions/*.js",
-    "#pages/*": "./client/pages/*.js"
+    "#pages/*": "./client/pages/*.js",
+    "#components/data-table": "./client/components/data-table/index.js"
   }
 }

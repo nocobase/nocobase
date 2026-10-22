@@ -648,13 +648,49 @@
       ]
     },
     {
+      "name": "task-center-ui-demo",
+      "type": "registry:example",
+      "title": "Task Center UI Demo",
+      "description": "Usage example of @nocobase/task-center-ui. A person's tasks from four sources — approvals waiting for them, their own requests, copies and work items — with subjects under each source, To do / Done / All, summaries contributed per subject, one-type batch approval, reminders and mark-as-read, and a detail drawer whose approve and reject form the approval type contributes.",
+      "categories": ["task-center"],
+      "registryDependencies": [
+        "button",
+        "spinner",
+        "textarea",
+        "@nocobase/task-center-ui"
+      ],
+      "dependencies": ["lucide-react@^0.487.0"],
+      "files": [
+        {
+          "path": "task-center/index.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-task-center-ui-demo/index.tsx"
+        },
+        {
+          "path": "task-center/contributions.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-task-center-ui-demo/contributions.tsx"
+        },
+        {
+          "path": "task-center/bulk-actions.ts",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-task-center-ui-demo/bulk-actions.ts"
+        },
+        {
+          "path": "task-center/fixtures.ts",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-task-center-ui-demo/fixtures.ts"
+        }
+      ]
+    },
+    {
       "name": "flow-diagram-demo",
       "type": "registry:example",
       "title": "Flow Diagram Demo",
       "description": "Usage example of @nocobase/flow-diagram with branches, a cycle, self-transition, parallel edges and inspection callbacks.",
       "categories": ["diagrams"],
       "registryDependencies": ["@nocobase/flow-diagram"],
-      "dependencies": [],
+      "dependencies": ["lucide-react@^0.487.0"],
       "files": [
         {
           "path": "components/flow-diagram.tsx",
@@ -676,6 +712,118 @@
           "path": "lifecycle/lifecycle-diagram.tsx",
           "type": "registry:example",
           "target": "client/extensions/nocobase-lifecycle-diagram-demo/lifecycle-diagram.tsx"
+        }
+      ]
+    },
+    {
+      "name": "workflow-management-demo",
+      "type": "registry:example",
+      "title": "Workflow Management Demo",
+      "description": "Compose a single workflow management page with in-page tabs, definition and execution lists, definition diagram and parameter layout, and historical execution inspection. An in-memory adapter demonstrates category filtering and adding, editing and deleting categories, alongside application-supplied data, labels and callbacks.",
+      "categories": ["workflows"],
+      "dependencies": [
+        "@nocobase/lifecycle@^0.1.0-beta.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": [
+        "button",
+        "input",
+        "@nocobase/lifecycle-diagram",
+        "@nocobase/workflow-management",
+        "@nocobase/page-header",
+        "dialog",
+        "dropdown-menu"
+      ],
+      "files": [
+        {
+          "path": "lifecycle/workflow-management/index.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-workflow-management-demo/index.tsx"
+        },
+        {
+          "path": "lifecycle/workflow-management/fixtures.ts",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-workflow-management-demo/fixtures.ts"
+        },
+        {
+          "path": "lifecycle/workflow-management/categories.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-workflow-management-demo/categories.tsx"
+        }
+      ]
+    },
+    {
+      "name": "data-table-demo",
+      "type": "registry:example",
+      "title": "Data Table Demo",
+      "description": "Standard TanStack DataTable with stable row identities, sortable columns and pagination.",
+      "registryDependencies": ["@nocobase/data-table"],
+      "files": [
+        {
+          "path": "components/data-table.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-data-table-demo/data-table.tsx"
+        }
+      ]
+    },
+    {
+      "name": "role-list-demo",
+      "type": "registry:example",
+      "title": "Role List Demo",
+      "description": "A compact role list with protected/custom roles, a long name and many rows.",
+      "categories": ["authorization"],
+      "dependencies": ["react-router@^7.0.2"],
+      "registryDependencies": ["@nocobase/role-list"],
+      "files": [
+        {
+          "path": "authorization/role-list.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-role-list-demo/role-list.tsx"
+        }
+      ]
+    },
+    {
+      "name": "default-access-editor-demo",
+      "type": "registry:example",
+      "title": "Default Access Editor Demo",
+      "description": "Controlled default-access rule fields, independent scopes and no implicit all-records selection.",
+      "categories": ["authorization"],
+      "registryDependencies": ["@nocobase/default-access-editor"],
+      "files": [
+        {
+          "path": "authorization/default-access-editor.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-default-access-editor-demo/default-access-editor.tsx"
+        }
+      ]
+    },
+    {
+      "name": "setup-readiness-demo",
+      "type": "registry:example",
+      "title": "Setup Readiness Demo",
+      "description": "Usage example of @nocobase/setup-readiness with local fixture configuration and missing-to-ready inspection. Connect real authorized reads in applications.",
+      "registryDependencies": ["button", "@nocobase/setup-readiness"],
+      "files": [
+        {
+          "path": "components/setup-readiness.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-setup-readiness-demo/setup-readiness.tsx"
+        }
+      ]
+    },
+    {
+      "name": "record-link-demo",
+      "type": "registry:example",
+      "title": "Record Link Demo",
+      "description": "Usage example of @nocobase/record-link with native navigation, preserved query context, hover and keyboard focus.",
+      "categories": ["data-display"],
+      "dependencies": ["react-router@^7.0.2"],
+      "registryDependencies": ["@nocobase/record-link"],
+      "files": [
+        {
+          "path": "components/record-link.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-record-link-demo/record-link.tsx"
         }
       ]
     }

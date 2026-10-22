@@ -1,3 +1,4 @@
+import { invoiceTimingGroup } from '../configuration/definitions.js';
 import {
   defineLifecycle,
   type Lifecycle,
@@ -74,6 +75,7 @@ export const invoiceLifecycle: Lifecycle<InvoiceTypes> =
       { name: 'issued', final: true },
       'issueFailed',
     ],
+    parameterConfiguration: { readMode: 'live', groups: [invoiceTimingGroup] },
     parameters: { querySeconds: 30 },
     transitions: {
       submit: { title: 'Request invoice', from: 'draft', to: 'submitting' },

@@ -22,6 +22,7 @@ export interface AppWebSocket {
   readonly url: URL;
   readonly protocol: string | null;
   readonly readyState: AppWebSocketReadyState;
+  readonly bufferedAmount?: number;
   send(
     data: string | ArrayBuffer | Uint8Array,
     options?: AppWebSocketSendOptions,
@@ -51,6 +52,10 @@ export interface AppWebSocketErrorEvent {
 }
 
 export interface AppWebSocketEvents {
+  /** Maximum assembled message size, including fragmented messages. */
+  maxMessageBytes?: number;
+  /** Native ping/pong interval; zero disables the transport keepalive. */
+  heartbeatIntervalMs?: number;
   onOpen?: (
     event: AppWebSocketOpenEvent,
     ws: AppWebSocket,
@@ -87,11 +92,6 @@ export interface AcceptWebSocketUpgradeOptions {
 export interface CreateWebSocketUpgradeRequestOptions {
   signal?: AbortSignal;
 }
-
-const websocketServer = new WebSocketServer({
-  clientTracking: false,
-  noServer: true,
-});
 
 const responseHeadersToSkip = new Set([
   'connection',
@@ -142,6 +142,11 @@ export function acceptWebSocketUpgrade(
   socket: Duplex,
   options: AcceptWebSocketUpgradeOptions,
 ): AppWebSocket | null {
+  const websocketServer = new WebSocketServer({
+    clientTracking: false,
+    noServer: true,
+    maxPayload: options.events.maxMessageBytes ?? 100 * 1024 * 1024,
+  });
   let connection: AppWebSocket | null = null;
   websocketServer.handleUpgrade(
     req,
@@ -161,6 +166,8 @@ export function acceptWebSocketUpgrade(
 
 class WsAppWebSocket implements AppWebSocket {
   readonly url: URL;
+  private heartbeat: ReturnType<typeof setInterval> | undefined;
+  private alive = true;
 
   constructor(
     private readonly socket: WsSocket,
@@ -172,12 +179,31 @@ class WsAppWebSocket implements AppWebSocket {
     this.socket.on('message', this.handleMessage);
     this.socket.once('close', this.handleClose);
     this.socket.once('error', this.handleError);
+    this.socket.on('pong', () => {
+      this.alive = true;
+    });
+    const interval = events.heartbeatIntervalMs ?? 30_000;
+    if (interval > 0) {
+      this.heartbeat = setInterval(() => {
+        if (!this.alive) {
+          this.socket.terminate();
+          return;
+        }
+        this.alive = false;
+        if (this.socket.readyState === this.socket.OPEN) this.socket.ping();
+      }, interval);
+      this.heartbeat.unref();
+    }
     this.signal?.addEventListener('abort', this.handleAbort, { once: true });
     this.invoke(this.events.onOpen, { type: 'open' });
   }
 
   get protocol(): string | null {
     return this.socket.protocol || null;
+  }
+
+  get bufferedAmount(): number {
+    return this.socket.bufferedAmount;
   }
 
   get readyState(): AppWebSocketReadyState {
@@ -208,6 +234,8 @@ class WsAppWebSocket implements AppWebSocket {
   };
 
   private readonly handleClose = (code: number, reason: Buffer): void => {
+    clearInterval(this.heartbeat);
+    this.heartbeat = undefined;
     this.signal?.removeEventListener('abort', this.handleAbort);
     this.invoke(this.events.onClose, {
       type: 'close',

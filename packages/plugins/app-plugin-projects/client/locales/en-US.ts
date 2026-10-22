@@ -918,6 +918,7 @@ const pages = {
     expand: 'Show the resolved thread by {{name}}',
     replies_one: '{{count}} reply',
     replies_other: '{{count}} replies',
+    earlierReplies: 'Show {{count}} earlier replies',
     resolve: 'Resolve',
     resolved: 'Resolved',
     resolvedBy: 'Resolved by {{name}}',

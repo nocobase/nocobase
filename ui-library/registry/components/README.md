@@ -17,6 +17,7 @@ Single components that pages are built from. Each is its own item, installs into
 | `long-text`        | `long-text.tsx`                                                         | `LongText`, `LongTextPreview`, `FadingText`                                                                                                                                                                                                                      |
 | `comment-thread`   | `comment-thread.tsx`                                                    | `CommentTimeline`, `ThreadCard`, `TimelineActivity`, `ActorAvatar`, `CommentComposer`                                                                                                                                                                            |
 | `attachment-list`  | `attachment-list.tsx`                                                   | `AttachmentList`, `PendingAttachments`, `AttachmentPanel`                                                                                                                                                                                                        |
+| `setup-readiness`  | `setup-readiness.tsx`, with `setup-readiness-state.ts`                  | `SetupReadiness`, `useSetupReadiness`, `setupInspectionFailure`; inspection types                                                                                                                                                                                |
 | `flow-diagram`     | `flow-diagram.tsx`, with `flow-layout.ts` and `flow-diagram-css.d.ts`   | `FlowDiagram`; `layoutFlowDiagram`, graph and layout types                                                                                                                                                                                                       |
 
 `route-dialog` and `route-drawer` both install `route-overlay.tsx`, the implementation they share, and `use-route-overlay.ts`, the Context it provides. Installing the second of them finds both files already in place.
@@ -85,15 +86,55 @@ The overlays' close button names itself with `useTranslation()` from `@nocobase/
 | -------------------- | ------- | ------- |
 | `routeOverlay.close` | Close   | 关闭    |
 
+The shared DataTable and its column header and pagination controls use these keys, including when composed by `role-list`:
+
+| Key                        | English                                    | Chinese                              |
+| -------------------------- | ------------------------------------------ | ------------------------------------ |
+| `dataTable.sortAscending`  | Asc                                        | 升序                                 |
+| `dataTable.sortDescending` | Desc                                       | 降序                                 |
+| `dataTable.hideColumn`     | Hide                                       | 隐藏                                 |
+| `dataTable.noResults`      | No results.                                | 暂无结果。                           |
+| `dataTable.selectedCount`  | {{selected}} of {{total}} row(s) selected. | 已选择 {{selected}} / {{total}} 行。 |
+| `dataTable.rowsPerPage`    | Rows per page                              | 每页行数                             |
+| `dataTable.pageOf`         | Page {{page}} of {{pageCount}}             | 第 {{page}} 页，共 {{pageCount}} 页  |
+| `dataTable.firstPage`      | Go to first page                           | 第一页                               |
+| `dataTable.previousPage`   | Go to previous page                        | 上一页                               |
+| `dataTable.nextPage`       | Go to next page                            | 下一页                               |
+| `dataTable.lastPage`       | Go to last page                            | 最后一页                             |
+| `dataTable.view`           | View                                       | 视图                                 |
+| `dataTable.toggleColumns`  | Toggle columns                             | 切换列                               |
+
 `page-container`, `page-header` and `route-child-page` render no text of their own.
 
-| Key                    | English                                      | Chinese                     |
-| ---------------------- | -------------------------------------------- | --------------------------- |
-| `flowDiagram.empty`    | No states to display.                        | 暂无可展示的状态。          |
-| `flowDiagram.loading`  | Laying out diagram…                          | 正在布局流程图…             |
-| `flowDiagram.failed`   | Unable to lay out this diagram.              | 无法布局此流程图。          |
-| `flowDiagram.nodeHelp` | Press Enter or Space to select a state.      | 按 Enter 或空格键选择状态。 |
-| `flowDiagram.edgeHelp` | Press Enter or Space to select a transition. | 按 Enter 或空格键选择转移。 |
+| Key                          | English                                      | Chinese                     |
+| ---------------------------- | -------------------------------------------- | --------------------------- |
+| `flowDiagram.empty`          | No states to display.                        | 暂无可展示的状态。          |
+| `flowDiagram.loading`        | Laying out diagram…                          | 正在布局流程图…             |
+| `flowDiagram.failed`         | Unable to lay out this diagram.              | 无法布局此流程图。          |
+| `flowDiagram.nodeHelp`       | Press Enter or Space to select a state.      | 按 Enter 或空格键选择状态。 |
+| `flowDiagram.edgeHelp`       | Press Enter or Space to select a transition. | 按 Enter 或空格键选择转移。 |
+| `flowDiagram.current`        | Current                                      | 当前                        |
+| `flowDiagram.visited`        | Visited                                      | 已经过                      |
+| `flowDiagram.initial`        | Initial                                      | 初始状态                    |
+| `flowDiagram.final`          | Final                                        | 终止状态                    |
+| `flowDiagram.state`          | State                                        | 状态                        |
+| `flowDiagram.zoomOut`        | Zoom out                                     | 缩小                        |
+| `flowDiagram.zoomIn`         | Zoom in                                      | 放大                        |
+| `flowDiagram.configurable`   | Parameters                                   | 可配置参数                  |
+| `flowDiagram.actualSize`     | Actual size                                  | 实际大小                    |
+| `flowDiagram.states`         | States                                       | 状态                        |
+| `flowDiagram.transitions`    | Transitions                                  | 转移                        |
+| `flowDiagram.overview`       | Diagram overview                             | 流程缩略导航                |
+| `flowDiagram.controls`       | Diagram controls                             | 流程图控制                  |
+| `flowDiagram.fitView`        | Fit to view                                  | 适应画布                    |
+| `flowDiagram.fullscreen`     | Fullscreen                                   | 全屏                        |
+| `flowDiagram.exitFullscreen` | Exit fullscreen                              | 退出全屏                    |
+| `flowDiagram.escapeHint`     | Press Escape to exit                         | 按 Escape 退出              |
+| `flowDiagram.minimap`        | Diagram overview                             | 流程缩略导航                |
+| `flowDiagram.fit`            | Fit to view                                  | 适应画布                    |
+| `flowDiagram.leavesTo`       | Leaves to                                    | 可转到                      |
+| `flowDiagram.arrivesFrom`    | Arrives from                                 | 来自                        |
+| `flowDiagram.otherRoutes`    | Other routes                                 | 其他流转                    |
 
 ## In a plugin
 
@@ -168,6 +209,30 @@ const EXTENSIONS = [Timestamp];
 
 Install `@nocobase/flow-diagram` for a read-only React Flow canvas with ELK layered layout and orthogonal edge routing. Import `FlowDiagram` from `#components/flow-diagram`; `flow-layout.ts` supplies the graph types and `layoutFlowDiagram()` for callers that need layout data separately. It handles cycles, self-loops and parallel edges. Nodes and edges each need unique ids, and every edge endpoint must name an existing node. Invalid graphs report a translated error and call `onLayoutError` when provided.
 
-Pass `nodes`, `edges`, `ariaLabel`, and optionally `direction` (`RIGHT` or `DOWN`), `renderNode`, `onNodeClick` and `onEdgeClick`. The component imports React Flow's stylesheet. Its default height is `h-96`; override with `className` or `style` for a bounded canvas, or use `autoHeight` to expand to the full graph at the available width. Prefer `direction="DOWN" autoHeight` for detailed lifecycle diagrams in a page, so a wide graph is not reduced to an unreadable strip. Automatic sizing includes routed edges and labels outside the node bounds. Nodes default to 200×64 canvas units, a deliberate fixed canvas size independent of zoom; customize `width`/`height` for richer content. Node labels wrap within their fixed dimensions. Edge labels reserve at most 320 canvas units; shorten long labels and show full details outside the canvas. Highlight changes preserve the viewport; topology, dimensions, direction or edge label changes rerun layout and fit the graph. Clicking opens consumer-owned details; it never changes graph data.
+Pass `nodes`, `edges`, `ariaLabel`, and optionally `direction` (`RIGHT` or `DOWN`), `renderNode`, `onNodeClick` and `onEdgeClick`. The component imports React Flow's stylesheet. Its default height is `h-96`; override with `className` or `style` for a bounded canvas, or use `autoHeight` to expand to the full graph at the available width. Prefer `direction="DOWN" autoHeight` for detailed lifecycle diagrams in a page, so a wide graph is not reduced to an unreadable strip. Automatic sizing includes routed edges and labels outside the node bounds, with reserved space for viewport controls. On narrow screens the toolbar stays at the top; clicking the zoom percentage returns to actual size for reading and panning through large diagrams. Node cards separate their title, type and execution status; current transitions use a moving dashed line that respects reduced-motion preferences. Set `configurable` only for genuine parameter bindings: nodes show a badge and edge labels include the translated Parameters caption. The lifecycle adapter projects both state and transition bindings automatically. Nodes default to 232×104 canvas units, a deliberate fixed canvas size independent of zoom; customize `width`/`height` for richer content. Node labels wrap within their fixed dimensions. Edge labels wrap into multiple lines within 268 canvas units; full action descriptions can be supplied through `title`. Highlight changes preserve the viewport; topology, dimensions, direction or edge label changes rerun layout and fit the graph. Clicking opens consumer-owned details; it never changes graph data.
 
 Nodes and edges accept `visited` for execution history and `highlighted` for the current node or available edges. Highlights use the application `--primary` token; current nodes have a stronger fill and ring, visited nodes a light fill. Ordinary edges use a subdued neutral stroke with inline labels. Defaults follow the application theme in light and dark mode. ELK can reorder ports to reduce crossings. Mark visual annotations `decorative` to remove selection and keyboard focus. For lifecycle descriptions, use `@nocobase/lifecycle-diagram` to project states, transitions, actual history and optional end markers.
+
+Use `nodeActions` for explicit keyboard-accessible node configuration controls and `nodeDescription` for supporting policy summaries. Increase node dimensions for richer content. For bounded process canvases, `initialMinZoom={0.8}` keeps the initial view readable in bounded and automatic-height canvases and `showMiniMap` provides pan/zoom orientation; the Fit control still fits the whole graph, and focusing an offscreen node control pans it into view. Defaults remain compatible with existing consumers. Definition views must not pass execution highlights or simulate running transitions. Technical diagnostic consumers may opt into a complete-source view; standard business process pages omit technical edit paths and keep every business path.
+
+Automatic-height canvases let wheel gestures scroll the page, preserve pinch/toolbar zoom, and place viewport controls at the top and include the complete routed height plus control padding. LifecycleDiagram defaults to top-to-bottom automatic-height presentation; generic FlowDiagram retains its RIGHT bounded-canvas default. Standard business process pages keep technical edit paths and overview minimaps out of the default interface.
+
+### Compact process presentation
+
+Use `direction="DOWN" compact controls` for the compact process canvas with zoom, fit and fullscreen controls. Fullscreen portals the canvas to the document body, shows a shape-aware minimap, and exits with Escape or the exit button. Wheel gestures scroll the page; use the controls to zoom. `initialZoomLimit` caps automatic fitting without limiting manual zoom. `showMiniMap` enables the overview outside fullscreen. Existing `nodeActions`, `nodeDescription`, `initialMinZoom`, and one-argument `renderNode` callbacks remain supported.
+
+Set `bare: true` to draw the whole node with `renderNode(node, { active })`. Use the exported `FlowDiagramStep` for reusable start/success/negative/exception pills and approval/work cards. Only ordinary approval/work nodes use solid, type-specific icon tiles: primary for approval and administration/teal for work. Start, success, negative and exception pills retain their compact unfilled icons, inheriting the existing pill tone. Work uses the optional `--area-administration` token with `--chart-2` as its fallback. Pass translated `label`, `description`, optional `icon`, `actions` and `children`; `progress` is `plan`, `current`, `visited` or `unreached`. Supply fixed node dimensions (for example, 216×64 for cards and 176×44 for pills; increase height for descriptions). Set `minimapShape` and `minimapColor` to match custom nodes. Keep business state classification in the application; these components infer no approval semantics from state names.
+
+Pass the main business path as `edges` and auxiliary routes between displayed nodes as `revealEdges`. Hovering or focusing a node temporarily draws its auxiliary routes in outer lanes without rerunning layout and dims unrelated states. `renderNode` receives the active state for optional exit details in its children; keyboard focus inside a node also keeps those details visible. Routes to absent nodes are omitted. Keep definition path selection in the application, and retain every recorded transition in execution history. Use `faint` and `dashed` for secondary routes and `title` for full hover/accessibility text when the canvas label is omitted. Give visible conditions priority over action labels; do not hide conditional branch meaning behind hover alone.
+
+`partitionFlowDiagramReturns(graph)` separates backward edges and self-transitions by node declaration order for process adapters. Render the returned `edges` on the canvas and show `extraEdges` through `FlowDiagramTransitionNotes` inside the active node. The notes render as one card beside the node, listing outgoing routes under Leaves to and incoming ones under Arrives from. Pass a short translated action in `label`, `direction` (`out` by default, or `in`), the translated states at the other end in `peers`, the tone of the first of them in `kind`, and the complete route in `detail` for the accessible name. List each action once per direction, with every state at the other end in `peers`. The card stays outside layout geometry. Pass the same `extraEdges` as `auxiliaryEdges`: hovering or focusing a node then keeps the states those routes join it to at full strength, dims the rest, and passes `linked` to `renderNode`, which `FlowDiagramStep` shows as a dashed outline. Nothing is drawn for these routes. `revealEdges` is a low-level opt-in for other graph consumers that intentionally draw auxiliary lines; the process presentation does not forward it to the canvas.
+
+## Setup readiness
+
+`setup-readiness` installs `setup-readiness.tsx` and `setup-readiness-state.ts`. The host memoizes prerequisite descriptors and a batch inspection callback backed by authorized business reads, then passes `useSetupReadiness(checks, inspect, { enabled, refreshKey })` to `SetupReadiness`. Supply translated labels and contextual authorized actions. No inspection runs without active checks. Focus, explicit refresh and a changed host route key recheck; stale results are ignored. Initial all-ready is hidden; after explicit refresh, compact confirmation keeps the control in place. Only missing checks expose actions. Use typed unknown reasons (`unavailable`, `signIn`, `forbidden`, `invalid`) instead of raw errors; `setupInspectionFailure` maps transport failures. Empty or unsupported results are unknown, not ready. No polling, plugin scan, configuration writes or security enforcement is installed.
+
+Both templates also prepare `RequiredRoleSetup`, which uses the real Users options and enabled-member totals for explicitly declared business roles, gates reads and member-management links with their existing permissions, and retains a validated source return URL. Application-owned manager relationships use their own authorized aggregate through the same hook. Read [the business wiring and acceptance contract](../../../packages/app/app-skills/skills/nocobase-app-development/references/setup-readiness.md) before using these parts.
+
+## Record Link
+
+`RecordLink` renders a React Router link for clickable record names and identifiers. It uses foreground text with medium weight at rest, an underline on hover and a visible keyboard focus. Pass the destination as `to`, including the current list query in `to.search` when navigating to a child route. Native Link props and refs are preserved. It adds no translation keys and does not replace action buttons or menu items.

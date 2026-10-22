@@ -1,3 +1,4 @@
+import { ticketTimingGroup } from '../configuration/definitions.js';
 import {
   ticketParameterGroup,
   notificationParameterGroup,
@@ -120,7 +121,11 @@ export const ticketLifecycle: Lifecycle<TicketTypes> =
     // A real help desk waits days; the example waits minutes so you can watch it.
     parameterConfiguration: {
       readMode: 'live',
-      groups: [ticketParameterGroup, notificationParameterGroup],
+      groups: [
+        ticketParameterGroup,
+        notificationParameterGroup,
+        ticketTimingGroup,
+      ],
     },
     parameters: { notificationPrefix: '', waitMinutes: 2, reopenDays: 7 },
     transitions: {

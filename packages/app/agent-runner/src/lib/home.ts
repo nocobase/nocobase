@@ -8,6 +8,7 @@
 //                                                  its owner only; see core/local-policy.ts)
 //   ~/.nocobase-runner/apps/<app>.json             one registration per application: server, runner id
 //   ~/.nocobase-runner/credentials/<app>.json      that registration's runner key (0600, in a 0700 directory)
+//   ~/.nocobase-runner/launcher.pid                the service/background launcher, including during backoff
 //   ~/.nocobase-runner/daemon.pid                  the running daemon
 //   ~/.nocobase-runner/runs/<runId>.json           one record per supervised run, for orphan recovery
 //   ~/.nocobase-runner/runs/<runId>.events.ndjson  the run's event spool
@@ -38,6 +39,7 @@ import {
 } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 export function runnerHome(env: NodeJS.ProcessEnv = process.env): string {
   const configured = env.NOCOBASE_RUNNER_HOME;
@@ -63,6 +65,7 @@ export interface RunnerPaths {
   appsDir: string;
   credentialsDir: string;
   daemonPid: string;
+  capacity: string;
   runsDir: string;
   logsDir: string;
   daemonLog: string;
@@ -91,6 +94,7 @@ export function runnerPaths(
     appsDir: path.join(home, 'apps'),
     credentialsDir: path.join(home, 'credentials'),
     daemonPid: path.join(home, 'daemon.pid'),
+    capacity: path.join(home, 'capacity.json'),
     runsDir: path.join(home, 'runs'),
     logsDir,
     daemonLog: path.join(logsDir, 'runner.log'),
@@ -139,7 +143,7 @@ export async function writeJsonAtomic(
   mode = 0o600,
 ): Promise<void> {
   await mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
-  const temporary = `${file}.${process.pid}.${Date.now()}.tmp`;
+  const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
   await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { mode });
   // The mode on writeFile is masked by umask; chmod sets it exactly.
   await chmod(temporary, mode);

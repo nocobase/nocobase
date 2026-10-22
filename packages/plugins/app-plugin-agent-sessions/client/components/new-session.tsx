@@ -1,9 +1,13 @@
 /**
  * A new session: which of the viewer's computers, which agent there, which folder and, when the application has
  * projects, which project it works for; the agent's choices; then the first message. Choices are discovered from the
- * installed agent in the selected directory before sending, with the mode the bridge opens sessions in. Folders are chosen
+ * installed agent in the selected directory, with the mode the bridge opens sessions in; the first message does not wait
+ * for them, and a message sent before they arrive carries only the settings the person chose. The new session's id is
+ * chosen with the draft and given to discovery, so the computer keeps the agent it starts for that session's first
+ * message instead of starting another. Folders are chosen
  * by browsing the computer, never typed. The computer, agent, folder and project last used are remembered in this
- * browser. Without a connected computer it says how to connect one.
+ * browser. Without a connected computer it says how to connect one. In a panel it starts with the panel's project and
+ * shows the new session in place of opening its page.
  */
 import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -54,6 +58,8 @@ import { AgentBadge } from './agent-badge.js';
 import { BackLink } from './back-link.js';
 import { ChoiceMenus } from './choice-menus.js';
 import { Composer } from './composer.js';
+import { sessionMemoryKey, useSessionMemory } from '../use-session-memory.js';
+import { useSessionSurface } from '../config.js';
 import { useSubmission } from '../use-submission.js';
 import { SubmissionNotice } from './submission-notice.js';
 import {
@@ -65,6 +71,8 @@ import {
 import { FolderBrowser } from './folder-browser.js';
 
 const REMEMBERED = 'nocobase.agentSessions.lastChoice';
+/** Where the draft's session id is kept, in the application's memory. */
+const SESSION_ID = 'new-session:id';
 
 interface Choice {
   readonly computerId?: string | undefined;
@@ -84,6 +92,7 @@ export function NewSession({
 }): ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const surface = useSessionSurface();
   const toaster = useToaster();
   const computers = useComputers();
   const projects = useProjects();
@@ -97,16 +106,38 @@ export function NewSession({
     Omit<Parameters<typeof create.mutateAsync>[0], 'submissionId'>
   >('new-session', 'new-session', async (input) => {
     const session = await create.mutateAsync(input);
-    if (mountedRef.current) void navigate(`/agent-sessions/${session.id}`);
+    if (!mountedRef.current) return;
+    if (surface.onCreated) surface.onCreated(session.id);
+    else void navigate(`/agent-sessions/${session.id}`);
   });
+  // The id the next session is created with (its `submissionId`), replaced once a message was sent with it.
+  const [freshSessionId] = useState(() => crypto.randomUUID());
+  const [sessionId, setSessionId] = useSessionMemory(
+    SESSION_ID,
+    freshSessionId,
+  );
+  const createdRef = useRef(false);
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      // Replaced only once this page is gone, so the next draft does not discover while the session opens.
+      if (createdRef.current)
+        client.setQueryData(sessionMemoryKey(SESSION_ID), crypto.randomUUID());
     };
-  }, []);
+  }, [client]);
   const [computersOpen, setComputersOpen] = useState(false);
-  const [choice, setChoice] = useState<Choice>(remembered);
+  const [choice, setChoice] = useState<Choice>(() =>
+    surface.projectId === undefined
+      ? remembered()
+      : { ...remembered(), projectId: surface.projectId ?? '' },
+  );
+  const [contextProject, setContextProject] = useState(surface.projectId);
+  if (contextProject !== surface.projectId) {
+    setContextProject(surface.projectId);
+    if (surface.projectId !== undefined)
+      setChoice({ ...choice, projectId: surface.projectId ?? '' });
+  }
   const sendingRef = useRef(false);
 
   const all = computers.data ?? [];
@@ -153,6 +184,7 @@ export function NewSession({
       cwd,
       enabled: Boolean(computer?.online && agent && cwd),
       deferred: deferDiscovery,
+      sessionId,
     },
   );
   const offered = discovery.displayed?.choices;
@@ -162,7 +194,7 @@ export function NewSession({
       discovery.settings[offer.id] ?? offer.currentValue,
     ]),
   );
-  const ready = Boolean(computer?.online && agent && cwd && discovery.result);
+  const ready = Boolean(computer?.online && agent && cwd);
 
   const begin = (): void => {
     if (sendingRef.current || creating) return;
@@ -206,8 +238,13 @@ export function NewSession({
   // A remembered or fallback computer can still be selected while every bridge is offline.
   if (computers.data && (!computer || online.length === 0)) {
     return (
-      <div className='h-full overflow-y-auto'>
-        <div className='mx-auto flex max-w-[560px] flex-col gap-4 px-4 py-10 sm:pt-24'>
+      <div className='@container/agent-session h-full overflow-y-auto'>
+        <div
+          className={cn(
+            'mx-auto flex max-w-[560px] flex-col gap-4 px-4 py-10',
+            !surface.panel && '@md/agent-session:pt-24',
+          )}
+        >
           <SubmissionNotice
             pending={submission.pending}
             sending={creating}
@@ -265,17 +302,14 @@ export function NewSession({
           begin();
       }}
     >
-      <div className='min-w-0 flex-1 overflow-y-auto'>
-        <div className='mx-auto flex max-w-[720px] flex-col gap-4 px-4 pt-3 pb-10 sm:px-6 sm:pt-24'>
-          <BackLink />
-          <div className='text-center'>
-            <h2 className='text-[22px] font-semibold tracking-tight'>
-              {t('newSession.title')}
-            </h2>
-            <p className='text-muted-foreground mt-1 text-sm'>
-              {t('newSession.subtitle')}
-            </p>
-          </div>
+      <div className='@container/agent-session min-w-0 flex-1 overflow-y-auto'>
+        <div
+          className={cn(
+            'mx-auto flex max-w-[720px] flex-col gap-4 px-4 pt-3 pb-10',
+            !surface.panel && '@md/agent-session:px-6 @md/agent-session:pt-24',
+          )}
+        >
+          {!surface.panel && <BackLink />}
           {computer?.outdatedBridge && (
             <OutdatedBridgeNotice computer={computer} />
           )}
@@ -291,7 +325,7 @@ export function NewSession({
             draftKey='new-session'
             onEdit={begin}
             autoFocus
-            placeholder={t('newSession.placeholder')}
+            placeholder={surface.placeholder ?? t('newSession.placeholder')}
             sendDisabled={!ready}
             sending={creating}
             commands={computer && agent ? computer.commands[agent.id] : []}
@@ -457,32 +491,43 @@ export function NewSession({
                 !computer ||
                 !agent ||
                 !ready ||
-                !discovery.isCurrent() ||
                 sendingRef.current ||
                 client.isMutating({
                   mutationKey: ['agentSessions', 'createSession'],
                 }) > 0
-              ) {
-                discovery.retry();
-                throw new Error(t('newSession.settingsLoading'));
-              }
+              )
+                throw new Error(t('composer.sending'));
+              // With the choices the agent offers here, send each as shown. Before they arrive, or when they are out of
+              // date, send only what the person chose: the session checks those before its first prompt, and the agent
+              // keeps its own defaults for the rest.
+              const settings =
+                discovery.result && discovery.isCurrent()
+                  ? Object.fromEntries(
+                      offeredChoices(offered).map((offer) => [
+                        offer.id,
+                        values[offer.id] ?? offer.currentValue,
+                      ]),
+                    )
+                  : discovery.settings;
               sendingRef.current = true;
               try {
-                await submission.send({
-                  computerId: computer.id,
-                  agentId: agent.id,
-                  cwd,
-                  content,
-                  settings: Object.fromEntries(
-                    offeredChoices(offered).map((offer) => [
-                      offer.id,
-                      values[offer.id] ?? offer.currentValue,
-                    ]),
-                  ),
-                  projectId: project?.id ?? null,
-                  mentions,
-                });
+                await submission.send(
+                  {
+                    computerId: computer.id,
+                    agentId: agent.id,
+                    cwd,
+                    content,
+                    settings,
+                    projectId: project?.id ?? null,
+                    mentions,
+                  },
+                  sessionId,
+                );
+                if (mountedRef.current) createdRef.current = true;
+                else setSessionId(crypto.randomUUID());
               } catch (error) {
+                // The id belongs to that submission now, which Retry sends again.
+                setSessionId(crypto.randomUUID());
                 toaster.show({
                   type: 'error',
                   title:
@@ -496,7 +541,11 @@ export function NewSession({
               }
             }}
           />
-          {computer && agents.length === 0 && <NoAgent computer={computer} />}
+          {computer &&
+            (agents.length === 0 ||
+              computer.agents.some((agent) => agent.problem === 'failed')) && (
+              <AgentProblems computer={computer} />
+            )}
           <p className='text-muted-foreground text-center text-xs'>
             {t('newSession.accessHint')}
             <br />
@@ -504,7 +553,7 @@ export function NewSession({
           </p>
         </div>
       </div>
-      {computer && (
+      {computer && !surface.panel && (
         <ComputerDetails
           computer={computer}
           onManage={() => setComputersOpen(true)}
@@ -886,16 +935,26 @@ function remembered(): Choice {
   }
 }
 
-/** Why no agent can start a session on the computer, and how one comes to: installed and signed in there. */
-function NoAgent({ computer }: { readonly computer: Computer }): ReactElement {
+/** Startup failures remain visible even while another agent can start a session on this computer. */
+function AgentProblems({
+  computer,
+}: {
+  readonly computer: Computer;
+}): ReactElement {
   const { t, i18n } = useTranslation();
   const failed = installedAgents(computer).filter((agent) => agent.problem);
   const others = otherAgentNames(computer, i18n.language);
+  const noneAvailable = !computer.agents.some((agent) => !agent.problem);
   return (
     <div className='flex flex-col gap-1.5 rounded-[10px] border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-[13px]'>
-      <p className='font-medium'>{t('newSession.noAgentTitle')}</p>
+      {noneAvailable && (
+        <p className='font-medium'>{t('newSession.noAgentTitle')}</p>
+      )}
       {failed.map((agent) => (
-        <p key={agent.id} className='text-muted-foreground text-xs break-words'>
+        <p
+          key={agent.id}
+          className='text-muted-foreground text-xs whitespace-pre-wrap [overflow-wrap:anywhere]'
+        >
           {t('newSession.failedAgent', {
             name: agent.name,
             detail: agent.detail ?? t('computers.problems.failed'),
@@ -903,9 +962,14 @@ function NoAgent({ computer }: { readonly computer: Computer }): ReactElement {
         </p>
       ))}
       <p className='text-muted-foreground text-xs'>
-        {t('newSession.noAgentHint')}
+        {t('computers.recheckHint')}
       </p>
-      {others && (
+      {noneAvailable && (
+        <p className='text-muted-foreground text-xs'>
+          {t('newSession.noAgentHint')}
+        </p>
+      )}
+      {noneAvailable && others && (
         <p className='text-muted-foreground text-xs'>
           {t('newSession.supported', { names: others })}
         </p>

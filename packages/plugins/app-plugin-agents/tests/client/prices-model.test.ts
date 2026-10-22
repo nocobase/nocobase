@@ -54,7 +54,6 @@ describe('the models page model', () => {
     expect(
       onlinePairs([
         service('a', 'openai-compatible'),
-        { ...service('b', 'openai-compatible'), enabled: false },
         { ...service('c', 'deepseek'), models: [] },
         service('d', 'openai-compatible'),
       ]).map(({ service: item, models }) => [item.name, models]),

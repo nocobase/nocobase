@@ -94,23 +94,25 @@ describe('admin API', () => {
     expect(list.body.data[0].workspaceUsage).not.toHaveProperty('workspaces');
     const detail = await h.request(
       'GET',
-      `/agents/runners/${runner.runnerId}`,
+      `/agents/runners/${runner.runnerId}/workspaces`,
       { user: 'alice' },
     );
-    expect(detail.body.data.workspaceUsage.workspaces).toEqual([
-      expect.objectContaining(directory),
-    ]);
+    expect(detail.body.data).toEqual([expect.objectContaining(directory)]);
     const redacted = await h.request(
       'GET',
-      `/agents/runners/${runner.runnerId}`,
+      `/agents/runners/${runner.runnerId}/workspaces`,
       { user: 'bob', can: ['agents.runners/read'] },
     );
-    expect(redacted.body.data.workspaceUsage.workspaces).toEqual([]);
+    expect(redacted.body.data).toEqual([]);
     expect(
       (
-        await h.request('GET', `/agents/runners/${runner.runnerId}`, {
-          user: 'charlie',
-        })
+        await h.request(
+          'GET',
+          `/agents/runners/${runner.runnerId}/workspaces`,
+          {
+            user: 'charlie',
+          },
+        )
       ).status,
     ).toBe(404);
   });
@@ -368,7 +370,7 @@ describe('admin API', () => {
     expect(revoked.body.data.status).toBe('revoked');
     expect(await h.services.runs.get(runId)).toMatchObject({
       status: 'queued',
-      failureReason: 'runnerOffline',
+      failureReason: 'runnerOfflineBeforeStart',
     });
     // A manager revoking someone else's runner tells its owner.
     expect(notices).toEqual([

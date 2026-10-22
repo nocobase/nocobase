@@ -1,0 +1,45 @@
+---
+/** The closing line every page ends with; the hand-built pages carry the same text in their own markup. */
+interface Props {
+  language: string;
+}
+
+const text =
+  Astro.props.language === 'cn'
+    ? ['NocoBase 3 · 开发文档', '开源 · 私有部署 · 自选模型与 Agent']
+    : [
+        'NocoBase 3 · Documentation',
+        'Open source · Self-hosted · Your choice of models and Agents',
+      ];
+---
+
+<footer class='site-footer'>
+  <div class='site-footer__inner'>
+    <span>{text[0]}</span>
+    <span>{text[1]}</span>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    padding: 0 max(24px, calc((100vw - 1248px) / 2 + 24px)) 32px;
+  }
+  .site-footer__inner {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--docs-line);
+    font-size: 12px;
+    color: var(--docs-muted);
+  }
+  @media (max-width: 640px) {
+    .site-footer {
+      padding-inline: 16px;
+    }
+    .site-footer__inner {
+      flex-direction: column;
+      gap: 6px;
+    }
+  }
+</style>

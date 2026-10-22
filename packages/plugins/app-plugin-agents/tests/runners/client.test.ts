@@ -168,6 +168,9 @@ describe('a runner at a glance', () => {
         workspaces: [],
       },
     });
+    expect(runnerActivity(runner('r1', { draining: 'diskLow' }))).toBe(
+      'low_disk',
+    );
     expect(runnerActivity(low)).toBe('low_disk');
     expect(runnerActivity({ ...low, status: 'offline' })).toBe('offline');
     expect(runnerActivity({ ...low, workspaceUsage: null })).toBe('busy');
@@ -179,22 +182,30 @@ describe('a runner at a glance', () => {
       name: 'Coder',
       modelEntries: [{ tool: 'claude' as const, model: null }],
     };
-    expect(runnerTakesAgent(runner('r1'), coder)).toBe(true);
+    expect(runnerTakesAgent(runner('r1'), coder, Date.now())).toBe(true);
     expect(
-      runnerTakesAgent(runner('r1'), {
-        ...coder,
-        modelEntries: [{ tool: 'codex', model: null }],
-      }),
+      runnerTakesAgent(
+        runner('r1'),
+        {
+          ...coder,
+          modelEntries: [{ tool: 'codex', model: null }],
+        },
+        Date.now(),
+      ),
     ).toBe(false);
     // Any of its tools will do; an entry naming a model needs the runner to report it.
     expect(
-      runnerTakesAgent(runner('r1'), {
-        ...coder,
-        modelEntries: [
-          { tool: 'codex', model: null },
-          { tool: 'claude', model: 'opus' },
-        ],
-      }),
+      runnerTakesAgent(
+        runner('r1'),
+        {
+          ...coder,
+          modelEntries: [
+            { tool: 'codex', model: null },
+            { tool: 'claude', model: 'opus' },
+          ],
+        },
+        Date.now(),
+      ),
     ).toBe(false);
     const reporting = runner('r1', {
       tools: [
@@ -206,10 +217,14 @@ describe('a runner at a glance', () => {
       ],
     });
     expect(
-      runnerTakesAgent(reporting, {
-        ...coder,
-        modelEntries: [{ tool: 'claude', model: 'opus' }],
-      }),
+      runnerTakesAgent(
+        reporting,
+        {
+          ...coder,
+          modelEntries: [{ tool: 'claude', model: 'opus' }],
+        },
+        Date.now(),
+      ),
     ).toBe(true);
     // A run that failed `modelUnavailable` there keeps it off that runner until it reports the tool's models anew.
     const marked = {
@@ -224,18 +239,32 @@ describe('a runner at a glance', () => {
       ],
     };
     expect(
-      runnerTakesAgent(marked, {
-        ...coder,
-        modelEntries: [{ tool: 'claude', model: 'claude-opus-5-5' }],
-      }),
+      runnerTakesAgent(
+        marked,
+        {
+          ...coder,
+          modelEntries: [{ tool: 'claude', model: 'claude-opus-5-5' }],
+        },
+        Date.now(),
+      ),
     ).toBe(false);
-    expect(runsEntry(marked, { tool: 'claude', model: null })).toBe(true);
+    expect(runsEntry(marked, { tool: 'claude', model: null }, Date.now())).toBe(
+      true,
+    );
     expect(reportedModels(reporting, 'claude')).toEqual(['claude-opus-5-5']);
     expect(
-      runnerTakesAgent(runner('r1', { policy: { agents: ['Rev*'] } }), coder),
+      runnerTakesAgent(
+        runner('r1', { policy: { agents: ['Rev*'] } }),
+        coder,
+        Date.now(),
+      ),
     ).toBe(false);
     expect(
-      runnerTakesAgent(runner('r1', { policy: { agents: ['Cod*'] } }), coder),
+      runnerTakesAgent(
+        runner('r1', { policy: { agents: ['Cod*'] } }),
+        coder,
+        Date.now(),
+      ),
     ).toBe(true);
   });
 });

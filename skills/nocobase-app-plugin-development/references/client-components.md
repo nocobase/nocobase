@@ -226,7 +226,7 @@ export function SaveButton({
 }
 ```
 
-Destructure `add` and `close` rather than keeping the returned object: the object changes whenever a toast appears or leaves, while `add` and `close` are stable, so only they belong in `useCallback` and `useEffect` dependencies. The hook throws outside a `Toast.Provider`, so a component test wraps what it renders, as `render(ui, { wrapper: Toast.Provider })`, or mocks the hook when it asserts what was reported. Do not add sonner or report through Refine's `useNotification()`: the App mounts no sonner host and registers no Refine notification provider, so both report nothing.
+Destructure `add` and `close` rather than keeping the returned object: the object changes whenever a toast appears or leaves, while `add` and `close` are stable, so only they belong in `useCallback` and `useEffect` dependencies. The hook throws outside a `Toast.Provider`, so a component test wraps what it renders, as `render(ui, { wrapper: Toast.Provider })`, or mocks the hook when it asserts what was reported. Do not add sonner: the App mounts no sonner host, so it reports nothing.
 
 ## Keep page modules lazy
 

@@ -20,7 +20,7 @@ import {
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import type { Runner } from '../../../shared/runners.js';
-import type { DatabaseConnection } from '@nocobase/db';
+import type { DatabaseConnection, ExpressionBuilder } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
 import type { RunBrief } from '../../../shared/briefs.js';
@@ -99,6 +99,7 @@ import {
   commentConsent,
   commentFromOwner,
 } from './comment-consent.js';
+import type { ClaimService } from './claim.js';
 
 export const DEFAULT_THREAD = 'main';
 
@@ -238,7 +239,7 @@ export interface RunService {
   /** Adds input to a run that has not ended. */
   addInput(runId: string, input: NewInput, outer?: Tx): Promise<string>;
   /** A queued run ends at once; a held one is asked to stop. In `outer`, joins the caller's transaction. */
-  cancel(runId: string, byUserId: string, outer?: Tx): Promise<Run>;
+  cancel(runId: string, byUserId: string | null, outer?: Tx): Promise<Run>;
   /**
    * Ends the queued runs on a subject, of one agent or of any, or of one agent on every subject; optionally only those
    * `actorUserId` woke. Held runs are left alone. Answers the runs it ended. In `outer`, joins the caller's transaction.
@@ -271,6 +272,11 @@ export interface RunService {
     readonly source: string;
   } | null>;
   list(filter: RunFilter): Promise<Run[]>;
+  inputTriggers(
+    runIds: readonly string[],
+  ): Promise<
+    ReadonlyMap<string, readonly { type: string; payload: unknown }[]>
+  >;
   /** The newest ended run of each agent on each of the subjects (`subjectIds` of `subjectKind`), in no order. */
   lastEnded(subjectKind: string, subjectIds: readonly string[]): Promise<Run[]>;
   /** Active subject/agent pairs within this scope, once each. Callers decide visibility and approval rules. */
@@ -349,7 +355,7 @@ export interface RunService {
 }
 
 export interface RunServiceDeps extends TransitionDeps {
-  readonly diagnose?: import('./claim.js').ClaimService['diagnose'];
+  readonly diagnose?: ClaimService['diagnose'];
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -419,12 +425,26 @@ export function createRunService(deps: RunServiceDeps): RunService {
     run: RunRecord,
     byUserId: string,
   ): Promise<void> {
-    const ended = await finishRun(unit, deps, run, {
-      status: 'cancelled',
-      reason: null,
-      detail: COMMENT_CANCEL_DETAIL,
-      cancelledById: byUserId,
-    });
+    const ended = await finishRun(
+      unit,
+      deps,
+      run,
+      {
+        status: 'cancelled',
+        reason: null,
+        detail: COMMENT_CANCEL_DETAIL,
+        cancelledById: byUserId,
+      },
+      false,
+      async () => {
+        await deps.subjects
+          .get(run.subjectKind)
+          ?.sink?.onCancelRequested?.(
+            unit,
+            toRun({ ...run, cancelledById: byUserId }),
+          );
+      },
+    );
     if (!ended) throw conflict('The comment work changed; read it again.');
   }
 
@@ -1416,24 +1436,48 @@ export function createRunService(deps: RunServiceDeps): RunService {
             `The run is ${run.status}.`,
           );
         if (run.status === 'queued') {
-          const ended = await finishRun(unit, deps, run, {
-            status: 'cancelled',
-            reason: 'cancelled',
-            cancelledById: byUserId,
-          });
+          const ended = await finishRun(
+            unit,
+            deps,
+            run,
+            {
+              status: 'cancelled',
+              reason: 'cancelled',
+              cancelledById: byUserId,
+            },
+            false,
+            async () => {
+              await deps.subjects
+                .get(run.subjectKind)
+                ?.sink?.onCancelRequested?.(
+                  unit,
+                  toRun({ ...run, cancelledById: byUserId }),
+                );
+            },
+          );
           if (!ended) throw conflict('The run changed; try again.');
           return toRun(ended);
         }
         if (!run.cancelRequestedAt) {
           const now = clock.now().toISOString();
-          await runsRepo(unit.conn).updateMany({
-            filter: { id: run.id },
+          const updated = await runsRepo(unit.conn).updateMany({
+            filter: { id: run.id, status: run.status, revision: run.revision },
             values: {
               cancelRequestedAt: now,
               cancelledById: byUserId,
               updatedAt: now,
             },
           });
+          if (updated.updatedCount !== 1)
+            throw conflict('The run changed; try again.');
+          await deps.subjects.get(run.subjectKind)?.sink?.onCancelRequested?.(
+            unit,
+            toRun({
+              ...run,
+              cancelRequestedAt: now,
+              cancelledById: byUserId,
+            }),
+          );
           unit.emit({ type: 'run.changed', runId: run.id, status: run.status });
         }
         return toRun(await require(unit.conn, run.id));
@@ -1774,6 +1818,38 @@ export function createRunService(deps: RunServiceDeps): RunService {
       };
     },
 
+    async inputTriggers(runIds) {
+      const result = new Map<string, { type: string; payload: unknown }[]>();
+      if (!runIds.length) return result;
+      const rows = await tx
+        .read()
+        .query.selectFrom('agRunInputs as input')
+        .select(['input.runId', 'input.type', 'input.payload'])
+        .where('input.runId', 'in', [...runIds])
+        .where((eb: ExpressionBuilder) =>
+          eb(
+            'input.id',
+            '=',
+            eb
+              .selectFrom('agRunInputs as first')
+              .select('first.id')
+              .whereRef('first.runId', '=', 'input.runId')
+              .orderBy('first.createdAt', 'asc')
+              .orderBy('first.id', 'asc')
+              .limit(1),
+          ),
+        )
+        .execute();
+      for (const row of rows) {
+        const inputs = result.get(String(row.runId)) ?? [];
+        inputs.push({
+          type: String(row.type),
+          payload: jsonObject(row.payload),
+        });
+        result.set(String(row.runId), inputs);
+      }
+      return result;
+    },
     async list(filter) {
       const records = await runsRepo(tx.read()).findMany({
         filter: (f) =>

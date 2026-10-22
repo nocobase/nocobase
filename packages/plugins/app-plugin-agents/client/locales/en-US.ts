@@ -9,6 +9,17 @@ import runtimesEnUS from './runtimes.en-US.js';
 import runWaitEnUS from './runWait.en-US.js';
 
 const pages = {
+  modelSuggestions: {
+    design:
+      'Designs, architecture, hard investigations and reviews of important changes.',
+    routine: 'Well-scoped implementation, small fixes, tests and wording.',
+    small: 'Small, mechanical changes; cheap and fast.',
+    explanation:
+      'Understanding requirements, writing proposals and explanations.',
+    large: 'Larger implementations, changes across packages and refactoring.',
+    review: 'Code review and reading CI failures.',
+  },
+
   actions: {
     back: 'Back',
     cancel: 'Cancel',
@@ -485,6 +496,8 @@ const pages = {
     runnerUpgrade:
       'Interrupted for an execution machine update; the run will continue.',
     runnerDiskFull: 'The execution machine ran out of disk space.',
+    runnerOfflineBeforeStart:
+      'The runtime went offline before starting the run.',
     runnerOffline: 'The runtime went offline.',
     leaseExpired: 'The runtime stopped reporting.',
     startTimeout: 'The runtime did not start the run in time.',

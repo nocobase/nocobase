@@ -3,6 +3,7 @@
  * runtime-cli.tsx`): its state with the slots it uses, its coding tools with whether each is turned on, installed and
  * signed in, and its version with the command that upgrades it.
  */
+import { AGENT_TOOLS } from '@nocobase/agent-protocol';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
 
@@ -47,11 +48,17 @@ const ACTIVITY_TONE: Readonly<Record<RunnerActivity, Tone>> = {
  */
 export function RunnerStatusCell({
   runner,
+  badgeOnly = false,
 }: {
+  readonly badgeOnly?: boolean;
   readonly runner: Pick<
     RunnerListItem,
     | 'status'
     | 'slots'
+    | 'reportedSlots'
+    | 'capacitySource'
+    | 'capacityReportedAt'
+    | 'toolLoad'
     | 'activeRuns'
     | 'activeJobs'
     | 'lastSeenAt'
@@ -63,10 +70,20 @@ export function RunnerStatusCell({
 }): ReactElement {
   const { t } = useTranslation();
   const format = useFormatters();
-  const activity = runnerActivity(runner);
+  const actual = {
+    ...runner,
+    slots: runner.reportedSlots ?? Number.POSITIVE_INFINITY,
+    toolSlots: Object.fromEntries(
+      Object.entries(runner.toolLoad ?? {}).map(([tool, load]) => [
+        tool,
+        load.slots,
+      ]),
+    ),
+  };
+  const activity = runnerActivity(actual);
   const values = {
     active: runner.activeRuns + runner.activeJobs,
-    slots: runner.slots,
+    slots: runner.reportedSlots ?? '?',
     time: format.relative(runner.lastSeenAt),
   };
   let label: string;
@@ -87,29 +104,62 @@ export function RunnerStatusCell({
       {label}
     </AgTag>
   );
-  const usage = toolUsage(runner);
-  if (usage.length === 0) return tag;
+  const usage = runner.reportedSlots === undefined ? [] : toolUsage(actual);
+  const pending =
+    runner.capacitySource === 'online' &&
+    (runner.reportedSlots !== runner.slots ||
+      AGENT_TOOLS.some((tool) => {
+        return (
+          (runner.toolLoad?.[tool]?.slots ?? runner.reportedSlots) !==
+          Math.min(runner.toolSlots?.[tool] ?? runner.slots, runner.slots)
+        );
+      }));
+  const notice =
+    runner.capacitySource === undefined
+      ? t('runtimes.capacity.upgrade')
+      : pending
+        ? t('runtimes.capacity.pending')
+        : runner.capacitySource === 'legacyLocal'
+          ? t('runtimes.capacity.legacy')
+          : t('runtimes.capacity.online');
   return (
     <div className='flex flex-col items-start gap-1'>
       {tag}
-      <ul
-        className='flex flex-wrap gap-x-2 text-xs text-muted-foreground tabular-nums'
-        aria-label={t('runtimes.toolUsage.label')}
-      >
-        {usage.map((item) => (
-          <li
-            key={item.tool}
-            data-full={item.used >= item.limit ? true : undefined}
-            className='data-full:text-foreground'
-          >
-            {t('runtimes.toolUsage.item', {
-              tool: t(`tools.${item.tool}`),
-              used: item.used,
-              limit: item.limit,
-            })}
-          </li>
-        ))}
-      </ul>
+      {runner.status === 'offline' ? (
+        <span className='text-xs'>
+          {t('runtimes.capacity.actual', {
+            slots: runner.reportedSlots ?? '?',
+          })}
+        </span>
+      ) : null}
+      <span className='text-xs text-muted-foreground'>{notice}</span>
+      {runner.status === 'offline' ? (
+        <span className='text-xs text-muted-foreground'>
+          {t('runtimes.capacity.lastReported', {
+            time: format.dateTime(runner.capacityReportedAt),
+          })}
+        </span>
+      ) : null}
+      {badgeOnly || usage.length === 0 ? null : (
+        <ul
+          className='flex flex-wrap gap-x-2 text-xs text-muted-foreground tabular-nums'
+          aria-label={t('runtimes.toolUsage.label')}
+        >
+          {usage.map((item) => (
+            <li
+              key={item.tool}
+              data-full={item.used >= item.limit ? true : undefined}
+              className='data-full:text-foreground'
+            >
+              {t('runtimes.toolUsage.item', {
+                tool: t(`tools.${item.tool}`),
+                used: item.used,
+                limit: item.limit,
+              })}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -250,14 +300,10 @@ export function RunnerVersionCell({
 export function RunnerUpgradeRequired({
   runner,
 }: {
-  readonly runner: Pick<
-    RunnerListItem,
-    | 'version'
-    | 'product'
-    | 'protocolVersion'
-    | 'requiredProtocol'
-    | 'updateVersion'
-  >;
+  readonly runner: Pick<Runner, 'version' | 'product' | 'protocolVersion'> & {
+    readonly requiredProtocol: { readonly min: number; readonly max: number };
+    readonly updateVersion: string | null;
+  };
 }): ReactElement {
   const { t } = useTranslation();
   const { min, max } = runner.requiredProtocol;

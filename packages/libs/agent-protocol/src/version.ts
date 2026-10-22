@@ -72,8 +72,17 @@ import { z } from 'zod';
  * without it still gets the credentials in its payload. The number moved so that a runner announcing
  * `gitCredentials` is refused cleanly by a server that does not know it; update the application first.
  */
-/** Version 11 adds runnerUpgrade reports, which older servers cannot parse; version 10 added workspace.key. */
-export const PROTOCOL_VERSION = 11;
+/**
+ * QuotaReport on FailRequest and event meta.quota are optional additions within version 11.
+ * Older runners retain failure-only behavior; receivers ignore absent quota observations.
+ */
+/**
+ * Version 11 adds runnerUpgrade reports, which older servers cannot parse; version 10 added workspace.key.
+ *
+ * Version 12 added code host CLI wrappers (`RunGit.tools`, the `gitTools` feature) and made a run credential's
+ * username the only one git uses. Nothing else of version 11 changed; update the application first.
+ */
+export const PROTOCOL_VERSION = 12;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -106,6 +115,7 @@ export function isProtocolSupported(version: number): boolean {
  *   package and exact version (`HeartbeatResponse.npmUpgrade`) instead of serving a tarball.
  * - `gitCredentials`: asks for a repository's credential whenever git needs one (`RunGit.onDemand`,
  *   `RUNNER_ROUTES.gitCredential`), instead of keeping the one the claim handed out for the whole run.
+ * - `gitTools` (protocol 12): wraps the code host CLIs a run names (`RunGit.tools`) with the run's credential.
  */
 export const RUNNER_FEATURES = [
   'workspaceKey',
@@ -121,6 +131,7 @@ export const RUNNER_FEATURES = [
   'mounts',
   'npm',
   'gitCredentials',
+  'gitTools',
 ] as const;
 
 export type RunnerFeature = (typeof RUNNER_FEATURES)[number];
@@ -227,7 +238,7 @@ export const TIMINGS = {
   heartbeatIntervalMs: 15_000,
   /** How long a `claim?wait=1` request is held when there is no work. */
   pollTimeoutMs: 25_000,
-  /** How long a lease lasts; a runner renews it every `leaseRenewMs`. */
+  /** How long a started run’s lease lasts; a runner renews it every `leaseRenewMs`. */
   leaseMs: 45_000,
   leaseRenewMs: 15_000,
   /** A runner not heard from for this long is offline, and its runs go back to the queue. */

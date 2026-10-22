@@ -25,7 +25,13 @@ import {
   type RunnerModelEntry,
   type SystemAgentInput,
 } from '../../../shared/agents.js';
-import { agentNameOf, discoveryKey } from '../../../shared/model-catalog.js';
+import {
+  agentNameOf,
+  catalogEntry,
+  discoveryKey,
+  normalizeModel,
+  type CatalogModel,
+} from '../../../shared/model-catalog.js';
 import {
   lockDiscovery,
   preferences,
@@ -71,13 +77,21 @@ export const AgentPatchSchema: z.ZodType<AgentPatch> = z.strictObject({
     .boolean()
     .optional()
     .meta({ description: 'Offer it work, or stop offering it.' }),
-  expectedRevision: z.number().int().min(1),
+  expectedRevision: z
+    .number()
+    .int()
+    .min(1)
+    .describe('The revision last read; reject if the record has changed.'),
 });
 
 /** What every agent discovered from runners is: the application's instructions and business actions. */
 export interface AgentDefaults {
   readonly instructions: string | null;
   readonly actions: readonly string[];
+  /** Suggested descriptions by tool and normalized model id; never written by applyDefaults. */
+  readonly modelDescriptions?: Readonly<
+    Partial<Record<AgentTool, Readonly<Record<string, CatalogModel['goodAt']>>>>
+  >;
 }
 
 const NO_DEFAULTS: AgentDefaults = { instructions: null, actions: [] };
@@ -153,6 +167,12 @@ export interface AgentService {
   syncRunner(unit: Tx, runner: Runner): Promise<void>;
   /** Where every discovered agent's instructions and business actions come from; returns what removes it. */
   setDefaults(provider: () => AgentDefaults): () => void;
+  /** The application's suggested description, falling back to the model catalog. */
+  suggestion(
+    this: void,
+    tool: AgentTool,
+    model: string,
+  ): CatalogModel['goodAt'] | null;
   /** Writes the current defaults to every discovered agent that differs; answers how many changed. */
   applyDefaults(options?: { preserveInstructions?: boolean }): Promise<number>;
   /** The agent's history, newest first; with `afterRevision`, the changes made after that revision. 404 when absent. */
@@ -599,6 +619,13 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       return () => {
         if (defaults === provider) defaults = () => NO_DEFAULTS;
       };
+    },
+    suggestion(tool, model) {
+      return (
+        defaults().modelDescriptions?.[tool]?.[normalizeModel(tool, model)] ??
+        catalogEntry(tool, model)?.goodAt ??
+        null
+      );
     },
     async applyDefaults(options = {}) {
       const { instructions, actions } = currentDefaults();

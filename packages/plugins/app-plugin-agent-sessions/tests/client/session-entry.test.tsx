@@ -1,13 +1,21 @@
 import { realtimeClientToken } from '@nocobase/app-client';
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
-import { Route, Routes, useLocation } from 'react-router';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import { Route, Routes, useLocation, useSearchParams } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AgentSessionsConfigContext } from '../../client/config.js';
 import AgentSessionsPage from '../../client/pages/sessions.js';
 import plugin from '../../client/plugin.js';
 import { discoveryKey } from '../../client/use-choice-discovery.js';
+import { sessionMemoryKey } from '../../client/use-session-memory.js';
 import type { Session } from '../../shared/api.js';
 
 const recent: Session = {
@@ -18,6 +26,7 @@ const recent: Session = {
   title: 'Recent',
   titleSource: 'owner',
   state: null,
+  startup: null,
   settings: {},
   running: false,
   waiting: false,
@@ -57,6 +66,9 @@ async function setup(route = '/agent-sessions', cachedSettings = false) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  // The draft's session id names its discovery, so cached choices belong to one draft.
+  if (cachedSettings)
+    client.setQueryData(sessionMemoryKey('new-session:id'), 'draft-session');
   if (cachedSettings)
     client.setQueryData(
       [
@@ -71,6 +83,7 @@ async function setup(route = '/agent-sessions', cachedSettings = false) {
           'test',
         ]),
         {},
+        'draft-session',
       ],
       {
         status: 'available',
@@ -247,6 +260,7 @@ describe('ordinary session entry', () => {
 
   it('keeps explicit new independent of a delayed history list', async () => {
     const { complete } = await setup('/agent-sessions?new');
+    expect(screen.queryByRole('heading', { name: 'New session' })).toBeNull();
     const input = await screen.findByRole('textbox', {
       name: 'Say what you need. Several things at once, or a screenshot, are fine.',
     });
@@ -317,3 +331,220 @@ describe('ordinary session entry', () => {
     ).not.toBeDisabled();
   });
 });
+
+describe('archived view', () => {
+  const old: Session = {
+    ...recent,
+    id: 'old',
+    title: 'Old investigation',
+    archivedAt: '2026-10-12T00:00:00Z',
+  };
+
+  async function render(route: string) {
+    const computer = {
+      id: 'computer',
+      name: 'Computer',
+      platform: 'linux',
+      arch: 'x64',
+      host: 'test',
+      home: '/work',
+      roots: ['/work'],
+      folders: ['/work'],
+      defaultFolders: true,
+      online: true,
+      agents: [{ id: 'codex', name: 'Codex', version: 'test' }],
+      choices: {},
+      commands: {},
+      lastSeenAt: '2026-10-13T00:00:00Z',
+      createdAt: '2026-10-13T00:00:00Z',
+    };
+    await renderWithApp(
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <AgentSessionsConfigContext.Provider
+          value={{
+            cli: 'app',
+            connectPrompt: null,
+            linkPanels: { issue: () => null },
+          }}
+        >
+          <Location />
+          <Routes>
+            <Route path='/agent-sessions' element={<AgentSessionsPage />}>
+              <Route path=':sessionId' element={<SessionStubWithPanel />} />
+            </Route>
+          </Routes>
+        </AgentSessionsConfigContext.Provider>
+      </QueryClientProvider>,
+      {
+        route,
+        plugins: [plugin({ routes: false })],
+        namespace: '@nocobase/app-plugin-agent-sessions',
+        fetch: answerApi(({ path, query }) => {
+          if (path === 'agentSessions/sessions')
+            return {
+              data: query?.archived === 'true' ? [old] : [recent],
+              meta: {},
+            };
+          if (path === 'agentSessions/computers')
+            return { data: [computer], meta: {} };
+          if (path.endsWith('/discoverChoices'))
+            return { data: { status: 'available', choices: [] } };
+          return { data: [], meta: {} };
+        }),
+      },
+    );
+  }
+
+  it('names the archived list and keeps an unarchived session and its draft out of the main area until restored', async () => {
+    await render('/agent-sessions/recent');
+    const draft = await screen.findByRole('textbox', { name: 'Draft' });
+    fireEvent.change(draft, { target: { value: 'Unsent reply' } });
+    const list = screen.getByRole('region', { name: 'Sessions' });
+    fireEvent.click(
+      within(list).getByRole('button', { name: 'Archived', exact: true }),
+    );
+    expect(
+      await within(list).findByRole('heading', { name: 'Archived' }),
+    ).toBeVisible();
+    await within(list).findByText('Old investigation');
+    expect(screen.getByRole('main').querySelector('h2')?.textContent).toBe(
+      'Archived',
+    );
+    expect(
+      screen.getByText(
+        'Choose an archived session to read it. Your open session and unsent draft are kept.',
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole('textbox', { name: 'Draft' })).toBeNull();
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/agent-sessions/recent',
+    );
+
+    fireEvent.click(within(list).getByText('Old investigation'));
+    await screen.findByText('Viewing old');
+    expect(
+      screen.queryByText(
+        'Choose an archived session to read it. Your open session and unsent draft are kept.',
+      ),
+    ).toBeNull();
+
+    fireEvent.click(
+      within(list).getByRole('button', { name: 'Archived', exact: true }),
+    );
+    expect(
+      await within(list).findByRole('heading', { name: 'My agents' }),
+    ).toBeVisible();
+  });
+
+  it('restores the open session with its unsent draft when leaving the archived list', async () => {
+    await render('/agent-sessions/recent');
+    const draft = await screen.findByRole('textbox', { name: 'Draft' });
+    fireEvent.change(draft, { target: { value: 'Unsent reply' } });
+    const list = screen.getByRole('region', { name: 'Sessions' });
+    const archived = within(list).getByRole('button', {
+      name: 'Archived',
+      exact: true,
+    });
+    fireEvent.click(archived);
+    await within(list).findByText('Old investigation');
+    fireEvent.click(archived);
+    expect(await screen.findByRole('textbox', { name: 'Draft' })).toHaveValue(
+      'Unsent reply',
+    );
+  });
+
+  it('leaves the archived list and shows an editable new session when starting one', async () => {
+    await render('/agent-sessions/recent');
+    const list = screen.getByRole('region', { name: 'Sessions' });
+    fireEvent.click(
+      within(list).getByRole('button', { name: 'Archived', exact: true }),
+    );
+    await within(list).findByText('Old investigation');
+
+    fireEvent.click(
+      within(list).getByRole('button', { name: 'New session', exact: true }),
+    );
+
+    expect(await screen.findByTestId('location')).toHaveTextContent(
+      '/agent-sessions?new',
+    );
+    expect(
+      await screen.findByRole('textbox', {
+        name: 'Say what you need. Several things at once, or a screenshot, are fine.',
+      }),
+    ).not.toBeDisabled();
+    expect(
+      screen.queryByText(
+        'Choose an archived session to read it. Your open session and unsent draft are kept.',
+      ),
+    ).toBeNull();
+    expect(
+      await within(list).findByRole('heading', { name: 'My agents' }),
+    ).toBeVisible();
+  });
+
+  it('leaves the archived list from the collapsed rail when starting a new session', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query !== '(min-width: 1600px)',
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    await render('/agent-sessions/recent');
+    const list = screen.getByRole('region', { name: 'Sessions' });
+    fireEvent.click(
+      within(list).getByRole('button', { name: 'Archived', exact: true }),
+    );
+    await within(list).findByText('Old investigation');
+    fireEvent.click(within(list).getByText('Old investigation'));
+    await screen.findByText('Viewing old');
+    fireEvent.click(screen.getByRole('button', { name: 'Open panel' }));
+
+    const rail = await screen.findByTestId('session-list-rail');
+    fireEvent.click(within(rail).getByRole('button', { name: 'New session' }));
+
+    expect(await screen.findByTestId('location')).toHaveTextContent(
+      '/agent-sessions?new',
+    );
+    expect(
+      await screen.findByRole('textbox', {
+        name: 'Say what you need. Several things at once, or a screenshot, are fine.',
+      }),
+    ).not.toBeDisabled();
+    expect(
+      screen.queryByText(
+        'Choose an archived session to read it. Your open session and unsent draft are kept.',
+      ),
+    ).toBeNull();
+  });
+});
+
+function SessionStubWithPanel() {
+  return (
+    <>
+      <SessionStub />
+      <OpenPanel />
+    </>
+  );
+}
+
+function SessionStub() {
+  const location = useLocation();
+  const id = location.pathname.split('/').pop();
+  return (
+    <div>
+      <p>Viewing {id}</p>
+      <textarea aria-label='Draft' />
+    </div>
+  );
+}
+
+function OpenPanel() {
+  const [, setParams] = useSearchParams();
+  return (
+    <button onClick={() => setParams({ issue: 'task-1' })}>Open panel</button>
+  );
+}

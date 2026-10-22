@@ -74,6 +74,7 @@ describe('Agent team › Usage', () => {
     resetApi({
       'agents/usage': (request) =>
         report(request.query.groupBy as UsageReport['groupBy']),
+      'agents/models': () => [],
       'agents/usage/models': () => ({ from: DAY, to: DAY, rows: [] }),
       'agents/vocabulary': () => ({ subjects: [], sources: [], scopes: [] }),
       agents: () => [],
@@ -157,6 +158,7 @@ describe('Agent team › Usage', () => {
         ...report('agent'),
         totals: row('total', { durationMs: 0 }),
       }),
+      'agents/models': () => [],
       'agents/usage/models': () => ({ from: DAY, to: DAY, rows: [] }),
       'agents/vocabulary': () => ({ subjects: [], sources: [], scopes: [] }),
       agents: () => [],

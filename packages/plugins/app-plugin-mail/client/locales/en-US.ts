@@ -581,6 +581,7 @@ const enUS = {
     },
   },
   errors: {
+    messageNotFound: 'Mail message was not found.',
     requestFailed: 'Mail request failed.',
     authorizationFailed: 'Could not start mail authorization.',
     syncFailed: 'Could not start mailbox synchronization.',

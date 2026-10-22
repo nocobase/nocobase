@@ -1,3 +1,4 @@
+import { PermissionSetConflictError } from '@nocobase/authorization/permission-sets';
 import {
   encodeAuthorizationTitle,
   decodeAuthorizationTitle,
@@ -36,7 +37,7 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
   async list(): Promise<readonly PermissionSet[]> {
     const rows = await this.connection()
       .query.selectFrom('authorizationPermissionSets')
-      .select(['key', 'title', 'grants'])
+      .select(['key', 'title', 'grants', 'revision'])
       .orderBy('key', 'asc')
       .execute();
     return rows.map((row) => permissionSetFromRow(row));
@@ -73,7 +74,7 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
   async get(key: string): Promise<PermissionSet | undefined> {
     const row = await this.connection()
       .query.selectFrom('authorizationPermissionSets')
-      .select(['key', 'title', 'grants'])
+      .select(['key', 'title', 'grants', 'revision'])
       .where('key', '=', key)
       .executeTakeFirst();
     if (!row) return undefined;
@@ -82,6 +83,7 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
 
   async create(input: PermissionSet): Promise<PermissionSet> {
     const now = new Date();
+    const revision = crypto.randomUUID();
     await this.connection()
       .query.insertInto('authorizationPermissionSets')
       .values({
@@ -89,25 +91,41 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
         key: input.key,
         title: encodeAuthorizationTitle(input.title),
         grants: JSON.stringify(input.grants),
+        revision,
         createdAt: now,
         updatedAt: now,
       })
       .execute();
-    return input;
+    return { ...input, revision };
   }
 
-  async update(key: string, input: PermissionSet): Promise<PermissionSet> {
+  async update(
+    key: string,
+    input: PermissionSet,
+    expectedRevision?: string,
+  ): Promise<PermissionSet> {
+    const revision = crypto.randomUUID();
     await this.connection().transaction(async (connection): Promise<void> => {
-      await connection.query
+      let update = connection.query
         .updateTable('authorizationPermissionSets')
         .set({
           key: input.key,
           title: encodeAuthorizationTitle(input.title),
           grants: JSON.stringify(input.grants),
+          revision,
           updatedAt: new Date(),
         })
-        .where('key', '=', key)
-        .execute();
+        .where('key', '=', key);
+      if (expectedRevision !== undefined)
+        update = update.where('revision', '=', expectedRevision);
+      const result = await update.execute();
+      if (
+        result.updatedCount === 0 ||
+        (expectedRevision !== undefined && result.updatedCount !== 1)
+      )
+        throw new PermissionSetConflictError(
+          'The Permission Set changed. Reload it before saving.',
+        );
       if (key !== input.key) {
         await connection.query
           .updateTable('authorizationPermissionSetAssignments')
@@ -116,7 +134,7 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
           .execute();
       }
     });
-    return input;
+    return { ...input, revision };
   }
 
   async delete(key: string): Promise<void> {
@@ -208,6 +226,10 @@ function permissionSetFromRow(row: object): PermissionSet {
   const grants = rowValue(row, 'grants');
   return {
     key: scalarString(key, 'Permission Set key'),
+    revision: scalarString(
+      rowValue(row, 'revision'),
+      'Permission Set revision',
+    ),
     ...(title == null ? {} : { title: decodeAuthorizationTitle(title) }),
     grants: jsonValue<PermissionGrant[]>(grants, []),
   };

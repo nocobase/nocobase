@@ -1,0 +1,380 @@
+import type { FoundationResource } from './en-US.js';
+
+const viVN: FoundationResource = {
+  nav: {
+    settings: 'Cài đặt hệ thống',
+    foundation: 'Nền tảng ứng dụng',
+  },
+  page: {
+    title: 'Nền tảng ứng dụng',
+    description:
+      'Ứng dụng tập trung vào nghiệp vụ. Dữ liệu, phân quyền và quy trình được NocoBase Core hỗ trợ bằng các khả năng chung do NocoBase phát triển, kiểm thử, bảo trì và cập nhật theo phiên bản chính thức.',
+    bandTitle: 'NocoBase Core',
+    bandDescription:
+      'Các khả năng đang dùng sáng lên lần lượt. Chọn một mục để xem vai trò.',
+    score: '{{active}} / {{total}}',
+    scoreCaption: 'khả năng đang hỗ trợ ứng dụng',
+    refresh: 'Làm mới',
+    refreshing: 'Đang thu thập…',
+    updatedAt: 'Thu thập lúc {{time}}',
+    loading: 'Đang thu thập khả năng…',
+    refreshFailed:
+      'Làm mới thất bại. Đang hiển thị kết quả thu thập thành công gần nhất.',
+    loadFailed: 'Không tải được tổng quan.',
+    forbidden: 'Chỉ quản trị viên có quyền không giới hạn được xem trang này.',
+    retry: 'Thử lại',
+    undetermined_one: 'Chưa xác định được {{count}} khả năng',
+    undetermined_other: 'Chưa xác định được {{count}} khả năng',
+    highlightsLabel: 'Số liệu chính',
+    unavailable: 'Không có dữ liệu',
+    lowerBound: 'Giá trị tối thiểu: chưa đọc được một phần dữ liệu.',
+  },
+  matrix: {
+    collections: 'Bộ sưu tập dữ liệu: {{names}}',
+    title: 'Mô-đun nghiệp vụ và khả năng nền tảng',
+    description:
+      'Xem khả năng nào hỗ trợ từng mô-đun. Chọn dấu tích để xem căn cứ liên kết và công việc cần làm nếu tự triển khai.',
+    modules: 'Mô-đun nghiệp vụ',
+    summary: '{{count}} khả năng · {{pages}} trang',
+    inspect: 'Xem {{module}} × {{capability}}',
+    unknown: 'Chưa xác định',
+    empty:
+      'Chưa tìm thấy mô-đun. Chúng sẽ tự xuất hiện khi thêm trang và mục điều hướng.',
+    legend:
+      '✓ Tích hợp đã xác định; · chưa xác định liên kết. Tham chiếu mã thể hiện phụ thuộc, không phải số lần thực thi.',
+    partial:
+      'Không đọc được một số phụ thuộc của trang. Các liên kết đã xác nhận vẫn được hiển thị.',
+    evidence: {
+      page: 'Trang đã đăng ký trong ứng dụng',
+      authentication: 'Trang yêu cầu đăng nhập',
+      authorization: 'Trang có kiểm soát quyền truy cập',
+      provider: 'Trang do nhà cung cấp này cung cấp',
+      source: 'Mã trang tham chiếu nhà cung cấp',
+      apiSource: 'Nhà cung cấp được mã xử lý API tương ứng tham chiếu',
+    },
+  },
+  inventory: {
+    recognitionNotes: 'Ghi chú nhận diện',
+    title: 'Khả năng và bên cung cấp',
+    description:
+      'Các khả năng phản ánh lõi, plugin chính thức, Pro và phần mở rộng đã kết nối với ứng dụng.',
+    discovered: 'gói cung cấp đã phát hiện',
+    mapped: 'gói cung cấp đã phân loại',
+    unmapped: 'đang chờ phân loại',
+    partial: 'Phát hiện chưa đầy đủ. Không đọc được: {{sources}}.',
+    selectedCategory: 'Bên cung cấp cho {{category}}',
+    usageBoundary:
+      'Trạng thái áp dụng cho cả nhóm, không khẳng định từng gói đã bật, cấu hình hay được sử dụng.',
+    noCategoryProviders:
+      'Danh mục hiện tại chưa nhận diện được bên cung cấp cho nhóm này.',
+    extensionsTitle: 'Bên cung cấp bổ sung · chờ nhận diện',
+    extensionsDescription:
+      'Bên cung cấp chưa phân loại vẫn hiển thị. Không tự động coi là tích hợp ngoài hoặc chưa sử dụng.',
+    noExtensions: 'Chưa tìm thấy bên cung cấp bổ sung trong phạm vi hiện tại.',
+    discoveryBoundary:
+      'Phạm vi: phụ thuộc trực tiếp, gói cung cấp đã biết, đóng góp cơ sở dữ liệu và API chuyển tiếp công khai, cùng đóng góp phía máy khách quan sát trong trình duyệt. Không liệt kê mọi đóng góp lúc chạy, phần mở rộng gián tiếp hay mô-đun cục bộ. Nguồn gốc và bản Pro cần danh mục đáng tin cậy; tên và giấy phép chưa đủ xác minh.',
+    versionUnknown: 'Chưa có phiên bản',
+    origin: 'Nguồn',
+    officialCatalog: 'Danh mục NocoBase',
+    unverifiedOrigin: 'Nguồn chưa xác minh',
+    installation: 'Cài đặt',
+    installed: 'Đã tìm thấy bản kê gói',
+    manifestUnavailable: 'Chưa đọc được bản kê gói',
+    registration: 'Đăng ký',
+    observed: 'Đã quan sát đóng góp lúc chạy hiện tại',
+    registrationUnknown: 'Chưa xác nhận · không có nghĩa đã tắt',
+    evidence: 'Bằng chứng',
+    noEvidence: 'Chưa có bằng chứng xác nhận',
+    categories: 'Phân loại',
+    awaitingRecognition: 'Chờ phân loại',
+    evidenceLabels: {
+      manifest: 'Bản kê gói đã cài',
+      databaseContribution: 'Đóng góp tác vụ cơ sở dữ liệu',
+      apiContribution: 'Đóng góp API chuyển tiếp',
+      foundationRuntime: 'Dịch vụ nền tảng đang chạy',
+      clientContribution: 'Đóng góp máy khách quan sát trong trình duyệt',
+      serverRegistration: 'Đăng ký plugin máy chủ',
+    },
+  },
+  status: {
+    active: 'Đang dùng',
+    needsSetup: 'Sẵn sàng, cần cấu hình',
+    unused: 'Chưa dùng',
+    undetermined: 'Chưa xác định',
+    legendActive: 'Đang dùng {{count}}',
+    legendNeedsSetup: 'Cần cấu hình {{count}}',
+    legendUnused: 'Chưa dùng {{count}}',
+  },
+  detail: {
+    collectionCount: '{{count}} bảng dữ liệu',
+    collectionPreview: 'Xem trước bảng dữ liệu',
+    collectionsTitle: 'Bảng dữ liệu',
+    noCollectionMatches: 'Không tìm thấy bảng phù hợp',
+    noCollectionMatchesHint: 'Thử tên khác hoặc xóa tìm kiếm.',
+    collectionRange: '{{from}}–{{to}} trên {{total}}',
+    closeCollections: 'Đóng danh sách bảng',
+    viewCollections: 'Xem tất cả bộ sưu tập',
+    searchCollections: 'Tìm bộ sưu tập',
+    collectionResults: '{{count}} bộ sưu tập phù hợp',
+    previousPage: 'Trước',
+    nextPage: 'Tiếp',
+    countRecords: 'Đếm bản ghi nghiệp vụ',
+    recordsOnDemand:
+      'Tổng bản ghi nghiệp vụ được đếm khi cần. Cơ sở dữ liệu lớn có thể mất nhiều thời gian hơn.',
+    recordsCountedAt: 'Đã đếm bản ghi {{time}}',
+
+    businessModules: 'Mô-đun nghiệp vụ liên quan',
+    inThisApp: 'Trong ứng dụng này',
+    withoutFoundation: 'Nếu không có nền tảng',
+    onceInUse: 'Khi sử dụng',
+    whyNot: 'Lý do chưa dùng',
+    liveData: 'Dữ liệu thực tế',
+    parts: 'Thành phần',
+    packages: 'Do các gói NocoBase cung cấp',
+    noPackages: 'Chưa cài gói nào cho khả năng này.',
+    noFacts: 'Chưa có thông tin xác nhận.',
+    partial:
+      'Chưa đọc được một phần bằng chứng; giá trị tối thiểu chỉ tính dữ liệu đã đọc.',
+    failed: 'Lần này chưa kiểm tra được khả năng. Hãy làm mới để thử lại.',
+    unreadable: 'Không đọc được: {{sources}}',
+    timeout: 'Kiểm tra quá thời gian chờ.',
+  },
+  capabilities: {
+    dataModeling: {
+      name: 'Mô hình hóa dữ liệu',
+      tagline: 'Bộ sưu tập, trường, quan hệ và di trú',
+      without:
+        'Phải tự viết thay đổi lược đồ, truy vấn, lọc, phân trang, chống chèn lệnh và tương thích cơ sở dữ liệu.',
+      onceInUse:
+        'Di trú định nghĩa bộ sưu tập và giao diện truy vấn thống nhất cho các cơ sở dữ liệu hỗ trợ.',
+    },
+    files: {
+      name: 'Quản lý tệp',
+      tagline: 'Tải lên, lưu trữ và đính kèm',
+      without:
+        'Phải tự xây tải lên, bộ lưu trữ, kiểm tra kích thước, loại tệp và liên kết tải xuống.',
+      onceInUse:
+        'Quản lý tệp đính kèm bằng hợp đồng bộ sưu tập và cấu hình lưu trữ chung.',
+    },
+    usersAndOrganizations: {
+      name: 'Người dùng và tổ chức',
+      tagline: 'Tài khoản, đăng nhập và lời mời',
+      without:
+        'Phải tự xây đăng ký, phiên, đặt lại mật khẩu và quản trị tài khoản an toàn.',
+      onceInUse: 'Quản lý tập trung tài khoản, đăng nhập và lời mời.',
+    },
+    permissions: {
+      name: 'Quyền truy cập',
+      tagline: 'Tập quyền và quy tắc truy cập',
+      without:
+        'Phải tự kiểm tra quyền ở từng API mà không có nơi quản lý chung.',
+      onceInUse:
+        'Tập quyền cấp phép trang, dữ liệu và thao tác; máy chủ kiểm tra mỗi yêu cầu.',
+    },
+    workflows: {
+      name: 'Quy trình và phê duyệt',
+      tagline: 'Vòng đời, chuyển trạng thái và lịch',
+      without:
+        'Phải tự viết trạng thái, chuyển đổi, lịch sử, thử lại và thời gian chờ.',
+      onceInUse:
+        'Vòng đời cung cấp chuyển đổi có kiểm soát, lịch sử và hiệu ứng tự thử lại.',
+    },
+    aiAgents: {
+      name: 'AI và tác tử',
+      tagline: 'Dịch vụ mô hình, tác tử và trình chạy',
+      without:
+        'Phải tự tích hợp mô hình, bảo vệ khóa, ghi mức sử dụng và chạy tác tử an toàn.',
+      onceInUse:
+        'Bật dịch vụ mô hình cho OnlineAgent và cổng mô hình, hoặc đăng ký trình chạy để thực thi tác tử.',
+    },
+    knowledge: {
+      name: 'Cơ sở tri thức',
+      tagline: 'Không gian, tài liệu và tìm kiếm',
+      without: 'Phải tự xây lưu trữ tài liệu, phiên bản, quyền và tìm kiếm.',
+      onceInUse:
+        'Không gian quản lý tài liệu, phiên bản và quyền cho người dùng và tác tử.',
+    },
+    mail: {
+      name: 'Thư điện tử',
+      tagline: 'Hộp thư, đồng bộ và gửi',
+      without:
+        'Phải tự kết nối dịch vụ, đồng bộ thư mục, xử lý cấp quyền và gửi lại.',
+      onceInUse: 'Kết nối hộp thư để đọc, đồng bộ và gửi ngay trong ứng dụng.',
+    },
+    notifications: {
+      name: 'Thông báo',
+      tagline: 'Kênh, lượt chuyển phát và tin nội bộ',
+      without: 'Phải tự xây gửi, thử lại, loại trùng và lịch sử cho từng kênh.',
+      onceInUse:
+        'Kênh đã cấu hình cung cấp gửi, thử lại, loại trùng và lịch sử.',
+    },
+    integrations: {
+      name: 'Tích hợp ngoài',
+      tagline: 'Khóa API và truy cập ngoài',
+      without:
+        'Phải tự cấp và kiểm tra thông tin xác thực cho từng hệ thống ngoài.',
+      onceInUse: 'Hệ thống ngoài dùng khóa API kế thừa quyền của chủ sở hữu.',
+    },
+    interface: {
+      name: 'Giao diện và cấu hình',
+      tagline: 'Trang, điều hướng, ngôn ngữ và giao diện',
+      without:
+        'Phải tự xây định tuyến, menu, bản dịch và giao diện trước trang nghiệp vụ.',
+      onceInUse:
+        'NocoBase cung cấp trang, menu, ngôn ngữ và giao diện phía máy khách.',
+    },
+    audit: {
+      name: 'Nhật ký kiểm toán',
+      tagline: 'Ghi nhận thao tác nhạy cảm',
+      without: 'Phải tự ghi ai đã thực hiện từng thay đổi quan trọng.',
+      onceInUse: 'Nhật ký tập trung lưu các thao tác nhạy cảm trong ứng dụng.',
+    },
+    operations: {
+      name: 'Vận hành',
+      tagline: 'Di trú, tác vụ, hàng đợi và bí mật',
+      without:
+        'Phải tự quản lý nâng cấp, tác vụ nền, hàng đợi và lưu trữ bí mật.',
+      onceInUse:
+        'Máy chủ cung cấp di trú có lịch sử, tác vụ, hàng đợi và quản lý bí mật.',
+    },
+  },
+  reasons: {
+    installedNotUsed:
+      'Đã cài đặt nhưng chưa xác định được bằng chứng đang bật hoặc sử dụng.',
+    noRecognizedAudit:
+      'Danh mục hiện chưa nhận diện bên cung cấp kiểm toán; phần mở rộng khác có thể cung cấp.',
+    noDatabase: 'Ứng dụng không dùng cơ sở dữ liệu.',
+    notRegistered: 'Plugin cung cấp chưa được đăng ký vào ứng dụng.',
+    notProvided: 'NocoBase Core chưa cung cấp khả năng này.',
+    noFileCollection: 'Chưa có bộ sưu tập lưu tệp.',
+    noDrive: 'Có bộ sưu tập tệp nhưng chưa cấu hình nơi lưu.',
+    noAccounts: 'Ứng dụng chưa có tài khoản.',
+    onlyUnrestrictedAccess:
+      'Chỉ quản trị viên có quyền không giới hạn; chưa cấp quyền cho người dùng khác.',
+    noWorkflows: 'Chưa có vòng đời lưu bền hoặc lịch đã bật.',
+    noSchedules: 'Chưa bật lịch nào.',
+    noModelOrRunner: 'Chưa bật dịch vụ mô hình nào và chưa đăng ký trình chạy.',
+    noModelService: 'Chưa bật dịch vụ mô hình nào.',
+    noAgent: 'Chưa định nghĩa tác tử.',
+    noDocuments: 'Không gian tri thức chưa có tài liệu.',
+    noConnectedMailbox: 'Chưa kết nối hộp thư.',
+    noChannel: 'Chưa cấu hình kênh thông báo.',
+    noApiKey: 'Chưa có khóa API.',
+    noUsedApiKey: 'Có khóa API nhưng chưa sử dụng.',
+    noClient: 'Ứng dụng không cung cấp máy khách NocoBase.',
+    notConfigured: 'Chưa cấu hình.',
+  },
+  facts: {
+    collectionOwnershipUnknown:
+      'Phát hiện phần mở rộng lúc chạy chưa phân loại. Chưa xác nhận bộ sưu tập thuộc bên nào nên ẩn số liệu nghiệp vụ.',
+    noApplicationCollections:
+      'Lớp dữ liệu đang chạy, ứng dụng chưa có bộ sưu tập riêng.',
+    applicationCollectionsPreview:
+      'Ứng dụng có {{count}} bộ sưu tập, bao gồm {{names}}.',
+    applicationCollections: '{{count}} bộ sưu tập riêng: {{names}}.',
+    relations: '{{count}} quan hệ kết nối chúng.',
+    fileCollections: '{{count}} bộ sưu tập tệp: {{names}}.',
+    accounts: '{{count}} tài khoản dùng xác thực NocoBase.',
+    permissionSets:
+      '{{count}} tập quyền ngoài quyền không giới hạn: {{names}}.',
+    accessRules: '{{count}} quy tắc chia sẻ, hạn chế hoặc truy cập mặc định.',
+    lifecyclesWithoutTransitions: 'Kho vòng đời sẵn sàng, chưa có chuyển đổi.',
+    lifecycles:
+      '{{count}} vòng đời có {{transitions}} lần chuyển đổi: {{names}}.',
+    schedules: 'Đã bật {{count}} lịch.',
+    modelServices:
+      '{{count}} dịch vụ mô hình đã bật hỗ trợ OnlineAgent và cổng mô hình.',
+    runners: '{{count}} trình chạy đã đăng ký hỗ trợ thực thi tác tử.',
+    agents: '{{count}} tác tử, {{runs}} lần chạy.',
+    documents: '{{count}} tài liệu tri thức.',
+    mailboxes: 'Đã kết nối {{count}} hộp thư.',
+    mailboxesNeedAttention: '{{count}} hộp thư cần xử lý để đồng bộ tiếp.',
+    channels: '{{count}} kênh thông báo: {{names}}.',
+    usedApiKeys: '{{count}} khóa API đã gọi ứng dụng.',
+    locales: '{{count}} ngôn ngữ: {{names}}.',
+    migrations: 'Đã chạy {{count}} di trú, {{own}} của ứng dụng.',
+    latestMigration: 'Lần chạy mới nhất: {{at}}.',
+    registeredExtension: 'Phần mở rộng đã đăng ký trong ứng dụng này.',
+  },
+  parts: {
+    accounts: 'Tài khoản',
+    organizations: 'Tổ chức',
+    permissionSets: 'Tập quyền',
+    sharingRules: 'Quy tắc chia sẻ',
+    restrictionRules: 'Quy tắc hạn chế',
+    defaultAccess: 'Truy cập mặc định',
+    lifecycles: 'Vòng đời',
+    schedules: 'Lịch',
+    modelServices: 'Dịch vụ mô hình',
+    agents: 'Tác tử',
+    runners: 'Trình chạy',
+    migrations: 'Di trú',
+    jobs: 'Tác vụ',
+    queue: 'Hàng đợi',
+    secrets: 'Bí mật',
+    caching: 'Bộ nhớ đệm',
+  },
+  metrics: {
+    businessRecords: 'bản ghi nghiệp vụ',
+    businessCollections: 'bộ sưu tập nghiệp vụ',
+    views: 'khung nhìn',
+    fields: 'trường',
+    relations: 'quan hệ',
+    systemCollections: 'bộ sưu tập hệ thống NocoBase',
+    files: 'tệp',
+    storedBytes: 'dung lượng lưu trữ đã ghi',
+    fileCollections: 'bộ sưu tập tệp',
+    accounts: 'tài khoản',
+    disabledAccounts: 'tài khoản đã tắt',
+    invitations: 'lời mời',
+    grants: 'quyền cấp',
+    permissionSets: 'tập quyền',
+    assignments: 'phân công',
+    sharingRules: 'quy tắc chia sẻ',
+    restrictionRules: 'quy tắc hạn chế',
+    defaultAccess: 'quy tắc truy cập mặc định',
+    transitions: 'lần chuyển trạng thái',
+    lifecycles: 'vòng đời có chuyển đổi',
+    effectsSucceeded: 'hiệu ứng thành công',
+    effectsFailed: 'hiệu ứng thất bại',
+    effectsPending: 'hiệu ứng đang chờ',
+    schedules: 'lịch đã bật',
+    scheduleOccurrences: 'lần kích hoạt lịch',
+    agents: 'tác tử',
+    modelServices: 'dịch vụ mô hình đã bật',
+    runners: 'trình chạy',
+    runs: 'lần chạy',
+    modelCalls: 'lần gọi mô hình ngoài lượt chạy',
+    tokens: 'token',
+    documents: 'tài liệu',
+    spaces: 'không gian tri thức',
+    chunks: 'đoạn',
+    connectedMailboxes: 'hộp thư đã kết nối',
+    mailboxesNeedAttention: 'hộp thư cần xử lý',
+    messages: 'thư',
+    submissions: 'thư được yêu cầu gửi',
+    failedSubmissions: 'lần gửi thất bại',
+    acceptedDeliveries: 'lượt chuyển phát được nhà cung cấp chấp nhận',
+    notifications: 'thông báo',
+    deliveries: 'lượt chuyển phát',
+    failedDeliveries: 'lượt chuyển phát thất bại',
+    pendingDeliveries: 'lượt chuyển phát đang thực hiện',
+    deliveryAttempts: 'lần thử chuyển phát',
+    inAppMessages: 'tin nội bộ',
+    inAppMessagesRead: 'tin nội bộ đã đọc',
+    channels: 'kênh',
+    usedApiKeys: 'khóa API đã dùng',
+    apiKeys: 'khóa API đã bật',
+    locales: 'ngôn ngữ',
+    migrations: 'di trú đã chạy',
+    applicationMigrations: 'di trú riêng của ứng dụng',
+    seeds: 'seed đã chạy',
+  },
+  dynamic: {
+    pending: 'Chờ nhận diện',
+    pendingDescription:
+      'Plugin đã đăng ký. Cấu hình và việc sử dụng thực tế chưa được xác định.',
+  },
+};
+
+export default viVN;

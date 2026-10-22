@@ -238,9 +238,14 @@ async function shoot(options) {
     }
     const locale = shot.locale ?? spec.locale;
     if (locale) {
-      await context.addInitScript((value) => {
-        window.localStorage.setItem('nocobase.locale', value);
-      }, locale);
+      const basePath = new URL(base).pathname.replace(/^\/+|\/+$/gu, '');
+      const appBase = basePath ? `/${basePath}/` : '/';
+      await context.addInitScript(
+        ({ value, key }) => {
+          window.localStorage.setItem(key, value);
+        },
+        { value: locale, key: `nocobase.locale:${appBase}` },
+      );
     }
     // Save the color mode and preset the way the Appearance popover does, under keys scoped to the deployment base
     // path (client/theme/theme-preferences.ts), so a default in config.yml does not override the requested look.

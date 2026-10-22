@@ -33,6 +33,8 @@ export interface StatusEventFiring {
   readonly note?: string;
   /** Kept with each activity, opaque to this plugin. */
   readonly details?: Readonly<Record<string, unknown>>;
+  readonly needsYou?: string | null;
+  readonly next?: string | null;
 }
 
 export type StatusEventMove = EventMove;
@@ -93,6 +95,10 @@ export function createStatusEventService(deps: {
               ...(firing.actor ? { actor: firing.actor } : {}),
               ...(note ? { note } : {}),
               ...(firing.details ? { details: firing.details } : {}),
+              ...(firing.needsYou !== undefined
+                ? { needsYou: firing.needsYou }
+                : {}),
+              ...(firing.next !== undefined ? { next: firing.next } : {}),
             }),
           );
         return moves;

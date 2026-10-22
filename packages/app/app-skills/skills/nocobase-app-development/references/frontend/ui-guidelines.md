@@ -14,6 +14,8 @@ These are this application's UI design guidelines: foundations, page structure, 
 
 **F1 [Must] Color uses only semantic tokens**: `bg-background` for the page, `bg-card` for cards, `bg-muted` for muted areas, `text-foreground` and `text-muted-foreground` for text, `border-border` for borders, the default button for primary actions and `variant='destructive'` or `text-destructive` for destructive ones. The full mapping, with what each replaces, is in [section 7 of `references/styling.md`](references/styling.md#7-semantic-tokens). Do not use literal colors such as `bg-white`, `text-gray-500`, `#1677ff` or `rgb(…)`.
 
+**F1.1 [Should] Record-name links stay visually quiet**: In tables and content lists, use the normal foreground color for a record's name or identifier, an underline on hover with `underline-offset-4`, and the shared keyboard focus treatment from `client/styles.css`. Apply this consistently to user, role and workflow names. Use the primary color for deliberate primary actions and selected navigation, rather than coloring every record link.
+
 **F2 [Must] Font sizes come from the scale**: PageHeader provides the page title; section titles use `text-base font-medium`; body text, tables and forms use the components' default size (`text-sm`); helper text uses `text-sm text-muted-foreground` or `text-xs`. Do not use arbitrary values such as `text-[13px]`.
 
 **F3 [Must] Spacing comes from the scale**: PageContainer spaces the sections of a page, and blocks you stack yourself use `flex flex-col` with `gap-4` or `gap-6` rather than `space-y-*`; cards keep the `Card` component's own padding, and whatever sits in a card lines up with its title: a `DataTable` in a card runs to the card's edges and pads its first and last cells to the card's spacing by itself ("Table in a card" in ["Common layouts" of `references/styling.md`](references/styling.md#common-layouts)); a panel you build yourself uses `p-4` or `p-6`; `gap-2` between related controls; FieldGroup's default spacing between form fields. Do not use arbitrary values such as `mt-[7px]`.
@@ -54,7 +56,7 @@ Structure, top to bottom: PageHeader (primary action "New X") → toolbar (searc
 
 - **T1.1 [Must]** The search box has a placeholder that says which fields it searches, for example "Search by name or email".
 - **T1.2 [Must]** Filter controls show their current value; while a search or filter is applied, show "Clear filters".
-- **T1.3 [Must]** The first column is the record's name or number; when there is a detail view, clicking it opens the detail view.
+- **T1.3 [Must]** The first column is the record's name or number; when there is a detail view, clicking it opens the detail view. Use the template’s `RecordLink` for record names and identifiers: foreground text with medium weight, no permanent underline, underline on hover, and underline plus a visible focus outline for keyboard navigation. Preserve native link behavior; action buttons and menu items keep their own styling.
 - **T1.4 [Must]** Enumerated values such as status and type are shown as text in a Badge; color is only an aid, and values must never be distinguished by color alone.
 - **T1.5 [Must]** A row's actions sit at the end of the row behind one icon-only ghost "…" button (`MoreHorizontalIcon`, `size='icon-sm'`, labelled "Actions for <name>") opening a `DropdownMenu`. Destructive items come last, after a `DropdownMenuSeparator`, with `variant='destructive'`, and are confirmed with an AlertDialog (I2). A table whose rows have exactly one non-destructive action may show it as a single ghost button instead, the same way on every row.
 - **T1.6 [Must]** Dates and times are formatted for the current language; numbers and amounts are right-aligned, with thousands separators.
@@ -63,6 +65,7 @@ Structure, top to bottom: PageHeader (primary action "New X") → toolbar (searc
 - **T1.9 [Must]** A list page must have a design for all four states S1–S4.
 - **T1.10 [Must]** When a list shows only part of the matching results, because it sorts and paginates one capped page in the browser or because the endpoint returns no total, show a notice when the results reach the cap ("Only the first N records are shown. Use search or filters to narrow the results."); records beyond the cap must not silently disappear.
 - **T1.11 [Must]** When a table cell is too narrow for its content, the content ends in an ellipsis where it is cut off, and hovering over it shows the full content. Content that fits shows nothing on hover.
+- **T1.12 [Must]** Pagination labels size to their localized text rather than a fixed English-sized width. Keep each short page summary, page-size control and navigation button group intact; at narrow widths, wrap whole groups onto another row instead of splitting labels or shrinking controls. Verify Chinese and English with large page counts at 375px and desktop widths.
 
 ### T2 Detail view
 

@@ -41,6 +41,7 @@ import {
   toRun,
   type RunRecord,
 } from './run.store.js';
+import type { ClaimService } from './claim.js';
 
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 1000;
@@ -128,7 +129,9 @@ export function explainWait(
   let fitting = context.runners;
   if (fitting.length === 0) return wait('noRunnerOnline');
   fitting = fitting.filter((runner) =>
-    agent.modelEntries.some((entry) => runsEntry(runner, entry)),
+    agent.modelEntries.some((entry) =>
+      runsEntry(runner, entry, context.now.getTime()),
+    ),
   );
   if (fitting.length === 0)
     return wait('toolUnavailable', {
@@ -177,7 +180,8 @@ export function explainWait(
     (runner) =>
       !runner.draining &&
       (runner.globalFree ?? 1) > 0 &&
-      (context.runnerUsed.get(runner.id) ?? 0) < runner.slots,
+      (context.runnerUsed.get(runner.id) ?? 0) <
+        Math.min(runner.slots, runner.reportedSlots ?? runner.slots),
   );
   if (free.length === 0)
     return wait('runnersBusy', { params: { runners: trusted.length } });
@@ -189,7 +193,9 @@ export function explainWait(
     free.every(
       (runner) =>
         !agent.modelEntries.some(
-          (entry) => runsEntry(runner, entry) && hasRoom(runner, entry.tool),
+          (entry) =>
+            runsEntry(runner, entry, context.now.getTime()) &&
+            hasRoom(runner, entry.tool),
         ),
     )
   ) {
@@ -608,7 +614,9 @@ export async function readWorkload(
       online:
         agent.status === 'enabled' &&
         online.some((runner) =>
-          agent.modelEntries.some((entry) => runsEntry(runner, entry)),
+          agent.modelEntries.some((entry) =>
+            runsEntry(runner, entry, state.now.getTime()),
+          ),
         ),
     });
   }
@@ -640,7 +648,7 @@ export async function readQueueWait(
   clock: Clock,
   runnerSource: WorkloadRunners,
   runId: string,
-  diagnose?: import('./claim.js').ClaimService['diagnose'],
+  diagnose?: ClaimService['diagnose'],
 ): Promise<RunWait | null> {
   const record = await runsRepo(conn).findOne({ filter: { id: runId } });
   if (!record || record.status !== 'queued') return null;

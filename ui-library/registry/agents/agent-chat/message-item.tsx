@@ -1,31 +1,37 @@
-/**
- * One entry of a conversation: the viewer's own message on the right with the context it carried (no avatar or name,
- * only a muted time under it that shows on hover or focus), the agent's reply on the left as Markdown under the
- * agent's avatar and name, or a centred line for what the server noted (the agent was switched, the run failed or was
- * stopped), translated from its `metadata.notice.code`. News the application shows as a card of its own
- * (`ChatExtensions.renderNews`) takes the line's place, and so does the card of an agent the agent consulted
- * (`ConsultationCard`). An online agent's reply still being written shows a typing cursor
- * (`metadata.streaming`); one whose run ended before it was final says it stopped there (`metadata.interrupted`).
- */
+/** Ordered SDK parts, with source segments retaining one logical message and independent notices. */
 import {
   AgentAvatar,
+  chatMessageSegments,
   ChatExtensionsContext,
   noticeText,
   useFormatters,
+  useAIToolRenderer,
+  getAIToolSourceMessage,
+  type AIToolRendererContext,
+  type AIToolPart,
   type PendingMessage,
+  type AppUIMessage,
+  type AppUIToolApprovalInput,
+  type ChatMessageSegment,
 } from '@nocobase/app-plugin-agents/client/chat';
-import type { ConversationMessage } from '@nocobase/app-plugin-agents/shared/conversations';
+import type { ConversationNotice } from '@nocobase/app-plugin-agents/shared/conversations';
+import { getToolName, isToolUIPart } from 'ai';
 import { AlertCircleIcon, RotateCcwIcon } from 'lucide-react';
-import { useContext, type ReactElement, type ReactNode } from 'react';
-
+import {
+  useContext,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { Button } from '#components/ui/button';
 import { cn } from 'cn';
-
 import { ChatMarkdown } from './chat-markdown.js';
 import { useChatTranslation } from './chat-i18n.js';
 import { ConsultationCard } from './consultation-card.js';
 import { SentContext } from './context-chips.js';
 import { MessageAttachments } from './message-attachments.js';
+import { ReasoningPart } from './reasoning-part.js';
 
 function Time({
   at,
@@ -45,77 +51,306 @@ function Time({
     </time>
   );
 }
+/* eslint-disable @eslint-react/static-components, react-hooks/static-components -- The registry selects existing component identities; it never creates a component during render. */
+function ToolPart({
+  part,
+  message,
+  context,
+  fallback,
+}: {
+  readonly part: AIToolPart;
+  readonly message: AppUIMessage;
+  readonly context: AIToolRendererContext;
+  readonly fallback: ReactNode;
+}): ReactNode {
+  const toolName = getToolName(part);
+  const Renderer = useAIToolRenderer(toolName);
+  return Renderer ? (
+    <div data-chat-part='tool' data-tool-call={part.toolCallId}>
+      <Renderer
+        toolName={toolName}
+        part={part}
+        message={message}
+        context={context}
+      />
+    </div>
+  ) : (
+    fallback
+  );
+}
+/* eslint-enable @eslint-react/static-components, react-hooks/static-components */
 
 export interface MessageItemProps {
-  readonly message: ConversationMessage;
-  /** The name of an agent by id, for replies and notices. */
+  readonly message: AppUIMessage;
+  readonly segment?: ChatMessageSegment;
   readonly agentName: (agentId: string | undefined) => string;
-  /** What an application renders under the message (`ChatExtensions.renderMessageExtra`). */
   readonly extra?: ReactNode;
+  readonly onApproval?: (input: AppUIToolApprovalInput) => Promise<void>;
+  readonly approvalDisabled?: boolean;
+  readonly readOnly?: boolean;
+  /** Exact originating user message resolved from durable server metadata, never nearest-user inference. */
+  readonly sourceMessage?: AppUIMessage | null;
+  /** Only the message owning the current SDK response may display a writing indicator. */
+  readonly streaming?: boolean;
 }
-
 export function MessageItem({
   message,
+  segment,
   agentName,
   extra,
-}: MessageItemProps): ReactElement {
+  onApproval,
+  approvalDisabled,
+  readOnly = false,
+  sourceMessage = null,
+  streaming = false,
+}: MessageItemProps): ReactElement | null {
   const { t } = useChatTranslation();
-  const { newsText, renderNews } = useContext(ChatExtensionsContext);
-  const notice = message.metadata.notice;
-  const card =
-    message.role === 'system' && notice?.code === 'news'
-      ? (renderNews?.(notice, message) ?? null)
-      : null;
-  if (message.role === 'system' && notice?.code === 'consultation')
-    return (
-      <li
-        className='flex px-1'
-        data-chat-message='event'
-        data-seq={message.seq}
-      >
-        <ConsultationCard notice={notice} />
-      </li>
+  const extensions = useContext(ChatExtensionsContext);
+  const [approving, setApproving] = useState(false);
+  const approvingRef = useRef(false);
+  const origin = getAIToolSourceMessage(
+    message,
+    sourceMessage ? [sourceMessage] : [],
+  );
+  const [approvalError, setApprovalError] = useState(false);
+  const parts = (
+    segment?.partIndexes ??
+    chatMessageSegments([message]).flatMap((item) => item.partIndexes)
+  ).map((index) => ({ part: message.parts[index], index }));
+  const fromAgent = message.role === 'assistant';
+  const writing =
+    streaming &&
+    parts.some(
+      ({ part }) => part.type === 'text' && part.state === 'streaming',
     );
-  if (card !== null)
-    return (
-      <li
-        className='flex px-1'
-        data-chat-message='event'
-        data-seq={message.seq}
-      >
-        {card}
-      </li>
-    );
-  if (message.role === 'system') {
-    return (
-      <li
-        className='flex justify-center px-4'
-        data-chat-message='system'
-        data-seq={message.seq}
-      >
-        <p className='max-w-full text-center text-xs text-muted-foreground wrap-anywhere'>
+  const at = segment?.at || message.metadata?.createdAt;
+  const approve = async (approval: {
+    id: string;
+    approved: boolean;
+    reason?: string;
+  }) => {
+    if (
+      !onApproval ||
+      !message.metadata?.executionId ||
+      approvingRef.current ||
+      approvalDisabled ||
+      readOnly
+    )
+      return;
+    approvingRef.current = true;
+    setApproving(true);
+    setApprovalError(false);
+    try {
+      await onApproval({
+        messageId: message.id,
+        executionId: message.metadata.executionId,
+        approval,
+      });
+    } catch {
+      setApprovalError(true);
+    } finally {
+      approvingRef.current = false;
+      setApproving(false);
+    }
+  };
+  const content = parts.map(({ part, index }, position): ReactNode => {
+    const key = String(index);
+    if (part.type === 'reasoning')
+      return <ReasoningPart key={key} part={part} streaming={streaming} />;
+    if (part.type === 'text')
+      return fromAgent ? (
+        <ChatMarkdown key={key} content={part.text} />
+      ) : (
+        <p key={key} className='whitespace-pre-wrap wrap-anywhere'>
+          {part.text}
+        </p>
+      );
+    if (part.type === 'file') {
+      if (parts[position - 1]?.part.type === 'file') return null;
+      const files = [];
+      for (const next of parts.slice(position)) {
+        if (next.part.type !== 'file') break;
+        files.push(next.part);
+      }
+      return <MessageAttachments key={key} attachments={files} />;
+    }
+    if (part.type === 'data-notice') {
+      const card =
+        extensions.renderDataPart?.(part, message) ??
+        extensions.renderNews?.(part.data, message);
+      return (
+        <div key={part.id ?? key} data-chat-part='notice'>
+          {card ?? (
+            <p className='text-xs text-muted-foreground'>
+              {extensions.newsText?.(part.data, t) ?? part.data.title}
+            </p>
+          )}
+        </div>
+      );
+    }
+    if (part.type === 'data-business') {
+      const card = extensions.renderDataPart?.(part, message);
+      if (card != null)
+        return (
+          <div key={part.id ?? key} data-chat-part='business'>
+            {card}
+          </div>
+        );
+      const payload = part.data.payload;
+      const notice =
+        payload &&
+        typeof payload === 'object' &&
+        !Array.isArray(payload) &&
+        payload.code === part.data.kind
+          ? (payload as unknown as ConversationNotice)
+          : undefined;
+      if (notice?.code === 'consultation')
+        return <ConsultationCard key={part.id ?? key} notice={notice} />;
+      return (
+        <p key={part.id ?? key} className='text-xs text-muted-foreground'>
           {noticeText(
             t,
             notice,
-            message.content.content,
+            part.data.kind,
             (id) => agentName(id),
-            newsText,
-          )}{' '}
-          · <Time at={message.createdAt} />
+            extensions.newsText,
+          )}
         </p>
+      );
+    }
+    if (isToolUIPart(part)) {
+      const name = getToolName(part);
+      const fallback = (
+        <div
+          key={part.toolCallId}
+          className='my-1 space-y-2 rounded-md border bg-background/60 p-3 text-sm'
+          data-chat-part='tool'
+          data-tool-call={part.toolCallId}
+        >
+          <p className='font-medium'>{name}</p>
+          {part.input !== undefined ? (
+            <pre className='overflow-auto whitespace-pre-wrap text-xs'>
+              {JSON.stringify(part.input, null, 2)}
+            </pre>
+          ) : null}
+          {part.state === 'approval-requested' ? (
+            <div className='space-y-2'>
+              <p>{t('chat.approval.request')}</p>
+              <div className='flex gap-2'>
+                <Button
+                  size='sm'
+                  disabled={
+                    readOnly || approvalDisabled || approving || !onApproval
+                  }
+                  onClick={() =>
+                    void approve({ id: part.approval.id, approved: true })
+                  }
+                >
+                  {t('chat.approval.approve')}
+                </Button>
+                <Button
+                  size='sm'
+                  variant='outline'
+                  disabled={
+                    readOnly || approvalDisabled || approving || !onApproval
+                  }
+                  onClick={() =>
+                    void approve({ id: part.approval.id, approved: false })
+                  }
+                >
+                  {t('chat.approval.deny')}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+          {part.state === 'output-available' ? (
+            <pre className='overflow-auto whitespace-pre-wrap text-xs'>
+              {JSON.stringify(part.output, null, 2)}
+            </pre>
+          ) : null}
+          {part.state === 'output-denied' ? (
+            <p>{t('chat.approval.denied')}</p>
+          ) : null}
+          {part.state === 'output-error' ? (
+            <p role='alert'>{part.errorText}</p>
+          ) : null}
+        </div>
+      );
+      return (
+        <ToolPart
+          key={part.toolCallId}
+          part={part}
+          message={message}
+          context={{
+            readOnly,
+            streaming,
+            sourceMessage: origin,
+            sourceContext: origin?.metadata?.context ?? null,
+            approval: {
+              disabled:
+                readOnly ||
+                Boolean(approvalDisabled) ||
+                approving ||
+                !onApproval ||
+                !message.metadata?.executionId ||
+                part.state !== 'approval-requested',
+              pending: approving,
+              error: approvalError,
+              respond: async (approved, reason) => {
+                if (part.state !== 'approval-requested') return;
+                await approve({
+                  id: part.approval.id,
+                  approved,
+                  ...(reason === undefined ? {} : { reason }),
+                });
+              },
+            },
+          }}
+          fallback={fallback}
+        />
+      );
+    }
+    return null;
+  });
+  if (content.every((part) => part == null)) {
+    const context = message.role === 'user' ? message.metadata?.context : null;
+    if (extra == null && !context) return null;
+    return (
+      <li
+        className='min-w-0 max-w-full overflow-x-auto wrap-anywhere'
+        data-chat-message={message.role}
+        data-message-id={message.id}
+        data-seq={segment?.seq ?? message.metadata?.seq}
+      >
+        {context ? <SentContext context={context} /> : null}
+        {extra ?? null}
       </li>
     );
   }
-  const fromAgent = message.role === 'assistant';
-  const streaming = fromAgent && message.metadata.streaming === true;
-  const name = fromAgent ? agentName(message.metadata.agentId) : null;
+  if (message.role === 'system')
+    return (
+      <li
+        className='min-w-0 max-w-full space-y-2 overflow-x-auto px-1 wrap-anywhere'
+        data-chat-message='system'
+        data-message-id={message.id}
+        data-seq={segment?.seq ?? message.metadata?.seq}
+      >
+        {content}
+        {extra ?? null}
+      </li>
+    );
+  const name = fromAgent ? agentName(message.metadata?.agentId) : null;
   return (
     <li
-      className={cn('group/message flex gap-2', !fromAgent && 'justify-end')}
+      className={cn(
+        'group/message flex min-w-0 max-w-full gap-2',
+        !fromAgent && 'justify-end',
+      )}
       data-chat-message={message.role}
-      data-seq={message.seq}
-      data-streaming={streaming ? true : undefined}
-      aria-busy={streaming ? true : undefined}
+      data-message-id={message.id}
+      data-seq={segment?.seq ?? message.metadata?.seq}
+      data-streaming={writing ? true : undefined}
+      aria-busy={writing ? true : undefined}
     >
       {fromAgent ? (
         <AgentAvatar name={name} size='sm' className='mt-0.5' />
@@ -129,58 +364,45 @@ export function MessageItem({
         {fromAgent ? (
           <p className='mb-1 flex items-center gap-2 text-xs'>
             <span className='font-medium text-muted-foreground'>{name}</span>
-            <Time at={message.createdAt} />
+            {at ? <Time at={at} /> : null}
           </p>
         ) : (
           <span className='sr-only'>{t('chat.you')}</span>
         )}
-        {!fromAgent && message.attachments?.length ? (
-          <MessageAttachments
-            attachments={message.attachments}
-            className={message.content.content.trim() ? 'mb-1' : undefined}
-          />
+        <div
+          className={cn(
+            'max-w-full min-w-0 space-y-1 overflow-x-auto rounded-lg px-3 py-2 text-sm wrap-anywhere [&_table]:wrap-normal',
+            fromAgent ? 'bg-muted' : 'bg-primary/10',
+          )}
+        >
+          {content}
+          {writing ? (
+            <span
+              className='ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-foreground/60 align-middle motion-reduce:animate-none'
+              role='status'
+              aria-label={t('chat.reply.writing')}
+            />
+          ) : null}
+        </div>
+        {!fromAgent && message.metadata?.context ? (
+          <SentContext context={message.metadata.context} />
         ) : null}
-        {/* A message of files alone has no text bubble. */}
-        {fromAgent || message.content.content.trim() ? (
-          <div
-            className={cn(
-              'max-w-full min-w-0 rounded-lg px-3 py-2 text-sm',
-              fromAgent ? 'bg-muted' : 'bg-primary/10',
-            )}
-          >
-            {fromAgent ? (
-              <>
-                <ChatMarkdown content={message.content.content} />
-                {streaming ? (
-                  <span
-                    className='ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-foreground/60 align-middle motion-reduce:animate-none'
-                    role='status'
-                    aria-label={t('chat.reply.writing')}
-                  />
-                ) : null}
-              </>
-            ) : (
-              <p className='whitespace-pre-wrap wrap-anywhere'>
-                {message.content.content}
-              </p>
-            )}
-          </div>
-        ) : null}
-        {fromAgent && message.metadata.interrupted ? (
-          <p className='mt-1 text-xs text-muted-foreground'>
-            {t('chat.reply.interrupted')}
-          </p>
-        ) : null}
-        {!fromAgent && message.workContext ? (
-          <SentContext context={message.workContext} />
-        ) : null}
-        {fromAgent ? null : (
+        {!fromAgent && at ? (
           <Time
-            at={message.createdAt}
+            at={at}
             className='mt-1 text-muted-foreground/80 opacity-0 transition-opacity group-focus-within/message:opacity-100 group-hover/message:opacity-100 motion-reduce:transition-none pointer-coarse:opacity-100'
           />
+        ) : null}
+        {approvalError ? (
+          <p role='alert' className='mt-1 text-xs text-destructive'>
+            {t('chat.approval.failed')}
+          </p>
+        ) : null}
+        {extra == null ? null : (
+          <div className='min-w-0 max-w-full overflow-x-auto wrap-anywhere'>
+            {extra}
+          </div>
         )}
-        {extra ?? null}
       </div>
     </li>
   );
@@ -190,6 +412,8 @@ export interface PendingItemProps {
   readonly message: PendingMessage;
   readonly onRetry: () => void;
   readonly onDiscard: () => void;
+  readonly onContinue?: () => void;
+  readonly onCheck?: () => void;
 }
 
 /** A message the server has not confirmed: "sending", or "not sent" with a retry. */
@@ -197,6 +421,8 @@ export function PendingItem({
   message,
   onRetry,
   onDiscard,
+  onContinue,
+  onCheck,
 }: PendingItemProps): ReactElement {
   const { t } = useChatTranslation();
   const failed = message.status === 'failed';
@@ -205,7 +431,7 @@ export function PendingItem({
       className='flex justify-end'
       data-chat-message='pending'
       data-status={message.status}
-      aria-busy={failed ? undefined : true}
+      aria-busy={message.status === 'sending' ? true : undefined}
     >
       <div className='flex max-w-[85%] min-w-0 flex-col items-end'>
         <p className='mb-1 text-xs text-muted-foreground'>
@@ -214,6 +440,8 @@ export function PendingItem({
               <AlertCircleIcon className='size-3.5' aria-hidden='true' />
               {t('chat.pending.failed')}
             </span>
+          ) : message.status === 'unknown' ? (
+            t('chat.connectionUnknown')
           ) : (
             t('chat.pending.sending')
           )}
@@ -237,6 +465,18 @@ export function PendingItem({
             <p className='whitespace-pre-wrap wrap-anywhere'>
               {message.content}
             </p>
+          </div>
+        ) : null}
+        {message.status === 'unknown' ? (
+          <div className='mt-1 flex flex-wrap gap-1'>
+            <Button variant='outline' size='xs' onClick={onCheck}>
+              {t('chat.refreshHistory')}
+            </Button>
+            {onContinue ? (
+              <Button variant='outline' size='xs' onClick={onContinue}>
+                {t('chat.allowAnother')}
+              </Button>
+            ) : null}
           </div>
         ) : null}
         {failed ? (

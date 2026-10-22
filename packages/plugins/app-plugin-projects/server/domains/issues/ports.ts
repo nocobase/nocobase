@@ -42,6 +42,8 @@ export interface StatusCatalog {
   /** Every status change goes through `move` with it and `rules`. */
   readonly machine: LifecycleMachine;
   readonly rules: IssueRules;
+  /** Includes an event targeting the current status, for progress-only updates. */
+  eventTarget(from: string, event: string): string | null;
 }
 
 /** The fixed statuses (`shared/statuses.ts`), and where principals of each kind may move an issue. */
@@ -55,14 +57,14 @@ export interface StatusService {
 }
 
 export interface IssueChange {
+  /** The already authorized caller for a service write; absent for automatic status events. */
+  readonly viewer?: Viewer;
   /** A person explicitly assigned the issue to themselves, including an unchanged owner field. */
   readonly ownerClaimed?: boolean;
   /** Null for a new issue. */
   readonly before: Issue | null;
   readonly after: Issue;
   readonly actor: Actor;
-  /** False when the person asked not to start work now. */
-  readonly start: boolean;
 }
 
 /**

@@ -90,9 +90,7 @@ describe('the Agent page', () => {
     fireEvent.click(await screen.findByTestId('agent-edit-opus'));
     const dialog = await screen.findByTestId('agent-dialog');
     const goodAt = within(dialog).getByTestId('agent-good-at');
-    expect(goodAt).toHaveValue(
-      'Designs, architecture, hard investigations and reviews of important changes.',
-    );
+    expect(goodAt).toHaveValue('modelSuggestions.design');
     fireEvent.change(goodAt, { target: { value: '' } });
     fireEvent.click(within(dialog).getByTestId('agent-dialog-save'));
     expect(
@@ -105,6 +103,31 @@ describe('the Agent page', () => {
       expect(callsTo('PATCH', 'agents/opus').map((call) => call.json)).toEqual([
         {
           description: 'Hard problems',
+          effort: null,
+          enabled: true,
+          expectedRevision: 1,
+        },
+      ]),
+    );
+  });
+
+  it('prefills an application suggestion for a known model and saves it on enable', async () => {
+    agents[0] = {
+      ...agents[0]!,
+      suggestion: { en: 'Application description', zh: '应用描述' },
+    };
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-discovery-toggle'));
+    fireEvent.click(await screen.findByTestId('agent-edit-opus'));
+    const dialog = await screen.findByTestId('agent-dialog');
+    expect(within(dialog).getByTestId('agent-good-at')).toHaveValue(
+      'Application description',
+    );
+    fireEvent.click(within(dialog).getByTestId('agent-dialog-save'));
+    await waitFor(() =>
+      expect(callsTo('PATCH', 'agents/opus').map((call) => call.json)).toEqual([
+        {
+          description: 'Application description',
           effort: null,
           enabled: true,
           expectedRevision: 1,

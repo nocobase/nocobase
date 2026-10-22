@@ -297,3 +297,7 @@ Every Server plugin declares an absolute `baseDir`. In `server/plugin.ts`, use `
 ## Request constraints for Repository routes
 
 Trusted middleware can call `addRepositoryRequestConstraint(context, { repository, action, collection, connection?, policy })` from `@nocobase/app-server/router`. `policy` is a complete Repository policy; constraints only intersect the route's static or principal-derived policy. All constraints accumulate for the current request, and repository/action/collection/connection mismatches return 403. Request JSON cannot supply a constraint. Without middleware, existing route behavior is unchanged. Business applications should use the authorization plugin's `db.authorizeRepository` instead of resolving grants themselves.
+
+## Inspecting registered plugins
+
+`app.registeredServerPlugins` is an immutable snapshot of explicit Server registrations, including provider-only and locales-only plugins. Each entry contains the resolved package identity, version, locations and static contribution counts. Reading it never imports plugins again, constructs providers or executes route factories. It establishes registration rather than configuration or actual use. `AppPluginApplication` makes the snapshot optional for compatibility with older and hand-composed hosts. Plugins exposing this information over HTTP must enforce their own access boundary and avoid returning filesystem locations or private plugin options.

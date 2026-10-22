@@ -15,6 +15,7 @@ import {
   Layers,
   LayoutTemplate,
   ListChecks,
+  ListTodo,
   Monitor,
   MonitorSmartphone,
   Moon,
@@ -83,14 +84,21 @@ import { AgentQueueDemo } from './demo/agents/agent-queue';
 import { IssueCardDemo } from './demo/projects/issue-card';
 import { PlanCardDemo } from './demo/projects/plan-card';
 import { IssueTableDemo } from './demo/projects/issue-table';
+import { DataTableDemo } from './demo/components/data-table';
 import { FlowDiagramDemo } from './demo/components/flow-diagram';
+import { WorkflowManagementDemo } from './demo/lifecycle/workflow-management';
 import { LifecycleDiagramDemo } from './demo/lifecycle/lifecycle-diagram';
 import { KanbanDemo } from './demo/components/kanban';
 import { ApprovalDemo } from './demo/approval';
+import { TaskCenterUiDemo } from './demo/task-center';
 import { AuthenticationDemo } from './demo/auth';
 import { DeviceApprovalDemo } from './demo/auth/device-approval';
 import { PageContainerDemo } from './demo/components/page-container';
+import { SetupReadinessDemo } from './demo/components/setup-readiness.js';
+import { RecordLinkDemo } from './demo/components/record-link.js';
 import { PageHeaderDemo } from './demo/components/page-header';
+import { DefaultAccessEditorDemo } from './demo/authorization/default-access-editor.js';
+import { RoleListDemo } from './demo/authorization/role-list.js';
 import { PermissionEditorDemo } from './demo/authorization/permission-editor';
 import { RouteOverlaysDemo } from './demo/components/route-overlays';
 import { IssueDetailDemo } from './demo/projects/issue-detail';
@@ -151,7 +159,12 @@ const itemPreviews: Record<string, ItemPreview> = {
     path: '/demo/components/page-container',
     icon: LayoutTemplate,
   },
+  'record-link': { path: '/demo/components/record-link', icon: Table2 },
   'page-header': { path: '/demo/components/page-header', icon: Heading },
+  'setup-readiness': {
+    path: '/demo/components/setup-readiness',
+    icon: ListChecks,
+  },
   // The three route overlays share one demo; each preview opens the route that presents its component.
   'route-dialog': {
     path: '/demo/components/route-overlays/new',
@@ -165,11 +178,21 @@ const itemPreviews: Record<string, ItemPreview> = {
     path: '/demo/components/route-overlays/report',
     icon: Layers,
   },
+  'default-access-editor': {
+    path: '/demo/authorization/default-access-editor',
+    icon: SlidersHorizontal,
+  },
+  'role-list': { path: '/demo/authorization/role-list', icon: ToggleRight },
   'permission-editor': {
     path: '/demo/authorization/permission-editor',
     icon: ToggleRight,
   },
+  'data-table': { path: '/demo/components/data-table', icon: Table2 },
   'flow-diagram': { path: '/demo/components/flow-diagram', icon: Layers },
+  'workflow-management': {
+    path: '/demo/lifecycle/workflow-management',
+    icon: Layers,
+  },
   'lifecycle-diagram': {
     path: '/demo/lifecycle/lifecycle-diagram',
     icon: Layers,
@@ -219,6 +242,10 @@ const itemPreviews: Record<string, ItemPreview> = {
   inbox: { path: '/demo/inbox/inbox', icon: Inbox },
   'inbox-button': { path: '/demo/inbox/inbox-button', icon: BellDot },
   'approval-ui': { path: '/demo/approval/approval-ui', icon: ListChecks },
+  'task-center-ui': {
+    path: '/demo/task-center/task-center-ui',
+    icon: ListTodo,
+  },
 };
 
 type ThemePreference = 'light' | 'dark' | 'system';
@@ -269,20 +296,35 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/approval/')) {
     return <ApprovalDemo />;
   }
+  if (pathname.startsWith('/demo/task-center/')) {
+    return <TaskCenterUiDemo />;
+  }
   if (pathname.startsWith('/demo/components/page-container')) {
     return <PageContainerDemo />;
   }
+  if (pathname.startsWith('/demo/components/setup-readiness'))
+    return <SetupReadinessDemo />;
+  if (pathname.startsWith('/demo/components/record-link'))
+    return <RecordLinkDemo />;
   if (pathname.startsWith('/demo/components/page-header')) {
     return <PageHeaderDemo />;
   }
+  if (pathname.startsWith('/demo/authorization/default-access-editor'))
+    return <DefaultAccessEditorDemo />;
+  if (pathname.startsWith('/demo/authorization/role-list'))
+    return <RoleListDemo />;
   if (pathname.startsWith('/demo/authorization/permission-editor')) {
     return <PermissionEditorDemo />;
   }
   if (pathname.startsWith('/demo/components/route-overlays')) {
     return <RouteOverlaysDemo />;
   }
+  if (pathname.startsWith('/demo/components/data-table'))
+    return <DataTableDemo />;
   if (pathname.startsWith('/demo/components/flow-diagram'))
     return <FlowDiagramDemo />;
+  if (pathname.startsWith('/demo/lifecycle/workflow-management'))
+    return <WorkflowManagementDemo />;
   if (pathname.startsWith('/demo/lifecycle/lifecycle-diagram'))
     return <LifecycleDiagramDemo />;
   if (pathname.startsWith('/demo/components/kanban')) {

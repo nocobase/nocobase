@@ -40,6 +40,7 @@ import {
   describeRoute,
   listResponse,
   parseApiInput,
+  resolver,
 } from '@nocobase/app-server/router';
 import { Hono, type Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
@@ -77,7 +78,7 @@ import {
   DocParams,
   FileQuery,
   KnowledgeChunkingConfigSchema,
-  KnowledgeDocIndexSchema,
+  KnowledgeDocIndexResponseSchema,
   KnowledgeDocSchema,
   KnowledgeEffectiveAccessSchema,
   KnowledgeEmptyMetaSchema,
@@ -579,7 +580,10 @@ export function createKnowledgeRoutes(
       );
       return c.json({
         data: found ?? [],
-        meta: { enabled: found !== null },
+        meta: {
+          enabled: found !== null,
+          notifications: knowledge.indexing.notifications(),
+        },
       });
     },
   );
@@ -996,7 +1000,14 @@ export function createKnowledgeRoutes(
       description:
         'Its sections at the current version: headings, lines and length, and with semantic search on where each stands in the index (`pending`, `done`, or `failed` with why).',
       responses: {
-        200: dataResponse(KnowledgeDocIndexSchema),
+        200: {
+          description: 'Index snapshot and notification coverage.',
+          content: {
+            'application/json': {
+              schema: resolver(KnowledgeDocIndexResponseSchema),
+            },
+          },
+        },
         ...apiErrorResponses,
         404: docNotFoundResponse,
       },
@@ -1008,6 +1019,7 @@ export function createKnowledgeRoutes(
     docParam,
     async (c) =>
       c.json({
+        meta: { notifications: knowledge.indexing.notifications() },
         data: await knowledge.indexing.doc(
           viewer(c),
           c.req.valid('param').docId,
@@ -1023,7 +1035,14 @@ export function createKnowledgeRoutes(
       description:
         'Requires `edit`. Queues its sections for embedding again, the failed ones included; nothing happens while semantic search is off. Answers where they stand.',
       responses: {
-        200: dataResponse(KnowledgeDocIndexSchema),
+        200: {
+          description: 'Index snapshot and notification coverage.',
+          content: {
+            'application/json': {
+              schema: resolver(KnowledgeDocIndexResponseSchema),
+            },
+          },
+        },
         ...apiErrorResponses,
         404: docNotFoundResponse,
       },
@@ -1035,6 +1054,7 @@ export function createKnowledgeRoutes(
     docParam,
     async (c) =>
       c.json({
+        meta: { notifications: knowledge.indexing.notifications() },
         data: await knowledge.indexing.reindex(
           viewer(c),
           c.req.valid('param').docId,

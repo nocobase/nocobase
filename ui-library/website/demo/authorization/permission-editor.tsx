@@ -4,6 +4,7 @@ import {
   PermissionEditor,
   type PermissionEditorLevel,
   type PermissionEditorSection,
+  type PermissionEditorScope,
 } from '#components/permission-editor';
 
 const OWN_OR_ALL: readonly PermissionEditorLevel[] = [
@@ -23,8 +24,10 @@ const VIEW_OR_MANAGE: readonly PermissionEditorLevel[] = [
 interface DemoRow {
   readonly id: string;
   readonly label: string;
+  readonly actionKey?: string | undefined;
   readonly hint?: string;
   readonly levels?: readonly PermissionEditorLevel[];
+  readonly scopes?: readonly PermissionEditorScope[];
   /** A hint per level, for a settings item whose levels mean different things. */
   readonly hints?: Readonly<Record<string, string>>;
 }
@@ -43,7 +46,7 @@ const CATALOG: readonly {
 }[] = [
   {
     id: 'actions',
-    title: 'Business actions',
+    title: 'Business operations',
     footer:
       'Their own records are the ones they own or are assigned to; all records include everyone else’s.',
     groups: [
@@ -53,21 +56,49 @@ const CATALOG: readonly {
         rows: [
           {
             id: 'deals-view',
+            actionKey: 'read',
             label: 'View deals',
             hint: 'Open deals and their history',
             levels: OWN_OR_ALL,
           },
           {
             id: 'deals-edit',
+            actionKey: 'update',
             label: 'Edit deals',
             hint: 'Change the amount, stage and close date',
             levels: OWN_OR_ALL,
           },
           {
             id: 'deals-delete',
+            actionKey: 'delete',
             label: 'Delete deals',
             hint: 'Remove a deal for good',
             levels: ALL_ONLY,
+          },
+        ],
+      },
+      {
+        id: 'quotes',
+        title: 'Quotes',
+        rows: [
+          {
+            id: 'quotes-submit',
+            actionKey: 'submit',
+            label: 'Submit quote',
+            scopes: [
+              {
+                id: 'quote-projects',
+                label: 'Linked projects',
+                levels: OWN_OR_ALL,
+                level: 'own',
+              },
+              {
+                id: 'quote-records',
+                label: 'Quotes allowed for submission',
+                levels: OWN_OR_ALL,
+                level: 'all',
+              },
+            ],
           },
         ],
       },
@@ -77,11 +108,13 @@ const CATALOG: readonly {
         rows: [
           {
             id: 'contacts-view',
+            actionKey: 'read',
             label: 'View contacts',
             levels: OWN_OR_ALL,
           },
           {
             id: 'contacts-export',
+            actionKey: 'export',
             label: 'Export contacts',
             hint: 'Download contacts as a spreadsheet',
             levels: ALL_ONLY,
@@ -111,6 +144,63 @@ const CATALOG: readonly {
         id: 'reports',
         title: 'Reports',
         rows: [{ id: 'page-forecast', label: 'Forecast' }],
+      },
+    ],
+  },
+  {
+    id: 'administration',
+    title: 'System and tools',
+    groups: [
+      {
+        id: 'roles',
+        title: 'Roles',
+        rows: [
+          { id: 'roles-read', actionKey: 'read', label: 'View' },
+          { id: 'roles-create', actionKey: 'create', label: 'Create' },
+          { id: 'roles-update', actionKey: 'update', label: 'Edit' },
+          { id: 'roles-delete', actionKey: 'delete', label: 'Delete' },
+          { id: 'roles-grants', actionKey: 'grants', label: 'Manage grants' },
+        ],
+      },
+      ...['Default data scope', 'Sharing rules', 'Restriction rules'].map(
+        (title, index) => ({
+          id: `policy-${index}`,
+          title,
+          rows: [
+            { id: `policy-${index}-read`, actionKey: 'read', label: 'View' },
+            {
+              id: `policy-${index}-create`,
+              actionKey: 'create',
+              label: 'Create',
+            },
+            {
+              id: `policy-${index}-update`,
+              actionKey: 'update',
+              label: 'Edit',
+            },
+            {
+              id: `policy-${index}-delete`,
+              actionKey: 'delete',
+              label: 'Delete',
+            },
+          ],
+        }),
+      ),
+      {
+        id: 'checker',
+        title: 'Permission checker',
+        rows: [{ id: 'check', actionKey: 'check', label: 'Check permissions' }],
+      },
+      {
+        id: 'scheduler',
+        title: 'Scheduler',
+        rows: [
+          {
+            id: 'scheduler-run',
+            actionKey: 'run',
+            label: 'Start and stop rules',
+          },
+        ],
       },
     ],
   },
@@ -148,6 +238,7 @@ const CATALOG: readonly {
 
 const INITIAL_ENABLED: Readonly<Record<string, boolean>> = {
   'deals-view': true,
+  'quotes-submit': true,
   'deals-edit': true,
   'contacts-view': true,
   'page-dashboard': true,
@@ -177,9 +268,14 @@ export function PermissionEditorDemo(): ReactElement {
           return {
             id: row.id,
             label: row.label,
+            actionKey: row.actionKey,
             hint: row.hints && level ? row.hints[level] : row.hint,
             enabled: enabled[row.id] ?? false,
             levels: row.levels,
+            scopes: row.scopes?.map((scope) => ({
+              ...scope,
+              level: levels[scope.id] ?? scope.level,
+            })),
             level,
           };
         }),
@@ -188,9 +284,17 @@ export function PermissionEditorDemo(): ReactElement {
   );
   return (
     <div className='min-h-svh bg-background p-6 text-foreground'>
-      <div className='mx-auto max-w-3xl'>
+      <div className='mx-auto max-w-6xl'>
         <PermissionEditor
           sections={sections}
+          onEnabledBatchChange={(changes) =>
+            setEnabled((current) => ({
+              ...current,
+              ...Object.fromEntries(
+                changes.map((change) => [change.id, change.enabled]),
+              ),
+            }))
+          }
           onEnabledChange={(id, on) =>
             setEnabled((current) => ({ ...current, [id]: on }))
           }

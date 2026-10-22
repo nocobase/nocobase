@@ -1,25 +1,29 @@
 # Notification App Plugin
 
-The notification runtime sends complete messages through configured Channels. Each Channel name maps to one Provider configuration; Provider identifiers are globally unique and determine the message type.
+The notification runtime sends complete messages through configured Channels. A Channel is a named configuration, such as `system-email`; its `type` selects a registered class, such as `SmtpChannel`. SMTP, Resend, in-app, Feishu webhook, DingTalk webhook and Web Push are peer channel types supplied by their respective plugins.
 
 ```yaml
 notification:
   channels:
     system-email:
-      provider: smtp
+      type: smtp
       host: smtp.example.com
       port: 587
-      auth: { user: '${SMTP_USER}', pass: '${SMTP_PASSWORD}' }
+      auth:
+        {
+          user: notifications@example.com,
+          pass: replace-with-the-smtp-password,
+        }
       from: notifications@example.com
     marketing-email:
-      provider: resend
-      apiKey: '${RESEND_API_KEY}'
+      type: resend
+      apiKey: replace-with-the-resend-api-key
       from: marketing@example.com
     ops-feishu:
-      provider: feishu-webhook
-      webhookUrl: '${FEISHU_WEBHOOK_URL}'
+      type: feishu-webhook
+      webhookUrl: https://open.feishu.cn/open-apis/bot/v2/hook/replace-with-the-token
     inbox:
-      provider: in-app
+      type: in-app
 ```
 
 ```ts
@@ -49,9 +53,13 @@ await notification.send({
 
 All messages are validated before persistence. Email and in-app arrays produce one Delivery per native recipient; Webhooks forbid `to`. Delivery failures remain independent. Queues, timeouts, leases, idempotency, status queries, retry audits, and realtime inbox events remain part of the runtime. Retries stay bound to the original Channel and Provider.
 
-This contract replaces the previous configuration and send API without compatibility aliases. Update configuration and callers together before upgrading. The single-Provider migration removes `providerName` from delivery and attempt records; rolling it back restores the columns using Provider identifiers, not the deleted instance names.
+`type` is the preferred discriminator. Existing `provider` configuration remains supported as a deprecated alias; when both are present they must match. Application configuration reads expose both `type` and `provider` with the same value after loading, merging defaults, and reloading, so existing business code reading `config.provider` continues to work. New code should read `type`. The host mailer accepts the same aliases.
 
-See the [integration guide](skills/nocobase-app-plugin-notification/references/integration-and-configuration.md), [sending contract](skills/nocobase-app-plugin-notification/references/sending-notifications.md), and [extension guide](skills/nocobase-app-plugin-notification/references/channel-and-provider-extensions.md). The protected test-send form selects one Channel and shows its message fields.
+Values in YAML are literal: map secrets from environment variables in `server/config/notification.ts` using `defineMailChannelsConfig` and `envString`. Its default `SMTP_PASSWORD` mapping targets `channels.system-email.auth.pass`; map a marketing Resend key explicitly to `channels.marketing-email.apiKey`.
+
+Extend notifications with a class implementing `ChannelInstance`, then call `registry.registerChannelType(MyChannel)`. Its context contains only `channelName` and `container`. Official plugins and examples use `registerChannelType()` exclusively for channel extensions. Deprecated `registerChannel()` / `registerProvider()` APIs and factory exports remain supported for existing third-party extensions. Built-in server plugins install their legacy message handlers through dedicated compatibility modules; new extensions need no separate message-handler registration. This extension change preserves `send()`, `sendTransient()`, `messages`, result DTOs and stored delivery identities; it adds no `submit()` API or database migration.
+
+See the [integration guide](skills/nocobase-app-plugin-notification/references/integration-and-configuration.md), [sending contract](skills/nocobase-app-plugin-notification/references/sending-notifications.md), and [extension guide](skills/nocobase-app-plugin-notification/references/channel-and-provider-extensions.md). Verify delivery through a normal business flow or server-side `send()` call and inspect the returned notification ID in the protected logs API.
 
 ### Sensitive messages
 

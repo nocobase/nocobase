@@ -38,17 +38,12 @@ describe('nocobase-runner cli', () => {
 
   it('registers with several applications, one key each, and refuses a second registration', async () => {
     const fake = writeFakeCli(home);
-    await registerRunner(first.url, env, [
-      '--slots',
-      '2',
-      '--cli',
-      `appcli=${fake}`,
-    ]);
+    await registerRunner(first.url, env, ['--cli', `appcli=${fake}`]);
     // Without --slots the token's number applies, raising the runner's shared slots but never lowering them.
     second.tokenSlots = 3;
     await registerRunner(second.url, env);
     await registerRunner(anonymous.url, env);
-    expect(first.runners.get('runner-1')?.register.slots).toBe(2);
+    expect(first.runners.get('runner-1')?.register.slots).toBeUndefined();
     expect(second.runners.get('runner-1')?.register).not.toHaveProperty(
       'slots',
     );
@@ -87,7 +82,6 @@ describe('nocobase-runner cli', () => {
     expect(parsed).toMatchObject({
       registered: true,
       name: 'test-runner',
-      slots: 3,
       agentTools: 'runner',
       running: false,
     });
@@ -117,7 +111,7 @@ describe('nocobase-runner cli', () => {
     expect(dry.code).toBe(0);
     if (process.platform === 'darwin') {
       expect(dry.stdout).toContain('<string>com.nocobase.runner</string>');
-      expect(dry.stdout).toContain('<string>--foreground</string>');
+      expect(dry.stdout).toContain('<string>run</string>');
       expect(dry.stdout).toMatch(/\$ launchctl bootstrap gui\/\d+ /);
     }
   });
@@ -137,7 +131,7 @@ describe('nocobase-runner cli', () => {
       '/home/u/.config/systemd/user/nocobase-runner.service',
     );
     expect(plan.content).toContain(
-      'ExecStart=/usr/bin/node /opt/acme/bin/run.js runner start --foreground',
+      'ExecStart=/usr/bin/node /opt/acme/bin/run.js runner service run',
     );
     expect(plan.content).toContain(
       'Environment=NOCOBASE_RUNNER_HOME=/home/u/.nocobase-runner',

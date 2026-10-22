@@ -32,6 +32,15 @@ describe('claiming', () => {
     expect(payload.prompt.system).toMatch(
       /^You are Coder[\s\S]*AGENTS\.md, CLAUDE\.md or README[\s\S]*\{\{runner\.workspaceInit\}\}[\s\S]*Work on the sample\.\n\nSample 7[\s\S]*Be brief\.$/u,
     );
+    expect(payload.prompt.system).toContain(
+      'Use the `acme` command line for all operations on the management Acme instance hosting this task',
+    );
+    expect(payload.prompt.system).toContain(
+      'A refused command (exit code 3) must not be bypassed through a browser, HTTP, another identity or a test environment.',
+    );
+    expect(payload.prompt.system).toContain(
+      'you may use Playwright, a browser and test HTTP requests, even when the tested product is also named Acme.',
+    );
     expect(payload.cli.credential.content).toMatchObject({
       runId,
       token: expect.stringMatching(/^fgr_/u),
@@ -251,7 +260,7 @@ describe('claiming', () => {
     expect(other.body.error.reason).toBe('SKILL_NOT_FOUND');
   });
 
-  it('pins a run to the runner that holds its directory, one run at a time there', async () => {
+  it('pins directories to their runner while allowing concurrent runs in the same directory', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ maxConcurrentRuns: 5 });
     const elsewhere = await h.registerRunner({ slots: 4 });
@@ -270,13 +279,13 @@ describe('claiming', () => {
     const second = await h.enqueue(agentId, '2');
     expect(await claim(h, elsewhere, 4)).toEqual([]);
     const claimed = await claim(h, holder, 4);
-    expect(claimed.map((payload) => payload.run.id)).toEqual([first]);
+    expect(claimed.map((payload) => payload.run.id)).toEqual([first, second]);
     expect(claimed[0].workspace.dirs).toEqual([
       { kind: 'directory', path: directory, initPrompt: 'Run make setup.' },
     ]);
     expect(claimed[0].run.requires).toEqual(['directories']);
 
-    // The directory is free again once the first run ends.
+    // Ending one run leaves the other run active in the shared directory.
     const runToken = claimed[0].cli.credential.content.token;
     await h.request('POST', `/agents/runners/runs/${first}/start`, {
       runnerKey: holder.key,
@@ -298,7 +307,8 @@ describe('claiming', () => {
     });
     expect(
       (await claim(h, holder, 4)).map((payload) => payload.run.id),
-    ).toEqual([second]);
+    ).toEqual([]);
+    expect((await h.services.runs.get(second)).status).toBe('dispatched');
   });
 
   it('merges variables subject scope < working directory < agent and audits their delivery', async () => {
