@@ -79,6 +79,10 @@ const agentChatZhCN: AgentChatLocale = {
       othersPersonal: '只有别人的个人执行机能跑',
       modelUnavailable: '模型不可用',
     },
+    reasoning: {
+      title: '推理过程',
+      thinking: '正在思考…',
+    },
     reply: {
       writing: '正在输入…',
       interrupted: '回复在这里中断了。',

@@ -420,6 +420,7 @@ function ConversationBody({
         (appUIMessageText(item).trim().length > 0 ||
           item.parts.some(
             (part) =>
+              (part.type === 'reasoning' && part.text.trim().length > 0) ||
               part.type === 'dynamic-tool' ||
               part.type.startsWith('tool-') ||
               part.type === 'file',

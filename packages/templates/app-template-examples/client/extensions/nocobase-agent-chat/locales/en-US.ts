@@ -71,6 +71,10 @@ export interface AgentChatLocale {
       readonly othersPersonal: string;
       readonly modelUnavailable: string;
     };
+    readonly reasoning: {
+      readonly title: string;
+      readonly thinking: string;
+    };
     readonly reply: {
       readonly writing: string;
       readonly interrupted: string;
@@ -336,6 +340,10 @@ const agentChatEnUS: AgentChatLocale = {
       othersPersonal: "Only others' personal runners have it",
       // The reason earlier versions wrote on a notice that their online fallback could not answer.
       modelUnavailable: 'Model unavailable',
+    },
+    reasoning: {
+      title: 'Reasoning',
+      thinking: 'Thinking…',
     },
     reply: {
       writing: 'Writing…',
