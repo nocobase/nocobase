@@ -47,7 +47,7 @@
     {
       "id": "deployment",
       "title": "NocoBase Studio",
-      "summary": "搭建 Studio 工作空间，统一管理项目、Agent 和任务。",
+      "summary": "安装并启动 NocoBase Studio，为 Agent 团队准备好协作环境。",
       "sections": [
         {
           "id": "deployment-prepare",

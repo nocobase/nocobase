@@ -47,7 +47,7 @@
     {
       "id": "deployment",
       "title": "NocoBase Studio",
-      "summary": "Set up your Studio workspace to manage projects, agents, and issues in one place.",
+      "summary": "Install and start NocoBase Studio to prepare a collaboration environment for your agent team.",
       "sections": [
         {
           "id": "deployment-prepare",
