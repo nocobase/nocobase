@@ -109,7 +109,7 @@ export function AvailableModelsDialog({
                 <AgListSkeleton />
               ) : (
                 Object.entries(TOOL_LABELS).map(([tool, label]) => {
-                  const byTool = models.data!.filter(
+                  const byTool = models.data.filter(
                     (model) => model.tool === tool && matches(model),
                   );
                   return byTool.length ? (

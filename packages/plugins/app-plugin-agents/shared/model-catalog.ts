@@ -197,6 +197,7 @@ export function sanitizeAgentNamePart(value: string): string {
   return value
     .replace(/\[/gu, '(')
     .replace(/\]/gu, ')')
+    // eslint-disable-next-line no-control-regex -- stripping control characters an agent mention link must not carry.
     .replace(/[\u0000-\u001f\u007f]/gu, ' ')
     .replace(/\s+/gu, ' ')
     .trim();
