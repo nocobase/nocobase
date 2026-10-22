@@ -55,9 +55,11 @@ export interface AgentSpec {
   };
   /**
    * A successful detection handshake (`initialize` and `session/new`) does not mean this agent is signed in: it
-   * opens a session the same way whether or not it is (Amp, by the owner's own tested report). Detection reports
-   * `needsLogin`/`signInUnconfirmed` from a bare successful handshake instead of `ready`, since claiming readiness
-   * it cannot back up is the worse of the two wrong answers.
+   * opens a session the same way whether or not it is (Amp, by the owner's own tested report). Detection reads this
+   * agent's own `initialize.authMethods` instead of taking the handshake's success at face value: a populated list
+   * names sign-in methods not yet used (`needsLogin`/`notLoggedIn`), an empty list is read as signed in (`ready`),
+   * and an absent field — the handshake saying nothing either way — stays `needsLogin`/`signInUnconfirmed` rather
+   * than a `ready` it cannot back up.
    */
   readonly signInUnconfirmable?: boolean;
 }

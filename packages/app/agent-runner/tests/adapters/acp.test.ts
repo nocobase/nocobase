@@ -20,6 +20,7 @@ afterEach(async () => {
 async function fixture(
   variant = '',
   specOverrides: Record<string, unknown> = {},
+  envOverrides: Record<string, string> = {},
 ) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'runner-acp-'));
   roots.push(root);
@@ -29,6 +30,7 @@ async function fixture(
     HOME: root,
     ACP_FIXTURE_VARIANT: variant,
     ACP_FIXTURE_TRACE: trace,
+    ...envOverrides,
   };
   const spec = {
     id: 'gemini',
@@ -117,22 +119,62 @@ it.each(['', 'legacy', 'unsupported', 'auth', 'initializeAuth', 'permission'])(
   },
 );
 
-it('never reports ready from a bare successful handshake for an agent whose handshake does not confirm sign-in (Amp)', async () => {
+it('reads a signInUnconfirmable agent’s own authMethods instead of taking a bare successful handshake at face value (Amp)', async () => {
   // The fixture's handshake always succeeds, modelling the owner's tested report that Amp opens a session the same
-  // way whether or not it is actually signed in: `signInUnconfirmable` must still keep this from reading as ready.
-  const f = await fixture('', {
-    signInUnconfirmable: true,
-    signIn: 'amp login',
+  // way whether or not it is actually signed in: `signInUnconfirmable` reads `authMethods` instead.
+  const signedOut = await fixture(
+    '',
+    { signInUnconfirmable: true, signIn: 'amp login' },
+    { ACP_FIXTURE_AUTH_METHODS: 'populated' },
+  );
+  const notLoggedIn = await signedOut.adapter.detect(
+    new AbortController().signal,
+  );
+  expect(notLoggedIn).toMatchObject({
+    installed: true,
+    authenticated: false,
+    status: 'needsLogin',
+    statusReason: 'notLoggedIn',
   });
-  const detected = await f.adapter.detect(new AbortController().signal);
-  expect(detected).toMatchObject({
+  expect(notLoggedIn.statusDetail).toContain('amp login');
+
+  const signedIn = await fixture(
+    '',
+    { signInUnconfirmable: true, signIn: 'amp login' },
+    { ACP_FIXTURE_AUTH_METHODS: 'empty' },
+  );
+  const ready = await signedIn.adapter.detect(new AbortController().signal);
+  // No sign-in method left unused: read as signed in, the recovery path the plain "always unavailable" fix lacked.
+  expect(ready).toMatchObject({ installed: true, status: 'ready' });
+
+  const unconfirmable = await fixture(
+    '',
+    { signInUnconfirmable: true, signIn: 'amp login' },
+    { ACP_FIXTURE_AUTH_METHODS: 'absent' },
+  );
+  const unknown = await unconfirmable.adapter.detect(
+    new AbortController().signal,
+  );
+  // The handshake says nothing either way: stays distinct from a confirmed need to sign in, never promoted to ready.
+  expect(unknown).toMatchObject({
     installed: true,
     authenticated: false,
     status: 'needsLogin',
     statusReason: 'signInUnconfirmed',
   });
-  expect(detected.statusDetail).toContain('amp login');
-  expect(detected.models).toBeUndefined();
+  expect(unknown.statusDetail).toContain('amp login');
+  expect(unknown.models).toBeUndefined();
+});
+
+it('names both the agent’s answered protocol version and the one this host requires, not a bare "unsupported" claim', async () => {
+  const f = await fixture('', {}, { ACP_FIXTURE_PROTOCOL_VERSION: '99' });
+  const detected = await f.adapter.detect(new AbortController().signal);
+  expect(detected).toMatchObject({
+    status: 'failed',
+    statusReason: 'versionTooOld',
+  });
+  expect(detected.statusDetail).toContain('99');
+  expect(detected.statusDetail).toContain('1');
 });
 
 it('never lists an agent’s non-model options as models when its spec says they are not (amp’s reasoning modes)', async () => {

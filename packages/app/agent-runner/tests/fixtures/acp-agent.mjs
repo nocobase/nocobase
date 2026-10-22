@@ -86,14 +86,20 @@ readline.createInterface({ input: process.stdin }).on('line', async (line) => {
           '\n',
       );
     }
+    const authMethods =
+      process.env.ACP_FIXTURE_AUTH_METHODS === 'absent'
+        ? undefined
+        : process.env.ACP_FIXTURE_AUTH_METHODS === 'empty'
+          ? []
+          : [{ id: 'native', name: 'Native login' }];
     return result({
-      protocolVersion: 1,
+      protocolVersion: Number(process.env.ACP_FIXTURE_PROTOCOL_VERSION ?? 1),
       agentInfo: { name: 'fixture', version: '1.2.3' },
       agentCapabilities:
         variant === 'resume'
           ? { sessionCapabilities: { resume: {} } }
           : { loadSession: true },
-      authMethods: [{ id: 'native', name: 'Native login' }],
+      ...(authMethods === undefined ? {} : { authMethods }),
     });
   }
   if (

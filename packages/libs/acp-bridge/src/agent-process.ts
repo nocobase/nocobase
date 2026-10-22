@@ -144,7 +144,7 @@ export class AgentProcess {
       ).finally(() => cleanup());
       if (initialize.protocolVersion !== acp.PROTOCOL_VERSION)
         throw new Error(
-          'The agent selected an unsupported ACP protocol version.',
+          `The agent selected an unsupported ACP protocol version: it answered ${initialize.protocolVersion}; this host requires version ${acp.PROTOCOL_VERSION}.`,
         );
       return new AgentProcess(
         child,

@@ -208,20 +208,40 @@ async function inspect(
           createRedactor().text(version) === version
             ? version
             : undefined;
-        // A successful handshake alone does not confirm sign-in for an agent marked `signInUnconfirmable`: report
-        // the safe default (not usable yet) instead of a `ready` this detection cannot back up.
-        if (spec.signInUnconfirmable)
-          return {
-            installed: true,
-            path: resolved.command,
-            version: safeVersion,
-            authenticated: false,
-            status: 'needsLogin',
-            statusReason: 'signInUnconfirmed',
-            statusDetail: statusDetailOf(
-              `${spec.name}'s handshake succeeds whether or not it is signed in; run \`${spec.signIn}\` to confirm.`,
-            ),
-          };
+        // A successful handshake alone does not confirm sign-in for an agent marked `signInUnconfirmable`: read its
+        // own `authMethods` instead of either assuming `ready` or getting permanently stuck. Three distinguishable
+        // outcomes, each reachable by a controlled fixture: the field naming unused sign-in methods (confirmed not
+        // signed in), an explicit empty list (nothing left unauthenticated, read as signed in), and the field being
+        // absent altogether (the handshake says nothing either way, kept distinct from a confirmed need to sign in
+        // rather than silently promoted to `ready`).
+        if (spec.signInUnconfirmable) {
+          const authMethods = process.initialize.authMethods;
+          if (authMethods === undefined)
+            return {
+              installed: true,
+              path: resolved.command,
+              version: safeVersion,
+              authenticated: false,
+              status: 'needsLogin',
+              statusReason: 'signInUnconfirmed',
+              statusDetail: statusDetailOf(
+                `${spec.name}'s handshake does not say whether it is signed in; run \`${spec.signIn}\` to make sure, then detect again.`,
+              ),
+            };
+          if (authMethods.length > 0)
+            return {
+              installed: true,
+              path: resolved.command,
+              version: safeVersion,
+              authenticated: false,
+              status: 'needsLogin',
+              statusReason: 'notLoggedIn',
+              statusDetail: statusDetailOf(
+                `${spec.name} still lists ${authMethods.length} sign-in method${authMethods.length === 1 ? '' : 's'} it has not used yet; run \`${spec.signIn}\`.`,
+              ),
+            };
+          // An explicit empty list: no sign-in method remains unused, so this handshake is read as signed in.
+        }
         return {
           installed: true,
           path: resolved.command,
