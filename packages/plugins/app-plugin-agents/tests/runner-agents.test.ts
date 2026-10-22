@@ -1,14 +1,16 @@
 /**
  * Agents built from what runners report. A runner reporting a tool and model signed in no longer creates an agent by
  * itself: only a combination in the application's recommended list does, already enabled (`syncRunner`); every other
- * one only joins the available models list (`availableModels`) until someone creates one from it
+ * one only joins the available models list (`availableModelGroups`, `availableModelRows`) until someone creates one from it
  * (`createFromAvailable`). Once an agent exists, visibility (team runners, personal runners, 14-day unreported) and
  * stale refresh behave as before.
  */
 import type { ToolInfo } from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { availableModels } from '../server/core/agents/available-models.js';
+import {
+  availableModelRows,
+} from '../server/core/agents/available-models.js';
 import { catalogEntry } from '../shared/model-catalog.js';
 import { runnerAgentId } from '../server/core/agents/index.js';
 import { claim, createHarness, type Harness } from './harness.js';
@@ -47,13 +49,14 @@ describe('agents built from runner reports', () => {
     });
     expect(await h.services.agents.list()).toEqual([]);
     const conn = h.services.tx.read();
-    const models = availableModels(
+    const models = availableModelRows(
       await h.services.runners.all(conn),
       await h.services.agents.list(),
       {
         recommendedModels: h.services.agents.recommended(),
         suggestion: h.services.agents.suggestion,
       },
+      'claude',
     );
     expect(
       models.map((model) => [

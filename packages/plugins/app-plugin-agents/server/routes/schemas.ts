@@ -25,6 +25,7 @@ import {
   ToolSlotsSchema,
   WorkspaceDecisionSchema,
   WorkspaceCleanupResultSchema,
+  type AgentTool,
   type RunEvent,
   type RunEventType,
   type RunStatus,
@@ -38,6 +39,7 @@ import {
   AGENT_STATUSES,
   AGENT_UNUSABLE_REASONS,
   CONFIRM_CHANGES,
+  MODEL_AVAILABILITY_STATUSES,
   type Agent,
   type AgentActionOption,
   type AgentChange,
@@ -45,7 +47,11 @@ import {
   type AgentView,
   type AvailableAgent,
   type AvailableModel,
+  type AvailableModelGroup,
+  type AvailableModelRunners,
   type CleanupCandidate,
+  type CleanupGroup,
+  type ModelAvailabilityStatus,
   type RunnerAgentCreateInput,
   type UserRef,
 } from '../../shared/agents.js';
@@ -735,6 +741,44 @@ export const AvailableAgentSchema: z.ZodType<AvailableAgent> = z
   })
   .meta({ ref: 'AgentsAvailableAgent' });
 
+export const ModelAvailabilityStatusSchema: z.ZodType<ModelAvailabilityStatus> =
+  z.enum(MODEL_AVAILABILITY_STATUSES);
+
+export const AvailableModelRunnersSchema: z.ZodType<AvailableModelRunners> =
+  z.object({
+    ready: z.number().int().meta({
+      description: 'Runners currently offering exactly this model.',
+    }),
+    total: z.number().int().meta({
+      description: 'Runners that have the tool selected, ready or not.',
+    }),
+    names: z.array(z.string()).meta({
+      description: 'A few of the ready runners’ names.',
+    }),
+  });
+
+export const AvailableModelGroupSchema: z.ZodType<AvailableModelGroup> = z
+  .object({
+    tool: AgentToolSchema,
+    modelCount: z.number().int().meta({
+      description: 'Models matching the search and status filter, if any.',
+    }),
+    runnerCount: z.number().int().meta({
+      description: 'Runners that have this tool selected, ready or not.',
+    }),
+    status: ModelAvailabilityStatusSchema,
+    statusReason: z.string().optional().meta({
+      description:
+        'The reason behind `status`, when it is not `available` and a runner gave one.',
+    }),
+    statusDetail: z.string().optional().meta({
+      description:
+        'A runner’s own words about `statusReason`, redacted and bounded.',
+    }),
+    recommendedCount: z.number().int(),
+  })
+  .meta({ ref: 'AgentsAvailableModelGroup' });
+
 export const AvailableModelSchema: z.ZodType<AvailableModel> = z
   .object({
     tool: AgentToolSchema,
@@ -755,6 +799,11 @@ export const AvailableModelSchema: z.ZodType<AvailableModel> = z
         'In the application’s recommended list: a runner reporting it signed in creates and enables it on its own.',
     }),
     suggestion: z.object({ en: z.string(), zh: z.string() }).nullable(),
+    availability: ModelAvailabilityStatusSchema.meta({
+      description:
+        'Its group’s availability; unselectable to create unless `available`.',
+    }),
+    runners: AvailableModelRunnersSchema,
   })
   .meta({ ref: 'AgentsAvailableModel' });
 
@@ -787,6 +836,89 @@ export const CleanupCandidateSchema: z.ZodType<CleanupCandidate> = z
     createdAt: dateTime,
   })
   .meta({ ref: 'AgentsCleanupCandidate' });
+
+export const CleanupGroupSchema: z.ZodType<CleanupGroup> = z
+  .object({
+    tool: AgentToolSchema.nullable(),
+    count: z.number().int(),
+  })
+  .meta({ ref: 'AgentsCleanupGroup' });
+
+export const PageMetaSchema: z.ZodType<{
+  readonly total: number;
+  readonly page: number;
+  readonly pageSize: number;
+}> = z
+  .object({
+    total: z.number().int().describe('Rows matching the search and filter.'),
+    page: z.number().int().min(1).describe('The requested one-based page.'),
+    pageSize: z.number().int().min(1).describe('Maximum rows per page.'),
+  })
+  .meta({ ref: 'AgentsPageMeta', description: 'Paging, within one tool.' });
+
+/**
+ * Without `tool`: the group summary, one row per tool. With `tool`: that tool's models, a page at a time (`page`,
+ * `pageSize`), both kept to the same shape so one route serves both views of `GET /availableModels`.
+ */
+export const AvailableModelsQuerySchema: z.ZodType<{
+  readonly tool?: AgentTool | undefined;
+  readonly q?: string | undefined;
+  readonly status?: ModelAvailabilityStatus | undefined;
+  readonly page: number;
+  readonly pageSize: number;
+}> = z.object({
+  tool: AgentToolSchema.optional().describe(
+    'Return this tool’s models, a page at a time; omit for the group summary.',
+  ),
+  q: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .describe('Filter by tool or model name, case-insensitive.'),
+  status: ModelAvailabilityStatusSchema.optional().describe(
+    'Only tools, or models of the given tool, at this availability.',
+  ),
+  page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(1)
+    .describe('One-based page, within one tool’s models.'),
+  pageSize: pageSize(50, 200).describe(
+    'Models per page, from 1 to 200, within one tool.',
+  ),
+});
+
+/**
+ * Without `tool`: the group summary, one row per tool with candidates. With `tool`: that tool's candidates, a page at
+ * a time, both kept to the same shape so one route serves both views of `GET /cleanupCandidates`.
+ */
+export const CleanupCandidatesQuerySchema: z.ZodType<{
+  readonly tool?: AgentTool | undefined;
+  readonly q?: string | undefined;
+  readonly page: number;
+  readonly pageSize: number;
+}> = z.object({
+  tool: AgentToolSchema.optional().describe(
+    'Return this tool’s candidates, a page at a time; omit for the group summary.',
+  ),
+  q: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .describe('Filter by the agent’s name, case-insensitive.'),
+  page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(1)
+    .describe('One-based page, within one tool’s candidates.'),
+  pageSize: pageSize(50, 500).describe(
+    'Candidates per page, from 1 to 500, within one tool; large enough for "select all in group" to page through in one or two calls.',
+  ),
+});
 
 export const AgentChangeSchema: z.ZodType<AgentChange> = z.object({
   id: z.string(),

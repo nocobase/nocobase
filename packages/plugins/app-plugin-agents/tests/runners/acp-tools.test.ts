@@ -1,11 +1,28 @@
 import type { Knex } from 'knex';
 import { afterEach, expect, it } from 'vitest';
 import { createHarness, claim, type Harness } from './harness.js';
-import { availableModels } from '../../server/core/agents/available-models.js';
+import {
+  availableModelGroups,
+  availableModelRows,
+  type AvailableModelOptions,
+} from '../../server/core/agents/available-models.js';
 import { runnerAgentId } from '../../server/core/agents/agent.service.js';
 import { PROTOCOL_VERSION } from '@nocobase/agent-protocol';
+import type { Agent } from '../../shared/agents.js';
+import type { Runner } from '../../shared/runners.js';
 let h: Harness;
 afterEach(async () => h?.close());
+
+/** Every tool's models, flattened: the old flat endpoint, now two paged calls, for tests that want the whole list. */
+function allAvailableModels(
+  runners: readonly Runner[],
+  agents: readonly Agent[],
+  options: AvailableModelOptions,
+) {
+  return availableModelGroups(runners, agents, options).flatMap((group) =>
+    availableModelRows(runners, agents, options, group.tool),
+  );
+}
 
 it('discovers separate catalog tools, preserves opaque model ids, and names the default agent after the tool', async () => {
   h = await createHarness();
@@ -28,7 +45,7 @@ it('discovers separate catalog tools, preserves opaque model ids, and names the 
     ],
   });
   // Neither combination is recommended: a runner's report lists them as available, creating no agent by itself.
-  const available = availableModels(
+  const available = allAvailableModels(
     await h.services.runners.all(h.services.tx.read()),
     [],
     { recommendedModels: [], suggestion: h.services.agents.suggestion },
@@ -86,7 +103,7 @@ it('discovers separate catalog tools, preserves opaque model ids, and names the 
       },
     ],
   });
-  const afterSecond = availableModels(
+  const afterSecond = allAvailableModels(
     await h.services.runners.all(h.services.tx.read()),
     await h.services.agents.list(),
     { recommendedModels: [], suggestion: h.services.agents.suggestion },

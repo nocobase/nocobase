@@ -60,7 +60,8 @@ import type { Agents } from '../composition.js';
 import {
   AgentPatchSchema,
   agentViews,
-  availableModels,
+  availableModelGroups,
+  availableModelRows,
 } from '../core/agents/index.js';
 import { ModelPricesSchema } from '../core/reports/index.js';
 import {
@@ -92,10 +93,15 @@ import {
   AgentSchema,
   AgentViewSchema,
   AvailableModelSchema,
+  AvailableModelGroupSchema,
+  AvailableModelsQuerySchema,
   BriefPreviewSchema,
   CleanupCandidateSchema,
+  CleanupCandidatesQuerySchema,
+  CleanupGroupSchema,
   RunnerAgentCreateInputSchema,
   ModelUsageReportSchema,
+  PageMetaSchema,
   PageTokenMetaSchema,
   PricesSchema,
   RunBriefSchema,
@@ -508,30 +514,57 @@ export function createAdminRoutes(
     can('agents.agents', 'read'),
     describeRoute({
       tags,
-      summary: 'List tools and models to create an agent from',
+      summary: 'List tools, or one tool’s models, to create an agent from',
       operationId: 'agentsListAvailableModels',
       ...cliRoute({
         command: 'agent model list',
-        columns: ['tool', 'model', 'displayModel', 'status', 'recommended'],
+        examples: ['agent model list', 'agent model list --tool codex'],
       }),
       description:
-        'Every tool and model a runner has signed in reported, whether an agent exists for it yet or not, grouped by tool for the enable dialog. The application’s recommended combinations create and enable themselves as soon as a runner reports them; create the rest with `POST /runnerAgents`. Needs `agents.agents` read.',
+        'Without `tool`: one row per coding tool a runner has selected, with its model count and aggregated availability, for the enable drawer’s group headers. With `tool`: that tool’s models, a page at a time, whether or not an agent exists for each yet. The application’s recommended combinations create and enable themselves as soon as a runner reports them; create the rest with `POST /runnerAgents`. Needs `agents.agents` read.',
       responses: {
-        200: listResponse(AvailableModelSchema),
+        200: listResponse(
+          z.union([AvailableModelGroupSchema, AvailableModelSchema]),
+          PageMetaSchema,
+        ),
         ...apiErrorResponses,
       },
     }),
+    apiValidator('query', AvailableModelsQuerySchema),
     async (context) => {
+      const query = context.req.valid('query');
       const conn = services.tx.read();
       const [runners, agents] = await Promise.all([
         services.runners.all(conn),
         services.agents.list(),
       ]);
-      const data = availableModels(runners, agents, {
+      const options = {
         recommendedModels: services.agents.recommended(),
         suggestion: services.agents.suggestion,
+      };
+      if (query.tool === undefined) {
+        const data = availableModelGroups(runners, agents, options, {
+          q: query.q,
+          status: query.status,
+        });
+        return context.json({
+          data,
+          meta: { total: data.length, page: 1, pageSize: data.length },
+        });
+      }
+      const rows = availableModelRows(runners, agents, options, query.tool, {
+        q: query.q,
+        status: query.status,
       });
-      return context.json({ data, meta: { total: data.length } });
+      const start = (query.page - 1) * query.pageSize;
+      return context.json({
+        data: rows.slice(start, start + query.pageSize),
+        meta: {
+          total: rows.length,
+          page: query.page,
+          pageSize: query.pageSize,
+        },
+      });
     },
   );
 
@@ -579,22 +612,46 @@ export function createAdminRoutes(
     can('agents.agents', 'manage'),
     describeRoute({
       tags,
-      summary: 'List runner-discovered agents safe to remove outright',
+      summary:
+        'List tools, or one tool’s runner-discovered agents, safe to remove outright',
       operationId: 'agentsListCleanupCandidates',
       ...cliRoute({
         command: 'agent cleanup list',
-        columns: ['id', 'name', 'tool', 'model', 'createdAt'],
+        examples: ['agent cleanup list', 'agent cleanup list --tool codex'],
       }),
       description:
-        'Agents a runner’s report created that nobody enabled and that never ran: safe to remove outright, such as a batch left from before the application stopped creating one agent per reported model. Needs `agents.agents` manage.',
+        'Without `tool`: one row per coding tool with candidates, for the cleanup drawer’s group headers. With `tool`: that tool’s candidates, a page at a time. A candidate is an agent a runner’s report created that nobody enabled and that never ran: safe to remove outright, such as a batch left from before the application stopped creating one agent per reported model. Needs `agents.agents` manage.',
       responses: {
-        200: listResponse(CleanupCandidateSchema),
+        200: listResponse(
+          z.union([CleanupGroupSchema, CleanupCandidateSchema]),
+          PageMetaSchema,
+        ),
         ...apiErrorResponses,
       },
     }),
+    apiValidator('query', CleanupCandidatesQuerySchema),
     async (context) => {
-      const data = await services.agents.cleanupCandidates();
-      return context.json({ data, meta: { total: data.length } });
+      const query = context.req.valid('query');
+      if (query.tool === undefined) {
+        const data = await services.agents.cleanupGroups(query.q);
+        return context.json({
+          data,
+          meta: { total: data.length, page: 1, pageSize: data.length },
+        });
+      }
+      const rows = await services.agents.cleanupCandidates({
+        tool: query.tool,
+        q: query.q,
+      });
+      const start = (query.page - 1) * query.pageSize;
+      return context.json({
+        data: rows.slice(start, start + query.pageSize),
+        meta: {
+          total: rows.length,
+          page: query.page,
+          pageSize: query.pageSize,
+        },
+      });
     },
   );
 

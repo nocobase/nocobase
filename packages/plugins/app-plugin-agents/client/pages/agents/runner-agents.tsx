@@ -2,8 +2,9 @@
  * Enabled agents first, disabled ones behind a toggle. A row shows where it can run now (team and personal runners,
  * with a few names), its default reasoning effort and its state; an enabled or disabled one offers "Edit"
  * (`agent-dialog.tsx`), for someone who manages agents; everyone else reads. The header's "Create agent" opens the
- * available models list (`available-models-dialog.tsx`, replacing the old discoveries section a runner's report used
- * to fill on its own) and "Clean up" removes leftover never-enabled, never-run agents outright (`cleanup-dialog.tsx`).
+ * available models drawer (`available-models-drawer.tsx`, replacing the old discoveries section a runner's report
+ * used to fill on its own) and "Clean up" removes leftover never-enabled, never-run agents outright
+ * (`cleanup-drawer.tsx`).
  */
 import { AgentQuotaHint, QuotaLabel } from '../../components/quota-status.js';
 
@@ -32,8 +33,8 @@ import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useFormatters } from '../../lib/format.js';
 import { useQuotaExpiry } from '../../hooks/use-quota-expiry.js';
 import { AgentDialog } from './agent-dialog.js';
-import { AvailableModelsDialog } from './available-models-dialog.js';
-import { CleanupDialog } from './cleanup-dialog.js';
+import { AvailableModelsDrawer } from './available-models-drawer.js';
+import { CleanupDrawer } from './cleanup-drawer.js';
 import { ordered, stateOf, type AgentState } from './agent-state.js';
 
 const STATE_TONE: Readonly<Record<AgentState, Tone>> = {
@@ -112,11 +113,11 @@ export function RunnerAgentsSection(): ReactElement {
       )}
       <p className='text-sm text-muted-foreground'>{t('agents.howToAdd')}</p>
       <AgentDialog agent={editing} onClose={() => setEditing(null)} />
-      <AvailableModelsDialog
+      <AvailableModelsDrawer
         open={creatingOpen}
         onClose={() => setCreatingOpen(false)}
       />
-      <CleanupDialog open={cleanupOpen} onClose={() => setCleanupOpen(false)} />
+      <CleanupDrawer open={cleanupOpen} onClose={() => setCleanupOpen(false)} />
     </section>
   );
 }

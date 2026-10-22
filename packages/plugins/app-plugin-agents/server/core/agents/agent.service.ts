@@ -28,6 +28,7 @@ import {
   type AgentName,
   type AgentPatch,
   type CleanupCandidate,
+  type CleanupGroup,
   type RunnerAgentCreateInput,
   type RunnerModelEntry,
   type SystemAgentInput,
@@ -243,8 +244,15 @@ export interface AgentService {
    * Runner-discovered agents nobody enabled and that never ran: safe to remove outright. Left over from before the
    * application stopped creating one pending agent per model a runner reports (`syncRunner` now only creates an
    * agent for a recommended combination), or from igniting a tool that reports far more models than anyone enables.
+   * `filter.tool` scopes to one tool's candidates (for the cleanup drawer's rows, paged by the route); omitted, every
+   * candidate (for `cleanupGroups` and the CLI, which has no drawer to page through).
    */
-  cleanupCandidates(): Promise<CleanupCandidate[]>;
+  cleanupCandidates(filter?: {
+    readonly tool?: AgentTool;
+    readonly q?: string;
+  }): Promise<CleanupCandidate[]>;
+  /** One row per tool with candidates, for the cleanup drawer's group headers, matching `q` against the agent name. */
+  cleanupGroups(q?: string): Promise<CleanupGroup[]>;
   /**
    * Removes the named agents outright, each re-checked against `cleanupCandidates`' own rule first: anything no
    * longer pending, now enabled, disabled, or with a run against it (another request may have changed it since it was
@@ -429,6 +437,32 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       createdAt: now,
     });
     return true;
+  }
+
+  async function candidatesMatching(filter: {
+    readonly tool?: AgentTool;
+    readonly q?: string;
+  }): Promise<CleanupCandidate[]> {
+    const conn = tx.read();
+    const pending = (await listAgents(conn)).filter(
+      (agent) => agent.source === 'runner' && agent.status === 'pending',
+    );
+    const withRuns = await agentIdsWithRuns(
+      conn,
+      pending.map((agent) => agent.id),
+    );
+    const needle = filter.q?.trim().toLowerCase();
+    return pending
+      .filter((agent) => !withRuns.has(agent.id))
+      .filter((agent) => !filter.tool || agent.tool === filter.tool)
+      .filter((agent) => !needle || agent.name.toLowerCase().includes(needle))
+      .map((agent) => ({
+        id: agent.id,
+        name: agent.name,
+        tool: agent.tool,
+        model: agent.model,
+        createdAt: agent.createdAt,
+      }));
   }
 
   return {
@@ -833,24 +867,15 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         return (await findAgent(conn, id))!;
       });
     },
-    async cleanupCandidates() {
-      const conn = tx.read();
-      const pending = (await listAgents(conn)).filter(
-        (agent) => agent.source === 'runner' && agent.status === 'pending',
-      );
-      const withRuns = await agentIdsWithRuns(
-        conn,
-        pending.map((agent) => agent.id),
-      );
-      return pending
-        .filter((agent) => !withRuns.has(agent.id))
-        .map((agent) => ({
-          id: agent.id,
-          name: agent.name,
-          tool: agent.tool,
-          model: agent.model,
-          createdAt: agent.createdAt,
-        }));
+    cleanupCandidates: (filter = {}) => candidatesMatching(filter),
+    async cleanupGroups(q) {
+      const candidates = await candidatesMatching({ q });
+      const counts = new Map<AgentTool | null, number>();
+      for (const candidate of candidates)
+        counts.set(candidate.tool, (counts.get(candidate.tool) ?? 0) + 1);
+      return [...counts.entries()]
+        .map(([tool, count]): CleanupGroup => ({ tool, count }))
+        .sort((a, b) => (a.tool ?? '').localeCompare(b.tool ?? ''));
     },
     async cleanup(requested, byUserId) {
       const unique = [...new Set(requested)];

@@ -210,10 +210,52 @@ export interface AgentPatch {
 }
 
 /**
- * A tool and model a runner has reported, whether or not an agent exists for it yet (`GET /api/agents/availableModels`,
- * replacing the discovery list a runner's report used to create one pending agent per combination for): the enable
- * dialog groups these by tool and lets someone create an agent from one that has none, instead of a runner's report
- * creating one for every model it lists.
+ * Whether a tool's models can be created into agents right now, aggregated across every runner that has it selected:
+ * `available` when at least one does; otherwise the most actionable reason none does, read from their own reports
+ * (`ToolStatusReason`, bucketed: `notLoggedIn` to `needsLogin`, `notConfigured` unchanged, `versionTooOld` unchanged,
+ * everything else — `otherProgram`, `timeout`, `startFailed`, or no reason at all — to `failed`). A row inherits its
+ * group's status: the detail dialog never lists a model no runner can currently run as selectable.
+ */
+export const MODEL_AVAILABILITY_STATUSES = [
+  'available',
+  'needsLogin',
+  'notConfigured',
+  'versionTooOld',
+  'failed',
+] as const;
+
+export type ModelAvailabilityStatus =
+  (typeof MODEL_AVAILABILITY_STATUSES)[number];
+
+/** How many of a group's or a row's runners can run it now, and a few of their names. */
+export interface AvailableModelRunners {
+  readonly ready: number;
+  readonly total: number;
+  readonly names: readonly string[];
+}
+
+/**
+ * One coding tool in the enable dialog (`GET /api/agents/availableModels` without `tool`): how many models it has and
+ * how many runners have it selected, its aggregated availability and, when unavailable, why — grouped so a tool with
+ * hundreds of models (the discovery bug this replaced) reads as one row until someone opens it.
+ */
+export interface AvailableModelGroup {
+  readonly tool: AgentTool;
+  readonly modelCount: number;
+  readonly runnerCount: number;
+  readonly status: ModelAvailabilityStatus;
+  /** The reason behind `status`, when it is not `available` and a runner gave one (protocol 13). */
+  readonly statusReason?: string;
+  /** A runner's own words about `statusReason`, redacted and bounded. */
+  readonly statusDetail?: string;
+  readonly recommendedCount: number;
+}
+
+/**
+ * A tool and model a runner has reported, whether or not an agent exists for it yet (`GET /api/agents/availableModels`
+ * with `tool`, replacing the discovery list a runner's report used to create one pending agent per combination for):
+ * the enable dialog groups these by tool and lets someone create an agent from one that has none, instead of a
+ * runner's report creating one for every model it lists.
  */
 export interface AvailableModel {
   readonly tool: AgentTool;
@@ -228,6 +270,10 @@ export interface AvailableModel {
   readonly recommended: boolean;
   /** What the model catalog or the application's own list says it is good at; null for a model neither knows. */
   readonly suggestion: { readonly en: string; readonly zh: string } | null;
+  /** Its group's availability (`AvailableModelGroup.status`); unselectable to create unless `available`. */
+  readonly availability: ModelAvailabilityStatus;
+  /** The runners currently offering this exact model. */
+  readonly runners: AvailableModelRunners;
 }
 
 /** What creating an agent from an available model takes (`POST /api/agents/runnerAgents`). */
@@ -243,8 +289,8 @@ export interface RunnerAgentCreateInput {
 }
 
 /**
- * A runner-discovered agent nobody enabled and that never ran (`GET /api/agents/cleanupCandidates`): safe for an
- * administrator to remove outright, such as a batch a tool reporting far too many models created before the
+ * A runner-discovered agent nobody enabled and that never ran (`GET /api/agents/cleanupCandidates` with `tool`): safe
+ * for an administrator to remove outright, such as a batch a tool reporting far too many models created before the
  * application stopped creating one agent per reported model.
  */
 export interface CleanupCandidate {
@@ -253,6 +299,43 @@ export interface CleanupCandidate {
   readonly tool: AgentTool | null;
   readonly model: string | null;
   readonly createdAt: string;
+}
+
+/** One coding tool's cleanup candidates (`GET /api/agents/cleanupCandidates` without `tool`), for the cleanup drawer. */
+export interface CleanupGroup {
+  readonly tool: AgentTool | null;
+  readonly count: number;
+}
+
+/** Paging shared by the available-model and cleanup-candidate row pages. */
+export interface ListPageMeta {
+  readonly total: number;
+  readonly page: number;
+  readonly pageSize: number;
+}
+
+/** `GET /api/agents/availableModels` without `tool`. */
+export interface AvailableModelGroupsPage {
+  readonly data: readonly AvailableModelGroup[];
+  readonly meta: ListPageMeta;
+}
+
+/** `GET /api/agents/availableModels` with `tool`. */
+export interface AvailableModelsPage {
+  readonly data: readonly AvailableModel[];
+  readonly meta: ListPageMeta;
+}
+
+/** `GET /api/agents/cleanupCandidates` without `tool`. */
+export interface CleanupGroupsPage {
+  readonly data: readonly CleanupGroup[];
+  readonly meta: ListPageMeta;
+}
+
+/** `GET /api/agents/cleanupCandidates` with `tool`. */
+export interface CleanupCandidatesPage {
+  readonly data: readonly CleanupCandidate[];
+  readonly meta: ListPageMeta;
 }
 
 /**

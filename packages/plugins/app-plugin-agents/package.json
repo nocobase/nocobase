@@ -312,6 +312,7 @@
     "react-day-picker": "catalog:",
     "react-markdown": "catalog:",
     "react-router": "catalog:",
+    "react-virtuoso": "catalog:",
     "recharts": "^3.8.0",
     "remark-gfm": "catalog:"
   },

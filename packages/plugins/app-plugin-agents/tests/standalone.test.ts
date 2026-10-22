@@ -181,7 +181,13 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
   expect((await call('GET', '/agents', { user: 'admin' })).body.data).toEqual(
     [],
   );
-  const available = await call('GET', '/agents/availableModels', {
+  const groups = await call('GET', '/agents/availableModels', {
+    user: 'admin',
+  });
+  expect(groups.body.data).toEqual([
+    expect.objectContaining({ tool: 'claude', modelCount: 1, status: 'available' }),
+  ]);
+  const available = await call('GET', '/agents/availableModels?tool=claude', {
     user: 'admin',
   });
   expect(available.body.data).toEqual([
