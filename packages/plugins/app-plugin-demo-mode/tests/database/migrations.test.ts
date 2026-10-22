@@ -11,6 +11,33 @@ const sources = [
   },
 ];
 
+describeMigration('202610230001_demo_mode_account_credentials', {
+  sources,
+  before: async ({ connection }) => {
+    await connection.query
+      .insertInto('demoModeAccounts')
+      .values({ userId: 'existing-user', datasetId: 'existing-demo' })
+      .execute();
+  },
+  up: async ({ connection, expectCollection }) => {
+    await expectCollection('demoModeAccounts').toHaveField('passwordHash', {
+      type: 'string',
+      length: 128,
+      nullable: true,
+    });
+    expect(
+      await connection.query
+        .selectFrom('demoModeAccounts')
+        .selectAll()
+        .where('userId', '=', 'existing-user')
+        .executeTakeFirst(),
+    ).toMatchObject({ datasetId: 'existing-demo', passwordHash: null });
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('demoModeAccounts').not.toHaveField('passwordHash');
+  },
+});
+
 describeMigration('202610200001_demo_mode_create_data_tables', {
   sources,
   up: async ({ expectCollection }) => {

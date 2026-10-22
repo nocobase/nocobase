@@ -9,6 +9,20 @@ Use this workflow to populate a dedicated demo system after choosing that scope.
 3. Choose a coherent fictional story with several related records and realistic states, including empty/pending/completed examples. Keep foreign keys, totals, units and chronological constraints consistent. Use reserved example addresses and domains. Create representative accounts for the application's actual roles and assign only the demo records they need.
 4. Identify external calls, file writes, background jobs and Runner dispatch that those services can trigger. Provide in-process fixtures or refuse the operation before side effects occur. The SQL read-only guard does not stop an HTTP request, a queued job or a drive upload.
 
+## Map a business journey to fixtures
+
+For a request such as “demo the existing CRM as a sales rep and a manager,” inspect the actual pages and services first, then write a small acceptance map:
+
+| Visible journey                | Required fictional data                                                                                              | Verification under the representative account                                       |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| A rep opens “My opportunities” | Customers and related opportunities owned by that rep, with valid pipeline stages                                    | The list contains the intended records; another rep's private records remain hidden |
+| The manager opens the pipeline | Opportunities spread across the stages and date range used by the existing chart, with consistent amounts and owners | Stage counts and totals match the list; the chart is useful rather than empty       |
+| A rep opens an opportunity     | Related contacts and recent activities created in the order required by the business services                        | The existing detail page renders its relationships and timeline                     |
+
+These are story requirements, not new collection names or service APIs. Map each row to the application's real schema, service methods, grants and URLs. Choose a small number of records that makes every requested page useful; increase volume only for a stated pagination or performance demonstration. Use the user's language for names and narratives. Avoid unrelated example schemas or new management infrastructure.
+
+Keep the implementation in application source: shared account definitions and a dataset under the existing demo/sample module, a provider that registers it, and a business cleanup adapter. Reuse the existing pages and authorized services. [The dataset example](dataset-example.md) shows the public contract; the minimal example's project/task business adapter is only for applications that have no business domain yet.
+
 ## Implement the dataset
 
 Import `DemoDataset` and the original `demoDataToken` from `@nocobase/app-plugin-demo-mode/server/tokens`. Register one dataset from an application provider after its required services exist. Keep registration deterministic; it must not import or clear data during ordinary startup.
@@ -37,7 +51,7 @@ The same cleanup runs for clear, reset and failed/interrupted imports. It must b
 
 ## Deliver the management flow
 
-Mount the plugin's `DemoModeSettings` page from `@nocobase/app-plugin-demo-mode/client/settings`; give it the names of the dataset's `counts` through `label('count', key)`. Grant `settings:demoMode.data` read/manage through the installed authorization plugin; reflect actual actions in the UI and preserve each endpoint's server checks. The page labels the actions Generate, Clear and Reset and shows language, progress, state, accounts and the exact clear/reset consequence. Do not grant every visitor the administrator action merely to let them try a demo.
+Mount the plugin's `DemoModeSettings` page from `@nocobase/app-plugin-demo-mode/client/settings`; give it the names of the dataset's `counts` through `label('count', key)`. Protect its application route with `authz: { resource: { type: 'settings', id: 'demoMode.data' }, action: 'read' }`, not page access. Grant the manager data read/manage, and configuration read/configure when policy editing is needed; preserve each endpoint's server checks. The page labels the actions Generate, Clear and Reset and shows language, progress, state, accounts and the exact clear/reset consequence. Visitors keep only their business-page and record permissions.
 
 The installed version's documented deployment collection allowlist is separate from business authorization. Never allow all tables to bypass errors. A collection allowlist cannot express “only records in this demo project”; use explicit application scope checks and the authorization system, and do not claim that the SQL guard supplies row-level policy.
 
@@ -48,5 +62,5 @@ The installed version's documented deployment collection allowlist is separate f
 - Inject a middle-step failure, then retry; business data is cleared while credentials and administrator assignments survive. Test username collisions and restart recovery.
 - Add visitor content within demo scope, clear it, then reset; verify blobs and cached views as well as rows. Verify failure recovery uses the same full cleanup contract.
 - Exercise anonymous, read-only administrator and managing administrator access, including direct API calls and concurrent ordinary requests during lifecycle exemption.
-- Trace every external/model/tool/Runner boundary. A fixture miss must not silently invoke a real provider. Follow the [simulation checklist](simulation.md).
+- Trace external boundaries the application actually uses. A fixture miss must not silently invoke a real provider. Follow the [simulation checklist](simulation.md) only when the demo includes models, tools or Runners.
 - Verify the published Skill reaches the application through Skills synchronization; that check proves delivery only. Report actual runtime tests and any unverified external boundaries separately.

@@ -39,7 +39,6 @@ export class DemoModelRuntime {
   }
 
   async initialize(): Promise<void> {
-    if (!this.enabled) return this.load();
     const agents = this.deps.agents?.();
     const services = agents?.models?.services;
     if (!services) {
@@ -47,7 +46,20 @@ export class DemoModelRuntime {
         throw new Error(
           'Demo models require the Agents 1.0 model services (`agents.models.services`).',
         );
+      if (!this.enabled) await this.load();
       return;
+    }
+    if (!this.enabled) {
+      const row = await this.row();
+      // Also retires a default selected by older previews. Agents falls back to an enabled service.
+      if (
+        row?.modelService &&
+        (await services.list()).some(
+          (service) => service.name === row.modelService,
+        )
+      )
+        await services.update(row.modelService, { enabled: false });
+      return this.load();
     }
     if (!(await this.row())) {
       try {
@@ -87,10 +99,6 @@ export class DemoModelRuntime {
       enabled: true,
       models: [{ value: DEMO_CHAT_MODEL, label: 'Demo chat' }],
     });
-    await services.setDefaultChat(
-      { modelService: name, model: DEMO_CHAT_MODEL },
-      null,
-    );
     await this.load();
   }
 }

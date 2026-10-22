@@ -4,6 +4,43 @@ import { describe, expect, it, vi } from 'vitest';
 
 import demoMode from '../../client/index.js';
 import DemoSignInPage from '../../client/pages/demo-sign-in.js';
+import { safeRedirect } from '../../client/accounts.js';
+
+it.each(['/', '/main/'])(
+  'keeps normalized redirects inside the application at %s',
+  (root) => {
+    for (const path of [
+      'https://other.example',
+      '//other.example',
+      '/\\other.example',
+      '/\t/other.example',
+      '/\n/other.example',
+      '/\r/other.example',
+      '/..//other.example',
+      '/foo/../..//other.example',
+    ]) {
+      const result = safeRedirect(path, root);
+      expect(result).toBe(root);
+      expect(new URL(result, 'https://demo.example').origin).toBe(
+        'https://demo.example',
+      );
+    }
+    expect(safeRedirect('/tasks?state=pending#today', root)).toBe(
+      `${root}tasks?state=pending#today`,
+    );
+  },
+);
+
+it('refuses normalized and encoded paths that escape the application base', () => {
+  for (const path of [
+    '/../admin',
+    '/%2e%2e/admin',
+    '/projects/../../admin',
+    '/../../main-other',
+  ])
+    expect(safeRedirect(path, '/main/')).toBe('/main/');
+  expect(safeRedirect('/projects/../tasks', '/main/')).toBe('/main/tasks');
+});
 
 const ann = { username: 'ann', name: 'Ann', role: '管理员' };
 const bob = { username: 'bob', name: 'Bob', role: '审核人' };

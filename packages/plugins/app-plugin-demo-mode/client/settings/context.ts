@@ -90,9 +90,12 @@ export function useErrorText(): (error: unknown) => string {
     if (error.status === 401) return t('errors.signedOut');
     if (error.status === 403) return t('errors.denied');
     const localized = (
-      error.payload as { error?: { localizedMessage?: string } } | undefined
+      error.payload as
+        { error?: { localizedMessage?: { message?: unknown } } } | undefined
     )?.error?.localizedMessage;
-    return localized ?? t('errors.failed');
+    return typeof localized?.message === 'string' && localized.message.trim()
+      ? localized.message
+      : t('errors.failed');
   };
 }
 

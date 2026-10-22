@@ -13,18 +13,15 @@ interface DemoModelInput {
 export interface DemoAgents {
   readonly models?: {
     readonly services?: {
+      list(): Promise<readonly { name: string }[]>;
       create(input: DemoModelInput): Promise<{ name: string }>;
       update(
         name: string,
-        input: Omit<DemoModelInput, 'title' | 'provider'> & {
-          enabled: boolean;
+        input: Partial<Omit<DemoModelInput, 'title' | 'provider'>> & {
+          enabled?: boolean;
         },
       ): Promise<unknown>;
       remove(name: string): Promise<void>;
-      setDefaultChat(
-        ref: { modelService: string; model: string },
-        byUserId: string | null,
-      ): Promise<unknown>;
     };
   };
 }

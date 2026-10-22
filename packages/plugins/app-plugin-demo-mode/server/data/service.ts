@@ -524,12 +524,6 @@ export class DefaultDemoDataService implements DemoDataService {
         ),
       ),
       touched: new Set(),
-      passwords: new Map(
-        (row.language && dataset.languages.includes(row.language)
-          ? dataset.accounts(row.language)
-          : []
-        ).map((account) => [account.username, account.password]),
-      ),
     };
     const now = new Date();
     const operationId = randomUUID();

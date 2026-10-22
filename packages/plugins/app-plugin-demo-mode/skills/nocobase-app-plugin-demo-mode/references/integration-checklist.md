@@ -49,7 +49,7 @@ Follow [Model and execution simulation](simulation.md). When showing task progre
 
 ## 7. Build the page and permissions
 
-- Mount the plugin's `DemoModeSettings` page (`client/settings`) with the application's `label`, and `chatTools` only for online chat. Protect the route with an ordinary page grant given together with the settings grants; do not add demo checks to the shared navigation, which runs on every page.
+- Mount the plugin's `DemoModeSettings` page (`client/settings`) with the application's `label`, and `chatTools` only for online chat. Its route checks `settings:demoMode.data/read`; its API checks read/manage for data and read/configure for configuration. Use the [route example](minimal-example.md#2-wire-existing-composition-roots), without an extra page grant. Business visitor pages retain their own page and record checks.
 - Show what clear and reset delete in the application's own words before they run.
 
 ## 8. Verify in a running application

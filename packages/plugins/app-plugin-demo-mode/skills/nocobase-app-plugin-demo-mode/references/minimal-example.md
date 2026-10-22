@@ -32,7 +32,7 @@ demoMode:
 
 The example assigns `demo.members` once through `createAccount.permissionSets`. The framework's default `app` role scope is optional; do not also assign that same Permission Set through `roleScopes.app`, which would duplicate its assignment. If an application requires a role scope, adapt `roleScopes` in `business.ts` and the account factory together so each Permission Set is assigned by exactly one mechanism. Use an existing real administrator to generate data; neither visitor receives management grants.
 
-Add ordinary authenticated routes in `client/routes.ts`:
+Add authenticated routes in `client/routes.ts`. The business page uses page access; the management page checks its settings item:
 
 ```ts
 {
@@ -46,12 +46,16 @@ Add ordinary authenticated routes in `client/routes.ts`:
   name: 'demoManagement',
   path: '/demo-management',
   auth: 'required',
+  authz: {
+    resource: { type: 'settings', id: 'demoMode.data' },
+    action: 'read',
+  },
   componentLoader: () => import('./pages/demo-management.js'),
   navigation: { title: 'exampleDemo.management' },
 },
 ```
 
-The generated visitor Permission Set grants `page:demoProjects/access`. Keep normal page authorization enabled. Give the administrator `page:demoManagement/access`, `settings:demoMode.data/read,manage` and `settings:demoMode.configuration/read,configure` through the host's authorization mechanism. Do not make management public or grant visitors its settings actions.
+The generated visitor Permission Set grants `page:demoProjects/access`. Keep normal business-page authorization enabled. Give the administrator `settings:demoMode.data/read,manage` and `settings:demoMode.configuration/read,configure` through the host's authorization mechanism. Do not add `page:demoManagement/access`: the management route uses settings authorization. A reader with only the data read action can inspect data status but cannot generate, clear or reset. Visitors receive no management settings actions.
 
 Create `client/pages/demo-management.tsx` using the public component:
 
@@ -87,7 +91,7 @@ Use the failing step to choose the next check; do not bypass permissions or add 
 | Status says no dataset is available         | Register `DemoProvider` in the application provider list and verify it reaches the original `demoDataToken`. Generation is an explicit action after registration.                          |
 | The CLI command is missing                  | Register `@nocobase/app-plugin-demo-mode/cli` in the CLI composition root; Server registration does not register commands.                                                                 |
 | The visitor entry is empty or sign-in fails | Complete generation, enable password sign-in and `quickSignIn`, and use the same explicit passwords in `accounts()` and `createAccount()`. Inspect the generation failure before retrying. |
-| A page or management API returns 403        | Check the signed-in identity, page access and the exact settings grants. Keep visitor grants separate from the real administrator's grants.                                                |
+| A page or management API returns 403        | Check business-page access for visitor pages and settings actions for management, including the route's read check. Keep visitor grants separate from administrator grants.                |
 | Generated records do not appear on the page | Check the current account, assignee/owner filters, relationships and date ranges against the dataset; verify the page calls the intended business API.                                     |
 
 For API calls, use the application's printed entry URL and base path. For this example, a successful first delivery shows Alex's task and Sam's task under their respective accounts, denies visitor reset, and reproduces the same two-task story after reset. Report browser checks separately from automated server checks.

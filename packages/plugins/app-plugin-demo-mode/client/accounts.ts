@@ -46,9 +46,7 @@ export function useDemoAccounts(refreshKey?: unknown): DemoAccounts {
         path: `/demoMode/accounts/${encodeURIComponent(username)}/signIn`,
         method: 'POST',
       });
-      window.location.assign(
-        `${root.replace(/\/+$/u, '')}${safeRedirect(redirect)}`,
-      );
+      window.location.assign(safeRedirect(redirect, root));
     },
     [api, root],
   );
@@ -57,8 +55,26 @@ export function useDemoAccounts(refreshKey?: unknown): DemoAccounts {
 }
 
 /** A path inside this application; anything else, such as another origin, falls back to the home page. */
-export function safeRedirect(redirect: string | null | undefined): string {
-  if (!redirect || !redirect.startsWith('/') || /^\/[/\\]/u.test(redirect))
-    return '/';
-  return redirect;
+export function safeRedirect(
+  redirect: string | null | undefined,
+  root = '/',
+): string {
+  const home = `${root.replace(/\/+$/u, '')}/`;
+  if (
+    !redirect?.startsWith('/') ||
+    redirect.startsWith('//') ||
+    redirect.includes('\\') ||
+    /\p{Cc}/u.test(redirect)
+  )
+    return home;
+  const base = new URL(home, 'https://demo.invalid');
+  const target = new URL(`${home.slice(0, -1)}${redirect}`, base);
+  if (
+    target.origin !== base.origin ||
+    target.pathname.startsWith('//') ||
+    (target.pathname !== base.pathname.slice(0, -1) &&
+      !target.pathname.startsWith(base.pathname))
+  )
+    return home;
+  return `${target.pathname}${target.search}${target.hash}`;
 }

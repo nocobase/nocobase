@@ -1,29 +1,45 @@
 import { createTestApp, type TestApp } from '@nocobase/app-testing/server';
-import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
+import { randomUUID } from 'node:crypto';
+import {
+  createAgents,
+  AGENTS_MIGRATIONS,
+  AGENTS_PACKAGE,
+} from '@nocobase/app-plugin-agents/testing';
+import { createSecretsService } from '@nocobase/app-server/secrets';
 import { databaseManagerToken } from '@nocobase/db';
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 
 import { DefaultDemoDataService } from '../../server/data/service.js';
 import { DemoModels } from '../../server/data/models.js';
+import type { DemoAgents } from '../../server/integrations/agents.js';
 import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
 
 let app: TestApp;
+const models = new Map<string, { name: string; enabled: boolean }>();
 const services = {
-  create: vi.fn(async () => ({ name: `demo-${++sequence}` })),
-  update: vi.fn(async () => undefined),
-  remove: vi.fn(async () => undefined),
-  setDefaultChat: vi.fn(async () => undefined),
+  list: vi.fn(async () => [...models.values()]),
+  create: vi.fn(async () => {
+    const model = { name: `demo-${++sequence}`, enabled: true };
+    models.set(model.name, model);
+    return model;
+  }),
+  update: vi.fn(async (name: string, input: { enabled?: boolean }) => {
+    Object.assign(models.get(name)!, input);
+  }),
+  remove: vi.fn(async (name: string) => {
+    models.delete(name);
+  }),
 };
 let sequence = 0;
 let mode: 'off' | 'observe' = 'observe';
-const make = () =>
+const make = (agents: DemoAgents = { models: { services } }) =>
   new DefaultDemoDataService({
     database: app.application.container.resolve(databaseManagerToken),
 
     mode: () => mode,
     models: new DemoModels(),
     modelBaseUrl: () => 'http://127.0.0.1:13000/api/demoMode/models/v1',
-    agents: () => ({ models: { services } }) as unknown as Agents,
+    agents: () => agents,
   });
 
 beforeAll(async () => {
@@ -37,6 +53,7 @@ beforeEach(async () => {
   for (const table of ['demoModeModel', 'demoModeDatasets', 'demoModeRecords'])
     await app.connection.query.deleteFrom(table).allowAllRows().execute();
   vi.clearAllMocks();
+  models.clear();
   mode = 'observe';
 });
 
@@ -57,10 +74,6 @@ it('provisions before import and keeps the same model and credentials after clea
     .selectAll()
     .executeTakeFirst();
   expect(name).toBeTruthy();
-  expect(services.setDefaultChat).toHaveBeenCalledWith(
-    { modelService: name, model: 'demo-chat' },
-    null,
-  );
   await demo.importNow('admin');
   await demo.clear('admin');
   expect((await demo.status()).model.service).toBe(name);
@@ -102,17 +115,79 @@ it('keeps the environment model after a failed import', async () => {
   expect(services.remove).not.toHaveBeenCalled();
 });
 
-it('does not provision or expose a model when demo mode is off', async () => {
+it('disables the owned service when off and reuses it when enabled again', async () => {
   const demo = make();
   await demo.initialize();
+  const name = demo.models.serviceName!;
   mode = 'off';
   await demo.initialize();
   expect(demo.models.serviceName).toBeNull();
+  expect(models.get(name)?.enabled).toBe(false);
   services.create.mockClear();
-  services.setDefaultChat.mockClear();
   await make().initialize();
   expect(services.create).not.toHaveBeenCalled();
-  expect(services.setDefaultChat).not.toHaveBeenCalled();
+  mode = 'observe';
+  const restarted = make();
+  await restarted.initialize();
+  expect(restarted.models.serviceName).toBe(name);
+  expect(models.get(name)?.enabled).toBe(true);
+  expect(services.create).not.toHaveBeenCalled();
+});
+
+it('can start in off mode after the owned model was removed', async () => {
+  await make().initialize();
+  models.clear();
+  services.update.mockClear();
+  mode = 'off';
+  await make().initialize();
+  expect(services.update).not.toHaveBeenCalled();
+});
+
+it('preserves real Agents defaults and retires a legacy demo default on shutdown', async () => {
+  const database = app.application.container.resolve(databaseManagerToken);
+  await database
+    .createMigrator({
+      packageName: AGENTS_PACKAGE,
+      directory: AGENTS_MIGRATIONS,
+    })
+    .latest();
+  const agents = createAgents({
+    database,
+    idGenerator: { generateString: randomUUID },
+    secrets: createSecretsService({
+      keys: [{ version: 1, key: 'a'.repeat(64) }],
+    }),
+  });
+  const api = agents.models.services;
+  const real = await api.create({
+    title: 'Real model',
+    provider: 'openai-compatible',
+    baseUrl: 'https://models.example.com/v1',
+    models: [{ value: 'real-chat', label: 'Real chat' }],
+  });
+  const original = { modelService: real.name, model: 'real-chat' };
+  await api.setDefaultChat(original, null);
+  const demo = make(agents);
+  await demo.initialize();
+  await make(agents).initialize();
+  expect((await api.defaults()).chat).toEqual(original);
+  const demoRef = {
+    modelService: demo.models.serviceName!,
+    model: 'demo-chat',
+  };
+  // Older previews persisted this default; off mode must make it ineligible.
+  await api.setDefaultChat(demoRef, null);
+  mode = 'off';
+  await make(agents).initialize();
+  expect((await api.defaults()).effectiveChat).toMatchObject(original);
+  expect(
+    (await api.list()).find((item) => item.name === real.name)?.enabled,
+  ).toBe(true);
+  // An administrator's subsequent selection survives re-enabling Demo Mode.
+  await api.setDefaultChat(original, null);
+  mode = 'observe';
+  await make(agents).initialize();
+  expect((await api.defaults()).chat).toEqual(original);
 });
 
 it('concurrent startups converge on one durable model binding', async () => {
@@ -129,5 +204,4 @@ it('concurrent startups converge on one durable model binding', async () => {
 it('fails startup when model configuration fails instead of falling back to another model', async () => {
   services.update.mockRejectedValueOnce(new Error('missing model'));
   await expect(make().initialize()).rejects.toThrow('missing model');
-  expect(services.setDefaultChat).not.toHaveBeenCalled();
 });

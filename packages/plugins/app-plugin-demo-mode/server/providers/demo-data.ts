@@ -124,8 +124,19 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   public override async ready(): Promise<void> {
-    if (this.app.container.resolve(demoModeServiceToken).mode !== 'off')
-      this.agents = await resolveDemoAgents(this.app.container);
+    const container = this.app.container;
+    const existingModel = await container
+      .resolve(databaseManagerToken)
+      .query()
+      .selectFrom('demoModeModel')
+      .select('modelService')
+      .where('id', '=', 'default')
+      .executeTakeFirst();
+    if (
+      container.resolve(demoModeServiceToken).mode !== 'off' ||
+      existingModel?.modelService
+    )
+      this.agents = await resolveDemoAgents(container);
     await this.app.container
       .resolve(demoConfigurationRuntimeToken)
       .initialize();

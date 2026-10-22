@@ -42,7 +42,9 @@ Write exceptions remain separate: register only the tables and operations needed
 
 ### Model services
 
-The plugin supports Agents 1.0 only and provisions the model through `agents.models.services`; it owns the durable model binding and its key. Point application Agents or works at the model in `ready()` after the plugin has initialized it; `start()` runs earlier. An installed Agents host without model services fails startup with an actionable error.
+The plugin supports Agents 1.0 only and provisions the model through `agents.models.services`; it owns the durable model binding and its key. It does not override an existing global chat default. In an application provider's `ready()` after the plugin is ready, read `demoData.models.serviceName` and construct `{ modelService: serviceName, model: 'demo-chat' }` for the application's demo AI flows. `start()` runs earlier. Treat a missing binding as unavailable; do not fall through to a real provider in demo mode. With no existing default, Agents may select the first enabled model through its own normal policy.
+
+Keep this selection scoped to the current demo environment. Do not call `setDefaultChat` or overwrite an Agent's ordinary persisted selection merely to demonstrate it. For online chat, pass the simulated reference to `chatModel` as described below. For other flows, pass it through their public per-operation model option, or use `models.complete` for application-owned generation. When mode is `off`, use the application's normal selection. Startup in off mode disables the plugin-owned model service; enabling Demo Mode again reuses the same service and credential. Clear/reset leave it enabled. An installed Agents host without model services fails startup with an actionable error.
 
 ## Online chat without changing Agents
 

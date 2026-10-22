@@ -1,3 +1,4 @@
+import { randomBytes, scrypt } from 'node:crypto';
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
 import type { DemoDataDependencies } from './service.js';
 import type {
@@ -18,8 +19,6 @@ export interface Carried {
   readonly records: ReadonlySet<string>;
   /** Those the new import created again; the rest are released once it finishes. */
   readonly touched: Set<string>;
-  /** The password the cleared import gave each account, by username. */
-  readonly passwords: ReadonlyMap<string, string>;
 }
 
 export const carriedKey = (collection: string, recordId: string): string =>
@@ -100,10 +99,10 @@ export class DemoIdentities {
       const ownership = await this.deps.database
         .query()
         .selectFrom('demoModeAccounts')
-        .select(['userId'])
+        .select(['userId', 'passwordHash'])
         .where('userId', '=', String(existing.id))
         .where('datasetId', '=', this.datasetId())
-        .executeTakeFirst();
+        .executeTakeFirst<{ userId: string; passwordHash: string | null }>();
       // A matching username and email do not prove ownership of an existing account.
       if (
         !ownership ||
@@ -116,12 +115,19 @@ export class DemoIdentities {
         );
       id = String(existing.id);
       await users.update(id, { name: spec.name });
+      const passwordHash = await hashPassword(password, ownership.passwordHash);
       // Setting a password signs the account out; an account a reset carries keeps its sessions while it stays the same.
       if (
         !carried?.records.has(carriedKey(USER, id)) ||
-        carried.passwords.get(spec.username) !== password
+        ownership.passwordHash !== passwordHash
       )
         await users.resetPassword(id, password);
+      await this.deps.database
+        .query()
+        .updateTable('demoModeAccounts')
+        .set({ passwordHash })
+        .where('userId', '=', id)
+        .execute();
       await users.enable(id);
       // Clearing dropped the account's assignments; its role scopes come back as a new account would get them.
       for (const [scope, value] of Object.entries(spec.roleScopes ?? {}))
@@ -141,7 +147,11 @@ export class DemoIdentities {
       await this.deps.database
         .query()
         .insertInto('demoModeAccounts')
-        .values({ userId: id, datasetId: this.datasetId() })
+        .values({
+          userId: id,
+          datasetId: this.datasetId(),
+          passwordHash: await hashPassword(password),
+        })
         .execute();
     }
     await track(USER, id);
@@ -208,4 +218,18 @@ export class DemoIdentities {
       );
     return sets;
   }
+}
+
+/** A salted snapshot of the last password applied through Users, never a second authentication source. */
+async function hashPassword(
+  password: string,
+  previous?: string | null,
+): Promise<string> {
+  const salt = previous?.split(':')[0] || randomBytes(16).toString('hex');
+  return new Promise((resolve, reject) => {
+    scrypt(password, salt, 32, (error, key) => {
+      if (error) reject(error);
+      else resolve(`${salt}:${key.toString('hex')}`);
+    });
+  });
 }
