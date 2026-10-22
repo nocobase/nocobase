@@ -206,7 +206,8 @@ const idID: LocaleResource<typeof enUS> = {
         failed: 'Deteksi gagal',
       },
       setupCommand: 'Jalankan `{{command}}` di runtime.',
-      setupUnknown: 'Alat ini perlu disiapkan, tetapi kami tidak tahu perintahnya.',
+      setupUnknown:
+        'Alat ini perlu disiapkan, tetapi kami tidak tahu perintahnya.',
       noDetail: 'Alat ini tidak memberikan detail lebih lanjut.',
       showMore: 'Tampilkan lebih banyak',
       showLess: 'Tampilkan lebih sedikit',

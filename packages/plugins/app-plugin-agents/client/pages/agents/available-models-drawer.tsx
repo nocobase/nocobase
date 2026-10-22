@@ -111,7 +111,11 @@ function ExpandableText({ text }: { readonly text: string }): ReactElement {
           className='h-auto p-0 pl-1 align-baseline'
           onClick={() => setExpanded((value) => !value)}
         >
-          {t(expanded ? 'agents.available.showLess' : 'agents.available.showMore')}
+          {t(
+            expanded
+              ? 'agents.available.showLess'
+              : 'agents.available.showMore',
+          )}
         </Button>
       ) : null}
     </p>
@@ -180,11 +184,14 @@ export function AvailableModelsDrawer({
   // time a model is selected; going back and forth keeps whatever was already typed.
   const goToConfirm = (addedModel?: AvailableModel): void => {
     setDrafts((current) => {
-      const entries = addedModel ? [addedModel, ...selected.values()] : [...selected.values()];
+      const entries = addedModel
+        ? [addedModel, ...selected.values()]
+        : [...selected.values()];
       const next = new Map(current);
       for (const model of entries) {
         const key = rowKey(model.tool, model.model);
-        if (!next.has(key)) next.set(key, modelSuggestion(model, i18n.language, t));
+        if (!next.has(key))
+          next.set(key, modelSuggestion(model, i18n.language, t));
       }
       return next;
     });
@@ -412,7 +419,9 @@ function ToolGroup({
                     <Virtuoso
                       style={{ height: 320 }}
                       data={loaded}
-                      computeItemKey={(_, model) => rowKey(model.tool, model.model)}
+                      computeItemKey={(_, model) =>
+                        rowKey(model.tool, model.model)
+                      }
                       endReached={() => {
                         if (rows.hasNextPage && !rows.isFetchingNextPage)
                           void rows.fetchNextPage();
@@ -421,7 +430,9 @@ function ToolGroup({
                         <div className='py-1'>
                           <ModelRow
                             model={model}
-                            checked={selected.has(rowKey(model.tool, model.model))}
+                            checked={selected.has(
+                              rowKey(model.tool, model.model),
+                            )}
                             onSelect={onSelect}
                             onAddOne={onAddOne}
                           />
@@ -434,7 +445,9 @@ function ToolGroup({
                         <ModelRow
                           key={rowKey(model.tool, model.model)}
                           model={model}
-                          checked={selected.has(rowKey(model.tool, model.model))}
+                          checked={selected.has(
+                            rowKey(model.tool, model.model),
+                          )}
                           onSelect={onSelect}
                           onAddOne={onAddOne}
                         />
@@ -550,7 +563,9 @@ function ConfirmStep({
             tool: model.tool,
             model: model.model,
             ...(model.displayModel ? { displayModel: model.displayModel } : {}),
-            description: (drafts.get(rowKey(model.tool, model.model)) ?? '').trim(),
+            description: (
+              drafts.get(rowKey(model.tool, model.model)) ?? ''
+            ).trim(),
           }),
         ),
       );
@@ -572,7 +587,8 @@ function ConfirmStep({
     onError: (error) => notify.error(error),
   });
   const invalid = entries.filter(
-    (model) => (drafts.get(rowKey(model.tool, model.model)) ?? '').trim() === '',
+    (model) =>
+      (drafts.get(rowKey(model.tool, model.model)) ?? '').trim() === '',
   );
   return (
     <>

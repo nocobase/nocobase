@@ -120,7 +120,10 @@ it.each(['', 'legacy', 'unsupported', 'auth', 'initializeAuth', 'permission'])(
 it('never reports ready from a bare successful handshake for an agent whose handshake does not confirm sign-in (Amp)', async () => {
   // The fixture's handshake always succeeds, modelling the owner's tested report that Amp opens a session the same
   // way whether or not it is actually signed in: `signInUnconfirmable` must still keep this from reading as ready.
-  const f = await fixture('', { signInUnconfirmable: true, signIn: 'amp login' });
+  const f = await fixture('', {
+    signInUnconfirmable: true,
+    signIn: 'amp login',
+  });
   const detected = await f.adapter.detect(new AbortController().signal);
   expect(detected).toMatchObject({
     installed: true,
@@ -348,7 +351,10 @@ it('detects behind the same host CLI guard a run gets, not the bare host PATH', 
   const messages = (await readFile(trace, 'utf8'))
     .trim()
     .split('\n')
-    .map((line) => JSON.parse(line) as { method: string; params: Record<string, unknown> });
+    .map(
+      (line) =>
+        JSON.parse(line) as { method: string; params: Record<string, unknown> },
+    );
   expect(
     messages.find((message) => message.method === 'hostCliCheck')?.params,
   ).toEqual({ ghRefused: true });

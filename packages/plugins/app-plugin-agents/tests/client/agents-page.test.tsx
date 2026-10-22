@@ -422,9 +422,7 @@ describe('the Agent page', () => {
     fireEvent.click(
       await within(drawer).findByTestId('cleanup-group-select-all-kilo'),
     );
-    expect(
-      within(drawer).getByTestId('cleanup-open-confirm'),
-    ).toBeDisabled();
+    expect(within(drawer).getByTestId('cleanup-open-confirm')).toBeDisabled();
     fireEvent.click(
       await within(drawer).findByTestId('cleanup-group-select-all-kilo'),
     );

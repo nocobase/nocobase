@@ -10,7 +10,11 @@
  * — never an offline runner's old report, and never another model of the same tool standing in for one with no
  * runner of its own.
  */
-import type { AgentTool, ToolInfo, ToolStatusReason } from '@nocobase/agent-protocol';
+import type {
+  AgentTool,
+  ToolInfo,
+  ToolStatusReason,
+} from '@nocobase/agent-protocol';
 
 import type {
   Agent,
@@ -46,7 +50,9 @@ const REASON_PRIORITY: readonly ToolStatusReason[] = [
  * same either way (run the tool's own sign-in/setup command on the runtime). `versionTooOld` stays its own bucket so
  * the filter can single it out; everything else neither a person can act on from here nor confirm is `failed`.
  */
-function bucketOf(reason: ToolStatusReason | undefined): ModelAvailabilityStatus {
+function bucketOf(
+  reason: ToolStatusReason | undefined,
+): ModelAvailabilityStatus {
   switch (reason) {
     case 'notLoggedIn':
     case 'signInUnconfirmed':
@@ -75,7 +81,10 @@ function bucketOfInfo(info: ToolInfo): {
       ...(info.statusDetail ? { detail: info.statusDetail } : {}),
     };
   if (info.status === 'needsLogin') return { status: 'needsSetup' };
-  return { status: 'failed', ...(info.statusDetail ? { detail: info.statusDetail } : {}) };
+  return {
+    status: 'failed',
+    ...(info.statusDetail ? { detail: info.statusDetail } : {}),
+  };
 }
 
 interface ToolAvailability {
@@ -102,13 +111,18 @@ function toolAvailability(
   const ready = infos.filter(
     (info) => info.authenticated && (!info.status || info.status === 'ready'),
   );
-  if (ready.length > 0) return { status: 'available', runnerCount: infos.length };
+  if (ready.length > 0)
+    return { status: 'available', runnerCount: infos.length };
   if (infos.length === 0) return { status: 'failed', runnerCount: 0 };
   const classified = infos
     .map((info) => ({ info, ...bucketOfInfo(info) }))
     .sort((a, b) => {
-      const ai = a.reason ? REASON_PRIORITY.indexOf(a.reason) : REASON_PRIORITY.length;
-      const bi = b.reason ? REASON_PRIORITY.indexOf(b.reason) : REASON_PRIORITY.length;
+      const ai = a.reason
+        ? REASON_PRIORITY.indexOf(a.reason)
+        : REASON_PRIORITY.length;
+      const bi = b.reason
+        ? REASON_PRIORITY.indexOf(b.reason)
+        : REASON_PRIORITY.length;
       return ai - bi;
     });
   const picked = classified[0];
@@ -194,7 +208,10 @@ function comboAvailability(
   tool: AgentTool,
   model: string,
   toolAvail: ToolAvailability,
-): { readonly status: ModelAvailabilityStatus; readonly runners: AvailableModel['runners'] } {
+): {
+  readonly status: ModelAvailabilityStatus;
+  readonly runners: AvailableModel['runners'];
+} {
   const withTool = runners.filter(
     (runner) => runner.status === 'online' && toolEnabled(runner, tool),
   );
@@ -250,20 +267,32 @@ export function availableModelGroups(
       (combo) =>
         matchesQuery(tool, combo, filter.q ?? '') &&
         (!filter.status ||
-          comboAvailability(runners, combo.tool, combo.model, toolAvail).status ===
-            filter.status),
+          comboAvailability(runners, combo.tool, combo.model, toolAvail)
+            .status === filter.status),
     );
-    if (filter.status && toolAvail.status !== filter.status && toolCombos.length === 0)
+    if (
+      filter.status &&
+      toolAvail.status !== filter.status &&
+      toolCombos.length === 0
+    )
       continue;
-    if (filter.q && toolCombos.length === 0 && !toolMatchesQuery(tool, filter.q))
+    if (
+      filter.q &&
+      toolCombos.length === 0 &&
+      !toolMatchesQuery(tool, filter.q)
+    )
       continue;
     groups.push({
       tool,
       modelCount: toolCombos.length,
       runnerCount: toolAvail.runnerCount,
       status: toolAvail.status,
-      ...(toolAvail.statusReason ? { statusReason: toolAvail.statusReason } : {}),
-      ...(toolAvail.statusDetail ? { statusDetail: toolAvail.statusDetail } : {}),
+      ...(toolAvail.statusReason
+        ? { statusReason: toolAvail.statusReason }
+        : {}),
+      ...(toolAvail.statusDetail
+        ? { statusDetail: toolAvail.statusDetail }
+        : {}),
       recommendedCount: toolCombos.filter((combo) =>
         recommended.has(`${combo.tool}\u0000${combo.model}`),
       ).length,
@@ -297,7 +326,12 @@ export function availableModelRows(
     .map((combo): AvailableModel => {
       const id = runnerAgentId(combo.tool, combo.model);
       const agent = byId.get(id);
-      const availability = comboAvailability(runners, combo.tool, combo.model, toolAvail);
+      const availability = comboAvailability(
+        runners,
+        combo.tool,
+        combo.model,
+        toolAvail,
+      );
       return {
         tool: combo.tool,
         model: combo.model,
