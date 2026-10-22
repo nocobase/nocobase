@@ -21,7 +21,6 @@ const withAssets = (html: string) =>
     return asset;
   });
 const number = (index: number) => String(index + 1).padStart(2, '0');
-const home = language === 'cn' ? '/zh-CN/' : '/';
 ---
 
 <div
@@ -35,12 +34,6 @@ const home = language === 'cn' ? '/zh-CN/' : '/';
     {content.skip}
   </a>
   <div class='guide-container'>
-    <nav class='guide-breadcrumb' aria-label={content.home}>
-      <a href={home}>{content.home}</a>
-      <span aria-hidden='true'>/</span>
-      <span>NocoBase Studio</span>
-      <span class='guide-badge'>{content.guideLabel}</span>
-    </nav>
     <header class='guide-intro'>
       <div>
         <p class='guide-eyebrow'>{content.eyebrow}</p>

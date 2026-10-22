@@ -55,24 +55,6 @@
     margin-inline: auto;
     padding: 28px 24px 48px;
   }
-  .guide-breadcrumb {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
-    color: var(--guide-muted);
-    font-size: 13px;
-    a {
-      color: inherit;
-    }
-  }
-  .guide-badge {
-    padding: 2px 8px;
-    background: var(--guide-tint);
-    color: var(--guide-blue);
-    border-radius: 4px;
-    font-size: 11px;
-  }
   .guide-intro {
     display: grid;
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.8fr);
@@ -860,10 +842,6 @@
     .guide-container {
       padding: 20px 16px 40px;
     }
-    .guide-breadcrumb {
-      gap: 8px;
-      font-size: 12px;
-    }
     .guide-intro {
       grid-template-columns: 1fr;
       padding: 40px 0 48px;
@@ -1005,7 +983,6 @@
     }
     .guide-flow,
     .guide-sidebar,
-    .guide-breadcrumb,
     .zoom-hint,
     .copy-button,
     .guide-lightbox,
