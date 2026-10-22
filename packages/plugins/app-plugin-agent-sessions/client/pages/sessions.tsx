@@ -100,6 +100,7 @@ export default function AgentSessionsPage(): ReactElement {
         onExpand={() => setExpandedFor(opened)}
         archived={archived}
         onArchivedChange={setArchived}
+        onNewSession={() => setArchived(false)}
       />
       <main className={cn('min-w-0 flex-1', !focused && 'hidden md:block')}>
         {showsArchived && <ArchivedView />}

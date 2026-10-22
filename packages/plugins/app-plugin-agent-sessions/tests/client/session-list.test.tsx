@@ -1,7 +1,7 @@
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { SessionList } from '../../client/components/session-list.js';
 import plugin from '../../client/plugin.js';
@@ -139,4 +139,28 @@ it('keeps standalone search and status filters above a plain empty list and a ne
   expect(
     within(list).getByRole('textbox', { name: 'Search sessions' }),
   ).toHaveValue('no match');
+});
+
+it('calls the new-session handler from the collapsed rail entry', async () => {
+  const onNewSession = vi.fn();
+  await renderWithApp(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <SessionList activeId={undefined} rail onNewSession={onNewSession} />
+    </QueryClientProvider>,
+    {
+      locale: 'en-US',
+      namespace: '@nocobase/app-plugin-agent-sessions',
+      plugins: [plugin({ routes: false })],
+      fetch: answerApi(() => ({ data: [], meta: {} })),
+    },
+  );
+
+  const create = screen.getByRole('button', { name: 'New session' });
+  expect(create).toHaveAttribute('href', '/agent-sessions?new');
+  fireEvent.click(create);
+  expect(onNewSession).toHaveBeenCalledOnce();
 });

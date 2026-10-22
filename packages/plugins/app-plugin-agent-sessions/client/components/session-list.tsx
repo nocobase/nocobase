@@ -58,6 +58,7 @@ export function SessionList({
   onExpand,
   archived,
   onArchivedChange,
+  onNewSession,
 }: {
   readonly activeId: string | undefined;
   readonly className?: string | undefined;
@@ -67,6 +68,8 @@ export function SessionList({
   /** Whether the archived sessions show, when the caller follows it; otherwise the list keeps it itself. */
   readonly archived?: boolean;
   readonly onArchivedChange?: (archived: boolean) => void;
+  /** Leaves an archived view before opening a new session from either list layout. */
+  readonly onNewSession?: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   if (rail)
@@ -93,6 +96,7 @@ export function SessionList({
           size='icon-sm'
           aria-label={t('list.new')}
           title={t('list.new')}
+          onClick={onNewSession}
           nativeButton={false}
           render={<Link to='/agent-sessions?new' />}
         >
@@ -106,6 +110,7 @@ export function SessionList({
       className={className}
       archived={archived}
       onArchivedChange={onArchivedChange}
+      onNewSession={onNewSession}
     />
   );
 }
@@ -115,11 +120,13 @@ function FullSessionList({
   className,
   archived: controlled,
   onArchivedChange,
+  onNewSession,
 }: {
   readonly activeId: string | undefined;
   readonly className?: string | undefined;
   readonly archived?: boolean | undefined;
   readonly onArchivedChange?: ((archived: boolean) => void) | undefined;
+  readonly onNewSession?: (() => void) | undefined;
 }): ReactElement {
   const { t, i18n } = useTranslation();
   const [own, setOwn] = useState(false);
@@ -221,6 +228,7 @@ function FullSessionList({
               className='size-9 shrink-0 [&_svg]:size-4'
               aria-label={t('list.new')}
               title={t('list.new')}
+              onClick={onNewSession}
               nativeButton={false}
               render={<Link to='/agent-sessions?new' />}
             >
