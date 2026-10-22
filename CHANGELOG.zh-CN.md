@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.30](https://github.com/nocobase/nocobase/compare/v2.2.29...v2.2.30) - 2026-10-22
+
+### 🐛 修复
+
+- **[cli-v1]** 修复全新生产环境安装时，NocoBase CLI 因缺少 chokidar 模块而初始化失败的问题。 ([#11083](https://github.com/nocobase/nocobase/pull/11083)) by @cgyrock
+
 ## [v2.2.29](https://github.com/nocobase/nocobase/compare/v2.2.28...v2.2.29) - 2026-10-21
 
 ### 🐛 修复
