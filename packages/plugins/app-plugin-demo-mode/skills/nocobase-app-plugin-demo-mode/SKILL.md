@@ -5,7 +5,7 @@ description: Use when building or operating a dedicated demo system: integrating
 
 # Demo Mode
 
-`@nocobase/app-plugin-demo-mode` provides the operating mechanisms for a dedicated demo system: request-scoped read-only protection with write exceptions, repeatable business-data generation, reusable demo accounts, scheduled resets and simulation policies. The application supplies its business data, cleanup, management pages and external/Agent adapters. Registration enables the guard; it does not automatically adapt application behavior or isolate external calls.
+`@nocobase/app-plugin-demo-mode` provides the operating mechanisms for a dedicated demo system: request-scoped read-only protection with write exceptions, repeatable business-data generation, reusable demo accounts, scheduled resets and simulation policies. The application supplies its business data, cleanup and external/Agent adapters, and mounts the plugin's administration page. Registration enables the guard; it does not automatically adapt application behavior or isolate external calls.
 
 ## Choose the right scope
 
@@ -42,7 +42,7 @@ An application registers one dataset on `demoDataToken` (`@nocobase/app-plugin-d
 - Environment startup provisions the `Demo model` service (OpenAI-compatible, on this application's own `/api/demoMode/models/v1`) as the default chat model unless `demoMode.data.models` is `false`. Online agents reach it through the Agents gateway; application code that generates text can call `models.complete({ system, prompt, tag })` in process after `await service.load()` refreshes the binding and `models.isDemoModel(ref)` says the default is the demo model.
 - Register `@nocobase/app-plugin-demo-mode/cli` in `cli/plugins.ts` to expose `demo-mode data status|import|clear|reset`. Changes need `--force`; `--dry-run` previews arguments without starting the application. Import and clear require `--actor`; reset may reuse the last importer and language. The command uses the lifecycle service directly, including in read-only mode.
 - `createAccount` only reuses accounts whose dataset ownership was recorded by this plugin. An existing username aborts the import; never weaken that check or grant demo accounts access to non-demo business records.
-- Build the page on `useDemoData()` from `@nocobase/app-plugin-demo-mode/client/demo-data`; the plugin ships no page of its own.
+- Mount `DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` on a route of the application's own, passing `label(kind, id)` for the application's names of its counts, capabilities, scopes, adapters and chat tools, and `chatTools` for the tools it serves through `runChatTool`. Do not build another demo administration page; `useDemoData()` remains only for an application with needs the page cannot meet.
 
 ## Quick sign-in
 

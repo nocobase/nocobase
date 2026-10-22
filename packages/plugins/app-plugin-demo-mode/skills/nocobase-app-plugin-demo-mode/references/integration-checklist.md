@@ -49,7 +49,7 @@ Follow [Model and execution simulation](simulation.md). A simulated Runner that 
 
 ## 7. Build the page and permissions
 
-- Build the demo page on `useDemoData()` (and the configuration endpoints when the application exposes them). Protect the route with an ordinary page grant given together with the settings grants; do not add demo checks to the shared navigation, which runs on every page.
+- Mount the plugin's `DemoModeSettings` page (`client/settings`) with the application's `label` and `chatTools`. Protect the route with an ordinary page grant given together with the settings grants; do not add demo checks to the shared navigation, which runs on every page.
 - Show what clear and reset delete in the application's own words before they run.
 
 ## 8. Verify in a running application

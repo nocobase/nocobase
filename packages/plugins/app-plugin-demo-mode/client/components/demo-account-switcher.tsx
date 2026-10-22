@@ -8,7 +8,8 @@ import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 
 /**
  * A corner button on every page of a demo, the sign-in page included, that enters or switches between the demo
- * accounts, so a visitor can see how the application looks to each of them.
+ * accounts, so a visitor can see how the application looks to each of them. Bottom right, where application sidebars
+ * keep nothing.
  */
 export function DemoAccountSwitcher(): ReactElement | null {
   const location = useLocation();
@@ -52,7 +53,10 @@ export function DemoAccountSwitcher(): ReactElement | null {
   };
 
   return (
-    <div ref={rootRef} className='fixed bottom-4 left-4 z-50 text-sm'>
+    <div
+      ref={rootRef}
+      className='fixed right-4 bottom-4 z-50 flex flex-col items-end text-sm'
+    >
       {open ? (
         <div
           role='menu'

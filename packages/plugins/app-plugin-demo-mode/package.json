@@ -46,6 +46,10 @@
     "./client/accounts": {
       "types": "./client/accounts.ts",
       "import": "./client/accounts.ts"
+    },
+    "./client/settings": {
+      "types": "./client/settings/index.tsx",
+      "import": "./client/settings/index.tsx"
     }
   },
   "imports": {
@@ -112,6 +116,10 @@
       "./client/accounts": {
         "types": "./dist/client/accounts.d.ts",
         "import": "./dist/client/accounts.js"
+      },
+      "./client/settings": {
+        "types": "./dist/client/settings/index.d.ts",
+        "import": "./dist/client/settings/index.js"
       }
     },
     "imports": {
@@ -138,6 +146,7 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
+    "@base-ui/react": "catalog:",
     "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-agents": "workspace:^",
@@ -149,6 +158,9 @@
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "lucide-react": "catalog:",
     "react": "^19.0.0",
     "react-router": "catalog:"
   },

@@ -9,7 +9,7 @@ For dedicated demo deployments with databases and storage isolated from producti
 
 Sample data is optional example content in an existing application: fictional customers, orders, tasks and their relationships. Use `defineSeed({ name, sample: true, run })` or `sampleDataToken` from `@nocobase/app-server/sample-data`, following the installed application development and database Skills. Sample data does not require this plugin and does not change the application's operating mode.
 
-Demo Mode supports an entire dedicated demo system: isolated database/storage, repeatable business-data generation/clear/reset, demo-account lifecycle, visitor write policies and optional simulated external or Agent execution. The plugin supplies those mechanisms; the application implements its dataset, cleanup, management UI and adapters. Choose it for that lifecycle, rather than merely because example records are called "demo data." Fixture-building helpers may be shared, but sample installation and demo reset remain separate entry points.
+Demo Mode supports an entire dedicated demo system: isolated database/storage, repeatable business-data generation/clear/reset, demo-account lifecycle, visitor write policies and optional simulated external or Agent execution. The plugin supplies those mechanisms; the application implements its dataset, cleanup and adapters, and mounts the plugin's administration page. Choose it for that lifecycle, rather than merely because example records are called "demo data." Fixture-building helpers may be shared, but sample installation and demo reset remain separate entry points.
 
 ## Register and switch on
 
@@ -105,7 +105,7 @@ container.resolve(demoDataToken).register({
 | `NOCOBASE_DEMO_DATA_MODELS`         | `demoMode.data.models`       | `true` (default): provision the environment model at startup     |
 | `NOCOBASE_DEMO_DATA_MODEL_BASE_URL` | `demoMode.data.modelBaseUrl` | Where the gateway reaches the simulated model, when not loopback |
 
-The routes require `settings:demoMode.data` (`read` for status, `manage` for changes): `GET /api/demoMode/data` and `POST /api/demoMode/data/import|clear|reset`. Import/reset accept `{ language }` and return progress through status. Every mutation requires enabled demo mode, including CLI and Scheduler calls. Authorized lifecycle work also runs in read-only mode without exempting concurrent ordinary requests. `useDemoData()` drives the application’s own management page.
+The routes require `settings:demoMode.data` (`read` for status, `manage` for changes): `GET /api/demoMode/data` and `POST /api/demoMode/data/import|clear|reset`. Import/reset accept `{ language }` and return progress through status. Every mutation requires enabled demo mode, including CLI and Scheduler calls. Authorized lifecycle work also runs in read-only mode without exempting concurrent ordinary requests. The plugin's administration page drives them; `useDemoData()` remains for an application that builds its own.
 
 ## Quick sign-in
 
@@ -119,6 +119,35 @@ While demo mode is `read-only` or `observe`, visitors enter the imported demo ac
 - `POST /api/demoMode/accounts/{username}/signIn` ends the request's own session, signs in through Better Auth's email-and-password sign-in with the password the dataset lists, and answers with Better Auth's session cookie. The authentication plugin is unchanged, and the session is an ordinary one. An account the list does not offer is `404 DEMO_ACCOUNT_NOT_FOUND`; a listed password that is wrong is `400 DEMO_ACCOUNT_SIGN_IN_FAILED`.
 - `accounts(language)` must therefore list each account's real password, and every listed account, an administrator included, is open to anyone who reaches the demo.
 - To embed a demo in another page, open `<base path>/demo-sign-in?as=<username>&redirect=/path` in an iframe; without `as` the page lists the accounts. Session cookies are `SameSite=Lax`, so the demo must be on the same site as the embedding page, such as a subdomain of its domain.
+
+## Administration page
+
+`DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` is the whole demo administration: an application mounts it on a route of its own, inside its own page layout, and protects that route with an ordinary page grant given together with the settings grants below. It has four tabs, the current one kept in `?tab=`:
+
+- **Overview** — the dataset's state, language, time and counts, with Generate, Reset and Clear (each confirmed, with its exact consequence), and the visitor entry: the accounts quick sign-in offers, their credentials, a copyable entry link for each and an iframe snippet.
+- **Daily reset** — on or off, the time, a searchable IANA time zone, the dataset language and the next run.
+- **Visitor writes** — the registered write capabilities with each operation and scope, and the table exceptions with the deployment's fixed tables.
+- **Simulation & AI** — online chat (on or off, simulated or a real model, a policy per tool) and the registered simulations.
+
+Each card saves on its own with the revision it was started from and says when another administrator saved first; leaving with unsaved changes asks first. What the viewer lacks the grant for is shown without its actions.
+
+```tsx
+import { DemoModeSettings } from '@nocobase/app-plugin-demo-mode/client/settings';
+
+<DemoModeSettings
+  // The application's names for what it registered; undefined falls back to the registered title or id.
+  label={(kind, id) =>
+    t(`demo.${kind}.${id}`, { defaultValue: '' }) || undefined
+  }
+  // The chat tools the application serves through runChatTool, and the policies each supports.
+  chatTools={[
+    { id: 'task_list', policies: ['read'] },
+    { id: 'read_page', policies: ['mock'] },
+  ]}
+/>;
+```
+
+`label` receives `count` (a key of the dataset's `counts`), `capability`, `scope`, `adapter` or `chatTool` with its id.
 
 ## Command line
 
@@ -141,11 +170,11 @@ The command waits for completion. `--dry-run` previews only the operation and ar
 
 ## Demo configuration
 
-While demo mode is `read-only` or `observe`, administrators adjust a demo from the application's demo page, through `GET /api/demoMode/configuration` and `PUT /api/demoMode/configuration/writeRules|tables|mocks|schedule` (`settings:demoMode.configuration`: `read` / `configure`). Every save carries `expectedRevision` and is refused with `DEMO_CONFIGURATION_CONFLICT` when another administrator saved first.
+While demo mode is `read-only` or `observe`, administrators adjust a demo from the plugin's administration page, through `GET /api/demoMode/configuration` and `PUT /api/demoMode/configuration/writeRules|tables|mocks|schedule` (`settings:demoMode.configuration`: `read` / `configure`). Every save carries `expectedRevision` and is refused with `DEMO_CONFIGURATION_CONFLICT` when another administrator saved first.
 
 - **Read-only write exceptions.** An application registers what may be opened with `demoConfigurationToken.registerWrite({ id, title, table, operations, scopes, checkScope })`; identity, authorization, secret and plugin tables are refused. Rules start empty. The application wraps exactly the authorized business mutation in `runWrite(id, operation, input, run)`, or `runWrites([[id, operation], …], input, run)` when one mutation writes through several capabilities: an entry without a rule allows nothing, and a configured entry whose `checkScope` refuses the input refuses the whole mutation with `DEMO_SCOPE_DENIED`.
 - **Simulations.** `registerMock` registers model/tool/Runner adapters. `registerAgent({ id, title, defaultEnabled, execute })` supplies an environment-wide Agent proxy: demo mode always uses the application’s replacement, while mode `off` uses the normal Agent. Disabled adapters fail closed; unmarked or visitor-created business records never fall through to a real Agent in demo mode.
-- **Daily reset.** Scheduler triggers resets independently of HTTP traffic. Normal request policy checks do not calculate the next reset time; `nextRun` is only a management-view preview. Configure `{ enabled, hour, minute, timezone, language }` through the management API/UI. This is the only schedule source; there is no deployment-cron override. A durable claim permits one reset per local day, including across processes and repeated DST minutes. Configure it after the first import, whose administrator is used for subsequent resets. Register the Scheduler plugin in the host: Demo Mode owns the `demoMode.dailyReset` target and minute tick; applications supply only the dataset adapter and configuration UI. The default is disabled. Expose `nextRun` from the saved configuration and execution failures in Scheduler. Missed minutes are skipped, including downtime; a failed claimed run is not retried automatically that day.
+- **Daily reset.** Scheduler triggers resets independently of HTTP traffic. Normal request policy checks do not calculate the next reset time; `nextRun` is only a management-view preview. Configure `{ enabled, hour, minute, timezone, language }` through the management API/UI. This is the only schedule source; there is no deployment-cron override. A durable claim permits one reset per local day, including across processes and repeated DST minutes. Configure it after the first import, whose administrator is used for subsequent resets. Register the Scheduler plugin in the host: Demo Mode owns the `demoMode.dailyReset` target and minute tick; applications supply only the dataset adapter. The default is disabled. Expose `nextRun` from the saved configuration and execution failures in Scheduler. Missed minutes are skipped, including downtime; a failed claimed run is not retried automatically that day.
 
 `pnpm nocobase demo-mode data <status|import|clear|reset>` drives the same lifecycle from a shell (`--actor`, `--language`; changes need `--force`, and `--dry-run` only prints what would happen).
 
@@ -160,7 +189,7 @@ pnpm --filter @nocobase/app-plugin-demo-mode build
 
 ## Runtime configuration
 
-Applications can build a management UI on `/api/demoMode/configuration`, with independent `demoMode.configuration` read/configure permissions. Register explicit write capabilities and mock adapters through `demoConfigurationToken`; no business write rules are enabled by default. Configuration uses optimistic revisions, daily reset supports IANA timezones, and disabled mocks fail closed. The published [integration Skill](skills/nocobase-app-plugin-demo-mode/SKILL.md) documents scope validation, scheduling and application-owned adapters.
+The administration page is built on `/api/demoMode/configuration`, with independent `demoMode.configuration` read/configure permissions. Register explicit write capabilities and mock adapters through `demoConfigurationToken`; no business write rules are enabled by default. Configuration uses optimistic revisions, daily reset supports IANA timezones, and disabled mocks fail closed. The published [integration Skill](skills/nocobase-app-plugin-demo-mode/SKILL.md) documents scope validation, scheduling and application-owned adapters.
 
 ### Exception tables
 
