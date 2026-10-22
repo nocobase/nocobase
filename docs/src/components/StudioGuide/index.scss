@@ -136,13 +136,6 @@
   }
   .guide-flow li {
     position: relative;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 14px;
-    background: #fff;
-    border: 1px solid var(--guide-line);
-    border-radius: 7px;
     &:not(:last-child)::after {
       content: '';
       position: absolute;
@@ -150,6 +143,24 @@
       left: 28px;
       height: 11px;
       border-left: 1px solid #bdc9e7;
+    }
+  }
+  .flow-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 100%;
+    padding: 12px 14px;
+    color: var(--guide-ink);
+    background: #fff;
+    border: 1px solid var(--guide-line);
+    border-radius: 7px;
+    text-decoration: none;
+    &:hover,
+    &:focus-visible {
+      background: var(--guide-tint);
+      border-color: var(--guide-blue);
+      text-decoration: none;
     }
     strong {
       font-size: 13px;
@@ -162,6 +173,8 @@
     }
   }
   .flow-number {
+    flex: none;
+    white-space: nowrap;
     font: 12px var(--docs-font-mono);
     color: var(--guide-blue);
   }
@@ -782,7 +795,7 @@
       gap: 8px;
       margin-top: 14px;
     }
-    .guide-flow li {
+    .flow-link {
       align-items: flex-start;
       gap: 8px;
       padding: 12px 10px;

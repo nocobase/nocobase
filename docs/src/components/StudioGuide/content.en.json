@@ -13,27 +13,33 @@
   "flow": [
     {
       "title": "Deploy Studio",
-      "description": "Prepare a server, install Studio, and verify the deployment"
+      "description": "Prepare a server, install Studio, and verify the deployment",
+      "chapterId": "deployment"
     },
     {
       "title": "Configure Runner Agent",
-      "description": "Connect a runtime, enable agents, and configure the project manager"
+      "description": "Connect a runtime, enable agents, and configure the project manager",
+      "chapterId": "runtimes"
     },
     {
       "title": "Configure Git",
-      "description": "Connect the Git service and your personal account"
+      "description": "Connect the Git service and your personal account",
+      "chapterId": "git"
     },
     {
       "title": "Set up a project and CI",
-      "description": "Create a repository, then configure the workflow and deployment key"
+      "description": "Create a repository, then configure the workflow and deployment key",
+      "chapterId": "projects"
     },
     {
       "title": "Create and review issues",
-      "description": "Use Runner or My agents to create issues, follow progress, and review previews"
+      "description": "Use Runner or My agents to create issues, follow progress, and review previews",
+      "chapterId": "issues"
     },
     {
       "title": "Use Studio CLI (optional)",
-      "description": "Let your local agent manage Studio and investigate issues"
+      "description": "Let your local agent manage Studio and investigate issues",
+      "chapterId": "cli"
     }
   ],
   "toc": "CONTENTS",

@@ -63,16 +63,18 @@ const home = language === 'cn' ? '/zh-CN/' : '/';
         <ol>
           {content.flow.map((stage, index) => (
             <li>
-              <span class='flow-number' aria-hidden='true'>
-                {number(index)}
-              </span>
-              <div>
-                <strong>{stage.title}</strong>
-                <p>{stage.description}</p>
-              </div>
-              <span class='flow-arrow' aria-hidden='true'>
-                ↗
-              </span>
+              <a class='flow-link' href={`#${stage.chapterId}`}>
+                <span class='flow-number' aria-hidden='true'>
+                  {number(index)}
+                </span>
+                <div>
+                  <strong>{stage.title}</strong>
+                  <p>{stage.description}</p>
+                </div>
+                <span class='flow-arrow' aria-hidden='true'>
+                  ↗
+                </span>
+              </a>
             </li>
           ))}
         </ol>

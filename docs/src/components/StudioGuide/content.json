@@ -13,27 +13,33 @@
   "flow": [
     {
       "title": "部署 Studio",
-      "description": "准备服务器，完成安装与验证"
+      "description": "准备服务器，完成安装与验证",
+      "chapterId": "deployment"
     },
     {
       "title": "配置 Runner Agent",
-      "description": "接入运行环境，配置 Agent 与项目经理"
+      "description": "接入运行环境，配置 Agent 与项目经理",
+      "chapterId": "runtimes"
     },
     {
       "title": "配置 Git",
-      "description": "连接全局 Git 服务与个人账号"
+      "description": "连接全局 Git 服务与个人账号",
+      "chapterId": "git"
     },
     {
       "title": "创建项目与配置 CI",
-      "description": "建立代码仓库，配置工作流和部署密钥"
+      "description": "建立代码仓库，配置工作流和部署密钥",
+      "chapterId": "projects"
     },
     {
       "title": "创建与验收任务",
-      "description": "通过 Runner 或 My agents 创建任务，跟进并验收预览"
+      "description": "通过 Runner 或 My agents 创建任务，跟进并验收预览",
+      "chapterId": "issues"
     },
     {
       "title": "使用 Studio CLI（可选）",
-      "description": "让本地 Agent 管理 Studio、协助分析任务"
+      "description": "让本地 Agent 管理 Studio、协助分析任务",
+      "chapterId": "cli"
     }
   ],
   "toc": "章节目录",
