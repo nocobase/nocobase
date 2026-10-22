@@ -580,18 +580,6 @@
     width: 100%;
     height: auto;
   }
-  .zoom-hint {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    padding: 8px 11px;
-    border: 1px solid #ffffff30;
-    background: #233652e8;
-    border-radius: 5px;
-    font-size: 10px;
-    color: #fff;
-    line-height: 1;
-  }
   figcaption {
     display: flex;
     align-items: baseline;
@@ -922,12 +910,6 @@
       gap: 8px;
       font-size: 12px;
     }
-    .zoom-hint {
-      bottom: 6px;
-      right: 6px;
-      font-size: 9px;
-      padding: 6px 8px;
-    }
     .guide-finish {
       padding: 22px;
     }
@@ -983,7 +965,6 @@
     }
     .guide-flow,
     .guide-sidebar,
-    .zoom-hint,
     .copy-button,
     .guide-lightbox,
     .guide-status,
