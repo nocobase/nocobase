@@ -47,7 +47,7 @@
     {
       "id": "deployment",
       "title": "NocoBase Studio",
-      "summary": "Prepare an internet-connected server, deploy Studio, and verify persistent storage.",
+      "summary": "Set up your Studio workspace to manage projects, agents, and issues in one place.",
       "sections": [
         {
           "id": "deployment-prepare",
