@@ -8,6 +8,7 @@
   --guide-paper: oklch(0.984 0.003 255);
   --guide-soft: oklch(0.963 0.005 258);
   --guide-tint: oklch(0.95 0.03 266);
+  --guide-grid: oklch(0.52 0.09 262 / 0.065);
   --guide-shadow:
     0 1px 2px oklch(0.25 0.05 266 / 0.05),
     0 12px 28px -14px oklch(0.25 0.06 266 / 0.2);
@@ -91,6 +92,9 @@
     line-height: 1.2;
     letter-spacing: -0.015em;
     overflow-wrap: anywhere;
+    span {
+      color: var(--guide-blue);
+    }
   }
   .guide-lead {
     max-width: 600px;
@@ -103,8 +107,11 @@
     padding: 24px;
     border: 1px solid var(--guide-border);
     border-radius: 12px;
-    background: #fff;
-    box-shadow: var(--guide-shadow);
+    background-color: var(--guide-soft);
+    background-image:
+      linear-gradient(var(--guide-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--guide-grid) 1px, transparent 1px);
+    background-size: 16px 16px;
   }
   .flow-heading {
     display: flex;
@@ -196,8 +203,8 @@
   }
   .flow-tools span {
     padding: 3px 8px;
-    background: var(--guide-soft);
-    color: var(--guide-muted);
+    background: var(--guide-tint);
+    color: var(--guide-blue);
     border-radius: 3px;
     font: 11px/1.6 var(--docs-font-mono);
     letter-spacing: 0.04em;
@@ -549,10 +556,10 @@
   .note {
     padding: 16px 20px;
     margin: 24px 0;
-    border: 1px solid #dee6fc;
+    border: 1px solid var(--guide-line);
     border-left: 3px solid var(--guide-blue);
     border-radius: 0 6px 6px 0;
-    background: #f4f7ff;
+    background: var(--guide-soft);
   }
   .note > strong {
     font-size: 15px;
@@ -566,22 +573,22 @@
   }
   .chapter-body .done {
     margin-top: 28px;
-    color: #506659;
+    color: #35744c;
     font-size: 14px;
   }
   .done > strong {
     display: inline-block;
     margin-right: 10px;
-    color: #35704d;
+    color: #35744c;
     font-size: 13px;
-    background: #edf7ef;
+    background: #f0f7f2;
     border-radius: 4px;
     padding: 2px 8px;
     flex: none;
   }
   .guide-finish {
-    border: 1px solid #d9e6de;
-    background: #f7fbf8;
+    border: 1px solid #d7e8dc;
+    background: #f0f7f2;
     padding: 28px;
     border-radius: 10px;
   }
