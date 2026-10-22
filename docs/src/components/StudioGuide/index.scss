@@ -287,17 +287,19 @@
   }
   .guide-directory .toc-sections,
   .guide-directory .toc-topics {
+    --toc-indent: 12px;
     grid-template-columns: 1fr;
     gap: 2px;
     margin: 8px 0 12px 20px;
-    padding-left: 12px;
+    padding-left: var(--toc-indent);
     border-left: 1px solid var(--guide-line);
   }
   .guide-directory .toc-topics {
+    --toc-indent: 8px;
     margin: 2px 0 6px 8px;
-    padding-left: 8px;
   }
   [data-section-link] {
+    position: relative;
     display: flex;
     align-items: baseline;
     gap: 8px;
@@ -313,8 +315,17 @@
     &:hover,
     &[aria-current='location'] {
       color: var(--guide-blue);
-      background: var(--guide-tint);
       text-decoration: none;
+    }
+    &[aria-current='location']::before {
+      content: '';
+      position: absolute;
+      top: 6px;
+      bottom: 6px;
+      left: calc(-1 * var(--toc-indent) - 1px);
+      width: 2px;
+      border-radius: 1px;
+      background: var(--guide-blue);
     }
   }
   [data-chapter-link] {
