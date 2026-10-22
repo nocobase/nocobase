@@ -177,6 +177,7 @@
 
 - **protected renderHiddenInConfig(): React.ReactNode | undefined**
   当 `flowSettings.enabled === true` 且 `model.hidden === true` 时调用，用于在“设计模式”下替代正常渲染；非设计模式下切 hidden 为 true 时直接不渲染（返回 null）。
+  实现时只能返回轻量占位内容，**不要在其中调用 `this.render()`**：实例的 `render` 已被响应式包装接管，隐藏态下再次调用会重新进入 `renderHiddenInConfig`，形成无限递归直至页面卡死。
 
 ---
 

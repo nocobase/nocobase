@@ -85,7 +85,17 @@ export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
   }
 
   protected renderHiddenInConfig(): React.ReactNode {
-    return <div style={{ display: 'inline-flex', opacity: 0.3 }}>{this.render()}</div>;
+    // Keep this preview lightweight: `render()` is already wrapped for reactivity, so calling it here would
+    // re-enter `renderHiddenInConfig` and recurse infinitely until the page freezes.
+    const { aiEmployee, style } = this.props;
+    const size = style?.size ?? 40;
+    return (
+      <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
+        <div style={{ display: 'inline-flex', opacity: 0.3 }}>
+          <Avatar shape="circle" size={size} src={aiEmployee?.avatar ? avatars(aiEmployee.avatar) : undefined} />
+        </div>
+      </Tooltip>
+    );
   }
 }
 
