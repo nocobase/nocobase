@@ -896,6 +896,71 @@ describe('@nocobase/app-plugin-users API routes', () => {
     );
   });
 
+  it.each([
+    { input: { name: 'Alice' }, actions: ['update'], status: 200 },
+    { input: { name: 'Alice' }, actions: ['assign-role'], status: 403 },
+    {
+      input: { roleScopes: { hub: 'hub-viewer' } },
+      actions: ['assign-role'],
+      status: 200,
+    },
+    {
+      input: { roleScopes: { hub: 'hub-viewer' } },
+      actions: ['update'],
+      status: 403,
+    },
+    {
+      input: { name: 'Alice', roleScopes: { hub: 'hub-viewer' } },
+      actions: ['update'],
+      status: 403,
+    },
+    {
+      input: { name: 'Alice', roleScopes: { hub: 'hub-viewer' } },
+      actions: ['assign-role'],
+      status: 403,
+    },
+    {
+      input: { name: 'Alice', roleScopes: { hub: 'hub-viewer' } },
+      actions: ['update', 'assign-role'],
+      status: 200,
+    },
+  ])(
+    'authorizes every part of an atomic update: %j',
+    async ({ input, actions, status }) => {
+      const service = userService();
+      const router = await apiRoutes.createRouter(
+        createApplication('allowed', service, {
+          requireAction: async ({ action }) => {
+            if (!actions.includes(action)) throw denied();
+          },
+        }),
+      );
+      const response = await router.request('/users/user-1', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+      expect(response.status).toBe(status);
+      if (status === 200)
+        expect(service.update).toHaveBeenCalledWith('user-1', input, 'admin-1');
+      else expect(service.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rejects an unauthorized invalid PATCH before validation', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('forbidden', service),
+    );
+    const response = await router.request('/users/user-1', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ unknown: true }),
+    });
+    expect(response.status).toBe(403);
+    expect(service.update).not.toHaveBeenCalled();
+  });
+
   it('declares every route in the API document', async () => {
     const router = await apiRoutes.createRouter(
       createApplication('allowed', userService()),

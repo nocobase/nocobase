@@ -157,7 +157,7 @@ function RoleEditor(): ReactElement {
       parent.reload();
       toaster.show({ type: 'success', title: t('settings.saved', { name }) });
       leave.allow();
-      void navigate(closeTo);
+      void navigate(closeTo, { replace: true });
     } catch (next) {
       if (
         creating &&

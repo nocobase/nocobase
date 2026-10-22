@@ -127,6 +127,10 @@ export interface ListManagedUsersInput {
   readonly role?: string;
 }
 
+export interface UpdateManagedUserInput extends UpdateAdministratedUserInput {
+  readonly roleScopes?: Readonly<Record<string, UserRoleValue>>;
+}
+
 export interface CreateManagedUserInput extends CreateAdministratedUserInput {
   readonly roleScopes?: Readonly<Record<string, UserRoleValue>>;
 }
@@ -234,7 +238,7 @@ export interface UserManagementService {
    */
   update(
     userId: string,
-    input: UpdateAdministratedUserInput,
+    input: UpdateManagedUserInput,
     actorId?: string,
   ): Promise<ManagedUser>;
   disable(userId: string, actorId?: string): Promise<ManagedUser>;

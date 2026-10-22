@@ -32,6 +32,7 @@ const frFR: FoundationResource = {
     lowerBound: 'Valeur minimale : une partie des données est illisible.',
   },
   matrix: {
+    collections: 'Collections de données : {{names}}',
     title: 'Modules métier et capacités du socle',
     description:
       'Découvrez les capacités qui soutiennent chaque module. Sélectionnez une coche pour voir le lien et ce que vous devriez développer vous-même.',
@@ -108,6 +109,23 @@ const frFR: FoundationResource = {
     legendUnused: 'Non utilisé {{count}}',
   },
   detail: {
+    collectionCount: '{{count}} tables',
+    collectionPreview: 'Aperçu des tables',
+    collectionsTitle: 'Tables',
+    noCollectionMatches: 'Aucune table correspondante',
+    noCollectionMatchesHint: 'Essayez un autre nom ou effacez la recherche.',
+    collectionRange: '{{from}}–{{to}} sur {{total}}',
+    closeCollections: 'Fermer les tables',
+    viewCollections: 'Voir toutes les collections',
+    searchCollections: 'Rechercher des collections',
+    collectionResults: '{{count}} collections correspondantes',
+    previousPage: 'Précédent',
+    nextPage: 'Suivant',
+    countRecords: 'Compter les enregistrements métier',
+    recordsOnDemand:
+      'Les enregistrements métier sont comptés à la demande. Les grandes bases de données peuvent prendre plus de temps.',
+    recordsCountedAt: 'Enregistrements comptés {{time}}',
+
     businessModules: 'Modules métier associés',
     inThisApp: 'Dans cette application',
     withoutFoundation: 'Sans le socle',
@@ -170,7 +188,7 @@ const frFR: FoundationResource = {
       without:
         'Il faudrait intégrer les modèles, protéger les clés, suivre la consommation et exécuter les agents en sécurité.',
       onceInUse:
-        'Configurez modèles et agents une fois, avec suivi d’utilisation.',
+        'Activez des services de modèles pour OnlineAgent et la passerelle de modèles, ou enregistrez des exécuteurs pour les agents.',
     },
     knowledge: {
       name: 'Base de connaissances',
@@ -245,8 +263,7 @@ const frFR: FoundationResource = {
       'Seuls les administrateurs ont un accès illimité ; aucun droit n’est encore accordé aux autres utilisateurs.',
     noWorkflows: 'Aucun cycle de vie persistant ni planification active.',
     noSchedules: 'Aucune planification active.',
-    noModelOrRunner:
-      'Un modèle actif et un agent, ou un exécuteur, sont nécessaires.',
+    noModelOrRunner: 'Aucun service de modèles activé ni exécuteur enregistré.',
     noModelService: 'Aucun service de modèle actif.',
     noAgent: 'Aucun agent défini.',
     noDocuments: 'Aucun document dans les espaces de connaissances.',
@@ -262,6 +279,8 @@ const frFR: FoundationResource = {
       'Une extension active non classée a été trouvée. L’appartenance des collections est incertaine ; les chiffres métier sont masqués.',
     noApplicationCollections:
       'La couche de données fonctionne, sans collection propre à l’application pour le moment.',
+    applicationCollectionsPreview:
+      'Cette application possède {{count}} collections, dont {{names}}.',
     applicationCollections: '{{count}} collections propres : {{names}}.',
     relations: '{{count}} relations les relient.',
     fileCollections: '{{count}} collections de fichiers : {{names}}.',
@@ -275,6 +294,9 @@ const frFR: FoundationResource = {
     lifecycles:
       '{{count}} cycles de vie avec {{transitions}} transitions : {{names}}.',
     schedules: '{{count}} planifications actives.',
+    modelServices:
+      '{{count}} services de modèles activés prennent en charge OnlineAgent et la passerelle de modèles.',
+    runners: '{{count}} exécuteurs enregistrés prennent en charge les agents.',
     agents: '{{count}} agents, {{runs}} exécutions.',
     documents: '{{count}} documents de connaissances.',
     mailboxes: '{{count}} boîtes connectées.',

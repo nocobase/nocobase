@@ -16,6 +16,7 @@ const zhCN: AgentSessionsResource = {
     sessionNotFound: '这个会话不存在，或者不属于你。',
   },
   list: {
+    panelEmpty: '暂无会话',
     expand: '展开会话列表',
     label: '会话',
     title: '我的 Agent',

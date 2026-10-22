@@ -32,18 +32,20 @@ export function SettingsError({
     <Alert variant='destructive'>
       <AlertDescription>
         {t(
-          status === 401
-            ? 'settings.sessionEnded'
-            : status === 403
-              ? 'settings.denied'
-              : status === 404
-                ? 'settings.missing'
-                : status === 409
-                  ? error instanceof ApiClientError &&
-                    error.reason === 'USER_IDENTITY_CONFLICT'
-                    ? 'settings.identityConflict'
-                    : 'settings.conflict'
-                  : 'settings.failed',
+          status === 400
+            ? 'settings.invalidRequest'
+            : status === 401
+              ? 'settings.sessionEnded'
+              : status === 403
+                ? 'settings.denied'
+                : status === 404
+                  ? 'settings.missing'
+                  : status === 409
+                    ? error instanceof ApiClientError &&
+                      error.reason === 'USER_IDENTITY_CONFLICT'
+                      ? 'settings.identityConflict'
+                      : 'settings.conflict'
+                    : 'settings.failed',
         )}
         {status === 401 && (
           <Button
@@ -54,7 +56,7 @@ export function SettingsError({
             {t('settings.signInAgain')}
           </Button>
         )}
-        {retry && ![401, 403, 404, 409].includes(Number(status)) && (
+        {retry && ![400, 401, 403, 404, 409].includes(Number(status)) && (
           <Button variant='outline' size='sm' onClick={retry}>
             {t('settings.retry')}
           </Button>

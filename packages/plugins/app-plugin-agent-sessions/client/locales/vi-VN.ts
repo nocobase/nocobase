@@ -24,6 +24,7 @@ const viVN: LocaleResource<typeof enUS> = {
     sessionNotFound: 'Phiên này không tồn tại hoặc không phải của bạn.',
   },
   list: {
+    panelEmpty: 'Chưa có cuộc trò chuyện',
     expand: 'Hiển thị phiên',
     label: 'Phiên',
     title: 'Đại lý của tôi',

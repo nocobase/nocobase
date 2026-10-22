@@ -6,6 +6,7 @@ import {
 } from 'react';
 import { useHref } from 'react-router';
 
+import type { Attachment } from './lib/attachments.js';
 import type { SessionLink } from '../shared/api.js';
 
 /**
@@ -73,11 +74,17 @@ export function useLinkOpen():
  * their header, opening records at their own address and telling the application which session to show.
  */
 export interface SessionSurface {
+  readonly panelTitle?: string | undefined;
+  /** Inspect the exact attached text or reference without removing it. */
+  readonly onInspectAttachment?: ((attachment: Attachment) => void) | undefined;
   readonly placeholder?: string | undefined;
   readonly panel: boolean;
   readonly activeLink?: Pick<SessionLink, 'kind' | 'refId'> | null | undefined;
   /** At the end of a view's header, such as the panel's own buttons. */
   readonly actions?: ReactNode;
+  /** Host-owned panel controls; session-specific commands are supplied as menu items. */
+  readonly renderHeaderActions?:
+    ((menuItems: ReactNode) => ReactNode) | undefined;
   /** A new session was created: show it. Left out, the page opens its address. */
   readonly onCreated?: ((sessionId: string) => void) | undefined;
   /** A session was picked in the list: show it. Left out, the list links to its address. */

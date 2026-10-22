@@ -7,6 +7,7 @@ import {
   metric,
   NO_DATABASE,
   type CapabilityCollector,
+  type CapabilityFindings,
 } from './types.js';
 
 const RELATION_TYPES = new Set([
@@ -25,6 +26,39 @@ export function applicationCollections(
   );
 }
 
+/** Catalog facts remain usable when a costly schema or record scan exceeds its deadline. */
+export function dataModelingSummary(probe: Probe): CapabilityFindings {
+  const own = applicationCollections(probe);
+  const tables = own.filter((item) => item.kind === 'table');
+  return {
+    status: 'active',
+    facts: own.length
+      ? [
+          fact(
+            own.length > 5
+              ? 'applicationCollectionsPreview'
+              : 'applicationCollections',
+            {
+              count: own.length,
+              names: own.slice(0, 5).map((item) => item.title ?? item.name),
+            },
+          ),
+        ]
+      : [fact('noApplicationCollections')],
+    metrics: [
+      metric('businessRecords', null),
+      metric('businessCollections', tables.length),
+      metric('views', own.length - tables.length),
+      metric('fields', null),
+      metric('relations', null),
+      metric(
+        'systemCollections',
+        probe.inventory.collections.length - own.length,
+      ),
+    ],
+  };
+}
+
 export const dataModeling: CapabilityCollector = {
   key: 'dataModeling',
   packages: [
@@ -32,18 +66,21 @@ export const dataModeling: CapabilityCollector = {
     '@nocobase/repository-input',
     '@nocobase/snowflake',
   ],
-  async collect({ probe }) {
+  async collect({ probe, countRecords }) {
     if (!probe) return NO_DATABASE;
     const own = applicationCollections(probe);
     // A view reads rows another Collection already holds, so only tables count towards the records.
     const tables = own.filter((collection) => collection.kind === 'table');
-    const records = total(
-      await Promise.all(
-        tables.map((collection) => probe.count(collection.name)),
-      ),
-    );
-    const definitions = await Promise.all(
-      own.map((collection) => probe.inventory.definition(collection.name)),
+    const records = countRecords
+      ? total(
+          await probe.map(tables, (collection) => probe.count(collection.name)),
+        )
+      : {
+          value: tables.length === 0 ? 0 : null,
+          complete: tables.length === 0,
+        };
+    const definitions = await probe.map(own, (collection) =>
+      probe.inventory.definition(collection.name, probe.signal),
     );
     const fields = definitions.flatMap(
       (definition) => definition?.fields ?? [],
@@ -55,12 +92,17 @@ export const dataModeling: CapabilityCollector = {
         own.length === 0
           ? [fact('noApplicationCollections')]
           : [
-              fact('applicationCollections', {
-                count: own.length,
-                names: own.map(
-                  (collection) => collection.title ?? collection.name,
-                ),
-              }),
+              fact(
+                own.length > 5
+                  ? 'applicationCollectionsPreview'
+                  : 'applicationCollections',
+                {
+                  count: own.length,
+                  names: own
+                    .slice(0, 5)
+                    .map((collection) => collection.title ?? collection.name),
+                },
+              ),
               ...(relations.length > 0
                 ? [fact('relations', { count: relations.length })]
                 : []),
@@ -97,16 +139,17 @@ export const files: CapabilityCollector = {
   packages: ['@nocobase/app-plugin-file', '@nocobase/drive'],
   async collect({ probe, container }) {
     if (!probe) return NO_DATABASE;
-    const candidates = await Promise.all(
-      applicationCollections(probe)
-        .filter((collection) => collection.kind === 'table')
-        .map(async (collection) => {
-          const names = await probe.fieldNames(collection.name);
-          return names !== null &&
-            FILE_COLUMNS.every((column) => names.includes(column))
-            ? collection
-            : undefined;
-        }),
+    const candidates = await probe.map(
+      applicationCollections(probe).filter(
+        (collection) => collection.kind === 'table',
+      ),
+      async (collection) => {
+        const names = await probe.fieldNames(collection.name);
+        return names !== null &&
+          FILE_COLUMNS.every((column) => names.includes(column))
+          ? collection
+          : undefined;
+      },
     );
     const fileCollections = candidates.filter(
       (collection): collection is CollectionSummary => collection !== undefined,
@@ -114,13 +157,13 @@ export const files: CapabilityCollector = {
     if (fileCollections.length === 0)
       return { status: 'unused', reason: 'noFileCollection' };
     const counts = total(
-      await Promise.all(
-        fileCollections.map((collection) => probe.count(collection.name)),
+      await probe.map(fileCollections, (collection) =>
+        probe.count(collection.name),
       ),
     );
     const bytes = total(
-      await Promise.all(
-        fileCollections.map((collection) => probe.sum(collection.name, 'size')),
+      await probe.map(fileCollections, (collection) =>
+        probe.sum(collection.name, 'size'),
       ),
     );
     const hasDrive = container.has(driveManagerToken);
@@ -130,9 +173,9 @@ export const files: CapabilityCollector = {
       facts: [
         fact('fileCollections', {
           count: fileCollections.length,
-          names: fileCollections.map(
-            (collection) => collection.title ?? collection.name,
-          ),
+          names: fileCollections
+            .slice(0, 5)
+            .map((collection) => collection.title ?? collection.name),
         }),
       ],
       metrics: [

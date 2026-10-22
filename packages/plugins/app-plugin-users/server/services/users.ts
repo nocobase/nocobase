@@ -218,13 +218,39 @@ class DefaultUserManagementService implements UserManagementService {
     input: Parameters<UserManagementService['update']>[1],
     actorId?: string,
   ) {
+    const { roleScopes, ...profile } = input;
+    const hasProfile =
+      roleScopes === undefined || Object.keys(profile).length > 0;
+    const submitted = Object.entries(roleScopes ?? {});
+    for (const [key, value] of submitted)
+      this.validateRoleScopeValue(this.requireScope(key, 400), value);
     const user = await this.services.database.transaction(
       async (connection) => {
         await lockUserForAdministration(connection, userId);
-        await this.assertCanAdminister(userId, actorId, 'update', connection);
-        return this.services.users
-          .withConnection(connection)
-          .update(userId, input);
+        if (hasProfile)
+          await this.assertCanAdminister(userId, actorId, 'update', connection);
+        if (submitted.length > 0)
+          await this.assertCanAdminister(
+            userId,
+            actorId,
+            'assign-role',
+            connection,
+          );
+        const users = this.services.users.withConnection(connection);
+        const updated = hasProfile
+          ? await users.update(userId, profile)
+          : await users.get(userId);
+        if (!updated)
+          throw new UserManagementError(
+            'USER_NOT_FOUND',
+            `Unknown user: ${userId}`,
+            404,
+          );
+        for (const [key, value] of submitted)
+          await this.requireScope(key, 400).replace(userId, value, connection);
+        if (submitted.length > 0)
+          this.afterRoleScopesCommit(connection, userId);
+        return updated;
       },
     );
     return this.withRoleScopes(user, this.services.database.connection());

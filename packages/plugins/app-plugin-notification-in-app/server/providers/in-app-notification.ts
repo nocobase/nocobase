@@ -1,5 +1,4 @@
 import { databaseManagerToken } from '@nocobase/db';
-import { userAdministrationServiceToken } from '@nocobase/app-plugin-authentication';
 import { notificationExtensionRegistryToken } from '@nocobase/app-plugin-notification';
 import { ServiceProvider } from '@nocobase/service-provider';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -8,10 +7,8 @@ import {
   type RealtimeUserTopic,
 } from '@nocobase/app-server/realtime';
 
-import {
-  createDatabaseProviderDefinition,
-  createInAppChannelDefinition,
-} from '../definition.js';
+import { InAppChannel } from '../definition.js';
+import { installLegacyMessageHandler } from '../compatibility.js';
 import {
   createRealtimeInAppStore,
   IN_APP_NOTIFICATION_REALTIME_TOPIC,
@@ -55,16 +52,8 @@ export class InAppNotificationProvider<
     const { container } = this.app;
     if (!container.has(notificationExtensionRegistryToken)) return;
     const registry = container.resolve(notificationExtensionRegistryToken);
-    const store = container.resolve(inAppNotificationStoreToken);
-    const users = container.resolve(userAdministrationServiceToken);
-    registry.registerChannel(createInAppChannelDefinition()).registerProvider(
-      createDatabaseProviderDefinition({
-        store,
-        async recipientExists(userId) {
-          return Boolean(await users.get(userId));
-        },
-      }),
-    );
+    installLegacyMessageHandler(registry);
+    registry.registerChannelType(InAppChannel);
   }
 
   public override shutdown(): Promise<void> {

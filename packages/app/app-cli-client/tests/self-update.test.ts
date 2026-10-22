@@ -128,6 +128,7 @@ describe('<bin> update', () => {
     const file = path.join(skills.stateHome, 'skills.json');
     const registry = JSON.parse(readFileSync(file, 'utf8'));
     registry.targets.push({
+      skill: 'nb-studio-cli',
       tool: 'claude',
       path: child,
       hash: 'child-hash',

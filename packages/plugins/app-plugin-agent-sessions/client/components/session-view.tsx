@@ -11,6 +11,7 @@ import {
   AlertTriangleIcon,
   ArchiveIcon,
   ArchiveRestoreIcon,
+  ChevronDownIcon,
   FolderIcon,
   FolderKanbanIcon,
   LaptopIcon,
@@ -333,7 +334,7 @@ function Conversation({
   return (
     <section
       ref={sectionRef}
-      className='@container/agent-session flex min-w-0 flex-1 flex-col'
+      className='@container/agent-session flex min-h-0 min-w-0 flex-1 flex-col'
       aria-label={session.title}
     >
       <div ref={headerRef} className='shrink-0'>
@@ -537,8 +538,45 @@ function Header({
       update.mutate({ title: title.trim() || null });
   };
 
+  const sessionCommands = (
+    <>
+      {session.running && session.computerOnline && (
+        <DropdownMenuItem onClick={onStop}>
+          <SquareIcon />
+          {t('session.stop')}
+        </DropdownMenuItem>
+      )}
+      <DropdownMenuItem onClick={onToggleDetails}>
+        <PanelRightIcon />
+        {details ? t('session.hideDetails') : t('session.showDetails')}
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => {
+          setTitle(session.title);
+          // The host menu restores focus when closing; mount the editor after that handoff.
+          requestAnimationFrame(() => setRenaming(true));
+        }}
+      >
+        <PencilIcon />
+        {t('session.rename')}
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => update.mutate({ archived: session.archivedAt === null })}
+      >
+        {session.archivedAt === null ? <ArchiveIcon /> : <ArchiveRestoreIcon />}
+        {session.archivedAt === null ? t('list.archive') : t('list.restore')}
+      </DropdownMenuItem>
+    </>
+  );
+
   return (
-    <header className='flex flex-col gap-2 border-b px-4 py-2 @md/agent-session:py-3 @md/agent-session:px-5'>
+    <header
+      className={
+        surface.renderHeaderActions
+          ? 'flex flex-col gap-2 border-b px-3.5 py-2'
+          : 'flex flex-col gap-2 border-b px-4 py-2 @md/agent-session:py-3 @md/agent-session:px-5'
+      }
+    >
       <div className='flex min-w-0 items-center gap-2.5'>
         {!surface.panel && <BackLink />}
         {renaming ? (
@@ -560,15 +598,38 @@ function Header({
         ) : (
           <h2
             title={session.title}
-            className={cn(
-              'min-w-0 flex-1 text-[15px] font-semibold @md/agent-session:truncate',
-              collapsed ? 'truncate' : 'line-clamp-2 break-words',
-            )}
+            className={
+              surface.renderHeaderActions
+                ? 'min-w-0 flex-1 truncate text-sm font-semibold'
+                : cn(
+                    'min-w-0 flex-1 text-[15px] font-semibold @md/agent-session:truncate',
+                    collapsed ? 'truncate' : 'line-clamp-2 break-words',
+                  )
+            }
           >
-            {session.title}
+            {surface.renderHeaderActions ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <button
+                      type='button'
+                      className='flex max-w-full items-center gap-1 rounded-md text-left hover:bg-muted'
+                    />
+                  }
+                >
+                  <span className='truncate'>{session.title}</span>
+                  <ChevronDownIcon className='size-3.5 shrink-0' />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align='start'>
+                  {sessionCommands}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              session.title
+            )}
           </h2>
         )}
-        {collapsed && (
+        {!surface.renderHeaderActions && collapsed && (
           <Button
             variant='ghost'
             size='sm'
@@ -595,72 +656,78 @@ function Header({
             </span>
           )
         )}
-        {session.running && session.computerOnline && (
-          <Button
-            variant='outline'
-            size='sm'
-            className='h-9 text-xs font-normal'
-            aria-label={t('session.stop')}
-            onClick={onStop}
-          >
-            <SquareIcon />
-            <span className='@max-md/agent-session:sr-only'>
-              {t('session.stop')}
-            </span>
-          </Button>
-        )}
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          className='text-muted-foreground size-9'
-          aria-label={
-            details ? t('session.hideDetails') : t('session.showDetails')
-          }
-          aria-pressed={details}
-          onClick={onToggleDetails}
-        >
-          <PanelRightIcon />
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
+        {surface.renderHeaderActions ? (
+          surface.renderHeaderActions(sessionCommands)
+        ) : (
+          <>
+            {session.running && session.computerOnline && (
               <Button
-                variant='ghost'
-                size='icon-sm'
-                className='text-muted-foreground size-9'
-                aria-label={t('session.more')}
-              />
-            }
-          >
-            <MoreHorizontalIcon />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='end'>
-            <DropdownMenuItem
-              onClick={() => {
-                setTitle(session.title);
-                setRenaming(true);
-              }}
-            >
-              <PencilIcon />
-              {t('session.rename')}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                update.mutate({ archived: session.archivedAt === null })
+                variant='outline'
+                size='sm'
+                className='h-9 text-xs font-normal'
+                aria-label={t('session.stop')}
+                onClick={onStop}
+              >
+                <SquareIcon />
+                <span className='@max-md/agent-session:sr-only'>
+                  {t('session.stop')}
+                </span>
+              </Button>
+            )}
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              className='text-muted-foreground size-9'
+              aria-label={
+                details ? t('session.hideDetails') : t('session.showDetails')
               }
+              aria-pressed={details}
+              onClick={onToggleDetails}
             >
-              {session.archivedAt === null ? (
-                <ArchiveIcon />
-              ) : (
-                <ArchiveRestoreIcon />
-              )}
-              {session.archivedAt === null
-                ? t('list.archive')
-                : t('list.restore')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        {surface.actions}
+              <PanelRightIcon />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant='ghost'
+                    size='icon-sm'
+                    className='text-muted-foreground size-9'
+                    aria-label={t('session.more')}
+                  />
+                }
+              >
+                <MoreHorizontalIcon />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='end'>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setTitle(session.title);
+                    setRenaming(true);
+                  }}
+                >
+                  <PencilIcon />
+                  {t('session.rename')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    update.mutate({ archived: session.archivedAt === null })
+                  }
+                >
+                  {session.archivedAt === null ? (
+                    <ArchiveIcon />
+                  ) : (
+                    <ArchiveRestoreIcon />
+                  )}
+                  {session.archivedAt === null
+                    ? t('list.archive')
+                    : t('list.restore')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {surface.actions}
+          </>
+        )}
       </div>
       {/* Narrow, where the session runs in one line; the chips below say it at full width. */}
       <p className='text-muted-foreground hidden min-w-0 items-center gap-1.5 text-xs @max-md/agent-session:flex'>

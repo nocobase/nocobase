@@ -31,6 +31,7 @@ const deDE: FoundationResource = {
     lowerBound: 'Mindestwert: Ein Teil konnte nicht gelesen werden.',
   },
   matrix: {
+    collections: 'Datensammlungen: {{names}}',
     title: 'Geschäftsmodule und Basisfunktionen',
     description:
       'Sehen Sie, welche Basisfunktionen jedes Modul unterstützen. Wählen Sie ein Häkchen für die Zuordnung und den Aufwand einer eigenen Umsetzung.',
@@ -107,6 +108,24 @@ const deDE: FoundationResource = {
     legendUnused: 'Noch ungenutzt {{count}}',
   },
   detail: {
+    collectionCount: '{{count}} Tabellen',
+    collectionPreview: 'Tabellenvorschau',
+    collectionsTitle: 'Tabellen',
+    noCollectionMatches: 'Keine passenden Tabellen',
+    noCollectionMatchesHint:
+      'Versuchen Sie einen anderen Namen oder leeren Sie die Suche.',
+    collectionRange: '{{from}}–{{to}} von {{total}}',
+    closeCollections: 'Tabellen schließen',
+    viewCollections: 'Alle Sammlungen anzeigen',
+    searchCollections: 'Sammlungen suchen',
+    collectionResults: '{{count}} passende Sammlungen',
+    previousPage: 'Zurück',
+    nextPage: 'Weiter',
+    countRecords: 'Geschäftsdatensätze zählen',
+    recordsOnDemand:
+      'Geschäftsdatensätze werden bei Bedarf gezählt. Große Datenbanken können länger brauchen.',
+    recordsCountedAt: 'Datensätze gezählt {{time}}',
+
     businessModules: 'Verknüpfte Geschäftsmodule',
     inThisApp: 'In dieser Anwendung',
     withoutFoundation: 'Ohne die Basis',
@@ -169,7 +188,7 @@ const deDE: FoundationResource = {
       without:
         'Modelle, Schlüsselverwaltung, Nutzungsprotokolle und sichere Agentenausführung müssten selbst integriert werden.',
       onceInUse:
-        'Modelle und Agenten einmal konfigurieren und mit Nutzungsaufzeichnung betreiben.',
+        'Aktivieren Sie Modelldienste für OnlineAgent und das Modell-Gateway oder registrieren Sie Ausführungsdienste für Agenten.',
     },
     knowledge: {
       name: 'Wissensdatenbank',
@@ -245,7 +264,7 @@ const deDE: FoundationResource = {
     noWorkflows: 'Keine gespeicherten Lebenszyklen oder aktivierten Zeitpläne.',
     noSchedules: 'Kein Zeitplan aktiviert.',
     noModelOrRunner:
-      'Ein aktives Modell und ein Agent oder ein Ausführungsdienst sind erforderlich.',
+      'Kein Modelldienst ist aktiviert und kein Ausführungsdienst registriert.',
     noModelService: 'Kein Modelldienst aktiviert.',
     noAgent: 'Kein Agent definiert.',
     noDocuments: 'Keine Dokumente in Wissensbereichen.',
@@ -261,6 +280,8 @@ const deDE: FoundationResource = {
       'Nicht zugeordnete Laufzeiterweiterung gefunden. Die Zugehörigkeit von Sammlungen ist unklar; Geschäftszahlen werden ausgeblendet.',
     noApplicationCollections:
       'Die Datenschicht läuft, die Anwendung hat noch keine eigenen Sammlungen.',
+    applicationCollectionsPreview:
+      'Diese Anwendung hat {{count}} Sammlungen, darunter {{names}}.',
     applicationCollections: '{{count}} eigene Sammlungen: {{names}}.',
     relations: '{{count}} Beziehungen verbinden sie.',
     fileCollections: '{{count}} Dateisammlungen: {{names}}.',
@@ -274,6 +295,10 @@ const deDE: FoundationResource = {
     lifecycles:
       '{{count}} Lebenszyklen mit {{transitions}} Übergängen: {{names}}.',
     schedules: '{{count}} Zeitpläne aktiviert.',
+    modelServices:
+      '{{count}} aktivierte Modelldienste unterstützen OnlineAgent und Modell-Gateway-Aufrufe.',
+    runners:
+      '{{count}} registrierte Ausführungsdienste unterstützen die Agentenausführung.',
     agents: '{{count}} Agenten, {{runs}} Ausführungen.',
     documents: '{{count}} Wissensdokumente.',
     mailboxes: '{{count}} Postfächer verbunden.',

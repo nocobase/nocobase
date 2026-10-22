@@ -46,8 +46,12 @@
         "iframeHeight": 480
       },
       "dependencies": ["react-router@^7.0.2", "@tanstack/react-table@^8.21.3"],
-      "registryDependencies": ["badge", "@nocobase/data-table"],
-      "docs": "Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. The host owns loading, empty/error states, filtering and authorization. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.",
+      "registryDependencies": [
+        "badge",
+        "@nocobase/data-table",
+        "@nocobase/record-link"
+      ],
+      "docs": "Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. Optional tableState accepts controlled pagination/sorting and page-size choices from the host URL adapter. The host owns loading, empty/error states, filtering and authorization. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.",
       "files": [
         {
           "path": "role-list.tsx",

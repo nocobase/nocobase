@@ -253,6 +253,7 @@ describe('ordinary session entry', () => {
 
   it('keeps explicit new independent of a delayed history list', async () => {
     const { complete } = await setup('/agent-sessions?new');
+    expect(screen.queryByRole('heading', { name: 'New session' })).toBeNull();
     const input = await screen.findByRole('textbox', {
       name: 'Say what you need. Several things at once, or a screenshot, are fine.',
     });

@@ -381,6 +381,16 @@ const esES: LocaleResource<typeof enUS> = {
     withdraw: 'Retirar',
   },
   flowDiagram: {
+    controls: 'Controles del diagrama',
+    fitView: 'Ajustar a la vista',
+    fullscreen: 'Pantalla completa',
+    exitFullscreen: 'Salir de pantalla completa',
+    escapeHint: 'Pulsa Escape para salir',
+    leavesTo: 'Sale hacia',
+    arrivesFrom: 'Llega desde',
+    otherRoutes: 'Otras rutas',
+    minimap: 'Vista general del diagrama',
+
     overview: 'Descripción general del diagrama',
     actualSize: 'Tamaño real',
     states: 'Estados',

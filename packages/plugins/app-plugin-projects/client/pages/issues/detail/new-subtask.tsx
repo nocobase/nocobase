@@ -1,7 +1,14 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircleIcon, SparklesIcon } from 'lucide-react';
-import { type FormEvent, type ReactElement, useRef, useState } from 'react';
+import {
+  type FormEvent,
+  type ReactElement,
+  useContext,
+  useRef,
+  useState,
+} from 'react';
+import { IssueCreationModeContext } from '../../../kit/issue-creation.js';
 import { useLocation, useParams, useSearchParams } from 'react-router';
 
 import { ISSUE_TITLE_MAX, type Executor } from '../../../../shared/issues.js';
@@ -57,6 +64,7 @@ type SubtaskTab = (typeof TABS)[number];
  * the issue's page. It cannot close while the sub-issue is being created, and asks before discarding what was typed.
  */
 export default function NewSubtaskPage(): ReactElement {
+  const manualOnly = useContext(IssueCreationModeContext) === 'manual';
   const { t } = useTranslation();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
@@ -84,7 +92,7 @@ export default function NewSubtaskPage(): ReactElement {
   const following = Boolean(
     params.get(INTAKE_DRAFT_PARAM) || params.get(INTAKE_JOB_PARAM),
   );
-  const withAi = breakdown.available || following;
+  const withAi = !manualOnly && (breakdown.available || following);
   const asked = params.get('tab');
   const tab: SubtaskTab = !withAi
     ? 'manual'

@@ -30,6 +30,7 @@ const jaJP: FoundationResource = {
     lowerBound: '一部を読み取れないため下限値です。',
   },
   matrix: {
+    collections: '関連コレクション：{{names}}',
     title: '業務モジュールと基盤機能',
     description:
       '各モジュールを支える基盤機能を確認できます。チェックを選ぶと、関連の根拠と独自実装で必要になる作業を確認できます。',
@@ -104,6 +105,23 @@ const jaJP: FoundationResource = {
     legendUnused: '未使用 {{count}}',
   },
   detail: {
+    collectionCount: 'データテーブル {{count}} 件',
+    collectionPreview: 'データテーブルのプレビュー',
+    collectionsTitle: 'データテーブル',
+    noCollectionMatches: '一致するテーブルがありません',
+    noCollectionMatchesHint: '別の名前を試すか、検索をクリアしてください。',
+    collectionRange: '{{total}} 件中 {{from}}–{{to}} 件',
+    closeCollections: 'テーブル一覧を閉じる',
+    viewCollections: 'すべてのコレクションを表示',
+    searchCollections: 'コレクションを検索',
+    collectionResults: '一致するコレクション：{{count}}',
+    previousPage: '前へ',
+    nextPage: '次へ',
+    countRecords: '業務レコード数を集計',
+    recordsOnDemand:
+      '業務レコード数は必要時に集計します。大規模なデータベースでは時間がかかる場合があります。',
+    recordsCountedAt: 'レコード集計日時：{{time}}',
+
     businessModules: '関連する業務モジュール',
     inThisApp: 'このアプリでの用途',
     withoutFoundation: '基盤がない場合',
@@ -164,7 +182,7 @@ const jaJP: FoundationResource = {
       without:
         'モデル接続、鍵管理、使用記録、安全な実行を独自に実装する必要があります。',
       onceInUse:
-        'モデルとエージェントを設定し、使用量を記録しながら実行できます。',
+        'モデルサービスを有効にして OnlineAgent とモデルゲートウェイを利用するか、ランナーを登録してエージェントを実行します。',
     },
     knowledge: {
       name: 'ナレッジベース',
@@ -232,7 +250,7 @@ const jaJP: FoundationResource = {
       '無制限管理者のみアクセスでき、他のユーザーへの権限付与はありません。',
     noWorkflows: '永続化したライフサイクルも有効なスケジュールもありません。',
     noSchedules: '有効なスケジュールはありません。',
-    noModelOrRunner: '有効なモデルとエージェント、またはランナーが必要です。',
+    noModelOrRunner: '有効なモデルサービスも登録済みランナーもありません。',
     noModelService: '有効なモデルサービスはありません。',
     noAgent: 'エージェントは未定義です。',
     noDocuments: 'ナレッジスペースに文書はありません。',
@@ -248,6 +266,8 @@ const jaJP: FoundationResource = {
       '未分類の実行時拡張があるためコレクションの所有元が不明です。業務統計は表示しません。',
     noApplicationCollections:
       'データ基盤は稼働中ですがアプリ固有のコレクションはまだありません。',
+    applicationCollectionsPreview:
+      'このアプリには {{count}} 個のコレクションがあります。例：{{names}}。',
     applicationCollections:
       'アプリ固有のコレクション {{count}} 件：{{names}}。',
     relations: '関連 {{count}} 件。',
@@ -260,6 +280,9 @@ const jaJP: FoundationResource = {
     lifecycles:
       '{{count}} 件のライフサイクルで {{transitions}} 回遷移：{{names}}。',
     schedules: '有効なスケジュール {{count}} 件。',
+    modelServices:
+      '{{count}} 件の有効なモデルサービスが OnlineAgent とモデルゲートウェイを支えています。',
+    runners: '{{count}} 件の登録済みランナーがエージェントを実行します。',
     agents: 'エージェント {{count}} 件、実行 {{runs}} 回。',
     documents: 'ナレッジ文書 {{count}} 件。',
     mailboxes: '接続済みメールボックス {{count}} 件。',

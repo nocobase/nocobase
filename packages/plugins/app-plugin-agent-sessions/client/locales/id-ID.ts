@@ -24,6 +24,7 @@ const idID: LocaleResource<typeof enUS> = {
     sessionNotFound: 'Sesi ini tidak ada, atau bukan milik Anda.',
   },
   list: {
+    panelEmpty: 'Belum ada percakapan',
     expand: 'Tampilkan sesi',
     label: 'Sesi',
     title: 'Agen saya',

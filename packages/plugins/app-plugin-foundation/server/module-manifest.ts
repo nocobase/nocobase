@@ -19,6 +19,7 @@ const manifestSchema = z
                 routeName: z.string(),
                 providers: z.array(z.string()),
                 apiProviders: z.array(z.string()).optional(),
+                collections: z.array(z.string()).optional(),
                 complete: z.boolean(),
               })
               .strict(),

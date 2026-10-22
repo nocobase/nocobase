@@ -13,6 +13,7 @@ import {
 import * as reactFlow from '@xyflow/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { FlowDiagram } from '../../registry/components/flow-diagram.js';
+import { FlowDiagramDemo } from '../../website/demo/components/flow-diagram.js';
 import * as layoutModule from '../../registry/components/flow-layout.js';
 import type { FlowDiagramLayout } from '../../registry/components/flow-layout.js';
 import { readmeTranslations } from '../readme-translations.js';
@@ -355,4 +356,92 @@ it('composes policy descriptions and explicit node actions without changing exec
   ).toHaveAttribute('data-execution-state', 'pending');
   expect(screen.getByTestId('rf__edge-submit')).not.toHaveClass('animated');
   expect(screen.getByLabelText('Diagram overview')).toBeInTheDocument();
+});
+
+it('reveals auxiliary routes for keyboard focus inside a custom node without relayout', async () => {
+  const layout = vi.spyOn(layoutModule, 'layoutFlowDiagram');
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <FlowDiagram
+        {...graph}
+        ariaLabel='Compact process'
+        compact
+        nodes={graph.nodes.map((node) => ({ ...node, bare: true }))}
+        revealEdges={[
+          { id: 'return', source: 'b', target: 'a', label: 'Return' },
+        ]}
+        renderNode={(node, { active }) => (
+          <button>
+            {node.label}
+            {active ? ' active' : ''}
+          </button>
+        )}
+      />
+    </TestI18nProvider>,
+  );
+  const review = await screen.findByRole('button', { name: 'Review' });
+  expect(
+    screen.queryByTestId('rf__edge-reveal:return'),
+  ).not.toBeInTheDocument();
+  fireEvent.focus(review);
+  expect(
+    await screen.findByTestId('rf__edge-reveal:return'),
+  ).toBeInTheDocument();
+  expect(review).toHaveTextContent('Review active');
+  expect(layout).toHaveBeenCalledTimes(1);
+  fireEvent.blur(review);
+  await waitFor(() =>
+    expect(
+      screen.queryByTestId('rf__edge-reveal:return'),
+    ).not.toBeInTheDocument(),
+  );
+  layout.mockRestore();
+});
+
+it('opens the fullscreen canvas and exits with Escape', async () => {
+  const { container } = render(
+    <TestI18nProvider runtime={runtime}>
+      <FlowDiagram {...graph} controls compact ariaLabel='Fullscreen process' />
+    </TestI18nProvider>,
+  );
+  await screen.findByTestId('rf__node-a');
+  fireEvent.click(screen.getByRole('button', { name: 'Fullscreen' }));
+  expect(container).not.toContainElement(
+    screen.getByLabelText('Fullscreen process'),
+  );
+  expect(screen.getByLabelText('Diagram overview')).toBeInTheDocument();
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(container).toContainElement(
+    screen.getByLabelText('Fullscreen process'),
+  );
+  expect(screen.queryByLabelText('Diagram overview')).not.toBeInTheDocument();
+});
+
+it('shows return and reassignment capsules in the demo without drawing their routes on hover', async () => {
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <FlowDiagramDemo />
+    </TestI18nProvider>,
+  );
+  const review = await screen.findByTestId('rf__node-review');
+  expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  fireEvent.mouseEnter(review);
+  expect(
+    await screen.findByRole('note', { name: 'In review · Withdraw → Draft' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole('note', { name: 'In review · Reassign → In review' }),
+  ).toBeInTheDocument();
+  for (const id of ['withdraw', 'assign', 'reveal:withdraw', 'reveal:assign']) {
+    expect(screen.queryByTestId(`rf__edge-${id}`)).not.toBeInTheDocument();
+  }
+  fireEvent.mouseLeave(review);
+  expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  fireEvent.focus(review);
+  expect(
+    await screen.findByRole('note', { name: 'In review · Withdraw → Draft' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTestId('rf__edge-reveal:withdraw'),
+  ).not.toBeInTheDocument();
 });

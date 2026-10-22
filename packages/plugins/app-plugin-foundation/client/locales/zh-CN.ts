@@ -29,6 +29,7 @@ const zhCN: FoundationResource = {
     lowerBound: '至少为此数：部分数据未能读取。',
   },
   matrix: {
+    collections: '关联数据表：{{names}}',
     title: '业务模块与底座能力',
     description:
       '查看每个业务模块由哪些底座能力支撑，点击标记，了解关联依据和自行实现时需要承担的工作。',
@@ -101,6 +102,22 @@ const zhCN: FoundationResource = {
     legendUnused: '本系统尚未使用 {{count}}',
   },
   detail: {
+    collectionCount: '共 {{count}} 张数据表',
+    collectionPreview: '数据表示例',
+    collectionsTitle: '数据表',
+    noCollectionMatches: '未找到数据表',
+    noCollectionMatchesHint: '试试其他名称，或清空搜索。',
+    collectionRange: '第 {{from}}–{{to}} 项，共 {{total}} 项',
+    closeCollections: '关闭数据表清单',
+    viewCollections: '查看全部数据表',
+    searchCollections: '搜索数据表',
+    collectionResults: '共 {{count}} 张匹配的数据表',
+    previousPage: '上一页',
+    nextPage: '下一页',
+    countRecords: '统计业务数据量',
+    recordsOnDemand: '业务数据总量按需统计，数据库较大时可能需要更长时间。',
+    recordsCountedAt: '数据量统计于 {{time}}',
+
     businessModules: '关联业务模块',
     inThisApp: '在本系统中',
     withoutFoundation: '如果没有底座',
@@ -157,7 +174,8 @@ const zhCN: FoundationResource = {
       tagline: '模型服务、Agent 与 Runner',
       without:
         '要自己对接每家模型服务、保管密钥、记录用量，并安全地运行 Agent。',
-      onceInUse: '一次配置模型服务和 Agent，就能在系统里工作，用量自动记录。',
+      onceInUse:
+        '启用模型服务即可支持 Online agent 和模型网关调用，也可接入 Runner 执行 Agent 任务。',
     },
     knowledge: {
       name: '知识库',
@@ -216,8 +234,7 @@ const zhCN: FoundationResource = {
       '目前只有拥有全部权限的管理员能访问，还没有权限集给其他人授予任何权限。',
     noWorkflows: '没有已持久化的生命周期，也没有已启用的定时任务。',
     noSchedules: '没有已启用的定时任务。',
-    noModelOrRunner:
-      '还没有可运行的 Agent：需要已启用的模型服务加上 Agent，或一个 Runner。',
+    noModelOrRunner: '还没有已启用的模型服务，也没有已注册的 Runner。',
     noModelService: '没有已启用的模型服务。',
     noAgent: '还没有定义 Agent。',
     noDocuments: '知识空间里还没有文档。',
@@ -232,6 +249,8 @@ const zhCN: FoundationResource = {
     collectionOwnershipUnknown:
       '发现尚未归类的运行时扩展，部分数据表的归属无法确认，暂不展示业务统计数。',
     noApplicationCollections: '数据层已在运行，本系统还没有自己的数据表。',
+    applicationCollectionsPreview:
+      '本系统自有 {{count}} 张数据表，包含 {{names}} 等。',
     applicationCollections: '本系统自有 {{count}} 张数据表：{{names}}。',
     relations: '它们之间有 {{count}} 个关联关系。',
     fileCollections: '{{count}} 张文件表：{{names}}。',
@@ -242,6 +261,9 @@ const zhCN: FoundationResource = {
     lifecycles:
       '{{count}} 个生命周期共记录了 {{transitions}} 次流转：{{names}}。',
     schedules: '已启用 {{count}} 个定时任务。',
+    modelServices:
+      '{{count}} 个已启用的模型服务，为 Online agent 和模型网关提供支持。',
+    runners: '已注册 {{count}} 个 Runner，为 Agent 执行提供支持。',
     agents: '{{count}} 个 Agent，累计运行 {{runs}} 次。',
     documents: '知识空间里有 {{count}} 篇文档。',
     mailboxes: '已连接 {{count}} 个邮箱。',
