@@ -1,7 +1,13 @@
 import { realtimeClientToken } from '@nocobase/app-client';
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { Route, Routes, useLocation } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -324,3 +330,111 @@ describe('ordinary session entry', () => {
     ).not.toBeDisabled();
   });
 });
+
+describe('archived view', () => {
+  const old: Session = {
+    ...recent,
+    id: 'old',
+    title: 'Old investigation',
+    archivedAt: '2026-10-12T00:00:00Z',
+  };
+
+  async function render(route: string) {
+    await renderWithApp(
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <Location />
+        <Routes>
+          <Route path='/agent-sessions' element={<AgentSessionsPage />}>
+            <Route path=':sessionId' element={<SessionStub />} />
+          </Route>
+        </Routes>
+      </QueryClientProvider>,
+      {
+        route,
+        plugins: [plugin({ routes: false })],
+        namespace: '@nocobase/app-plugin-agent-sessions',
+        fetch: answerApi(({ path, query }) => {
+          if (path === 'agentSessions/sessions')
+            return {
+              data: query?.archived === 'true' ? [old] : [recent],
+              meta: {},
+            };
+          return { data: [], meta: {} };
+        }),
+      },
+    );
+  }
+
+  it('names the archived list and keeps an unarchived session and its draft out of the main area until restored', async () => {
+    await render('/agent-sessions/recent');
+    const draft = await screen.findByRole('textbox', { name: 'Draft' });
+    fireEvent.change(draft, { target: { value: 'Unsent reply' } });
+    const list = screen.getByRole('region', { name: 'Sessions' });
+    fireEvent.click(
+      within(list).getByRole('button', { name: 'Archived', exact: true }),
+    );
+    expect(
+      await within(list).findByRole('heading', { name: 'Archived' }),
+    ).toBeVisible();
+    await within(list).findByText('Old investigation');
+    expect(screen.getByRole('main').querySelector('h2')?.textContent).toBe(
+      'Archived',
+    );
+    expect(
+      screen.getByText(
+        'Choose an archived session to read it. Your open session and unsent draft are kept.',
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole('textbox', { name: 'Draft' })).toBeNull();
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/agent-sessions/recent',
+    );
+
+    fireEvent.click(within(list).getByText('Old investigation'));
+    await screen.findByText('Viewing old');
+    expect(
+      screen.queryByText(
+        'Choose an archived session to read it. Your open session and unsent draft are kept.',
+      ),
+    ).toBeNull();
+
+    fireEvent.click(
+      within(list).getByRole('button', { name: 'Archived', exact: true }),
+    );
+    expect(
+      await within(list).findByRole('heading', { name: 'My agents' }),
+    ).toBeVisible();
+  });
+
+  it('restores the open session with its unsent draft when leaving the archived list', async () => {
+    await render('/agent-sessions/recent');
+    const draft = await screen.findByRole('textbox', { name: 'Draft' });
+    fireEvent.change(draft, { target: { value: 'Unsent reply' } });
+    const list = screen.getByRole('region', { name: 'Sessions' });
+    const archived = within(list).getByRole('button', {
+      name: 'Archived',
+      exact: true,
+    });
+    fireEvent.click(archived);
+    await within(list).findByText('Old investigation');
+    fireEvent.click(archived);
+    expect(await screen.findByRole('textbox', { name: 'Draft' })).toHaveValue(
+      'Unsent reply',
+    );
+  });
+});
+
+function SessionStub() {
+  const location = useLocation();
+  const id = location.pathname.split('/').pop();
+  return (
+    <div>
+      <p>Viewing {id}</p>
+      <textarea aria-label='Draft' />
+    </div>
+  );
+}

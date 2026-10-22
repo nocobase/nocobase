@@ -29,6 +29,8 @@ const esES: LocaleResource<typeof enUS> = {
     label: 'Sesiones',
     title: 'Mis agentes',
     archived: 'Archivado',
+    archivedView:
+      'Elige una sesión archivada para leerla. Tu sesión abierta y tu borrador sin enviar se conservan.',
     back: 'Volver a sesiones',
     new: 'Nueva sesión',
     search: 'Buscar sesiones',
@@ -102,9 +104,6 @@ const esES: LocaleResource<typeof enUS> = {
       'Este agente no expone configuraciones. Se utilizarán sus valores predeterminados.',
     settingsEmpty:
       'Este agente no tiene ajustes configurables. Se utilizarán sus valores predeterminados.',
-    title: 'Nueva sesión',
-    subtitle:
-      'Discuta y aclare los requisitos con un agente en su propia computadora, registre las tareas y siga el progreso aquí. El director de proyectos de Studio coordina a los agentes para que desarrollen las tareas después de que usted las inicia.',
     pickComputer: 'Elija una computadora',
     noAgent: 'Ningún agente disponible',
     folder: 'Directorio en la computadora',

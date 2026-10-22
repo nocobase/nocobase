@@ -21,7 +21,7 @@ describe('session list archive navigation', () => {
       computers: '我的电脑',
     },
   ])(
-    'keeps the mode title and toggles archive from the footer in $locale',
+    'names the archived list and toggles it from the footer in $locale',
     async ({ locale, archived, title, computers }) => {
       await renderWithApp(
         <QueryClientProvider
@@ -48,7 +48,9 @@ describe('session list archive navigation', () => {
         within(footer).getByRole('button', { name: computers }).title,
       ).toBe(computers);
       fireEvent.click(archive);
-      expect(await screen.findByRole('heading', { name: title })).toBeVisible();
+      expect(
+        await screen.findByRole('heading', { name: archived }),
+      ).toBeVisible();
       expect(
         within(footer)
           .getByRole('button', { name: archived })
