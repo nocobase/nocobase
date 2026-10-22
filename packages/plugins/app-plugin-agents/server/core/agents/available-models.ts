@@ -122,11 +122,14 @@ function allCombos(
   return combos;
 }
 
-function matchesQuery(tool: AgentTool, model: string, q: string): boolean {
+/** Matches the tool name, the model's own id, or its display name: whichever a person searched by. */
+function matchesQuery(tool: AgentTool, combo: Combo, q: string): boolean {
   const needle = q.trim().toLowerCase();
   if (!needle) return true;
   return (
-    tool.toLowerCase().includes(needle) || model.toLowerCase().includes(needle)
+    tool.toLowerCase().includes(needle) ||
+    combo.model.toLowerCase().includes(needle) ||
+    (combo.displayModel?.toLowerCase().includes(needle) ?? false)
   );
 }
 
@@ -174,7 +177,7 @@ export function availableModelGroups(
     if (availability.runnerCount === 0) continue;
     if (filter.status && availability.status !== filter.status) continue;
     const toolCombos = (byTool.get(tool) ?? []).filter((combo) =>
-      matchesQuery(tool, combo.displayModel ?? combo.model, filter.q ?? ''),
+      matchesQuery(tool, combo, filter.q ?? ''),
     );
     if (
       filter.q &&
@@ -237,9 +240,7 @@ export function availableModelRows(
   const availability = toolAvailability(runners, tool);
   if (filter.status && availability.status !== filter.status) return [];
   const combos = [...allCombos(runners, agents).values()].filter(
-    (combo) =>
-      combo.tool === tool &&
-      matchesQuery(tool, combo.displayModel ?? combo.model, filter.q ?? ''),
+    (combo) => combo.tool === tool && matchesQuery(tool, combo, filter.q ?? ''),
   );
   return combos
     .map((combo): AvailableModel => {

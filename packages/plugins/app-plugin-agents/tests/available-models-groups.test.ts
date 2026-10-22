@@ -87,7 +87,11 @@ describe('available models groups', () => {
     await h.registerRunner({
       enabledTools: ['claude', 'kilo'],
       tools: [
-        { kind: 'claude', authenticated: true, models: [{ id: 'claude-sonnet-5' }] },
+        {
+          kind: 'claude',
+          authenticated: true,
+          models: [{ id: 'claude-sonnet-5' }],
+        },
         kilo(60),
       ],
     });
@@ -138,7 +142,11 @@ describe('available models groups', () => {
     await h.registerRunner({
       enabledTools: ['claude', 'qwen'],
       tools: [
-        { kind: 'claude', authenticated: true, models: [{ id: 'claude-sonnet-5' }] },
+        {
+          kind: 'claude',
+          authenticated: true,
+          models: [{ id: 'claude-sonnet-5' }],
+        },
         {
           kind: 'qwen',
           authenticated: true,
@@ -167,6 +175,31 @@ describe('available models groups', () => {
       { user: 'admin', can: ['agents.agents/read'] },
     );
     expect(noMatch.body.data).toEqual([]);
+  });
+
+  it('matches a model’s own id even when its display name reads differently', async () => {
+    h = await createHarness();
+    await h.registerRunner({
+      enabledTools: ['kilo'],
+      tools: [
+        {
+          kind: 'kilo',
+          authenticated: true,
+          models: [{ id: 'model-25', name: 'Kilo Model 25' }],
+        },
+      ],
+    });
+    const byId = await h.request(
+      'GET',
+      '/agents/availableModels?tool=kilo&q=model-25',
+      { user: 'admin', can: ['agents.agents/read'] },
+    );
+    expect(byId.body.data).toEqual([
+      expect.objectContaining({
+        model: 'model-25',
+        displayModel: 'Kilo Model 25',
+      }),
+    ]);
   });
 
   it('aggregates a tool’s availability across its runners: one down one does not hide another’s ready models', async () => {
@@ -202,7 +235,11 @@ describe('available models groups', () => {
     });
     expect(groups.body.data).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ tool: 'amp', status: 'available', runnerCount: 2 }),
+        expect.objectContaining({
+          tool: 'amp',
+          status: 'available',
+          runnerCount: 2,
+        }),
       ]),
     );
   });
