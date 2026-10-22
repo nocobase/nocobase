@@ -1078,6 +1078,21 @@ describe('AgentSessionsService', () => {
         skip: [],
       }),
     ).rejects.toMatchObject({ key: 'linkNotFound' });
+    start.mockRejectedValueOnce(
+      new Error('Configure the project manager first.'),
+    );
+    await expect(
+      service.decideLinks(owner, session.id, {
+        kind: 'issue',
+        start: ['ST-1'],
+        skip: ['ST-2'],
+      }),
+    ).rejects.toThrow('Configure the project manager first.');
+    expect(
+      (await service.getSession(owner, session.id)).links.map(
+        (link) => link.decidedAt,
+      ),
+    ).toEqual([null, null]);
     const decided = await service.decideLinks(owner, session.id, {
       kind: 'issue',
       start: ['ST-1'],
