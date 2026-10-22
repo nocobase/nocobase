@@ -65,5 +65,5 @@ export default {
       name: 'log',
     },
   ],
-  indexes: [{ fields: ['status', 'id'] }],
+  indexes: [{ fields: ['status', 'id'] }, { fields: ['executionId', 'nodeId', 'id'] }],
 };

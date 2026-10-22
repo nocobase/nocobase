@@ -945,11 +945,14 @@ export default {
         tags: ['executions'],
         summary: 'Get single execution',
         description: [
-          'Get details of a single execution. Use `appends` to include jobs, workflow and node data.',
+          'Get details of a single execution with workflow, nodes, version statistics and statistics.',
+          'The server always includes only the latest job per node, without result, meta or log. Workflow options are excluded.',
+          'Caller-supplied appends, fields and except parameters do not change this response shape.',
+          'Use executions/{executionId}/jobs:list for paginated node history and jobs:get for full job details.',
           '',
           'Example:',
           '```',
-          'GET /api/executions:get?filterByTk=1&appends[]=jobs&appends[]=workflow&appends[]=workflow.nodes',
+          'GET /api/executions:get?filterByTk=1',
           '```',
         ].join('\n'),
         parameters: [
@@ -960,19 +963,6 @@ export default {
             description: 'Execution ID',
             schema: { type: 'integer' },
           },
-          {
-            name: 'appends',
-            in: 'query',
-            description:
-              'Append associations: `jobs`, `workflow`, `workflow.nodes`, `workflow.versionStats`, `workflow.stats`',
-            schema: { type: 'array', items: { type: 'string' } },
-          },
-          {
-            name: 'except',
-            in: 'query',
-            description: 'Exclude fields to reduce payload (e.g. `jobs.result`, `workflow.options`)',
-            schema: { type: 'array', items: { type: 'string' } },
-          },
         ],
         responses: {
           200: {
@@ -982,6 +972,27 @@ export default {
                 schema: { $ref: '#/components/schemas/execution' },
               },
             },
+          },
+        },
+      },
+    },
+
+    '/executions/{executionId}/jobs:list': {
+      get: {
+        tags: ['executions'],
+        summary: 'List jobs for one execution node',
+        description:
+          'Returns up to 20 lightweight jobs in descending ID order. The first page includes total; use snapshot and nextCursor as before for subsequent pages. Also available as GET /executions/{executionId}/jobs.',
+        parameters: [
+          { name: 'executionId', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'nodeId', in: 'query', required: true, schema: { type: 'string' } },
+          { name: 'before', in: 'query', schema: { type: 'string' } },
+          { name: 'snapshot', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: {
+          200: {
+            description:
+              'Lightweight items, first-page total, snapshot and nullable nextCursor. Job result, meta and log are excluded.',
           },
         },
       },
@@ -1063,7 +1074,7 @@ export default {
         tags: ['jobs'],
         summary: 'List jobs',
         description:
-          'Get list of node job records. Usually more convenient to access via `executions:get` with `appends: ["jobs"]`.',
+          'Get list of node job records. Use `executions/{executionId}/jobs:list` for lightweight cursor-paginated history of one node.',
         parameters: [
           {
             name: 'filter',
