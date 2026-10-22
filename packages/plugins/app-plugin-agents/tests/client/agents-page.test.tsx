@@ -262,13 +262,53 @@ describe('the Agent page', () => {
     renderPage(<AgentsPage />);
     fireEvent.click(await screen.findByTestId('agents-available-open'));
     const drawer = await screen.findByTestId('available-models-drawer');
+    fireEvent.click(
+      within(drawer).getByTestId('available-models-filter-needsSetup'),
+    );
+    expect(
+      within(drawer).getByTestId('available-models-filter-available'),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      within(drawer).getByTestId('available-models-filter-needsSetup'),
+    ).toHaveAttribute('aria-pressed', 'true');
     // One model is at or under the default-expand threshold, so the group opens without a click.
     expect(
-      await within(drawer).findByText(/goose configure/u),
+      await within(drawer).findByText('goose configure', { selector: 'code' }),
     ).toBeInTheDocument();
     expect(
       await within(drawer).findByTestId('available-model-goose-already-added'),
     ).toBeInTheDocument();
+  });
+
+  it('uses catalog names and secondary ids without repeating a matching group status', async () => {
+    availableRows.claude![0] = {
+      ...availableRows.claude![0]!,
+      displayModel: 'claude-opus-5-5',
+    };
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-available-open'));
+    const row = await screen.findByTestId(
+      'available-model-claude-claude-opus-5-5',
+    );
+    expect(within(row).getByText('Claude · Opus 5.5')).toBeInTheDocument();
+    expect(within(row).getByText('claude-opus-5-5')).toBeInTheDocument();
+    expect(
+      within(row).queryByText('agents.available.status.available'),
+    ).toBeNull();
+  });
+
+  it('marks an enabled historical agent with no fitting runtime as currently unavailable', async () => {
+    agents[0] = {
+      ...agents[0]!,
+      unusable: 'noRunner',
+      runners: { team: 0, personal: 0, mine: 0, names: [] },
+    };
+    renderPage(<AgentsPage />);
+    const row = await screen.findByTestId('agent-sonnet');
+    expect(within(row).getByText('agents.state.enabled')).toBeInTheDocument();
+    expect(
+      within(row).getAllByText('agents.where.noneOnline').length,
+    ).toBeGreaterThan(0);
   });
 
   it('selects several models across the group, edits one good-at, and adds them at once from the confirm step', async () => {
@@ -313,7 +353,21 @@ describe('the Agent page', () => {
       'available-model-good-at-claude-claude-fable-5-1',
     );
     expect(fableGoodAt).toHaveValue('');
+    expect(fableGoodAt).toHaveAttribute('aria-invalid', 'true');
+    expect(
+      within(drawer).getByText('agents.enable.goodAtRequired'),
+    ).toBeVisible();
+    expect(
+      within(drawer).getByTestId('available-models-confirm-submit'),
+    ).toBeDisabled();
+    fireEvent.change(fableGoodAt, { target: { value: '   ' } });
+    expect(
+      within(drawer).getByTestId('available-models-confirm-submit'),
+    ).toBeDisabled();
     fireEvent.change(fableGoodAt, { target: { value: 'Fable good at' } });
+    expect(
+      within(drawer).getByTestId('available-models-confirm-submit'),
+    ).toBeEnabled();
     fireEvent.click(
       within(drawer).getByTestId('available-models-confirm-submit'),
     );

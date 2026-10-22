@@ -205,8 +205,11 @@ const jaJP: LocaleResource<typeof enUS> = {
         versionTooOld: 'バージョンが古い',
         failed: '検出失敗',
       },
-      setupCommand: 'ランタイムで `{{command}}` を実行してください。',
+      details: 'ツールの詳細',
+      setupCommand: 'ランタイムで {{command}} を実行してください。',
       setupUnknown: 'このツールには設定が必要ですが、コマンドが分かりません。',
+      upgradeAdvice:
+        '実行環境でツールと ACP アダプターを最新版に更新し、検出を更新してください。',
       minimumVersionUnknown:
         '対応するツールの最小リリースは不明です。互換性のドキュメントを確認してください。',
       noDetail: 'ツールから追加の詳細はありませんでした。',
@@ -340,7 +343,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     teamRunnersOnlyBadge: 'チームランタイムのみ',
     fromRunner: 'ランタイムから取得',
     fromRunnerHint:
-      'ここには値は保持されません。実行を受けるランタイムは、それ自体のマシンから値を提供し、`{{command}}` で設定するか、`--pass-env` で渡します。これを提供しないランタイムは、開始前に実行に失敗します。',
+      'ここには値は保持されません。実行を受けるランタイムは、それ自体のマシンから値を提供し、{{command}} で設定するか、`--pass-env` で渡します。これを提供しないランタイムは、開始前に実行に失敗します。',
     fromRunnerBadge: 'ランタイムから',
     valueRequired: '値を入力するか、ランタイムから値を取得し続けます。',
     empty: '環境変数はありません。',

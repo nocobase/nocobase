@@ -9,6 +9,7 @@
  * creates and enables it on its own. Only the tools a runtime has checked are ever detected, so a tool nobody checked
  * never appears in this list at all.
  */
+import { CheckIcon } from 'lucide-react';
 import type { AgentTool } from '@nocobase/agent-protocol';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
@@ -25,7 +26,11 @@ import type {
   AvailableModelGroup,
   ModelAvailabilityStatus,
 } from '../../../shared/agents.js';
-import { TOOL_LABELS, TOOL_SIGN_IN } from '../../../shared/model-catalog.js';
+import {
+  agentNameOf,
+  TOOL_LABELS,
+  TOOL_SIGN_IN,
+} from '../../../shared/model-catalog.js';
 import { modelSuggestion } from '../../model-suggestion.js';
 import { agentsKeys } from '../../api/keys.js';
 import { AgListSkeleton, AgLoadError } from '../../components/ag-states.js';
@@ -78,29 +83,64 @@ function rowKey(tool: AgentTool, model: string): string {
   return `${tool}\u0000${model}`;
 }
 
-/** The group header's reason line: the tool's own setup command when the catalog has one, its own words when it
- * gave any, and an honest gap instead of a guess when neither is available. */
-function setupGuidance(
-  group: Pick<AvailableModelGroup, 'tool' | 'status' | 'statusDetail'>,
-  t: (key: string, options?: Record<string, unknown>) => string,
-): string {
+/** Setup actions and diagnostic output have different jobs: keep the command visible once, with raw output opt-in. */
+function SetupGuidance({
+  group,
+}: {
+  readonly group: AvailableModelGroup;
+}): ReactElement {
+  const { t } = useTranslation();
   const command = TOOL_SIGN_IN[group.tool];
-  if (group.status === 'needsSetup') {
-    const instruction = command
-      ? t('agents.available.setupCommand', { command })
-      : t('agents.available.setupUnknown');
-    return group.statusDetail
-      ? `${instruction} ${group.statusDetail}`
-      : instruction;
-  }
+  if (group.status !== 'needsSetup')
+    return (
+      <ExpandableText
+        text={
+          (group.statusDetail ??
+            t(
+              group.status === 'versionTooOld'
+                ? 'agents.available.minimumVersionUnknown'
+                : 'agents.available.noDetail',
+            )) +
+          (group.status === 'versionTooOld'
+            ? ' ' + t('agents.available.upgradeAdvice')
+            : '')
+        }
+      />
+    );
+  const [before, after] = t('agents.available.setupCommand', {
+    command: '\u0000',
+  }).split('\u0000');
   return (
-    group.statusDetail ??
-    t(
-      group.status === 'versionTooOld'
-        ? 'agents.available.minimumVersionUnknown'
-        : 'agents.available.noDetail',
-    )
+    <div className='space-y-2 pt-3 text-sm text-muted-foreground'>
+      <p>
+        {command ? (
+          <>
+            {before}
+            <code className='rounded bg-muted px-1 py-0.5 font-mono text-foreground'>
+              {command}
+            </code>
+            {after}
+          </>
+        ) : (
+          t('agents.available.setupUnknown')
+        )}
+      </p>
+      {group.statusDetail ? (
+        <details>
+          <summary className='cursor-pointer'>
+            {t('agents.available.details')}
+          </summary>
+          <p className='whitespace-pre-wrap break-words pt-2'>
+            {group.statusDetail}
+          </p>
+        </details>
+      ) : null}
+    </div>
   );
+}
+
+function modelName(model: AvailableModel): string {
+  return agentNameOf(model.tool, model.model, model.displayModel);
 }
 
 function ExpandableText({ text }: { readonly text: string }): ReactElement {
@@ -143,7 +183,9 @@ export function AvailableModelsDrawer({
   const notify = useNotify();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<ModelAvailabilityStatus>('available');
+  const [statuses, setStatuses] = useState<
+    ReadonlySet<ModelAvailabilityStatus>
+  >(() => new Set(['available']));
   const [toggled, setToggled] = useState<ReadonlySet<AgentTool>>(
     () => new Set(),
   );
@@ -163,7 +205,7 @@ export function AvailableModelsDrawer({
 
   const reset = (): void => {
     setSearch('');
-    setStatus('available');
+    setStatuses(new Set(['available']));
     setToggled(new Set());
     setSelected(new Map());
     setDrafts(new Map());
@@ -251,8 +293,8 @@ export function AvailableModelsDrawer({
   };
 
   const groups = useQuery({
-    queryKey: agentsKeys.availableModelGroups(q, status),
-    queryFn: () => api.availableModelGroups({ q: q || undefined, status }),
+    queryKey: agentsKeys.availableModelGroups(q, ''),
+    queryFn: () => api.availableModelGroups({ q: q || undefined }),
     enabled: open && step === 'select',
   });
 
@@ -345,10 +387,19 @@ export function AvailableModelsDrawer({
                     key={option}
                     type='button'
                     size='sm'
-                    variant={status === option ? 'default' : 'outline'}
-                    onClick={() => setStatus(option)}
+                    variant={statuses.has(option) ? 'default' : 'outline'}
+                    aria-pressed={statuses.has(option)}
+                    onClick={() =>
+                      setStatuses((current) => {
+                        const next = new Set(current);
+                        if (next.has(option)) next.delete(option);
+                        else next.add(option);
+                        return next;
+                      })
+                    }
                     data-testid={`available-models-filter-${option}`}
                   >
+                    {statuses.has(option) ? <CheckIcon aria-hidden /> : null}
                     {t(`agents.available.status.${option}`)}
                   </Button>
                 ))}
@@ -363,31 +414,35 @@ export function AvailableModelsDrawer({
                 />
               ) : !groups.data ? (
                 <AgListSkeleton />
-              ) : groups.data.data.length === 0 ? (
+              ) : groups.data.data.every(
+                  (group) => !statuses.has(group.status),
+                ) ? (
                 <p className='text-sm text-muted-foreground'>
                   {t('agents.noneInFilter')}
                 </p>
               ) : (
-                groups.data.data.map((group) => (
-                  <ToolGroup
-                    key={group.tool}
-                    group={group}
-                    q={q}
-                    status={status}
-                    expanded={
-                      toggled.has(group.tool) !==
-                      group.modelCount <= DEFAULT_EXPAND_THRESHOLD
-                    }
-                    forceExpand={forceExpand}
-                    onToggle={() => toggle(group.tool)}
-                    selected={selected}
-                    onSelect={setRowSelected}
-                    onAddOne={(model) => {
-                      setRowSelected(model, true);
-                      goToConfirm(model);
-                    }}
-                  />
-                ))
+                groups.data.data
+                  .filter((group) => statuses.has(group.status))
+                  .map((group) => (
+                    <ToolGroup
+                      key={group.tool}
+                      group={group}
+                      q={q}
+                      status={group.status}
+                      expanded={
+                        toggled.has(group.tool) !==
+                        group.modelCount <= DEFAULT_EXPAND_THRESHOLD
+                      }
+                      forceExpand={forceExpand}
+                      onToggle={() => toggle(group.tool)}
+                      selected={selected}
+                      onSelect={setRowSelected}
+                      onAddOne={(model) => {
+                        setRowSelected(model, true);
+                        goToConfirm(model);
+                      }}
+                    />
+                  ))
               )}
             </div>
             <SheetFooter
@@ -467,7 +522,7 @@ function ToolGroup({
       last.meta.page * last.meta.pageSize < last.meta.total
         ? last.meta.page + 1
         : undefined,
-    enabled: open,
+    enabled: open && group.modelCount > 0,
   });
   const loaded = useMemo(
     () => rows.data?.pages.flatMap((page) => page.data) ?? [],
@@ -497,7 +552,7 @@ function ToolGroup({
           {/* Shown independently of modelCount: a tool that already has models with an agent (so this group is not
               empty) can still need setup or be failing now, and that guidance must not disappear behind its rows. */}
           {group.status !== 'available' ? (
-            <ExpandableText text={setupGuidance(group, t)} />
+            <SetupGuidance group={group} />
           ) : null}
           {group.modelCount === 0 ? null : (
             <>
@@ -518,7 +573,9 @@ function ToolGroup({
                   onRetry={() => void rows.refetch()}
                 />
               ) : !rows.data ? (
-                <AgListSkeleton rows={2} />
+                <p role='status' className='pt-3 text-sm text-muted-foreground'>
+                  {t('common.loading')}
+                </p>
               ) : loaded.length === 0 ? (
                 <p className='pt-3 text-sm text-muted-foreground'>
                   {t('agents.available.noModels')}
@@ -540,6 +597,7 @@ function ToolGroup({
                         <div className='py-1'>
                           <ModelRow
                             model={model}
+                            groupStatus={group.status}
                             checked={selected.has(
                               rowKey(model.tool, model.model),
                             )}
@@ -555,6 +613,7 @@ function ToolGroup({
                         <ModelRow
                           key={rowKey(model.tool, model.model)}
                           model={model}
+                          groupStatus={group.status}
                           checked={selected.has(
                             rowKey(model.tool, model.model),
                           )}
@@ -588,11 +647,13 @@ function ToolGroup({
 
 function ModelRow({
   model,
+  groupStatus,
   checked,
   onSelect,
   onAddOne,
 }: {
   readonly model: AvailableModel;
+  readonly groupStatus: ModelAvailabilityStatus;
   readonly checked: boolean;
   readonly onSelect: (model: AvailableModel, checked: boolean) => void;
   readonly onAddOne: (model: AvailableModel) => void;
@@ -606,17 +667,16 @@ function ModelRow({
     >
       <Checkbox
         aria-label={t('agents.cleanup.select', {
-          name: model.displayModel ?? model.model,
+          name: modelName(model),
         })}
         checked={checked}
         disabled={added || model.availability !== 'available'}
         onCheckedChange={(next) => onSelect(model, next === true)}
       />
       <div className='min-w-0 flex-1'>
-        <div className='font-medium'>
-          {model.displayModel ?? (model.model || TOOL_LABELS[model.tool])}
-        </div>
+        <div className='font-medium'>{modelName(model)}</div>
         <div className='flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground'>
+          <span>{model.model}</span>
           {model.recommended ? (
             <span>{t('agents.available.recommended')}</span>
           ) : null}
@@ -625,9 +685,11 @@ function ModelRow({
           </span>
         </div>
       </div>
-      <AgTag tone={STATUS_TONE[model.availability]}>
-        {t(`agents.available.status.${model.availability}`)}
-      </AgTag>
+      {model.availability !== groupStatus ? (
+        <AgTag tone={STATUS_TONE[model.availability]}>
+          {t(`agents.available.status.${model.availability}`)}
+        </AgTag>
+      ) : null}
       {added ? (
         <AgTag tone='grey'>{t('agents.available.added')}</AgTag>
       ) : (
@@ -664,7 +726,6 @@ function ConfirmStep({
   readonly onBack: () => void;
 }): ReactElement {
   const { t } = useTranslation();
-  const [submitted, setSubmitted] = useState(false);
   const entries = [...selected.values()];
   const invalid = entries.filter(
     (model) =>
@@ -684,7 +745,6 @@ function ConfirmStep({
         onSubmit={(event) => {
           event.preventDefault();
           if (pending) return;
-          setSubmitted(true);
           if (invalid.length > 0) return;
           onSubmit();
         }}
@@ -692,12 +752,12 @@ function ConfirmStep({
         {entries.map((model) => {
           const key = rowKey(model.tool, model.model);
           const goodAt = drafts.get(key) ?? '';
-          const missing = submitted && goodAt.trim() === '';
+          const missing = goodAt.trim() === '';
           const rowError = rowErrors.get(key);
           return (
             <Field key={key} data-invalid={missing ? true : undefined}>
               <FieldLabel htmlFor={`confirm-good-at-${key}`}>
-                {model.displayModel ?? model.model} · {TOOL_LABELS[model.tool]}
+                {modelName(model)}
               </FieldLabel>
               <Textarea
                 id={`confirm-good-at-${key}`}
@@ -740,7 +800,7 @@ function ConfirmStep({
         <Button
           type='submit'
           form='available-models-confirm-form'
-          disabled={pending}
+          disabled={pending || invalid.length > 0}
           data-testid='available-models-confirm-submit'
         >
           {t('agents.available.confirmAction', { count: entries.length })}

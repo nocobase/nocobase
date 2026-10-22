@@ -30,9 +30,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '../../components/ui/alert-dialog.js';
-import { Button, buttonVariants } from '../../components/ui/button.js';
+import { Button } from '../../components/ui/button.js';
 import { Checkbox } from '../../components/ui/checkbox.js';
 import {
   Collapsible,
@@ -246,7 +245,10 @@ export function CleanupDrawer({
             ))
           )}
         </div>
-        <SheetFooter className='shrink-0 flex-row items-center justify-between border-t'>
+        <SheetFooter
+          data-fixed-sheet-footer
+          className='shrink-0 flex-row items-center justify-between border-t'
+        >
           <div className='text-sm text-muted-foreground'>
             {selected.size > 0
               ? t('agents.cleanup.selectedCount', { count: selected.size })
@@ -256,42 +258,44 @@ export function CleanupDrawer({
             <Button variant='outline' onClick={onClose}>
               {t('actions.close')}
             </Button>
-            <AlertDialog open={confirming} onOpenChange={setConfirming}>
-              <AlertDialogTrigger
-                className={buttonVariants({ variant: 'destructive' })}
-                disabled={selected.size === 0 || remove.isPending}
-                data-testid='cleanup-open-confirm'
-              >
-                {t('agents.cleanup.remove', { count: selected.size })}
-              </AlertDialogTrigger>
-              <AlertDialogContent data-testid='cleanup-confirm'>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    {t('agents.cleanup.confirmTitle', { count: selected.size })}
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t('agents.cleanup.confirmDescription', {
-                      tools: toolNames,
-                    })}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t('actions.back')}</AlertDialogCancel>
-                  <AlertDialogAction
-                    disabled={remove.isPending}
-                    onClick={() => remove.mutate()}
-                    data-testid='cleanup-confirm-submit'
-                  >
-                    {t('agents.cleanup.confirmAction', {
-                      count: selected.size,
-                    })}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button
+              variant='destructive'
+              disabled={selected.size === 0 || remove.isPending}
+              data-testid='cleanup-open-confirm'
+              onClick={() => setConfirming(true)}
+            >
+              {t('agents.cleanup.remove', { count: selected.size })}
+            </Button>
           </div>
         </SheetFooter>
       </SheetContent>
+      {/* Render the confirmation portal after the sheet portal so its backdrop and popup cover virtualized rows. */}
+      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        <AlertDialogContent data-testid='cleanup-confirm'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('agents.cleanup.confirmTitle', { count: selected.size })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('agents.cleanup.confirmDescription', {
+                tools: toolNames,
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('actions.back')}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={remove.isPending}
+              onClick={() => remove.mutate()}
+              data-testid='cleanup-confirm-submit'
+            >
+              {t('agents.cleanup.confirmAction', {
+                count: selected.size,
+              })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }

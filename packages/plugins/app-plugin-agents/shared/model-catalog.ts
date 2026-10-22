@@ -220,7 +220,11 @@ export function agentNameOf(
   displayModel?: string,
 ): string {
   if (!model) return TOOL_DISPLAY_NAMES[tool] ?? tool;
-  const label = sanitizeAgentNamePart(displayModel ?? modelLabel(tool, model));
+  const label = sanitizeAgentNamePart(
+    displayModel && displayModel !== model
+      ? displayModel
+      : modelLabel(tool, model),
+  );
   return `${TOOL_LABELS[tool]} · ${label || model}`;
 }
 

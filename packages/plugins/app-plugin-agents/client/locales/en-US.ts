@@ -208,9 +208,12 @@ const pages = {
         versionTooOld: 'Version too low',
         failed: 'Detection failed',
       },
-      setupCommand: 'Run `{{command}}` on the runtime.',
+      details: 'Tool details',
+      setupCommand: 'Needs setup: run {{command}} on the runtime.',
       setupUnknown:
         'This tool needs setting up, but we don’t know the command for it.',
+      upgradeAdvice:
+        'Upgrade the tool and its ACP adapter to the latest releases on the runtime, then refresh detection.',
       minimumVersionUnknown:
         'Minimum supported tool release: unknown. Consult the tool’s compatibility documentation.',
       noDetail: 'The tool gave no further detail.',
@@ -344,7 +347,7 @@ const pages = {
     teamRunnersOnlyBadge: 'Team runtimes only',
     fromRunner: 'Take from the runtime',
     fromRunnerHint:
-      'No value is kept here: the runtime that takes a run provides it from its own machine, set there with `{{command}}` or passed with `--pass-env`. A runtime that does not provide it fails the run before it starts.',
+      'No value is kept here: the runtime that takes a run provides it from its own machine, set there with {{command}} or passed with `--pass-env`. A runtime that does not provide it fails the run before it starts.',
     fromRunnerBadge: 'From the runtime',
     valueRequired: 'Enter a value, or keep taking it from the runtime.',
     empty: 'No environment variables.',

@@ -205,9 +205,12 @@ const idID: LocaleResource<typeof enUS> = {
         versionTooOld: 'Versi terlalu lama',
         failed: 'Deteksi gagal',
       },
-      setupCommand: 'Jalankan `{{command}}` di runtime.',
+      details: 'Detail alat',
+      setupCommand: 'Jalankan {{command}} di runtime.',
       setupUnknown:
         'Alat ini perlu disiapkan, tetapi kami tidak tahu perintahnya.',
+      upgradeAdvice:
+        'Perbarui alat dan adaptor ACP ke rilis terbaru di runtime, lalu segarkan deteksi.',
       minimumVersionUnknown:
         'Versi minimum alat yang didukung tidak diketahui. Lihat dokumentasi kompatibilitas alat.',
       noDetail: 'Alat ini tidak memberikan detail lebih lanjut.',
@@ -342,7 +345,7 @@ const idID: LocaleResource<typeof enUS> = {
     teamRunnersOnlyBadge: 'Waktu proses tim saja',
     fromRunner: 'Ambil dari runtime',
     fromRunnerHint:
-      'Tidak ada nilai yang disimpan di sini: waktu proses yang dijalankan menyediakannya dari mesinnya sendiri, disetel di sana dengan `{{command}}` atau diteruskan dengan `--pass-env`. Runtime yang tidak menyediakannya akan gagal dijalankan sebelum dimulai.',
+      'Tidak ada nilai yang disimpan di sini: waktu proses yang dijalankan menyediakannya dari mesinnya sendiri, disetel di sana dengan {{command}} atau diteruskan dengan `--pass-env`. Runtime yang tidak menyediakannya akan gagal dijalankan sebelum dimulai.',
     fromRunnerBadge: 'Dari waktu proses',
     valueRequired: 'Masukkan nilai, atau terus ambil dari runtime.',
     empty: 'Tidak ada variabel lingkungan.',

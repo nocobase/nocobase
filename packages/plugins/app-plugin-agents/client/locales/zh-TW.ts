@@ -201,8 +201,11 @@ const zhTW: LocaleResource<typeof enUS> = {
         versionTooOld: '版本過舊',
         failed: '偵測失敗',
       },
-      setupCommand: '在執行機上執行 `{{command}}`。',
+      details: '工具詳情',
+      setupCommand: '在執行機上執行 {{command}}。',
       setupUnknown: '這個工具需要設定，但我們不知道對應的指令。',
+      upgradeAdvice:
+        '在執行機上將工具及其 ACP 配接器升級至最新版，然後重新整理偵測。',
       minimumVersionUnknown:
         '最低支援的工具發行版本未知，請查閱工具的相容性文件。',
       noDetail: '工具沒有提供更多資訊。',
@@ -331,7 +334,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     teamRunnersOnlyBadge: '僅限團隊執行環境',
     fromRunner: '從執行環境獲取',
     fromRunnerHint:
-      '這裡不保留任何值：進行執行的執行環境從自己的機器提供它，用 `{{command}}` 在那裡設定或用 `--pass-env` 傳遞。不提供它的執行環境會在啟動之前失敗。',
+      '這裡不保留任何值：進行執行的執行環境從自己的機器提供它，用 {{command}} 在那裡設定或用 `--pass-env` 傳遞。不提供它的執行環境會在啟動之前失敗。',
     fromRunnerBadge: '來自執行環境',
     valueRequired: '輸入一個值，或繼續從執行環境取得它。',
     empty: '沒有環境變數。',

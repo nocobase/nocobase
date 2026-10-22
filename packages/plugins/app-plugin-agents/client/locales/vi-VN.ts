@@ -204,9 +204,12 @@ const viVN: LocaleResource<typeof enUS> = {
         versionTooOld: 'Phiên bản quá cũ',
         failed: 'Phát hiện thất bại',
       },
-      setupCommand: 'Chạy `{{command}}` trên môi trường chạy.',
+      details: 'Chi tiết công cụ',
+      setupCommand: 'Chạy {{command}} trên môi trường chạy.',
       setupUnknown:
         'Công cụ này cần được thiết lập, nhưng chúng tôi không biết lệnh tương ứng.',
+      upgradeAdvice:
+        'Nâng cấp công cụ và bộ điều hợp ACP lên bản mới nhất trên môi trường, rồi làm mới việc phát hiện.',
       minimumVersionUnknown:
         'Chưa rõ phiên bản công cụ tối thiểu được hỗ trợ. Xem tài liệu tương thích của công cụ.',
       noDetail: 'Công cụ không cung cấp thêm chi tiết.',
@@ -341,7 +344,7 @@ const viVN: LocaleResource<typeof enUS> = {
     teamRunnersOnlyBadge: 'Chỉ thời gian chạy của nhóm',
     fromRunner: 'Lấy từ thời gian chạy',
     fromRunnerHint:
-      'Không có giá trị nào được giữ ở đây: thời gian chạy thực hiện một lần chạy cung cấp giá trị đó từ máy của chính nó, được đặt ở đó bằng `{{command}}` hoặc được truyền bằng `--pass-env`. Một thời gian chạy không cung cấp nó sẽ không chạy được trước khi bắt đầu.',
+      'Không có giá trị nào được giữ ở đây: thời gian chạy thực hiện một lần chạy cung cấp giá trị đó từ máy của chính nó, được đặt ở đó bằng {{command}} hoặc được truyền bằng `--pass-env`. Một thời gian chạy không cung cấp nó sẽ không chạy được trước khi bắt đầu.',
     fromRunnerBadge: 'Từ thời gian chạy',
     valueRequired:
       'Nhập một giá trị hoặc tiếp tục lấy giá trị đó từ thời gian chạy.',

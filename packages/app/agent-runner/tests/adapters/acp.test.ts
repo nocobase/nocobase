@@ -213,6 +213,9 @@ it.each(['0', '99'])(
     expect(detected.statusDetail).toContain(
       'Minimum supported tool release: unknown',
     );
+    expect(detected.statusDetail).toContain(
+      'Upgrade the tool and its ACP adapter to their latest releases',
+    );
   },
 );
 

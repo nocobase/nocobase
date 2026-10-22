@@ -144,7 +144,7 @@ export class AgentProcess {
       ).finally(() => cleanup());
       if (initialize.protocolVersion !== acp.PROTOCOL_VERSION)
         throw new Error(
-          `ACP protocol incompatibility: the agent selected ${initialize.protocolVersion}; this host supports ACP ${acp.PROTOCOL_VERSION}. Reported tool release: ${initialize.agentInfo?.version ?? 'unknown'}. Minimum supported tool release: unknown; consult the tool's compatibility documentation.`,
+          `ACP protocol incompatibility: the agent selected ${initialize.protocolVersion}; this host supports ACP ${acp.PROTOCOL_VERSION}. Reported tool release: ${initialize.agentInfo?.version ?? 'unknown'}. Minimum supported tool release: unknown. Upgrade the tool and its ACP adapter to their latest releases, then refresh detection; consult their compatibility documentation if the mismatch persists.`,
         );
       return new AgentProcess(
         child,

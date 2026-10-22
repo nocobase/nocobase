@@ -210,9 +210,12 @@ const deDE: LocaleResource<typeof enUS> = {
         versionTooOld: 'Version zu alt',
         failed: 'Erkennung fehlgeschlagen',
       },
-      setupCommand: 'Führen Sie `{{command}}` auf der Laufzeit aus.',
+      details: 'Tool-Details',
+      setupCommand: 'Führen Sie {{command}} auf der Laufzeit aus.',
       setupUnknown:
         'Dieses Tool muss eingerichtet werden, aber wir kennen den Befehl dafür nicht.',
+      upgradeAdvice:
+        'Aktualisieren Sie das Tool und seinen ACP-Adapter auf der Laufzeit auf die neuesten Versionen und starten Sie die Erkennung erneut.',
       minimumVersionUnknown:
         'Die unterstützte Mindestversion des Tools ist unbekannt. Lesen Sie die Kompatibilitätsdokumentation.',
       noDetail: 'Das Tool hat keine weiteren Details angegeben.',
@@ -350,7 +353,7 @@ const deDE: LocaleResource<typeof enUS> = {
     teamRunnersOnlyBadge: 'Nur Teamlaufzeiten',
     fromRunner: 'Aus der Laufzeit übernehmen',
     fromRunnerHint:
-      'Hier wird kein Wert gespeichert: Die Laufzeit, die einen Lauf durchführt, stellt ihn von ihrer eigenen Maschine bereit, wird dort mit `{{command}}` gesetzt oder mit `--pass-env` übergeben. Eine Laufzeit, die dies nicht bereitstellt, schlägt die Ausführung fehl, bevor sie gestartet wird.',
+      'Hier wird kein Wert gespeichert: Die Laufzeit, die einen Lauf durchführt, stellt ihn von ihrer eigenen Maschine bereit, wird dort mit {{command}} gesetzt oder mit `--pass-env` übergeben. Eine Laufzeit, die dies nicht bereitstellt, schlägt die Ausführung fehl, bevor sie gestartet wird.',
     fromRunnerBadge: 'Aus der Laufzeit',
     valueRequired:
       'Geben Sie einen Wert ein oder übernehmen Sie ihn weiterhin aus der Laufzeit.',

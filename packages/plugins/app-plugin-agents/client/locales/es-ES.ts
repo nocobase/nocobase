@@ -213,9 +213,12 @@ const esES: LocaleResource<typeof enUS> = {
         versionTooOld: 'Versión demasiado antigua',
         failed: 'Detección fallida',
       },
-      setupCommand: 'Ejecute `{{command}}` en el tiempo de ejecución.',
+      details: 'Detalles de la herramienta',
+      setupCommand: 'Ejecute {{command}} en el tiempo de ejecución.',
       setupUnknown:
         'Esta herramienta necesita configuración, pero no conocemos el comando para ello.',
+      upgradeAdvice:
+        'Actualiza la herramienta y su adaptador ACP a las últimas versiones en el entorno y vuelve a detectar.',
       minimumVersionUnknown:
         'Se desconoce la versión mínima compatible de la herramienta. Consulte su documentación de compatibilidad.',
       noDetail: 'La herramienta no dio más detalles.',
@@ -359,7 +362,7 @@ const esES: LocaleResource<typeof enUS> = {
     teamRunnersOnlyBadge: 'Solo tiempos de ejecución en equipo',
     fromRunner: 'Tomar del tiempo de ejecución',
     fromRunnerHint:
-      'Aquí no se guarda ningún valor: el tiempo de ejecución que realiza una ejecución lo proporciona desde su propia máquina, configurado allí con `{{command}}` o pasado con `--pass-env`. Un tiempo de ejecución que no lo proporciona falla en la ejecución antes de comenzar.',
+      'Aquí no se guarda ningún valor: el tiempo de ejecución que realiza una ejecución lo proporciona desde su propia máquina, configurado allí con {{command}} o pasado con `--pass-env`. Un tiempo de ejecución que no lo proporciona falla en la ejecución antes de comenzar.',
     fromRunnerBadge: 'Desde el tiempo de ejecución',
     valueRequired:
       'Ingrese un valor o continúe tomándolo del tiempo de ejecución.',

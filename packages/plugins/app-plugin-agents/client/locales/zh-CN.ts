@@ -204,8 +204,11 @@ const zhCN: AgentsResource = {
         versionTooOld: '版本过低',
         failed: '检测失败',
       },
-      setupCommand: '在执行机上运行 `{{command}}`。',
+      details: '工具详情',
+      setupCommand: '需要设置：在执行机上运行 {{command}}。',
       setupUnknown: '这个工具需要设置，但我们不知道对应的命令。',
+      upgradeAdvice:
+        '在执行机上将工具及其 ACP 适配器升级至最新版，然后刷新检测。',
       minimumVersionUnknown:
         '最低支持的工具发布版本未知，请查阅工具的兼容性文档。',
       noDetail: '工具没有提供更多信息。',
@@ -337,7 +340,7 @@ const zhCN: AgentsResource = {
     teamRunnersOnlyBadge: '仅限团队运行环境',
     fromRunner: '从运行环境取',
     fromRunnerHint:
-      '这里不保存值：由接活的运行环境从它所在的机器提供，在那台机器上用 `{{command}}` 设置，或用 `--pass-env` 放行。不提供这个变量的运行环境会在运行开始前失败。',
+      '这里不保存值：由接活的运行环境从它所在的机器提供，在那台机器上用 {{command}} 设置，或用 `--pass-env` 放行。不提供这个变量的运行环境会在运行开始前失败。',
     fromRunnerBadge: '从运行环境取',
     valueRequired: '请填写值，或继续从运行环境取。',
     empty: '没有环境变量。',

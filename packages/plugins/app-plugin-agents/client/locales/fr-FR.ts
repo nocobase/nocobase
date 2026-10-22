@@ -212,9 +212,12 @@ const frFR: LocaleResource<typeof enUS> = {
         versionTooOld: 'Version trop ancienne',
         failed: 'Détection échouée',
       },
-      setupCommand: 'Exécutez `{{command}}` sur l’environnement d’exécution.',
+      details: 'Détails de l’outil',
+      setupCommand: 'Exécutez {{command}} sur l’environnement d’exécution.',
       setupUnknown:
         'Cet outil doit être configuré, mais nous ne connaissons pas la commande correspondante.',
+      upgradeAdvice:
+        'Mettez à jour l’outil et son adaptateur ACP dans l’environnement, puis relancez la détection.',
       minimumVersionUnknown:
         'La version minimale compatible de l’outil est inconnue. Consultez sa documentation de compatibilité.',
       noDetail: 'L’outil n’a donné aucun détail supplémentaire.',
@@ -359,7 +362,7 @@ const frFR: LocaleResource<typeof enUS> = {
     teamRunnersOnlyBadge: "Runtimes d'équipe uniquement",
     fromRunner: 'Extraire du runtime',
     fromRunnerHint:
-      "Aucune valeur n'est conservée ici : le runtime qui effectue une exécution la fournit depuis sa propre machine, définie ici avec `{{command}}` ou transmise avec `--pass-env`. Un environnement d'exécution qui ne le fournit pas échoue avant son démarrage.",
+      "Aucune valeur n'est conservée ici : le runtime qui effectue une exécution la fournit depuis sa propre machine, définie ici avec {{command}} ou transmise avec `--pass-env`. Un environnement d'exécution qui ne le fournit pas échoue avant son démarrage.",
     fromRunnerBadge: "Depuis l'exécution",
     valueRequired:
       'Entrez une valeur ou continuez à la récupérer à partir du runtime.',
