@@ -2,6 +2,8 @@ import { useEffect, useRef, type ReactElement, type ReactNode } from 'react';
 
 import { cn } from 'cn';
 
+import { PageTitleContext } from '../lib/page-title-context.js';
+
 export interface RouteChildPageProps {
   readonly children?: ReactNode;
   readonly className?: string;
@@ -23,6 +25,9 @@ export interface RouteChildPageProps {
  * than within it. Nested inside, a deeper layer would resolve `inset-0` against this one and scroll out of sight
  * as soon as the user had scrolled this page. Kept as siblings, both layers anchor to the content area, and the
  * DOM gains no level for each level of routing.
+ *
+ * It shows its page's title even under an application's heading or tab bar (`PageTitleContext`), which names the
+ * page beneath rather than this one.
  */
 export function RouteChildPage({
   children,
@@ -62,7 +67,9 @@ export function RouteChildPage({
       )}
       ref={layerRef}
     >
-      {children}
+      <PageTitleContext.Provider value='visible'>
+        {children}
+      </PageTitleContext.Provider>
     </div>
   );
 }
