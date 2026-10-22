@@ -143,6 +143,8 @@ export class DashscopeEmbeddingProvider extends EmbeddingProvider {
         apiKey: this.apiKey,
       },
       model: this.model,
+      // Some DashScope endpoints return numeric arrays for base64 requests; avoid the SDK's implicit base64 decoding.
+      encodingFormat: 'float',
     });
   }
 }
