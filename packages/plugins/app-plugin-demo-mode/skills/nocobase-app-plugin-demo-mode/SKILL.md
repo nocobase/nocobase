@@ -1,85 +1,100 @@
 ---
 name: nocobase-app-plugin-demo-mode
-description: Use when building or operating a dedicated demo system: integrating demo mode into an isolated deployment, writing its repeatable dataset and demo accounts, adapting simulated model/Agent execution, running demo import/clear/reset, or configuring read-only demo policies. For ordinary example records in an existing application, use the application development Skill and sample-data mechanisms instead. Combine with the authorization Skills for roles and record scopes; this plugin does not replace business permissions.
+description: >-
+  Build or operate a dedicated NocoBase 3 demo deployment: repeatable fictional
+  data, visitor accounts, generation/clear/reset, write policies and optional
+  model or Agent simulation. For example records in an existing application,
+  use the application development Skill's sample-data workflow instead.
 ---
 
 # Demo Mode
 
-Use `@nocobase/app-plugin-demo-mode` to build a dedicated demo deployment with fictional data. The plugin supplies generation/clear/reset, reusable accounts, visitor entry, write policies, a reset schedule and optional simulation. The application supplies the business story, records, cleanup and external adapters.
+Use `@nocobase/app-plugin-demo-mode` for a dedicated demo with its own database and storage. The plugin supplies data lifecycle, reusable visitor accounts, write policies, management components and optional simulation. The application supplies its business story, records, cleanup and external adapters. Business authorization still applies.
 
-## Choose the scope from the request
+## Choose the path
 
-- For example customers, orders or tasks in an existing application, use the application development Skill's sample-data workflow (`sample: true` seeds or `sampleDataToken`). This needs no demo-mode plugin.
-- For a dedicated demo system, use this Skill. Its database and storage are separate from production; clear/reset may remove all business data, including visitor additions.
-- Reuse decisions already in the user's request or application documentation. Ask only when the unresolved choice changes the deployment or cleanup scope. Do not turn a request for example records into an environment-wide cleanup feature.
+| User's intended result                                        | Start here                                                                                                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Example customers, orders or tasks in an existing application | Use `sample: true` seeds or `sampleDataToken` through the application development Skill; no Demo Mode plugin is needed.               |
+| A new isolated demo application                               | Follow the [executable minimal non-AI example](references/minimal-example.md).                                                        |
+| An isolated demo of an existing business application          | Follow [data adaptation](references/adapting-data.md) and reuse its services and pages; do not add the example's project/task schema. |
 
-## Choose only the prerequisites you need
+Reuse deployment, language and role choices already established by the user or application guidance. Ask only when an unresolved choice changes the deployment or cleanup scope. In a dedicated demo, clear/reset removes all business data, including visitor additions.
 
-Installation supplies code; registration supplies runtime services. Retain the host's existing framework configuration and use its application Skill for registration.
+## Deliver the first useful demo
 
-| Requested capability                                     | Host prerequisites                                                                                              |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Dataset generation through CLI, with no accounts         | Database, Demo Mode Server/configuration and CLI registrations                                                  |
-| Reusable visitor accounts                                | Official Users and Authentication; Authorization for Permission Sets and role scopes                            |
-| Quick sign-in                                            | Authentication with password sign-in, a generated dataset, and Demo Mode Client registration for the entry UI   |
-| Management APIs/page                                     | Authentication + Authorization; Demo Mode Client for locales/UI and an application-owned protected route        |
-| Daily reset                                              | Register the official Scheduler; import once before enabling the schedule                                       |
-| Simulated environment model / online Agent conversations | Install and register official Agents 1.0 (`agents.models.services`); see [simulation](references/simulation.md) |
-| Application-owned mock callbacks                         | No Agents installation required; register only the adapters the demo uses                                       |
+1. **Inspect the application.** Read its development, database and authorization Skills. Check the installed plugin's public exports and composition roots. Choose one or two principal user journeys and identify each account, related records, business service, visible result and cleanup boundary. Start with the requested language; add AI, visitor writes or daily resets only when needed.
+2. **Register and configure.** Use the application's plugin registration workflow and preserve its existing configuration. Register the Server export and configuration factory below, the Client factory `demoMode()` for UI, and the CLI export only when commands are needed. Installation, registration and Skill synchronization are separate steps.
+3. **Implement one dataset.** Use the [typed dataset pattern](references/dataset-example.md), adapted to the application's actual services. Register on the original `demoDataToken` from an application provider. Supply `id`, `languages`, `accounts(language)`, `clear(context)` and exactly one of `generate(context)` or `steps(language)`. Registration does not generate records. Use one account definition for both listing and creation, and `context.clock` for coherent recent dates and reproducible variation. A dataset without accounts returns `[]` from `accounts()`.
+4. **Make the demonstrated interactions work.** Before generation, inventory side effects from those services and their background work. Provide local fixtures or disable irrelevant jobs. Use [write policies](references/policies.md) for visitor mutations and [simulation](references/simulation.md) for model/tool/Runner boundaries. The SQL guard does not intercept files or outbound calls. The [integration checklist](references/integration-checklist.md) covers existing applications with these integrations.
+5. **Provide entry and management.** Mount `DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` on an application-owned protected page. Grant the real administrator its page access and `settings:demoMode.data` read/manage; add `settings:demoMode.configuration` read/configure for policy editing. Supply `label(kind, id)` for application names and `chatTools` only for online chat. Keep visitor permissions separate. The Client plugin supplies `/demo-sign-in`; see [visitor entry](references/visitor-entry.md) for redirects, account-menu integration and embedding.
+6. **Generate and verify the story.** Generate through the page or CLI, enter each representative visitor account and inspect the principal pages. Check relationships, recent dates, visible states and role-specific access, then reset and clear/generate to verify repeatability. If visitor writes are enabled, add a visitor record and verify cleanup removes it. A read-only showcase needs no extra mutation API just for this check.
 
-Agents is an optional peer loaded at the integration boundary. A non-AI application does not need to install it. Installing Agents alone does not register it; a registered unsupported or broken Agents integration fails visibly rather than silently using a real model. Other host peers remain part of this package's installation contract even when a particular runtime service is unused.
+For a CLI-only dataset, omit the page and visitor steps. For a non-AI demo, finish the data and visitor flow before considering AI integration.
 
-For the first working non-AI demo, follow the [executable minimal example](references/minimal-example.md). For an existing business application, use the data adaptation reference below instead of copying the example schema.
+## Register only the required capabilities
 
-## Shortest useful workflow
+| Capability                                | Required host registrations                                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Dataset CLI without accounts              | Database, Demo Mode Server/configuration and CLI                                                 |
+| Visitor accounts                          | Official Users and Authentication; Authorization for Permission Sets and role scopes             |
+| Quick sign-in                             | Password sign-in enabled, generated accounts and Demo Mode Client for entry UI                   |
+| Management APIs/page                      | Authentication, Authorization and Demo Mode Client for locales/UI                                |
+| Daily reset                               | Official Scheduler; generate once before enabling the schedule                                   |
+| Simulated environment model / online chat | Official Agents 1.0 with `agents.models.services`; follow [simulation](references/simulation.md) |
+| Application mock callbacks                | Only the adapters the demo uses; Agents is not required                                          |
 
-1. **Inspect the installed application.** Read its development, database and authorization Skills. Confirm the installed plugin's public exports and the Server, Client and CLI composition roots. Inspect the main pages, business services, relationships and roles; choose a small fictional story that makes those pages useful.
-2. **Register and configure.** Register the Server export, the Client factory `demoMode()` and, if CLI operations are needed, `@nocobase/app-plugin-demo-mode/cli`. Set `demoMode.mode` to `observe` while adapting the application, then `read-only` if visitors should have restricted writes. AI integration is optional; use the settings UI for simulation and online-chat policies when those features are needed. Configuration details are below.
-3. **Implement one dataset.** Follow [data adaptation](references/adapting-data.md) and the [typed dataset example](references/dataset-example.md). Register on `demoDataToken` from an application provider. Share one account definition between the visitor list and account creation. Use the application's services, `context.clock` for dates, and `clock.sample(key)` for reproducible variation. Implement full business cleanup alongside generation.
-4. **Adapt the interactions being demonstrated.** Inventory external calls and background jobs before running generation. Supply local fixtures or skip irrelevant jobs. For visitor writes, use [write policies](references/policies.md); for model, tool or Runner execution, use [simulation](references/simulation.md). Add only capabilities the requested demo uses. The SQL guard does not intercept external calls.
-5. **Mount the supplied management flow.** Mount `DemoModeSettings` from `client/settings` on an application-owned route. Supply `label(kind, id)` for application names, and `chatTools` only when online chat is used. Administrators need `settings:demoMode.data` read/manage and, for policy editing, `settings:demoMode.configuration` read/configure. Preserve the application's page authorization. Use [visitor entry and presentation](references/visitor-entry.md) for the account menu, embedding or host component overrides.
-6. **Generate and inspect.** Generate through the page or CLI, sign in as each representative account, and inspect the actual principal pages. Add a visitor record, clear and reset, and check that the story returns without duplicate records. Report the working entry URL, account roles, enabled interactions and checks actually performed. The [integration checklist](references/integration-checklist.md) covers applications with background services or Agents.
+Agents is an optional peer. A non-AI application can omit it. Installing Agents does not register its service; a broken or unsupported registered integration fails visibly. Other host peers remain part of the package installation contract even when a particular runtime service is unused.
 
-## Runtime configuration
+## Deployment configuration
 
-Register the configuration factory in the application's existing `defaultAppConfigs()` map as well as registering the Server plugin:
+Register the factory in the existing `defaultAppConfigs()` map, in addition to the Server plugin:
 
 ```ts
 import { defineDemoModeConfig } from '@nocobase/app-plugin-demo-mode/config';
 
-// Add to the existing map; retain every other application section.
+// Add this section to the existing map; retain the application's other sections.
 defaultAppConfigs({ demoMode: defineDemoModeConfig() });
 ```
 
-The factory declares defaults, validation and two environment mappings. The runtime resolves them from the owning application's environment: environment values override configuration-file values, which override defaults. There is no process-global fallback in the plugin. Registration of the Server plugin alone does not register the configuration factory. Restart after changing deployment configuration.
+Configure the isolated deployment and restart:
 
-The `demoMode` section contains `mode` (`off`, `observe`, `read-only`), `allowCollections` and `quickSignIn`. Only `NOCOBASE_DEMO_MODE` and `NOCOBASE_DEMO_WRITABLE_COLLECTIONS` are mapped environment variables. The latter is a comma-separated list of logical collection names, as used in migrations; it maps to `demoMode.allowCollections`. Quick sign-in is controlled by `demoMode.quickSignIn` (default `true`). The local simulated model endpoint is derived automatically. Enable or disable model simulation and online chat, and select chat models, in the settings UI; real model URLs and credentials belong to Agents model services.
+```yaml
+demoMode:
+  mode: observe
+  quickSignIn: true
+  allowCollections: []
+```
 
-`session` and `verification` writes are allowed for sign-in. Browse the intended demo flows in `observe` mode and inspect the `demo-mode` logger before selecting write exceptions. Choose whole-collection exceptions for disposable business tables when normal application authorization is sufficient; use registered capabilities when a narrower operation or record scope is needed. Switch to `read-only` and verify the same flows. Neither mode replaces business authorization.
+Use `observe` while adapting existing flows: writes proceed and the `demo-mode` logger reports those read-only mode would refuse. Select only needed exceptions, switch to `read-only` and repeat the visitor checks. `off` disables demo operations. Neither mode replaces business authorization.
 
-## Lifecycle and ownership
+`NOCOBASE_DEMO_MODE` maps to `mode`; `NOCOBASE_DEMO_WRITABLE_COLLECTIONS` maps to a comma-separated list of logical `allowCollections` names from migrations. These are the only mapped environment variables. Values resolve per application: environment overrides configuration files, then defaults. `quickSignIn` defaults to `true`; `session` and `verification` writes are allowed for sign-in. Configure reset schedules, simulation and chat through the management UI/API. Model URLs and credentials belong to Agents model services.
 
-Use “Generate demo data,” “Clear demo data” and “Reset demo data” in user explanations. `/import`, `importNow` and CLI `import` mean generation from application code, not file upload. Supply exactly one of `generate(context)` or `steps(language)`, plus `id`, `languages`, `accounts(language)` and `clear(context)`. Generation does not run on ordinary startup.
+## Lifecycle boundaries
 
-The application owns business records, blobs, caches and active work. Its retry-safe `clear(context)` removes them even with empty or partial context. The same cleanup is used after failed or interrupted generation; it is compensating cleanup, not restoration of previous business data. Tracking supplies import membership and counts, not automatic business deletion. The plugin manages its demo accounts and Permission Sets through their owning services. Clear disables accounts for reuse; reset preserves the sessions of accounts it creates again. Do not reuse an account the dataset does not own.
+Use “Generate demo data,” “Clear demo data” and “Reset demo data” in user explanations. `/import`, `importNow` and CLI `import` generate from application code; they do not upload files. `context.track()` supplies import membership and counts, not automatic business deletion.
 
-Keep one application-owned generator when ordinary sample installation and demo reset need the same story. Adapt each entry's actor, language and identity helpers; never call demo reset from `sampleDataToken` or modify seed execution history to regenerate demo content.
+The application implements retry-safe `clear(context)` for all demo business records, files, caches and active work, accepting partial or empty context. It also runs after failed/interrupted generation; this is compensation, not restoration of earlier data. Preserve system identities and configuration. The plugin owns its tracked accounts and Permission Sets: clear disables accounts for reuse; reset retains sessions for unchanged reused accounts. Keep required role scopes and visitor grants consistent with the host's authorization model.
 
-Authorized lifecycle operations can write in read-only mode. `GET /api/demoMode/data` requires data read permission; `POST /api/demoMode/data/import|clear|reset` requires read and manage. CLI commands are `pnpm nocobase demo-mode data status|import|clear|reset`: review arguments with `--dry-run`; mutations need `--force`; import and clear need the actual administrator's `--actor` ID. Reset may reuse the last importer and language. CLI uses the lifecycle service directly. Read the application's CLI guidance before running commands.
+When sample installation and demo reset share a story, share an application-owned generator and adapt its identities, language and clock at each entry. Never invoke demo reset from `sampleDataToken` or modify seed execution history.
 
-Only `@nocobase/db` writes within requests are guarded. Background jobs, schedules, files and outbound requests need application adaptation. When demo mode is on and Agents is available, startup provisions the persistent demo model; clear/reset leave it in place. Model simulation does not simulate tools or Runners. Daily resets use the plugin's Scheduler integration, never a second application timer.
+Authorized lifecycle operations can write in read-only mode. `GET /api/demoMode/data` needs data read permission; `POST /api/demoMode/data/import|clear|reset` needs read and manage. CLI commands are `pnpm nocobase demo-mode data status|import|clear|reset`: read the application's CLI guidance, review mutations with `--dry-run`, then use `--force`; import and clear require the real administrator's `--actor` ID. Reset can reuse the last importer and language.
+
+Request protection covers `@nocobase/db` writes; background work and external effects need application adaptation. With Agents registered, startup provisions a persistent demo model that survives clear/reset. Model simulation does not simulate tools or Runners. Use the plugin's Scheduler integration for daily resets, not a second application timer.
+
+## Finish with observable evidence
+
+Report the working application entry URL, visitor entry/roles, demonstrated pages and interactions, cleanup scope and checks actually performed. Verify anonymous and visitor access cannot invoke management operations. Where supported, check failure/retry, visitor additions and external isolation. See the minimal example's [troubleshooting](references/minimal-example.md#troubleshooting) when the first flow is incomplete. Compilation and Skill synchronization alone do not prove that a usable demo was delivered.
 
 ## References by task
 
-| Task                                                         | Reference                                                     |
-| ------------------------------------------------------------ | ------------------------------------------------------------- |
-| Run a complete small non-AI example                          | [Minimal application example](references/minimal-example.md)  |
-| Design fictional records, shared generation and cleanup      | [Data adaptation](references/adapting-data.md)                |
-| Implement a typed adapter with shared account definitions    | [Dataset example](references/dataset-example.md)              |
-| Integrate external boundaries and background services        | [Integration checklist](references/integration-checklist.md)  |
-| Configure writes, mocks, revisions and scheduled reset       | [Policies](references/policies.md)                            |
-| Simulate models, tools, Agents or online conversations       | [Simulation](references/simulation.md)                        |
-| Configure quick sign-in, embedding and management components | [Visitor entry and presentation](references/visitor-entry.md) |
-| Update an older plugin adapter                               | [Upgrade checklist](references/upgrading.md)                  |
-
-Finish with runtime evidence appropriate to the requested demo. Do not require Agent, multilingual or daily-schedule work for a demo that does not use those features. Skill synchronization and compilation alone do not prove that the pages contain useful demo data.
+| Task                                                       | Reference                                                     |
+| ---------------------------------------------------------- | ------------------------------------------------------------- |
+| Run a small non-AI demo with schema, API and pages         | [Minimal application example](references/minimal-example.md)  |
+| Adapt existing business records and full cleanup           | [Data adaptation](references/adapting-data.md)                |
+| Implement the typed dataset and shared account definitions | [Dataset example](references/dataset-example.md)              |
+| Coordinate external boundaries and background services     | [Integration checklist](references/integration-checklist.md)  |
+| Configure write exceptions, revisions and daily reset      | [Policies](references/policies.md)                            |
+| Simulate models, tools, Agents or online conversations     | [Simulation](references/simulation.md)                        |
+| Integrate quick sign-in, account menus and management UI   | [Visitor entry and presentation](references/visitor-entry.md) |
+| Update an older adapter                                    | [Upgrade checklist](references/upgrading.md)                  |

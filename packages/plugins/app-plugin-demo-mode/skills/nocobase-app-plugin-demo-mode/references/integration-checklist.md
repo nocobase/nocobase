@@ -6,7 +6,7 @@ The order of work when an application adopts this plugin, and the observable res
 
 Confirm that the user needs a dedicated demo system, not only sample records in an existing application. The latter uses sample seeds or `sampleDataToken` without this plugin.
 
-- Register the Server plugin, the Client factory and `@nocobase/app-plugin-demo-mode/cli` in the application's composition roots, and add the package's build hook if the application vendors or packages plugins itself.
+- Register the Server plugin and `defineDemoModeConfig()` in the application's existing defaults map. Add the Client factory for UI and `@nocobase/app-plugin-demo-mode/cli` when commands are needed. Use the application's normal package build workflow.
 - Infer from the request and existing application guidance: which languages, which roles and how many accounts, the full business cleanup boundary (this is a dedicated demo instance), whether visitors may write anything in read-only mode, and whether Agents answer from scripts. Record those decisions in the application's development guide.
 
 ## 2. Inventory every external boundary first
@@ -43,13 +43,13 @@ In read-only mode request writes need an exception. For disposable business tabl
 - Map the actions that may write to their capabilities in one table at the dispatcher instead of nesting wrappers.
 - Rules start empty; tell administrators which ones to enable, or enable them as part of the deployment and say so.
 
-## 6. Simulate Agents convincingly
+## 6. Simulate Agents when requested
 
 Follow [Model and execution simulation](simulation.md). When showing task progress is part of the requested demo, play back a short simulated transcript through the existing run view. Otherwise an immediate, clearly simulated result is sufficient. Business AI calls that expect JSON need scripted answers per operation, in the scope's language.
 
 ## 7. Build the page and permissions
 
-- Mount the plugin's `DemoModeSettings` page (`client/settings`) with the application's `label` and `chatTools`. Protect the route with an ordinary page grant given together with the settings grants; do not add demo checks to the shared navigation, which runs on every page.
+- Mount the plugin's `DemoModeSettings` page (`client/settings`) with the application's `label`, and `chatTools` only for online chat. Protect the route with an ordinary page grant given together with the settings grants; do not add demo checks to the shared navigation, which runs on every page.
 - Show what clear and reset delete in the application's own words before they run.
 
 ## 8. Verify in a running application

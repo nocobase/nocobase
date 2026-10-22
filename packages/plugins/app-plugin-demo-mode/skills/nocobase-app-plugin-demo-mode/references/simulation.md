@@ -10,6 +10,8 @@ Import these types through `@nocobase/app-plugin-demo-mode/server/tokens`. Defin
 
 For application-owned generation, call `await demoData.load()` before reading the current binding, verify `demoData.models.isDemoModel(ref)`, then call `demoData.models.complete({ system, prompt, tag })`. The model binding is environment infrastructure and survives data clear/reset. HTTP callers use the generated authenticated OpenAI-compatible gateway at `/api/demoMode/models/v1`; do not expose its bearer key in a UI or Skill example.
 
+The gateway follows the OpenAI response protocol: `GET /models` returns `{ object: 'list', data: [...] }`, and `POST /chat/completions` returns a raw chat completion. Neither has an additional application `{ data }` envelope. A request with `stream: true` receives `text/event-stream` containing completion chunks and a final `data: [DONE]` event. Use the host's OpenAI-compatible client; do not unwrap these responses like the plugin's management APIs.
+
 Unmatched model requests receive an explicitly simulated fallback. No real provider is called by `DemoModels`. This guarantee is local to that service: application code that elects to invoke a different real model remains responsible for its demo scope policy.
 
 ## Registered tool and Runner adapters

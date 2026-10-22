@@ -5,9 +5,9 @@ import {
   ApiError,
   apiErrorHandler,
   apiErrorResponse,
-  dataResponse,
   defineApiRoutes,
   describeRoute,
+  resolver,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
@@ -88,7 +88,11 @@ export const modelRoutes: AppApiRouteContribution<AppPluginApplication> =
           'The OpenAI-compatible model list of the simulated model service. Needs the key the service was given, as a bearer token.',
         security,
         responses: {
-          200: dataResponse(ModelList),
+          // OpenAI protocol responses have no additional application data envelope.
+          200: {
+            description: 'An OpenAI model list.',
+            content: { 'application/json': { schema: resolver(ModelList) } },
+          },
           401: apiErrorResponse(
             401,
             'The key is missing or wrong (`DEMO_MODEL_KEY_REQUIRED`).',
@@ -119,7 +123,20 @@ export const modelRoutes: AppApiRouteContribution<AppPluginApplication> =
           'An OpenAI-compatible chat completion, streamed when `stream` is true, answered from the demo dataset’s scripts and never from a real model. It may call the tools the request offers. Needs the key the service was given, as a bearer token.',
         security,
         responses: {
-          200: dataResponse(ChatCompletion),
+          200: {
+            description:
+              'An OpenAI chat completion, or server-sent events when the request sets stream to true.',
+            content: {
+              'application/json': { schema: resolver(ChatCompletion) },
+              'text/event-stream': {
+                schema: {
+                  type: 'string',
+                  description:
+                    'OpenAI chat.completion.chunk objects in data events, followed by data: [DONE].',
+                },
+              },
+            },
+          },
           401: apiErrorResponse(
             401,
             'The key is missing or wrong (`DEMO_MODEL_KEY_REQUIRED`).',

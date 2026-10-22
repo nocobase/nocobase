@@ -1,5 +1,6 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createTestApp, type TestApp } from '@nocobase/app-testing/server';
+import { apiDocsToken } from '@nocobase/app-server/router';
 import { generateText, jsonSchema, stepCountIs, streamText, tool } from 'ai';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -318,6 +319,34 @@ describe('simulated model', () => {
   it('refuses a call without the service key', async () => {
     const response = await app.request('/demoMode/models/v1/models');
     expect(response.status).toBe(401);
+  });
+
+  it('documents raw OpenAI model and completion responses, including SSE', async () => {
+    const document = await app.application.container
+      .resolve(apiDocsToken)
+      .getDocument();
+    const root = '/api/demoMode/models/v1';
+    expect(document.paths![`${root}/models`]!.get!.responses).toMatchObject({
+      200: {
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/DemoModeModelList' },
+          },
+        },
+      },
+    });
+    expect(
+      document.paths![`${root}/chat/completions`]!.post!.responses,
+    ).toMatchObject({
+      200: {
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/DemoModeChatCompletion' },
+          },
+          'text/event-stream': { schema: { type: 'string' } },
+        },
+      },
+    });
   });
 
   it('answers through the OpenAI-compatible client, calling the offered tools', async () => {

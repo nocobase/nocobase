@@ -181,6 +181,7 @@
   },
   "devDependencies": {
     "@ai-sdk/openai-compatible": "catalog:",
+    "@nocobase/app-plugin-agents": "workspace:*",
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
@@ -195,7 +196,7 @@
     "react-dom": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "@nocobase/app-plugin-agents": "workspace:*"
+    "yaml": "catalog:"
   },
   "peerDependenciesMeta": {
     "@nocobase/app-plugin-agents": {

@@ -76,3 +76,18 @@ Wrap each top-level page in the application's existing `PageContainer`, followin
 Alternatively use `pnpm nocobase demo-mode data import --actor <existing-admin-id> --language en-US --dry-run`, then replace `--dry-run` with `--force` after reviewing the target deployment. Record the real application URL and the runtime checks performed. The package's automated example test exercises real authentication, Users, Authorization, generation, visitor entry, record filtering, denied visitor reset and account reuse; it does not replace browser validation in the consuming application.
 
 Only after this path works, read [write policies](policies.md) for exceptions/scheduling or [simulation](simulation.md) for AI. Keep those integrations out of a demo that does not need them.
+
+## Troubleshooting
+
+Use the failing step to choose the next check; do not bypass permissions or add unrelated infrastructure to make the example run.
+
+| Symptom                                     | Check                                                                                                                                                                                      |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Management says demo mode is off            | Register `defineDemoModeConfig()` in the existing defaults map, set this deployment's `demoMode.mode`, and restart. Installing or registering the Server plugin alone does not enable it.  |
+| Status says no dataset is available         | Register `DemoProvider` in the application provider list and verify it reaches the original `demoDataToken`. Generation is an explicit action after registration.                          |
+| The CLI command is missing                  | Register `@nocobase/app-plugin-demo-mode/cli` in the CLI composition root; Server registration does not register commands.                                                                 |
+| The visitor entry is empty or sign-in fails | Complete generation, enable password sign-in and `quickSignIn`, and use the same explicit passwords in `accounts()` and `createAccount()`. Inspect the generation failure before retrying. |
+| A page or management API returns 403        | Check the signed-in identity, page access and the exact settings grants. Keep visitor grants separate from the real administrator's grants.                                                |
+| Generated records do not appear on the page | Check the current account, assignee/owner filters, relationships and date ranges against the dataset; verify the page calls the intended business API.                                     |
+
+For API calls, use the application's printed entry URL and base path. For this example, a successful first delivery shows Alex's task and Sam's task under their respective accounts, denies visitor reset, and reproduces the same two-task story after reset. Report browser checks separately from automated server checks.

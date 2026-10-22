@@ -14,10 +14,4 @@ If real services create a pending task and then complete it through a lifecycle 
 
 For shared sample installation, extract the business generation into an application function whose arguments contain the people, clock and business services it needs. The ordinary sample entry supplies its own identity helpers; the demo entry adapts `DemoImportContext`. Do not require a sample installation to start the demo lifecycle merely to reuse fictional content.
 
-## Run and verify
-
-1. Register the configuration factory and set the dedicated deployment's demo mode. Leave online chat disabled when no AI feature is needed. Start the application with its normal migration and initialization workflow.
-2. Mount `DemoModeSettings`, grant the real administrator data read/manage access, and choose Generate. Alternatively run `pnpm nocobase demo-mode data import --actor <administrator-id> --language en-US --dry-run`, then the same command with `--force` instead of `--dry-run`. Replace the actor placeholder with an existing administrator ID.
-3. Check that generation completes, the project and both tasks appear with recent dates, and both visitor accounts can enter through `/demo-sign-in` and see the records allowed by their grants.
-4. Enable only the visitor writes needed by this demo. Add one visitor task, reset, and verify the original story returns, the visitor task is gone and accounts remain reusable. Clear and generate once more to verify the separate account-disable/reuse path.
-5. Report the application entry URL, visitor roles, permitted interactions and any unverified behavior. Add model/tool/Runner examples only if they are part of the requested demonstration.
+Follow [Generate and verify](minimal-example.md#3-generate-and-verify) for the runnable workflow. In an existing application, substitute its principal pages, accounts and expected business records; exercise visitor mutations only when the requested demo supports them.
