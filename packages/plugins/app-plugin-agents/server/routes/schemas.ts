@@ -760,9 +760,14 @@ export const AvailableModelSchema: z.ZodType<AvailableModel> = z
 
 export const RunnerAgentCreateInputSchema: z.ZodType<RunnerAgentCreateInput> =
   z.strictObject({
-    tool: AgentToolSchema,
-    model: z.string().max(200),
-    displayModel: z.string().min(1).max(200).optional(),
+    tool: AgentToolSchema.meta({ description: 'The coding tool.' }),
+    model: z.string().max(200).meta({
+      description: 'Its model, as the available models list names it.',
+    }),
+    displayModel: z.string().min(1).max(200).optional().meta({
+      description:
+        'As the tool names it (`AvailableModel.displayModel`), for the agent’s name; `model` itself when absent.',
+    }),
     description: z.string().min(1).max(10_000).meta({
       description:
         'What it is good at: the project manager hands it work by this.',
