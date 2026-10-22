@@ -120,7 +120,12 @@ export interface DemoDataset {
   /** The accounts an import in `language` creates, as the demo page lists them before and after the import. */
   accounts(language: string): readonly DemoAccountSummary[];
   /** Run in order; a failing step triggers full-business cleanup, not transaction rollback or restoration of prior data. */
-  steps(language: string): readonly DemoStep[];
+  steps?(language: string): readonly DemoStep[];
+  /**
+   * Calls the application's shared sample-data generator directly. Supply either generate or steps.
+   * This does not run the core sample registry or read/write its seed history.
+   */
+  generate?(context: DemoImportContext): Promise<void>;
   /**
    * Clears ALL application business data, including visitor-created records and files. Used for explicit clear,
    * reset and failed/interrupted imports alike. Must be retry-safe, accept empty context, and preserve system

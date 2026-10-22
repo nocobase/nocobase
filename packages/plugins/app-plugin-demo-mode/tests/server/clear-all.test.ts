@@ -95,7 +95,7 @@ it('uses the same full cleanup for failed and interrupted imports', async () => 
   service.register({
     ...dataset,
     steps: (language) => [
-      ...dataset.steps(language),
+      ...dataset.steps!(language),
       {
         key: 'fail',
         run: async () => {

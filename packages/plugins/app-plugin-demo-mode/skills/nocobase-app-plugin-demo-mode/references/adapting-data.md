@@ -13,7 +13,7 @@ Use this workflow to populate a dedicated demo system after choosing that scope.
 
 Import `DemoDataset` and the original `demoDataToken` from `@nocobase/app-plugin-demo-mode/server/tokens`. Register one dataset from an application provider after its required services exist. Keep registration deterministic; it must not import or clear data during ordinary startup.
 
-Implement `id`, `languages`, `accounts(language)`, `steps(language)` and `clear(context)`. Add `timeZone(language)`, `counts(context)` and `answers` as required by the application. Each step has a stable key, optional progress weight and `run(context)`. Write through application services so real validation and derived data run. Split steps by meaningful user-visible progress, not one step per row.
+Implement `id`, `languages`, `accounts(language)`, `generate(context)` and `clear(context)`. Call the application's shared sample generator from `generate`; the existing `steps(language)` alternative remains supported, but do not provide both. Keep core sample registration separate and leave its execution history untouched. Add `timeZone(language)`, `counts(context)` and `answers` as required by the application. Each step has a stable key, optional progress weight and `run(context)`. Write through application services so real validation and derived data run. Split steps by meaningful user-visible progress, not one step per row.
 
 - Use `context.actorId` as the administrator initiating the import, not a hard-coded user id.
 - Use `createAccount`, `createPermissionSet` and `assignPermissionSet`; never insert authentication rows directly or reuse a username the plugin does not own.

@@ -220,7 +220,7 @@ it.each(['steps', 'timezone', 'policy'] as const)(
       ...dataset,
       steps: (language) => {
         if (broken && failure === 'steps') throw new Error('steps failed');
-        return dataset.steps(language);
+        return dataset.steps!(language);
       },
       timeZone: () =>
         broken && failure === 'timezone' ? 'Invalid/Timezone' : 'UTC',

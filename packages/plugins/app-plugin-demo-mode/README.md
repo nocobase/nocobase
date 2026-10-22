@@ -107,6 +107,37 @@ container.resolve(demoDataToken).register({
 
 The routes require `settings:demoMode.data` (`read` for status, `manage` for changes): `GET /api/demoMode/data` and `POST /api/demoMode/data/import|clear|reset`. Import/reset accept `{ language }` and return progress through status. Every mutation requires enabled demo mode, including CLI and Scheduler calls. Authorized lifecycle work also runs in read-only mode without exempting concurrent ordinary requests. The plugin's administration page drives them; `useDemoData()` remains for an application that builds its own.
 
+## Share a sample-data generator
+
+Keep business generation in an application function and call it from both entry points. A dataset accepts `generate(context)` instead of `steps(language)`; supply exactly one. Existing step-based adapters remain supported. The generator receives the usual clock, account helpers, tracking and progress context. It must not clear data or call the core sample registry itself.
+
+```ts
+// Application-owned generator: no seed history or demo lifecycle dependency.
+async function generateBusinessSamples() {
+  await business.createExampleRecords();
+}
+
+// Ordinary installation: the core decides whether this registration runs.
+app.container.resolve(sampleDataToken).register({
+  name: 'my-app/business',
+  packageName: 'my-app',
+  run: generateBusinessSamples,
+});
+
+// Dedicated demo: the same generator runs on every reset.
+app.container.resolve(demoDataToken).register({
+  id: 'my-app',
+  languages: ['en-US'],
+  accounts: () => [],
+  generate: generateBusinessSamples,
+  clear: () => business.clearAllDemoBusinessData(),
+});
+```
+
+For generators requiring an actor, language, accounts or a clock, use an application-owned options object and adapt each caller's context. Never call demo import/reset from `sampleDataToken`: ordinary sample installation must not enable demo mode or clear existing business data. Applications without a sample-data registration can expose their generator first without adding automatic installation behavior.
+
+Demo reset always clears business data before calling the generator again. A failed cleanup stops generation; retry reset after correcting the failure. It neither consults nor changes sample seed history, normal initialization seeds or migrations. An already executed sample registration therefore does not prevent demo regeneration, and a later normal startup does not repeat sample installation. No core change, execution-history reset, checkpoint resumption or legacy-data migration is required.
+
 ## Quick sign-in
 
 While demo mode is `read-only` or `observe`, visitors enter the imported demo accounts without a password and switch between them. Registration alone enables it: the Client plugin contributes a `/demo-sign-in` page and a corner account switcher on every page, the sign-in page included.

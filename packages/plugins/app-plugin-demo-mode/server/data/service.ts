@@ -162,6 +162,11 @@ export class DefaultDemoDataService implements DemoDataService {
       throw new Error(
         `A demo dataset is registered already (${this.dataset.id}); an application registers one.`,
       );
+    if (
+      (typeof dataset.generate === 'function') ===
+      (typeof dataset.steps === 'function')
+    )
+      throw new Error('A demo dataset must provide either generate or steps.');
     if (typeof dataset.clear !== 'function')
       throw new Error(
         'A dedicated demo dataset must provide full business cleanup.',
@@ -533,7 +538,14 @@ export class DefaultDemoDataService implements DemoDataService {
     startedAt: Date,
     operationId: string,
   ): Promise<void> {
-    const steps = dataset.steps(language);
+    const steps = dataset.generate
+      ? [
+          {
+            key: 'generate',
+            run: (context: DemoImportContext) => dataset.generate!(context),
+          },
+        ]
+      : dataset.steps!(language);
     const total = steps.reduce((sum, step) => sum + (step.weight ?? 1), 0) || 1;
     let done = 0;
     let ordinal = (await this.records(dataset.id)).length;
