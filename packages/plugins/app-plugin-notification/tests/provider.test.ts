@@ -1,22 +1,27 @@
-import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import {
   authorizationToken,
   type Authorization,
 } from '@nocobase/app-plugin-authorization';
-import { loggingToken } from '@nocobase/app-server/logging';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
-import { createLogger, type Logging } from '@nocobase/logging';
+import { loggingToken } from '@nocobase/app-server/logging';
+import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import type { JobExecutorService } from '@nocobase/jobs';
+import { createLogger, type Logging } from '@nocobase/logging';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { describe, expect, it, vi } from 'vitest';
 
+import type {
+  ChannelInstance,
+  ChannelPreparationInput,
+  ChannelSendResult,
+} from '../server/channel-type.js';
 import { NotificationProvider } from '../server/providers/notification.js';
-import { InlineJobExecutor } from './helpers/inline-job-executor.js';
 import { notificationRuntimeToken } from '../server/runtime.js';
 import {
   notificationExtensionRegistryToken,
   notificationServiceToken,
 } from '../server/tokens.js';
+import { InlineJobExecutor } from './helpers/inline-job-executor.js';
 
 describe('@nocobase/app-plugin-notification provider', () => {
   it('registers, activates, and closes the core manager', async () => {
@@ -24,7 +29,7 @@ describe('@nocobase/app-plugin-notification provider', () => {
     const provider = new NotificationProvider({
       config: {
         get: () => ({
-          channels: { email: { provider: 'fake', enabled: true } },
+          channels: { email: { type: 'fake', enabled: true } },
         }),
       },
       container,
@@ -34,34 +39,19 @@ describe('@nocobase/app-plugin-notification provider', () => {
     expect(container.has(notificationServiceToken)).toBe(true);
     expect(container.has(notificationExtensionRegistryToken)).toBe(true);
     const registry = container.resolve(notificationExtensionRegistryToken);
-    registry
-      .registerChannel({
-        type: 'email',
-        async createChannel() {
-          return {
-            type: 'email',
-            validateMessage: (message: object) => ({
-              message,
-              recipients: [{}],
-            }),
-            async prepare(input): Promise<object> {
-              return input.message;
-            },
-          };
-        },
-      })
-      .registerProvider({
-        messageType: 'email',
-        type: 'fake',
-        async createProvider(_context, config) {
-          return {
-            type: config.provider,
-            async send() {
-              return { status: 'accepted' } as const;
-            },
-          };
-        },
-      });
+    class FakeChannel implements ChannelInstance {
+      static readonly type = 'fake';
+      validateMessage(message: unknown) {
+        return { message: message as object, recipients: [{}] };
+      }
+      async prepare({ message }: ChannelPreparationInput): Promise<object> {
+        return message;
+      }
+      async send(): Promise<ChannelSendResult> {
+        return { status: 'accepted' };
+      }
+    }
+    registry.registerChannelType(FakeChannel);
     const notification = container.resolve(notificationRuntimeToken);
     expect(container.resolve(notificationServiceToken)).toBe(notification);
     const activate = vi.spyOn(notification, 'activate');
@@ -92,42 +82,7 @@ describe('@nocobase/app-plugin-notification provider', () => {
     expect(close).toHaveBeenCalledOnce();
     expect(executorShutdown).toHaveBeenCalledOnce();
     const authorization = container.resolve(authorizationToken);
-    expect(authorization.resourceTypes.add).toHaveBeenCalledOnce();
-    const add = authorization.resourceTypes.add as unknown as ReturnType<
-      typeof vi.fn
-    >;
-    const handler = add.mock.calls[0]?.[0] as {
-      type: string;
-      actions: readonly string[];
-      authorize(
-        request: object,
-        context: object,
-      ): Promise<{ readonly effect: string }>;
-    };
-    expect(handler).toMatchObject({ type: 'notification', actions: ['send'] });
-    const context = {
-      grants: {
-        resolve: () =>
-          Promise.resolve([
-            {
-              source: { plugin: 'permission-sets', id: 'operators' },
-              resource: { type: 'notification', id: '*' },
-              action: 'send',
-            },
-          ]),
-      },
-    };
-    const request = (id: string) => ({
-      principal: { type: 'user', id: 'user-1' },
-      resource: { type: 'notification', id },
-      action: 'send',
-    });
-    await expect(
-      handler.authorize(request('test'), context),
-    ).resolves.toMatchObject({ effect: 'permit' });
-    await expect(
-      handler.authorize(request('other'), context),
-    ).resolves.toMatchObject({ effect: 'deny' });
+    expect(authorization.resourceTypes.add).not.toHaveBeenCalled();
   });
 
   it('runs Deliveries on the jobs configuration notification.jobs names', () => {

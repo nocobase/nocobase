@@ -5,9 +5,9 @@ import {
   authorizationClientToken,
   type AuthorizationOptionsResponse,
 } from '@nocobase/app-plugin-authorization/client';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Routes, Route } from 'react-router';
+import { Routes, Route, useLocation, useNavigate } from 'react-router';
 import { expect, it, vi } from 'vitest';
 import Page from '../../client/pages/settings/default-access.js';
 import Form from '../../client/pages/settings/default-access-form.js';
@@ -551,4 +551,143 @@ it('maps a server scope validation error to the affected selector and focuses it
   await waitFor(() => expect(scope).toHaveFocus());
   expect(scope).toHaveTextContent('All records');
   expect(screen.queryByText('Private detail')).not.toBeInTheDocument();
+});
+
+it('does not reset a title-filtered page while its metadata is still loading', async () => {
+  let resolveCatalog!: (value: { data: AuthorizationOptionsResponse }) => void;
+  const pending = new Promise<{ data: AuthorizationOptionsResponse }>(
+    (resolve) => {
+      resolveCatalog = resolve;
+    },
+  );
+  const resources = Array.from({ length: 25 }, (_, i) => ({
+    ...catalog.sections[0]!.subsections[0]!.resources[0]!,
+    id: `resource-${i}`,
+    title: `Projects ${i}`,
+  }));
+  const namedCatalog = {
+    ...catalog,
+    sections: [
+      {
+        ...catalog.sections[0]!,
+        subsections: [{ ...catalog.sections[0]!.subsections[0]!, resources }],
+      },
+    ],
+  };
+  const rules = resources.map((resource, i) => ({
+    ...existing,
+    key: `rule-${i}`,
+    resource: { type: 'composite', id: resource.id },
+  }));
+  function CurrentLocation() {
+    const location = useLocation();
+    return <output data-testid='metadata-location'>{location.search}</output>;
+  }
+  const calls = vi.fn(async ({ path }: { path: string }) =>
+    path === 'authorization/permissions'
+      ? { data: { unrestricted: true, permissions: [] } }
+      : path.endsWith('/options')
+        ? pending
+        : { data: rules },
+  );
+  await renderWithApp(
+    <>
+      <Page />
+      <CurrentLocation />
+    </>,
+    {
+      route: '/default-access?q=Projects&page=2&pageSize=20',
+      namespace,
+      namespaces,
+      services,
+      fetch: answerApi(calls),
+    },
+  );
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'authorization/defaultAccess' }),
+    ),
+  );
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  });
+  expect(screen.getByTestId('metadata-location')).toHaveTextContent('page=2');
+  await act(async () => {
+    resolveCatalog({ data: namedCatalog });
+  });
+  expect(await screen.findByText('Page 2 of 2')).toBeVisible();
+  expect(screen.getByTestId('metadata-location')).toHaveTextContent('page=2');
+});
+
+it('replaces the saved editor history entry and keeps the list query when going back', async () => {
+  const query = '?q=Projects&pageSize=20&sort=resource&order=desc';
+  function History() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    return (
+      <>
+        <output data-testid='history-location'>
+          {location.pathname}
+          {location.search}
+        </output>
+        <button onClick={() => void navigate(-1)}>Back in history</button>
+      </>
+    );
+  }
+  let patches = 0;
+  let rules = [existing];
+  await renderWithApp(
+    <>
+      {tree()}
+      <History />
+    </>,
+    {
+      route: `/default-access${query}`,
+      namespace,
+      namespaces,
+      services,
+      fetch: answerApi((request) => {
+        if (request.path === 'authorization/permissions')
+          return { data: { unrestricted: true, permissions: [] } };
+        if (request.path.endsWith('/options')) return { data: catalog };
+        if (request.method === 'PATCH') {
+          patches += 1;
+          expect(request.json).toEqual({ actions: [existing.actions[0]] });
+          rules = [{ ...existing, actions: [existing.actions[0]!] }];
+          return { data: rules[0] };
+        }
+        return { data: rules };
+      }),
+    },
+  );
+  await userEvent.click(await screen.findByRole('link', { name: 'Projects' }));
+  await userEvent.click(
+    await screen.findByRole('combobox', { name: 'Edit · Projects' }),
+  );
+  await userEvent.click(
+    await screen.findByRole('option', {
+      name: enUS.settings.defaultAccess.none,
+    }),
+  );
+  const save = screen.getByRole('button', { name: enUS.settings.save });
+  expect(save).toBeEnabled();
+  await userEvent.click(save);
+  await waitFor(() =>
+    expect(screen.getByTestId('history-location').textContent).toBe(
+      `/default-access${query}`,
+    ),
+  );
+  expect(patches).toBe(1);
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Back in history' }),
+  );
+  await waitFor(() =>
+    expect(screen.getByTestId('history-location').textContent).toBe(
+      `/default-access${query}`,
+    ),
+  );
+  expect(
+    screen.queryByRole('button', { name: enUS.settings.save }),
+  ).not.toBeInTheDocument();
+  expect(patches).toBe(1);
 });

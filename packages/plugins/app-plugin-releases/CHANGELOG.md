@@ -1,5 +1,17 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.10
+
+### Patch Changes
+
+- 4b36a3d: Complete runtime timer inheritance labels in every supported client locale so the release management package builds and the settings remain translated.
+- 10120a1: Let newly created apps inherit environment runtime timer defaults until a timer is explicitly customized.
+- Updated dependencies [62da032]
+  - @nocobase/app-client@4.0.0-beta.1
+  - @nocobase/app-server@3.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+
 ## 0.1.0-beta.9
 
 ### Patch Changes

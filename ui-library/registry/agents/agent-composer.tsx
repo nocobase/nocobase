@@ -524,7 +524,7 @@ export function AgentComposer({
   const addFiles = useCallback(
     (added: readonly File[]): void => {
       const source = attachmentsRef.current;
-      if (!source || added.length === 0) return;
+      if (!mountedRef.current || !source || added.length === 0) return;
       const room = Math.max(0, maxCount - filesRef.current.length);
       setTooMany(added.length > room);
       const taken = added.slice(0, room).map((file): ComposerFile => {
@@ -589,8 +589,8 @@ export function AgentComposer({
   const registerAdd = attachments?.registerAdd;
   useEffect(() => registerAdd?.(addFiles), [registerAdd, addFiles]);
 
-  // Leaving: uploads stop, files never sent are discarded, thumbnails freed.
-  useEffect(
+  // Leaving: abort before late upload callbacks can run, discard unsent files and free thumbnails.
+  useLayoutEffect(
     () => () => {
       for (const file of filesRef.current) {
         file.controller?.abort();

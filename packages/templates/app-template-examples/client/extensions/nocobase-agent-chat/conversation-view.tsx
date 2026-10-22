@@ -12,6 +12,7 @@ import {
   useAgentText,
   useChatAgents,
   useChatModels,
+  useConversationModel,
   useChatPanel,
   useConversation,
   useConversationMessages,
@@ -49,7 +50,7 @@ import { Skeleton } from '#components/ui/skeleton';
 import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
-import { NewChatChoice } from './agent-choice.js';
+import { NewChatChoice, ConversationModelChoice } from './agent-choice.js';
 import { AgentNotice } from './agent-status.js';
 import { errorStatus, useChatTranslation } from './chat-i18n.js';
 import { LoadError } from './chat-ui.js';
@@ -87,12 +88,18 @@ export function ConversationView({
   // keeps its focus and the message stays where it is.
   const [created, setCreated] = useState<string | null>(null);
   const continuing = conversationId !== null && created === conversationId;
-  // Each "new conversation" is a fresh body.
+  // An explicit fresh blank chat also drops its optimistic timeline and pending creation observer.
+  // Existing conversations keep their message/stream owner; only their composer follows the revision.
   const [freshKey, setFreshKey] = useState(0);
   const [seenId, setSeenId] = useState(conversationId);
-  if (seenId !== conversationId) {
+  const [seenRevision, setSeenRevision] = useState(panel.composerRevision);
+  if (seenId !== conversationId || seenRevision !== panel.composerRevision) {
     setSeenId(conversationId);
-    if (conversationId === null) setFreshKey((value) => value + 1);
+    setSeenRevision(panel.composerRevision);
+    if (conversationId === null) {
+      setFreshKey((value) => value + 1);
+      setCreated(null);
+    }
   }
 
   if (conversationId && detail.isError && !detail.data) {
@@ -192,8 +199,26 @@ function ConversationBody({
   const extensions = useContext(ChatExtensionsContext);
   const actions = useConversationActions();
   const agents = useChatAgents(panel.open);
-  const catalog = useChatModels(panel.open && !conversation);
+  const nativeConversation =
+    conversation?.agent.id === 'online' && Boolean(conversation.execution);
+  const catalog = useChatModels(
+    panel.open && (!conversation || nativeConversation),
+  );
+  const {
+    configuration,
+    select: selectModel,
+    changing: changingModel,
+  } = useConversationModel(
+    nativeConversation ? conversation.id : null,
+    panel.open,
+  );
   const [chosenModel, setChosenModel] = useState<ModelRef | null>(null);
+  const modelChangeBlocked =
+    changingModel ||
+    (nativeConversation &&
+      (selectModel.isError ||
+        configuration.isFetching ||
+        !configuration.isSuccess));
   const run = conversation?.run ?? null;
   const stream = useChatStream(conversation?.execution ? conversationId : null);
   const receiving =
@@ -269,7 +294,7 @@ function ConversationBody({
   const created = useCallback(
     (detail: ConversationDetail) => {
       onCreated(detail.id);
-      selectConversation(detail.id);
+      selectConversation(detail.id, undefined, { preserveComposer: true });
       resetSource();
     },
     [onCreated, selectConversation, resetSource],
@@ -278,6 +303,7 @@ function ConversationBody({
     conversationId,
     agentId: conversation ? conversation.agent.id : (target?.id ?? null),
     source,
+    editorRevision: panel.composerRevision,
     dispatch: messages.dispatch,
     onCreated: created,
     ...(target?.id === 'online' && model ? { selectedModel: model } : {}),
@@ -420,6 +446,7 @@ function ConversationBody({
         (appUIMessageText(item).trim().length > 0 ||
           item.parts.some(
             (part) =>
+              (part.type === 'reasoning' && part.text.trim().length > 0) ||
               part.type === 'dynamic-tool' ||
               part.type.startsWith('tool-') ||
               part.type === 'file',
@@ -696,6 +723,20 @@ function ConversationBody({
         {sendAvailability?.notice ? (
           <div className='mb-3'>{sendAvailability.notice}</div>
         ) : null}
+        {nativeConversation && (configuration.error || selectModel.error) ? (
+          <LoadError
+            title={t(
+              selectModel.error
+                ? 'chat.agents.modelChangeFailed'
+                : 'chat.agents.modelLoadFailed',
+            )}
+            error={selectModel.error ?? configuration.error}
+            onRetry={() => {
+              selectModel.reset();
+              void configuration.refetch();
+            }}
+          />
+        ) : null}
         {saveError ? (
           <LoadError
             title={t('chat.loadFailed')}
@@ -711,6 +752,7 @@ function ConversationBody({
         <Composer
           variant={variant}
           disabled={
+            modelChangeBlocked ||
             sendAvailability?.canSend === false ||
             running ||
             Boolean(conversation && !conversation.availability.online) ||
@@ -726,6 +768,7 @@ function ConversationBody({
             if (conversationId) actions.stop.mutate(conversationId);
           }}
           onSend={(content, context, attachments) => {
+            if (modelChangeBlocked) return false;
             if (sendAvailability?.canSend === false) return false;
             const accepted = send({ content, context, attachments });
             if (accepted) focusComposer();
@@ -733,7 +776,35 @@ function ConversationBody({
           }}
           registerAddFiles={registerAddFiles}
           toolbar={
-            conversation ? null : (
+            conversation ? (
+              nativeConversation ? (
+                <ConversationModelChoice
+                  services={catalog.data ?? []}
+                  model={configuration.data?.selectedModel ?? null}
+                  allowedModels={configuration.data?.model}
+                  disabled={
+                    running ||
+                    stopping ||
+                    modelChangeBlocked ||
+                    catalog.isFetching ||
+                    !catalog.isSuccess ||
+                    chatController.submissions.blocked(
+                      conversationId,
+                      `registry:${source}:${conversationId ?? 'new'}`,
+                    )
+                  }
+                  onModelChange={(selected) => {
+                    const current = configuration.data?.selectedModel;
+                    if (
+                      current?.modelService === selected.modelService &&
+                      current.model === selected.model
+                    )
+                      return;
+                    selectModel.mutate(selected);
+                  }}
+                />
+              ) : null
+            ) : (
               // Before the first message: who the conversation goes to.
               <NewChatChoice
                 agents={agents.data ?? []}
@@ -745,11 +816,13 @@ function ConversationBody({
                 }
                 onModelChange={(selected) => {
                   setChosenModel(selected);
-                  selectConversation(null, 'online');
+                  selectConversation(null, 'online', {
+                    preserveComposer: true,
+                  });
                   focusComposer();
                 }}
                 onAgentChange={(agentId) => {
-                  selectConversation(null, agentId);
+                  selectConversation(null, agentId, { preserveComposer: true });
                   focusComposer();
                 }}
               />

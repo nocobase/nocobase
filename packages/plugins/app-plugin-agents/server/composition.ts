@@ -150,10 +150,13 @@ import {
   type SubjectRegistry,
 } from './core/runs/index.js';
 
+import { createSandboxProvider } from './online/sandbox/provider.js';
+import type { OnlineAgentSandboxOptions } from './online/sandbox/types.js';
 export interface AgentsDeps {
   readonly uiRecovery?: OnlineAgentRecoveryConfig;
   readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
   readonly resolver?: ServiceResolver;
+  readonly sandbox?: OnlineAgentSandboxOptions;
   readonly runRetentionDays?: () => number;
   /** The first back-off of a failed run attempt (`agents.runs.retryBaseDelayMs`); 30 seconds when left out. */
   readonly retryBaseDelayMs?: number;
@@ -509,6 +512,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     clock,
     reports,
     repoAccess,
+    subjects,
     secrets,
     onError,
   });
@@ -529,7 +533,14 @@ export function createAgents(deps: AgentsDeps): Agents {
   jobs.provideSecrets({
     open: (conn, refs, delivery) => variables.forJob(conn, refs, delivery),
   });
-  const chat = createChatSettingsService({ tx, clock, agents });
+  const nativeAvailable = async () =>
+    Boolean((await modelServices.defaults()).effectiveChat);
+  const chat = createChatSettingsService({
+    tx,
+    clock,
+    agents,
+    nativeAvailable,
+  });
   const basePath = deps.basePath ?? (() => '');
   const chatAttachments = createChatAttachments({
     tx,
@@ -554,8 +565,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     runs,
     people,
     settings: chat,
-    nativeAvailable: async () =>
-      Boolean((await modelServices.catalog().catch(() => null))?.defaultModel),
+    nativeAvailable,
     nativeNotice: (unit, row, id, parts) =>
       sessions.native.deliver(row.userId, row.id, id, parts, { unit, row }),
     nativeActive: (id, persistedRunning) =>
@@ -593,6 +603,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
   const onlineAgent = new OnlineAgentService({
     configurator,
+    sandboxProvider: createSandboxProvider({ skills, ...deps.sandbox }),
     runner: runnerOnlineAgent,
     uiStreams,
     sessions,
@@ -668,7 +679,13 @@ export function createAgents(deps: AgentsDeps): Agents {
       agentViews(
         conn,
         (await listAgents(conn)).filter((agent) => agent.source === 'runner'),
-        { availability, userId, canEdit: options.canEdit, now: clock.now() },
+        {
+          availability,
+          userId,
+          canEdit: options.canEdit,
+          now: clock.now(),
+          suggestion: agents.suggestion,
+        },
       ),
     eligibility,
     app,
@@ -710,7 +727,13 @@ export function createAgents(deps: AgentsDeps): Agents {
     subjects,
     gate,
     actions,
-    reporting: createReportService({ tx, clock, people, subjects }),
+    reporting: createReportService({
+      tx,
+      clock,
+      people,
+      subjects,
+      nativeAvailable,
+    }),
     prices: createPriceService({ tx, ids, clock }),
     conversations,
     chatAttachments: chatAttachments.service,

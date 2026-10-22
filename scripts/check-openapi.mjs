@@ -149,11 +149,18 @@ export function findOpenApiProblems(inspection) {
     security,
     cli,
   } of documentOperations(inspection.document)) {
+    // The shared runToken transport also carries native OnlineAgent credentials. Explicit person-only commands
+    // exclude real Runs; their route guards must still enforce that identity boundary at request time.
+    const personOnly =
+      Array.isArray(cli?.identities) &&
+      cli.identities.length === 1 &&
+      cli.identities[0] === 'person';
     const takesRun = (security ?? []).some((requirement) =>
       runSchemes.some((scheme) => scheme in (requirement ?? {})),
     );
     if (
       takesRun &&
+      !personOnly &&
       !RUN_ACTION_EXEMPT.has(operationId) &&
       !(cli && typeof cli === 'object' && cli.action)
     ) {

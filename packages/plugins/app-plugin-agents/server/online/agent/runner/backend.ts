@@ -77,8 +77,9 @@ function supported(config: OnlineAgentConfig, selectedModel?: ModelRef): void {
   if (
     !config.agentId ||
     config.agentId === 'online' ||
-    config.model.length ||
+    config.model?.length ||
     config.tool.length ||
+    (config.skill?.length ?? 0) > 0 ||
     config.thinking !== undefined ||
     selectedModel
   )
@@ -262,7 +263,6 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
           this.context,
           requested,
           current,
-          [],
           this.boundary === 'http',
         )
       : current;
@@ -474,7 +474,6 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
       context,
       options,
       expectedConfig,
-      [],
       boundary === 'http',
     );
     supported(config);

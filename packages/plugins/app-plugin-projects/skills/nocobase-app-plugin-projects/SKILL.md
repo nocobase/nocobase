@@ -98,6 +98,8 @@ grants from before roles moved to the App; the App converts them (for example, `
 
 ## Verification
 
+`statusEvents.fire` accepts optional `needsYou` and `next`, validated with the same progress rules as an issue update. Include the target in the event's `from` list to refresh these fields when an issue already has that status; this updates progress without replaying status activities or entry actions and returns `ignored/noTransition`. An event moving to a different status still records the provided actor and runs the normal transition.
+
 Work handlers receive the original optional `actor` on `onOwnerChanged`, `onUnblocked` and `onSubtasksFinished`, including `actor.trace.runId` when supplied. A status event moves as the system but records the actor it was fired with; pass the real actor when firing one, since an omitted actor defaults to the system.
 
 `GET /api/projects/me` as a signed-in user returns 200 with `permissions`; `POST /api/projects/issues` with a `title` returns 201

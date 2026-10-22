@@ -15,6 +15,7 @@ import {
   type ExecutorPresentationProps,
 } from '../../client/kit/executor-presentation.js';
 import { renderAt } from './render.js';
+import { IssueCreationModeContext } from '../../client/kit/issue-creation.js';
 
 vi.mock('@nocobase/app-client', () => clientMocks.appClient());
 vi.mock('@nocobase/i18n/client', () => clientMocks.i18n());
@@ -73,6 +74,25 @@ const renderNewIssue = (search = '?tab=manual') =>
 const location = () => screen.getByTestId('location').textContent;
 
 describe('the new issue dialog', () => {
+  it('lets applications retain a manual form even when an AI tab was requested', async () => {
+    renderAt('/issues/new?tab=ai', [
+      {
+        path: '/issues/new',
+        element: (
+          <IssueCreationModeContext.Provider value='manual'>
+            <NewIssuePage />
+          </IssueCreationModeContext.Provider>
+        ),
+      },
+      { path: '*', element: <p>list</p> },
+    ]);
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('issueForm.titleLabel'), {
+      target: { value: 'Manual fallback' },
+    });
+    fireEvent.click(within(dialog).getByText('actions.cancel'));
+    expect(await screen.findByText('unsavedChanges.title')).toBeTruthy();
+  });
   it('closes at once when nothing was entered', async () => {
     renderNewIssue();
     const dialog = await screen.findByRole('dialog');

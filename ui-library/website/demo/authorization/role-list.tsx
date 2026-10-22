@@ -8,7 +8,13 @@ export function RoleListDemo(): ReactElement {
       <div className='min-h-svh bg-background p-6 text-foreground'>
         <RoleList
           ariaLabel='Roles'
-          labels={{ protected: 'Protected', custom: 'Custom' }}
+          labels={{
+            name: 'Role name',
+            key: 'Key',
+            type: 'Type',
+            protected: 'Protected',
+            custom: 'Custom',
+          }}
           roles={[
             {
               key: 'member',

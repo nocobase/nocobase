@@ -24,10 +24,13 @@ const zhTW: LocaleResource<typeof enUS> = {
     sessionNotFound: '此會話不存在，或者不是您的。',
   },
   list: {
+    panelEmpty: '暫無會話',
     expand: '展示場次',
     label: '會議',
     title: '我的經紀人',
     archived: '已封存',
+    archivedView:
+      '選擇一個已封存的會話查看內容。目前開啟的會話和未送出的草稿會保留。',
     back: '返回會議',
     new: '新會話',
     search: '搜尋會話',
@@ -89,9 +92,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     settingsReset: '使用代理預設值',
     settingsUnsupported: '此代理不公開設定。將使用其預設值。',
     settingsEmpty: '該代理沒有可配置的設定。將使用其預設值。',
-    title: '新會話',
-    subtitle:
-      '在您自己的電腦上與代理討論並澄清要求，記錄任務並在此處追蹤進度。 Studio 的專案經理會在您啟動任務後協調代理程式來開發任務。',
     pickComputer: '選擇電腦',
     noAgent: '無可用代理',
     folder: '計算機上的目錄',

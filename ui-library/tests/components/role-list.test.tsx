@@ -1,8 +1,27 @@
-import { render, screen } from '@testing-library/react';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import type { ReactElement } from 'react';
+import { render as renderView, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { RoleList } from '../../registry/authorization/role-list.js';
+
+import { readmeTranslations } from '../readme-translations.js';
+
+const runtime = await createTestI18nRuntime({
+  application: {
+    namespace: 'role-table-test',
+    resources: readmeTranslations('components')['en-US'],
+  },
+});
+function render(view: ReactElement) {
+  return renderView(
+    <TestI18nProvider runtime={runtime}>{view}</TestI18nProvider>,
+  );
+}
 
 const roles = [
   {
@@ -18,19 +37,30 @@ const roles = [
     protected: false,
   },
 ];
-describe('compact role list', () => {
-  it('renders ordinary list content with full names, identifiers and translated state labels', () => {
+describe('standard role table', () => {
+  it('renders standard table headers, full names, identifiers and translated state labels', () => {
     render(
       <MemoryRouter>
         <RoleList
           roles={roles}
           ariaLabel='角色与权限'
-          labels={{ protected: '受保护', custom: '自定义' }}
+          labels={{
+            name: '角色名称',
+            key: '标识',
+            type: '类型',
+            protected: '受保护',
+            custom: '自定义',
+          }}
         />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('list', { name: '角色与权限' })).toBeVisible();
-    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    expect(
+      within(screen.getByRole('region', { name: '角色与权限' })).getByRole(
+        'table',
+      ),
+    ).toBeVisible();
+    expect(screen.getAllByRole('columnheader')).toHaveLength(3);
+    expect(screen.getAllByRole('row')).toHaveLength(3);
     expect(
       screen.queryByRole('heading', { name: 'Member' }),
     ).not.toBeInTheDocument();
@@ -51,7 +81,13 @@ describe('compact role list', () => {
             element={
               <RoleList
                 roles={roles}
-                labels={{ protected: 'Protected', custom: 'Custom' }}
+                labels={{
+                  name: 'Role name',
+                  key: 'Key',
+                  type: 'Type',
+                  protected: 'Protected',
+                  custom: 'Custom',
+                }}
               />
             }
           />
@@ -63,9 +99,41 @@ describe('compact role list', () => {
       name: 'Member',
     });
     expect(link).toHaveAttribute('href', '/roles/member/edit?q=team');
-    await user.tab();
+    for (let i = 0; i < 8 && document.activeElement !== link; i++)
+      await user.tab();
     expect(link).toHaveFocus();
     await user.keyboard('{Enter}');
     expect(screen.getByText('Edit member')).toBeVisible();
+  });
+  it('uses standard pagination without losing edit links on later pages', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <RoleList
+          roles={Array.from({ length: 12 }, (_, i) => ({
+            key: `role-${i}`,
+            title: `Role ${i}`,
+            to: `/roles/role-${i}/edit`,
+            protected: false,
+          }))}
+          labels={{
+            name: 'Role name',
+            key: 'Key',
+            type: 'Type',
+            protected: 'Protected',
+            custom: 'Custom',
+          }}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getAllByRole('row')).toHaveLength(11);
+    expect(
+      screen.queryByRole('link', { name: 'Role 11', exact: true }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Go to next page' }));
+    expect(screen.getAllByRole('row')).toHaveLength(3);
+    expect(
+      screen.getByRole('link', { name: 'Role 11', exact: true }),
+    ).toHaveAttribute('href', '/roles/role-11/edit');
   });
 });

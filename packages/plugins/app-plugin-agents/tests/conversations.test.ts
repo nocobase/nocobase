@@ -360,6 +360,13 @@ describe('historical Runner conversation domain', () => {
     expect(resumed.prompt.system).not.toContain('Earlier in this conversation');
     // Back to the queue, as if the runner went away; another runner takes it.
     await runner(one).post(second.run.id, 'fail', { reason: 'runnerOffline' });
+    await h.database
+      .connection()
+      .repository('agRunners')
+      .updateMany({
+        filter: { id: one.runnerId },
+        values: { status: 'offline' },
+      });
     const two = await h.registerRunner({ name: 'two' });
     const [fresh] = await claim(h, two);
     expect(fresh.run.id).toBe(second.run.id);
@@ -684,6 +691,7 @@ describe('historical Runner conversation domain', () => {
     await claim(h, key);
     await runner(key).post(next.run!.id, 'start', start);
     await domain().stop(ALICE, id);
+    expect((await h.services.runs.get(next.run!.id)).cancelledById).toBe(ALICE);
     expect(
       (await h.services.runs.get(next.run!.id)).cancelRequestedAt,
     ).not.toBeNull();
@@ -768,7 +776,6 @@ describe('historical Runner conversation domain', () => {
     expect((await domain().get(ALICE, original.id)).agent?.id).toBe(mine);
     expect((await domain().chatAgents(ALICE)).map((x) => x.name)).toEqual([
       'Team PM',
-      'Online agent',
     ]);
   });
   it('lists the agents a person may give work to, with whether each can take it now', async () => {

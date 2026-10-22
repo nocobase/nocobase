@@ -1,5 +1,33 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.12
+
+### Minor Changes
+
+- f2712b9: Make run git credentials independent of the code host. Protocol 12 adds `RunGit.tools` and the `gitTools` runner feature: the runner wraps the code host CLIs a run names (such as `gh` or `glab`) so every call runs with the current credential of one of the run's repositories, fetched through the run's credential broker, and fails with the reason instead of falling back to the machine's login. A credential's username is now the only one git uses (`oauth2` for GitLab, `x-access-token` for a GitHub App); the runner no longer defaults it for runs (a build job's token without a username keeps the old default).
+
+  Every run's agent now gets `git`, `gh` and `glab` wrappers that refuse `gh`/`glab` logins and token output, `credential.*` set with `git -c`/`--config-env` or written outside the repository's own config, `http.*.extraHeader` in any git configuration, and git URLs with a user in them.
+
+  Repository access providers are told whether the runner wraps CLIs (`tools`) and who answers for the run's subject now (`responsibleUserId`), at the claim, in `prepare` and on every `issue`, so an application can issue credentials for a task's owner. `RunGit.tools` is dropped for runners without the feature and for repositories without a credential in the payload.
+
+  The runner's workspace notes now tell the agent to open and update change requests with the code host's command line rather than an application `pr open` command.
+
+  Update the application before its runners: a server speaking protocol 11 refuses a runner speaking 12.
+
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- 301d309: Reuse a fixed task worktree across runs and tools, preserve dependencies and sessions, isolate per-run files and cancellation, and protect cleanup with nonexclusive usage records covering worker startup. Reclaim sessions only with their owning directory. Leave commits and pushes to agents, give them an explicit HEAD-to-branch refspec for detached workspaces, refresh initialization after lockfile changes or artifact cleanup, and default idle artifact retention to 24 hours. Prefer an immediately available previous runner under the same ordered-model admission rules, aggregate affinity location and occupancy reads, and reserve actual upgrade interruptions for that runner for five minutes.
+
+  Separate ordered-model claim eligibility from full waiting diagnostics, evaluate affinity in queue order, and reuse batched resource metadata without repeating capacity reads for every candidate and machine.
+
+  Serialize cache fetch and worktree creation through a short cache mutex, retry transient Git lock conflicts, fall back to a detached remote branch when another directory owns it, and avoid optional index locks and per-remote-branch reporting commands. Both workspace-cleanup and repository-cache lock waits now time out after two minutes as retryable workspace-busy failures. Report disk pauses as unavailable capacity while continuing claims during periodic workspace collection.
+
+- 4f0d96e: Add opt-in native OnlineAgent Skills and application-branded CLI execution using an isolated, lazily created just-bash environment. Load current Skill support trees, support virtual parameter files and read bindings, retain existing business authorization, and release execution resources across stop, approval and retryable finalization without replaying writes.
+
+  Redact execution credentials and declare intentionally disabled optional archive-native build scripts in workspace, generated-application and deployment installation policies.
+
 ## 0.1.0-beta.10
 
 ### Minor Changes

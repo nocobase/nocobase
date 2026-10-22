@@ -608,9 +608,7 @@ it('preserves directory defaults, personal eligibility and offline reasons, and 
     isMyDefault: true,
     availability: { online: true },
   });
-  expect(alice.find((agent) => agent.id === 'online')).toMatchObject({
-    availability: { online: false, reason: 'noModel' },
-  });
+  expect(alice.some((agent) => agent.id === 'online')).toBe(false);
   expect(alice.some((agent) => agent.id === hidden)).toBe(false);
   const bob = await h.services.conversations.chatAgents('bob');
   expect(bob.find((agent) => agent.id === first)?.availability).toMatchObject({
@@ -781,6 +779,13 @@ it('measures admission and proves an unchanged active read takes no write transa
 
 it('accepts Native personal and team defaults without a Runner row and preserves explicit Runner choice', async () => {
   h = await createHarness();
+  await h.services.models.services.create({
+    title: 'Native',
+    provider: 'openai-compatible',
+    baseUrl: 'http://127.0.0.1:1/v1',
+    apiKey: 'test',
+    models: [{ value: 'chat' }],
+  });
   await h.services.chat.updateSettings('alice', { defaultAgentId: 'online' });
   await h.services.chat.updatePreferences('alice', {
     defaultAgentId: 'online',
@@ -792,12 +797,13 @@ it('accepts Native personal and team defaults without a Runner row and preserves
   ).toMatchObject({
     isMyDefault: true,
     isSystemDefault: true,
-    availability: { online: false, reason: 'noModel' },
+    availability: { online: true, reason: null },
   });
   const runner = await h.registerRunner();
   expect(runner.runnerId).toBeTruthy();
   const agentId = await h.createAgent({ source: 'runner' });
   await h.services.chat.updatePreferences('alice', { defaultAgentId: agentId });
+  await h.services.models.services.update('native', { enabled: false });
   await expect(h.services.onlineAgent.realtime(context())).rejects.toThrow();
   const agent = await h.services.onlineAgent.realtime(context(), { agentId });
   expect(agent.sessionId).toBeTruthy();

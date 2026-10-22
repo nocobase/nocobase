@@ -50,6 +50,8 @@ export interface AgentSessionsPanelAttach {
 }
 
 export interface AgentSessionsPanelProps extends AgentSessionsRouteOptions {
+  /** Let the host show the text or resolve the reference carried by a context tag. */
+  readonly onInspectAttachment?: ((attachment: Attachment) => void) | undefined;
   readonly view: AgentSessionsPanelView;
   readonly onViewChange: (view: AgentSessionsPanelView) => void;
   readonly attach?: AgentSessionsPanelAttach | undefined;
@@ -57,6 +59,14 @@ export interface AgentSessionsPanelProps extends AgentSessionsRouteOptions {
   readonly activeLink?: Pick<SessionLink, 'kind' | 'refId'> | null | undefined;
   /** After the panel's own buttons, such as the host's close button. */
   readonly actions?: ReactNode;
+  /** Show the existing session history beside the current content without remounting its draft. */
+  readonly showHistory?: boolean;
+  /** Mode label and new-session control for a host-owned history column. */
+  readonly title?: string;
+  readonly historyActions?: ReactNode;
+  /** Replace panel header controls, retaining session commands in the host menu. */
+  readonly renderHeaderActions?:
+    ((menuItems: ReactNode) => ReactNode) | undefined;
   /** Opens the full page at `path`; left out, it navigates there. */
   readonly onFullScreen?: ((path: string) => void) | undefined;
 }
@@ -65,16 +75,25 @@ export interface AgentSessionsPanelProps extends AgentSessionsRouteOptions {
 const APPLIED = 'panel:attach';
 
 function Panel({
-  view,
+  view: requestedView,
+  showHistory = false,
+  title,
+  historyActions,
   onViewChange,
   attach,
   activeLink,
   actions,
   onFullScreen,
+  onInspectAttachment,
+  renderHeaderActions,
 }: Omit<
   AgentSessionsPanelProps,
   keyof AgentSessionsRouteOptions
 >): ReactElement {
+  const view =
+    showHistory && requestedView.kind === 'list'
+      ? { kind: 'new' as const }
+      : requestedView;
   const { t } = useTranslation();
   const navigate = useNavigate();
   const client = useQueryClient();
@@ -144,7 +163,7 @@ function Panel({
       : view.kind === 'new'
         ? '/agent-sessions?new'
         : '/agent-sessions';
-  const buttons = (
+  const defaultButtons = (
     <div className='flex shrink-0 items-center gap-0.5'>
       {view.kind !== 'new' && (
         <Button
@@ -182,8 +201,14 @@ function Panel({
       {actions}
     </div>
   );
+  const buttons = renderHeaderActions
+    ? renderHeaderActions(null)
+    : defaultButtons;
   const surface: SessionSurface = {
+    renderHeaderActions,
+    panelTitle: title,
     panel: true,
+    onInspectAttachment,
     actions: buttons,
     onCreated: (sessionId) => onViewChange({ kind: 'session', sessionId }),
     onOpenSession: (sessionId) => onViewChange({ kind: 'session', sessionId }),
@@ -195,26 +220,49 @@ function Panel({
 
   return (
     <SessionSurfaceContext.Provider value={surface}>
-      <div className='@container/agent-session flex h-full min-h-0 flex-col'>
-        {view.kind === 'session' && (
-          <SessionView key={view.sessionId} sessionId={view.sessionId} />
-        )}
-        {view.kind === 'new' && (
-          <>
-            <div className='flex items-center gap-2 border-b px-3.5 py-2'>
-              <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
-                {t('list.new')}
-              </h2>
-              {buttons}
+      <div className='flex h-full min-h-0 min-w-0'>
+        {showHistory && (
+          <SessionSurfaceContext.Provider
+            value={{ ...surface, actions: historyActions }}
+          >
+            <div className='w-[18rem] shrink-0 border-r' data-panel-history=''>
+              <SessionList
+                activeId={view.kind === 'session' ? view.sessionId : undefined}
+                className='min-h-0'
+              />
             </div>
-            <div className='min-h-0 flex-1'>
-              <NewSession />
-            </div>
-          </>
+          </SessionSurfaceContext.Provider>
         )}
-        {view.kind === 'list' && (
-          <SessionList activeId={undefined} className='min-h-0 flex-1' />
-        )}
+        <div
+          key='content'
+          className='@container/agent-session flex min-h-0 min-w-0 flex-1 flex-col'
+        >
+          {view.kind === 'session' && (
+            <SessionView key={view.sessionId} sessionId={view.sessionId} />
+          )}
+          {view.kind === 'new' && (
+            <>
+              <header className='flex items-center gap-2 border-b px-3.5 py-2'>
+                {renderHeaderActions && showHistory ? (
+                  <div className='flex-1' />
+                ) : (
+                  <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
+                    {renderHeaderActions
+                      ? (title ?? t('list.title'))
+                      : t('list.new')}
+                  </h2>
+                )}
+                {buttons}
+              </header>
+              <div className='min-h-0 flex-1'>
+                <NewSession />
+              </div>
+            </>
+          )}
+          {view.kind === 'list' && (
+            <SessionList activeId={undefined} className='min-h-0 flex-1' />
+          )}
+        </div>
       </div>
     </SessionSurfaceContext.Provider>
   );

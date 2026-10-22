@@ -24,10 +24,13 @@ const ptBR: LocaleResource<typeof enUS> = {
     sessionNotFound: 'Esta sessão não existe ou não é sua.',
   },
   list: {
+    panelEmpty: 'Nenhuma conversa',
     expand: 'Mostrar sessões',
     label: 'Sessões',
     title: 'Meus agentes',
     archived: 'Arquivado',
+    archivedView:
+      'Escolha uma sessão arquivada para lê-la. Sua sessão aberta e seu rascunho não enviado são mantidos.',
     back: 'Voltar às sessões',
     new: 'Nova sessão',
     search: 'Sessões de pesquisa',
@@ -101,9 +104,6 @@ const ptBR: LocaleResource<typeof enUS> = {
       'Este agente não expõe configurações. Seus padrões serão usados.',
     settingsEmpty:
       'Este agente não possui configurações configuráveis. Seus padrões serão usados.',
-    title: 'Nova sessão',
-    subtitle:
-      'Discuta e esclareça requisitos com um agente em seu próprio computador, registre tarefas e acompanhe o progresso aqui. O gerente de projeto do Studio coordena os agentes para desenvolver tarefas depois de iniciá-las.',
     pickComputer: 'Escolha um computador',
     noAgent: 'Nenhum agente disponível',
     folder: 'Diretório no computador',

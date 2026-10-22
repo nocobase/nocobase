@@ -26,6 +26,7 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { loggingToken } from '@nocobase/app-server/logging';
 import {
   defineApiRoutes,
+  ApiError,
   type AppApiRouteContribution,
   type AppRouteContribution,
 } from '@nocobase/app-server/router';
@@ -47,6 +48,7 @@ import { createDistRoutes } from './runners/dist.js';
 import { createInstallRoutes } from './runners/install.js';
 import { createRunnerRoutes } from './runners/runner.js';
 import { runIdentityOf } from '../cli/run-credential.js';
+import { ONLINE_AGENT_CREDENTIAL } from '../cli/online-credential.js';
 import { ProtocolError } from '../kernel/errors.js';
 
 export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
@@ -119,6 +121,28 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       caller,
     );
 
+    // Only owner-checked conversation list/get/update accept OnlineAgent; not Run or other scoped identities.
+    const personOrOnlineAgent: MiddlewareHandler<AdminEnv> = every(
+      authentication.required({ scopedKeys: true }),
+      (async (context, next) => {
+        const auth = context.get('auth');
+        if (
+          auth &&
+          auth.credential?.type !== ONLINE_AGENT_CREDENTIAL &&
+          (await authentication.isScopedSession(auth, context.req.raw))
+        )
+          throw new ApiError({
+            status: 'PERMISSION_DENIED',
+            reason: 'SCOPED_KEY_FORBIDDEN',
+            domain: 'authentication',
+            message:
+              'This endpoint does not accept scoped API keys or service-account keys.',
+          });
+        await next();
+      }) as MiddlewareHandler<GuardEnv>,
+      authorization.middleware(),
+      caller,
+    );
     const router = new Hono();
     router.route(
       '/agents/dist',
@@ -156,7 +180,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // A person alone: confirming makes a run act as the caller, which no run token or scoped key may do for them.
     router.route('/agents', createRunRequestRoutes(services, person));
     router.route('/agents', createRosterRoutes(services, personOrScopedKey));
-    router.route('/agents', createChatRoutes(services, person, personOrRun));
+    router.route(
+      '/agents',
+      createChatRoutes(services, person, personOrRun, personOrOnlineAgent),
+    );
     router.route(
       '/agents',
       createModelRoutes(services, person, personOrScopedKey),

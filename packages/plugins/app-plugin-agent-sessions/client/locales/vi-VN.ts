@@ -24,10 +24,13 @@ const viVN: LocaleResource<typeof enUS> = {
     sessionNotFound: 'Phiên này không tồn tại hoặc không phải của bạn.',
   },
   list: {
+    panelEmpty: 'Chưa có cuộc trò chuyện',
     expand: 'Hiển thị phiên',
     label: 'Phiên',
     title: 'Đại lý của tôi',
     archived: 'Đã lưu trữ',
+    archivedView:
+      'Chọn một phiên đã lưu trữ để đọc. Phiên đang mở và bản nháp chưa gửi vẫn được giữ lại.',
     back: 'Quay lại phiên',
     new: 'Phiên họp mới',
     search: 'Phiên tìm kiếm',
@@ -96,9 +99,6 @@ const viVN: LocaleResource<typeof enUS> = {
       'Tác nhân này không hiển thị cài đặt. Mặc định của nó sẽ được sử dụng.',
     settingsEmpty:
       'Tác nhân này không có cài đặt có thể định cấu hình. Mặc định của nó sẽ được sử dụng.',
-    title: 'Phiên họp mới',
-    subtitle:
-      'Thảo luận và làm rõ các yêu cầu với nhân viên trên máy tính của bạn, ghi lại các nhiệm vụ và theo dõi tiến độ tại đây. Người quản lý dự án của Studio điều phối các nhân viên để phát triển nhiệm vụ sau khi bạn bắt đầu chúng.',
     pickComputer: 'Chọn máy tính',
     noAgent: 'Không có đại lý',
     folder: 'Thư mục trên máy tính',

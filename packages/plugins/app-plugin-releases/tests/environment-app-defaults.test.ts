@@ -60,4 +60,70 @@ describe('environment App defaults', () => {
       }),
     ).rejects.toMatchObject({ status: 'INVALID_ARGUMENT' });
   });
+
+  it('persists inherited and mixed policies and recovers after capacity is freed', async () => {
+    const owner = await harness.as('owner', 'admin');
+    await harness.services.environments.update(owner, 'apps', {
+      defaultIdleStopMinutes: 1,
+      defaultDormantAfterHours: 0.5,
+      maxApps: 2,
+    });
+    const releases = harness.services.releases;
+    await releases.createApp(owner, {
+      id: 'control',
+      name: 'Control',
+      environmentId: 'apps',
+    });
+    expect((await releases.getApp(owner, 'control')).app).toMatchObject({
+      idleStopMinutes: 1,
+      dormantAfterHours: 0.5,
+    });
+    const choices = [
+      {
+        input: { idleStopMinutes: 10 },
+        policy: { idleStopMinutes: 10, dormantAfterHours: 0.5 },
+      },
+      {
+        input: { dormantAfterHours: 1 },
+        policy: { idleStopMinutes: 1, dormantAfterHours: 1 },
+      },
+      {
+        input: { idleStopMinutes: null },
+        policy: { idleStopMinutes: null, dormantAfterHours: 0.5 },
+      },
+      {
+        input: { dormantAfterHours: null },
+        policy: { idleStopMinutes: 1, dormantAfterHours: null },
+      },
+    ];
+    for (const { input, policy } of choices) {
+      await releases.createApp(owner, {
+        id: 'choice',
+        name: 'Choice',
+        environmentId: 'apps',
+        ...input,
+      });
+      expect((await releases.getApp(owner, 'choice')).app).toMatchObject(
+        policy,
+      );
+      await expect(
+        releases.createApp(owner, {
+          id: 'retry',
+          name: 'Retry',
+          environmentId: 'apps',
+        }),
+      ).rejects.toMatchObject({ reason: 'ENVIRONMENT_FULL' });
+      await releases.deleteApp(owner, 'choice', { confirm: 'choice' });
+    }
+    await releases.createApp(owner, {
+      id: 'retry',
+      name: 'Retry',
+      environmentId: 'apps',
+    });
+    expect((await releases.getApp(owner, 'retry')).app).toMatchObject({
+      idleStopMinutes: 1,
+      dormantAfterHours: 0.5,
+    });
+    expect(harness.fake.running.size).toBe(0);
+  });
 });

@@ -1894,6 +1894,7 @@ export function createAdminRoutes(
       );
       const [data] = await agentViews(services.tx.read(), [agent], {
         availability: services.availability,
+        suggestion: services.agents.suggestion,
         userId: who.userId,
         canEdit: await who.can('agents.agents', 'manage'),
         now: services.clock.now(),

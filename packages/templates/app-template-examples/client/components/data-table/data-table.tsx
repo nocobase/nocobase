@@ -107,6 +107,8 @@ export function DataTable<TData, TValue = unknown>({
     data: tableData,
     columns,
     manualPagination,
+    // Controlled hosts own URL page resets and correction after writes.
+    autoResetPageIndex: paginationState === undefined,
     rowCount,
     manualSorting,
     ...(onPaginationChange ? { onPaginationChange } : {}),

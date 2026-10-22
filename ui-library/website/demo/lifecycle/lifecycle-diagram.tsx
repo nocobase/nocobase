@@ -103,6 +103,18 @@ export function LifecycleDiagramDemo(): ReactElement {
         {detail}
       </p>
       <LifecycleDiagram
+        presentation='process'
+        stateKind={(state) =>
+          state.name === 'review'
+            ? 'approval'
+            : state.name === 'rejected'
+              ? 'negative'
+              : state.final
+                ? 'success'
+                : description.initialStates.includes(state.name)
+                  ? 'start'
+                  : 'work'
+        }
         description={description}
         currentState='review'
         history={[{ transition: 'submit', from: 'draft', to: 'review' }]}

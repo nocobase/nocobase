@@ -13,7 +13,8 @@ import {
 import { createSubscriptions, PUSH_SECRET_PURPOSE } from '../subscriptions.js';
 import { createWebPushService } from '../service.js';
 import { webPushServiceToken } from '../tokens.js';
-import { registerWebPushChannel } from '../channel.js';
+import { WebPushChannel } from '../channel.js';
+import { installLegacyMessageHandler } from '../compatibility.js';
 import { sendPush } from '../transport.js';
 import { PushError } from '../subscriptions.js';
 import type { PushConfig } from '../config.js';
@@ -53,9 +54,10 @@ export default class WebPushProvider extends ServiceProvider<AppPluginApplicatio
         connection: () => container.resolve(databaseManagerToken).connection(),
       }),
     );
-    registerWebPushChannel(
-      container.resolve(notificationExtensionRegistryToken),
-      () => container.resolve(webPushServiceToken),
+    const registry = container.resolve(notificationExtensionRegistryToken);
+    installLegacyMessageHandler(registry, () =>
+      container.resolve(webPushServiceToken),
     );
+    registry.registerChannelType(WebPushChannel);
   }
 }

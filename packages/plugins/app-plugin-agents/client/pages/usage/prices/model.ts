@@ -11,7 +11,7 @@ import {
   type PricesAnswer,
   type PricesInput,
 } from '../../../../shared/reports.js';
-import type { ModelServiceView } from '../../../../shared/models.js';
+import type { ModelCatalog } from '../../../../shared/models.js';
 
 export { AGENT_TOOLS, type AgentTool };
 
@@ -128,7 +128,7 @@ export function parseAmount(value: string): number | null {
   return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
-/** An amount as an input shows it: `3`, `0.075`. */
+/** A read-only amount, rounded for display; never use it to initialize editable values. */
 export function amountText(value: number): string {
   return Number.isInteger(value)
     ? String(value)
@@ -136,11 +136,12 @@ export function amountText(value: number): string {
 }
 
 /** The (service, model) pairs online agents may use, so the ones priced: each enabled service's models, in order. */
-export function onlinePairs(
-  services: readonly ModelServiceView[],
-): { readonly service: ModelServiceView; readonly models: string[] }[] {
+export function onlinePairs(services: ModelCatalog['services']): {
+  readonly service: ModelCatalog['services'][number];
+  readonly models: string[];
+}[] {
   return services
-    .filter((service) => service.enabled && service.models.length > 0)
+    .filter((service) => service.models.length > 0)
     .map((service) => ({
       service,
       models: service.models.map((model) => model.value),

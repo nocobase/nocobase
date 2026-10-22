@@ -1,3 +1,4 @@
+import type { OnlineAgentSandboxProvider } from '../../sandbox/types.js';
 import { nativeInputParts } from '../messages/validation.js';
 import {
   NativeRealtimeOnlineAgent,
@@ -61,6 +62,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
     private deps: {
       sessions: OnlineAgentSessionManager;
       configurator: OnlineAgentConfigurator;
+      sandboxProvider?: OnlineAgentSandboxProvider;
       ids: IdSource;
       resolver?: ServiceResolver;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
@@ -198,15 +200,12 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
     const config = structuredClone(initial.config);
     if (config.agentId && config.agentId !== 'online')
       throw invalid('This configuration belongs to a Runner backend.');
-    if (!initial.hasModel) {
-      const fallback =
-        options.selectedModel ??
-        initial.defaultModel ??
-        (await this.deps.defaultModel());
-      if (fallback)
-        config.model = [`${fallback.modelService}/${fallback.model}`];
-    }
-    const model = options.selectedModel ?? this.firstModel(config.model);
+    const model =
+      options.selectedModel ??
+      (config.model?.length
+        ? this.firstModel(config.model)
+        : (initial.defaultModel ?? (await this.deps.defaultModel())));
+    if (!model) throw invalid('No enabled chat model is configured.');
     this.validateModel(config.model, model);
     await this.deps.model(model, '');
     this.available();
@@ -328,15 +327,15 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
         context,
         options,
         session.config,
-        [],
         boundary === 'http',
       );
       if ((config.agentId ?? 'online') !== (session.config.agentId ?? 'online'))
         throw conflict('Start a new conversation to choose another agent.');
       const model =
         selectedModel ??
+        (config.model?.length &&
         (options.model !== undefined ||
-        JSON.stringify(config.model) !== JSON.stringify(session.config.model)
+          JSON.stringify(config.model) !== JSON.stringify(session.config.model))
           ? this.firstModel(config.model)
           : session.model);
       this.validateModel(config.model, model);
@@ -356,6 +355,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
   }
   private firstModel(models: string[]): ModelRef {
     const value = models[0];
+    if (!value) throw invalid('No enabled chat model is configured.');
     const separator = value?.indexOf('/') ?? -1;
     if (separator < 1 || separator === value.length - 1)
       throw invalid('The selected model is outside this configuration.');
@@ -364,8 +364,11 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       model: value.slice(separator + 1),
     };
   }
-  private validateModel(allowed: string[], model: ModelRef) {
-    if (!allowed.includes(`${model.modelService}/${model.model}`))
+  private validateModel(allowed: string[] | undefined, model: ModelRef) {
+    if (
+      allowed?.length &&
+      !allowed.includes(`${model.modelService}/${model.model}`)
+    )
       throw invalid('The selected model is outside this configuration.');
   }
   private notifyObservers(

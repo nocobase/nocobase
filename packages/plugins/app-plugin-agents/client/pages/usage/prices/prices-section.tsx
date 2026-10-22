@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronRightIcon, TerminalIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
+import type { ModelCatalog } from '../../../../shared/models.js';
 import type { PricesAnswer } from '../../../../shared/reports.js';
 import { agentsKeys } from '../../../api/keys.js';
 import { Badge } from '../../../components/ui/badge.js';
@@ -17,14 +18,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '../../../components/ui/collapsible.js';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-} from '../../../components/ui/empty.js';
 import { Item, ItemGroup } from '../../../components/ui/item.js';
 import { Separator } from '../../../components/ui/separator.js';
-import { Skeleton } from '../../../components/ui/skeleton.js';
+import { AgLoadError } from '../../../components/ag-states.js';
 import { TableCell, TableRow } from '../../../components/ui/table.js';
 import { useAgentsApi } from '../../../hooks/use-agents-api.js';
 import { useNotify } from '../../../hooks/use-notify.js';
@@ -47,10 +43,27 @@ export function PricesSection({
   readonly canEdit: boolean;
 }): ReactElement {
   const { t } = useTranslation();
+  const api = useAgentsApi();
+  const models = useQuery({
+    queryKey: agentsKeys.models,
+    queryFn: () => api.models(),
+  });
+  const services = models.data?.services ?? [];
   return (
     <div className='flex flex-col gap-6'>
-      <OnlinePrices prices={prices} canEdit={canEdit} />
-      <Separator />
+      {models.isError ? (
+        <AgLoadError
+          title={t('prices.loadFailed')}
+          error={models.error}
+          onRetry={() => void models.refetch()}
+        />
+      ) : null}
+      {services.length > 0 ? (
+        <>
+          <OnlinePrices prices={prices} canEdit={canEdit} services={services} />
+          <Separator />
+        </>
+      ) : null}
       <section
         className='flex flex-col gap-3'
         aria-labelledby='ag-prices-runner'
@@ -88,70 +101,57 @@ export function PricesSection({
 function OnlinePrices({
   prices,
   canEdit,
+  services,
 }: {
   readonly prices: PricesAnswer;
   readonly canEdit: boolean;
+  readonly services: ModelCatalog['services'];
 }): ReactElement {
   const { t } = useTranslation();
-  const api = useAgentsApi();
   const notify = useNotify();
   const save = useSavePrices();
-  const services = useQuery({
-    queryKey: agentsKeys.services,
-    queryFn: () => api.services(),
-  });
-  const groups = onlinePairs(services.data ?? []);
+  const groups = onlinePairs(services);
   return (
     <section className='flex flex-col gap-3' aria-labelledby='ag-prices-online'>
       <h3 id='ag-prices-online' className='text-sm font-medium'>
         {t('prices.section.online')}
       </h3>
-      {services.isPending ? (
-        <Skeleton className='h-24 w-full' />
-      ) : groups.length === 0 ? (
-        <Empty className='border p-4'>
-          <EmptyHeader>
-            <EmptyDescription>{t('prices.section.noOnline')}</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        <PriceTable
-          label={t('prices.section.online')}
-          model={t('prices.price.model')}
-        >
-          {groups.flatMap(({ service, models }) =>
-            models.map((model) => {
-              const key = onlineKey(service.name, model);
-              const price = exactPrice(prices.items, key);
-              const label = `${service.title} · ${model}`;
-              return (
-                <TableRow key={`${service.name}/${model}`} aria-label={label}>
-                  <TableCell className='max-w-0 px-3'>
-                    <div className='truncate font-mono'>{model}</div>
-                    <div className='truncate text-muted-foreground'>
-                      {service.title}
-                    </div>
-                  </TableCell>
-                  <PriceCells
-                    key={`${price?.id ?? 'none'}:${price?.updatedAt ?? ''}`}
-                    model={label}
-                    price={price}
-                    exact
-                    canEdit={canEdit}
-                    onSave={(amounts) =>
-                      save.mutateAsync(withPrice(prices, key, amounts), {
-                        onSuccess: () =>
-                          notify.success(t('prices.price.saved', { model })),
-                        onError: (error) => notify.error(error),
-                      })
-                    }
-                  />
-                </TableRow>
-              );
-            }),
-          )}
-        </PriceTable>
-      )}
+      <PriceTable
+        label={t('prices.section.online')}
+        model={t('prices.price.model')}
+      >
+        {groups.flatMap(({ service, models }) =>
+          models.map((model) => {
+            const key = onlineKey(service.name, model);
+            const price = exactPrice(prices.items, key);
+            const label = `${service.title} · ${model}`;
+            return (
+              <TableRow key={`${service.name}/${model}`} aria-label={label}>
+                <TableCell className='max-w-0 px-3'>
+                  <div className='truncate font-mono'>{model}</div>
+                  <div className='truncate text-muted-foreground'>
+                    {service.title}
+                  </div>
+                </TableCell>
+                <PriceCells
+                  key={`${price?.id ?? 'none'}:${price?.updatedAt ?? ''}`}
+                  model={label}
+                  price={price}
+                  exact
+                  canEdit={canEdit}
+                  onSave={(amounts) =>
+                    save.mutateAsync(withPrice(prices, key, amounts), {
+                      onSuccess: () =>
+                        notify.success(t('prices.price.saved', { model })),
+                      onError: (error) => notify.error(error),
+                    })
+                  }
+                />
+              </TableRow>
+            );
+          }),
+        )}
+      </PriceTable>
     </section>
   );
 }

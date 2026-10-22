@@ -25,10 +25,13 @@ const frFR: LocaleResource<typeof enUS> = {
       "Cette session n'existe pas ou elle ne vous appartient pas.",
   },
   list: {
+    panelEmpty: 'Aucune conversation',
     expand: 'Afficher les sessions',
     label: 'Séances',
     title: 'Mes agents',
     archived: 'Archivé',
+    archivedView:
+      'Choisissez une séance archivée pour la lire. Votre séance ouverte et votre brouillon non envoyé sont conservés.',
     back: 'Retour aux séances',
     new: 'Nouvelle séance',
     search: 'Sessions de recherche',
@@ -102,9 +105,6 @@ const frFR: LocaleResource<typeof enUS> = {
       "Cet agent n'expose pas les paramètres. Ses valeurs par défaut seront utilisées.",
     settingsEmpty:
       "Cet agent n'a aucun paramètre configurable. Ses valeurs par défaut seront utilisées.",
-    title: 'Nouvelle séance',
-    subtitle:
-      'Discutez et clarifiez les exigences avec un agent sur votre propre ordinateur, enregistrez les tâches et suivez les progrès ici. Le chef de projet de Studio coordonne les agents pour développer les tâches après leur démarrage.',
     pickComputer: 'Choisissez un ordinateur',
     noAgent: 'Aucun agent disponible',
     folder: "Répertoire sur l'ordinateur",

@@ -1,5 +1,17 @@
 # @nocobase/app-testing
 
+## 0.1.0-beta.6
+
+### Patch Changes
+
+- 8b30952: Isolate application command test storage in the test configuration directory. Respect the application mount path in test router links and navigation, and clean up runtime configuration immediately when initialization or rendering fails. Preserve the original failure when cleanup also fails, without reporting handled cleanup failures again at test completion. Document the test helpers' storage, routing and cleanup contracts.
+- Updated dependencies [62da032]
+- Updated dependencies [8b30952]
+- Updated dependencies [4f0d96e]
+  - @nocobase/app-client@4.0.0-beta.1
+  - @nocobase/app-server@3.0.0-beta.1
+  - @nocobase/app-cli@1.0.0-beta.26
+
 ## 0.1.0-beta.5
 
 ### Patch Changes

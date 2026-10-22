@@ -1828,8 +1828,7 @@ export function createConversationService(
             };
           }),
       );
-      if (deps.nativeAvailable) {
-        const online = await deps.nativeAvailable();
+      if (await deps.nativeAvailable?.()) {
         catalog.push({
           id: 'online',
           runnerNames: [],
@@ -1843,8 +1842,8 @@ export function createConversationService(
           isMyDefault: preferences.defaultAgentId === 'online',
           personalOnly: false,
           availability: {
-            online,
-            reason: online ? null : 'noModel',
+            online: true,
+            reason: null,
             onlineRunners: 0,
           },
         });

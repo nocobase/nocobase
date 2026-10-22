@@ -126,7 +126,9 @@ describe('repository credentials on demand', () => {
     repos(APP, LIB, OTHER);
     const provider = provide();
     const { payload } = await claimedOnDemand();
-    expect(provider.prepares).toEqual([{ onDemand: true }]);
+    expect(provider.prepares).toEqual([
+      { onDemand: true, tools: false, responsibleUserId: null },
+    ]);
     expect(provider.minted()).toBe(0);
     expect(provider.contexts[0]?.onDemand).toBe(true);
     // Only the run's own repositories, whatever the provider lists.
@@ -138,7 +140,9 @@ describe('repository credentials on demand', () => {
     repos(APP);
     const provider = provide();
     const { runner, payload } = await claimedOnDemand([...FEATURES]);
-    expect(provider.prepares).toEqual([{ onDemand: false }]);
+    expect(provider.prepares).toEqual([
+      { onDemand: false, tools: false, responsibleUserId: null },
+    ]);
     expect(payload.workspace.git).toEqual({
       credentials: [
         {
@@ -156,6 +160,109 @@ describe('repository credentials on demand', () => {
     });
     expect(refused.status).toBe(400);
     expect(refused.body.error.reason).toBe('INVALID_REQUEST');
+  });
+
+  it('passes code host CLI wrappers to a runner that has the feature, only for repositories with a credential', async () => {
+    h = await createHarness();
+    repos(APP, OTHER);
+    const contexts: RepoAccessContext[] = [];
+    const gitlab = {
+      GITLAB_TOKEN: { credential: 'password' as const },
+      GITLAB_HOST: 'github.com',
+    };
+    h.services.repoAccess.register({
+      key: 'tools',
+      forRun: async (_conn, context): Promise<RunGit> => {
+        contexts.push(context);
+        return {
+          onDemand: [APP],
+          tools: [
+            { bin: 'glab', url: APP, env: gitlab },
+            { bin: 'glab', url: APP, env: {} },
+            {
+              bin: 'gh',
+              url: OTHER,
+              env: { GH_TOKEN: { credential: 'password' } },
+            },
+          ],
+        };
+      },
+    });
+    const { payload } = await claimedOnDemand([
+      ...FEATURES,
+      'gitCredentials',
+      'gitTools',
+    ]);
+    expect(contexts[0]?.tools).toBe(true);
+    expect(payload.workspace.git).toEqual({
+      onDemand: [APP],
+      tools: [{ bin: 'glab', url: APP, env: gitlab }],
+    });
+  });
+
+  it('drops code host CLI wrappers for a runner without the feature', async () => {
+    h = await createHarness();
+    repos(APP);
+    h.services.repoAccess.register({
+      key: 'tools',
+      forRun: async (): Promise<RunGit> => ({
+        onDemand: [APP],
+        tools: [{ bin: 'gh', url: APP, env: {} }],
+      }),
+    });
+    const { payload } = await claimedOnDemand();
+    expect(payload.workspace.git).toEqual({ onDemand: [APP] });
+  });
+
+  it('tells the provider who answers for the subject, at the claim and on every ask', async () => {
+    h = await createHarness();
+    repos(APP);
+    const provider = provide();
+    const agentId = await h.createAgent({ maxAttempts: 3 });
+    await h.enqueue(agentId, '1');
+    // The subject's responsible, as an application with owners binds it, read only once the run is queued.
+    let responsible = 'u-owner';
+    Object.assign(h.services.subjects.get('sample')!, {
+      responsibleUserId: async () => responsible,
+    });
+    const runner = await h.registerRunner({
+      features: [...FEATURES, 'gitCredentials'] as never,
+    });
+    const [payload] = await claim(h, runner);
+    expect(provider.prepares[0]?.responsibleUserId).toBe('u-owner');
+    expect(provider.contexts[0]?.responsibleUserId).toBe('u-owner');
+    responsible = 'u-next-owner';
+    const asked = await ask(runner, payload.run.id, { attempt: 1, url: APP });
+    expect(asked.status).toBe(200);
+    expect(provider.requests[0]?.responsibleUserId).toBe('u-next-owner');
+  });
+
+  it('treats a failed read of the responsible as retryable: the run stays queued, and an ask is unavailable', async () => {
+    h = await createHarness();
+    repos(APP);
+    const provider = provide();
+    const agentId = await h.createAgent({ maxAttempts: 3 });
+    await h.enqueue(agentId, '1');
+    let broken = true;
+    Object.assign(h.services.subjects.get('sample')!, {
+      responsibleUserId: async () => {
+        if (broken) throw new Error('database busy');
+        return 'u-owner';
+      },
+    });
+    const runner = await h.registerRunner({
+      features: [...FEATURES, 'gitCredentials'] as never,
+    });
+    expect(await claim(h, runner)).toEqual([]);
+    expect(provider.prepares).toEqual([]);
+    broken = false;
+    const [payload] = await claim(h, runner);
+    expect(provider.contexts[0]?.responsibleUserId).toBe('u-owner');
+    broken = true;
+    const asked = await ask(runner, payload.run.id, { attempt: 1, url: APP });
+    expect(asked.status).toBe(503);
+    expect(asked.body.error.reason).toBe('REPO_ACCESS_UNAVAILABLE');
+    expect(provider.requests).toEqual([]);
   });
 
   it('issues a credential per repository of the run, again on every ask, fresh on refresh', async () => {
@@ -399,6 +506,13 @@ describe('repository credentials on demand', () => {
           .status,
       ).toBe('queued');
       h.clock.advance(60_000);
+      await h.database
+        .connection()
+        .repository('agRunners')
+        .updateMany({
+          filter: { id: runner.runnerId },
+          values: { status: 'offline' },
+        });
       const other = await h.registerRunner({
         name: 'other',
         features: [...FEATURES, 'gitCredentials'],

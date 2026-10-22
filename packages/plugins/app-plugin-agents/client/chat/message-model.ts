@@ -197,7 +197,7 @@ export function chatMessageSegments(
       const partIndexes = message.parts.flatMap((part, index) =>
         (part.type === 'text' && !part.text.trim()) ||
         part.type === 'step-start' ||
-        part.type === 'reasoning' ||
+        (part.type === 'reasoning' && !part.text.trim()) ||
         (part.type === 'data-notice' &&
           part.id === 'execution-status' &&
           part.data.type === 'completed')

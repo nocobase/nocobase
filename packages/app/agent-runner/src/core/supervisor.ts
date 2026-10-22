@@ -1,3 +1,9 @@
+import {
+  protectUpgradeWorkspace,
+  registerWorkspaceUse,
+  waitForWorkspaceCleanup,
+} from './workspace-use.ts';
+import { taskWorkDir } from './checkout.ts';
 import { cleanupRunTemp } from './run-temp.ts';
 import { finalizeRunWorktrees } from './run-worktrees.ts';
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
@@ -43,8 +49,6 @@ import {
   listProcesses,
   newProcessTag,
   PROCESS_TAG_ENV,
-  workspaceHolders,
-  taggedProcesses,
 } from './process-tree.ts';
 
 export interface RunRecord {
@@ -65,6 +69,7 @@ export interface RunRecord {
   pid: number;
   startedAt: string;
   workDir?: string;
+  privateDir?: string;
   /** The run's CLI credentials file, once written. */
   credentialsFile?: string;
   /** `spawned`, the name of the preparation step under way (prepare/index.ts), `running` or `reporting`. */
@@ -96,6 +101,8 @@ export interface Timings {
   collectIntervalMs?: number;
   /** How often the process groups below each worker are noted. */
   processScanMs?: number;
+  /** Override the production cleanup wait in tests that drive the full claim path. */
+  workspaceCleanupWaitMs?: number;
 }
 
 /** What a worker reads from its stdin: a run, or a job (`kind: 'job'`). */
@@ -245,6 +252,19 @@ export interface SupervisorOptions {
   onExit?: (runId: string) => void;
 }
 
+function runDirectories(
+  paths: RunnerPaths,
+  appKey: string,
+  payload: RunPayload,
+): string[] {
+  return [
+    taskWorkDir(paths, appKey, payload.workspace.key ?? payload.subject.key),
+    ...payload.workspace.dirs
+      .filter((dir) => dir.kind === 'directory')
+      .map((dir) => path.resolve(dir.path)),
+  ];
+}
+
 export class Supervisor {
   private readonly options: SupervisorOptions;
   readonly runs: Map<string, SupervisedRun> = new Map();
@@ -283,17 +303,35 @@ export class Supervisor {
   }
 
   async spawn(appKey: string, payload: RunPayload): Promise<SupervisedRun> {
-    const supervised = await this.start(
-      {
-        runId: payload.run.id,
-        appKey,
-        attempt: payload.run.attempt,
-        firstSeq: payload.run.firstSeq,
-      },
-      { appKey, payload, timings: this.options.timings },
-    );
-    supervised.tool = payload.tool.kind;
-    return supervised;
+    const dirs = runDirectories(this.options.paths, appKey, payload);
+    const releases: (() => Promise<void>)[] = [];
+    try {
+      for (const dir of dirs) {
+        releases.push(
+          await registerWorkspaceUse(this.options.paths, dir, payload.run.id),
+        );
+        await waitForWorkspaceCleanup(dir, {
+          timeoutMs: this.options.timings.workspaceCleanupWaitMs,
+        });
+      }
+      const supervised = await this.start(
+        {
+          runId: payload.run.id,
+          appKey,
+          attempt: payload.run.attempt,
+          firstSeq: payload.run.firstSeq,
+        },
+        { appKey, payload, timings: this.options.timings },
+      );
+      supervised.tool = payload.tool.kind;
+      void supervised.exited
+        .finally(() => Promise.all(releases.map((release) => release())))
+        .catch((error: unknown) => this.options.log(String(error)));
+      return supervised;
+    } catch (error) {
+      await Promise.all(releases.map((release) => release()));
+      throw error;
+    }
   }
 
   /** How many runs of `tool` it supervises now. */
@@ -365,6 +403,18 @@ export class Supervisor {
       phase: 'spawned',
       log: logFile,
     });
+    // A worker can outlive this daemon. Its own PID protects startup even before its preparation steps run.
+    const startupUses: (() => Promise<void>)[] = [];
+    try {
+      if (job.kind !== 'job')
+        for (const dir of runDirectories(paths, appKey, job.payload))
+          startupUses.push(await registerWorkspaceUse(paths, dir, runId, pid));
+    } catch (error) {
+      child.stdin?.destroy();
+      await killGroup(pid, 0);
+      await Promise.all(startupUses.map((release) => release()));
+      throw error;
+    }
     const exited = new Promise<void>((resolve) => {
       child.on('exit', (code, signal) => {
         log(`${noun} ${label}: worker ${pid} exited (${signal ?? code})`);
@@ -392,6 +442,7 @@ export class Supervisor {
             const cancelled = this.runs.get(runId)?.cancelSeenAt !== undefined;
             const upgrade = this.runs.get(runId)?.upgradeInterrupted === true;
             await this.afterExit(runId, cancelled, upgrade);
+            await Promise.all(startupUses.map((release) => release()));
             this.runs.delete(runId);
             this.options.onExit?.(runId);
             resolve();
@@ -628,42 +679,23 @@ export async function recoverRun(
     log(`${runId}: killing the job's command group ${record.commandPgid}`);
     await killGroup(record.commandPgid, 0);
   }
-  let detail = options.detail;
+  const detail = options.detail;
   if (record.kind !== 'job' && record.workDir !== undefined) {
-    const holders = await workspaceHolders(record.workDir);
-    const tags =
-      record.processTag === undefined
-        ? []
-        : await taggedProcesses([record.processTag]);
-    const liveGroup = (await listProcesses()).some(
-      (p) => p.pgid === record.pid,
-    );
-    const stopped = holders.length + tags.length === 0 && !liveGroup;
-    const results = await finalizeRunWorktrees(
-      paths,
-      record.workDir,
-      log,
-      holders.length + tags.length > 0 || liveGroup
-        ? {
-            unsafeReason:
-              'Processes still hold the attempt directory after stopping.',
-          }
-        : {},
-    );
-    if (stopped) {
-      try {
-        await cleanupRunTemp(paths, record.workDir);
-      } catch (error) {
-        // Temporary cleanup must not prevent credential removal, reporting or worker exit completion.
-        const reason = `Run temporary directory retained for ${record.workDir}: ${String(error)}`;
-        log(reason);
-        detail += `\n${reason}`;
-      }
+    if (options.reason === 'runnerUpgrade')
+      await protectUpgradeWorkspace(paths, record.workDir, runId);
+    // New task directories are permanent. Legacy attempts retain their recovery path.
+    if (record.privateDir === undefined) {
+      await finalizeRunWorktrees(paths, record.workDir, log, {
+        unsafeReason: 'Legacy attempt retained after worker exit.',
+      });
     }
-    const failed = results.filter((result) => !result.saved);
-    if (failed.length > 0)
-      detail += `\nDirectory retained: ${record.workDir}: ${failed.map((r) => r.reason).join('; ')}`;
+    await cleanupRunTemp(paths, record.privateDir ?? record.workDir).catch(
+      (error: unknown) => log(String(error)),
+    );
+    if (record.privateDir !== undefined)
+      await rm(record.privateDir, { recursive: true, force: true });
   }
+
   if (record.credentialsFile !== undefined)
     await deleteRunCredentials(record.credentialsFile);
   // A job's directory is its own and goes with it.
@@ -742,6 +774,13 @@ export async function recoverRun(
     }
   }
   if (delivered || spool.failure !== undefined) await spool.remove();
+  // Reporting establishes the server's interruption time, potentially after a slow event drain.
+  if (
+    options.reason === 'runnerUpgrade' &&
+    record.kind !== 'job' &&
+    record.workDir !== undefined
+  )
+    await protectUpgradeWorkspace(paths, record.workDir, runId);
   await removeRecord(paths, runId);
   const files = spoolPaths(paths.runsDir, runId);
   if (!delivered && spool.failure === undefined)

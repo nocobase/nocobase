@@ -233,9 +233,9 @@
       "name": "permission-editor-demo",
       "type": "registry:example",
       "title": "Permission Editor Demo",
-      "description": "Usage example of @nocobase/permission-editor. A role's sample permissions: pages, business actions with levels, and settings, kept in local state.",
+      "description": "Usage example of @nocobase/permission-editor. Original category navigation with compact action cards, visible descriptions, independently named scopes and explicit draft Save.",
       "categories": ["authorization"],
-      "registryDependencies": ["@nocobase/permission-editor"],
+      "registryDependencies": ["button", "@nocobase/permission-editor"],
       "files": [
         {
           "path": "authorization/permission-editor.tsx",
@@ -648,6 +648,42 @@
       ]
     },
     {
+      "name": "task-center-ui-demo",
+      "type": "registry:example",
+      "title": "Task Center UI Demo",
+      "description": "Usage example of @nocobase/task-center-ui. A person's tasks from four sources — approvals waiting for them, their own requests, copies and work items — with subjects under each source, To do / Done / All, summaries contributed per subject, one-type batch approval, reminders and mark-as-read, and a detail drawer whose approve and reject form the approval type contributes.",
+      "categories": ["task-center"],
+      "registryDependencies": [
+        "button",
+        "spinner",
+        "textarea",
+        "@nocobase/task-center-ui"
+      ],
+      "dependencies": ["lucide-react@^0.487.0"],
+      "files": [
+        {
+          "path": "task-center/index.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-task-center-ui-demo/index.tsx"
+        },
+        {
+          "path": "task-center/contributions.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-task-center-ui-demo/contributions.tsx"
+        },
+        {
+          "path": "task-center/bulk-actions.ts",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-task-center-ui-demo/bulk-actions.ts"
+        },
+        {
+          "path": "task-center/fixtures.ts",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-task-center-ui-demo/fixtures.ts"
+        }
+      ]
+    },
+    {
       "name": "flow-diagram-demo",
       "type": "registry:example",
       "title": "Flow Diagram Demo",
@@ -758,6 +794,36 @@
           "path": "authorization/default-access-editor.tsx",
           "type": "registry:example",
           "target": "client/extensions/nocobase-default-access-editor-demo/default-access-editor.tsx"
+        }
+      ]
+    },
+    {
+      "name": "setup-readiness-demo",
+      "type": "registry:example",
+      "title": "Setup Readiness Demo",
+      "description": "Usage example of @nocobase/setup-readiness with local fixture configuration and missing-to-ready inspection. Connect real authorized reads in applications.",
+      "registryDependencies": ["button", "@nocobase/setup-readiness"],
+      "files": [
+        {
+          "path": "components/setup-readiness.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-setup-readiness-demo/setup-readiness.tsx"
+        }
+      ]
+    },
+    {
+      "name": "record-link-demo",
+      "type": "registry:example",
+      "title": "Record Link Demo",
+      "description": "Usage example of @nocobase/record-link with native navigation, preserved query context, hover and keyboard focus.",
+      "categories": ["data-display"],
+      "dependencies": ["react-router@^7.0.2"],
+      "registryDependencies": ["@nocobase/record-link"],
+      "files": [
+        {
+          "path": "components/record-link.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-record-link-demo/record-link.tsx"
         }
       ]
     }

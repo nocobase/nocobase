@@ -4,6 +4,10 @@ import {
   AuthorizationClient,
   authorizationClientToken,
 } from '@nocobase/app-plugin-authorization/client';
+import {
+  defineAppRoutes,
+  defineClientPlugin,
+} from '@nocobase/app-client/plugins';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route, useNavigate } from 'react-router';
@@ -48,7 +52,7 @@ describe('template system settings', () => {
       services,
       fetch: answerApi(calls),
     });
-    expect(await screen.findByRole('link', { name: 'Alice' })).toBeVisible();
+    expect(await screen.findByText('Alice', { exact: true })).toBeVisible();
     expect(
       screen.queryByRole('link', { name: 'New user' }),
     ).not.toBeInTheDocument();
@@ -197,8 +201,8 @@ describe('template system settings', () => {
             data: {
               sections: [
                 {
-                  name: 'settings',
-                  title: 'Settings',
+                  name: 'administration',
+                  title: 'Business operations',
                   order: 0,
                   subsections: [
                     {
@@ -207,9 +211,9 @@ describe('template system settings', () => {
                       resources: [
                         {
                           type: 'settings',
-                          id: 'files',
-                          title: 'Files',
-                          actions: [{ name: 'read', title: 'Read files' }],
+                          id: 'authorization.permission-sets',
+                          title: 'Roles',
+                          actions: [{ name: 'read', title: 'Read roles' }],
                         },
                       ],
                     },
@@ -261,14 +265,32 @@ describe('template system settings', () => {
       </Routes>,
       {
         route: '/settings/roles/sales/edit',
+        plugins: [
+          defineClientPlugin({
+            packageName: settingsNamespace,
+            routes: defineAppRoutes([
+              {
+                name: 'roles',
+                path: '/role-config',
+                componentLoader: async () => ({ default: () => null }),
+                authz: {
+                  resource: {
+                    type: 'settings',
+                    id: 'authorization.permission-sets',
+                  },
+                  action: 'read',
+                },
+              },
+            ]),
+          })(),
+        ],
         namespace: settingsNamespace,
         namespaces,
         services,
         fetch: answerApi(calls),
       },
     );
-    await user.click(await screen.findByRole('button', { name: /^Settings/ }));
-    const toggle = await screen.findByRole('checkbox', { name: 'Read files' });
+    const toggle = await screen.findByRole('checkbox', { name: 'Read roles' });
     await waitFor(() =>
       expect(toggle).not.toHaveAttribute('aria-disabled', 'true'),
     );
@@ -283,7 +305,10 @@ describe('template system settings', () => {
           expectedRevision: 'version-1',
           grants: [
             {
-              resource: { type: 'settings', id: 'files' },
+              resource: {
+                type: 'settings',
+                id: 'authorization.permission-sets',
+              },
               actions: [{ action: 'read' }],
             },
           ],

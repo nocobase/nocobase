@@ -93,7 +93,7 @@ function AddRunnerSteps(): ReactElement {
   const [trust, setTrust] = useState<RunnerTrust>('ownerOnly');
   const [tools, setTools] = useState<readonly AgentTool[]>(AGENT_TOOLS);
   const [toolsMissing, setToolsMissing] = useState(false);
-  const [slots, setSlots] = useState('1');
+  const [slots, setSlots] = useState('4');
   const [slotsInvalid, setSlotsInvalid] = useState(false);
   const [toolSlots, setToolSlots] = useState<ToolSlotsDraft>({});
   const [toolSlotsInvalid, setToolSlotsInvalid] = useState(false);

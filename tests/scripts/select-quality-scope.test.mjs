@@ -268,14 +268,18 @@ test('global paths run everything', () => {
   }
 });
 
-test('a plugin without dependents selects only itself', () => {
-  const result = plan(
-    'packages/plugins/app-plugin-knowledge/server/index.ts',
-    '.changeset/knowledge.md',
+test('a plugin without dependents selects only itself', (t) => {
+  const repo = createRepository(t);
+  const result = planFromChanges(
+    ['packages/plugins/other/server/index.ts', '.changeset/other.md'],
+    {
+      packages: readWorkspace(repo.cwd),
+      devDbPackages: readDevDbPackages(repo.cwd),
+    },
   );
   assert.equal(result.full, false);
-  assert.deepEqual(result.packages, ['@nocobase/app-plugin-knowledge']);
-  assert.deepEqual(result.packPackages, ['@nocobase/app-plugin-knowledge']);
+  assert.deepEqual(result.packages, ['@nocobase/other']);
+  assert.deepEqual(result.packPackages, ['@nocobase/other']);
   assert.equal(result.runBuild, true);
   assert.equal(result.buildFull, false);
   assert.equal(result.runCreateApp, false);

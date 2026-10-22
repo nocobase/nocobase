@@ -527,7 +527,8 @@ export interface OnlineChatConfigSnapshot {
   readonly agentId?: string;
   readonly selectedModel: { modelService: string; model: string } | null;
   readonly scope: string[];
-  readonly model: string[];
+  /** Missing and empty lists impose no additional model restriction. */
+  readonly model?: string[];
   readonly thinking?: string;
   readonly tool: string[];
   readonly toolVersions: Record<string, string>;

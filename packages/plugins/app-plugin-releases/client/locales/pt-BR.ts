@@ -219,10 +219,18 @@ const ptBR: LocaleResource<typeof enUS> = {
       },
       idleLabel: 'Parar quando não for visitado por',
       dormantLabel: 'Hibernar quando não for visitado por',
+      idleModeLabel: 'Comportamento do temporizador de inatividade',
+      dormantModeLabel: 'Comportamento do temporizador de hibernação',
       minutes: 'minutos',
       hours: 'horas',
       neverIdle: 'Nunca',
       neverDormant: 'Nunca',
+      timerMode: {
+        inherit: 'Usar o valor padrão do ambiente',
+        custom: 'Definir um valor personalizado',
+      },
+      customTimerHint:
+        'Um valor personalizado vazio desativa este temporizador; o valor padrão do ambiente não é usado.',
       idleSummary: 'para após {{minutes}} min não visitado',
       dormantSummary: 'hiberna após {{hours}} h',
       timersHint:

@@ -25,10 +25,13 @@ const deDE: LocaleResource<typeof enUS> = {
       'Diese Sitzung existiert nicht oder sie gehört nicht Ihnen.',
   },
   list: {
+    panelEmpty: 'Keine Unterhaltungen',
     expand: 'Sitzungen anzeigen',
     label: 'Sitzungen',
     title: 'Meine Agenten',
     archived: 'Archiviert',
+    archivedView:
+      'Wählen Sie eine archivierte Sitzung, um sie zu lesen. Ihre offene Sitzung und nicht gesendete Entwürfe bleiben erhalten.',
     back: 'Zurück zu den Sitzungen',
     new: 'Neue Sitzung',
     search: 'Suchsitzungen',
@@ -96,9 +99,6 @@ const deDE: LocaleResource<typeof enUS> = {
       'Dieser Agent macht keine Einstellungen verfügbar. Es werden die Standardeinstellungen verwendet.',
     settingsEmpty:
       'Dieser Agent verfügt über keine konfigurierbaren Einstellungen. Es werden die Standardeinstellungen verwendet.',
-    title: 'Neue Sitzung',
-    subtitle:
-      'Besprechen und klären Sie Anforderungen mit einem Agenten am eigenen Computer, erfassen Sie Aufgaben und verfolgen Sie hier den Fortschritt. Der Projektmanager von Studio koordiniert Agenten, um Aufgaben zu entwickeln, nachdem Sie sie gestartet haben.',
     pickComputer: 'Wählen Sie einen Computer',
     noAgent: 'Kein Agent verfügbar',
     folder: 'Verzeichnis auf dem Computer',

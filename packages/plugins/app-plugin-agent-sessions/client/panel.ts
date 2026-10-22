@@ -8,3 +8,8 @@ export {
 } from './components/sessions-panel.js';
 export type { Attachment } from './lib/attachments.js';
 export { useLinkedSessions, useAgentSessionAvailability } from './api.js';
+
+export {
+  useAgentSessionDraft,
+  type AgentSessionDraft,
+} from './lib/panel-draft.js';

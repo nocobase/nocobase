@@ -27,11 +27,11 @@ it.each(['assistant', 'system'] as const)(
       [{ type: 'text', text: '', state: 'streaming' }],
       [{ type: 'text', text: ' \n\t ', state: 'done' }],
       [{ type: 'step-start' }],
-      [{ type: 'reasoning', text: 'Private thinking', state: 'streaming' }],
+      [{ type: 'reasoning', text: '   ', state: 'streaming' }],
       [completed],
       [
         { type: 'step-start' },
-        { type: 'reasoning', text: 'Private thinking', state: 'done' },
+        { type: 'reasoning', text: '   ', state: 'done' },
         { type: 'text', text: '  ' },
         completed,
       ],
@@ -60,7 +60,7 @@ it('shows a live text part only after visible output arrives, keeping its origin
     role: 'assistant',
     parts: [
       { type: 'step-start' },
-      { type: 'reasoning', text: 'Thinking' },
+      { type: 'reasoning', text: ' ' },
       { type: 'text', text: ' \n', state: 'streaming' },
     ],
   };
@@ -258,7 +258,7 @@ it('filters source-record groups before choosing first and last while retaining 
       { type: 'text', text: 'First' },
       { type: 'text', text: ' \t' },
       { type: 'file', mediaType: 'text/plain', url: '/file.txt' },
-      { type: 'reasoning', text: 'Thinking' },
+      { type: 'reasoning', text: ' ' },
       toolParts[1],
       completed,
     ],
@@ -397,3 +397,23 @@ it.each([false, true])(
     }
   },
 );
+
+it('preserves reasoning, tools and text in original positions without merging reasoning across steps', () => {
+  const message: AppUIMessage = {
+    id: 'reasoning',
+    role: 'assistant',
+    parts: [
+      { type: 'step-start' },
+      { type: 'reasoning', text: ' First ', state: 'done' },
+      toolParts[1],
+      { type: 'step-start' },
+      { type: 'reasoning', text: 'Second', state: 'streaming' },
+      { type: 'text', text: 'Answer' },
+    ],
+  };
+  const segments = chatMessageSegments([message]);
+  expect(segments).toHaveLength(1);
+  expect(segments[0].partIndexes).toEqual([1, 2, 4, 5]);
+  expect(segments[0].message).toBe(message);
+  expect(message.parts[1]).toMatchObject({ text: ' First ' });
+});

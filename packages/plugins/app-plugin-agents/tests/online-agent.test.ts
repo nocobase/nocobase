@@ -616,7 +616,10 @@ it.each(['realtime', 'background'] as const)(
     ]);
     const history = await agent.history();
     expect(history.map(appUIMessageText)).toEqual(['Question', 'Public']);
-    expect(history[1].parts).toEqual([{ type: 'text', text: 'Public' }]);
+    expect(history[1].parts).toEqual([
+      { type: 'text', text: 'Public' },
+      { type: 'reasoning', text: 'Private' },
+    ]);
     expect(JSON.stringify(history)).not.toContain('secret');
     const internal = await f.history(agent);
     expect(JSON.stringify(internal)).toContain('Private');
@@ -1192,14 +1195,14 @@ it('does not evaluate providers on read and persists only explicit idle override
   expect(session.model).toEqual(ref);
   expect(global).toHaveBeenCalledTimes(1);
   expect(business).toHaveBeenCalledTimes(1);
-  await expect(
-    loaded.send([{ role: 'user', content: 'Clear models' }], {
-      overrides: { model: [] },
-    }),
-  ).rejects.toThrow('outside');
-  expect(
-    (await f.sessions.load('alice', agent.sessionId)).config.model,
-  ).toEqual(['fixture/chat']);
+  expect(session.config).not.toHaveProperty('model');
+  await loaded.send([{ role: 'user', content: 'Clear model restriction' }], {
+    overrides: { model: [] },
+  });
+  await settle(loaded);
+  const unrestricted = await f.sessions.load('alice', agent.sessionId);
+  expect(unrestricted.config.model).toEqual([]);
+  expect(unrestricted.model).toEqual(ref);
 });
 
 it('caches a shared factory while binding distinct users to streaming tool execution', async () => {
@@ -1280,6 +1283,111 @@ it('drains a provider error before finalization and keeps incomplete text out of
     .findMany({ filter: { conversationId: agent.sessionId } });
   expect(JSON.stringify(rows)).toContain('Partial answer');
   expect(model.doStreamCalls).toHaveLength(1);
+});
+
+it('preserves absent and explicit empty model restrictions through configuration resolution', async () => {
+  const configurator = new OnlineAgentConfigurator();
+  const absent = await configurator.resolve(context(), {});
+  expect(absent).not.toHaveProperty('model');
+  expect(
+    await configurator.resolve(context(), { thinking: 'high' }, absent),
+  ).not.toHaveProperty('model');
+  const empty = await configurator.resolve(context(), { model: [] });
+  expect(empty).toHaveProperty('model', []);
+  expect(await configurator.resolve(context(), {}, empty)).toHaveProperty(
+    'model',
+    [],
+  );
+  configurator.registerOnlineAgentScope('restricted', {
+    model: ['fixture/chat'],
+  });
+  configurator.registerOnlineAgentScope('unrestricted', { model: [] });
+  const restricted = await configurator.resolve(context(), {
+    scope: ['restricted'],
+  });
+  expect((await configurator.resolve(context(), {}, restricted)).model).toEqual(
+    ['fixture/chat'],
+  );
+  expect(
+    (
+      await configurator.resolve(
+        context(),
+        { scope: ['unrestricted'] },
+        restricted,
+      )
+    ).model,
+  ).toEqual([]);
+});
+
+it.each([{ models: undefined }, { models: [] }])(
+  'keeps model restrictions as %j while selecting, switching and restoring native models',
+  async ({ models }) => {
+    const f = await fixture(
+      new MockLanguageModelV4({
+        doStream: async () => ({ stream: streamed(text('Done')) }),
+      }),
+    );
+    const options = models === undefined ? {} : { model: models };
+    const check = async (id: string) => {
+      const session = await f.sessions.load('alice', id);
+      if (models === undefined)
+        expect(session.config).not.toHaveProperty('model');
+      else expect(session.config).toHaveProperty('model', []);
+      return session;
+    };
+    const background = await f.service.background(context(), options);
+    expect((await check(background.sessionId)).model).toEqual(ref);
+    const agent = await f.service.realtime(context(), options);
+    expect((await check(agent.sessionId)).model).toEqual(ref);
+    const selected = { modelService: 'alternate', model: 'second' };
+    const explicit = await f.service.realtime(context(), {
+      ...options,
+      selectedModel: selected,
+    });
+    expect((await check(explicit.sessionId)).model).toEqual(selected);
+
+    await f.service.configure(context(), agent.sessionId, {}, selected, 'http');
+    expect((await check(agent.sessionId)).model).toEqual(selected);
+    const restored = await f.service.realtime(context(), {
+      sessionId: agent.sessionId,
+    });
+    await restored.send([{ role: 'user', content: 'Use the saved model' }]);
+    await settle(restored);
+    expect(f.resolveModel).toHaveBeenLastCalledWith(selected, agent.sessionId);
+    await check(agent.sessionId);
+    await restored.send([{ role: 'user', content: 'Choose another model' }], {
+      selectedModel: ref,
+    });
+    await settle(restored);
+    expect((await check(agent.sessionId)).model).toEqual(ref);
+    expect(f.resolveModel).toHaveBeenLastCalledWith(ref, agent.sessionId);
+  },
+);
+
+it('rejects a selected model outside a nonempty restriction without changing the persisted configuration', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({ stream: streamed(text('Done')) }),
+    }),
+  );
+  const options = { model: ['fixture/chat'] };
+  const selected = { modelService: 'alternate', model: 'second' };
+  await expect(
+    f.service.realtime(context(), { ...options, selectedModel: selected }),
+  ).rejects.toThrow('outside');
+  const agent = await f.service.realtime(context(), options);
+  await expect(
+    f.service.configure(context(), agent.sessionId, {}, selected, 'http'),
+  ).rejects.toThrow('outside');
+  await expect(
+    agent.send([{ role: 'user', content: 'Not allowed' }], {
+      selectedModel: selected,
+    }),
+  ).rejects.toThrow('outside');
+  const session = await f.sessions.load('alice', agent.sessionId);
+  expect(session.config.model).toEqual(options.model);
+  expect(session.model).toEqual(ref);
+  expect(f.resolveModel).not.toHaveBeenCalledWith(selected, agent.sessionId);
 });
 
 it('selects the first resolved business or request model before validating the original model columns', async () => {
@@ -2877,7 +2985,6 @@ it('validates HTTP variables across selected scope schemas while keeping trusted
       context: { variable: { name: 'Alice', count: 2 } },
     },
     undefined,
-    [],
     true,
   );
   expect(resolved.variable).toEqual({ name: 'Alice', count: 2 });
@@ -2892,4 +2999,40 @@ it('validates HTTP variables across selected scope schemas while keeping trusted
     systemPrompt: 'Trusted prompt',
     variable: { arbitrary: true },
   });
+});
+
+it('projects background reasoning history without changing structured results or requiring browser streams', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: streamed([
+          { type: 'reasoning-start', id: 'r' },
+          {
+            type: 'reasoning-delta',
+            id: 'r',
+            delta: 'Background reasoning',
+            providerMetadata: { fixture: { signature: 'private-signature' } },
+          },
+          { type: 'reasoning-end', id: 'r' },
+          ...text('{"count":2}'),
+        ]),
+      }),
+    }),
+  );
+  const job = await f.service.background(context());
+  await job.run([{ role: 'user', content: 'Count' }], {
+    type: 'object',
+    properties: { count: { type: 'integer' } },
+    required: ['count'],
+  });
+  await settle(job);
+  expect(await job.get()).toEqual({ count: 2 });
+  expect(await job.try()).toEqual({ ok: true, data: { count: 2 } });
+  const history = await job.history();
+  expect(history.at(-1)!.parts).toContainEqual({
+    type: 'reasoning',
+    text: 'Background reasoning',
+    state: 'done',
+  });
+  expect(JSON.stringify(history)).not.toContain('private-signature');
 });

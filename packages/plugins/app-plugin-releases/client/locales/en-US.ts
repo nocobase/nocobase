@@ -70,10 +70,18 @@ const ui = {
     },
     idleLabel: 'Stop when unvisited for',
     dormantLabel: 'Hibernate when unvisited for',
+    idleModeLabel: 'Idle timer behavior',
+    dormantModeLabel: 'Hibernate timer behavior',
     minutes: 'minutes',
     hours: 'hours',
     neverIdle: 'Never',
     neverDormant: 'Never',
+    timerMode: {
+      inherit: 'Use environment default',
+      custom: 'Set a custom value',
+    },
+    customTimerHint:
+      'A blank custom value turns that timer off; it does not use the environment default.',
     idleSummary: 'stops after {{minutes}} min unvisited',
     dormantSummary: 'hibernates after {{hours}} h',
     timersHint:

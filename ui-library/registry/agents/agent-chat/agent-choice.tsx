@@ -66,3 +66,56 @@ export function NewChatChoice({
     />
   );
 }
+
+/** Existing native conversations may change their model, never their Agent. */
+export function ConversationModelChoice({
+  services,
+  model,
+  allowedModels,
+  onModelChange,
+  disabled,
+}: {
+  readonly services: readonly ModelService[];
+  readonly model: ModelRef | null;
+  readonly allowedModels?: readonly string[];
+  readonly onModelChange: (model: ModelRef) => void;
+  readonly disabled: boolean;
+}): ReactElement {
+  const labels = useAgentPickerLabels();
+  const { t } = useChatTranslation();
+  const offered = services.map((service) => ({
+    ...service,
+    models: service.models.filter(
+      (item) =>
+        !allowedModels?.length ||
+        allowedModels.includes(`${service.name}/${item.value}`),
+    ),
+  }));
+  return (
+    <AgentPicker
+      agents={[]}
+      value={null}
+      onSelect={() => {}}
+      models={{
+        services: offered,
+        value: model,
+        onSelect: onModelChange,
+        disabled,
+      }}
+      labels={{
+        ...labels,
+        modelPlaceholder: model?.model ?? labels.modelPlaceholder,
+        modelSwitch: t('chat.agents.modelOnlySwitch', {
+          name: '{name}',
+          service: '{service}',
+        }),
+        search: t('chat.agents.modelSearch'),
+        noResults: t('chat.agents.noMatchingModels'),
+      }}
+      disabled={disabled}
+      appearance='toolbar'
+      className='h-7 shrink px-1.5 @md:px-2'
+      data-testid='chat-model-picker'
+    />
+  );
+}

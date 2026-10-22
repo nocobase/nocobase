@@ -1,5 +1,73 @@
 # @nocobase/app-plugin-agents
 
+## 1.0.0-beta.18
+
+### Minor Changes
+
+- f2712b9: Make run git credentials independent of the code host. Protocol 12 adds `RunGit.tools` and the `gitTools` runner feature: the runner wraps the code host CLIs a run names (such as `gh` or `glab`) so every call runs with the current credential of one of the run's repositories, fetched through the run's credential broker, and fails with the reason instead of falling back to the machine's login. A credential's username is now the only one git uses (`oauth2` for GitLab, `x-access-token` for a GitHub App); the runner no longer defaults it for runs (a build job's token without a username keeps the old default).
+
+  Every run's agent now gets `git`, `gh` and `glab` wrappers that refuse `gh`/`glab` logins and token output, `credential.*` set with `git -c`/`--config-env` or written outside the repository's own config, `http.*.extraHeader` in any git configuration, and git URLs with a user in them.
+
+  Repository access providers are told whether the runner wraps CLIs (`tools`) and who answers for the run's subject now (`responsibleUserId`), at the claim, in `prepare` and on every `issue`, so an application can issue credentials for a task's owner. `RunGit.tools` is dropped for runners without the feature and for repositories without a credential in the payload.
+
+  The runner's workspace notes now tell the agent to open and update change requests with the code host's command line rather than an application `pr open` command.
+
+  Update the application before its runners: a server speaking protocol 11 refuses a runner speaking 12.
+
+- fb3b3c5: Allow applications to supply bilingual description suggestions by tool and model through agent defaults, with model catalog fallback and existing descriptions preserved.
+
+### Patch Changes
+
+- 5d49614: Strip NUL characters from what runners report — run events, summaries, failure details and job events — before storing it. PostgreSQL refuses NUL in text and JSON columns, so one event carrying a NUL byte in tool output failed every later events upload of its run.
+- Updated dependencies [ab68344]
+- Updated dependencies [f2712b9]
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-cli-client@0.1.0-beta.13
+  - @nocobase/agent-protocol@0.1.0-beta.12
+  - @nocobase/app-server@3.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
+## 1.0.0-beta.17
+
+### Minor Changes
+
+- 4f0d96e: Add opt-in native OnlineAgent Skills and application-branded CLI execution using an isolated, lazily created just-bash environment. Load current Skill support trees, support virtual parameter files and read bindings, retain existing business authorization, and release execution resources across stop, approval and retryable finalization without replaying writes.
+
+  Redact execution credentials and declare intentionally disabled optional archive-native build scripts in workspace, generated-application and deployment installation policies.
+
+### Patch Changes
+
+- b805e54: Reset chat drafts and unsent attachments on every explicit new conversation, apply business-entry prefill atomically, and ignore stale uploads, context snapshots and conversation-creation callbacks while preserving drafts on ordinary close/reopen and first-send promotion.
+- b805e54: Clear carried work context when starting a fresh chat, while preserving page registrations and atomically including explicitly requested business context.
+- 301d309: Reuse a fixed task worktree across runs and tools, preserve dependencies and sessions, isolate per-run files and cancellation, and protect cleanup with nonexclusive usage records covering worker startup. Reclaim sessions only with their owning directory. Leave commits and pushes to agents, give them an explicit HEAD-to-branch refspec for detached workspaces, refresh initialization after lockfile changes or artifact cleanup, and default idle artifact retention to 24 hours. Prefer an immediately available previous runner under the same ordered-model admission rules, aggregate affinity location and occupancy reads, and reserve actual upgrade interruptions for that runner for five minutes.
+
+  Separate ordered-model claim eligibility from full waiting diagnostics, evaluate affinity in queue order, and reuse batched resource metadata without repeating capacity reads for every candidate and machine.
+
+  Serialize cache fetch and worktree creation through a short cache mutex, retry transient Git lock conflicts, fall back to a detached remote branch when another directory owns it, and avoid optional index locks and per-remote-branch reporting commands. Both workspace-cleanup and repository-cache lock waits now time out after two minutes as retryable workspace-busy failures. Report disk pauses as unavailable capacity while continuing claims during periodic workspace collection.
+
+- 1fcc7a8: Hide the built-in online agent and online usage and prices when no chat model is enabled. Reject new online defaults and conversations with a clear error while preserving saved preferences, historical conversations, usage and prices.
+- 4f0d96e: Keep native Sandbox construction internal to Agents composition and unify authentication, preparation, execution, and retryable cleanup ownership.
+- 4f0d96e: Restore detailed bash and skill tool guidance while describing the native Sandbox's current capabilities and limits accurately.
+- 4f0d96e: Bundle a lightweight just-bash runtime with self-contained declarations and third-party licenses instead of installing the full runtime dependency tree.
+- b805e54: Allow idle OnlineAgent conversations to switch models without starting a new conversation. Show a model-only picker for existing native chats, preserve conversation configuration and drafts, and prevent sends while a model change is being saved or reconciled.
+
+  Keep unspecified model restrictions absent instead of replacing them with a default-model allowlist. Treat omitted and explicit empty lists as unrestricted while preserving their distinct stored shapes, and retain nonempty business restrictions when switching models.
+
+- 0b5a9c1: Preserve saved model price precision when editing another price, reopening the editor, or reloading prices.
+- Updated dependencies [62da032]
+- Updated dependencies [8b30952]
+- Updated dependencies [301d309]
+- Updated dependencies [4f0d96e]
+  - @nocobase/app-client@4.0.0-beta.1
+  - @nocobase/app-server@3.0.0-beta.1
+  - @nocobase/app-cli@1.0.0-beta.26
+  - @nocobase/agent-protocol@0.1.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-cli-client@0.1.0-beta.12
+
 ## 1.0.0-beta.16
 
 ### Patch Changes

@@ -71,6 +71,10 @@ export interface AgentChatLocale {
       readonly othersPersonal: string;
       readonly modelUnavailable: string;
     };
+    readonly reasoning: {
+      readonly title: string;
+      readonly thinking: string;
+    };
     readonly reply: {
       readonly writing: string;
       readonly interrupted: string;
@@ -170,6 +174,11 @@ export interface AgentChatLocale {
       readonly runnerAgents: string;
       readonly modelPlaceholder: string;
       readonly modelSwitch: string;
+      readonly modelOnlySwitch: string;
+      readonly modelLoadFailed: string;
+      readonly modelChangeFailed: string;
+      readonly modelSearch: string;
+      readonly noMatchingModels: string;
       readonly modelHint: string;
       readonly mixedHint: string;
       readonly search: string;
@@ -332,6 +341,10 @@ const agentChatEnUS: AgentChatLocale = {
       // The reason earlier versions wrote on a notice that their online fallback could not answer.
       modelUnavailable: 'Model unavailable',
     },
+    reasoning: {
+      title: 'Reasoning',
+      thinking: 'Thinking…',
+    },
     reply: {
       writing: 'Writing…',
       interrupted: 'The reply stopped here.',
@@ -437,6 +450,11 @@ const agentChatEnUS: AgentChatLocale = {
       runnerAgents: 'Agents',
       modelPlaceholder: 'Choose a model',
       modelSwitch: 'Model: {{name}} · {{service}}; choose a model or agent',
+      modelOnlySwitch: 'Model: {{name}} · {{service}}; choose a model',
+      modelLoadFailed: 'Could not load the conversation model',
+      modelChangeFailed: 'Could not confirm the model change',
+      modelSearch: 'Search models',
+      noMatchingModels: 'No matching models',
       modelHint: 'Choose an online model to chat with.',
       mixedHint: 'Choose an online model or an Agent on a runner to chat with.',
       search: 'Search models or agents',

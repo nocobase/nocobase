@@ -187,6 +187,16 @@ beforeEach(() => {
         return { data: input.query?.q ? [] : [conversation], meta: {} };
       if (input.path.endsWith('/messages'))
         return { data: [message], meta: { lastSeq: 1 } };
+      if (input.path === 'agents/conversations/saved/config')
+        return {
+          data: {
+            selectedModel: { modelService: 'local', model: 'chat' },
+            scope: [],
+            tool: [],
+            toolVersions: {},
+            systemPrompt: '',
+          },
+        };
       if (input.path === 'agents/conversations/saved')
         return { data: conversation };
       if (input.path.endsWith('/stop'))
@@ -759,6 +769,61 @@ it('lets a failed known-unsubmitted input be discarded without leaving Send bloc
   expect(screen.queryByText('Rejected input')).not.toBeInTheDocument();
 });
 
+it('retires a blank editor and its creation observer when New is requested before creation completes', async () => {
+  const normal = host.request.getMockImplementation()!;
+  let finishOld: (value: { data: ConversationDetail }) => void = () => {};
+  let creations = 0;
+  host.catalog.mockResolvedValue(models);
+  host.request.mockImplementation((input) => {
+    if (input.path === 'agents/conversations' && input.method === 'POST') {
+      creations += 1;
+      if (creations === 1)
+        return new Promise<{ data: ConversationDetail }>((resolve) => {
+          finishOld = resolve;
+        });
+      return new Promise(() => {});
+    }
+    if (input.path.endsWith('/messages') && input.method === 'POST')
+      return Promise.resolve({
+        data: { conversation, message: { ...message, role: 'user' } },
+      });
+    return normal(input);
+  });
+  await setup();
+  const first = await screen.findByRole('textbox', {
+    name: 'Message to the agent',
+  });
+  await userEvent.setup().type(first, 'Abandoned pending message{Enter}');
+  await waitFor(() => expect(creations).toBe(1));
+  act(() => {
+    panel.selectConversation(null);
+    panel.focusComposer();
+  });
+  const second = screen.getByRole('textbox', { name: 'Message to the agent' });
+  expect(second).not.toBe(first);
+  expect(
+    screen.queryByText('Abandoned pending message'),
+  ).not.toBeInTheDocument();
+  await userEvent.setup().type(second, 'New pending message{Enter}');
+  await waitFor(() => expect(creations).toBe(2));
+  fireEvent.change(second, { target: { value: 'Unsent new draft' } });
+  await act(async () => finishOld({ data: conversation }));
+  await waitFor(() =>
+    expect(host.stream).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: 'agents/conversations/saved/messages',
+        method: 'POST',
+      }),
+    ),
+  );
+  expect(panel.conversationId).toBeNull();
+  expect(second).toHaveValue('Unsent new draft');
+  expect(
+    screen.queryByText('Abandoned pending message'),
+  ).not.toBeInTheDocument();
+  expect(screen.getByText('New pending message')).toBeVisible();
+});
+
 it('recovers uncertain conversation creation only after an explicit user decision', async () => {
   const normal = host.request.getMockImplementation()!;
   let creations = 0;
@@ -945,6 +1010,29 @@ it.each([
     });
     expect(document.querySelector('[data-message-id="answer"]')).toBeNull();
     expect(thinking).toBeVisible();
+    act(() => {
+      emit({ type: 'reasoning-start', id: 'reasoning' });
+      emit({
+        type: 'reasoning-delta',
+        id: 'reasoning',
+        delta: 'Reasoning only',
+      });
+    });
+    expect(await screen.findByText('Reasoning only')).toBeVisible();
+    expect(
+      document.querySelector('[data-chat-feedback="thinking"]'),
+    ).toBeNull();
+    expect(
+      screen.queryByLabelText(locale === 'zh-CN' ? '正在输入…' : 'Writing…'),
+    ).toBeNull();
+    act(() => emit({ type: 'reasoning-end', id: 'reasoning' }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: locale === 'zh-CN' ? '推理过程' : 'Reasoning',
+        }),
+      ).toHaveAttribute('aria-expanded', 'false'),
+    );
     act(() => emit({ type: 'text-delta', id: 'text', delta: 'First body' }));
     expect(await screen.findByText('First body')).toBeVisible();
     expect(

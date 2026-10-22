@@ -1,4 +1,25 @@
 const settings = {
+  setup: {
+    title: 'Feature prerequisites',
+    checking: 'Checking current configuration…',
+    checkAgain: 'Check again',
+    ready: 'The checked prerequisites are ready.',
+    missing: 'Review the configuration items below.',
+    manageMembers: 'Manage members',
+    manageMembersFor: 'Manage {{role}} members',
+    unavailable: 'Unable to check right now. Try again.',
+    signIn: 'Your session expired. Sign in again to check configuration.',
+    forbidden:
+      'You do not have access to check this configuration. Contact an administrator.',
+    invalid:
+      'This prerequisite could not be verified. Ask the application maintainer to check its configuration.',
+  },
+  roleFilterIncomplete:
+    'Choose both a role scope and a role, or clear the filters.',
+  backToSource: 'Return to previous page',
+  roleFilter: 'Filter by role',
+  allRoles: 'All roles',
+
   permissionManagement: 'Permission management',
   defaultAccess: {
     noResourcesShort: 'No configurable objects available',
@@ -57,7 +78,7 @@ const settings = {
   scopeExplanation:
     'Each range applies to its corresponding data. The operation must also pass its authorization checks.',
   noAdditionalScopeHint:
-    'This action grants no additional record access here. Default access, sharing and restriction rules still determine actual access.',
+    'This role adds no records. Effective access also depends on other roles and default, sharing and restriction rules.',
   systemToolsHint:
     'Manage system configuration and tools. Review the capabilities each action includes before granting access.',
   userAccountsHint:
@@ -65,7 +86,7 @@ const settings = {
   businessOperationsHint:
     'Choose the operations this role can perform and the data each operation can use.',
   pageAccessHint:
-    'Controls which pages this role can open. Data and actions on each page require their own permissions.',
+    'Choose the business pages this role can open. All system settings, including user management and business configuration, are controlled under Configuration permissions. Data and business actions require separate permissions.',
   roleAssignment: 'Role assignment',
   accountSecurity: 'Account security',
   userInformation: 'User information',
@@ -83,6 +104,11 @@ const settings = {
 
   assignedRoles: 'Assigned roles',
   actionSaved: 'Updated access for "{{name}}"',
+  userActionSaved: {
+    disable: 'Disabled user "{{name}}"',
+    enable: 'Enabled user "{{name}}"',
+    revokeSessions: 'Revoked active sessions for "{{name}}"',
+  },
 
   identityConflict: 'This email or username is already in use.',
   signInAgain: 'Sign in again',
@@ -97,6 +123,7 @@ const settings = {
   userSearch: 'Search names, usernames or emails',
   roleSearch: 'Search role names',
   newUser: 'New user',
+  editUserFor: 'Edit {{name}}',
   editUser: 'Edit user',
   newRole: 'New role',
   editRole: 'Edit role',
@@ -104,6 +131,7 @@ const settings = {
   username: 'Username',
   email: 'Email',
   password: 'Initial password',
+  roleType: 'Role type',
   roleName: 'Role name',
   key: 'Key',
   status: 'Status',
@@ -116,9 +144,16 @@ const settings = {
   noResults: 'No matching results',
   clearHint: 'Try a different search or clear the filters.',
   noUsers: 'No users yet',
+  usersReadOnlyEmpty:
+    'Contact an administrator to add users or grant the permissions needed to create users and assign roles.',
+  rolesReadOnlyEmpty:
+    'Contact an administrator to create a role or grant you permission to create roles.',
   noRoles: 'No roles yet',
   create: 'Create',
   edit: 'Edit',
+  selectRoles: 'Select roles',
+  searchRoles: 'Search roles',
+  noRolesFound: 'No roles found.',
   save: 'Save',
   cancel: 'Cancel',
   saving: 'Saving…',
@@ -148,28 +183,41 @@ const settings = {
   discardTitle: 'Discard changes?',
   discardHint: 'Your unsaved changes will be lost.',
   failed: 'Unable to complete the request. Try again.',
+  invalidRequest:
+    'Some values are invalid. Check your input or filters and try again.',
   retry: 'Retry',
   loading: 'Loading',
   denied: 'You do not have access. Contact an administrator.',
   missing: 'This record does not exist or has been deleted.',
   conflict:
-    'This role has changed. Reload it and merge your changes before saving.',
+    'The request conflicts with current data. Review the latest record before trying again.',
   sessionEnded: 'Your session has ended. Sign in again.',
   previous: 'Previous',
   next: 'Next',
   total_one: '{{count}} user',
   total_other: '{{count}} users',
   access: 'Access',
+  expandPermissionGroup: 'Expand {{name}}',
+  collapsePermissionGroup: 'Collapse {{name}}',
+  pagesOutsideNavigation: 'Pages outside navigation',
+  configurationPermissions: 'Configuration permissions',
+  configurationPermissionsHint:
+    'Control access and actions for system settings, user management and business configuration. Only actual application features are shown.',
   permissionSearch: 'Search categories, groups or permissions',
   enabledOnly: 'Enabled only',
   noPermissions: 'No permissions to configure',
+  permissionEmptyHint:
+    'Ask the application developer to expose the permissions this role can configure.',
+  permissionReadOnlyHint: 'These permissions are read-only.',
+  permissionManagedHint: 'This permission is managed by the application.',
+  permissionSaveHint: 'Permission changes take effect after saving.',
   permissionCategories: 'Permission categories',
   selectAllPermissions: 'All',
   dataRanges: 'Data ranges ({{count}})',
   selectVisiblePermissions: 'Select visible permissions in {{name}}',
   permissionSummary: '{{enabled}} of {{total}} enabled',
   preservedRecordScope: 'Keep existing configuration',
-  noRecordScope: 'No additional record access',
+  noRecordScope: 'Use default rules',
   permissionFilter: {
     limit: 'Up to 20 conditions',
     configure: 'Conditions',

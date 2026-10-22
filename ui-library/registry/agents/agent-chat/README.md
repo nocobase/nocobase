@@ -6,12 +6,17 @@ Everything that has to stay consistent across upgrades stays in the agents plugi
 
 Empty SDK assistant placeholders and framework-only successful-execution notices do not produce message bubbles. The plugin's `chatMessageSegments` and `chatFeedback` provide these shared display decisions without deleting or changing persisted SDK parts. The transcript has no horizontal scrollbar; oversized Markdown code blocks and tables remain scrollable inside their own bounded content. Updates to an application's installed source should preserve its readiness, mobile dialog, approvals and custom message extras while applying these presentation changes.
 
+Nonempty SDK reasoning renders in order through `ReasoningPart`, using the same safe Markdown renderer as answers. Only the currently streaming part opens automatically; part end and newly mounted history default to collapsed. Manual open/close choices remain local to that mounted message/part and override deltas, end chunks and history revisions. Reasoning-only output replaces generic waiting feedback, but does not add an answer-writing cursor or imply execution completion. Text copy/search helpers remain text-only. Providers that return no reasoning and the current text-only Runner adapter keep their existing presentation.
+
+An Agents npm upgrade does not replace source already installed into an application's extensions directory. Update that application's Registry files (including `reasoning-part.tsx`), locale keys and `hasOutput`/part rendering together, preserving its own readiness, recovery and business extensions.
+
 | File                      | Exports                                                                                          |
 | ------------------------- | ------------------------------------------------------------------------------------------------ |
 | `chat-panel.tsx`          | `ChatPanel`                                                                                      |
 | `panel-header.tsx`        | `PanelHeader`, `ConversationTitle`                                                               |
 | `conversation-view.tsx`   | `ConversationView`, `PAGE_COLUMN`                                                                |
 | `message-item.tsx`        | `MessageItem`, `PendingItem`                                                                     |
+| `reasoning-part.tsx`      | `ReasoningPart`: accessible, per-part collapsible SDK reasoning with sanitized Markdown          |
 | `message-attachments.tsx` | `MessageAttachments`: a message's files through `attachment-list`                                |
 | `live-steps.tsx`          | `LiveSteps`, `TurnAnnouncer`                                                                     |
 | `composer.tsx`            | `Composer`                                                                                       |
@@ -74,6 +79,7 @@ import {
 - **Place `ChatPanel` as a sibling of `<main>` inside a `relative flex` row.** From 1280px it docks beside the content, which narrows to make room; between `md` and 1280px it floats over the content's right side; "Full width" covers the row. All three are positioned against that row, so without `relative` the panel covers the whole page instead. Below `md` it is a full-screen dialog.
 - `ChatHeaderButton` toggles the panel and names ⌘J / Ctrl+J in its tooltip; `ChatFloatingButton` shows below `md` only, and rises above a bar the page pins to the bottom of the screen. Hide it on a page that is a chat already.
 - A conversation's agent is chosen before its first message, in the composer's toolbar beside the attach button: `NewChatChoice` lists every enabled agent, saying why one cannot answer the viewer now. Once the conversation exists its agent is its identity: the panel's header and `ChatConversationPage` show it read-only (`AgentLine`), the notice above the composer reports failure or historical read-only state, and a different configuration means a new conversation or an explicit idle configuration update. New conversations can explicitly choose a callable Runner agent; the saved executor stays bound for the conversation. An application's own place to start a conversation, such as a home page, renders `NewChatChoice` in its `agent-composer`'s `toolbar` so both look and work alike.
+- Existing native OnlineAgent conversations show `ConversationModelChoice` instead: a nonempty saved model allowlist restricts the offered chat models; an absent or explicitly empty list adds no restriction. Switching calls the idle configuration endpoint for the same conversation, preserving its scopes, tools and business variables. Execution, approval, saving and reconciliation disable switching; saving and unresolved configuration errors also block sending without clearing the draft. Runner and historical read-only conversations have no model picker.
 - `ChatConversationPage` is one conversation as a page, for a route such as `/chat/:conversationId`; `newConversationPath` is where a new conversation starts. `ChatHistoryDialog` lists the conversations in a dialog for a page.
 - `AskAgentButton` on a page opens the panel with the page's object pinned and, optionally, a draft in the composer, which is never sent on its own. Pages tell the panel what they show with the plugin's `useChatContextSource` and `useChatFilterSource`.
 - Links that open the panel come from the plugin: add `...chatLinkRoutes('/chat-link')` (any base) to the application's routes for `<base>`, `<base>/new` and `<base>/:conversationId`.
@@ -92,6 +98,16 @@ const enUS = {
 ```
 
 Every key is under `chat.`. A key missing from the application's resources renders the English of `locales/en-US.ts` (`useChatTranslation`), and a run's failure reason in a notice comes from the agents plugin's own namespace. `zh-CN.ts` is typed with `AgentChatLocale`, so a key missing from it fails `typecheck`; add a new language the same way.
+
+## Composer lifecycle
+
+`openChat({ conversationId: null })` and `selectConversation(null)` always start a fresh composer, even while the current conversation is already blank. Opening a different conversation clears the previous prefill; omitting the ID or reopening the same ID preserves the local draft. A supplied `draft`, including `''`, is applied in the same update as reset and never sends automatically. Business entries only open the target with optional prefill; they do not clear textarea DOM or own upload cleanup.
+
+`ChatPanelValue.composerRevision` is the local reset identity. The installed `Composer` keys only its input subtree by it, clearing text, unsent attachments and preparation errors, aborting uploads, and rejecting stale completion callbacks. The blank-conversation body also receives a fresh identity so an accepted but delayed creation cannot navigate the replacement editor or retain its optimistic message there. Existing conversation streams and durable messages are not reset. Pass `editorRevision: panel.composerRevision` to `useSendMessage` so a new blank editor does not reuse an earlier editor's pending/unknown creation gate.
+
+Pre-send model/Agent changes and first-send ID promotion use `selectConversation(id, agentId, { preserveComposer: true })`; the promotion retires old prefill without remounting the input or losing focus. Ordinary close/reopen does not change the revision. Full-page scopes keep their own stable composer revision rather than inheriting resets from the closed sidebar.
+
+A fresh composer also clears carried work context: pinned business objects, registered page-object chips, filters, selected page text and checked UI sources. Page/form registrations remain available for subsequent explicit selection; cleared sources are not read or included in the next message. Closing and reopening the same chat, changing the executor and promoting a newly created conversation ID preserve its carried context. Business launchers attach only the intended context atomically with `openChat({ conversationId, draft, pin, uiSources: [{ kind: 'form', id: 'example-request' }] })`; do not call `selectUI` before opening a different conversation because the reset discards the old selection. UI values are still read only when sending, never when opening the chat. A normal new chat may retain its current route identifier, but carries no old object/filter/selection/UI snapshot.
 
 ## Customizing
 

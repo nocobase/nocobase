@@ -1,10 +1,11 @@
+import { groupFoundationNavigation } from '@nocobase/app-plugin-foundation/client';
 import type { RouteNavigationItem } from '../routing/route-navigation.js';
 
 /** Application-owned navigation customization, applied after permission filtering. */
 export function transformNavigation(
   items: RouteNavigationItem[],
 ): RouteNavigationItem[] {
-  return collapsePermissionNavigation(items);
+  return groupFoundationNavigation(collapsePermissionNavigation(items));
 }
 
 /** One sidebar entry opens the first readable tab; original routes and guards remain unchanged. */

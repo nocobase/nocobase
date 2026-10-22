@@ -197,10 +197,17 @@ const zhTW: LocaleResource<typeof enUS> = {
       },
       idleLabel: '無人訪問時停止',
       dormantLabel: '無人訪問時休眠',
+      idleModeLabel: '閒置計時策略',
+      dormantModeLabel: '休眠計時策略',
       minutes: '分鐘',
       hours: '小時',
       neverIdle: '從來沒有',
       neverDormant: '從來沒有',
+      timerMode: {
+        inherit: '使用環境預設值',
+        custom: '設定自訂值',
+      },
+      customTimerHint: '自訂值留空會關閉該計時器，不會使用環境預設值。',
       idleSummary: '在 {{minutes}} 分鐘未訪問後停止',
       dormantSummary: '{{hours}} 小時後休眠',
       timersHint:

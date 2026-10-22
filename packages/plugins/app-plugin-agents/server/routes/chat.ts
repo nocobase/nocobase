@@ -94,7 +94,7 @@ const ConfigOutput: z.ZodType<OnlineChatConfigSnapshot> = z.object({
     .object({ modelService: z.string(), model: z.string() })
     .nullable(),
   scope: z.array(z.string()),
-  model: z.array(z.string()),
+  model: z.array(z.string()).optional(),
   thinking: z.string().optional(),
   tool: z.array(z.string()),
   toolVersions: z.record(z.string(), z.string()),
@@ -252,6 +252,7 @@ export function createChatRoutes(
   services: Agents,
   guard: MiddlewareHandler<AdminEnv>,
   personOrRun: MiddlewareHandler<AdminEnv> = guard,
+  personOrOnlineAgent: MiddlewareHandler<AdminEnv> = guard,
 ): Hono<AdminEnv> {
   const router = domainRouter<AdminEnv>();
   const { conversations, chat } = services;
@@ -268,13 +269,15 @@ export function createChatRoutes(
 
   router.get(
     '/conversations',
-    guard,
+    personOrOnlineAgent,
     describeRoute({
       tags,
+      security: personOrRunSecurity,
       summary: "List the caller's conversations",
       operationId: 'agentsListConversations',
       ...cliRoute({
         command: 'conversation list',
+        identities: ['person'],
         flags: {
           q: { name: 'query' },
           agentId: { name: 'agent' },
@@ -283,7 +286,7 @@ export function createChatRoutes(
         columns: ['id', 'title', 'agent.name', 'lastMessageAt', 'read'],
       }),
       description:
-        "The conversations the caller started, newest message first, a page at a time; a conversation is its owner's alone.",
+        "The conversations the caller started, newest message first, a page at a time; a conversation is its owner's alone. The runToken scheme accepts only OnlineAgent execution credentials here; Run tokens and other scoped credentials are refused.",
       responses: {
         200: listResponse(ConversationSummarySchema, PageTokenMetaSchema),
         ...apiErrorResponses,
@@ -370,13 +373,17 @@ export function createChatRoutes(
   );
   router.get(
     '/conversations/:conversationId',
-    guard,
+    personOrOnlineAgent,
     describeRoute({
       tags,
+      security: personOrRunSecurity,
+      description:
+        'Owner-only read. The runToken scheme accepts OnlineAgent execution credentials here, not Run tokens or other scoped credentials.',
       summary: 'Get a conversation',
       operationId: 'agentsGetConversation',
       ...cliRoute({
         command: 'conversation get',
+        identities: ['person'],
         args: ['conversationId'],
         flags: { conversationId: { name: 'conversation' } },
       }),
@@ -397,13 +404,18 @@ export function createChatRoutes(
   );
   router.patch(
     '/conversations/:conversationId',
-    guard,
+    personOrOnlineAgent,
     describeRoute({
       tags,
+      security: personOrRunSecurity,
+      description:
+        'Owner-only update. The runToken scheme accepts OnlineAgent execution credentials, not Run tokens or other scoped credentials.',
       summary: 'Rename or archive a conversation',
       operationId: 'agentsUpdateConversation',
       ...cliRoute({
         command: 'conversation update',
+        bodyFile: 'file',
+        identities: ['person'],
         args: ['conversationId'],
         flags: { conversationId: { name: 'conversation' } },
       }),

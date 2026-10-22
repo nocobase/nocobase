@@ -24,10 +24,13 @@ const idID: LocaleResource<typeof enUS> = {
     sessionNotFound: 'Sesi ini tidak ada, atau bukan milik Anda.',
   },
   list: {
+    panelEmpty: 'Belum ada percakapan',
     expand: 'Tampilkan sesi',
     label: 'Sesi',
     title: 'Agen saya',
     archived: 'Diarsipkan',
+    archivedView:
+      'Pilih sesi yang diarsipkan untuk membacanya. Sesi yang terbuka dan draf yang belum dikirim tetap disimpan.',
     back: 'Kembali ke sesi',
     new: 'Sesi baru',
     search: 'Sesi pencarian',
@@ -94,9 +97,6 @@ const idID: LocaleResource<typeof enUS> = {
       'Agen ini tidak memaparkan pengaturan. Standarnya akan digunakan.',
     settingsEmpty:
       'Agen ini tidak memiliki pengaturan yang dapat dikonfigurasi. Standarnya akan digunakan.',
-    title: 'Sesi baru',
-    subtitle:
-      'Diskusikan dan klarifikasi persyaratan dengan agen di komputer Anda sendiri, catat tugas, dan ikuti kemajuannya di sini. Manajer proyek Studio mengoordinasikan agen untuk mengembangkan tugas setelah Anda memulainya.',
     pickComputer: 'Pilih komputer',
     noAgent: 'Tidak ada agen yang tersedia',
     folder: 'Direktori di komputer',

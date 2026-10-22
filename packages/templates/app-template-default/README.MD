@@ -6,7 +6,7 @@ You own everything in this directory. Add pages, API routes, database tables, an
 
 ## Default and Examples
 
-Default provides the application shell and product capabilities without example plugins or business demo pages. Application-owned business API routes start empty, and new databases receive no article sample data. A bare create-app shows Home only, with no System settings routes or menu. As business capabilities are developed, the app development skill reconciles missing core administration on every iteration and registers the prepared Users and Roles and permissions contribution (`client/pages/settings/routes.ts`); each actually used configurable capability includes its administration as part of feature delivery. Its built-in Users integration lists direct Authorization Permission Sets as application roles, while access assigned to all authenticated users remains separate. Use `app-template-examples` for article management and runnable plugin demonstrations.
+Default provides the application shell and product capabilities without example plugins or business demo pages. Application-owned business API routes start empty, and new databases receive no article sample data. A bare create-app shows Home and, for unrestricted administrators only, System settings → App foundation. Foundation is installed and registered on both Client and Server; its read-only overview is available at `/foundation` under the application base path. As business capabilities are developed, the app development skill reconciles missing core administration on every iteration and registers the prepared Users and Roles and permissions contribution (`client/pages/settings/routes.ts`); each actually used configurable capability includes its administration as part of feature delivery. Its built-in Users integration lists direct Authorization Permission Sets as application roles, while access assigned to all authenticated users remains separate. Use `app-template-examples` for article management and runnable plugin demonstrations.
 
 Existing Default installations retain their data when example plugins are unregistered. If an installation already ran the article migration, retain its original migration sources as described in the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations) before upgrading. Do not erase migration history or delete existing data to make an upgrade start.
 
@@ -403,9 +403,9 @@ Tests live in `tests/`, never beside the source they cover. Put logic and integr
 
 Application tests use the `/server`, `/client` and `/cli` entries of `@nocobase/app-testing`. Start page tests from `tests/components/page-harness.test.tsx`: it uses `renderWithApp()` with real application hooks, strict translations, permission checks and a test toaster. Answer requests through `answerApi()` and replace external services through `services`, without also registering their owning plugins. The template's Vitest configuration includes client plugins in custom package scopes so their contexts and service tokens remain shared. See `.agents/skills/nocobase-app-development/references/testing.md` for fixture ownership and complete server, migration and CLI examples.
 
-### Notification testing
+### Notification verification
 
-With the `notification:test` `send` permission, send a real message through the durable Notification Manager with `POST <APP_BASE_PATH>/api/notifications/testSends`. `GET <APP_BASE_PATH>/api/notifications/testTargets` lists each configured channel and the fields its test takes: Email tests require an address and IM tests use the configured logical target. The server enforces the permission when the message is submitted.
+Exercise the application's business notification flow, or use a server-side command resolving `notificationServiceToken` and calling `send()` with complete messages and explicit recipients. Inspect the returned notification ID through the protected `/api/notifications/logs` API or the logs page installed by the application. Log access requires `page:notification.logs` `access`.
 
 ## API documentation
 

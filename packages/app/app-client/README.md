@@ -400,3 +400,7 @@ Client route authentication uses `auth: 'required' | 'guest' | 'optional'`. Auth
 Use `useRealtimeTopic(topic, onEvent, { onReady, onError, enabled })` for payload-driven updates, `useRealtimeRefresh(topic, refresh, { enabled, delayMs })` for coalesced API refreshes, and `useRealtimeConnectionState()` to observe the transport. A null topic or `enabled: false` releases the component's subscription. `onReady` runs after the server acknowledges this topic, including reconnects; transport `onOpen` alone does not prove subscription success. Return the refresh promise so events arriving during that read schedule a follow-up instead of cancelling it. The non-React `createRealtimeRefresh(refresh)` helper exposes `request()` and `close()` with the same burst and visibility handling.
 
 The host's client also exposes `watch(topic, callbacks)`, which returns a handle with `state`, `error`, `retry()` and `close()`. The existing `subscribe()` cleanup API remains available. See the [Realtime usage and migration guide](../../libs/realtime/README.md) for server declarations, personal and resource-authorized topics, identity changes, failure handling and delivery limits.
+
+## Inspecting registered plugins
+
+`runtime.registeredPlugins` is a frozen list of explicit Client plugin package names, including plugins that contribute only locales or services. It contains no plugin options or executable contributions. It describes registration, not configuration or actual use; older hand-composed runtimes may omit it.

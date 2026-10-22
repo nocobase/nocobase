@@ -309,19 +309,7 @@ export function NewSession({
             !surface.panel && '@md/agent-session:px-6 @md/agent-session:pt-24',
           )}
         >
-          {!surface.panel && (
-            <>
-              <BackLink />
-              <div className='text-center'>
-                <h2 className='text-[22px] font-semibold tracking-tight'>
-                  {t('newSession.title')}
-                </h2>
-                <p className='text-muted-foreground mt-1 text-sm'>
-                  {t('newSession.subtitle')}
-                </p>
-              </div>
-            </>
-          )}
+          {!surface.panel && <BackLink />}
           {computer?.outdatedBridge && (
             <OutdatedBridgeNotice computer={computer} />
           )}

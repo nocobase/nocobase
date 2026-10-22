@@ -18,6 +18,7 @@ const host = vi.hoisted(() => ({
   accepted: vi.fn(() => true),
   send: undefined as AgentComposerProps['onSend'] | undefined,
   close: undefined as (() => void) | undefined,
+  newChat: undefined as (() => void) | undefined,
   api: { request: vi.fn() },
   realtime: { watch: vi.fn(() => ({ close: vi.fn() })) },
 }));
@@ -39,7 +40,10 @@ const runtime = await createTestI18nRuntime({
   strict: false,
 });
 function Open() {
-  const { openChat, closeChat } = useChatPanel();
+  const { openChat, closeChat, selectConversation } = useChatPanel();
+  useLayoutEffect(() => {
+    host.newChat = () => selectConversation(null);
+  });
   useLayoutEffect(() => {
     host.close = closeChat;
     openChat();
@@ -70,7 +74,7 @@ beforeEach(() => {
   host.accepted.mockClear();
 });
 
-it.each(['disabled', 'closed', 'unmounted'])(
+it.each(['disabled', 'closed', 'unmounted', 'reset'])(
   'rejects an old upload-completion callback after the editor becomes %s',
   async (boundary) => {
     const tree = render(<Tree />);
@@ -79,6 +83,7 @@ it.each(['disabled', 'closed', 'unmounted'])(
     if (boundary === 'disabled') tree.rerender(<Tree disabled />);
     if (boundary === 'closed') act(() => host.close?.());
     if (boundary === 'unmounted') tree.unmount();
+    if (boundary === 'reset') act(() => host.newChat?.());
     expect(delayedUploadCompletion('Retain this draft', undefined, [])).toBe(
       false,
     );

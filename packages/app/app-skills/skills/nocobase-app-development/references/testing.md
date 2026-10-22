@@ -238,3 +238,9 @@ Do not delete or rebuild a running development server's cache. For an already co
 Application server source supports extensionless relative imports. Keep `module: "ESNext"`, `moduleResolution: "Bundler"`, and `tsc-alias.resolveFullPaths: true` in `tsconfig.server.json`. Development uses `tsx`; production builds run `tsc-alias` after `tsc` to complete ESM paths, before build hooks run. When changing this configuration, verify the compiled output with plain Node and no source files or TypeScript loader.
 
 Vite configuration imports the proxy helpers from `@nocobase/app-cli/dev/proxy`. Watcher, proxy, supervisor and build-step unit tests live in `app-cli`; templates verify their composition and Vite integration.
+
+## Permission assignment acceptance
+
+Run the template's `tests/logic/authorization-assignment-safety.test.ts` after installing the real application migrations/seeds in isolated test storage. Retain it as business features are added: it catches unexpected wildcard role assignments and business grants hidden in the inherited member role. Do not treat a source-code scan as proof of the resulting assignments. See [assignment safety](authorization.md#visible-and-manageable-assignments) for intentional global defaults and the limits of the initialized-state check.
+
+For an ordinary identity assigned only the intended business role, enumerate direct and inherited grant sources, confirm visible menus/buttons match effective access, and exercise forbidden direct API requests. Test page-only versus action-only access separately. If a global default is explicitly requested, test its authorized administration control, inherited-role display and revocation while preserving independent direct grants. Never silently assign all authenticated users a role to make an acceptance test pass.

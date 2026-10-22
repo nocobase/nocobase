@@ -35,8 +35,6 @@ function resultMethod(value: unknown, key: string | symbol): boolean {
 }
 
 function supported(value: object) {
-  if ('skill' in value && Array.isArray(value.skill) && value.skill.length)
-    throw invalid('Skills are not supported.');
   if ('permissions' in value || 'toolApproval' in value)
     throw invalid(
       'Permission overrides and custom approval protocols are not supported.',
@@ -135,32 +133,24 @@ export class OnlineAgentConfigurator {
     context: OnlineAgentContext,
     options: OnlineAgentOptions,
     previous?: OnlineAgentConfig,
-    fallbackModels: string[] = [],
     http: boolean = false,
   ): Promise<OnlineAgentConfig> {
-    return (
-      await this.resolveSelection(
-        context,
-        options,
-        previous,
-        fallbackModels,
-        http,
-      )
-    ).config;
+    return (await this.resolveSelection(context, options, previous, http))
+      .config;
   }
 
   async resolveSelection(
     context: OnlineAgentContext,
     options: OnlineAgentOptions,
     previous?: OnlineAgentConfig,
-    fallbackModels: string[] = [],
     http: boolean = false,
   ): Promise<{ config: OnlineAgentConfig; hasModel: boolean }> {
-    let hasModel = previous !== undefined;
+    let hasModel = previous?.model !== undefined;
     supported(options);
     if (
       http &&
       (options.tool !== undefined ||
+        options.skill !== undefined ||
         options.model !== undefined ||
         options.systemPromptTemplate !== undefined ||
         options.context?.systemPrompt !== undefined)
@@ -184,9 +174,10 @@ export class OnlineAgentConfigurator {
           scope: [],
           systemPrompt: '',
           tool: [],
+          skill: [],
           toolVersions: {},
-          model: [...fallbackModels],
         };
+    result.skill ??= [];
     const layers: {
       value: OnlineAgentScope | OnlineAgentScopeProvider;
       selected: boolean;
@@ -263,6 +254,7 @@ export class OnlineAgentConfigurator {
         result.agentId = scope.agentId;
       }
       if (scope.tool !== undefined) result.tool = [...scope.tool];
+      if (scope.skill !== undefined) result.skill = [...new Set(scope.skill)];
       if (scope.model !== undefined) {
         result.model = [...scope.model];
         hasModel = true;
@@ -277,6 +269,21 @@ export class OnlineAgentConfigurator {
         'Business variables must be declared by the selected scopes.',
       );
     if (options.scope !== undefined) result.scope = [...options.scope];
+    if (
+      result.skill.length &&
+      (!result.tool.includes('bash') || !result.tool.includes('skill'))
+    )
+      throw invalid('Selected skills require both bash and skill tools.');
+    if (result.tool.includes('skill') && !result.skill.length)
+      throw invalid('The skill tool requires selected skills.');
+    if (
+      result.agentId &&
+      result.agentId !== 'online' &&
+      (result.skill.length ||
+        result.tool.includes('bash') ||
+        result.tool.includes('skill'))
+    )
+      throw invalid('Sandbox tools are only supported by the native backend.');
     result.toolVersions = Object.fromEntries(
       result.tool.map((name) => {
         const registered = this.tools.get(name);

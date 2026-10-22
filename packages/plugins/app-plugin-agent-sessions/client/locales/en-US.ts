@@ -17,10 +17,13 @@ const enUS = {
     sessionNotFound: 'This session does not exist, or it is not yours.',
   },
   list: {
+    panelEmpty: 'No conversations',
     expand: 'Show sessions',
     label: 'Sessions',
     title: 'My agents',
     archived: 'Archived',
+    archivedView:
+      'Choose an archived session to read it. Your open session and unsent draft are kept.',
     back: 'Back to sessions',
     new: 'New session',
     search: 'Search sessions',
@@ -87,9 +90,6 @@ const enUS = {
       'This agent does not expose settings. Its defaults will be used.',
     settingsEmpty:
       'This agent has no configurable settings. Its defaults will be used.',
-    title: 'New session',
-    subtitle:
-      'Discuss and clarify requirements with an agent on your own computer, record tasks, and follow progress here. Studio’s project manager coordinates agents to develop tasks after you start them.',
     pickComputer: 'Choose a computer',
     noAgent: 'No agent available',
     folder: 'Directory on the computer',

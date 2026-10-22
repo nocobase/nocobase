@@ -1,3 +1,5 @@
+import { RecordLink } from '#components/record-link';
+import { useTableUrlState } from '#hooks/use-table-url-state';
 import { useApiClient, useToaster } from '@nocobase/app-client';
 import {
   useCan,
@@ -119,15 +121,14 @@ export default function DefaultAccessPage(): ReactElement {
         />
       ),
       cell: ({ row }) => (
-        <Link
-          className='text-foreground underline-offset-4 hover:underline'
+        <RecordLink
           to={{
             pathname: `${encodeURIComponent(row.original.key)}/edit`,
             search: location.search,
           }}
         >
           {name(row.original)}
-        </Link>
+        </RecordLink>
       ),
     },
     {
@@ -210,6 +211,29 @@ export default function DefaultAccessPage(): ReactElement {
         .includes(search.toLocaleLowerCase()),
     )
     .sort((a, b) => name(a).localeCompare(name(b), i18n.language));
+  const tableState = useTableUrlState({
+    defaultPageSize: 20,
+    sortColumns: ['resource'],
+    rowCount:
+      rules.data &&
+      !rules.loading &&
+      !rules.error &&
+      catalog.data &&
+      !catalog.loading &&
+      !catalog.error
+        ? rows.length
+        : undefined,
+  });
+  const clearSearch = () =>
+    setParams(
+      (old) => {
+        const next = new URLSearchParams(old);
+        next.delete('q');
+        next.delete('page');
+        return next;
+      },
+      { replace: true },
+    );
   const eligible = resources.some(
     (resource) =>
       !rules.data?.data.some(
@@ -295,13 +319,20 @@ export default function DefaultAccessPage(): ReactElement {
             placeholder={t('settings.defaultAccess.search')}
             aria-label={t('settings.defaultAccess.search')}
             onChange={(event) =>
-              setParams(event.target.value ? { q: event.target.value } : {}, {
-                replace: true,
-              })
+              setParams(
+                (old) => {
+                  const next = new URLSearchParams(old);
+                  next.delete('page');
+                  if (event.target.value) next.set('q', event.target.value);
+                  else next.delete('q');
+                  return next;
+                },
+                { replace: true },
+              )
             }
           />
           {search && (
-            <Button variant='ghost' onClick={() => setParams({})}>
+            <Button variant='ghost' onClick={clearSearch}>
               {t('settings.clear')}
             </Button>
           )}
@@ -329,6 +360,7 @@ export default function DefaultAccessPage(): ReactElement {
           !catalog.error &&
           (rows.length ? (
             <DataTable
+              {...tableState}
               columns={columns}
               data={rows}
               getRowId={(rule) => rule.key}
@@ -358,7 +390,7 @@ export default function DefaultAccessPage(): ReactElement {
               </EmptyDescription>
               <EmptyContent>
                 {search ? (
-                  <Button variant='outline' onClick={() => setParams({})}>
+                  <Button variant='outline' onClick={clearSearch}>
                     {t('settings.clear')}
                   </Button>
                 ) : (

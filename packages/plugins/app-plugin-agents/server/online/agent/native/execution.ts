@@ -1,3 +1,5 @@
+import type { OnlineAgentSandboxProvider } from '../../sandbox/types.js';
+import { NativeToolExecution } from '../../sandbox/execution.js';
 import { jsonSafe } from '../messages/json.js';
 import type {
   OnlineAgentJson,
@@ -56,6 +58,7 @@ export class NativeOnlineAgent {
       uiStreams: OnlineAgentUIStreams;
       ids: IdSource;
       configurator: OnlineAgentConfigurator;
+      sandboxProvider?: OnlineAgentSandboxProvider;
       resolver?: ServiceResolver;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       onError(error: unknown): void;
@@ -105,11 +108,13 @@ export class NativeOnlineAgent {
     let metadata: AppUIMessageMetadata;
     let priorMessage: NativeMessage | undefined;
     let previousPage: ModelMessage | undefined;
-    let tools: ReturnType<OnlineAgentConfigurator['bind']>;
+    let tools!: ReturnType<OnlineAgentConfigurator['bind']>;
     let model: LanguageModel;
     let afterSeq: number;
-    let executionId: string;
+    const executionId = approval?.executionId ?? this.deps.ids.next();
     let messageId: string;
+    let toolContext!: OnlineAgentToolContext;
+    let instructions = '';
     const pending: Promise<unknown>[] = [];
     const begun = new Set<string>();
     const ended = new Set<string>();
@@ -141,43 +146,63 @@ export class NativeOnlineAgent {
             context,
             input.overrides,
             session.config,
-            [],
             input.boundary === 'http',
           )
         : session.config;
       if ((config.agentId ?? 'online') !== (session.config.agentId ?? 'online'))
         throw conflict('Start a new conversation to choose another agent.');
-      const candidate = config.model[0]?.split('/');
+      const candidate = config.model?.[0]?.split('/');
       const selected =
         input?.selectedModel ??
+        (config.model?.length &&
         (input?.overrides?.model !== undefined ||
-        JSON.stringify(config.model) !== JSON.stringify(session.config.model)
+          JSON.stringify(config.model) !== JSON.stringify(session.config.model))
           ? {
               modelService: candidate?.[0] ?? '',
               model: candidate?.slice(1).join('/') ?? '',
             }
           : session.model);
-      if (!config.model.includes(`${selected.modelService}/${selected.model}`))
+      if (
+        config.model?.length &&
+        !config.model.includes(`${selected.modelService}/${selected.model}`)
+      )
         throw invalid('The selected model is outside this configuration.');
       model = await this.deps.model(selected, id);
-      const boundContext: OnlineAgentToolContext = Object.freeze({
-        ...context,
-        user: Object.freeze({ ...context.user }),
-        variable: config.variable,
-        systemPrompt: config.systemPrompt,
-        sessionId: id,
-        signal: execution.abort.signal,
-      });
-      tools = this.deps.configurator.bind(
-        config,
-        boundContext,
-        this.deps.resolver,
-        (task) => {
-          pending.push(task);
+      const entryContext: Omit<OnlineAgentToolContext, 'execution'> =
+        Object.freeze({
+          ...context,
+          user: Object.freeze({ ...context.user }),
+          variable: config.variable,
+          systemPrompt: config.systemPrompt,
+          sessionId: id,
+          signal: execution.abort.signal,
+        });
+      const toolExecution = new NativeToolExecution(
+        executionId,
+        execution,
+        {
+          sessionId: id,
+          executionId,
+          context: entryContext,
+          skill: config.skill ?? [],
         },
+        this.deps.sandboxProvider,
       );
+      execution.toolExecution = toolExecution;
+      toolContext = Object.freeze({
+        ...entryContext,
+        execution: toolExecution,
+      });
+      const prepareTools = async () => {
+        instructions = await toolExecution.instructions(config.tool);
+        tools = this.deps.configurator.bind(
+          config,
+          toolContext,
+          this.deps.resolver,
+          (task) => pending.push(task),
+        );
+      };
       if (approval) {
-        executionId = approval.executionId;
         messageId = approval.messageId;
         response = await this.deps.uiStreams.open(
           context.user.id,
@@ -194,7 +219,9 @@ export class NativeOnlineAgent {
         priorMessage = approved.message;
         waitingApprovals = approved.waiting;
         afterSeq = session.lastSeq;
+        if (!waitingApprovals) await prepareTools();
       } else {
+        await prepareTools();
         if (!background) {
           if (inputs.length !== 1)
             throw invalid('Submit only the current user message.');
@@ -210,7 +237,6 @@ export class NativeOnlineAgent {
           )
             throw invalid('A valid user input is required.');
         }
-        executionId = this.deps.ids.next();
         messageId = this.deps.ids.next();
         previousPage = (
           await this.deps.sessions.native.executionHistory(
@@ -259,6 +285,21 @@ export class NativeOnlineAgent {
         this.executionResponses.set(execution, response);
       }
     } catch (error) {
+      if (execution.toolExecution) {
+        const allocated = execution.toolExecution;
+        execution.finalize = async () => {
+          await allocated.dispose();
+          execution.finalize = undefined;
+          this.deps.complete(id, execution);
+        };
+        try {
+          await this.deps.finish(execution);
+        } catch (cleanupError) {
+          this.deps.onError(cleanupError);
+          accepted.reject(error);
+          return;
+        }
+      }
       if (response)
         await this.deps.uiStreams
           .close(id, response)
@@ -290,6 +331,7 @@ export class NativeOnlineAgent {
       if (notice) output?.write(notice as NativeUIChunk);
       accepted.resolve(afterSeq);
       execution.finalize = async () => {
+        await execution.toolExecution?.dispose();
         if (output) await this.deps.uiStreams.release(id, output);
         output?.write({ type: 'finish', messageMetadata: metadata });
         output?.close();
@@ -341,18 +383,11 @@ export class NativeOnlineAgent {
         output: schema ? Output.object({ schema }) : undefined,
         tools,
         messages: history,
-        system: config.systemPrompt,
+        system: [config.systemPrompt, instructions]
+          .filter(Boolean)
+          .join('\n\n'),
         toolsContext: Object.fromEntries(
-          Object.keys(tools).map((name) => [
-            name,
-            Object.freeze({
-              ...context,
-              variable: config.variable,
-              systemPrompt: config.systemPrompt,
-              sessionId: id,
-              signal: execution.abort.signal,
-            }),
-          ]),
+          Object.keys(tools).map((name) => [name, toolContext]),
         ),
         reasoning: reasoningOf(config.thinking),
         abortSignal: execution.abort.signal,
@@ -509,6 +544,7 @@ export class NativeOnlineAgent {
     };
     let snapshot: NativeSnapshot | undefined;
     execution.finalize = async () => {
+      await execution.toolExecution?.dispose();
       if (!snapshot) {
         const message = (
           await this.deps.sessions.native.messages.validate([

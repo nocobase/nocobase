@@ -136,38 +136,51 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 
 ### permission-editor
 
-A compact permission workspace with category navigation, individual action checkboxes, scoped data controls and accessible scope help.
+A controlled permission workspace with category navigation, application-owned menu trees, compact action tiles and named data scopes.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/permission-editor`
 - Installs to: `client/components/permission-editor.tsx`, `client/components/permission-filter.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/long-text`
 - Example: `@nocobase/permission-editor-demo` (`pnpm exec shadcn view @nocobase/permission-editor-demo`)
-- After installing: Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default. Resource groups render as compact rows with wrapping action checkboxes. Optional row.scopes bind independent scope selectors to their owning action. Actions are configured individually; category names and groups omit authorization counts and bulk selection. Filtering never mutates the draft. Use scope.hint for contextual scope help shown on hover, keyboard focus or tap, and labels.scopeHintFor for the accessible trigger name. Use group.accessOnly for a page with a single access action to show one title checkbox without redundant action text. Provide scope.configuration for parameterized scopes; PermissionFilter edits validated condition drafts and keeps role saving in the host form. Never save customFilter as a bare key: bind its native params.filter object.
+- After installing: The application owns the exposed permission catalog, its business grouping, labels and persistence. Pass sections of groups of rows; the component has no built-in business or system permissions and never discovers or requests them. Preserve caller action order, including non-CRUD operations. Each row shows a checkbox, its title and optional hint; enabled scoped actions show every independently named range directly. onEnabledChange and onLevelChange report only explicit draft edits by stable row or scope id. The host owns loading, validation, Save, conflicts and preservation of grants absent from the visible catalog. Installing a plugin or receiving a capability in options does not opt it into this form: select only actual application features and supported actions in application-owned composition code. Settings require explicit app opt-in, an actual registered configuration page and matching server capability/action together; neither installed plugins nor a catalog entry alone are sufficient. Keep the original category navigation (left-side desktop, horizontal narrow layout), show one category by default and matching categories during global filtering; search and enabled-only filters never change grants. Do not supply a default System and tools section or copy demo permissions into an application. Set group.accessOnly for a page with one access action. Supply scope.configuration for parameterized filters, scope.hint for contextual help, and translated labels including emptyDescription, readOnly and managedPermission. Full-width descriptions use LongText and narrow tile descriptions use LongTextPreview; disabled controls have visible explanations. Existing apps reconcile the component, its LongText and Empty dependencies, application catalog adapter and host bindings through a normal source upgrade. Preserve unknown policies and native filter parameters. For page access, pass section.navigation as application-owned nodes with id, label, optional rowId and children. References use the existing flat row ids; a structural menu group has no grant. Single-level menus stay flat; a parent page and its children use independent checkboxes for staged authorization. Disclosure only changes presentation. Search includes ancestor names and retains their paths; filtering expands matching branches and Clear restores collapse state. The host adapter uses the complete runtime menu tree and its navigation transforms, deduplicates inherited page grants, and retains independent non-menu pages. Supply translated expandGroup and collapseGroup callbacks. Never infer authorization inheritance or grant every child when opening a menu group. All page grants, business actions and settings permissions use Checkbox to edit the host draft. The enabled-only filter also uses Checkbox and changes presentation immediately without editing grants. The page-access tree contains business pages only. Compose every actual system-settings page and operation, including user management and business configuration, under Configuration permissions. Preserve original row ids and grants when reclassifying existing controls, and do not duplicate these entries as page checkboxes or category-jump placeholders. Explain this boundary in the application-supplied section descriptions. Map each independently assignable business operation to its actual UI entry, server request, affected fields and record scopes. Use actual operation labels, reuse a permission across equivalent entry points, and separate steps such as Approve and Reject instead of bundling them behind Manage. Page access, record viewing and lifecycle eligibility are separate; read lists do not require unrelated write permissions. Enforce the matching action and all affected record scopes server-side, including operation-scoped related-record pickers. When splitting existing actions, update backend enforcement, frontend availability and the application selection together and migrate grants and default, sharing and restriction rules without widening scopes or changing history. See the authorization Registry README for the full contract. For Create operations, hide the selector for the newly created record because no existing row can be selected; retain the source catalog and stored hidden policy values. If creation reads an existing related record, keep that related range visible and label its actual purpose. Localize custom-filter field captions by collection while preserving field identifiers and saved conditions. The application adapter decides this presentation from its real operations; the Registry supplies no fixed business fields.
 
 ### role-list
 
-A compact role content list with aligned names, identifiers and protected/custom labels. Use it on role administration pages backed by the Authorization plugin; the host supplies authorized data and edit destinations. Preinstalled in both application templates.
+A role administration table built with the standard DataTable: localized column headers, sortable names and identifiers, protected/custom badges, and pagination. The host supplies authorized rows and edit destinations. Preinstalled in both application templates.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/role-list`
 - Installs to: `client/components/role-list.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/data-table`, `@nocobase/record-link`
 - Example: `@nocobase/role-list-demo` (`pnpm exec shadcn view @nocobase/role-list-demo`)
-- After installing: Render inside a React Router with roles containing key, localized title, edit destination (to) and protected state. Pass localized protected/custom labels and an optional ariaLabel. The host owns loading, empty/error states, filtering, sorting and authorization. Rows use body-sized text and compact spacing; identifiers move under the name on narrow containers. Publishing the Registry does not replace installed source; existing apps merge role-list.tsx and the roles page integration through a template source upgrade.
+- After installing: Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. Optional tableState accepts controlled pagination/sorting and page-size choices from the host URL adapter. The host owns loading, empty/error states, filtering and authorization. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.
 
 ### default-access-editor
 
-Controlled default data scope rule fields with business-object selection, independent operation scopes and native custom-filter slots. The host supplies current rules and performs authorized writes. Preinstalled in both application templates.
+Controlled default data scope fields grouped by operation, with independently named ranges and native custom-filter slots. The host supplies localized business captions, current rules and authorized writes.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/default-access-editor`
 - Installs to: `client/components/default-access-editor.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/default-access-editor-demo` (`pnpm exec shadcn view @nocobase/default-access-editor-demo`)
-- After installing: Pass localized labels, a stable rule key, resource choices and scope controls. Explain that default data scopes combine with role-granted scopes for users who already hold the operation permission, and that restriction rules still constrain final access. The host loads authorization/defaultAccess and authorization/defaultAccess/options, enforces settings:authorization.default-access read/create/update/delete, and owns draft preservation, custom filters, validation, confirmation and writes. Existing apps reconcile the editor, default-access pages/model/routes, locales and contextual role-form link from the updated template. No existing rule is seeded or rewritten on upgrade. Both templates expose one Permission management sidebar entry with Roles and permissions and Default data scopes tabs, without changing their route ids, URLs, settings guards or stored rules. This navigation organization does not add sharing or restriction editors.
+- After installing: Pass localized labels, a stable rule key, resource choices and scope controls. Explain that default data scopes combine with role-granted scopes for users who already hold the operation permission, and that restriction rules still constrain final access. The host loads authorization/defaultAccess and authorization/defaultAccess/options, enforces settings:authorization.default-access read/create/update/delete, and owns draft preservation, custom filters, validation, confirmation and writes. Existing apps reconcile the editor, default-access pages/model/routes, locales from the updated template. No existing rule is seeded or rewritten on upgrade. Both templates expose one Permission management sidebar entry with Roles and permissions and Default data scopes tabs, without changing their route ids, URLs, settings guards or stored rules. This navigation organization does not add sharing or restriction editors. Keep global default data scopes in the Permission management tabs and omit the contextual shortcut from role editors to avoid confusing global rules with the current role’s scopes. Group scopes with the same stable actionId under one operation heading; each scope retains its independent id, selection, filter and error. The application shares scope captions with its role permission adapter rather than exposing collection identifiers, and preserves original resource/action/scope keys and stored rules.
 
 ## Data display
+
+### record-link
+
+A native router link for record names and identifiers in tables and lists: foreground text at rest, underline on hover and visible keyboard focus. Preinstalled in both application templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/record-link`
+- Installs to: `client/components/record-link.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/record-link-demo` (`pnpm exec shadcn view @nocobase/record-link-demo`)
+- After installing: Render inside a React Router and pass the record route through to. Carry the current list query in to.search when opening a child route. Supports native Link props and refs; use action buttons and menu items separately.
 
 ### kanban
 
@@ -348,6 +361,17 @@ A settings dialog after shadcn's sidebar-13: grouped categories in a sidebar on 
 - Example: `@nocobase/settings-dialog-demo` (`pnpm exec shadcn view @nocobase/settings-dialog-demo`)
 - After installing: Pass groups of { id, label, icon } items, the activeId and onSelect (or renderItem to draw each entry as a router link), and render the open entry as children, optionally in a SettingsDialogSection. Every word comes from the props; the component ships no locale keys.
 
+### setup-readiness
+
+Contextual prerequisite checks for a feature, with missing, ready and unavailable states. Connect real authorized business reads; never infer readiness from installed plugins. Preinstalled in application templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/setup-readiness`
+- Installs to: `client/components/setup-readiness.tsx`, `client/components/setup-readiness-state.ts`
+- Plugin dependencies: none
+- Example: `@nocobase/setup-readiness-demo` (`pnpm exec shadcn view @nocobase/setup-readiness-demo`)
+- After installing: Memoize SetupCheck descriptors and the async inspect callback; wire useSetupReadiness to the feature’s authorized aggregate read and pass its state to SetupReadiness. Supply translated labels, stable ids and authorized configuration links. No checks or disabled inspection causes no reads. Refresh on the host route key and after configuration saves; focus rechecks mounted checks. Unknown reason is unavailable, signIn, forbidden or invalid. Only missing checks render configuration links; denied/invalid reads are not missing. Initial all-ready hides; explicit refresh keeps a compact confirmation and the refresh control. This is informational; execution still validates prerequisites server-side. Templates also include RequiredRoleSetup for explicitly declared business roles.
+
 ## Projects
 
 ### issue-table
@@ -443,6 +467,19 @@ A child route presented as a non-modal page covering the content area, keeping t
 - Plugin dependencies: none
 - Example: `@nocobase/route-child-page-demo` (`pnpm exec shadcn view @nocobase/route-child-page-demo`)
 - After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole.
+
+## Task Center
+
+### task-center-ui
+
+Presentational components for a personal task center layered as source → subject → status → task cards: a source navigation with subjects folded under each source, pending counts and a client-side subject search; To do / Done / All tabs; day-grouped task cards whose summary each task type contributes; one-type-at-a-time batch selection with a floating action bar and confirmation; and a right-side detail drawer whose form and actions the task's business supplies. Takes data already shaped and translated; pairs with a task index such as @nocobase/app-plugin-task-center.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/task-center-ui`
+- Installs to: `client/extensions/nocobase-task-center-ui/`
+- Plugin dependencies: none
+- Example: `@nocobase/task-center-ui-demo` (`pnpm exec shadcn view @nocobase/task-center-ui-demo`)
+- After installing: Pure presentation: map your task index into TaskNavSource and TaskCardData (types.ts) with translated labels, render each task type's summary with TaskSummaryFields, its batch actions through useTaskSelection, TaskBulkBar and TaskBulkConfirm, and its detail form and actions inside TaskDetailSheet. Merge locales/ into your locale resources.
 
 ## Workflows
 

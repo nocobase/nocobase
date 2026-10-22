@@ -71,6 +71,10 @@ const agentChatZhCN: AgentChatLocale = {
       othersPersonal: '只有别人的个人执行机能跑',
       modelUnavailable: '模型不可用',
     },
+    reasoning: {
+      title: '推理过程',
+      thinking: '正在思考…',
+    },
     reply: {
       writing: '正在输入…',
       interrupted: '回复在这里中断了。',
@@ -173,6 +177,11 @@ const agentChatZhCN: AgentChatLocale = {
       runnerAgents: 'Agents',
       modelPlaceholder: '选择模型',
       modelSwitch: '模型：{{name}} · {{service}}；选择模型或 Agent',
+      modelOnlySwitch: '模型：{{name}} · {{service}}；选择模型',
+      modelLoadFailed: '无法加载会话模型',
+      modelChangeFailed: '无法确认模型切换结果',
+      modelSearch: '搜索模型',
+      noMatchingModels: '没有匹配的模型',
       modelHint: '选择与在线大模型对话。',
       mixedHint: '选择与在线大模型或执行机中的 Agent 对话。',
       search: '搜索模型或 Agent',

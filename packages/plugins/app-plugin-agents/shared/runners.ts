@@ -81,18 +81,22 @@ export interface Runner {
   readonly slots: number;
   /**
    * How many runs of each coding tool it may hold at once, beside `slots` (`{ claude: 2, codex: 1 }`); a tool left
-   * out, or every tool when null or absent, is bounded by `slots` only. Set on the web or on registration (`--slots`).
+   * out, or every tool when null or absent, is bounded by `slots` only. Set on the web or by an online registration token.
    * Optional so a runner built by other code than this plugin's server needs none; the server always sets it.
    */
   readonly toolSlots?: ToolSlots | null;
   /**
    * What it last reported per coding tool for the tools its own settings limit: how many runs of each it holds at most
-   * and could take now, across every application it serves. Null or absent when it reported none (unknown: read as
+   * and could take now, within this application. Null or absent when it reported none (unknown: read as
    * room left).
    */
-  /** Last heartbeat free slots across all applications; absent before a heartbeat. */
+  /** Last heartbeat free slots; updated runners report this application only. */
   readonly globalFree?: number;
-  readonly draining?: 'updatePending' | 'pruning';
+  /** Actual capacity from the last heartbeat; absent until reported. */
+  readonly reportedSlots?: number;
+  readonly capacitySource?: 'online' | 'legacyLocal';
+  readonly capacityReportedAt?: string;
+  readonly draining?: 'updatePending' | 'pruning' | 'diskLow';
   readonly toolLoad?: Readonly<Partial<Record<AgentTool, ToolLoad>>> | null;
   /**
    * Its owner (or a manager of runners) lets it take jobs: builds and other steps an application configures, run
@@ -340,6 +344,10 @@ export const RUNNER_LIST_FIELDS = {
   ownerName: true,
   status: true,
   slots: true,
+  reportedSlots: true,
+  capacitySource: true,
+  capacityReportedAt: true,
+  toolLoad: true,
   toolSlots: true,
   activeRuns: true,
   activeJobs: true,
@@ -415,13 +423,12 @@ export interface RegistrationTokenInput {
   /** The coding tools the runner that registers with this token may run; omitted or null for every tool. */
   readonly enabledTools?: readonly AgentTool[] | null;
   /**
-   * How many runs at once the runner that registers with this token takes (1 to 64); omitted or null leaves it to the
-   * runner. A runner registered with an explicit `--slots` keeps its own number.
+   * How many runs at once the runner that registers with this token takes (1 to 64); omitted or null defaults to four.
    */
   readonly slots?: number | null;
   /**
    * The limits per coding tool the runner that registers with this token gets; omitted or null for none. A runner
-   * registered with its own limits per tool (`--slots claude=2`) keeps its own.
+   * cannot override these online tool limits with legacy local settings.
    */
   readonly toolSlots?: ToolSlots | null;
 }
@@ -581,6 +588,7 @@ export function runnerActivity(
   >,
 ): RunnerActivity {
   if (runner.status !== 'online') return runner.status;
+  if (runner.draining === 'diskLow') return 'low_disk';
   if (runner.draining) return runner.draining;
   if (runnerLowOnDisk(runner)) return 'low_disk';
   return runner.activeRuns + runner.activeJobs >= runner.slots

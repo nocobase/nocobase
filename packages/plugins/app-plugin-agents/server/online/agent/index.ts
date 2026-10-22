@@ -1,4 +1,9 @@
 export type {
+  OnlineAgentSandbox,
+  OnlineAgentSandboxSkill,
+  OnlineAgentSandboxSkillCatalog,
+} from '../sandbox/types.js';
+export type {
   OnlineAgent,
   RealtimeOnlineAgent,
   BackgroundOnlineAgent,
@@ -9,6 +14,7 @@ export type {
   OnlineAgentSafeError,
   OnlineAgentContext,
   OnlineAgentToolContext,
+  OnlineAgentToolExecution,
   OnlineAgentScope,
   OnlineAgentScopeProvider,
   OnlineAgentOptions,

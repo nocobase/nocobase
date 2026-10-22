@@ -168,6 +168,9 @@ describe('a runner at a glance', () => {
         workspaces: [],
       },
     });
+    expect(runnerActivity(runner('r1', { draining: 'diskLow' }))).toBe(
+      'low_disk',
+    );
     expect(runnerActivity(low)).toBe('low_disk');
     expect(runnerActivity({ ...low, status: 'offline' })).toBe('offline');
     expect(runnerActivity({ ...low, workspaceUsage: null })).toBe('busy');

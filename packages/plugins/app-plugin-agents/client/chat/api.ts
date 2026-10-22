@@ -52,8 +52,11 @@ export class ChatApi {
     this.api = api;
   }
 
-  public configuration(id: string): Promise<OnlineChatConfigSnapshot> {
-    return this.get(chatPath('config', id));
+  public configuration(
+    id: string,
+    signal?: AbortSignal,
+  ): Promise<OnlineChatConfigSnapshot> {
+    return this.get(chatPath('config', id), undefined, signal);
   }
   public configure(
     id: string,

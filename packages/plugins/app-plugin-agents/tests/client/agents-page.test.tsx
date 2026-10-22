@@ -111,6 +111,31 @@ describe('the Agent page', () => {
     );
   });
 
+  it('prefills an application suggestion for a known model and saves it on enable', async () => {
+    agents[0] = {
+      ...agents[0]!,
+      suggestion: { en: 'Application description', zh: '应用描述' },
+    };
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-discovery-toggle'));
+    fireEvent.click(await screen.findByTestId('agent-edit-opus'));
+    const dialog = await screen.findByTestId('agent-dialog');
+    expect(within(dialog).getByTestId('agent-good-at')).toHaveValue(
+      'Application description',
+    );
+    fireEvent.click(within(dialog).getByTestId('agent-dialog-save'));
+    await waitFor(() =>
+      expect(callsTo('PATCH', 'agents/opus').map((call) => call.json)).toEqual([
+        {
+          description: 'Application description',
+          effort: null,
+          enabled: true,
+          expectedRevision: 1,
+        },
+      ]),
+    );
+  });
+
   it('labels provider choices before and after switching while saving the original ID', async () => {
     agents = ['openai', 'rightapi'].map((provider) =>
       agent(provider, {
