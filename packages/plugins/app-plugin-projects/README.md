@@ -234,6 +234,8 @@ The plugin seeds no roles: the application that assembles it seeds its own (the 
 
 My tasks combines owned and executed issues, and the New issue dialog opens on its "AI draft" tab (the last tab used is remembered in the browser): requirements typed or uploaded are split into a draft of issues, edited row by row and created together, after which the dialog closes. Its manual tab asks when the issue starts: "Start now" (`in_progress`) or "Later" (`backlog`), and preselects the default executor. Nothing asks "Start now?" any more: moving an issue to `in_progress` starts its work.
 
+Applications that create tasks through conversation can render the retained create and subtask pages under `IssueCreationModeContext.Provider` (from `client/kit`) with `value='manual'`. This shows only the original guarded form, ignoring old AI tab parameters and preferences, without changing the default plugin pages.
+
 The settings pages are exported for the application to route under its own `/config` (`client/config.ts`: the issue
 prefix and labels), and components it reuses on its member pages are exported from
 `client/kit.ts`. The application routes an issue's page itself and presents it (for example, with the UI Library's

@@ -17,6 +17,7 @@ const enUS = {
     sessionNotFound: 'This session does not exist, or it is not yours.',
   },
   list: {
+    panelEmpty: 'No conversations',
     expand: 'Show sessions',
     label: 'Sessions',
     title: 'My agents',

@@ -25,6 +25,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       'このセッションは存在しないか、あなたのものではありません。',
   },
   list: {
+    panelEmpty: '会話はありません',
     expand: 'ショーセッション',
     label: 'セッション',
     title: '私のエージェント',

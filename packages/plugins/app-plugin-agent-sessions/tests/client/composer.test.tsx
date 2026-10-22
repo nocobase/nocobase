@@ -147,3 +147,49 @@ describe('retained composer drafts', () => {
     await waitFor(() => expect(input).toHaveValue(''));
   });
 });
+
+it('offers an optional context inspection action without removing or changing what is sent', async () => {
+  const { SessionSurfaceContext } = await import('../../client/config.js');
+  const client = new QueryClient();
+  const attachment = {
+    id: 'intent',
+    label: 'Create task',
+    text: 'Full creation intent',
+  };
+  client.setQueryData(sessionMemoryKey('attached:preview'), [attachment]);
+  const inspect = vi.fn();
+  const send = vi.fn();
+  await renderWithApp(
+    <QueryClientProvider client={client}>
+      <SessionSurfaceContext.Provider
+        value={{ panel: true, onInspectAttachment: inspect }}
+      >
+        <Composer draftKey='preview' placeholder='Draft' onSend={send} />
+      </SessionSurfaceContext.Provider>
+    </QueryClientProvider>,
+    {
+      namespace: '@nocobase/app-plugin-agent-sessions',
+      plugins: [plugin({ routes: false })],
+    },
+  );
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Create task', exact: true }),
+  );
+  expect(inspect).toHaveBeenCalledWith(attachment);
+  fireEvent.change(screen.getByRole('textbox', { name: 'Draft' }), {
+    target: { value: 'Please' },
+  });
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Draft' }), {
+    key: 'Enter',
+  });
+  await waitFor(() =>
+    expect(send).toHaveBeenCalledWith(
+      [
+        { type: 'text', text: 'Please' },
+        { type: 'text', text: 'Full creation intent' },
+      ],
+      false,
+      [],
+    ),
+  );
+});
