@@ -35,6 +35,7 @@ import {
 } from '../../api-docs.js';
 import type { Auth, AuthOpenAPISchema } from '../../auth.js';
 import authentication from '../../plugin.js';
+import { authenticationToken } from '../../tokens.js';
 import { signIn, type TestSession } from '../../testing.js';
 import { createAuthFixture } from './support.js';
 
@@ -141,11 +142,27 @@ describe('API documentation access and the Better Auth fragment', () => {
     });
   });
 
-  it('refuses a session cookie Better Auth does not recognize', async () => {
+  it('refuses a forged signature on the current session cookie', async () => {
+    const cookieName = await app.container
+      .resolve(authenticationToken)
+      .sessionCookieName();
+    const signedValue = session.cookie
+      .split(';')
+      .map((cookie) => cookie.trim())
+      .find((cookie) => cookie.startsWith(`${cookieName}=`))!
+      .slice(cookieName.length + 1);
+    const value = decodeURIComponent(signedValue);
+    const separator = value.lastIndexOf('.');
+    expect(separator).toBeGreaterThan(0);
+    // Keep a real session token so the forged signature, rather than an unknown token, causes rejection.
+    const token = value.slice(0, separator);
     const response = await request('/api/swagger', {
-      cookie: 'main.session_token=forged.signature',
+      cookie: `${cookieName}=${encodeURIComponent(`${token}.forged-signature`)}`,
     });
     expect(response.status).toBe(401);
+    expect(await response.json()).toMatchObject({
+      error: { reason: 'API_DOCS_UNAUTHENTICATED' },
+    });
   });
 
   it('serves the document and the Swagger UI page to a signed-in session, without touching its cookies', async () => {
