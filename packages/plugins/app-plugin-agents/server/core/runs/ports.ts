@@ -181,6 +181,8 @@ export interface SubjectSample {
 }
 
 export interface WorkSink {
+  /** In the stop request's transaction, once, before any terminal callback. A null actor is a system stop. */
+  onCancelRequested?(tx: Tx, run: Run): Promise<void>;
   /**
    * In the transaction that ended the run: completed, cancelled, or failed with no attempt left. A failed run's
    * `failureReason` says why; this is where the subject's domain asks people what next (retry, reassign, cancel).
