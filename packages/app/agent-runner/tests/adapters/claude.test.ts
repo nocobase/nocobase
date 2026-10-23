@@ -1,3 +1,4 @@
+import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { randomUUID } from 'node:crypto';
 import { chmod, mkdir, mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -825,4 +826,147 @@ describe('stopping', () => {
     expect(res.exit).toBe('aborted');
     expect(calls).toHaveLength(0);
   });
+});
+
+describe('streamed output', () => {
+  it.each([true, false])(
+    'streams split SDK blocks before completion (thinking=%s)',
+    async (withThinking) => {
+      const observed: AdapterEvent[] = [];
+      const partial = (event: unknown, parent: string | null = null) =>
+        ({
+          type: 'stream_event',
+          event,
+          parent_tool_use_id: parent,
+          session_id: SESSION_ID,
+          uuid: randomUUID(),
+        }) as SDKMessage;
+      setScript(async function* (ctx) {
+        await ctx.nextInput();
+        expect(ctx.options.includePartialMessages).toBe(true);
+        yield init();
+        yield partial({ type: 'message_start', message: { id: 'msg_1' } });
+        let index = 0;
+        if (withThinking) {
+          vi.useFakeTimers();
+          yield partial({
+            type: 'content_block_delta',
+            index,
+            delta: { type: 'thinking_delta', thinking: 'Plan ' },
+          });
+          yield partial({
+            type: 'content_block_delta',
+            index,
+            delta: { type: 'thinking_delta', thinking: 'carefully' },
+          });
+          try {
+            await vi.advanceTimersByTimeAsync(1000);
+            expect(
+              observed
+                .filter((e) => e.type === 'thinking')
+                .map((e) => e.content),
+            ).toEqual(['Plan carefully']);
+          } finally {
+            vi.useRealTimers();
+          }
+          yield assistant([
+            {
+              type: 'thinking',
+              thinking: 'Plan carefully',
+              signature: 'secret-signature',
+            },
+          ]);
+          index++;
+        }
+        vi.useFakeTimers();
+        yield partial({
+          type: 'content_block_start',
+          index,
+          content_block: { type: 'text', text: 'Hel' },
+        });
+        yield partial({
+          type: 'content_block_delta',
+          index,
+          delta: { type: 'text_delta', text: 'lo' },
+        });
+        try {
+          await vi.advanceTimersByTimeAsync(1000);
+          expect(
+            observed.filter((e) => e.type === 'text').map((e) => e.content),
+          ).toEqual(['Hello']);
+        } finally {
+          vi.useRealTimers();
+        }
+        yield assistant([{ type: 'text', text: 'Hello world' }]);
+        yield result();
+      });
+      const handle = adapterWith('9.0.0', dir).start(session());
+      for await (const event of handle.events) observed.push(event);
+      expect(await handle.result).toMatchObject({ exit: 'completed' });
+      expect(
+        observed
+          .filter((e) => e.type === 'text')
+          .map((e) => e.content)
+          .join(''),
+      ).toBe('Hello world');
+      expect(
+        observed
+          .filter((e) => e.type === 'thinking')
+          .map((e) => e.content)
+          .join(''),
+      ).toBe(withThinking ? 'Plan carefully' : '');
+      expect(JSON.stringify(observed)).not.toContain('secret-signature');
+    },
+  );
+});
+
+it('keeps interleaved parent and child partial messages separate', async () => {
+  const partial = (event: unknown, parent: string | null = null) =>
+    ({
+      type: 'stream_event',
+      event,
+      parent_tool_use_id: parent,
+      session_id: SESSION_ID,
+      uuid: randomUUID(),
+    }) as SDKMessage;
+  setScript(async function* (ctx) {
+    await ctx.nextInput();
+    yield init();
+    yield partial({ type: 'message_start', message: { id: 'msg_1' } });
+    yield partial({
+      type: 'content_block_delta',
+      index: 0,
+      delta: { type: 'text_delta', text: 'Parent' },
+    });
+    yield partial(
+      { type: 'message_start', message: { id: 'child' } },
+      'tool-1',
+    );
+    yield partial(
+      {
+        type: 'content_block_delta',
+        index: 0,
+        delta: { type: 'text_delta', text: 'Child' },
+      },
+      'tool-1',
+    );
+    yield assistant([{ type: 'text', text: 'Child' }], {
+      parent_tool_use_id: 'tool-1',
+      message: { id: 'child', content: [{ type: 'text', text: 'Child' }] },
+    });
+    yield partial({
+      type: 'content_block_delta',
+      index: 0,
+      delta: { type: 'text_delta', text: ' reply' },
+    });
+    yield assistant([{ type: 'text', text: 'Parent reply' }]);
+    yield result();
+  });
+  const handle = adapterWith('9.0.0', dir).start(session());
+  const events = (await collect(handle.events)).filter(
+    (e) => e.type === 'text',
+  );
+  expect(events.map((e) => e.content)).toEqual(['Parent', 'Child', ' reply']);
+  expect(events[1]?.meta).toMatchObject({ parentToolUseId: 'tool-1' });
+  expect(await handle.result).toMatchObject({ exit: 'completed' });
 });

@@ -18,6 +18,7 @@
  *   so a runner without a recent enough `claude` reports Claude Code
  *   unavailable and is offered no Claude runs.
  */
+import { StreamOutput } from './stream-output.ts';
 import { programFingerprint } from './program-fingerprint.ts';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
@@ -436,7 +437,17 @@ class ClaudeRun {
     };
   }
 
+  private readonly streaming = new StreamOutput((event) => {
+    const capped = capText(event.content ?? '');
+    this.emit({
+      ...event,
+      content: capped.text,
+      meta: { ...event.meta, ...(capped.truncated ? { truncated: true } : {}) },
+    });
+  });
+
   private emit(event: Omit<AdapterEvent, 'at'>): void {
+    this.streaming.flush();
     this.events.push({ at: new Date().toISOString(), ...event });
   }
 
@@ -519,7 +530,7 @@ class ClaudeRun {
       allowDangerouslySkipPermissions: true,
       env: { ...session.env },
       abortController: this.abortController,
-      includePartialMessages: false,
+      includePartialMessages: true,
       stderr: (data: string) => {
         this.stderrTail = (this.stderrTail + data).slice(-8192);
         this.stderrLines.push(...data.split('\n').filter(Boolean));
@@ -614,6 +625,7 @@ class ClaudeRun {
         content: result.error.message,
         meta: { reason: result.error.reason },
       });
+    this.streaming.flush();
     this.events.close();
     return result;
   }
@@ -709,8 +721,66 @@ class ClaudeRun {
     }
   }
 
+  private readonly partialMessages = new Map<
+    string,
+    { id: string; completedBlocks: number }
+  >();
+
+  private onPartial(
+    message: Extract<SDKMessage, { type: 'stream_event' }>,
+  ): void {
+    const parentId = message.parent_tool_use_id ?? '';
+    const { event } = message;
+    if (event.type === 'message_start') {
+      this.partialMessages.set(parentId, {
+        id: event.message.id,
+        completedBlocks: 0,
+      });
+      return;
+    }
+    const state = this.partialMessages.get(parentId);
+    if (!state) return;
+    const meta = parentId ? { parentToolUseId: parentId } : {};
+    if (event.type === 'content_block_delta') {
+      const { delta } = event;
+      if (delta.type === 'text_delta')
+        this.streaming.delta(
+          `${parentId}:${state.id}:${event.index}`,
+          'text',
+          delta.text,
+          meta,
+        );
+      else if (delta.type === 'thinking_delta')
+        this.streaming.delta(
+          `${parentId}:${state.id}:${event.index}`,
+          'thinking',
+          delta.thinking,
+          meta,
+        );
+    } else if (event.type === 'content_block_start') {
+      const block = event.content_block;
+      if (block.type === 'text')
+        this.streaming.delta(
+          `${parentId}:${state.id}:${event.index}`,
+          'text',
+          block.text,
+          meta,
+        );
+      else if (block.type === 'thinking')
+        this.streaming.delta(
+          `${parentId}:${state.id}:${event.index}`,
+          'thinking',
+          block.thinking,
+          meta,
+        );
+    }
+  }
+
   private onMessage(message: SDKMessage): void {
     switch (message.type) {
+      case 'stream_event':
+        this.onPartial(message);
+        return;
       case 'system':
         this.onSystem(message);
         return;
@@ -723,27 +793,20 @@ class ClaudeRun {
         const parent = message.parent_tool_use_id
           ? { parentToolUseId: message.parent_tool_use_id }
           : {};
+        const parentId = message.parent_tool_use_id ?? '';
+        const state = this.partialMessages.get(parentId);
+        // The SDK emits one assistant envelope per completed block, sharing the API message id.
+        let index = 0;
         for (const block of message.message.content) {
+          const blockIndex =
+            state?.id === message.message.id
+              ? state.completedBlocks++
+              : index++;
+          const key = `${parentId}:${message.message.id}:${blockIndex}`;
           if (block.type === 'text') {
-            const capped = capText(block.text);
-            this.emit({
-              type: 'text',
-              content: capped.text,
-              meta: {
-                ...parent,
-                ...(capped.truncated ? { truncated: true } : {}),
-              },
-            });
+            this.streaming.complete(key, 'text', block.text, parent);
           } else if (block.type === 'thinking') {
-            const capped = capText(block.thinking);
-            this.emit({
-              type: 'thinking',
-              content: capped.text,
-              meta: {
-                ...parent,
-                ...(capped.truncated ? { truncated: true } : {}),
-              },
-            });
+            this.streaming.complete(key, 'thinking', block.thinking, parent);
           } else if (
             block.type === 'tool_use' ||
             block.type === 'server_tool_use' ||

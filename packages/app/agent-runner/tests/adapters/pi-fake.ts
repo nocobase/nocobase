@@ -244,15 +244,21 @@ export function assistantMessage(
       type: 'message_start',
       message: { ...message, content: [], stopReason: 'pending' },
     },
-    {
-      type: 'message_update',
-      usage: message.usage,
-      assistantMessageEvent: {
-        type: 'text_delta',
-        contentIndex: 0,
-        delta: 'x',
-      },
-    },
+    ...content.flatMap((value, contentIndex) => {
+      const block = value as { type: string; text?: string; thinking?: string };
+      return block.type === 'text' || block.type === 'thinking'
+        ? [
+            {
+              type: 'message_update',
+              assistantMessageEvent: {
+                type: block.type === 'text' ? 'text_delta' : 'thinking_delta',
+                contentIndex,
+                delta: block.text ?? block.thinking ?? '',
+              },
+            },
+          ]
+        : [];
+    }),
     { type: 'message_end', message },
   ];
 }

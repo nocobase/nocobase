@@ -19,6 +19,7 @@
  * - The run ends when the session's execution settles and no steered input
  *   is still waiting.
  */
+import { StreamOutput } from './stream-output.ts';
 import { programFingerprint } from './program-fingerprint.ts';
 import { existsSync, constants as fsConstants } from 'node:fs';
 import { access } from 'node:fs/promises';
@@ -398,7 +399,17 @@ class OpencodeRun {
     };
   }
 
+  private readonly streaming = new StreamOutput((event) => {
+    const capped = capText(event.content ?? '');
+    this.emit({
+      ...event,
+      content: capped.text,
+      meta: { ...event.meta, ...(capped.truncated ? { truncated: true } : {}) },
+    });
+  });
+
   private emit(event: Omit<AdapterEvent, 'at'>): void {
+    this.streaming.flush();
     this.events.push({ at: new Date().toISOString(), ...event });
   }
 
@@ -459,6 +470,7 @@ class OpencodeRun {
         content: result.error.message,
         meta: { reason: result.error.reason },
       });
+    this.streaming.flush();
     this.events.close();
     return result;
   }
@@ -795,15 +807,26 @@ class OpencodeRun {
         }
         return;
       }
+      case 'session.text.delta':
+      case 'session.reasoning.delta': {
+        const type = event.type === 'session.text.delta' ? 'text' : 'thinking';
+        this.streaming.delta(
+          `${sid}:${str(data.assistantMessageID) ?? ''}:${type}:${num(data.ordinal)}`,
+          type,
+          str(data.delta) ?? '',
+          child,
+        );
+        return;
+      }
       case 'session.text.ended': {
         const text = str(data.text) ?? '';
         const messageId = str(data.assistantMessageID) ?? '';
-        const capped = capText(text);
-        this.emit({
-          type: 'text',
-          content: capped.text,
-          meta: { ...child, ...(capped.truncated ? { truncated: true } : {}) },
-        });
+        this.streaming.complete(
+          `${sid}:${str(data.assistantMessageID) ?? ''}:text:${num(data.ordinal)}`,
+          'text',
+          text,
+          child,
+        );
         if (root) {
           if (this.lastText?.messageId === messageId)
             this.lastText.texts.push(text);
@@ -812,13 +835,12 @@ class OpencodeRun {
         return;
       }
       case 'session.reasoning.ended': {
-        const capped = capText(str(data.text) ?? '');
-        if (!capped.text) return;
-        this.emit({
-          type: 'thinking',
-          content: capped.text,
-          meta: { ...child, ...(capped.truncated ? { truncated: true } : {}) },
-        });
+        this.streaming.complete(
+          `${sid}:${str(data.assistantMessageID) ?? ''}:thinking:${num(data.ordinal)}`,
+          'thinking',
+          str(data.text) ?? '',
+          child,
+        );
         return;
       }
       case 'session.tool.input.started': {

@@ -806,3 +806,80 @@ describe('stopping and resuming', () => {
     ]);
   });
 });
+
+describe('streamed output', () => {
+  it.each([true, false])(
+    'streams before completion and deduplicates snapshots (summary=%s)',
+    async (withSummary) => {
+      const observed: AdapterEvent[] = [];
+      const { adapter } = adapterWith(async (fake) => {
+        const params = await handshake(fake);
+        expect(params.summary).toBe('auto');
+        const delta = (
+          method: string,
+          itemId: string,
+          text: string,
+          summaryIndex = 0,
+        ) =>
+          fake.notify(method, {
+            threadId: 'thread-1',
+            itemId,
+            delta: text,
+            summaryIndex,
+          });
+        vi.useFakeTimers();
+        try {
+          if (withSummary) {
+            for (const text of ['Plan ', 'carefully'])
+              delta('item/reasoning/summaryTextDelta', 'r', text);
+            await vi.advanceTimersByTimeAsync(1000);
+            expect(
+              observed
+                .filter((e) => e.type === 'thinking')
+                .map((e) => e.content),
+            ).toEqual(['Plan carefully']);
+            delta('item/reasoning/summaryTextDelta', 'r', 'Then answer', 1);
+            item(fake, 'completed', {
+              type: 'reasoning',
+              id: 'r',
+              summary: ['Plan carefully', 'Then answer'],
+              content: [],
+            });
+          }
+          for (const text of ['Hel', 'lo'])
+            delta('item/agentMessage/delta', 'm', text);
+          await vi.advanceTimersByTimeAsync(1000);
+          expect(
+            observed.filter((e) => e.type === 'text').map((e) => e.content),
+          ).toEqual(['Hello']);
+        } finally {
+          vi.useRealTimers();
+        }
+        item(fake, 'completed', {
+          type: 'agentMessage',
+          id: 'm',
+          text: 'Hello world',
+        });
+        completeTurn(fake);
+      });
+      const handle = adapter.start(session());
+      for await (const event of handle.events) observed.push(event);
+      expect(
+        observed
+          .filter((e) => e.type === 'text')
+          .map((e) => e.content)
+          .join(''),
+      ).toBe('Hello world');
+      expect(
+        observed
+          .filter((e) => e.type === 'thinking')
+          .map((e) => e.content)
+          .join(''),
+      ).toBe(withSummary ? 'Plan carefully\n\nThen answer' : '');
+      expect(await handle.result).toMatchObject({
+        exit: 'completed',
+        summary: 'Hello world',
+      });
+    },
+  );
+});

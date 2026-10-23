@@ -16,6 +16,7 @@
  * - `stop()` interrupts the turn, then ends the process group: within five
  *   seconds in all.
  */
+import { StreamOutput } from './stream-output.ts';
 import { programFingerprint } from './program-fingerprint.ts';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
@@ -411,7 +412,17 @@ class CodexRun {
     };
   }
 
+  private readonly streaming = new StreamOutput((event) => {
+    const capped = capText(event.content ?? '');
+    this.emit({
+      ...event,
+      content: capped.text,
+      meta: { ...event.meta, ...(capped.truncated ? { truncated: true } : {}) },
+    });
+  });
+
   private emit(event: Omit<AdapterEvent, 'at'>): void {
+    this.streaming.flush();
     this.events.push({ at: new Date().toISOString(), ...event });
   }
 
@@ -515,6 +526,7 @@ class CodexRun {
       clientUserMessageId: first.clientId,
       approvalPolicy: 'never',
       sandboxPolicy,
+      summary: 'auto',
       ...(effort && EFFORTS.has(effort) ? { effort } : {}),
     });
     if (effort && EFFORTS.has(effort))
@@ -650,6 +662,22 @@ class CodexRun {
       case 'turn/completed':
         this.onTurnCompleted(p.turn as Turn);
         return;
+      case 'item/agentMessage/delta':
+        this.streaming.delta(
+          `${String(p.itemId)}:text`,
+          'text',
+          p.delta as string,
+        );
+        return;
+      case 'item/reasoning/summaryTextDelta':
+        this.streaming.delta(
+          `${String(p.itemId)}:summary:${Number(p.summaryIndex)}`,
+          'thinking',
+          p.delta as string,
+          undefined,
+          Number(p.summaryIndex) > 0 ? '\n\n' : '',
+        );
+        return;
       case 'item/started':
         this.onItemStarted(p.item as ThreadItem);
         return;
@@ -760,13 +788,19 @@ class CodexRun {
       case 'agentMessage':
         if ('text' in item) {
           this.turnSummary = item.text;
-          this.text('text', item.text);
+          this.streaming.complete(`${item.id}:text`, 'text', item.text);
         }
         break;
       case 'reasoning':
         if ('summary' in item) {
-          const text = [...item.summary, ...item.content].join('\n\n');
-          if (text) this.text('thinking', text);
+          for (const [index, text] of item.summary.entries())
+            this.streaming.complete(
+              `${item.id}:summary:${index}`,
+              'thinking',
+              text,
+              undefined,
+              index > 0 ? '\n\n' : '',
+            );
         }
         break;
       case 'commandExecution':
@@ -833,15 +867,6 @@ class CodexRun {
         break;
     }
     this.items.delete(item.id);
-  }
-
-  private text(type: 'text' | 'thinking', content: string): void {
-    const capped = capText(content);
-    this.emit({
-      type,
-      content: capped.text,
-      ...(capped.truncated ? { meta: { truncated: true } } : {}),
-    });
   }
 
   private toolUse(tool: string, input: unknown, id: string): void {
@@ -957,6 +982,7 @@ class CodexRun {
         content: result.error.message,
         meta: { reason: result.error.reason },
       });
+    this.streaming.flush();
     this.events.close();
     return result;
   }
