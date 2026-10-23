@@ -119,7 +119,7 @@ describe.each(candidates)('$provider native search SDK gate', (candidate) => {
       },
     };
   }
-  async function search(signal: AbortSignal = new AbortController().signal) {
+  async function setup(): Promise<Harness> {
     harness = await createHarness();
     await harness.services.models.services.create({
       title: 'Search',
@@ -127,9 +127,13 @@ describe.each(candidates)('$provider native search SDK gate', (candidate) => {
       apiKey: 'offline-provider-key',
       models: [{ value: candidate.model }],
     });
-    const result = await createModelGateway(
-      harness.services.models.services,
-    ).search({
+    return harness;
+  }
+  async function search(
+    h: Harness,
+    signal: AbortSignal = new AbortController().signal,
+  ) {
+    const result = await createModelGateway(h.services.models.services).search({
       model: { modelService: 'search', model: candidate.model },
       queries: ['NocoBase'],
       sessionId: 'provider-fixture',
@@ -193,7 +197,7 @@ describe.each(candidates)('$provider native search SDK gate', (candidate) => {
   });
 
   it('sends the exact model, native tool and explicit reasoning-off settings with safe evidence', async () => {
-    expect(await search()).toEqual({
+    expect(await search(await setup())).toEqual({
       query: 'NocoBase',
       status: 'success',
       findings: 'Safe finding',
@@ -244,7 +248,7 @@ describe.each(candidates)('$provider native search SDK gate', (candidate) => {
         response.writeHead(200, { 'content-type': 'application/json' });
         response.end(JSON.stringify(responseBody(options)));
       };
-      expect(await search()).toEqual({
+      expect(await search(await setup())).toEqual({
         query: 'NocoBase',
         status: 'failed',
         reason: 'noEvidence',
@@ -255,7 +259,7 @@ describe.each(candidates)('$provider native search SDK gate', (candidate) => {
   it('cancels before dispatch without any provider request', async () => {
     const controller = new AbortController();
     controller.abort(new Error('Cancelled before search'));
-    await expect(search(controller.signal)).rejects.toThrow();
+    await expect(search(await setup(), controller.signal)).rejects.toThrow();
     expect(requests).toHaveLength(0);
   });
   it('sanitizes upstream authentication failures and never retries', async () => {
@@ -271,7 +275,7 @@ describe.each(candidates)('$provider native search SDK gate', (candidate) => {
         }),
       );
     };
-    await expect(search()).rejects.toMatchObject({
+    await expect(search(await setup())).rejects.toMatchObject({
       code: 'auth',
       message: 'Web search model configuration or credentials are unavailable.',
     });
@@ -286,7 +290,7 @@ describe.each(candidates)('$provider native search SDK gate', (candidate) => {
           JSON.stringify({ error: { message: 'Private upstream details' } }),
         );
       };
-      expect(await search()).toEqual({
+      expect(await search(await setup())).toEqual({
         query: 'NocoBase',
         status: 'failed',
         reason: 'unavailable',
@@ -302,14 +306,20 @@ describe.each(candidates)('$provider native search SDK gate', (candidate) => {
       });
     };
     const controller = new AbortController();
-    const pending = search(controller.signal);
-    const rejected = (async () => {
-      await expect(pending).rejects.toThrow();
-    })();
-    await vi.waitFor(() => expect(requests).toHaveLength(1));
-    controller.abort(new Error('Stop hosted search'));
-    await rejected;
-    await vi.waitFor(() => expect(closed).toBe(true));
-    expect(requests).toHaveLength(1);
+    const pending = search(await setup(), controller.signal);
+    // Keep a failed HTTP wait from leaving an unhandled rejection or a live search.
+    void pending.catch(() => {});
+    try {
+      await vi.waitFor(() => expect(requests).toHaveLength(1), {
+        timeout: 10_000,
+      });
+      controller.abort(new Error('Stop hosted search'));
+      await expect(pending).rejects.toThrow('Stop hosted search');
+      await vi.waitFor(() => expect(closed).toBe(true), { timeout: 10_000 });
+      expect(requests).toHaveLength(1);
+    } finally {
+      controller.abort();
+      await Promise.allSettled([pending]);
+    }
   });
 });
