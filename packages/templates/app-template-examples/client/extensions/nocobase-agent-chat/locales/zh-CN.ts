@@ -133,6 +133,29 @@ const agentChatZhCN: AgentChatLocale = {
       usingDefault: '这条对话暂时由 {{name}} 代替 {{own}} 回答。',
       restore: '切回 {{own}}',
     },
+    fileInputFailures: {
+      imageCapability:
+        '所选模型尚未配置图片输入能力，请切换已确认支持图片的模型。',
+      unsupportedFormat:
+        '所选模型尚未配置此格式的文件输入能力，当前也没有适用的文本提取器。请换用支持的文档格式，或已确认支持此类文件的模型。',
+      formatMismatch:
+        '附件的文件名与内容类型不一致，请检查文件格式后重新上传。',
+      invalidInline: '附件数据无效或过大，请重新上传或使用更小的文件。',
+      fileTooLarge: '单个附件大小超出限制，请使用更小的文件。',
+      inputTooLarge: '会话附件总大小超出限制，请缩小文件或新建会话。',
+      documentTooLarge:
+        '附件提取出的文字超出限制，请拆分文档或使用更小的文件。',
+      contextTooLarge: '会话附件的文字总量超出限制，请缩小文件或新建会话。',
+      fileCount: '会话文件输入已超过 100 个，请新建会话。',
+      nativeFileCount:
+        '附件数量超出文件输入限制，请减少附件，或改用可提取文字的文档。',
+      unreadable:
+        '附件中没有可读取的文字。纯图片或扫描文档需要先做 OCR 文字识别。',
+      extractionFailed:
+        '无法提取附件文字，请检查文档是否损坏或受密码保护，然后重新上传。',
+      extractionTimeout: '附件文字提取超时，请使用更小的文件或稍后重试。',
+      preparationFailed: '无法准备附件，请检查文件访问权限和格式后重试。',
+    },
     notice: {
       switchedToDefault:
         '已临时改用系统默认的 {{name}}，等 {{own}} 恢复后可以切回。',

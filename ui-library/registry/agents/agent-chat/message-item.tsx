@@ -196,7 +196,13 @@ export function MessageItem({
         <div key={part.id ?? key} data-chat-part='notice'>
           {card ?? (
             <p className='text-xs text-muted-foreground'>
-              {extensions.newsText?.(part.data, t) ?? part.data.title}
+              {noticeText(
+                t,
+                { ...part.data, code: 'news' },
+                part.data.title,
+                () => '',
+                extensions.newsText,
+              )}
             </p>
           )}
         </div>

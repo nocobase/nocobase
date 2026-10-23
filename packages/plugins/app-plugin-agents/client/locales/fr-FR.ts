@@ -1,4 +1,5 @@
 import type { LocaleResource } from '@nocobase/i18n';
+import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -993,6 +994,9 @@ const frFR: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    // Keep new guidance available in English until this locale is translated.
+    executionFailed: chatEnUS.chat.executionFailed,
+    fileInputFailures: chatEnUS.chat.fileInputFailures,
     untitled: 'Conversation sans titre',
     renamed: 'Renommé',
     archivedNamed: 'Archivé « {{title}} »',

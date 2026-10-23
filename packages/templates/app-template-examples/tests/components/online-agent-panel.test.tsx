@@ -1590,3 +1590,50 @@ it('lists the conversations on the left while covering the content, with the arc
     expect(panelElement).toHaveAttribute('data-mode', 'docked'),
   );
 });
+
+it.each([
+  [
+    'imageCapability',
+    '所选模型尚未配置图片输入能力，请切换已确认支持图片的模型。',
+  ],
+  [
+    'unreadable',
+    '附件中没有可读取的文字。纯图片或扫描文档需要先做 OCR 文字识别。',
+  ],
+  [
+    'documentTooLarge',
+    '附件提取出的文字超出限制，请拆分文档或使用更小的文件。',
+  ],
+  ['__proto__', '无法准备附件，请检查文件访问权限和格式后重试。'],
+  [undefined, '执行失败。再次执行前请查看已保存历史，核对可能已完成的操作。'],
+] as const)(
+  'renders stored failure %s safely in the real Examples panel',
+  async (reason, expected) => {
+    const previous = host.request.getMockImplementation();
+    if (!previous) throw new Error('Missing request fixture.');
+    const failure: AppUIMessage = {
+      ...message,
+      parts: [
+        {
+          type: 'data-notice',
+          id: 'execution-status',
+          data: {
+            type: 'failed',
+            title: reason ? 'private-provider-response' : 'Interrupted',
+            ...(reason ? { params: { fileInputReason: reason } } : {}),
+          },
+        },
+      ],
+    };
+    host.request.mockImplementation(async (input: { path: string }) =>
+      input.path.endsWith('/messages')
+        ? { data: [failure], meta: { lastSeq: 1 } }
+        : previous(input),
+    );
+    await setup('zh-CN');
+    act(() => panel.openChat({ conversationId: 'saved' }));
+    expect(await screen.findByText(expected)).toBeVisible();
+    expect(screen.queryByText('private-provider-response')).toBeNull();
+    expect(screen.queryByText('Interrupted')).toBeNull();
+  },
+);
