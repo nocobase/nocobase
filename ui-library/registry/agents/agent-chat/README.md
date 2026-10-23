@@ -27,6 +27,7 @@ An Agents npm upgrade does not replace source already installed into an applicat
 | `agent-choice.tsx`        | `NewChatChoice`: the agent picker of a conversation not yet started                              |
 | `agent-status.tsx`        | `AvailabilityDot`, `AgentLine`, `AgentNotice`                                                    |
 | `consultation-card.tsx`   | `ConsultationCard`                                                                               |
+| `web-search-card.tsx`     | `WebSearchCard`: safe, expandable native search findings and sources                             |
 | `history-list.tsx`        | `HistoryList`, `ChatHistoryDialog`                                                               |
 | `conversation-page.tsx`   | `ChatConversationPage`                                                                           |
 | `launchers.tsx`           | `ChatHeaderButton`, `ChatFloatingButton`, `AskAgentButton`                                       |
@@ -43,6 +44,18 @@ It installs `markdown-view`, `agent-run-history`, `agent-composer`, `agent-picke
 ## Files
 
 People send files with a message: the composer's attach button, a pasted screenshot, or files dropped anywhere on the conversation. Each uploads at once through the agents plugin (`POST /api/agents/chatAttachments`, at most 20 MB, ten per message) and goes with the message; a message of files alone has no text bubble. The sender sees images as thumbnails that open larger and other files as chips that download, read from the plugin's content route, which only the conversation's owner and its agent's run may read. The plugin needs the file plugin registered on the server to store them. The agent reads the files listed with the message: the agent downloads one into its working directory on the runner with the CLI (`conversation attachment download <file-id>`). Agents do not send files back.
+
+## Native web search
+
+Search is off by default. For a native OnlineAgent chat, explicitly choose an admitted model before enabling **Search the web**. New conversations freeze the preference in the first-create configuration; existing conversations use the idle configuration endpoint. Busy execution, approvals and unresolved configuration writes disable changes. Unsupported explicit enabling is rejected; a switch to an unsupported model clears an inherited enabled flag without changing business configuration. The server owns capability admission; this source does not infer support from a provider name.
+
+The default `webSearch` renderer displays one original SDK tool part, safe text findings and HTTP(S) links. It never executes historical tools, renders provider HTML or exposes private errors. Unfinished historical parts do not spin unless their owning message is actually streaming. Application renderers with the same name override it; inherited renderers and form-proposal cards remain available. Both English and Chinese resources include the new labels.
+
+Alibaba can return a source-free answer marked `unverified`. The card retains its findings, labels search as unverified in English/Chinese and explains that execution, freshness and sources are unconfirmed. It does not show a source list or label such an answer as verified evidence; the original three providers still require search execution and safe sources.
+
+This revision requires the matching Agents feature release with the public `shared/web-search` and `shared/web-search-results` exports. Its declared floor is `^1.0.0-beta.19`; do not deploy the Registry before that feature-bearing package is actually released, and adjust the floor if release sequencing changes. Current local tarball acceptance does not assert that the future npm version exists. See the Agents package's `docs/native-web-search.md` for platform admission and model compatibility, locked SDK evidence, limits, Alibaba's source-free unverified-result policy and the distinction between offline fixtures and paid vendor acceptance.
+
+Merge feature hunks into existing installed copies rather than overwriting application-owned source. In particular preserve conversation actions, input availability, first-create recovery, retry gating, history refresh, pending presentation, custom tool renderers and translations. Default does not preinstall this block; Examples does.
 
 ## Prerequisites
 

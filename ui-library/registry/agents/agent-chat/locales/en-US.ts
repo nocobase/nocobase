@@ -1,6 +1,26 @@
 /** Every key the agent chat looks up, so each locale is checked against the same list. */
 export interface AgentChatLocale {
   readonly chat: {
+    readonly webSearch: {
+      readonly title: string;
+      readonly queryCount: string;
+      readonly expand: string;
+      readonly collapse: string;
+      readonly toggle: string;
+      readonly unsupported: string;
+      readonly searching: string;
+      readonly completed: string;
+      readonly unverified: string;
+      readonly unverifiedNotice: string;
+      readonly partial: string;
+      readonly failed: string;
+      readonly cancelled: string;
+      readonly interrupted: string;
+      readonly timeout: string;
+      readonly unavailable: string;
+      readonly noEvidence: string;
+      readonly sources: string;
+    };
     readonly retrySaving: string;
     readonly cancel: string;
     readonly editMessage: string;
@@ -257,6 +277,27 @@ export interface AgentChatLocale {
 
 const agentChatEnUS: AgentChatLocale = {
   chat: {
+    webSearch: {
+      title: 'Web search',
+      queryCount: 'Queries · {{count}}',
+      expand: 'Expand',
+      collapse: 'Collapse',
+      toggle: 'Search the web',
+      unsupported: 'Select a supported model to enable web search.',
+      searching: 'Searching…',
+      completed: 'Sources retrieved',
+      unverified: 'Search not verified',
+      unverifiedNotice:
+        'The provider returned an answer without search evidence. Search execution, freshness and sources could not be verified.',
+      partial: 'Some searches failed',
+      failed: 'Search unavailable',
+      cancelled: 'Search cancelled',
+      interrupted: 'Search interrupted',
+      timeout: 'Search timed out.',
+      unavailable: 'Search is temporarily unavailable.',
+      noEvidence: 'No verified web evidence was returned.',
+      sources: 'Sources',
+    },
     retrySaving: 'Retry saving',
     cancel: 'Cancel',
     editMessage: 'Edit',

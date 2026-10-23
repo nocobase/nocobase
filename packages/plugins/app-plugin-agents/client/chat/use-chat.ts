@@ -384,6 +384,7 @@ export function useSendMessage({
   agentId,
   source,
   selectedModel,
+  webSearch,
   editorRevision = 0,
   dispatch,
   onCreated,
@@ -393,6 +394,7 @@ export function useSendMessage({
   readonly source: ConversationSource;
   /** Snapshotted for a new, explicitly native conversation only; Runner and continuation ignore it. */
   readonly selectedModel?: ModelRef;
+  readonly webSearch?: boolean;
   /** A fresh blank editor must not share pending/unknown creation admission with its predecessor. */
   readonly editorRevision?: number;
   readonly dispatch: Dispatch<MessagesAction>;
@@ -465,7 +467,10 @@ export function useSendMessage({
           ...(agentId ? { agentId } : {}),
           source,
           ...(!conversationId && agentId === 'online' && selectedModel
-            ? { selectedModel }
+            ? {
+                selectedModel,
+                ...(webSearch === undefined ? {} : { config: { webSearch } }),
+              }
             : {}),
         },
       });
@@ -494,6 +499,7 @@ export function useSendMessage({
       agentId,
       source,
       selectedModel,
+      webSearch,
       editorKey,
       dispatch,
       onCreated,

@@ -45,6 +45,34 @@ beforeEach(() => {
 });
 afterEach(() => agentsQueryClient().clear());
 
+it('updates search and model in one existing configuration mutation without replacing business config', async () => {
+  const saved = snapshot(second);
+  saved.webSearch = true;
+  resetApi({
+    'agents/conversations/c/config': () => saved,
+    'PATCH agents/conversations/c/config': ({ json }) => {
+      expect(json).toEqual({
+        config: { webSearch: true },
+        selectedModel: second,
+      });
+      return saved;
+    },
+  });
+  const { result } = renderHook(() => useConversationModel('c'), { wrapper });
+  await waitFor(() =>
+    expect(result.current.configuration.isSuccess).toBe(true),
+  );
+  await act(async () => {
+    await result.current.select.mutateAsync({
+      selectedModel: second,
+      webSearch: true,
+    });
+  });
+  expect(result.current.configuration.data).toEqual(saved);
+  expect(result.current.configuration.data?.variable).toEqual({
+    project: 'private',
+  });
+});
 it('shares pending changes and the persisted snapshot across two mounted consumers', async () => {
   let saved = snapshot();
   let release!: () => void;

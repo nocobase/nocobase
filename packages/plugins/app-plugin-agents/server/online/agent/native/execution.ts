@@ -1,4 +1,7 @@
 import type { NativeExecutionRequest } from './types.js';
+import { WebSearchBudget } from '../../search/budget.js';
+import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
+import { effectiveTools } from '../configuration.js';
 import type { OnlineAgentSandboxProvider } from '../../sandbox/types.js';
 import { NativeToolExecution } from '../../sandbox/execution.js';
 import { jsonSafe } from '../messages/json.js';
@@ -54,6 +57,7 @@ export class NativeOnlineAgent {
       configurator: OnlineAgentConfigurator;
       sandboxProvider?: OnlineAgentSandboxProvider;
       resolver?: ServiceResolver;
+      webSearch?: OnlineAgentWebSearch;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       onError(error: unknown): void;
       complete(
@@ -158,7 +162,18 @@ export class NativeOnlineAgent {
         !config.model.includes(`${selected.modelService}/${selected.model}`)
       )
         throw invalid('The selected model is outside this configuration.');
+      const changedModel =
+        selected.modelService !== session.model.modelService ||
+        selected.model !== session.model.model;
+      config = structuredClone(config);
+      await validateWebSearch(
+        config,
+        selected,
+        this.deps.webSearch,
+        changedModel && input?.overrides?.webSearch === undefined,
+      );
       model = await this.deps.model(selected, id);
+      const searchBudget = new WebSearchBudget();
       const entryContext: Omit<OnlineAgentToolContext, 'execution'> =
         Object.freeze({
           ...context,
@@ -167,6 +182,8 @@ export class NativeOnlineAgent {
           systemPrompt: config.systemPrompt,
           sessionId: id,
           signal: execution.abort.signal,
+          selectedModel: Object.freeze({ ...selected }),
+          webSearchBudget: searchBudget,
         });
       const toolExecution = new NativeToolExecution(
         executionId,
@@ -185,7 +202,7 @@ export class NativeOnlineAgent {
         execution: toolExecution,
       });
       const prepareTools = async () => {
-        instructions = await toolExecution.instructions(config.tool);
+        instructions = await toolExecution.instructions(effectiveTools(config));
         tools = this.deps.configurator.bind(
           config,
           toolContext,
@@ -208,6 +225,7 @@ export class NativeOnlineAgent {
           approval,
         );
         priorMessage = approved.message;
+        searchBudget.restore(approved.message);
         waitingApprovals = approved.waiting;
         afterSeq = session.lastSeq;
         if (!waitingApprovals) await prepareTools();
@@ -319,7 +337,7 @@ export class NativeOnlineAgent {
     }
     const output = response;
     const publicStream = this.deps.sessions.native.messages.stream(
-      config.tool,
+      effectiveTools(config),
       priorMessage,
     );
     if (waitingApprovals) {

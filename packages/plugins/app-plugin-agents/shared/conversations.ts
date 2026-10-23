@@ -530,6 +530,7 @@ export interface OnlineChatConfigSnapshot {
   /** Missing and empty lists impose no additional model restriction. */
   readonly model?: string[];
   readonly thinking?: string;
+  readonly webSearch?: boolean;
   readonly tool: string[];
   readonly toolVersions: Record<string, string>;
   readonly systemPrompt: string;
@@ -543,6 +544,7 @@ export interface CreateConversationRequest {
     context?: { variable?: OnlineChatJson };
     scope?: string[];
     thinking?: string;
+    webSearch?: boolean;
   };
   readonly selectedModel?: { modelService: string; model: string };
   /** Selects the native `online` executor or a callable Runner agent for a new conversation. */

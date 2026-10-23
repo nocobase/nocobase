@@ -15,7 +15,11 @@ import { useChatApi } from './use-chat.js';
 
 export interface ConversationModel {
   readonly configuration: UseQueryResult<OnlineChatConfigSnapshot>;
-  readonly select: UseMutationResult<OnlineChatConfigSnapshot, Error, ModelRef>;
+  readonly select: UseMutationResult<
+    OnlineChatConfigSnapshot,
+    Error,
+    ModelRef | { selectedModel?: ModelRef; webSearch: boolean }
+  >;
   /** Shared across mounted views of this conversation. */
   readonly changing: boolean;
 }
@@ -51,14 +55,19 @@ export function useConversationModel(
     {
       mutationKey: key,
       retry: false,
-      mutationFn: async (model: ModelRef) => {
+      mutationFn: async (
+        change: ModelRef | { selectedModel?: ModelRef; webSearch: boolean },
+      ) => {
         const active = controller.lifetime();
         if (!id || !active()) throw new CancelledError({ silent: true });
         await client.cancelQueries({ queryKey: key, exact: true });
         if (!active()) throw new CancelledError({ silent: true });
         try {
-          // Empty overrides preserve scopes, tools, thinking and business variables.
-          const result = await api.configure(id, {}, model);
+          const model =
+            'modelService' in change ? change : change.selectedModel;
+          const overrides =
+            'webSearch' in change ? { webSearch: change.webSearch } : {};
+          const result = await api.configure(id, overrides, model);
           if (!active()) return result;
           await client.cancelQueries({ queryKey: key, exact: true });
           if (active()) client.setQueryData(key, result);

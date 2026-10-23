@@ -43,6 +43,15 @@ export type ModelProviderName =
  */
 export type ModelKind = 'chat' | 'embedding' | 'rerank';
 
+export interface ModelCapabilities {
+  readonly webSearch: boolean;
+}
+
+export interface ProviderCapabilitiesDefinition {
+  readonly defaults: ModelCapabilities;
+  readonly models: Readonly<Record<string, Partial<ModelCapabilities>>>;
+}
+
 export const MODEL_KINDS: readonly ModelKind[] = [
   'chat',
   'embedding',
@@ -151,6 +160,8 @@ export function isOpenCodeUrl(baseUrl: string | null | undefined): boolean {
 }
 
 export interface ModelOption {
+  /** Derived by the server; absent on older servers means unsupported. */
+  readonly capabilities?: ModelCapabilities;
   /** The provider's model id. */
   readonly value: string;
   readonly label: string;

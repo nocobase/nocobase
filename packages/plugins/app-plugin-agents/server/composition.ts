@@ -609,6 +609,10 @@ export function createAgents(deps: AgentsDeps): Agents {
     sessions,
     ids,
     resolver: deps.resolver,
+    webSearch: {
+      capabilities: (ref) => modelServices.capabilities(ref),
+      search: (request) => gateway.search(request),
+    },
     model: async (ref, sessionId) =>
       languageModel(
         await modelServices.connectionFor(ref),

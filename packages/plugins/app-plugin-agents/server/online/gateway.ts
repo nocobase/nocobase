@@ -1,3 +1,5 @@
+import { WEB_SEARCH_RETRIEVAL_INSTRUCTIONS } from './search/prompts.js';
+import { WebSearchBudget } from './search/budget.js';
 /**
  * The model gateway online agents' runs call (`ModelGateway`): the catalog of what the enabled model services offer,
  * a short check of one model, and one streaming model call with tools. It also serves the application's model calls
@@ -26,6 +28,7 @@ import {
   LoadAPIKeyError,
   NoSuchModelError,
   RetryError,
+  ToolChoiceViolationError,
   streamText,
   tool,
   type LanguageModel,
@@ -42,12 +45,24 @@ import {
   type ModelKind,
   type ModelRef,
 } from '../../shared/models.js';
+import type {
+  WebSearchItem,
+  WebSearchResult,
+} from '../../shared/web-search.js';
+import { resolveModelCapabilities } from './search/capabilities.js';
+import {
+  searchItem,
+  unverifiedSearchItem,
+  WebSearchInputSchema,
+} from './search/results.js';
+import { WEB_SEARCH_LIMITS } from '../../shared/web-search.js';
 import type { ModelUsageRecorder } from '../core/reports/model-usage.js';
 import {
   embeddingModel,
   languageModel,
   RERANK_METADATA_KEY,
   rerankingModel,
+  createSearchCall,
   type ModelConnection,
 } from './providers.js';
 
@@ -201,6 +216,16 @@ export interface RerankResult {
   readonly ranking: { index: number; score: number }[];
 }
 
+/** Isolated retrieval using the exact model reference selected by the Native execution. */
+export interface WebSearchRequest {
+  readonly model: ModelRef;
+  readonly queries: readonly string[];
+  readonly sessionId: string;
+  readonly signal: AbortSignal;
+  readonly source: 'agents.webSearch';
+  readonly budget?: WebSearchBudget;
+}
+
 /** `ModelGateway.generate`: one short text from a chat model, without tools, for utility work. */
 export interface GenerateRequest {
   readonly model: ModelRef;
@@ -239,6 +264,8 @@ export interface ModelGateway {
   rerank(request: RerankRequest): Promise<RerankResult>;
   /** One short text from a chat model; throws `ModelError`. Recorded as `text` use. */
   generate(request: GenerateRequest): Promise<{ text: string }>;
+  /** Native retrieval evidence only; never creates an Agent or writes a message. */
+  search(request: WebSearchRequest): Promise<WebSearchResult>;
 }
 
 /** A service's connection and what it says of one of its models. */
@@ -764,6 +791,141 @@ export function createModelGateway(
     }
   }
 
+  async function search(request: WebSearchRequest): Promise<WebSearchResult> {
+    const { signal } = request;
+    signal.throwIfAborted();
+    const { queries } = WebSearchInputSchema.parse({
+      queries: request.queries,
+    });
+    const connection = await source.connectionFor(request.model, 'chat');
+    signal.throwIfAborted();
+    if (!resolveModelCapabilities(connection, request.model.model).webSearch)
+      throw new ModelError(
+        'config',
+        'Web search is unavailable for the selected model or endpoint.',
+      );
+    const budget = request.budget ?? new WebSearchBudget();
+    const deadline = new AbortController();
+    const failed = new AbortController();
+    const timer = setTimeout(
+      () => deadline.abort(),
+      WEB_SEARCH_LIMITS.totalTimeoutMs,
+    );
+    const group = AbortSignal.any([signal, deadline.signal, failed.signal]);
+    const results: WebSearchItem[] = queries.map((query) => ({
+      query,
+      status: 'failed',
+      reason: 'unavailable',
+    }));
+    let next = 0;
+    let hasFailure = false;
+    let failure: unknown;
+    const worker = async (): Promise<void> => {
+      try {
+        while (next < queries.length) {
+          group.throwIfAborted();
+          const index = next++;
+          const query = queries[index];
+          if (query === undefined) return;
+          results[index] = await budget.run(group, async () => {
+            group.throwIfAborted();
+            const timeout = new AbortController();
+            const queryTimer = setTimeout(
+              () => timeout.abort(),
+              WEB_SEARCH_LIMITS.queryTimeoutMs,
+            );
+            const querySignal = AbortSignal.any([group, timeout.signal]);
+            try {
+              const { evidence: evidenceOf, ...call } = createSearchCall(
+                connection,
+                request.model.model,
+                request.sessionId,
+              );
+              const result = await generateText({
+                ...call,
+                instructions: WEB_SEARCH_RETRIEVAL_INSTRUCTIONS,
+                prompt: query,
+                maxRetries: 0,
+                abortSignal: querySignal,
+              });
+              const usage = usageOf(result.totalUsage);
+              await record({
+                purpose: 'text',
+                source: 'agents.webSearch',
+                modelService: request.model.modelService,
+                model: request.model.model,
+                inputTokens:
+                  usage.inputTokens +
+                  (usage.cacheReadTokens ?? 0) +
+                  (usage.cacheWriteTokens ?? 0),
+                outputTokens: usage.outputTokens,
+                units: 1,
+              });
+              querySignal.throwIfAborted();
+              if (connection.provider === 'alibaba')
+                return unverifiedSearchItem(query, result.text);
+              const evidence = evidenceOf(result.response.body);
+              return searchItem(
+                query,
+                result.text,
+                [
+                  ...result.sources.flatMap((item) =>
+                    item.sourceType === 'url'
+                      ? [{ title: item.title, url: item.url }]
+                      : [],
+                  ),
+                  ...evidence.sources,
+                ],
+                evidence.executed,
+              );
+            } catch (error) {
+              group.throwIfAborted();
+              if (ToolChoiceViolationError.isInstance(error))
+                return { query, status: 'failed', reason: 'noEvidence' };
+              const classified = classify(error, querySignal);
+              if (classified.code === 'auth' || classified.code === 'config')
+                throw new ModelError(
+                  classified.code,
+                  'Web search model configuration or credentials are unavailable.',
+                );
+              return {
+                query,
+                status: 'failed',
+                reason: timeout.signal.aborted ? 'timeout' : 'unavailable',
+              };
+            } finally {
+              clearTimeout(queryTimer);
+            }
+          });
+        }
+      } catch (error) {
+        if (!hasFailure) {
+          hasFailure = true;
+          failure = error;
+          failed.abort(error);
+        }
+      }
+    };
+    try {
+      await Promise.all(
+        Array.from(
+          { length: Math.min(WEB_SEARCH_LIMITS.concurrency, queries.length) },
+          worker,
+        ),
+      );
+      signal.throwIfAborted();
+      if (deadline.signal.aborted)
+        throw new ModelError(
+          'network',
+          'Web search exceeded its total deadline.',
+        );
+      if (hasFailure) throw failure;
+      return { results };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async function generate(request: GenerateRequest): Promise<{ text: string }> {
     const { signal } = request;
     const connection = await source.connectionFor(request.model, 'chat');
@@ -802,6 +964,7 @@ export function createModelGateway(
     embed,
     rerank,
     generate,
+    search,
     async check(ref) {
       try {
         return answered(
