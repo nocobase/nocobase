@@ -34,7 +34,7 @@
       "name": "agent-composer-demo",
       "type": "registry:example",
       "title": "Agent Composer Demo",
-      "description": "Usage example of @nocobase/agent-composer. The side-panel box carrying page context as removable chips, the full-page box sending after a short wait, files added from the paperclip, a paste or a drop and uploaded before sending, and a switch that turns the empty box's send button into Stop while the agent works.",
+      "description": "Usage example of @nocobase/agent-composer. The side-panel box carrying page context as removable chips that open a preview of what they carry, the full-page box sending after a short wait, files added from the paperclip, a paste or a drop and uploaded before sending, and a switch that turns the empty box's send button into Stop while the agent works.",
       "categories": ["agents"],
       "dependencies": ["@nocobase/app-plugin-agents@^0.1.0-beta.0"],
       "registryDependencies": ["label", "switch", "@nocobase/agent-composer"],
@@ -66,7 +66,7 @@
       "name": "agent-chat-demo",
       "type": "registry:example",
       "title": "Agent Chat Demo",
-      "description": "Usage example of @nocobase/agent-chat. An application shell wired the way the block expects: ChatProvider around the routes, the header button, the panel beside <main> in a relative flex row, the floating button, a page that registers its issue as context with an Ask agent button, and a full-page conversation route.",
+      "description": "Usage example of @nocobase/agent-chat. An application shell wired the way the block expects: ChatProvider around the routes (with memoryScope, so a new conversation starts with the agent used last), the header button, a panel that switches between the online agent and runner agents, the panel beside <main> in a relative flex row, the floating button, a page that registers its issue as context with an Ask agent button, and a full-page conversation route.",
       "categories": ["agents"],
       "dependencies": [
         "@nocobase/app-plugin-agents@^0.1.0-beta.0",

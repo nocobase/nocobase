@@ -1,9 +1,10 @@
 /**
- * The panel's header: the conversation's title (click to rename; Enter saves, Escape cancels), then new conversation,
- * history, full screen (the application's page of the conversation when it has one, else full width) or back, a menu
- * (archive) and close; under it, once the conversation exists, its agent with its availability and mode (Online or
- * Runner), read-only. A conversation stays with its agent and its mode: a new conversation chooses its agent in the
- * composer (`NewChatChoice`), and another agent means a new conversation.
+ * The panel's header: the conversation's title (click to rename; Enter saves, Escape cancels), then a new conversation
+ * ("+"), the history, the switch between online and runner agents (when both are configured), full width or back, a
+ * menu (open full page, archive) and close. While the panel covers the content, "+" and the history move to the
+ * conversation list on the left (`PanelHistoryHeader`). Under the title, once the conversation exists, its agent with
+ * its availability and mode, read-only. A conversation stays with its agent and its mode: a new conversation chooses
+ * its agent in the composer (`NewChatChoice`), and another agent means a new conversation.
  */
 import {
   useChatPanel,
@@ -13,14 +14,17 @@ import {
 import {
   CONVERSATION_TITLE_MAX,
   type ConversationDetail,
+  type ConversationMode,
 } from '@nocobase/app-plugin-agents/shared/conversations';
 import {
   ArchiveIcon,
+  ArrowLeftRightIcon,
   HistoryIcon,
   Maximize2Icon,
   Minimize2Icon,
   MoreHorizontalIcon,
-  SquarePenIcon,
+  PlusIcon,
+  SquareArrowOutUpRightIcon,
   XIcon,
 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
@@ -38,8 +42,81 @@ import { cn } from 'cn';
 
 import { AgentLine } from './agent-status.js';
 import { useChatTranslation } from './chat-i18n.js';
+import { useChatMode, type ChatMode } from './chat-mode.js';
 
-const TOUCH = "size-9 [&_svg:not([class*='size-'])]:size-4.5";
+const TOUCH = "size-9 shrink-0 [&_svg:not([class*='size-'])]:size-4";
+
+/** What the panel calls a mode, or `fallback` while only one is configured. */
+function modeTitle(
+  t: ReturnType<typeof useChatTranslation>['t'],
+  chat: ChatMode,
+  fallback: string,
+): string {
+  return chat.switchable && chat.mode ? t(`chat.modes.${chat.mode}`) : fallback;
+}
+
+/** "+": a new conversation in the current mode; a neutral icon button like the header's others. */
+export function NewConversationButton(): ReactElement {
+  const { t } = useChatTranslation();
+  const chat = useChatMode();
+  return (
+    <Button
+      variant='ghost'
+      size='icon-sm'
+      className={TOUCH}
+      aria-label={t('chat.newConversation')}
+      title={t('chat.newConversation')}
+      onClick={chat.startNew}
+      data-testid='chat-new-conversation'
+    >
+      <PlusIcon />
+    </Button>
+  );
+}
+
+/** The switch to the other mode; nothing while only one is configured. */
+export function ModeSwitchButton(): ReactElement | null {
+  const { t } = useChatTranslation();
+  const chat = useChatMode();
+  const other: ConversationMode | null = chat.other;
+  if (!other) return null;
+  const label = t(
+    other === 'online'
+      ? 'chat.modes.switchToOnline'
+      : 'chat.modes.switchToRunner',
+  );
+  return (
+    <Button
+      variant='ghost'
+      size='icon-sm'
+      className={TOUCH}
+      aria-label={label}
+      title={label}
+      onClick={() => chat.switchTo(other)}
+      data-testid='chat-mode-switch'
+      data-mode={chat.mode ?? undefined}
+    >
+      <ArrowLeftRightIcon />
+    </Button>
+  );
+}
+
+/** The conversation list's own header while the panel covers the content: the mode's name, then "+". */
+export function PanelHistoryHeader(): ReactElement {
+  const { t } = useChatTranslation();
+  const chat = useChatMode();
+  return (
+    <div
+      className='flex min-h-12 shrink-0 items-center gap-2 border-b px-3.5 py-1.5'
+      data-testid='chat-history-header'
+    >
+      <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
+        {modeTitle(t, chat, t('chat.history.title'))}
+      </h2>
+      <NewConversationButton />
+    </div>
+  );
+}
 
 export function PanelHeader({
   compact,
@@ -49,73 +126,61 @@ export function PanelHeader({
 }): ReactElement {
   const { t } = useChatTranslation();
   const panel = useChatPanel();
-  const history = panel.view === 'history';
+  const chat = useChatMode();
+  const expanded = panel.mode === 'expanded';
+  // While the panel covers the content the list stays on the left, so the header is the conversation's alone.
+  const split = expanded && !compact;
+  const history = !split && panel.view === 'history';
   const detail = useConversation(panel.conversationId);
   const conversation = detail.data ?? null;
   const actions = useConversationActions();
-  const expanded = panel.mode === 'expanded';
   const menuTarget = history ? null : conversation;
-  const pageTarget = panel.openPage && !expanded ? menuTarget : null;
+  const pageTarget = panel.openPage ? menuTarget : null;
   const shownTitle = history
-    ? t('chat.history.title')
+    ? modeTitle(t, chat, t('chat.history.title'))
     : conversation
       ? conversation.title?.trim() || t('chat.untitled')
-      : t('chat.newConversation');
+      : split
+        ? t('chat.newConversation')
+        : modeTitle(t, chat, t('chat.newConversation'));
 
   return (
-    <header className='flex shrink-0 flex-col gap-1 border-b px-3 py-2'>
+    <header className='flex min-h-12 shrink-0 flex-col justify-center gap-1 border-b px-3 py-1.5'>
       <div className='flex min-w-0 items-center gap-0.5'>
         <ConversationTitle
           conversation={history ? null : conversation}
           shown={shownTitle}
         />
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          className={TOUCH}
-          aria-label={t('chat.newConversation')}
-          title={t('chat.newConversation')}
-          onClick={() => {
-            panel.selectConversation(null);
-            panel.focusComposer();
-          }}
-        >
-          <SquarePenIcon />
-        </Button>
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          className={TOUCH}
-          aria-label={t('chat.history.title')}
-          title={t('chat.history.title')}
-          aria-pressed={history}
-          onClick={() => panel.setView(history ? 'chat' : 'history')}
-          data-testid='chat-history-button'
-        >
-          <HistoryIcon />
-        </Button>
-        {compact ? null : pageTarget ? (
-          // The application shows a conversation as a page of its own: "full screen" goes there.
-          <Button
-            variant='ghost'
-            size='icon-sm'
-            className={TOUCH}
-            aria-label={t('chat.openPage')}
-            title={t('chat.openPage')}
-            onClick={() => panel.openPage?.(pageTarget.id)}
-            data-testid='chat-open-page'
-          >
-            <Maximize2Icon />
-          </Button>
-        ) : (
-          // Without a page to go to (a new conversation, the history, or no page at all), the panel covers the content.
+        {split ? null : (
+          <>
+            <NewConversationButton />
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              className={TOUCH}
+              aria-label={t('chat.history.title')}
+              title={t('chat.history.title')}
+              aria-pressed={history}
+              onClick={() => panel.setView(history ? 'chat' : 'history')}
+              data-testid='chat-history-button'
+            >
+              <HistoryIcon />
+            </Button>
+          </>
+        )}
+        <ModeSwitchButton />
+        {compact ? null : (
           <Button
             variant='ghost'
             size='icon-sm'
             className={TOUCH}
             aria-label={expanded ? t('chat.restoreSize') : t('chat.expand')}
             title={expanded ? t('chat.restoreSize') : t('chat.expand')}
-            onClick={() => panel.setMode(expanded ? 'docked' : 'expanded')}
+            onClick={() => {
+              panel.setView('chat');
+              panel.setMode(expanded ? 'docked' : 'expanded');
+              panel.focusComposer();
+            }}
             data-testid='chat-expand'
           >
             {expanded ? <Minimize2Icon /> : <Maximize2Icon />}
@@ -138,6 +203,15 @@ export function PanelHeader({
           </DropdownMenuTrigger>
           <DropdownMenuContent align='end' className='w-auto min-w-40'>
             <DropdownMenuGroup>
+              {pageTarget ? (
+                <DropdownMenuItem
+                  onClick={() => panel.openPage?.(pageTarget.id)}
+                  data-testid='chat-open-page'
+                >
+                  <SquareArrowOutUpRightIcon />
+                  {t('chat.openPage')}
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem
                 onClick={() => {
                   if (!menuTarget) return;

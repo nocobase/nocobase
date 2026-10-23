@@ -30,14 +30,14 @@ An agent's runs on one subject: a compact side-column log with a live timer, an 
 
 ### agent-composer
 
-The message box for talking to an agent: page-context chips inside it, files to send (attach, paste, drop, uploaded before sending), Enter to send, Stop while the agent works, and a toolbar slot for a picker such as the agent's. Use it wherever a person writes to an agent. Presentational: context chips, drafts and focus come from the agents plugin's chat hooks (@nocobase/app-plugin-agents/client/chat) through optional props.
+The message box for talking to an agent: page-context chips inside it (each can open a preview of what it carries), files to send (attach, paste, drop, uploaded before sending), Enter to send, Stop while the agent works, and a toolbar slot for a picker such as the agent's. Use it wherever a person writes to an agent. Presentational: context chips, drafts and focus come from the agents plugin's chat hooks (@nocobase/app-plugin-agents/client/chat) through optional props.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-composer`
 - Installs to: `client/components/agent-composer.tsx`
 - Plugin dependencies: `@nocobase/app-plugin-agents`
 - Example: `@nocobase/agent-composer-demo` (`pnpm exec shadcn view @nocobase/agent-composer-demo`)
-- After installing: Pass onSend (return true, or a promise of true, once the message is taken), and optionally running, onStop, toolbar and notice; pass attachments (upload, and optionally discard and registerAdd; useChatAttachments of @nocobase/app-plugin-agents/client/chat uploads to the plugin) to send files; wire context (chips from contextChips and buildPageContext of @nocobase/app-plugin-agents/client/chat), draft and registerFocus from the chat panel when it sits in one. Every word comes from the labels prop, English by default.
+- After installing: Pass onSend (return true, or a promise of true, once the message is taken), and optionally running, onStop, toolbar and notice; pass attachments (upload, and optionally discard and registerAdd; useChatAttachments of @nocobase/app-plugin-agents/client/chat uploads to the plugin) to send files; wire context (chips from contextChips and buildPageContext of @nocobase/app-plugin-agents/client/chat, and optionally inspect, which makes each chip open a preview of what it carries), draft and registerFocus from the chat panel when it sits in one. Every word comes from the labels prop, English by default.
 
 ### agent-picker
 
@@ -52,7 +52,7 @@ The one way to pick an agent: a trigger with the agent's avatar (availability do
 
 ### agent-chat
 
-The agents' chat: a side panel beside the content area with the conversation, live steps, a composer with page-context chips and files to send (attach, paste, drop), the agent picker, the history, a full-page conversation view, and header, floating and Ask agent launchers. Use it to let people talk to agents from any page. Wired to the headless hooks of @nocobase/app-plugin-agents/client/chat.
+The agents' chat: a side panel beside the content area, switching between the online agent and runner agents when both are configured, with the conversation, live steps, a composer with page-context chips and files to send (attach, paste, drop), the agent picker, the history, a full-page conversation view, and header, floating and Ask agent launchers. Use it to let people talk to agents from any page. Wired to the headless hooks of @nocobase/app-plugin-agents/client/chat.
 
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat`
@@ -60,7 +60,7 @@ The agents' chat: a side panel beside the content area with the conversation, li
 - Plugin dependencies: `@nocobase/app-plugin-agents`
 - Also installs: `@nocobase/markdown-view`, `@nocobase/agent-run-history`, `@nocobase/agent-composer`, `@nocobase/agent-picker`, `@nocobase/attachment-list`
 - Example: `@nocobase/agent-chat-demo` (`pnpm exec shadcn view @nocobase/agent-chat-demo`)
-- After installing: Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
+- After installing: Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass memoryScope, the signed-in person's id, so a new conversation starts with the agent they used last; pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
 
 ## Approval
 
