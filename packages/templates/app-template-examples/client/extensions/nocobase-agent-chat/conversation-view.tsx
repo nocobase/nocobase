@@ -25,7 +25,7 @@ import {
 } from '@nocobase/app-plugin-agents/client/chat';
 import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
 import type { ModelRef } from '@nocobase/app-plugin-agents/shared/models';
-import { BotMessageSquareIcon, PaperclipIcon } from 'lucide-react';
+import { BotMessageSquareIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
 import {
   useCallback,
   useContext,
@@ -216,6 +216,7 @@ function ConversationBody({
     panel.open,
   );
   const [chosenModel, setChosenModel] = useState<ModelRef | null>(null);
+  const [chosenSearch, setChosenSearch] = useState(false);
   const modelChangeBlocked =
     changingModel ||
     (nativeConversation &&
@@ -327,6 +328,19 @@ function ConversationBody({
         ),
     ),
   );
+  const searchModel = nativeConversation
+    ? configuration.data?.selectedModel
+    : model;
+  const searchSupported = Boolean(
+    searchModel &&
+    catalog.data
+      ?.find((service) => service.name === searchModel.modelService)
+      ?.models.find((item) => item.value === searchModel.model)?.capabilities
+      ?.webSearch,
+  );
+  const searchEnabled = nativeConversation
+    ? configuration.data?.webSearch === true
+    : chosenSearch && searchSupported;
   const nativeReady =
     catalog.isSuccess &&
     !catalog.isFetching &&
@@ -365,6 +379,8 @@ function ConversationBody({
     dispatch: messages.dispatch,
     onCreated: created,
     ...(target?.id === 'online' && model ? { selectedModel: model } : {}),
+    webSearch:
+      target?.id === 'online' && searchSupported ? searchEnabled : undefined,
   });
 
   // Viewed: tell the server the agent's latest replies were read.
@@ -914,13 +930,25 @@ function ConversationBody({
           }}
           registerAddFiles={registerAddFiles}
           toolbar={
-            conversation ? (
-              nativeConversation ? (
-                <ConversationModelChoice
-                  services={catalog.data ?? []}
-                  model={configuration.data?.selectedModel ?? null}
-                  allowedModels={configuration.data?.model}
+            <div className='flex min-w-0 flex-wrap items-center gap-1'>
+              {nativeConversation || target?.id === 'online' ? (
+                <Button
+                  type='button'
+                  size='icon-sm'
+                  className={cn(
+                    'shrink-0 rounded-full',
+                    !searchEnabled && 'text-muted-foreground',
+                  )}
+                  aria-label={t('chat.webSearch.toggle')}
+                  variant={searchEnabled ? 'secondary' : 'ghost'}
+                  aria-pressed={searchEnabled}
+                  title={
+                    searchSupported
+                      ? t('chat.webSearch.toggle')
+                      : t('chat.webSearch.unsupported')
+                  }
                   disabled={
+                    !searchSupported ||
                     running ||
                     resend.isPending ||
                     stopping ||
@@ -932,40 +960,73 @@ function ConversationBody({
                       `registry:${source}:${conversationId ?? 'new'}`,
                     )
                   }
+                  onClick={() => {
+                    if (nativeConversation)
+                      selectModel.mutate({ webSearch: !searchEnabled });
+                    else setChosenSearch(!searchEnabled);
+                  }}
+                  data-testid='chat-web-search-toggle'
+                >
+                  <GlobeIcon aria-hidden='true' />
+                </Button>
+              ) : null}
+              {conversation ? (
+                nativeConversation ? (
+                  <ConversationModelChoice
+                    services={catalog.data ?? []}
+                    model={configuration.data?.selectedModel ?? null}
+                    allowedModels={configuration.data?.model}
+                    disabled={
+                      running ||
+                      resend.isPending ||
+                      stopping ||
+                      modelChangeBlocked ||
+                      catalog.isFetching ||
+                      !catalog.isSuccess ||
+                      chatController.submissions.blocked(
+                        conversationId,
+                        `registry:${source}:${conversationId ?? 'new'}`,
+                      )
+                    }
+                    onModelChange={(selected) => {
+                      const current = configuration.data?.selectedModel;
+                      if (
+                        current?.modelService === selected.modelService &&
+                        current.model === selected.model
+                      )
+                        return;
+                      selectModel.mutate(selected);
+                    }}
+                  />
+                ) : null
+              ) : (
+                // Before the first message: who the conversation goes to.
+                <NewChatChoice
+                  agents={agents.data ?? []}
+                  agent={target}
+                  services={catalog.data ?? []}
+                  model={model}
+                  modelsDisabled={
+                    catalog.isFetching || !catalog.isSuccess || !hasChatModels
+                  }
                   onModelChange={(selected) => {
-                    const current = configuration.data?.selectedModel;
-                    if (
-                      current?.modelService === selected.modelService &&
-                      current.model === selected.model
-                    )
-                      return;
-                    selectModel.mutate(selected);
+                    setChosenSearch(false);
+                    setChosenModel(selected);
+                    selectConversation(null, 'online', {
+                      preserveComposer: true,
+                    });
+                    focusComposer();
+                  }}
+                  onAgentChange={(agentId) => {
+                    setChosenSearch(false);
+                    selectConversation(null, agentId, {
+                      preserveComposer: true,
+                    });
+                    focusComposer();
                   }}
                 />
-              ) : null
-            ) : (
-              // Before the first message: who the conversation goes to.
-              <NewChatChoice
-                agents={agents.data ?? []}
-                agent={target}
-                services={catalog.data ?? []}
-                model={model}
-                modelsDisabled={
-                  catalog.isFetching || !catalog.isSuccess || !hasChatModels
-                }
-                onModelChange={(selected) => {
-                  setChosenModel(selected);
-                  selectConversation(null, 'online', {
-                    preserveComposer: true,
-                  });
-                  focusComposer();
-                }}
-                onAgentChange={(agentId) => {
-                  selectConversation(null, agentId, { preserveComposer: true });
-                  focusComposer();
-                }}
-              />
-            )
+              )}
+            </div>
           }
           notice={
             conversation ? (

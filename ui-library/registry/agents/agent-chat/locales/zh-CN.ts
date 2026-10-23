@@ -2,6 +2,27 @@ import type { AgentChatLocale } from './en-US.js';
 
 const agentChatZhCN: AgentChatLocale = {
   chat: {
+    webSearch: {
+      title: '联网搜索',
+      queryCount: '{{count}} 个搜索词',
+      expand: '展开',
+      collapse: '收起',
+      toggle: '联网搜索',
+      unsupported: '请选择支持联网搜索的模型。',
+      searching: '正在搜索…',
+      completed: '已获取来源',
+      unverified: '搜索未经核验',
+      unverifiedNotice:
+        '服务返回了回答，但未提供搜索证据；无法核验是否实际联网搜索、信息时效或来源。',
+      partial: '部分搜索失败',
+      failed: '搜索不可用',
+      cancelled: '搜索已取消',
+      interrupted: '搜索已中断',
+      timeout: '搜索超时。',
+      unavailable: '搜索暂时不可用。',
+      noEvidence: '未返回可验证的网络证据。',
+      sources: '来源',
+    },
     retrySaving: '重试保存',
     cancel: '取消',
     editMessage: '编辑',
