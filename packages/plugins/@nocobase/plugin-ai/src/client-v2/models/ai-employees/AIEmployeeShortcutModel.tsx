@@ -8,6 +8,7 @@
  */
 
 import React, { useEffect, useMemo } from 'react';
+import { RobotOutlined } from '@ant-design/icons';
 import { Avatar, Card, Radio, Select, Space, Spin, Switch, Tag, Tooltip, Typography, theme } from 'antd';
 import type { RadioGroupProps } from 'antd';
 import { FlowModel, observer, useFlowSettingsContext } from '@nocobase/flow-engine';
@@ -89,10 +90,23 @@ export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
     // re-enter `renderHiddenInConfig` and recurse infinitely until the page freezes.
     const { aiEmployee, style } = this.props;
     const size = style?.size ?? 40;
+    const aiConfigRepository = this.flowEngine?.context?.aiConfigRepository as
+      | { aiEmployees?: AIEmployee[] }
+      | undefined;
+    const resolvedAIEmployee = aiConfigRepository?.aiEmployees?.find(
+      (employee) => employee.username === aiEmployee?.username,
+    );
+    const avatar = resolvedAIEmployee?.avatar ?? aiEmployee?.avatar;
+
     return (
       <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
         <div style={{ display: 'inline-flex', opacity: 0.3 }}>
-          <Avatar shape="circle" size={size} src={aiEmployee?.avatar ? avatars(aiEmployee.avatar) : undefined} />
+          <Avatar
+            shape="circle"
+            size={size}
+            src={avatar ? avatars(avatar) : undefined}
+            icon={!avatar ? <RobotOutlined /> : undefined}
+          />
         </div>
       </Tooltip>
     );
