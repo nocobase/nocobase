@@ -292,7 +292,7 @@ describe('ChatPanel', () => {
   });
 
   it('opens the history, filters archived conversations, and opens one', async () => {
-    renderPanel('release-plan');
+    renderPanel('welcome-tour');
     fireEvent.click(await screen.findByTestId('chat-history-button'));
     const history = await screen.findByTestId('chat-history');
     expect(
@@ -391,7 +391,10 @@ describe('ChatPanel modes and layout', () => {
       within(runner).getByText('Fix the flaky sign-in test'),
     ).toBeVisible();
     expect(
-      within(runner).queryByText('Name the onboarding checklist'),
+      within(runner).getByText('Summarize PM-12 Welcome tour'),
+    ).toBeVisible();
+    expect(
+      within(runner).queryByText('Plan the onboarding release'),
     ).toBeNull();
 
     fireEvent.click(toggle);
@@ -401,7 +404,7 @@ describe('ChatPanel modes and layout', () => {
       'Online agent',
     );
     expect(
-      within(online).getByText('Name the onboarding checklist'),
+      within(online).getByText('Plan the onboarding release'),
     ).toBeVisible();
     expect(within(online).queryByText('Fix the flaky sign-in test')).toBeNull();
     // One online agent: nothing to filter by.
@@ -456,7 +459,7 @@ describe('ChatPanel modes and layout', () => {
         </button>
       );
     }
-    renderPanel('release-plan', <Elsewhere />);
+    renderPanel('welcome-tour', <Elsewhere />);
     const panel = await screen.findByTestId('chat-panel');
     // Docked: "+" first among the header's buttons, and the history behind its own button.
     const newButton = await within(panel).findByTestId('chat-new-conversation');
@@ -491,7 +494,7 @@ describe('ChatPanel modes and layout', () => {
     expect(within(split).getByText('Fix the flaky sign-in test')).toBeVisible();
     expect(
       within(split).getByRole('heading', {
-        name: 'Plan the onboarding release',
+        name: 'Summarize PM-12 Welcome tour',
       }),
     ).toBeVisible();
     expect(within(panel).queryByTestId('chat-history-button')).toBeNull();
