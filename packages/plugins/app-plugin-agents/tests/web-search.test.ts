@@ -1,3 +1,4 @@
+import { fixtureModel } from './helpers/native-files.js';
 import {
   WEB_SEARCH_RETRIEVAL_INSTRUCTIONS,
   WEB_SEARCH_TOOL_DESCRIPTION,
@@ -477,7 +478,9 @@ describe('OpenAI native web search SDK gate', () => {
         }),
       }),
     });
-    vi.spyOn(providers, 'languageModel').mockReturnValue(main);
+    vi.spyOn(providers, 'languageModel').mockImplementation(() =>
+      fixtureModel(main),
+    );
     const agent = await h.services.onlineAgent.realtime(actor, {
       webSearch: true,
       selectedModel: { modelService: 'search', model: 'gpt-5.4' },
@@ -606,7 +609,9 @@ describe('OpenAI native web search SDK gate', () => {
           };
         },
       });
-      vi.spyOn(providers, 'languageModel').mockReturnValue(main);
+      vi.spyOn(providers, 'languageModel').mockImplementation(() =>
+        fixtureModel(main),
+      );
       const agent = await online.realtime(actor, {
         webSearch: true,
         tool: ['confirmSearch'],
@@ -779,7 +784,7 @@ describe('OpenAI native web search SDK gate', () => {
         .spyOn(providers, 'languageModel')
         .mockImplementation((_connection, model) => {
           expect(model).toBe('gpt-5.4');
-          return main;
+          return fixtureModel(main);
         });
       const online = h.services.onlineAgent;
       const agent = await online.realtime(actor, {

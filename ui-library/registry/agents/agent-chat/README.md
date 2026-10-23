@@ -12,6 +12,8 @@ Nonempty SDK reasoning renders in order through `ReasoningPart`, using the same 
 
 An Agents npm upgrade does not replace source already installed into an application's extensions directory. Update that application's Registry files (including `reasoning-part.tsx`), locale keys and `hasOutput`/part rendering together, preserving its own readiness, recovery and business extensions.
 
+File preparation failures use the plugin's `noticeText` formatter for both ordered data notices and historical notices. The existing `params.fileInputReason` carries only an allowlisted reason, never a raw Provider/parser error or document text. Keep the block's English and Chinese failure wording aligned when updating installed source. Historical `Interrupted` notices without a reason remain generic; do not reclassify them using the currently selected model.
+
 | File                      | Exports                                                                                               |
 | ------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `chat-panel.tsx`          | `ChatPanel`                                                                                           |

@@ -52,19 +52,7 @@ export type KnowledgeParseStatus =
   'parsing' | 'ready' | 'failed' | 'unsupported';
 
 /** The extensions whose text is extracted; anything else (images included) is stored only, `unsupported`. */
-export const KNOWLEDGE_PARSED_EXTENSIONS: readonly string[] = [
-  'pdf',
-  'docx',
-  'doc',
-  'xlsx',
-  'xls',
-  'xlsm',
-  'pptx',
-  'txt',
-  'md',
-  'json',
-  'csv',
-];
+export { SUPPORTED_DOCUMENT_EXTENSIONS as KNOWLEDGE_PARSED_EXTENSIONS } from '@nocobase/document-extractor/formats';
 
 /** A stored file as the API shows it: read its bytes at `contentUrl`, or `downloadUrl` to save them. */
 export interface KnowledgeFileInfo {

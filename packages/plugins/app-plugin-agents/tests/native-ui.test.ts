@@ -1,8 +1,13 @@
+import {
+  fixtureFileInputs,
+  projectNativeHistory,
+} from './helpers/native-files.js';
 import { measureUIReadCost, measureUIOperationCost } from './ui-read-cost.js';
 import { createServer, connect, type Socket } from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { Redis } from 'ioredis';
 import { OnlineAgentUIStreams } from '../server/online/agent/transport/streams.js';
+import type { ModelRef } from '../shared/models.js';
 import type {
   OnlineAgentRecoveryConfig,
   OnlineAgentContext,
@@ -117,15 +122,17 @@ async function fixture(
     },
   });
   const ids = { next: () => `native-${++counter}` };
+  const fileInputs = fixtureFileInputs(model, h.services.chatAttachments);
   const sessions = createSessionManager({
     tx: h.services.tx,
     ids,
     attachments: attachments.links,
-    files: h.services.chatAttachments,
     measure: (phase, durationMs) => measurements.push({ phase, durationMs }),
     now: () => new Date().toISOString(),
   });
-  const resolveModel = vi.fn(async () => model);
+  const resolveModel = vi.fn((ref: ModelRef, id: string) =>
+    fileInputs.model(ref, id),
+  );
   const create = () => {
     const service = new OnlineAgentService({
       sessions,
@@ -137,6 +144,7 @@ async function fixture(
         onError: () => {},
       }),
       ids,
+      fileInputs,
       model: resolveModel,
       defaultModel: async () => ref,
       onError: () => {},
@@ -671,7 +679,9 @@ describe('native SDK transport, persistence and approval', () => {
     expect(JSON.stringify(await f.agent.history())).not.toContain(
       'private-signature',
     );
-    const trusted = await f.sessions.native.executionHistory(
+    const trusted = await projectNativeHistory(
+      f.sessions.native,
+      h.services.chatAttachments,
       'alice',
       f.agent.sessionId,
       undefined,
@@ -803,7 +813,9 @@ describe('native SDK transport, persistence and approval', () => {
       type: 'text',
       content: 'Public answer',
     });
-    const trusted = await f.sessions.native.executionHistory(
+    const trusted = await projectNativeHistory(
+      f.sessions.native,
+      h.services.chatAttachments,
       'alice',
       f.agent.sessionId,
       undefined,
@@ -825,7 +837,9 @@ describe('native SDK transport, persistence and approval', () => {
     });
     expect(await repo.findOne({ filter: { id: message.id } })).toEqual(stored);
     expect(
-      await f.sessions.native.executionHistory(
+      await projectNativeHistory(
+        f.sessions.native,
+        h.services.chatAttachments,
         'alice',
         f.agent.sessionId,
         undefined,
@@ -943,7 +957,9 @@ describe('native SDK transport, persistence and approval', () => {
         state: 'output-error',
         errorText: 'The tool could not complete.',
       });
-      const trusted = await f.sessions.native.executionHistory(
+      const trusted = await projectNativeHistory(
+        f.sessions.native,
+        h.services.chatAttachments,
         'alice',
         f.agent.sessionId,
         undefined,
@@ -994,7 +1010,9 @@ describe('native SDK transport, persistence and approval', () => {
     ).toBe(false);
     expect(
       JSON.stringify(
-        await f.sessions.native.executionHistory(
+        await projectNativeHistory(
+          f.sessions.native,
+          h.services.chatAttachments,
           'alice',
           f.agent.sessionId,
           undefined,
@@ -1767,10 +1785,20 @@ describe('native SDK transport, persistence and approval', () => {
         parts: [{ type: 'text', text: 'Continue' }],
       },
     });
-    expect(refused.status).toBe(404);
+    expect(refused.status).toBe(200);
+    await refused.text();
+    await vi.waitFor(async () => expect(await f.agent.status()).toBe('idle'));
     expect(read).toHaveBeenCalledWith({ userId: 'alice' }, own.id);
     expect(f.prompts).toHaveLength(1);
-    expect(await f.agent.history()).toHaveLength(2);
+    const failedHistory = await f.agent.history();
+    expect(failedHistory).toHaveLength(4);
+    expect(failedHistory[2].id).toBe('next');
+    expect(failedHistory[3].parts).toContainEqual(
+      expect.objectContaining({
+        type: 'data-notice',
+        data: expect.objectContaining({ type: 'failed' }),
+      }),
+    );
   });
   it('does not overwrite a configuration changed by another service during admission', async () => {
     const f = await fixture();
@@ -1840,12 +1868,14 @@ describe('native SDK transport, persistence and approval', () => {
       state: 'approval-requested',
     });
     const read = vi
-      .spyOn(f.sessions.native, 'executionHistory')
+      .spyOn(f.sessions.native, 'executionSnapshot')
       .mockRejectedValueOnce(new Error('Temporary context failure'));
     await respond(first, 1);
     expect(f.execute).toHaveBeenCalledTimes(1);
     read.mockRestore();
-    const trusted = await f.sessions.native.executionHistory(
+    const trusted = await projectNativeHistory(
+      f.sessions.native,
+      h.services.chatAttachments,
       'alice',
       f.agent.sessionId,
       undefined,

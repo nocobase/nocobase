@@ -20,7 +20,6 @@ import type {
   OnlineAgentInitialConfiguration,
 } from './types.js';
 import type { NativeSessionStore } from './persistence/store.js';
-import type { ResolvedPageContext } from '../../../shared/conversations.js';
 import type { NativeOnlineAgent } from './native/execution.js';
 import type { OnlineAgentUIStreams } from './transport/streams.js';
 import type {
@@ -120,12 +119,6 @@ export interface OnlineAgentSessionManager {
     model: ModelRef,
   ): Promise<void>;
   /** Private model projection; public facades expose safe UI messages instead. */
-  history(userId: string, id: string): Promise<ModelMessage[]>;
-  executionHistory(
-    userId: string,
-    id: string,
-    current?: ResolvedPageContext,
-  ): Promise<ModelMessage[]>;
   finish(userId: string, id: string): Promise<void>;
 }
 

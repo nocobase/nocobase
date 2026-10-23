@@ -1,4 +1,5 @@
 import type { LocaleResource } from '@nocobase/i18n';
+import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -918,6 +919,9 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    // Keep new guidance available in English until this locale is translated.
+    executionFailed: chatEnUS.chat.executionFailed,
+    fileInputFailures: chatEnUS.chat.fileInputFailures,
     untitled: '無標題對話',
     renamed: '已更名',
     archivedNamed: '存檔“{{title}}”',

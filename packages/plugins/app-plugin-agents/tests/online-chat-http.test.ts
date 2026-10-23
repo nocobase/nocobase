@@ -1,3 +1,4 @@
+import { fixtureFileInputs } from './helpers/native-files.js';
 import { ApiDocsService, CliService } from '@nocobase/app-server/router';
 import { appendFile } from 'node:fs/promises';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -82,18 +83,19 @@ async function fixture() {
     },
   });
   const ids = { next: () => `http-${++counter}` };
+  const fileInputs = fixtureFileInputs(model, h.services.chatAttachments);
   service = new OnlineAgentService({
     ids,
     sessions: createSessionManager({
       ids,
       tx: h.services.tx,
       attachments: attachments.links,
-      files: h.services.chatAttachments,
       now: () => new Date().toISOString(),
       measure: (phase, durationMs) => measurements.push({ phase, durationMs }),
     }),
     defaultModel: async () => ({ modelService: 'fixture', model: 'chat' }),
-    model: async () => model,
+    fileInputs,
+    model: (ref, id) => fileInputs.model(ref, id),
     onError: () => {},
   });
   let release!: () => void;

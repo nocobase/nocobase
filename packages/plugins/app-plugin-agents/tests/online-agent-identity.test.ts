@@ -73,7 +73,6 @@ async function fixture() {
     tx: harness.services.tx,
     ids,
     attachments: attachments.links,
-    files: harness.services.chatAttachments,
     now: () => harness.clock.now().toISOString(),
   });
   const configurator = new OnlineAgentConfigurator();

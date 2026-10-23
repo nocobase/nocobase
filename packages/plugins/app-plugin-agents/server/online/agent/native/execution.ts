@@ -2,6 +2,13 @@ import type { NativeExecutionRequest } from './types.js';
 import { WebSearchBudget } from '../../search/budget.js';
 import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
 import { effectiveTools } from '../configuration.js';
+import { FileInputError } from '../../files/errors.js';
+import {
+  fileInputFailureTitles,
+  isFileInputFailureReason,
+  type FileInputFailureReason,
+} from '../../../../shared/file-input-failures.js';
+import type { NativeFileInputs } from '../../files/service.js';
 import type { OnlineAgentSandboxProvider } from '../../sandbox/types.js';
 import { NativeToolExecution } from '../../sandbox/execution.js';
 import { jsonSafe } from '../messages/json.js';
@@ -58,6 +65,7 @@ export class NativeOnlineAgent {
       sandboxProvider?: OnlineAgentSandboxProvider;
       resolver?: ServiceResolver;
       webSearch?: OnlineAgentWebSearch;
+      fileInputs?: NativeFileInputs;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       onError(error: unknown): void;
       complete(
@@ -100,8 +108,8 @@ export class NativeOnlineAgent {
     let previousPage: ModelMessage | undefined;
     let resendHistory:
       | Awaited<
-          ReturnType<OnlineAgentSessionManager['native']['executionHistory']>
-        >
+          ReturnType<OnlineAgentSessionManager['native']['resend']>
+        >['history']
       | undefined;
     let tools!: ReturnType<OnlineAgentConfigurator['bind']>;
     let model: LanguageModel;
@@ -248,14 +256,12 @@ export class NativeOnlineAgent {
         }
         messageId = this.deps.ids.next();
         if (request.kind === 'append')
-          previousPage = (
-            await this.deps.sessions.native.executionHistory(
-              context.user.id,
-              id,
-              input?.workContext,
-              !context.authorization.identity.keyScope,
-            )
-          ).page;
+          previousPage = await this.deps.sessions.native.pageContext(
+            context.user.id,
+            id,
+            input?.workContext,
+            !context.authorization.identity.keyScope,
+          );
         execution.abort.signal.throwIfAborted();
         if (!background)
           response = await this.deps.uiStreams.open(
@@ -276,6 +282,22 @@ export class NativeOnlineAgent {
             messageId,
             session,
             !context.authorization.identity.keyScope,
+            async (snapshot, conn) => {
+              if (!this.deps.fileInputs && snapshot.files.length)
+                throw invalid('File input preparation is unavailable.');
+              const prepared = this.deps.fileInputs
+                ? await this.deps.fileInputs.prepare({
+                    model,
+                    snapshot,
+                    userId: context.user.id,
+                    sessionId: id,
+                    signal: execution.abort.signal,
+                    conn,
+                  })
+                : snapshot.replay;
+              execution.abort.signal.throwIfAborted();
+              return prepared;
+            },
           );
           afterSeq = result.lastSeq;
           sourceUserMessageId = result.messageId;
@@ -383,20 +405,36 @@ export class NativeOnlineAgent {
       ? structuredClone(priorMessage)
       : { id: messageId, role: 'assistant', parts: [], metadata };
     let outcome: 'completed' | 'cancelled' | 'failed' = 'completed';
+    let preparingFiles = false;
+    let fileInputFailure: FileInputFailureReason | undefined;
     let finishChunk: NativeUIChunk = { type: 'finish' };
     output?.write({ type: 'start', messageId, messageMetadata: metadata });
     try {
-      const trusted =
-        resendHistory ??
-        (await this.deps.sessions.native.executionHistory(
+      const snapshot =
+        resendHistory?.snapshot ??
+        (await this.deps.sessions.native.executionSnapshot(
           context.user.id,
           id,
-          input?.workContext,
-          false,
         ));
-      const original = trusted.ui;
-      const history = trusted.model;
-      if (request.kind !== 'resend' && previousPage) history.push(previousPage);
+      preparingFiles = snapshot.files.length > 0;
+      if (!this.deps.fileInputs && snapshot.files.length)
+        throw invalid('File input preparation is unavailable.');
+      const prepared =
+        resendHistory?.prepared ??
+        (this.deps.fileInputs
+          ? await this.deps.fileInputs.prepare({
+              model,
+              snapshot,
+              userId: context.user.id,
+              sessionId: id,
+              signal: execution.abort.signal,
+            })
+          : snapshot.replay);
+      preparingFiles = false;
+      const original = snapshot.original;
+      const history = await this.deps.sessions.native.messages.model(prepared);
+      const page = resendHistory?.page ?? previousPage;
+      if (page) history.push(page);
       if (priorMessage)
         privateMessage = structuredClone(
           original.find((message) => message.id === messageId)!,
@@ -412,9 +450,10 @@ export class NativeOnlineAgent {
         output: schema ? Output.object({ schema }) : undefined,
         tools,
         messages: history,
-        system: [config.systemPrompt, instructions]
-          .filter(Boolean)
-          .join('\n\n'),
+        system:
+          [config.systemPrompt, instructions]
+            .filter((part) => part?.trim())
+            .join('\n\n') || undefined,
         toolsContext: Object.fromEntries(
           Object.keys(tools).map((name) => [name, toolContext]),
         ),
@@ -469,7 +508,7 @@ export class NativeOnlineAgent {
       for await (const chunk of stream) {
         if (chunk.type === 'start') continue;
         if (chunk.type === 'finish') {
-          finishChunk = chunk as NativeUIChunk;
+          finishChunk = chunk;
           continue;
         }
         if (chunk.type === 'error') {
@@ -510,6 +549,12 @@ export class NativeOnlineAgent {
       }
     } catch (error) {
       outcome = execution.abort.signal.aborted ? 'cancelled' : 'failed';
+      if (outcome === 'failed' && preparingFiles)
+        fileInputFailure =
+          error instanceof FileInputError &&
+          isFileInputFailureReason(error.fileInputReason)
+            ? error.fileInputReason
+            : 'preparationFailed';
       execution.abort.abort();
       this.deps.onError(error);
       accepted.resolve(afterSeq);
@@ -568,7 +613,12 @@ export class NativeOnlineAgent {
             ? 'Completed'
             : outcome === 'cancelled'
               ? 'Stopped'
-              : 'Interrupted',
+              : fileInputFailure
+                ? fileInputFailureTitles[fileInputFailure]
+                : 'Interrupted',
+        ...(fileInputFailure
+          ? { params: { fileInputReason: fileInputFailure } }
+          : {}),
       },
     };
     let snapshot: NativeSnapshot | undefined;

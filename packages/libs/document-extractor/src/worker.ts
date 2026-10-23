@@ -9,23 +9,27 @@
 import { createRequire } from 'node:module';
 import { isMainThread, parentPort, workerData } from 'node:worker_threads';
 
-/** What the worker is sent. */
-export interface ExtractRequest {
-  readonly bytes: Uint8Array;
-  /** Lower-case, without the dot. */
-  readonly ext: string;
-}
+import type { ExtractRequest, ExtractResponse } from './types.js';
 
-/** What the worker answers. */
-export type ExtractResponse =
-  | { readonly status: 'ready'; readonly markdown: string }
-  | { readonly status: 'unsupported' }
-  | { readonly status: 'failed'; readonly error: string };
-
-/** The data the worker is started with, so that only the knowledge base's own worker answers messages. */
-export const WORKER_MARK = '@nocobase/app-plugin-knowledge/parser';
-
+const WORKER_MARK = '@nocobase/document-extractor/parser';
 const ROWS_PER_TABLE = 50;
+
+class OutputLimit extends Error {}
+class OutputBudget {
+  private used = 0;
+  private readonly max: number | undefined;
+  constructor(max?: number) {
+    this.max = max;
+  }
+  add(text: string): void {
+    if (this.max === undefined) return;
+    for (const _character of text) {
+      this.used += 1;
+      if (this.used > this.max)
+        throw new OutputLimit('The extracted text exceeds its budget.');
+    }
+  }
+}
 
 const decode = (bytes: Uint8Array) =>
   new TextDecoder('utf-8').decode(bytes).replace(/^\uFEFF/u, '');
@@ -61,7 +65,12 @@ export function rowsToMarkdown(rows: readonly (readonly unknown[])[]): string {
   return tables.join('\n\n');
 }
 
-async function sheets(bytes: Uint8Array, csv: boolean): Promise<string> {
+async function sheets(
+  bytes: Uint8Array,
+  csv: boolean,
+  max?: number,
+): Promise<string> {
+  const budget = new OutputBudget(max);
   const XLSX = await import('xlsx');
   const workbook = csv
     ? XLSX.read(decode(bytes), { type: 'string', raw: true })
@@ -78,7 +87,9 @@ async function sheets(bytes: Uint8Array, csv: boolean): Promise<string> {
     });
     const table = rowsToMarkdown(rows);
     if (!table) continue;
-    parts.push(csv ? table : `## ${name}\n\n${table}`);
+    const part = csv ? table : `## ${name}\n\n${table}`;
+    budget.add((parts.length ? '\n\n' : '') + part);
+    parts.push(part);
   }
   return parts.join('\n\n');
 }
@@ -104,7 +115,12 @@ interface PdfJs {
   }>;
 }
 
-async function pdf(bytes: Uint8Array): Promise<string> {
+interface ExtractedText {
+  readonly markdown: string;
+  readonly hasText: boolean;
+}
+async function pdf(bytes: Uint8Array, max?: number): Promise<ExtractedText> {
+  const budget = new OutputBudget(max);
   // pdf-parse's bundled pdf.js, required and given the bytes as `data`: handed a Buffer, it misreads some documents.
   const pdfjs = createRequire(import.meta.url)(
     'pdf-parse/lib/pdf.js/v1.10.100/build/pdf.js',
@@ -133,6 +149,7 @@ async function pdf(bytes: Uint8Array): Promise<string> {
       for (const item of content.items) {
         const y = item.transform[5];
         text += lastY === undefined || lastY === y ? item.str : `\n${item.str}`;
+        budget.add(item.str + (lastY === undefined || lastY === y ? '' : '\n'));
         lastY = y;
       }
       pages.push(
@@ -146,25 +163,60 @@ async function pdf(bytes: Uint8Array): Promise<string> {
   } finally {
     await document.destroy().catch(() => undefined);
   }
-  if (pages.length <= 1) return pages[0] ?? '';
-  return pages
-    .map((text, index) => `## Page ${index + 1}\n\n${text}`)
-    .join('\n\n');
+  return {
+    hasText: pages.some((text) => Boolean(text.trim())),
+    markdown:
+      pages.length <= 1
+        ? (pages[0] ?? '')
+        : pages
+            .map((text, index) => `## Page ${index + 1}\n\n${text}`)
+            .join('\n\n'),
+  };
 }
 
-async function docx(bytes: Uint8Array): Promise<string> {
+interface DocxNode {
+  readonly type: string;
+  readonly value?: string;
+  readonly children?: readonly DocxNode[];
+}
+function docxHasText(node: DocxNode): boolean {
+  return (
+    (node.type === 'text' && Boolean(node.value?.trim())) ||
+    (node.children?.some(docxHasText) ?? false)
+  );
+}
+async function docx(
+  bytes: Uint8Array,
+  omitEmbeddedImages: boolean,
+): Promise<ExtractedText> {
+  // Mammoth implements this legacy entry point but omits it from its declarations.
   const mammoth = (await import('mammoth')).default as unknown as {
-    convertToMarkdown(input: {
-      buffer: Buffer;
-    }): Promise<{ readonly value: string }>;
+    convertToMarkdown(
+      input: { buffer: Buffer },
+      options: {
+        convertImage?: () => readonly never[];
+        transformDocument: (document: DocxNode) => DocxNode;
+      },
+    ): Promise<{ readonly value: string }>;
   };
-  const { value } = await mammoth.convertToMarkdown({
-    buffer: Buffer.from(bytes),
-  });
-  // mammoth escapes punctuation Markdown would not misread, and anchors each bookmark; the text reads better without.
-  return value
-    .replace(/<a id="[^"]*"><\/a>/gu, '')
-    .replace(/\\([.()!\-_#+])/gu, '$1');
+  let hasText = false;
+  const { value } = await mammoth.convertToMarkdown(
+    { buffer: Buffer.from(bytes) },
+    {
+      ...(omitEmbeddedImages ? { convertImage: () => [] } : {}),
+      transformDocument: (document) => {
+        hasText = docxHasText(document);
+        return document;
+      },
+    },
+  );
+  // Mammoth escapes punctuation Markdown would not misread and anchors each bookmark.
+  return {
+    markdown: value
+      .replace(/<a id="[^"]*"><\/a>/gu, '')
+      .replace(/\\([.()!\-_#+])/gu, '$1'),
+    hasText,
+  };
 }
 
 /** word-extractor, which ships no types, as far as it is used here. */
@@ -186,36 +238,48 @@ interface OfficeNode {
   readonly children?: readonly OfficeNode[];
 }
 
-async function pptx(bytes: Uint8Array): Promise<string> {
+async function pptx(bytes: Uint8Array, max?: number): Promise<ExtractedText> {
+  const budget = new OutputBudget(max);
   const { OfficeParser } = await import('officeparser');
   const ast = await OfficeParser.parseOffice(Buffer.from(bytes), {
     ocr: false,
   });
   const nodes = ast.content as readonly OfficeNode[];
   const slides = nodes.filter((node) => node.type === 'slide');
-  if (slides.length === 0) return ast.toText();
-  return slides
+  if (slides.length === 0) {
+    const markdown = ast.toText();
+    return { markdown, hasText: Boolean(markdown.trim()) };
+  }
+  let hasText = false;
+  const markdown = slides
     .map((slide, index) => {
       const lines = (slide.children ?? [])
         .map((child) => child.text?.trim() ?? '')
         .filter(Boolean);
-      return [`## Slide ${index + 1}`, ...lines].join('\n\n');
+      hasText ||= lines.length > 0;
+      const part = [`## Slide ${index + 1}`, ...lines].join('\n\n');
+      budget.add((index ? '\n\n' : '') + part);
+      return part;
     })
     .join('\n\n');
+  return { markdown, hasText };
 }
 
 /** The file's text as Markdown; `unsupported` for a type whose text is not extracted. */
 export async function extractText(
   request: ExtractRequest,
+  maxOutputChars?: number,
+  omitEmbeddedImages: boolean = false,
 ): Promise<ExtractResponse> {
   const { bytes } = request;
   let markdown: string;
-  switch (request.ext) {
+  let hasText: boolean | undefined;
+  switch (request.ext.toLowerCase()) {
     case 'pdf':
-      markdown = await pdf(bytes);
+      ({ markdown, hasText } = await pdf(bytes, maxOutputChars));
       break;
     case 'docx':
-      markdown = await docx(bytes);
+      ({ markdown, hasText } = await docx(bytes, omitEmbeddedImages));
       break;
     case 'doc':
       markdown = await doc(bytes);
@@ -223,13 +287,13 @@ export async function extractText(
     case 'xlsx':
     case 'xls':
     case 'xlsm':
-      markdown = await sheets(bytes, false);
+      markdown = await sheets(bytes, false, maxOutputChars);
       break;
     case 'csv':
-      markdown = await sheets(bytes, true);
+      markdown = await sheets(bytes, true, maxOutputChars);
       break;
     case 'pptx':
-      markdown = await pptx(bytes);
+      ({ markdown, hasText } = await pptx(bytes, maxOutputChars));
       break;
     case 'txt':
     case 'md':
@@ -249,8 +313,10 @@ export async function extractText(
     default:
       return { status: 'unsupported' };
   }
+  new OutputBudget(maxOutputChars).add(markdown);
   return {
     status: 'ready',
+    hasText: hasText ?? Boolean(markdown.trim()),
     markdown: markdown
       .replace(/\r\n/gu, '\n')
       .replace(/\n{3,}/gu, '\n\n')
@@ -265,11 +331,24 @@ const marked =
   (workerData as { mark?: unknown }).mark === WORKER_MARK;
 
 if (marked)
-  parentPort?.once('message', (request: ExtractRequest) => {
-    void extractText(request)
-      .catch((error: unknown): ExtractResponse => ({
-        status: 'failed',
-        error: error instanceof Error ? error.message : String(error),
-      }))
-      .then((response) => parentPort?.postMessage(response));
-  });
+  parentPort?.once(
+    'message',
+    (
+      request: ExtractRequest & {
+        maxOutputChars?: number;
+        omitEmbeddedImages?: boolean;
+      },
+    ) => {
+      void extractText(
+        request,
+        request.maxOutputChars,
+        request.omitEmbeddedImages,
+      )
+        .catch((error: unknown): ExtractResponse => ({
+          status: 'failed',
+          error: error instanceof Error ? error.message : String(error),
+          code: error instanceof OutputLimit ? 'too-large' : 'invalid-document',
+        }))
+        .then((response) => parentPort?.postMessage(response));
+    },
+  );

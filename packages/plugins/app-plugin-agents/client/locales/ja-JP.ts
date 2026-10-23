@@ -1,4 +1,5 @@
 import type { LocaleResource } from '@nocobase/i18n';
+import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -959,6 +960,9 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    // Keep new guidance available in English until this locale is translated.
+    executionFailed: chatEnUS.chat.executionFailed,
+    fileInputFailures: chatEnUS.chat.fileInputFailures,
     untitled: 'タイトルのない会話',
     renamed: '名前変更',
     archivedNamed: 'アーカイブ「{{title}}」',

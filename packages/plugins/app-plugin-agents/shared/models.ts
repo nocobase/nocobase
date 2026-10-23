@@ -45,6 +45,8 @@ export type ModelKind = 'chat' | 'embedding' | 'rerank';
 
 export interface ModelCapabilities {
   readonly webSearch: boolean;
+  /** Code-owned native image formats; absence does not grant image input. */
+  readonly imageMediaTypes?: readonly string[];
 }
 
 export interface ProviderCapabilitiesDefinition {

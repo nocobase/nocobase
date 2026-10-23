@@ -1,0 +1,63 @@
+{
+  "name": "@nocobase/document-extractor",
+  "version": "0.0.1",
+  "description": "Worker-isolated local document text extraction without application or model dependencies.",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./formats": {
+      "types": "./src/formats.ts",
+      "import": "./src/formats.ts"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./formats": {
+        "types": "./dist/formats.d.ts",
+        "import": "./dist/formats.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "fix": "pnpm lint:fix && pnpm format"
+  },
+  "dependencies": {
+    "mammoth": "^1.10.0",
+    "officeparser": "^6.0.4",
+    "pdf-parse": "^1.1.1",
+    "word-extractor": "^1.0.4",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@nocobase/dev-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

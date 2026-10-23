@@ -41,6 +41,62 @@ Repository access providers that mint credentials in `prepare` implement the ide
 
 Runner affinity uses the same ordered-model admission decision as actual claims, without loading the full waiting diagnostic. Queue traversal evaluates only candidates it reaches before a successful claim. Capacity comes from the existing batch, while resource metadata is cached by scope within the poll and loaded in batches across relevant machines; known agent scopes share the first metadata read. Preferred-model admission needs a compatible or unknown first choice, even when busy, so it does not read per-machine slot counts. The broader machine inventory is read at most once for this affinity pass. Full diagnostics remain available through the waiting projection. Application context assembly and policy providers may issue their own reads; visiting new subject scopes adds metadata batches, and returned-row budgets do not bound the database's internal scans.
 
+## Native document inputs
+
+Native chats prepare attachments after the original user message commits. Supported local documents are extracted through `@nocobase/document-extractor` into user-level model replay copies only; the original user message, search index and public history retain file references. Knowledge is not an Agents dependency, and File remains responsible for authorized byte access.
+
+When neither the configured system prompt nor generated execution instructions contain non-whitespace text, Native execution omits the SDK system option rather than sending an empty system message. Nonempty instructions retain their original content, and attachments remain user-level data. This avoids Moonshot/Kimi HTTP 400 errors without adding a placeholder system prompt or changing file routing.
+
+**Upgrade note:** Native file routing follows legacy Provider defaults unless an exact profile overrides them. OpenAI, Anthropic, Google and OpenAI-compatible services forward PDF originals and images; Alibaba forwards images and extracts document text locally; Moonshot forwards images and uploads supported documents to its selected service's Kimi Files API by default. Ollama forwards images and extracts PDF and other supported document text locally, without attempting PDF-original delivery first. An explicit profile requesting PDF-original forwarding is described to the model as unavailable instead of letting the current SDK silently drop the file. DeepSeek and Cohere retain local document extraction. DeepSeek image capability is declared centrally in `server/online/search/capabilities.ts`: only the official endpoint's exact `deepseek-flash` model forwards JPEG, PNG, GIF and WebP, regardless of the service name; other DeepSeek models/endpoints and Cohere receive no default image grant. Existing exact file-input profiles still take precedence, including explicit opt-outs. `profiles: []` removes overrides, not code-owned capabilities. These are forwarding policies, not evidence that every model accepts every MIME type. No failure automatically changes the model, service or extraction route.
+
+```yaml
+agents:
+  fileInputs:
+    profiles:
+      - modelService: company-chat
+        model: verified-vision-model
+        provider: openai-compatible
+        protocol: chat-completions
+        baseUrl: https://gateway.example.invalid/v1
+        nativeMediaTypes: [image/png, image/jpeg]
+        maxNativeFiles: 10 # Example verified Provider limit; omit for the global ceiling.
+        extraction: local
+```
+
+Protocols follow the existing SDK construction path: OpenAI `responses`, Anthropic `messages`, Google `generate-content`, DeepSeek/Alibaba/Moonshot/OpenAI-compatible `chat-completions`, Ollama `ollama-chat`, and Cohere `cohere-chat`. A profile does not switch the Provider protocol. Exact overrides must match the complete service/model/Provider/protocol/effective base URL identity; a stale profile fails instead of falling back to defaults. Native MIME values must be exact, except for the restricted `image/*` wildcard. An explicit `nativeMediaTypes: []` and `extraction: local` override disables native forwarding and remote extraction for that model. An empty `profiles` array removes overrides, not Provider defaults. OCR and arbitrary URL downloading are not provided. Provider references use an allowed native route or become an unavailable-attachment description in model replay; their original private representation remains unchanged.
+
+Unsupported user attachment formats, unconfigured native images, unsupported file references and an extractor's explicit `unsupported` result do not fail the conversation. Model replay replaces only the affected user file part with an untrusted-metadata description containing its filename, MIME type and controlled limitation, stating that no contents were parsed and asking the model to explain honestly and continue with readable inputs. Historical files use the same rule on follow-up, including after an earlier failed turn. Descriptions count toward the existing context budget, are not cached as extracted text, and are not persisted into original user messages, search indexes or public history. Authorized stored bytes are still reread and bounded on every turn; permission failures, invalid inline data, mismatched formats, budgets, cancellation, timeouts and actual parser or Provider failures retain their existing behavior.
+
+Local DOCX preparation explicitly omits embedded image data before applying the text budget. The model receives extracted text, not base64 image payloads; its document wrapper warns that images and visual layout may be omitted. Image-only DOCX files fail as unreadable instead of being reported as read. This performs no OCR and leaves Knowledge's default Markdown output unchanged.
+Local extraction caches only completed successful text in this NativeFileInputs instance: 30-minute non-sliding TTL, 128-entry LRU and 32 MiB of UTF-8 text. Every use still authorizes and reads the current bounded bytes, checking their digest before a cache hit; no in-flight work is shared between executions. Limits include historical files and cache hits: 20 MiB per actual file, 64 MiB of distinct source bytes, 100,000 Unicode characters per extracted document and 200,000 characters of wrapped document context. An execution admits at most 100 file inputs, including native references; a profile can lower the native count with `maxNativeFiles` (0–100). These ceilings do not infer any Provider's actual capabilities or token context limits. A private file-only background input retains its original file parts and projects to empty public text, without indexing or exposing its bytes.
+
+Missing permission, unreadable nonempty documents and budget failures end the accepted execution without sending another user message or dropping attachments. Stop forwards the execution signal and waits for file-stream cancellation, Worker termination or bounded remote cleanup. Direct `OnlineAgentService` composition can omit file inputs for text-only use; file-enabled hosts must supply the grouped file-input capability and its model binding.
+
+Controlled file preparation failures persist an allowlisted `fileInputReason` in the existing execution-status notice's `params`, with a fixed English fallback title. Chat renders the reason in the viewer's language in both live responses and history; raw parser/Provider messages, file contents and credentials never become public failure text. An unknown preparation exception uses generic safe guidance, Stop remains cancellation, and old `Interrupted` notices without a saved reason get a generic explanation rather than a reason inferred from today's model configuration.
+
+### Kimi extraction and exact overrides
+
+Selecting the Moonshot Provider enables Kimi Files document uploads by default, using the selected service's saved API key (not an environment-key fallback) and execution-bound endpoint. Native images and text-only turns do not initialize or call the Files API adapter. No model-name heuristic enables remote extraction on another Provider, and the adapter never selects a second service. OpenAI-compatible services still require an exact `extraction: kimi-file-extract` profile to grant uploads. For Moonshot, an exact `extraction: local` profile opts out; configure `nativeMediaTypes: ['image/*']` to keep images native while parsing documents locally. The profile below illustrates an exact remote override, not real Provider acceptance evidence:
+
+```yaml
+agents:
+  fileInputs:
+    profiles:
+      - modelService: company-kimi
+        model: kimi-k2.5
+        provider: moonshotai
+        protocol: chat-completions
+        baseUrl: https://api.moonshot.ai/v1
+        nativeMediaTypes: []
+        extraction: kimi-file-extract
+```
+
+An explicitly supported native file still goes directly to the model without an extra upload. Otherwise the authorized bytes go to `POST <base>/files` with multipart `purpose=file-extract`, followed by `GET <base>/files/:id/content`. Proxy prefixes and API roots are preserved; requests do not follow redirects. Only `text/plain` and JSON with a string `content` field are accepted. Upload metadata is limited to 64 KiB; content response bytes are bounded by the character budget (4 bytes per character for text or 12 for JSON escapes, plus 64 KiB of envelope allowance), then the decoded text is checked without truncation. File IDs must be bounded alphanumeric/underscore/hyphen tokens; unknown response contracts fail safely rather than being guessed.
+
+Upload and content share one five-minute deadline and the execution signal. Once an ID is known, success, failure and cancellation all attempt DELETE with the same pinned connection and a separate cleanup signal lasting at most five seconds. Stop and shutdown await that cleanup. Deletion failure produces a sanitized diagnostic without replacing successful extraction; cleanup is best-effort, not proof of removal. A lost upload response without a usable ID cannot be reliably cleaned and emits an uncertainty diagnostic.
+
+Remote text is reused only within the current execution, never in the cross-execution local cache. History and approval continuations reauthorize and re-extract from originals; finalization retries do not re-upload. Credentials, remote IDs and raw upstream failure bodies are not written into user messages or public history. Real Provider testing and external file upload require separate authorization; loopback fixtures do not verify a live gateway's capabilities.
+
 ## Chat integration documentation
 
 - [OnlineAgent service and business tools](skills/nocobase-app-plugin-agents/references/online-agent.md): trusted server configuration, Native/Runner sessions, public browser transport and lifecycle boundaries.

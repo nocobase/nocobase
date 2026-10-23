@@ -162,7 +162,9 @@ export function createKnowledge(deps: KnowledgeDeps): Knowledge {
   const store = deps.files?.store ?? (() => null);
   const files = createFileService(context, docs, {
     store,
-    extract: deps.files?.extract ?? workerExtractor(),
+    extract:
+      deps.files?.extract ??
+      workerExtractor({ maxInputBytes: deps.files?.maxBytes }),
     ...(deps.files?.maxBytes ? { maxBytes: deps.files.maxBytes } : {}),
   });
   return {

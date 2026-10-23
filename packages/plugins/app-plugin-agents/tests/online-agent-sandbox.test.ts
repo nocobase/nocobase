@@ -208,7 +208,6 @@ async function fixture(
     tx: h.services.tx,
     ids: { next: randomUUID },
     attachments: attachments.links,
-    files: h.services.chatAttachments,
     now: () => new Date().toISOString(),
   });
   const router = new Hono();

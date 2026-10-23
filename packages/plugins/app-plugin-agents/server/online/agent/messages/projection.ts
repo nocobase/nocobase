@@ -203,6 +203,9 @@ export class NativeMessages {
           : this.publicPart(part);
         if (projected) parts.push(projected);
       }
+      // A private file-only user input still needs a valid, empty public representation.
+      if (message.role === 'user' && privateFiles.length && !parts.length)
+        parts.push({ type: 'text', text: '' });
       const metadata = appUIMessageMetadataSchema.parse(
         pick(message.metadata ?? {}, [
           'conversationId',

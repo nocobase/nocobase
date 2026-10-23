@@ -1,4 +1,5 @@
 /** UIMessage reconciliation at the durable-history boundary. SDK Chat owns the active messages. */
+import { isFileInputFailureReason } from '../../shared/file-input-failures.js';
 import type { ConsultationIdentity } from './consultation-identity.js';
 import type { RunEvent } from '@nocobase/agent-protocol';
 import type {
@@ -455,8 +456,18 @@ export function noticeText(
     // The historical code names a cancellation request, not a terminal outcome.
     case 'runCancelled':
       return t('chat.notice.runCancelled');
-    case 'news':
-      return newsText?.(notice, t) ?? notice.title;
+    case 'news': {
+      const custom = newsText?.(notice, t);
+      if (custom !== undefined && custom !== null) return custom;
+      const reason = notice.params?.fileInputReason;
+      if (notice.type === 'failed' && reason !== undefined)
+        return t(
+          `chat.fileInputFailures.${isFileInputFailureReason(reason) ? reason : 'preparationFailed'}`,
+        );
+      if (notice.type === 'failed' && notice.title === 'Interrupted')
+        return t('chat.executionFailed');
+      return notice.title;
+    }
     case 'consultation':
       if (consultationIdentity?.state === 'unavailable')
         return t('chat.consultation.unavailableTitle');
