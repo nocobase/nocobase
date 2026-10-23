@@ -1,5 +1,5 @@
 /**
- * The agent team pages as route definitions, for the application to route (the plugin registers no routes of its
+ * The agent management pages as route definitions, for the application to route (the plugin registers no routes of its
  * own): `/agents`, `/runtimes` and `/skills`, each with its dialog and detail children, and `/usage`. Each page renders its own page
  * frame and heading, and brings this plugin's translations and query cache, since it renders in the application's
  * tree. The application gives each top-level page its own `navigation` and `breadcrumb`.

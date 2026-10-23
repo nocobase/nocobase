@@ -129,7 +129,7 @@ function price(extra: Partial<ModelPrice>): ModelPrice {
 const renderPrices = () =>
   renderRoute(<UsagePage />, '/usage', '/usage?prices=1');
 
-describe('Agent team › Usage › Prices', () => {
+describe('Agent management › Usage › Prices', () => {
   it('opens the prices sheet from the header', async () => {
     renderRoute(<UsagePage />, '/usage', '/usage');
     expect(screen.queryByRole('dialog')).toBeNull();

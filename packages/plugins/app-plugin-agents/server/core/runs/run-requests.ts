@@ -480,7 +480,7 @@ export function createRunRequestService(
         userIds: [record.requestedByUserId],
         subject: { kind: 'runRequest', id: record.id, label: agentName },
         title: `${agentName} did not run your request`,
-        body: `${reason === 'timeout' ? 'Nobody confirmed your request in time' : 'The new responsible cannot run your request'}, so your request to ${agentName} on ${record.subjectKind} ${record.subjectId} expired. You can still run it as yourself, on your own runner or a team runner.`,
+        body: `${reason === 'timeout' ? 'Nobody confirmed your request in time' : 'The new responsible cannot run your request'}, so your request to ${agentName} on ${record.subjectKind} ${record.subjectId} expired. You can still run it as yourself, on your own runner or a shared runner.`,
         params: {
           agentName,
           subjectKind: record.subjectKind,

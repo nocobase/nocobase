@@ -7,7 +7,7 @@
  */
 import { RUNNER_PRODUCT } from '@nocobase/agent-protocol';
 
-/** The systems a page offers a command for. Windows is not supported by the runner yet. */
+/** Windows runs the Linux command inside WSL Ubuntu. */
 export const INSTALL_SYSTEMS = ['macos', 'linux', 'windows'] as const;
 
 export type InstallSystem = (typeof INSTALL_SYSTEMS)[number];
@@ -21,13 +21,12 @@ function quote(value: string): string {
     : `'${value.replaceAll("'", `'"'"'`)}'`;
 }
 
-/** The one-line install of a runtime for `system`, or null where the runner does not run. */
+/** The one-line install, run inside WSL Ubuntu when Windows is selected. */
 export function installCommand(
-  system: InstallSystem,
+  _system: InstallSystem,
   server: string,
   token: string,
-): string | null {
-  if (system === 'windows') return null;
+): string {
   const base = server.replace(/\/+$/u, '');
   return `curl -fsSL ${quote(`${base}${INSTALL_SCRIPT_PATH}`)} | sh -s -- --runner --server ${quote(base)} --token ${quote(token)}`;
 }

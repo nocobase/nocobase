@@ -17,10 +17,10 @@ import { z } from 'zod';
 
 import { invalid } from '../kernel/errors.js';
 
-/** The stored variables named by a job may be delivered only to a team runner. */
+/** The stored variables named by a job may be delivered only to a shared runner. */
 export class JobSecretsNotAllowed extends Error {
   public constructor() {
-    super('The job names variables restricted to team runners.');
+    super('The job names variables restricted to shared runners.');
   }
 }
 

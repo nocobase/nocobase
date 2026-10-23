@@ -1,3 +1,4 @@
+import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
@@ -647,6 +648,7 @@ const frFR: LocaleResource<typeof enUS> = {
     unknown: "L'exécution a échoué.",
   },
   runtimes: {
+    pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',
       online: 'Effective slots · online settings',
@@ -908,6 +910,7 @@ const frFR: LocaleResource<typeof enUS> = {
       version: 'Version {{version}}',
     },
     trust: {
+      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
       label: 'Pour qui ça marche',
       team: 'Équipe',
       teamHint:
@@ -959,6 +962,7 @@ const frFR: LocaleResource<typeof enUS> = {
       "Les environnements d'exécution {{count}} ont été révoqués.",
   },
   connect: {
+    ...runtimesEnUS.connect,
     title: "Ajouter un environnement d'exécution",
     description:
       "Exécutez la commande ci-dessous sur un hôte sur lequel un outil de codage est installé : un serveur, une VM ou votre propre appareil. Les agents y fonctionnent avec un accès complet, en tant qu'utilisateur qui exécute le exécuteur, et peuvent lire et modifier tout ce que l'utilisateur peut faire, clés SSH et autres informations d'identification incluses. Le runner n'est pas une barrière de sécurité : exécutez-le en tant qu'utilisateur dédié, dans un conteneur ou dans une VM.",
@@ -968,8 +972,6 @@ const frFR: LocaleResource<typeof enUS> = {
     nodeRequired:
       "L'hôte a besoin de Node.js 24 ou plus récent (vérifiez avec node --version). La commande s'arrête et indique comment l'installer lorsqu'elle est manquante.",
     installed: 'Nocobase-runner est-il déjà installé ? Enregistrez-le plutôt :',
-    unsupported:
-      "Le programme d'exécution ne s'exécute pas encore sous Windows. Utilisez macOS ou Linux, ou WSL.",
     tokenOnce:
       'La commande comporte un identifiant unique pour un environnement d\'exécution "{{trust}}". Cela fonctionne une fois, jusqu\'à {{time}}.',
     after:

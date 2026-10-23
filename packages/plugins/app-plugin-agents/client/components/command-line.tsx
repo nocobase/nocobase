@@ -27,7 +27,7 @@ export function CommandLine({
 
   return (
     <div className='flex items-start gap-2 rounded-lg border bg-muted p-2 pl-3'>
-      <code className='min-w-0 flex-1 py-1 font-mono text-xs break-all select-all'>
+      <code className='max-h-64 min-w-0 flex-1 overflow-y-auto py-1 font-mono text-xs break-all whitespace-pre-wrap select-all'>
         {command}
       </code>
       <Button

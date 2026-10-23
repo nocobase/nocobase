@@ -4,7 +4,7 @@
  * one-line install command carrying a one-time token, run it on the host, and watch it show up connected with the
  * coding tools it found and whether each is on and signed in. The tool choice and the concurrency travel with the
  * token, so the command stays one line, and both can be changed on the runtimes page afterwards. A runtime added this way is personal (it runs
- * only its owner's work); someone who manages runners may add one shared with the team instead.
+ * only its owner's work); someone who manages runners may add one shared with all users instead.
  *
  * Installing the runner, creating its credential and starting it at login are one command here.
  */
@@ -59,12 +59,12 @@ import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useNotify } from '../../hooks/use-notify.js';
 import { useRealtimeTopic } from '../../hooks/use-realtime-topic.js';
 import { useServerUrl } from '../../hooks/use-server-url.js';
+import { noCodingToolsFound } from '../../lib/runner-tools.js';
 import { useFormatters } from '../../lib/format.js';
 import {
   guessSystem,
   installCommand,
   INSTALL_SYSTEMS,
-  registerCommand,
 } from '../../lib/install.js';
 import { RunnerToolsCell } from './runner-cells.js';
 import { readToolSlots, type ToolSlotsDraft } from '../../lib/tool-slots.js';
@@ -176,6 +176,9 @@ function AddRunnerSteps(): ReactElement {
           {t('runtimes.trust.personalOnly')}
         </p>
       )}
+      <p className='text-sm text-muted-foreground'>
+        {t('runtimes.trust.isolationHint')}
+      </p>
       <FieldSet data-invalid={toolsMissing ? true : undefined}>
         <FieldLegend variant='label'>{t('connect.tools')}</FieldLegend>
         <FieldDescription>{t('connect.toolsHint')}</FieldDescription>
@@ -277,6 +280,7 @@ function InstallStep({
   const [system, setSystem] = useState(() =>
     guessSystem(typeof navigator === 'undefined' ? '' : navigator.userAgent),
   );
+  const [method, setMethod] = useState('prompt');
   // Polled while waiting, and fetched again as soon as the server announces a runner.
   const runners = useQuery({
     queryKey: agentsKeys.runners,
@@ -309,23 +313,52 @@ function InstallStep({
           const command = installCommand(candidate, server, token.token);
           return (
             <TabsContent key={candidate} value={candidate} className='pt-3'>
-              {command ? (
-                <div className='space-y-3'>
-                  <p className='text-sm'>{t('connect.run')}</p>
+              <Tabs value={method} onValueChange={setMethod}>
+                <TabsList>
+                  <TabsTrigger value='prompt'>
+                    {t('connect.prompt')}
+                  </TabsTrigger>
+                  <TabsTrigger value='manual'>
+                    {t('connect.manual')}
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value='prompt' className='space-y-3 pt-3'>
+                  <p className='text-sm'>{t('connect.promptHint')}</p>
+                  <CommandLine
+                    command={
+                      (candidate === 'windows'
+                        ? t('connect.promptWindows')
+                        : '') +
+                      t('connect.promptBody', {
+                        tools: (token.enabledTools ?? AGENT_TOOLS)
+                          .map((tool) => t(`tools.${tool}`))
+                          .join(', '),
+                        command,
+                      })
+                    }
+                  />
+                </TabsContent>
+                <TabsContent value='manual' className='space-y-3 pt-3'>
+                  {candidate === 'windows' ? (
+                    <>
+                      <p className='text-sm'>
+                        {t('connect.windowsPowerShell')}
+                      </p>
+                      <CommandLine command='wsl --install' />
+                      <p className='text-sm'>{t('connect.windowsUbuntu')}</p>
+                      <p className='text-xs text-muted-foreground'>
+                        {t('connect.windowsNetwork')}
+                      </p>
+                    </>
+                  ) : (
+                    <p className='text-sm'>{t('connect.run')}</p>
+                  )}
                   <CommandLine command={command} />
                   <p className='text-xs text-muted-foreground'>
                     {t('connect.nodeRequired')}
                   </p>
-                  <p className='text-xs text-muted-foreground'>
-                    {t('connect.installed')}
-                  </p>
-                  <CommandLine command={registerCommand(server, token.token)} />
-                </div>
-              ) : (
-                <p className='text-sm text-muted-foreground'>
-                  {t('connect.unsupported')}
-                </p>
-              )}
+                </TabsContent>
+              </Tabs>
             </TabsContent>
           );
         })}
@@ -368,6 +401,11 @@ function InstallStep({
                 {t('connect.connected', { name: connected.name })}
               </p>
               <RunnerToolsCell runner={connected} />
+              {noCodingToolsFound(connected) ? (
+                <p className='text-sm text-muted-foreground'>
+                  {t('runtimes.pathHint')}
+                </p>
+              ) : null}
             </div>
           </>
         ) : (

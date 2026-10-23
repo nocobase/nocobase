@@ -137,7 +137,7 @@ describe('admin API', () => {
       can: ADMIN,
     });
     expect(managed.body.data[0].canEdit).toBe(true);
-    // Anyone signed in may add a personal runner; a team runner needs the runners item.
+    // Anyone signed in may add a personal runner; a shared runner needs the runners item.
     const personal = await h.request(
       'POST',
       '/agents/runners/registrationTokens',
@@ -889,7 +889,7 @@ describe('admin API', () => {
     expect(shared.body.data.trust).toBe('team');
   });
 
-  it('lets owners and team runner managers choose tools without granting other settings', async () => {
+  it('lets owners and shared runner managers choose tools without granting other settings', async () => {
     h = await createHarness();
     const token = await h.request(
       'POST',

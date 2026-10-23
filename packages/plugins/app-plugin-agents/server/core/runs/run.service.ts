@@ -149,7 +149,7 @@ export interface EnqueueRequest {
   readonly causedByRunId?: string;
   /**
    * How work whose source is not the responsible runs: `auto` (the default) asks the responsible to confirm it;
-   * `mine` queues it at once as the source, on a runner they may use (their own or a team runner), refused with
+   * `mine` queues it at once as the source, on a runner they may use (their own or a shared runner), refused with
    * `NO_RUNNER_AVAILABLE` when there is none now. Ignored when the source is the responsible or there is none.
    */
   readonly execution?: RunExecution;

@@ -1,3 +1,4 @@
+import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
@@ -642,6 +643,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     unknown: 'A execução falhou.',
   },
   runtimes: {
+    pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',
       online: 'Effective slots · online settings',
@@ -904,6 +906,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       version: 'Versão {{version}}',
     },
     trust: {
+      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
       label: 'Para quem trabalha',
       team: 'Equipe',
       teamHint:
@@ -954,6 +957,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     revokedList_many: '{{count}} tempos de execução revogados',
   },
   connect: {
+    ...runtimesEnUS.connect,
     title: 'Adicionar tempo de execução',
     description:
       'Execute o comando abaixo em um host que possua uma ferramenta de codificação instalada: um servidor, uma VM ou seu próprio dispositivo. Os agentes são executados lá com acesso total, como o usuário que executa o executor, e podem ler e alterar qualquer coisa que o usuário possa, incluindo chaves SSH e outras credenciais. O executor não é um limite de segurança: execute-o como um usuário dedicado, em um contêiner ou em uma VM.',
@@ -963,8 +967,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     nodeRequired:
       'O host precisa do Node.js 24 ou mais recente (verifique com node --version). O comando para e diz como instalá-lo quando estiver faltando.',
     installed: 'Já tem o nocobase-runner instalado? Em vez disso, registre-o:',
-    unsupported:
-      'O executor ainda não funciona no Windows. Use macOS ou Linux ou WSL.',
     tokenOnce:
       'O comando carrega uma credencial única para um tempo de execução "{{trust}}". Funciona uma vez, até {{time}}.',
     after:

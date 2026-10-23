@@ -758,7 +758,7 @@ describe('run requests', () => {
       trust: 'ownerOnly',
       ownerUserId: BOB,
     });
-    // Bob's own runner fits the agent, but the agent's variable is for team runners only.
+    // Bob's own runner fits the agent, but the agent's variable is for shared runners only.
     await expect(bobAsks('Mine.', { execution: 'mine' })).rejects.toMatchObject(
       { code: 'NO_RUNNER_AVAILABLE' },
     );

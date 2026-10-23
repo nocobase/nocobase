@@ -24,7 +24,7 @@ const runWaitEnUS = {
       noSharedRunner: 'Only other people’s personal runners are online',
       missingFeatures: 'No runtime supports {{features}}',
       secretsNotAllowed:
-        'Needs a team runtime: {{variables}} is for team runtimes only',
+        'Needs a shared runtime: {{variables}} is for shared runtimes only',
       sameWorkActive: 'After the run already on it',
       concurrencyFull: 'Concurrency full ({{active}}/{{limit}})',
       runnersBusy: 'Compatible runners are full',

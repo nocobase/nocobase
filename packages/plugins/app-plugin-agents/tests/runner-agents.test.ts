@@ -2,7 +2,7 @@
  * Agents built from what runners report. A runner reporting a tool and model signed in no longer creates an agent by
  * itself: only a combination in the application's recommended list does, already enabled (`syncRunner`); every other
  * one only joins the available models list (`availableModelGroups`, `availableModelRows`) until someone creates one from it
- * (`createFromAvailable`). Once an agent exists, visibility (team runners, personal runners, 14-day unreported) and
+ * (`createFromAvailable`). Once an agent exists, visibility (shared runners, personal runners, 14-day unreported) and
  * stale refresh behave as before.
  */
 import type { ToolInfo } from '@nocobase/agent-protocol';
@@ -251,7 +251,7 @@ describe('agents built from runner reports', () => {
     expect(await h.services.roster(conn, 'bob')).toEqual([
       expect.objectContaining({ id, online: false, personalOnly: true }),
     ]);
-    // A team runner takes everyone's work.
+    // A shared runner takes everyone's work.
     await h.registerRunner({
       name: 'dev-2',
       tools: [claude('claude-sonnet-5')],

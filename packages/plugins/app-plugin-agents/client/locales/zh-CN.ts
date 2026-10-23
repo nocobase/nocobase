@@ -68,9 +68,9 @@ const zhCN: AgentsResource = {
       '无法保存或查看变量：服务器未配置密钥。请联系管理员在应用配置中设置 secrets.keys。',
   },
   command: {
-    copy: '复制命令',
+    copy: '复制',
     copied: '已复制',
-    copyFailed: '无法复制，请选中命令后手动复制。',
+    copyFailed: '无法复制，请选中文本后手动复制。',
   },
   tools: {
     claude: 'Claude Code',
@@ -141,11 +141,11 @@ const zhCN: AgentsResource = {
     },
     where: {
       none: '暂无执行机',
-      team_one: '团队 {{count}} 台',
-      team_other: '团队 {{count}} 台',
+      team_one: '共享 {{count}} 台',
+      team_other: '共享 {{count}} 台',
       personal_one: '个人 {{count}} 台在线',
       personal_other: '个人 {{count}} 台在线',
-      both: '团队 {{team}} · 个人 {{personal}}',
+      both: '共享 {{team}} · 个人 {{personal}}',
       names: '{{names}}',
       noneOnline: '现在没有执行机在线',
       personalOnly: '仅个人执行机',
@@ -325,7 +325,7 @@ const zhCN: AgentsResource = {
     actionsHead: '操作',
     title: '环境变量',
     description:
-      '每次运行都会传给编码工具，并在运行记录中脱敏；保存后不再显示值。共享 agent 的使用者可以在自己的电脑上拿到这些值；高风险的密钥请勾选「仅限团队运行环境」。',
+      '每次运行都会传给编码工具，并在运行记录中脱敏；保存后不再显示值。共享 agent 的使用者可以在自己的电脑上拿到这些值；高风险的密钥请勾选「仅限共享运行环境」。',
     add: '添加变量',
     addTitle: '添加环境变量',
     editTitle: '替换 {{name}}',
@@ -335,10 +335,10 @@ const zhCN: AgentsResource = {
     value: '值',
     valueTooLong: '值超过 8 KB。',
     keepValueHint: '留空则保留原来的值。',
-    teamRunnersOnly: '仅限团队运行环境',
+    teamRunnersOnly: '仅限共享运行环境',
     teamRunnersOnlyHint:
-      '不勾选时，运行会把这个值发给接活的运行环境，包括能使用这个 agent 的人自己的个人运行环境。勾选后，带有这个变量的运行只由团队运行环境接。',
-    teamRunnersOnlyBadge: '仅限团队运行环境',
+      '不勾选时，运行会把这个值发给接活的运行环境，包括能使用这个 agent 的人自己的个人运行环境。勾选后，带有这个变量的运行只由共享运行环境接。',
+    teamRunnersOnlyBadge: '仅限共享运行环境',
     fromRunner: '从运行环境取',
     fromRunnerHint:
       '这里不保存值：由接活的运行环境从它所在的机器提供，在那台机器上用 {{command}} 设置，或用 `--pass-env` 放行。不提供这个变量的运行环境会在运行开始前失败。',

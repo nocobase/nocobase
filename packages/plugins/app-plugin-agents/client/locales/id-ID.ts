@@ -1,3 +1,4 @@
+import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
 import type enUS from './en-US.js';
@@ -620,6 +621,7 @@ const idID: LocaleResource<typeof enUS> = {
     unknown: 'Pelariannya gagal.',
   },
   runtimes: {
+    pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',
       online: 'Effective slots · online settings',
@@ -878,6 +880,7 @@ const idID: LocaleResource<typeof enUS> = {
       version: 'Versi {{version}}',
     },
     trust: {
+      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
       label: 'Untuk siapa ini bekerja',
       team: 'Tim',
       teamHint:
@@ -928,6 +931,7 @@ const idID: LocaleResource<typeof enUS> = {
     },
   },
   connect: {
+    ...runtimesEnUS.connect,
     title: 'Tambahkan waktu proses',
     description:
       'Jalankan perintah di bawah ini pada host yang memiliki alat pengkodean terpasang: server, VM, atau perangkat Anda sendiri. Agen berjalan di sana dengan akses penuh, sebagai pengguna yang menjalankan runner, dan dapat membaca serta mengubah apa pun yang dapat dilakukan pengguna, termasuk kunci SSH dan kredensial lainnya. Runner bukanlah batasan keamanan: jalankan sebagai pengguna khusus, dalam container, atau di VM.',
@@ -937,8 +941,6 @@ const idID: LocaleResource<typeof enUS> = {
     nodeRequired:
       'Host memerlukan Node.js 24 atau lebih baru (periksa dengan node --version). Perintah berhenti dan mengatakan cara menginstalnya ketika tidak ada.',
     installed: 'Sudahkah nocobase-runner terinstal? Daftarkan saja:',
-    unsupported:
-      'Runner belum berjalan di Windows. Gunakan macOS atau Linux, atau WSL.',
     tokenOnce:
       'Perintah ini membawa kredensial satu kali untuk runtime "{{trust}}". Ini berfungsi sekali, hingga {{time}}.',
     after:
