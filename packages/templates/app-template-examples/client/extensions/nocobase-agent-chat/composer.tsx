@@ -5,6 +5,7 @@ import {
   useChatAttachments,
   useChatPanel,
   useChatSources,
+  type ChatContextChip,
   type ChatContextInput,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type {
@@ -50,6 +51,28 @@ export interface ComposerProps {
   readonly onStop: () => void;
   /** `page`: the full-page view's box, one rounded field holding the text and a round send button. */
   readonly variant?: 'panel' | 'page';
+}
+
+/** What a chip in the composer carries, as its preview dialog shows it. */
+function chipContent(chip: ChatContextChip): unknown {
+  switch (chip.kind) {
+    case 'selection':
+      return chip.selection.text;
+    case 'filter':
+      return chip.filter;
+    case 'item':
+      return {
+        kind: chip.item.kind,
+        id: chip.item.id,
+        label: chip.item.label,
+      };
+    case 'ui':
+      return {
+        kind: chip.source.kind,
+        id: chip.source.id,
+        label: chip.source.label,
+      };
+  }
 }
 
 export function Composer({
@@ -108,6 +131,7 @@ export function Composer({
   const context: AgentComposerContext = {
     chips: contextChips(input),
     onRemove: sources.remove,
+    inspect: chipContent,
     build: () => {
       if (sources.selectedUIKeys.size === 0) return buildPageContext(input);
       return sources.snapshotUI().then((ui) => {
