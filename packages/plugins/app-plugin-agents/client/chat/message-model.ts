@@ -44,6 +44,12 @@ export const EMPTY_MESSAGES: MessagesState = {
 };
 export type MessagesAction =
   | {
+      readonly type: 'replaceHistory';
+      readonly seq: number;
+      readonly executionId: string;
+      readonly lastSeq: number;
+    }
+  | {
       readonly type: 'page';
       readonly page: UIMessagePage;
       readonly older?: boolean;
@@ -95,6 +101,8 @@ export function mergeUIMessages(
     const left = a.metadata?.seq,
       right = b.metadata?.seq;
     if (left !== undefined && right !== undefined) return left - right;
+    if (left !== undefined) return -1;
+    if (right !== undefined) return 1;
     return (a.metadata?.createdAt ?? '').localeCompare(
       b.metadata?.createdAt ?? '',
     );
@@ -110,6 +118,18 @@ export function messagesReducer(
   action: MessagesAction,
 ): MessagesState {
   switch (action.type) {
+    case 'replaceHistory':
+      return {
+        ...state,
+        items: state.items.filter(
+          (message) =>
+            (message.metadata?.seq !== undefined &&
+              message.metadata.seq <= action.seq) ||
+            (message.role === 'assistant' &&
+              message.metadata?.executionId === action.executionId),
+        ),
+        lastSeq: Math.max(state.lastSeq, action.lastSeq),
+      };
     case 'page': {
       const items = mergeUIMessages(state.items, action.page.items);
       return {

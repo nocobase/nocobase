@@ -754,3 +754,284 @@ for (const width of [1440, 375]) {
     }
   });
 }
+
+test('resend replaces history atomically through installed edit and refresh controls', async ({
+  page,
+  context,
+  browser,
+}) => {
+  const app = applicationUrl!.replace(/\/$/, '');
+  const fixture = await createOnlineAgentModelFixture({ initialText: '' });
+  const headers = { origin: new URL(app).origin };
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  let serviceName: string | undefined;
+  const observer = await context.newPage();
+  let mobile: Awaited<ReturnType<typeof browser.newContext>> | undefined;
+  let resendPosts = 0;
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().endsWith('/resend'))
+      resendPosts++;
+  });
+  const shot = async (name: string) => {
+    await page.mouse.move(20, 70);
+    await expect(page.getByRole('tooltip')).toBeHidden();
+    if (await page.getByRole('dialog').count())
+      await expect(page.getByRole('dialog')).toHaveCSS('opacity', '1');
+    if (!process.env.E2E_SCREENSHOT_DIR) return;
+    await mkdir(process.env.E2E_SCREENSHOT_DIR, { recursive: true });
+    await page.screenshot({
+      path: path.join(process.env.E2E_SCREENSHOT_DIR, name),
+      fullPage: true,
+    });
+  };
+  try {
+    await page.goto(app + '/login');
+    await page.getByLabel('Username or email').fill(process.env.E2E_USERNAME!);
+    await page
+      .getByLabel('Password', { exact: true })
+      .fill(process.env.E2E_PASSWORD!);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await page.waitForURL((url) => !url.pathname.endsWith('/login'));
+    const service = await page.request.post(app + '/api/agents/services', {
+      headers,
+      data: {
+        title: 'Resend acceptance local model',
+        provider: 'openai-compatible',
+        baseUrl: fixture.url,
+        apiKey: 'disposable-fixture-only',
+        enabled: true,
+        models: [{ value: 'fixture-chat', kind: 'chat' }],
+      },
+    });
+    expect(service.status()).toBe(201);
+    serviceName = (await service.json()).data.name;
+    await page.reload();
+    await page.getByTestId('chat-header-button').click();
+    const panel = page.getByTestId('chat-panel');
+    await panel
+      .getByRole('textbox', { name: 'Message to the agent' })
+      .fill('Original first input');
+    const created = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().endsWith('/api/agents/conversations'),
+    );
+    await expect(panel.getByTestId('chat-send')).toBeEnabled();
+    await panel.getByTestId('chat-send').click();
+    const id = (await (await created).json()).data.id as string;
+    const endpoint = app + '/api/agents/conversations/' + id;
+    const detail = async () =>
+      (await (await page.request.get(endpoint)).json()).data;
+    const history = async () =>
+      (await (await page.request.get(endpoint + '/messages?after=0')).json())
+        .data as {
+        id: string;
+        role: string;
+        metadata: {
+          seq: number;
+          revision: number;
+          createdAt: string;
+          sourceUserMessageId?: string;
+        };
+      }[];
+    await expect.poll(() => fixture.streams.length).toBe(1);
+    fixture.append(0, 'First answer to delete.');
+    await expect(
+      panel.getByText('First answer to delete.', { exact: true }),
+    ).toBeVisible();
+    fixture.complete(0);
+    await expect
+      .poll(async () => (await detail()).execution?.status)
+      .toBe('idle');
+    await panel
+      .getByRole('textbox', { name: 'Message to the agent' })
+      .fill('Later user input to delete');
+    await expect(panel.getByTestId('chat-send')).toBeEnabled();
+    await panel.getByTestId('chat-send').click();
+    await expect.poll(() => fixture.streams.length).toBe(2);
+    fixture.append(1, 'Later answer to delete.');
+    await expect(
+      panel.getByText('Later answer to delete.', { exact: true }),
+    ).toBeVisible();
+    fixture.complete(1);
+    await expect
+      .poll(async () => (await detail()).execution?.status)
+      .toBe('idle');
+    const before = await history();
+    expect(before).toHaveLength(4);
+    const target = before[0]!;
+    const entry = app + '/?chat=' + encodeURIComponent(id);
+    await observer.goto(entry);
+    const otherPanel = observer.getByTestId('chat-panel');
+    await expect(
+      otherPanel.getByText('Later user input to delete', { exact: true }),
+    ).toBeVisible();
+    const bottom = panel.getByRole('textbox', { name: 'Message to the agent' });
+    await bottom.fill('Keep my unsent composer draft');
+    const row = panel.locator('[data-message-id="' + target.id + '"]');
+    await row.hover();
+    await row.getByRole('button', { name: 'Edit', exact: true }).click();
+    const editor = row.getByRole('textbox', { name: 'Edit', exact: true });
+    await expect(editor).toHaveClass(/\bbg-background\b/);
+    await expect(
+      row.locator('[data-chat-message-editor]').locator('..'),
+    ).not.toHaveClass(/bg-primary/);
+    await expect(row).not.toContainText(
+      'Original attachments and context will be kept.',
+    );
+    await expect(row.locator('[data-chat-message-actions]')).toHaveCount(0);
+    await editor.fill('');
+    await editor.pressSequentially('Revised first input');
+    await editor.press('Enter');
+    await editor.pressSequentially('Second line');
+    expect(resendPosts).toBe(0);
+    await expect(bottom).toHaveValue('Keep my unsent composer draft');
+    await shot('resend-edit-desktop-en.png');
+    await row.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(editor).toHaveCount(0);
+    expect((await history()).map((message) => message.id)).toEqual(
+      before.map((message) => message.id),
+    );
+    await expect(bottom).toHaveValue('Keep my unsent composer draft');
+    await row.getByRole('button', { name: 'Edit', exact: true }).click();
+    await editor.fill('Revised first input\nSecond line');
+    await row.getByRole('button', { name: 'Send', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect.poll(() => fixture.streams.length).toBe(3);
+    await expect(editor).toHaveCount(0);
+    await expect(
+      panel.getByText('Later user input to delete', { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      otherPanel.getByText('Later user input to delete', { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      otherPanel.getByText('First answer to delete.', { exact: true }),
+    ).toHaveCount(0);
+    await expect(bottom).toHaveValue('Keep my unsent composer draft');
+    expect(resendPosts).toBe(1);
+    expect(JSON.stringify(fixture.requests[2]!.messages)).toContain(
+      'Revised first input',
+    );
+    expect(JSON.stringify(fixture.requests[2]!.messages)).not.toContain(
+      'Later user input',
+    );
+    fixture.append(2, 'Replacement answer.');
+    await expect(
+      panel.getByText('Replacement answer.', { exact: true }),
+    ).toBeVisible();
+    fixture.complete(2);
+    await expect
+      .poll(async () => (await detail()).execution?.status)
+      .toBe('idle');
+    const edited = await history();
+    expect(edited).toHaveLength(2);
+    expect(edited[0]).toMatchObject({
+      id: target.id,
+      metadata: {
+        seq: target.metadata.seq,
+        createdAt: target.metadata.createdAt,
+        revision: target.metadata.revision + 1,
+      },
+    });
+    expect(edited[1]!.metadata.seq).toBeGreaterThan(before[3]!.metadata.seq);
+    expect(edited[1]!.metadata.sourceUserMessageId).toBe(target.id);
+    expect(edited[1]!.id).not.toBe(before[1]!.id);
+    const assistant = panel.locator(
+      '[data-message-id="' + edited[1]!.id + '"]',
+    );
+    await assistant.hover();
+    const refresh = assistant.getByRole('button', {
+      name: 'Regenerate',
+      exact: true,
+    });
+    await expect(refresh).toBeEnabled();
+    await refresh.click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect.poll(() => fixture.streams.length).toBe(4);
+    fixture.append(3, 'Refreshed replacement answer.');
+    await expect(
+      panel.getByText('Refreshed replacement answer.', { exact: true }),
+    ).toBeVisible();
+    fixture.complete(3);
+    await expect
+      .poll(async () => (await detail()).execution?.status)
+      .toBe('idle');
+    expect(resendPosts).toBe(2);
+    const final = await history();
+    expect(final).toHaveLength(2);
+    expect(final[0]!.metadata.revision).toBe(target.metadata.revision + 2);
+    expect(final[1]!.id).not.toBe(edited[1]!.id);
+    await expect(bottom).toHaveValue('Keep my unsent composer draft');
+    await page.goto(entry);
+    await expect(
+      panel.getByText('Refreshed replacement answer.', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      panel.getByText('First answer to delete.', { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      panel.getByText('Later user input to delete', { exact: true }),
+    ).toHaveCount(0);
+    expect(fixture.streams).toHaveLength(4);
+    await panel.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.getByRole('button', { name: 'Open account menu' }).click();
+    await page.getByRole('menuitem', { name: /Language/ }).hover();
+    await page
+      .getByRole('menuitemradio', { name: '中文', exact: true })
+      .click();
+    await page.getByTestId('chat-header-button').click();
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await expect(page.locator('html')).toHaveClass(/dark/);
+    const chineseRow = panel.locator('[data-message-id="' + target.id + '"]');
+    await chineseRow.hover();
+    await chineseRow.getByRole('button', { name: '编辑', exact: true }).click();
+    await expect(
+      chineseRow.getByRole('textbox', { name: '编辑', exact: true }),
+    ).toHaveValue('Revised first input\nSecond line');
+    await expect(chineseRow).not.toContainText('将保留原附件和上下文。');
+    await expect(
+      chineseRow.locator('[data-chat-message-editor]').locator('..'),
+    ).not.toHaveClass(/bg-primary/);
+    await shot('resend-edit-desktop-dark-zh.png');
+    mobile = await browser.newContext({
+      storageState: await context.storageState(),
+      viewport: { width: 375, height: 812 },
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: 'dark',
+    });
+    const touch = await mobile.newPage();
+    await touch.goto(entry);
+    const mobilePanel = touch.getByTestId('chat-panel');
+    await expect(mobilePanel).toBeVisible();
+    const mobileUser = mobilePanel.locator(
+      '[data-message-id="' + target.id + '"]',
+    );
+    await mobileUser.getByRole('button', { name: /^(Edit|编辑)$/ }).tap();
+    await expect(mobileUser.locator('textarea')).toBeVisible();
+    expect(
+      await touch.evaluate(
+        'document.documentElement.scrollWidth <= innerWidth + 1',
+      ),
+    ).toBe(true);
+    if (process.env.E2E_SCREENSHOT_DIR)
+      await touch.screenshot({
+        path: path.join(
+          process.env.E2E_SCREENSHOT_DIR,
+          'resend-edit-mobile-dark.png',
+        ),
+        fullPage: true,
+      });
+    expect(errors).toEqual([]);
+  } finally {
+    await mobile?.close();
+    await observer.close();
+    if (serviceName)
+      await page.request.delete(app + '/api/agents/services/' + serviceName, {
+        headers,
+      });
+    await fixture.close();
+  }
+});

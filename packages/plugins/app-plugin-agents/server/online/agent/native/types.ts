@@ -1,3 +1,26 @@
+import type { Schema } from 'ai';
+import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
+import type {
+  NativeInput,
+  NativeApproval,
+  OnlineAgentJson,
+  OnlineAgentSendOptions,
+  OnlineAgentBoundary,
+} from '../types.js';
+
+export type NativeExecutionRequest =
+  | {
+      kind: 'append';
+      inputs: NativeInput[];
+      input?: OnlineAgentSendOptions & { boundary?: OnlineAgentBoundary };
+      schema?: Schema<OnlineAgentJson>;
+    }
+  | {
+      kind: 'resend';
+      options: OnlineAgentResendOptions;
+      input: OnlineAgentSendOptions & { boundary?: OnlineAgentBoundary };
+    }
+  | { kind: 'approval'; approval: NativeApproval };
 import type { OnlineAgentSandbox } from '../../sandbox/types.js';
 import type { NativeToolExecution } from '../../sandbox/execution.js';
 import type { OnlineAgentResult } from '../types.js';

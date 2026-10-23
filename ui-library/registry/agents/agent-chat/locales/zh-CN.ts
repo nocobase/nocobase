@@ -3,6 +3,18 @@ import type { AgentChatLocale } from './en-US.js';
 const agentChatZhCN: AgentChatLocale = {
   chat: {
     retrySaving: '重试保存',
+    cancel: '取消',
+    editMessage: '编辑',
+    copyMessage: '复制',
+    refreshReply: '重新生成',
+    copyFailed: '无法复制消息。',
+    resendConfirm: '重新发送',
+    resend: {
+      rejected: '消息未重新发送，已保留编辑内容。',
+      unknown:
+        '重新发送的结果未知，请先刷新历史并等待，再决定是否重试；消息可能已经接收。',
+      needsSync: '消息已接收，但历史尚未同步。请刷新历史，不要再次发送。',
+    },
     contextFailed: '无法读取所选上下文或发送消息，请检查当前页面后重试。',
     approval: {
       request: '此工具需要您批准后才能执行。',

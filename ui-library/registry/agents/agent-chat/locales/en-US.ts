@@ -2,6 +2,17 @@
 export interface AgentChatLocale {
   readonly chat: {
     readonly retrySaving: string;
+    readonly cancel: string;
+    readonly editMessage: string;
+    readonly copyMessage: string;
+    readonly refreshReply: string;
+    readonly copyFailed: string;
+    readonly resendConfirm: string;
+    readonly resend: {
+      readonly rejected: string;
+      readonly unknown: string;
+      readonly needsSync: string;
+    };
     readonly contextFailed: string;
     readonly approval: {
       readonly request: string;
@@ -247,6 +258,19 @@ export interface AgentChatLocale {
 const agentChatEnUS: AgentChatLocale = {
   chat: {
     retrySaving: 'Retry saving',
+    cancel: 'Cancel',
+    editMessage: 'Edit',
+    copyMessage: 'Copy',
+    refreshReply: 'Regenerate',
+    copyFailed: 'Could not copy the message.',
+    resendConfirm: 'Resend',
+    resend: {
+      rejected: 'The message was not resent. Your edit has been kept.',
+      unknown:
+        'The resend result is unknown. Refresh history and wait before trying again; the message may already have been accepted.',
+      needsSync:
+        'The message was accepted, but history has not synchronized. Refresh history; do not send it again.',
+    },
     contextFailed:
       'Could not read the selected context or send the message. Check the current page and try again.',
     approval: {

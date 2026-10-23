@@ -197,6 +197,9 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
   async approve(_input: NativeApproval): Promise<number> {
     throw unsupportedCapability('runner', 'approval');
   }
+  async resend(): Promise<number> {
+    throw unsupportedCapability('runner', 'message resend');
+  }
   send(
     messages: ModelMessage[],
     input?: OnlineAgentSendOptions,

@@ -6,6 +6,8 @@ Everything that has to stay consistent across upgrades stays in the agents plugi
 
 Empty SDK assistant placeholders and framework-only successful-execution notices do not produce message bubbles. The plugin's `chatMessageSegments` and `chatFeedback` provide these shared display decisions without deleting or changing persisted SDK parts. The transcript has no horizontal scrollbar; oversized Markdown code blocks and tables remain scrollable inside their own bounded content. Updates to an application's installed source should preserve its readiness, mobile dialog, approvals and custom message extras while applying these presentation changes.
 
+Native conversations offer Edit/Copy on user messages and Copy/Regenerate on linked assistant messages; Runner conversations offer Copy only. Editing preserves the original files and context and never resets the bottom composer draft. Both Send from the inline editor and Regenerate execute directly without a confirmation dialog. Later messages are deleted and completed business operations are not undone; pending-state disabling and a synchronous guard prevent duplicate submissions. This source requires the plugin's `useResendMessage` export and `/conversations/:id/resend` route. Upgrade the plugin and installed Registry source together. Rejected edits remain editable; unknown admission only synchronizes reads and never retries the POST automatically.
+
 Nonempty SDK reasoning renders in order through `ReasoningPart`, using the same safe Markdown renderer as answers. Only the currently streaming part opens automatically; part end and newly mounted history default to collapsed. Manual open/close choices remain local to that mounted message/part and override deltas, end chunks and history revisions. Reasoning-only output replaces generic waiting feedback, but does not add an answer-writing cursor or imply execution completion. Text copy/search helpers remain text-only. Providers that return no reasoning and the current text-only Runner adapter keep their existing presentation.
 
 An Agents npm upgrade does not replace source already installed into an application's extensions directory. Update that application's Registry files (including `reasoning-part.tsx`), locale keys and `hasOutput`/part rendering together, preserving its own readiness, recovery and business extensions.
@@ -16,6 +18,7 @@ An Agents npm upgrade does not replace source already installed into an applicat
 | `panel-header.tsx`        | `PanelHeader`, `ConversationTitle`                                                               |
 | `conversation-view.tsx`   | `ConversationView`, `PAGE_COLUMN`                                                                |
 | `message-item.tsx`        | `MessageItem`, `PendingItem`                                                                     |
+| `message-actions.tsx`     | `MessageActions`, `MessageEditor`: public-text copy and direct inline edit/resend controls       |
 | `reasoning-part.tsx`      | `ReasoningPart`: accessible, per-part collapsible SDK reasoning with sanitized Markdown          |
 | `message-attachments.tsx` | `MessageAttachments`: a message's files through `attachment-list`                                |
 | `live-steps.tsx`          | `LiveSteps`, `TurnAnnouncer`                                                                     |

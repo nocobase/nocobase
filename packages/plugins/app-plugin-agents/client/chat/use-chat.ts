@@ -84,6 +84,7 @@ export function isChatPayload(
   const kind = (payload as { kind?: unknown }).kind;
   return (
     kind === 'conversation.messages' ||
+    kind === 'conversation.historyReplaced' ||
     kind === 'conversation.changed' ||
     kind === 'conversation.messageUpdated'
   );
@@ -247,11 +248,10 @@ export function useConversationMessages(
   );
   const [draft, draftDispatch] = useReducer(messagesReducer, EMPTY_MESSAGES);
   useEffect(() => {
-    if (conversationId) void controller.loadHistory(conversationId);
+    if (conversationId) void controller.refresh(conversationId).catch(() => {});
   }, [controller, conversationId]);
   const fetchNewer = useCallback(() => {
-    if (conversationId)
-      void controller.loadHistory(conversationId, false, true);
+    if (conversationId) void controller.refresh(conversationId).catch(() => {});
   }, [controller, conversationId]);
   useRealtimeTopic(conversationId ? CONVERSATIONS_TOPIC : null, (payload) => {
     if (!conversationId) return;
@@ -264,6 +264,10 @@ export function useConversationMessages(
     }
     if (!isChatPayload(payload) || payload.conversationId !== conversationId)
       return;
+    if (payload.kind === 'conversation.historyReplaced') {
+      controller.historyReplaced(payload);
+      return;
+    }
     if (payload.kind === 'conversation.messageUpdated')
       controller.messageUpdated(
         conversationId,
@@ -334,6 +338,34 @@ export function useConversationMessages(
   };
 }
 
+export function useResendMessage(conversationId: string | null): {
+  isPending: boolean;
+  resend(
+    options: import('../../shared/resend.js').OnlineAgentResendOptions & {
+      messageId: string;
+    },
+  ): Promise<import('./controller.js').ResendResult>;
+} {
+  const controller = useChatController();
+  useSyncExternalStore(
+    controller.subscribe,
+    controller.snapshot,
+    controller.snapshot,
+  );
+  return {
+    isPending: Boolean(
+      conversationId && controller.isResending(conversationId),
+    ),
+    resend: (options): Promise<import('./controller.js').ResendResult> => {
+      if (!conversationId)
+        return Promise.resolve({
+          outcome: 'rejected' as const,
+          error: new Error('A conversation is required.'),
+        });
+      return controller.resend(conversationId, options);
+    },
+  };
+}
 export interface SendInput {
   readonly content: string;
   readonly context: PageContext | undefined;

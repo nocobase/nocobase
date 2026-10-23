@@ -1,3 +1,4 @@
+import type { NativeExecutionRequest } from './types.js';
 import type { OnlineAgentSandboxProvider } from '../../sandbox/types.js';
 import { NativeToolExecution } from '../../sandbox/execution.js';
 import { jsonSafe } from '../messages/json.js';
@@ -5,11 +6,8 @@ import type {
   OnlineAgentJson,
   OnlineAgentOutcome,
   OnlineAgentContext,
-  OnlineAgentOptions,
   OnlineAgentToolContext,
-  NativeApproval,
   NativeSnapshot,
-  NativeInput,
   NativeMessage,
   NativeUIChunk,
 } from '../types.js';
@@ -20,7 +18,6 @@ import {
 import {
   streamText,
   Output,
-  type Schema,
   toUIMessageStream,
   stepCountIs,
   isToolUIPart,
@@ -33,10 +30,7 @@ import {
   appUIMessageMetadataSchema,
   type AppUIMessageMetadata,
 } from '../../../../shared/online-agent.js';
-import {
-  MESSAGE_CONTENT_MAX,
-  type ResolvedPageContext,
-} from '../../../../shared/conversations.js';
+import { MESSAGE_CONTENT_MAX } from '../../../../shared/conversations.js';
 import type { ModelRef } from '../../../../shared/models.js';
 import { conflict, invalid } from '../../../kernel/errors.js';
 import type { IdSource } from '../../../kernel/ids.js';
@@ -88,26 +82,23 @@ export class NativeOnlineAgent {
   async run(
     context: OnlineAgentContext,
     id: string,
-    inputs: NativeInput[],
-    input:
-      | {
-          attachmentIds?: string[][];
-          clientId?: string;
-          messageId?: string;
-          workContext?: ResolvedPageContext;
-          overrides?: OnlineAgentOptions;
-          selectedModel?: ModelRef;
-          boundary?: 'http';
-        }
-      | undefined,
+    request: NativeExecutionRequest,
     execution: NativeExecution,
     accepted: Acceptance,
-    approval?: NativeApproval,
-    schema?: Schema<OnlineAgentJson>,
   ): Promise<void> {
+    const inputs = request.kind === 'append' ? request.inputs : [];
+    const input = request.kind !== 'approval' ? request.input : undefined;
+    const approval = request.kind === 'approval' ? request.approval : undefined;
+    const schema = request.kind === 'append' ? request.schema : undefined;
+    let sourceUserMessageId = inputs.at(-1)?.id;
     let metadata: AppUIMessageMetadata;
     let priorMessage: NativeMessage | undefined;
     let previousPage: ModelMessage | undefined;
+    let resendHistory:
+      | Awaited<
+          ReturnType<OnlineAgentSessionManager['native']['executionHistory']>
+        >
+      | undefined;
     let tools!: ReturnType<OnlineAgentConfigurator['bind']>;
     let model: LanguageModel;
     let afterSeq: number;
@@ -222,7 +213,7 @@ export class NativeOnlineAgent {
         if (!waitingApprovals) await prepareTools();
       } else {
         await prepareTools();
-        if (!background) {
+        if (!background && request.kind === 'append') {
           if (inputs.length !== 1)
             throw invalid('Submit only the current user message.');
           const content = inputs[0].parts;
@@ -238,14 +229,15 @@ export class NativeOnlineAgent {
             throw invalid('A valid user input is required.');
         }
         messageId = this.deps.ids.next();
-        previousPage = (
-          await this.deps.sessions.native.executionHistory(
-            context.user.id,
-            id,
-            input?.workContext,
-            !context.authorization.identity.keyScope,
-          )
-        ).page;
+        if (request.kind === 'append')
+          previousPage = (
+            await this.deps.sessions.native.executionHistory(
+              context.user.id,
+              id,
+              input?.workContext,
+              !context.authorization.identity.keyScope,
+            )
+          ).page;
         execution.abort.signal.throwIfAborted();
         if (!background)
           response = await this.deps.uiStreams.open(
@@ -255,16 +247,33 @@ export class NativeOnlineAgent {
             'native',
             () => execution.abort.abort(),
           );
-        afterSeq = await this.deps.sessions.native.accept(
-          context.user.id,
-          id,
-          background ? inputs : inputs[0],
-          config,
-          selected,
-          executionId,
-          messageId,
-          session,
-        );
+        if (request.kind === 'resend') {
+          const result = await this.deps.sessions.native.resend(
+            context.user.id,
+            id,
+            request.options,
+            config,
+            selected,
+            executionId,
+            messageId,
+            session,
+            !context.authorization.identity.keyScope,
+          );
+          afterSeq = result.lastSeq;
+          sourceUserMessageId = result.messageId;
+          resendHistory = result.history;
+        } else {
+          afterSeq = await this.deps.sessions.native.accept(
+            context.user.id,
+            id,
+            background ? inputs : inputs[0],
+            config,
+            selected,
+            executionId,
+            messageId,
+            session,
+          );
+        }
         execution.admitted = true;
       }
       metadata = {
@@ -276,8 +285,8 @@ export class NativeOnlineAgent {
         agentId: config.agentId ?? 'online',
         executionId,
         turnId: executionId,
-        ...(!priorMessage && inputs.length
-          ? { sourceUserMessageId: inputs[inputs.length - 1].id }
+        ...(!priorMessage && sourceUserMessageId
+          ? { sourceUserMessageId }
           : {}),
       };
       if (response) {
@@ -359,15 +368,17 @@ export class NativeOnlineAgent {
     let finishChunk: NativeUIChunk = { type: 'finish' };
     output?.write({ type: 'start', messageId, messageMetadata: metadata });
     try {
-      const trusted = await this.deps.sessions.native.executionHistory(
-        context.user.id,
-        id,
-        input?.workContext,
-        false,
-      );
+      const trusted =
+        resendHistory ??
+        (await this.deps.sessions.native.executionHistory(
+          context.user.id,
+          id,
+          input?.workContext,
+          false,
+        ));
       const original = trusted.ui;
       const history = trusted.model;
-      if (previousPage) history.push(previousPage);
+      if (request.kind !== 'resend' && previousPage) history.push(previousPage);
       if (priorMessage)
         privateMessage = structuredClone(
           original.find((message) => message.id === messageId)!,

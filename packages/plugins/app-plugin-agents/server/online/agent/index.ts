@@ -1,3 +1,4 @@
+export type { OnlineAgentResendOptions } from '../../../shared/resend.js';
 export type {
   OnlineAgentSandbox,
   OnlineAgentSandboxSkill,

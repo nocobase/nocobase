@@ -1,3 +1,4 @@
+import type { OnlineAgentResendOptions } from '../../../shared/resend.js';
 import type { JSONSchema7, ModelMessage, Schema } from 'ai';
 import type { AppUIMessage } from '../../../shared/online-agent.js';
 import type { ModelRef } from '../../../shared/models.js';
@@ -44,6 +45,7 @@ export interface RealtimeOnlineAgent extends OnlineAgent {
     messages: ModelMessage[],
     input?: OnlineAgentSendOptions,
   ): Promise<number>;
+  resend(options?: OnlineAgentResendOptions): Promise<number>;
   receive(): Promise<ReadableStream<NativeUIChunk> | null>;
   approve(input: NativeApproval): Promise<number>;
 }
@@ -145,6 +147,13 @@ export interface NativeSessionHost {
     messages: ModelMessage[],
     input?: OnlineAgentSendOptions & { boundary?: OnlineAgentBoundary },
     schema?: Schema<OnlineAgentJson>,
+    onExecution?: (execution: OnlineAgentExecution) => void,
+  ): Promise<number>;
+  resend(
+    context: OnlineAgentContext,
+    id: string,
+    options: OnlineAgentResendOptions,
+    input: OnlineAgentSendOptions & { boundary?: OnlineAgentBoundary },
     onExecution?: (execution: OnlineAgentExecution) => void,
   ): Promise<number>;
   approve(
