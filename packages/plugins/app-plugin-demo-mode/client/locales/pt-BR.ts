@@ -214,6 +214,21 @@ const resource: DemoModeResource = {
           'Um serviço de modelos existente responde; as credenciais ficam nele.',
         service: 'Serviço de modelos',
         modelId: 'Modelo',
+        connection: {
+          new: 'Novo serviço de modelo de demonstração',
+          createHelp:
+            'Cria um serviço compatível com OpenAI. Salve a conexão e depois as configurações do chat.',
+          shared:
+            'As alterações também afetam outros agentes que usam este serviço.',
+          endpoint: 'Endpoint (URL base)',
+          apiKey: 'Chave de API',
+          keepKey: 'Configurada; deixe em branco para manter',
+          enterKey: 'Insira uma chave de API se necessário',
+          clearKey: 'Remover a chave de API salva',
+          save: 'Salvar conexão',
+          saved:
+            'Conexão salva. Salve as configurações do chat se alterou o modelo selecionado.',
+        },
         cost: 'Cada conversa de visitante consome tokens deste serviço.',
         tools: 'Ferramentas',
         noTools: 'O aplicativo não declara ferramentas de chat.',

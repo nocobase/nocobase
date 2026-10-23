@@ -1,4 +1,4 @@
-import { useContext, type ReactElement } from 'react';
+import { useContext, useState, type ReactElement } from 'react';
 
 import type { DemoChatConfiguration } from '../../shared/configuration.js';
 import { Alert, AlertTitle } from '../components/ui/alert.js';
@@ -9,7 +9,6 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from '../components/ui/empty.js';
-import { Input } from '../components/ui/input.js';
 import {
   Select,
   SelectContent,
@@ -26,6 +25,7 @@ import {
   type Configuration,
 } from './context.js';
 import { SettingRow, SettingsCard } from './shared.js';
+import { ModelConnection } from './model-connection.js';
 
 /**
  * The application's simulations of outside work, such as the demo model or a Runner. A disabled one fails closed:
@@ -122,7 +122,9 @@ export function ChatCard({
   const { view } = configuration;
   const draft = useDraft('chat', 'chat', view.chat, configuration);
   const chat: DemoChatConfiguration = draft.draft;
-  const disabled = !configuration.canEdit || draft.saving || view.busy;
+  const [connectionSaving, setConnectionSaving] = useState(false);
+  const disabled =
+    !configuration.canEdit || draft.saving || view.busy || connectionSaving;
   const set = (patch: Partial<DemoChatConfiguration>) =>
     draft.setDraft({ ...chat, ...patch });
   const tools = [
@@ -136,9 +138,13 @@ export function ChatCard({
         ),
       })),
   ];
+  const [connectionPending, setConnectionPending] = useState(false);
   const live = chat.model !== null;
   const incomplete =
-    live && (!chat.model?.modelService.trim() || !chat.model?.model.trim());
+    live &&
+    (connectionPending ||
+      !chat.model?.modelService.trim() ||
+      !chat.model?.model.trim());
   return (
     <SettingsCard
       title={t('simulation.chat.title')}
@@ -209,35 +215,19 @@ export function ChatCard({
         </Select>
       </SettingRow>
       {live && chat.model ? (
-        <div className='grid gap-3 rounded-lg border p-4 sm:grid-cols-2'>
-          <label className='flex flex-col gap-2 text-sm font-medium'>
-            {t('simulation.chat.service')}
-            <Input
-              required
-              disabled={disabled}
-              value={chat.model.modelService}
-              onChange={(event) =>
-                set({
-                  model: { ...chat.model!, modelService: event.target.value },
-                })
-              }
-            />
-          </label>
-          <label className='flex flex-col gap-2 text-sm font-medium'>
-            {t('simulation.chat.modelId')}
-            <Input
-              required
-              disabled={disabled}
-              value={chat.model.model}
-              onChange={(event) =>
-                set({ model: { ...chat.model!, model: event.target.value } })
-              }
-            />
-          </label>
-          <Alert className='sm:col-span-2'>
+        <>
+          <ModelConnection
+            model={chat.model}
+            onChange={(model) => set({ model })}
+            disabled={disabled}
+            configuration={configuration}
+            onPending={setConnectionPending}
+            onSaving={setConnectionSaving}
+          />
+          <Alert>
             <AlertTitle>{t('simulation.chat.cost')}</AlertTitle>
           </Alert>
-        </div>
+        </>
       ) : null}
       <div className='flex flex-col gap-2'>
         <p className='text-sm font-medium'>{t('simulation.chat.tools')}</p>

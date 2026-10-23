@@ -23,6 +23,7 @@ import {
 } from '../configuration/schemas.js';
 import { demoConfigurationToken } from '../tokens.js';
 import { demoWriteGuardToken } from '../guard.js';
+import { modelServiceRoutes } from './model-services.js';
 
 export const DEMO_CONFIGURATION_SETTINGS = 'demoMode.configuration';
 export const configurationRoutes: AppApiRouteContribution<AppPluginApplication> =
@@ -122,6 +123,7 @@ export const configurationRoutes: AppApiRouteContribution<AppPluginApplication> 
         },
       );
     }
+    routes.route('/modelServices', modelServiceRoutes(container, allowed));
     router.route('/demoMode/configuration', routes);
     return router;
   });

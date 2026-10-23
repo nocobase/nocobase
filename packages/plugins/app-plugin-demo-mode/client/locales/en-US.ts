@@ -206,6 +206,21 @@ const resource = {
           'An existing model service answers; its credentials stay there.',
         service: 'Model service',
         modelId: 'Model',
+        connection: {
+          new: 'New demo model service',
+          createHelp:
+            'Creates an OpenAI-compatible model service. Save the connection, then save the chat settings to use it.',
+          shared:
+            'Changes to this connection also apply to other agents using this model service.',
+          endpoint: 'Endpoint (base URL)',
+          apiKey: 'API key',
+          keepKey: 'Configured; leave blank to keep it',
+          enterKey: 'Enter an API key if required',
+          clearKey: 'Clear the saved API key',
+          save: 'Save connection',
+          saved:
+            'Connection saved. Save the chat settings if you changed the selected model.',
+        },
         cost: 'Every visitor conversation uses this service’s tokens.',
         tools: 'Tools',
         noTools: 'The application declares no chat tools.',

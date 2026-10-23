@@ -119,12 +119,16 @@ function demoApi({
   configuration = view(),
   onPut,
   onRead,
+  onConnection,
+  modelServices = [],
   data = status,
 }: {
   data?: typeof status;
   enabled?: boolean;
   permissions?: readonly object[];
   configuration?: ReturnType<typeof view>;
+  modelServices?: import('../../shared/model-services.js').DemoModelService[];
+  onConnection?: (call: ApiCall) => unknown;
   onPut?: (call: ApiCall) => unknown;
   onRead?: (path: string) => Promise<void>;
 } = {}) {
@@ -155,6 +159,10 @@ function demoApi({
       return { data: [{ name: 'userPreferences', title: 'View preferences' }] };
     if (call.method === 'GET' && call.path === 'demoMode/configuration')
       return { data: configuration };
+    if (call.path === 'demoMode/configuration/modelServices') {
+      if (call.method === 'GET') return { data: modelServices };
+      return onConnection?.(call);
+    }
     if (call.method === 'PUT' && onPut) return onPut(call);
     if (call.method === 'POST' && call.path === 'demoMode/data/clear')
       return {
@@ -447,4 +455,86 @@ it('keeps the host refresh pending until both data and configuration settle', as
   expect(refresh).toBeDisabled();
   releaseConfiguration();
   await waitFor(() => expect(refresh).toBeEnabled());
+});
+
+it('edits model endpoints with a write-only key and keeps connection saves separate from chat policy', async () => {
+  const service = {
+    name: 'live',
+    title: 'Live',
+    provider: 'openai-compatible',
+    enabled: true,
+    apiKeySet: true,
+    baseUrl: 'https://old.example.com/v1',
+    models: [
+      {
+        value: 'chat-v1',
+        label: 'Chat',
+        kind: 'chat' as const,
+        dimensions: null,
+      },
+    ],
+  };
+  const writes: ApiCall[] = [];
+  const permissions = [
+    ...everything,
+    {
+      resource: { type: 'settings', id: 'agents.services' },
+      actions: ['read', 'manage'],
+    },
+  ];
+  await renderSettings(
+    demoApi({
+      permissions,
+      modelServices: [service],
+      configuration: view({
+        chat: {
+          enabled: true,
+          model: { modelService: 'live', model: 'chat-v1' },
+          tools: {},
+        },
+      }),
+      onConnection: (call) => {
+        writes.push(call);
+        return {
+          data: {
+            ...service,
+            baseUrl: 'https://new.example.com/v1',
+            apiKeySet: writes.length !== 3,
+          },
+        };
+      },
+    }),
+    '/?tab=simulation',
+  );
+  const endpoint = await screen.findByLabelText('Endpoint（API 基础地址）');
+  expect(screen.getByLabelText('API key')).toHaveValue('');
+  fireEvent.change(endpoint, {
+    target: { value: 'https://new.example.com/v1' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '保存连接' }));
+  await waitFor(() => expect(writes).toHaveLength(1));
+  expect(writes[0].json).toEqual({
+    service: 'live',
+    baseUrl: 'https://new.example.com/v1',
+    model: 'chat-v1',
+  });
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: '保存连接' })).toBeDisabled(),
+  );
+  fireEvent.change(screen.getByLabelText('API key'), {
+    target: { value: 'replacement-secret' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '保存连接' }));
+  await waitFor(() => expect(writes).toHaveLength(2));
+  expect(writes[1].json).toMatchObject({ apiKey: 'replacement-secret' });
+  await waitFor(() => expect(screen.getByLabelText('API key')).toHaveValue(''));
+  fireEvent.click(screen.getByRole('switch', { name: '清除已保存的 API key' }));
+  fireEvent.click(screen.getByRole('button', { name: '保存连接' }));
+  await waitFor(() => expect(writes).toHaveLength(3));
+  expect(writes[2].json).toMatchObject({ apiKey: null });
+  await waitFor(() =>
+    expect(
+      screen.queryByRole('switch', { name: '清除已保存的 API key' }),
+    ).not.toBeInTheDocument(),
+  );
 });

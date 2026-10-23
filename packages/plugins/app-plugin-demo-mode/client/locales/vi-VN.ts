@@ -208,6 +208,21 @@ const resource: DemoModeResource = {
           'Một dịch vụ mô hình có sẵn trả lời; thông tin xác thực vẫn ở đó.',
         service: 'Dịch vụ mô hình',
         modelId: 'Mô hình',
+        connection: {
+          new: 'Dịch vụ mô hình demo mới',
+          createHelp:
+            'Tạo dịch vụ tương thích OpenAI. Lưu kết nối rồi lưu cài đặt trò chuyện để sử dụng.',
+          shared:
+            'Thay đổi kết nối cũng ảnh hưởng đến các agent khác dùng dịch vụ này.',
+          endpoint: 'Endpoint (URL cơ sở)',
+          apiKey: 'Khóa API',
+          keepKey: 'Đã cấu hình; để trống để giữ nguyên',
+          enterKey: 'Nhập khóa API nếu cần',
+          clearKey: 'Xóa khóa API đã lưu',
+          save: 'Lưu kết nối',
+          saved:
+            'Đã lưu kết nối. Lưu cài đặt trò chuyện nếu bạn đã đổi mô hình được chọn.',
+        },
         cost: 'Mỗi cuộc trò chuyện của khách tiêu tốn token của dịch vụ này.',
         tools: 'Công cụ',
         noTools: 'Ứng dụng không khai báo công cụ trò chuyện nào.',

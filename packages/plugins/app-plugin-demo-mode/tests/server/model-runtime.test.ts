@@ -15,11 +15,22 @@ import type { DemoAgents } from '../../server/integrations/agents.js';
 import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
 
 let app: TestApp;
-const models = new Map<string, { name: string; enabled: boolean }>();
+const models = new Map<
+  string,
+  import('../../shared/model-services.js').DemoModelService
+>();
 const services = {
   list: vi.fn(async () => [...models.values()]),
   create: vi.fn(async () => {
-    const model = { name: `demo-${++sequence}`, enabled: true };
+    const model = {
+      name: `demo-${++sequence}`,
+      title: 'Demo',
+      provider: 'openai-compatible',
+      baseUrl: 'http://localhost/v1',
+      apiKeySet: true,
+      models: [],
+      enabled: true,
+    };
     models.set(model.name, model);
     return model;
   }),
