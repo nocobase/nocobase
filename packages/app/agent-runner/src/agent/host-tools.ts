@@ -165,10 +165,14 @@ export function hostToolWrapperScript(
       // Gitee config writes migrate credentials to credentials.yml; aliases can persist credential commands.
       // Global flags may precede auth/config, so scan command words rather than just $1 and $2.
       'previous=',
+      'scope=',
       'for arg do',
-      '  case "$previous:$arg" in',
+      '  case "$arg" in auth|config|alias) scope=$arg ;; esac',
+      '  case "$scope:$arg" in',
       '    auth:login|auth:logout|auth:token|config:set|alias:set|alias:delete)',
       '      echo "nocobase-runner: refused: gitee may not persist or show credentials during a run." >&2; exit 1 ;;',
+      '  esac',
+      '  case "$previous:$arg" in',
       '    --hostname:*)',
       '      if [ "$arg" != gitee.com ]; then echo "nocobase-runner: refused: only gitee.com is supported." >&2; exit 1; fi ;;',
       '  esac',

@@ -128,6 +128,25 @@ describe('code host CLI wrappers', () => {
     return { binDir, realDir, env, result };
   }
 
+  it('reports how to install a missing official Gitee CLI', async () => {
+    const messages: string[] = [];
+    const result = await writeHostTools({
+      binDir: path.join(root, 'bin'),
+      helpersDir: path.join(root, 'helpers'),
+      searchPath: path.join(root, 'empty'),
+      tools: [
+        {
+          bin: 'gitee',
+          url: REPO,
+          env: { GITEE_TOKEN: { credential: 'password' } },
+        },
+      ],
+      log: (message) => messages.push(message),
+    });
+    expect(result.wrapped).not.toContain('gitee');
+    expect(messages.join(' ')).toContain('npm install -g @gitee/gitee-cli');
+  });
+
   it('injects the Gitee credential, denies fallback and blocks credential persistence with global flags', async () => {
     answers = [
       () => ({
@@ -152,6 +171,8 @@ describe('code host CLI wrappers', () => {
     expect(result.stdout).toContain('token=gitee-fixture');
     for (const args of [
       ['auth', 'token'],
+      ['auth', '--no-tui', 'token'],
+      ['config', '--no-tui', 'set', 'tui', 'false'],
       ['--json', 'auth', 'login'],
       ['config', 'set', 'ai.token', 'fixture'],
       ['--no-tui', 'config', 'set', 'tui', 'false'],
