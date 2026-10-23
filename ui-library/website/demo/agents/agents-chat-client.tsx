@@ -317,23 +317,39 @@ interface Store {
 function initialStore(): Store {
   return {
     conversations: [
-      conversation('release-plan', 'assistant', 'Plan the onboarding release', {
+      // Online agent, idle: its last messages offer edit, copy and regenerate on hover; it consulted a runner agent.
+      conversation('release-plan', 'online', 'Plan the onboarding release', {
         lastMessageAt: ago(3),
         mode: 'online',
         execution: { status: 'idle' },
       }),
+      // Online agent, archived.
+      conversation('naming', 'online', 'Name the onboarding checklist', {
+        lastMessageAt: ago(300),
+        archivedAt: ago(240),
+        mode: 'online',
+        execution: { status: 'idle' },
+      }),
+      // Runner agent at work, with an unread reply on its way.
       conversation('flaky-test', 'coder', 'Fix the flaky sign-in test', {
         read: false,
-        source: 'askAgent',
         run: { id: 'run-7', status: 'running', acceptsInput: true },
         lastMessageAt: ago(1),
       }),
+      // Runner agent, started from the issue page's "Ask agent", with the issue as its context.
+      conversation(
+        'welcome-tour',
+        'assistant',
+        'Summarize PM-12 Welcome tour',
+        {
+          source: 'askAgent',
+          lastMessageAt: ago(12),
+        },
+      ),
+      // Runner agent, archived after its run failed.
       conversation('notes', 'release', 'Release notes draft', {
         archivedAt: ago(600),
         lastMessageAt: ago(900),
-      }),
-      conversation('naming', 'online', 'Name the onboarding checklist', {
-        lastMessageAt: ago(30),
       }),
     ],
     messages: {
@@ -349,6 +365,39 @@ function initialStore(): Store {
           2,
           'assistant',
           'Here are three: **First steps**, **Getting started** and **Welcome checklist**.',
+          {
+            metadata: { agentId: 'online', sourceUserMessageId: 'naming-1' },
+          },
+        ),
+      ],
+      'welcome-tour': [
+        message(
+          'welcome-tour',
+          1,
+          'user',
+          'Summarize this issue and what is left to do.',
+          {
+            workContext: {
+              route: '/',
+              dropped: 0,
+              items: [
+                {
+                  kind: 'issue',
+                  id: 'pm-12',
+                  key: 'PM-12',
+                  title: 'Welcome tour',
+                  url: null,
+                },
+              ],
+            },
+          },
+        ),
+        message(
+          'welcome-tour',
+          2,
+          'assistant',
+          'PM-12 adds a short tour for new members: the projects, the inbox and how to ask an agent. The tour is built and in review with Lin; what is left is the review and the copy for the last step.',
+          { metadata: { agentId: 'assistant' } },
         ),
       ],
       'release-plan': [
@@ -380,7 +429,7 @@ function initialStore(): Store {
           'Three issues are still open:\n\n| Issue | Status | Owner |\n| --- | --- | --- |\n| PM-12 Welcome tour | In review | Lin |\n| PM-15 Invite emails | In progress | Coding agent |\n| PM-18 Empty states | Todo | — |\n\nPM-12 only needs a review; I can **ask the coding agent** to finish PM-15.',
           {
             metadata: {
-              agentId: 'assistant',
+              agentId: 'online',
               sourceUserMessageId: 'release-plan-1',
             },
           },
