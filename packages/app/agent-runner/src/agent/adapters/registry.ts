@@ -2,7 +2,9 @@
 //
 // Claude Code, Codex, OpenCode and Pi all have real adapters. `NOCOBASE_RUNNER_ADAPTER=echo` makes the echo adapter stand in for every
 // tool kind, which is how the tests and local development drive the runner without a coding tool.
-import type { AgentTool } from '../../protocol/index.ts';
+import { AGENTS } from '@nocobase/acp-bridge/catalog';
+import { createAcpAdapter } from './acp.ts';
+import { AGENT_TOOLS, type AgentTool } from '../../protocol/index.ts';
 import { detectionEnv } from '../env.ts';
 import { createClaudeAdapter } from './claude.ts';
 import { createCodexAdapter } from './codex.ts';
@@ -11,7 +13,15 @@ import { createOpencodeAdapter } from './opencode.ts';
 import { createPiAdapter } from './pi.ts';
 import type { AgentAdapter } from './types.ts';
 
-const KINDS: readonly AgentTool[] = ['claude', 'codex', 'opencode', 'pi'];
+const nativeAdapters = new Map<
+  string,
+  (options: { env: Record<string, string> }) => AgentAdapter
+>([
+  ['claude', createClaudeAdapter],
+  ['codex', createCodexAdapter],
+  ['opencode', createOpencodeAdapter],
+  ['pi', createPiAdapter],
+]);
 
 /**
  * The adapters, detecting their tools in the environment a run gets from the runner (`detectionEnv`): `env` and the
@@ -21,16 +31,22 @@ export function loadAdapters(
   env: NodeJS.ProcessEnv = process.env,
   passEnv: readonly string[] = [],
   localVariables: Record<string, string> = {},
+  selected: readonly AgentTool[] = AGENT_TOOLS,
 ): Map<AgentTool, AgentAdapter> {
   const adapters = new Map<AgentTool, AgentAdapter>();
   if (env.NOCOBASE_RUNNER_ADAPTER === 'echo') {
-    for (const kind of KINDS) adapters.set(kind, createEchoAdapter({ kind }));
+    for (const kind of selected.filter((id) => AGENT_TOOLS.includes(id)))
+      adapters.set(kind, createEchoAdapter({ kind }));
     return adapters;
   }
   const detection = { env: detectionEnv(env, passEnv, localVariables) };
-  adapters.set('claude', createClaudeAdapter(detection));
-  adapters.set('codex', createCodexAdapter(detection));
-  adapters.set('opencode', createOpencodeAdapter(detection));
-  adapters.set('pi', createPiAdapter(detection));
+  for (const kind of selected) {
+    const factory = nativeAdapters.get(kind);
+    const spec = AGENTS.find((agent) => agent.id === kind);
+    if (factory) {
+      adapters.set(kind, factory(detection));
+    } else if (spec) adapters.set(kind, createAcpAdapter(spec, detection.env));
+    else throw new Error(`Unknown coding tool: ${kind}`);
+  }
   return adapters;
 }

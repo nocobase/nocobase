@@ -63,6 +63,10 @@ The plugin combines page, authentication and authorization declarations, provide
 
 Capability details include their associated business modules. API dependency associations require both the statically recognized HTTP method and path; an omitted method follows the API client's `GET` default. A refresh failure is shown while retaining the last successful result and its collection time. A `401` or `403` hides the cached overview. Do not describe cached data as freshly collected or type-only references as runtime integration.
 
+### Existing application analysis
+
+For existing applications, the source analyzer also recognizes `useService(apiClientToken)`, React `useCallback` request wrappers, literal tuple-generated routes, decidable local literal conversions and Hono registration helpers. Request path and method bindings stay paired per call. After updating the Foundation plugin, rebuild the application to regenerate `dist/server/foundation-modules.json`; merely refreshing an old deployment cannot repair associations missing from its build artifact. Do not hand-edit that artifact or add a per-application capability map.
+
 ## Sidebar grouping
 
 The host can call `groupFoundationNavigation(items)` from `@nocobase/app-plugin-foundation/client` in its existing `client/lib/navigation-transform.ts` hook, after permission filtering. The helper places an already-visible Foundation entry last in the existing `settings` navigation group, avoiding a separate sidebar group gap. Pass the host’s group name as the second argument when different. It preserves route identity, `/foundation`, authorization and other navigation metadata, never creates a hidden entry and leaves Foundation standalone if no settings group exists. The App needs only the hook call; grouping logic stays in this plugin and does not change Core or the sidebar renderer.

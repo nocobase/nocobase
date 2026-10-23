@@ -18,6 +18,7 @@
  *   so a runner without a recent enough `claude` reports Claude Code
  *   unavailable and is offered no Claude runs.
  */
+import { programFingerprint } from './program-fingerprint.ts';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
 import { access, realpath, stat } from 'node:fs/promises';
@@ -233,6 +234,14 @@ export class ClaudeAdapter implements AgentAdapter {
     };
   }
 
+  private program(): Promise<string | undefined> {
+    return findOnPath('claude', this.options.searchPath);
+  }
+
+  async fingerprint(): Promise<string> {
+    return programFingerprint(await this.program());
+  }
+
   features(): RunnerFeature[] {
     return ['steer'];
   }
@@ -330,8 +339,8 @@ export class ClaudeAdapter implements AgentAdapter {
     detection: ToolDetection;
     executable: ResolvedExecutable | undefined;
   }> {
-    const { exec, minVersion, searchPath } = this.options;
-    const found = await findOnPath('claude', searchPath);
+    const { exec, minVersion } = this.options;
+    const found = await this.program();
     if (!found)
       return {
         detection: { installed: false, authenticated: false },

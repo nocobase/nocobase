@@ -1,13 +1,16 @@
 import { useState, type ReactElement } from 'react';
+import { Button } from '#components/ui/button';
 
 import {
   PermissionEditor,
   type PermissionEditorLevel,
   type PermissionEditorSection,
   type PermissionEditorScope,
+  type PermissionEditorNavigationNode,
 } from '#components/permission-editor';
 
 const OWN_OR_ALL: readonly PermissionEditorLevel[] = [
+  { value: '', label: 'Use default rules' },
   { value: 'own', label: 'Their own records' },
   { value: 'all', label: 'All records' },
 ];
@@ -42,7 +45,9 @@ const CATALOG: readonly {
   readonly id: string;
   readonly title: string;
   readonly footer?: string;
+  readonly description?: string;
   readonly groups: readonly DemoGroup[];
+  readonly navigation?: readonly PermissionEditorNavigationNode[];
 }[] = [
   {
     id: 'actions',
@@ -85,20 +90,33 @@ const CATALOG: readonly {
             id: 'quotes-submit',
             actionKey: 'submit',
             label: 'Submit quote',
+            hint: 'Submit an eligible quote after checking its linked project.',
             scopes: [
               {
                 id: 'quote-projects',
                 label: 'Linked projects',
                 levels: OWN_OR_ALL,
-                level: 'own',
+                level: '',
+                hint: 'This role adds no records. Effective access also depends on other roles and default, sharing and restriction rules.',
               },
               {
                 id: 'quote-records',
                 label: 'Quotes allowed for submission',
                 levels: OWN_OR_ALL,
-                level: 'all',
+                level: '',
+                hint: 'This role adds no records. Effective access also depends on other roles and default, sharing and restriction rules.',
               },
             ],
+          },
+          {
+            id: 'quotes-create',
+            label: 'Create quote',
+            hint: 'Prepare a draft quotation.',
+          },
+          {
+            id: 'quotes-withdraw',
+            label: 'Withdraw quote',
+            hint: 'Withdraw an unprocessed quotation.',
           },
         ],
       },
@@ -126,6 +144,41 @@ const CATALOG: readonly {
   {
     id: 'pages',
     title: 'Page access',
+    description:
+      'Choose business pages. System settings and their actions are controlled under Configuration permissions.',
+    navigation: [
+      { id: 'dashboard', label: 'Dashboard', rowId: 'page-dashboard' },
+      {
+        id: 'sales-menu',
+        label: 'Sales',
+        children: [
+          {
+            id: 'pipeline-menu',
+            label: 'Pipeline',
+            rowId: 'page-pipeline',
+            children: [
+              { id: 'deals-menu', label: 'Deals', rowId: 'page-deals' },
+              {
+                id: 'contacts-menu',
+                label: 'Contacts',
+                rowId: 'page-contacts',
+              },
+            ],
+          },
+          {
+            id: 'reports-menu',
+            label: 'Reports',
+            children: [
+              {
+                id: 'forecast-menu',
+                label: 'Forecast',
+                rowId: 'page-forecast',
+              },
+            ],
+          },
+        ],
+      },
+    ],
     groups: [
       {
         id: 'home',
@@ -148,66 +201,10 @@ const CATALOG: readonly {
     ],
   },
   {
-    id: 'administration',
-    title: 'System and tools',
-    groups: [
-      {
-        id: 'roles',
-        title: 'Roles',
-        rows: [
-          { id: 'roles-read', actionKey: 'read', label: 'View' },
-          { id: 'roles-create', actionKey: 'create', label: 'Create' },
-          { id: 'roles-update', actionKey: 'update', label: 'Edit' },
-          { id: 'roles-delete', actionKey: 'delete', label: 'Delete' },
-          { id: 'roles-grants', actionKey: 'grants', label: 'Manage grants' },
-        ],
-      },
-      ...['Default data scope', 'Sharing rules', 'Restriction rules'].map(
-        (title, index) => ({
-          id: `policy-${index}`,
-          title,
-          rows: [
-            { id: `policy-${index}-read`, actionKey: 'read', label: 'View' },
-            {
-              id: `policy-${index}-create`,
-              actionKey: 'create',
-              label: 'Create',
-            },
-            {
-              id: `policy-${index}-update`,
-              actionKey: 'update',
-              label: 'Edit',
-            },
-            {
-              id: `policy-${index}-delete`,
-              actionKey: 'delete',
-              label: 'Delete',
-            },
-          ],
-        }),
-      ),
-      {
-        id: 'checker',
-        title: 'Permission checker',
-        rows: [{ id: 'check', actionKey: 'check', label: 'Check permissions' }],
-      },
-      {
-        id: 'scheduler',
-        title: 'Scheduler',
-        rows: [
-          {
-            id: 'scheduler-run',
-            actionKey: 'run',
-            label: 'Start and stop rules',
-          },
-        ],
-      },
-    ],
-  },
-  {
     id: 'settings',
-    title: 'Settings',
-    footer: 'Only people who can define roles may change this page.',
+    title: 'Configuration permissions',
+    description:
+      'Control access and actions for the system settings this application exposes.',
     groups: [
       {
         id: 'stages',
@@ -223,15 +220,6 @@ const CATALOG: readonly {
           },
         ],
       },
-      {
-        id: 'team',
-        title: 'Team',
-        rows: [
-          { id: 'settings-team-read', label: 'See who is on the team' },
-          { id: 'settings-team-invite', label: 'Invite people' },
-          { id: 'settings-team-roles', label: 'Define roles' },
-        ],
-      },
     ],
   },
 ];
@@ -245,7 +233,6 @@ const INITIAL_ENABLED: Readonly<Record<string, boolean>> = {
   'page-pipeline': true,
   'page-deals': true,
   'settings-stages': true,
-  'settings-team-read': true,
 };
 
 const INITIAL_LEVELS: Readonly<Record<string, string>> = {
@@ -258,6 +245,12 @@ const INITIAL_LEVELS: Readonly<Record<string, string>> = {
 export function PermissionEditorDemo(): ReactElement {
   const [enabled, setEnabled] = useState(INITIAL_ENABLED);
   const [levels, setLevels] = useState(INITIAL_LEVELS);
+  const [saved, setSaved] = useState({
+    enabled: INITIAL_ENABLED,
+    levels: INITIAL_LEVELS,
+  });
+  const [savedNotice, setSavedNotice] = useState(false);
+  const dirty = JSON.stringify({ enabled, levels }) !== JSON.stringify(saved);
   const sections: readonly PermissionEditorSection[] = CATALOG.map(
     (section) => ({
       ...section,
@@ -284,17 +277,12 @@ export function PermissionEditorDemo(): ReactElement {
   );
   return (
     <div className='min-h-svh bg-background p-6 text-foreground'>
-      <div className='mx-auto max-w-6xl'>
+      <div className='mx-auto grid max-w-6xl gap-4'>
+        <p className='text-sm text-muted-foreground'>
+          Example application permissions. Changes take effect after Save.
+        </p>
         <PermissionEditor
           sections={sections}
-          onEnabledBatchChange={(changes) =>
-            setEnabled((current) => ({
-              ...current,
-              ...Object.fromEntries(
-                changes.map((change) => [change.id, change.enabled]),
-              ),
-            }))
-          }
           onEnabledChange={(id, on) =>
             setEnabled((current) => ({ ...current, [id]: on }))
           }
@@ -302,6 +290,33 @@ export function PermissionEditorDemo(): ReactElement {
             setLevels((current) => ({ ...current, [id]: level }))
           }
         />
+        <div className='flex flex-wrap items-center justify-end gap-2'>
+          <span role='status' className='mr-auto text-xs text-muted-foreground'>
+            {dirty ? 'Unsaved changes' : savedNotice ? 'Example saved' : ''}
+          </span>
+          <Button
+            type='button'
+            variant='outline'
+            disabled={!dirty}
+            onClick={() => {
+              setEnabled(saved.enabled);
+              setLevels(saved.levels);
+              setSavedNotice(false);
+            }}
+          >
+            Discard changes
+          </Button>
+          <Button
+            type='button'
+            disabled={!dirty}
+            onClick={() => {
+              setSaved({ enabled, levels });
+              setSavedNotice(true);
+            }}
+          >
+            Save
+          </Button>
+        </div>
       </div>
     </div>
   );

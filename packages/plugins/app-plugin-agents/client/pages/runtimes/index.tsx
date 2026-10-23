@@ -361,7 +361,7 @@ function RunnerActions({
         <MoreHorizontalIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-auto min-w-40'>
-        {revoked || !runner.canManage ? null : (
+        {revoked || (!runner.canManage && !runner.canManageTools) ? null : (
           <>
             <DropdownMenuItem onClick={onEdit}>
               {t('runtimes.edit.button')}

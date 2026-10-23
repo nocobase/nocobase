@@ -33,6 +33,7 @@ import {
   type NpmUpgradeNotice,
   type DistResolution,
   NPM_UPGRADE_FEATURE,
+  NATIVE_AGENT_TOOLS,
   DIST_ACCEPT_NPM,
   distAccepts,
   type AgentTool,
@@ -488,6 +489,8 @@ export class FakeServer {
     };
   }
 
+  enabledTools: readonly string[] = NATIVE_AGENT_TOOLS;
+  detectTools = false;
   requests = 0;
   authFailure:
     | { route: string; reason: 'RUNNER_REVOKED' | 'RUNNER_KEY_INVALID' }
@@ -521,6 +524,7 @@ export class FakeServer {
       this.runners.set(id, runner);
       return ok(c, {
         ...(this.options.app === undefined ? {} : { app: this.options.app }),
+        enabledTools: this.enabledTools,
         runnerId: id,
         runnerKey: runner.key,
         heartbeatIntervalMs: this.options.heartbeatIntervalMs,
@@ -579,6 +583,8 @@ export class FakeServer {
         ok: true,
         ...(this.capacity ? { capacity: this.capacity } : {}),
         serverTime: new Date().toISOString(),
+        enabledTools: this.enabledTools,
+        detectTools: this.detectTools,
         ...(this.protocolVersion === undefined
           ? {}
           : { protocolVersion: this.protocolVersion }),

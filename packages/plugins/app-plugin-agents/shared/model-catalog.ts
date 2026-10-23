@@ -8,10 +8,14 @@
  * suggested for what it is good at. Keep it to the models the tools offer today, checked against the same lists as
  * `TOOL_MODEL_SUGGESTIONS` in `@nocobase/agent-protocol`; a model leaving it only loses its suggestion and its label.
  */
-import type { AgentTool } from '@nocobase/agent-protocol';
+import { isNativeTool, type AgentTool } from '@nocobase/agent-protocol';
+import { AGENTS } from '@nocobase/acp-bridge/catalog';
 
 /** A coding tool as agent names show it. */
 export const TOOL_LABELS: Readonly<Record<AgentTool, string>> = {
+  ...(Object.fromEntries(
+    AGENTS.map((agent) => [agent.id, agent.name]),
+  ) as Record<AgentTool, string>),
   claude: 'Claude',
   codex: 'Codex',
   opencode: 'OpenCode',
@@ -23,6 +27,14 @@ export const TOOL_DISPLAY_NAMES: Readonly<Record<AgentTool, string>> = {
   ...TOOL_LABELS,
   claude: 'Claude Code',
 };
+
+/**
+ * What a person runs in a terminal on the runtime to sign a tool in, as the catalog states it for its own "not
+ * signed in" message (`acp-bridge`'s `AgentSpec.signIn`); absent for a tool the catalog does not cover (`pi`), which
+ * is shown as an honest gap rather than a guessed command.
+ */
+export const TOOL_SIGN_IN: Readonly<Partial<Record<AgentTool, string>>> =
+  Object.fromEntries(AGENTS.map((agent) => [agent.id, agent.signIn]));
 
 /** What the catalog knows about one model. */
 export interface CatalogModel {
@@ -144,6 +156,7 @@ function catalogById(id: string): CatalogModel | undefined {
  * `gpt-6-sol` and `gpt-6.1-sol` are two models.
  */
 export function normalizeModel(tool: AgentTool, reported: string): string {
+  if (!isNativeTool(tool)) return reported;
   const id = reported.trim();
   if (providerQualified(tool)) {
     const slash = id.indexOf('/');
@@ -161,6 +174,7 @@ export function catalogEntry(
   tool: AgentTool,
   model: string,
 ): CatalogModel | undefined {
+  if (!isNativeTool(tool)) return undefined;
   const id = normalizeModel(tool, model);
   const slash = providerQualified(tool) ? id.indexOf('/') : -1;
   return catalogById(slash > 0 ? id.slice(slash + 1) : id);
@@ -168,6 +182,7 @@ export function catalogEntry(
 
 /** How names show a tool's model: the catalog's label, else its id without the provider. */
 export function modelLabel(tool: AgentTool, model: string): string {
+  if (!isNativeTool(tool)) return model;
   const known = catalogEntry(tool, model);
   if (known) return known.label;
   const id = normalizeModel(tool, model);
@@ -181,9 +196,36 @@ export function modelLabel(tool: AgentTool, model: string): string {
   return label;
 }
 
+/**
+ * An agent's name is shown as a markdown mention link (`[@name](mention://…)`); a `[` or `]` in it closes that link
+ * early, breaking the mention. Model names an ACP tool reports sometimes carry them (a "Token Plan" option in
+ * brackets) or newlines: replace the former with the visually closest safe punctuation and the rest with spaces.
+ */
+export function sanitizeAgentNamePart(value: string): string {
+  return (
+    value
+      .replace(/\[/gu, '(')
+      .replace(/\]/gu, ')')
+      // eslint-disable-next-line no-control-regex -- stripping control characters an agent mention link must not carry.
+      .replace(/[\u0000-\u001f\u007f]/gu, ' ')
+      .replace(/\s+/gu, ' ')
+      .trim()
+  );
+}
+
 /** An agent's name for a tool and model: "Claude · Opus 5.5". */
-export function agentNameOf(tool: AgentTool, model: string): string {
-  return `${TOOL_LABELS[tool]} · ${modelLabel(tool, model)}`;
+export function agentNameOf(
+  tool: AgentTool,
+  model: string,
+  displayModel?: string,
+): string {
+  if (!model) return TOOL_DISPLAY_NAMES[tool] ?? tool;
+  const label = sanitizeAgentNamePart(
+    displayModel && displayModel !== model
+      ? displayModel
+      : modelLabel(tool, model),
+  );
+  return `${TOOL_LABELS[tool]} · ${label || model}`;
 }
 
 /** Whether two ids of one tool's model name the same model. */

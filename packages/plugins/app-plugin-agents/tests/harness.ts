@@ -634,7 +634,7 @@ export async function createHarness(
           ...(options.toolSlots ? { toolSlots: options.toolSlots } : {}),
           ...(options.enabledTools !== undefined
             ? { enabledTools: options.enabledTools }
-            : {}),
+            : { enabledTools: ['claude', 'codex', 'opencode', 'pi'] }),
         },
       );
       const registration: RegisterRequest = {

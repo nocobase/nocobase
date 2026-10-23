@@ -1,4 +1,3 @@
-import { AGENT_TOOLS } from '@nocobase/agent-protocol';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -36,7 +35,7 @@ function runner(
     protocolVersion: 3,
     features: ['input'],
     tools: [{ kind: 'claude', version: '2.1.0', authenticated: true }],
-    enabledTools: null,
+    enabledTools: ['claude'],
     trust: 'ownerOnly',
     ownerUserId: 'u1',
     ownerName: 'Alice',
@@ -107,24 +106,24 @@ describe('install commands', () => {
 });
 
 describe('a runner at a glance', () => {
-  it('lists exactly the tools a runner reported, whatever is enabled', () => {
+  it('lists reported tools and selected tools awaiting detection in catalog order', () => {
     const tools = [
       { kind: 'claude' as const, authenticated: true },
       { kind: 'codex' as const, authenticated: false },
     ];
-    // Turning claude off from "every tool" stores every other protocol tool.
-    const enabledTools = AGENT_TOOLS.filter((tool) => tool !== 'claude');
-    const off = runner('r1', { tools, enabledTools });
-    expect(listedTools(off)).toEqual(['claude', 'codex']);
+    const off = runner('r1', { tools, enabledTools: ['gemini', 'codex'] });
+    expect(listedTools(off)).toEqual(['claude', 'codex', 'gemini']);
     expect(toolState(off, 'claude')).toBe('off');
     expect(toolState(off, 'codex')).toBe('signedOut');
+    expect(toolState(off, 'gemini')).toBe('checking');
     expect(listedTools(runner('r2', { tools, enabledTools: ['pi'] }))).toEqual([
       'claude',
       'codex',
+      'pi',
     ]);
-    expect(
-      listedTools(runner('r3', { tools: [], enabledTools: null })),
-    ).toEqual([]);
+    expect(listedTools(runner('r3', { tools: [], enabledTools: [] }))).toEqual(
+      [],
+    );
   });
 
   it('says the tool state of each tool', () => {
@@ -136,9 +135,27 @@ describe('a runner at a glance', () => {
     expect(toolState(one, 'claude')).toBe('off');
     expect(toolState(one, 'codex')).toBe('signedIn');
     expect(toolState(runner('r4', { enabledTools: ['pi'] }), 'pi')).toBe(
-      'notInstalled',
+      'checking',
     );
   });
+
+  it.each([
+    ['checking', false, 'checking'],
+    ['notInstalled', false, 'notInstalled'],
+    ['needsLogin', false, 'signedOut'],
+    ['failed', false, 'failed'],
+    ['ready', true, 'signedIn'],
+  ] as const)(
+    'shows the reported %s state distinctly',
+    (status, authenticated, expected) => {
+      const reported = runner('r1', {
+        enabledTools: ['gemini'],
+        tools: [{ kind: 'gemini', status, authenticated }],
+      });
+      expect(listedTools(reported)).toEqual(['gemini']);
+      expect(toolState(reported, 'gemini')).toBe(expected);
+    },
+  );
 
   it('is busy while every slot is taken', () => {
     expect(runnerActivity(runner('r1', { draining: 'updatePending' }))).toBe(

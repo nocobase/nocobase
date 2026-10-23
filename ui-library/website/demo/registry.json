@@ -233,9 +233,9 @@
       "name": "permission-editor-demo",
       "type": "registry:example",
       "title": "Permission Editor Demo",
-      "description": "Usage example of @nocobase/permission-editor. A role's sample permissions: pages, business actions with levels, and settings, kept in local state.",
+      "description": "Usage example of @nocobase/permission-editor. Original category navigation with compact action cards, visible descriptions, independently named scopes and explicit draft Save.",
       "categories": ["authorization"],
-      "registryDependencies": ["@nocobase/permission-editor"],
+      "registryDependencies": ["button", "@nocobase/permission-editor"],
       "files": [
         {
           "path": "authorization/permission-editor.tsx",

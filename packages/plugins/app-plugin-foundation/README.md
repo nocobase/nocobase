@@ -80,6 +80,10 @@ Source discovery currently supports conventional `client/routes` entries, relati
 
 The capability detail lists its automatically associated business modules beside the application evidence, so readers can connect a shared capability to their own business before inspecting package names. Static API dependency matching respects the request method (`GET` when omitted) as well as the path; computed methods stay unassociated, and type-only re-exports do not establish dependencies. A failed refresh retains the last successful result with a visible warning and unchanged collection time. If a refresh returns `401` or `403`, the page hides cached internals and shows the access boundary instead.
 
+### Existing application analysis
+
+Static module tracing recognizes `useService(apiClientToken)` as well as `useApiClient()`. Local hooks may return a React `useCallback` request function; arguments remain scoped to each invocation so one request's method cannot be paired with another request's path. Literal tuple destructuring, unshadowed `String()` conversions and local literal conversions with decidable branches are supported. Hono registration helpers retain their router and literal arguments. Opaque calls, side-effecting conversions and unknown inputs remain unassociated. These associations are generated during the application build, so an existing deployment must rebuild with the updated Foundation plugin before its matrix changes.
+
 ## Sidebar grouping
 
 Use `foundation({ settingsGroup: true })` in a bare application to wrap the protected page in a localized System settings group. The default template enables this on initial creation. The group disappears when its page is denied; the navigation helper merges it into the application settings group when that group becomes available.

@@ -63,6 +63,26 @@ export const agentsKeys: {
     agentId: string,
     scenario: string | null,
   ) => readonly ['agents', 'brief-preview', string, string | null];
+  /** Prefix shared by every available-models query, to invalidate groups and rows together after a change. */
+  readonly availableModelsAll: readonly ['agents', 'available-models'];
+  readonly availableModelGroups: (
+    q: string,
+    status: string,
+  ) => readonly ['agents', 'available-models', 'groups', string, string];
+  readonly availableModelRows: (
+    tool: string,
+    q: string,
+    status: string,
+  ) => readonly ['agents', 'available-models', 'rows', string, string, string];
+  /** Prefix shared by every cleanup-candidates query, to invalidate groups and rows together after a change. */
+  readonly cleanupCandidatesAll: readonly ['agents', 'cleanup-candidates'];
+  readonly cleanupGroups: (
+    q: string,
+  ) => readonly ['agents', 'cleanup-candidates', 'groups', string];
+  readonly cleanupRows: (
+    tool: string,
+    q: string,
+  ) => readonly ['agents', 'cleanup-candidates', 'rows', string, string];
 } = {
   available: ['agents', 'available'],
   chatAgents: ['agents', 'chat', 'agents'],
@@ -103,4 +123,23 @@ export const agentsKeys: {
     agentId,
     scenario,
   ],
+  availableModelsAll: ['agents', 'available-models'],
+  availableModelGroups: (q, status) => [
+    'agents',
+    'available-models',
+    'groups',
+    q,
+    status,
+  ],
+  availableModelRows: (tool, q, status) => [
+    'agents',
+    'available-models',
+    'rows',
+    tool,
+    q,
+    status,
+  ],
+  cleanupCandidatesAll: ['agents', 'cleanup-candidates'],
+  cleanupGroups: (q) => ['agents', 'cleanup-candidates', 'groups', q],
+  cleanupRows: (tool, q) => ['agents', 'cleanup-candidates', 'rows', tool, q],
 };

@@ -513,6 +513,9 @@ importers:
       '@anthropic-ai/claude-agent-sdk':
         specifier: 0.3.285
         version: 0.3.285(@anthropic-ai/sdk@0.73.0(zod@4.6.5))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5))(zod@4.6.5)
+      '@nocobase/acp-bridge':
+        specifier: workspace:^
+        version: link:../../libs/acp-bridge
       '@nocobase/agent-protocol':
         specifier: workspace:*
         version: link:../../libs/agent-protocol
@@ -1372,12 +1375,12 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.8
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.5
       react-dom:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
       '@nocobase/app-testing':
         specifier: workspace:*
@@ -2231,6 +2234,9 @@ importers:
 
   packages/libs/agent-protocol:
     dependencies:
+      '@nocobase/acp-bridge':
+        specifier: workspace:^
+        version: link:../acp-bridge
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -3257,6 +3263,9 @@ importers:
       '@base-ui/react':
         specifier: 'catalog:'
         version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@nocobase/acp-bridge':
+        specifier: workspace:^
+        version: link:../../libs/acp-bridge
       '@nocobase/agent-protocol':
         specifier: workspace:^
         version: link:../../libs/agent-protocol
@@ -3356,6 +3365,9 @@ importers:
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react-virtuoso:
+        specifier: 'catalog:'
+        version: 4.18.16(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       recharts:
         specifier: ^3.8.0
         version: 3.10.1(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-is@17.0.2)(react@19.2.8)(redux@5.0.1)
@@ -5643,12 +5655,12 @@ importers:
       '@nocobase/app-plugin-i18n':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-i18n
-      '@nocobase/app-plugin-knowledge':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-knowledge
       '@nocobase/app-plugin-jobs-example':
         specifier: workspace:^
         version: link:../../examples/app-plugin-jobs-example
+      '@nocobase/app-plugin-knowledge':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-knowledge
       '@nocobase/app-plugin-lifecycle-example':
         specifier: workspace:^
         version: link:../../examples/app-plugin-lifecycle-example
@@ -21109,6 +21121,10 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.5
 
+  fdir@6.5.0(picomatch@4.0.7):
+    optionalDependencies:
+      picomatch: 4.0.7
+
   fflate@0.8.3: {}
 
   figures@6.1.0:
@@ -25188,9 +25204,9 @@ snapshots:
   vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0):
     dependencies:
       esbuild: 0.25.12
-      fdir: 6.5.0(picomatch@4.0.5)
-      picomatch: 4.0.5
-      postcss: 8.5.26
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
+      postcss: 8.5.30
       rollup: 4.62.4
       tinyglobby: 0.2.17
     optionalDependencies:
@@ -25206,9 +25222,9 @@ snapshots:
   vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0):
     dependencies:
       esbuild: 0.25.12
-      fdir: 6.5.0(picomatch@4.0.5)
-      picomatch: 4.0.5
-      postcss: 8.5.26
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
+      postcss: 8.5.30
       rollup: 4.62.4
       tinyglobby: 0.2.17
     optionalDependencies:

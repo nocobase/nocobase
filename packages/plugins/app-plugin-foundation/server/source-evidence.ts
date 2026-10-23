@@ -238,6 +238,53 @@ export class SourceEvidence {
     return symbol?.declarations ?? [];
   }
 
+  /** Resolve returned local functions and React's identity-preserving callback wrapper only. */
+  public functions(
+    node: ts.Node,
+    seen: Set<ts.Node> = new Set<ts.Node>(),
+  ): readonly ts.SignatureDeclaration[] {
+    if (seen.has(node) || seen.size >= 32) return [];
+    seen = new Set(seen).add(node);
+    return this.values(node).flatMap((value): ts.SignatureDeclaration[] => {
+      if (ts.isFunctionLike(value)) return [value];
+      if (!ts.isCallExpression(value)) return [];
+      const callback = (this.symbol(value.expression)?.declarations ?? []).some(
+        (declaration) => {
+          if (
+            !ts.isImportSpecifier(declaration) ||
+            declaration.isTypeOnly ||
+            (declaration.propertyName?.text ?? declaration.name.text) !==
+              'useCallback'
+          )
+            return false;
+          const statement = declaration.parent.parent.parent;
+          return (
+            ts.isImportDeclaration(statement) &&
+            !statement.importClause?.isTypeOnly &&
+            ts.isStringLiteralLike(statement.moduleSpecifier) &&
+            statement.moduleSpecifier.text === 'react'
+          );
+        },
+      );
+      if (callback && value.arguments[0])
+        return [...this.functions(value.arguments[0], seen)];
+      return this.functions(value.expression, seen).flatMap((fn) => {
+        const results: ts.SignatureDeclaration[] = [];
+        const visit = (child: ts.Node): void => {
+          if (ts.isReturnStatement(child) && child.expression)
+            results.push(...this.functions(child.expression, seen));
+          else if (!ts.isFunctionLike(child)) ts.forEachChild(child, visit);
+        };
+        if ('body' in fn && fn.body) {
+          if (ts.isArrowFunction(fn) && !ts.isBlock(fn.body))
+            results.push(...this.functions(fn.body, seen));
+          else visit(fn.body);
+        }
+        return results;
+      });
+    });
+  }
+
   /** Resolve local value aliases and re-exports without executing a module. */
   public values(
     node: ts.Node,
