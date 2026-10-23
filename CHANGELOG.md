@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.31](https://github.com/nocobase/nocobase/compare/v2.2.30...v2.2.31) - 2026-10-23
+
+### 🚀 Improvements
+
+- **[server]** Allow the snowflake worker id to be rebound while the application is running. ([#11076](https://github.com/nocobase/nocobase/pull/11076)) by @2013xile
+
+- **[Workflow]** Improved workflow execution detail performance by loading only the latest job per node and loading node history on demand with cursor pagination and lightweight fields. ([#11094](https://github.com/nocobase/nocobase/pull/11094)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[AI employees]**
+  - Fixed embedding response encoding compatibility with Qwen/DashScope endpoints to prevent document and query vector dimension mismatches. Previously affected knowledge bases require re-vectorization. ([#11074](https://github.com/nocobase/nocobase/pull/11074)) by @cgyrock
+
+  - Fixed the page freeze when opening the UI Editor while an AI employee button is hidden by a linkage rule ([#11100](https://github.com/nocobase/nocobase/pull/11100)) by @hongboji
+
 ## [v2.2.30](https://github.com/nocobase/nocobase/compare/v2.2.29...v2.2.30) - 2026-10-22
 
 ### 🐛 Bug Fixes
