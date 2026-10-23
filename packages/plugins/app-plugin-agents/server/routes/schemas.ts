@@ -393,6 +393,7 @@ export const ConversationListQuerySchema: z.ZodType<
     readonly q?: string | undefined;
     readonly archived?: 'true' | 'false' | 'all' | undefined;
     readonly agentId?: string | undefined;
+    readonly mode?: 'online' | 'runner' | undefined;
     readonly source?: string | undefined;
   }
 > = z.object({
@@ -402,6 +403,12 @@ export const ConversationListQuerySchema: z.ZodType<
     .optional()
     .describe('Filter by archive state.'),
   agentId: id.optional().describe('The agent identifier.'),
+  mode: z
+    .enum(['online', 'runner'])
+    .optional()
+    .describe(
+      'online: conversations with the online agent; runner: conversations with every other agent.',
+    ),
   source: z
     .string()
     .regex(CONVERSATION_SOURCE_PATTERN)

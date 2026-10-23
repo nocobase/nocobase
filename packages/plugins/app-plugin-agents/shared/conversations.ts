@@ -502,6 +502,8 @@ export interface ConversationListQuery {
   /** `false` (default): open ones; `true`: archived ones; `all`: both. */
   readonly archived?: boolean | 'all';
   readonly agentId?: string;
+  /** `online`: conversations with the online agent; `runner`: those with every other agent. */
+  readonly mode?: ConversationMode;
   readonly source?: ConversationSource;
   /** The `meta.nextPageToken` of the previous page. */
   readonly pageToken?: string;

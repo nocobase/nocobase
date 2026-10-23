@@ -4,6 +4,7 @@
  * reopens the panel where it was; every access is guarded (private windows, full storage). A link opens the panel
  * with `?chat=<conversationId|new|history>` (and `chatMode=expanded`), which the panel applies and then removes.
  */
+import type { ConversationMode } from '../../shared/conversations.js';
 
 export type ChatPanelMode = 'docked' | 'expanded';
 export type ChatPanelView = 'chat' | 'history';
@@ -16,6 +17,8 @@ export interface ChatPanelState {
   readonly conversationId: string | null;
   /** The agent a new conversation goes to; null: the person's default (or the system default). */
   readonly newAgentId: string | null;
+  /** The kind of agent the person switched the panel to; null or left out: chosen from the agents (`resolveChatAgentMode`). */
+  readonly agentMode?: ConversationMode | null;
 }
 
 export const CHAT_PANEL_STORAGE_KEY = 'nocobase:agents-chat-panel';
@@ -29,6 +32,7 @@ export const INITIAL_PANEL_STATE: ChatPanelState = {
   view: 'chat',
   conversationId: null,
   newAgentId: null,
+  agentMode: null,
 };
 
 /**
@@ -67,6 +71,10 @@ export function readPanelState(storage?: Storage | null): ChatPanelState {
       view: value.view === 'history' ? 'history' : 'chat',
       conversationId: text(value.conversationId),
       newAgentId: text(value.newAgentId),
+      agentMode:
+        value.agentMode === 'online' || value.agentMode === 'runner'
+          ? value.agentMode
+          : null,
     };
   } catch {
     return INITIAL_PANEL_STATE;

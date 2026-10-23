@@ -443,6 +443,34 @@ describe('OnlineAgent service slice', () => {
     ).rejects.toThrow('not found');
   });
 
+  it('lists online and Runner conversations apart by mode', async () => {
+    const f = await fixture(
+      new MockLanguageModelV4({
+        doStream: async () => ({ stream: streamed(text('Hi')) }),
+      }),
+    );
+    const online = await f.service.realtime(context());
+    const agentId = await h.createAgent();
+    const runner = (await h.services.conversations.create('alice', { agentId }))
+      .id;
+    const ids = async (mode?: 'online' | 'runner') =>
+      (
+        await h.services.conversations.list('alice', mode ? { mode } : {})
+      ).items.map((item) => item.id);
+    expect(await ids()).toEqual(
+      expect.arrayContaining([online.sessionId, runner]),
+    );
+    expect(await ids('online')).toEqual([online.sessionId]);
+    expect(await ids('runner')).toEqual([runner]);
+    const http = await h.request('GET', '/agents/conversations?mode=runner', {
+      user: 'alice',
+    });
+    expect(http.status).toBe(200);
+    expect(http.body.data.map((item: { id: string }) => item.id)).toEqual([
+      runner,
+    ]);
+  });
+
   it('retries failed and commit-unknown UI saves without rerunning the SDK or duplicating messages', async () => {
     const model = new MockLanguageModelV4({
       doStream: async () => ({ stream: streamed(text('Saved once')) }),
