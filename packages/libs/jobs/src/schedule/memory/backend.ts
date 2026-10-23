@@ -1,6 +1,7 @@
 import path from 'node:path';
 
 import type { ResolvedMemoryJobsConfig } from '../../config.js';
+import { runDetached } from '../../detached.js';
 import {
   ScheduleHandlerNotRegisteredError,
   type ScheduleBackend,
@@ -169,10 +170,15 @@ export class InMemoryScheduleBackend implements ScheduleBackend {
     );
     this.timers.set(
       name,
-      setTimeout(() => {
-        if (scheduledAt > Date.now()) this.wait(name, scheduledAt);
-        else this.enqueue(name, scheduledAt);
-      }, delay),
+      // Detached so a firing never inherits the async context of whoever added or updated the rule.
+      setTimeout(
+        () =>
+          runDetached(() => {
+            if (scheduledAt > Date.now()) this.wait(name, scheduledAt);
+            else this.enqueue(name, scheduledAt);
+          }),
+        delay,
+      ),
     );
   }
 

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { DispatchOutcome } from '../consumer.js';
 import type { PreparedJob } from '../message.js';
 import { backoffDelay } from '../options.js';
+import { runDetached } from './detached.js';
 import type { QueueRuntime, QueueRuntimeContext } from '../runtime.js';
 import type {
   QueueBackoffOptions,
@@ -266,10 +267,13 @@ export class MemoryQueueRuntime implements QueueRuntime {
     if (this.pumpQueued || !this.consuming) return;
     this.pumpQueued = true;
     // Yields to I/O and shutdown even when handlers resolve synchronously.
-    setImmediate(() => {
-      this.pumpQueued = false;
-      this.pump();
-    });
+    // Detached so a handler never inherits the async context of whoever published the job.
+    setImmediate(() =>
+      runDetached(() => {
+        this.pumpQueued = false;
+        this.pump();
+      }),
+    );
   }
 
   private pump(): void {

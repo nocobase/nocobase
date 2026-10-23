@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import {
   chmod,
   mkdtemp,
@@ -699,5 +700,23 @@ describe('InMemoryScheduler', () => {
 
       expect(Object.keys((await readState()).jobs)).toEqual(['job-1']);
     });
+  });
+});
+
+describe('memory schedule dispatch context', () => {
+  it('fires outside the async context of whoever added the rule', async () => {
+    const request = new AsyncLocalStorage<string>();
+    const seen: (string | undefined)[] = [];
+    const executor = create();
+    await executor.setup();
+    await request.run('request', () =>
+      executor.addJob(
+        everyJob(async () => {
+          seen.push(request.getStore());
+        }),
+      ),
+    );
+    await vi.waitFor(() => expect(seen.length).toBeGreaterThanOrEqual(1));
+    expect(new Set(seen)).toEqual(new Set([undefined]));
   });
 });

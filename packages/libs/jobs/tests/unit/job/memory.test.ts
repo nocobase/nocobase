@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -246,5 +247,25 @@ describe('ordinary memory queue', () => {
       await executor.shutdown();
       expect(await readFile(file, 'utf8')).toBe(text);
     }
+  });
+});
+
+describe('ordinary memory dispatch context', () => {
+  it('runs a task outside the async context of whoever enqueued it', async () => {
+    const request = new AsyncLocalStorage<string>();
+    const seen: (string | undefined)[] = [];
+    class Task extends Job<number> {
+      static readonly jobName: string = 'context-task';
+      async execute(): Promise<void> {
+        seen.push(request.getStore());
+      }
+    }
+    const executor = create().getJobExecutor('scope');
+    executor.registerJob(Task);
+    await executor.setup();
+    // Let the pump that setup scheduled run first, so the request's enqueue schedules the next one.
+    await new Promise((resolve) => setImmediate(resolve));
+    await request.run('request', () => executor.addJob(new Task(1)));
+    await vi.waitFor(() => expect(seen).toEqual([undefined]));
   });
 });
