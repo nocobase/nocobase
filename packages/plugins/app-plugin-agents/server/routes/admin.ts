@@ -585,7 +585,7 @@ export function createAdminRoutes(
         ],
       }),
       description:
-        'Creates and enables an agent for a tool and model from the available models list. Needs `agents.agents` manage.',
+        'Creates and enables an agent for an available model. An existing agent for the same tool and model returns `AGENT_EXISTS` and can be enabled from the agent list. Needs `agents.agents` manage.',
       responses: {
         201: dataResponse(AgentSchema),
         400: apiErrorResponse(
