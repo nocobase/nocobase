@@ -40,7 +40,7 @@ For a CLI-only dataset, omit the page and visitor steps. For a non-AI demo, the 
 | Visitor accounts                          | Official Users and Authentication; Authorization for Permission Sets and role scopes             |
 | Quick sign-in                             | Password sign-in enabled, generated accounts and Demo Mode Client for entry UI                   |
 | Management APIs/page                      | Authentication, Authorization and Demo Mode Client for locales/UI                                |
-| Daily reset                               | Official Scheduler; generate once before enabling the schedule                                   |
+| Daily reset                               | Official Scheduler; on by default at 03:00, effective after the first generation                 |
 | Simulated environment model / online chat | Official Agents 1.0 with `agents.models.services`; follow [simulation](references/simulation.md) |
 | Application mock callbacks                | Only the adapters the demo uses; Agents is not required                                          |
 

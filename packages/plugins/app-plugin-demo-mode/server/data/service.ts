@@ -185,6 +185,11 @@ export class DefaultDemoDataService implements DemoDataService {
     return this.runtime.load();
   }
 
+  /** The time zone the dataset writes the given language's demo in. */
+  public timeZone(language: string): string {
+    return this.dataset?.timeZone?.(language) ?? 'UTC';
+  }
+
   public async status(): Promise<DemoDataStatus> {
     const dataset = this.dataset;
     await this.load();

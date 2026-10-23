@@ -60,7 +60,14 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
       container.resolve(databaseManagerToken),
       resolveDemoModeSettings(this.app.config),
       container.resolve(demoWriteGuardToken),
-      () => this.service!.status(),
+      async () => {
+        const status = await this.service!.status();
+        const language = status.language ?? status.languages[0];
+        return {
+          ...status,
+          ...(language ? { timeZone: this.service!.timeZone(language) } : {}),
+        };
+      },
     );
     container.instance(demoConfigurationToken, configuration);
     container.instance(demoConfigurationRuntimeToken, configuration);
@@ -158,6 +165,9 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
           : { valid: false, reason: 'config-must-be-an-object' },
       async start(_config, context) {
         try {
+          // Nothing to reset before the first generation, which also names the account resets run as.
+          if ((await service.status()).state === null)
+            return { state: 'skipped', reason: 'not-generated' };
           const due = await configuration.claimDaily(new Date());
           if (!due) return { state: 'skipped', reason: 'not-due' };
           await service.reset(undefined, due.language);

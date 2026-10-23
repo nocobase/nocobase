@@ -123,6 +123,38 @@ it('claims one daily reset, skips DST gaps and does not repeat a folded minute',
     nextDailyRun(schedule, new Date('2026-11-01T05:31:00Z'), '2026-11-01'),
   ).toBe('2026-11-02T06:30:00.000Z');
 });
+it('resets every night at 03:00 by default until an administrator saves a schedule', async () => {
+  const { container, guard } = await setup();
+  const config = new DefaultDemoConfigurationService(
+    container.resolve(databaseManagerToken),
+    resolveDemoModeSettings(app.application.config),
+    guard,
+    async () => ({
+      importing: null,
+      languages: ['zh-CN', 'en-US'],
+      language: 'en-US',
+      timeZone: 'Asia/Shanghai',
+    }),
+  );
+  const schedule = {
+    enabled: true,
+    hour: 3,
+    minute: 0,
+    timezone: 'Asia/Shanghai',
+    language: 'en-US',
+  };
+  expect((await config.read()).schedule).toEqual(schedule);
+  expect((await config.read()).nextRun).not.toBeNull();
+  expect(await config.claimDaily(new Date('2026-10-22T19:00:00Z'))).toEqual(
+    schedule,
+  );
+  // A saved schedule replaces the default, including switching it off.
+  await config.save('schedule', (await config.read()).revision, {
+    ...schedule,
+    enabled: false,
+  });
+  expect(await config.claimDaily(new Date('2026-10-23T19:00:00Z'))).toBeNull();
+});
 it('shares durable daily claims across service instances and honors disabling', async () => {
   const { config, container, guard } = await setup();
   const schedule = {

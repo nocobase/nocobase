@@ -24,6 +24,8 @@ import type {
 
 const protectedCollection =
   /^(?:user|account|session|verification|auth|ag(?:_|[a-z])|demoMode|demo_mode_|permission|role|secret|apiKey|api_key)/iu;
+/** The local hour of the default daily reset. */
+export const DEFAULT_RESET_HOUR = 3;
 const invalid = (message: string) =>
   demoDataError('DEMO_CONFIGURATION_INVALID', message, 'INVALID_ARGUMENT');
 interface Stored {
@@ -50,8 +52,25 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     private readonly data: () => Promise<{
       importing: unknown;
       languages: readonly string[];
+      /** The language the demo data was last generated in. */
+      language?: string | null;
+      /** The dataset's time zone for that language. */
+      timeZone?: string;
     }>,
   ) {}
+  /** Until an administrator saves a schedule, the demo resets every night at 03:00 in its own language and time zone. */
+  private async defaultSchedule(): Promise<DemoDailySchedule | null> {
+    const data = await this.data();
+    const language = data.language ?? data.languages[0];
+    if (!language) return null;
+    return {
+      enabled: true,
+      hour: DEFAULT_RESET_HOUR,
+      minute: 0,
+      timezone: data.timeZone ?? 'UTC',
+      language,
+    };
+  }
   public get enabled(): boolean {
     return this.settings.enabled;
   }
@@ -185,7 +204,11 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     this.requireEnabled();
     const row = await this.row();
     if (!row) throw new Error('Demo configuration has not been initialized.');
-    const value = this.decode(row);
+    const decoded = this.decode(row);
+    const value = {
+      ...decoded,
+      schedule: decoded.schedule ?? (await this.defaultSchedule()),
+    };
     return {
       ...value,
       busy: includeBusy && Boolean((await this.data()).importing),
@@ -420,7 +443,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     const row = await this.row();
     if (!row) return null;
     const config = this.decode(row);
-    const schedule = config.schedule;
+    const schedule = config.schedule ?? (await this.defaultSchedule());
     if (!schedule?.enabled) return null;
     const local = localMinute(now, schedule.timezone);
     if (

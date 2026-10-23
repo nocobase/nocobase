@@ -52,8 +52,9 @@ export function ScheduleCard({
   readonly languages: readonly string[];
 }): ReactElement {
   const t = useT();
+  // The server answers its default schedule; this only covers a view without one.
   const fallback: DemoDailySchedule = {
-    enabled: false,
+    enabled: true,
     hour: 3,
     minute: 0,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,

@@ -57,7 +57,14 @@ const view = (patch: Partial<DemoConfigurationView> = {}) => ({
   revision: 4,
   collections: [],
   mocks: { 'dataset.model': true },
-  schedule: null,
+  // An administrator switched the default daily reset off.
+  schedule: {
+    enabled: false,
+    hour: 3,
+    minute: 0,
+    timezone: 'Asia/Shanghai',
+    language: 'zh-CN',
+  },
   chat: { enabled: false, tools: {} },
   busy: false,
   enabled: true,
