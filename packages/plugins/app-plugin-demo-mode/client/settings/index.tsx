@@ -13,7 +13,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../components/ui/alert-dialog.js';
-import { Badge } from '../components/ui/badge.js';
 import { Skeleton } from '../components/ui/skeleton.js';
 import { Tabs, TabsContent } from '../components/ui/tabs.js';
 import { useDemoData } from '../demo-data.js';
@@ -218,7 +217,6 @@ export function DemoModeSettings(
         <Header
           title={t('title')}
           description={t('status.help')}
-          badge={<Badge>{t('status.enabled')}</Badge>}
           refreshLabel={t('refresh')}
           refreshDisabled={Boolean(dirtyCount)}
           refreshing={

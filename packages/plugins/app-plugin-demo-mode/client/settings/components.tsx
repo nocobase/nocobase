@@ -18,7 +18,7 @@ import { DemoSettingsContext } from './context.js';
 export interface DemoSettingsHeaderProps {
   readonly title: string;
   readonly description: string;
-  readonly badge: ReactNode;
+  readonly badge?: ReactNode;
   readonly refreshLabel: string;
   readonly refreshDisabled: boolean;
   readonly refreshing: boolean;

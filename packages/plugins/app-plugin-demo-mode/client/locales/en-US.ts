@@ -44,7 +44,6 @@ const resource = {
       off: 'Off',
     },
     status: {
-      enabled: 'Demo enabled',
       help: 'Visitors can open every page, but changes are not saved unless an exception below allows them.',
     },
     tabs: {
@@ -133,8 +132,6 @@ const resource = {
       copyFailed: 'Could not copy. Copy the link from the address bar instead.',
     },
     schedule: {
-      description:
-        'Once a day, delete what visitors changed and generate the demo data again.',
       confirmTitle: 'Save the daily reset?',
       confirmDescription:
         'At the time below, all business data in this instance is deleted and generated again.',

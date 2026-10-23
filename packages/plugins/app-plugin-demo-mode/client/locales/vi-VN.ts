@@ -44,7 +44,6 @@ const resource: DemoModeResource = {
       off: 'Tắt',
     },
     status: {
-      enabled: 'Đã bật bản demo',
       help: 'Khách có thể mở mọi trang, nhưng thay đổi không được lưu trừ khi một ngoại lệ bên dưới cho phép.',
     },
     tabs: {
@@ -134,8 +133,6 @@ const resource: DemoModeResource = {
         'Không sao chép được. Hãy sao chép liên kết từ thanh địa chỉ.',
     },
     schedule: {
-      description:
-        'Mỗi ngày một lần, xóa những gì khách đã thay đổi và tạo lại dữ liệu demo.',
       confirmTitle: 'Lưu đặt lại hằng ngày?',
       confirmDescription:
         'Vào giờ dưới đây, mọi dữ liệu nghiệp vụ trong phiên bản này bị xóa và tạo lại.',

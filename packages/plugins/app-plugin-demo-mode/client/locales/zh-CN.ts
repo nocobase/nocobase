@@ -43,7 +43,6 @@ const resource: DemoModeResource = {
       off: '关闭',
     },
     status: {
-      enabled: '演示已开启',
       help: '访客可以打开所有页面，但改动不会保存，除非下面的例外允许。',
     },
     tabs: {
@@ -127,7 +126,6 @@ const resource: DemoModeResource = {
       copyFailed: '复制失败，请从地址栏复制链接。',
     },
     schedule: {
-      description: '每天删除访客的改动，并重新生成演示数据。',
       confirmTitle: '保存每日重置？',
       confirmDescription:
         '在下面的时间，会删除这个实例中的全部业务数据并重新生成。',

@@ -44,7 +44,6 @@ const resource: DemoModeResource = {
       off: 'Nonaktif',
     },
     status: {
-      enabled: 'Demo aktif',
       help: 'Pengunjung bisa membuka setiap halaman, tetapi perubahan tidak disimpan kecuali diizinkan pengecualian di bawah.',
     },
     tabs: {
@@ -133,8 +132,6 @@ const resource: DemoModeResource = {
       copyFailed: 'Gagal menyalin. Salin tautan dari bilah alamat.',
     },
     schedule: {
-      description:
-        'Sekali sehari, hapus perubahan pengunjung dan buat ulang data demo.',
       confirmTitle: 'Simpan reset harian?',
       confirmDescription:
         'Pada waktu di bawah, semua data bisnis di instans ini dihapus dan dibuat ulang.',

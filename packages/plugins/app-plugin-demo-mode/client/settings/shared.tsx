@@ -57,7 +57,7 @@ export function SettingsCard({
   children,
 }: {
   readonly title?: string;
-  readonly description: ReactNode;
+  readonly description?: ReactNode;
   readonly draft?: DraftControls;
   readonly canEdit?: boolean;
   readonly busy?: boolean;
@@ -72,10 +72,14 @@ export function SettingsCard({
   };
   return (
     <Card>
-      <CardHeader>
-        {title ? <CardTitle>{title}</CardTitle> : null}
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
+      {title || description ? (
+        <CardHeader>
+          {title ? <CardTitle>{title}</CardTitle> : null}
+          {description ? (
+            <CardDescription>{description}</CardDescription>
+          ) : null}
+        </CardHeader>
+      ) : null}
       <CardContent className='flex flex-col gap-4'>
         {draft?.conflict ? (
           <Alert variant='destructive'>

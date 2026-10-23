@@ -47,7 +47,6 @@ const resource: DemoModeResource = {
       off: 'Désactivé',
     },
     status: {
-      enabled: 'Démo activée',
       help: 'Les visiteurs peuvent ouvrir toutes les pages, mais leurs modifications ne sont pas enregistrées, sauf si une exception ci-dessous le permet.',
     },
     tabs: {
@@ -143,8 +142,6 @@ const resource: DemoModeResource = {
       copyFailed: 'Copie impossible. Copiez le lien depuis la barre d’adresse.',
     },
     schedule: {
-      description:
-        'Une fois par jour, supprime ce que les visiteurs ont modifié et régénère les données de démonstration.',
       confirmTitle: 'Enregistrer la réinitialisation quotidienne ?',
       confirmDescription:
         'À l’heure ci-dessous, toutes les données métier de cette instance sont supprimées puis régénérées.',

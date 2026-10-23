@@ -44,7 +44,6 @@ const resource: DemoModeResource = {
       off: 'Desactivado',
     },
     status: {
-      enabled: 'Demo activada',
       help: 'Los visitantes pueden abrir todas las páginas, pero los cambios no se guardan salvo que una excepción de abajo lo permita.',
     },
     tabs: {
@@ -139,8 +138,6 @@ const resource: DemoModeResource = {
         'No se pudo copiar. Copia el enlace desde la barra de direcciones.',
     },
     schedule: {
-      description:
-        'Una vez al día, elimina lo que cambiaron los visitantes y vuelve a generar los datos de demostración.',
       confirmTitle: '¿Guardar el restablecimiento diario?',
       confirmDescription:
         'A la hora indicada se eliminan todos los datos de negocio de esta instancia y se vuelven a generar.',

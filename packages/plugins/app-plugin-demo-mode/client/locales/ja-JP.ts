@@ -44,7 +44,6 @@ const resource: DemoModeResource = {
       off: 'オフ',
     },
     status: {
-      enabled: 'デモ有効',
       help: '訪問者はすべてのページを開けますが、下の例外で許可しない限り変更は保存されません。',
     },
     tabs: {
@@ -135,8 +134,6 @@ const resource: DemoModeResource = {
         'コピーできませんでした。アドレスバーからリンクをコピーしてください。',
     },
     schedule: {
-      description:
-        '1 日 1 回、訪問者の変更を削除してデモデータを再生成します。',
       confirmTitle: '毎日のリセットを保存しますか？',
       confirmDescription:
         '下の時刻に、このインスタンスの業務データをすべて削除して再生成します。',

@@ -44,7 +44,6 @@ const resource: DemoModeResource = {
       off: 'Desligado',
     },
     status: {
-      enabled: 'Demo ativada',
       help: 'Os visitantes podem abrir todas as páginas, mas as alterações não são salvas, a menos que uma exceção abaixo permita.',
     },
     tabs: {
@@ -138,8 +137,6 @@ const resource: DemoModeResource = {
         'Não foi possível copiar. Copie o link da barra de endereços.',
     },
     schedule: {
-      description:
-        'Uma vez por dia, exclui o que os visitantes alteraram e gera os dados de demonstração novamente.',
       confirmTitle: 'Salvar a redefinição diária?',
       confirmDescription:
         'No horário abaixo, todos os dados de negócio desta instância são excluídos e gerados novamente.',

@@ -43,7 +43,6 @@ const resource: DemoModeResource = {
       off: '關閉',
     },
     status: {
-      enabled: '示範已啟用',
       help: '訪客可以開啟所有頁面，但變更不會儲存，除非下方的例外允許。',
     },
     tabs: {
@@ -127,7 +126,6 @@ const resource: DemoModeResource = {
       copyFailed: '複製失敗，請從網址列複製連結。',
     },
     schedule: {
-      description: '每天刪除訪客的變更，並重新產生示範資料。',
       confirmTitle: '儲存每日重設？',
       confirmDescription:
         '在下方的時間，會刪除這個執行個體中的全部業務資料並重新產生。',

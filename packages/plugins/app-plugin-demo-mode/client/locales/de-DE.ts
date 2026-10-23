@@ -44,7 +44,6 @@ const resource: DemoModeResource = {
       off: 'Aus',
     },
     status: {
-      enabled: 'Demo aktiviert',
       help: 'Besucher können jede Seite öffnen, aber Änderungen werden nicht gespeichert, außer eine Ausnahme unten erlaubt sie.',
     },
     tabs: {
@@ -138,8 +137,6 @@ const resource: DemoModeResource = {
         'Kopieren fehlgeschlagen. Kopieren Sie den Link aus der Adressleiste.',
     },
     schedule: {
-      description:
-        'Einmal am Tag löschen, was Besucher geändert haben, und die Demo-Daten neu erzeugen.',
       confirmTitle: 'Tägliches Zurücksetzen speichern?',
       confirmDescription:
         'Zur unten genannten Zeit werden alle Geschäftsdaten dieser Instanz gelöscht und neu erzeugt.',
