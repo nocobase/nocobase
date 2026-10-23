@@ -400,6 +400,17 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     this.releases.push(
       services.events.onAny((event) => {
         switch (event.type) {
+          case 'conversation.historyReplaced':
+            announceConversation(event.userId, {
+              kind: 'conversation.historyReplaced',
+              conversationId: event.conversationId,
+              messageId: event.messageId,
+              seq: event.seq,
+              revision: event.revision,
+              lastSeq: event.lastSeq,
+              executionId: event.executionId,
+            });
+            return;
           case 'conversation.changed':
             announceConversation(
               event.userId,

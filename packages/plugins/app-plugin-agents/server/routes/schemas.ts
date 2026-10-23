@@ -30,6 +30,13 @@ import {
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import { z } from 'zod';
+import type { OnlineAgentResendOptions } from '../../shared/resend.js';
+
+export const OnlineAgentResendSchema: z.ZodType<OnlineAgentResendOptions> =
+  z.strictObject({
+    messageId: z.string().min(1).max(64).optional(),
+    input: z.strictObject({ text: z.string().max(100_000) }).optional(),
+  });
 import { QuotaReportSchema } from '@nocobase/agent-protocol';
 
 import {

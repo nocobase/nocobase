@@ -125,6 +125,7 @@ async function fixture(
     measure: (phase, durationMs) => measurements.push({ phase, durationMs }),
     now: () => new Date().toISOString(),
   });
+  const resolveModel = vi.fn(async () => model);
   const create = () => {
     const service = new OnlineAgentService({
       sessions,
@@ -136,7 +137,7 @@ async function fixture(
         onError: () => {},
       }),
       ids,
-      model: async () => model,
+      model: resolveModel,
       defaultModel: async () => ref,
       onError: () => {},
     });
@@ -212,9 +213,9 @@ async function fixture(
         prepareReconnectToStreamRequest: () => ({
           api: `http://fixture/agents${base}/events`,
         }),
-        prepareSendMessagesRequest: ({ messages }) => ({
-          api: `http://fixture/agents${base}/${approval ? 'approval' : 'messages'}`,
-          body: approval ?? { message: messages.at(-1) },
+        prepareSendMessagesRequest: ({ messages, body }) => ({
+          api: `http://fixture/agents${base}/${body?.resendInput ? 'resend' : approval ? 'approval' : 'messages'}`,
+          body: body?.resendInput ?? approval ?? { message: messages.at(-1) },
         }),
       }),
     });
@@ -224,6 +225,7 @@ async function fixture(
     agent,
     base,
     model,
+    resolveModel,
     prompts,
     measurements,
     execute,
@@ -238,6 +240,354 @@ async function fixture(
 }
 
 describe('native SDK transport, persistence and approval', () => {
+  it('resends the last user in place through a real SDK control request and keeps the high water mark', async () => {
+    const f = await fixture();
+    const chat = f.chatFor();
+    await chat.sendMessage({ text: 'U1' });
+    await chat.sendMessage({ text: 'U2' });
+    const before = await f.agent.history();
+    const control = new Chat<AppUIMessage>({
+      messages: before,
+      transport: new DefaultChatTransport<AppUIMessage>({
+        api: 'http://fixture/resend',
+        prepareSendMessagesRequest: ({ body, messages, trigger }) => {
+          expect(trigger).toBe('regenerate-message');
+          expect(messages).toEqual(before.slice(0, 3));
+          return { body: body?.resendInput };
+        },
+        fetch: async (_url, init) => {
+          // Official regenerate optimistically truncates only the local message list.
+          expect(control.messages).toEqual(before.slice(0, 3));
+          const response = await f.request(
+            `${f.base}/resend`,
+            'POST',
+            JSON.parse(String(init?.body)),
+          );
+          expect(response.status).toBe(200);
+          return response;
+        },
+      }),
+    });
+    await control.regenerate({
+      messageId: before[2].id,
+      body: { resendInput: {} },
+    });
+    expect(control.error).toBeUndefined();
+    const after = await f.agent.history();
+    expect(after.map((m) => m.id).slice(0, 3)).toEqual(
+      before.map((m) => m.id).slice(0, 3),
+    );
+    expect(after).toHaveLength(4);
+    expect(after[2].metadata).toMatchObject({ seq: 3, revision: 2 });
+    expect(after[3].id).not.toBe(before[3].id);
+    expect(after[3].metadata).toMatchObject({
+      seq: 5,
+      sourceUserMessageId: before[2].id,
+    });
+    expect(control.messages.map((m) => m.id)).toEqual(after.map((m) => m.id));
+    expect(
+      control.messages
+        .at(-1)!
+        .parts.flatMap((part) => (part.type === 'text' ? [part.text] : []))
+        .join(''),
+    ).toBe('Done');
+    expect((await f.agent.messages({ limit: 100 })).lastSeq).toBe(5);
+    expect(
+      (await f.request(`${f.base}/messages?ids=${before[3].id}`)).status,
+    ).toBe(200);
+    expect(
+      await h.services.tx
+        .read()
+        .repository('agConversationMessages')
+        .findOne({ filter: { id: before[3].id } }),
+    ).toBeUndefined();
+  });
+
+  it('edits a specified user without replaying its suffix, and rejects invalid input without deletion', async () => {
+    const f = await fixture();
+    const chat = f.chatFor();
+    await chat.sendMessage({
+      parts: [
+        { type: 'text', text: 'first' },
+        { type: 'text', text: 'second' },
+      ],
+    });
+    await chat.sendMessage({ text: 'deleted suffix' });
+    const before = await f.agent.history();
+    for (const input of [
+      { messageId: before[1].id },
+      { messageId: 'missing' },
+      { input: null },
+      { input: {} },
+      { input: { text: 'x', context: {} } },
+      { input: { text: ' ' } },
+    ]) {
+      expect((await f.request(`${f.base}/resend`, 'POST', input)).status).toBe(
+        400,
+      );
+      expect(await f.agent.history()).toEqual(before);
+    }
+    const response = await f.request(`${f.base}/resend`, 'POST', {
+      messageId: before[0].id,
+      input: { text: 'edited' },
+    });
+    expect(response.status).toBe(200);
+    await response.text();
+    const after = await f.agent.history();
+    expect(after).toHaveLength(2);
+    expect(after[0]).toMatchObject({
+      id: before[0].id,
+      parts: [{ type: 'text', text: 'edited' }],
+      metadata: {
+        seq: 1,
+        revision: 2,
+        createdAt: before[0].metadata!.createdAt,
+      },
+    });
+    expect(JSON.stringify(f.prompts.at(-1))).not.toMatch(
+      /deleted suffix|first|second/,
+    );
+    const record = await h.services.tx
+      .read()
+      .repository('agConversationMessages')
+      .findOne({ filter: { id: before[0].id } });
+    expect(record).toMatchObject({
+      searchText: 'edited',
+      content: { content: 'edited', original: { id: before[0].id } },
+    });
+  });
+  it('rolls back the edited input, physical deletion and new call together on a transaction failure', async () => {
+    const f = await fixture();
+    const chat = f.chatFor();
+    await chat.sendMessage({ text: 'first' });
+    await chat.sendMessage({ text: 'later' });
+    const before = await f.agent.history();
+    const session = await f.sessions.load('alice', f.agent.sessionId);
+    const run = h.services.tx.run.bind(h.services.tx);
+    const fault = vi
+      .spyOn(h.services.tx, 'run')
+      .mockImplementationOnce((fn, outer) =>
+        run(async (tx) => {
+          await fn(tx);
+          throw new Error('Commit fault');
+        }, outer),
+      );
+    await expect(
+      f.sessions.native.resend(
+        'alice',
+        f.agent.sessionId,
+        { messageId: before[0].id, input: { text: 'replacement' } },
+        session.config,
+        session.model,
+        'new-execution',
+        'new-assistant',
+        session,
+      ),
+    ).rejects.toThrow('Commit fault');
+    fault.mockRestore();
+    expect(await f.agent.history()).toEqual(before);
+    expect(await f.sessions.load('alice', f.agent.sessionId)).toEqual(session);
+  });
+
+  it('rejects a stale configuration and foreign targets without modifying history', async () => {
+    const f = await fixture();
+    await f.chatFor().sendMessage({ text: 'keep' });
+    const before = await f.agent.history();
+    const session = await f.sessions.load('alice', f.agent.sessionId);
+    await f.sessions.configure(
+      'alice',
+      f.agent.sessionId,
+      { ...session.config, thinking: 'high' },
+      session.model,
+    );
+    await expect(
+      f.sessions.native.resend(
+        'alice',
+        f.agent.sessionId,
+        {},
+        session.config,
+        session.model,
+        'stale',
+        'answer',
+        session,
+      ),
+    ).rejects.toThrow('configuration has changed');
+    const foreign = await f.service.realtime(actor('bob'), {});
+    await foreign.send([{ role: 'user', content: 'private' }]);
+    await vi.waitFor(async () => expect(await foreign.status()).toBe('idle'));
+    const foreignHistory = await foreign.history();
+    expect(
+      (
+        await f.request(`${f.base}/resend`, 'POST', {
+          messageId: foreignHistory[0].id,
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (await f.request(`${f.base}/resend`, 'POST', {}, 'bob')).status,
+    ).toBe(404);
+    expect((await f.request(`${f.base}/resend`, 'POST', {}, '')).status).toBe(
+      401,
+    );
+    expect(await f.agent.history()).toEqual(before);
+    expect(await foreign.history()).toEqual(foreignHistory);
+  });
+
+  it.each(['running', 'waitingApproval', 'closing'] as const)(
+    'refuses persisted %s occupancy without deleting history',
+    async (state) => {
+      const f = await fixture();
+      await f.chatFor().sendMessage({ text: 'keep' });
+      const before = await f.agent.history();
+      const session = await f.sessions.load('alice', f.agent.sessionId);
+      await h.services.tx
+        .read()
+        .repository('agConversations')
+        .updateMany({
+          filter: { id: f.agent.sessionId },
+          values: {
+            metadata: {
+              onlineAgent: {
+                ...session,
+                call: {
+                  ...session.call!,
+                  state: state === 'closing' ? 'idle' : state,
+                  ...(state === 'closing' ? { closing: true } : {}),
+                },
+              },
+            },
+          },
+        });
+      expect((await f.request(`${f.base}/resend`, 'POST', {})).status).toBe(
+        409,
+      );
+      expect(await f.agent.history()).toEqual(before);
+    },
+  );
+
+  it('refuses model preparation failure before destructive admission', async () => {
+    const f = await fixture();
+    await f.chatFor().sendMessage({ text: 'keep' });
+    const before = await f.agent.history();
+    f.resolveModel.mockRejectedValueOnce(new Error('Model preparation failed'));
+    await expect(f.agent.resend()).rejects.toThrow('Model preparation failed');
+    expect(await f.agent.history()).toEqual(before);
+  });
+
+  it('rejects empty, archived and already deleted targets without changing persisted history', async () => {
+    const f = await fixture();
+    expect((await f.request(`${f.base}/resend`, 'POST', {})).status).toBe(400);
+    await f.chatFor().sendMessage({ text: 'keep' });
+    const before = await f.agent.history();
+    expect(
+      (await f.request(`${f.base}/resend`, 'POST', { messageId: 'deleted' }))
+        .status,
+    ).toBe(400);
+    await h.services.tx
+      .read()
+      .repository('agConversations')
+      .updateMany({
+        filter: { id: f.agent.sessionId },
+        values: { archivedAt: new Date().toISOString() },
+      });
+    expect((await f.request(`${f.base}/resend`, 'POST', {})).status).toBe(409);
+    expect(await f.agent.history()).toEqual(before);
+  });
+
+  it('does not restore the deleted suffix after an accepted model failure and can resend again', async () => {
+    const f = await fixture();
+    const chat = f.chatFor();
+    await chat.sendMessage({ text: 'first' });
+    await chat.sendMessage({ text: 'suffix' });
+    const before = await f.agent.history();
+    const fail = vi
+      .spyOn(f.model, 'doStream')
+      .mockRejectedValueOnce(new Error('Provider unavailable'));
+    await f.agent.resend({
+      messageId: before[0].id,
+      input: { text: 'edited' },
+    });
+    await vi.waitFor(async () => expect(await f.agent.status()).toBe('idle'));
+    fail.mockRestore();
+    const after = await f.agent.history();
+    expect(after.map((message) => message.id)).not.toContain(before[1].id);
+    expect(after.map((message) => message.id)).not.toContain(before[2].id);
+    expect(after[0].parts).toEqual([{ type: 'text', text: 'edited' }]);
+    expect(
+      (await f.sessions.load('alice', f.agent.sessionId)).call?.outcome,
+    ).toBe('failed');
+    await f.agent.resend();
+    await vi.waitFor(async () => expect(await f.agent.status()).toBe('idle'));
+    expect(
+      (await f.sessions.load('alice', f.agent.sessionId)).call?.outcome,
+    ).toBe('completed');
+  });
+
+  it('retains the target attachment binding and UI context, reauthorizes it once, and ignores revoked suffix files', async () => {
+    const f = await fixture();
+    const own = await h.services.chatAttachments.upload(
+      'alice',
+      new File(['Owned'], 'owned.txt', { type: 'text/plain' }),
+    );
+    const tail = await h.services.chatAttachments.upload(
+      'alice',
+      new File(['Tail'], 'tail.txt', { type: 'text/plain' }),
+    );
+    const send = async (id: string, attachmentId: string) => {
+      const response = await f.request(`${f.base}/messages`, 'POST', {
+        message: { id, role: 'user', parts: [{ type: 'text', text: id }] },
+        attachmentIds: [attachmentId],
+        context: { route: '/original', items: [] },
+      });
+      expect(response.status).toBe(200);
+      await response.text();
+    };
+    await send('original', own.id);
+    await send('tail', tail.id);
+    const repo = h.services.tx.read().repository('agConversationMessages');
+    const before = await repo.findOne({ filter: { id: 'original' } });
+    const originalContext = (await f.agent.history())[0].metadata?.context;
+    const originalRead = h.services.chatAttachments.content;
+    const read = vi.spyOn(h.services.chatAttachments, 'content');
+    read.mockImplementation(async (actor, id, conn) => {
+      if (id === tail.id) throw new Error('Suffix file revoked');
+      return originalRead(actor, id, conn);
+    });
+    const response = await f.request(`${f.base}/resend`, 'POST', {
+      messageId: 'original',
+      input: { text: 'edited' },
+    });
+    expect(response.status).toBe(200);
+    await response.text();
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(read.mock.calls[0].slice(0, 2)).toEqual([
+      { userId: 'alice' },
+      own.id,
+    ]);
+    const after = await repo.findOne({ filter: { id: 'original' } });
+    expect(after).toMatchObject({
+      attachments: before!.attachments,
+      workContext: before!.workContext,
+      metadata: before!.metadata,
+      createdAt: before!.createdAt,
+      seq: before!.seq,
+      searchText: 'edited',
+    });
+    expect((await f.agent.history())[0].metadata?.context).toEqual(
+      originalContext,
+    );
+    expect(JSON.stringify(f.prompts.at(-1))).not.toContain('Tail');
+    const retained = await f.agent.history();
+    read.mockRejectedValueOnce(
+      new ProtocolError('NOT_FOUND', 'Attachment not found.'),
+    );
+    expect(
+      (await f.request(`${f.base}/resend`, 'POST', { messageId: 'original' }))
+        .status,
+    ).toBe(404);
+    expect(await f.agent.history()).toEqual(retained);
+  });
+
   it('is consumed by the real SDK Chat and saves the same message and metadata', async () => {
     const f = await fixture();
     const chat = f.chatFor();
@@ -845,6 +1195,71 @@ describe('native SDK transport, persistence and approval', () => {
       expect(f.prompts).toHaveLength(2);
     },
   );
+
+  it('resend keeps completed effects but deletes their history and requires a fresh approval binding', async () => {
+    const f = await fixture(true, true);
+    let chat = f.chatFor();
+    await chat.sendMessage({ text: 'An operation requiring approval' });
+    const first = chat.messages.at(-1)!;
+    const oldInput = {
+      messageId: first.id,
+      executionId: first.metadata!.executionId!,
+      approval: {
+        id: first.parts.filter(isToolUIPart)[0].approval!.id,
+        approved: true,
+      },
+    };
+    await chat.addToolApprovalResponse(oldInput.approval);
+    chat = f.chatFor(chat.messages, oldInput);
+    await chat.sendMessage();
+    expect(f.execute).toHaveBeenCalledTimes(1);
+    expect(await f.agent.status()).toBe('idle');
+    const before = await f.agent.history();
+    const user = before.find((message) => message.role === 'user')!;
+    vi.spyOn(f.model, 'doStream').mockImplementationOnce(async () => ({
+      stream: chunks([
+        {
+          type: 'tool-call',
+          toolCallId: 'fresh-call',
+          toolName: 'business',
+          input: JSON.stringify({ value: 'fresh request' }),
+        },
+        finish('tool-calls'),
+      ]),
+    }));
+    chat = f.chatFor(before);
+    await chat.regenerate({
+      messageId: user.id,
+      body: { resendInput: { messageId: user.id } },
+    });
+    expect(chat.error).toBeUndefined();
+    expect(f.execute).toHaveBeenCalledTimes(1);
+    const pending = chat.messages.at(-1)!;
+    expect(pending.id).not.toBe(first.id);
+    expect(pending.metadata!.executionId).not.toBe(oldInput.executionId);
+    expect(pending.parts.filter(isToolUIPart)[0].state).toBe(
+      'approval-requested',
+    );
+    expect(
+      (await f.agent.history()).some((message) => message.id === first.id),
+    ).toBe(false);
+    const stale = await f.request(`${f.base}/approval`, 'POST', oldInput);
+    expect(stale.status).toBe(409);
+    const nextInput = {
+      messageId: pending.id,
+      executionId: pending.metadata!.executionId!,
+      approval: {
+        id: pending.parts.filter(isToolUIPart)[0].approval!.id,
+        approved: true,
+      },
+    };
+    await chat.addToolApprovalResponse(nextInput.approval);
+    chat = f.chatFor(chat.messages, nextInput);
+    await chat.sendMessage();
+    expect(chat.error).toBeUndefined();
+    expect(f.execute).toHaveBeenCalledTimes(2);
+    expect(await f.agent.status()).toBe('idle');
+  });
 
   it('stops a partially answered step without leaving an approved tool executable in the next round', async () => {
     const f = await fixture(true, true, 2);

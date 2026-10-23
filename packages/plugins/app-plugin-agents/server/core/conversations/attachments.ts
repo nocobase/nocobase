@@ -189,7 +189,11 @@ export interface ChatAttachmentService {
   /** Deletes the person's own upload not sent yet; 404 for anything else. */
   remove(userId: string, id: string): Promise<void>;
   /** A file's bytes; 404 unless the reader may read it. */
-  content(reader: AttachmentReader, id: string): Promise<ChatAttachmentContent>;
+  content(
+    reader: AttachmentReader,
+    id: string,
+    conn?: DatabaseConnection,
+  ): Promise<ChatAttachmentContent>;
   /** The images of `ids` sent in `conversationId`, at most `maxBytes` each, for an online agent's model. */
   images(
     conversationId: string,
@@ -444,8 +448,8 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
         await deps.storage.remove(row);
     },
 
-    async content(reader, id) {
-      const row = await readable(deps.tx.read(), reader, id);
+    async content(reader, id, conn) {
+      const row = await readable(conn ?? deps.tx.read(), reader, id);
       return { attachment: view(row), body: await deps.storage.stream(row) };
     },
 

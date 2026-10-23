@@ -682,6 +682,15 @@ export const CONVERSATIONS_TOPIC = 'agents:conversations';
  */
 export type ConversationChanged =
   | {
+      readonly kind: 'conversation.historyReplaced';
+      readonly conversationId: string;
+      readonly messageId: string;
+      readonly seq: number;
+      readonly revision: number;
+      readonly lastSeq: number;
+      readonly executionId: string;
+    }
+  | {
       readonly kind: 'conversation.messageUpdated';
       readonly conversationId: string;
       readonly messageId: string;

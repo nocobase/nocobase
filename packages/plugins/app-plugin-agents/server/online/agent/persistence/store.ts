@@ -1,3 +1,5 @@
+import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
+import { resendMessage } from '../messages/resend.js';
 import { publicUIPageContext } from '../../../../shared/ui-message.js';
 import { isDeepStrictEqual } from 'node:util';
 import { isToolUIPart, type ModelMessage, type UIMessage } from 'ai';
@@ -25,6 +27,7 @@ import {
   lockConversation,
   messagesRepo,
   type ConversationRecord,
+  type MessageRecord,
 } from '../../../core/conversations/conversation.store.js';
 import { conflict, invalid, notFound } from '../../../kernel/errors.js';
 import { asJson, jsonObject } from '../../../kernel/values.js';
@@ -82,6 +85,7 @@ export class NativeSessionStore {
       conn: DatabaseConnection,
       row: ConversationRecord,
       changed: (message: NativeMessage) => void,
+      emit: Tx['emit'],
     ) => Promise<T>,
     outer?: { unit: Tx; row: ConversationRecord },
   ): Promise<T> {
@@ -90,14 +94,18 @@ export class NativeSessionStore {
       return await this.deps.tx.run(async ({ conn, emit }) => {
         start = performance.now();
         const row = outer?.row ?? (await this.owned(userId, id, conn, true));
-        const result = await work(conn, row, (message) =>
-          emit({
-            type: 'conversation.changed',
-            conversationId: id,
-            userId,
-            messageId: message.id,
-            revision: message.metadata!.revision,
-          }),
+        const result = await work(
+          conn,
+          row,
+          (message) =>
+            emit({
+              type: 'conversation.changed',
+              conversationId: id,
+              userId,
+              messageId: message.id,
+              revision: message.metadata!.revision,
+            }),
+          emit,
         );
         emit({ type: 'conversation.changed', conversationId: id, userId });
         return result;
@@ -395,6 +403,16 @@ export class NativeSessionStore {
       filter: { conversationId: id },
       sort: (s) => s.field('seq').asc(),
     });
+    return this.modelHistory(userId, owner, rows, context, page);
+  }
+  private async modelHistory(
+    userId: string,
+    owner: ConversationRecord,
+    rows: MessageRecord[],
+    context?: ResolvedPageContext,
+    page = true,
+    conn?: DatabaseConnection,
+  ): Promise<{ ui: UIMessage[]; model: ModelMessage[]; page?: ModelMessage }> {
     if (!rows.length) return { ui: [], model: [] };
     const original = await this.messages.validate(
       rows.map((row) => jsonObject(row.content).original),
@@ -440,7 +458,9 @@ export class NativeSessionStore {
         }
         if (!this.deps.files)
           throw invalid('Attachment content is unavailable.');
-        const authorized = await this.deps.files.content({ userId }, file.id);
+        const authorized = conn
+          ? await this.deps.files.content({ userId }, file.id, conn)
+          : await this.deps.files.content({ userId }, file.id);
         const bytes = Buffer.from(
           await new Response(authorized.body).arrayBuffer(),
         );
@@ -452,7 +472,7 @@ export class NativeSessionStore {
       page && this.deps.contextKinds
         ? await historicalPageContext(
             this.deps.contextKinds,
-            this.deps.tx.read(),
+            conn ?? this.deps.tx.read(),
             userId,
             latestPageContext(rows),
             context,
@@ -463,6 +483,164 @@ export class NativeSessionStore {
       : undefined;
     if (historical) model.push(historical);
     return { ui: original, model, page: historical };
+  }
+  private accepting(
+    row: ConversationRecord,
+    expected: {
+      config: OnlineAgentConfig;
+      model: { modelService: string; model: string };
+    },
+  ): void {
+    const binding = jsonObject(jsonObject(row.metadata).onlineAgent);
+    const call = binding.call as OnlineAgentCall | null;
+    if (
+      call?.state === 'running' ||
+      call?.state === 'waitingApproval' ||
+      call?.closing ||
+      row.archivedAt ||
+      row.syncRunId
+    )
+      throw conflict('This conversation cannot accept input.');
+    if (
+      !isDeepStrictEqual(binding.config, expected.config) ||
+      row.model !== expected.model.model ||
+      row.modelService !== expected.model.modelService
+    )
+      throw conflict(
+        'The conversation configuration has changed. Refresh before sending.',
+      );
+  }
+
+  resend(
+    userId: string,
+    id: string,
+    options: OnlineAgentResendOptions,
+    config: OnlineAgentConfig,
+    model: { modelService: string; model: string },
+    executionId: string,
+    messageId: string,
+    expected: {
+      config: OnlineAgentConfig;
+      model: { modelService: string; model: string };
+    },
+    page = true,
+  ): Promise<{
+    lastSeq: number;
+    messageId: string;
+    history: Awaited<ReturnType<NativeSessionStore['executionHistory']>>;
+  }> {
+    return this.write(
+      userId,
+      id,
+      'native.resend',
+      async (conn, row, _changed, emit) => {
+        this.accepting(row, expected);
+        const record = await messagesRepo(conn).findOne({
+          filter: {
+            conversationId: id,
+            role: 'user',
+            ...(options.messageId ? { id: options.messageId } : {}),
+          },
+          sort: (s) => s.field('seq').desc(),
+        });
+        if (!record)
+          throw invalid(
+            'An existing user message in this conversation is required.',
+          );
+        const [original] = await this.messages.validate([
+          jsonObject(record.content).original,
+        ]);
+        const message = resendMessage(original, options);
+        message.metadata = {
+          ...message.metadata!,
+          revision: (message.metadata?.revision ?? 0) + 1,
+          executionId,
+          turnId: executionId,
+        };
+        await this.messages.validate([message]);
+        // Prepare only the retained prefix before any destructive write. Revoked
+        // suffix attachments and page references must never affect this execution.
+        const prefix = await messagesRepo(conn).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('conversationId').eq(id),
+              f.number('seq').lte(Number(record.seq)),
+            ]),
+          sort: (s) => s.field('seq').asc(),
+        });
+        const history = await this.modelHistory(
+          userId,
+          row,
+          prefix.map((item) =>
+            item.id === record.id
+              ? {
+                  ...item,
+                  content: asJson({
+                    ...jsonObject(item.content),
+                    original: message,
+                  }),
+                }
+              : item,
+          ),
+          undefined,
+          page,
+          conn,
+        );
+        const text = appUIMessageText(
+          (await this.messages.public([message]))[0],
+        );
+        await messagesRepo(conn).updateMany({
+          filter: { conversationId: id, id: record.id },
+          values: {
+            content: asJson({ type: 'text', content: text, original: message }),
+            searchText: text,
+            updatedAt: this.deps.now(),
+          },
+        });
+        await messagesRepo(conn).deleteMany({
+          filter: (f) =>
+            f.and([
+              f.string('conversationId').eq(id),
+              f.number('seq').gt(Number(record.seq)),
+            ]),
+        });
+        const binding = jsonObject(jsonObject(row.metadata).onlineAgent);
+        await conversationsRepo(conn).updateMany({
+          filter: { id },
+          values: {
+            metadata: asJson({
+              ...jsonObject(row.metadata),
+              onlineAgent: {
+                ...binding,
+                config,
+                call: {
+                  actorId: userId,
+                  state: 'running',
+                  executionId,
+                  messageId,
+                },
+              },
+            }),
+            modelService: model.modelService,
+            model: model.model,
+            read: true,
+            lastMessageAt: this.deps.now(),
+            updatedAt: this.deps.now(),
+          },
+        });
+        emit({
+          type: 'conversation.historyReplaced',
+          conversationId: id,
+          userId,
+          messageId: record.id,
+          seq: Number(record.seq),
+          revision: message.metadata.revision,
+          lastSeq: Number(row.lastSeq),
+          executionId,
+        });
+        return { lastSeq: Number(row.lastSeq), messageId: record.id, history };
+      },
+    );
   }
   accept(
     userId: string,
@@ -483,34 +661,12 @@ export class NativeSessionStore {
       id,
       'native.accept',
       async (conn, row, changed) => {
-        const call = jsonObject(jsonObject(row.metadata).onlineAgent)
-          .call as OnlineAgentCall | null;
-        if (
-          call?.state === 'running' ||
-          call?.state === 'waitingApproval' ||
-          call?.closing ||
-          row.archivedAt ||
-          row.syncRunId
-        ) {
-          throw conflict('This conversation cannot accept input.');
-        }
+        this.accepting(row, expected);
         if (
           !inputs.length ||
           inputs.some((item) => !item.id || item.id.length > 64)
         ) {
           throw invalid('A message ID of at most 64 characters is required.');
-        }
-        if (
-          !isDeepStrictEqual(
-            jsonObject(jsonObject(row.metadata).onlineAgent).config,
-            expected.config,
-          ) ||
-          row.model !== expected.model.model ||
-          row.modelService !== expected.model.modelService
-        ) {
-          throw conflict(
-            'The conversation configuration has changed. Refresh before sending.',
-          );
         }
         let seq = Number(row.lastSeq);
         const title: string[] = [];
