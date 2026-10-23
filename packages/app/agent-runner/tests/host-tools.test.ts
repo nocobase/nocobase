@@ -169,6 +169,9 @@ describe('code host CLI wrappers', () => {
     );
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('token=gitee-fixture');
+    expect(result.stdout).toContain(
+      'args=--hostname gitee.com pr create --json --no-tui',
+    );
     for (const args of [
       ['auth', 'token'],
       ['auth', '--no-tui', 'token'],

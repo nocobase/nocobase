@@ -187,7 +187,10 @@ export function hostToolWrapperScript(
       `exports=$(${quote(node)} ${quote(credential.helper)} ${credential.index} env ${quote(JSON.stringify(credential.env))}) || exit 1`,
       'eval "$exports"',
     );
-  lines.push(`exec ${quote(real)} "$@"`, '');
+  lines.push(
+    `exec ${quote(real)}${bin === 'gitee' ? ' --hostname gitee.com' : ''} "$@"`,
+    '',
+  );
   return lines.join('\n');
 }
 
