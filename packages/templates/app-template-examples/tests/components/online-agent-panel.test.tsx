@@ -1590,3 +1590,92 @@ it('lists the conversations on the left while covering the content, with the arc
     expect(panelElement).toHaveAttribute('data-mode', 'docked'),
   );
 });
+
+it('shows no source tag in the history and offers rename and archive in a row menu', async () => {
+  const normal = host.request.getMockImplementation()!;
+  host.request.mockImplementation(async (input) =>
+    input.path === 'agents/conversations'
+      ? { data: [{ ...conversation, source: 'askAgent' }], meta: {} }
+      : normal(input),
+  );
+  await setup();
+  fireEvent.click(await screen.findByTestId('chat-expand'));
+  const history = within(screen.getByTestId('chat-split')).getByTestId(
+    'chat-history',
+  );
+  const row = (await within(history).findByText('Saved conversation')).closest(
+    'li',
+  )!;
+  expect(within(row).queryByText('askAgent')).not.toBeInTheDocument();
+  const user = userEvent.setup();
+  await user.click(
+    within(row).getByRole('button', {
+      name: 'Actions for Saved conversation',
+    }),
+  );
+  expect(
+    (await screen.findAllByRole('menuitem')).map((item) => item.textContent),
+  ).toEqual(['Rename', 'Archive']);
+});
+
+it("sends a runner agent's chosen reasoning effort, medium by default, and offers none for the online agent", async () => {
+  host.catalog.mockResolvedValue(models);
+  const normal = host.request.getMockImplementation()!;
+  host.request.mockImplementation(async (input) => {
+    if (input.path === 'agents/chatAgents')
+      return {
+        data: [
+          { ...agent, efforts: [], effort: null },
+          {
+            ...agent,
+            id: 'runner',
+            name: 'Coding agent',
+            isMyDefault: true,
+            efforts: ['low', 'medium', 'high'],
+            effort: 'high',
+          },
+        ],
+        meta: {},
+      };
+    if (input.path === 'agents/conversations' && input.method === 'POST')
+      return {
+        data: {
+          ...conversation,
+          id: 'created',
+          mode: 'runner',
+          effort: 'low',
+          agent: { ...conversation.agent, id: 'runner', name: 'Coding agent' },
+        },
+      };
+    return normal(input);
+  });
+  await setup();
+  const user = userEvent.setup();
+  const picker = await screen.findByTestId('chat-effort-picker');
+  expect(picker).toHaveTextContent('Medium');
+  await user.click(picker);
+  expect(
+    (await screen.findAllByRole('option')).map((item) => item.textContent),
+  ).toEqual(['Low', 'Medium', 'High']);
+  await user.click(screen.getByRole('option', { name: 'Low' }));
+  await waitFor(() => expect(picker).toHaveTextContent('Low'));
+  await user.type(
+    screen.getByRole('textbox', { name: 'Message to the agent' }),
+    'Quick question',
+  );
+  await user.click(screen.getByTestId('chat-send'));
+  await waitFor(() => expect(host.stream).toHaveBeenCalled());
+  const creation = host.request.mock.calls.find(
+    ([request]) =>
+      request.path === 'agents/conversations' && request.method === 'POST',
+  )![0];
+  expect(creation.json).toMatchObject({ agentId: 'runner', effort: 'low' });
+  expect(host.stream.mock.calls[0][0]).toMatchObject({
+    path: 'agents/conversations/created/messages',
+    json: { effort: 'low' },
+  });
+  act(() => panel.openChat({ conversationId: null, agentId: 'online' }));
+  await waitFor(() =>
+    expect(screen.queryByTestId('chat-effort-picker')).not.toBeInTheDocument(),
+  );
+});

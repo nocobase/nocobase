@@ -258,6 +258,12 @@ export interface ConversationSummary {
   readonly updatedAt: string;
   /** The open run, if any: the panel shows "working" and offers to stop. */
   readonly run: ConversationRun | null;
+  /**
+   * The reasoning effort last chosen for this conversation's runs (`CreateConversationRequest.effort`,
+   * `SendMessageRequest.effort`), one of its agent's `ChatAgent.efforts`; null when none was chosen and the agent's own
+   * effort applies.
+   */
+  readonly effort?: string | null;
 }
 
 /** One conversation as the panel opens it. */
@@ -555,6 +561,11 @@ export interface CreateConversationRequest {
   readonly title?: string;
   /** `panel` by default; otherwise a registered source. */
   readonly source?: ConversationSource;
+  /**
+   * The reasoning effort of the conversation's runs, one of its runner agent's `ChatAgent.efforts`, kept with the
+   * conversation; absent: the agent's own effort. 400 `EFFORT_UNSUPPORTED` for another effort or the online agent.
+   */
+  readonly effort?: string;
 }
 
 /** `PATCH conversation`: rename (the title becomes `user`'s and the agent may no longer change it), or archive. */
@@ -600,6 +611,12 @@ export interface SendMessageRequest {
   readonly attachmentIds?: readonly string[];
   /** Echoed in the message's `metadata.clientId`. */
   readonly clientId?: string;
+  /**
+   * The reasoning effort of the run this message starts, one of the runner agent's `ChatAgent.efforts`; kept as the
+   * conversation's `effort` for its later runs. Absent: the conversation's effort as it is. 400 `EFFORT_UNSUPPORTED`
+   * for another effort or the online agent.
+   */
+  readonly effort?: string;
 }
 
 export interface SendMessageResult {
@@ -655,6 +672,10 @@ export interface ChatAgent {
   readonly availability: ChatAvailability;
   /** Only personal runners have it: it takes only their owners' work. */
   readonly personalOnly: boolean;
+  /** The reasoning efforts its tool takes, weakest first; empty when none can be chosen, as for the online agent. */
+  readonly efforts?: readonly string[];
+  /** Its own reasoning effort, which its issue and task runs use; null for the tool's default. */
+  readonly effort?: string | null;
 }
 
 /** The person's own chat settings ("Profile › Agent"). */

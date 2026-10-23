@@ -102,6 +102,7 @@ function overrides(
     title: _title,
     showInChatList: _showInChatList,
     selectedModel: _selectedModel,
+    effort: _effort,
     ...pending
   } = options;
   return Object.keys(pending).length ? pending : undefined;
@@ -306,6 +307,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
                   .join(''),
           attachmentIds: input?.attachmentIds?.[0],
           clientId: input?.clientId,
+          ...(input?.effort === undefined ? {} : { effort: input.effort }),
         },
         {
           config,
@@ -388,6 +390,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         source: options.source,
         title: options.title,
         showInChatList: options.showInChatList,
+        ...(options.effort === undefined ? {} : { effort: options.effort }),
       },
       initial.config,
     );

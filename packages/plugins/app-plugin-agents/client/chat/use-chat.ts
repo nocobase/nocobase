@@ -385,6 +385,7 @@ export function useSendMessage({
   source,
   selectedModel,
   webSearch,
+  effort,
   editorRevision = 0,
   dispatch,
   onCreated,
@@ -395,6 +396,11 @@ export function useSendMessage({
   /** Snapshotted for a new, explicitly native conversation only; Runner and continuation ignore it. */
   readonly selectedModel?: ModelRef;
   readonly webSearch?: boolean;
+  /**
+   * The reasoning effort of the run each message starts, one of the Runner agent's `ChatAgent.efforts`; a new
+   * conversation keeps it too. Ignored for the online agent, which takes none.
+   */
+  readonly effort?: string | null;
   /** A fresh blank editor must not share pending/unknown creation admission with its predecessor. */
   readonly editorRevision?: number;
   readonly dispatch: Dispatch<MessagesAction>;
@@ -457,14 +463,17 @@ export function useSendMessage({
         }
       });
       observersRef.current.add(cleanup);
+      const runnerEffort = agentId !== 'online' && effort ? effort : undefined;
       const submitted = controller.submissions.submit({
         content: input.content,
         context: input.context,
         attachments: input.attachments ?? [],
         conversationId,
         editorKey,
+        ...(runnerEffort ? { effort: runnerEffort } : {}),
         create: {
           ...(agentId ? { agentId } : {}),
+          ...(runnerEffort ? { effort: runnerEffort } : {}),
           source,
           ...(!conversationId && agentId === 'online' && selectedModel
             ? {
@@ -500,6 +509,7 @@ export function useSendMessage({
       source,
       selectedModel,
       webSearch,
+      effort,
       editorKey,
       dispatch,
       onCreated,
