@@ -16,7 +16,7 @@ Unmatched requests to this model receive a simulated fallback. Calls that the ap
 
 Register `configuration.registerMock({ id, title, kind, scope, defaultEnabled, invoke })`, then call `invokeMock(id, input)` at the authorized application boundary. Registration does not intercept anything. Set `defaultEnabled: true` when the adapter should initially be available; saved administrator choices still apply.
 
-Adapters validate input and trusted record scope and return the business service's expected result shape. Scope labels do not enforce authorization. Unknown or disabled adapters throw `DEMO_MOCK_UNAVAILABLE`; never catch this to invoke the real provider. Use the server-side Demo Mode flag for dispatch, including visitor-created records and background work.
+Adapters return the business service's expected result shape. Unknown or disabled adapters throw `DEMO_MOCK_UNAVAILABLE`; never catch this to invoke the real provider. Use the server-side Demo Mode flag for dispatch, including visitor-created records and background work.
 
 ## Replace a whole Agent
 
@@ -36,7 +36,7 @@ For queued work, authorize first, call `proxy.prepare()` and persist its decisio
 | `false` | Use the ordinary queue path.                                                |
 | Throws  | Refuse admission without queuing real work.                                 |
 
-When claiming a demo job, recheck actor permissions, ownership, scope, task revision and cancellation. Resolve the saved proxy ID and call `configuration.withFreshPolicy(() => proxy.execute(job.input))`. Use `execute`, not `run`, so turning Demo Mode off cannot route an already queued demo job to the real callback. Unknown proxies, disabled adapters and disabled Demo Mode must fail that job.
+When claiming a demo job, skip it if it was cancelled. Resolve the saved proxy ID and call `configuration.withFreshPolicy(() => proxy.execute(job.input))`. Use `execute`, not `run`, so turning Demo Mode off cannot route an already queued demo job to the real callback. Unknown proxies, disabled adapters and disabled Demo Mode must fail that job.
 
 Ordinary queued jobs must also check the current Demo Mode flag at execution before real transport or Runner dispatch. Preserve duplicate-delivery protections. Generic queued mocks likewise need `withFreshPolicy(() => configuration.invokeMock(id, input))`; an admission-time `requireMock` check alone is insufficient.
 
@@ -46,8 +46,8 @@ Online chat is disabled by default; enable it only for a requested chat experien
 
 After business authorization, wrap tools with `runChatTool(id, { readOnly, run, mock })` and declare their IDs through the management page's `chatTools`. Administrators choose `read`, `mock` or `deny`. Only local data queries qualify as `readOnly`; network fetches need mocks. Missing rules or adapters must reject execution.
 
-For the Agents OnlineAgent service, check conversation ownership and agent scope, then wrap only its public session operation with `runOnlineConversation(callback)`. This permits scoped conversation/message persistence when chat is enabled. Do not wrap a dispatcher, tool/model call, upload or agent configuration; refuse unrelated agents, Runner conversations, attachments, approvals and configuration overrides. Keep fixture creation separate from visitor chat enablement. Applications with their own conversation persistence use their normal authorization and collection policy.
+For the Agents OnlineAgent service, wrap only its public session operation with `runOnlineConversation(callback)`, keeping the service's normal session checks. This permits conversation/message persistence when chat is enabled. Do not wrap a dispatcher, tool/model call, upload or agent configuration. Keep fixture creation separate from visitor chat enablement. Applications with their own conversation persistence use their normal collection policy.
 
 ## Verify the implemented flows
 
-Test the actual model outputs, structured results and tool/Agent paths the demo uses, including unsupported input and disabled adapters. Confirm no real provider is reached and non-demo execution still uses its normal path. For queues, also test cancellation, cleanup and policy changes between admission and execution. For online chat, verify conversation ownership and tool permissions.
+Test the actual model outputs, structured results and tool/Agent paths the demo uses, including unsupported input and disabled adapters. Confirm no real provider is reached and non-demo execution still uses its normal path. For queues, also test cancellation and cleanup. For online chat, verify the tool policies the demo uses.

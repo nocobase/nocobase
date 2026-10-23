@@ -29,7 +29,7 @@ When ordinary sample installation uses the same story, share an application-owne
 
 ## Visitor accounts
 
-Keep `accounts(language)` and `createAccount()` on one shared definition with explicit passwords satisfying the host's authentication policy. Use `createPermissionSet`, `createAccount` and `assignPermissionSet` for identities and grants. Every listed account is publicly enterable while quick sign-in is enabled; keep management access on the real administrator.
+Keep `accounts(language)` and `createAccount()` on one shared definition with explicit passwords satisfying the host's authentication policy. Use `createPermissionSet`, `createAccount` and `assignPermissionSet` for identities and grants. Every listed account is publicly enterable while quick sign-in is enabled, as intended; list any role the demo should show, administrators included.
 
 Create demo-owned Permission Sets rather than assigning a built-in administrator role, whose last active assignment may prevent account cleanup. Supply any `roleScopes` marked `requiredOnCreate`. Assign a Permission Set through either `permissionSets` or its role scope, not both.
 
@@ -49,4 +49,4 @@ If an operation fails, inspect its error and verify business rows and account ac
 
 ## Verify the application adapter
 
-Check the requested pages under representative visitor accounts, including relationships, recent dates and role-specific access. Run reset and clear/generate to verify repeatability. For writable demos, add visitor content and verify cleanup removes it, including associated files and caches. Test partial-generation cleanup for the business adapter and verify visitors cannot invoke management APIs. Check [external integrations](integration-checklist.md) only where the application uses them.
+Check the requested pages under representative visitor accounts, including relationships, recent dates and role-specific access. Run reset and clear/generate to verify repeatability. For writable demos, add visitor content and verify cleanup removes it, including associated files and caches. Test partial-generation cleanup for the business adapter. Check [external integrations](integration-checklist.md) only where the application uses them.

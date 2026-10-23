@@ -102,7 +102,7 @@ export class DemoIdentities {
         .select(['userId', 'passwordHash'])
         .where('userId', '=', String(existing.id))
         .where('datasetId', '=', this.datasetId())
-        .executeTakeFirst<{ userId: string; passwordHash: string | null }>();
+        .executeTakeFirst<{ userId: string; passwordHash: string }>();
       // A matching username and email do not prove ownership of an existing account.
       if (
         !ownership ||
@@ -223,7 +223,7 @@ export class DemoIdentities {
 /** A salted snapshot of the last password applied through Users, never a second authentication source. */
 async function hashPassword(
   password: string,
-  previous?: string | null,
+  previous?: string,
 ): Promise<string> {
   const salt = previous?.split(':')[0] || randomBytes(16).toString('hex');
   return new Promise((resolve, reject) => {

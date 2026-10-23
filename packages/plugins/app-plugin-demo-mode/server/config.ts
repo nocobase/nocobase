@@ -48,8 +48,6 @@ export function defineDemoModeConfig(): AppConfigFactory<DemoModeConfig> {
       ),
     },
     validate(value, context) {
-      if ('mode' in value)
-        context.error('mode', 'Use enabled (boolean) instead.');
       if (typeof value.enabled !== 'boolean')
         context.error('enabled', 'must be a boolean.');
       if (

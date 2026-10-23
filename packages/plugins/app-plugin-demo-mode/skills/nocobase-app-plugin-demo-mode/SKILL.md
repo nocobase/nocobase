@@ -14,13 +14,17 @@ Use `@nocobase/app-plugin-demo-mode` for a dedicated demo with its own database 
 
 For example records in an existing application, use the application development Skill's sample-data workflow. For a dedicated demo, reuse the user's established deployment, language and role choices. Clarify only unresolved deployment or cleanup scope: clear/reset removes all business data in the demo instance, including visitor additions.
 
+## Keep protection proportionate
+
+A demo is a public showcase: anyone may enter any listed account, administrators included, and the fictional data is reset daily. Protect only what lies outside the demo: a dedicated database and storage, no real credentials or customer data, and no real external effects such as mail, payments, publishing or real models. Inside the demo, use the application's existing permissions as they are and the plugin's defaults. Do not add hardening such as ownership rechecks, rate limits, confirmation steps, management restrictions for dataset accounts or security-focused tests unless the user asks; prefer the simplest integration that shows the requested journeys.
+
 ## Integration workflow
 
 1. **Confirm the target and enable.** Check [the dedicated deployment](#confirm-the-dedicated-deployment), then complete [enable the deployment](#enable-the-deployment) and its verification. Check the required host capabilities below.
 2. **Provide the dataset.** Adapt the application's business services using [data adaptation](references/adapting-data.md). For a new application with no business domain, use the [executable non-AI example](references/minimal-example.md). Register one dataset on the original `demoDataToken`; registration does not generate records.
 3. **Adapt interactions.** Keep normal business authorization. Enable [collection write exceptions](references/policies.md#collection-write-exceptions) for visitor mutations. The guard covers request-scoped database writes; adapt [external calls and background work](references/integration-checklist.md) where the application has them. Read [simulation](references/simulation.md) only for AI or Runner flows the demo uses.
 4. **Provide entry and management.** Mount `DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` on an application-owned page protected by `settings:demoMode.data/read`. Grant [management access](#management-access) and see the [route example](references/minimal-example.md#2-wire-existing-composition-roots). Visitor accounts keep their business permissions. The Client plugin provides `/demo-sign-in`; use [presentation options](references/visitor-entry.md) only when customization is needed.
-5. **Generate and verify.** Generate through the page or [CLI](references/policies.md#data-operations), enter representative visitor accounts and check the requested business journeys. Verify permissions, reset repeatability and cleanup of visitor additions when writes are enabled. Report the application URL, visitor entry, demonstrated interactions, cleanup scope and checks performed.
+5. **Generate and verify.** Generate through the page or [CLI](references/policies.md#data-operations), enter representative visitor accounts and check the requested business journeys. Verify that each role sees its intended pages, that reset is repeatable and, when writes are enabled, that reset removes visitor additions. Report the application URL, visitor entry, demonstrated interactions, cleanup scope and checks performed.
 
 For a CLI-only dataset, omit the page and visitor steps. A non-AI demo needs no model or Agent integration. With the application's jobs service composed, daily reset is enabled by default after the first generation; preserve existing saved policy and make no extra schedule changes unless requested.
 
@@ -66,7 +70,7 @@ Use the plugin defaults for quick sign-in and scheduling. Customize only what th
 
 ## Management access
 
-Root is unrestricted and can open the management page without grants. Give other administrators `settings:demoMode.data` `read` and `manage` and `settings:demoMode.configuration` `read` and `configure` through the application's authorization seeds or permission administration. `read` alone shows status without generating, clearing, resetting or saving. Visitor accounts never receive these actions.
+Root is unrestricted and can open the management page without grants. Give other administrators `settings:demoMode.data` `read` and `manage` and `settings:demoMode.configuration` `read` and `configure` through the application's authorization seeds or permission administration. `read` alone shows status without generating, clearing, resetting or saving. A dataset account may hold these actions too when the demo should show administration; reset restores whatever a visitor changes.
 
 ## References by task
 

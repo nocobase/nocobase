@@ -146,7 +146,7 @@ beforeAll(async () => {
       await database
         .query()
         .insertInto('demoModeAccounts')
-        .values({ userId: id, datasetId: 'demo' })
+        .values({ userId: id, datasetId: 'demo', passwordHash: 'fixture' })
         .execute();
   }
   await users.disable(ids.cat!);

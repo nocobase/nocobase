@@ -51,7 +51,7 @@ export class DemoModelRuntime {
     }
     if (!this.enabled) {
       const row = await this.row();
-      // Also retires a default selected by older previews. Agents falls back to an enabled service.
+      // Also retires the demo model where an administrator chose it as a default. Agents falls back to an enabled service.
       if (
         row?.modelService &&
         (await services.list()).some(

@@ -34,9 +34,17 @@ interface Stored {
   lastDay: string | null;
 }
 
-/** All instances read shared configuration; no process-local policy cache can retain revoked access. */
+/**
+ * How long a process reuses the policy it read. A save in this process takes effect at once; one made by another
+ * instance reaches this process within this time.
+ */
+const POLICY_TTL_MS = 5_000;
+
+/** Policy is shared through the database and cached briefly per process, so requests do not each read it. */
 export class DefaultDemoConfigurationService implements DemoConfigurationRuntime {
   private readonly policy = new AsyncLocalStorage<DemoConfiguration>();
+  private cached:
+    { readonly value: DemoConfiguration; readonly expires: number } | undefined;
   public async runWithPolicy<T>(run: () => Promise<T>): Promise<T> {
     if (!this.enabled || this.policy.getStore()) return run();
     return this.policy.run(await this.readPolicy(), run);
@@ -95,6 +103,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     if (this.adapters.has(adapter.id))
       throw new Error(`Duplicate demo mock: ${adapter.id}`);
     this.adapters.set(adapter.id, adapter);
+    this.cached = undefined;
   }
   public registerAgent<Input, Output>(
     adapter: DemoAgentAdapter<Input, Output>,
@@ -116,46 +125,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
           `Unknown demoMode.allowCollections collection in the default database: ${name}`,
         );
     }
-    const existing = await this.row();
-    if (existing) {
-      // Earlier previews stored physical names. Resolve them once without changing their target.
-      const value = (
-        typeof existing.value === 'string'
-          ? JSON.parse(existing.value)
-          : existing.value
-      ) as Record<string, unknown>;
-      if (Array.isArray(value.tables) && value.collections === undefined) {
-        const names = new Map<string, string>();
-        for await (const collection of this.database
-          .connection()
-          .collections.scan()) {
-          if (collection.name) {
-            const physical = await this.database
-              .connection()
-              .collections.getPhysical(collection.name);
-            if (physical) names.set(physical.tableName, collection.name);
-          }
-        }
-        value.collections = value.tables.map((table: string) => {
-          const name = names.get(table);
-          if (!name)
-            throw invalid(`Cannot migrate demo table exception: ${table}`);
-          return name;
-        });
-        delete value.tables;
-        await this.database
-          .query()
-          .updateTable('demoModeConfiguration')
-          .set({
-            value: JSON.stringify(value),
-            revision: Number(existing.revision) + 1,
-          })
-          .where('id', '=', 'default')
-          .where('revision', '=', existing.revision)
-          .execute();
-      }
-      return;
-    }
+    if (await this.row()) return;
     try {
       await this.database
         .query()
@@ -202,12 +172,16 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
       },
     };
   }
-  /** Execution checks read fresh persisted policy without building management-only schedule previews. */
+  /** Execution checks read the cached persisted policy without building management-only schedule previews. */
   private async readPolicy(): Promise<DemoConfiguration> {
     this.requireEnabled();
+    if (this.cached && Date.now() < this.cached.expires)
+      return this.cached.value;
     const row = await this.row();
     if (!row) throw new Error('Demo configuration has not been initialized.');
-    return this.decode(row);
+    const value = this.decode(row);
+    this.cached = { value, expires: Date.now() + POLICY_TTL_MS };
+    return value;
   }
   public async read(includeBusy = true): Promise<DemoConfigurationView> {
     this.requireEnabled();
@@ -334,10 +308,11 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         'The configuration changed. Reload before saving.',
         'ALREADY_EXISTS',
       );
+    this.cached = undefined;
     if (section === 'schedule') await this.scheduleListener?.();
     return this.read();
   }
-  /** Read fresh at admission and before model/tool I/O, including restored sessions and workers. */
+  /** Read at admission and before model/tool I/O, including restored sessions and workers. */
   public async chatModel(simulated: {
     modelService: string;
     model: string;

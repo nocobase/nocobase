@@ -151,7 +151,7 @@ it('can start with Demo Mode disabled after the owned model was removed', async 
   expect(services.update).not.toHaveBeenCalled();
 });
 
-it('preserves real Agents defaults and retires a legacy demo default on shutdown', async () => {
+it('preserves real Agents defaults and retires a demo default when Demo Mode is off', async () => {
   const database = app.application.container.resolve(databaseManagerToken);
   await database
     .createMigrator({
@@ -183,7 +183,7 @@ it('preserves real Agents defaults and retires a legacy demo default on shutdown
     modelService: demo.models.serviceName!,
     model: 'demo-chat',
   };
-  // Older previews persisted this default; disabling Demo Mode must make it ineligible.
+  // An administrator chose the demo model as default; disabling Demo Mode must make it ineligible.
   await api.setDefaultChat(demoRef, null);
   enabled = false;
   await make(agents).initialize();

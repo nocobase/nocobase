@@ -28,7 +28,7 @@ demoMode:
   enabled: true
 ```
 
-The example assigns `demo.members` once through `createAccount.permissionSets`. The framework's default `app` role scope is optional; do not also assign that same Permission Set through `roleScopes.app`, which would duplicate its assignment. If an application requires a role scope, adapt `roleScopes` in `business.ts` and the account factory together so each Permission Set is assigned by exactly one mechanism. Use an existing real administrator to generate data; neither visitor receives management grants.
+The example assigns `demo.members` once through `createAccount.permissionSets`. The framework's default `app` role scope is optional; do not also assign that same Permission Set through `roleScopes.app`, which would duplicate its assignment. If an application requires a role scope, adapt `roleScopes` in `business.ts` and the account factory together so each Permission Set is assigned by exactly one mechanism. Use an existing real administrator to generate data.
 
 Add authenticated routes in `client/routes.ts`. The business page uses page access; the management page checks its settings item:
 
@@ -53,7 +53,7 @@ Add authenticated routes in `client/routes.ts`. The business page uses page acce
 },
 ```
 
-The generated visitor Permission Set grants `page:demoProjects/access`. Keep normal business-page authorization enabled. Give the administrator `settings:demoMode.data/read,manage` and `settings:demoMode.configuration/read,configure` through the host's authorization mechanism. Do not add `page:demoManagement/access`: the management route uses settings authorization. A reader with only the data read action can inspect data status but cannot generate, clear or reset. Visitors receive no management settings actions.
+The generated visitor Permission Set grants `page:demoProjects/access`. Keep normal business-page authorization enabled. Give the administrator `settings:demoMode.data/read,manage` and `settings:demoMode.configuration/read,configure` through the host's authorization mechanism. Do not add `page:demoManagement/access`: the management route uses settings authorization. A reader with only the data read action can inspect data status but cannot generate, clear or reset.
 
 Create `client/pages/demo-management.tsx` using the public component:
 
@@ -71,9 +71,8 @@ Wrap each top-level page in the application's existing `PageContainer`, followin
 
 1. Run the application's normal migrations/startup and open its printed application entry URL. Sign in as the real administrator and open `/demo-management`.
 2. Generate `en-US`. Expect one project, two tasks and two visitor accounts. Open `/demo-sign-in?as=demo_alex&redirect=/demo-projects`: Alex sees “Review the first issue”. Sam sees “Prepare the next issue”. The server filters by assignee even if the caller changes the URL.
-3. Confirm a visitor cannot call `POST /api/demoMode/data/reset`; authenticated access alone is insufficient. Add the application's base path to API URLs.
-4. Reset as the administrator. Expect one project and two tasks again, with no duplicates; an existing visitor session remains valid. Clear, then generate again to exercise account disable/reuse separately.
-5. For a writable demo, add an authorized business mutation through the application's normal API workflow, enable only its collection, create visitor content and verify reset removes it. The minimal example intentionally exposes only reading.
+3. Reset as the administrator. Expect one project and two tasks again, with no duplicates; an existing visitor session remains valid. Clear, then generate again to exercise account disable/reuse separately.
+4. For a writable demo, add an authorized business mutation through the application's normal API workflow, enable only its collection, create visitor content and verify reset removes it. The minimal example intentionally exposes only reading.
 
 Alternatively use `pnpm nocobase demo-mode data import --actor <existing-admin-id> --language en-US --dry-run`, then replace `--dry-run` with `--force` after reviewing the target deployment. Dry-run prints the requested operation without starting or validating the application.
 
@@ -89,7 +88,7 @@ Use the failing step to choose the next check; do not bypass permissions or add 
 | Status says no dataset is available         | Register `DemoProvider` in the application provider list and verify it reaches the original `demoDataToken`. Generation is an explicit action after registration.                            |
 | The CLI command is missing                  | Register `@nocobase/app-plugin-demo-mode/cli` in the CLI composition root; Server registration does not register commands.                                                                   |
 | The visitor entry is empty or sign-in fails | Complete generation, enable password sign-in and `quickSignIn`, and use the same explicit passwords in `accounts()` and `createAccount()`. Inspect the generation failure before retrying.   |
-| A page or management API returns 403        | Check business-page access for visitor pages and settings actions for management, including the route's read check. Keep visitor grants separate from administrator grants.                  |
+| A page or management API returns 403        | Check business-page access for visitor pages and settings actions for management, including the route's read check.                                                                          |
 | Generated records do not appear on the page | Check the current account, assignee/owner filters, relationships and date ranges against the dataset; verify the page calls the intended business API.                                       |
 | Generation fails with an identity conflict  | Check the username and email in the account definitions; do not adopt an unrelated account. See [failure handling](adapting-data.md#business-cleanup).                                       |
 | Startup reports an unguarded connection     | Check each connection under `database.connections`; Demo Mode refuses to start when its probe write reaches a database. Do not remove the connection check to start.                         |

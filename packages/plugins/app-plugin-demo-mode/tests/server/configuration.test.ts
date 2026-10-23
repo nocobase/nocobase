@@ -11,7 +11,15 @@ import { nextDailyRun } from '../../shared/schedule.js';
 import * as scheduleHelpers from '../../shared/schedule.js';
 import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
 let app: TestApp;
-afterEach(async () => app?.close());
+afterEach(async () => {
+  vi.useRealTimers();
+  await app?.close();
+});
+/** Moves the clock past the per-process policy cache, as a while passing after another instance's save does. */
+function expirePolicyCache(): void {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(Date.now() + 6_000);
+}
 async function setup() {
   app = await createTestApp({
     createServer: createStandaloneServer,
@@ -39,6 +47,9 @@ it('configures exception collections without application registration and revoke
   expect((await config.read()).collections).toEqual([]);
   expect((await app.request('/notes', { method: 'POST' })).status).toBe(400);
   await other.save('collections', 0, ['demonotes']);
+  // This process still serves the policy it cached until it expires.
+  expect((await app.request('/notes', { method: 'POST' })).status).toBe(400);
+  expirePolicyCache();
   expect((await app.request('/notes', { method: 'POST' })).status).toBe(200);
   expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
   await guard.run(
@@ -77,6 +88,7 @@ it('configures exception collections without application registration and revoke
     reason: 'DEMO_CONFIGURATION_CONFLICT',
   });
   await other.save('collections', 1, []);
+  expirePolicyCache();
   expect((await app.request('/notes', { method: 'POST' })).status).toBe(400);
   expect((await other.read()).collections).toEqual([]);
 });
@@ -542,32 +554,6 @@ it('resolves migration collection names with prefixes and isolates same-name tab
           .execute(),
     ),
   ).rejects.toThrow();
-});
-
-it('converts persisted preview table selections to logical collection names once', async () => {
-  const { config } = await setup();
-  await app.connection.builder.createCollection('orderItems', (collection) => {
-    collection.string('id', { primaryKey: true });
-  });
-  await app.connection.query
-    .updateTable('demoModeConfiguration')
-    .set({
-      revision: 4,
-      value: JSON.stringify({
-        tables: ['order_items'],
-        mocks: {},
-        schedule: null,
-      }),
-    })
-    .where('id', '=', 'default')
-    .execute();
-  await config.initialize();
-  expect(await config.read()).toMatchObject({
-    revision: 5,
-    collections: ['orderItems'],
-  });
-  await config.initialize();
-  expect((await config.read()).revision).toBe(5);
 });
 
 it('resolves allowed collections once instead of introspecting the schema on every request', async () => {

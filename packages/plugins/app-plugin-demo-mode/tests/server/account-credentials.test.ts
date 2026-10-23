@@ -85,21 +85,6 @@ it('applies changed shared passwords across restart while keeping unchanged acco
     await restarted.clear('admin');
     await restarted.importNow('admin');
     expect((await signIn(password)).status).toBe(200);
-
-    // Preview accounts have no snapshot; establish it once without trusting current source definitions.
-    await app.connection.query
-      .updateTable('demoModeAccounts')
-      .set({ passwordHash: null })
-      .where('userId', '=', userId)
-      .execute();
-    const legacyCookie = cookieOf(await signIn(password));
-    await make().reset('admin', undefined, { wait: true });
-    expect(await session(legacyCookie)).toBeNull();
-    const migratedCookie = cookieOf(await signIn(password));
-    await make().reset('admin', undefined, { wait: true });
-    expect(await session(migratedCookie)).toMatchObject({
-      user: { id: userId },
-    });
   } finally {
     await app.close();
   }

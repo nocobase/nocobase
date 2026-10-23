@@ -16,7 +16,9 @@ Imports and cleanup renew their persisted lease every 30 seconds. Status updates
 
 Clear disables owned demo accounts, including an initiating demo account, for later reuse. Reset carries tracked accounts, Permission Sets and assignments across cleanup and atomically hands `clearing` to `importing`; reused accounts retain sessions, unused identities are released, and failed generation compensates tracked identities. Administrator identities outside tracking remain untouched.
 
-Preview deployments already exist. Preserve database migration names and checksums even when consolidating unreleased changesets; release notes describe the final feature, while migrations preserve upgradeability.
+## Security posture
+
+Demo Mode serves public demonstrations: anyone may enter any listed account, and reset restores the fictional data. Protect what lies outside the demo — dedicated databases, real credentials and real external effects — and keep everything else simple. Do not add hardening that only protects the demo's own data, such as extra ownership checks, rate limits or confirmations.
 
 ## Verification
 
