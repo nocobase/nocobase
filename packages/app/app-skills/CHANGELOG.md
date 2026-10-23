@@ -1,5 +1,21 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.47
+
+### Patch Changes
+
+- 39fa974: The chat's headless entry tells a panel which kind of agent it shows: `resolveChatAgentMode`, `configuredChatModes`, `agentsOfMode` and `chatAgentMode` split the catalog into the online agent and runner agents, and `useChatPanel()` carries `agentMode` with `setAgentMode` for a panel that switches between them. `GET /api/agents/conversations` takes `mode=online|runner` to list one kind's conversations. `ChatProvider` takes `memoryScope` (the signed-in person's id) and remembers the agent a new conversation last went to in `localStorage` (`lastAgentId`, `rememberAgent`, `readLastAgent`, `rememberLastAgent`); `newConversationAgent` takes it as a third argument, ahead of the person's and the team's defaults. Every addition is optional, and a panel that passes none of it behaves as before.
+
+  The UI Library catalog in `nocobase-app-development` describes the updated `agent-chat` and `agent-composer` items: the panel's mode switch and the agent last used, and context chips that open a preview of what they carry.
+
+- 9c20e2d: Add Demo Mode for isolated demonstration deployments, enabled by the boolean `NOCOBASE_DEMO_MODE` environment variable or `demoMode.enabled` configuration and disabled by default, with application-owned repeatable datasets, full business cleanup, reusable visitor accounts, application-scoped quick sign-in redirects, progress reporting and daily scheduled resets. Track applied credentials across restarts so reset preserves unchanged sessions and applies password changes.
+
+  Provide request-scoped write protection with logical-collection exceptions while preserving business authorization. Expose permission-gated data management, revision-safe policy APIs, CLI commands and composable settings components.
+
+  Support optional official Agents integration with a persistent simulated model, application-owned Agent simulations and explicitly authorized online conversation policies. Preserve existing global defaults and disable the owned model when Demo Mode is disabled. Document raw OpenAI JSON and streaming response contracts. Non-AI applications can use demo data without installing Agents. Publish structural service contracts and browser-safe shared types.
+
+  Publish a task-focused integration Skill with capability prerequisites, an executable non-AI example, settings-based management authorization and application-owned datasets and cleanup. Distinguish ordinary sample data from dedicated demo deployments, use automatic daily reset defaults and keep customization and simulation guidance conditional on the requested demo.
+
 ## 0.1.0-beta.46
 
 ### Patch Changes

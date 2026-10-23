@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.3
+
+### Patch Changes
+
+- 040b540: Recognize backend routes and service providers in published plugin layouts. Preserve confirmed data-model catalog totals and partial schema statistics when Collection definitions are missing or unreadable, without exposing driver errors.
+
 ## 0.1.0-beta.2
 
 ### Patch Changes
