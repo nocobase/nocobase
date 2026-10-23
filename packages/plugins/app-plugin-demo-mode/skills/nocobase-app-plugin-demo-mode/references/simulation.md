@@ -26,7 +26,7 @@ Answers for the application's own text generation must keep each consumer's cont
 
 ## Acceptance checks
 
-Test text generation, structured business replies, a tool-call round trip, malformed tool input and an unmatched call. Verify no external provider or real Runner is reached, including when scope lookup fails, after process restart and after clearing a demo project while work is queued. Test `NOCOBASE_DEMO_MODE=false` separately to confirm the application still uses its normal Agent outside demo deployments. List each verified boundary; “model mock works” is insufficient evidence for “all Agent calls are mocked.”
+Test text generation, structured business replies, a tool-call round trip, malformed tool input and an unmatched call. Verify no external provider or real Runner is reached, including when scope lookup fails, after process restart and after clearing a demo project while work is queued. For queued work, disable the adapter after admission and verify the worker refuses it without a real fallback. Test `NOCOBASE_DEMO_MODE=false` separately to confirm new ordinary work uses the normal Agent and previously queued demo work is refused. List each verified boundary; “model mock works” is insufficient evidence for “all Agent calls are mocked.”
 
 ## Application-configured Demo Agent proxy
 
@@ -34,11 +34,25 @@ Use `configuration.registerAgent<Input, Output>({ id, title, defaultEnabled, exe
 
 For an immediate execution, call `proxy.run(input, () => normalAgent(input))` at the existing authorized Agent entry point. `NOCOBASE_DEMO_MODE=false` uses the normal Agent; every input in an enabled demo environment uses the configured demo implementation. Disabled mocks, unsupported operations and adapter failures must never trigger a real fallback. A queued demo run still calls `execute` directly and is refused if demo mode is subsequently off.
 
-For durable tasks, call `proxy.prepare()` before enqueueing, persist the proxy ID and a simulation marker in application-owned work, and use `proxy.execute(input)` after claiming work. Call `configuration.withFreshPolicy(callback)` when the worker runs so an originating request's old policy cannot hide revocation. Recheck actor/owner permissions, scope and task revisions; never enqueue an official Runner execution for a replacement. Keep your normal cancellation and duplicate-delivery protections. The proxy does not fabricate official Agent definitions or execution receipts.
+### Durable Agent dispatch
+
+Keep the queue and its job schema application-owned. After authorization, call `proxy.prepare()` before enqueueing and branch on its result; it is not just a validation call. Persist the selected dispatch kind with the input in the same durable job record.
+
+| Admission result | Persist and dispatch                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `true`           | Save a demo marker and `proxy.id`; enqueue application-owned simulation work, without an official Runner execution. |
+| `false`          | Demo Mode is off. Use the application's ordinary queue path; do not mark the work as simulated.                     |
+| Throws           | Refuse admission. A disabled or unknown mock must not enqueue real work.                                            |
+
+After claiming a demo job, recheck the actor, ownership, record scope, task revision and cancellation state. Resolve its saved proxy ID through the application's registered proxies, then call `configuration.withFreshPolicy(() => proxy.execute(job.input))`. Use `execute`, not `run`, for a persisted demo job: `run` would choose the real callback if Demo Mode had been switched off. Unknown proxy IDs, disabled adapters and disabled Demo Mode must fail the job without a real fallback. Mark a successful result as simulated through the normal application result/review flow.
+
+Ordinary queued work must also recheck the current environment at its actual transport or Runner dispatch boundary; a job admitted before Demo Mode was enabled must not bypass demo isolation. Preserve the application's cancellation and duplicate-delivery protections. Do not reuse a request's configuration snapshot in a worker or fabricate official Agent definitions and execution receipts.
+
+### Optional playback and result persistence
 
 If the requested demo needs visible execution progress, provide a short playback; an immediate simulated response is sufficient otherwise. For playback, let `execute(input)` return the result together with a scripted transcript — thinking, tool calls and their results built from the run's own material (its brief, the page it targets read through the in-process responder, the data summary, the knowledge), the submission and the usage — and play it back from the worker: wait between events, append each one to the application's run record, and stop between two events once the run is asked to stop. Return that transcript wherever the application already shows a run's events, in the same shape as an official run's, so its existing view renders it. Scale the pauses with a setting so tests can play back instantly, keep the playback short enough that the interrupted-run recovery does not mistake it for a crash, and leave transcripts out of list responses that are polled often.
 
-Write exceptions remain separate: register only the tables and operations needed to create tasks and persist results, and require explicit UI rules. Use the same normal workflow for human review and mark any demo publication as simulated. Do not manufacture PR URLs, live deployment evidence or real effect metrics. Application Skills should inspect the input/result schemas, build useful task-specific fixtures, register the proxy at the execution boundary, and test handoff through review as well as failure and non-demo paths.
+Write exceptions remain separate: configure only the logical collections needed to create tasks and persist results, using the [collection policy](policies.md#collection-write-exceptions). Each exception permits INSERT, UPDATE and DELETE together; business authorization must restrict the operations and records a visitor may change. Use the same normal workflow for human review and mark any demo publication as simulated. Do not manufacture PR URLs, live deployment evidence or real effect metrics. Inspect the application's input/result schemas, build useful task-specific fixtures, register the proxy at the execution boundary, and test handoff through review as well as failure and non-demo paths.
 
 ### Model services
 

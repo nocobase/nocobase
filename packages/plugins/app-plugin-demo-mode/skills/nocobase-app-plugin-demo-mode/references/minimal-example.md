@@ -71,7 +71,7 @@ Wrap each top-level page in the application's existing `PageContainer`, followin
 
 ## 3. Generate and verify
 
-1. Run the application's normal migrations/startup and open its printed application entry URL. Sign in as the real administrator and open `/demo-management`.
+1. Run the application's normal migrations/startup and open its printed application entry URL. Sign in as the real administrator and open `/demo-management`. This example does not require Scheduler, but an existing host registration still activates the default daily reset; [save a disabled schedule](policies.md#decide-the-reset-schedule-before-generation) before generating when recurring resets are not wanted.
 2. Generate `en-US`. Expect one project, two tasks and two visitor accounts. Open `/demo-sign-in?as=demo_alex&redirect=/demo-projects`: Alex sees “Review the first issue”. Sam sees “Prepare the next issue”. The server filters by assignee even if the caller changes the URL.
 3. Confirm a visitor cannot call `POST /api/demoMode/data/reset`; authenticated access alone is insufficient. Add the application's base path to API URLs.
 4. Reset as the administrator. Expect one project and two tasks again, with no duplicates; an existing visitor session remains valid. Clear, then generate again to exercise account disable/reuse separately.
@@ -93,5 +93,7 @@ Use the failing step to choose the next check; do not bypass permissions or add 
 | The visitor entry is empty or sign-in fails | Complete generation, enable password sign-in and `quickSignIn`, and use the same explicit passwords in `accounts()` and `createAccount()`. Inspect the generation failure before retrying.   |
 | A page or management API returns 403        | Check business-page access for visitor pages and settings actions for management, including the route's read check. Keep visitor grants separate from administrator grants.                  |
 | Generated records do not appear on the page | Check the current account, assignee/owner filters, relationships and date ranges against the dataset; verify the page calls the intended business API.                                       |
+| Demo content disappears overnight           | Inspect the saved reset policy and existing Scheduler registration. Omitting the schedule card does not disable its default 03:00 reset.                                                     |
+| Generation fails with an identity conflict  | Follow [cleanup and recovery](adapting-data.md#coordinate-cleanup-and-recovery); verify ownership instead of adopting an existing account or repeatedly retrying.                            |
 
 For API calls, use the application's printed entry URL and base path. For this example, a successful first delivery shows Alex's task and Sam's task under their respective accounts, denies visitor reset, and reproduces the same two-task story after reset. Report browser checks separately from automated server checks.

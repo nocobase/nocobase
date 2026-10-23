@@ -41,13 +41,27 @@ Use `context.clock` throughout a step: `now`, `timeZone`, `daysAgo`, `dateAgo` a
 
 Use `context.clock.seed` and `context.clock.sample(stableRecordKey)` for daily variation. The seed includes the dataset, language, time zone and local import day; each key produces a stable value in `[0, 1)` independent of iteration order. Do not add a second random-seed implementation. Keep variation bounded and preserve totals, references and domain invariants. See the [dataset example](dataset-example.md) for dates and account reuse.
 
-Relative dates become current when the dataset is imported or reset. They do not advance in persisted records merely because the page is opened the next day. Configure the daily schedule through the demo configuration API/UI if daily regeneration is needed, with an explicit timezone and language. Explain the deletion scope before enabling automatic reset. Do not replace an administrator's existing schedule or clear live data just to make a preview look recent.
+Relative dates become current when the dataset is imported or reset. They do not advance in persisted records merely because the page is opened the next day. [Decide the reset schedule before generation](policies.md#decide-the-reset-schedule-before-generation): an existing Scheduler registration enables the default 03:00 reset unless a disabled policy is saved. Use an explicit time zone and language when recurring regeneration is wanted. Preserve an administrator's existing schedule unless changing it is part of the request.
 
 ## One business cleanup contract
 
 Implement `clear(context)` to delete ALL business data and visitor additions in the dedicated demo instance, including files, queues, active work and caches. Preserve system identities, authorization, secrets, demo configuration and the environment model. Inventory tables and deletion order explicitly; never delete every database table indiscriminately. Tracking supplies counts and import membership, not a promise to preserve older business records.
 
 The same cleanup runs for clear, reset and failed/interrupted imports. It must be retry-safe and accept partial or empty import context. It does not restore an earlier business state. An interrupted cleanup must retain enough evidence to retry failed file deletion. Demo accounts are disabled for reuse; do not delete their reserved usernames or introduce an application-specific account policy.
+
+## Coordinate cleanup and recovery
+
+Stop and drain application-owned jobs and active writes before deleting their business data. The persisted operation lease protects plugin status updates, but it cannot cancel an application callback already executing. A timed-out callback may resume and delete rows created by its replacement; a lease-lost error after the callback returns cannot undo that deletion. Before manually recovering a stalled operation, establish that its old executor has stopped. Deployments that allow concurrent takeover need a shared exclusion mechanism covering business writes; the public clear context supplies progress reporting, not a cancellation signal or an atomic write fence.
+
+After an ordinary generation failure, inspect the reported failure and verify cleanup completed before retrying. Account creation and demo ownership recording are separate writes: interruption between them can leave an enabled account outside tracked compensation and make a retry fail with `DEMO_DATA_ACCOUNT_CONFLICT`. An identity conflict is not permission to adopt or overwrite the existing account. Verify its provenance, disable an unintended account through Users administration when appropriate, and resolve ownership recovery in the owning plugin before retrying. Do not patch private tracking tables, delete reserved usernames or repeatedly reset the database to hide the conflict.
+
+Verify actual rows, files, active work and effective access after recovery. A `ready` status and tracked counts alone cannot prove that a resumed old callback left the new business data intact.
+
+## Update demo accounts
+
+Keep `accounts(language)` and `createAccount()` on one shared definition. Reset applies changed passwords and revokes their old sessions; unchanged credentials preserve sessions. Check ordinary and quick sign-in after resetting changed definitions.
+
+Reused accounts apply only the `roleScopes` keys present in the new specification. Omitting a key keeps its previous value. To remove an optional multi-value scope, explicitly supply an empty array, for example `roleScopes: { app: [] }`, and retain that explicit value in the account definition. For required or single-value scopes, use the host's supported replacement value. Do not infer a universal removal value or bypass the scope's validation. Verify effective permissions after reset with the visitor's existing session, including an operation the old role allowed and the new role must refuse.
 
 ## Deliver the management flow
 
@@ -59,7 +73,8 @@ The installed version's documented deployment collection allowlist is separate f
 
 - Import into an isolated database and inspect the actual principal pages: coherent relations, useful charts, role-appropriate accounts and recent dates in each language the demo supports.
 - If the dataset uses daily variation, verify stable results for the same date and meaningful bounded changes on another date; test business invariants rather than snapshots of every generated value.
-- Inject a middle-step failure, then retry; business data is cleared while credentials and administrator assignments survive. Test username collisions and restart recovery.
+- Inject a middle-step failure and verify full business cleanup and preservation of system identities. Exercise identity-creation failures and username collisions separately; do not claim automatic recovery from conflicts. Retry only after the failed boundary has been resolved.
+- Test role removal as well as role assignment. For takeover-capable deployments, resume a stalled old cleanup after a new import and verify the new rows survive; include an actual delayed write in the test.
 - Add visitor content within demo scope, clear it, then reset; verify blobs and cached views as well as rows. Verify failure recovery uses the same full cleanup contract.
 - Exercise anonymous, read-only administrator and managing administrator access, including direct API calls and concurrent ordinary requests during lifecycle exemption.
 - Trace external boundaries the application actually uses. A fixture miss must not silently invoke a real provider. Follow the [simulation checklist](simulation.md) only when the demo includes models, tools or Runners.

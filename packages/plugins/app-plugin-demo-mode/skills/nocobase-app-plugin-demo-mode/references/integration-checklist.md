@@ -8,6 +8,7 @@ Confirm that the user needs a dedicated demo system, not only sample records in 
 
 - Register the Server plugin and `defineDemoModeConfig()` in the application's existing defaults map. Add the Client factory for UI and `@nocobase/app-plugin-demo-mode/cli` when commands are needed. Use the application's normal package build workflow.
 - Infer from the request and existing application guidance: which languages, which roles and how many accounts, the full business cleanup boundary (this is a dedicated demo instance), whether visitors may write anything with Demo Mode enabled, and whether Agents answer from scripts. Record those decisions in the application's development guide.
+- Inspect an existing Scheduler registration and [save the intended reset policy](policies.md#decide-the-reset-schedule-before-generation) before generating. Its default is daily at 03:00; for a new demo without recurring resets, explicitly save a disabled schedule. Preserve existing administrator choices.
 
 ## 2. Inventory every external boundary first
 
@@ -32,8 +33,9 @@ Follow [Adapt demo data](adapting-data.md). In addition:
 - Write each language as its own content, with names that read naturally in it; tie authored comments and owners to the demo people so "my tasks" means something for each account.
 - Give demo accounts roles the demo owns (`createPermissionSet`), scoped to the demo's own projects or tenants. Do not hand a demo account the application's built-in administrator role: a role's last active assignment is protected, so clearing could not disable that account.
 - Demo accounts are always disabled on clear and re-enabled on import. Do not add deletion or restoration policies.
-- When the application registers a role scope marked `requiredOnCreate`, pass its value as `roleScopes` on each account spec; the plugin applies it again when an import reuses the account.
+- When the application registers a role scope marked `requiredOnCreate`, pass its value as `roleScopes` on each account spec. On reuse, only supplied keys are applied; removing a key does not revoke its old value. Follow [account changes](adapting-data.md#update-demo-accounts) when reducing permissions.
 - Inside a transaction of a legacy or ORM layer, do not query through another connection API; on SQLite that deadlocks or fails. Run those deletes before or after the transaction.
+- Follow [cleanup and recovery](adapting-data.md#coordinate-cleanup-and-recovery) for stalled callbacks and interrupted identity creation. Keep jobs drained during cleanup and verify actual business rows after recovery.
 
 ## 5. Let visitors do what the demo is for
 
@@ -58,4 +60,5 @@ Automated tests cover contracts; verify the requested user journeys in a browser
 - Import, then open each principal page as each demo account in the supported languages; clear and reset. If the demo includes tasks or online Agents, exercise those flows too.
 - Run the demo with Demo Mode enabled as a visitor would. Confirm that what should work works and that everything else is refused.
 - If background jobs are enabled, observe a relevant run and check that curated content is not unexpectedly rewritten.
+- Check the saved reset policy, including disabled state when automatic cleanup was not requested. Check effective access after reducing a demo account's roles.
 - Trace one request per external boundary and confirm it stayed in process; report boundaries you could not exercise.
