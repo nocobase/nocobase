@@ -21,7 +21,7 @@ describe('workflowCcTasks read permissions', () => {
   beforeAll(async () => {
     app = await getApp({
       acl: true,
-      database: { tablePrefix: `task_read_${uid(6)}_` },
+      database: { tablePrefix: `t${uid(5)}_` },
       plugins: ['workflow-cc'],
     });
     const users = app.db.getRepository('users');
