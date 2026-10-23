@@ -56,6 +56,8 @@ describe('AIEmployeeButtonModel', () => {
     const placeholder = container.firstElementChild as HTMLElement;
     expect(placeholder?.style.opacity).toBe('0.3');
     expect(container.querySelector('.ant-avatar')).toBeTruthy();
+    // A robot icon is shown as a fallback when employee metadata is not yet available.
+    expect(container.querySelector('.ant-avatar .anticon')).toBeTruthy();
     // The hidden preview only renders a static placeholder, never the real shortcut button that would
     // initialize the chatbox runtime and subscribe to its stores.
     expect(container.querySelector('span[style*="cursor: pointer"]')).toBeNull();
