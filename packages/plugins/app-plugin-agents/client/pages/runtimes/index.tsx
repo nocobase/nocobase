@@ -2,7 +2,7 @@ import { RefreshStatus } from './refresh-status.js';
 /**
  * Route `/runtimes`: the runtimes that run agents (a runner on a server, a VM or someone's own device). The list is an
  * overview, one row per runtime: its name with its system, its state with the slots it uses, its coding tools by
- * whether each is signed in, whether it is personal or shared with the team, its runner version (marked when a newer
+ * whether each is signed in, whether it is personal or shared with all users, its runner version (marked when a newer
  * one is served) and when it was last seen. Clicking a row, or "Edit" in its menu, opens the runtime's sheet
  * (`runner-sheet.tsx`), which holds every setting; the menu also revokes it, or deletes it once revoked. Revoked
  * runtimes sit folded below until deleted.

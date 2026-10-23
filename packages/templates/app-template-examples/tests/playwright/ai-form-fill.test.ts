@@ -137,7 +137,10 @@ async function startScene(page: Page) {
     );
     const readDraft = async () => ({
       name: await form.getByTestId('draft-name').inputValue(),
-      department: await form.getByTestId('draft-department').innerText(),
+      department: await form
+        .getByTestId('draft-department')
+        .locator('[data-slot="select-value"]')
+        .innerText(),
       quantity: await form.getByTestId('draft-quantity').inputValue(),
       budget: await form.getByTestId('draft-budget').inputValue(),
       arrival: await form.getByTestId('draft-arrival').innerText(),
@@ -153,7 +156,9 @@ async function startScene(page: Page) {
           candidate.method() === 'POST' &&
           candidate.url() === `${endpoint}/messages`,
       );
-      await panel.locator('textarea').fill(text);
+      await panel
+        .getByRole('textbox', { name: 'Message to the agent', exact: true })
+        .fill(text);
       await panel.getByTestId('chat-send').click();
       const sent = sendSchema.parse((await request).postDataJSON());
       const snapshots = sent.context.ui.items
@@ -224,9 +229,11 @@ test('automatically fills the draft without confirmation and never reapplies res
       proposedValues.name!,
     );
     await expect(scene.form.getByTestId('draft-budget')).toHaveValue('420');
-    await expect(scene.form.getByTestId('draft-department')).toHaveText(
-      'Product Design',
-    );
+    await expect(
+      scene.form
+        .getByTestId('draft-department')
+        .locator('[data-slot="select-value"]'),
+    ).toHaveText('Product Design');
     await expect(scene.form.getByTestId('draft-quantity')).toHaveValue('3');
     await expect(scene.form.getByTestId('draft-arrival')).toHaveText(
       'Nov 6, 2026',
@@ -339,7 +346,7 @@ test('does not authorize a registered form from a different user message context
         request.url() === `${scene.endpoint}/messages`,
     );
     await scene.panel
-      .locator('textarea')
+      .getByRole('textbox', { name: 'Message to the agent', exact: true })
       .fill('There is no form selected in this message.');
     await scene.panel.getByTestId('chat-send').click();
     const sent = z

@@ -322,7 +322,7 @@ export function createRunRequestRoutes(
       summary: 'Run a run request as the caller',
       operationId: 'agentsRunRunRequestAsMe',
       description:
-        'The person who asked runs the work as themselves now, without waiting for confirmation: on their own runner or a team runner, never on the runners of the person who answers for the subject. A pending request is withdrawn; an expired one that went nowhere may be run this way once. Rejected personal runner requests also allow one execution as the original requester, preserving the rejection. Refused with `NO_RUNNER_AVAILABLE` when no runner the caller may use can run the agent now, so the work never waits unseen.',
+        'The person who asked runs the work as themselves now, without waiting for confirmation: on their own runner or a shared runner, never on the runners of the person who answers for the subject. A pending request is withdrawn; an expired one that went nowhere may be run this way once. Rejected personal runner requests also allow one execution as the original requester, preserving the rejection. Refused with `NO_RUNNER_AVAILABLE` when no runner the caller may use can run the agent now, so the work never waits unseen.',
       ...cliRoute({
         command: 'run request run-as-me',
         args: ['requestId'],

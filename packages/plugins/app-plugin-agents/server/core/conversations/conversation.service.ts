@@ -1318,6 +1318,13 @@ export function createConversationService(
                     : f.string('agentId').eq(query.agentId),
                 ]
               : []),
+            ...(query.mode
+              ? [
+                  query.mode === 'online'
+                    ? f.string('agentId').eq('0')
+                    : f.string('agentId').ne('0'),
+                ]
+              : []),
             ...(query.source ? [f.string('source').eq(query.source)] : []),
             ...(q
               ? [

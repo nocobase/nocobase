@@ -1,4 +1,6 @@
+import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
+import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -648,6 +650,7 @@ const deDE: LocaleResource<typeof enUS> = {
       checking: 'Wird geprüft…',
       restart: 'Starte den Runner neu, um seinen Status zu aktualisieren.',
     },
+    pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',
       online: 'Effective slots · online settings',
@@ -912,6 +915,7 @@ const deDE: LocaleResource<typeof enUS> = {
       version: 'Version {{version}}',
     },
     trust: {
+      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
       label: 'Für wen es funktioniert',
       team: 'Mannschaft',
       teamHint:
@@ -962,6 +966,7 @@ const deDE: LocaleResource<typeof enUS> = {
     },
   },
   connect: {
+    ...runtimesEnUS.connect,
     title: 'Laufzeit hinzufügen',
     description:
       'Führen Sie den folgenden Befehl auf einem Host aus, auf dem ein Codierungstool installiert ist: einem Server, einer VM oder Ihrem eigenen Gerät. Agenten werden dort mit vollem Zugriff ausgeführt, als der Benutzer, der den Runner ausführt, und können alles lesen und ändern, was der Benutzer tun kann, einschließlich SSH-Schlüsseln und anderen Anmeldeinformationen. Der Runner stellt keine Sicherheitsgrenze dar: Führen Sie ihn als dedizierten Benutzer, in einem Container oder in einer VM aus.',
@@ -972,8 +977,6 @@ const deDE: LocaleResource<typeof enUS> = {
       'Der Host benötigt Node.js 24 oder neuer (überprüfen Sie dies mit node --version). Der Befehl stoppt und sagt, wie er installiert werden soll, wenn er fehlt.',
     installed:
       'Ist nocobase-runner bereits installiert? Registrieren Sie es stattdessen:',
-    unsupported:
-      'Der Runner läuft noch nicht unter Windows. Verwenden Sie macOS oder Linux oder WSL.',
     tokenOnce:
       'Der Befehl enthält einen einmaligen Berechtigungsnachweis für eine „{{trust}}“-Laufzeit. Es funktioniert einmal, bis {{time}}.',
     after:
@@ -997,6 +1000,9 @@ const deDE: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    // Keep new guidance available in English until this locale is translated.
+    executionFailed: chatEnUS.chat.executionFailed,
+    fileInputFailures: chatEnUS.chat.fileInputFailures,
     untitled: 'Gespräch ohne Titel',
     renamed: 'Umbenannt',
     archivedNamed: 'Archiviert „{{title}}“',

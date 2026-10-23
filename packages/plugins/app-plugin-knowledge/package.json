@@ -108,11 +108,7 @@
   },
   "dependencies": {
     "hono": "catalog:",
-    "mammoth": "^1.10.0",
-    "officeparser": "^6.0.4",
-    "pdf-parse": "^1.1.1",
-    "word-extractor": "^1.0.4",
-    "xlsx": "^0.18.5",
+    "@nocobase/document-extractor": "workspace:^",
     "zod": "catalog:"
   },
   "peerDependencies": {

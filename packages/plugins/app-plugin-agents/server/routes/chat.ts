@@ -54,6 +54,7 @@ import {
 import type { AdminEnv } from './admin.js';
 import { personOrRunSecurity, tags } from './openapi.js';
 import {
+  OnlineAgentResendSchema,
   ChatAgentSchema,
   ChatSettingsSchema,
   ChatAttachmentContentQuery,
@@ -82,6 +83,7 @@ const ConfigInput = z.strictObject({
   agentId: z.string().min(1).max(64).optional(),
   scope: z.array(z.string()).optional(),
   thinking: z.string().optional(),
+  webSearch: z.boolean().optional(),
   context: z
     .strictObject({
       variable: z.json().optional(),
@@ -96,6 +98,7 @@ const ConfigOutput: z.ZodType<OnlineChatConfigSnapshot> = z.object({
   scope: z.array(z.string()),
   model: z.array(z.string()).optional(),
   thinking: z.string().optional(),
+  webSearch: z.boolean().optional(),
   tool: z.array(z.string()),
   toolVersions: z.record(z.string(), z.string()),
   systemPrompt: z.string(),
@@ -299,6 +302,7 @@ export function createChatRoutes(
         archived: query.archived === 'all' ? 'all' : query.archived === 'true',
         ...(query.q ? { q: query.q } : {}),
         ...(query.agentId ? { agentId: query.agentId } : {}),
+        ...(query.mode ? { mode: query.mode } : {}),
         ...(query.source ? { source: query.source } : {}),
         ...(query.pageToken ? { pageToken: query.pageToken } : {}),
         pageSize: query.pageSize,
@@ -578,6 +582,44 @@ export function createChatRoutes(
         selectedModel: request.selectedModel,
         workContext,
       });
+      const stream = await agent.receive();
+      if (!stream)
+        throw invalid('The accepted response requires history reconciliation.');
+      return createUIMessageStreamResponse({
+        stream,
+        headers: {
+          'Cache-Control': 'private, no-store',
+          'x-online-agent-recovery': services.onlineAgent.recovery,
+        },
+      });
+    },
+  );
+  router.post(
+    '/conversations/:conversationId/resend',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Resend an existing user message',
+      operationId: 'agentsResendConversationMessage',
+      ...cliRoute(false),
+      description:
+        'Native only. Updates the user input in place and permanently deletes all later messages in the admission transaction. Retains original attachments and context. Business effects are not reversed. Unknown responses must not be automatically retried.',
+      responses: {
+        200: {
+          description: 'Standard SDK UI message stream.',
+          content: { 'text/event-stream': { schema: { type: 'string' } } },
+        },
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    apiValidator('json', OnlineAgentResendSchema),
+    async (context) => {
+      const agent = await services.onlineAgent.realtime(trusted(context), {
+        sessionId: conversationId(context),
+      });
+      await agent.resend(context.req.valid('json'));
       const stream = await agent.receive();
       if (!stream)
         throw invalid('The accepted response requires history reconciliation.');

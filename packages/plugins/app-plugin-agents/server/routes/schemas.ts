@@ -31,6 +31,13 @@ import {
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import { z } from 'zod';
+import type { OnlineAgentResendOptions } from '../../shared/resend.js';
+
+export const OnlineAgentResendSchema: z.ZodType<OnlineAgentResendOptions> =
+  z.strictObject({
+    messageId: z.string().min(1).max(64).optional(),
+    input: z.strictObject({ text: z.string().max(100_000) }).optional(),
+  });
 import { QuotaReportSchema } from '@nocobase/agent-protocol';
 
 import {
@@ -393,6 +400,7 @@ export const ConversationListQuerySchema: z.ZodType<
     readonly q?: string | undefined;
     readonly archived?: 'true' | 'false' | 'all' | undefined;
     readonly agentId?: string | undefined;
+    readonly mode?: 'online' | 'runner' | undefined;
     readonly source?: string | undefined;
   }
 > = z.object({
@@ -402,6 +410,12 @@ export const ConversationListQuerySchema: z.ZodType<
     .optional()
     .describe('Filter by archive state.'),
   agentId: id.optional().describe('The agent identifier.'),
+  mode: z
+    .enum(['online', 'runner'])
+    .optional()
+    .describe(
+      'online: conversations with the online agent; runner: conversations with every other agent.',
+    ),
   source: z
     .string()
     .regex(CONVERSATION_SOURCE_PATTERN)
@@ -477,7 +491,7 @@ export const VariableValueInput: z.ZodType<{
   }),
   teamRunnersOnly: z.boolean().optional().meta({
     description:
-      'Only team runners receive it; left out, a new variable is not restricted and an existing one keeps its setting.',
+      'Only shared runners receive it; left out, a new variable is not restricted and an existing one keeps its setting.',
   }),
   fromRunner: z.boolean().optional().meta({
     description:
@@ -497,7 +511,11 @@ export const SkillRestoreInput: z.ZodType<{ expectedRevision: number }> =
 export const RunnerPatchInput: z.ZodType<RunnerPatch> = z
   .strictObject({
     name: z.string().trim().min(1).max(200).describe('The name to display.'),
-    trust: z.enum(RUNNER_TRUST).describe('The runner trust level.'),
+    trust: z
+      .enum(RUNNER_TRUST)
+      .describe(
+        'Usage scope: team is shared across all users; ownerOnly is personal to its owner.',
+      ),
     slots: z
       .number()
       .int()
@@ -523,7 +541,12 @@ export const RunnerPatchInput: z.ZodType<RunnerPatch> = z
 
 export const RegistrationTokenInputSchema: z.ZodType<RegistrationTokenInput> =
   z.strictObject({
-    trust: z.enum(RUNNER_TRUST).optional().describe('The runner trust level.'),
+    trust: z
+      .enum(RUNNER_TRUST)
+      .optional()
+      .describe(
+        'Usage scope: team is shared across all users; ownerOnly is personal to its owner.',
+      ),
     enabledTools: z
       .array(AgentToolSchema)
       .min(1)
@@ -533,7 +556,7 @@ export const RegistrationTokenInputSchema: z.ZodType<RegistrationTokenInput> =
       .describe('The agent tools this runner accepts.'),
     slots: z.number().int().min(1).max(64).nullable().optional().meta({
       description:
-        'How many runs at once the runner takes from this application; omitted or null registers it with 4. The application keeps this setting and sends it to the runner in heartbeat answers.',
+        'How many runs at once the runner takes from this application; omitted or null registers it with 3. The application keeps this setting and sends it to the runner in heartbeat answers.',
     }),
     toolSlots: ToolSlotsSchema.nullable().optional().meta({
       description:
@@ -1025,7 +1048,7 @@ export const VariableSchema: z.ZodType<Variable> = z
     name: z.string(),
     teamRunnersOnly: z.boolean().optional().meta({
       description:
-        'Only team runners receive it: a run that gets it waits for one rather than going to a personal runner.',
+        'Only shared runners receive it: a run that gets it waits for one rather than going to a personal runner.',
     }),
     fromRunner: z.boolean().optional().meta({
       description:
@@ -1274,7 +1297,7 @@ const runObject = z.object({
   threadScope: z.string(),
   actorUserId: z.string().meta({
     description:
-      'The person the run acts as: their permissions bound it, and only their runners (or team runners) take it.',
+      'The person the run acts as: their permissions bound it, and only their runners (or shared runners) take it.',
   }),
   commentRootRunId: z.string().nullable().optional().meta({
     description: 'Root of this comment run chain; null for independent events.',
@@ -1513,6 +1536,13 @@ const modelOption = z.object({
   label: z.string(),
   kind: modelKind,
   dimensions: z.number().int().nullable(),
+  capabilities: z.object({
+    webSearch: z.boolean(),
+    imageMediaTypes: z.array(z.string()).optional().meta({
+      description:
+        'Code-owned native image MIME types for the selected Provider, endpoint, and model.',
+    }),
+  }),
 });
 
 export const ModelCatalogServiceSchema: z.ZodType<ModelService> = z.object({

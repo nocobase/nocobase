@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/acp-bridge",
-  "version": "1.0.0-beta.3",
+  "version": "1.0.0-beta.4",
   "description": "Runs a person's coding agents on their own computer for a NocoBase application's agent sessions, over the Agent Client Protocol, and the wire protocol between that bridge and the application",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

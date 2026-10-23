@@ -1,7 +1,7 @@
 /**
  * This plugin on the authorization plugin, from `shared/access.ts`: its settings items, listed in the permission
- * workspace under an Agent team subsection of administration, and its businesses as the `agents` resource type, each
- * level of a business action its own action, under an Agent team subsection of administration. Its pages are client routes;
+ * workspace under an Agent management subsection of administration, and its businesses as the `agents` resource type, each
+ * level of a business action its own action, under an Agent management subsection of administration. Its pages are client routes;
  * the authorization plugin lists them from the route tree.
  */
 import {

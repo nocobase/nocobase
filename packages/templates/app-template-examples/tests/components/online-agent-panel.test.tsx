@@ -167,6 +167,7 @@ async function setup(locale = 'en-US', extensions: ChatExtensions = {}) {
 }
 beforeEach(() => {
   sessionStorage.clear();
+  localStorage.clear();
   agentsQueryClient().clear();
   host.canRead = true;
   host.request.mockReset();
@@ -220,6 +221,83 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+it.each(['en-US', 'zh-CN'])(
+  'keeps the installed inline edit and composer draft on unknown resend in %s',
+  async (locale) => {
+    host.catalog.mockResolvedValue(models);
+    const original = host.request.getMockImplementation()!;
+    const user: AppUIMessage = {
+      ...message,
+      id: 'saved-user',
+      role: 'user',
+      parts: [{ type: 'text', text: 'Original user input' }],
+    };
+    const reply: AppUIMessage = {
+      ...message,
+      metadata: { ...message.metadata!, seq: 2, sourceUserMessageId: user.id },
+    };
+    host.request.mockImplementation((input) =>
+      input.path.endsWith('/messages')
+        ? Promise.resolve({ data: [user, reply], meta: { lastSeq: 2 } })
+        : original(input),
+    );
+    host.stream.mockRejectedValue(new TypeError('Resend response lost'));
+    await setup(locale);
+    act(() => panel.openChat({ conversationId: 'saved' }));
+    const editLabel = locale === 'zh-CN' ? '编辑' : 'Edit';
+    const sendLabel = locale === 'zh-CN' ? '发送' : 'Send';
+    const draft = await screen.findByRole('textbox', {
+      name: locale === 'zh-CN' ? '发给 Agent 的消息' : 'Message to the agent',
+    });
+    fireEvent.change(draft, { target: { value: 'Preserved composer draft' } });
+    const editButton = await screen.findByRole('button', {
+      name: editLabel,
+      exact: true,
+    });
+    await waitFor(() => expect(editButton).toBeEnabled());
+    fireEvent.click(editButton);
+    const editor = screen.getByRole('textbox', {
+      name: editLabel,
+      exact: true,
+    });
+    expect(editor).toHaveClass('bg-background', 'min-h-20', 'resize-none');
+    const editing = editor.closest('[data-chat-message-editor]')!;
+    expect(editing.parentElement).not.toHaveClass('bg-primary/10');
+    expect(editing).not.toHaveTextContent('将保留原附件和上下文。');
+    expect(editing).not.toHaveTextContent(
+      'Original attachments and context will be kept.',
+    );
+    expect(
+      editor.closest('li')!.querySelector('[data-chat-message-actions]'),
+    ).toBeNull();
+    fireEvent.change(editor, { target: { value: 'Edited user text' } });
+    fireEvent.click(
+      within(editor.closest('[data-chat-message-editor]')!).getByRole(
+        'button',
+        { name: sendLabel, exact: true },
+      ),
+    );
+    await screen.findByText(
+      locale === 'zh-CN' ? zhCN.chat.resend.unknown : enUS.chat.resend.unknown,
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(editor).toHaveValue('Edited user text');
+    expect(draft).toHaveValue('Preserved composer draft');
+    expect(host.stream).toHaveBeenCalledTimes(1);
+    expect(host.stream.mock.calls[0][0]).toMatchObject({
+      path: 'agents/conversations/saved/resend',
+      method: 'POST',
+      json: { messageId: 'saved-user', input: { text: 'Edited user text' } },
+    });
+    expect(
+      screen.getByText(
+        locale === 'zh-CN'
+          ? zhCN.chat.resend.unknown
+          : enUS.chat.resend.unknown,
+      ),
+    ).toBeVisible();
+  },
+);
 it.each(['en-US', 'zh-CN'])(
   'guides model configuration in %s, preserves the draft and never sends without a chat model',
   async (locale) => {
@@ -353,7 +431,7 @@ it('groups native models by service and submits the selected service/model pair'
   );
 });
 
-it('uses the approved Chinese hint and service grouping in the mixed picker', async () => {
+it('uses the approved Chinese hint and service grouping in the online mode picker, with a switch to Runner agents', async () => {
   host.catalog.mockResolvedValue(models);
   const normal = host.request.getMockImplementation()!;
   host.request.mockImplementation(async (input) =>
@@ -365,13 +443,15 @@ it('uses the approved Chinese hint and service grouping in the mixed picker', as
       : normal(input),
   );
   await setup('zh-CN');
+  expect(await screen.findByTestId('chat-mode-switch')).toHaveAccessibleName(
+    '切换到执行机 Agent',
+  );
   await userEvent.click(screen.getByTestId('chat-agent-picker'));
   const menu = await screen.findByRole('menu');
-  expect(within(menu).getByText('Agents')).toBeVisible();
-  expect(within(menu).queryByText('Runner agents')).not.toBeInTheDocument();
-  expect(
-    within(menu).getByText('选择与在线大模型或执行机中的 Agent 对话。'),
-  ).toBeVisible();
+  // Each mode offers its own kind: the online agent's models, no Runner agents.
+  expect(within(menu).queryByText('Agents')).not.toBeInTheDocument();
+  expect(within(menu).queryByText('Coding agent')).not.toBeInTheDocument();
+  expect(within(menu).getByText('选择与在线大模型对话。')).toBeVisible();
   const service = within(menu).getByRole('group', { name: 'Local' });
   expect(within(service).getByRole('menuitem')).toHaveAttribute(
     'data-model',
@@ -411,20 +491,32 @@ it('keeps the draft when switching between a model and a Runner and omits native
   const user = userEvent.setup();
   const input = screen.getByRole('textbox', { name: 'Message to the agent' });
   await user.type(input, 'Keep the draft');
+  // The person's default is a Runner agent, so the panel starts with Runner agents.
+  await screen.findByTestId('chat-mode-switch');
+  await waitFor(() =>
+    expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent(
+      'Coding agent',
+    ),
+  );
   await user.click(screen.getByTestId('chat-agent-picker'));
   let menu = await screen.findByRole('menu');
-  expect(within(menu).getByText('Models')).toBeVisible();
-  expect(within(menu).getByText('Agents')).toBeVisible();
+  expect(within(menu).queryByText('Models')).not.toBeInTheDocument();
   const runner = within(menu).getByRole('menuitem', { name: /Coding agent/ });
   expect(runner).toHaveTextContent('Works in a repository');
   expect(runner).toHaveTextContent('My default');
   expect(runner).toHaveTextContent('Personal runners only');
-  await user.click(within(menu).getByRole('menuitem', { name: /Chat.*Local/ }));
+  await user.keyboard('{Escape}');
+  await user.click(screen.getByTestId('chat-mode-switch'));
   expect(input).toHaveValue('Keep the draft');
   await user.click(screen.getByTestId('chat-agent-picker'));
   menu = await screen.findByRole('menu');
-  await user.click(
-    within(menu).getByRole('menuitem', { name: /Coding agent/ }),
+  await user.click(within(menu).getByRole('menuitem', { name: /Chat.*Local/ }));
+  expect(input).toHaveValue('Keep the draft');
+  await user.click(screen.getByTestId('chat-mode-switch'));
+  await waitFor(() =>
+    expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent(
+      'Coding agent',
+    ),
   );
   expect(input).toHaveValue('Keep the draft');
   await user.click(screen.getByTestId('chat-send'));
@@ -1472,5 +1564,76 @@ it.each(['assistant', 'system'] as const)(
       document.querySelector('[data-message-id="application-only"]')
         ?.previousElementSibling,
     ).toHaveAttribute('data-message-id', message.id);
+  },
+);
+
+it('lists the conversations on the left while covering the content, with the archived toggle at the foot', async () => {
+  await setup();
+  const panelElement = await screen.findByTestId('chat-panel');
+  fireEvent.click(await screen.findByTestId('chat-expand'));
+  await waitFor(() =>
+    expect(panelElement).toHaveAttribute('data-mode', 'expanded'),
+  );
+  const split = screen.getByTestId('chat-split');
+  const history = within(split).getByTestId('chat-history');
+  expect(within(history).getByTestId('chat-history-header')).toContainElement(
+    within(history).getByTestId('chat-new-conversation'),
+  );
+  expect(await within(history).findByText('Saved conversation')).toBeVisible();
+  expect(history.lastElementChild).toContainElement(
+    within(history).getByTestId('chat-history-archived'),
+  );
+  // Only the online agent is configured: no switch.
+  expect(screen.queryByTestId('chat-mode-switch')).not.toBeInTheDocument();
+  fireEvent.keyDown(panelElement, { key: 'Escape' });
+  await waitFor(() =>
+    expect(panelElement).toHaveAttribute('data-mode', 'docked'),
+  );
+});
+
+it.each([
+  [
+    'imageCapability',
+    '所选模型尚未配置图片输入能力，请切换已确认支持图片的模型。',
+  ],
+  [
+    'unreadable',
+    '附件中没有可读取的文字。纯图片或扫描文档需要先做 OCR 文字识别。',
+  ],
+  [
+    'documentTooLarge',
+    '附件提取出的文字超出限制，请拆分文档或使用更小的文件。',
+  ],
+  ['__proto__', '无法准备附件，请检查文件访问权限和格式后重试。'],
+  [undefined, '执行失败。再次执行前请查看已保存历史，核对可能已完成的操作。'],
+] as const)(
+  'renders stored failure %s safely in the real Examples panel',
+  async (reason, expected) => {
+    const previous = host.request.getMockImplementation();
+    if (!previous) throw new Error('Missing request fixture.');
+    const failure: AppUIMessage = {
+      ...message,
+      parts: [
+        {
+          type: 'data-notice',
+          id: 'execution-status',
+          data: {
+            type: 'failed',
+            title: reason ? 'private-provider-response' : 'Interrupted',
+            ...(reason ? { params: { fileInputReason: reason } } : {}),
+          },
+        },
+      ],
+    };
+    host.request.mockImplementation(async (input: { path: string }) =>
+      input.path.endsWith('/messages')
+        ? { data: [failure], meta: { lastSeq: 1 } }
+        : previous(input),
+    );
+    await setup('zh-CN');
+    act(() => panel.openChat({ conversationId: 'saved' }));
+    expect(await screen.findByText(expected)).toBeVisible();
+    expect(screen.queryByText('private-provider-response')).toBeNull();
+    expect(screen.queryByText('Interrupted')).toBeNull();
   },
 );

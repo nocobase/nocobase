@@ -103,14 +103,23 @@ export class Probe {
     return this.inventory.has(name);
   }
 
-  public async fieldNames(name: string): Promise<readonly string[] | null> {
+  /** A listed Collection can disappear or become unreadable before its definition is inspected. */
+  public async definition(name: string): Promise<CollectionDefinition | null> {
     try {
       const definition = await this.inventory.definition(name, this.signal);
-      return (definition?.fields ?? []).map((field) => field.name);
+      if (definition !== undefined) return definition;
     } catch {
-      this.unreadable(name);
-      return null;
+      // Driver details must not reach a capability response.
     }
+    this.unreadable(name);
+    return null;
+  }
+
+  public async fieldNames(name: string): Promise<readonly string[] | null> {
+    const definition = await this.definition(name);
+    return definition
+      ? (definition.fields ?? []).map((field) => field.name)
+      : null;
   }
 
   public count(

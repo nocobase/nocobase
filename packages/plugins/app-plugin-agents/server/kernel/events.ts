@@ -105,6 +105,16 @@ export type AgentsEvent =
       readonly messageId?: string;
       readonly revision?: number;
     }
+  | {
+      readonly type: 'conversation.historyReplaced';
+      readonly conversationId: string;
+      readonly userId: string;
+      readonly messageId: string;
+      readonly seq: number;
+      readonly revision: number;
+      readonly lastSeq: number;
+      readonly executionId: string;
+    }
   | { readonly type: 'agent.changed'; readonly agentId: string }
   /**
    * The agent can no longer be given work: it was archived or deleted. Its queued runs were withdrawn in the same

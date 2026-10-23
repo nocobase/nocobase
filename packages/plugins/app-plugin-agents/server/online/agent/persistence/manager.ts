@@ -11,10 +11,7 @@ import {
   settingsRepo,
   type ConversationRecord,
 } from '../../../core/conversations/conversation.store.js';
-import type {
-  ChatAttachmentLinks,
-  ChatAttachmentService,
-} from '../../../core/conversations/attachments.js';
+import type { ChatAttachmentLinks } from '../../../core/conversations/attachments.js';
 import { NativeSessionStore } from './store.js';
 import type { PageContextKinds } from '../../../core/conversations/page-context.js';
 import type { OnlineAgentSessionManager } from '../contracts.js';
@@ -47,7 +44,6 @@ export function createSessionManager(deps: {
   basePath?: () => string;
   ids: IdSource;
   attachments: ChatAttachmentLinks;
-  files?: Pick<ChatAttachmentService, 'content'>;
   now(): string;
   measure?: (phase: string, durationMs: number) => void;
 }): OnlineAgentSessionManager {
@@ -253,13 +249,6 @@ export function createSessionManager(deps: {
           },
         );
       });
-    },
-    async history(userId, id) {
-      return (await native.executionHistory(userId, id, undefined, false))
-        .model;
-    },
-    async executionHistory(userId, id, current) {
-      return (await native.executionHistory(userId, id, current)).model;
     },
     async finish(userId, id) {
       await write(userId, id, 'finish', async (conn, row) => {

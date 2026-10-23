@@ -1,0 +1,206 @@
+{
+  "name": "@nocobase/app-plugin-demo-mode",
+  "displayName": "Demo Mode",
+  "description": "Enables isolated demo deployments with application-owned repeatable datasets, visitor accounts, request-scoped write protection, scheduled resets and optional simulated models for agents.",
+  "version": "0.1.0-beta.0",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    "./cli": {
+      "types": "./cli/index.ts",
+      "import": "./cli/index.ts"
+    },
+    "./server": {
+      "types": "./server/index.ts",
+      "import": "./server/index.ts"
+    },
+    "./server/tokens": {
+      "types": "./server/tokens.ts",
+      "import": "./server/tokens.ts"
+    },
+    "./client": {
+      "types": "./client/index.ts",
+      "import": "./client/index.ts"
+    },
+    "./client/plugin": {
+      "types": "./client/plugin.ts",
+      "import": "./client/plugin.ts"
+    },
+    "./client/react-providers": {
+      "types": "./client/react-providers/index.tsx",
+      "import": "./client/react-providers/index.tsx"
+    },
+    "./client/demo-data": {
+      "types": "./client/demo-data.ts",
+      "import": "./client/demo-data.ts"
+    },
+    "./package.json": "./package.json",
+    "./client/demo-configuration": {
+      "types": "./client/demo-configuration.ts",
+      "import": "./client/demo-configuration.ts"
+    },
+    "./client/accounts": {
+      "types": "./client/accounts.ts",
+      "import": "./client/accounts.ts"
+    },
+    "./client/settings": {
+      "types": "./client/settings/index.tsx",
+      "import": "./client/settings/index.tsx"
+    },
+    "./client/account-menu": {
+      "types": "./client/account-menu.ts",
+      "import": "./client/account-menu.ts"
+    },
+    "./config": {
+      "types": "./server/config.ts",
+      "import": "./server/config.ts"
+    }
+  },
+  "imports": {
+    "#components/*": {
+      "development": "./client/components/*.js",
+      "default": "./dist/client/components/*.js"
+    },
+    "#hooks/*": {
+      "development": "./client/hooks/*.js",
+      "default": "./dist/client/hooks/*.js"
+    },
+    "#lib/*": {
+      "development": "./client/lib/*.js",
+      "default": "./dist/client/lib/*.js"
+    },
+    "#extensions/*": {
+      "development": "./client/extensions/*.js",
+      "default": "./dist/client/extensions/*.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "skills"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./cli": {
+        "types": "./dist/cli/index.d.ts",
+        "import": "./dist/cli/index.js"
+      },
+      "./server": {
+        "types": "./dist/server/index.d.ts",
+        "import": "./dist/server/index.js"
+      },
+      "./server/tokens": {
+        "types": "./dist/server/tokens.d.ts",
+        "import": "./dist/server/tokens.js"
+      },
+      "./client": {
+        "types": "./dist/client/index.d.ts",
+        "import": "./dist/client/index.js"
+      },
+      "./client/plugin": {
+        "types": "./dist/client/plugin.d.ts",
+        "import": "./dist/client/plugin.js"
+      },
+      "./client/react-providers": {
+        "types": "./dist/client/react-providers/index.d.ts",
+        "import": "./dist/client/react-providers/index.js"
+      },
+      "./client/demo-data": {
+        "types": "./dist/client/demo-data.d.ts",
+        "import": "./dist/client/demo-data.js"
+      },
+      "./package.json": "./package.json",
+      "./client/demo-configuration": {
+        "types": "./dist/client/demo-configuration.d.ts",
+        "import": "./dist/client/demo-configuration.js"
+      },
+      "./client/accounts": {
+        "types": "./dist/client/accounts.d.ts",
+        "import": "./dist/client/accounts.js"
+      },
+      "./client/settings": {
+        "types": "./dist/client/settings/index.d.ts",
+        "import": "./dist/client/settings/index.js"
+      },
+      "./client/account-menu": {
+        "types": "./dist/client/account-menu.d.ts",
+        "import": "./dist/client/account-menu.js"
+      },
+      "./config": {
+        "types": "./dist/server/config.d.ts",
+        "import": "./dist/server/config.js"
+      }
+    },
+    "imports": {
+      "#components/*": "./dist/client/components/*.js",
+      "#hooks/*": "./dist/client/hooks/*.js",
+      "#lib/*": "./dist/client/lib/*.js",
+      "#extensions/*": "./dist/client/extensions/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && nocobase-db-manifests",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p skills/nocobase-app-plugin-demo-mode/assets/minimal-demo/tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "fix": "pnpm lint:fix && pnpm format"
+  },
+  "dependencies": {
+    "@oclif/core": "catalog:",
+    "hono": "catalog:",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "@base-ui/react": "catalog:",
+    "@nocobase/app-cli": "workspace:^",
+    "@nocobase/app-client": "workspace:^",
+    "@nocobase/app-plugin-agents": "workspace:^",
+    "@nocobase/app-plugin-authentication": "workspace:^",
+    "@nocobase/app-plugin-authorization": "workspace:^",
+    "@nocobase/app-plugin-users": "workspace:^",
+    "@nocobase/app-server": "workspace:^",
+    "@nocobase/db": "workspace:^",
+    "@nocobase/i18n": "workspace:^",
+    "@nocobase/jobs": "workspace:^",
+    "@nocobase/service-provider": "workspace:^",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "lucide-react": "catalog:",
+    "react": "^19.0.0",
+    "react-router": "catalog:"
+  },
+  "devDependencies": {
+    "@ai-sdk/openai-compatible": "catalog:",
+    "@nocobase/app-plugin-agents": "workspace:*",
+    "@nocobase/app-testing": "workspace:*",
+    "@nocobase/dev-config": "workspace:*",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "ai": "catalog:",
+    "eslint": "catalog:",
+    "jsdom": "catalog:",
+    "prettier": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "yaml": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "@nocobase/app-plugin-agents": {
+      "optional": true
+    }
+  }
+}

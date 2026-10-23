@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-agents",
   "displayName": "Agents",
   "description": "Agents for NocoBase applications: agents, the model services online agents call, their runs and conversations, and the runners people connect to run them (registration, the long-poll claim, slots, the sweeper, build jobs, and the runner and CLI tarballs the application serves).",
-  "version": "1.0.0-beta.19",
+  "version": "1.0.0-beta.21",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -77,6 +77,14 @@
     "./shared/models": {
       "types": "./shared/models.ts",
       "import": "./shared/models.ts"
+    },
+    "./shared/web-search": {
+      "types": "./shared/web-search.ts",
+      "import": "./shared/web-search.ts"
+    },
+    "./shared/web-search-results": {
+      "types": "./shared/web-search-results.ts",
+      "import": "./shared/web-search-results.ts"
     },
     "./shared/i18n": {
       "types": "./shared/i18n.ts",
@@ -202,6 +210,14 @@
         "types": "./dist/shared/models.d.ts",
         "import": "./dist/shared/models.js"
       },
+      "./shared/web-search": {
+        "types": "./dist/shared/web-search.d.ts",
+        "import": "./dist/shared/web-search.js"
+      },
+      "./shared/web-search-results": {
+        "types": "./dist/shared/web-search-results.d.ts",
+        "import": "./dist/shared/web-search-results.js"
+      },
       "./shared/i18n": {
         "types": "./dist/shared/i18n.d.ts",
         "import": "./dist/shared/i18n.js"
@@ -261,6 +277,7 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
+    "@nocobase/document-extractor": "workspace:^",
     "@ai-sdk/alibaba": "catalog:",
     "@ai-sdk/anthropic": "catalog:",
     "@ai-sdk/cohere": "catalog:",

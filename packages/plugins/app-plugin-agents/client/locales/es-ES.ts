@@ -1,4 +1,6 @@
+import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
+import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -658,6 +660,7 @@ const esES: LocaleResource<typeof enUS> = {
       checking: 'Comprobando…',
       restart: 'Reinicia el runner para actualizar su estado.',
     },
+    pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',
       online: 'Effective slots · online settings',
@@ -922,6 +925,7 @@ const esES: LocaleResource<typeof enUS> = {
       version: 'Versión {{version}}',
     },
     trust: {
+      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
       label: 'Para quién funciona',
       team: 'Equipo',
       teamHint:
@@ -973,6 +977,7 @@ const esES: LocaleResource<typeof enUS> = {
     revokedList_many: '{{count}} revocó tiempos de ejecución',
   },
   connect: {
+    ...runtimesEnUS.connect,
     title: 'Añadir tiempo de ejecución',
     description:
       'Ejecute el siguiente comando en un host que tenga una herramienta de codificación instalada: un servidor, una máquina virtual o su propio dispositivo. Los agentes se ejecutan allí con acceso completo, como el usuario que ejecuta el ejecutor, y pueden leer y cambiar cualquier cosa que el usuario pueda, incluidas las claves SSH y otras credenciales. El ejecutor no es un límite de seguridad: ejecútelo como un usuario dedicado, en un contenedor o en una VM.',
@@ -982,8 +987,6 @@ const esES: LocaleResource<typeof enUS> = {
     nodeRequired:
       'El host necesita Node.js 24 o posterior (verifique con node --version). El comando se detiene y dice cómo instalarlo cuando falta.',
     installed: '¿Ya tienes instalado nocobase-runner? Regístrelo en su lugar:',
-    unsupported:
-      'El ejecutor aún no se ejecuta en Windows. Utilice macOS o Linux, o WSL.',
     tokenOnce:
       'El comando lleva una credencial de un solo uso para un tiempo de ejecución "{{trust}}". Funciona una vez, hasta {{time}}.',
     after:
@@ -1007,6 +1010,9 @@ const esES: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    // Keep new guidance available in English until this locale is translated.
+    executionFailed: chatEnUS.chat.executionFailed,
+    fileInputFailures: chatEnUS.chat.fileInputFailures,
     untitled: 'Conversación sin título',
     renamed: 'Renombrado',
     archivedNamed: 'Archivado “{{title}}”',

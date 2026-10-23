@@ -855,6 +855,19 @@ describe('runtimes page', () => {
     });
   });
 
+  it('shows PATH recovery in details when every reported tool is missing', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      tools: [{ kind: 'codex', authenticated: false, status: 'notInstalled' }],
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    expect(within(sheet).getByText('runtimes.pathHint')).toBeInTheDocument();
+    expect(
+      within(sheet).getByText('runtimes.trust.isolationHint'),
+    ).toBeInTheDocument();
+  });
+
   it('offers build jobs only when the application gives runners jobs', async () => {
     renderPage(<RuntimesPage />);
     let sheet = await openSheet();
@@ -900,21 +913,42 @@ describe('runtimes page', () => {
     ).toEqual({
       trust: 'ownerOnly',
       enabledTools: ['codex', 'claude'],
-      slots: 4,
+      slots: 3,
     });
     expect(within(dialog).getAllByText(/fgreg_secret/u).length).toBeGreaterThan(
       0,
     );
-    expect(
-      within(dialog).getByText(
-        /^nocobase-runner register .*--token fgreg_secret.* && nocobase-runner service install$/u,
-      ),
-    ).toBeInTheDocument();
-    // The packages run on the host's own Node.js, which the command says beside it.
-    expect(
-      within(dialog).getAllByText('connect.nodeRequired').length,
-    ).toBeGreaterThan(0);
-    runners = [...runners, runner('r3', { name: 'build-box' })];
+    // Both methods use the same credential; switching systems does not create another one.
+    for (const system of ['macos', 'linux', 'windows']) {
+      await userEvent.click(
+        within(dialog).getByRole('tab', { name: `connect.system.${system}` }),
+      );
+      await userEvent.click(
+        within(dialog).getByRole('tab', { name: 'connect.prompt' }),
+      );
+      expect(
+        within(dialog).getByText(/connect\.promptBody/u),
+      ).toHaveTextContent('--token fgreg_secret');
+      if (system === 'windows')
+        expect(
+          within(dialog).getByText(/connect\.promptWindows/u),
+        ).toHaveTextContent(/^connect\.promptWindows/u);
+      await userEvent.click(
+        within(dialog).getByRole('tab', { name: 'connect.manual' }),
+      );
+      expect(within(dialog).getByText(/^curl -fsSL/u)).toHaveTextContent(
+        '--token fgreg_secret',
+      );
+      if (system === 'windows')
+        expect(within(dialog).getByText('wsl --install')).toBeInTheDocument();
+      expect(
+        within(dialog).getByText('connect.nodeRequired'),
+      ).toBeInTheDocument();
+    }
+    expect(callsTo('POST', 'agents/runners/registrationTokens')).toHaveLength(
+      1,
+    );
+    runners = [...runners, runner('r3', { name: 'build-box', tools: [] })];
     realtime.publish(RUNNERS_TOPIC, {
       kind: 'runners.changed',
       runnerId: 'r3',
@@ -922,9 +956,10 @@ describe('runtimes page', () => {
     expect(
       await within(dialog).findByText('connect.connected(name=build-box)'),
     ).toBeInTheDocument();
+    expect(within(dialog).getByText('runtimes.pathHint')).toBeInTheDocument();
   });
 
-  it('lets a manager of runners add a runtime shared with the team', async () => {
+  it('lets a manager of runners add a runtime shared with all users', async () => {
     resetApi(
       {
         'agents/runners': () => runners,
@@ -951,7 +986,7 @@ describe('runtimes page', () => {
       ).toEqual({
         trust: 'team',
         enabledTools: ['codex', 'claude'],
-        slots: 4,
+        slots: 3,
       }),
     );
   });
@@ -1073,7 +1108,7 @@ describe('runtimes page', () => {
       within(dialog).getByRole('checkbox', { name: 'tools.codex' }),
     );
     const slots = within(dialog).getByLabelText('connect.slots');
-    expect(slots).toHaveValue('4');
+    expect(slots).toHaveValue('3');
     fireEvent.change(slots, { target: { value: '65' } });
     fireEvent.click(
       within(dialog).getByRole('button', { name: 'connect.createCredential' }),

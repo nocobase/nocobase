@@ -211,7 +211,7 @@ run() {
 # The token says what it is for; the other kind fails here, before anything is installed.
 case "$token" in
   ${CREDENTIAL_PREFIXES.download}*)
-    [ "$runner" = 0 ] || fail "This is a download token: it installs the $cli CLI only. To make this host a runtime, use the command from Agent team > Runtimes > Add runtime, which has --runner and a registration token."
+    [ "$runner" = 0 ] || fail "This is a download token: it installs the $cli CLI only. To make this host a runtime, use the command from Agent management > Runtimes > Add runtime, which has --runner and a registration token."
     header="${HEADERS.downloadToken}" ;;
   ${CREDENTIAL_PREFIXES.registration}*)
     [ "$runner" = 1 ] || fail "This is a runtime registration token: run the command with --runner, as Add runtime shows it. To install the CLI alone, use a download token."

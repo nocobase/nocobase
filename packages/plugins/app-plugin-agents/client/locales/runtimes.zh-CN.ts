@@ -195,6 +195,8 @@ const runtimesZhCN: RuntimesLocale = {
       hint: '本应用配置的构建等步骤，不调用模型。这个运行环境支持：{{kinds}}。',
       unsupported: '这个运行环境的 runner 不支持作业，更新后才能打开。',
     },
+    pathHint:
+      '执行机按它自己的 PATH 查找编码工具。请在能执行 which codex / which claude 的终端里重新执行 nocobase-runner service install 并重启服务（或重新执行 nocobase-runner start），让服务带上正确的 PATH。',
     noTools: '没有发现编码工具',
     actionsFor: '{{name}} 的操作',
     columns: {
@@ -253,20 +255,22 @@ const runtimesZhCN: RuntimesLocale = {
       version: '版本 {{version}}',
     },
     trust: {
-      label: '为谁工作',
-      team: '团队',
-      teamHint:
-        '运行团队中任何人发起的工作，并接收他们的变量和密钥。适合团队共用的服务器或虚拟机。',
+      isolationHint:
+        '无论个人还是共享，都建议在虚拟机或隔离环境中运行执行机：Agent 拥有完全权限，执行机不是沙箱。',
+      label: '使用范围',
+      team: '共享',
+      teamHint: '可执行所有用户发起的任务，并会收到发起人的变量和密钥。',
       ownerOnly: '个人',
-      ownerOnlyHint: '只运行你发起的工作。你自己添加的运行环境默认如此。',
+      ownerOnlyHint:
+        '仅执行所属用户发起的任务。你自己添加的运行环境默认是个人。',
       personalOnly:
-        '这个运行环境将是个人的：只运行你发起的工作。之后可以再共享给团队。',
+        '这个运行环境将是个人的：仅执行所属用户发起的任务。之后可以再共享给所有用户。',
     },
     share: {
-      title: '把 {{name}} 共享给团队？',
+      title: '把 {{name}} 共享给所有用户？',
       description:
         '其他人的运行会在这个运行环境中执行，并带上他们的变量和密钥，也能读取其中的内容。确认没有问题再共享。',
-      confirm: '共享给团队',
+      confirm: '共享给所有用户',
     },
     edit: {
       button: '编辑',
@@ -301,15 +305,25 @@ const runtimesZhCN: RuntimesLocale = {
   },
   connect: {
     title: '添加运行环境',
-    description:
-      '在装有编码工具的主机（服务器、虚拟机或个人设备）上运行下面的命令。Agent 在那里以运行执行机的用户身份完全放开地运行，能读写该用户能访问的一切，包括 SSH 密钥和其他凭证。执行机不是安全边界：请用专用系统用户、容器或虚拟机来运行它。',
+    description: '选择编码工具和使用范围，然后在目标机器上安装执行机。',
     createCredential: '生成安装命令',
     advanced: '高级：按编码工具限制',
     run: '在那台主机上运行以下命令。它会从本应用下载 runner（nocobase-runner）和本应用的 CLI，注册 runner 并设置为登录后自动启动：',
     nodeRequired:
       '主机需要安装 Node.js 24 或更高版本（可用 node --version 查看）。未安装时命令会停止并说明如何安装。',
     installed: '已经装好 nocobase-runner？改为注册它：',
-    unsupported: 'runner 暂不支持 Windows，请使用 macOS、Linux 或 WSL。',
+    prompt: '提示词',
+    manual: '手动安装',
+    promptHint:
+      '把下面的完整提示词复制给目标机器上的 Agent（Claude Code、Codex 等）。窄屏可滚动弹窗阅读全部步骤。其中包含一次性凭证，请只交给该 Agent。',
+    windowsPowerShell: '1. 安装 WSL：在 PowerShell 执行，然后重启 Windows：',
+    windowsUbuntu:
+      '2. 打开 Ubuntu，执行下面的 Linux 命令。Node.js 和编码工具都安装在 WSL Ubuntu 里。',
+    windowsNetwork: '如果 WSL 无法访问外网，请开启 WSL 镜像网络。',
+    promptWindows:
+      '首先判断你自己是否运行在 WSL Ubuntu 中。如果不在 WSL Ubuntu 中，立即停止，不要执行任何安装或注册命令；请告诉用户先到 PowerShell 执行 wsl --install、重启 Windows，再到 WSL Ubuntu 中打开 Agent，重新执行这段提示词。只有确认在 WSL Ubuntu 中，才能继续以下步骤。Node.js 和编码工具都必须安装在 WSL 中。如果 WSL 无法访问外网，请开启镜像网络。\n\n',
+    promptBody:
+      '请将这台机器配置为 NocoBase 执行机。建议使用虚拟机或隔离环境：Agent 拥有完全权限，执行机不是沙箱。\n\n检查 Node.js 24 或更高版本，以及这些编码工具是否已安装并登录：{{tools}}。使用工具的官方安装方式，不要使用 snap 版工具。\n\n运行以下含一次性凭证的注册命令，安装执行机和应用 CLI，注册执行机并安装为后台服务：\n{{command}}\n\n处理常见问题：确保服务的 PATH 包含编码工具（在安装终端确认 which codex / which claude，然后重新执行 nocobase-runner service install 并重启服务）；按需为下载和后台服务配置代理；npm 全局安装权限不足时使用当前用户拥有的安装目录或 Node 版本管理器，不要使用 sudo npm install。\n\n最后执行 nocobase-runner status，确认已连上并检测到编码工具。告诉我还需要亲自完成哪些登录或网络步骤。注册凭证属于密钥，请勿写入结果报告。',
     tokenOnce:
       '命令中带有一次性凭证，用于添加一个「{{trust}}」运行环境。只能使用一次，有效期至 {{time}}。',
     after: '几秒钟后，运行环境会出现在列表中，并列出它发现的每个编码工具…',

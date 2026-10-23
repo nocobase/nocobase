@@ -23,6 +23,7 @@ export function apiDependencies(
   analysis: SourceEvidence,
   providers: (file: string, nodes: readonly ts.Node[]) => readonly string[],
 ): EndpointEvidence[] {
+  type Bindings = ReadonlyMap<ts.Declaration, readonly ts.Node[]>;
   const endpoints: EndpointEvidence[] = [];
   const roots = new Set<ts.Node>();
   const visited = new Set<ts.Node>();
@@ -43,10 +44,11 @@ export function apiDependencies(
   const identity = (
     node: ts.Node,
     seen = new Set<ts.Node>(),
+    bindings: Bindings = new Map(),
   ): ts.Node | undefined => {
     if (seen.has(node)) return undefined;
     seen.add(node);
-    for (const value of analysis.values(node)) {
+    for (const value of new StaticValues(analysis, bindings).values(node)) {
       if (
         ts.isNewExpression(value) &&
         imported(value.expression, 'hono', 'Hono')
@@ -56,9 +58,9 @@ export function apiDependencies(
         ts.isCallExpression(value) &&
         ts.isPropertyAccessExpression(value.expression)
       )
-        return identity(value.expression.expression, seen);
+        return identity(value.expression.expression, seen, bindings);
       if (value !== node) {
-        const result = identity(value, seen);
+        const result = identity(value, seen, bindings);
         if (result) return result;
       }
     }
@@ -156,15 +158,42 @@ export function apiDependencies(
   const mounts = new Map<ts.Node, { prefix: string; child: ts.Node }[]>();
   const paths = new Map<ts.Node, EndpointEvidence[]>();
   const bases = new Map<ts.Node, string>();
-  const literals = new StaticValues(analysis);
+  const selected = new Set(sources.flatMap((source) => [...source.nodes]));
   for (const source of sources) {
-    const visit = (node: ts.Node): void => {
-      if (ts.isFunctionLike(node) && !source.nodes.has(node)) return;
+    const visit = (
+      node: ts.Node,
+      bindings: Bindings = new Map(),
+      active = new Set<ts.Node>(),
+    ): void => {
+      if (ts.isFunctionLike(node) && !selected.has(node)) return;
+      const literals = new StaticValues(analysis, bindings);
+      if (
+        ts.isCallExpression(node) &&
+        !active.has(node) &&
+        active.size < 32 &&
+        node.arguments.some((argument) =>
+          identity(argument, new Set(), bindings),
+        )
+      ) {
+        for (const fn of analysis.functions(node.expression)) {
+          if (!('body' in fn) || !fn.body || active.has(fn)) continue;
+          const context = new Map(bindings);
+          fn.parameters.forEach((parameter, index) => {
+            const argument = node.arguments[index] ?? parameter.initializer;
+            context.set(parameter, argument ? literals.values(argument) : []);
+          });
+          visit(fn.body, context, new Set(active).add(node).add(fn));
+        }
+      }
       if (
         ts.isCallExpression(node) &&
         ts.isPropertyAccessExpression(node.expression)
       ) {
-        const router = identity(node.expression.expression);
+        const router = identity(
+          node.expression.expression,
+          new Set(),
+          bindings,
+        );
         const first = node.arguments[0];
         const resolved = first ? literals.strings(first) : [];
         for (const path of router ? resolved : []) {
@@ -173,7 +202,7 @@ export function apiDependencies(
           if (method === 'basePath' && resolved.length === 1)
             bases.set(router, path);
           else if (method === 'route' && node.arguments[1]) {
-            const child = identity(node.arguments[1]);
+            const child = identity(node.arguments[1], new Set(), bindings);
             if (child)
               mounts.set(router, [
                 ...(mounts.get(router) ?? []),
@@ -188,7 +217,7 @@ export function apiDependencies(
                 path,
                 method: method.toUpperCase(),
                 providers: providers(
-                  source.ast.fileName,
+                  node.getSourceFile().fileName,
                   node.arguments.slice(1),
                 ),
               },
@@ -196,7 +225,7 @@ export function apiDependencies(
           }
         }
       }
-      ts.forEachChild(node, visit);
+      ts.forEachChild(node, (child) => visit(child, bindings, active));
     };
     visit(source.ast);
   }

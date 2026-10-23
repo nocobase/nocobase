@@ -137,13 +137,13 @@ export type AgentUnusableReason = (typeof AGENT_UNUSABLE_REASONS)[number];
 
 /** Where an agent can run now: the online runners that have its tool and model signed in and take its work. */
 export interface AgentRunners {
-  /** Online team runners: they take anyone's work. */
+  /** Online shared runners: they take anyone's work. */
   readonly team: number;
   /** Online personal runners: each takes only its owner's work. */
   readonly personal: number;
   /** Of `personal`, the caller's own. */
   readonly mine: number;
-  /** A few of their names, team runners first. */
+  /** A few of their names, shared runners first. */
   readonly names: readonly string[];
 }
 

@@ -1,4 +1,5 @@
 /** UIMessage reconciliation at the durable-history boundary. SDK Chat owns the active messages. */
+import { isFileInputFailureReason } from '../../shared/file-input-failures.js';
 import type { ConsultationIdentity } from './consultation-identity.js';
 import type { RunEvent } from '@nocobase/agent-protocol';
 import type {
@@ -43,6 +44,12 @@ export const EMPTY_MESSAGES: MessagesState = {
   loaded: false,
 };
 export type MessagesAction =
+  | {
+      readonly type: 'replaceHistory';
+      readonly seq: number;
+      readonly executionId: string;
+      readonly lastSeq: number;
+    }
   | {
       readonly type: 'page';
       readonly page: UIMessagePage;
@@ -95,6 +102,8 @@ export function mergeUIMessages(
     const left = a.metadata?.seq,
       right = b.metadata?.seq;
     if (left !== undefined && right !== undefined) return left - right;
+    if (left !== undefined) return -1;
+    if (right !== undefined) return 1;
     return (a.metadata?.createdAt ?? '').localeCompare(
       b.metadata?.createdAt ?? '',
     );
@@ -110,6 +119,18 @@ export function messagesReducer(
   action: MessagesAction,
 ): MessagesState {
   switch (action.type) {
+    case 'replaceHistory':
+      return {
+        ...state,
+        items: state.items.filter(
+          (message) =>
+            (message.metadata?.seq !== undefined &&
+              message.metadata.seq <= action.seq) ||
+            (message.role === 'assistant' &&
+              message.metadata?.executionId === action.executionId),
+        ),
+        lastSeq: Math.max(state.lastSeq, action.lastSeq),
+      };
     case 'page': {
       const items = mergeUIMessages(state.items, action.page.items);
       return {
@@ -335,14 +356,19 @@ export type Translate = (
 /** A notice of what happened outside the conversation (`ConversationNotice` `news`). */
 export type NewsNotice = AppUIData['notice'];
 
-/** The agent a new conversation would go to: the one picked, else the viewer's default, else the system default. */
+/**
+ * The agent a new conversation would go to: the one picked, else the one last used (`lastUsed`, when the application
+ * remembers it), else the viewer's default, else the system default.
+ */
 export function newConversationAgent(
   agents: readonly ChatAgent[] | undefined,
   picked: string | null,
+  lastUsed: string | null = null,
 ): ChatAgent | null {
   if (!agents) return null;
   return (
     (picked ? agents.find((agent) => agent.id === picked) : undefined) ??
+    (lastUsed ? agents.find((agent) => agent.id === lastUsed) : undefined) ??
     agents.find((agent) => agent.isMyDefault) ??
     agents.find((agent) => agent.isSystemDefault) ??
     null
@@ -430,8 +456,18 @@ export function noticeText(
     // The historical code names a cancellation request, not a terminal outcome.
     case 'runCancelled':
       return t('chat.notice.runCancelled');
-    case 'news':
-      return newsText?.(notice, t) ?? notice.title;
+    case 'news': {
+      const custom = newsText?.(notice, t);
+      if (custom !== undefined && custom !== null) return custom;
+      const reason = notice.params?.fileInputReason;
+      if (notice.type === 'failed' && reason !== undefined)
+        return t(
+          `chat.fileInputFailures.${isFileInputFailureReason(reason) ? reason : 'preparationFailed'}`,
+        );
+      if (notice.type === 'failed' && notice.title === 'Interrupted')
+        return t('chat.executionFailed');
+      return notice.title;
+    }
     case 'consultation':
       if (consultationIdentity?.state === 'unavailable')
         return t('chat.consultation.unavailableTitle');

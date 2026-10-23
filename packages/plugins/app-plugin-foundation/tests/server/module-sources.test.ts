@@ -2,6 +2,7 @@ import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import ts from 'typescript';
 
 import { collectModuleSources } from '../../server/module-sources.js';
 
@@ -18,7 +19,17 @@ async function fixture(files: Record<string, string>): Promise<string> {
   })) {
     const file = path.join(root, name);
     await mkdir(path.dirname(file), { recursive: true });
-    await writeFile(file, source);
+    await writeFile(
+      file,
+      name.startsWith('dist/') && name.endsWith('.js')
+        ? ts.transpileModule(source, {
+            compilerOptions: {
+              target: ts.ScriptTarget.ES2022,
+              module: ts.ModuleKind.ESNext,
+            },
+          }).outputText
+        : source,
+    );
   }
   return root;
 }
@@ -31,6 +42,202 @@ afterEach(async () => {
 });
 
 describe('static module dependencies', () => {
+  it.each(['server/routes/index.js', 'server/routes.js'])(
+    'matches source and published %s entries for applications and registered plugins',
+    async (router) => {
+      const host = await fixture({ 'client/routes.js': 'export default [];' });
+      const results = [];
+      for (const prefix of ['', 'dist/']) {
+        const root = await fixture({
+          [prefix + 'client/routes.js']:
+            `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,
+          [prefix + 'client/page.js']:
+            `import {useApiClient} from '@nocobase/app-client'; export default ()=>useApiClient().request({path:'items'});`,
+          [prefix + router]:
+            `import {Hono} from 'hono'; import {read} from '${router.includes('/index') ? '../read.js' : './read.js'}'; export default new Hono().get('/items',()=>read());`,
+          [prefix + 'server/read.js']:
+            `import {query} from '@nocobase/db'; import {send} from '@nocobase/app-plugin-notification/server'; export const unused=()=>send(); export const read=()=>query();`,
+        });
+        const application = await collectModuleSources(root);
+        const plugin = await collectModuleSources(host, [
+          {
+            name: 'arbitrary-app',
+            rootDir: root,
+            evidence: 'serverRegistration',
+          },
+        ]);
+        expect(application.routes[0]).toMatchObject({
+          apiProviders: ['@nocobase/db'],
+          complete: true,
+        });
+        expect(plugin).toEqual(application);
+        results.push(application);
+      }
+      expect(results[1]).toEqual(results[0]);
+    },
+  );
+
+  it.each(['providers/index.js', 'providers.js', 'service-provider.js'])(
+    'follows compiled %s service registrations and selected methods',
+    async (provider) => {
+      const host = await fixture({ 'client/routes.js': 'export default [];' });
+      const results = [];
+      for (const prefix of ['', 'dist/']) {
+        const up = provider.includes('/index') ? '../' : './';
+        const root = await fixture({
+          [prefix + 'client/routes.js']:
+            `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,
+          [prefix + 'client/page.js']:
+            `import {useApiClient} from '@nocobase/app-client'; export default ()=>useApiClient().request({path:'items'});`,
+          [prefix + 'server/routes/index.js']:
+            `import {Hono} from 'hono'; import {defineApiRoutes} from '@nocobase/app-server/router'; import {token} from '../tokens.js'; export default defineApiRoutes(app=>{const service=app.container.resolve(token); return new Hono().get('/items',()=>service.read());});`,
+          [prefix + 'server/tokens.js']:
+            `import {createServiceToken} from '@nocobase/service-provider'; export const token=createServiceToken('items');`,
+          [prefix + 'server/' + provider]:
+            `import {token} from '${up}tokens.js'; import {Items} from '${up}items.js'; export default class Provider{register(app){app.container.singleton(token,()=>new Items());}}`,
+          [prefix + 'server/items.js']:
+            `import {read} from '@nocobase/db'; import {send} from '@nocobase/app-plugin-notification/server'; export class Items{read(){return read();} unused(){return send();}}`,
+        });
+        const application = await collectModuleSources(root);
+        expect(application.routes[0]).toMatchObject({
+          apiProviders: ['@nocobase/db', '@nocobase/service-provider'],
+          complete: true,
+        });
+        expect(
+          await collectModuleSources(host, [
+            {
+              name: 'arbitrary-app',
+              rootDir: root,
+              evidence: 'serverRegistration',
+            },
+          ]),
+        ).toEqual(application);
+        results.push(application);
+        await writeFile(
+          path.join(root, prefix + 'server/' + provider),
+          `import {token} from '${up}tokens.js'; import {Items} from '${up}items.js'; export default []; export class Unregistered{register(app){app.container.singleton(token,()=>new Items());}}`,
+        );
+        expect(
+          (await collectModuleSources(root)).routes[0]?.apiProviders ?? [],
+        ).not.toContain('@nocobase/db');
+      }
+      expect(results[1]).toEqual(results[0]);
+    },
+  );
+
+  it.each(['missing', 'oversized', 'escaping'])(
+    'marks %s backend dependencies incomplete while keeping frontend-only pages complete',
+    async (failure) => {
+      const root = await fixture({
+        'dist/client/routes.js': `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,
+        'dist/client/page.js': `import {useApiClient} from '@nocobase/app-client'; export default ()=>useApiClient().request({path:'items'});`,
+        'dist/server/routes.js': `import {Hono} from 'hono'; import {read} from './missing.js'; export default new Hono().get('/items',()=>read());`,
+      });
+      if (failure === 'oversized')
+        await writeFile(
+          path.join(root, 'dist/server/missing.js'),
+          ' '.repeat(512_001),
+        );
+      if (failure === 'escaping') {
+        const outside = await fixture({
+          'secret.js': `import {read} from '@secret/provider'; export {read};`,
+        });
+        await symlink(
+          path.join(outside, 'secret.js'),
+          path.join(root, 'dist/server/missing.js'),
+        );
+      }
+      const incomplete = await collectModuleSources(root);
+      expect(incomplete).toMatchObject({
+        complete: false,
+        routes: [{ complete: false }],
+      });
+      expect(JSON.stringify(incomplete)).not.toContain('secret');
+      await rm(path.join(root, 'dist/server'), { recursive: true });
+      expect(await collectModuleSources(root)).toMatchObject({
+        complete: false,
+        routes: [{ complete: false }],
+      });
+      await writeFile(
+        path.join(root, 'dist/client/page.js'),
+        'export default ()=>null;',
+      );
+      expect(await collectModuleSources(root)).toMatchObject({
+        complete: true,
+        routes: [{ complete: true }],
+      });
+    },
+  );
+
+  it('keeps compiled request methods paired with paths and ignores fake clients and unrelated endpoints', async () => {
+    const root = await fixture({
+      'dist/client/routes.js': `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,
+      'dist/client/page.js': `import {useApiClient} from '@nocobase/app-client'; export default ()=>{const api=useApiClient(); api.request({method:'GET',path:'read'}); api.request({method:'POST',path:'other'}); const fake={request(){}}; fake.request({method:'POST',path:'read'});};`,
+      'dist/server/routes.js': `import {Hono} from 'hono'; import {query} from '@nocobase/db'; import {transition} from '@nocobase/lifecycle'; export default new Hono().get('/read',()=>query()).post('/read',()=>transition());`,
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/db',
+    ]);
+  });
+
+  it('recognizes the host API client resolved by useService and excludes other service tokens', async () => {
+    const root = await fixture({
+      'client/routes.ts': `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts': `import {useService,apiClientToken} from '@nocobase/app-client'; export default ()=>useService(apiClientToken).request({path:'items'});`,
+      'server/routes/index.ts': `import {Hono} from 'hono'; import {read} from '@nocobase/db'; export default new Hono().get('/items',()=>read());`,
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/db',
+    ]);
+    await writeFile(
+      path.join(root, 'client/page.ts'),
+      `import {useService} from '@nocobase/app-client'; import {apiClientToken} from 'another-sdk'; export default ()=>useService(apiClientToken).request({path:'items'});`,
+    );
+    expect(
+      (await collectModuleSources(root)).routes[0]?.apiProviders,
+    ).toBeUndefined();
+  });
+
+  it('follows memoized request helpers and literal string normalization without running application code', async () => {
+    const root = await fixture({
+      'client/routes.ts': `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts': `import {useRead} from './api.js'; export default ()=>{useRead('items');useRead('other');};`,
+      'client/api.ts': `import {useService,apiClientToken} from '@nocobase/app-client'; import {useCallback} from 'react'; function text(value){if(value==null)return ''; if(typeof value==='object')return JSON.stringify(value); return typeof value==='string'?value:String(value);} function useRequest(){const api=useService(apiClientToken);return useCallback((path,method='GET')=>api.request({path:text(path),method}),[api]);} export function useRead(path){const request=useRequest();return request(path);}`,
+      'server/routes/index.ts': `import {Hono} from 'hono'; import {read} from '@nocobase/db'; import {send} from '@nocobase/app-plugin-notification/server'; export default new Hono().get('/items',()=>read()).post('/items',()=>send());`,
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/db',
+    ]);
+  });
+
+  it('keeps each memoized request path paired with its own method', async () => {
+    const root = await fixture({
+      'client/routes.ts': `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts': `import {useApiClient} from '@nocobase/app-client'; import {useCallback} from 'react'; function useRequest(){const api=useApiClient();return useCallback((path,method='GET')=>api.request({path,method}),[api]);} export default ()=>{const request=useRequest();request('items');request('audit','POST');};`,
+      'server/routes/index.ts': `import {Hono} from 'hono'; import {read} from '@nocobase/db'; import {send} from '@nocobase/app-plugin-notification/server'; export default new Hono().get('/items',()=>read()).post('/items',()=>send()).post('/audit',()=>read());`,
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/db',
+    ]);
+  });
+
+  it('associates tuple-generated pages with routes registered through local helpers', async () => {
+    const root = await fixture({
+      'client/routes.ts': `export default [['books','icon'],['loans','icon']].map(([kind,icon])=>({name:\`page-\${String(kind)}\`,componentLoader:()=>import('./page.js')}));`,
+      'client/page.ts': `import {useApiClient} from '@nocobase/app-client'; export default ()=>useApiClient().request({path:'books'});`,
+      'server/routes/index.ts': `import {Hono} from 'hono'; import {defineApiRoutes} from '@nocobase/app-server/router'; import {register} from './register.js'; export default defineApiRoutes(()=>{const router=new Hono(); for(const name of ['books','loans'])register(router,name); return router;});`,
+      'server/routes/register.ts': `import {read} from '@nocobase/db'; export function register(router,name){router.get(\`/\${name}\`,()=>read());}`,
+    });
+    expect(
+      (await collectModuleSources(root)).routes.map(
+        ({ routeName, apiProviders }) => ({ routeName, apiProviders }),
+      ),
+    ).toEqual([
+      { routeName: 'page-books', apiProviders: ['@nocobase/db'] },
+      { routeName: 'page-loans', apiProviders: ['@nocobase/db'] },
+    ]);
+  });
+
   it('keeps literal array-generated route names and conditional loaders paired', async () => {
     const root = await fixture({
       'client/routes.ts': `export default ['books','loans'].map(kind=>({name:kind==='books'?'catalog':'borrowing',componentLoader:()=>kind==='books'?import('./books.js'):import('./loans.js'),children:[{name:\`\${kind}-detail\`,componentLoader:()=>kind==='books'?import('./books.js'):import('./loans.js')}]}));`,

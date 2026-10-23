@@ -5,7 +5,8 @@ import { RunnerOnlineAgentAdapter } from './online/agent/runner/backend.js';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { OnlineAgentService } from './online/agent/service.js';
 import { createSessionManager } from './online/agent/persistence/manager.js';
-import { languageModel } from './online/providers.js';
+import { NativeFileInputs } from './online/files/service.js';
+import type { FileInputsConfig } from './online/files/types.js';
 /**
  * The one place the plugin's services are assembled from their dependencies. The provider binds the result to
  * `agentsToken`; tests call it directly against a real database.
@@ -154,6 +155,7 @@ import { createSandboxProvider } from './online/sandbox/provider.js';
 import type { OnlineAgentSandboxOptions } from './online/sandbox/types.js';
 export interface AgentsDeps {
   readonly uiRecovery?: OnlineAgentRecoveryConfig;
+  readonly fileInputs?: FileInputsConfig;
   readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
   readonly resolver?: ServiceResolver;
   readonly sandbox?: OnlineAgentSandboxOptions;
@@ -597,9 +599,14 @@ export function createAgents(deps: AgentsDeps): Agents {
     tx,
     ids,
     attachments: chatAttachments.links,
-    files: chatAttachments.service,
     basePath,
     now: () => clock.now().toISOString(),
+  });
+  const fileInputs = new NativeFileInputs({
+    connectionFor: (ref) => modelServices.connectionFor(ref),
+    files: chatAttachments.service,
+    config: deps.fileInputs,
+    onWarning: (message) => onError(message, new Error(message)),
   });
   const onlineAgent = new OnlineAgentService({
     configurator,
@@ -609,12 +616,12 @@ export function createAgents(deps: AgentsDeps): Agents {
     sessions,
     ids,
     resolver: deps.resolver,
-    model: async (ref, sessionId) =>
-      languageModel(
-        await modelServices.connectionFor(ref),
-        ref.model,
-        sessionId,
-      ),
+    webSearch: {
+      capabilities: (ref) => modelServices.capabilities(ref),
+      search: (request) => gateway.search(request),
+    },
+    fileInputs,
+    model: (ref, sessionId) => fileInputs.model(ref, sessionId),
     defaultModel: async () =>
       (await modelServices.catalog()).defaultModel ?? null,
     onError: (error) =>

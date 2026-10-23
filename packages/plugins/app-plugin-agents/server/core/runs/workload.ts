@@ -154,7 +154,7 @@ export function explainWait(
     const missing = run.requires.filter((feature) => !offered.has(feature));
     return wait('missingFeatures', { missing, params: { features: missing } });
   }
-  // Variables for team runners only, as the last claim by a personal runner found them (`claim.ts`).
+  // Variables for shared runners only, as the last claim by a personal runner found them (`claim.ts`).
   const teamOnly = variableRefs(run.teamOnlyVariables);
   const trusted =
     teamOnly.length > 0

@@ -1,3 +1,4 @@
+import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
 import type { JSONSchema7, ModelMessage } from 'ai';
 import type {
   BackgroundOnlineAgent,
@@ -122,6 +123,23 @@ export class NativeRealtimeOnlineAgent
     return seq;
   }
 
+  async resend(options: OnlineAgentResendOptions = {}): Promise<number> {
+    const seq = await this.host.resend(
+      this.context,
+      this.sessionId,
+      options,
+      {
+        overrides: this.requestedOverrides,
+        selectedModel: this.requestedModel,
+        boundary: this.boundary,
+      },
+      (execution) => {
+        this.responseExecution = execution;
+      },
+    );
+    this.consumed();
+    return seq;
+  }
   async receive(): ReturnType<RealtimeOnlineAgent['receive']> {
     await this.host.sessions.load(this.context.user.id, this.sessionId);
     return this.host.native.receive(

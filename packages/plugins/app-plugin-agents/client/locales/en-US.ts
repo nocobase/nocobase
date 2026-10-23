@@ -75,9 +75,9 @@ const pages = {
       'Variables cannot be saved or shown: the server has no secrets key. Ask an administrator to set secrets.keys in the application configuration.',
   },
   command: {
-    copy: 'Copy command',
+    copy: 'Copy',
     copied: 'Copied',
-    copyFailed: 'Could not copy. Select the command and copy it yourself.',
+    copyFailed: 'Could not copy. Select the text and copy it yourself.',
   },
   tools: {
     claude: 'Claude Code',
@@ -148,11 +148,11 @@ const pages = {
     },
     where: {
       none: 'No runner',
-      team_one: '{{count}} team runner',
-      team_other: '{{count}} team runners',
+      team_one: '{{count}} shared runner',
+      team_other: '{{count}} shared runners',
       personal_one: '{{count}} personal runner online',
       personal_other: '{{count}} personal runners online',
-      both: '{{team}} team · {{personal}} personal',
+      both: '{{team}} shared · {{personal}} personal',
       names: '{{names}}',
       noneOnline: 'No runner online now',
       personalOnly: 'Personal runners only',
@@ -336,7 +336,7 @@ const pages = {
   envVars: {
     title: 'Environment variables',
     description:
-      'Passed to the coding tool on every run and masked in run records; values are not shown again after saving. Anyone who may use a shared agent can receive these values on their own computer; mark high-risk secrets "Team runtimes only".',
+      'Passed to the coding tool on every run and masked in run records; values are not shown again after saving. Anyone who may use a shared agent can receive these values on their own computer; mark high-risk secrets "Shared runtimes only".',
     add: 'Add variable',
     addTitle: 'Add environment variable',
     editTitle: 'Replace {{name}}',
@@ -346,10 +346,10 @@ const pages = {
     value: 'Value',
     valueTooLong: 'The value is larger than 8 KB.',
     keepValueHint: 'Leave it empty to keep the current value.',
-    teamRunnersOnly: 'Team runtimes only',
+    teamRunnersOnly: 'Shared runtimes only',
     teamRunnersOnlyHint:
-      'Without it, a run sends the value to the runtime that takes it, including the personal runtime of anyone who may use the agent. With it, only a team runtime takes runs that get this variable.',
-    teamRunnersOnlyBadge: 'Team runtimes only',
+      'Without it, a run sends the value to the runtime that takes it, including the personal runtime of anyone who may use the agent. With it, only a shared runtime takes runs that get this variable.',
+    teamRunnersOnlyBadge: 'Shared runtimes only',
     fromRunner: 'Take from the runtime',
     fromRunnerHint:
       'No value is kept here: the runtime that takes a run provides it from its own machine, set there with {{command}} or passed with `--pass-env`. A runtime that does not provide it fails the run before it starts.',

@@ -85,6 +85,29 @@ function operation(method: string, path: string): OpenAPIV3_1.OperationObject {
 }
 
 describe('agents API document', () => {
+  it('declares destructive native resend as an SDK stream without a generated CLI command', () => {
+    const resend = operation(
+      'POST',
+      '/api/agents/conversations/{conversationId}/resend',
+    );
+    expect(resend.operationId).toBe('agentsResendConversationMessage');
+    expect(resend.description).toContain(
+      'permanently deletes all later messages',
+    );
+    expect(resend.description).toContain(
+      'Unknown responses must not be automatically retried',
+    );
+    expect(resend.responses?.['200']).toMatchObject({
+      content: { 'text/event-stream': {} },
+    });
+    expect(resend.security).toBeUndefined();
+    expect(
+      deriveAllCliCommands(document).some(
+        (command) => command.operationId === resend.operationId,
+      ),
+    ).toBe(false);
+  });
+
   it('retains SKILL.md front matter rules in skill create and update help', () => {
     const commands = deriveAllCliCommands(document);
     for (const id of ['skill:create', 'skill:update']) {

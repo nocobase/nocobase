@@ -2668,6 +2668,43 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
+  packages/libs/document-extractor:
+    dependencies:
+      mammoth:
+        specifier: ^1.10.0
+        version: 1.12.2
+      officeparser:
+        specifier: ^6.0.4
+        version: 6.1.1(encoding@0.1.13)(supports-color@8.1.1)
+      pdf-parse:
+        specifier: ^1.1.1
+        version: 1.1.4
+      word-extractor:
+        specifier: ^1.0.4
+        version: 1.0.4
+      xlsx:
+        specifier: ^0.18.5
+        version: 0.18.5
+    devDependencies:
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
   packages/libs/drive:
     dependencies:
       '@aws-sdk/client-s3':
@@ -3299,6 +3336,9 @@ importers:
       '@nocobase/db':
         specifier: workspace:^
         version: link:../../libs/db
+      '@nocobase/document-extractor':
+        specifier: workspace:^
+        version: link:../../libs/document-extractor
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
@@ -3428,7 +3468,7 @@ importers:
         version: 30.0.1(@noble/hashes@2.3.0)
       just-bash:
         specifier: 3.6.0
-        version: 3.6.0(supports-color@8.1.1)
+        version: 3.6.0
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
@@ -3935,6 +3975,118 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
+  packages/plugins/app-plugin-demo-mode:
+    dependencies:
+      '@base-ui/react':
+        specifier: 'catalog:'
+        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@nocobase/app-cli':
+        specifier: workspace:^
+        version: link:../../app/app-cli
+      '@nocobase/app-client':
+        specifier: workspace:^
+        version: link:../../app/app-client
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../app-plugin-authentication
+      '@nocobase/app-plugin-authorization':
+        specifier: workspace:^
+        version: link:../app-plugin-authorization
+      '@nocobase/app-plugin-users':
+        specifier: workspace:^
+        version: link:../app-plugin-users
+      '@nocobase/app-server':
+        specifier: workspace:^
+        version: link:../../app/app-server
+      '@nocobase/db':
+        specifier: workspace:^
+        version: link:../../libs/db
+      '@nocobase/i18n':
+        specifier: workspace:^
+        version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
+      '@nocobase/service-provider':
+        specifier: workspace:^
+        version: link:../../libs/service-provider
+      '@oclif/core':
+        specifier: 'catalog:'
+        version: 4.14.0
+      class-variance-authority:
+        specifier: 'catalog:'
+        version: 0.7.1
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@ai-sdk/openai-compatible':
+        specifier: 'catalog:'
+        version: 3.0.63(zod@4.6.5)
+      '@nocobase/app-plugin-agents':
+        specifier: workspace:*
+        version: link:../app-plugin-agents
+      '@nocobase/app-testing':
+        specifier: workspace:*
+        version: link:../../tools/app-testing
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.1)(vitest@4.1.10)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      '@vitejs/plugin-react':
+        specifier: 'catalog:'
+        version: 4.7.0(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+      ai:
+        specifier: 'catalog:'
+        version: 7.0.128(zod@4.6.5)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      jsdom:
+        specifier: 'catalog:'
+        version: 30.0.1(@noble/hashes@2.3.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+      yaml:
+        specifier: 'catalog:'
+        version: 2.9.0
+
   packages/plugins/app-plugin-file:
     dependencies:
       '@nocobase/i18n':
@@ -4219,6 +4371,9 @@ importers:
       '@nocobase/db':
         specifier: workspace:^
         version: link:../../libs/db
+      '@nocobase/document-extractor':
+        specifier: workspace:^
+        version: link:../../libs/document-extractor
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
@@ -4249,15 +4404,6 @@ importers:
       lucide-react:
         specifier: 'catalog:'
         version: 0.487.0(react@19.2.8)
-      mammoth:
-        specifier: ^1.10.0
-        version: 1.12.2
-      officeparser:
-        specifier: ^6.0.4
-        version: 6.1.1(encoding@0.1.13)
-      pdf-parse:
-        specifier: ^1.1.1
-        version: 1.1.4
       react:
         specifier: ^19.0.0
         version: 19.2.8
@@ -4273,12 +4419,6 @@ importers:
       remark-gfm:
         specifier: 'catalog:'
         version: 4.0.1
-      word-extractor:
-        specifier: ^1.0.4
-        version: 1.0.4
-      xlsx:
-        specifier: ^0.18.5
-        version: 0.18.5
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -4911,7 +5051,7 @@ importers:
         version: 0.487.0(react@19.2.8)
       officeparser:
         specifier: ^6.0.4
-        version: 6.1.1(encoding@0.1.13)
+        version: 6.1.1(encoding@0.1.13)(supports-color@8.1.1)
       react:
         specifier: ^19.0.0
         version: 19.2.8
@@ -21135,7 +21275,7 @@ snapshots:
     dependencies:
       flat-cache: 4.0.1
 
-  file-type@21.3.4(supports-color@8.1.1):
+  file-type@21.3.4:
     dependencies:
       '@tokenizer/inflate': 0.4.1(supports-color@8.1.1)
       strtok3: 10.3.5
@@ -21144,7 +21284,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  file-type@22.0.2:
+  file-type@22.0.2(supports-color@8.1.1):
     dependencies:
       '@tokenizer/inflate': 0.4.1(supports-color@8.1.1)
       strtok3: 10.3.5
@@ -21922,11 +22062,11 @@ snapshots:
       readable-stream: 2.3.8
       setimmediate: 1.0.5
 
-  just-bash@3.6.0(supports-color@8.1.1):
+  just-bash@3.6.0:
     dependencies:
       diff: 8.0.4
       fast-xml-parser: 5.11.2
-      file-type: 21.3.4(supports-color@8.1.1)
+      file-type: 21.3.4
       guarded-fetch: 0.1.3
       ini: 6.0.0
       modern-tar: 0.7.7
@@ -23060,11 +23200,11 @@ snapshots:
       node-fetch-native: 1.6.7
       ufo: 1.6.4
 
-  officeparser@6.1.1(encoding@0.1.13):
+  officeparser@6.1.1(encoding@0.1.13)(supports-color@8.1.1):
     dependencies:
       '@xmldom/xmldom': 0.9.12
       fflate: 0.8.3
-      file-type: 22.0.2
+      file-type: 22.0.2(supports-color@8.1.1)
       pdfjs-dist: 5.6.205
       tesseract.js: 7.0.0(encoding@0.1.13)
     transitivePeerDependencies:

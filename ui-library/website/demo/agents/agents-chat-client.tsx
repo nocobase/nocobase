@@ -29,14 +29,33 @@ export const useAIToolRenderer: typeof Chat.useAIToolRenderer = useToolRenderer;
 export const getAIToolSourceMessage: typeof Chat.getAIToolSourceMessage =
   toolSourceMessage;
 export { chatMessageSegments } from '../../../../packages/plugins/app-plugin-agents/client/chat/message-model.js';
+import {
+  CHAT_LAST_AGENT_STORAGE_KEY as CHAT_LAST_AGENT_KEY,
+  readLastAgent,
+  rememberLastAgent,
+} from '../../../../packages/plugins/app-plugin-agents/client/chat/agent-mode.js';
+export {
+  agentsOfMode,
+  CHAT_AGENT_MODES,
+  CHAT_LAST_AGENT_STORAGE_KEY,
+  chatAgentMode,
+  configuredChatModes,
+  lastAgentStorageKey,
+  ONLINE_AGENT_ID,
+  readLastAgent,
+  rememberLastAgent,
+  resolveChatAgentMode,
+} from '../../../../packages/plugins/app-plugin-agents/client/chat/agent-mode.js';
 import type {
   ChatAgent,
   ConversationDetail,
   ResolvedPageContext,
+  ConversationMode,
   ConversationNotice,
   ConversationSource,
   MessageAttachment,
 } from '@nocobase/app-plugin-agents/shared/conversations';
+import type { ModelService } from '@nocobase/app-plugin-agents/shared/models';
 import { BotIcon } from 'lucide-react';
 import {
   createContext,
@@ -113,6 +132,44 @@ const AGENTS: readonly ChatAgent[] = [
     availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
     personalOnly: true,
   },
+  {
+    id: 'online',
+    name: 'Online agent',
+    description: 'Chat with a configured model and registered tools.',
+    nameText: null,
+    descriptionText: null,
+    avatar: null,
+    isSystemDefault: false,
+    isMyDefault: false,
+    runnerNames: [],
+    availability: { online: true, reason: null, onlineRunners: 0 },
+    personalOnly: false,
+  },
+];
+
+/** `?agents=online` or `?agents=runner` shows the panel with one kind of agent configured, and no switch. */
+function configuredAgents(): readonly ChatAgent[] {
+  const only =
+    typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('agents');
+  return only === 'online'
+    ? AGENTS.filter((agent) => agent.id === 'online')
+    : only === 'runner'
+      ? AGENTS.filter((agent) => agent.id !== 'online')
+      : AGENTS;
+}
+
+const MODELS: readonly ModelService[] = [
+  {
+    name: 'demo',
+    title: 'Demo models',
+    provider: 'openai',
+    models: [
+      { value: 'fast', label: 'Fast model', kind: 'chat', dimensions: null },
+      { value: 'deep', label: 'Deep model', kind: 'chat', dimensions: null },
+    ],
+  },
 ];
 
 function agentRef(id: string): ConversationDetail['agent'] {
@@ -167,6 +224,7 @@ function message(
     attachments?: readonly MessageAttachment[];
     metadata?: {
       agentId?: string;
+      sourceUserMessageId?: string;
       clientId?: string;
       notice?: ConversationNotice;
     };
@@ -182,6 +240,9 @@ function message(
       revision: 1,
       createdAt: fields.createdAt ?? ago(30 - seq),
       ...(fields.metadata?.agentId ? { agentId: fields.metadata.agentId } : {}),
+      ...(fields.metadata?.sourceUserMessageId
+        ? { sourceUserMessageId: fields.metadata.sourceUserMessageId }
+        : {}),
       ...(fields.metadata?.clientId
         ? { clientId: fields.metadata.clientId }
         : {}),
@@ -256,21 +317,89 @@ interface Store {
 function initialStore(): Store {
   return {
     conversations: [
-      conversation('release-plan', 'assistant', 'Plan the onboarding release', {
+      // Online agent, idle: its last messages offer edit, copy and regenerate on hover; it consulted a runner agent.
+      conversation('release-plan', 'online', 'Plan the onboarding release', {
         lastMessageAt: ago(3),
+        mode: 'online',
+        execution: { status: 'idle' },
       }),
+      // Online agent, archived.
+      conversation('naming', 'online', 'Name the onboarding checklist', {
+        lastMessageAt: ago(300),
+        archivedAt: ago(240),
+        mode: 'online',
+        execution: { status: 'idle' },
+      }),
+      // Runner agent at work, with an unread reply on its way.
       conversation('flaky-test', 'coder', 'Fix the flaky sign-in test', {
         read: false,
-        source: 'askAgent',
         run: { id: 'run-7', status: 'running', acceptsInput: true },
         lastMessageAt: ago(1),
       }),
+      // Runner agent, started from the issue page's "Ask agent", with the issue as its context.
+      conversation(
+        'welcome-tour',
+        'assistant',
+        'Summarize PM-12 Welcome tour',
+        {
+          source: 'askAgent',
+          lastMessageAt: ago(12),
+        },
+      ),
+      // Runner agent, archived after its run failed.
       conversation('notes', 'release', 'Release notes draft', {
         archivedAt: ago(600),
         lastMessageAt: ago(900),
       }),
     ],
     messages: {
+      naming: [
+        message(
+          'naming',
+          1,
+          'user',
+          'Suggest three short names for the onboarding checklist.',
+        ),
+        message(
+          'naming',
+          2,
+          'assistant',
+          'Here are three: **First steps**, **Getting started** and **Welcome checklist**.',
+          {
+            metadata: { agentId: 'online', sourceUserMessageId: 'naming-1' },
+          },
+        ),
+      ],
+      'welcome-tour': [
+        message(
+          'welcome-tour',
+          1,
+          'user',
+          'Summarize this issue and what is left to do.',
+          {
+            workContext: {
+              route: '/',
+              dropped: 0,
+              items: [
+                {
+                  kind: 'issue',
+                  id: 'pm-12',
+                  key: 'PM-12',
+                  title: 'Welcome tour',
+                  url: null,
+                },
+              ],
+            },
+          },
+        ),
+        message(
+          'welcome-tour',
+          2,
+          'assistant',
+          'PM-12 adds a short tour for new members: the projects, the inbox and how to ask an agent. The tour is built and in review with Lin; what is left is the review and the copy for the last step.',
+          { metadata: { agentId: 'assistant' } },
+        ),
+      ],
       'release-plan': [
         message(
           'release-plan',
@@ -298,7 +427,12 @@ function initialStore(): Store {
           2,
           'assistant',
           'Three issues are still open:\n\n| Issue | Status | Owner |\n| --- | --- | --- |\n| PM-12 Welcome tour | In review | Lin |\n| PM-15 Invite emails | In progress | Coding agent |\n| PM-18 Empty states | Todo | — |\n\nPM-12 only needs a review; I can **ask the coding agent** to finish PM-15.',
-          { metadata: { agentId: 'assistant' } },
+          {
+            metadata: {
+              agentId: 'online',
+              sourceUserMessageId: 'release-plan-1',
+            },
+          },
         ),
         message('release-plan', 3, 'system', 'Consulted Coding agent', {
           metadata: {
@@ -392,6 +526,7 @@ function initialStore(): Store {
 let store: Store = initialStore();
 const listeners = new Set<() => void>();
 const chats = new Map<string, SDKChat<Chat.AppUIMessage>>();
+const demoWatermarks = new Map<string, number>();
 const stopReplies = new Map<string, () => void>();
 let generation = 0;
 function demoChat(id: string): SDKChat<Chat.AppUIMessage> {
@@ -440,8 +575,16 @@ export function resetChatDemo(): void {
   stopReplies.clear();
   for (const chat of chats.values()) void chat.stop();
   chats.clear();
+  demoWatermarks.clear();
   for (const timer of replyTimers) clearTimeout(timer);
   replyTimers.clear();
+  try {
+    for (const key of Object.keys(window.localStorage))
+      if (key.startsWith(CHAT_LAST_AGENT_KEY))
+        window.localStorage.removeItem(key);
+  } catch {
+    // Nothing remembered to forget.
+  }
   update(() => initialStore());
 }
 
@@ -463,7 +606,14 @@ function appendMessage(
   build: (seq: number) => Chat.AppUIMessage,
 ): Chat.AppUIMessage {
   const list = store.messages[conversationId] ?? [];
-  const added = build(list.length + 1);
+  const seq =
+    Math.max(
+      demoWatermarks.get(conversationId) ?? 0,
+      ...list.map((message) => message.metadata?.seq ?? 0),
+      0,
+    ) + 1;
+  const added = build(seq);
+  demoWatermarks.set(conversationId, seq);
   update((current) => ({
     ...current,
     messages: { ...current.messages, [conversationId]: [...list, added] },
@@ -477,7 +627,17 @@ const REPLY =
 /** A deterministic producer emits standard SDK chunks and saves only its final public message. */
 function answer(conversationId: string, agentId: string): Response {
   const ownGeneration = generation;
-  const seq = (store.messages[conversationId]?.length ?? 0) + 1;
+  const seq =
+    Math.max(
+      demoWatermarks.get(conversationId) ?? 0,
+      ...(store.messages[conversationId] ?? []).map(
+        (message) => message.metadata?.seq ?? 0,
+      ),
+      0,
+    ) + 1;
+  const sourceUserMessageId = store.messages[conversationId]
+    ?.filter((message) => message.role === 'user')
+    .at(-1)?.id;
   const id = `${conversationId}-${seq}`;
   const createdAt = new Date().toISOString();
   let length = 0,
@@ -505,7 +665,14 @@ function answer(conversationId: string, agentId: string): Response {
     const saved: Chat.AppUIMessage = {
       id,
       role: 'assistant',
-      metadata: { conversationId, seq, revision: 1, createdAt, agentId },
+      metadata: {
+        conversationId,
+        seq,
+        revision: 1,
+        createdAt,
+        agentId,
+        sourceUserMessageId,
+      },
       parts: [{ type: 'text', text: REPLY.slice(0, length), state: 'done' }],
     };
     if (length) appendMessage(conversationId, () => saved);
@@ -535,7 +702,13 @@ function answer(conversationId: string, agentId: string): Response {
         output.enqueue({
           type: 'start',
           messageId: id,
-          messageMetadata: { conversationId, createdAt, agentId, revision: 0 },
+          messageMetadata: {
+            conversationId,
+            createdAt,
+            agentId,
+            revision: 0,
+            sourceUserMessageId,
+          },
         });
         output.enqueue({ type: 'text-start', id: 'text' });
         interval = setInterval(() => {
@@ -586,9 +759,11 @@ export const timelineOrder: typeof Chat.timelineOrder = (entries) =>
 export const newConversationAgent: typeof Chat.newConversationAgent = (
   agents,
   picked,
+  lastUsed = null,
 ) =>
   agents
     ? ((picked ? agents.find((agent) => agent.id === picked) : undefined) ??
+      (lastUsed ? agents.find((agent) => agent.id === lastUsed) : undefined) ??
       agents.find((agent) => agent.isMyDefault) ??
       agents.find((agent) => agent.isSystemDefault) ??
       null)
@@ -829,6 +1004,7 @@ export const useChatUIContextSource: typeof Chat.useChatUIContextSource = (
 export const ChatProvider: typeof Chat.ChatProvider = ({
   available = true,
   conversationPath,
+  memoryScope,
   children,
 }) => {
   const navigate = useNavigate();
@@ -838,7 +1014,19 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
     view: 'chat' as Chat.ChatPanelView,
     conversationId: null as string | null,
     newAgentId: null as string | null,
+    agentMode: null as ConversationMode | null,
   });
+  const memoryKey = `demo:${memoryScope ?? ''}`;
+  const [lastAgentId, setLastAgentId] = useState(() =>
+    readLastAgent(memoryKey),
+  );
+  const rememberAgent = useCallback(
+    (agentId: string) => {
+      rememberLastAgent(memoryKey, agentId);
+      setLastAgentId(agentId);
+    },
+    [memoryKey],
+  );
   const [pinned, setPinned] = useState<readonly Chat.ChatContextItem[]>([]);
   const [draft, setDraft] = useState<Chat.ChatDraft | null>(null);
   const [composerRevision, setComposerRevision] = useState(0);
@@ -908,6 +1096,7 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
             : options.conversationId,
         newAgentId:
           options.agentId === undefined ? current.newAgentId : options.agentId,
+        agentMode: options.agentId ? null : current.agentMode,
       }));
       if (options.source) setSource(options.source);
       const pin = options.pin;
@@ -965,6 +1154,8 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
           conversationId,
           newAgentId:
             conversationId === null ? (agentId ?? null) : current.newAgentId,
+          agentMode:
+            conversationId === null && agentId ? null : current.agentMode,
         }));
       },
       pinned,
@@ -982,8 +1173,14 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
           }
         : null,
       conversationPath: conversationPath ?? null,
+      setAgentMode: (agentMode) =>
+        setState((current) => ({ ...current, agentMode })),
+      lastAgentId,
+      rememberAgent,
     }),
     [
+      lastAgentId,
+      rememberAgent,
       state,
       available,
       openChat,
@@ -1157,11 +1354,26 @@ function query<T>(data: T | undefined): never {
 }
 
 export const useChatAgents: typeof Chat.useChatAgents = () =>
-  query([...AGENTS]);
+  query([...configuredAgents()]);
 
-export const useChatModels: typeof Chat.useChatModels = () => query([]);
-export const useConversationModel: typeof Chat.useConversationModel = () => ({
-  configuration: query(undefined),
+export const useChatModels: typeof Chat.useChatModels = () =>
+  query(
+    configuredAgents().some((agent) => agent.id === 'online')
+      ? [...MODELS]
+      : [],
+  );
+export const useConversationModel: typeof Chat.useConversationModel = (id) => ({
+  configuration: query(
+    id
+      ? {
+          selectedModel: { modelService: 'demo', model: 'fast' },
+          scope: [],
+          tool: [],
+          toolVersions: {},
+          systemPrompt: '',
+        }
+      : undefined,
+  ),
   select: mutation(() => {}),
   changing: false,
 });
@@ -1197,6 +1409,8 @@ export const useConversationList: typeof Chat.useConversationList = (
         (filter.archived === 'all' ||
           Boolean(item.archivedAt) === Boolean(filter.archived)) &&
         (!filter.agentId || item.agent.id === filter.agentId) &&
+        (!filter.mode ||
+          (item.agent.id === 'online') === (filter.mode === 'online')) &&
         (!filter.source || item.source === filter.source) &&
         (!q ||
           (item.title ?? '').toLowerCase().includes(q) ||
@@ -1277,6 +1491,85 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
     },
     [conversationId, agentId, source, onCreated],
   );
+/** Preview-only destructive resend, using the same official SDK entry points as production. */
+export const useResendMessage: typeof Chat.useResendMessage = (
+  conversationId,
+) => {
+  useStore();
+  const [isPending, setIsPending] = useState(false);
+  return {
+    isPending,
+    resend: async (options) => {
+      const detail = store.conversations.find(
+        (item) => item.id === conversationId,
+      );
+      const sdk = demoChat(conversationId ?? 'draft');
+      const list = store.messages[conversationId ?? ''] ?? [];
+      const index = list.findIndex(
+        (message) =>
+          message.id === options.messageId && message.role === 'user',
+      );
+      if (
+        !conversationId ||
+        !detail ||
+        detail.mode !== 'online' ||
+        detail.archivedAt ||
+        index < 0 ||
+        sdk.status === 'streaming' ||
+        sdk.status === 'submitted'
+      )
+        return {
+          outcome: 'rejected',
+          error: new Error('Resend is unavailable.'),
+        };
+      setIsPending(true);
+      const original = list[index];
+      let replaced = false;
+      const target = {
+        ...original,
+        metadata: {
+          ...original.metadata!,
+          revision: (original.metadata?.revision ?? 0) + 1,
+        },
+        parts: options.input
+          ? [
+              ...original.parts.flatMap<Chat.AppUIMessage['parts'][number]>(
+                (part) => {
+                  if (part.type !== 'text') return [part];
+                  if (replaced) return [];
+                  replaced = true;
+                  return [{ type: 'text', text: options.input!.text }];
+                },
+              ),
+              ...(!original.parts.some((part) => part.type === 'text')
+                ? [{ type: 'text' as const, text: options.input.text }]
+                : []),
+            ]
+          : original.parts,
+      };
+      const seq = Math.max(
+        0,
+        ...list.map((message) => message.metadata?.seq ?? 0),
+      );
+      demoWatermarks.set(
+        conversationId,
+        Math.max(demoWatermarks.get(conversationId) ?? 0, seq),
+      );
+      update((current) => ({
+        ...current,
+        messages: {
+          ...current.messages,
+          [conversationId]: [...list.slice(0, index), target],
+        },
+      }));
+      if (options.input)
+        void sdk.sendMessage({ ...target, messageId: target.id });
+      else void sdk.regenerate({ messageId: target.id });
+      setIsPending(false);
+      return { outcome: 'accepted' };
+    },
+  };
+};
 
 let uploads = 0;
 

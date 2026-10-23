@@ -5,7 +5,7 @@ import { createHarness, type Harness } from './harness.js';
 let h: Harness;
 afterEach(async () => h?.close());
 
-it('defaults new registrations to four, preserves online settings and reports applied capacity without overwriting settings', async () => {
+it('defaults new registrations to three, preserves online settings and reports applied capacity without overwriting settings', async () => {
   h = await createHarness();
   const token = await h.services.runners.createRegistrationToken('owner', {});
   const registered = await h.services.runners.register({
@@ -21,7 +21,7 @@ it('defaults new registrations to four, preserves online settings and reports ap
     slots: 9,
     toolSlots: { claude: 1 },
   });
-  expect(registered.slots).toBe(4);
+  expect(registered.slots).toBe(3);
   expect(registered.toolSlots).toBeUndefined();
   const beat = (slots: number, tools = {}) =>
     h.request('POST', '/agents/runners/heartbeat', {

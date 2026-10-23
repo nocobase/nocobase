@@ -11,7 +11,7 @@ const sources: readonly MigrationSource[] = [
   },
 ];
 
-describeMigration('202610280002_ag_add_runner_tool_refresh', {
+describeMigration('202610290002_ag_add_runner_tool_refresh', {
   sources,
   up: async ({ expectCollection }) => {
     await expectCollection('agConversations').toHaveField('showInChatList', {

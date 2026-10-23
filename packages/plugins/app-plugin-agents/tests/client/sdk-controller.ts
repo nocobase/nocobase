@@ -11,6 +11,7 @@ import { sdkResponse } from './sdk-chat.js';
 
 export function sdkController() {
   const state = {
+    lastSeq: 0,
     messages: [] as AppUIMessage[],
     detail: {
       id: 'c1',
@@ -22,6 +23,10 @@ export function sdkController() {
   const request = vi.fn(
     async (options: { path: string; query?: Record<string, unknown> }) => {
       if (options.path.endsWith('/messages')) {
+        state.lastSeq = Math.max(
+          state.lastSeq,
+          ...state.messages.map((message) => message.metadata?.seq ?? 0),
+        );
         const ids =
           typeof options.query?.ids === 'string'
             ? options.query.ids.split(',')
@@ -37,10 +42,7 @@ export function sdkController() {
               : after === undefined || (message.metadata?.seq ?? 0) > after,
           ),
           meta: {
-            lastSeq: Math.max(
-              0,
-              ...state.messages.map((message) => message.metadata?.seq ?? 0),
-            ),
+            lastSeq: state.lastSeq,
           },
         };
       }
