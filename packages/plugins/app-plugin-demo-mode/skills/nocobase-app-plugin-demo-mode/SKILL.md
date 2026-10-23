@@ -68,12 +68,17 @@ Then reset the demo and verify that no business rows from before the reset remai
 
 ## Confirm the dedicated deployment
 
-Clear and reset delete all business data in the connected database, including visitor additions. Before enabling, confirm that every connection under `database.connections` and the storage directory (`APP_STORAGE_DIR`) belong only to this demo deployment, through its own environment file or deployment configuration. Never enable Demo Mode against a database holding production or development data. If the target cannot be confirmed from the user's stated deployment, ask before enabling.
+Clear and reset delete all business data in the connected database, including visitor additions. Before enabling, confirm that every connection under `database.connections`, the storage directory (`APP_STORAGE_DIR`) and any shared service the configuration names belong only to this demo deployment, through its own environment file or deployment configuration. Never enable Demo Mode against a database holding production or development data. If the target cannot be confirmed from the user's stated deployment, ask before enabling.
 
 Give the demo its own storage and databases:
 
 - **Local trial.** Stop the normal development server and start a separate instance, such as `APP_STORAGE_DIR=storage/demo NOCOBASE_DEMO_MODE=true pnpm dev`. A relative SQLite filename, the template default, resolves under the storage directory, so this one variable separates both the database and the files. When the local environment uses a server database (`DB_DIALECT` other than `sqlite`), also set `DB_DATABASE` to a separate, empty database; `APP_STORAGE_DIR` alone would still reach the development database. The normal database is untouched.
 - **Server deployment.** Use the deployment's own environment file or `config.yml` with a distinct `APP_STORAGE_DIR` and distinct connection values: `DB_DATABASE` (with its host and credentials) for a server database, or `DB_FILENAME` for an absolute SQLite path. Give every additional connection its own database too.
+
+`APP_STORAGE_DIR` also separates the template's default memory queue and jobs state and its local `fs` disk, but not external services. Check the configuration of both instances, including a local trial beside the development server:
+
+- **Redis.** When `queue.default`, `jobs.default`, the session store or a caching provider uses Redis, give the demo its own Redis instance or a distinct `db` number in each of those sections. A shared Redis lets one instance consume the other's queue messages and job firings and write them into its own database.
+- **File disks.** When `drive.default` or a disk the application uses is `s3` or another remote driver, give the demo its own bucket or prefix. Cleanup of generated and visitor-uploaded files acts on that disk.
 
 A new demo database starts with only the initial administrator, created on first start from `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` (`users.initialAdmin`); without them it is `nocobase` / `admin@nocobase.com` / `admin123`. This administrator holds the unrestricted root Permission Set, so it can open the management page and generate data without extra grants. Set non-default credentials before exposing a public demo, and do not list this account among the visitor accounts.
 
@@ -81,7 +86,7 @@ A new demo database starts with only the initial administrator, created on first
 
 Complete these steps in order, preserving existing registrations and configuration sections:
 
-1. **Install and register.** Run `pnpm nocobase plugin register demo-mode --dry-run`, review the plan, then run it without `--dry-run`. It adds the dependency, registers the Server, Client and CLI entries and synchronizes this Skill. Do not edit only one of `server/plugins.ts`, `client/plugins.ts` or `cli/plugins.ts` by hand; edit `client/plugins.ts` afterwards only to pass [presentation options](references/visitor-entry.md) such as `demoMode({ accountSwitcher: 'menu' })`.
+1. **Install and register.** Run `pnpm nocobase plugin register demo-mode --dry-run`, review the plan, then run it without `--dry-run`. While the package is not installed yet, the dry run only prints the install command and asks to run `register` again; that is expected, so run it without `--dry-run`, which installs and then registers. It adds the dependency, registers the Server, Client and CLI entries and synchronizes this Skill. Do not edit only one of `server/plugins.ts`, `client/plugins.ts` or `cli/plugins.ts` by hand; edit `client/plugins.ts` afterwards only to pass [presentation options](references/visitor-entry.md) such as `demoMode({ accountSwitcher: 'menu' })`.
 2. **Register the configuration section.** Without it, neither `NOCOBASE_DEMO_MODE` nor a `demoMode` section is read. Follow the application's one-file-per-section layout: create `server/config/demo-mode.ts`,
 
    ```ts
@@ -123,7 +128,7 @@ Complete these steps in order, preserving existing registrations and configurati
    - `GET <base path>/api/demoMode/status` returns `{ "data": { "enabled": true } }`, and the startup log contains `Demo mode is on`. `false` with the variable set means the configuration section is not registered.
    - Signed in as an administrator, an ordinary change outside the [write exceptions](references/policies.md#collection-write-exceptions), such as editing a business record or a user profile, fails with 400 and `error.reason: DEMO_READ_ONLY`.
    - Startup refuses to continue when a database connection cannot be guarded; see [troubleshooting](references/minimal-example.md#troubleshooting).
-   - When Agents is registered, its chat and Agent runs are not covered by the write guard, and Demo Mode does not redirect them to the simulated model by itself. Check the model services in the demo database: keep no real provider credentials there, and either integrate [simulation](references/simulation.md) or confirm that chat is unavailable to visitors.
+   - When Agents is registered, its chat and Agent runs are not covered by the write guard. Demo Mode then creates an enabled simulated model service, `Demo chat`, but does not redirect Agents to it: Agents uses its saved default chat model, or else the first enabled chat model service. In a new demo database that is `Demo chat`. Check the model services in the demo database: keep no real provider credentials there, leave no real service saved as the default or enabled ahead of `Demo chat`, and either integrate [simulation](references/simulation.md) or confirm that chat is unavailable to visitors.
 
 Use the plugin defaults for quick sign-in and scheduling. Customize only what the requested demo needs. Demo Mode is disabled by default in ordinary deployments.
 
