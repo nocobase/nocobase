@@ -20,12 +20,6 @@ export const DailySchedule: z.ZodType<DemoDailySchedule> = z.strictObject({
 export const ChatConfiguration: z.ZodType<DemoChatConfiguration> =
   z.strictObject({
     enabled: z.boolean(),
-    model: z
-      .strictObject({
-        modelService: z.string().min(1).max(256),
-        model: z.string().min(1).max(256),
-      })
-      .nullable(),
     tools: z.record(
       z.string().min(1).max(128),
       z.enum(['read', 'mock', 'deny']),

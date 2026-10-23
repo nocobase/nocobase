@@ -223,19 +223,32 @@ it('uses the real Agent only in an off deployment and refuses direct queued demo
   });
 });
 
-it('keeps online chat opt-in and rechecks models and tool policies without real fallbacks', async () => {
+it('keeps simulated chat opt-in and rechecks admission and tool policies', async () => {
   const { config } = await setup();
   const simulated = { modelService: 'demo', model: 'demo-chat' };
   await expect(config.chatModel(simulated)).rejects.toMatchObject({
     reason: 'DEMO_CHAT_DISABLED',
   });
-  const live = { modelService: 'existing-service', model: 'chat' };
   await config.save('chat', 0, {
     enabled: true,
-    model: live,
     tools: { query: 'read', send: 'mock', unsafe: 'read' },
   });
-  expect(await config.chatModel(simulated)).toEqual(live);
+  const saved = await config.read();
+  // Existing deployments may still have a model selection in their stored policy.
+  await app.connection.query
+    .updateTable('demoModeConfiguration')
+    .set({
+      value: JSON.stringify({
+        ...saved,
+        chat: {
+          ...saved.chat,
+          model: { modelService: 'existing-service', model: 'chat' },
+        },
+      }),
+    })
+    .where('id', '=', 'default')
+    .execute();
+  expect(await config.chatModel(simulated)).toEqual(simulated);
   let writes = 0;
   const run = async () => ++writes;
   expect(
@@ -253,7 +266,7 @@ it('keeps online chat opt-in and rechecks models and tool policies without real 
     });
   expect(writes).toBe(0);
   await config.runWithPolicy(async () => {
-    await config.save('chat', 1, { enabled: false, model: null, tools: {} });
+    await config.save('chat', 1, { enabled: false, tools: {} });
     await expect(config.chatModel(simulated)).rejects.toMatchObject({
       reason: 'DEMO_CHAT_DISABLED',
     });
@@ -262,9 +275,9 @@ it('keeps online chat opt-in and rechecks models and tool policies without real 
     ).rejects.toMatchObject({ reason: 'DEMO_CHAT_DISABLED' });
   });
   await expect(
-    config.save('chat', 1, { enabled: true, model: null, tools: {} }),
+    config.save('chat', 1, { enabled: true, tools: {} }),
   ).rejects.toMatchObject({ reason: 'DEMO_CONFIGURATION_CONFLICT' });
-  await config.save('chat', 2, { enabled: true, model: null, tools: {} });
+  await config.save('chat', 2, { enabled: true, tools: {} });
   expect(await config.chatModel(simulated)).toEqual(simulated);
 });
 
@@ -291,7 +304,7 @@ it('limits online chat persistence to the callback and requires enabled chat', a
   await expect(
     request(() => config.runOnlineConversation(async () => {})),
   ).rejects.toMatchObject({ reason: 'DEMO_CHAT_DISABLED' });
-  await config.save('chat', 0, { enabled: true, model: null, tools: {} });
+  await config.save('chat', 0, { enabled: true, tools: {} });
   await request(() =>
     config.runOnlineConversation(async () => {
       expect(() =>
@@ -375,7 +388,6 @@ it('keeps schedule previews out of request and chat policy checks while observin
   });
   await config.save('chat', 1, {
     enabled: true,
-    model: null,
     tools: { lookup: 'read' },
   });
   await config.save('collections', 2, ['demoitems']);
@@ -398,7 +410,7 @@ it('keeps schedule previews out of request and chat policy checks while observin
     expect((await config.read()).nextRun).not.toBeNull();
     expect(preview).toHaveBeenCalledTimes(1);
     await config.save('collections', 3, []);
-    await config.save('chat', 4, { enabled: false, model: null, tools: {} });
+    await config.save('chat', 4, { enabled: false, tools: {} });
     preview.mockClear();
     expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
     await expect(

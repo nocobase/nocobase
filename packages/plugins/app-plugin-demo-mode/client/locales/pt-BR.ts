@@ -199,34 +199,8 @@ const resource: DemoModeResource = {
         confirmTitle: 'Salvar as configurações do chat online?',
         confirmDescription:
           'As conversas dos visitantes seguem estas configurações a partir da próxima mensagem.',
-        confirmLive:
-          'Um modelo real responde aos visitantes e cada conversa é cobrada do seu serviço de modelos.',
         enabled: 'Os visitantes podem conversar',
         enabledHelp: 'Desligado: o chat recusa as mensagens dos visitantes.',
-        model: 'Respostas de',
-        simulated: 'Modelo simulado',
-        live: 'Um modelo real',
-        simulatedHelp: 'Respostas roteirizadas; sem custo.',
-        liveHelp:
-          'Um serviço de modelos existente responde; as credenciais ficam nele.',
-        service: 'Serviço de modelos',
-        modelId: 'Modelo',
-        connection: {
-          new: 'Novo serviço de modelo de demonstração',
-          createHelp:
-            'Cria um serviço compatível com OpenAI. Salve a conexão e depois as configurações do chat.',
-          shared:
-            'As alterações também afetam outros agentes que usam este serviço.',
-          endpoint: 'Endpoint (URL base)',
-          apiKey: 'Chave de API',
-          keepKey: 'Configurada; deixe em branco para manter',
-          enterKey: 'Insira uma chave de API se necessário',
-          clearKey: 'Remover a chave de API salva',
-          save: 'Salvar conexão',
-          saved:
-            'Conexão salva. Salve as configurações do chat se alterou o modelo selecionado.',
-        },
-        cost: 'Cada conversa de visitante consome tokens deste serviço.',
         tools: 'Ferramentas',
         noTools: 'O aplicativo não declara ferramentas de chat.',
         policy: {

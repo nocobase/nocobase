@@ -1,7 +1,6 @@
-/** Online chat policy; credentials stay in the host model service. */
+/** Visitor chat through the application's simulated model. */
 export interface DemoChatConfiguration {
   enabled: boolean;
-  model: { modelService: string; model: string } | null;
   tools: Record<string, 'read' | 'mock' | 'deny'>;
 }
 export interface DemoMockAdapter {

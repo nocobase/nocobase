@@ -21,6 +21,7 @@ export interface DemoConfigurationService {
     expectedRevision: number,
     input: unknown,
   ): Promise<DemoConfigurationView>;
+  /** Returns the supplied simulated model in demo mode; call before admission and each model request. */
   chatModel(simulated: {
     modelService: string;
     model: string;

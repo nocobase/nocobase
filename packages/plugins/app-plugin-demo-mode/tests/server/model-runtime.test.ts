@@ -15,10 +15,7 @@ import type { DemoAgents } from '../../server/integrations/agents.js';
 import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
 
 let app: TestApp;
-const models = new Map<
-  string,
-  import('../../shared/model-services.js').DemoModelService
->();
+const models = new Map<string, { name: string; enabled: boolean }>();
 const services = {
   list: vi.fn(async () => [...models.values()]),
   create: vi.fn(async () => {

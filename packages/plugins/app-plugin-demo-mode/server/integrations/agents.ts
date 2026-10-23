@@ -1,26 +1,20 @@
 import { createRequire } from 'node:module';
 import type { ServiceResolver } from '@nocobase/service-provider';
-import type { DemoModelService } from '../../shared/model-services.js';
 
 interface DemoModelInput {
   title: string;
   provider: 'openai-compatible';
   baseUrl: string | null;
   apiKey?: string | null;
-  models: {
-    value: string;
-    label: string;
-    kind?: 'chat' | 'embedding' | 'rerank';
-    dimensions?: number | null;
-  }[];
+  models: { value: string; label: string }[];
 }
 
 /** The official Agents capability used here, without requiring its types in non-AI applications. */
 export interface DemoAgents {
   readonly models?: {
     readonly services?: {
-      list(): Promise<readonly DemoModelService[]>;
-      create(input: DemoModelInput): Promise<DemoModelService>;
+      list(): Promise<readonly { name: string }[]>;
+      create(input: DemoModelInput): Promise<{ name: string }>;
       update(
         name: string,
         input: Partial<Omit<DemoModelInput, 'title' | 'provider'>> & {

@@ -1,7 +1,6 @@
-import { useContext, useState, type ReactElement } from 'react';
+import { useContext, type ReactElement } from 'react';
 
 import type { DemoChatConfiguration } from '../../shared/configuration.js';
-import { Alert, AlertTitle } from '../components/ui/alert.js';
 import { Badge } from '../components/ui/badge.js';
 import {
   Empty,
@@ -25,7 +24,6 @@ import {
   type Configuration,
 } from './context.js';
 import { SettingRow, SettingsCard } from './shared.js';
-import { ModelConnection } from './model-connection.js';
 
 /**
  * The application's simulations of outside work, such as the demo model or a Runner. A disabled one fails closed:
@@ -110,7 +108,7 @@ export function MocksCard({
 
 type Policy = 'read' | 'mock' | 'deny';
 
-/** Online chat for visitors: whether it is open, which model answers, and what each tool may do. */
+/** Online chat for visitors: whether it is open and what each tool may do. */
 export function ChatCard({
   configuration,
 }: {
@@ -122,9 +120,7 @@ export function ChatCard({
   const { view } = configuration;
   const draft = useDraft('chat', 'chat', view.chat, configuration);
   const chat: DemoChatConfiguration = draft.draft;
-  const [connectionSaving, setConnectionSaving] = useState(false);
-  const disabled =
-    !configuration.canEdit || draft.saving || view.busy || connectionSaving;
+  const disabled = !configuration.canEdit || draft.saving || view.busy;
   const set = (patch: Partial<DemoChatConfiguration>) =>
     draft.setDraft({ ...chat, ...patch });
   const tools = [
@@ -138,32 +134,19 @@ export function ChatCard({
         ),
       })),
   ];
-  const [connectionPending, setConnectionPending] = useState(false);
-  const live = chat.model !== null;
-  const incomplete =
-    live &&
-    (connectionPending ||
-      !chat.model?.modelService.trim() ||
-      !chat.model?.model.trim());
   return (
     <SettingsCard
       title={t('simulation.chat.title')}
       description={t('simulation.chat.description')}
       draft={draft}
       canEdit={configuration.canEdit}
-      busy={view.busy || incomplete}
+      busy={view.busy}
       confirmation={{
         title: t('simulation.chat.confirmTitle'),
-        description: live
-          ? t('simulation.chat.confirmLive')
-          : t('simulation.chat.confirmDescription'),
+        description: t('simulation.chat.confirmDescription'),
         changes: [
           `${t('simulation.chat.enabled')}: ${t(chat.enabled ? 'switch.on' : 'switch.off')}`,
-          live
-            ? `${t('simulation.chat.model')}: ${chat.model?.modelService} / ${chat.model?.model}`
-            : `${t('simulation.chat.model')}: ${t('simulation.chat.simulated')}`,
         ],
-        destructive: live,
       }}
     >
       <SettingRow
@@ -178,57 +161,6 @@ export function ChatCard({
           onCheckedChange={(enabled) => set({ enabled })}
         />
       </SettingRow>
-      <SettingRow
-        label={t('simulation.chat.model')}
-        description={
-          live
-            ? t('simulation.chat.liveHelp')
-            : t('simulation.chat.simulatedHelp')
-        }
-      >
-        <Select
-          value={live ? 'live' : 'simulated'}
-          disabled={disabled}
-          onValueChange={(mode) =>
-            set({
-              model:
-                mode === 'live'
-                  ? (view.chat.model ?? { modelService: '', model: '' })
-                  : null,
-            })
-          }
-        >
-          <SelectTrigger
-            aria-label={t('simulation.chat.model')}
-            className='w-48'
-          >
-            <SelectValue>
-              {t(live ? 'simulation.chat.live' : 'simulation.chat.simulated')}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='simulated'>
-              {t('simulation.chat.simulated')}
-            </SelectItem>
-            <SelectItem value='live'>{t('simulation.chat.live')}</SelectItem>
-          </SelectContent>
-        </Select>
-      </SettingRow>
-      {live && chat.model ? (
-        <>
-          <ModelConnection
-            model={chat.model}
-            onChange={(model) => set({ model })}
-            disabled={disabled}
-            configuration={configuration}
-            onPending={setConnectionPending}
-            onSaving={setConnectionSaving}
-          />
-          <Alert>
-            <AlertTitle>{t('simulation.chat.cost')}</AlertTitle>
-          </Alert>
-        </>
-      ) : null}
       <div className='flex flex-col gap-2'>
         <p className='text-sm font-medium'>{t('simulation.chat.tools')}</p>
         {!tools.length ? (

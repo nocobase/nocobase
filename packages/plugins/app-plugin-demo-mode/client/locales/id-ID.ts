@@ -191,34 +191,8 @@ const resource: DemoModeResource = {
         confirmTitle: 'Simpan setelan obrolan daring?',
         confirmDescription:
           'Percakapan pengunjung mengikuti setelan ini mulai pesan berikutnya.',
-        confirmLive:
-          'Model sungguhan menjawab pengunjung dan setiap percakapan ditagihkan ke layanan modelnya.',
         enabled: 'Pengunjung bisa mengobrol',
         enabledHelp: 'Nonaktif: obrolan menolak pesan pengunjung.',
-        model: 'Jawaban dari',
-        simulated: 'Model simulasi',
-        live: 'Model sungguhan',
-        simulatedHelp: 'Jawaban sesuai skrip; tanpa biaya.',
-        liveHelp:
-          'Layanan model yang ada menjawab; kredensialnya tetap di sana.',
-        service: 'Layanan model',
-        modelId: 'Model',
-        connection: {
-          new: 'Layanan model demo baru',
-          createHelp:
-            'Membuat layanan kompatibel OpenAI. Simpan koneksi, lalu simpan pengaturan obrolan untuk menggunakannya.',
-          shared:
-            'Perubahan koneksi juga berlaku untuk agen lain yang menggunakan layanan ini.',
-          endpoint: 'Endpoint (URL dasar)',
-          apiKey: 'Kunci API',
-          keepKey: 'Sudah diatur; kosongkan untuk mempertahankan',
-          enterKey: 'Masukkan kunci API jika diperlukan',
-          clearKey: 'Hapus kunci API tersimpan',
-          save: 'Simpan koneksi',
-          saved:
-            'Koneksi disimpan. Simpan pengaturan obrolan jika Anda mengubah model yang dipilih.',
-        },
-        cost: 'Setiap percakapan pengunjung memakai token layanan ini.',
         tools: 'Alat',
         noTools: 'Aplikasi tidak mendeklarasikan alat obrolan.',
         policy: {

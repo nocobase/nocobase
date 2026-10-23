@@ -197,34 +197,8 @@ const resource: DemoModeResource = {
         confirmTitle: 'Online-Chat-Einstellungen speichern?',
         confirmDescription:
           'Unterhaltungen von Besuchern folgen diesen Einstellungen ab ihrer nächsten Nachricht.',
-        confirmLive:
-          'Ein echtes Modell antwortet Besuchern, und jede Unterhaltung wird über seinen Modelldienst abgerechnet.',
         enabled: 'Besucher dürfen chatten',
         enabledHelp: 'Aus: Der Chat lehnt Nachrichten von Besuchern ab.',
-        model: 'Antworten von',
-        simulated: 'Simuliertes Modell',
-        live: 'Ein echtes Modell',
-        simulatedHelp: 'Antworten nach Skript; keine Kosten.',
-        liveHelp:
-          'Ein vorhandener Modelldienst antwortet; seine Zugangsdaten bleiben dort.',
-        service: 'Modelldienst',
-        modelId: 'Modell',
-        connection: {
-          new: 'Neuer Demo-Modelldienst',
-          createHelp:
-            'Erstellt einen OpenAI-kompatiblen Dienst. Speichern Sie die Verbindung und danach die Chat-Einstellungen.',
-          shared:
-            'Änderungen betreffen auch andere Agenten, die diesen Dienst verwenden.',
-          endpoint: 'Endpunkt (Basis-URL)',
-          apiKey: 'API-Schlüssel',
-          keepKey: 'Konfiguriert; leer lassen, um ihn beizubehalten',
-          enterKey: 'API-Schlüssel bei Bedarf eingeben',
-          clearKey: 'Gespeicherten API-Schlüssel löschen',
-          save: 'Verbindung speichern',
-          saved:
-            'Verbindung gespeichert. Speichern Sie die Chat-Einstellungen, wenn Sie die Modellauswahl geändert haben.',
-        },
-        cost: 'Jede Unterhaltung eines Besuchers verbraucht Tokens dieses Dienstes.',
         tools: 'Werkzeuge',
         noTools: 'Die Anwendung deklariert keine Chat-Werkzeuge.',
         policy: {

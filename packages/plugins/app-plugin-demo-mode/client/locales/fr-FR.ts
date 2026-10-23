@@ -204,34 +204,8 @@ const resource: DemoModeResource = {
         confirmTitle: 'Enregistrer les réglages du chat en ligne ?',
         confirmDescription:
           'Les conversations des visiteurs suivent ces réglages dès leur prochain message.',
-        confirmLive:
-          'Un vrai modèle répond aux visiteurs et chaque conversation est facturée sur son service de modèles.',
         enabled: 'Les visiteurs peuvent discuter',
         enabledHelp: 'Désactivé : le chat refuse les messages des visiteurs.',
-        model: 'Réponses de',
-        simulated: 'Modèle simulé',
-        live: 'Un vrai modèle',
-        simulatedHelp: 'Réponses scénarisées ; aucun coût.',
-        liveHelp:
-          'Un service de modèles existant répond ; ses identifiants y restent.',
-        service: 'Service de modèles',
-        modelId: 'Modèle',
-        connection: {
-          new: 'Nouveau service de modèle de démonstration',
-          createHelp:
-            'Crée un service compatible OpenAI. Enregistrez la connexion, puis les paramètres du chat.',
-          shared:
-            'Les modifications affectent aussi les autres agents utilisant ce service.',
-          endpoint: 'Endpoint (URL de base)',
-          apiKey: 'Clé API',
-          keepKey: 'Configurée ; laissez vide pour la conserver',
-          enterKey: 'Saisissez une clé API si nécessaire',
-          clearKey: 'Effacer la clé API enregistrée',
-          save: 'Enregistrer la connexion',
-          saved:
-            'Connexion enregistrée. Enregistrez les paramètres du chat si vous avez changé le modèle sélectionné.',
-        },
-        cost: 'Chaque conversation d’un visiteur consomme des tokens de ce service.',
         tools: 'Outils',
         noTools: 'L’application ne déclare aucun outil de chat.',
         policy: {

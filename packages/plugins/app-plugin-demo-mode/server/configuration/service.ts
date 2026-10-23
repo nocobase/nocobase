@@ -159,7 +159,10 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
       revision: Number(row.revision),
       collections: stored.collections ?? [],
       schedule: stored.schedule,
-      chat: stored.chat ?? { enabled: false, model: null, tools: {} },
+      chat: {
+        enabled: stored.chat?.enabled ?? false,
+        tools: stored.chat?.tools ?? {},
+      },
       mocks: {
         ...Object.fromEntries(
           [...this.adapters.values()].map((a) => [
@@ -312,7 +315,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         'DEMO_CHAT_DISABLED',
         'Online demo chat is disabled.',
       );
-    return chat.model ?? simulated;
+    return simulated;
   }
   /** Host authorization must run first. Only explicitly marked local reads may execute normally. */
   public async runChatTool<T>(

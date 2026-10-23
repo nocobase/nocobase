@@ -191,34 +191,8 @@ const resource = {
         confirmTitle: 'Save the online chat settings?',
         confirmDescription:
           'Visitors’ conversations follow these settings from their next message.',
-        confirmLive:
-          'A real model answers visitors and every conversation is charged to its model service.',
         enabled: 'Visitors can chat',
         enabledHelp: 'Off: the chat refuses visitors’ messages.',
-        model: 'Replies from',
-        simulated: 'Simulated model',
-        live: 'A real model',
-        simulatedHelp: 'Scripted answers; nothing is charged.',
-        liveHelp:
-          'An existing model service answers; its credentials stay there.',
-        service: 'Model service',
-        modelId: 'Model',
-        connection: {
-          new: 'New demo model service',
-          createHelp:
-            'Creates an OpenAI-compatible model service. Save the connection, then save the chat settings to use it.',
-          shared:
-            'Changes to this connection also apply to other agents using this model service.',
-          endpoint: 'Endpoint (base URL)',
-          apiKey: 'API key',
-          keepKey: 'Configured; leave blank to keep it',
-          enterKey: 'Enter an API key if required',
-          clearKey: 'Clear the saved API key',
-          save: 'Save connection',
-          saved:
-            'Connection saved. Save the chat settings if you changed the selected model.',
-        },
-        cost: 'Every visitor conversation uses this service’s tokens.',
         tools: 'Tools',
         noTools: 'The application declares no chat tools.',
         policy: {
