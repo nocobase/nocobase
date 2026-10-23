@@ -466,6 +466,22 @@ describe('ChatPanel modes and layout', () => {
     );
     // After the title (which renames the conversation).
     expect(headerButtons.indexOf(newButton)).toBe(1);
+    // Title, "+", history, switch, full width, close: no menu.
+    expect(
+      headerButtons.map((button) => button.getAttribute('aria-label')),
+    ).toEqual([
+      null,
+      'New conversation',
+      'Conversations',
+      'Switch to the online agent',
+      'Full width',
+      'Close',
+    ]);
+    expect(
+      within(newButton.closest('header')!).queryByRole('button', {
+        name: 'More',
+      }),
+    ).toBeNull();
     fireEvent.click(within(panel).getByTestId('chat-expand'));
     await waitFor(() => expect(panel).toHaveAttribute('data-mode', 'expanded'));
     const split = within(panel).getByTestId('chat-split');

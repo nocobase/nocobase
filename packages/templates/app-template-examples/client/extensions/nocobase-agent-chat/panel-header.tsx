@@ -9,26 +9,16 @@ import {
   type ConversationMode,
 } from '@nocobase/app-plugin-agents/shared/conversations';
 import {
-  ArchiveIcon,
   ArrowLeftRightIcon,
   HistoryIcon,
   Maximize2Icon,
   Minimize2Icon,
-  MoreHorizontalIcon,
   PlusIcon,
-  SquareArrowOutUpRightIcon,
   XIcon,
 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
 import { Button } from '#components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '#components/ui/dropdown-menu';
 import { Input } from '#components/ui/input';
 import { cn } from 'cn';
 
@@ -125,9 +115,6 @@ export function PanelHeader({
   const history = !split && panel.view === 'history';
   const detail = useConversation(panel.conversationId);
   const conversation = detail.data ?? null;
-  const actions = useConversationActions();
-  const menuTarget = history ? null : conversation;
-  const pageTarget = panel.openPage ? menuTarget : null;
   const shownTitle = history
     ? modeTitle(t, chat, t('chat.history.title'))
     : conversation
@@ -178,48 +165,6 @@ export function PanelHeader({
             {expanded ? <Minimize2Icon /> : <Maximize2Icon />}
           </Button>
         )}
-        {/* Always there, disabled without a conversation, so the row keeps its icons in place. */}
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            disabled={!menuTarget}
-            render={
-              <Button
-                variant='ghost'
-                size='icon-sm'
-                className={TOUCH}
-                aria-label={t('chat.more')}
-              />
-            }
-          >
-            <MoreHorizontalIcon />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='end' className='w-auto min-w-40'>
-            <DropdownMenuGroup>
-              {pageTarget ? (
-                <DropdownMenuItem
-                  onClick={() => panel.openPage?.(pageTarget.id)}
-                  data-testid='chat-open-page'
-                >
-                  <SquareArrowOutUpRightIcon />
-                  {t('chat.openPage')}
-                </DropdownMenuItem>
-              ) : null}
-              <DropdownMenuItem
-                onClick={() => {
-                  if (!menuTarget) return;
-                  actions.archive.mutate({
-                    id: menuTarget.id,
-                    archived: true,
-                  });
-                  panel.selectConversation(null);
-                }}
-              >
-                <ArchiveIcon />
-                {t('chat.archive')}
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
         <Button
           variant='ghost'
           size='icon-sm'
