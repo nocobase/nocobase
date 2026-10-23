@@ -23,6 +23,80 @@ const event = (
 });
 afterEach(() => vi.useRealTimers());
 
+for (const type of ['text', 'thinking'] as const) {
+  for (const pieces of [
+    ['你好，我正在分析。', '接下来逐步说明，', '现在仍在生成。'],
+    ['你好我正在分析', '接下来逐步说明', '现在仍在生成'],
+    [
+      'こんにちは。分析しています。',
+      '次の手順を説明します。',
+      'まだ生成中です。',
+    ],
+    ['こんにちは分析しています', '次の手順を説明します', 'まだ生成中です'],
+  ]) {
+    it(`streams ${type} before block completion: ${pieces[0]}`, async () => {
+      vi.useFakeTimers();
+      const events: SpoolEvent[] = [];
+      const writer = new OutputWriter(
+        (e) => events.push(e),
+        createRedactor(),
+        true,
+      );
+      for (let i = 0; i < pieces.length; i++) {
+        writer.write({ ...event(pieces[i]), type });
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(events.map((e) => e.content).join('')).toBe(
+          pieces.slice(0, i + 1).join(''),
+        );
+        expect(events).toHaveLength(i + 1);
+        expect(
+          events.every((e) => outputBlock(e.meta)?.phase === 'delta'),
+        ).toBe(true);
+      }
+      writer.write({ ...event('', 'end'), type });
+      expect(events).toHaveLength(pieces.length + 1);
+      expect(events.at(-1)?.content).toBe('');
+      expect(vi.getTimerCount()).toBe(0);
+    });
+  }
+
+  it(`streams ${type} safely at every secret split amid unspaced text`, async () => {
+    vi.useFakeTimers();
+    for (const secret of [
+      '跨段敏感值 含空白123456',
+      'ghp_' + 'a1'.repeat(18),
+    ]) {
+      for (let split = 1; split < secret.length; split++) {
+        const events: SpoolEvent[] = [];
+        const writer = new OutputWriter(
+          (e) => events.push(e),
+          createRedactor([secret.startsWith('ghp_') ? undefined : secret]),
+          true,
+        );
+        writer.write({
+          ...event('开始逐步输出。' + secret.slice(0, split)),
+          type,
+        });
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(events.map((e) => e.content).join('')).toBe('开始逐步输出。');
+        writer.write({
+          ...event(secret.slice(split) + '继续安全输出。'),
+          type,
+        });
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(events.map((e) => e.content).join('')).toBe(
+          `开始逐步输出。${REDACTED}继续安全输出。`,
+        );
+        expect(
+          events.every((e) => outputBlock(e.meta)?.phase === 'delta'),
+        ).toBe(true);
+        writer.write({ ...event('', 'end'), type });
+        expect(vi.getTimerCount()).toBe(0);
+      }
+    }
+  });
+}
+
 it('redacts every split of a whitespace-containing value before timers, disk and transport', async () => {
   vi.useFakeTimers();
   const dir = await mkdtemp(path.join(tmpdir(), 'output-spool-'));

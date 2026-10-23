@@ -254,6 +254,10 @@ it('redacts all token, label, PEM and known multi-line value split positions', (
     'Basic dXNlcjpwYXNzd29yZDEyMw==',
     `aws_secret_access_key = ${AWS_SECRET}`,
     'x-api-key: fictional-value-123456',
+    'password=测试密码123456',
+    'https://user:测试密码123456@example.test/path',
+    'https://example.test/?token=测试密码123456',
+    'x-api-key: 测试密码123456',
     'a known value\nwith whitespace 98765',
   ];
   for (const sample of samples) {
@@ -285,4 +289,10 @@ it('retains ordinary prose and catches known values across complete lines too', 
       lines.write('with spaces after') +
       lines.end(),
   ).toBe(`before ${REDACTED} after`);
+});
+
+it('protects even an ambiguous single-character credential prefix at interruption', () => {
+  const stream = createStreamRedactor(createRedactor(['runner-key-fixture']));
+  expect(stream.write('warning on stderr')).toBe('warning on stder');
+  expect(stream.end()).toBe(REDACTED);
 });

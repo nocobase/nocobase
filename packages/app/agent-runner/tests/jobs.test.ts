@@ -58,7 +58,7 @@ echo "runner-vars=$(grep -c '^NOCOBASE_RUNNER' "$TMPDIR/env.txt" || true)"
 echo "ssh-sock=\${SSH_AUTH_SOCK:-none}"
 echo "home-entries=$(ls -A "$HOME" | tr '\\n' ' ')"
 echo "git-helper=$(git config --get credential.helper || echo none)"
-echo "warning on stderr" >&2
+echo "warning on stderr." >&2
 mkdir -p dist
 printf 'built from %s\\n' "$(cat VERSION)" > dist/info.txt
 tar -czf dist/out.tgz -C dist info.txt
@@ -206,10 +206,11 @@ describe('jobs', () => {
         .filter((event) => event.type === 'phase')
         .map((event) => event.phase),
     ).toEqual(['checkout', 'command', 'upload']);
+    // End with punctuation: the fixture runner key starts with "r", so a trailing "r" must stay protected.
     expect(
       events.some(
         (event) =>
-          event.stream === 'stderr' && event.content === 'warning on stderr',
+          event.stream === 'stderr' && event.content === 'warning on stderr.',
       ),
     ).toBe(true);
     const text = logText(job);
