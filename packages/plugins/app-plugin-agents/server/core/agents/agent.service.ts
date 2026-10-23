@@ -66,11 +66,14 @@ import {
   agentNamesOf,
   agentsRepo,
   deleteAgent,
+  entriesOf,
   findAgent,
   insertAgent,
   isRemoved,
   listAgents,
   reviseAgent,
+  runnerModelEntries,
+  toAgent,
   updateAgent,
   type AgentRecord,
 } from './agent.store.js';
@@ -733,6 +736,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         ),
       );
       const created: string[] = [];
+      const repaired: string[] = [];
       const stale: string[] = [];
       for (const combo of combos) {
         const id = runnerAgentId(combo.tool, combo.model);
@@ -756,6 +760,46 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
             created.push(id);
           continue;
         }
+        const restore =
+          record.source === 'runner' &&
+          (record.deletedAt !== null || record.archivedAt !== null);
+        const fillModelEntries =
+          record.source === 'runner' &&
+          entriesOf(record.modelEntries).length === 0;
+        if (restore || fillModelEntries) {
+          const values: Partial<AgentRecord> = {
+            ...(restore
+              ? { status: 'pending', deletedAt: null, archivedAt: null }
+              : {}),
+            ...(fillModelEntries
+              ? { modelEntries: runnerModelEntries(record) }
+              : {}),
+            lastReportedAt: nowText,
+            updatedAt: nowText,
+          };
+          if (restore && record.status !== 'pending') {
+            if (!(await reviseAgent(unit.conn, id, record.revision, values)))
+              continue;
+            const after = await findAgent(unit.conn, id);
+            if (after) {
+              const changes = diffAgents(toAgent(record), after);
+              if (changes.length > 0)
+                await recordChange(unit.conn, {
+                  id: ids.next(),
+                  agentId: id,
+                  revision: after.revision,
+                  action: 'restored',
+                  actorUserId: null,
+                  changes,
+                  createdAt: nowText,
+                });
+            }
+          } else {
+            await updateAgent(unit.conn, id, values);
+          }
+          repaired.push(id);
+          continue;
+        }
         const generated = agentNameOf(combo.tool, combo.model);
         if (
           record.status === 'pending' &&
@@ -777,7 +821,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
           values: { lastReportedAt: nowText },
         });
       }
-      for (const id of created)
+      for (const id of [...created, ...repaired])
         unit.emit({ type: 'agent.changed', agentId: id });
     },
     setDefaults(provider) {
@@ -816,12 +860,73 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       return tx.run(async (unit) => {
         const { conn, emit } = unit;
         const id = runnerAgentId(tool, model);
-        if (await agentsRepo(conn).findOne({ filter: { id } }))
-          throw invalid(
-            'An agent for this tool and model already exists: enable it from the agent list instead.',
-            { reason: 'AGENT_EXISTS' },
-          );
         const now = clock.now().toISOString();
+        const existing = await agentsRepo(conn).findOne({ filter: { id } });
+        if (existing) {
+          const restore =
+            existing.source === 'runner' &&
+            (existing.deletedAt !== null || existing.archivedAt !== null);
+          const fillModelEntries =
+            existing.source === 'runner' &&
+            entriesOf(existing.modelEntries).length === 0;
+          if (!restore && !fillModelEntries)
+            throw invalid(
+              'An agent for this tool and model already exists: enable it from the agent list instead.',
+              { reason: 'AGENT_EXISTS' },
+            );
+          const currentEntry = entriesOf(existing.modelEntries).find(
+            (entry) => entry.tool === tool && entry.model === model,
+          );
+          const adoptedDescription = existing.description?.trim()
+            ? existing.description
+            : description;
+          const values: Partial<AgentRecord> = {
+            ...(restore
+              ? { status: 'pending', deletedAt: null, archivedAt: null }
+              : {}),
+            ...(restore || fillModelEntries
+              ? {
+                  modelEntries: [
+                    {
+                      tool,
+                      model,
+                      effort: currentEntry ? currentEntry.effort : effort,
+                    },
+                  ],
+                }
+              : {}),
+            ...(existing.description === adoptedDescription
+              ? {}
+              : { description: adoptedDescription, descriptionText: null }),
+            lastReportedAt: now,
+            updatedAt: now,
+          };
+          const shouldRevise =
+            (restore && existing.status !== 'pending') ||
+            existing.description !== adoptedDescription;
+          if (shouldRevise) {
+            if (!(await reviseAgent(conn, id, existing.revision, values)))
+              throw revisionConflict((await require(conn, id)).revision);
+            const after = await findAgent(conn, id);
+            if (after) {
+              const changes = diffAgents(toAgent(existing), after);
+              if (changes.length > 0)
+                await recordChange(conn, {
+                  id: ids.next(),
+                  agentId: id,
+                  revision: after.revision,
+                  action: restore ? 'restored' : 'updated',
+                  actorUserId: byUserId,
+                  changes,
+                  createdAt: now,
+                });
+            }
+          } else {
+            await updateAgent(conn, id, values);
+          }
+          emit({ type: 'agent.changed', agentId: id });
+          return (await findAgent(conn, id))!;
+        }
         const name = await uniqueAgentName(
           conn,
           agentNameOf(tool, model, input.displayModel),
