@@ -88,33 +88,47 @@ it('declares an automatic after-server-build hook using the plugin-owned command
   ]);
 });
 
-it('retains memoized API dependencies and tuple-generated pages in a source-free deployment', async () => {
-  root = await mkdtemp(path.join(os.tmpdir(), 'foundation-build-api-'));
-  const files = {
-    'package.json': JSON.stringify({ name: 'fixture-app' }),
-    'client/routes.ts': `export default [['items','icon']].map(([name])=>({name:String(name),componentLoader:()=>import('./page.js')}));`,
-    'client/page.ts': `import {useService,apiClientToken} from '@nocobase/app-client'; import {useCallback} from 'react'; export default ()=>{const api=useService(apiClientToken);const read=useCallback((path)=>api.request({path}),[api]);return read('items');};`,
-    'server/routes/index.ts': `import {Hono} from 'hono'; import {read} from '@nocobase/db'; export default new Hono().get('/items',()=>read());`,
-  };
-  for (const [name, source] of Object.entries(files)) {
-    await mkdir(path.dirname(path.join(root, name)), { recursive: true });
-    await writeFile(path.join(root, name), source);
-  }
-  await writeModuleManifest(root);
-  const artifact = path.join(root, 'dist/server/foundation-modules.json');
-  const first = await readFile(artifact, 'utf8');
-  await writeModuleManifest(root);
-  expect(await readFile(artifact, 'utf8')).toBe(first);
-  await writeFile(
-    path.join(root, 'dist/package.json'),
-    JSON.stringify({ name: 'fixture-app' }),
-  );
-  expect((await collectModuleSources(path.join(root, 'dist'))).routes).toEqual([
-    expect.objectContaining({
-      routeName: 'items',
-      apiProviders: ['@nocobase/db'],
-    }),
-  ]);
-  expect(first).not.toContain(root);
-  expect(first).not.toContain('useCallback');
-});
+it.each(['', 'dist/'])(
+  'retains %s API dependencies and tuple-generated pages in a source-free deployment',
+  async (prefix) => {
+    root = await mkdtemp(path.join(os.tmpdir(), 'foundation-build-api-'));
+    const files = {
+      'package.json': JSON.stringify({ name: 'fixture-app' }),
+      'client/routes.ts': `export default [['items','icon']].map(([name])=>({name:String(name),componentLoader:()=>import('./page.js')}));`,
+      'client/page.ts': `import {useService,apiClientToken} from '@nocobase/app-client'; import {useCallback} from 'react'; export default ()=>{const api=useService(apiClientToken);const read=useCallback((path)=>api.request({path}),[api]);return read('items');};`,
+      'server/routes/index.ts': `import {Hono} from 'hono'; import {read} from '@nocobase/db'; export default new Hono().get('/items',()=>read());`,
+    };
+    for (const [name, source] of Object.entries(files)) {
+      const file =
+        name === 'package.json' ? name : prefix + name.replace(/\.ts$/, '.js');
+      await mkdir(path.dirname(path.join(root, file)), { recursive: true });
+      await writeFile(path.join(root, file), source);
+    }
+    expect(await writeModuleManifest(root)).toEqual({
+      routes: 1,
+      complete: true,
+    });
+    const artifact = path.join(root, 'dist/server/foundation-modules.json');
+    const first = await readFile(artifact, 'utf8');
+    expect(JSON.parse(first)).toMatchObject({
+      sources: { routes: [{ apiProviders: ['@nocobase/db'], complete: true }] },
+    });
+    await writeModuleManifest(root);
+    expect(await readFile(artifact, 'utf8')).toBe(first);
+    await writeFile(
+      path.join(root, 'dist/package.json'),
+      JSON.stringify({ name: 'fixture-app' }),
+    );
+    await rm(path.join(root, 'dist/client'), { recursive: true, force: true });
+    expect(
+      (await collectModuleSources(path.join(root, 'dist'))).routes,
+    ).toEqual([
+      expect.objectContaining({
+        routeName: 'items',
+        apiProviders: ['@nocobase/db'],
+      }),
+    ]);
+    expect(first).not.toContain(root);
+    expect(first).not.toContain('useCallback');
+  },
+);

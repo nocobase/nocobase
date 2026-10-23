@@ -80,12 +80,26 @@ export const dataModeling: CapabilityCollector = {
           complete: tables.length === 0,
         };
     const definitions = await probe.map(own, (collection) =>
-      probe.inventory.definition(collection.name, probe.signal),
+      probe.definition(collection.name),
     );
-    const fields = definitions.flatMap(
-      (definition) => definition?.fields ?? [],
+    const relations = total(
+      definitions.map((definition) =>
+        definition === null
+          ? null
+          : (definition.fields ?? []).filter((field) =>
+              RELATION_TYPES.has(field.type),
+            ).length,
+      ),
     );
-    const relations = fields.filter((field) => RELATION_TYPES.has(field.type));
+    const fields = total(
+      definitions.map((definition) =>
+        definition === null
+          ? null
+          : (definition.fields ?? []).filter(
+              (field) => !RELATION_TYPES.has(field.type),
+            ).length,
+      ),
+    );
     return {
       status: 'active',
       facts:
@@ -103,8 +117,10 @@ export const dataModeling: CapabilityCollector = {
                     .map((collection) => collection.title ?? collection.name),
                 },
               ),
-              ...(relations.length > 0
-                ? [fact('relations', { count: relations.length })]
+              ...(relations.complete &&
+              relations.value !== null &&
+              relations.value > 0
+                ? [fact('relations', { count: relations.value })]
                 : []),
             ],
       metrics: [
@@ -113,8 +129,8 @@ export const dataModeling: CapabilityCollector = {
         }),
         metric('businessCollections', tables.length),
         metric('views', own.length - tables.length),
-        metric('fields', fields.length - relations.length),
-        metric('relations', relations.length),
+        metric('fields', fields.value, { complete: fields.complete }),
+        metric('relations', relations.value, { complete: relations.complete }),
         metric(
           'systemCollections',
           probe.inventory.collections.length - own.length,
