@@ -19,6 +19,15 @@ const definitions: Partial<
     defaults: { webSearch: true },
     models: {},
   },
+  deepseek: {
+    defaults: { webSearch: false },
+    models: {
+      // Verified against https://api-docs.deepseek.com/zh-cn/guides/vision on 2026-10-23.
+      'deepseek-flash': {
+        imageMediaTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+      },
+    },
+  },
   google: {
     defaults: { webSearch: true },
     models: {},
@@ -33,7 +42,15 @@ export function mergeModelCapabilities(
   definition: ProviderCapabilitiesDefinition,
   model: string,
 ): ModelCapabilities {
-  return { ...definition.defaults, ...definition.models[model] };
+  const capabilities = {
+    ...definition.defaults,
+    ...(Object.hasOwn(definition.models, model)
+      ? definition.models[model]
+      : {}),
+  };
+  return capabilities.imageMediaTypes
+    ? { ...capabilities, imageMediaTypes: [...capabilities.imageMediaTypes] }
+    : capabilities;
 }
 
 export function officialSearchEndpoint(
@@ -87,13 +104,10 @@ export function resolveModelCapabilities(
   kind: ModelKind = 'chat',
 ): ModelCapabilities {
   const definition = definitions[connection.provider];
-  return {
-    webSearch:
-      kind === 'chat' &&
-      !!definition &&
-      officialSearchEndpoint(connection) &&
-      mergeModelCapabilities(definition, model).webSearch,
-  };
+  if (kind !== 'chat' || !definition || !officialSearchEndpoint(connection)) {
+    return { webSearch: false };
+  }
+  return mergeModelCapabilities(definition, model);
 }
 
 export function supportsOpenAISearch(

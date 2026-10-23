@@ -85,17 +85,8 @@ async function prepare(
   return { model, prepared };
 }
 
-it('loads only the exact official DeepSeek Flash image profile through the application runtime', () => {
-  expect(config.fileInputs?.profiles).toEqual([
-    {
-      ...ref,
-      provider: 'deepseek',
-      protocol: 'chat-completions',
-      baseUrl: 'https://api.deepseek.com',
-      nativeMediaTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-      extraction: 'local',
-    },
-  ]);
+it('inherits shared Provider capabilities without declaring an application image profile', () => {
+  expect(config.fileInputs).toBeUndefined();
 });
 
 it('serializes the prepared PNG with the real DeepSeek SDK without any external request', async () => {
@@ -142,8 +133,15 @@ it('serializes the prepared PNG with the real DeepSeek SDK without any external 
   expect(fetch).toHaveBeenCalledTimes(1);
 });
 
+it('inherits DeepSeek Flash images independently of the service name', async () => {
+  const { prepared } = await prepare(createInputs(), {
+    ...ref,
+    modelService: 'renamed-service',
+  });
+  expect(prepared[0]!.parts[1].type).toBe('file');
+});
+
 it.each([
-  { modelService: 'another-service', model: 'deepseek-flash' },
   { modelService: 'deepseek', model: 'deepseek-v4-pro' },
   { modelService: 'deepseek', model: 'deepseek-v4-flash' },
 ])(
@@ -169,24 +167,53 @@ it('does not grant image types outside the documented allowlist', async () => {
   expect(JSON.stringify(prepared)).not.toContain(png);
 });
 
-it('rejects an endpoint change rather than reusing the official-service grant', async () => {
-  await expect(
-    createInputs('https://gateway.example.invalid/v1').model(
-      ref,
-      'fixture-session',
-    ),
-  ).rejects.toThrow('no longer matches');
+it('does not reuse official image capabilities on a custom endpoint', async () => {
+  const { prepared } = await prepare(
+    createInputs('https://gateway.example.invalid/v1'),
+  );
+  expect(prepared[0]!.parts[1]).toMatchObject({
+    type: 'text',
+    text: expect.stringContaining('Attachment not parsed'),
+  });
+  expect(JSON.stringify(prepared)).not.toContain(png);
 });
 
-it('lets deployment configuration explicitly remove the example image grant', async () => {
+it('lets deployment policy explicitly disable shared image forwarding', async () => {
   const configPath = path.join(directory, 'disabled.yml');
-  await writeFile(configPath, 'agents:\n  fileInputs:\n    profiles: []\n');
+  await writeFile(
+    configPath,
+    [
+      'agents:',
+      '  fileInputs:',
+      '    profiles:',
+      '      - modelService: deepseek',
+      '        model: deepseek-flash',
+      '        provider: deepseek',
+      '        protocol: chat-completions',
+      '        baseUrl: https://api.deepseek.com',
+      '        nativeMediaTypes: []',
+      '        extraction: local',
+      '        maxNativeFiles: 0',
+      '',
+    ].join('\n'),
+  );
   const runtime = await resolveStandaloneAppRuntime(appRuntime, {
     rootDir,
     configPath,
     env: { AUTH_SECRET: 'fixture-auth-secret-at-least-32-characters' },
   });
-  expect(
-    runtime.config.get<AgentsConfig>('agents')?.fileInputs?.profiles,
-  ).toEqual([]);
+  const inputs = new NativeFileInputs({
+    config: runtime.config.get<AgentsConfig>('agents')?.fileInputs,
+    connectionFor: async () => ({
+      provider: 'deepseek',
+      baseUrl: null,
+      apiKey: 'offline-fixture-key',
+    }),
+  });
+  const { prepared } = await prepare(inputs);
+  expect(prepared[0]!.parts[1]).toMatchObject({
+    type: 'text',
+    text: expect.stringContaining('Attachment not parsed'),
+  });
+  expect(JSON.stringify(prepared)).not.toContain(png);
 });

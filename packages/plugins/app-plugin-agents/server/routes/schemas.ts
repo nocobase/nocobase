@@ -1527,7 +1527,13 @@ const modelOption = z.object({
   label: z.string(),
   kind: modelKind,
   dimensions: z.number().int().nullable(),
-  capabilities: z.object({ webSearch: z.boolean() }),
+  capabilities: z.object({
+    webSearch: z.boolean(),
+    imageMediaTypes: z.array(z.string()).optional().meta({
+      description:
+        'Code-owned native image MIME types for the selected Provider, endpoint, and model.',
+    }),
+  }),
 });
 
 export const ModelCatalogServiceSchema: z.ZodType<ModelService> = z.object({

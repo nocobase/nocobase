@@ -36,7 +36,28 @@ describe('legacy Provider file defaults', () => {
     },
   );
 
-  it('keeps the existing exact DeepSeek Flash profile and fail-closed connection checks', () => {
+  it.each([undefined, { profiles: [] }])(
+    'uses the shared exact DeepSeek capability with configuration %j',
+    (config) => {
+      expect(
+        new FileInputProfiles(config).resolve(
+          { modelService: 'renamed-service', model: 'deepseek-flash' },
+          { provider: 'deepseek', baseUrl: null, apiKey: 'fixture-key' },
+        ),
+      ).toEqual({
+        nativeMediaTypes: [
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+        ],
+        extraction: 'local',
+        maxNativeFiles: 100,
+      });
+    },
+  );
+
+  it('keeps the explicit custom image profile and fail-closed connection checks', () => {
     const profile: FileInputProfile = {
       ...ref,
       provider: 'deepseek',
