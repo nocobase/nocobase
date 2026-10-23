@@ -14,6 +14,7 @@ export type Execution = {
   cursor: number;
   writer: UIStreamChannel;
   published: Set<string>;
+  textLengths: Map<string, number>;
   ready: boolean;
   started: boolean;
   snapshot?: AppUIMessage;

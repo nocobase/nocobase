@@ -1,3 +1,4 @@
+import { collectOutput } from './collect-output.ts';
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { randomUUID } from 'node:crypto';
 import { chmod, mkdir, mkdtemp, readdir, writeFile } from 'node:fs/promises';
@@ -62,9 +63,7 @@ function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
 async function collect(
   events: AsyncIterable<AdapterEvent>,
 ): Promise<AdapterEvent[]> {
-  const out: AdapterEvent[] = [];
-  for await (const event of events) out.push(event);
-  return out;
+  return collectOutput(events);
 }
 
 let dir: string;
@@ -865,7 +864,7 @@ describe('streamed output', () => {
               observed
                 .filter((e) => e.type === 'thinking')
                 .map((e) => e.content),
-            ).toEqual(['Plan carefully']);
+            ).toEqual(['Plan ', 'carefully']);
           } finally {
             vi.useRealTimers();
           }
@@ -892,8 +891,11 @@ describe('streamed output', () => {
         try {
           await vi.advanceTimersByTimeAsync(1000);
           expect(
-            observed.filter((e) => e.type === 'text').map((e) => e.content),
-          ).toEqual(['Hello']);
+            observed
+              .filter((e) => e.type === 'text')
+              .map((e) => e.content)
+              .join(''),
+          ).toBe('Hello');
         } finally {
           vi.useRealTimers();
         }
@@ -966,7 +968,60 @@ it('keeps interleaved parent and child partial messages separate', async () => {
   const events = (await collect(handle.events)).filter(
     (e) => e.type === 'text',
   );
-  expect(events.map((e) => e.content)).toEqual(['Parent', 'Child', ' reply']);
-  expect(events[1]?.meta).toMatchObject({ parentToolUseId: 'tool-1' });
+  expect(events.map((e) => e.content)).toEqual(['Child', 'Parent reply']);
+  expect(events[0]?.meta).toMatchObject({ parentToolUseId: 'tool-1' });
   expect(await handle.result).toMatchObject({ exit: 'completed' });
 });
+
+it.each(['cancel', 'exception'])(
+  'ends a partial block once on %s before reporting the outcome',
+  async (mode) => {
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      yield init();
+      yield {
+        type: 'stream_event',
+        parent_tool_use_id: null,
+        uuid: randomUUID(),
+        session_id: SESSION_ID,
+        event: { type: 'message_start', message: { id: 'msg_partial' } },
+      } as SDKMessage;
+      yield {
+        type: 'stream_event',
+        parent_tool_use_id: null,
+        uuid: randomUUID(),
+        session_id: SESSION_ID,
+        event: {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'text_delta', text: 'unfinished tail' },
+        },
+      } as SDKMessage;
+      if (mode === 'exception') throw new Error('Fixture provider exception');
+      await ctx.aborted;
+    });
+    const handle = adapterWith('9.0.0', dir).start(session());
+    const events: AdapterEvent[] = [];
+    for await (const event of handle.events) {
+      events.push(event);
+      if (mode === 'cancel' && event.type === 'text' && event.content)
+        void handle.stop();
+    }
+    expect(
+      events
+        .filter((e) => e.type === 'text')
+        .map((e) => e.content)
+        .join(''),
+    ).toBe('unfinished tail');
+    const ends = events.filter(
+      (e) =>
+        (e.meta?.output as { phase?: string } | undefined)?.phase === 'end',
+    );
+    expect(ends).toHaveLength(1);
+    const error = events.findIndex((e) => e.type === 'error');
+    if (error >= 0) expect(events.indexOf(ends[0])).toBeLessThan(error);
+    expect((await handle.result).exit).toBe(
+      mode === 'cancel' ? 'aborted' : 'error',
+    );
+  },
+);

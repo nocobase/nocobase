@@ -1,15 +1,20 @@
+import { randomUUID } from 'node:crypto';
 import type { AdapterEvent } from './types.ts';
 
-type OutputEvent = Omit<AdapterEvent, 'at'>;
 type TextType = 'text' | 'thinking';
+type OutputEvent = Omit<AdapterEvent, 'at'>;
+type Block = {
+  id: string;
+  length: number;
+  type: TextType;
+  meta?: AdapterEvent['meta'];
+  ended: boolean;
+};
 
-/** Coalesces consecutive chunks with ACP's one-second / 4 KiB cadence. */
+/** Normalize raw provider deltas before redaction. The worker owns redaction and throttling. */
 export class StreamOutput {
-  private pending?: { key: string; event: OutputEvent };
-  private timer?: ReturnType<typeof setTimeout>;
-  private readonly lengths = new Map<string, number>();
+  private readonly blocks = new Map<string, Block>();
   private readonly emit: (event: OutputEvent) => void;
-
   constructor(emit: (event: OutputEvent) => void) {
     this.emit = emit;
   }
@@ -22,12 +27,17 @@ export class StreamOutput {
     prefix = '',
   ): void {
     if (!text) return;
-    const length = this.lengths.get(key) ?? 0;
-    this.lengths.set(key, length + text.length);
-    this.append(key, type, (length ? '' : prefix) + text, meta);
+    const block = this.block(key, type, meta);
+    if (block.ended) return;
+    const content = (block.length ? '' : prefix) + text;
+    block.length += text.length;
+    this.emit({
+      type,
+      content,
+      meta: { ...meta, output: { blockId: block.id, phase: 'delta' } },
+    });
   }
 
-  /** A completed snapshot supplies only the suffix not already streamed. */
   complete(
     key: string,
     type: TextType,
@@ -35,41 +45,41 @@ export class StreamOutput {
     meta?: AdapterEvent['meta'],
     prefix = '',
   ): void {
-    const length = this.lengths.get(key) ?? 0;
-    const suffix = text.slice(length);
-    if (suffix) this.append(key, type, (length ? '' : prefix) + suffix, meta);
-    this.lengths.delete(key);
-    this.flush();
+    const block = this.blocks.get(key);
+    if (block?.ended) return;
+    const suffix = text.slice(block?.length ?? 0);
+    if (suffix) this.delta(key, type, suffix, meta, prefix);
+    this.close(key);
   }
 
-  private append(
+  close(key: string): void {
+    const block = this.blocks.get(key);
+    if (!block || block.ended) return;
+    block.ended = true;
+    this.emit({
+      type: block.type,
+      meta: { ...block.meta, output: { blockId: block.id, phase: 'end' } },
+    });
+  }
+
+  private block(
     key: string,
     type: TextType,
-    content: string,
     meta?: AdapterEvent['meta'],
-  ): void {
-    if (this.pending?.key !== key || this.pending.event.type !== type)
-      this.flush();
-    if (this.pending) this.pending.event.content += content;
-    else
-      this.pending = {
-        key,
-        event: { type, content, ...(meta ? { meta } : {}) },
-      };
-    if (this.pending.event.content!.length >= 4 * 1024) this.flush();
-    else this.timer ??= setTimeout(() => this.flush(), 1000);
+  ): Block {
+    let block = this.blocks.get(key);
+    if (!block) {
+      block = { id: randomUUID(), length: 0, type, meta, ended: false };
+      this.blocks.set(key, block);
+    }
+    return block;
   }
 
+  end(): void {
+    for (const key of this.blocks.keys()) this.close(key);
+  }
   reset(): void {
-    this.flush();
-    this.lengths.clear();
-  }
-
-  flush(): void {
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = undefined;
-    const pending = this.pending;
-    this.pending = undefined;
-    if (pending) this.emit(pending.event);
+    this.end();
+    this.blocks.clear();
   }
 }

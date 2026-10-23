@@ -52,6 +52,26 @@ describe('event spool', () => {
     expect(readFileSync(file, 'utf8')).toContain('"seq":1000001');
   });
 
+  it('does not replace meaningful fallback text with an empty block end marker', () => {
+    const spool = EventSpool.open({
+      runsDir,
+      runId: 'block-end',
+      client,
+      firstSeq: 1,
+    });
+    spool.push({
+      type: 'text',
+      content: 'safe reply',
+      meta: { output: { blockId: 'reply', phase: 'delta' } },
+    });
+    spool.push({
+      type: 'text',
+      content: '',
+      meta: { output: { blockId: 'reply', phase: 'end' } },
+    });
+    expect(spool.lastText).toBe('safe reply');
+  });
+
   it('truncates content over 64 KB and marks it', () => {
     const spool = EventSpool.open({
       runsDir,

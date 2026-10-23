@@ -1,3 +1,4 @@
+import { collectOutput } from './collect-output.ts';
 import { existsSync, readFileSync } from 'node:fs';
 import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -337,11 +338,10 @@ it('keeps the tool’s own words alongside the fixed sign-in instruction when a 
   expect(result.error?.message).toContain('Fixture error');
 });
 
-it('merges a turn’s small consecutive text chunks into about one event instead of one per chunk', async () => {
+it('preserves ACP chunks as one complete block when streaming is not negotiated', async () => {
   const f = await fixture('chunky');
   const handle = f.adapter.start(f.session);
-  const events: AdapterEvent[] = [];
-  for await (const event of handle.events) events.push(event);
+  const events = await collectOutput(handle.events);
   await handle.result;
   const text = events.filter((event) => event.type === 'text');
   expect(text.length).toBeLessThan(5);

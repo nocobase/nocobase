@@ -106,6 +106,7 @@ export function isProtocolSupported(version: number): boolean {
 /**
  * What a runner can do beyond the baseline (claim, lease, events, complete/fail).
  *
+ * - `outputBlocks`: emits redacted append-only `meta.output` blocks when the run payload opts in.
  * - `workspaceKey`: honors the separately named work directory in `RunWorkspace.key`.
  * - `input`: accepts input while a run is running (`status.inputs`, and the `handledInputIds` fence on complete).
  * - `steer`: injects input into the running turn instead of waiting for a turn boundary.
@@ -125,6 +126,7 @@ export function isProtocolSupported(version: number): boolean {
  * - `gitTools` (protocol 12): wraps the code host CLIs a run names (`RunGit.tools`) with the run's credential.
  */
 export const RUNNER_FEATURES = [
+  'outputBlocks',
   'workspaceKey',
   'input',
   'steer',

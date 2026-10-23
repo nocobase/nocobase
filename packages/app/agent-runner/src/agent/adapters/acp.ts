@@ -1,3 +1,4 @@
+import { StreamOutput } from './stream-output.ts';
 /** Drives a catalog agent through the same ACP client used by personal sessions. */
 import { execFile } from 'node:child_process';
 import { AGENTS } from '@nocobase/acp-bridge/catalog';
@@ -278,11 +279,6 @@ async function inspect(
   );
 }
 
-/** How long a run of same-typed text/thinking chunks may accumulate before it becomes one event. */
-const MERGE_FLUSH_MS = 1000;
-/** How large the accumulated text of one merged event may grow before it flushes early. */
-const MERGE_FLUSH_BYTES = 4 * 1024;
-
 function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
   const events = new EventQueue<AdapterEvent>();
   let process: AgentProcess | undefined;
@@ -299,7 +295,9 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
   const emit = (event: Omit<AdapterEvent, 'at'>): void => {
     if (replaying || finished) return;
     const content =
-      event.content === undefined ? undefined : capText(event.content);
+      event.content === undefined || event.meta?.output
+        ? undefined
+        : capText(event.content);
     const output =
       event.output === undefined ? undefined : capText(event.output);
     const input = event.input === undefined ? undefined : capInput(event.input);
@@ -317,32 +315,21 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
       at: new Date().toISOString(),
     });
   };
-  // Zed-style agents stream a text or thinking turn as dozens of small chunks, one `session/update` each. Buffering
-  // consecutive same-typed chunks into one event cuts that to about one a second, in the order they arrived; anything
-  // else (a tool call, the run ending) flushes what is pending first, so order never changes.
-  let pendingChunk: { type: 'text' | 'thinking'; content: string } | undefined;
-  let pendingTimer: ReturnType<typeof setTimeout> | undefined;
+  const streaming = new StreamOutput(emit);
+  let chunkId = 0;
+  let chunkType: 'text' | 'thinking' | undefined;
   const flushPendingChunk = (): void => {
-    if (pendingTimer !== undefined) {
-      clearTimeout(pendingTimer);
-      pendingTimer = undefined;
-    }
-    if (!pendingChunk) return;
-    const chunk = pendingChunk;
-    pendingChunk = undefined;
-    emit({ type: chunk.type, content: chunk.content });
+    if (chunkType) streaming.close(String(chunkId));
+    chunkType = undefined;
   };
   const emitChunk = (type: 'text' | 'thinking', text: string): void => {
     if (replaying || finished) return;
-    pendingChunk =
-      pendingChunk && pendingChunk.type === type
-        ? { type, content: pendingChunk.content + text }
-        : (flushPendingChunk(), { type, content: text });
-    if (pendingChunk.content.length >= MERGE_FLUSH_BYTES) {
+    if (chunkType !== type) {
       flushPendingChunk();
-      return;
+      chunkType = type;
+      chunkId++;
     }
-    pendingTimer ??= setTimeout(flushPendingChunk, MERGE_FLUSH_MS);
+    streaming.delta(String(chunkId), type, text);
   };
   const update = ({ update }: SessionNotification): void => {
     if (replaying) return;

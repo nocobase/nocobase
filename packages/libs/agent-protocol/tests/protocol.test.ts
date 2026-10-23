@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  RunEventSchema,
   ClaimRequestSchema,
   CancelAckRequestSchema,
   ClaimResponseSchema,
@@ -594,4 +595,38 @@ describe('agent protocol', () => {
       }).load.tools,
     ).toEqual({ claude: { slots: 2, free: 0 } });
   });
+});
+
+it('declares optional block streaming and validates empty end events without changing legacy messages', () => {
+  expect(RunnerFeatureSchema.parse('outputBlocks')).toBe('outputBlocks');
+  expect(RunPayloadSchema.parse(payload).outputBlocks).toBeUndefined();
+  expect(
+    RunPayloadSchema.parse({ ...payload, outputBlocks: true }).outputBlocks,
+  ).toBe(true);
+  const event = {
+    seq: 1,
+    at: '2026-01-01T00:00:00Z',
+    type: 'text',
+    content: '',
+  };
+  expect(RunEventSchema.parse(event)).toEqual(event);
+  expect(
+    RunEventSchema.parse({
+      ...event,
+      meta: { output: { blockId: 'body', phase: 'end' } },
+    }).content,
+  ).toBe('');
+  expect(
+    RunEventSchema.safeParse({
+      ...event,
+      meta: { output: { blockId: '', phase: 'delta' } },
+    }).success,
+  ).toBe(false);
+  expect(
+    RunEventSchema.safeParse({
+      ...event,
+      type: 'toolUse',
+      meta: { output: { blockId: 'body', phase: 'delta' } },
+    }).success,
+  ).toBe(false);
 });

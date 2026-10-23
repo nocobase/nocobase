@@ -225,16 +225,13 @@ export interface StreamRedactor {
   end(): string;
 }
 
-/** The longest unfinished word held back; a longer one is passed on rather than held for ever. */
-const MAX_HELD = 1024;
-
-/** `text` with its end replaced when it is the start of a secret (at least 4 characters of it): a secret cut short. */
+/** `text` with its end replaced when it is the start of a secret (including a one-character prefix): a secret cut short. */
 function cutShort(text: string, secrets: readonly string[]): string {
   let longest = 0;
   for (const secret of secrets)
     for (
       let length = Math.min(secret.length - 1, text.length);
-      length > longest && length >= 4;
+      length > longest && length >= 1;
       length -= 1
     )
       if (text.endsWith(secret.slice(0, length))) {
@@ -253,10 +250,6 @@ function cutShort(text: string, secrets: readonly string[]): string {
 export function createStreamRedactor(redactor: Redactor): StreamRedactor {
   let held = '';
   let inKey = false;
-  const longestSecret = Math.max(
-    0,
-    ...redactor.secrets.map((secret) => secret.length),
-  );
 
   /** Redacts whole text; notes a private key block it begins and does not end. */
   const redact = (text: string): string => {
@@ -282,12 +275,61 @@ export function createStreamRedactor(redactor: Redactor): StreamRedactor {
         inKey = false;
         text = text.slice(end.index + end[0].length);
       }
-      if (!options.partial) return redact(text);
-      const word = /[^\s]*$/u.exec(text)?.[0] ?? '';
-      if (word.length === 0 || word.length > Math.max(MAX_HELD, longestSecret))
-        return redact(text);
-      const out = redact(text.slice(0, text.length - word.length));
-      held = word;
+      const opening = [
+        ...text.matchAll(new RegExp(PRIVATE_KEY_BEGIN, 'gu')),
+      ].at(-1);
+      const closing = opening
+        ? PRIVATE_KEY_END.exec(text.slice(opening.index))
+        : null;
+      if (opening && !closing) {
+        inKey = true;
+        held = text.slice(-64);
+        return redactor.text(text.slice(0, opening.index)) + REDACTED;
+      }
+      // Keep unfinished tokens, labels and known-value prefixes. Values may contain whitespace and may
+      // be registered after this stream was created, so consult the live redactor on every write.
+      let cut = options.partial
+        ? text.length - (/[^\s]*$/u.exec(text)?.[0].length ?? 0)
+        : text.length;
+      for (const secret of redactor.secrets) {
+        for (
+          let length = Math.min(secret.length - 1, text.length);
+          length > 0;
+          length--
+        ) {
+          if (text.endsWith(secret.slice(0, length))) {
+            cut = Math.min(cut, text.length - length);
+            break;
+          }
+        }
+      }
+      const label =
+        /\b(?:bearer|basic|x-api-key|(?:aws_?)?secret_?access_?key)["']?\s*(?:[:=]\s*["']?)?[^\s]*$/iu.exec(
+          text,
+        );
+      if (label) cut = Math.min(cut, label.index);
+      const begin = text.lastIndexOf('-----BEGIN');
+      if (begin >= 0) {
+        const marker = PRIVATE_KEY_BEGIN.exec(text.slice(begin));
+        if (!marker || begin + marker[0].length > cut)
+          cut = Math.min(cut, begin);
+      }
+      if (
+        opening &&
+        closing &&
+        cut > opening.index &&
+        cut < opening.index + closing.index + closing[0].length
+      )
+        cut = opening.index;
+      // Redact before selecting the safe prefix: a match may cross the proposed cut (for example a PEM block).
+      // Moving the cut to the beginning of a full known value prevents emitting only part of its replacement.
+      for (const secret of redactor.secrets) {
+        const start = text.lastIndexOf(secret, cut);
+        if (start >= 0 && start < cut && start + secret.length > cut)
+          cut = start;
+      }
+      const out = redact(text.slice(0, cut));
+      held = text.slice(cut);
       return out;
     },
     end() {
@@ -297,7 +339,12 @@ export function createStreamRedactor(redactor: Redactor): StreamRedactor {
         inKey = false;
         return '';
       }
-      return text === '' ? '' : cutShort(redactor.text(text), redactor.secrets);
+      if (text === '') return '';
+      const safe = cutShort(redactor.text(text), redactor.secrets);
+      return safe.replace(
+        /(?:\b(?:fg(?:k|r|o|reg|dl)_|gh[pousr]_|github_pat_|npm_|xox[abposr]-|AIza|sk-(?=[A-Za-z0-9_-]*\d)|[rs]k_(?:live|test)_|AKIA|ASIA|ABIA|ACCA|eyJ)|-----BEGIN)[^\n]*$/giu,
+        REDACTED,
+      );
     },
   };
 }

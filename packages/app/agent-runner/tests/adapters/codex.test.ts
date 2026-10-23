@@ -1,3 +1,4 @@
+import { collectOutput } from './collect-output.ts';
 import {
   chmod,
   mkdtemp,
@@ -75,9 +76,7 @@ function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
 }
 
 async function drain(handle: AdapterHandle): Promise<AdapterEvent[]> {
-  const events: AdapterEvent[] = [];
-  for await (const event of handle.events) events.push(event);
-  return events;
+  return collectOutput(handle.events);
 }
 
 /** initialize, thread/start (or resume) and the first turn/start. */
@@ -837,7 +836,7 @@ describe('streamed output', () => {
               observed
                 .filter((e) => e.type === 'thinking')
                 .map((e) => e.content),
-            ).toEqual(['Plan carefully']);
+            ).toEqual(['Plan ', 'carefully']);
             delta('item/reasoning/summaryTextDelta', 'r', 'Then answer', 1);
             item(fake, 'completed', {
               type: 'reasoning',
@@ -850,8 +849,11 @@ describe('streamed output', () => {
             delta('item/agentMessage/delta', 'm', text);
           await vi.advanceTimersByTimeAsync(1000);
           expect(
-            observed.filter((e) => e.type === 'text').map((e) => e.content),
-          ).toEqual(['Hello']);
+            observed
+              .filter((e) => e.type === 'text')
+              .map((e) => e.content)
+              .join(''),
+          ).toBe('Hello');
         } finally {
           vi.useRealTimers();
         }

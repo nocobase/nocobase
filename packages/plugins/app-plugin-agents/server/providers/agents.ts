@@ -54,6 +54,8 @@ export interface AgentsConfig {
    * failed attempt waits `retryBaseDelayMs` before the next, doubling up to ten minutes: 30 seconds by default.
    */
   readonly runs?: {
+    /** Enable only after installing block-aware chat and transcript components. Off by default. */
+    readonly outputBlocks?: boolean;
     readonly retentionDays?: number;
     readonly retryBaseDelayMs?: number;
   };
@@ -171,6 +173,7 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
           }),
         },
         retryBaseDelayMs: retryBaseDelayMs(config?.runs?.retryBaseDelayMs),
+        outputBlocks: config?.runs?.outputBlocks === true,
         runRetentionDays: () =>
           runRetentionDays(
             this.app.config.get<AgentsConfig>('agents')?.runs?.retentionDays,

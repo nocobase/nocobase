@@ -1,3 +1,4 @@
+import { collectOutput } from './collect-output.ts';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -44,9 +45,7 @@ function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
 }
 
 async function collect(handle: AdapterHandle): Promise<AdapterEvent[]> {
-  const events: AdapterEvent[] = [];
-  for await (const event of handle.events) events.push(event);
-  return events;
+  return collectOutput(handle.events);
 }
 
 function writeAll(pi: FakePi, records: readonly Record<string, unknown>[]) {

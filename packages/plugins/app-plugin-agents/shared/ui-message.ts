@@ -1,3 +1,4 @@
+import { OutputBlockSchema, type OutputBlock } from '@nocobase/agent-protocol';
 import { validateUIMessages, type UIMessage } from 'ai';
 import { z } from 'zod';
 import type { ResolvedPageContext } from './conversations.js';
@@ -111,6 +112,7 @@ export interface AppUIMessageMetadata {
     partId: string;
     /** Index in ordered parts; SDK text parts do not retain their stream ID. */
     partIndex: number;
+    output?: OutputBlock;
     createdAt?: string;
   }[];
 }
@@ -137,6 +139,7 @@ export const appUIMessageMetadataSchema: z.ZodType<AppUIMessageMetadata> =
           seq: z.number().int().positive(),
           partId: identity,
           partIndex: z.number().int().nonnegative(),
+          output: OutputBlockSchema.optional(),
           createdAt: z.iso.datetime({ offset: true }).optional(),
         }),
       )

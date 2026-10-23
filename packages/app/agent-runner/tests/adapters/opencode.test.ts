@@ -1,3 +1,4 @@
+import { collectOutput } from './collect-output.ts';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdtemp, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -113,9 +114,7 @@ function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
 async function collect(
   events: AsyncIterable<AdapterEvent>,
 ): Promise<AdapterEvent[]> {
-  const out: AdapterEvent[] = [];
-  for await (const event of events) out.push(event);
-  return out;
+  return collectOutput(events);
 }
 
 function begin(inbox = 'msg_in0'): ScriptItem[] {

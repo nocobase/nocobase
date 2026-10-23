@@ -1012,6 +1012,49 @@ export interface RunTranscriptEvent {
   readonly truncated?: boolean | undefined;
 }
 
+/** Project only explicit blocks; legacy records and independent message boundaries remain unchanged. */
+function projectTranscriptEvents(
+  events: readonly RunTranscriptEvent[],
+): RunTranscriptEvent[] {
+  const projected: RunTranscriptEvent[] = [];
+  const blocks = new Map<string, number>();
+  const seen = new Set<number>();
+  for (const event of events) {
+    if (seen.has(event.seq)) continue;
+    seen.add(event.seq);
+    const output = event.meta?.output as
+      { blockId?: unknown; phase?: unknown } | undefined;
+    if (
+      (event.type !== 'text' && event.type !== 'thinking') ||
+      typeof output?.blockId !== 'string' ||
+      !['delta', 'end'].includes(String(output.phase))
+    ) {
+      projected.push(event);
+      continue;
+    }
+    const key = JSON.stringify([
+      event.type,
+      output.blockId,
+      event.meta?.parentToolUseId,
+      event.meta?.childSessionId,
+    ]);
+    const index = blocks.get(key);
+    if (index === undefined) {
+      blocks.set(key, projected.length);
+      projected.push({ ...event, content: event.content ?? '' });
+    } else {
+      const previous = projected[index];
+      projected[index] = {
+        ...previous,
+        content: (previous.content ?? '') + (event.content ?? ''),
+        meta: { ...previous.meta, ...event.meta },
+        truncated: previous.truncated || event.truncated,
+      };
+    }
+  }
+  return projected;
+}
+
 export interface RunTranscriptLabels {
   readonly waiting: string;
   readonly empty: string;
@@ -1352,29 +1395,31 @@ function FilteredRunTranscript({
           </p>
         ) : (
           <ol aria-label={labels.events}>
-            {transcriptSegments(events, groups).map((segment) => {
-              const first = segment.events[0];
-              const key = `${first.at}:${first.seq}:${first.type}`;
-              return segment.hidden ? (
-                <HiddenTranscriptEvents
-                  key={key}
-                  events={segment.events}
-                  filterLabels={filterLabels}
-                  onLayoutChange={updatePinned}
-                  renderMarkdown={markdown}
-                  locale={locale}
-                  labels={labels}
-                />
-              ) : (
-                <RunTranscriptRow
-                  key={key}
-                  event={first}
-                  renderMarkdown={markdown}
-                  locale={locale}
-                  labels={labels}
-                />
-              );
-            })}
+            {transcriptSegments(projectTranscriptEvents(events), groups).map(
+              (segment) => {
+                const first = segment.events[0];
+                const key = `${first.at}:${first.seq}:${first.type}`;
+                return segment.hidden ? (
+                  <HiddenTranscriptEvents
+                    key={key}
+                    events={segment.events}
+                    filterLabels={filterLabels}
+                    onLayoutChange={updatePinned}
+                    renderMarkdown={markdown}
+                    locale={locale}
+                    labels={labels}
+                  />
+                ) : (
+                  <RunTranscriptRow
+                    key={key}
+                    event={first}
+                    renderMarkdown={markdown}
+                    locale={locale}
+                    labels={labels}
+                  />
+                );
+              },
+            )}
           </ol>
         )}
       </div>

@@ -1,65 +1,48 @@
-import { afterEach, expect, it, vi } from 'vitest';
-
+import { expect, it } from 'vitest';
 import { StreamOutput } from '../../src/agent/adapters/stream-output.ts';
 import type { AdapterEvent } from '../../src/agent/adapters/types.ts';
 
-afterEach(() => vi.useRealTimers());
-
-it('reports progress once a second without waiting for completion', async () => {
-  vi.useFakeTimers();
+it('deduplicates raw snapshots and emits one explicit end even on repeated completion', () => {
   const events: Omit<AdapterEvent, 'at'>[] = [];
-  const stream = new StreamOutput((event) => events.push(event));
-  for (let second = 0; second < 3; second++) {
-    for (let token = 0; token < 100; token++)
-      stream.delta('reply', 'text', 'x');
-    expect(events).toHaveLength(second);
-    await vi.advanceTimersByTimeAsync(1000);
-  }
-  stream.complete('reply', 'text', 'x'.repeat(300));
-  expect(events.map((event) => event.content)).toEqual(
-    Array(3).fill('x'.repeat(100)),
-  );
-  expect(vi.getTimerCount()).toBe(0);
+  const stream = new StreamOutput((e) => events.push(e));
+  stream.delta('reply', 'text', '**Hel');
+  stream.delta('reply', 'text', 'lo**');
+  stream.complete('reply', 'text', '**Hello** world');
+  stream.complete('reply', 'text', '**Hello** world');
+  stream.end();
+  expect(events.map((e) => e.content).join('')).toBe('**Hello** world');
+  expect(
+    events.filter((e) => (e.meta?.output as { phase: string }).phase === 'end'),
+  ).toHaveLength(1);
+  expect(
+    new Set(events.map((e) => (e.meta?.output as { blockId: string }).blockId))
+      .size,
+  ).toBe(1);
 });
 
-it('preserves thinking, reply, child and tool order and supplies a missing suffix', () => {
+it('preserves whitespace and independent ids, including repeated provider keys in a new message', () => {
   const events: Omit<AdapterEvent, 'at'>[] = [];
-  const stream = new StreamOutput((event) => events.push(event));
-  stream.delta('thinking', 'thinking', 'Plan');
-  stream.delta('reply', 'text', 'Hello');
-  stream.delta('child', 'text', 'Child', { parentToolUseId: 'tool' });
-  stream.flush();
-  events.push({ type: 'toolUse', tool: 'shell' });
-  stream.complete('reply', 'text', 'Hello world');
-  expect(events.map((event) => [event.type, event.content])).toEqual([
-    ['thinking', 'Plan'],
-    ['text', 'Hello'],
-    ['text', 'Child'],
-    ['toolUse', undefined],
-    ['text', ' world'],
+  const stream = new StreamOutput((e) => events.push(e));
+  stream.delta('reply', 'text', ' ');
+  stream.end();
+  stream.reset();
+  stream.complete('reply', 'text', 'next');
+  expect(events.map((e) => e.content)).toEqual([
+    ' ',
+    undefined,
+    'next',
+    undefined,
   ]);
-  expect(events[2]?.meta).toEqual({ parentToolUseId: 'tool' });
+  expect(
+    new Set(events.map((e) => (e.meta?.output as { blockId: string }).blockId))
+      .size,
+  ).toBe(2);
 });
 
-it('flushes a large chunk early and releases a final pending chunk', () => {
-  vi.useFakeTimers();
-  const emit = vi.fn();
-  const stream = new StreamOutput(emit);
-  stream.delta('reply', 'text', 'x'.repeat(4096));
-  expect(emit).toHaveBeenCalledTimes(1);
-  stream.delta('reply', 'text', 'tail');
-  stream.flush();
-  expect(emit).toHaveBeenLastCalledWith({ type: 'text', content: 'tail' });
-  expect(vi.getTimerCount()).toBe(0);
-});
-
-it('accepts completed-only output and emits nothing for absent summaries', () => {
-  const emit = vi.fn();
-  const stream = new StreamOutput(emit);
+it('does not invent empty thinking when a model provides no summary', () => {
+  const events: Omit<AdapterEvent, 'at'>[] = [];
+  const stream = new StreamOutput((e) => events.push(e));
   stream.complete('summary', 'thinking', '');
-  stream.complete('reply', 'text', 'Hello');
-  expect(emit).toHaveBeenCalledExactlyOnceWith({
-    type: 'text',
-    content: 'Hello',
-  });
+  stream.end();
+  expect(events).toEqual([]);
 });

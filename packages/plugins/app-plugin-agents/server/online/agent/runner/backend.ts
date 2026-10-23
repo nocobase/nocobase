@@ -287,6 +287,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
       cursor: Number(before.lastSeq),
       writer,
       published: new Set(),
+      textLengths: new Map(),
       ready: false,
       started: false,
       again: false,
@@ -599,13 +600,21 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
           if (execution.published.has(source.partId)) continue;
           const part = message.parts[source.partIndex];
           if (part.type === 'text') {
-            execution.writer.write({ type: 'text-start', id: source.partId });
-            execution.writer.write({
-              type: 'text-delta',
-              id: source.partId,
-              delta: part.text,
-            });
-            execution.writer.write({ type: 'text-end', id: source.partId });
+            const length = execution.textLengths.get(source.partId);
+            if (length === undefined)
+              execution.writer.write({ type: 'text-start', id: source.partId });
+            const delta = part.text.slice(length ?? 0);
+            if (delta)
+              execution.writer.write({
+                type: 'text-delta',
+                id: source.partId,
+                delta,
+              });
+            execution.textLengths.set(source.partId, part.text.length);
+            if (part.state !== 'streaming') {
+              execution.writer.write({ type: 'text-end', id: source.partId });
+              execution.published.add(source.partId);
+            }
           } else if (part.type === 'file')
             execution.writer.write({
               type: 'file',
@@ -613,7 +622,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
               mediaType: part.mediaType,
               ...(part.filename ? { filename: part.filename } : {}),
             });
-          execution.published.add(source.partId);
+          if (part.type !== 'text') execution.published.add(source.partId);
         }
         execution.snapshot = message;
       }

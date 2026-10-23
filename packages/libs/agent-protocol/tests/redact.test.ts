@@ -244,3 +244,45 @@ describe('createStreamRedactor', () => {
     expect(stream.end()).toBe(REDACTED);
   });
 });
+
+it('redacts all token, label, PEM and known multi-line value split positions', () => {
+  const samples = [
+    GITHUB,
+    OPENAI,
+    PRIVATE_KEY,
+    'Bearer eyAbc.def123.ghiJKL456mno',
+    'Basic dXNlcjpwYXNzd29yZDEyMw==',
+    `aws_secret_access_key = ${AWS_SECRET}`,
+    'x-api-key: fictional-value-123456',
+    'a known value\nwith whitespace 98765',
+  ];
+  for (const sample of samples) {
+    const redactor = createRedactor([samples.at(-1)!]);
+    const input = `before ${sample} after`;
+    for (let split = 1; split < input.length; split++) {
+      const stream = createStreamRedactor(redactor);
+      const result =
+        stream.write(input.slice(0, split), { partial: true }) +
+        stream.write(input.slice(split), { partial: true }) +
+        stream.end();
+      expect(
+        result,
+        `split ${split} of sample ${samples.indexOf(sample)}`,
+      ).toBe(redactor.text(input));
+    }
+  }
+});
+
+it('retains ordinary prose and catches known values across complete lines too', () => {
+  const prose = 'Use sk-learn and basic examples';
+  const stream = createStreamRedactor(createRedactor());
+  expect(stream.write(prose, { partial: true }) + stream.end()).toBe(prose);
+  const lines = createStreamRedactor(
+    createRedactor(['fictional secret\nwith spaces']),
+  );
+  expect(
+    lines.write('before fictional secret\n') +
+      lines.write('with spaces after') +
+      lines.end(),
+  ).toBe(`before ${REDACTED} after`);
+});

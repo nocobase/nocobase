@@ -1,3 +1,4 @@
+import { eventsRepo } from '../server/core/runs/run.store.js';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type {
@@ -21,9 +22,26 @@ const context = (id = 'alice'): OnlineAgentContext => ({
     identity: { principal: { type: 'user', id } },
   } as AuthorizationContext,
 });
-async function fixture() {
-  h = await createHarness();
-  const runner = await h.registerRunner();
+async function fixture(
+  options: { outputBlocks?: boolean; outputFeature?: boolean } = {},
+) {
+  h = await createHarness({ outputBlocks: options.outputBlocks });
+  const runner = await h.registerRunner(
+    options.outputFeature
+      ? {
+          features: [
+            'workspaceKey',
+            'input',
+            'checkout',
+            'directories',
+            'attachments',
+            'skills',
+            'secrets',
+            'outputBlocks',
+          ],
+        }
+      : {},
+  );
   const agentId = await h.createAgent({
     source: 'runner',
     name: 'Runner helper',
@@ -968,4 +986,194 @@ it('saves Runner notices transactionally without waking and persists ordinary vi
   await expect(
     h.services.conversations.get('bob', hidden.sessionId),
   ).rejects.toThrow('not found');
+});
+
+it.each([
+  [false, true],
+  [true, false],
+  [true, true],
+])(
+  'negotiates output blocks only when application=%s and runner=%s',
+  async (enabled, supported) => {
+    const f = await fixture({
+      outputBlocks: enabled,
+      outputFeature: supported,
+    });
+    await f.agent.send([{ role: 'user', content: 'Negotiation' }]);
+    const [payload] = await claim(h, f.runner);
+    expect(payload.outputBlocks).toBe(enabled && supported ? true : undefined);
+  },
+);
+
+it('streams one continuous Markdown block, retains whitespace and reproduces the same history after reload', async () => {
+  const f = await fixture({ outputBlocks: true, outputFeature: true });
+  await f.agent.send([{ role: 'user', content: 'Markdown' }]);
+  const reader = (await f.agent.receive())!.getReader();
+  const chunks: NativeUIChunk[] = [];
+  const reading = (async () => {
+    for (;;) {
+      const next = await reader.read();
+      if (next.done) break;
+      chunks.push(next.value);
+    }
+  })();
+  const [payload] = await claim(h, f.runner);
+  const id = payload.run.id;
+  await f.report(id, 'start', {
+    workDir: '/work/markdown',
+    adapter: { kind: 'claude' },
+    acceptsInput: true,
+  });
+  const pieces = [
+    '**Hello',
+    '**',
+    ' ',
+    'world',
+    '\n\n```ts\nconst x = 1;',
+    '\n```\n\n[Link](https://example.test)\n\n| A | B |\n| - | - |\n| 1 | 2 |',
+  ];
+  let seq = 0;
+  for (const content of pieces) {
+    const event = {
+      seq: ++seq,
+      at: h.clock.now().toISOString(),
+      type: 'text',
+      content,
+      meta: { output: { blockId: 'markdown', phase: 'delta' } },
+    };
+    expect(
+      (await f.report(id, 'events', { events: [event, event] })).status,
+    ).toBe(200);
+    await vi.waitFor(() =>
+      expect(
+        chunks
+          .filter((e) => e.type === 'text-delta')
+          .map((e) => e.delta)
+          .join(''),
+      ).toBe(pieces.slice(0, seq).join('')),
+    );
+    expect(chunks.filter((e) => e.type === 'text-start')).toHaveLength(1);
+    expect(chunks.filter((e) => e.type === 'text-end')).toHaveLength(0);
+  }
+  await f.report(id, 'events', {
+    events: [
+      {
+        seq: ++seq,
+        at: h.clock.now().toISOString(),
+        type: 'text',
+        content: '',
+        meta: { output: { blockId: 'markdown', phase: 'end' } },
+      },
+    ],
+  });
+  await vi.waitFor(() =>
+    expect(chunks.filter((e) => e.type === 'text-end')).toHaveLength(1),
+  );
+  const before = await f.agent.history();
+  expect(before.filter((m) => m.role === 'assistant')[0].parts).toEqual([
+    { type: 'text', text: pieces.join(''), state: 'done' },
+  ]);
+  const sources = before.filter((m) => m.role === 'assistant')[0].metadata!
+    .sourceRecords!;
+  expect(sources).toHaveLength(1);
+  expect(sources[0].output).toEqual({ blockId: 'markdown', phase: 'end' });
+  await f.report(id, 'complete', {
+    summary: 'Done',
+    handledInputIds: payload.inputs.map((i) => i.id),
+  });
+  await reading;
+  const reload = await h.services.onlineAgent.realtime(context(), {
+    sessionId: f.agent.sessionId,
+  });
+  expect(await reload.history()).toEqual(before);
+  expect((await reload.messages({ limit: 50 })).items).toEqual(before);
+});
+
+it('keeps synchronization SQL cost unchanged per fragment and measures the empty end record', async () => {
+  const f = await fixture();
+  const conversation = await h.services.conversations.create('alice', {
+    agentId: f.agentId,
+  });
+  await h.services.conversations.send('alice', conversation.id, {
+    content: 'Measured stream',
+  });
+  const [payload] = await claim(h, f.runner);
+  const connection = h.database.connection();
+  const client = await connection.client<Knex>();
+  const costs: Record<string, number>[] = [];
+  const measure = async () => {
+    const queries: string[] = [];
+    const record = (q: { sql: string }) => queries.push(q.sql);
+    client.on('query', record);
+    try {
+      await h.services.conversations.syncRun(payload.run.id);
+    } finally {
+      client.off('query', record);
+    }
+    const cost: Record<string, number> = {};
+    for (const sql of queries) {
+      const verb = sql.trim().split(/\s/)[0].toLowerCase();
+      cost[verb] = (cost[verb] ?? 0) + 1;
+    }
+    return cost;
+  };
+  await eventsRepo(connection).createOne({
+    values: {
+      id: 'cost-warmup',
+      runId: payload.run.id,
+      seq: 1,
+      at: h.clock.now().toISOString(),
+      createdAt: h.clock.now().toISOString(),
+      type: 'text',
+      tool: null,
+      content: 'warmup',
+      input: null,
+      output: null,
+      truncated: false,
+      meta: null,
+    },
+  });
+  await h.services.conversations.syncRun(payload.run.id);
+  for (let seq = 2; seq <= 6; seq++) {
+    await eventsRepo(connection).createOne({
+      values: {
+        id: `cost-${seq}`,
+        runId: payload.run.id,
+        seq,
+        at: h.clock.now().toISOString(),
+        createdAt: h.clock.now().toISOString(),
+        type: 'text',
+        tool: null,
+        content: seq === 6 ? '' : seq === 4 ? ' ' : 'piece',
+        input: null,
+        output: null,
+        truncated: false,
+        meta:
+          seq === 2
+            ? null
+            : {
+                output: {
+                  blockId: 'measured',
+                  phase: seq === 6 ? 'end' : 'delta',
+                },
+              },
+      },
+    });
+    costs.push(await measure());
+  }
+  expect(costs.slice(1)).toEqual(Array(4).fill(costs[0]));
+  const idle = await measure();
+  expect(idle.insert ?? 0).toBe(0);
+  expect(idle.update ?? 0).toBe(0);
+  expect(idle.begin ?? 0).toBe(0);
+  if (process.env.NOCOBASE_STREAM_OUTPUT_REPORT)
+    await appendFile(
+      process.env.NOCOBASE_STREAM_OUTPUT_REPORT,
+      JSON.stringify({
+        scenario: 'conversation-sync',
+        records: 5,
+        costs,
+        idle,
+      }) + '\n',
+    );
 });

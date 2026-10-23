@@ -160,6 +160,7 @@ export interface AgentsDeps {
   readonly runRetentionDays?: () => number;
   /** The first back-off of a failed run attempt (`agents.runs.retryBaseDelayMs`); 30 seconds when left out. */
   readonly retryBaseDelayMs?: number;
+  readonly outputBlocks?: boolean;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   readonly idGenerator: { generateString(): string };
   /**
@@ -474,6 +475,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   const secrets = createSecretMemory();
   const selectionPolicies = createModelSelectionPolicies();
   const claims = createClaimService({
+    outputBlocks: deps.outputBlocks,
     selectionPolicies,
     runners,
     people,

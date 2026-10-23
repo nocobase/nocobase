@@ -1,3 +1,4 @@
+import { MarkdownView } from '#components/markdown-view';
 import { useState, type ReactElement } from 'react';
 
 import {
@@ -91,7 +92,21 @@ const EVENTS: readonly RunTranscriptEvent[] = [
     output:
       ' ✓ tests/login.test.ts (2 tests)\n ✓ tests/session.test.ts (1 test)\n\n Test Files  2 passed (2)\n      Tests  3 passed (3)',
   },
-  { seq: 5, at: ago(1), type: 'text', content: 'All tests pass.' },
+  ...[
+    '**All',
+    ' tests pass.**\n\n```ts\n',
+    'const ready = true;\n```\n\n',
+    '[Documentation](https://example.test)',
+    '',
+  ].map((content, index): RunTranscriptEvent => ({
+    seq: 5 + index,
+    at: ago(1),
+    type: 'text',
+    content,
+    meta: {
+      output: { blockId: 'reply', phase: index === 4 ? 'end' : 'delta' },
+    },
+  })),
 ];
 
 export function AgentRunHistoryDemo(): ReactElement {
@@ -112,6 +127,7 @@ export function AgentRunHistoryDemo(): ReactElement {
       <div className='space-y-6'>
         {shown ? (
           <RunTranscript
+            renderMarkdown={(text) => <MarkdownView content={text} />}
             // Replace these demo identities with the application's id and the signed-in user's id.
             preferenceKey='nocobase:ui-library:demo-viewer:run-transcript-filters'
             header={

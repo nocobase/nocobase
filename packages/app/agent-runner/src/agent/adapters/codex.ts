@@ -412,17 +412,9 @@ class CodexRun {
     };
   }
 
-  private readonly streaming = new StreamOutput((event) => {
-    const capped = capText(event.content ?? '');
-    this.emit({
-      ...event,
-      content: capped.text,
-      meta: { ...event.meta, ...(capped.truncated ? { truncated: true } : {}) },
-    });
-  });
+  private readonly streaming = new StreamOutput((event) => this.emit(event));
 
   private emit(event: Omit<AdapterEvent, 'at'>): void {
-    this.streaming.flush();
     this.events.push({ at: new Date().toISOString(), ...event });
   }
 
@@ -976,13 +968,13 @@ class CodexRun {
       await this.shutdown();
     }
     const result = this.outcome(thrown, processFailed);
+    this.streaming.end();
     if (result.error)
       this.emit({
         type: 'error',
         content: result.error.message,
         meta: { reason: result.error.reason },
       });
-    this.streaming.flush();
     this.events.close();
     return result;
   }

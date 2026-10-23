@@ -9,7 +9,11 @@
  */
 import type { QuotaLocation } from './quota.js';
 
-import type { FailureReason, RunStatus } from '@nocobase/agent-protocol';
+import type {
+  OutputBlock,
+  FailureReason,
+  RunStatus,
+} from '@nocobase/agent-protocol';
 
 import type { I18nText } from './i18n.js';
 import type { PageUIContext } from './page-ui-context.js';
@@ -371,6 +375,9 @@ export type ConversationNoticeCode = ConversationNotice['code'];
 
 /** `aiMessages.metadata`. */
 export interface MessageMetadata {
+  readonly output?: OutputBlock;
+  readonly parentToolUseId?: string;
+  readonly childSessionId?: string;
   /** A user message: the run input it became, once the agent was woken. */
   readonly inputId?: string;
   /** An assistant message: the agent that wrote it and the run event it came from. */

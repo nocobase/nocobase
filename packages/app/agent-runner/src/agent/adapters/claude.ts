@@ -437,17 +437,9 @@ class ClaudeRun {
     };
   }
 
-  private readonly streaming = new StreamOutput((event) => {
-    const capped = capText(event.content ?? '');
-    this.emit({
-      ...event,
-      content: capped.text,
-      meta: { ...event.meta, ...(capped.truncated ? { truncated: true } : {}) },
-    });
-  });
+  private readonly streaming = new StreamOutput((event) => this.emit(event));
 
   private emit(event: Omit<AdapterEvent, 'at'>): void {
-    this.streaming.flush();
     this.events.push({ at: new Date().toISOString(), ...event });
   }
 
@@ -619,13 +611,13 @@ class ClaudeRun {
       this.input.close();
     }
     const result = this.outcome(thrown);
+    this.streaming.end();
     if (result.error)
       this.emit({
         type: 'error',
         content: result.error.message,
         meta: { reason: result.error.reason },
       });
-    this.streaming.flush();
     this.events.close();
     return result;
   }
@@ -794,7 +786,11 @@ class ClaudeRun {
           ? { parentToolUseId: message.parent_tool_use_id }
           : {};
         const parentId = message.parent_tool_use_id ?? '';
-        const state = this.partialMessages.get(parentId);
+        let state = this.partialMessages.get(parentId);
+        if (!state || state.id !== message.message.id) {
+          state = { id: message.message.id, completedBlocks: 0 };
+          this.partialMessages.set(parentId, state);
+        }
         // The SDK emits one assistant envelope per completed block, sharing the API message id.
         let index = 0;
         for (const block of message.message.content) {

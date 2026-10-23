@@ -562,3 +562,71 @@ it('retains per-part manual choice on same-message revisions and keeps multi-ste
   );
   expect(row.querySelector('[data-reasoning-streaming="true"]')).toBeNull();
 });
+
+it('keeps a block in one Markdown part across live updates and a history reload', async () => {
+  const message: AppUIMessage = {
+    id: 'runner:run',
+    role: 'assistant',
+    metadata: {
+      ...metadata,
+      sourceRecords: [
+        {
+          recordId: 'r1',
+          seq: 2,
+          partId: 'record:r1',
+          partIndex: 0,
+          output: { blockId: 'body', phase: 'delta' },
+        },
+      ],
+    },
+    parts: [{ type: 'text', text: '**Hello', state: 'streaming' }],
+  };
+  const view = render(
+    <ol>
+      <MessageItem message={message} agentName={() => 'Agent'} streaming />
+    </ol>,
+    { wrapper },
+  );
+  const completed: AppUIMessage = {
+    ...message,
+    metadata: {
+      ...message.metadata!,
+      revision: 6,
+      sourceRecords: [
+        {
+          ...message.metadata!.sourceRecords![0],
+          output: { blockId: 'body', phase: 'end' },
+        },
+      ],
+    },
+    parts: [
+      {
+        type: 'text',
+        text: '**Hello** world\n\n```ts\nconst ready = true;\n```\n\n[Docs](https://example.test)',
+        state: 'done',
+      },
+    ],
+  };
+  view.rerender(
+    <ol>
+      <MessageItem message={completed} agentName={() => 'Agent'} />
+    </ol>,
+  );
+  await waitFor(() =>
+    expect(screen.getByRole('link', { name: 'Docs' })).toBeVisible(),
+  );
+  expect(screen.getByText('Hello').tagName).toBe('STRONG');
+  expect(view.container.querySelectorAll('code')).toHaveLength(1);
+  const html = view.container.innerHTML;
+  view.unmount();
+  const reloaded = render(
+    <ol>
+      <MessageItem
+        message={JSON.parse(JSON.stringify(completed))}
+        agentName={() => 'Agent'}
+      />
+    </ol>,
+    { wrapper },
+  );
+  await waitFor(() => expect(reloaded.container.innerHTML).toBe(html));
+});

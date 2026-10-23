@@ -1,3 +1,4 @@
+import { OutputWriter } from './output-writer.ts';
 import { existsSync } from 'node:fs';
 import { protectUpgradeWorkspace } from '../core/workspace-use.ts';
 import { taskSessionWorkDir } from '../core/run-worktrees.ts';
@@ -351,6 +352,7 @@ export class RunWorker {
   private readonly runId: string;
   private readonly record: RunRecord;
   private readonly spool: EventSpool;
+  private readonly output: OutputWriter;
   private readonly lease: LeaseKeeper;
   private readonly abort = new AbortController();
   private readonly inputs = new Map<string, RunInput>();
@@ -415,6 +417,11 @@ export class RunWorker {
           this.end({ kind: 'lost', code: error.reason });
       },
     });
+    this.output = new OutputWriter(
+      (event) => this.spool.push(event),
+      this.redactor,
+      payload.outputBlocks === true,
+    );
     this.lease = new LeaseKeeper({
       client: this.client,
       runId: this.runId,
@@ -435,7 +442,7 @@ export class RunWorker {
             ...(git?.credentials ? { credentials: git.credentials } : {}),
             onSecret: (secret) => this.redactor.add([secret]),
             onLost: (code) => this.end({ kind: 'lost', code }),
-            event: (event) => this.spool.push(event),
+            event: (event) => this.output.write(event),
             log: this.deps.log,
           })
         : undefined;
@@ -507,7 +514,7 @@ export class RunWorker {
   ): void {
     for (const input of inputs) {
       this.delivered.add(input.id);
-      this.spool.push({
+      this.output.write({
         type: 'input',
         content: input.text,
         meta: { inputId: input.id, mode },
@@ -553,7 +560,7 @@ export class RunWorker {
         this.steered.delete(inputId);
       }
     }
-    this.spool.push(event);
+    this.output.write(event);
   }
 
   private undelivered(): RunInput[] {
@@ -641,6 +648,11 @@ export class RunWorker {
         await removeHostToolWrappers(this.hostToolsDir).catch(() => undefined);
       if (this.statusTimer !== undefined) clearInterval(this.statusTimer);
       if (this.idleTimer !== undefined) clearInterval(this.idleTimer);
+      try {
+        this.output.end();
+      } catch (error) {
+        log(`Output cleanup failed: ${this.redactor.text(String(error))}`);
+      }
       this.spool.stop();
       if (this.credentialsFile !== undefined)
         await deleteRunCredentials(this.credentialsFile);
@@ -680,7 +692,7 @@ export class RunWorker {
       client: this.client,
       tool: payload.tool.kind,
       log: deps.log,
-      event: (event) => this.spool.push(event),
+      event: (event) => this.output.write(event),
       onRelease: (release) => this.releases.push(release),
       ...(this.broker === undefined ? {} : { gitAuth: this.broker }),
       dirs: [],
@@ -707,7 +719,7 @@ export class RunWorker {
         await step.run(context);
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
-        this.spool.push({
+        this.output.write({
           type: 'error',
           content: detail,
           meta: {
@@ -855,7 +867,7 @@ export class RunWorker {
     // Turns
     const init = workspaceInit(context.dirs);
     if (init !== '')
-      this.spool.push({
+      this.output.write({
         type: 'status',
         content:
           'Initialization prompts included for freshly prepared directories.',
@@ -961,7 +973,7 @@ export class RunWorker {
             ],
           };
         }
-        this.spool.push({ type: 'error', content: detail, meta: { reason } });
+        this.output.write({ type: 'error', content: detail, meta: { reason } });
         return this.finishFailed(reason, detail);
       }
       if (result.exit === 'aborted')
@@ -1032,6 +1044,7 @@ export class RunWorker {
   }
 
   private async drainEvents(): Promise<boolean> {
+    this.output.end();
     return this.spool.drain(this.timings.reportTimeoutMs ?? 10 * 60_000);
   }
 
@@ -1226,7 +1239,7 @@ export class RunWorker {
         return 'leaseLost';
       case 'cancel': {
         const saved = await this.saveLocal(true);
-        this.spool.push({
+        this.output.write({
           type: 'status',
           content: saved.includes('Recovery required:')
             ? `Cancelled. ${saved}`
