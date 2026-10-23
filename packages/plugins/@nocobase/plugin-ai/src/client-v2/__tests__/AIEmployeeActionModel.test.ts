@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { AIEmployeeButtonModel } from '../models/ai-employees';
@@ -61,5 +61,33 @@ describe('AIEmployeeButtonModel', () => {
     // The hidden preview only renders a static placeholder, never the real shortcut button that would
     // initialize the chatbox runtime and subscribe to its stores.
     expect(container.querySelector('span[style*="cursor: pointer"]')).toBeNull();
+  });
+
+  it('renders the configured employee avatar when employee metadata is cached', async () => {
+    const engine = new FlowEngine();
+    const repository = {
+      aiEmployees: [{ username: 'atlas', avatar: 'nocobase-010-male' }],
+      getAIEmployees: vi.fn(),
+    };
+    (engine.context as unknown as { aiConfigRepository: typeof repository }).aiConfigRepository = repository;
+
+    const model = new AIEmployeeButtonModel({
+      uid: 'ai-employee-button-with-avatar',
+      flowEngine: engine,
+      props: {
+        aiEmployee: { username: 'atlas' },
+        context: { workContext: [] },
+        auto: false,
+        style: { size: 32 },
+      },
+    });
+    await engine.flowSettings.enable();
+    model.setHidden(true);
+
+    const { container } = render(model.render());
+
+    expect(container.querySelector('.ant-avatar img')).toBeTruthy();
+    expect(container.querySelector('.ant-avatar .anticon')).toBeNull();
+    expect(repository.getAIEmployees).not.toHaveBeenCalled();
   });
 });
