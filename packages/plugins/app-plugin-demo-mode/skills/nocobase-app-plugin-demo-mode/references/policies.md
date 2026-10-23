@@ -22,7 +22,7 @@ A refused request returns 400 with `error.reason: DEMO_READ_ONLY`. Branch on the
 
 Use logical collection names matching migrations, such as `orderItems`. An exception allows INSERT, UPDATE and DELETE together on that collection in the default database connection. Keep operation and record restrictions in normal application authorization.
 
-The management page provides a collection selector. For a custom UI, GET `/api/demoMode/configuration/collections` returns selectable `{ name, title? }` entries. Preserve saved selections absent from the catalog so administrators can remove them. Protected collections and malformed or duplicate names are rejected.
+The management page provides a collection selector. For a custom UI, GET `/api/demoMode/configuration/collections` returns selectable `{ name, title? }` entries. Preserve saved selections absent from the catalog so administrators can remove them. Unknown, malformed or duplicate names are rejected.
 
 Deployment defaults come from `demoMode.allowCollections`, overridden by `NOCOBASE_DEMO_WRITABLE_COLLECTIONS=orderItems,userPreferences`. Restart after changing deployment configuration. These `fixedCollections` combine with runtime selections and cannot be removed through the selector.
 

@@ -74,12 +74,7 @@ it('configures exception collections without application registration and revoke
   await expect(
     config.save('collections', 1, ['demonotes', 'demonotes']),
   ).rejects.toMatchObject({ reason: 'DEMO_CONFIGURATION_INVALID' });
-  for (const table of [
-    'user',
-    'ag_agents',
-    'demo_mode_configuration',
-    'demonotes;drop',
-  ]) {
+  for (const table of ['unknownnotes', 'demonotes;drop']) {
     await expect(config.save('collections', 1, [table])).rejects.toMatchObject({
       reason: 'DEMO_CONFIGURATION_INVALID',
     });
@@ -391,13 +386,10 @@ it('limits online chat persistence to the callback and requires enabled chat', a
   );
 });
 
-it('lists physical table choices without protected or deployment-managed collections', async () => {
+it('lists physical table choices without deployment-managed collections', async () => {
   const { config, container, guard } = await setup();
   expect(await config.availableCollections()).toEqual(
     expect.arrayContaining([{ name: 'demoitems' }, { name: 'demonotes' }]),
-  );
-  expect(await config.availableCollections()).not.toContainEqual(
-    expect.objectContaining({ name: 'demoModeConfiguration' }),
   );
   const settings = resolveDemoModeSettings({
     get: () => ({

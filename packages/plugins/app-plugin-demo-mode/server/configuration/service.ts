@@ -22,8 +22,6 @@ import type {
   DemoMockAdapter,
 } from '../../shared/configuration.js';
 
-const protectedCollection =
-  /^(?:user|account|session|verification|auth|ag(?:_|[a-z])|demoMode|demo_mode_|permission|role|secret|apiKey|api_key)/iu;
 /** The local hour of the default daily reset. */
 export const DEFAULT_RESET_HOUR = 3;
 const invalid = (message: string) =>
@@ -223,7 +221,6 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         if (
           item.kind === 'table' &&
           /^[a-z][a-z0-9_]*$/iu.test(name) &&
-          !protectedCollection.test(name) &&
           !this.settings.allowCollections.has(name)
         )
           names.push({ name, ...(item.title ? { title: item.title } : {}) });
@@ -262,13 +259,9 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
       this.resolved.clear();
       const collections = new Set<string>();
       for (const table of input as string[]) {
-        if (
-          protectedCollection.test(table) ||
-          collections.has(table) ||
-          !(await this.resolveCollection(table))
-        )
+        if (collections.has(table) || !(await this.resolveCollection(table)))
           throw invalid(
-            'Unknown, protected or duplicate collections cannot be configured.',
+            'Unknown or duplicate collections cannot be configured.',
           );
         collections.add(table);
       }
