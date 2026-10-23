@@ -221,6 +221,83 @@ afterEach(() => {
 });
 
 it.each(['en-US', 'zh-CN'])(
+  'keeps the installed inline edit and composer draft on unknown resend in %s',
+  async (locale) => {
+    host.catalog.mockResolvedValue(models);
+    const original = host.request.getMockImplementation()!;
+    const user: AppUIMessage = {
+      ...message,
+      id: 'saved-user',
+      role: 'user',
+      parts: [{ type: 'text', text: 'Original user input' }],
+    };
+    const reply: AppUIMessage = {
+      ...message,
+      metadata: { ...message.metadata!, seq: 2, sourceUserMessageId: user.id },
+    };
+    host.request.mockImplementation((input) =>
+      input.path.endsWith('/messages')
+        ? Promise.resolve({ data: [user, reply], meta: { lastSeq: 2 } })
+        : original(input),
+    );
+    host.stream.mockRejectedValue(new TypeError('Resend response lost'));
+    await setup(locale);
+    act(() => panel.openChat({ conversationId: 'saved' }));
+    const editLabel = locale === 'zh-CN' ? '编辑' : 'Edit';
+    const sendLabel = locale === 'zh-CN' ? '发送' : 'Send';
+    const draft = await screen.findByRole('textbox', {
+      name: locale === 'zh-CN' ? '发给 Agent 的消息' : 'Message to the agent',
+    });
+    fireEvent.change(draft, { target: { value: 'Preserved composer draft' } });
+    const editButton = await screen.findByRole('button', {
+      name: editLabel,
+      exact: true,
+    });
+    await waitFor(() => expect(editButton).toBeEnabled());
+    fireEvent.click(editButton);
+    const editor = screen.getByRole('textbox', {
+      name: editLabel,
+      exact: true,
+    });
+    expect(editor).toHaveClass('bg-background', 'min-h-20', 'resize-none');
+    const editing = editor.closest('[data-chat-message-editor]')!;
+    expect(editing.parentElement).not.toHaveClass('bg-primary/10');
+    expect(editing).not.toHaveTextContent('将保留原附件和上下文。');
+    expect(editing).not.toHaveTextContent(
+      'Original attachments and context will be kept.',
+    );
+    expect(
+      editor.closest('li')!.querySelector('[data-chat-message-actions]'),
+    ).toBeNull();
+    fireEvent.change(editor, { target: { value: 'Edited user text' } });
+    fireEvent.click(
+      within(editor.closest('[data-chat-message-editor]')!).getByRole(
+        'button',
+        { name: sendLabel, exact: true },
+      ),
+    );
+    await screen.findByText(
+      locale === 'zh-CN' ? zhCN.chat.resend.unknown : enUS.chat.resend.unknown,
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(editor).toHaveValue('Edited user text');
+    expect(draft).toHaveValue('Preserved composer draft');
+    expect(host.stream).toHaveBeenCalledTimes(1);
+    expect(host.stream.mock.calls[0][0]).toMatchObject({
+      path: 'agents/conversations/saved/resend',
+      method: 'POST',
+      json: { messageId: 'saved-user', input: { text: 'Edited user text' } },
+    });
+    expect(
+      screen.getByText(
+        locale === 'zh-CN'
+          ? zhCN.chat.resend.unknown
+          : enUS.chat.resend.unknown,
+      ),
+    ).toBeVisible();
+  },
+);
+it.each(['en-US', 'zh-CN'])(
   'guides model configuration in %s, preserves the draft and never sends without a chat model',
   async (locale) => {
     await setup(locale);

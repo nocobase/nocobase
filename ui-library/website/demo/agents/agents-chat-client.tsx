@@ -167,6 +167,7 @@ function message(
     attachments?: readonly MessageAttachment[];
     metadata?: {
       agentId?: string;
+      sourceUserMessageId?: string;
       clientId?: string;
       notice?: ConversationNotice;
     };
@@ -182,6 +183,9 @@ function message(
       revision: 1,
       createdAt: fields.createdAt ?? ago(30 - seq),
       ...(fields.metadata?.agentId ? { agentId: fields.metadata.agentId } : {}),
+      ...(fields.metadata?.sourceUserMessageId
+        ? { sourceUserMessageId: fields.metadata.sourceUserMessageId }
+        : {}),
       ...(fields.metadata?.clientId
         ? { clientId: fields.metadata.clientId }
         : {}),
@@ -258,6 +262,8 @@ function initialStore(): Store {
     conversations: [
       conversation('release-plan', 'assistant', 'Plan the onboarding release', {
         lastMessageAt: ago(3),
+        mode: 'online',
+        execution: { status: 'idle' },
       }),
       conversation('flaky-test', 'coder', 'Fix the flaky sign-in test', {
         read: false,
@@ -298,7 +304,12 @@ function initialStore(): Store {
           2,
           'assistant',
           'Three issues are still open:\n\n| Issue | Status | Owner |\n| --- | --- | --- |\n| PM-12 Welcome tour | In review | Lin |\n| PM-15 Invite emails | In progress | Coding agent |\n| PM-18 Empty states | Todo | — |\n\nPM-12 only needs a review; I can **ask the coding agent** to finish PM-15.',
-          { metadata: { agentId: 'assistant' } },
+          {
+            metadata: {
+              agentId: 'assistant',
+              sourceUserMessageId: 'release-plan-1',
+            },
+          },
         ),
         message('release-plan', 3, 'system', 'Consulted Coding agent', {
           metadata: {
@@ -392,6 +403,7 @@ function initialStore(): Store {
 let store: Store = initialStore();
 const listeners = new Set<() => void>();
 const chats = new Map<string, SDKChat<Chat.AppUIMessage>>();
+const demoWatermarks = new Map<string, number>();
 const stopReplies = new Map<string, () => void>();
 let generation = 0;
 function demoChat(id: string): SDKChat<Chat.AppUIMessage> {
@@ -440,6 +452,7 @@ export function resetChatDemo(): void {
   stopReplies.clear();
   for (const chat of chats.values()) void chat.stop();
   chats.clear();
+  demoWatermarks.clear();
   for (const timer of replyTimers) clearTimeout(timer);
   replyTimers.clear();
   update(() => initialStore());
@@ -463,7 +476,14 @@ function appendMessage(
   build: (seq: number) => Chat.AppUIMessage,
 ): Chat.AppUIMessage {
   const list = store.messages[conversationId] ?? [];
-  const added = build(list.length + 1);
+  const seq =
+    Math.max(
+      demoWatermarks.get(conversationId) ?? 0,
+      ...list.map((message) => message.metadata?.seq ?? 0),
+      0,
+    ) + 1;
+  const added = build(seq);
+  demoWatermarks.set(conversationId, seq);
   update((current) => ({
     ...current,
     messages: { ...current.messages, [conversationId]: [...list, added] },
@@ -477,7 +497,17 @@ const REPLY =
 /** A deterministic producer emits standard SDK chunks and saves only its final public message. */
 function answer(conversationId: string, agentId: string): Response {
   const ownGeneration = generation;
-  const seq = (store.messages[conversationId]?.length ?? 0) + 1;
+  const seq =
+    Math.max(
+      demoWatermarks.get(conversationId) ?? 0,
+      ...(store.messages[conversationId] ?? []).map(
+        (message) => message.metadata?.seq ?? 0,
+      ),
+      0,
+    ) + 1;
+  const sourceUserMessageId = store.messages[conversationId]
+    ?.filter((message) => message.role === 'user')
+    .at(-1)?.id;
   const id = `${conversationId}-${seq}`;
   const createdAt = new Date().toISOString();
   let length = 0,
@@ -505,7 +535,14 @@ function answer(conversationId: string, agentId: string): Response {
     const saved: Chat.AppUIMessage = {
       id,
       role: 'assistant',
-      metadata: { conversationId, seq, revision: 1, createdAt, agentId },
+      metadata: {
+        conversationId,
+        seq,
+        revision: 1,
+        createdAt,
+        agentId,
+        sourceUserMessageId,
+      },
       parts: [{ type: 'text', text: REPLY.slice(0, length), state: 'done' }],
     };
     if (length) appendMessage(conversationId, () => saved);
@@ -535,7 +572,13 @@ function answer(conversationId: string, agentId: string): Response {
         output.enqueue({
           type: 'start',
           messageId: id,
-          messageMetadata: { conversationId, createdAt, agentId, revision: 0 },
+          messageMetadata: {
+            conversationId,
+            createdAt,
+            agentId,
+            revision: 0,
+            sourceUserMessageId,
+          },
         });
         output.enqueue({ type: 'text-start', id: 'text' });
         interval = setInterval(() => {
@@ -1277,6 +1320,85 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
     },
     [conversationId, agentId, source, onCreated],
   );
+/** Preview-only destructive resend, using the same official SDK entry points as production. */
+export const useResendMessage: typeof Chat.useResendMessage = (
+  conversationId,
+) => {
+  useStore();
+  const [isPending, setIsPending] = useState(false);
+  return {
+    isPending,
+    resend: async (options) => {
+      const detail = store.conversations.find(
+        (item) => item.id === conversationId,
+      );
+      const sdk = demoChat(conversationId ?? 'draft');
+      const list = store.messages[conversationId ?? ''] ?? [];
+      const index = list.findIndex(
+        (message) =>
+          message.id === options.messageId && message.role === 'user',
+      );
+      if (
+        !conversationId ||
+        !detail ||
+        detail.mode !== 'online' ||
+        detail.archivedAt ||
+        index < 0 ||
+        sdk.status === 'streaming' ||
+        sdk.status === 'submitted'
+      )
+        return {
+          outcome: 'rejected',
+          error: new Error('Resend is unavailable.'),
+        };
+      setIsPending(true);
+      const original = list[index];
+      let replaced = false;
+      const target = {
+        ...original,
+        metadata: {
+          ...original.metadata!,
+          revision: (original.metadata?.revision ?? 0) + 1,
+        },
+        parts: options.input
+          ? [
+              ...original.parts.flatMap<Chat.AppUIMessage['parts'][number]>(
+                (part) => {
+                  if (part.type !== 'text') return [part];
+                  if (replaced) return [];
+                  replaced = true;
+                  return [{ type: 'text', text: options.input!.text }];
+                },
+              ),
+              ...(!original.parts.some((part) => part.type === 'text')
+                ? [{ type: 'text' as const, text: options.input.text }]
+                : []),
+            ]
+          : original.parts,
+      };
+      const seq = Math.max(
+        0,
+        ...list.map((message) => message.metadata?.seq ?? 0),
+      );
+      demoWatermarks.set(
+        conversationId,
+        Math.max(demoWatermarks.get(conversationId) ?? 0, seq),
+      );
+      update((current) => ({
+        ...current,
+        messages: {
+          ...current.messages,
+          [conversationId]: [...list.slice(0, index), target],
+        },
+      }));
+      if (options.input)
+        void sdk.sendMessage({ ...target, messageId: target.id });
+      else void sdk.regenerate({ messageId: target.id });
+      setIsPending(false);
+      return { outcome: 'accepted' };
+    },
+  };
+};
 
 let uploads = 0;
 
