@@ -1,5 +1,5 @@
 /**
- * Agent team › Usage › Prices without React: what is priced, and the price table as it is edited one row at a time. A
+ * Agent management › Usage › Prices without React: what is priced, and the price table as it is edited one row at a time. A
  * price belongs to a source and a model (`@nocobase/app-plugin-agents/shared/reports`): an online model's to its model
  * service, so (service, model); a coding tool's to the tool, so (tool, model).
  */

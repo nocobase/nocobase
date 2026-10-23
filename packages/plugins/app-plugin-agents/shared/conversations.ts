@@ -665,7 +665,7 @@ export interface ChatPreferences {
 
 export type ChatPreferencesPatch = Partial<ChatPreferences>;
 
-/** The team's chat settings ("Agent team › Settings"). */
+/** The team's chat settings ("Agent management › Settings"). */
 export interface ChatSettings {
   /** The agent new conversations go to when a person has no default of their own; null when none is set. */
   readonly defaultAgentId: string | null;

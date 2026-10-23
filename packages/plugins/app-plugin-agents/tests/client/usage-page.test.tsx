@@ -69,7 +69,7 @@ const usageCalls = () =>
     (call) => call.query.groupBy !== 'group',
   );
 
-describe('Agent team › Usage', () => {
+describe('Agent management › Usage', () => {
   beforeEach(() => {
     resetApi({
       'agents/usage': (request) =>

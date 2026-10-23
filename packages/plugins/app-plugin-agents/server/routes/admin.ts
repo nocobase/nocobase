@@ -889,7 +889,7 @@ export function createAdminRoutes(
           },
           teamRunnersOnly: {
             description:
-              'Only team runners receive it; personal runners leave a run that gets it.',
+              'Only shared runners receive it; personal runners leave a run that gets it.',
           },
           fromRunner: {
             description:
@@ -902,7 +902,7 @@ export function createAdminRoutes(
           'variable set agent <agent> OPENAI_API_KEY --from-runner',
         ],
       }),
-      description: `Creates or replaces the variable; the value is encrypted at rest and never answered. A run's variables go to the runner that takes it, a personal runner of anyone who may use the agent included, unless one is marked \`teamRunnersOnly\`: then only a team runner takes the run. Leave \`value\` out to change only \`teamRunnersOnly\` of an existing variable. With \`fromRunner\` the variable is a name only: the runner that takes the run provides its value from its own configuration (\`nocobase-runner env set NAME\` or \`--pass-env NAME\`), and a runner that does not fails the run before the agent starts. Needs the right to change the scope. ${scopeAccess}`,
+      description: `Creates or replaces the variable; the value is encrypted at rest and never answered. A run's variables go to the runner that takes it, a personal runner of anyone who may use the agent included, unless one is marked \`teamRunnersOnly\`: then only a shared runner takes the run. Leave \`value\` out to change only \`teamRunnersOnly\` of an existing variable. With \`fromRunner\` the variable is a name only: the runner that takes the run provides its value from its own configuration (\`nocobase-runner env set NAME\` or \`--pass-env NAME\`), and a runner that does not fails the run before the agent starts. Needs the right to change the scope. ${scopeAccess}`,
       responses: {
         200: dataResponse(VariableSchema.nullable()),
         404: noScope,

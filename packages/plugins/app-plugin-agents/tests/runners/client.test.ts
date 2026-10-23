@@ -7,6 +7,7 @@ import {
   registerCommand,
   upgradeCommand,
 } from '../../client/lib/install.js';
+import { noCodingToolsFound } from '../../client/lib/runner-tools.js';
 import runtimesEnUS from '../../client/locales/runtimes.en-US.js';
 import runtimesZhCN from '../../client/locales/runtimes.zh-CN.js';
 import {
@@ -69,7 +70,9 @@ describe('install commands', () => {
     expect(
       installCommand('linux', 'http://localhost:3000/main', 't'),
     ).toContain('http://localhost:3000/main/api/agents/dist/installScript');
-    expect(installCommand('windows', 'https://x', 't')).toBeNull();
+    expect(installCommand('windows', 'https://x', 't')).toBe(
+      installCommand('linux', 'https://x', 't'),
+    );
     expect(registerCommand('https://x', 't')).toBe(
       'nocobase-runner register --server https://x --token t && nocobase-runner service install',
     );
@@ -80,6 +83,23 @@ describe('install commands', () => {
     expect(runtimesZhCN.connect.nodeRequired).toContain('Node.js 24');
     expect(runtimesEnUS.connect.run).not.toContain('no Node.js needed');
     expect(runtimesZhCN.connect.run).not.toContain('无需 Node.js');
+  });
+
+  it('starts Windows prompts with the WSL Ubuntu stop condition in both languages', () => {
+    expect(runtimesEnUS.connect.promptWindows).toMatch(
+      /^FIRST, determine whether you are running inside WSL Ubuntu/u,
+    );
+    expect(runtimesEnUS.connect.promptWindows).toContain('STOP');
+    expect(runtimesEnUS.connect.promptWindows).toContain(
+      'open the agent inside WSL Ubuntu and run this prompt again',
+    );
+    expect(runtimesZhCN.connect.promptWindows).toMatch(
+      /^首先判断你自己是否运行在 WSL Ubuntu 中/u,
+    );
+    expect(runtimesZhCN.connect.promptWindows).toContain('立即停止');
+    expect(runtimesZhCN.connect.promptWindows).toContain('重新执行这段提示词');
+    expect(runtimesEnUS.connect.windowsPowerShell).toContain('Install WSL');
+    expect(runtimesZhCN.connect.windowsPowerShell).toContain('安装 WSL');
   });
 
   it('update nocobase-runner, and reinstall anything else', () => {
@@ -283,5 +303,31 @@ describe('a runner at a glance', () => {
         Date.now(),
       ),
     ).toBe(true);
+  });
+});
+
+describe('missing coding tools', () => {
+  it('handles empty and explicitly missing reports without confusing login or pending detection', () => {
+    expect(noCodingToolsFound({ tools: [] })).toBe(true);
+    expect(
+      noCodingToolsFound({
+        tools: [
+          { kind: 'codex', authenticated: false, status: 'notInstalled' },
+        ],
+      }),
+    ).toBe(true);
+    for (const status of [
+      'checking',
+      'failed',
+      'needsLogin',
+      'ready',
+      undefined,
+    ] as const) {
+      expect(
+        noCodingToolsFound({
+          tools: [{ kind: 'claude', authenticated: false, status }],
+        }),
+      ).toBe(false);
+    }
   });
 });

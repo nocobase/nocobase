@@ -6,7 +6,7 @@
  * - the queue: priority, then age; a failed attempt with a retryable reason goes back to the queue while attempts
  *   remain;
  * - the claim: the same long-poll hands out runs and jobs, from the same runner slots. A runner fits a job when its
- *   owner let it take jobs (`acceptJobs`), it reports the executor's feature (`jobs.build`), it is shared with the team
+ *   owner let it take jobs (`acceptJobs`), it reports the executor's feature (`jobs.build`), it is shared with all users
  *   or belongs to the person who started the job, the job names no runner or names it, and its owner's local policy
  *   lets it check out the job's repository. The claim is one transaction: a guarded update takes the job, the kind's
  *   `prepare` gives the spec, stored variables it names are opened for this runner through the application's secret

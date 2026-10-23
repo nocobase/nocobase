@@ -1,3 +1,4 @@
+import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import chatEnUS from './chat.en-US.js';
 
@@ -595,6 +596,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     unknown: '執行失敗。',
   },
   runtimes: {
+    pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',
       online: 'Effective slots · online settings',
@@ -840,6 +842,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       version: '版本 {{version}}',
     },
     trust: {
+      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
       label: '它適用於誰',
       team: '團隊',
       teamHint:
@@ -887,6 +890,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
   },
   connect: {
+    ...runtimesEnUS.connect,
     title: '新增執行環境',
     description:
       '在安裝了編碼工具的主機上執行以下命令：伺服器、虛擬機器或您自己的裝置。代理程式以完全存取許可權執行，就像執行執行程式的使用者一樣，並且可以讀取和更改使用者可以讀取的任何內容，包括 SSH 金鑰和其他憑證。執行程式不是安全邊界：它作為專用使用者在容器或虛擬機器中執行。',
@@ -896,7 +900,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     nodeRequired:
       '主機需要 Node.js 24 或更高版本（使用 node --version 檢查）。該指令會停止並說明缺少時如何安裝。',
     installed: '已經安裝了 nocobase-runner 嗎？而是註冊它：',
-    unsupported: '該執行器尚未在 Windows 上運作。使用 macOS 或 Linux，或 WSL。',
     tokenOnce:
       '此指令攜帶「{{trust}}」執行環境的一次性憑證。它有效一次，直到{{time}}。',
     after:

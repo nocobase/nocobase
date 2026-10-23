@@ -1,3 +1,4 @@
+import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import chatEnUS from './chat.en-US.js';
 
@@ -616,6 +617,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     unknown: '実行に失敗しました。',
   },
   runtimes: {
+    pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',
       online: 'Effective slots · online settings',
@@ -875,6 +877,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       version: 'バージョン {{version}}',
     },
     trust: {
+      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
       label: '誰に効果があるか',
       team: 'チーム',
       teamHint:
@@ -925,6 +928,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
   },
   connect: {
+    ...runtimesEnUS.connect,
     title: 'ランタイムの追加',
     description:
       'コーディング ツールがインストールされているホスト (サーバー、VM、または独自のデバイス) で以下のコマンドを実行します。エージェントは、ランナーを実行するユーザーとして完全なアクセス権で実行され、SSH キーやその他の資格情報を含め、ユーザーができることはすべて読み取りおよび変更できます。ランナーはセキュリティ境界ではありません。コンテナまたは VM 内で専用ユーザーとして実行します。',
@@ -935,8 +939,6 @@ const jaJP: LocaleResource<typeof enUS> = {
       'ホストには Node.js 24 以降が必要です (node --version で確認してください)。コマンドが停止し、コマンドが見つからない場合はインストール方法が表示されます。',
     installed:
       'nocobase-runner はすでにインストールされていますか?代わりに登録してください:',
-    unsupported:
-      'ランナーはまだ Windows 上で動作しません。 macOS、Linux、または WSL を使用します。',
     tokenOnce:
       'このコマンドには、「{{trust}}」ランタイムのワンタイム認証情報が含まれています。 {{time}} までは 1 回だけ動作します。',
     after:

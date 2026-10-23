@@ -1,3 +1,4 @@
+import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import chatEnUS from './chat.en-US.js';
 
@@ -618,6 +619,7 @@ const viVN: LocaleResource<typeof enUS> = {
     unknown: 'Việc chạy không thành công.',
   },
   runtimes: {
+    pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',
       online: 'Effective slots · online settings',
@@ -877,6 +879,7 @@ const viVN: LocaleResource<typeof enUS> = {
       version: 'Phiên bản {{version}}',
     },
     trust: {
+      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
       label: 'Nó phù hợp với ai',
       team: 'Đội',
       teamHint:
@@ -926,6 +929,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
   },
   connect: {
+    ...runtimesEnUS.connect,
     title: 'Thêm thời gian chạy',
     description:
       'Chạy lệnh bên dưới trên máy chủ đã cài đặt công cụ mã hóa: máy chủ, VM hoặc thiết bị của riêng bạn. Các tác nhân chạy ở đó với toàn quyền truy cập, với tư cách là người dùng chạy trình chạy, đồng thời có thể đọc và thay đổi bất kỳ thứ gì mà người dùng có thể, bao gồm cả khóa SSH và các thông tin xác thực khác. Trình chạy không phải là ranh giới bảo mật: chạy nó với tư cách là người dùng chuyên dụng, trong vùng chứa hoặc trong máy ảo.',
@@ -935,8 +939,6 @@ const viVN: LocaleResource<typeof enUS> = {
     nodeRequired:
       'Máy chủ cần Node.js 24 trở lên (kiểm tra bằng nút --version). Lệnh dừng và cho biết cách cài đặt khi thiếu.',
     installed: 'Đã cài đặt nocobase-runner chưa? Đăng ký nó thay thế:',
-    unsupported:
-      'Á hậu chưa chạy trên Windows. Sử dụng macOS hoặc Linux hoặc WSL.',
     tokenOnce:
       'Lệnh mang thông tin xác thực một lần cho thời gian chạy "{{trust}}". Nó hoạt động một lần, cho đến {{time}}.',
     after:

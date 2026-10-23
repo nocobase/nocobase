@@ -181,7 +181,7 @@ export interface Run {
   readonly threadScope: string;
   /** The run was asked to start a new session; absent on older servers. */
   readonly freshSession?: boolean;
-  /** The person the run acts as: their permissions bound it, and only their own runners (or team runners) take it. */
+  /** The person the run acts as: their permissions bound it, and only their own runners (or shared runners) take it. */
   /** Server-managed authorization for runs caused by one comment, never independent events. */
   readonly commentRootRunId?: string | null;
   readonly commentExecution?: 'owner' | 'requester' | null;
@@ -303,7 +303,7 @@ export interface RunEventPage {
  *   signed in.
  * - `noSharedRunner`: only personal runners could take it, and none belongs to the person who woke the agent.
  * - `missingFeatures`: the runners that could take it lack what it needs (`missing`).
- * - `secretsNotAllowed`: some of its variables are for team runners only (`variables` names them), and the runners
+ * - `secretsNotAllowed`: some of its variables are for shared runners only (`variables` names them), and the runners
  *   that could take it are personal ones.
  * - `sameWorkActive`: the agent is already working on the same subject and thread; this run follows.
  * - `concurrencyFull`: the agent has as many runs held as it may have at once.
@@ -345,7 +345,7 @@ export type RunWaitReason = (typeof RUN_WAIT_REASONS)[number];
  * - `delayed`: `until` (RFC 3339).
  * - `toolUnavailable`: `tool`, the agent's default coding tool.
  * - `missingFeatures`: `features`, what no fitting runner has.
- * - `secretsNotAllowed`: `variables`, the names of the variables for team runners only.
+ * - `secretsNotAllowed`: `variables`, the names of the variables for shared runners only.
  * - `concurrencyFull`: `active`, `limit`, the agent's runs held and its limit.
  * - `runnersBusy`: `runners`, how many fitting runners have their slots full.
  * - `toolSlotsFull`: `tool`, `used`, `limit`, that tool's runs and limit on the fitting runner closest to room.
@@ -373,7 +373,7 @@ export interface RunWait {
   readonly missing: readonly RunnerFeature[];
   /** For `setupRetrying`: why preparing it failed. */
   readonly detail: string | null;
-  /** For `secretsNotAllowed`: the variables that ask for a team runner, by scope; absent when not provided. */
+  /** For `secretsNotAllowed`: the variables that ask for a shared runner, by scope; absent when not provided. */
   readonly variables?: readonly VariableRef[];
   /** What its words need (`RunWaitParams`); absent when nothing, or from a server before they were sent. */
   readonly params?: RunWaitParams;
@@ -457,7 +457,7 @@ export const RUN_EXECUTIONS = ['auto', 'mine'] as const;
 
 /**
  * `auto`: as the subject's responsible, once they confirm it when someone else asked; `mine`: as the person who asked,
- * at once, on a runner they may use (their own, or a team runner).
+ * at once, on a runner they may use (their own, or a shared runner).
  */
 export type RunExecution = (typeof RUN_EXECUTIONS)[number];
 

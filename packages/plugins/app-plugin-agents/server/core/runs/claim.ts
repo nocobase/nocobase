@@ -9,7 +9,7 @@ import { ACTIVE_JOB, jobsRepo } from '../../jobs/job.store.js';
  * payload: checkouts, directories, skills, secrets), its owner's local policy (`Runner.policy`) lets it take the
  * agent's runs on the run's subject and repositories, and it has a free slot. A working directory that is a directory
  * on one runner pins the run to that runner; multiple runs may share that directory. A run's variables go to the runner that
- * takes it, personal ones included, unless one of them is for team runners only (`teamRunnersOnly`): then only a team
+ * takes it, personal ones included, unless one of them is for shared runners only (`teamRunnersOnly`): then only a team
  * runner takes the run, and the variables that asked for one are noted on it (`teamOnlyVariables`), so its wait says
  * which.
  *
@@ -20,7 +20,7 @@ import { ACTIVE_JOB, jobsRepo } from '../../jobs/job.store.js';
  * the first is full; a run none of whose tools has room is passed over for the runs behind it.
  *
  * Variables are checked and opened in the claim's own transaction, on its connection: which ones the assembled payload
- * gets, whether any is for team runners only, and their values, so what the runner receives is what was checked. The
+ * gets, whether any is for shared runners only, and their values, so what the runner receives is what was checked. The
  * names taken from the runner go in `workspace.passthrough`, without values.
  *
  * A claim is one transaction per run. It first writes the agent's row (`lockAgentForClaim`): on databases with row
@@ -231,7 +231,7 @@ class NotForThisRunner extends Error {
   }
 }
 
-/** The run gets variables only team runners may receive, and this runner is a personal one. */
+/** The run gets variables only shared runners may receive, and this runner is a personal one. */
 class TeamRunnersOnly extends NotForThisRunner {
   public constructor(public readonly variables: readonly VariableRef[]) {
     super();
@@ -1117,7 +1117,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       ),
     ]) as RunnerFeature[];
     if (!covers(runner.features, requires)) throw new NotForThisRunner();
-    // A variable for team runners only keeps a personal runner off the run.
+    // A variable for shared runners only keeps a personal runner off the run.
     if (names.length > 0 && runner.trust !== 'team') {
       const teamOnly = variables.teamOnly;
       if (teamOnly.length > 0) throw new TeamRunnersOnly(teamOnly);
@@ -1338,8 +1338,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
               ),
             ],
             subject: { kind: 'run', id: run.id, label: run.id },
-            title: 'A run waits for a team runtime',
-            body: `Some of its variables are for team runtimes only: ${describeVariables(variables)}.`,
+            title: 'A run waits for a shared runtime',
+            body: `Some of its variables are for shared runtimes only: ${describeVariables(variables)}.`,
             params: {
               runId: run.id,
               agentId: run.agentId,

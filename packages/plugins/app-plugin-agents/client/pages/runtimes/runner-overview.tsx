@@ -1,3 +1,4 @@
+import { noCodingToolsFound } from '../../lib/runner-tools.js';
 /** Overview settings preserve drafts while the other tabs load independently. */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useState, type FormEvent, type ReactElement } from 'react';
@@ -241,6 +242,9 @@ function SettingsForm({
                 </Field>
               ))}
             </RadioGroup>
+            <FieldDescription>
+              {t('runtimes.trust.isolationHint')}
+            </FieldDescription>
           </FieldSet>
           {runner.offersJobs ? (
             <Field orientation='horizontal'>
@@ -272,6 +276,11 @@ function SettingsForm({
         title={t('runtimes.detail.tools')}
         description={t('runtimes.detail.toolsDescription')}
       >
+        {noCodingToolsFound(runner) ? (
+          <p className='mb-3 text-sm text-muted-foreground'>
+            {t('runtimes.pathHint')}
+          </p>
+        ) : null}
         <ToolTable
           runner={runner}
           now={now}
