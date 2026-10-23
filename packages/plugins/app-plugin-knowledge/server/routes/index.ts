@@ -11,6 +11,9 @@ import {
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
 
+import { authorizationToken } from '@nocobase/app-plugin-authorization';
+import { knowledgeIndexingToken } from '../tokens.js';
+import { createKnowledgeIndexingRoutes } from './indexing.js';
 import { knowledgeAccessToken, knowledgeToken } from '../tokens.js';
 import { createKnowledgeRoutes, createKnowledgeTicketRoutes } from './api.js';
 
@@ -24,6 +27,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     const routes = new Hono();
     routes.use('*', container.resolve(authenticationToken).required());
+    if (
+      container.has(authorizationToken) &&
+      container.has(knowledgeIndexingToken)
+    )
+      routes.route(
+        '/',
+        createKnowledgeIndexingRoutes(
+          container.resolve(knowledgeIndexingToken),
+          container.resolve(authorizationToken).middleware(),
+        ),
+      );
     routes.route(
       '/',
       createKnowledgeRoutes(

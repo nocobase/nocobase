@@ -3,6 +3,154 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  indexing: {
+    failedDocumentCount: '失敗した文書：{{count}}',
+    enabled: 'インデックスを有効にする',
+    enabledHint:
+      '無効にするとテキスト検索のみを使用します。変更は保存後に適用されます。',
+    chooseInstance: 'インデックスインスタンスを選択',
+    documentProgress: '文書の進捗',
+    pendingDocuments: '処理待ちの文書',
+    failedDocuments: '失敗した文書',
+    preparedChunks: '準備済みチャンク',
+    committedChunks: '確定済みチャンク',
+    agentPrompt:
+      'この NocoBase 3 アプリケーションのナレッジベース索引の設定を手伝ってください。\n\nまず AGENTS.md を読み、このアプリケーションで実際に使える索引タイプ（type）を確認してください。現在のベクトルデータベースの選択肢は、SQLite + sqlite-vec（type は sqlite-vec、ローカルファイル）と PostgreSQL + pgvector（type は pgvector、vector 拡張が必要）です。配置環境に合う選択肢と必要条件を説明し、私が選んでから進めてください。\n\n選択後、SQLite なら索引ファイルの場所、PostgreSQL なら接続情報と vector 拡張の準備状況を確認してください。パスワードや API キーを表示しないでください。\n\n変更案を示して私の確認を得てから、アプリケーションの config.yaml の knowledge.indexing に書き込み、ほかの設定は残してください。既存ファイルが config.yml ならそれを編集し、別の設定ファイルを作らないでください。\n\n最後に設定を安全に検証し、再起動の方法を説明してください。再起動や依存関係のインストールには事前の確認が必要です。索引設定を開き直し、有効化、インスタンスと埋め込みモデルの選択、保存を案内してください。有料モデルの呼び出しや索引再構築も事前に確認してください。',
+    databases: {
+      sqlite: {
+        name: 'SQLite ベクトルデータベース',
+        description:
+          'sqlite-vec ベクトル拡張を使用し、アプリケーションサーバー上の SQLite ファイルに索引を保存します。別のデータベースサービスは不要で、単一ホストの構成に適しています。',
+      },
+      pgvector: {
+        name: 'PostgreSQL ベクトルデータベース',
+        description:
+          'pgvector ベクトル拡張を使用し、PostgreSQL でベクトルを保存・検索します。接続情報と vector 拡張が必要です。既存の PostgreSQL サービスや複数サーバーでの索引共有に適しています。',
+      },
+    },
+    setupTitle: '設定手順',
+    setup: {
+      instance:
+        'アプリケーションの config.yaml を開き、knowledge.indexing に索引インスタンスを追加します。名前、タイプ、ローカルファイルのパスまたはデータベース接続情報を指定してください。',
+      restart:
+        'ファイルを保存し、アプリケーションを再起動して設定を反映します。',
+      enable:
+        '索引設定を開き直し、索引を有効にして追加したインスタンスと埋め込みモデルを選択し、保存します。',
+    },
+    agentHandoff:
+      '設定ファイルに不慣れな場合は、以下のプロンプトをコピーして開発 Agent に依頼できます。',
+    global: 'すべてのナレッジ空間に適用',
+    back: 'ナレッジに戻る',
+    configuration: 'インデックス設定',
+    typeHint:
+      'インスタンスは type ごとに分類されます。フォームとモデルの要否は各型が決定します。',
+    typeForm: 'この型が提供する動的フォーム',
+    openPage: '独立した設定ページを開く',
+    emptyTitle: 'まずベクトルデータベースを設定',
+    emptyDescription:
+      'ナレッジベース索引には、文書ベクトルを保存・検索するベクトルデータベースが必要です。次から選び、アプリケーションの config.yaml に設定を追加してください。',
+    agentTitle: '設定用プロンプト',
+    copyPrompt: '設定プロンプトをコピー',
+    promptCopied: 'プロンプトをコピーしました。操作は実行していません。',
+    promptCopyFallback:
+      '自動コピーできません。選択されたプロンプトを手動でコピーしてください。',
+    promptLabel: '開発 Agent 用の設定プロンプト',
+    rebuildHint: '変更には再構築が必要です',
+    editHint: '変更後に保存できます',
+    confirmRetryEmbedding:
+      'すべての空間の失敗した文書のみ再試行します。完了分は再構築しません。Embedding 料金が発生する場合があります。',
+    confirmRetry:
+      'すべての空間の失敗した文書のみ再試行します。完了分は再構築しませんが、サービス資源を使用します。',
+    confirmResources:
+      'すべての空間のインデックスを再構築します。この型は Embedding を呼び出しませんが、ストレージとサービス資源を使用します。新しいインデックスの準備まで公開済みのものを使用します。',
+    deploymentPg: '接続、Schema、テーブル接頭辞はデプロイ設定で管理します。',
+    deploymentFile: 'インデックスファイルのパスはデプロイ設定で管理します。',
+    errors: {
+      configurationChanged:
+        'インデックスまたはモデルの設定が変更されました。新しい設定で古い世代を再試行できません。設定を確認し、必要に応じてすべてのスペースを再構築してください（Embedding の費用が発生する場合があります）。',
+      modelAuth:
+        'Embedding サービスの認証に失敗しました。API キー、アクセス権限、接続先リージョンを確認してください。',
+      modelQuota:
+        'Embedding の利用枠または残高が不足しています。再試行前にモデルのアカウントを確認してください。',
+      modelRateLimit:
+        'Embedding サービスのレート制限に達しました。しばらく待ってから再試行してください。',
+      modelConfig:
+        '保存された Embedding モデルは利用不可、変更済み、または未対応です。サービスとモデルを確認してください。',
+      modelInput:
+        'Embedding の入力が長すぎます。文書のチャンクサイズを確認してください。',
+      modelPolicy:
+        'Embedding サービスがコンテンツポリシーにより入力を拒否しました。該当する内容を確認してください。',
+      modelResponse:
+        'Embedding サービスが無効なベクトルを返しました。モデルの互換性と次元数を確認してください。',
+      modelUnavailable:
+        'Embedding サービスに接続できないか、一時的に利用できません。接続先とネットワークを確認してください。',
+      storageAuth:
+        'インデックスストレージの認証に失敗しました。データベースのユーザー、パスワード、接続設定を確認してください。',
+      storagePermission:
+        'インデックスストレージが操作を拒否したか、読み取り専用です。スキーマとテーブルの権限を確認してください。',
+      storageSchema:
+        'インデックスのデータベース、スキーマ、または必要なテーブルを利用できません。配置とスキーマを確認してください。',
+      storageUnavailable:
+        'インデックスストレージに接続できないか、接続が切断されました。アドレス、ポート、ネットワークを確認してください。',
+      storageBusy:
+        'インデックスストレージが使用中か、トランザクションが競合しました。ホストの再試行ポリシーに従ってお待ちください。',
+      timeout:
+        'インデックス処理がタイムアウトしました。再試行前にストレージとモデルサービスを確認してください。',
+      vectorExtension:
+        'PostgreSQL の vector 拡張機能がありません。データベース管理者にインストールを依頼してください。',
+      ownership:
+        'インデックス対象の所有者または構造が一致しません。リソースを確認し、無関係なテーブルは削除しないでください。',
+      dependencies:
+        'インスタンス、拡張機能、またはホストの jobs 設定を利用できません。配置設定を確認し、必要に応じて再起動してください。',
+    },
+    invalidValue: 'この値を確認してください。',
+    title: 'ナレッジ索引設定',
+    description: 'すべてのナレッジスペースの検索インデックスを設定します。',
+    progress: '索引作成の進捗',
+    instance: '索引インスタンス',
+    off: '無効 — テキスト検索のみ',
+    missingForm:
+      'このインスタンスの設定フォームは利用できません。保存済みの設定は保持されます。',
+    statusFailed: '索引状態を更新できませんでした。',
+    loadFailed:
+      '索引設定を読み込めませんでした。権限を確認して再試行してください。',
+    saveFailed: 'リクエストは受理されませんでした。下書きは保持されています。',
+    conflict:
+      '設定が別の場所で変更されました。下書きを保持したまま最新の版を読み込み、確認して再度保存してください。',
+    saved:
+      'リクエストを受け付けました。索引作成はバックグラウンドで続行します。',
+    workFailed:
+      '一部の索引処理が失敗しました。インスタンスとモデルサービスを確認して再試行してください。',
+    rebuild: '全スペースを再構築',
+    retry: '失敗した処理を再試行',
+    confirmTitle: '全体の索引変更を確認',
+    confirmRebuild:
+      'すべてのスペースに影響し、全文書のベクトル再計算、モデル料金、追加ストレージが必要になる場合があります。新しい索引の準備が整うまで既存の索引を利用します。',
+    confirmDisable:
+      '全スペースの索引検索を無効にします。テキスト検索は引き続き利用できます。クリーンアップはバックグラウンドで実行します。',
+    discardTitle: '未保存の変更を破棄しますか？',
+    discardDescription: '保存していない索引設定は失われます。',
+    discard: '変更を破棄',
+    confirm: '確認',
+    documents:
+      'ドキュメント：{{done}} / {{total}} · 待機中：{{pending}} · 失敗：{{failed}}',
+    chunks: '準備済みチャンク：{{prepared}} · 確定済み：{{committed}}',
+    availability: {
+      disabled: '無効 — テキスト検索のみ',
+      unavailable: '索引は利用不可 — テキスト検索は利用可能',
+      building: '索引を構築中',
+      ready: '索引の準備完了',
+      degraded: '索引は縮退中 — テキスト検索は利用可能',
+    },
+    table: 'テーブル名',
+    modelService: 'モデルサービス',
+    model: '埋め込みモデル',
+    chooseService: 'モデルサービスを選択',
+    chooseModel: 'モデルを選択するか名前を入力',
+    loadingModels: '埋め込みモデルを読み込み中…',
+    modelsUnavailable:
+      '埋め込みモデルを利用できません。モデルサービスを確認して再試行してください。',
+  },
   access: {
     businessSection: '知識',
     businesses: {

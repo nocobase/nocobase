@@ -51,6 +51,15 @@ import {
   type KnowledgeIndexRefreshOptions,
 } from './index-refresh.js';
 
+export {
+  KnowledgeIndexingApi,
+  knowledgeIndexingKeys,
+  useKnowledgeIndexingApi,
+  useKnowledgeIndexingSettings,
+  useKnowledgeIndexingStatus,
+  useKnowledgeIndexingInstances,
+  useKnowledgeEmbeddingModels,
+} from './indexing/api.js';
 export type { KnowledgeIndexRefreshOptions } from './index-refresh.js';
 
 const spaceKey = (space: SpaceRef) => `${space.scope}:${space.scopeId}`;

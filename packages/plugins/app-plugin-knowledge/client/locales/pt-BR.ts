@@ -3,6 +3,156 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  indexing: {
+    failedDocumentCount: 'Documentos com falha: {{count}}',
+    enabled: 'Ativar indexação',
+    enabledHint:
+      'Desative para usar apenas busca textual. As alterações entram em vigor após salvar.',
+    chooseInstance: 'Selecione uma instância de índice',
+    documentProgress: 'Documentos indexados',
+    pendingDocuments: 'Documentos pendentes',
+    failedDocuments: 'Documentos com falha',
+    preparedChunks: 'Fragmentos preparados',
+    committedChunks: 'Fragmentos confirmados',
+    agentPrompt:
+      'Ajude-me a configurar o índice da base de conhecimento deste aplicativo NocoBase 3.\n\nLeia AGENTS.md e verifique os tipos de índice (type) realmente disponíveis. Há dois bancos vetoriais: SQLite com sqlite-vec (type sqlite-vec, arquivo local) e PostgreSQL com pgvector (type pgvector, extensão vector necessária). Explique as opções e seus requisitos neste ambiente e deixe-me escolher antes de continuar.\n\nApós a escolha, peça o caminho do arquivo para SQLite ou a conexão e o estado da extensão vector para PostgreSQL. Não mostre senhas nem chaves de API.\n\nMostre a configuração proposta e obtenha minha confirmação antes de escrevê-la em knowledge.indexing no config.yaml. Preserve as outras configurações. Se o aplicativo já usa config.yml, edite esse arquivo sem criar outro.\n\nValide a configuração com segurança e explique como reiniciar. Peça autorização antes de reiniciar ou instalar dependências. Depois, oriente-me a reabrir os ajustes, ativar o índice, escolher a instância e um modelo de embedding e salvar. Chamadas a modelos pagos e reconstruções também precisam da minha confirmação.',
+    databases: {
+      sqlite: {
+        name: 'Banco vetorial SQLite',
+        description:
+          'Usa a extensão vetorial sqlite-vec para guardar o índice em um arquivo SQLite local no servidor do aplicativo. Dispensa um serviço de banco separado; adequado para um único servidor.',
+      },
+      pgvector: {
+        name: 'Banco vetorial PostgreSQL',
+        description:
+          'Usa pgvector para armazenar e buscar vetores no PostgreSQL. Requer conexão com o banco e a extensão vector habilitada. Adequado para um PostgreSQL existente ou índice compartilhado entre servidores.',
+      },
+    },
+    setupTitle: 'Etapas de configuração',
+    setup: {
+      instance:
+        'Abra config.yaml e adicione uma instância em knowledge.indexing com nome, tipo e caminho do arquivo local ou dados de conexão.',
+      restart:
+        'Salve o arquivo e reinicie o aplicativo para carregar a configuração.',
+      enable:
+        'Reabra as configurações do índice, ative-o, escolha a nova instância e um modelo de embedding e salve.',
+    },
+    agentHandoff:
+      'Se você não conhece os arquivos de configuração, copie o prompt abaixo para um Agent de desenvolvimento.',
+    global: 'Todos os espaços de conhecimento',
+    back: 'Voltar ao conhecimento',
+    configuration: 'Configuração do índice',
+    typeHint:
+      'As instâncias são agrupadas por type. Cada tipo define seu formulário e se precisa de modelo Embedding.',
+    typeForm: 'Formulário dinâmico deste tipo',
+    openPage: 'Abrir página de configurações',
+    emptyTitle: 'Configure primeiro um banco de dados vetorial',
+    emptyDescription:
+      'O índice precisa de um banco de dados vetorial para armazenar e buscar vetores dos documentos. Escolha uma opção e adicione-a ao config.yaml do aplicativo:',
+    agentTitle: 'Prompt de configuração',
+    copyPrompt: 'Copiar instruções',
+    promptCopied: 'Instruções copiadas. Nenhuma operação foi executada.',
+    promptCopyFallback:
+      'Cópia automática indisponível. O texto foi selecionado para cópia manual.',
+    promptLabel: 'Instruções para seu Agent de desenvolvimento',
+    rebuildHint: 'As alterações exigem reconstrução',
+    editHint: 'Altere a configuração para salvar',
+    confirmRetryEmbedding:
+      'Reprocessar apenas documentos com falha de todos os espaços. O trabalho concluído é preservado; pode haver cobrança Embedding.',
+    confirmRetry:
+      'Reprocessar apenas documentos com falha de todos os espaços. O trabalho concluído é preservado, mas recursos do serviço são usados.',
+    confirmResources:
+      'Os índices de todos os espaços serão reconstruídos. Este tipo não chama Embedding, mas usa armazenamento e recursos. O índice publicado continua disponível até a substituição.',
+    deploymentPg:
+      'Conexão, Schema e prefixo de tabela são gerenciados na configuração da implantação.',
+    deploymentFile:
+      'O caminho do arquivo de índice é gerenciado na configuração da implantação.',
+    errors: {
+      configurationChanged:
+        'As configurações do índice ou do modelo mudaram. A geração antiga não pode ser repetida com as novas configurações. Confira-as e reconstrua todos os espaços se necessário (pode haver custos de Embedding).',
+      modelAuth:
+        'Falha na autenticação de Embedding. Confira a chave de API, as permissões e a região do endpoint.',
+      modelQuota:
+        'A cota ou o saldo de Embedding acabou. Confira a conta antes de tentar novamente.',
+      modelRateLimit:
+        'O serviço de Embedding está limitando solicitações. Aguarde antes de tentar novamente.',
+      modelConfig:
+        'O modelo de Embedding salvo está indisponível, mudou ou não é compatível. Confira o serviço e o modelo.',
+      modelInput:
+        'A entrada de Embedding é muito longa. Confira o tamanho dos fragmentos do documento.',
+      modelPolicy:
+        'O serviço de Embedding rejeitou a entrada pela política de conteúdo. Confira o conteúdo afetado.',
+      modelResponse:
+        'O serviço de Embedding retornou vetores inválidos. Confira a compatibilidade e as dimensões.',
+      modelUnavailable:
+        'Não foi possível acessar o serviço de Embedding ou ele está temporariamente indisponível. Confira o endpoint e a rede.',
+      storageAuth:
+        'Falha na autenticação do armazenamento do índice. Confira usuário, senha e conexão do banco.',
+      storagePermission:
+        'O armazenamento do índice negou a operação ou está somente para leitura. Confira as permissões do esquema e das tabelas.',
+      storageSchema:
+        'O banco, esquema ou uma tabela necessária do índice está indisponível. Confira a implantação e o esquema.',
+      storageUnavailable:
+        'Não foi possível acessar o armazenamento do índice ou a conexão caiu. Confira endereço, porta e rede.',
+      storageBusy:
+        'O armazenamento do índice está ocupado ou houve conflito de transação. Aguarde a política de novas tentativas do host.',
+      timeout:
+        'A operação de indexação excedeu o tempo limite. Confira o armazenamento e o serviço do modelo antes de tentar novamente.',
+      vectorExtension:
+        'A extensão vector do PostgreSQL não está instalada. Solicite a instalação ao administrador.',
+      ownership:
+        'A propriedade ou estrutura do destino do índice não corresponde. Confira o recurso; não exclua tabelas de terceiros.',
+      dependencies:
+        'Uma instância, extensão ou configuração de jobs do host está indisponível. Confira a implantação e reinicie se necessário.',
+    },
+    invalidValue: 'Verifique este valor.',
+    title: 'Configurações do índice de conhecimento',
+    description:
+      'Configure a indexação de busca para todos os espaços de conhecimento.',
+    progress: 'Progresso da indexação',
+    instance: 'Instância de indexação',
+    off: 'Desativado — somente busca de texto',
+    missingForm:
+      'O formulário desta instância não está disponível. As opções salvas são preservadas.',
+    statusFailed: 'Não foi possível atualizar o status do índice.',
+    loadFailed:
+      'Não foi possível carregar as configurações. Verifique suas permissões e tente novamente.',
+    saveFailed: 'A solicitação não foi aceita. Seu rascunho foi mantido.',
+    conflict:
+      'As configurações foram alteradas em outra sessão. Recarregue a revisão mais recente sem descartar o rascunho, revise e salve novamente.',
+    saved: 'Solicitação aceita. A indexação continua em segundo plano.',
+    workFailed:
+      'Algumas tarefas falharam. Verifique a instância e o serviço de modelo e tente novamente.',
+    rebuild: 'Reconstruir todos os espaços',
+    retry: 'Repetir tarefas com falha',
+    confirmTitle: 'Confirmar alteração global do índice',
+    confirmRebuild:
+      'Isso afeta todos os espaços e pode recalcular os vetores de todos os documentos, gerar custos de modelo e exigir armazenamento adicional. O índice atual fica disponível até que o novo esteja pronto.',
+    confirmDisable:
+      'Isso desativa a busca por índice em todos os espaços. A busca de texto continua disponível. A limpeza ocorre em segundo plano.',
+    discardTitle: 'Descartar alterações não salvas?',
+    discardDescription: 'As configurações de índice não salvas serão perdidas.',
+    discard: 'Descartar alterações',
+    confirm: 'Confirmar',
+    documents:
+      'Documentos: {{done}} / {{total}} · Pendentes: {{pending}} · Falhas: {{failed}}',
+    chunks: 'Fragmentos preparados: {{prepared}} · Confirmados: {{committed}}',
+    availability: {
+      disabled: 'Desativado — somente busca de texto',
+      unavailable: 'Índice indisponível — busca de texto disponível',
+      building: 'Construindo índice',
+      ready: 'Índice pronto',
+      degraded: 'Índice degradado — busca de texto disponível',
+    },
+    table: 'Nome da tabela',
+    modelService: 'Serviço de modelos',
+    model: 'Modelo de embeddings',
+    chooseService: 'Escolher um serviço de modelos',
+    chooseModel: 'Selecione ou digite o nome do modelo',
+    loadingModels: 'Carregando modelos de embeddings…',
+    modelsUnavailable:
+      'Os modelos de embeddings estão indisponíveis. Verifique o serviço e tente novamente.',
+  },
   access: {
     businessSection: 'Conhecimento',
     businesses: {

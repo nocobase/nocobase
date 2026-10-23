@@ -34,6 +34,12 @@ import { knowledgeAccessToken, knowledgeToken } from '../tokens.js';
 export interface KnowledgeConfig {
   /** The Drive disk files go to. */
   readonly disk?: string;
+  /** Named indexing instances; only the selected key is stored as runtime settings. */
+  readonly indexing?: Readonly<
+    Record<string, import('../../shared/indexing.js').JsonObject>
+  >;
+  /** Optional real host jobs configuration key. */
+  readonly jobs?: string;
   /** The largest file stored, in bytes. */
   readonly maxFileSize?: number;
   /** The sweep of unused uploads; `false` turns it off. */

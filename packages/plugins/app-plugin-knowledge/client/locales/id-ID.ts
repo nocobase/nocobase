@@ -3,6 +3,156 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  indexing: {
+    failedDocumentCount: 'Dokumen gagal: {{count}}',
+    enabled: 'Aktifkan pengindeksan',
+    enabledHint:
+      'Nonaktifkan untuk hanya menggunakan pencarian teks. Perubahan berlaku setelah disimpan.',
+    chooseInstance: 'Pilih instans indeks',
+    documentProgress: 'Dokumen terindeks',
+    pendingDocuments: 'Dokumen tertunda',
+    failedDocuments: 'Dokumen gagal',
+    preparedChunks: 'Potongan disiapkan',
+    committedChunks: 'Potongan dikomit',
+    agentPrompt:
+      'Bantu saya mengonfigurasi indeks basis pengetahuan di aplikasi NocoBase 3 ini.\n\nBaca AGENTS.md dan periksa jenis indeks (type) yang benar-benar tersedia. Ada dua opsi basis data vektor: SQLite dengan sqlite-vec (type sqlite-vec, berkas lokal) dan PostgreSQL dengan pgvector (type pgvector, memerlukan ekstensi vector). Jelaskan opsi dan kebutuhannya sesuai lingkungan ini lalu biarkan saya memilih sebelum melanjutkan.\n\nSetelah saya memilih, tanyakan lokasi berkas untuk SQLite atau detail koneksi dan kesiapan ekstensi vector untuk PostgreSQL. Jangan tampilkan kata sandi atau kunci API.\n\nTunjukkan rencana konfigurasi dan minta konfirmasi sebelum menuliskannya ke knowledge.indexing dalam config.yaml. Pertahankan pengaturan lain. Jika aplikasi sudah memakai config.yml, edit berkas itu tanpa membuat berkas baru.\n\nValidasi konfigurasi dengan aman dan jelaskan cara memulai ulang aplikasi. Minta izin sebelum memulai ulang atau memasang dependensi. Kemudian pandu saya membuka kembali pengaturan, mengaktifkan indeks, memilih instans serta model embedding dan menyimpan. Panggilan model berbayar dan pembangunan ulang indeks juga memerlukan konfirmasi saya.',
+    databases: {
+      sqlite: {
+        name: 'Basis data vektor SQLite',
+        description:
+          'Menggunakan ekstensi vektor sqlite-vec untuk menyimpan indeks dalam berkas SQLite lokal di server aplikasi. Tidak memerlukan layanan basis data terpisah; cocok untuk satu server.',
+      },
+      pgvector: {
+        name: 'Basis data vektor PostgreSQL',
+        description:
+          'Menggunakan pgvector untuk menyimpan dan mencari vektor di PostgreSQL. Memerlukan koneksi basis data dan ekstensi vector aktif. Cocok untuk PostgreSQL yang sudah tersedia atau indeks bersama beberapa server.',
+      },
+    },
+    setupTitle: 'Langkah konfigurasi',
+    setup: {
+      instance:
+        'Buka config.yaml dan tambahkan instans di knowledge.indexing dengan nama, jenis dan lokasi berkas lokal atau detail koneksi.',
+      restart:
+        'Simpan berkas lalu mulai ulang aplikasi untuk memuat konfigurasi.',
+      enable:
+        'Buka kembali pengaturan indeks, aktifkan, pilih instans baru dan model embedding lalu simpan.',
+    },
+    agentHandoff:
+      'Jika belum terbiasa dengan berkas konfigurasi, salin prompt berikut untuk meminta bantuan Agent pengembangan.',
+    global: 'Semua ruang pengetahuan',
+    back: 'Kembali ke pengetahuan',
+    configuration: 'Konfigurasi indeks',
+    typeHint:
+      'Instans dikelompokkan menurut type. Setiap tipe menentukan formulir dan kebutuhan model Embedding.',
+    typeForm: 'Formulir dinamis dari tipe ini',
+    openPage: 'Buka halaman pengaturan',
+    emptyTitle: 'Konfigurasikan basis data vektor terlebih dahulu',
+    emptyDescription:
+      'Indeks memerlukan basis data vektor untuk menyimpan dan mencari vektor dokumen. Pilih salah satu opsi berikut dan tambahkan ke config.yaml aplikasi:',
+    agentTitle: 'Prompt konfigurasi',
+    copyPrompt: 'Salin petunjuk konfigurasi',
+    promptCopied: 'Petunjuk disalin. Tidak ada operasi dijalankan.',
+    promptCopyFallback:
+      'Penyalinan otomatis tidak tersedia. Teks dipilih untuk disalin manual.',
+    promptLabel: 'Petunjuk untuk Agent pengembangan',
+    rebuildHint: 'Perubahan memerlukan pembangunan ulang',
+    editHint: 'Ubah konfigurasi untuk menyimpan',
+    confirmRetryEmbedding:
+      'Coba ulang hanya dokumen gagal di semua ruang. Pekerjaan selesai tidak diulang; biaya Embedding mungkin berlaku.',
+    confirmRetry:
+      'Coba ulang hanya dokumen gagal di semua ruang. Pekerjaan selesai tidak diulang, tetapi sumber daya layanan digunakan.',
+    confirmResources:
+      'Indeks semua ruang akan dibangun ulang. Tipe ini tidak memanggil Embedding, tetapi memakai penyimpanan dan sumber daya. Indeks terbit tetap tersedia sampai penggantinya siap.',
+    deploymentPg:
+      'Koneksi, Schema dan prefiks tabel dikelola dalam konfigurasi deployment.',
+    deploymentFile:
+      'Jalur berkas indeks dikelola dalam konfigurasi deployment.',
+    errors: {
+      configurationChanged:
+        'Pengaturan indeks atau model telah berubah. Generasi lama tidak dapat dicoba ulang dengan pengaturan baru. Periksa pengaturan dan bangun ulang semua ruang jika perlu (biaya Embedding mungkin berlaku).',
+      modelAuth:
+        'Autentikasi Embedding gagal. Periksa API Key, izin akses, dan wilayah endpoint.',
+      modelQuota:
+        'Kuota atau saldo Embedding habis. Periksa akun model sebelum mencoba lagi.',
+      modelRateLimit:
+        'Layanan Embedding membatasi permintaan. Tunggu sebelum mencoba lagi.',
+      modelConfig:
+        'Model Embedding tersimpan tidak tersedia, berubah, atau tidak didukung. Periksa layanan dan model.',
+      modelInput:
+        'Input Embedding terlalu panjang. Periksa ukuran potongan dokumen.',
+      modelPolicy:
+        'Layanan Embedding menolak input berdasarkan kebijakan konten. Periksa konten terkait.',
+      modelResponse:
+        'Layanan Embedding mengembalikan vektor tidak valid. Periksa kompatibilitas dan dimensi.',
+      modelUnavailable:
+        'Layanan Embedding tidak dapat dijangkau atau sementara tidak tersedia. Periksa endpoint dan jaringan.',
+      storageAuth:
+        'Autentikasi penyimpanan indeks gagal. Periksa pengguna, kata sandi, dan koneksi basis data.',
+      storagePermission:
+        'Penyimpanan indeks menolak operasi atau hanya-baca. Periksa izin skema dan tabel.',
+      storageSchema:
+        'Basis data, skema, atau tabel indeks yang diperlukan tidak tersedia. Periksa penerapan dan skema.',
+      storageUnavailable:
+        'Penyimpanan indeks tidak dapat dijangkau atau koneksi terputus. Periksa alamat, port, dan jaringan.',
+      storageBusy:
+        'Penyimpanan indeks sibuk atau terjadi konflik transaksi. Tunggu kebijakan percobaan ulang host.',
+      timeout:
+        'Operasi pengindeksan kehabisan waktu. Periksa penyimpanan dan layanan model sebelum mencoba lagi.',
+      vectorExtension:
+        'Ekstensi vector PostgreSQL belum terpasang. Minta administrator memasangnya.',
+      ownership:
+        'Kepemilikan atau struktur target indeks tidak sesuai. Periksa sumber daya instans; jangan hapus tabel lain.',
+      dependencies:
+        'Instans, ekstensi, atau konfigurasi jobs host tidak tersedia. Periksa penerapan dan mulai ulang jika perlu.',
+    },
+    invalidValue: 'Periksa nilai ini.',
+    title: 'Pengaturan indeks pengetahuan',
+    description:
+      'Konfigurasikan indeks pencarian untuk semua ruang pengetahuan.',
+    progress: 'Progres pengindeksan',
+    instance: 'Instans pengindeksan',
+    off: 'Nonaktif — hanya pencarian teks',
+    missingForm:
+      'Formulir instans ini tidak tersedia. Opsi yang tersimpan tetap dipertahankan.',
+    statusFailed: 'Tidak dapat memperbarui status indeks.',
+    loadFailed:
+      'Tidak dapat memuat pengaturan indeks. Periksa izin akses Anda dan coba lagi.',
+    saveFailed: 'Permintaan tidak diterima. Draf Anda tetap tersimpan.',
+    conflict:
+      'Pengaturan diubah di tempat lain. Muat revisi terbaru tanpa membuang draf, tinjau, lalu simpan kembali.',
+    saved: 'Permintaan diterima. Pengindeksan berlanjut di latar belakang.',
+    workFailed:
+      'Sebagian pekerjaan gagal. Periksa instans dan layanan model lalu coba lagi.',
+    rebuild: 'Bangun ulang semua ruang',
+    retry: 'Ulangi pekerjaan yang gagal',
+    confirmTitle: 'Konfirmasi perubahan indeks global',
+    confirmRebuild:
+      'Ini memengaruhi semua ruang dan dapat menghitung ulang vektor semua dokumen, menimbulkan biaya model, serta membutuhkan penyimpanan tambahan. Indeks lama tetap tersedia sampai penggantinya siap.',
+    confirmDisable:
+      'Ini menonaktifkan pencarian indeks untuk semua ruang. Pencarian teks tetap tersedia. Pembersihan berjalan di latar belakang.',
+    discardTitle: 'Buang perubahan yang belum disimpan?',
+    discardDescription: 'Pengaturan indeks yang belum disimpan akan hilang.',
+    discard: 'Buang perubahan',
+    confirm: 'Konfirmasi',
+    documents:
+      'Dokumen: {{done}} / {{total}} · Tertunda: {{pending}} · Gagal: {{failed}}',
+    chunks: 'Potongan disiapkan: {{prepared}} · Diterapkan: {{committed}}',
+    availability: {
+      disabled: 'Nonaktif — hanya pencarian teks',
+      unavailable: 'Indeks tidak tersedia — pencarian teks tetap tersedia',
+      building: 'Membangun indeks',
+      ready: 'Indeks siap',
+      degraded: 'Indeks menurun — pencarian teks tetap tersedia',
+    },
+    table: 'Nama tabel',
+    modelService: 'Layanan model',
+    model: 'Model embedding',
+    chooseService: 'Pilih layanan model',
+    chooseModel: 'Pilih atau masukkan nama model',
+    loadingModels: 'Memuat model embedding…',
+    modelsUnavailable:
+      'Model embedding tidak tersedia. Periksa layanan model dan coba lagi.',
+  },
   access: {
     businessSection: 'Pengetahuan',
     businesses: {

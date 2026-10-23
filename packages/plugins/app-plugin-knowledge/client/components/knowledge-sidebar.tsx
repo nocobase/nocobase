@@ -81,6 +81,7 @@ export interface SidebarSpace {
 }
 
 export interface KnowledgeSidebarProps {
+  readonly headingActions?: ReactNode;
   readonly spaces: readonly SidebarSpace[];
   readonly loading: boolean;
   readonly spaceLabel: (space: KnowledgeSpace) => string;
@@ -560,8 +561,15 @@ export function KnowledgeSidebar(props: KnowledgeSidebarProps): ReactElement {
       aria-label={t('knowledge.tree.label')}
       className='flex h-full min-h-0 flex-col'
     >
-      {props.heading ? (
-        <div className='min-w-0 shrink-0 px-2 pt-2'>{props.heading}</div>
+      {props.heading || props.headingActions ? (
+        <div className='flex min-w-0 shrink-0 items-center gap-2 px-2 pt-2'>
+          <div className='min-w-0 flex-1'>{props.heading}</div>
+          {props.headingActions ? (
+            <div className='flex shrink-0 items-center gap-1'>
+              {props.headingActions}
+            </div>
+          ) : null}
+        </div>
       ) : null}
       <div className='flex shrink-0 items-center gap-2 p-2'>
         <Button
