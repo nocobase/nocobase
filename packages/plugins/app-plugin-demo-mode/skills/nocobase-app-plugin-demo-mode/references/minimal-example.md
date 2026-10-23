@@ -19,7 +19,7 @@ The example's cleanup deletes all rows in `demotasks` and `demoprojects`, includ
 
 ## 2. Wire existing composition roots
 
-Retain the application's Authentication, Authorization and Users plugins. Add Demo Mode's Server export, Client factory and CLI export through the normal application composition roots. Add `DemoProvider` to `server/providers/index.ts` and `demoProjectRoutes` to `server/routes/index.ts`. Register the `demoMode` configuration section as described in [enable the deployment](../SKILL.md#enable-the-deployment).
+Retain the application's Authentication, Authorization and Users plugins. Register Demo Mode with `pnpm nocobase plugin register demo-mode`, as described in [enable the deployment](../SKILL.md#enable-the-deployment). Add `DemoProvider` to `server/providers/index.ts` and `demoProjectRoutes` to `server/routes/index.ts`. Register the `demoMode` configuration section as described in [enable the deployment](../SKILL.md#enable-the-deployment).
 
 Configure the isolated deployment:
 

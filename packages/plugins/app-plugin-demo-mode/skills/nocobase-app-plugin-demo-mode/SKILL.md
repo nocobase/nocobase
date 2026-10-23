@@ -44,13 +44,17 @@ For a CLI-only dataset, omit the page and visitor steps. A non-AI demo needs no 
 
 Clear and reset delete all business data in the connected database, including visitor additions. Before enabling, confirm that every connection under `database.connections` and the storage directory (`APP_STORAGE_DIR`) belong only to this demo deployment, through its own environment file or deployment configuration. Never enable Demo Mode against a database holding production or development data. If the target cannot be confirmed from the user's stated deployment, ask before enabling.
 
+Give the demo its own storage and databases:
+
+- **Local trial.** Stop the normal development server and start a separate instance, such as `APP_STORAGE_DIR=storage/demo NOCOBASE_DEMO_MODE=true pnpm dev`. A relative SQLite filename, the template default, resolves under the storage directory, so this one variable separates both the database and the files. It starts from an empty database; the normal one under `storage/` is untouched.
+- **Server deployment.** Use the deployment's own environment file or `config.yml` with a distinct `APP_STORAGE_DIR` and distinct connection values: `DB_DATABASE` (with its host and credentials) for a server database, or `DB_FILENAME` for an absolute SQLite path. Give every additional connection its own database too.
+
 ## Enable the deployment
 
 Complete these steps in order, preserving existing registrations and configuration sections:
 
-1. **Install.** Add `@nocobase/app-plugin-demo-mode` through the application's package workflow and run `pnpm nocobase skills sync`.
-2. **Register.** Add the default export of `@nocobase/app-plugin-demo-mode/server` to `server/plugins.ts` and `demoMode()` from `@nocobase/app-plugin-demo-mode/client` to `client/plugins.ts`. When CLI commands are needed, add the default export of `@nocobase/app-plugin-demo-mode/cli` to `cli/plugins.ts`.
-3. **Register the configuration section.** Without it, neither `NOCOBASE_DEMO_MODE` nor a `demoMode` section is read. Follow the application's one-file-per-section layout: create `server/config/demo-mode.ts`,
+1. **Install and register.** Run `pnpm nocobase plugin register demo-mode --dry-run`, review the plan, then run it without `--dry-run`. It adds the dependency, registers the Server, Client and CLI entries and synchronizes this Skill. Do not edit only one of `server/plugins.ts`, `client/plugins.ts` or `cli/plugins.ts` by hand; edit `client/plugins.ts` afterwards only to pass [presentation options](references/visitor-entry.md) such as `demoMode({ accountSwitcher: 'menu' })`.
+2. **Register the configuration section.** Without it, neither `NOCOBASE_DEMO_MODE` nor a `demoMode` section is read. Follow the application's one-file-per-section layout: create `server/config/demo-mode.ts`,
 
    ```ts
    import type { AppConfigFactory } from '@nocobase/app-server/config';
@@ -78,14 +82,19 @@ Complete these steps in order, preserving existing registrations and configurati
    });
    ```
 
-4. **Switch it on.** Set `NOCOBASE_DEMO_MODE=true` in this deployment's environment, or set the application configuration below, then run migrations and restart:
+3. **Switch it on.** Set `NOCOBASE_DEMO_MODE=true` in this deployment's environment (its process environment or environment file), or set it in this deployment's `config.yml`:
 
    ```yaml
    demoMode:
      enabled: true
    ```
 
-5. **Verify.** `GET <base path>/api/demoMode/status` returns `{ "data": { "enabled": true } }`, and the startup log contains `Demo mode is on`. Startup refuses to continue when a database connection cannot be guarded; see [troubleshooting](references/minimal-example.md#troubleshooting).
+   Run `pnpm nocobase config check`, then start or restart. Startup applies the plugin's migrations while `migrations.autoRun` is `true`, the template default; otherwise run `pnpm nocobase db apply` first.
+
+4. **Verify.**
+   - `GET <base path>/api/demoMode/status` returns `{ "data": { "enabled": true } }`, and the startup log contains `Demo mode is on`. `false` with the variable set means the configuration section is not registered.
+   - Signed in as an administrator, an ordinary change outside the [write exceptions](references/policies.md#collection-write-exceptions), such as editing a business record or a user profile, fails with 400 and `error.reason: DEMO_READ_ONLY`.
+   - Startup refuses to continue when a database connection cannot be guarded; see [troubleshooting](references/minimal-example.md#troubleshooting).
 
 Use the plugin defaults for quick sign-in and scheduling. Customize only what the requested demo needs. Demo Mode is disabled by default in ordinary deployments.
 

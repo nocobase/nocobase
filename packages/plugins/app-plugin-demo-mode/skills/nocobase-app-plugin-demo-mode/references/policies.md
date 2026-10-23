@@ -14,13 +14,13 @@ Clear/reset run the application's full business cleanup, including visitor addit
 
 `GET /api/demoMode/status` returns `{ data: { enabled: boolean } }` without a session. Server integrations resolve the original `demoModeServiceToken` from `@nocobase/app-plugin-demo-mode/server/tokens` to read `enabled`.
 
-The guard observes SQL through `@nocobase/db` in an HTTP request context. It does not replace authentication, operation permissions or record scopes, or intercept files, outbound calls and background work. Treat jobs, queue messages and schedule firings as unguarded, including work a visitor's action triggers: Redis workers never see the request, and in-process adapters stop being refused once the request that enqueued them has ended. Adapt those [external boundaries and jobs](integration-checklist.md) in the application.
+The guard observes SQL through `@nocobase/db` in an HTTP request context. It does not replace authentication, operation permissions or record scopes, or intercept files, outbound calls and background work. Treat jobs, queue messages and schedule firings as unguarded, including work a visitor's action triggers: Redis workers never see the request, and in-process adapters stop being refused once the request that enqueued them has ended. Writes made after a route handler returns are unguarded as well: a streamed response body, such as server-sent events from Agents chat and the tool calls and message persistence it runs, and messages on an upgraded WebSocket. Adapt those [external boundaries and jobs](integration-checklist.md) in the application.
 
 A refused request returns 400 with `error.reason: DEMO_READ_ONLY`. Branch on the reason, not its translated message. If a page encounters a refusal, identify the required business write before granting an exception.
 
 ## Collection write exceptions
 
-Use logical collection names matching migrations, such as `orderItems`. An exception allows INSERT, UPDATE and DELETE together on that collection in the default database connection. Keep operation and record restrictions in normal application authorization.
+Use logical collection names matching migrations, such as `orderItems`. An exception allows INSERT, UPDATE and DELETE together on that collection's own table in the default database connection. A write that also changes related rows, such as a many-to-many through collection, needs each of those collections too; the refusal log `Demo mode refused a write` names the tables. Keep operation and record restrictions in normal application authorization.
 
 The management page provides a collection selector. For a custom UI, GET `/api/demoMode/configuration/collections` returns selectable `{ name, title? }` entries. Preserve saved selections absent from the catalog so administrators can remove them. Unknown, malformed or duplicate names are rejected.
 
