@@ -7,6 +7,15 @@ const zhCN: AppResource = {
   // The template's own copy; see `./en-US.ts`.
   ...systemZhCN,
   ...agentChatZhCN,
+  knowledge: {
+    indexing: '知识库索引',
+    title: '知识库',
+    spaces: {
+      default: '默认知识库',
+      sales: '销售知识库',
+      engineering: '研发知识库',
+    },
+  },
   aiFormFill: {
     title: 'AI 辅助填表',
     description: '用一句话描述需求，让 AI 帮你填写表单。',

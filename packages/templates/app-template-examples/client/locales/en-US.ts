@@ -5,6 +5,15 @@ import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
+  knowledge: {
+    indexing: 'Knowledge indexing',
+    title: 'Knowledge base',
+    spaces: {
+      default: 'Default knowledge base',
+      sales: 'Sales knowledge base',
+      engineering: 'Engineering knowledge base',
+    },
+  },
   aiFormFill: {
     title: 'AI form assistance',
     description: 'Describe your request and let AI help fill the form.',
