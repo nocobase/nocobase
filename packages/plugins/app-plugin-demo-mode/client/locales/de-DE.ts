@@ -44,7 +44,7 @@ const resource: DemoModeResource = {
       off: 'Aus',
     },
     status: {
-      help: 'Besucher können jede Seite öffnen, aber Änderungen werden nicht gespeichert, außer eine Ausnahme unten erlaubt sie.',
+      help: 'Im Demo-Modus können Sie jede Seite öffnen, aber Änderungen werden nicht gespeichert, außer eine Ausnahme unten erlaubt sie.',
     },
     tabs: {
       overview: 'Übersicht',

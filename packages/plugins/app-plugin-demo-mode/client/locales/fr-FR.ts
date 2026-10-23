@@ -47,7 +47,7 @@ const resource: DemoModeResource = {
       off: 'Désactivé',
     },
     status: {
-      help: 'Les visiteurs peuvent ouvrir toutes les pages, mais leurs modifications ne sont pas enregistrées, sauf si une exception ci-dessous le permet.',
+      help: 'En mode démo, vous pouvez ouvrir toutes les pages, mais les modifications ne sont pas enregistrées, sauf si une exception ci-dessous le permet.',
     },
     tabs: {
       overview: 'Vue d’ensemble',

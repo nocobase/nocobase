@@ -43,7 +43,7 @@ const resource: DemoModeResource = {
       off: '關閉',
     },
     status: {
-      help: '訪客可以開啟所有頁面，但變更不會儲存，除非下方的例外允許。',
+      help: '示範模式可以開啟所有頁面，但變更不會儲存，除非下方的例外允許。',
     },
     tabs: {
       overview: '概覽',

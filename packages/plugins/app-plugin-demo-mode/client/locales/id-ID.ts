@@ -44,7 +44,7 @@ const resource: DemoModeResource = {
       off: 'Nonaktif',
     },
     status: {
-      help: 'Pengunjung bisa membuka setiap halaman, tetapi perubahan tidak disimpan kecuali diizinkan pengecualian di bawah.',
+      help: 'Dalam mode demo, Anda bisa membuka setiap halaman, tetapi perubahan tidak disimpan kecuali diizinkan pengecualian di bawah.',
     },
     tabs: {
       overview: 'Ringkasan',

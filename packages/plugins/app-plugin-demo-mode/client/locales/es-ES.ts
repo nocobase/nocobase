@@ -44,7 +44,7 @@ const resource: DemoModeResource = {
       off: 'Desactivado',
     },
     status: {
-      help: 'Los visitantes pueden abrir todas las páginas, pero los cambios no se guardan salvo que una excepción de abajo lo permita.',
+      help: 'En el modo de demostración puedes abrir todas las páginas, pero los cambios no se guardan salvo que una excepción de abajo lo permita.',
     },
     tabs: {
       overview: 'Resumen',

@@ -44,7 +44,7 @@ const resource = {
       off: 'Off',
     },
     status: {
-      help: 'Visitors can open every page, but changes are not saved unless an exception below allows them.',
+      help: 'In demo mode, you can open every page, but changes are not saved unless an exception below allows them.',
     },
     tabs: {
       overview: 'Overview',

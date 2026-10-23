@@ -44,7 +44,7 @@ const resource: DemoModeResource = {
       off: 'Tắt',
     },
     status: {
-      help: 'Khách có thể mở mọi trang, nhưng thay đổi không được lưu trừ khi một ngoại lệ bên dưới cho phép.',
+      help: 'Ở chế độ demo, bạn có thể mở mọi trang, nhưng thay đổi không được lưu trừ khi một ngoại lệ bên dưới cho phép.',
     },
     tabs: {
       overview: 'Tổng quan',

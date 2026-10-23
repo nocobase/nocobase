@@ -43,7 +43,7 @@ const resource: DemoModeResource = {
       off: '关闭',
     },
     status: {
-      help: '访客可以打开所有页面，但改动不会保存，除非下面的例外允许。',
+      help: '演示模式可以打开所有页面，但改动不会保存，除非下面的例外允许。',
     },
     tabs: {
       overview: '概览',

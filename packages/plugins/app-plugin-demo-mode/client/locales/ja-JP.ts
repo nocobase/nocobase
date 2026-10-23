@@ -44,7 +44,7 @@ const resource: DemoModeResource = {
       off: 'オフ',
     },
     status: {
-      help: '訪問者はすべてのページを開けますが、下の例外で許可しない限り変更は保存されません。',
+      help: 'デモモードではすべてのページを開けますが、下の例外で許可しない限り変更は保存されません。',
     },
     tabs: {
       overview: '概要',
