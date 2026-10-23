@@ -52,10 +52,14 @@ import { Skeleton } from '#components/ui/skeleton';
 import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
-import { NewChatChoice, ConversationModelChoice } from './agent-choice.js';
+import {
+  ConversationModelChoice,
+  EffortChoice,
+  NewChatChoice,
+} from './agent-choice.js';
 import { AgentNotice } from './agent-status.js';
 import { errorStatus, useChatTranslation } from './chat-i18n.js';
-import { useChatMode } from './chat-mode.js';
+import { defaultEffort, useChatMode } from './chat-mode.js';
 import { LoadError } from './chat-ui.js';
 import { Composer } from './composer.js';
 import { LiveSteps, TurnAnnouncer } from './live-steps.js';
@@ -379,8 +383,33 @@ function ConversationBody({
     },
     [onCreated, selectConversation, resetSource],
   );
+  // A runner agent's conversation chooses the reasoning effort of its runs, `medium` by default; the online agent's
+  // models declare no efforts, so it offers none.
+  const effortAgent = conversation
+    ? conversation.agent.id === 'online'
+      ? null
+      : (agents.data?.find((agent) => agent.id === conversation.agent.id) ??
+        null)
+    : target && target.id !== 'online'
+      ? target
+      : null;
+  const efforts = effortAgent?.efforts ?? [];
+  const effortKey = conversationId ?? `new:${target?.id ?? ''}`;
+  const [chosenEffort, setChosenEffort] = useState<{
+    readonly key: string;
+    readonly effort: string;
+  } | null>(null);
+  const effort =
+    efforts.length === 0
+      ? null
+      : chosenEffort?.key === effortKey && efforts.includes(chosenEffort.effort)
+        ? chosenEffort.effort
+        : conversation?.effort && efforts.includes(conversation.effort)
+          ? conversation.effort
+          : defaultEffort(effortAgent);
   const send = useSendMessage({
     conversationId,
+    effort,
     agentId: conversation ? conversation.agent.id : (target?.id ?? null),
     source,
     editorRevision: panel.composerRevision,
@@ -1038,6 +1067,22 @@ function ConversationBody({
                   }}
                 />
               )}
+              <EffortChoice
+                efforts={efforts}
+                value={effort}
+                onChange={(next) => {
+                  setChosenEffort({ key: effortKey, effort: next });
+                  focusComposer();
+                }}
+                disabled={
+                  running ||
+                  stopping ||
+                  chatController.submissions.blocked(
+                    conversationId,
+                    `registry:${source}:${conversationId ?? 'new'}`,
+                  )
+                }
+              />
             </div>
           }
           notice={

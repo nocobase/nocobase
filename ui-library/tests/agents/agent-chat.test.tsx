@@ -370,6 +370,57 @@ describe('ChatPanel', () => {
       await screen.findByRole('heading', { name: 'Hello there' }),
     ).toBeVisible();
   });
+
+  it("chooses a runner conversation's reasoning effort among its agent's, medium by default, and keeps it", async () => {
+    renderPanel(null);
+    const composer = await screen.findByTestId('chat-composer');
+    const picker = await within(composer).findByTestId('chat-effort-picker');
+    expect(picker).toHaveTextContent('Medium');
+    expect(picker).toHaveAccessibleName('Reasoning effort: Medium');
+    await userEvent.click(picker);
+    expect(
+      (await screen.findAllByRole('option')).map((item) => item.textContent),
+    ).toEqual(['Low', 'Medium', 'High', 'Extra high', 'Max']);
+    await userEvent.click(screen.getByRole('option', { name: 'High' }));
+    await waitFor(() => expect(picker).toHaveTextContent('High'));
+    fireEvent.change(screen.getByLabelText('Message to the agent'), {
+      target: { value: 'Think it through' },
+    });
+    fireEvent.click(screen.getByTestId('chat-send'));
+    expect(
+      await screen.findByRole('heading', { name: 'Think it through' }),
+    ).toBeVisible();
+    // Kept with the conversation once it exists.
+    expect(screen.getByTestId('chat-effort-picker')).toHaveTextContent('High');
+  });
+
+  it('offers no reasoning effort for the online agent', async () => {
+    renderPanel('release-plan');
+    const composer = await screen.findByTestId('chat-composer');
+    expect(within(composer).queryByTestId('chat-effort-picker')).toBeNull();
+  });
+
+  it('shows no source tag in the history and offers rename and archive in a row menu', async () => {
+    renderPanel('welcome-tour');
+    fireEvent.click(await screen.findByTestId('chat-history-button'));
+    const history = await screen.findByTestId('chat-history');
+    const row = within(history)
+      .getByText('Summarize PM-12 Welcome tour')
+      .closest('li')!;
+    // Started from "Ask agent", which the row no longer says.
+    expect(within(row).queryByText('Ask agent')).toBeNull();
+    await userEvent.click(
+      within(row).getByRole('button', {
+        name: 'Actions for Summarize PM-12 Welcome tour',
+      }),
+    );
+    expect(
+      (await screen.findAllByRole('menuitem')).map((item) => item.textContent),
+    ).toEqual(['Rename', 'Archive']);
+    expect(
+      screen.queryByRole('menuitem', { name: 'Open full screen' }),
+    ).toBeNull();
+  });
 });
 
 describe('ChatPanel modes and layout', () => {

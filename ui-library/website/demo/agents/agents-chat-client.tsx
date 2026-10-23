@@ -105,6 +105,8 @@ const AGENTS: readonly ChatAgent[] = [
     runnerNames: ['Demo runtime'],
     availability: online,
     personalOnly: false,
+    efforts: ['low', 'medium', 'high', 'xhigh', 'max'],
+    effort: 'high',
   },
   {
     id: 'coder',
@@ -118,6 +120,8 @@ const AGENTS: readonly ChatAgent[] = [
     runnerNames: ['Demo runtime'],
     availability: online,
     personalOnly: false,
+    efforts: ['minimal', 'low', 'medium', 'high', 'xhigh'],
+    effort: 'medium',
   },
   {
     id: 'release',
@@ -131,6 +135,8 @@ const AGENTS: readonly ChatAgent[] = [
     runnerNames: [],
     availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
     personalOnly: true,
+    efforts: ['low', 'medium', 'high', 'xhigh', 'max'],
+    effort: null,
   },
   {
     id: 'online',
@@ -144,6 +150,8 @@ const AGENTS: readonly ChatAgent[] = [
     runnerNames: [],
     availability: { online: true, reason: null, onlineRunners: 0 },
     personalOnly: false,
+    efforts: [],
+    effort: null,
   },
 ];
 
@@ -206,6 +214,7 @@ function conversation(
     createdAt: ago(60),
     updatedAt: ago(5),
     run: null,
+    effort: null,
     availability: agent?.availability ?? online,
     canFallback: false,
     canRestore: false,
@@ -1455,6 +1464,7 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
   conversationId,
   agentId,
   source,
+  effort,
   onCreated,
 }) =>
   useCallback(
@@ -1467,6 +1477,7 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
         const created = conversation(id, agent.id, input.content.slice(0, 30), {
           source,
           lastMessageAt: new Date().toISOString(),
+          ...(effort && agent.id !== 'online' ? { effort } : {}),
         });
         update((current) => ({
           ...current,
@@ -1476,6 +1487,14 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
         onCreated(created);
       }
       const target = id;
+      // The chosen effort is kept with the conversation, as the server keeps it for its runs.
+      if (effort && agentId !== 'online')
+        update((current) => ({
+          ...current,
+          conversations: current.conversations.map((item) =>
+            item.id === target ? { ...item, effort } : item,
+          ),
+        }));
       const sdk = demoChat(target);
       const saved = appendMessage(target, (seq) =>
         message(target, seq, 'user', input.content, {
@@ -1489,7 +1508,7 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
       if (detail) void sdk.sendMessage(saved);
       return true;
     },
-    [conversationId, agentId, source, onCreated],
+    [conversationId, agentId, source, effort, onCreated],
   );
 /** Preview-only destructive resend, using the same official SDK entry points as production. */
 export const useResendMessage: typeof Chat.useResendMessage = (

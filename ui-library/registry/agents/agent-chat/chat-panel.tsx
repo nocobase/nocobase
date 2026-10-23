@@ -175,7 +175,6 @@ function PanelHistory({
         panel.selectConversation(id);
         panel.focusComposer();
       }}
-      onOpenPage={panel.openPage}
     />
   );
 }

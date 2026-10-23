@@ -19,7 +19,6 @@ import {
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
-  Maximize2Icon,
   MoreHorizontalIcon,
   PencilIcon,
   SearchIcon,
@@ -52,7 +51,7 @@ import { Skeleton } from '#components/ui/skeleton';
 import { cn } from 'cn';
 
 import { useChatTranslation } from './chat-i18n.js';
-import { ChatTag, LoadError, Pulse } from './chat-ui.js';
+import { LoadError, Pulse } from './chat-ui.js';
 
 const ALL = '__all__';
 
@@ -61,8 +60,6 @@ export interface HistoryListProps {
   readonly header?: ReactNode;
   readonly activeId: string | null;
   readonly onOpen: (conversationId: string) => void;
-  /** Offered in each row's menu: open the conversation on the application's full-page view. */
-  readonly onOpenPage?: ((conversationId: string) => void) | null;
   /** Only this mode's conversations (online or runner agents); left out, every conversation. */
   readonly mode?: ConversationMode | null;
   readonly className?: string;
@@ -74,7 +71,6 @@ export function HistoryList({
   header,
   activeId,
   onOpen,
-  onOpenPage,
   mode,
   className,
   onNew,
@@ -262,7 +258,6 @@ export function HistoryList({
                 item={item}
                 active={item.id === activeId}
                 onOpen={() => onOpen(item.id)}
-                onOpenPage={onOpenPage ? () => onOpenPage(item.id) : null}
               />
             ))}
           </ul>
@@ -304,17 +299,14 @@ function HistoryRow({
   item,
   active,
   onOpen,
-  onOpenPage,
 }: {
   readonly item: ConversationSummary;
   readonly active: boolean;
   readonly onOpen: () => void;
-  readonly onOpenPage: (() => void) | null;
 }): ReactElement {
   const { t } = useChatTranslation();
   const format = useFormatters();
   const actions = useConversationActions();
-  const sources = useConversationSources();
   const agentText = useAgentText();
   const shown = item.title?.trim() ? item.title : t('chat.untitled');
   const [renaming, setRenaming] = useState(false);
@@ -396,12 +388,6 @@ function HistoryRow({
             <span className='truncate'>
               {agentText.name(item.agent) ?? t('chat.agentGone')}
             </span>
-            {item.source === 'panel' ? null : (
-              <ChatTag tone='grey' className='ml-auto'>
-                {sources.find((candidate) => candidate.key === item.source)
-                  ?.label ?? item.source}
-              </ChatTag>
-            )}
           </span>
         </button>
       )}
@@ -419,12 +405,6 @@ function HistoryRow({
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-auto min-w-40'>
           <DropdownMenuGroup>
-            {onOpenPage ? (
-              <DropdownMenuItem onClick={onOpenPage}>
-                <Maximize2Icon />
-                {t('chat.openPage')}
-              </DropdownMenuItem>
-            ) : null}
             <DropdownMenuItem
               onClick={() => {
                 setTitle(item.title ?? '');

@@ -2,6 +2,20 @@ import type { AgentChatLocale } from './en-US.js';
 
 const agentChatZhCN: AgentChatLocale = {
   chat: {
+    effort: {
+      label: '推理强度',
+      trigger: '推理强度：{{effort}}',
+      default: '默认',
+      levels: {
+        off: '关闭',
+        minimal: '最低',
+        low: '低',
+        medium: '中',
+        high: '高',
+        xhigh: '超高',
+        max: '最高',
+      },
+    },
     webSearch: {
       title: '联网搜索',
       queryCount: '{{count}} 个搜索词',
@@ -68,7 +82,6 @@ const agentChatZhCN: AgentChatLocale = {
     close: '关闭',
     expand: '全屏',
     restoreSize: '恢复为侧栏',
-    openPage: '全屏打开',
     openInPanel: '在侧栏中打开',
     more: '更多',
     newConversation: '新对话',

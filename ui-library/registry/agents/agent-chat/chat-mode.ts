@@ -70,3 +70,12 @@ export function useChatMode(): ChatMode {
     },
   };
 }
+
+/** The effort a conversation starts with: `medium` when the agent takes it, otherwise the agent's own. */
+export function defaultEffort(
+  agent: Pick<ChatAgent, 'efforts' | 'effort'> | null | undefined,
+): string | null {
+  const efforts = agent?.efforts ?? [];
+  if (efforts.includes('medium')) return 'medium';
+  return agent?.effort && efforts.includes(agent.effort) ? agent.effort : null;
+}

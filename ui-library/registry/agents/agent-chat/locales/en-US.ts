@@ -1,6 +1,20 @@
 /** Every key the agent chat looks up, so each locale is checked against the same list. */
 export interface AgentChatLocale {
   readonly chat: {
+    readonly effort: {
+      readonly label: string;
+      readonly trigger: string;
+      readonly default: string;
+      readonly levels: {
+        readonly off: string;
+        readonly minimal: string;
+        readonly low: string;
+        readonly medium: string;
+        readonly high: string;
+        readonly xhigh: string;
+        readonly max: string;
+      };
+    };
     readonly webSearch: {
       readonly title: string;
       readonly queryCount: string;
@@ -62,7 +76,6 @@ export interface AgentChatLocale {
     readonly close: string;
     readonly expand: string;
     readonly restoreSize: string;
-    readonly openPage: string;
     readonly openInPanel: string;
     readonly more: string;
     readonly newConversation: string;
@@ -285,6 +298,20 @@ export interface AgentChatLocale {
 
 const agentChatEnUS: AgentChatLocale = {
   chat: {
+    effort: {
+      label: 'Reasoning effort',
+      trigger: 'Reasoning effort: {{effort}}',
+      default: 'Default',
+      levels: {
+        off: 'Off',
+        minimal: 'Minimal',
+        low: 'Low',
+        medium: 'Medium',
+        high: 'High',
+        xhigh: 'Extra high',
+        max: 'Max',
+      },
+    },
     webSearch: {
       title: 'Web search',
       queryCount: 'Queries · {{count}}',
@@ -359,7 +386,6 @@ const agentChatEnUS: AgentChatLocale = {
     close: 'Close',
     expand: 'Full width',
     restoreSize: 'Back to side panel',
-    openPage: 'Open full screen',
     openInPanel: 'Open in side panel',
     more: 'More',
     newConversation: 'New conversation',

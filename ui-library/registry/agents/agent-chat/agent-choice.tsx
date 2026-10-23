@@ -7,6 +7,13 @@ import type {
 import type { ReactElement } from 'react';
 
 import { AgentPicker } from '#components/agent-picker';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#components/ui/select';
 
 import { useAgentPickerLabels, useChatTranslation } from './chat-i18n.js';
 
@@ -117,5 +124,70 @@ export function ConversationModelChoice({
       className='h-7 shrink px-1.5 @md:px-2'
       data-testid='chat-model-picker'
     />
+  );
+}
+
+const EFFORT_LEVELS = [
+  'off',
+  'minimal',
+  'low',
+  'medium',
+  'high',
+  'xhigh',
+  'max',
+] as const;
+
+/**
+ * The reasoning effort of a runner conversation's runs, among the efforts its agent's tool takes; nothing when it takes
+ * none. Null shows the agent's default.
+ */
+export function EffortChoice({
+  efforts,
+  value,
+  onChange,
+  disabled,
+}: {
+  readonly efforts: readonly string[];
+  readonly value: string | null;
+  readonly onChange: (effort: string) => void;
+  readonly disabled?: boolean;
+}): ReactElement | null {
+  const { t } = useChatTranslation();
+  if (efforts.length === 0) return null;
+  const label = (effort: string): string =>
+    (EFFORT_LEVELS as readonly string[]).includes(effort)
+      ? t(`chat.effort.levels.${effort as (typeof EFFORT_LEVELS)[number]}`)
+      : effort;
+  const items = efforts.map((effort) => ({
+    value: effort,
+    label: label(effort),
+  }));
+  const shown = value ? label(value) : t('chat.effort.default');
+  return (
+    <Select
+      items={items}
+      value={value}
+      onValueChange={(next: string | null) => {
+        if (next) onChange(next);
+      }}
+      disabled={disabled ?? false}
+    >
+      <SelectTrigger
+        size='sm'
+        className='h-7 min-w-0 shrink gap-1 border-transparent bg-transparent px-1.5 text-xs text-muted-foreground shadow-none hover:bg-muted dark:bg-transparent @md:px-2'
+        aria-label={t('chat.effort.trigger', { effort: shown })}
+        title={t('chat.effort.label')}
+        data-testid='chat-effort-picker'
+      >
+        <SelectValue placeholder={t('chat.effort.default')} />
+      </SelectTrigger>
+      <SelectContent className='w-auto min-w-(--anchor-width)'>
+        {items.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
