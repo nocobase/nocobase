@@ -899,7 +899,7 @@ describe('runtimes page', () => {
       callsTo('POST', 'agents/runners/registrationTokens')[0]?.json,
     ).toEqual({
       trust: 'ownerOnly',
-      enabledTools: null,
+      enabledTools: ['codex', 'claude'],
       slots: 4,
     });
     expect(within(dialog).getAllByText(/fgreg_secret/u).length).toBeGreaterThan(
@@ -950,7 +950,7 @@ describe('runtimes page', () => {
         callsTo('POST', 'agents/runners/registrationTokens')[0]?.json,
       ).toEqual({
         trust: 'team',
-        enabledTools: null,
+        enabledTools: ['codex', 'claude'],
         slots: 4,
       }),
     );
@@ -963,8 +963,10 @@ describe('runtimes page', () => {
     const claude = within(sheet).getByTestId('runner-tool-claude');
     expect(claude).toHaveAttribute('data-enabled', 'false');
     expect(within(claude).getByText('runtimes.tool.off')).toBeInTheDocument();
-    // Enabled but not reported: not listed.
-    expect(within(sheet).queryByTestId('runner-tool-pi')).toBeNull();
+    // All supported tools remain selectable, including tools awaiting detection.
+    expect(within(sheet).getByTestId('runner-tool-pi')).toHaveTextContent(
+      'runtimes.tool.checking',
+    );
 
     fireEvent.click(
       within(claude).getByRole('switch', {
@@ -1049,11 +1051,11 @@ describe('runtimes page', () => {
   it('adds a runtime that runs only the coding tools checked, with its concurrency', async () => {
     renderRoute(<ConnectPage />, '/runtimes/connect', '/runtimes/connect');
     const dialog = await screen.findByRole('dialog');
-    for (const tool of ['claude', 'codex', 'opencode', 'pi'])
+    for (const tool of ['claude', 'codex'])
       expect(
         within(dialog).getByRole('checkbox', { name: `tools.${tool}` }),
       ).toBeChecked();
-    for (const tool of ['claude', 'codex', 'opencode', 'pi'])
+    for (const tool of ['claude', 'codex'])
       fireEvent.click(
         within(dialog).getByRole('checkbox', { name: `tools.${tool}` }),
       );

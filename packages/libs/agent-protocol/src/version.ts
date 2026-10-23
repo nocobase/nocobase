@@ -7,6 +7,7 @@
  * declares the `features` it has, and the server hands a run only to a runner whose features cover its requirements.
  */
 import { z } from 'zod';
+import { AGENTS, type CatalogAgentId } from '@nocobase/acp-bridge/catalog';
 
 /**
  * The protocol this package describes. A server rejects a runner that speaks another one (`PROTOCOL_UNSUPPORTED`).
@@ -85,7 +86,13 @@ import { z } from 'zod';
  * Version 12 added code host CLI wrappers (`RunGit.tools`, the `gitTools` feature) and made a run credential's
  * username the only one git uses. Nothing else of version 11 changed; update the application first.
  */
-export const PROTOCOL_VERSION = 12;
+/**
+ * `ToolInfo.statusReason` and `ToolInfo.statusDetail` were added within version 13 as optional fields: why a tool's
+ * status is what it is, beyond the status itself, and the tool's own redacted words about it. Older servers ignore
+ * them; a runner that does not send them is shown by status alone, as before.
+ */
+/** Version 13 expands tool identities to the shared ACP catalog and adds server-selected detection. Update servers first. */
+export const PROTOCOL_VERSION = 13;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -157,9 +164,26 @@ export function missingFeatures(
 }
 
 /** The coding tools a runner can drive. */
-export const AGENT_TOOLS = ['claude', 'codex', 'opencode', 'pi'] as const;
+export const NATIVE_AGENT_TOOLS = [
+  'claude',
+  'codex',
+  'opencode',
+  'pi',
+] as const;
 
-export type AgentTool = (typeof AGENT_TOOLS)[number];
+export const AGENT_TOOLS: readonly AgentTool[] = [
+  ...new Set<AgentTool>([
+    ...NATIVE_AGENT_TOOLS,
+    ...AGENTS.map((agent) => agent.id),
+  ]),
+];
+export const DEFAULT_AGENT_TOOLS = ['codex', 'claude'] as const;
+export function isNativeTool(tool: string): boolean {
+  return (NATIVE_AGENT_TOOLS as readonly string[]).includes(tool);
+}
+
+export type NativeAgentTool = (typeof NATIVE_AGENT_TOOLS)[number];
+export type AgentTool = NativeAgentTool | CatalogAgentId;
 
 export const AgentToolSchema: z.ZodType<AgentTool> = z.enum(AGENT_TOOLS);
 
@@ -176,7 +200,8 @@ export const AgentToolSchema: z.ZodType<AgentTool> = z.enum(AGENT_TOOLS);
  * the provider publishes; this list does not establish availability on any runner.
  */
 export const TOOL_MODEL_SUGGESTIONS: Readonly<
-  Record<AgentTool, readonly string[]>
+  Record<NativeAgentTool, readonly string[]> &
+    Partial<Record<AgentTool, readonly string[]>>
 > = {
   claude: [
     'opus',
@@ -214,7 +239,10 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
  * the tool's default; an adapter passes nothing for a value its tool does not take (an OpenCode model without that
  * variant).
  */
-export const TOOL_EFFORTS: Readonly<Record<AgentTool, readonly string[]>> = {
+export const TOOL_EFFORTS: Readonly<
+  Record<NativeAgentTool, readonly string[]> &
+    Partial<Record<AgentTool, readonly string[]>>
+> = {
   claude: ['low', 'medium', 'high', 'xhigh', 'max'],
   codex: ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'],
   opencode: ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'],

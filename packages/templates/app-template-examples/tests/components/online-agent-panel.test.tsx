@@ -1010,6 +1010,29 @@ it.each([
     });
     expect(document.querySelector('[data-message-id="answer"]')).toBeNull();
     expect(thinking).toBeVisible();
+    act(() => {
+      emit({ type: 'reasoning-start', id: 'reasoning' });
+      emit({
+        type: 'reasoning-delta',
+        id: 'reasoning',
+        delta: 'Reasoning only',
+      });
+    });
+    expect(await screen.findByText('Reasoning only')).toBeVisible();
+    expect(
+      document.querySelector('[data-chat-feedback="thinking"]'),
+    ).toBeNull();
+    expect(
+      screen.queryByLabelText(locale === 'zh-CN' ? '正在输入…' : 'Writing…'),
+    ).toBeNull();
+    act(() => emit({ type: 'reasoning-end', id: 'reasoning' }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: locale === 'zh-CN' ? '推理过程' : 'Reasoning',
+        }),
+      ).toHaveAttribute('aria-expanded', 'false'),
+    );
     act(() => emit({ type: 'text-delta', id: 'text', delta: 'First body' }));
     expect(await screen.findByText('First body')).toBeVisible();
     expect(

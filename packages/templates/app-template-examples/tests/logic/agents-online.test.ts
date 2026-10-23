@@ -86,7 +86,7 @@ test('configures a chat model and streams, persists, resumes and stops an owned 
     ).status,
   ).toBe(403);
 
-  const fixture = await createOnlineAgentModelFixture();
+  const fixture = await createOnlineAgentModelFixture({ scene: 'reasoning' });
   try {
     const apiKey = randomBytes(16).toString('hex'); // Fixture-only token exercises sealed storage and redaction.
     const created = await admin.fetch(
@@ -156,9 +156,15 @@ test('configures a chat model and streams, persists, resumes and stops an owned 
     expect(events.headers.get('x-vercel-ai-ui-message-stream')).toBe('v1');
     await expect.poll(() => fixture.streams.length).toBe(1);
     const streamText = events.text();
+    fixture.reasoning(0, 'Local model reasoning');
+    fixture.append(0, 'Hello from the local model fixture.');
     fixture.complete(0);
     const output = await streamText;
     expect(output).toContain('"type":"text-delta"');
+    expect(output).toContain('"type":"reasoning-start"');
+    expect(output).toContain('"type":"reasoning-delta"');
+    expect(output).toContain('"type":"reasoning-end"');
+    expect(output).toContain('Local model reasoning');
     expect(output).toContain('Hello from the local model fixture.');
     expect(output).toContain('"type":"finish"');
     expect(output).toContain('[DONE]');
@@ -171,6 +177,12 @@ test('configures a chat model and streams, persists, resumes and stops an owned 
     expect(appUIMessageText(saved[1]!)).toContain(
       'Hello from the local model fixture.',
     );
+    expect(saved[1]!.parts).toContainEqual({
+      type: 'reasoning',
+      text: 'Local model reasoning',
+      state: 'done',
+    });
+    expect(appUIMessageText(saved[1]!)).not.toContain('Local model reasoning');
     expect(saved.every((message) => !('original' in message))).toBe(true);
 
     // Ownership is a server boundary even for an administrator.
@@ -208,7 +220,21 @@ test('configures a chat model and streams, persists, resumes and stops an owned 
     expect(JSON.stringify(fixture.requests.at(-1)!.messages)).toContain(
       'Hello from the local model fixture.',
     );
-    const cancelledText = second.text();
+    expect(JSON.stringify(fixture.requests.at(-1)!.messages)).toContain(
+      'Local model reasoning',
+    );
+    let received = '';
+    const cancelledText = (async () => {
+      for await (const value of second.body!.pipeThrough(
+        new TextDecoderStream(),
+      ))
+        received += value;
+      return received;
+    })();
+    fixture.append(1, 'Hello from the local model fixture.');
+    await expect
+      .poll(() => received)
+      .toContain('Hello from the local model fixture.');
     expect((await member.fetch(`${path}/stop`, write())).status).toBe(200);
     expect(await cancelledText).toContain('"type":"cancelled"');
     await expect

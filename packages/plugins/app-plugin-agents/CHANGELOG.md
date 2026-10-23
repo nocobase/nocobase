@@ -1,5 +1,30 @@
 # @nocobase/app-plugin-agents
 
+## 1.0.0-beta.19
+
+### Patch Changes
+
+- c94a01c: Display model-provided OnlineAgent reasoning in live and saved conversations without exposing provider metadata or signatures. Keep reasoning separate from answer text, preserve manual expand/collapse choices during updates, and render each part safely in the shared chat and Examples application.
+- ffe5494: Apply each application's online runner slots and tool limits from heartbeat replies without restarting. Count tasks and build jobs independently per application, wake capacity waits after changes, and keep existing leases during shrinkage. New registrations default to four slots and online registration settings take precedence over legacy client hints.
+
+  Remove local slot configuration flags from register and start. Retain existing local values only for older servers until all connected applications support online capacity. The runner status JSON now reports effective capacity and its source under each apps entry instead of top-level slots and toolSlots. Runtime pages show reported capacity, pending synchronization, legacy compatibility and the last offline report.
+
+- 5875cb9: Expose cancellation actors and a transactional stop request callback, and allow status events to refresh issue progress even when the issue already has the target status.
+- Updated dependencies [0c5c4ff]
+- Updated dependencies [5b72947]
+- Updated dependencies [6e3d66e]
+- Updated dependencies [6e3d66e]
+- Updated dependencies [ffe5494]
+- Updated dependencies [0c5c4ff]
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-cli@1.0.0-beta.27
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+  - @nocobase/agent-protocol@0.1.0-beta.13
+  - @nocobase/app-client@4.0.0-beta.2
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/app-cli-client@0.1.0-beta.14
+
 ## 1.0.0-beta.18
 
 ### Minor Changes

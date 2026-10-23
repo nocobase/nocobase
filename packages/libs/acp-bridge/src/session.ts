@@ -21,6 +21,7 @@ import {
   isAuthRequired,
   type AgentClientHandlers,
 } from './agent-process.js';
+import { continueSession, sessionChoices } from './client.js';
 import { allowedDir } from './folders.js';
 import type { ResolvedAgent } from './agents.js';
 import {
@@ -447,7 +448,7 @@ export class BridgeSession {
         const cwd = await this.#workDir(target.cwd);
         const mcpServers: acp.McpServer[] = [];
         let opened = this.#acpSessionId
-          ? await this.#continue(agent, this.#acpSessionId, cwd, mcpServers)
+          ? await this.#continue(agent, this.#acpSessionId, cwd)
           : undefined;
         if (!opened) {
           const created = await agent.agent.request(
@@ -529,34 +530,12 @@ export class BridgeSession {
     agent: AgentProcess,
     sessionId: string,
     cwd: string,
-    mcpServers: acp.McpServer[],
   ): Promise<OpenedSession | undefined> {
-    const capabilities = agent.initialize.agentCapabilities;
-    let reason = 'the agent cannot continue earlier sessions';
-    try {
-      if (capabilities?.sessionCapabilities?.resume) {
-        return await agent.agent.request(acp.methods.agent.session.resume, {
-          sessionId,
-          cwd,
-          mcpServers,
-        });
-      }
-      if (capabilities?.loadSession) {
-        this.#replaying = true;
-        return (
-          (await agent.agent.request(acp.methods.agent.session.load, {
-            sessionId,
-            cwd,
-            mcpServers,
-          })) ?? {}
-        );
-      }
-    } catch (cause) {
-      if (isAuthRequired(cause)) throw cause;
-      reason = errorMessage(cause);
-    } finally {
-      this.#replaying = false;
-    }
+    const opened = await continueSession(agent, sessionId, cwd, (active) => {
+      this.#replaying = active;
+    });
+    if (opened) return opened;
+    const reason = 'the agent cannot continue the earlier session';
     this.#acpSessionId = null;
     this.#emit({
       kind: 'notice',
@@ -571,44 +550,8 @@ export class BridgeSession {
     configOptions: readonly acp.SessionConfigOption[] | null | undefined,
     modes: acp.SessionModeState | null | undefined,
   ): void {
-    const selects = (configOptions ?? []).flatMap((option): SessionChoice[] =>
-      option.type === 'select'
-        ? [
-            {
-              id: option.id,
-              name: option.name,
-              ...(option.category ? { category: option.category } : {}),
-              currentValue: option.currentValue,
-              options: option.options
-                .flatMap((entry) =>
-                  'group' in entry ? entry.options : [entry],
-                )
-                .map(valueOf),
-            },
-          ]
-        : [],
-    );
-    if (selects.length > 0 || !modes) {
-      this.#choices = selects;
-      this.#modesOnly = false;
-      return;
-    }
-    this.#modesOnly = true;
-    this.#choices = [
-      {
-        id: 'mode',
-        name: 'Mode',
-        category: 'mode',
-        currentValue: modes.currentModeId,
-        options: modes.availableModes.map((mode) =>
-          valueOf({
-            value: mode.id,
-            name: mode.name,
-            description: mode.description,
-          }),
-        ),
-      },
-    ];
+    this.#choices = sessionChoices(configOptions, modes);
+    this.#modesOnly = !configOptions?.length && !!modes;
   }
 
   /** Applies the first of the agent's full-access modes it offers, then what the person chose, wherever they differ. */
@@ -839,18 +782,6 @@ function usageOf(usage: acp.Usage): TurnUsage {
       ? {}
       : { thoughtTokens: usage.thoughtTokens }),
     totalTokens: usage.totalTokens,
-  };
-}
-
-function valueOf(option: {
-  readonly value: string;
-  readonly name: string;
-  readonly description?: string | null;
-}): SessionChoice['options'][number] {
-  return {
-    value: option.value,
-    name: option.name,
-    ...(option.description ? { description: option.description } : {}),
   };
 }
 

@@ -45,6 +45,7 @@ import {
 } from './run.js';
 import {
   AgentToolSchema,
+  isNativeTool,
   RunnerFeatureSchema,
   type AgentTool,
   type RunnerFeature,
@@ -58,6 +59,7 @@ export const MAX_EFFORT_LENGTH = 40;
 
 export interface ToolModel {
   readonly id: string;
+  readonly name?: string;
   /** Absent when the tool cannot report this model's supported efforts. */
   readonly efforts?: readonly string[];
 }
@@ -76,6 +78,18 @@ const capabilityIdentifier = (max: number) =>
 
 export const ToolModelSchema: z.ZodType<ToolModel> = z.object({
   id: capabilityIdentifier(MAX_MODEL_ID_LENGTH),
+  name: z
+    .string()
+    .min(1)
+    .max(200)
+    .refine(
+      (value) =>
+        [...value].every(
+          (character) =>
+            character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127,
+        ) && modelRedactor.text(value) === value,
+    )
+    .optional(),
   efforts: z
     .array(capabilityIdentifier(MAX_EFFORT_LENGTH))
     .max(MAX_MODEL_EFFORTS)
@@ -84,6 +98,18 @@ export const ToolModelSchema: z.ZodType<ToolModel> = z.object({
 
 const reportedToolModelSchema = z.object({
   id: capabilityIdentifier(MAX_MODEL_ID_LENGTH),
+  name: z
+    .string()
+    .min(1)
+    .max(200)
+    .refine(
+      (value) =>
+        [...value].every(
+          (character) =>
+            character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127,
+        ) && modelRedactor.text(value) === value,
+    )
+    .optional(),
   efforts: z
     .unknown()
     .transform((value) => {
@@ -135,12 +161,75 @@ export interface ToolCapabilities {
   readonly modelsDetectionError?: ModelsDetectionError;
 }
 
+/**
+ * Why `status` is what it is, when the runner can say more than the status alone: the tool is installed but its
+ * version answers that it predates ACP support (`versionTooOld`), its handshake failed because it has no provider or
+ * model configured (`notConfigured`), the program found under the expected name is not this tool (`otherProgram`),
+ * detection ran out of time (`timeout`), it started but the handshake or first session failed for another reason
+ * (`startFailed`), it is simply not signed in (`notLoggedIn`), or its handshake succeeds whether or not it is signed
+ * in, so sign-in could not be confirmed one way or the other (`signInUnconfirmed`; reported as detection failure,
+ * never as confirmed missing setup or as `ready` from a handshake alone). Added within version 13: absent from a runner that
+ * predates it, or when the runner has nothing more specific to say than `status` itself.
+ */
+export type ToolStatusReason =
+  | 'notLoggedIn'
+  | 'versionTooOld'
+  | 'notConfigured'
+  | 'otherProgram'
+  | 'timeout'
+  | 'startFailed'
+  | 'signInUnconfirmed';
+
+export const TOOL_STATUS_REASONS: readonly ToolStatusReason[] = [
+  'notLoggedIn',
+  'versionTooOld',
+  'notConfigured',
+  'otherProgram',
+  'timeout',
+  'startFailed',
+  'signInUnconfirmed',
+];
+
+export const ToolStatusReasonSchema: z.ZodType<ToolStatusReason> = z.enum([
+  'notLoggedIn',
+  'versionTooOld',
+  'notConfigured',
+  'otherProgram',
+  'timeout',
+  'startFailed',
+  'signInUnconfirmed',
+]);
+
+/** How much of a tool's own words about its status the runner keeps, redacted and cut to this length. */
+export const MAX_STATUS_DETAIL_LENGTH = 300;
+
+const statusDetailRedactor = createRedactor();
+
+/** The tool's own words, redacted, control characters stripped, cut to {@link MAX_STATUS_DETAIL_LENGTH}. */
+export const ToolStatusDetailSchema: z.ZodType<string> = z
+  .string()
+  .min(1)
+  .max(MAX_STATUS_DETAIL_LENGTH)
+  .refine(
+    (value) =>
+      [...value].every(
+        (character) =>
+          character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127,
+      ) && statusDetailRedactor.text(value) === value,
+  );
+
 /** A coding tool found on the runner's host. */
 export interface ToolInfo extends ToolCapabilities {
   readonly kind: AgentTool;
   readonly version?: string;
   readonly path?: string;
   readonly authenticated: boolean;
+  readonly status?:
+    'checking' | 'notInstalled' | 'needsLogin' | 'ready' | 'failed';
+  /** Why `status` is what it is, when the runner can say more (protocol 7); absent when it cannot. */
+  readonly statusReason?: ToolStatusReason;
+  /** The tool's own words about its status, redacted and bounded (protocol 7); absent when it said nothing useful. */
+  readonly statusDetail?: string;
 }
 
 const toolInfoFields = {
@@ -148,48 +237,99 @@ const toolInfoFields = {
   version: z.string().optional(),
   path: z.string().optional(),
   authenticated: z.boolean(),
+  status: z
+    .enum(['checking', 'notInstalled', 'needsLogin', 'ready', 'failed'])
+    .optional(),
+  statusReason: ToolStatusReasonSchema.optional(),
+  statusDetail: ToolStatusDetailSchema.optional(),
 };
 
-export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
-  ...toolInfoFields,
-  models: z.array(ToolModelSchema).max(MAX_TOOL_MODELS).optional(),
-  modelsSource: ModelsSourceSchema.optional(),
-  modelsDetectedAt: z.iso.datetime().optional(),
-  modelsDetectionStatus: ModelsDetectionStatusSchema.optional(),
-  modelsDetectionError: ModelsDetectionErrorSchema.optional(),
+/** ACP model ids are opaque: preserve spelling, spaces and provider punctuation without accepting controls or secrets. */
+export const AcpToolModelSchema: z.ZodType<ToolModel> = z.object({
+  id: z
+    .string()
+    .min(1)
+    .max(MAX_MODEL_ID_LENGTH)
+    .refine(
+      (value) =>
+        value.trim() === value &&
+        [...value].every(
+          (character) =>
+            character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127,
+        ) &&
+        !value.includes('://') &&
+        modelRedactor.text(value) === value,
+    ),
+  name: reportedToolModelSchema.shape.name,
+  efforts: z
+    .array(capabilityIdentifier(MAX_EFFORT_LENGTH))
+    .max(MAX_MODEL_EFFORTS)
+    .optional(),
 });
+
+export const ToolInfoSchema: z.ZodType<ToolInfo> = z
+  .object({
+    ...toolInfoFields,
+    models: z.array(AcpToolModelSchema).max(MAX_TOOL_MODELS).optional(),
+    modelsSource: ModelsSourceSchema.optional(),
+    modelsDetectedAt: z.iso.datetime().optional(),
+    modelsDetectionStatus: ModelsDetectionStatusSchema.optional(),
+    modelsDetectionError: ModelsDetectionErrorSchema.optional(),
+  })
+  .superRefine((tool, context) => {
+    if (isNativeTool(tool.kind))
+      for (const [index, model] of (tool.models ?? []).entries()) {
+        if (!ToolModelSchema.safeParse(model).success)
+          context.addIssue({
+            code: 'custom',
+            message: 'Invalid native tool model',
+            path: ['models', index],
+          });
+      }
+  });
+
+function reportedModelsOf(
+  kind: AgentTool,
+  value: unknown,
+): ToolModel[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const schema = isNativeTool(kind)
+    ? reportedToolModelSchema
+    : AcpToolModelSchema;
+  const models = (value as unknown[])
+    .slice(0, MAX_TOOL_MODELS)
+    .flatMap((model) => {
+      const parsed = schema.safeParse(model);
+      return parsed.success ? [parsed.data] : [];
+    });
+  return value.length > 0 && models.length === 0 ? undefined : models;
+}
 
 /** Keep a runner connected when an independently released sender reports unfamiliar advisory capabilities. */
 export const ReportedToolInfoSchema: z.ZodType<ToolInfo> = z
   .object({
     ...toolInfoFields,
-    models: z
-      .unknown()
-      .transform((value) => {
-        if (!Array.isArray(value)) return undefined;
-        const models = (value as unknown[])
-          .slice(0, MAX_TOOL_MODELS)
-          .flatMap((model) => {
-            const parsed = reportedToolModelSchema.safeParse(model);
-            return parsed.success ? [parsed.data] : [];
-          });
-        return value.length > 0 && models.length === 0 ? undefined : models;
-      })
-      .optional(),
+    models: z.unknown().optional(),
     modelsSource: ModelsSourceSchema.optional().catch(undefined),
     modelsDetectedAt: z.iso.datetime().optional().catch(undefined),
     modelsDetectionStatus:
       ModelsDetectionStatusSchema.optional().catch(undefined),
     modelsDetectionError:
       ModelsDetectionErrorSchema.optional().catch(undefined),
+    statusReason: ToolStatusReasonSchema.optional().catch(undefined),
+    statusDetail: ToolStatusDetailSchema.optional().catch(undefined),
   })
-  .transform((tool) => ({
-    ...tool,
-    modelsDetectionStatus:
-      tool.modelsDetectionStatus === 'detected' && tool.models === undefined
-        ? undefined
-        : tool.modelsDetectionStatus,
-  }));
+  .transform((tool) => {
+    const models = reportedModelsOf(tool.kind, tool.models);
+    return {
+      ...tool,
+      models,
+      modelsDetectionStatus:
+        tool.modelsDetectionStatus === 'detected' && models === undefined
+          ? undefined
+          : tool.modelsDetectionStatus,
+    };
+  });
 
 /**
  * How many runs of each coding tool a runner may hold at once, beside its total slots: `{ claude: 2, codex: 1 }`. A tool
@@ -290,6 +430,7 @@ export const RegisterRequestSchema: z.ZodType<RegisterRequest> = z.object({
 });
 
 export interface RegisterResponse {
+  readonly enabledTools?: readonly AgentTool[];
   /** The application the runner registered with; a runner keeps one registration per application `id`. */
   readonly app?: RunApp;
   readonly runnerId: string;
@@ -307,6 +448,7 @@ export interface RegisterResponse {
 }
 
 export const RegisterResponseSchema: z.ZodType<RegisterResponse> = z.object({
+  enabledTools: z.array(AgentToolSchema).optional(),
   app: RunAppSchema.optional(),
   runnerId: z.string(),
   runnerKey: z.string(),
@@ -446,6 +588,8 @@ export const UpgradeRequiredSchema: z.ZodType<UpgradeRequired> = z.object({
 export interface HeartbeatResponse {
   /** Re-detect tools and acknowledge this request in a heartbeat with the new report. */
   readonly toolsRefreshRequestId?: string;
+  readonly enabledTools?: readonly AgentTool[];
+  readonly detectTools?: boolean;
   readonly capacity?: RunnerCapacity;
   readonly ok: true;
   readonly serverTime: string;
@@ -474,6 +618,8 @@ export interface HeartbeatResponse {
 
 export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
   toolsRefreshRequestId: z.string().min(1).max(64).optional(),
+  enabledTools: z.array(AgentToolSchema).optional(),
+  detectTools: z.boolean().optional(),
   capacity: RunnerCapacitySchema.optional(),
   ok: z.literal(true),
   serverTime: z.string(),

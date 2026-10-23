@@ -38,6 +38,7 @@ import { detectionEnv, providedNames } from '../agent/env.ts';
 import type { loadAdapters } from '../agent/adapters/registry.ts';
 import {
   readConnection,
+  writeConnection,
   markRevoked,
   type RevocationReason,
   passEnvNames,
@@ -115,7 +116,7 @@ import {
   type UpdateTarget,
 } from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
-import { ToolCapabilitiesCache, detectTools } from './tool-capabilities.ts';
+import { detectTools, ToolCapabilitiesCache } from './tool-capabilities.ts';
 export { detectTools } from './tool-capabilities.ts';
 import { reportedModels } from './model-list.ts';
 
@@ -209,6 +210,8 @@ interface AppLink {
   revoked: boolean;
   /** The application cannot work with this runner's protocol: heartbeats only, no claims. */
   upgradeRequired: boolean;
+  /** Fetch the server selection before the first inspection after a daemon restart. */
+  selectionConfirmed?: boolean;
   heartbeatTimer?: NodeJS.Timeout;
   heartbeatInFlight?: Promise<void>;
   reportedDetection?: AppLink['detection'];
@@ -567,28 +570,49 @@ export class RunnerDaemon {
       this.options.settings;
     const passEnv = passEnvNames(settings.passEnv);
     const localVariables = (stored ?? link.connection).registration.variables;
+    const selected = link.selectionConfirmed
+      ? (link.connection.registration.enabledTools ?? [])
+      : [];
     const key = createHash('sha256')
       .update(
-        JSON.stringify(
+        JSON.stringify([
+          selected,
           Object.entries(
             detectionEnv(process.env, passEnv, localVariables),
           ).sort(([a], [b]) => a.localeCompare(b)),
-        ),
+        ]),
       )
       .digest('hex');
-    if (
-      force ||
-      link.detection?.key !== key ||
-      (link.detection.detectedAt !== undefined &&
-        Date.now() - link.detection.detectedAt >= TOOL_DETECTION_INTERVAL_MS)
-    ) {
+    const expired =
+      link.detection?.detectedAt !== undefined &&
+      Date.now() - link.detection.detectedAt >= TOOL_DETECTION_INTERVAL_MS;
+    if (force || link.detection?.key !== key || expired) {
       const previous = link.detection;
       previous?.controller.abort();
       const controller = new AbortController();
-      const adaptersFor = () =>
-        this.options.adaptersFor?.(process.env, passEnv, localVariables) ??
-        this.options.adapters;
-      const tools = detectTools(adaptersFor(), controller.signal);
+      const adaptersFor = () => {
+        const adapters =
+          this.options.adaptersFor?.(
+            process.env,
+            passEnv,
+            localVariables,
+            selected,
+          ) ?? this.options.adapters;
+        return new Map(
+          [...adapters].filter(([kind]) => selected.includes(kind)),
+        );
+      };
+      // Initial selection is inspected in the background; requested and expired results must finish before reporting.
+      const tools =
+        force || expired
+          ? detectTools(adaptersFor(), controller.signal)
+          : Promise.resolve(
+              selected.map((kind): ToolInfo => ({
+                kind,
+                authenticated: false,
+                status: 'checking',
+              })),
+            );
       const detection: NonNullable<AppLink['detection']> = {
         key,
         controller,
@@ -888,7 +912,7 @@ export class RunnerDaemon {
                         free:
                           this.pendingUpdate || this.pruning || this.diskPaused
                             ? 0
-                            : free,
+                            : (free ?? 0),
                       } satisfies ToolLoad,
                     ]),
                   ),
@@ -934,6 +958,18 @@ export class RunnerDaemon {
         response.compatibility !== undefined,
         response.compatibility?.message,
       );
+      if (response.enabledTools !== undefined) link.selectionConfirmed = true;
+      if (
+        response.enabledTools !== undefined &&
+        JSON.stringify(response.enabledTools) !==
+          JSON.stringify(link.connection.registration.enabledTools)
+      ) {
+        link.connection.registration.enabledTools = response.enabledTools;
+        await writeConnection(link.connection, this.options.paths);
+      }
+      if (response.detectTools) {
+        (await link.detection?.capabilities)?.invalidate();
+      }
       link.workspaceReporting = response.workspaces;
       if (!response.toolsRefreshRequestId)
         link.toolsRefreshCompletedId = undefined;
@@ -1239,7 +1275,11 @@ export class RunnerDaemon {
     }
     for (const payload of response.runs) {
       if (this.stopping.signal.aborted) break;
-      const refused = refuseRun(policy.policy, payload);
+      const refused = !(
+        link.connection.registration.enabledTools ?? []
+      ).includes(payload.tool.kind)
+        ? 'The coding tool is disabled for this runner.'
+        : refuseRun(policy.policy, payload);
       if (refused !== undefined) {
         this.options.log(`run ${payload.run.id}: refused: ${refused}`);
         await link.client
@@ -1262,7 +1302,12 @@ export class RunnerDaemon {
           `run ${payload.run.id}: ${payload.tool.kind} is over its limit of ${this.toolLimit(link, payload.tool.kind)}; ${link.key} does not apply limits per tool`,
         );
       try {
-        await this.supervisor.spawn(link.key, payload);
+        const tools = (await link.detection?.capabilities)?.tools;
+        await this.supervisor.spawn(
+          link.key,
+          payload,
+          tools?.find((tool) => tool.kind === payload.tool.kind)?.version,
+        );
       } catch (error) {
         this.options.log(
           `run ${payload.run.id}: could not start: ${error instanceof Error ? error.message : String(error)}`,

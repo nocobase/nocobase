@@ -64,13 +64,18 @@ const sectionDescriptions: Readonly<Record<string, string>> = {
   pages: 'pageAccessHint',
   business: 'businessOperationsHint',
   users: 'userAccountsHint',
-  administration: 'systemToolsHint',
+  configuration: 'configurationPermissionsHint',
 };
 
 export function permissionSections(
   catalog: AuthorizationOptionsResponse,
   grants: readonly PermissionGrant[],
   text: (value: LocalizedText) => string,
+  showScope: (
+    resource: CatalogResource,
+    action: string,
+    scopeKey: string,
+  ) => boolean = () => true,
 ): readonly PermissionEditorSection[] {
   const sharedActionHint = (resource: CatalogResource): string | undefined => {
     const first = resource.actions[0]?.description;
@@ -125,59 +130,63 @@ export function permissionSections(
             return {
               ...row,
               scopes: granted
-                ? (resource.dataScopes?.[action.name] ?? []).map((scope) => {
-                    const value = scopeSelectionKey(
-                      granted.policy?.scopes &&
-                        typeof granted.policy.scopes === 'object'
-                        ? Reflect.get(granted.policy.scopes, scope.key)
-                        : undefined,
-                    );
-                    const preserved =
-                      value !== '' && !scope.recordAccess.includes(value);
-                    return {
-                      id: JSON.stringify([
-                        resource.type,
-                        resource.id,
-                        action.name,
-                        scope.key,
-                      ]),
-                      label: text(
-                        typeof scope.title === 'string' &&
-                          scope.title === scope.collection
-                          ? { key: 'settings.recordScope' }
-                          : scope.title,
-                      ),
-                      levels: [
-                        ...(preserved
-                          ? [
-                              {
-                                value,
-                                label: text({
-                                  key: 'settings.preservedRecordScope',
-                                }),
-                              },
-                            ]
-                          : []),
-                        {
-                          value: '',
-                          label: text({ key: 'settings.noRecordScope' }),
-                        },
-                        ...scope.recordAccess.map((key) => ({
-                          value: key,
-                          label: text(
-                            catalog.recordAccess.find(
-                              (entry) => entry.key === key,
-                            )?.title ?? key,
-                          ),
-                        })),
-                      ],
-                      level: value,
-                      hint:
-                        value === ''
-                          ? text({ key: 'settings.noAdditionalScopeHint' })
+                ? (resource.dataScopes?.[action.name] ?? [])
+                    .filter((scope) =>
+                      showScope(resource, action.name, scope.key),
+                    )
+                    .map((scope) => {
+                      const value = scopeSelectionKey(
+                        granted.policy?.scopes &&
+                          typeof granted.policy.scopes === 'object'
+                          ? Reflect.get(granted.policy.scopes, scope.key)
                           : undefined,
-                    };
-                  })
+                      );
+                      const preserved =
+                        value !== '' && !scope.recordAccess.includes(value);
+                      return {
+                        id: JSON.stringify([
+                          resource.type,
+                          resource.id,
+                          action.name,
+                          scope.key,
+                        ]),
+                        label: text(
+                          typeof scope.title === 'string' &&
+                            scope.title === scope.collection
+                            ? { key: 'settings.recordScope' }
+                            : scope.title,
+                        ),
+                        levels: [
+                          ...(preserved
+                            ? [
+                                {
+                                  value,
+                                  label: text({
+                                    key: 'settings.preservedRecordScope',
+                                  }),
+                                },
+                              ]
+                            : []),
+                          {
+                            value: '',
+                            label: text({ key: 'settings.noRecordScope' }),
+                          },
+                          ...scope.recordAccess.map((key) => ({
+                            value: key,
+                            label: text(
+                              catalog.recordAccess.find(
+                                (entry) => entry.key === key,
+                              )?.title ?? key,
+                            ),
+                          })),
+                        ],
+                        level: value,
+                        hint:
+                          value === ''
+                            ? text({ key: 'settings.noAdditionalScopeHint' })
+                            : undefined,
+                      };
+                    })
                 : [],
             };
           }),

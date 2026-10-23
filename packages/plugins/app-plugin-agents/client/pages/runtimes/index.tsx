@@ -367,7 +367,7 @@ function RunnerActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-auto min-w-40'>
         <RefreshStatus runner={runner} menu />
-        {revoked || !runner.canManage ? null : (
+        {revoked || (!runner.canManage && !runner.canManageTools) ? null : (
           <>
             <DropdownMenuItem onClick={onEdit}>
               {t('runtimes.edit.button')}

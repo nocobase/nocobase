@@ -182,6 +182,11 @@
           "target": "client/extensions/nocobase-agent-chat/conversation-view.tsx"
         },
         {
+          "path": "agent-chat/reasoning-part.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/reasoning-part.tsx"
+        },
+        {
           "path": "agent-chat/message-item.tsx",
           "type": "registry:component",
           "target": "client/extensions/nocobase-agent-chat/message-item.tsx"

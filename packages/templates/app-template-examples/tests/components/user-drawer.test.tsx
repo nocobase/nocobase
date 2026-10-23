@@ -254,9 +254,20 @@ it.each(['/users', '/settings/users'])(
         },
       }),
     );
-    expect(
-      await screen.findByText('Alice updated', { exact: true }),
-    ).toBeVisible();
+    // Refreshing remounts cells; permission loading can replace the name span with a link.
+    await waitFor(() => {
+      const table = screen.getByRole('table');
+      expect(table).toHaveAttribute('aria-busy', 'false');
+      const row = within(table).getByRole('row', {
+        name: /alice@example\.test/u,
+      });
+      const updated = within(row).getByRole('link', {
+        name: 'Alice updated',
+        exact: true,
+      });
+      expect(updated).toBeVisible();
+      expect(updated).toHaveAttribute('href', `${base}/alice/edit${search}`);
+    });
     expect(screen.getByTestId('location')).toHaveTextContent(
       `${base}${search}`,
     );

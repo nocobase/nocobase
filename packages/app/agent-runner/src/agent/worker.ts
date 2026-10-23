@@ -115,6 +115,8 @@ export interface WorkerDeps {
   connection: AppConnection;
   settings: RunnerSettings;
   adapters: Map<AgentTool, AgentAdapter>;
+  /** Version from background detection; starting a task must not launch an inspection. */
+  toolVersion?: string;
   log: (message: string) => void;
   /** Overrides the client built from `connection`, for tests. */
   client?: ApiClient;
@@ -658,7 +660,10 @@ export class RunWorker {
   private async execute(): Promise<WorkerOutcome> {
     const { payload, deps } = this;
     const adapter = deps.adapters.get(payload.tool.kind);
-    if (adapter === undefined) {
+    if (
+      adapter === undefined ||
+      !deps.connection.registration.enabledTools?.includes(payload.tool.kind)
+    ) {
       return this.finishFailed(
         'setupFailed',
         `This runner has no adapter for ${payload.tool.kind}.`,
@@ -743,18 +748,16 @@ export class RunWorker {
     if (!existsSync(sessionDir)) this.sessionId = undefined;
     await mkdir(sessionDir, { recursive: true, mode: 0o700 });
 
-    // Start
-    const detected = await adapter
-      .detect()
-      .catch(() => ({ version: undefined }));
+    // Start with the cached version; the actual run owns every tool process from here.
+    if (this.ending !== undefined) return this.finishEnding();
     try {
       await this.report(routePath(RUNNER_ROUTES.start, { runId: this.runId }), {
         workDir,
         adapter: {
           kind: adapter.kind,
-          ...(detected.version === undefined
+          ...(deps.toolVersion === undefined
             ? {}
-            : { version: detected.version }),
+            : { version: deps.toolVersion }),
         },
         acceptsInput: true,
         sessionId: this.sessionId ?? null,

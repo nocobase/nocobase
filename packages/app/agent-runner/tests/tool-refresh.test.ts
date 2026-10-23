@@ -3,8 +3,10 @@ import { z } from 'zod';
 import {
   RegisterRequestSchema,
   HeartbeatRequestSchema,
+  type AgentTool,
 } from '../src/protocol/index.ts';
 import { createEchoAdapter } from '../src/agent/adapters/echo.ts';
+import type { AgentAdapter } from '../src/agent/adapters/types.ts';
 import { RunnerDaemon } from '../src/core/loop.ts';
 import { readConnections, readSettings } from '../src/lib/config.ts';
 import { runnerPaths } from '../src/lib/home.ts';
@@ -32,65 +34,78 @@ afterEach(async () => {
   }
 });
 
-it('recreates detection on a refresh command and after ten minutes, acknowledging fresh reports', async () => {
-  server = new FakeServer();
-  await server.listen();
-  home = tempDir('tool-refresh-');
-  vi.stubEnv('NOCOBASE_RUNNER_ADAPTER', 'echo');
-  await registerRunner(server.url, cliEnv(home), [
-    '--cli',
-    `appcli=${writeFakeCli(home)}`,
-  ]);
-  const paths = runnerPaths(home, `${home}-work`);
-  let authenticated = false;
-  const detect = vi.fn(async () => ({ installed: true, authenticated }));
-  const adaptersFor = vi.fn(
-    () =>
-      new Map([
-        [
-          'claude' as const,
-          { ...createEchoAdapter({ kind: 'claude' }), detect },
-        ],
-      ]),
-  );
-  daemon = new RunnerDaemon({
-    paths,
-    settings: await readSettings(paths),
-    connections: await readConnections(paths),
-    adapters: adaptersFor(),
-    adaptersFor,
-    timings: FAST_TIMINGS,
-    log: () => {},
-  });
-  await daemon.start();
-  await waitFor(() => server.lastHeartbeat(), 5000);
-  expect(server.lastHeartbeat()?.tools[0]?.authenticated).toBe(false);
-  // Each generation inspects installation once before reporting and once for background model discovery.
-  const initial = detect.mock.calls.length;
-  authenticated = true;
-  server.toolsRefreshRequestId = 'refresh-one';
-  await waitFor(
-    () => server.lastHeartbeat()?.toolsRefreshCompletedId === 'refresh-one',
-    5000,
-  );
-  expect(server.lastHeartbeat()?.tools[0]?.authenticated).toBe(true);
-  expect(detect).toHaveBeenCalledTimes(initial + 2);
-  const sent = server.runners.values().next().value!.heartbeatsSent;
-  await waitFor(
-    () => server.runners.values().next().value!.heartbeatsSent > sent + 1,
-    5000,
-  );
-  expect(detect).toHaveBeenCalledTimes(initial + 2);
-  server.toolsRefreshRequestId = undefined;
-  const now = Date.now.bind(Date);
-  vi.spyOn(Date, 'now').mockImplementation(() => now() + 10 * 60_000 + 1000);
-  authenticated = false;
-  await waitFor(
-    () => server.lastHeartbeat()?.tools[0]?.authenticated === false,
-    5000,
-  );
-  expect(detect).toHaveBeenCalledTimes(initial + 4);
-});
+it.each(['claude', 'gemini'] as const)(
+  'refreshes selected %s on request and after ten minutes, acknowledging fresh reports',
+  async (kind) => {
+    server = new FakeServer();
+    await server.listen();
+    server.enabledTools = [kind];
+    home = tempDir('tool-refresh-');
+    vi.stubEnv('NOCOBASE_RUNNER_ADAPTER', 'echo');
+    await registerRunner(server.url, cliEnv(home), [
+      '--cli',
+      `appcli=${writeFakeCli(home)}`,
+    ]);
+    const paths = runnerPaths(home, `${home}-work`);
+    let authenticated = false;
+    const detect = vi.fn(async () => ({ installed: true, authenticated }));
+    const unselected = vi.fn(async () => ({
+      installed: true,
+      authenticated: true,
+    }));
+    const adaptersFor = vi.fn(
+      () =>
+        new Map<AgentTool, AgentAdapter>([
+          [kind, { ...createEchoAdapter({ kind }), detect }],
+          [
+            'codex',
+            { ...createEchoAdapter({ kind: 'codex' }), detect: unselected },
+          ],
+        ]),
+    );
+    daemon = new RunnerDaemon({
+      paths,
+      settings: await readSettings(paths),
+      connections: await readConnections(paths),
+      adapters: adaptersFor(),
+      adaptersFor,
+      timings: FAST_TIMINGS,
+      log: () => {},
+    });
+    await daemon.start();
+    await waitFor(() => server.lastHeartbeat(), 5000);
+    expect(server.lastHeartbeat()?.tools[0]?.authenticated).toBe(false);
+    // Each generation inspects installation once before reporting and once for background model discovery.
+    const initial = detect.mock.calls.length;
+    authenticated = true;
+    server.toolsRefreshRequestId = 'refresh-one';
+    await waitFor(
+      () => server.lastHeartbeat()?.toolsRefreshCompletedId === 'refresh-one',
+      5000,
+    );
+    expect(server.lastHeartbeat()?.tools[0]?.authenticated).toBe(true);
+    expect(detect).toHaveBeenCalledTimes(initial + 2);
+    const sent = server.runners.values().next().value!.heartbeatsSent;
+    await waitFor(
+      () => server.runners.values().next().value!.heartbeatsSent > sent + 1,
+      5000,
+    );
+    expect(detect).toHaveBeenCalledTimes(initial + 2);
+    server.toolsRefreshRequestId = undefined;
+    const now = Date.now.bind(Date);
+    vi.spyOn(Date, 'now').mockImplementation(() => now() + 10 * 60_000 + 1000);
+    authenticated = false;
+    await waitFor(
+      () => server.lastHeartbeat()?.tools[0]?.authenticated === false,
+      5000,
+    );
+    expect(detect).toHaveBeenCalledTimes(initial + 4);
+    expect(unselected).not.toHaveBeenCalled();
+    expect(server.lastHeartbeat()?.tools.map((tool) => tool.kind)).toEqual([
+      kind,
+    ]);
+  },
+);
 
 it('refreshes stale detection before claiming even when the next heartbeat is not due', async () => {
   server = new FakeServer();
@@ -261,7 +276,7 @@ it('waits for concurrent heartbeat detection and its acknowledged report before 
     await claim;
   }
   expect(server.runners.values().next().value!.claims).toBe(1);
-  expect(detect).toHaveBeenCalledTimes(4);
+  expect(detect).toHaveBeenCalledTimes(3);
 });
 
 it('withholds claims after a failed fresh report and retries reporting on the next poll', async () => {

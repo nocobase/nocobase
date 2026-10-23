@@ -31,6 +31,7 @@ import { useChatTranslation } from './chat-i18n.js';
 import { ConsultationCard } from './consultation-card.js';
 import { SentContext } from './context-chips.js';
 import { MessageAttachments } from './message-attachments.js';
+import { ReasoningPart } from './reasoning-part.js';
 
 function Time({
   at,
@@ -154,6 +155,8 @@ export function MessageItem({
   };
   const content = parts.map(({ part, index }, position): ReactNode => {
     const key = String(index);
+    if (part.type === 'reasoning')
+      return <ReasoningPart key={key} part={part} streaming={streaming} />;
     if (part.type === 'text')
       return fromAgent ? (
         <ChatMarkdown key={key} content={part.text} />

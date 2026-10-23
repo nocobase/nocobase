@@ -367,7 +367,7 @@ it.each(
       [{ type: 'text', text: '', state: 'streaming' }],
       [{ type: 'text', text: ' \n\t' }],
       [{ type: 'step-start' }],
-      [{ type: 'reasoning', text: 'Private reasoning', state: 'streaming' }],
+      [{ type: 'reasoning', text: '   ', state: 'streaming' }],
       [
         {
           type: 'data-notice',
@@ -508,4 +508,57 @@ it('bounds custom business cards without imposing layout requirements on their r
   expect(
     screen.getByText('Wide business card').closest('.rounded-lg'),
   ).toHaveClass('min-w-0', 'max-w-full', 'overflow-x-auto');
+});
+
+it('retains per-part manual choice on same-message revisions and keeps multi-step reasoning in order', () => {
+  const message: AppUIMessage = {
+    id: 'reasoned',
+    role: 'assistant',
+    metadata,
+    parts: [
+      { type: 'reasoning', text: 'First thought', state: 'streaming' },
+      { type: 'text', text: 'Between' },
+      { type: 'reasoning', text: 'Second thought', state: 'streaming' },
+    ],
+  };
+  const view = (value: AppUIMessage, streaming = true) => (
+    <ol>
+      <MessageItem
+        message={value}
+        agentName={() => 'Agent'}
+        streaming={streaming}
+      />
+    </ol>
+  );
+  const tree = render(view(message), { wrapper });
+  const buttons = screen.getAllByRole('button', { name: 'Thinking…' });
+  fireEvent.click(buttons[0]);
+  const revised: AppUIMessage = {
+    ...message,
+    metadata: { ...metadata, revision: 2 },
+    parts: [
+      { type: 'reasoning', text: 'First thought delta', state: 'done' },
+      { type: 'text', text: 'Between' },
+      { type: 'reasoning', text: 'Second thought delta', state: 'done' },
+    ],
+  };
+  tree.rerender(view(revised, false));
+  const reasoning = screen.getAllByRole('button', { name: 'Reasoning' });
+  expect(reasoning[0]).toHaveAttribute('aria-expanded', 'false');
+  expect(reasoning[1]).toHaveAttribute('aria-expanded', 'false');
+  fireEvent.click(reasoning[0]);
+  tree.rerender(
+    view({ ...revised, metadata: { ...metadata, revision: 3 } }, false),
+  );
+  expect(
+    screen.getAllByRole('button', { name: 'Reasoning' })[0],
+  ).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.getByText('First thought delta')).toBeVisible();
+  expect(screen.queryByText('Second thought delta')).not.toBeInTheDocument();
+  expect(appUIMessageText(revised)).toBe('Between');
+  const row = tree.container.querySelector('[data-message-id="reasoned"]')!;
+  expect(row.textContent!.indexOf('First thought delta')).toBeLessThan(
+    row.textContent!.indexOf('Between'),
+  );
+  expect(row.querySelector('[data-reasoning-streaming="true"]')).toBeNull();
 });

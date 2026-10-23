@@ -5,6 +5,8 @@ import type { QuotaLocation } from './quota.js';
 
 import {
   AGENT_TOOLS,
+  NATIVE_AGENT_TOOLS,
+  isNativeTool,
   policyAllowsAgent,
   type AgentTool,
   type RunnerFeature,
@@ -309,6 +311,7 @@ export interface RunnerSummary extends Omit<
    * owner can no longer act (none recorded, or disabled or deleted). A manager does not change someone else's runner.
    */
   readonly canManage: boolean;
+  readonly canManageTools?: boolean;
   /** The viewer may switch it between personal and team: whoever may change it (`canManage`). */
   readonly canChangeTrust: boolean;
   /** The viewer may revoke it, and delete it once revoked: its owner, or a manager of runners in an emergency. */
@@ -359,6 +362,7 @@ export const RUNNER_LIST_FIELDS = {
   lastSeenAt: true,
   draining: true,
   canManage: true,
+  canManageTools: true,
   canChangeTrust: true,
   canRevoke: true,
   takes: true,
@@ -417,6 +421,7 @@ export interface RunnerPatch {
   /** Limits per coding tool; null, or a tool left out, for none of its own (bounded by `slots`). */
   readonly toolSlots?: ToolSlots | null;
   /** null offers every tool the runner reports. */
+  readonly redetectTools?: boolean;
   readonly enabledTools?: readonly AgentTool[] | null;
   readonly acceptJobs?: boolean;
 }
@@ -469,12 +474,12 @@ export interface DownloadToken {
   readonly maxDownloads: number;
 }
 
-/** Whether people let `runner` run `tool` (whether it is installed and signed in is another matter). */
+/** Whether the explicit server selection permits `tool`; null API input is normalized to the four native tools. */
 export function toolEnabled(
   runner: Pick<Runner, 'enabledTools'>,
   tool: AgentTool,
 ): boolean {
-  return runner.enabledTools === null || runner.enabledTools.includes(tool);
+  return (runner.enabledTools ?? NATIVE_AGENT_TOOLS).includes(tool);
 }
 
 /** Whether `runner` can run `tool`'s work: it is enabled there, installed and signed in. */
@@ -484,7 +489,12 @@ export function runsTool(
 ): boolean {
   return (
     toolEnabled(runner, tool) &&
-    runner.tools.some((item) => item.kind === tool && item.authenticated)
+    runner.tools.some(
+      (item) =>
+        item.kind === tool &&
+        item.authenticated &&
+        (!item.status || item.status === 'ready'),
+    )
   );
 }
 
@@ -500,6 +510,8 @@ export function reportedModels(
   const info = runner.tools.find(
     (item) => item.kind === tool && item.authenticated,
   );
+  if (!isNativeTool(tool) && info?.modelsDetectionStatus === 'unsupported')
+    return [''];
   return [
     ...new Set(
       (info?.models ?? []).map((model) => normalizeModel(tool, model.id)),
@@ -542,7 +554,8 @@ export function jobKindsOf(runner: Pick<Runner, 'features'>): string[] {
 }
 
 /** The state of one of a runner's coding tools, as a page shows it. */
-export type ToolState = 'off' | 'notInstalled' | 'signedOut' | 'signedIn';
+export type ToolState =
+  'off' | 'notInstalled' | 'signedOut' | 'signedIn' | 'checking' | 'failed';
 
 /** Off when people turned it off here; otherwise whether the runner has it installed and signed in. */
 export function toolState(
@@ -551,18 +564,24 @@ export function toolState(
 ): ToolState {
   if (!toolEnabled(runner, tool)) return 'off';
   const info = runner.tools.find((item) => item.kind === tool);
-  if (!info) return 'notInstalled';
+  if (!info) return 'checking';
+  if (
+    info.status === 'notInstalled' ||
+    info.status === 'checking' ||
+    info.status === 'failed'
+  )
+    return info.status;
   return info.authenticated ? 'signedIn' : 'signedOut';
 }
 
-/**
- * The tools a runner lists, in the protocol's order: exactly the tools it reported. A runner reports only the tools it
- * has installed, so a tool it did not report is not listed, even when `enabledTools` names it (turning one tool off
- * from "every tool" stores every other tool the protocol knows).
- */
-export function listedTools(runner: Pick<Runner, 'tools'>): AgentTool[] {
-  return AGENT_TOOLS.filter((tool) =>
-    runner.tools.some((item) => item.kind === tool),
+/** The selected or reported tools, in catalog order, including selected tools awaiting detection. */
+export function listedTools(
+  runner: Pick<Runner, 'tools'> & Partial<Pick<Runner, 'enabledTools'>>,
+): AgentTool[] {
+  return AGENT_TOOLS.filter(
+    (tool) =>
+      runner.tools.some((item) => item.kind === tool) ||
+      (runner.enabledTools ?? []).includes(tool),
   );
 }
 

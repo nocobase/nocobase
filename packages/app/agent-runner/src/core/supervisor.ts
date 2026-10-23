@@ -107,7 +107,13 @@ export interface Timings {
 
 /** What a worker reads from its stdin: a run, or a job (`kind: 'job'`). */
 export type WorkerJob =
-  | { kind?: 'run'; appKey: string; payload: RunPayload; timings: Timings }
+  | {
+      kind?: 'run';
+      appKey: string;
+      payload: RunPayload;
+      timings: Timings;
+      toolVersion?: string;
+    }
   | { kind: 'job'; appKey: string; payload: JobPayload; timings: Timings };
 
 /** The name of a job's record, spool and log on the runner: apart from run records. */
@@ -302,7 +308,11 @@ export class Supervisor {
     return this.runs.size;
   }
 
-  async spawn(appKey: string, payload: RunPayload): Promise<SupervisedRun> {
+  async spawn(
+    appKey: string,
+    payload: RunPayload,
+    toolVersion?: string,
+  ): Promise<SupervisedRun> {
     const dirs = runDirectories(this.options.paths, appKey, payload);
     const releases: (() => Promise<void>)[] = [];
     try {
@@ -321,7 +331,12 @@ export class Supervisor {
           attempt: payload.run.attempt,
           firstSeq: payload.run.firstSeq,
         },
-        { appKey, payload, timings: this.options.timings },
+        {
+          appKey,
+          payload,
+          timings: this.options.timings,
+          ...(toolVersion === undefined ? {} : { toolVersion }),
+        },
       );
       supervised.tool = payload.tool.kind;
       void supervised.exited
