@@ -55,11 +55,11 @@ describe('OpenAI native web search SDK gate', () => {
     });
     return harness;
   }
-  async function gatewaySearch(
+  function gatewaySearch(
+    h: Harness,
     queries: string[],
     signal: AbortSignal = new AbortController().signal,
   ) {
-    const h = await setup();
     const services = h.services.models.services;
     return createModelGateway(services).search({
       model: { modelService: 'search', model: 'gpt-5.4' },
@@ -369,27 +369,45 @@ describe('OpenAI native web search SDK gate', () => {
   it('runs at most two queries and returns original order despite reversed completion', async () => {
     const responses: ServerResponse[] = [];
     answer = (response) => responses.push(response);
-    const pending = gatewaySearch(['first', 'second', 'third', 'fourth']);
+    const abort = new AbortController();
+    const pending = gatewaySearch(
+      await setup(),
+      ['first', 'second', 'third', 'fourth'],
+      abort.signal,
+    );
+    // Observe early rejection while the test is waiting for loopback HTTP.
+    void pending.catch(() => {});
     const finish = (index: number) => {
       const response = responses[index];
       if (!response) throw new Error('Missing controlled response');
       response.writeHead(200, { 'content-type': 'application/json' });
       response.end(JSON.stringify(evidence()));
     };
-    await vi.waitFor(() => expect(responses).toHaveLength(2));
-    finish(1);
-    await vi.waitFor(() => expect(responses).toHaveLength(3));
-    finish(2);
-    await vi.waitFor(() => expect(responses).toHaveLength(4));
-    finish(3);
-    finish(0);
-    expect((await pending).results.map((item) => item.query)).toEqual([
-      'first',
-      'second',
-      'third',
-      'fourth',
-    ]);
-    expect(requests).toHaveLength(4);
+    try {
+      await vi.waitFor(() => expect(responses).toHaveLength(2), {
+        timeout: 10_000,
+      });
+      finish(1);
+      await vi.waitFor(() => expect(responses).toHaveLength(3), {
+        timeout: 10_000,
+      });
+      finish(2);
+      await vi.waitFor(() => expect(responses).toHaveLength(4), {
+        timeout: 10_000,
+      });
+      finish(3);
+      finish(0);
+      expect((await pending).results.map((item) => item.query)).toEqual([
+        'first',
+        'second',
+        'third',
+        'fourth',
+      ]);
+      expect(requests).toHaveLength(4);
+    } finally {
+      abort.abort();
+      await Promise.allSettled([pending]);
+    }
   });
 
   it('cancels both active HTTP requests, leaves queued queries unstarted and settles all workers', async () => {
@@ -401,17 +419,23 @@ describe('OpenAI native web search SDK gate', () => {
     };
     const abort = new AbortController();
     const pending = gatewaySearch(
+      await setup(),
       ['first', 'second', 'third', 'fourth'],
       abort.signal,
     );
-    const outcome = (async () => {
+    void pending.catch(() => {});
+    try {
+      await vi.waitFor(() => expect(requests).toHaveLength(2), {
+        timeout: 10_000,
+      });
+      abort.abort(new Error('Stopped searches'));
       await expect(pending).rejects.toThrow('Stopped searches');
-    })();
-    await vi.waitFor(() => expect(requests).toHaveLength(2));
-    abort.abort(new Error('Stopped searches'));
-    await outcome;
-    await vi.waitFor(() => expect(closed).toBe(2));
-    expect(requests).toHaveLength(2);
+      await vi.waitFor(() => expect(closed).toBe(2), { timeout: 10_000 });
+      expect(requests).toHaveLength(2);
+    } finally {
+      abort.abort();
+      await Promise.allSettled([pending]);
+    }
   });
 
   it('Native Stop reaches search fetch and releases pending execution before another turn', async () => {
@@ -798,7 +822,10 @@ describe('OpenAI native web search SDK gate', () => {
   );
 
   it('gateway.search uses the saved model service and returns only normalized evidence', async () => {
-    const result = await gatewaySearch([' NocoBase ', 'NocoBase']);
+    const result = await gatewaySearch(await setup(), [
+      ' NocoBase ',
+      'NocoBase',
+    ]);
     expect(requests[0]?.body).toMatchObject({
       input: [
         {
@@ -832,7 +859,7 @@ describe('OpenAI native web search SDK gate', () => {
         ),
       );
     };
-    const result = await gatewaySearch(['first', 'second']);
+    const result = await gatewaySearch(await setup(), ['first', 'second']);
     expect(result.results[0]).toMatchObject({
       query: 'first',
       status: 'success',
@@ -852,7 +879,7 @@ describe('OpenAI native web search SDK gate', () => {
     const controller = new AbortController();
     controller.abort();
     await expect(
-      gatewaySearch(['NocoBase'], controller.signal),
+      gatewaySearch(await setup(), ['NocoBase'], controller.signal),
     ).rejects.toThrow();
     expect(requests).toHaveLength(0);
   });
@@ -867,7 +894,12 @@ describe('OpenAI native web search SDK gate', () => {
       );
     };
     await expect(
-      gatewaySearch(['first', 'second', 'never-third', 'never-fourth']),
+      gatewaySearch(await setup(), [
+        'first',
+        'second',
+        'never-third',
+        'never-fourth',
+      ]),
     ).rejects.toMatchObject({
       code: 'auth',
       message: 'Web search model configuration or credentials are unavailable.',
@@ -889,7 +921,7 @@ describe('OpenAI native web search SDK gate', () => {
         response.end(JSON.stringify(evidence()));
       }
     };
-    const result = await gatewaySearch(['first', 'second']);
+    const result = await gatewaySearch(await setup(), ['first', 'second']);
     expect(result.results[0]).toEqual({
       query: 'first',
       status: 'failed',
