@@ -1,3 +1,4 @@
+import { fixtureModel } from './helpers/native-files.js';
 import {
   WEB_SEARCH_RETRIEVAL_INSTRUCTIONS,
   WEB_SEARCH_TOOL_DESCRIPTION,
@@ -369,7 +370,9 @@ describe('Alibaba search without source evidence', () => {
         };
       },
     });
-    vi.spyOn(providers, 'languageModel').mockReturnValue(main);
+    vi.spyOn(providers, 'languageModel').mockImplementation(() =>
+      fixtureModel(main),
+    );
     const online = harness.services.onlineAgent;
     const agent = await online.realtime(actor, {
       webSearch: true,

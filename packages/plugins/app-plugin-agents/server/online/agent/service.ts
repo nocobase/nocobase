@@ -2,6 +2,7 @@ import {
   registerWebSearchTool,
   type OnlineAgentWebSearch,
 } from './web-search.js';
+import type { NativeFileInputs } from '../files/service.js';
 import type { OnlineAgentSandboxProvider } from '../sandbox/types.js';
 import { registerSandboxTools } from '../sandbox/tools.js';
 import type { LanguageModel } from 'ai';
@@ -43,6 +44,7 @@ export class OnlineAgentService {
       ids: IdSource;
       resolver?: ServiceResolver;
       webSearch?: OnlineAgentWebSearch;
+      fileInputs?: NativeFileInputs;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
       uiStreams?: OnlineAgentUIStreams;

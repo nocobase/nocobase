@@ -2,6 +2,7 @@ import type { NativeExecutionRequest } from './types.js';
 import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
 import { resendOptions } from '../messages/resend.js';
 import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
+import type { NativeFileInputs } from '../../files/service.js';
 import type { OnlineAgentSandboxProvider } from '../../sandbox/types.js';
 import { nativeInputParts } from '../messages/validation.js';
 import {
@@ -70,6 +71,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       ids: IdSource;
       resolver?: ServiceResolver;
       webSearch?: OnlineAgentWebSearch;
+      fileInputs?: NativeFileInputs;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
       uiStreams: OnlineAgentUIStreams;

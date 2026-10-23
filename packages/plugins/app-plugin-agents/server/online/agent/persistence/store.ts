@@ -1,8 +1,9 @@
 import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
 import { resendMessage } from '../messages/resend.js';
+import type { ExecutionSnapshot, ExecutionFile } from '../../files/types.js';
 import { publicUIPageContext } from '../../../../shared/ui-message.js';
 import { isDeepStrictEqual } from 'node:util';
-import { isToolUIPart, type ModelMessage, type UIMessage } from 'ai';
+import { isToolUIPart, type ModelMessage } from 'ai';
 import type { DatabaseConnection } from '@nocobase/db';
 import {
   appUIMessageText,
@@ -12,7 +13,6 @@ import {
 import type { ResolvedPageContext } from '../../../../shared/conversations.js';
 import {
   chatAttachmentUrl,
-  type ChatAttachmentService,
   type ChatAttachmentLinks,
   storedAttachments,
 } from '../../../core/conversations/attachments.js';
@@ -51,7 +51,6 @@ export class NativeSessionStore {
     private deps: {
       tx: TxRunner;
       attachments: ChatAttachmentLinks;
-      files?: Pick<ChatAttachmentService, 'content'>;
       contextKinds?: PageContextKinds;
       basePath?: () => string;
       now(): string;
@@ -392,33 +391,29 @@ export class NativeSessionStore {
         : {}),
     };
   }
-  async executionHistory(
+  async executionSnapshot(
     userId: string,
     id: string,
-    context?: ResolvedPageContext,
-    page = true,
-  ): Promise<{ ui: UIMessage[]; model: ModelMessage[]; page?: ModelMessage }> {
+  ): Promise<ExecutionSnapshot> {
     const owner = await this.owned(userId, id);
     const rows = await messagesRepo(this.deps.tx.read()).findMany({
       filter: { conversationId: id },
       sort: (s) => s.field('seq').asc(),
     });
-    return this.modelHistory(userId, owner, rows, context, page);
+    return this.snapshot(owner, rows);
   }
-  private async modelHistory(
-    userId: string,
+  private async snapshot(
     owner: ConversationRecord,
     rows: MessageRecord[],
-    context?: ResolvedPageContext,
-    page = true,
-    conn?: DatabaseConnection,
-  ): Promise<{ ui: UIMessage[]; model: ModelMessage[]; page?: ModelMessage }> {
-    if (!rows.length) return { ui: [], model: [] };
-    const original = await this.messages.validate(
-      rows.map((row) => jsonObject(row.content).original),
-    );
-    const ui = structuredClone(original);
-    for (const message of ui) {
+  ): Promise<ExecutionSnapshot> {
+    const original = rows.length
+      ? await this.messages.validate(
+          rows.map((row) => jsonObject(row.content).original),
+        )
+      : [];
+    const replay = structuredClone(original);
+    const files: ExecutionFile[] = [];
+    for (const message of replay) {
       const row = rows.find((row) => row.id === message.id)!;
       if (
         message.role === 'assistant' &&
@@ -435,54 +430,54 @@ export class NativeSessionStore {
               )),
         );
       }
-      for (const part of message.parts) {
+      for (const [partIndex, part] of message.parts.entries()) {
         if (part.type !== 'file') continue;
-        const file = storedAttachments(row.attachments).find(
+        const attachment = storedAttachments(row.attachments).find(
           (file) =>
             chatAttachmentUrl(this.deps.basePath?.() ?? '', file.id) ===
             part.url,
         );
-        if (!file) {
-          if (
-            message.role === 'user' &&
-            jsonObject(jsonObject(owner.metadata).onlineAgent).kind ===
-              'background' &&
-            (message.metadata?.inputFiles ?? []).includes(
-              message.parts.indexOf(part),
-            )
-          )
-            continue;
-          if (message.role === 'assistant' && part.url.startsWith('data:'))
-            continue;
-          throw invalid('A saved file reference cannot be authorized.');
+        if (attachment) {
+          files.push({ messageId: message.id, partIndex, attachment });
+          continue;
         }
-        if (!this.deps.files)
-          throw invalid('Attachment content is unavailable.');
-        const authorized = conn
-          ? await this.deps.files.content({ userId }, file.id, conn)
-          : await this.deps.files.content({ userId }, file.id);
-        const bytes = Buffer.from(
-          await new Response(authorized.body).arrayBuffer(),
-        );
-        part.url = `data:${file.mimeType};base64,${bytes.toString('base64')}`;
+        if (
+          message.role === 'user' &&
+          jsonObject(jsonObject(owner.metadata).onlineAgent).kind ===
+            'background' &&
+          (message.metadata?.inputFiles ?? []).includes(partIndex)
+        ) {
+          files.push({ messageId: message.id, partIndex });
+          continue;
+        }
+        if (message.role === 'assistant' && part.url.startsWith('data:'))
+          continue;
+        throw invalid('A saved file reference cannot be authorized.');
       }
     }
-    const model = await this.messages.model(ui);
-    const current =
-      page && this.deps.contextKinds
-        ? await historicalPageContext(
-            this.deps.contextKinds,
-            conn ?? this.deps.tx.read(),
-            userId,
-            latestPageContext(rows),
-            context,
-          )
-        : undefined;
-    const historical: ModelMessage | undefined = current
-      ? { role: 'user', content: current }
-      : undefined;
-    if (historical) model.push(historical);
-    return { ui: original, model, page: historical };
+    return { original, replay, files };
+  }
+  async pageContext(
+    userId: string,
+    id: string,
+    context?: ResolvedPageContext,
+    allowed = true,
+  ): Promise<ModelMessage | undefined> {
+    await this.owned(userId, id);
+    if (!allowed || !this.deps.contextKinds) return undefined;
+    const rows = await messagesRepo(this.deps.tx.read()).findMany({
+      filter: { conversationId: id },
+      sort: (s) => s.field('seq').asc(),
+    });
+    if (!rows.length) return undefined;
+    const current = await historicalPageContext(
+      this.deps.contextKinds,
+      this.deps.tx.read(),
+      userId,
+      latestPageContext(rows),
+      context,
+    );
+    return current ? { role: 'user', content: current } : undefined;
   }
   private accepting(
     row: ConversationRecord,
@@ -524,10 +519,18 @@ export class NativeSessionStore {
       model: { modelService: string; model: string };
     },
     page = true,
+    prepare?: (
+      snapshot: ExecutionSnapshot,
+      conn: DatabaseConnection,
+    ) => Promise<NativeMessage[]>,
   ): Promise<{
     lastSeq: number;
     messageId: string;
-    history: Awaited<ReturnType<NativeSessionStore['executionHistory']>>;
+    history: {
+      snapshot: ExecutionSnapshot;
+      prepared: NativeMessage[];
+      page?: ModelMessage;
+    };
   }> {
     return this.write(
       userId,
@@ -568,8 +571,7 @@ export class NativeSessionStore {
             ]),
           sort: (s) => s.field('seq').asc(),
         });
-        const history = await this.modelHistory(
-          userId,
+        const snapshot = await this.snapshot(
           row,
           prefix.map((item) =>
             item.id === record.id
@@ -582,10 +584,28 @@ export class NativeSessionStore {
                 }
               : item,
           ),
-          undefined,
-          page,
-          conn,
         );
+        if (!prepare && snapshot.files.length)
+          throw invalid('File input preparation is unavailable.');
+        const prepared = prepare
+          ? await prepare(snapshot, conn)
+          : snapshot.replay;
+        const current =
+          page && this.deps.contextKinds
+            ? await historicalPageContext(
+                this.deps.contextKinds,
+                conn,
+                userId,
+                latestPageContext(prefix),
+              )
+            : undefined;
+        const history = {
+          snapshot,
+          prepared,
+          ...(current
+            ? { page: { role: 'user' as const, content: current } }
+            : {}),
+        };
         const text = appUIMessageText(
           (await this.messages.public([message]))[0],
         );

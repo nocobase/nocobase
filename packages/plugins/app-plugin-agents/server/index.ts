@@ -6,6 +6,12 @@ export {
   registerSettings,
 } from './providers/authorization.js';
 
+export { NativeFileInputs } from './online/files/service.js';
+export type {
+  FileInputsConfig,
+  FileInputProfile,
+  ModelInputProtocol,
+} from './online/files/types.js';
 export {
   OnlineAgentService,
   OnlineAgentConfigurator,

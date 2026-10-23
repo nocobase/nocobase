@@ -82,7 +82,6 @@ async function fixture(languageModel = model()) {
     tx: h.services.tx,
     ids,
     attachments: attachments.links,
-    files: h.services.chatAttachments,
     now: () => new Date().toISOString(),
   });
   const configurator = new OnlineAgentConfigurator();

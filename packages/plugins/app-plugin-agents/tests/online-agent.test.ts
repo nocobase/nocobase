@@ -1,3 +1,7 @@
+import {
+  fixtureFileInputs,
+  projectNativeHistory,
+} from './helpers/native-files.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
 import {
@@ -87,23 +91,24 @@ async function fixture(model: MockLanguageModelV4) {
     },
   });
   const measurements: { phase: string; durationMs: number }[] = [];
+  const fileInputs = fixtureFileInputs(model, h.services.chatAttachments);
   const sessions = createSessionManager({
     tx: h.services.tx,
     ids,
     attachments: attachments.links,
-    files: h.services.chatAttachments,
     now: () => new Date().toISOString(),
     measure: (phase, durationMs) => measurements.push({ phase, durationMs }),
   });
   const resolver = new ServiceContainer();
   const errors: unknown[] = [];
-  const resolveModel = vi.fn(
-    async (_ref: typeof ref, _sessionId: string) => model,
+  const resolveModel = vi.fn((_ref: typeof ref, _sessionId: string) =>
+    fileInputs.model(_ref, _sessionId),
   );
   const service = new OnlineAgentService({
     sessions,
     ids,
     resolver,
+    fileInputs,
     model: resolveModel,
     defaultModel: async () => ref,
     onError: (error) => errors.push(error),
@@ -121,7 +126,9 @@ async function fixture(model: MockLanguageModelV4) {
     resolveModel,
     history: async (agent: { sessionId: string }, userId = 'alice') =>
       (
-        await sessions.native.executionHistory(
+        await projectNativeHistory(
+          sessions.native,
+          h.services.chatAttachments,
           userId,
           agent.sessionId,
           undefined,
@@ -652,12 +659,6 @@ it.each(['realtime', 'background'] as const)(
     const internal = await f.history(agent);
     expect(JSON.stringify(internal)).toContain('Private');
     expect(JSON.stringify(internal)).toContain('secret');
-    expect(await f.sessions.history('alice', agent.sessionId)).toEqual(
-      internal,
-    );
-    expect(await f.sessions.executionHistory('alice', agent.sessionId)).toEqual(
-      internal,
-    );
   },
 );
 
@@ -719,7 +720,7 @@ it('assembles background UI messages without transport and replays private user 
     ]);
     expect(history[0].parts).toEqual([{ type: 'text', text: 'Files' }]);
     expect(JSON.stringify(history)).not.toContain('private');
-    const replay = await f.sessions.history('alice', job.sessionId);
+    const replay = await f.history(job);
     expect(replay[0]).toMatchObject({
       role: 'user',
       providerOptions: { fixture: { token: 'private-user-options' } },

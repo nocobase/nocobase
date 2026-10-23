@@ -58,7 +58,11 @@ it.each([undefined, 'stderr'] as const)(
           ? { state: 'running' }
           : { state: 'idle', outcome: 'failed' },
       );
-      expect(await sessions.history('alice', id)).toHaveLength(1);
+      expect(
+        await sessions.native.messages.model(
+          (await sessions.native.executionSnapshot('alice', id)).replay,
+        ),
+      ).toHaveLength(1);
       const history = await sessions.native.history('alice', id);
       expect(history).toHaveLength(consoleLogStream === 'stderr' ? 1 : 2);
       if (consoleLogStream !== 'stderr')
