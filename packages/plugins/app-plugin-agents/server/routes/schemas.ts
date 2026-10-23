@@ -497,7 +497,11 @@ export const SkillRestoreInput: z.ZodType<{ expectedRevision: number }> =
 export const RunnerPatchInput: z.ZodType<RunnerPatch> = z
   .strictObject({
     name: z.string().trim().min(1).max(200).describe('The name to display.'),
-    trust: z.enum(RUNNER_TRUST).describe('Usage scope: team is shared across all users; ownerOnly is personal to its owner.'),
+    trust: z
+      .enum(RUNNER_TRUST)
+      .describe(
+        'Usage scope: team is shared across all users; ownerOnly is personal to its owner.',
+      ),
     slots: z
       .number()
       .int()
@@ -523,7 +527,12 @@ export const RunnerPatchInput: z.ZodType<RunnerPatch> = z
 
 export const RegistrationTokenInputSchema: z.ZodType<RegistrationTokenInput> =
   z.strictObject({
-    trust: z.enum(RUNNER_TRUST).optional().describe('Usage scope: team is shared across all users; ownerOnly is personal to its owner.'),
+    trust: z
+      .enum(RUNNER_TRUST)
+      .optional()
+      .describe(
+        'Usage scope: team is shared across all users; ownerOnly is personal to its owner.',
+      ),
     enabledTools: z
       .array(AgentToolSchema)
       .min(1)

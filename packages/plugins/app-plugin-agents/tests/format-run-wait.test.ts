@@ -39,7 +39,9 @@ describe('formatRunWait', () => {
     );
     expect(
       words('secretsNotAllowed', { variables: ['NPM_TOKEN', 'KEY'] }),
-    ).toBe('Needs a shared runtime: NPM_TOKEN, KEY is for shared runtimes only');
+    ).toBe(
+      'Needs a shared runtime: NPM_TOKEN, KEY is for shared runtimes only',
+    );
     expect(words('concurrencyFull', { active: 2, limit: 2 })).toBe(
       'Concurrency full (2/2)',
     );
