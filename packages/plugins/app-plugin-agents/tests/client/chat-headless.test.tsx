@@ -260,9 +260,16 @@ describe('headless chat hooks', () => {
     expect(callsTo('GET', 'agents/models')).toHaveLength(2);
   });
 
-  it.each(['first', 'second'])(
-    'snapshots the %s service model for a new native conversation only',
-    async (modelService) => {
+  it.each(
+    ['first', 'second'].flatMap((modelService) =>
+      [undefined, false, true].map((webSearch) => ({
+        modelService,
+        webSearch,
+      })),
+    ),
+  )(
+    'snapshots $modelService and webSearch=$webSearch for a new native conversation only',
+    async ({ modelService, webSearch }) => {
       const conversation: ConversationDetail = {
         ...summary('c1'),
         mode: 'online',
@@ -281,20 +288,21 @@ describe('headless chat hooks', () => {
       });
       const selectedModel = { modelService, model: 'shared/model' };
       const { result, rerender } = renderHook(
-        ({ selection }) => {
+        ({ selection, search }) => {
           const controller = chat.useChatController();
           const send = chat.useSendMessage({
             conversationId: null,
             agentId: 'online',
             source: 'panel',
             selectedModel: selection,
+            webSearch: search,
             dispatch: () => undefined,
             onCreated: () => undefined,
           });
           return { send, controller };
         },
         {
-          initialProps: { selection: selectedModel },
+          initialProps: { selection: selectedModel, search: webSearch },
           wrapper: ({ children }: { children: ReactNode }) => (
             <ChatClientProvider>{children}</ChatClientProvider>
           ),
@@ -309,10 +317,12 @@ describe('headless chat hooks', () => {
         agentId: 'online',
         source: 'panel',
         selectedModel: { modelService, model: 'shared/model' },
+        ...(webSearch === undefined ? {} : { config: { webSearch } }),
       };
       selectedModel.modelService = 'changed-after-submit';
       rerender({
         selection: { modelService: 'another-picker-choice', model: 'other' },
+        search: webSearch === undefined ? true : !webSearch,
       });
       expect(
         result.current.controller.submissions.snapshot()[0]?.create,

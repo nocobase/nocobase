@@ -1,3 +1,7 @@
+import type { NativeExecutionRequest } from './types.js';
+import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
+import { resendOptions } from '../messages/resend.js';
+import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
 import type { OnlineAgentSandboxProvider } from '../../sandbox/types.js';
 import { nativeInputParts } from '../messages/validation.js';
 import {
@@ -65,6 +69,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       sandboxProvider?: OnlineAgentSandboxProvider;
       ids: IdSource;
       resolver?: ServiceResolver;
+      webSearch?: OnlineAgentWebSearch;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
       uiStreams: OnlineAgentUIStreams;
@@ -207,6 +212,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
         : (initial.defaultModel ?? (await this.deps.defaultModel())));
     if (!model) throw invalid('No enabled chat model is configured.');
     this.validateModel(config.model, model);
+    await validateWebSearch(config, model, this.deps.webSearch);
     await this.deps.model(model, '');
     this.available();
     return this.deps.sessions.create(context.user.id, kind, config, model, {
@@ -307,6 +313,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       abort: (...args) => this.abort(...args),
       retryFinalization: (...args) => this.retryFinalization(...args),
       start: (...args) => this.start(...args),
+      resend: (...args) => this.resend(...args),
       approve: (...args) => this.approve(...args),
       observe: (...args) => this.observe(...args),
     };
@@ -339,6 +346,15 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
           ? this.firstModel(config.model)
           : session.model);
       this.validateModel(config.model, model);
+      const changed =
+        model.modelService !== session.model.modelService ||
+        model.model !== session.model.model;
+      await validateWebSearch(
+        config,
+        model,
+        this.deps.webSearch,
+        changed && options.webSearch === undefined,
+      );
       await this.deps.model(model, id);
       this.available();
       await this.deps.sessions.configure(context.user.id, id, config, model);
@@ -500,31 +516,12 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
     input: NativeApproval,
     onExecution?: (execution: OnlineAgentExecution) => void,
   ): Promise<number> {
-    this.available();
-    const accepted = acceptance();
-    const execution: OnlineAgentExecution = {
-      abort: new AbortController(),
-      observers: new Set(),
-    };
-    await this.gate(id, async () => {
-      if (this.stopping) throw conflict('OnlineAgent is stopping.');
-      if (this.active.size >= 1024)
-        throw conflict('OnlineAgent execution limit exceeded.');
-      if (this.active.has(id)) throw conflict('This conversation is busy.');
-      this.active.set(id, execution);
-      execution.task = this.native.run(
-        context,
-        id,
-        [],
-        undefined,
-        execution,
-        accepted,
-        input,
-      );
-    });
-    const seq = await accepted.promise;
-    onExecution?.(execution);
-    return seq;
+    return this.launch(
+      context,
+      id,
+      { kind: 'approval', approval: input },
+      onExecution,
+    );
   }
   private async start(
     context: OnlineAgentContext,
@@ -564,15 +561,44 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
           : {}),
       })),
     );
+    return this.launch(
+      context,
+      id,
+      { kind: 'append', inputs, input, schema },
+      onExecution,
+    );
+  }
+
+  private resend(
+    context: OnlineAgentContext,
+    id: string,
+    options: OnlineAgentResendOptions,
+    input: Parameters<NativeSessionHost['resend']>[3],
+    onExecution?: (execution: OnlineAgentExecution) => void,
+  ): Promise<number> {
+    return this.launch(
+      context,
+      id,
+      { kind: 'resend', options: resendOptions(options), input },
+      onExecution,
+    );
+  }
+
+  private async launch(
+    context: OnlineAgentContext,
+    id: string,
+    request: NativeExecutionRequest,
+    onExecution?: (execution: OnlineAgentExecution) => void,
+  ): Promise<number> {
     await this.deps.sessions.load(context.user.id, id);
-    if (this.stopping) throw conflict('OnlineAgent is stopping.');
+    this.available();
     const execution: OnlineAgentExecution = {
       abort: new AbortController(),
       observers: new Set(),
     };
     const accepted = acceptance();
     await this.gate(id, async () => {
-      if (this.stopping) throw conflict('OnlineAgent is stopping.');
+      this.available();
       if (this.active.has(id)) throw conflict('This conversation is busy.');
       if (this.active.size >= 1024)
         throw conflict('OnlineAgent execution limit exceeded.');
@@ -580,12 +606,9 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       execution.task = this.native.run(
         context,
         id,
-        inputs,
-        input,
+        request,
         execution,
         accepted,
-        undefined,
-        schema,
       );
     });
     const seq = await accepted.promise;

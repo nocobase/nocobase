@@ -532,6 +532,7 @@ export interface OnlineChatConfigSnapshot {
   /** Missing and empty lists impose no additional model restriction. */
   readonly model?: string[];
   readonly thinking?: string;
+  readonly webSearch?: boolean;
   readonly tool: string[];
   readonly toolVersions: Record<string, string>;
   readonly systemPrompt: string;
@@ -545,6 +546,7 @@ export interface CreateConversationRequest {
     context?: { variable?: OnlineChatJson };
     scope?: string[];
     thinking?: string;
+    webSearch?: boolean;
   };
   readonly selectedModel?: { modelService: string; model: string };
   /** Selects the native `online` executor or a callable Runner agent for a new conversation. */
@@ -683,6 +685,15 @@ export const CONVERSATIONS_TOPIC = 'agents:conversations';
  * `after`); `conversation`: its title, agent, run, archive or read state changed (fetch it, and the list).
  */
 export type ConversationChanged =
+  | {
+      readonly kind: 'conversation.historyReplaced';
+      readonly conversationId: string;
+      readonly messageId: string;
+      readonly seq: number;
+      readonly revision: number;
+      readonly lastSeq: number;
+      readonly executionId: string;
+    }
   | {
       readonly kind: 'conversation.messageUpdated';
       readonly conversationId: string;

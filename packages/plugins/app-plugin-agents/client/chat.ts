@@ -1,3 +1,6 @@
+export { useResendMessage } from './chat/use-chat.js';
+export type { ResendResult } from './chat/controller.js';
+export type { OnlineAgentResendOptions } from '../shared/resend.js';
 /**
  * The agents' chat without its UI, for the application that renders one: the UI Library's `agent-chat` block
  * (`shadcn add @nocobase/agent-chat`) is the panel, conversation page, history and launchers built on what is here

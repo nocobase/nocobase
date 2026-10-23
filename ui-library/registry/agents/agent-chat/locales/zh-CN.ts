@@ -2,7 +2,40 @@ import type { AgentChatLocale } from './en-US.js';
 
 const agentChatZhCN: AgentChatLocale = {
   chat: {
+    webSearch: {
+      title: '联网搜索',
+      queryCount: '{{count}} 个搜索词',
+      expand: '展开',
+      collapse: '收起',
+      toggle: '联网搜索',
+      unsupported: '请选择支持联网搜索的模型。',
+      searching: '正在搜索…',
+      completed: '已获取来源',
+      unverified: '搜索未经核验',
+      unverifiedNotice:
+        '服务返回了回答，但未提供搜索证据；无法核验是否实际联网搜索、信息时效或来源。',
+      partial: '部分搜索失败',
+      failed: '搜索不可用',
+      cancelled: '搜索已取消',
+      interrupted: '搜索已中断',
+      timeout: '搜索超时。',
+      unavailable: '搜索暂时不可用。',
+      noEvidence: '未返回可验证的网络证据。',
+      sources: '来源',
+    },
     retrySaving: '重试保存',
+    cancel: '取消',
+    editMessage: '编辑',
+    copyMessage: '复制',
+    refreshReply: '重新生成',
+    copyFailed: '无法复制消息。',
+    resendConfirm: '重新发送',
+    resend: {
+      rejected: '消息未重新发送，已保留编辑内容。',
+      unknown:
+        '重新发送的结果未知，请先刷新历史并等待，再决定是否重试；消息可能已经接收。',
+      needsSync: '消息已接收，但历史尚未同步。请刷新历史，不要再次发送。',
+    },
     contextFailed: '无法读取所选上下文或发送消息，请检查当前页面后重试。',
     approval: {
       request: '此工具需要您批准后才能执行。',

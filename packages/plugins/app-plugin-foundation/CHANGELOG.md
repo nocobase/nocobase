@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.2
+
+### Patch Changes
+
+- 4d61361: Recognize data-model dependencies in existing applications that resolve the API client through useService, return memoized request helpers, generate routes from literal tuples, or register backend routes through local helpers. Keep request paths paired with their own HTTP methods and preserve the associations in source-free deployment manifests without executing application code.
+
 ## 0.1.0-beta.1
 
 ### Patch Changes

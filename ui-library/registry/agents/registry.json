@@ -140,9 +140,9 @@
       "dependencies": [
         "@ai-sdk/react@4.0.131",
         "ai@7.0.128",
-        "@nocobase/app-plugin-agents@^0.1.0-beta.0",
+        "@nocobase/app-plugin-agents@^1.0.0-beta.21",
         "@nocobase/i18n@^1.0.0-beta.4",
-        "@nocobase/markdown-mermaid@^0.0.2-beta.0",
+        "@nocobase/markdown-mermaid@^0.1.0-beta.2",
         "cn@^0.4.0",
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
@@ -201,6 +201,16 @@
           "path": "agent-chat/message-item.tsx",
           "type": "registry:component",
           "target": "client/extensions/nocobase-agent-chat/message-item.tsx"
+        },
+        {
+          "path": "agent-chat/message-actions.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/message-actions.tsx"
+        },
+        {
+          "path": "agent-chat/web-search-card.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/web-search-card.tsx"
         },
         {
           "path": "agent-chat/message-attachments.tsx",

@@ -36,6 +36,14 @@ import {
   type ModelProviderName,
 } from '../../shared/models.js';
 
+import { openAISearchCall, type OpenAISearchCall } from './search/openai.js';
+import {
+  anthropicSearchCall,
+  type AnthropicSearchCall,
+} from './search/anthropic.js';
+import { googleSearchCall, type GoogleSearchCall } from './search/google.js';
+import { alibabaSearchCall, type AlibabaSearchCall } from './search/alibaba.js';
+import { resolveModelCapabilities } from './search/capabilities.js';
 type JSONObject = Record<string, JSONValue>;
 /** The SDK's reranking model specification, as `ai` names it (`RerankingModel` minus model ids and older versions). */
 type RerankingModelV4 = Extract<RerankingModel, { specificationVersion: 'v4' }>;
@@ -93,14 +101,48 @@ function settingsOf(
   connection: ModelConnection,
   session?: string | null,
 ): Settings {
+  // Alibaba's SDK defaults to Singapore, while the service catalog and editor default to Beijing.
+  const baseURL =
+    connection.baseUrl ||
+    (connection.provider === 'alibaba'
+      ? providerOf('alibaba')?.defaultBaseUrl
+      : undefined);
   return {
-    ...(connection.baseUrl ? { baseURL: connection.baseUrl } : {}),
+    ...(baseURL ? { baseURL } : {}),
     ...(connection.apiKey ? { apiKey: connection.apiKey } : {}),
     headers: headersOf(connection, session),
     fetch: modelFetch,
   };
 }
 
+/** An isolated native search call; ordinary languageModel and reasoningOf are unchanged. */
+export function createSearchCall(
+  connection: ModelConnection,
+  model: string,
+  session?: string | null,
+):
+  | OpenAISearchCall
+  | AnthropicSearchCall
+  | GoogleSearchCall
+  | AlibabaSearchCall {
+  if (!resolveModelCapabilities(connection, model).webSearch)
+    throw new Error(
+      'Native web search is unavailable for this model or endpoint.',
+    );
+  const settings = settingsOf(connection, session);
+  switch (connection.provider) {
+    case 'alibaba':
+      return alibabaSearchCall(settings, model);
+    case 'openai':
+      return openAISearchCall(settings, model);
+    case 'anthropic':
+      return anthropicSearchCall(settings, model);
+    case 'google':
+      return googleSearchCall(settings, model);
+    default:
+      throw new Error('Native web search is unavailable for this provider.');
+  }
+}
 /** Ollama's settings: the connection's headers and fetch, its key as a bearer token beside them. */
 function ollamaSettings(settings: Settings): {
   baseURL?: string;

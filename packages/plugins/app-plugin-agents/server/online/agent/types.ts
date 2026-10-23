@@ -1,3 +1,4 @@
+import type { WebSearchBudget } from '../search/budget.js';
 import type { OnlineAgentSandbox } from '../sandbox/types.js';
 import type { Tool, ModelMessage, UIMessage, UIMessageChunk } from 'ai';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
@@ -32,6 +33,8 @@ export type OnlineAgentToolContext = OnlineAgentContext & {
   /** The executing session, supplied by the runtime rather than model or page input. */
   readonly sessionId: string;
   readonly signal: AbortSignal;
+  readonly selectedModel?: Readonly<ModelRef>;
+  readonly webSearchBudget?: WebSearchBudget;
   readonly execution: OnlineAgentToolExecution;
 };
 export type OnlineAgentScope = {
@@ -47,6 +50,7 @@ export type OnlineAgentScope = {
   skill?: string[];
   model?: string[];
   thinking?: string;
+  webSearch?: boolean;
   permissions?: never;
 };
 export type OnlineAgentScopeProvider = (
@@ -64,6 +68,7 @@ export type OnlineAgentConfig = {
   /** Missing and empty lists are unrestricted; preserve their distinct shapes. */
   model?: string[];
   thinking?: string;
+  webSearch?: boolean;
 };
 export type OnlineAgentToolDefinition<
   I,

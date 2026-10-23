@@ -18,6 +18,7 @@ import { StrictMode, type ReactNode } from 'react';
 import { expect, expectTypeOf, it, vi } from 'vitest';
 import { MessageItem } from '../../registry/agents/agent-chat/message-item';
 import enUS from '../../registry/agents/agent-chat/locales/en-US';
+import zhCN from '../../registry/agents/agent-chat/locales/zh-CN';
 import * as preview from '../../website/demo/agents/agents-chat-client';
 
 const runtime = await createTestI18nRuntime({
@@ -77,6 +78,173 @@ function Card({
     </article>
   );
 }
+it('never keeps restored unfinished search cards busy or displays private tool errors', () => {
+  const owner = message({
+    type: 'tool-webSearch',
+    toolCallId: 'search',
+    state: 'input-available',
+    input: { queries: ['pending'] },
+  });
+  const tree = render(
+    <ol>
+      <MessageItem message={owner} agentName={() => 'Agent'} streaming />
+    </ol>,
+    { wrapper },
+  );
+  expect(screen.getByTestId('chat-web-search')).toHaveAttribute(
+    'aria-busy',
+    'true',
+  );
+  expect(
+    screen.getByRole('status', { name: enUS.chat.webSearch.searching }),
+  ).toBeVisible();
+  const indicator = screen.getByRole('status', {
+    name: enUS.chat.webSearch.searching,
+  });
+  expect(indicator.nextElementSibling).toHaveTextContent(
+    enUS.chat.webSearch.title,
+  );
+  expect(indicator.nextElementSibling?.nextElementSibling).toHaveTextContent(
+    'Queries · 1',
+  );
+  expect(indicator).toHaveClass('lucide-globe', 'animate-pulse');
+  expect(
+    screen.getByTestId('chat-web-search').querySelectorAll('.lucide-globe'),
+  ).toHaveLength(1);
+  expect(
+    screen
+      .getByTestId('chat-web-search')
+      .querySelector('[data-slot="spinner"]'),
+  ).toBeNull();
+  tree.rerender(
+    <ol>
+      <MessageItem message={owner} agentName={() => 'Agent'} />
+    </ol>,
+  );
+  expect(screen.getByTestId('chat-web-search')).toHaveAttribute(
+    'aria-busy',
+    'false',
+  );
+  expect(screen.getByText(enUS.chat.webSearch.interrupted)).toBeVisible();
+  expect(
+    screen.queryByRole('status', { name: enUS.chat.webSearch.searching }),
+  ).toBeNull();
+  expect(
+    screen.getByTestId('chat-web-search').querySelector('.lucide-globe'),
+  ).not.toHaveClass('animate-pulse');
+  tree.rerender(
+    <ol>
+      <MessageItem
+        message={message({
+          type: 'tool-webSearch',
+          toolCallId: 'search',
+          state: 'output-error',
+          input: {},
+          errorText: 'Private upstream provider details',
+        })}
+        agentName={() => 'Agent'}
+      />
+    </ol>,
+  );
+  expect(screen.queryByText('Private upstream provider details')).toBeNull();
+  expect(screen.getByText(enUS.chat.webSearch.failed)).toBeVisible();
+});
+
+it('renders native search evidence inline and lets applications override the default card', async () => {
+  const owner = message({
+    type: 'tool-webSearch',
+    toolCallId: 'search',
+    state: 'output-available',
+    input: { queries: ['current facts'] },
+    output: {
+      results: [
+        {
+          query: 'current facts',
+          status: 'success',
+          findings: '<script>unsafe</script>',
+          sources: [
+            { title: 'Unsafe', url: 'javascript:alert(1)' },
+            { title: 'Official source', url: 'https://example.com/evidence' },
+          ],
+        },
+      ],
+    },
+  });
+  const tree = render(
+    <ol>
+      <MessageItem message={owner} agentName={() => 'Agent'} />
+    </ol>,
+    { wrapper },
+  );
+  const link = await screen.findByRole('link', { name: 'Official source' });
+  expect(link).toHaveAttribute('href', 'https://example.com/evidence');
+  expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  expect(screen.queryByRole('link', { name: 'Unsafe' })).toBeNull();
+  expect(document.querySelector('script')).toBeNull();
+  expect(screen.getByTestId('chat-web-search')).toHaveTextContent(
+    '<script>unsafe</script>',
+  );
+  tree.rerender(
+    <AIToolRendererProvider renderers={{ webSearch: Card }}>
+      <ol>
+        <MessageItem message={owner} agentName={() => 'Agent'} />
+      </ol>
+    </AIToolRendererProvider>,
+  );
+  expect(screen.queryByTestId('chat-web-search')).toBeNull();
+  expect(screen.getByText('Custom webSearch: output-available')).toBeVisible();
+});
+
+it.each([enUS, zhCN])(
+  'renders source-free findings without warning labels or fabricated source links in each locale',
+  async (resources) => {
+    const local = await createTestI18nRuntime({
+      application: { namespace: 'unverified-search', resources },
+    });
+    render(
+      <TestI18nProvider runtime={local}>
+        <ol>
+          <MessageItem
+            message={message({
+              type: 'tool-webSearch',
+              toolCallId: 'unverified',
+              state: 'output-available',
+              input: { queries: ['Current facts'] },
+              output: {
+                results: [
+                  {
+                    query: 'Current facts',
+                    status: 'unverified',
+                    findings: 'Answer without source evidence.',
+                    sources: [],
+                  },
+                ],
+              },
+            })}
+            agentName={() => 'Agent'}
+          />
+        </ol>
+      </TestI18nProvider>,
+    );
+    expect(screen.queryByText(resources.chat.webSearch.unverified)).toBeNull();
+    expect(screen.queryByText(resources.chat.webSearch.completed)).toBeNull();
+    expect(
+      await screen.findByText('Answer without source evidence.'),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(resources.chat.webSearch.unverifiedNotice),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('list', { name: resources.chat.webSearch.sources }),
+    ).toBeNull();
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.getByTestId('chat-web-search')).toHaveAttribute(
+      'aria-busy',
+      'false',
+    );
+  },
+);
+
 const renderers: AIToolRendererMap = { propose: Card };
 const states = [
   {

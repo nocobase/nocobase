@@ -63,6 +63,10 @@ The plugin combines page, authentication and authorization declarations, provide
 
 Capability details include their associated business modules. API dependency associations require both the statically recognized HTTP method and path; an omitted method follows the API client's `GET` default. A refresh failure is shown while retaining the last successful result and its collection time. A `401` or `403` hides the cached overview. Do not describe cached data as freshly collected or type-only references as runtime integration.
 
+### Existing application analysis
+
+For existing applications, the source analyzer also recognizes `useService(apiClientToken)`, React `useCallback` request wrappers, literal tuple-generated routes, decidable local literal conversions and Hono registration helpers. Request path and method bindings stay paired per call. After updating the Foundation plugin, rebuild the application to regenerate `dist/server/foundation-modules.json`; merely refreshing an old deployment cannot repair associations missing from its build artifact. Do not hand-edit that artifact or add a per-application capability map.
+
 ## Sidebar grouping
 
 The host can call `groupFoundationNavigation(items)` from `@nocobase/app-plugin-foundation/client` in its existing `client/lib/navigation-transform.ts` hook, after permission filtering. The helper places an already-visible Foundation entry last in the existing `settings` navigation group, avoiding a separate sidebar group gap. Pass the host’s group name as the second argument when different. It preserves route identity, `/foundation`, authorization and other navigation metadata, never creates a hidden entry and leaves Foundation standalone if no settings group exists. The App needs only the hook call; grouping logic stays in this plugin and does not change Core or the sidebar renderer.
@@ -72,6 +76,10 @@ When business settings are added, preserve the template navigation transform: it
 ## Large catalogs and count freshness
 
 Only five Collection names appear in the overview. The page loads the full-list browser only when opened, with search and 50 entries per page. Exact business row totals are explicit, bounded operations; the page retains the last successful count and shows its original `recordCountCheckedAt`. A normal Refresh does not recount rows, and a process restart clears this in-memory count. Database reads share four service-wide slots; a timed-out scan stops scheduling work, while driver queries already in progress retain their slots until they settle. Known table totals survive a scan timeout; unavailable counts are not zero. Hover or focus a matrix column icon to read its localized capability name.
+
+A missing or unreadable Collection definition makes data modeling partial without discarding the catalog preview or confirmed table/view totals. Field and relation metrics count readable definitions as lower bounds (`complete: false`); if all definitions are unavailable, their values are `null`. A present empty definition remains an exact zero. Refresh retries schema inspection after recovery and retains the last successful business record count with its original time. Raw driver errors and connection details never enter the overview.
+
+Module discovery supports the conventional Client routes, Server routes and provider entries both at the package root and under `dist/`, for applications and registered plugins. Local compiled services retain endpoint and selected-method boundaries. Unreadable backend entries or local dependencies mark pages with recognized backend requests incomplete; pages without such requests need no backend entry. Rebuild existing deployments to regenerate the module artifact; source-free application deployments continue reading that validated artifact.
 
 Literal JSX props, destructured defaults, loader aliases and finite literal array-generated routes/endpoints are statically recognized. Unknown factories and computed values remain unassociated; application code is never executed.
 

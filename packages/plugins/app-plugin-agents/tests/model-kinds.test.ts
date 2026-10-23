@@ -74,6 +74,7 @@ describe('model kinds', () => {
         value: 'mock-embed',
         label: 'mock-embed',
         kind: 'embedding',
+        capabilities: { webSearch: false },
         dimensions: 6,
       },
     ]);

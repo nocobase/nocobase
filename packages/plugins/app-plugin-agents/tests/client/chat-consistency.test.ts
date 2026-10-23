@@ -47,26 +47,24 @@ afterEach(() => {
   controllers.splice(0).forEach((c) => c.dispose());
   agentsQueryClient().clear();
 });
-it('drains a coalesced fresh refresh after an older page, using loaded messages rather than the server watermark', async () => {
+it('discards an older page that returns after an authoritative refresh begins', async () => {
   const old = deferred<ReturnType<typeof page>>();
-  const messages = vi
-    .fn()
-    .mockReturnValueOnce(old.promise)
-    .mockResolvedValueOnce(page([message(11)], 11));
+  const messages = vi.fn().mockImplementation(async (_id, query) => {
+    if (query?.pageToken) return old.promise;
+    if (query?.ids) return page([message(10)], 11);
+    return page([message(11)], 11);
+  });
   const c = controller({ messages, conversation: async () => detail('fresh') });
   c.dispatch('c', { type: 'page', page: page([message(10)], 10, 'older') });
   const older = c.loadHistory('c', true);
-  const refresh = c.refresh('c');
-  await vi.waitFor(() => expect(messages).toHaveBeenCalledTimes(1));
-  const again = c.loadHistory('c', false, true);
+  await c.refresh('c');
   old.resolve(page([message(1)], 11));
-  await Promise.all([older, refresh, again]);
-  expect(messages.mock.calls.map((call) => call[1])).toEqual([
-    { pageToken: 'older' },
-    { after: 10 },
-  ]);
+  await older;
+  expect(messages.mock.calls.map((call) => call[1])).toContainEqual({
+    ids: 'm10',
+  });
   expect(c.history('c').state.items.map((m) => m.metadata?.seq)).toEqual([
-    1, 10, 11,
+    10, 11,
   ]);
 });
 it('does not let an older detail response overwrite a newer refresh', async () => {

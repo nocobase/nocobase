@@ -56,7 +56,7 @@ export async function collectModuleSources(
         continue;
       }
       const declarationFiles = await graph.walk(entry, false);
-      await graph.prepare(entry);
+      const backendComplete = await graph.prepare(entry);
       const endpoints = await graph.apiDependencies();
       for (const source of declarationFiles.sources) {
         const declarations = graph.routeDeclarations(source.ast);
@@ -88,6 +88,7 @@ export async function collectModuleSources(
             const page = graph.evidence(target);
             for (const provider of page.providers) providers.add(provider);
             for (const request of graph.requests(page.sources)) {
+              routeComplete &&= backendComplete;
               for (const endpoint of endpoints) {
                 if (
                   request.method === endpoint.method &&
@@ -114,6 +115,7 @@ export async function collectModuleSources(
               : {}),
             complete: routeComplete,
           });
+          complete &&= routeComplete;
         }
       }
       complete &&= declarationFiles.complete;
@@ -128,6 +130,7 @@ export async function collectModuleSources(
 class SourceGraph {
   private readonly files = new Map<string, Source | undefined>();
   private analysis: SourceEvidence | undefined;
+  private serverEntry: string | undefined;
   private constructor(
     private readonly root: string,
     public readonly packageName: string,
@@ -178,28 +181,41 @@ class SourceGraph {
   }
 
   public async entry(): Promise<string | undefined> {
-    return (
-      (await this.resolve(path.join(this.root, 'client/routes.js'))) ??
-      (await this.resolve(path.join(this.root, 'dist/client/routes.js')))
-    );
+    return this.conventionalEntry('client/routes.js');
   }
 
-  public async prepare(entry: string): Promise<void> {
+  /** Prefer source entries in a checkout, then the same conventional entries in a published package. */
+  private async conventionalEntry(
+    ...names: string[]
+  ): Promise<string | undefined> {
+    for (const layout of ['', 'dist'])
+      for (const name of names) {
+        const file = await this.resolve(path.join(this.root, layout, name));
+        if (file) return file;
+      }
+    return undefined;
+  }
+
+  public async prepare(entry: string): Promise<boolean> {
     await this.walk(entry, true);
-    const server =
-      (await this.resolve(path.join(this.root, 'server/routes/index.js'))) ??
-      (await this.resolve(path.join(this.root, 'server/routes.js')));
-    if (server) await this.walk(server, false);
+    this.serverEntry = await this.conventionalEntry(
+      'server/routes/index.js',
+      'server/routes.js',
+    );
+    let backendComplete = this.serverEntry
+      ? (await this.walk(this.serverEntry, false)).complete
+      : false;
     const providerEntries: string[] = [];
     for (const name of [
       'server/providers/index.js',
       'server/providers.js',
       'server/service-provider.js',
     ]) {
-      const provider = await this.resolve(path.join(this.root, name));
+      const provider = await this.conventionalEntry(name);
       if (provider) {
         providerEntries.push(provider);
-        await this.walk(provider, false);
+        const graph = await this.walk(provider, false);
+        backendComplete &&= graph.complete;
       }
     }
     const resolutions = new Map<string, string>();
@@ -220,6 +236,7 @@ class SourceGraph {
       resolutions,
     );
     this.analysis.registerServices(providerEntries);
+    return backendComplete;
   }
 
   public evidence(
@@ -324,9 +341,7 @@ class SourceGraph {
 
   public async overrides(): Promise<Set<string>> {
     const ids = new Set<string>();
-    const entry = await this.resolve(
-      path.join(this.root, 'client/route-overrides.js'),
-    );
+    const entry = await this.conventionalEntry('client/route-overrides.js');
     if (!entry) return ids;
     const graph = await this.walk(entry, false);
     for (const source of graph.sources) {
@@ -345,9 +360,7 @@ class SourceGraph {
   public async apiDependencies(): Promise<
     ReturnType<typeof analyzeApiDependencies>
   > {
-    const entry =
-      (await this.resolve(path.join(this.root, 'server/routes/index.js'))) ??
-      (await this.resolve(path.join(this.root, 'server/routes.js')));
+    const entry = this.serverEntry;
     const source = entry && this.files.get(entry);
     if (!source || !this.analysis) return [];
     const graph = this.evidence(source.file);

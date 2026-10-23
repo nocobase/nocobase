@@ -1,3 +1,4 @@
+import { WEB_SEARCH_TOOL } from '../../../shared/web-search.js';
 import type { Tool } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { invalid } from '../../kernel/errors.js';
@@ -41,6 +42,19 @@ function supported(value: object) {
     );
 }
 
+/** Single effective selection for versioning, SDK binding, instructions and realtime projection. */
+export function effectiveTools(config: OnlineAgentConfig): string[] {
+  if (config.tool.includes(WEB_SEARCH_TOOL))
+    throw invalid(
+      'webSearch is reserved; enable it through webSearch configuration.',
+    );
+  return [
+    ...new Set([
+      ...config.tool,
+      ...(config.webSearch ? [WEB_SEARCH_TOOL] : []),
+    ]),
+  ];
+}
 export class OnlineAgentConfigurator {
   private globals: (OnlineAgentScope | OnlineAgentScopeProvider)[] = [];
   private scopes = new Map<
@@ -260,6 +274,11 @@ export class OnlineAgentConfigurator {
         hasModel = true;
       }
       if (scope.thinking !== undefined) result.thinking = scope.thinking;
+      if (scope.webSearch !== undefined) {
+        if (typeof scope.webSearch !== 'boolean')
+          throw invalid('webSearch must be a boolean.');
+        result.webSearch = scope.webSearch;
+      }
     }
     if (
       supplied !== undefined &&
@@ -284,8 +303,10 @@ export class OnlineAgentConfigurator {
         result.tool.includes('skill'))
     )
       throw invalid('Sandbox tools are only supported by the native backend.');
+    if (result.webSearch && result.agentId && result.agentId !== 'online')
+      throw invalid('Web search is only supported by the native backend.');
     result.toolVersions = Object.fromEntries(
-      result.tool.map((name) => {
+      effectiveTools(result).map((name) => {
         const registered = this.tools.get(name);
         if (!registered) throw invalid(`Tool ${name} is not registered.`);
         return [name, registered.version];
@@ -302,7 +323,7 @@ export class OnlineAgentConfigurator {
     track: (task: Promise<unknown>) => void = () => {},
   ): Record<string, Tool<unknown, OnlineAgentJson, OnlineAgentToolContext>> {
     return Object.fromEntries(
-      config.tool.map((name) => {
+      effectiveTools(config).map((name) => {
         const registered = this.tools.get(name);
         if (!registered || registered.version !== config.toolVersions[name])
           throw invalid(`Tool ${name} has changed or is unavailable.`);
