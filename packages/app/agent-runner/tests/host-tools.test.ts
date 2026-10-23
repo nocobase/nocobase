@@ -48,7 +48,7 @@ async function fakeTool(dir: string, name: string): Promise<string> {
   const file = path.join(dir, name);
   await writeFile(
     file,
-    `#!/bin/sh\necho "args=$*"\necho "token=$GITLAB_TOKEN$GH_TOKEN"\necho "user=$GITLAB_USER"\necho "host=$GITLAB_HOST"\necho "protocol=$API_PROTOCOL"\n`,
+    `#!/bin/sh\necho "args=$*"\necho "token=$GITLAB_TOKEN$GH_TOKEN$GITEE_TOKEN"\necho "user=$GITLAB_USER"\necho "host=$GITLAB_HOST"\necho "protocol=$API_PROTOCOL"\n`,
   );
   await chmod(file, 0o755);
   return file;
@@ -100,6 +100,7 @@ describe('code host CLI wrappers', () => {
     const realDir = path.join(root, 'real');
     await fakeTool(realDir, 'glab');
     await fakeTool(realDir, 'gh');
+    await fakeTool(realDir, 'gitee');
     const broker = new GitCredentialBroker({
       client,
       runId: 'r1',
@@ -126,6 +127,41 @@ describe('code host CLI wrappers', () => {
     };
     return { binDir, realDir, env, result };
   }
+
+  it('injects the Gitee credential, denies fallback and blocks credential persistence with global flags', async () => {
+    answers = [
+      () => ({
+        username: 'oauth2',
+        password: 'gitee-fixture',
+        expiresAt: new Date(Date.now() + 60 * MINUTE).toISOString(),
+      }),
+    ];
+    const { binDir, env } = await setUp([
+      {
+        bin: 'gitee',
+        url: REPO,
+        env: { GITEE_TOKEN: { credential: 'password' } },
+      },
+    ]);
+    const result = await run(
+      path.join(binDir, 'gitee'),
+      ['pr', 'create', '--json', '--no-tui'],
+      env,
+    );
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('token=gitee-fixture');
+    for (const args of [
+      ['auth', 'token'],
+      ['--json', 'auth', 'login'],
+      ['config', 'set', 'ai.token', 'fixture'],
+      ['--no-tui', 'config', 'set', 'tui', 'false'],
+      ['--hostname', 'elsewhere.test', 'pr', 'list'],
+    ]) {
+      const denied = await run(path.join(binDir, 'gitee'), args, env);
+      expect(denied.code).toBe(1);
+      expect(denied.stdout).not.toContain('gitee-fixture');
+    }
+  });
 
   it('runs the real tool with the run’s current credential and the literal variables, asking anew as it expires', async () => {
     answers = [
