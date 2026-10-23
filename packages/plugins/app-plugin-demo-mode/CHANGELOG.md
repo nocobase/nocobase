@@ -1,6 +1,6 @@
 # @nocobase/app-plugin-demo-mode
 
-## Unreleased
+## 0.0.1
 
 - Introduce isolated demo deployments enabled by the boolean `NOCOBASE_DEMO_MODE` environment variable or `demoMode.enabled` configuration, disabled by default, with request-scoped write protection, logical-collection exceptions and application-owned repeatable data generation and cleanup.
 - Provide reusable visitor accounts, quick sign-in with application-scoped redirects, permission-gated lifecycle APIs and CLI, reset progress, persisted operation leases and one daily Scheduler integration. Preserve sessions for unchanged accounts and apply changed passwords using persisted salted snapshots.
