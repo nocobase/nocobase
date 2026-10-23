@@ -166,6 +166,7 @@ export function hostToolWrapperScript(
       // Global flags may precede auth/config, so scan command words rather than just $1 and $2.
       'previous=',
       'scope=',
+      'destination=',
       'for arg do',
       '  case "$arg" in auth|config|alias) scope=$arg ;; esac',
       '  case "$scope:$arg" in',
@@ -179,6 +180,16 @@ export function hostToolWrapperScript(
       '  case "$arg" in',
       '    --hostname=*) if [ "$arg" != --hostname=gitee.com ]; then echo "nocobase-runner: refused: only gitee.com is supported." >&2; exit 1; fi ;;',
       '  esac',
+      '  case "$arg" in api|pipeline) destination=$arg ;; esac',
+      '  case "$destination:$arg" in pipeline:request) destination=request ;; esac',
+      '  case "$previous" in',
+      '    --body|-b|--title|-t|--field|-f|--header|-H) ;;',
+      '    *)',
+      '      case "$destination:$arg" in',
+      '        api:https://gitee.com/*|request:https://go-api.gitee.com/*) ;;',
+      '        api:*://*|request:*://*) echo "nocobase-runner: refused: only public Gitee API URLs are supported." >&2; exit 1 ;;',
+      '      esac ;;',
+      '  esac',
       '  previous=$arg',
       'done',
     );
@@ -186,6 +197,12 @@ export function hostToolWrapperScript(
     lines.push(
       `exports=$(${quote(node)} ${quote(credential.helper)} ${credential.index} env ${quote(JSON.stringify(credential.env))}) || exit 1`,
       'eval "$exports"',
+    );
+  if (bin === 'gitee' && credential !== undefined)
+    lines.push(
+      // These environment values override both inherited variables and config.yml in the official CLI.
+      'export GITEE_API_PREFIX=https://gitee.com/api/v5',
+      'export GITEE_GO_API_HOST=go-api.gitee.com',
     );
   lines.push(
     `exec ${quote(real)}${bin === 'gitee' ? ' --hostname gitee.com' : ''} "$@"`,
