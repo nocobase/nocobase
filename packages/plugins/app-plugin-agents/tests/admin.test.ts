@@ -889,7 +889,7 @@ describe('admin API', () => {
     expect(shared.body.data.trust).toBe('team');
   });
 
-  it('lets only the owner choose its coding tools', async () => {
+  it('lets owners and team runner managers choose tools without granting other settings', async () => {
     h = await createHarness();
     const token = await h.request(
       'POST',
@@ -909,7 +909,7 @@ describe('admin API', () => {
     const unknown = await h.request(
       'POST',
       '/agents/runners/registrationTokens',
-      { user: 'bob', body: { enabledTools: ['cursor'] } },
+      { user: 'bob', body: { enabledTools: ['unknown-tool'] } },
     );
     expect(unknown.status).toBe(400);
 
@@ -948,14 +948,34 @@ describe('admin API', () => {
     });
     expect(owner.status).toBe(200);
     expect(owner.body.data.enabledTools).toEqual(['claude', 'codex']);
-    expect(await online()).toBe(1);
+    // A newly enabled tool must report again before it is offered work.
+    expect(await online()).toBe(0);
     const manager = await h.request('PATCH', path, {
       user: 'carol',
       can: ['agents.runners/manage'],
       body: { enabledTools: [] },
     });
-    expect(manager.status).toBe(403);
-    expect(await online()).toBe(1);
+    expect(manager.status).toBe(200);
+    expect(await online()).toBe(0);
+    const rename = await h.request('PATCH', path, {
+      user: 'carol',
+      can: ['agents.runners/manage'],
+      body: { enabledTools: ['gemini'], name: 'Changed by manager' },
+    });
+    expect(rename.status).toBe(403);
+    const personal = await h.registerRunner({
+      trust: 'ownerOnly',
+      ownerUserId: 'bob',
+    });
+    expect(
+      (
+        await h.request('PATCH', `/agents/runners/${personal.runnerId}`, {
+          user: 'carol',
+          can: ['agents.runners/manage'],
+          body: { enabledTools: ['gemini'] },
+        })
+      ).status,
+    ).toBe(403);
   });
 
   it('refuses variables with SECRETS_KEY_MISSING when no secrets key is configured', async () => {

@@ -1,6 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
-import type { AgentTool } from '@nocobase/agent-protocol';
+import { isNativeTool, type AgentTool } from '@nocobase/agent-protocol';
 import type {
   RunnerSummary,
   UnavailableModel,
@@ -135,8 +135,12 @@ export function QuotaCell({
             })}
           </span>
         ) : (
-          <span className='text-green-700 dark:text-green-300'>
-            {t('runtimes.quota.ok')}
+          <span className='text-muted-foreground'>
+            {t(
+              !isNativeTool(tool)
+                ? 'runtimes.tool.notProvided'
+                : 'runtimes.quota.ok',
+            )}
           </span>
         )
       ) : null}

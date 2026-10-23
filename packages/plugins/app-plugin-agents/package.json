@@ -286,7 +286,8 @@
     "resumable-stream": "2.2.13",
     "sqlite-vec": "^0.1.9",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@nocobase/acp-bridge": "workspace:^"
   },
   "peerDependencies": {
     "@ai-sdk/react": "catalog:",
@@ -311,6 +312,7 @@
     "react-day-picker": "catalog:",
     "react-markdown": "catalog:",
     "react-router": "catalog:",
+    "react-virtuoso": "catalog:",
     "recharts": "^3.8.0",
     "remark-gfm": "catalog:"
   },

@@ -221,6 +221,14 @@ export async function updateAgent(
   await agentsRepo(conn).updateMany({ filter: { id }, values });
 }
 
+/** Removes an agent's row outright: only for one never enabled and never run, which keeps no history anyone reads. */
+export async function deleteAgent(
+  conn: DatabaseConnection,
+  id: string,
+): Promise<void> {
+  await agentsRepo(conn).deleteMany({ filter: { id } });
+}
+
 /**
  * Writes a change made against `revision`, raising it by one. False, writing nothing, when the agent is no longer at
  * that revision.

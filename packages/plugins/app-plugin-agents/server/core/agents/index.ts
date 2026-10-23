@@ -24,3 +24,7 @@ export {
   isReported,
   unusableReason,
 } from './agent.views.js';
+export {
+  availableModelGroups,
+  availableModelRows,
+} from './available-models.js';

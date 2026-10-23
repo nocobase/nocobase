@@ -28,7 +28,7 @@ import {
 } from '../protocol/index.ts';
 import { isolationProblem } from '../core/isolation.ts';
 import { policyReport } from '../core/local-policy.ts';
-import { detectTools, runnerFeatures, runnerVersion } from '../core/loop.ts';
+import { runnerFeatures, runnerVersion } from '../core/loop.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
 
 /** `acme=/path/to/acme` → ['acme', '/path/to/acme']. */
@@ -143,7 +143,7 @@ export default class Register extends RunnerCommand {
       product: runnerHost().product,
       protocolVersion: PROTOCOL_VERSION,
       features: policy.features,
-      tools: await detectTools(adapters),
+      tools: [],
       ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
       variables: providedNames(
         process.env,
@@ -185,6 +185,7 @@ export default class Register extends RunnerCommand {
         ...overrides,
       },
       registeredAt: new Date().toISOString(),
+      ...(response.enabledTools ? { enabledTools: response.enabledTools } : {}),
     };
     await writeSettings(settings, this.paths);
     await writeConnection(

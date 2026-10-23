@@ -19,7 +19,15 @@
       "types": "./src/protocol.ts",
       "import": "./src/protocol.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./catalog": {
+      "types": "./src/catalog.ts",
+      "import": "./src/catalog.ts"
+    },
+    "./client": {
+      "types": "./src/client.ts",
+      "import": "./src/client.ts"
+    }
   },
   "publishConfig": {
     "access": "public",
@@ -32,7 +40,15 @@
         "types": "./dist/protocol.d.ts",
         "import": "./dist/protocol.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./catalog": {
+        "types": "./dist/catalog.d.ts",
+        "import": "./dist/catalog.js"
+      },
+      "./client": {
+        "types": "./dist/client.d.ts",
+        "import": "./dist/client.js"
+      }
     }
   },
   "files": [

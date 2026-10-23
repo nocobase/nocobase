@@ -16,6 +16,7 @@
  * - `stop()` interrupts the turn, then ends the process group: within five
  *   seconds in all.
  */
+import { programFingerprint } from './program-fingerprint.ts';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
 import { access } from 'node:fs/promises';
@@ -186,6 +187,14 @@ export class CodexAdapter implements AgentAdapter {
     };
   }
 
+  private program(): Promise<string | undefined> {
+    return findOnPath('codex', this.options.searchPath);
+  }
+
+  async fingerprint(): Promise<string> {
+    return programFingerprint(await this.program());
+  }
+
   features(): RunnerFeature[] {
     return ['steer'];
   }
@@ -292,8 +301,8 @@ export class CodexAdapter implements AgentAdapter {
   }
 
   private async runDetection(signal?: AbortSignal): Promise<ToolDetection> {
-    const { exec, minVersion, searchPath, env } = this.options;
-    const found = await findOnPath('codex', searchPath);
+    const { exec, minVersion, env } = this.options;
+    const found = await this.program();
     if (!found) {
       return {
         installed: false,

@@ -204,10 +204,20 @@ function RunnerDetail({
           {runner.status === 'upgrade_required' ? (
             <RunnerUpgradeRequired runner={runner} />
           ) : null}
-          {!runner.canManage ? (
+          {!runner.canManage && !runner.canManageTools ? (
             <p className='text-sm text-muted-foreground'>
               {t('runtimes.detail.readOnly')}
             </p>
+          ) : null}
+          {(editable || runner.canManageTools) && runner.status === 'online' ? (
+            <Button
+              type='button'
+              variant='outline'
+              disabled={update.isPending}
+              onClick={() => update.mutate({ redetectTools: true })}
+            >
+              {t('runtimes.tool.redetect')}
+            </Button>
           ) : null}
           <RunnerOverview
             runner={runner}
@@ -222,7 +232,9 @@ function RunnerDetail({
         <TabsContent value='runs' className='min-h-0 overflow-y-auto p-4'>
           <RunnerRuns runnerId={runner.id} />
         </TabsContent>
-        {editable && tab === 'overview' ? (
+        {(editable || runner.canManageTools) &&
+        runner.status !== 'revoked' &&
+        tab === 'overview' ? (
           <div
             data-fixed-sheet-footer
             className='flex shrink-0 justify-end gap-2 border-t bg-background p-4'

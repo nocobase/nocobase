@@ -1,5 +1,5 @@
 /**
- * Route `/runtimes/connect` ("Add runtime"): choose which coding tools the runtime may run (all by default) and how many
+ * Route `/runtimes/connect` ("Add runtime"): choose which coding tools the runtime may run (Codex and Claude Code by default) and how many
  * runs it takes at once (1 by default), get a
  * one-line install command carrying a one-time token, run it on the host, and watch it show up connected with the
  * coding tools it found and whether each is on and signed in. The tool choice and the concurrency travel with the
@@ -13,7 +13,11 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { CheckCircle2Icon, ChevronRightIcon } from 'lucide-react';
 import { useState, type FormEvent, type ReactElement } from 'react';
 
-import { AGENT_TOOLS, type AgentTool } from '@nocobase/agent-protocol';
+import {
+  AGENT_TOOLS,
+  DEFAULT_AGENT_TOOLS,
+  type AgentTool,
+} from '@nocobase/agent-protocol';
 
 import type {
   RegistrationToken,
@@ -91,7 +95,7 @@ function AddRunnerSteps(): ReactElement {
   const { close } = useRouteOverlay();
   const canShare = useSetting('agents.runners', 'manage');
   const [trust, setTrust] = useState<RunnerTrust>('ownerOnly');
-  const [tools, setTools] = useState<readonly AgentTool[]>(AGENT_TOOLS);
+  const [tools, setTools] = useState<readonly AgentTool[]>(DEFAULT_AGENT_TOOLS);
   const [toolsMissing, setToolsMissing] = useState(false);
   const [slots, setSlots] = useState('4');
   const [slotsInvalid, setSlotsInvalid] = useState(false);
@@ -107,8 +111,7 @@ function AddRunnerSteps(): ReactElement {
       const before = await api.runners();
       const token = await api.createRegistrationToken({
         trust: canShare ? trust : 'ownerOnly',
-        // Every tool is no choice at all, so a tool the protocol adds later is offered too.
-        enabledTools: tools.length === AGENT_TOOLS.length ? null : tools,
+        enabledTools: tools,
         slots: Number(slots),
         ...(limits ? { toolSlots: limits } : {}),
       });
