@@ -1,19 +1,22 @@
-# Visitor entry and settings presentation
+# Visitor entry and presentation
 
-## Quick sign-in
+## Default entry
 
-While demo mode is on, visitors enter the imported demo accounts without a password, and switch between them, with no application code: the Client plugin contributes the `/demo-sign-in` page and a corner switcher on every page. `demoMode.quickSignIn: false` in application configuration turns it off.
+The Client plugin provides `/demo-sign-in` and a floating account switcher automatically. Generate the dataset first and enable the host's password sign-in. Use one shared account definition for listing and creation, as described in [visitor accounts](adapting-data.md#visitor-accounts).
 
-- `GET /api/demoMode/accounts` (public) lists `{ username, name, role, current }` for the accounts `accounts(language)` lists for the imported language whose user the dataset created (`demoModeAccounts`) and is not disabled. Passwords are never returned. Empty when demo mode is off, quick sign-in is off or no data is imported.
-- `POST /api/demoMode/accounts/{username}/signIn` signs the request's own session out, then signs in through Better Auth's `/sign-in/email` with the email of that user and the password `accounts(language)` lists, and forwards Better Auth's `Set-Cookie`. The session is ordinary. `DEMO_ACCOUNT_NOT_FOUND` (404) for an account the list does not offer; `DEMO_ACCOUNT_SIGN_IN_FAILED` (400) when the listed password is not the account's password. Email-and-password sign-in must be enabled.
-- So `accounts(language)` must list the real password of every account: the spec's `password`, or the username followed by `123` when the spec leaves it out. Every listed account can be entered by anyone who reaches the demo, so give each one only what a visitor may see and do.
-- An application with an account menu registers `demoMode({ accountSwitcher: 'menu' })` and places `DemoAccountMenu` from `@nocobase/app-plugin-demo-mode/client/account-menu` inside that menu's Base UI content, before signing out; the corner button then shows only to visitors who have not signed in.
-- Open `<base path>/demo-sign-in?as=<username>&redirect=/path` to enter an account directly. `redirect` is an application-relative path: under `/main`, `/tasks` opens `/main/tasks`; do not include the base path twice. External URLs, control characters, backslashes and normalized paths outside the application base fall back to its home page. Signing in reloads the page, so nothing of the previous account stays.
+For a direct link, use `<base path>/demo-sign-in?as=<username>&redirect=/path`. The redirect is application-relative: under `/main`, `/tasks` opens `/main/tasks`. Sign-in reloads the page to discard the previous account's client state.
 
-Keep the account list and creation on one shared definition. After changing a password, reset the dataset before testing quick sign-in: reset applies changed credentials and revokes their old sessions; unchanged accounts retain their sessions. See the [upgrade note](upgrading.md#credentials-and-model-defaults) for existing preview accounts.
+## Customize only when needed
 
-## Host settings presentation
+- Set `demoMode.quickSignIn: false` in application configuration to disable quick sign-in.
+- For an existing account menu, register `demoMode({ accountSwitcher: 'menu' })` and place `DemoAccountMenu` from `@nocobase/app-plugin-demo-mode/client/account-menu` inside its Base UI menu content, before sign-out. Guests retain the floating entry.
+- Set the Client option `showFloatingAccountSwitcher: false` to hide the floating entry. This changes presentation; it does not disable the sign-in route.
+- For a custom entry UI, use `useDemoAccounts` from `@nocobase/app-plugin-demo-mode/client/accounts`; it supplies the public account list and `signIn(username, redirect?)`.
 
-Use the public `DemoSettingsComponents` and `DemoSettingsHeaderProps` types from `client/settings` to pass a stable module-level `components` map to `DemoModeSettings`. Supply the host Header, Button, card parts and TabsList/TabsTrigger when its conventions differ. Header receives localized text, activeTabLabel, refreshDisabled, refreshing and onRefresh; preserve the refresh guard, and reuse a frame-aware header inside a parent settings page. Forward children, refs, event and accessibility props; compatible tabs must share the host Base UI peer instance with the plugin. Keep the plugin-owned permission checks, mounted panels, URL query state, confirmations and revision handling. Keep one owning PageContainer and wrap tab/action/footer rows at narrow widths. Omitted components retain plugin defaults. Never define replacement components inside render or patch private plugin imports.
+## Management presentation
 
-To hide the floating guest/account entry, register the client with `showFloatingAccountSwitcher: false`. This is presentation only: `DemoAccountMenu`, the direct sign-in route and server authorization remain unchanged. The default stays enabled for existing hosts.
+Mount `DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` inside the application's page layout; see the [route example](minimal-example.md#2-wire-existing-composition-roots) for permissions. Keep one owning `PageContainer`.
+
+Use its default components. Supply `label(kind, id)` for application-owned count/adapter/tool names, `chatTools` for online chat tool policies and `onDataChange` when the application needs to refresh cached business data.
+
+If host styling requires component replacement, use the public `DemoSettingsComponents` and `DemoSettingsHeaderProps` types. Keep the `components` map stable outside render, forward refs/events/accessibility props, and retain disabled/loading behavior. Tabs replacements must use the same Base UI peer instance. Omitted slots keep their defaults; no private plugin imports or global style overrides are needed.

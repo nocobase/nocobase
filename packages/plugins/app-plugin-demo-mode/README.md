@@ -144,7 +144,7 @@ app.container.resolve(demoDataToken).register({
 
 For generators requiring an actor, language, accounts or a clock, use an application-owned options object and adapt each caller's context. Never call demo import/reset from `sampleDataToken`: ordinary sample installation must not enable demo mode or clear existing business data. Applications without a sample-data registration can expose their generator first without adding automatic installation behavior.
 
-Demo reset always clears business data before calling the generator again. A failed cleanup stops generation; retry reset after correcting the failure. It neither consults nor changes sample seed history, normal initialization seeds or migrations. An already executed sample registration therefore does not prevent demo regeneration, and a later normal startup does not repeat sample installation. No core change, execution-history reset, checkpoint resumption or legacy-data migration is required.
+Demo reset always clears business data before calling the generator again. A failed cleanup stops generation; retry reset after correcting the failure. It neither consults nor changes sample seed history, normal initialization seeds or migrations. An already executed sample registration therefore does not prevent demo regeneration, and a later normal startup does not repeat sample installation.
 
 ## Quick sign-in
 
@@ -261,13 +261,11 @@ Protected identity, authorization, Agent and Demo configuration tables cannot be
 
 `demoConfigurationToken.registerAgent<Input, Output>({ id, title, defaultEnabled, execute })` returns a proxy with `run(input, normalAgent)`. For queued work call `prepare()` before enqueueing, persist the proxy ID, then `execute(input)` under `withFreshPolicy` after normal authorization and work-claim checks. Record-level business authorization remains mandatory; a demo environment does not grant visitors administrator permissions. See the [simulation reference](skills/nocobase-app-plugin-demo-mode/references/simulation.md).
 
-## Upgrading the development snapshot
-
-The isolated-environment contract intentionally removes mixed-data compatibility. Follow the [adapter migration checklist](skills/nocobase-app-plugin-demo-mode/references/upgrading.md) before replacing a vendored snapshot. The current Agents API is required; update an older host instead of adding legacy API fallbacks.
+## Agents integration
 
 ### Model services
 
-The plugin supports Agents 1.0 only and provisions the model through `agents.models.services`; it owns the durable model binding and its key. Select `{ modelService: demoData.models.serviceName, model: 'demo-chat' }` for application-owned demo flows after checking the service name in `ready()`; `start()` runs earlier. Keep normal persisted model selections intact. When no default exists, Agents may choose its first enabled model through its own policy. An installed Agents host without model services fails startup with an actionable error. See [upgrade notes](skills/nocobase-app-plugin-demo-mode/references/upgrading.md#credentials-and-model-defaults) for defaults selected by older previews and the first reset of their accounts.
+The plugin supports Agents 1.0 only and provisions the model through `agents.models.services`; it owns the durable model binding and its key. Select `{ modelService: demoData.models.serviceName, model: 'demo-chat' }` for application-owned demo flows after checking the service name in `ready()`; `start()` runs earlier. Keep normal persisted model selections intact. When no default exists, Agents may choose its first enabled model through its own policy. An installed Agents host without model services fails startup with an actionable error.
 
 ### Online demo chat
 
@@ -285,4 +283,4 @@ This policy does not intercept Agents, grant permissions, or open internal table
 
 Agents is an optional peer, resolved when demo mode is enabled or an existing demo model needs disabling. Non-AI applications can omit it; installing the package alone does not register its service. When the official Agents service is registered, the existing persistent-model lifecycle applies. Broken installed integrations and unsupported registered services fail visibly. Demo Mode does not provide an alternative Agents backend.
 
-Start with the Skill's [prerequisites](skills/nocobase-app-plugin-demo-mode/SKILL.md#register-only-the-required-capabilities) and [executable non-AI example](skills/nocobase-app-plugin-demo-mode/references/minimal-example.md). It supplies application-owned schema, business services, dataset, provider, permissions, protected API and page composition. Add scheduled reset or AI only when requested.
+Start with the Skill's [prerequisites](skills/nocobase-app-plugin-demo-mode/SKILL.md#required-host-capabilities) and [executable non-AI example](skills/nocobase-app-plugin-demo-mode/references/minimal-example.md). It supplies application-owned schema, business services, dataset, provider, permissions, protected API and page composition. Daily reset uses plugin defaults when Scheduler is registered; add AI only when requested.

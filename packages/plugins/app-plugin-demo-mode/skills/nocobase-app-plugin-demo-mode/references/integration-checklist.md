@@ -1,64 +1,21 @@
-# Integrate demo mode into an application
+# External calls and background work
 
-The order of work when an application adopts this plugin, and the observable result at each step. Each item names what to deliver and how to check it. Read [Adapt demo data](adapting-data.md) for the dataset itself and [Model and execution simulation](simulation.md) for Agents.
+Read this when the application has outbound integrations, file storage or background work. The database write guard does not isolate these effects. Inspect the integrations reachable from enabled demo features and from jobs that run automatically in this deployment.
 
-## 1. Register and decide the scope
+## External effects
 
-Confirm that the user needs a dedicated demo system, not only sample records in an existing application. The latter uses sample seeds or `sampleDataToken` without this plugin.
+At each application-owned transport or service boundary, use the server-side Demo Mode flag to choose a local fixture or refuse the operation before it causes an external effect. Apply this to visitor-created records and queued work as well as generated fixtures.
 
-- Register the Server plugin and `defineDemoModeConfig()` in the application's existing defaults map. Add the Client factory for UI and `@nocobase/app-plugin-demo-mode/cli` when commands are needed. Use the application's normal package build workflow.
-- Infer from the request and existing application guidance: which languages, which roles and how many accounts, the full business cleanup boundary (this is a dedicated demo instance), whether visitors may write anything with Demo Mode enabled, and whether Agents answer from scripts. Record those decisions in the application's development guide.
-- Inspect an existing Scheduler registration and [save the intended reset policy](policies.md#decide-the-reset-schedule-before-generation) before generating. Its default is daily at 03:00; for a new demo without recurring resets, explicitly save a disabled schedule. Preserve existing administrator choices.
+Reuse existing adapters and business parsing/validation. Fixtures should return the shape each caller expects. Missing or disabled simulations must not fall through to real mail, notifications, payments, publishing or other outbound services. For models, tools and Runners, follow [simulation](simulation.md).
 
-## 2. Inventory every external boundary first
+Use the demo deployment's own file storage and include generated and visitor-uploaded files in business cleanup. Keep private credentials and production storage out of the fixtures.
 
-List every way the application's code can reach outside the process, then decide for each what a demo record gets. Search the code for the transports, not only the obvious client: `fetch`, `undici`, `node:https`/`node:http`, `node:dns`, sockets, SDK clients, mail and notification channels, drive uploads, queue producers, model gateways, Runner dispatch. Include transports that bypass the application's usual network layer.
+## Background work
 
-- Route requests made for demo records to an in-process responder at one layer every caller already uses, selected by the server’s demo environment configuration, never by a client flag. Persisted markers may select fixture content, but an unmarked record in a demo environment must not reach a real provider. A request the fixtures do not cover fails with a clear error; it never falls through to the network.
-- Recognize demo scope in every process: use the server-side Demo Mode flag, including for unmarked visitor-created records and queued work.
-- Give fixture data real shapes by running the application's own collection, parsing and saving code against the responder, rather than writing finished results directly. Pages that query upstream services on view keep working, and the stored formats follow the code as it changes.
-- Mail, notifications, payments, repository pushes and publication must refuse or be simulated explicitly in demo scope; a disabled simulation never means "use the real one".
+For each enabled application job, choose whether it should run against fixtures or be disabled in the demo. Coordinate active work with generation and cleanup so a job cannot recreate deleted records or overwrite the new dataset. Preserve cancellation and duplicate-delivery protections.
 
-## 3. Find what runs by itself
+Use the plugin's built-in daily reset when Scheduler is registered; do not add a second reset timer or cron. Application-specific jobs still need their own demo adaptation.
 
-Background jobs, schedules, timers and catch-up ticks act on demo records too. Catch-up jobs may overwrite freshly generated content.
+## Verify the adapted boundaries
 
-- For each job, decide: skip demo scopes, run against the in-process responder, or accept that it changes demo content. Skipping is usually right for jobs that rewrite curated content; leave the manual trigger working so the feature can still be shown.
-- Make sure a job that starts during an import cannot collide with it (on SQLite one connection serves both).
-
-## 4. Write the dataset
-
-Follow [Adapt demo data](adapting-data.md). In addition:
-
-- Write each language as its own content, with names that read naturally in it; tie authored comments and owners to the demo people so "my tasks" means something for each account.
-- Give demo accounts roles the demo owns (`createPermissionSet`), scoped to the demo's own projects or tenants. Do not hand a demo account the application's built-in administrator role: a role's last active assignment is protected, so clearing could not disable that account.
-- Demo accounts are always disabled on clear and re-enabled on import. Do not add deletion or restoration policies.
-- When the application registers a role scope marked `requiredOnCreate`, pass its value as `roleScopes` on each account spec. On reuse, only supplied keys are applied; removing a key does not revoke its old value. Follow [account changes](adapting-data.md#update-demo-accounts) when reducing permissions.
-- Inside a transaction of a legacy or ORM layer, do not query through another connection API; on SQLite that deadlocks or fails. Run those deletes before or after the transaction.
-- Follow [cleanup and recovery](adapting-data.md#coordinate-cleanup-and-recovery) for stalled callbacks and interrupted identity creation. Keep jobs drained during cleanup and verify actual business rows after recovery.
-
-## 5. Let visitors do what the demo is for
-
-With Demo Mode enabled, request writes need an exception. Configure the business collections those journeys need. Enforce operation permissions and record scopes through the application’s normal authorization. See [policies](policies.md).
-
-- Typical candidates include starting a task, saving a note or updating a demo record. For Agents online conversations, use the dedicated `runOnlineConversation` persistence boundary and chat policy in [simulation](simulation.md#online-conversation-persistence).
-- Rules start empty; tell administrators which ones to enable, or enable them as part of the deployment and say so.
-
-## 6. Simulate Agents when requested
-
-Follow [Model and execution simulation](simulation.md). When showing task progress is part of the requested demo, play back a short simulated transcript through the existing run view. Otherwise an immediate, clearly simulated result is sufficient. Business AI calls that expect JSON need scripted answers per operation, in the scope's language.
-
-## 7. Build the page and permissions
-
-- Mount the plugin's `DemoModeSettings` page (`client/settings`) with the application's `label`, and `chatTools` only for online chat. Its route checks `settings:demoMode.data/read`; its API checks read/manage for data and read/configure for configuration. Use the [route example](minimal-example.md#2-wire-existing-composition-roots), without an extra page grant. Business visitor pages retain their own page and record checks.
-- Show what clear and reset delete in the application's own words before they run.
-
-## 8. Verify in a running application
-
-Automated tests cover contracts; verify the requested user journeys in a browser too.
-
-- Import, then open each principal page as each demo account in the supported languages; clear and reset. If the demo includes tasks or online Agents, exercise those flows too.
-- Run the demo with Demo Mode enabled as a visitor would. Confirm that what should work works and that everything else is refused.
-- If background jobs are enabled, observe a relevant run and check that curated content is not unexpectedly rewritten.
-- Check the saved reset policy, including disabled state when automatic cleanup was not requested. Check effective access after reducing a demo account's roles.
-- Trace one request per external boundary and confirm it stayed in process; report boundaries you could not exercise.
+Exercise the demo interactions that reach these integrations and confirm their expected local results. Check that missing fixtures and disabled adapters refuse execution without reaching real providers. For queued work, verify cancellation and policy changes at execution time. Include the associated files, jobs and caches when checking cleanup.

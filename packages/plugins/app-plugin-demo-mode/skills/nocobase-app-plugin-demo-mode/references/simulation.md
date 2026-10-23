@@ -1,71 +1,53 @@
 # Model and execution simulation
 
-There are three different boundaries: the model generates a reply or a tool-call request, the application executes a tool or external request, and a Runner executes a task. Simulating the first does not simulate the other two.
+Read only the sections needed by the demo. A simulated model does not intercept tool calls, external services or Runner execution; adapt each used boundary. Resolve the original `demoDataToken` and `demoConfigurationToken` from `@nocobase/app-plugin-demo-mode/server/tokens`.
 
-## Current public model adapter
+## Simulated model
 
-A dataset's `answers` is an ordered array of `DemoAnswer` objects. Each has a stable `id`, `match(request)` and `reply(request)`. The request includes the model, system text, messages, last user prompt, offered tools, tool results, inferred language and an optional application-supplied `tag`. A reply is text, `{ text }`, or `{ toolCalls: [{ name, arguments }] }`. Only tools offered in the current request can be returned by the gateway.
+Agents 1.0 with `agents.models.services` is required only for model integration. In an application provider's `ready()`, after the plugin is ready, select `{ modelService: demoData.models.serviceName, model: 'demo-chat' }` for demo flows. `start()` runs too early. A missing binding means unavailable; never fall back to a real provider in Demo Mode. Keep the application's normal global defaults intact.
 
-Import these types through `@nocobase/app-plugin-demo-mode/server/tokens`. Define answers in the application beside its dataset. Prefer exact business tags and validated input structures for structured outputs. Match broad conversational examples after specific business operations. Preserve the consuming service's JSON schema; an apparently plausible string is not a valid business result.
+Define the dataset's ordered `answers` array using the exported `DemoAnswer` type. Each answer has `id`, `match(request)` and `reply(request)`. Requests include messages, offered tools, tool results, language and an optional application `tag`. Replies are text, `{ text }`, or `{ toolCalls: [{ name, arguments }] }`; return only offered tools. Put specific business matches before broad conversational answers and preserve each caller's output schema and requested language.
 
-For application-owned generation, call `await demoData.load()` before reading the current binding, verify `demoData.models.isDemoModel(ref)`, then call `demoData.models.complete({ system, prompt, tag })`. The model binding is environment infrastructure and survives data clear/reset. HTTP callers use the generated authenticated OpenAI-compatible gateway at `/api/demoMode/models/v1`; do not expose its bearer key in a UI or Skill example.
+For application-owned generation, call `await demoData.load()`, verify `demoData.models.isDemoModel(ref)`, then call `demoData.models.complete({ system, prompt, tag })`. Use stable tags for structured business outputs. For HTTP, use the host's OpenAI-compatible client with the authenticated gateway at `/api/demoMode/models/v1`; its responses follow OpenAI's protocol without an additional application `{ data }` envelope. Keep its bearer key server-side.
 
-The gateway follows the OpenAI response protocol: `GET /models` returns `{ object: 'list', data: [...] }`, and `POST /chat/completions` returns a raw chat completion. Neither has an additional application `{ data }` envelope. A request with `stream: true` receives `text/event-stream` containing completion chunks and a final `data: [DONE]` event. Use the host's OpenAI-compatible client; do not unwrap these responses like the plugin's management APIs.
+Unmatched requests to this model receive a simulated fallback. Calls that the application sends to another provider remain its responsibility. Clear/reset preserve the model binding.
 
-Unmatched model requests receive an explicitly simulated fallback. No real provider is called by `DemoModels`. This guarantee is local to that service: application code that elects to invoke a different real model remains responsible for its demo scope policy.
+## Tool and external adapters
 
-## Registered tool and Runner adapters
+Register `configuration.registerMock({ id, title, kind, scope, defaultEnabled, invoke })`, then call `invokeMock(id, input)` at the authorized application boundary. Registration does not intercept anything. Set `defaultEnabled: true` when the adapter should initially be available; saved administrator choices still apply.
 
-Register application-specific tool and Runner adapters on `demoConfigurationToken`, and invoke them through `invokeMock(id, input)` at the actual transport/dispatch boundary. The registry does not automatically intercept actual tool execution, outbound transport or Runner dispatch. Inspect those application entry points before claiming an Agent is completely mocked. Keep their adapters behind the existing authenticated, authorized business service boundary. Select simulation from the server-side Demo Mode flag, not a client flag or the presence of an imported-record marker.
+Adapters validate input and trusted record scope and return the business service's expected result shape. Scope labels do not enforce authorization. Unknown or disabled adapters throw `DEMO_MOCK_UNAVAILABLE`; never catch this to invoke the real provider. Use the server-side Demo Mode flag for dispatch, including visitor-created records and background work.
 
-For each boundary, record the operation identifier, input validation, applicable record scope, fixture result schema, simulated side effects and behavior when no fixture matches. Fail closed for unknown operations inside demo scope. Do not offer a “mock disabled” switch that silently enables real publishing, email, payment, repository push or arbitrary Runner work.
+## Replace a whole Agent
 
-A simulated Runner result must visibly identify itself as simulated, preserve the application's run/task state transitions and remain outside official execution receipts or publication/effect tracking. If a Runner adapter is not implemented, report “not supported” and refuse execution rather than marking the run successful with a fabricated real execution record.
+Use `configuration.registerAgent<Input, Output>({ id, title, defaultEnabled, execute })` when the application should simulate the entire Agent. Keep a stable ID and return the application's normal result contract, labeled as simulated. Enable the adapter by default when it is part of the requested demo.
 
-Answers for the application's own text generation must keep each consumer's contract. Pass the operation as `tag` when calling `models.complete`, answer each tag with the JSON that operation parses, and write people-facing text in the language the application asked for (for example a language note appended to its prompt). Conversational answers can call the tools the request offers, then summarize their real results; order specific answers before broad ones.
+For immediate execution, call `proxy.run(input, () => normalAgent(input))` after normal authorization. Demo Mode off selects the normal callback; enabled Demo Mode selects the adapter. Disabled mocks and adapter failures must refuse execution without a real fallback.
 
-## Acceptance checks
-
-Test text generation, structured business replies, a tool-call round trip, malformed tool input and an unmatched call. Verify no external provider or real Runner is reached, including when scope lookup fails, after process restart and after clearing a demo project while work is queued. For queued work, disable the adapter after admission and verify the worker refuses it without a real fallback. Test `NOCOBASE_DEMO_MODE=false` separately to confirm new ordinary work uses the normal Agent and previously queued demo work is refused. List each verified boundary; “model mock works” is insufficient evidence for “all Agent calls are mocked.”
-
-## Application-configured Demo Agent proxy
-
-Use `configuration.registerAgent<Input, Output>({ id, title, defaultEnabled, execute })` when the whole Agent execution should be replaced. `execute(input)` belongs to the application and returns its normal result contract, clearly labeled as simulated. The proxy appears in the existing Runner mock configuration card and uses the same permissions and revision-safe toggle. Keep its ID stable across releases.
-
-For an immediate execution, call `proxy.run(input, () => normalAgent(input))` at the existing authorized Agent entry point. `NOCOBASE_DEMO_MODE=false` uses the normal Agent; every input in an enabled demo environment uses the configured demo implementation. Disabled mocks, unsupported operations and adapter failures must never trigger a real fallback. A queued demo run still calls `execute` directly and is refused if demo mode is subsequently off.
+Preserve the application's normal task, cancellation and result/review workflow. Add playback only when requested. Do not present simulated results as real publications, deployments or external execution receipts. Configure [collection exceptions](policies.md#collection-write-exceptions) only for business writes that the workflow needs.
 
 ### Durable Agent dispatch
 
-Keep the queue and its job schema application-owned. After authorization, call `proxy.prepare()` before enqueueing and branch on its result; it is not just a validation call. Persist the selected dispatch kind with the input in the same durable job record.
+For queued work, authorize first, call `proxy.prepare()` and persist its decision with the job:
 
-| Admission result | Persist and dispatch                                                                                                |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `true`           | Save a demo marker and `proxy.id`; enqueue application-owned simulation work, without an official Runner execution. |
-| `false`          | Demo Mode is off. Use the application's ordinary queue path; do not mark the work as simulated.                     |
-| Throws           | Refuse admission. A disabled or unknown mock must not enqueue real work.                                            |
+| Result  | Admission                                                                   |
+| ------- | --------------------------------------------------------------------------- |
+| `true`  | Save a demo marker and `proxy.id`; queue application-owned simulation work. |
+| `false` | Use the ordinary queue path.                                                |
+| Throws  | Refuse admission without queuing real work.                                 |
 
-After claiming a demo job, recheck the actor, ownership, record scope, task revision and cancellation state. Resolve its saved proxy ID through the application's registered proxies, then call `configuration.withFreshPolicy(() => proxy.execute(job.input))`. Use `execute`, not `run`, for a persisted demo job: `run` would choose the real callback if Demo Mode had been switched off. Unknown proxy IDs, disabled adapters and disabled Demo Mode must fail the job without a real fallback. Mark a successful result as simulated through the normal application result/review flow.
+When claiming a demo job, recheck actor permissions, ownership, scope, task revision and cancellation. Resolve the saved proxy ID and call `configuration.withFreshPolicy(() => proxy.execute(job.input))`. Use `execute`, not `run`, so turning Demo Mode off cannot route an already queued demo job to the real callback. Unknown proxies, disabled adapters and disabled Demo Mode must fail that job.
 
-Ordinary queued work must also recheck the current environment at its actual transport or Runner dispatch boundary; a job admitted before Demo Mode was enabled must not bypass demo isolation. Preserve the application's cancellation and duplicate-delivery protections. Do not reuse a request's configuration snapshot in a worker or fabricate official Agent definitions and execution receipts.
+Ordinary queued jobs must also check the current Demo Mode flag at execution before real transport or Runner dispatch. Preserve duplicate-delivery protections. Generic queued mocks likewise need `withFreshPolicy(() => configuration.invokeMock(id, input))`; an admission-time `requireMock` check alone is insufficient.
 
-### Optional playback and result persistence
+## Optional online chat
 
-If the requested demo needs visible execution progress, provide a short playback; an immediate simulated response is sufficient otherwise. For playback, let `execute(input)` return the result together with a scripted transcript — thinking, tool calls and their results built from the run's own material (its brief, the page it targets read through the in-process responder, the data summary, the knowledge), the submission and the usage — and play it back from the worker: wait between events, append each one to the application's run record, and stop between two events once the run is asked to stop. Return that transcript wherever the application already shows a run's events, in the same shape as an official run's, so its existing view renders it. Scale the pauses with a setting so tests can play back instantly, keep the playback short enough that the interrupted-run recovery does not mistake it for a crash, and leave transcripts out of list responses that are polled often.
+Online chat is disabled by default; enable it only for a requested chat experience. Call `configuration.chatModel(simulatedRef)` before admission and each model request, outside business transactions. It returns undefined outside Demo Mode and rejects disabled demo chat. Use the returned model reference for the operation, retaining normal selection outside Demo Mode.
 
-Write exceptions remain separate: configure only the logical collections needed to create tasks and persist results, using the [collection policy](policies.md#collection-write-exceptions). Each exception permits INSERT, UPDATE and DELETE together; business authorization must restrict the operations and records a visitor may change. Use the same normal workflow for human review and mark any demo publication as simulated. Do not manufacture PR URLs, live deployment evidence or real effect metrics. Inspect the application's input/result schemas, build useful task-specific fixtures, register the proxy at the execution boundary, and test handoff through review as well as failure and non-demo paths.
+After business authorization, wrap tools with `runChatTool(id, { readOnly, run, mock })` and declare their IDs through the management page's `chatTools`. Administrators choose `read`, `mock` or `deny`. Only local data queries qualify as `readOnly`; network fetches need mocks. Missing rules or adapters must reject execution.
 
-### Model services
+For the Agents OnlineAgent service, check conversation ownership and agent scope, then wrap only its public session operation with `runOnlineConversation(callback)`. This permits scoped conversation/message persistence when chat is enabled. Do not wrap a dispatcher, tool/model call, upload or agent configuration; refuse unrelated agents, Runner conversations, attachments, approvals and configuration overrides. Keep fixture creation separate from visitor chat enablement. Applications with their own conversation persistence use their normal authorization and collection policy.
 
-The plugin supports Agents 1.0 only and provisions the model through `agents.models.services`; it owns the durable model binding and its key. It does not override an existing global chat default. In an application provider's `ready()` after the plugin is ready, read `demoData.models.serviceName` and construct `{ modelService: serviceName, model: 'demo-chat' }` for the application's demo AI flows. `start()` runs earlier. Treat a missing binding as unavailable; do not fall through to a real provider in demo mode. With no existing default, Agents may select the first enabled model through its own normal policy.
+## Verify the implemented flows
 
-Keep this selection scoped to the current demo environment. Do not call `setDefaultChat` or overwrite an Agent's ordinary persisted selection merely to demonstrate it. For online chat, pass the simulated reference to `chatModel` as described below. For other flows, pass it through their public per-operation model option, or use `models.complete` for application-owned generation. When Demo Mode is disabled, use the application's normal selection. Startup disables the plugin-owned model service when Demo Mode is disabled; enabling Demo Mode again reuses the same service and credential. Clear/reset leave it enabled. An installed Agents host without model services fails startup with an actionable error.
-
-## Online chat without changing Agents
-
-Use the plugin's `chat` configuration for native online conversations. Call `chatModel(simulatedRef)` before admitting work and before model I/O; it returns undefined outside demo mode, rejects disabled demo chat, and otherwise returns the supplied simulated model. Read this policy before entering a business transaction to avoid nested-connection deadlocks. The host verifies model availability through its normal model service. Do not reuse a cached configuration for subsequent turns.
-
-Wrap each business tool with `runChatTool(id, { readOnly, run, mock })` after authorization. Administrators select `read`, `mock`, or `deny` per tool. Only mark local data queries `readOnly`; even a webpage fetch needs a mock adapter. No matching rule or missing mock means rejection. Keep normal conversation ownership and explicit scoped persistence rules; this policy intentionally does not bypass the SQL guard or modify Agents. Declare each served tool to the administration page through its `chatTools` option.
-
-### Online conversation persistence
-
-Applications chatting through the Agents OnlineAgent service call `runOnlineConversation(callback)` around the public session operation only (create, send, abort, finalize, configure, rename, mark read), after checking ownership and the agent scope. Chat must be enabled. This grants scoped conversation and message writes, inherited by the session's continuation; it never opens global table rules. Do not put an HTTP dispatcher, tool, model call, upload or agent configuration inside it. Refuse other agents, runner conversations, attachments, approvals and configuration overrides. Keep fixture creation outside the HTTP boundary, independent of the visitor chat switch. The host still enforces tool permissions at execution.
+Test the actual model outputs, structured results and tool/Agent paths the demo uses, including unsupported input and disabled adapters. Confirm no real provider is reached and non-demo execution still uses its normal path. For queues, also test cancellation, cleanup and policy changes between admission and execution. For online chat, verify conversation ownership and tool permissions.
