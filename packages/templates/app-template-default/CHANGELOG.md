@@ -1,5 +1,48 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.77
+
+### Patch Changes
+
+- 0c5c4ff: Isolate language sessions and all default authentication cookies by the complete public application mount path, including root and nested applications. Preserve port isolation and explicit cookie configuration. Fix template root-path configuration and share a cookie-name-safe path encoder.
+
+  Visitors using default authentication cookie names must sign in again after upgrading. Old cookies and server records are neither migrated nor deleted; records expire normally, and rolling back can recognize old logins again. Explicit names and prefixes remain unchanged and must be unique across applications with overlapping paths.
+
+  Existing applications must merge the updated `server/config/session.ts` and root-path handling in `server/config/app.ts` into their own source as well as upgrade dependencies; dependency updates alone do not replace copied template configuration. See the application cookie isolation guide in the upgrade Skill for the exact edits and verification steps.
+
+- 6e3d66e: Clarify how application-owned permission workspaces map independently assignable business operations to actual UI controls, server enforcement and data scopes, including compatibility requirements when splitting existing actions. Align the settings guidance with checkbox-based draft editing.
+
+  Allow applications to hide created-record range selectors while retaining registered policies, name related-record ranges per action, and localize filter field captions by collection in both templates.
+
+- 6e3d66e: Present role permissions as compact ordered action tiles with checkboxes, descriptions and named data ranges while retaining the original category navigation. Keep the visible catalog in application-owned composition, require explicit settings opt-in plus a real configuration page and registered server action, omit the default System and tools category, preserve undisplayed grants, and update the permission Registry integration and agent guidance.
+
+  Render page access using the application's actual menu hierarchy, with independent page checkboxes, disclosure-only structural groups, ancestor-aware filtering and preserved non-menu page grants.
+
+  Use checkboxes consistently for page, business and settings permission drafts and the enabled-only filter, retaining separate scope selectors and explicit host Save.
+
+  Refine menu permission trees with compact aligned rows, subtle hover and focus feedback, restrained group headings and fewer nested borders.
+
+  Keep page-access trees limited to business pages. Group actual system-settings pages and operations under Configuration permissions, explain the boundary, and preserve existing grant identifiers and values.
+
+  Remove the global default-data-scope shortcut from role editors; retain its dedicated Permission management tab.
+
+  Keep multi-scope action tiles at stable widths, show default-rule explanations visibly, and let applications classify individual composite configuration actions by their actual pages while retaining native filter editing.
+
+  Group default data scope controls under one heading per operation and reuse application-owned business captions across role and default-scope forms without rewriting stored rules.
+
+- Updated dependencies [c94a01c]
+- Updated dependencies [0c5c4ff]
+- Updated dependencies [5b72947]
+- Updated dependencies [6e3d66e]
+- Updated dependencies [6e3d66e]
+- Updated dependencies [ffe5494]
+- Updated dependencies [5875cb9]
+  - @nocobase/app-plugin-agents@1.0.0-beta.19
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-cli@1.0.0-beta.27
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+
 ## 1.0.0-beta.76
 
 ### Patch Changes

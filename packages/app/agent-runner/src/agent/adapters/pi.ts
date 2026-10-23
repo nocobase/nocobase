@@ -19,6 +19,7 @@
  *   the agent starts one turn more than allowed.
  * - Stop: `abort`, close stdin, SIGTERM after 2 s, SIGKILL after 4.5 s.
  */
+import { programFingerprint } from './program-fingerprint.ts';
 import { spawn as nodeSpawn } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -212,6 +213,14 @@ export class PiAdapter implements AgentAdapter {
     this.spawn = options.spawn ?? defaultSpawn;
   }
 
+  private program(): Promise<string | undefined> {
+    return findOnPath('pi', this.searchPath);
+  }
+
+  async fingerprint(): Promise<string> {
+    return programFingerprint(await this.program());
+  }
+
   features(): RunnerFeature[] {
     return ['steer'];
   }
@@ -252,8 +261,7 @@ export class PiAdapter implements AgentAdapter {
   }
 
   private async runDetection(signal?: AbortSignal): Promise<ToolDetection> {
-    const { searchPath } = this;
-    const piPath = await findOnPath('pi', searchPath);
+    const piPath = await this.program();
     if (!piPath) return { installed: false, authenticated: false };
     const v = await this.exec(piPath, ['--version'], { signal });
     const version = v.code === 0 ? parseVersion(v.stdout) : undefined;

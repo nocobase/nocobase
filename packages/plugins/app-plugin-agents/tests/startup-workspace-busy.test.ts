@@ -21,7 +21,11 @@ import type {
   AppRegistration,
   RunnerSettings,
 } from '../../../app/agent-runner/src/lib/config.ts';
-import { removeDir, tempDir } from '../../../app/agent-runner/tests/helpers.ts';
+import {
+  FAST_TIMINGS,
+  removeDir,
+  tempDir,
+} from '../../../app/agent-runner/tests/helpers.ts';
 
 async function waitFor<T>(
   check: () => T | undefined | false | Promise<T | undefined | false>,
@@ -127,7 +131,8 @@ describe('runner startup workspace timeout', () => {
       }),
       slots: 1,
       timings: {
-        heartbeatIntervalMs: 60_000,
+        // Selection is fetched first, then background detection reaches the server on a later heartbeat.
+        heartbeatIntervalMs: FAST_TIMINGS.heartbeatIntervalMs,
         pollTimeoutMs: 200,
         pollFallbackMs: 100,
         workspaceCleanupWaitMs: 0,

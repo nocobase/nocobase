@@ -166,6 +166,8 @@ export function RunnerStatusCell({
 
 const TOOL_STATE_TONE: Readonly<Record<ToolState, Tone>> = {
   off: 'grey',
+  checking: 'grey',
+  failed: 'red',
   notInstalled: 'amber',
   signedOut: 'amber',
   signedIn: 'green',
@@ -181,6 +183,7 @@ export function ToolStateTag({
     <AgTag
       tone={TOOL_STATE_TONE[state]}
       dot
+      className='max-w-full whitespace-normal'
       title={state === 'off' ? t('runtimes.tool.offHint') : undefined}
     >
       {t(`runtimes.tool.${state}`)}

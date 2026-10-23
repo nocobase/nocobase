@@ -98,7 +98,7 @@ describe('runner end to end', () => {
         'steer',
       ]),
     );
-    expect(runner?.register.tools.map((tool) => tool.kind)).toContain('claude');
+    expect(runner?.register.tools).toEqual([]);
     // The key is in the runner's own directory, private, and apart from the registration.
     const keyFile = path.join(home, 'credentials', 'test-app.json');
     expect(statSync(keyFile).mode & 0o777).toBe(0o600);
@@ -213,6 +213,21 @@ describe('runner end to end', () => {
 
   it('claims, streams events and observes an explicit agent push', async () => {
     const remote = makeRemote(scratch);
+    daemon();
+    // The production server dispatches only after the runner reports an authenticated tool.
+    await waitFor(
+      () =>
+        server
+          .lastHeartbeat()
+          ?.tools.some(
+            (tool) =>
+              tool.kind === 'claude' &&
+              tool.authenticated &&
+              tool.version === 'echo',
+          ),
+      10_000,
+      'cached Claude capabilities',
+    );
     const run = server.enqueue({
       subject: { key: 'PM-7', url: 'http://app.test/PM-7' },
       workspace: {
@@ -242,7 +257,6 @@ describe('runner end to end', () => {
         ].join('\n'),
       },
     });
-    daemon();
     await waitFor(
       () => run.status === 'completed' || run.status === 'failed',
       20_000,

@@ -31,8 +31,13 @@ it.each([1, 10, 50])(
         })
       ).runnerId;
     }
-    for (const agent of await h.services.agents.list())
-      await h.enableAgent(agent.id);
+    // A runner's report no longer creates an agent by itself: create and enable one for each reported model, as
+    // this test needs to exercise reads that scale with the number of agents, not with how they came to exist.
+    for (const model of models)
+      await h.services.agents.createFromAvailable(
+        { tool: 'codex', model: model.id, description: 'Reviews' },
+        'alice',
+      );
     const client = await h.database.connection().client<Knex>();
     for (const endpoint of [
       '/agents',

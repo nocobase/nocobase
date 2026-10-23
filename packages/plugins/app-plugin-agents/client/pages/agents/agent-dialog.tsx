@@ -60,7 +60,7 @@ export function AgentDialog({
       }}
     >
       <DialogContent
-        className='flex max-h-[calc(100dvh-2rem)] flex-col'
+        className='flex max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] flex-col sm:max-w-xl'
         data-testid='agent-dialog'
         finalFocus={() =>
           document.querySelector<HTMLButtonElement>(

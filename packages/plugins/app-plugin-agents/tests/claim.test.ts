@@ -9,6 +9,43 @@ describe('claiming', () => {
     await h?.close();
   });
 
+  it.each(['needsLogin', 'failed'] as const)(
+    'does not dispatch an enabled historical agent when its tool reports %s',
+    async (status) => {
+      h = await createHarness();
+      const agentId = await h.createAgent({
+        source: 'runner',
+        status: 'enabled',
+      });
+      const runId = await h.enqueue(agentId, '7');
+      const runner = await h.registerRunner({
+        tools: [
+          {
+            kind: 'claude',
+            authenticated: true,
+            status,
+            statusReason: status === 'failed' ? 'versionTooOld' : 'notLoggedIn',
+          },
+        ],
+      });
+      expect(await claim(h, runner)).toEqual([]);
+      expect((await h.services.runs.get(runId)).status).toBe('queued');
+      const response = await h.request('GET', '/agents', {
+        user: 'admin',
+        can: ['agents.agents/read'],
+      });
+      expect(
+        response.body.data.find(
+          (agent: { id: string }) => agent.id === agentId,
+        ),
+      ).toMatchObject({
+        status: 'enabled',
+        unusable: 'noRunner',
+        runners: { team: 0, personal: 0 },
+      });
+    },
+  );
+
   it('hands a queued run to a runner with a complete payload', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ instructions: 'Be brief.' });
@@ -190,6 +227,30 @@ describe('claiming', () => {
     await h.services.runners.update(runner.runnerId, {
       enabledTools: ['claude', 'codex'],
     });
+    // Enabling a tool requires a new inspection report before it can receive work.
+    expect(await claim(h, runner, 4)).toEqual([]);
+    const heartbeat = await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: runner.key,
+      body: {
+        version: '0.0.1',
+        features: [
+          'workspaceKey',
+          'input',
+          'checkout',
+          'directories',
+          'attachments',
+          'skills',
+          'secrets',
+        ],
+        tools: [
+          { kind: 'claude', authenticated: true },
+          { kind: 'codex', authenticated: true },
+        ],
+        active: [],
+        load: { slots: 4, free: 3 },
+      },
+    });
+    expect(heartbeat.status).toBe(200);
     expect((await claim(h, runner, 4)).map((run) => run.subject.key)).toEqual([
       'SMP-1',
     ]);

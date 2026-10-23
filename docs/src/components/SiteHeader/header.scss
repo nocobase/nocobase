@@ -134,6 +134,16 @@
   .topbar .toplinks {
     gap: 8px;
   }
+  .topbar .toplinks:has(a[href$='/studio']) {
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    align-items: center;
+    gap: 2px 12px;
+    font-size: 12px;
+    .docs-language-menu summary {
+      padding-block: 2px;
+    }
+  }
   .topbar .brand .brand-logo {
     width: 96px;
   }
