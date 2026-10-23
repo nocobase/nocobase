@@ -1156,11 +1156,14 @@ describe('workflow > Plugin', () => {
       const p2 = await PostRepo.create({ values: { title: 't2' } });
       const p3 = await PostRepo.create({ values: { title: 't3' } });
 
-      await sleep(500);
-
-      const executions = await w1.getExecutions();
-      expect(executions.length).toBe(3);
-      expect(executions.map((item) => item.status)).toEqual(Array(3).fill(EXECUTION_STATUS.RESOLVED));
+      await vi.waitFor(
+        async () => {
+          const executions = await w1.getExecutions();
+          expect(executions.length).toBe(3);
+          expect(executions.map((item) => item.status)).toEqual(Array(3).fill(EXECUTION_STATUS.RESOLVED));
+        },
+        { timeout: 10000, interval: 100 },
+      );
     });
 
     it('duplicated event trigger', async () => {
