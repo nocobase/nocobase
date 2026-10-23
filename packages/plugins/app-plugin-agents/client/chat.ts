@@ -14,6 +14,8 @@ export type { OnlineAgentResendOptions } from '../shared/resend.js';
  * - for pages: `useChatPanel().openChat(…)`, and `useChatContextSource` / `useChatFilterSource` to tell the panel what
  *   the page shows (the chips above the composer);
  * - `ChatExtensionsContext`: what the application adds among a conversation's messages, and how it words its news;
+ * - `resolveChatAgentMode` and the helpers beside it: the two kinds of agent a panel switches between (`online`, the
+ *   application's model agent, and `runner`), and the agent last used for a new conversation;
  * - the data hooks (`useChatAgents`, `useChatModels`, `useConversation`, `useConversationMessages`, `useConversationList`,
  *   `useConsultationIdentity` for current consultation labels without rewriting loaded messages, `useSendMessage`, `useConversationActions`, keyed by `chatKeys`, and `useLiveRunEvents`, `useConversationSources`),
  *   the pure models of the timeline and the context chips, the panel's state helpers, and `ChatPanelScope` /
@@ -169,6 +171,19 @@ export {
   type StepLine,
   type Translate,
 } from './chat/message-model.js';
+export {
+  agentsOfMode,
+  CHAT_AGENT_MODES,
+  CHAT_LAST_AGENT_STORAGE_KEY,
+  chatAgentMode,
+  configuredChatModes,
+  lastAgentStorageKey,
+  ONLINE_AGENT_ID,
+  readLastAgent,
+  rememberLastAgent,
+  resolveChatAgentMode,
+  type ChatAgentModeInput,
+} from './chat/agent-mode.js';
 export {
   CHAT_DOCK_QUERY,
   CHAT_MOBILE_QUERY,

@@ -2,8 +2,12 @@
  * The chat panel, which the application renders beside its content area (for example, a sibling of `<main>` inside a
  * `relative flex` row, so it survives page changes). From 1280px it docks beside the content (22rem, 26.25rem from
  * 1536px); between `md` and 1280px it floats over the content's right side (22rem); "full width" covers the content
- * area. Neither is a dialog nor traps focus; Escape restores the width, then closes. Below `md` it is a full-screen
- * dialog. Once opened it stays mounted while closed, so the conversation's subscriptions carry on.
+ * area, with the conversation list in a column on its left and the conversation on the right; following a link to
+ * another page brings it back to its usual width. Neither is a dialog nor traps focus: it takes the focus when it
+ * opens (the composer takes it from there once it is ready), and Escape restores the width, then closes. Below `md`
+ * it is a full-screen dialog. Once opened it stays mounted while closed, so the conversation's subscriptions carry on.
+ *
+ * It shows one kind of agent at a time, online or runner agents, each with its own conversations (`useChatMode`).
  *
  * It needs `ChatProvider` above it, and a positioned parent: a `relative flex` row beside the content area.
  */
@@ -15,14 +19,16 @@ import {
   useChatPanel,
 } from '@nocobase/app-plugin-agents/client/chat';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useLocation } from 'react-router';
 
 import { Dialog, DialogContent, DialogTitle } from '#components/ui/dialog';
 import { cn } from 'cn';
 
 import { useChatTranslation } from './chat-i18n.js';
 import { ConversationView } from './conversation-view.js';
+import { useChatMode } from './chat-mode.js';
 import { HistoryList } from './history-list.js';
-import { PanelHeader } from './panel-header.js';
+import { PanelHeader, PanelHistoryHeader } from './panel-header.js';
 import { useMediaQuery } from './use-media-query.js';
 
 /** The chat panel; nothing while `ChatProvider` says the panel is not available (signed out, no provider). */
@@ -41,7 +47,22 @@ function PanelFrame(): ReactElement | null {
   const dialogRef = useRef<HTMLDivElement>(null);
   if (panel.open && !mounted) setMounted(true);
 
-  const { mode, setMode, closeChat, open } = panel;
+  const { mode, setMode, setView, closeChat, open } = panel;
+  const { pathname } = useLocation();
+  const pathRef = useRef(pathname);
+  useEffect(() => {
+    const changed = pathRef.current !== pathname;
+    pathRef.current = pathname;
+    // Another page from the navigation: show it beside the panel rather than under it.
+    if (changed && mode === 'expanded') setMode('docked');
+  }, [pathname, mode, setMode]);
+  useEffect(() => {
+    const element = asideRef.current;
+    // The panel takes the focus as it opens, so Escape reaches it while the agents are still loading; a composer that
+    // is ready takes it from there.
+    if (open && !mobile && element && !element.contains(document.activeElement))
+      element.focus();
+  }, [open, mobile, mounted]);
   useEffect(() => {
     const element = asideRef.current;
     if (!element || !open) return undefined;
@@ -49,12 +70,14 @@ function PanelFrame(): ReactElement | null {
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
       event.preventDefault();
-      if (mode === 'expanded') setMode('docked');
-      else closeChat();
+      if (mode === 'expanded') {
+        setView('chat');
+        setMode('docked');
+      } else closeChat();
     }
     element.addEventListener('keydown', onKeyDown);
     return () => element.removeEventListener('keydown', onKeyDown);
-  }, [open, mode, setMode, closeChat, mounted, mobile]);
+  }, [open, mode, setMode, setView, closeChat, mounted, mobile]);
 
   if (!mounted) return null;
   const marker = { [CHAT_PANEL_ATTRIBUTE]: '' };
@@ -81,7 +104,7 @@ function PanelFrame(): ReactElement | null {
         >
           <DialogTitle className='sr-only'>{t('chat.title')}</DialogTitle>
           <PanelHeader compact />
-          <PanelBody />
+          <PanelBody split={false} />
         </DialogContent>
       </Dialog>
     );
@@ -90,6 +113,7 @@ function PanelFrame(): ReactElement | null {
   return (
     <aside
       ref={asideRef}
+      tabIndex={-1}
       id={CHAT_PANEL_ID}
       {...marker}
       aria-label={t('chat.title')}
@@ -97,7 +121,7 @@ function PanelFrame(): ReactElement | null {
       data-mode={expanded ? 'expanded' : wide ? 'docked' : 'floating'}
       data-testid='chat-panel'
       className={cn(
-        'flex min-h-0 min-w-0 flex-col bg-background',
+        'flex min-h-0 min-w-0 flex-col bg-background outline-none',
         expanded
           ? 'absolute inset-0 z-30'
           : wide
@@ -105,36 +129,73 @@ function PanelFrame(): ReactElement | null {
             : 'absolute inset-y-0 right-0 z-30 w-[22rem] max-w-full border-l shadow-xl',
       )}
     >
-      <PanelHeader compact={false} />
-      <PanelBody />
+      {expanded ? (
+        <SplitBody />
+      ) : (
+        <>
+          <PanelHeader compact={false} />
+          <PanelBody split={false} />
+        </>
+      )}
     </aside>
   );
 }
 
-function PanelBody(): ReactElement {
+/** Covering the content: the conversation list in a column on the left, the conversation and its header on the right. */
+function SplitBody(): ReactElement {
+  return (
+    <div className='flex min-h-0 min-w-0 flex-1' data-testid='chat-split'>
+      <section
+        className='flex w-[18rem] shrink-0 flex-col border-r bg-muted/30'
+        data-panel-history=''
+      >
+        <PanelHistory header={<PanelHistoryHeader />} />
+      </section>
+      <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
+        <PanelHeader compact={false} />
+        <PanelBody split />
+      </div>
+    </div>
+  );
+}
+
+function PanelHistory({
+  header,
+}: {
+  readonly header?: ReactElement;
+}): ReactElement {
   const panel = useChatPanel();
-  const expanded = panel.mode === 'expanded';
+  const chat = useChatMode();
+  return (
+    <HistoryList
+      header={header}
+      mode={chat.mode}
+      activeId={panel.conversationId}
+      onOpen={(id) => {
+        panel.selectConversation(id);
+        panel.focusComposer();
+      }}
+      onOpenPage={panel.openPage}
+    />
+  );
+}
+
+function PanelBody({ split }: { readonly split: boolean }): ReactElement {
+  const panel = useChatPanel();
+  if (!split && panel.view === 'history')
+    return (
+      <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
+        <PanelHistory />
+      </div>
+    );
   return (
     <div
       className={cn(
         'flex min-h-0 min-w-0 flex-1 flex-col p-3',
-        expanded && 'mx-auto w-full max-w-3xl',
+        split && 'mx-auto w-full max-w-3xl',
       )}
     >
-      {panel.view === 'history' ? (
-        <div className='min-h-0 flex-1 overflow-y-auto'>
-          <HistoryList
-            activeId={panel.conversationId}
-            onOpen={(id) => {
-              panel.selectConversation(id);
-              panel.focusComposer();
-            }}
-            onOpenPage={panel.openPage}
-          />
-        </div>
-      ) : (
-        <ConversationView conversationId={panel.conversationId} />
-      )}
+      <ConversationView conversationId={panel.conversationId} />
     </div>
   );
 }

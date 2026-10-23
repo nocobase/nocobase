@@ -203,6 +203,14 @@ const agentChatZhCN: AgentChatLocale = {
       filter: '筛选：{{filter}}',
       selection: '选中文字：“{{text}}”',
       remove: '移除上下文：{{label}}',
+      inspect: '查看上下文：{{label}}',
+      preview: '上下文：{{label}}',
+    },
+    modes: {
+      online: '在线 Agent',
+      runner: '执行机 Agent',
+      switchToOnline: '切换到在线 Agent',
+      switchToRunner: '切换到执行机 Agent',
     },
     agents: {
       models: '模型',
@@ -248,7 +256,7 @@ const agentChatZhCN: AgentChatLocale = {
       loadFailed: '无法加载对话',
       noMatch: '没有匹配的对话',
       noArchived: '没有已归档的对话',
-      empty: '还没有对话',
+      empty: '没有对话',
       more: '加载更多',
       unread: '有新回复',
       actions: '{{title}} 的操作',

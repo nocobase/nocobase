@@ -302,6 +302,7 @@ export function createChatRoutes(
         archived: query.archived === 'all' ? 'all' : query.archived === 'true',
         ...(query.q ? { q: query.q } : {}),
         ...(query.agentId ? { agentId: query.agentId } : {}),
+        ...(query.mode ? { mode: query.mode } : {}),
         ...(query.source ? { source: query.source } : {}),
         ...(query.pageToken ? { pageToken: query.pageToken } : {}),
         pageSize: query.pageSize,

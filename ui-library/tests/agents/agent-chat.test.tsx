@@ -18,7 +18,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, type ReactElement, type ReactNode } from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ChatPanel } from '../../registry/agents/agent-chat/chat-panel';
@@ -299,7 +299,11 @@ describe('ChatPanel', () => {
       within(history).getByText('Fix the flaky sign-in test'),
     ).toBeVisible();
     expect(within(history).queryByText('Release notes draft')).toBeNull();
-    fireEvent.click(within(history).getByRole('tab', { name: 'Archived' }));
+    // Archived is a toggle at the bottom of the list, not a tab.
+    const archived = within(history).getByTestId('chat-history-archived');
+    expect(archived).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(archived);
+    expect(archived).toHaveAttribute('aria-pressed', 'true');
     expect(
       await within(history).findByText('Release notes draft'),
     ).toBeVisible();
@@ -365,6 +369,202 @@ describe('ChatPanel', () => {
     expect(
       await screen.findByRole('heading', { name: 'Hello there' }),
     ).toBeVisible();
+  });
+});
+
+describe('ChatPanel modes and layout', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'));
+
+  it('switches between runner and online agents, each with its own conversations', async () => {
+    renderPanel(null);
+    const panel = await screen.findByTestId('chat-panel');
+    // The person's default is a runner agent, so the panel starts there.
+    expect(await within(panel).findByTestId('chat-title')).toHaveTextContent(
+      'Runner agents',
+    );
+    const toggle = within(panel).getByTestId('chat-mode-switch');
+    expect(toggle).toHaveAccessibleName('Switch to the online agent');
+    fireEvent.click(within(panel).getByTestId('chat-history-button'));
+    const runner = await within(panel).findByTestId('chat-history');
+    expect(runner).toHaveAttribute('data-mode', 'runner');
+    expect(
+      within(runner).getByText('Fix the flaky sign-in test'),
+    ).toBeVisible();
+    expect(
+      within(runner).queryByText('Name the onboarding checklist'),
+    ).toBeNull();
+
+    fireEvent.click(toggle);
+    const online = await within(panel).findByTestId('chat-history');
+    await waitFor(() => expect(online).toHaveAttribute('data-mode', 'online'));
+    expect(within(panel).getByTestId('chat-title')).toHaveTextContent(
+      'Online agent',
+    );
+    expect(
+      within(online).getByText('Name the onboarding checklist'),
+    ).toBeVisible();
+    expect(within(online).queryByText('Fix the flaky sign-in test')).toBeNull();
+    // One online agent: nothing to filter by.
+    expect(
+      within(online).queryByRole('combobox', { name: 'Agent' }),
+    ).toBeNull();
+    expect(within(panel).getByTestId('chat-mode-switch')).toHaveAccessibleName(
+      'Switch to runner agents',
+    );
+    // A new conversation in this mode chooses a model, not a runner agent.
+    fireEvent.click(within(panel).getByTestId('chat-new-conversation'));
+    const composer = await within(panel).findByTestId('chat-composer');
+    expect(
+      within(composer).queryByText('What can Assistant do for you?'),
+    ).toBeNull();
+    expect(within(composer).getByTestId('chat-agent-picker')).toHaveTextContent(
+      'Default model',
+    );
+  });
+
+  it('hides the switch while only one kind of agent is configured', async () => {
+    window.history.replaceState(null, '', '/?agents=runner');
+    renderPanel(null);
+    const panel = await screen.findByTestId('chat-panel');
+    expect(await within(panel).findByTestId('chat-title')).toHaveTextContent(
+      'New conversation',
+    );
+    expect(within(panel).queryByTestId('chat-mode-switch')).toBeNull();
+  });
+
+  it('starts the history with its search and filters, ends it with the archived toggle, and says so in one line when empty', async () => {
+    renderPanel('release-plan');
+    fireEvent.click(await screen.findByTestId('chat-history-button'));
+    const history = await screen.findByTestId('chat-history');
+    const archived = within(history).getByTestId('chat-history-archived');
+    expect(history.lastElementChild).toContainElement(archived);
+    expect(within(history).queryByRole('tab')).toBeNull();
+    fireEvent.change(within(history).getByLabelText('Search conversations'), {
+      target: { value: 'nothing like this' },
+    });
+    const empty = await within(history).findByTestId('chat-history-empty');
+    expect(empty.tagName).toBe('P');
+    expect(empty).toHaveTextContent('No conversation matches');
+  });
+
+  it('puts the conversation list on the left while covering the content, and docks again on another page', async () => {
+    function Elsewhere(): ReactElement {
+      const navigate = useNavigate();
+      return (
+        <button type='button' onClick={() => void navigate('/other')}>
+          Go elsewhere
+        </button>
+      );
+    }
+    renderPanel('release-plan', <Elsewhere />);
+    const panel = await screen.findByTestId('chat-panel');
+    // Docked: "+" first among the header's buttons, and the history behind its own button.
+    const newButton = await within(panel).findByTestId('chat-new-conversation');
+    expect(newButton.className).not.toMatch(/bg-primary/u);
+    const headerButtons = within(newButton.closest('header')!).getAllByRole(
+      'button',
+    );
+    // After the title (which renames the conversation).
+    expect(headerButtons.indexOf(newButton)).toBe(1);
+    // Title, "+", history, switch, full width, close: no menu.
+    expect(
+      headerButtons.map((button) => button.getAttribute('aria-label')),
+    ).toEqual([
+      null,
+      'New conversation',
+      'Conversations',
+      'Switch to the online agent',
+      'Full width',
+      'Close',
+    ]);
+    expect(
+      within(newButton.closest('header')!).queryByRole('button', {
+        name: 'More',
+      }),
+    ).toBeNull();
+    fireEvent.click(within(panel).getByTestId('chat-expand'));
+    await waitFor(() => expect(panel).toHaveAttribute('data-mode', 'expanded'));
+    const split = within(panel).getByTestId('chat-split');
+    const header = within(split).getByTestId('chat-history-header');
+    expect(header).toHaveTextContent('Runner agents');
+    expect(within(header).getByTestId('chat-new-conversation')).toBeVisible();
+    expect(within(split).getByText('Fix the flaky sign-in test')).toBeVisible();
+    expect(
+      within(split).getByRole('heading', {
+        name: 'Plan the onboarding release',
+      }),
+    ).toBeVisible();
+    expect(within(panel).queryByTestId('chat-history-button')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Go elsewhere' }));
+    await waitFor(() => expect(panel).toHaveAttribute('data-mode', 'docked'));
+  });
+
+  it('shows what a chip carries, in the composer and under a sent message', async () => {
+    function Page(): ReactElement {
+      const item = { kind: 'issue', id: 'pm-12', label: 'PM-12 Tour' };
+      useChatContextSource(item);
+      return <AskAgentButton item={item} />;
+    }
+    renderPanel('release-plan', <Page />);
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Ask agent', exact: true }),
+    );
+    const chip = await screen.findByRole('button', {
+      name: 'Show context: PM-12 Tour',
+    });
+    fireEvent.click(chip);
+    const preview = await screen.findByTestId('chat-context-preview');
+    expect(
+      within(preview).getByRole('heading', { name: 'Context: PM-12 Tour' }),
+    ).toBeVisible();
+    expect(preview).toHaveTextContent('"id": "pm-12"');
+    fireEvent.keyDown(preview, { key: 'Escape' });
+    await waitFor(() =>
+      expect(screen.queryByTestId('chat-context-preview')).toBeNull(),
+    );
+    // Ask agent started a new conversation; the sent message's context is in the one before it.
+    fireEvent.click(screen.getByTestId('chat-history-button'));
+    fireEvent.click(await screen.findByText('Plan the onboarding release'));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Show context: Onboarding' }),
+    );
+    const sent = await screen.findByTestId('chat-context-preview');
+    expect(sent).toHaveTextContent('"title": "Onboarding"');
+  });
+
+  it('starts the next new conversation with the agent last used, also after a reload', async () => {
+    const first = renderPanel(null);
+    await userEvent.click(await screen.findByTestId('chat-agent-picker'));
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: /Coding agent/u }),
+    );
+    const box = screen.getByLabelText('Message to the agent');
+    fireEvent.change(box, { target: { value: 'Fix the build' } });
+    fireEvent.click(screen.getByTestId('chat-send'));
+    expect(
+      await screen.findByRole('heading', { name: 'Fix the build' }),
+    ).toBeVisible();
+    fireEvent.click(screen.getByTestId('chat-new-conversation'));
+    await waitFor(() =>
+      expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent(
+        'Coding agent',
+      ),
+    );
+    first.unmount();
+    renderPanel(null);
+    expect(await screen.findByTestId('chat-agent-picker')).toHaveTextContent(
+      'Coding agent',
+    );
+  });
+
+  it('takes the focus as it opens, so Escape closes it', async () => {
+    renderPanel(null);
+    const panel = await screen.findByTestId('chat-panel');
+    await waitFor(() =>
+      expect(panel).toContainElement(document.activeElement as HTMLElement),
+    );
+    fireEvent.keyDown(document.activeElement ?? panel, { key: 'Escape' });
+    await waitFor(() => expect(panel).not.toBeVisible());
   });
 });
 

@@ -31,15 +31,19 @@ export function OnlineAgentProvider({
   const { session, isPending } = useAuthentication();
   const userId = isPending ? null : session?.user.id;
   return userId ? (
-    <IdentityChat key={userId}>{children}</IdentityChat>
+    <IdentityChat key={userId} userId={userId}>
+      {children}
+    </IdentityChat>
   ) : (
     <>{children}</>
   );
 }
 
 function IdentityChat({
+  userId,
   children,
 }: {
+  readonly userId: string;
   readonly children: ReactNode;
 }): ReactElement | null {
   const [ready, setReady] = useState(false);
@@ -69,7 +73,8 @@ function IdentityChat({
     <OnlineAgentIdentityScope>
       <AIFormRegistryProvider>
         <AIToolRendererProvider renderers={toolRenderers}>
-          <ChatProvider>{children}</ChatProvider>
+          {/* Remembers the agent a new conversation last went to, for this person. */}
+          <ChatProvider memoryScope={userId}>{children}</ChatProvider>
         </AIToolRendererProvider>
       </AIFormRegistryProvider>
     </OnlineAgentIdentityScope>

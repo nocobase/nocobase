@@ -12,32 +12,33 @@ Nonempty SDK reasoning renders in order through `ReasoningPart`, using the same 
 
 An Agents npm upgrade does not replace source already installed into an application's extensions directory. Update that application's Registry files (including `reasoning-part.tsx`), locale keys and `hasOutput`/part rendering together, preserving its own readiness, recovery and business extensions.
 
-| File                      | Exports                                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------ |
-| `chat-panel.tsx`          | `ChatPanel`                                                                                      |
-| `panel-header.tsx`        | `PanelHeader`, `ConversationTitle`                                                               |
-| `conversation-view.tsx`   | `ConversationView`, `PAGE_COLUMN`                                                                |
-| `message-item.tsx`        | `MessageItem`, `PendingItem`                                                                     |
-| `message-actions.tsx`     | `MessageActions`, `MessageEditor`: public-text copy and direct inline edit/resend controls       |
-| `reasoning-part.tsx`      | `ReasoningPart`: accessible, per-part collapsible SDK reasoning with sanitized Markdown          |
-| `message-attachments.tsx` | `MessageAttachments`: a message's files through `attachment-list`                                |
-| `live-steps.tsx`          | `LiveSteps`, `TurnAnnouncer`                                                                     |
-| `composer.tsx`            | `Composer`                                                                                       |
-| `context-chips.tsx`       | `SentContext`                                                                                    |
-| `agent-choice.tsx`        | `NewChatChoice`: the agent picker of a conversation not yet started                              |
-| `agent-status.tsx`        | `AvailabilityDot`, `AgentLine`, `AgentNotice`                                                    |
-| `consultation-card.tsx`   | `ConsultationCard`                                                                               |
-| `web-search-card.tsx`     | `WebSearchCard`: safe, expandable native search findings and sources                             |
-| `history-list.tsx`        | `HistoryList`, `ChatHistoryDialog`                                                               |
-| `conversation-page.tsx`   | `ChatConversationPage`                                                                           |
-| `launchers.tsx`           | `ChatHeaderButton`, `ChatFloatingButton`, `AskAgentButton`                                       |
-| `chat-markdown.tsx`       | `ChatMarkdown`: `markdown-view` with `mermaid` code blocks drawn by `@nocobase/markdown-mermaid` |
-| `chat-ui.tsx`             | `ChatTag`, `Pulse`, `LoadError`                                                                  |
-| `chat-i18n.ts`            | `useChatTranslation`, `useTranscriptLabels`, `errorStatus`                                       |
-| `floating-clearance.ts`   | `useFloatingButtonBottom`, `measureFloatingClearance`                                            |
-| `use-media-query.ts`      | `useMediaQuery`                                                                                  |
-| `locales/en-US.ts`        | the English resource (default export) and its `AgentChatLocale` type                             |
-| `locales/zh-CN.ts`        | the Chinese resource                                                                             |
+| File                      | Exports                                                                                               |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `chat-panel.tsx`          | `ChatPanel`                                                                                           |
+| `panel-header.tsx`        | `PanelHeader`, `PanelHistoryHeader`, `NewConversationButton`, `ModeSwitchButton`, `ConversationTitle` |
+| `chat-mode.ts`            | `useChatMode`: the panel's mode (online agent or runner agents), its agents, the switch and "+"       |
+| `conversation-view.tsx`   | `ConversationView`, `PAGE_COLUMN`                                                                     |
+| `message-item.tsx`        | `MessageItem`, `PendingItem`                                                                          |
+| `message-actions.tsx`     | `MessageActions`, `MessageEditor`: public-text copy and direct inline edit/resend controls            |
+| `reasoning-part.tsx`      | `ReasoningPart`: accessible, per-part collapsible SDK reasoning with sanitized Markdown               |
+| `message-attachments.tsx` | `MessageAttachments`: a message's files through `attachment-list`                                     |
+| `live-steps.tsx`          | `LiveSteps`, `TurnAnnouncer`                                                                          |
+| `composer.tsx`            | `Composer`: its chips open a preview of what they carry                                               |
+| `context-chips.tsx`       | `SentContext`: a sent message's context, each chip opening a preview of what it carried               |
+| `agent-choice.tsx`        | `NewChatChoice`: the agent picker of a conversation not yet started                                   |
+| `agent-status.tsx`        | `AvailabilityDot`, `AgentLine`, `AgentNotice`                                                         |
+| `consultation-card.tsx`   | `ConsultationCard`                                                                                    |
+| `web-search-card.tsx`     | `WebSearchCard`: safe, expandable native search findings and sources                                  |
+| `history-list.tsx`        | `HistoryList`, `ChatHistoryDialog`                                                                    |
+| `conversation-page.tsx`   | `ChatConversationPage`                                                                                |
+| `launchers.tsx`           | `ChatHeaderButton`, `ChatFloatingButton`, `AskAgentButton`                                            |
+| `chat-markdown.tsx`       | `ChatMarkdown`: `markdown-view` with `mermaid` code blocks drawn by `@nocobase/markdown-mermaid`      |
+| `chat-ui.tsx`             | `ChatTag`, `Pulse`, `LoadError`                                                                       |
+| `chat-i18n.ts`            | `useChatTranslation`, `useTranscriptLabels`, `errorStatus`                                            |
+| `floating-clearance.ts`   | `useFloatingButtonBottom`, `measureFloatingClearance`                                                 |
+| `use-media-query.ts`      | `useMediaQuery`                                                                                       |
+| `locales/en-US.ts`        | the English resource (default export) and its `AgentChatLocale` type                                  |
+| `locales/zh-CN.ts`        | the Chinese resource                                                                                  |
 
 It installs `markdown-view`, `agent-run-history`, `agent-composer`, `agent-picker` and `attachment-list` beside it, in `client/components/`: `Composer` wires `agent-composer` to the panel (context chips, the draft, focus, and files through the plugin's `useChatAttachments`), `MessageAttachments` shows a message's files with `attachment-list`, and `NewChatChoice` and the availability dot are `agent-picker`'s in the chat's wording.
 
@@ -93,6 +94,10 @@ import {
 ```
 
 - **Place `ChatPanel` as a sibling of `<main>` inside a `relative flex` row.** From 1280px it docks beside the content, which narrows to make room; between `md` and 1280px it floats over the content's right side; "Full width" covers the row. All three are positioned against that row, so without `relative` the panel covers the whole page instead. Below `md` it is a full-screen dialog.
+- Give `ChatProvider` `memoryScope`, the signed-in person's id: the agent a new conversation last went to is remembered in `localStorage` for that person in this application, and the next new conversation starts with it, before the person's and the team's default agents.
+- The panel's header is the title, then neutral icon buttons: "+" for a new conversation, the history, the switch between the online agent and runner agents (only when both are configured), full width, and close (no menu: a conversation is archived, or opened full screen when the application has a page for it, from its row in the history). Each mode has its own conversations: the history lists that mode's alone, and a new conversation chooses among that mode's agents (a model for the online agent). The mode follows the open conversation, else the one switched to, else that of the agent a new conversation goes to (the one asked for, the one used last, the person's default, the team's default).
+- Full width shows the conversation list in a column on the left, under its own header with the mode and "+", and the conversation on the right; following a link to another page brings the panel back to its usual width. The history is its search and agent filter, the list, and an "Archived" toggle at its foot; an empty list says so in one line.
+- The panel takes the focus when it opens, so Escape restores its width, then closes it, even before the composer is ready. Clicking a context chip, in the composer or under a sent message, opens a small dialog with what it carries.
 - `ChatHeaderButton` toggles the panel and names ⌘J / Ctrl+J in its tooltip; `ChatFloatingButton` shows below `md` only, and rises above a bar the page pins to the bottom of the screen. Hide it on a page that is a chat already.
 - A conversation's agent is chosen before its first message, in the composer's toolbar beside the attach button: `NewChatChoice` lists every enabled agent, saying why one cannot answer the viewer now. Once the conversation exists its agent is its identity: the panel's header and `ChatConversationPage` show it read-only (`AgentLine`), the notice above the composer reports failure or historical read-only state, and a different configuration means a new conversation or an explicit idle configuration update. New conversations can explicitly choose a callable Runner agent; the saved executor stays bound for the conversation. An application's own place to start a conversation, such as a home page, renders `NewChatChoice` in its `agent-composer`'s `toolbar` so both look and work alike.
 - Existing native OnlineAgent conversations show `ConversationModelChoice` instead: a nonempty saved model allowlist restricts the offered chat models; an absent or explicitly empty list adds no restriction. Switching calls the idle configuration endpoint for the same conversation, preserving its scopes, tools and business variables. Execution, approval, saving and reconciliation disable switching; saving and unresolved configuration errors also block sending without clearing the draft. Runner and historical read-only conversations have no model picker.

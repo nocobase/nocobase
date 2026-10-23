@@ -55,6 +55,7 @@ import { cn } from 'cn';
 import { NewChatChoice, ConversationModelChoice } from './agent-choice.js';
 import { AgentNotice } from './agent-status.js';
 import { errorStatus, useChatTranslation } from './chat-i18n.js';
+import { useChatMode } from './chat-mode.js';
 import { LoadError } from './chat-ui.js';
 import { Composer } from './composer.js';
 import { LiveSteps, TurnAnnouncer } from './live-steps.js';
@@ -306,9 +307,16 @@ function ConversationBody({
     conversationId ?? '',
     revision,
   );
+  const chatMode = useChatMode();
+  // A new conversation goes to an agent of the panel's mode; the online agent is the only one of its mode.
+  const offered = agents.data ? chatMode.agents : undefined;
   const target = conversation
     ? null
-    : newConversationAgent(agents.data, panel.newAgentId);
+    : (newConversationAgent(
+        offered,
+        panel.newAgentId,
+        panel.lastAgentId ?? null,
+      ) ?? (chatMode.mode === 'online' ? (offered?.[0] ?? null) : null));
 
   // Leave default resolution on the server until a model is explicitly chosen.
   const model = chosenModel;
@@ -925,7 +933,11 @@ function ConversationBody({
             if (modelChangeBlocked || resend.isPending) return false;
             if (sendAvailability?.canSend === false) return false;
             const accepted = send({ content, context, attachments });
-            if (accepted) focusComposer();
+            if (accepted) {
+              // The next new conversation starts with the agent this one went to.
+              if (target) panel.rememberAgent?.(target.id);
+              focusComposer();
+            }
             return accepted;
           }}
           registerAddFiles={registerAddFiles}
@@ -1002,7 +1014,7 @@ function ConversationBody({
               ) : (
                 // Before the first message: who the conversation goes to.
                 <NewChatChoice
-                  agents={agents.data ?? []}
+                  agents={offered ?? []}
                   agent={target}
                   services={catalog.data ?? []}
                   model={model}
@@ -1032,7 +1044,7 @@ function ConversationBody({
             conversation ? (
               <AgentNotice conversation={conversation} />
             ) : target === null && agents.isSuccess ? (
-              (agents.data?.length ?? 0) > 0 ? (
+              (offered?.length ?? 0) > 0 ? (
                 <p
                   className='text-xs text-muted-foreground'
                   data-testid='chat-choose-agent'

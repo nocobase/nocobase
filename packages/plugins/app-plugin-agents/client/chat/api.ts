@@ -160,6 +160,7 @@ export class ChatApi {
         archived:
           query.archived === undefined ? undefined : String(query.archived),
         agentId: query.agentId,
+        mode: query.mode,
         source: query.source,
         pageToken: query.pageToken,
         pageSize: query.pageSize,

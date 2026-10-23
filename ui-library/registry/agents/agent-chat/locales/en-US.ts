@@ -192,6 +192,14 @@ export interface AgentChatLocale {
       readonly filter: string;
       readonly selection: string;
       readonly remove: string;
+      readonly inspect: string;
+      readonly preview: string;
+    };
+    readonly modes: {
+      readonly online: string;
+      readonly runner: string;
+      readonly switchToOnline: string;
+      readonly switchToRunner: string;
     };
     readonly agents: {
       readonly models: string;
@@ -492,6 +500,14 @@ const agentChatEnUS: AgentChatLocale = {
       filter: 'Filter: {{filter}}',
       selection: 'Selected text: “{{text}}”',
       remove: 'Remove context: {{label}}',
+      inspect: 'Show context: {{label}}',
+      preview: 'Context: {{label}}',
+    },
+    modes: {
+      online: 'Online agent',
+      runner: 'Runner agents',
+      switchToOnline: 'Switch to the online agent',
+      switchToRunner: 'Switch to runner agents',
     },
     agents: {
       models: 'Models',
@@ -538,7 +554,7 @@ const agentChatEnUS: AgentChatLocale = {
       loadFailed: 'Could not load conversations',
       noMatch: 'No conversation matches',
       noArchived: 'No archived conversations',
-      empty: 'No conversations yet',
+      empty: 'No conversations',
       more: 'Load more',
       unread: 'New reply',
       actions: 'Actions for {{title}}',

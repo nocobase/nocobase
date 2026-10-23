@@ -167,6 +167,7 @@ async function setup(locale = 'en-US', extensions: ChatExtensions = {}) {
 }
 beforeEach(() => {
   sessionStorage.clear();
+  localStorage.clear();
   agentsQueryClient().clear();
   host.canRead = true;
   host.request.mockReset();
@@ -430,7 +431,7 @@ it('groups native models by service and submits the selected service/model pair'
   );
 });
 
-it('uses the approved Chinese hint and service grouping in the mixed picker', async () => {
+it('uses the approved Chinese hint and service grouping in the online mode picker, with a switch to Runner agents', async () => {
   host.catalog.mockResolvedValue(models);
   const normal = host.request.getMockImplementation()!;
   host.request.mockImplementation(async (input) =>
@@ -442,13 +443,15 @@ it('uses the approved Chinese hint and service grouping in the mixed picker', as
       : normal(input),
   );
   await setup('zh-CN');
+  expect(await screen.findByTestId('chat-mode-switch')).toHaveAccessibleName(
+    '切换到执行机 Agent',
+  );
   await userEvent.click(screen.getByTestId('chat-agent-picker'));
   const menu = await screen.findByRole('menu');
-  expect(within(menu).getByText('Agents')).toBeVisible();
-  expect(within(menu).queryByText('Runner agents')).not.toBeInTheDocument();
-  expect(
-    within(menu).getByText('选择与在线大模型或执行机中的 Agent 对话。'),
-  ).toBeVisible();
+  // Each mode offers its own kind: the online agent's models, no Runner agents.
+  expect(within(menu).queryByText('Agents')).not.toBeInTheDocument();
+  expect(within(menu).queryByText('Coding agent')).not.toBeInTheDocument();
+  expect(within(menu).getByText('选择与在线大模型对话。')).toBeVisible();
   const service = within(menu).getByRole('group', { name: 'Local' });
   expect(within(service).getByRole('menuitem')).toHaveAttribute(
     'data-model',
@@ -488,20 +491,32 @@ it('keeps the draft when switching between a model and a Runner and omits native
   const user = userEvent.setup();
   const input = screen.getByRole('textbox', { name: 'Message to the agent' });
   await user.type(input, 'Keep the draft');
+  // The person's default is a Runner agent, so the panel starts with Runner agents.
+  await screen.findByTestId('chat-mode-switch');
+  await waitFor(() =>
+    expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent(
+      'Coding agent',
+    ),
+  );
   await user.click(screen.getByTestId('chat-agent-picker'));
   let menu = await screen.findByRole('menu');
-  expect(within(menu).getByText('Models')).toBeVisible();
-  expect(within(menu).getByText('Agents')).toBeVisible();
+  expect(within(menu).queryByText('Models')).not.toBeInTheDocument();
   const runner = within(menu).getByRole('menuitem', { name: /Coding agent/ });
   expect(runner).toHaveTextContent('Works in a repository');
   expect(runner).toHaveTextContent('My default');
   expect(runner).toHaveTextContent('Personal runners only');
-  await user.click(within(menu).getByRole('menuitem', { name: /Chat.*Local/ }));
+  await user.keyboard('{Escape}');
+  await user.click(screen.getByTestId('chat-mode-switch'));
   expect(input).toHaveValue('Keep the draft');
   await user.click(screen.getByTestId('chat-agent-picker'));
   menu = await screen.findByRole('menu');
-  await user.click(
-    within(menu).getByRole('menuitem', { name: /Coding agent/ }),
+  await user.click(within(menu).getByRole('menuitem', { name: /Chat.*Local/ }));
+  expect(input).toHaveValue('Keep the draft');
+  await user.click(screen.getByTestId('chat-mode-switch'));
+  await waitFor(() =>
+    expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent(
+      'Coding agent',
+    ),
   );
   expect(input).toHaveValue('Keep the draft');
   await user.click(screen.getByTestId('chat-send'));
@@ -1551,3 +1566,27 @@ it.each(['assistant', 'system'] as const)(
     ).toHaveAttribute('data-message-id', message.id);
   },
 );
+
+it('lists the conversations on the left while covering the content, with the archived toggle at the foot', async () => {
+  await setup();
+  const panelElement = await screen.findByTestId('chat-panel');
+  fireEvent.click(await screen.findByTestId('chat-expand'));
+  await waitFor(() =>
+    expect(panelElement).toHaveAttribute('data-mode', 'expanded'),
+  );
+  const split = screen.getByTestId('chat-split');
+  const history = within(split).getByTestId('chat-history');
+  expect(within(history).getByTestId('chat-history-header')).toContainElement(
+    within(history).getByTestId('chat-new-conversation'),
+  );
+  expect(await within(history).findByText('Saved conversation')).toBeVisible();
+  expect(history.lastElementChild).toContainElement(
+    within(history).getByTestId('chat-history-archived'),
+  );
+  // Only the online agent is configured: no switch.
+  expect(screen.queryByTestId('chat-mode-switch')).not.toBeInTheDocument();
+  fireEvent.keyDown(panelElement, { key: 'Escape' });
+  await waitFor(() =>
+    expect(panelElement).toHaveAttribute('data-mode', 'docked'),
+  );
+});

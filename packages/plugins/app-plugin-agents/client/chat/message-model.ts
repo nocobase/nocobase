@@ -355,14 +355,19 @@ export type Translate = (
 /** A notice of what happened outside the conversation (`ConversationNotice` `news`). */
 export type NewsNotice = AppUIData['notice'];
 
-/** The agent a new conversation would go to: the one picked, else the viewer's default, else the system default. */
+/**
+ * The agent a new conversation would go to: the one picked, else the one last used (`lastUsed`, when the application
+ * remembers it), else the viewer's default, else the system default.
+ */
 export function newConversationAgent(
   agents: readonly ChatAgent[] | undefined,
   picked: string | null,
+  lastUsed: string | null = null,
 ): ChatAgent | null {
   if (!agents) return null;
   return (
     (picked ? agents.find((agent) => agent.id === picked) : undefined) ??
+    (lastUsed ? agents.find((agent) => agent.id === lastUsed) : undefined) ??
     agents.find((agent) => agent.isMyDefault) ??
     agents.find((agent) => agent.isSystemDefault) ??
     null

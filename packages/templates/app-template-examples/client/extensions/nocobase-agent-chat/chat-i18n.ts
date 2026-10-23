@@ -76,6 +76,8 @@ export function useComposerLabels(): AgentComposerLabels {
       contextFilter: t('chat.context.filter', { filter: '{filter}' }),
       contextSelection: t('chat.context.selection', { text: '{text}' }),
       contextRemove: t('chat.context.remove', { label: '{label}' }),
+      contextInspect: t('chat.context.inspect', { label: '{label}' }),
+      contextPreview: t('chat.context.preview', { label: '{label}' }),
       attach: t('chat.attachments.attach'),
       attachmentsLabel: t('chat.attachments.label'),
       attachmentRemove: t('chat.attachments.remove', { name: '{name}' }),

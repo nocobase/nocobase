@@ -29,14 +29,33 @@ export const useAIToolRenderer: typeof Chat.useAIToolRenderer = useToolRenderer;
 export const getAIToolSourceMessage: typeof Chat.getAIToolSourceMessage =
   toolSourceMessage;
 export { chatMessageSegments } from '../../../../packages/plugins/app-plugin-agents/client/chat/message-model.js';
+import {
+  CHAT_LAST_AGENT_STORAGE_KEY as CHAT_LAST_AGENT_KEY,
+  readLastAgent,
+  rememberLastAgent,
+} from '../../../../packages/plugins/app-plugin-agents/client/chat/agent-mode.js';
+export {
+  agentsOfMode,
+  CHAT_AGENT_MODES,
+  CHAT_LAST_AGENT_STORAGE_KEY,
+  chatAgentMode,
+  configuredChatModes,
+  lastAgentStorageKey,
+  ONLINE_AGENT_ID,
+  readLastAgent,
+  rememberLastAgent,
+  resolveChatAgentMode,
+} from '../../../../packages/plugins/app-plugin-agents/client/chat/agent-mode.js';
 import type {
   ChatAgent,
   ConversationDetail,
   ResolvedPageContext,
+  ConversationMode,
   ConversationNotice,
   ConversationSource,
   MessageAttachment,
 } from '@nocobase/app-plugin-agents/shared/conversations';
+import type { ModelService } from '@nocobase/app-plugin-agents/shared/models';
 import { BotIcon } from 'lucide-react';
 import {
   createContext,
@@ -112,6 +131,44 @@ const AGENTS: readonly ChatAgent[] = [
     runnerNames: [],
     availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
     personalOnly: true,
+  },
+  {
+    id: 'online',
+    name: 'Online agent',
+    description: 'Chat with a configured model and registered tools.',
+    nameText: null,
+    descriptionText: null,
+    avatar: null,
+    isSystemDefault: false,
+    isMyDefault: false,
+    runnerNames: [],
+    availability: { online: true, reason: null, onlineRunners: 0 },
+    personalOnly: false,
+  },
+];
+
+/** `?agents=online` or `?agents=runner` shows the panel with one kind of agent configured, and no switch. */
+function configuredAgents(): readonly ChatAgent[] {
+  const only =
+    typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('agents');
+  return only === 'online'
+    ? AGENTS.filter((agent) => agent.id === 'online')
+    : only === 'runner'
+      ? AGENTS.filter((agent) => agent.id !== 'online')
+      : AGENTS;
+}
+
+const MODELS: readonly ModelService[] = [
+  {
+    name: 'demo',
+    title: 'Demo models',
+    provider: 'openai',
+    models: [
+      { value: 'fast', label: 'Fast model', kind: 'chat', dimensions: null },
+      { value: 'deep', label: 'Deep model', kind: 'chat', dimensions: null },
+    ],
   },
 ];
 
@@ -275,8 +332,25 @@ function initialStore(): Store {
         archivedAt: ago(600),
         lastMessageAt: ago(900),
       }),
+      conversation('naming', 'online', 'Name the onboarding checklist', {
+        lastMessageAt: ago(30),
+      }),
     ],
     messages: {
+      naming: [
+        message(
+          'naming',
+          1,
+          'user',
+          'Suggest three short names for the onboarding checklist.',
+        ),
+        message(
+          'naming',
+          2,
+          'assistant',
+          'Here are three: **First steps**, **Getting started** and **Welcome checklist**.',
+        ),
+      ],
       'release-plan': [
         message(
           'release-plan',
@@ -455,6 +529,13 @@ export function resetChatDemo(): void {
   demoWatermarks.clear();
   for (const timer of replyTimers) clearTimeout(timer);
   replyTimers.clear();
+  try {
+    for (const key of Object.keys(window.localStorage))
+      if (key.startsWith(CHAT_LAST_AGENT_KEY))
+        window.localStorage.removeItem(key);
+  } catch {
+    // Nothing remembered to forget.
+  }
   update(() => initialStore());
 }
 
@@ -629,9 +710,11 @@ export const timelineOrder: typeof Chat.timelineOrder = (entries) =>
 export const newConversationAgent: typeof Chat.newConversationAgent = (
   agents,
   picked,
+  lastUsed = null,
 ) =>
   agents
     ? ((picked ? agents.find((agent) => agent.id === picked) : undefined) ??
+      (lastUsed ? agents.find((agent) => agent.id === lastUsed) : undefined) ??
       agents.find((agent) => agent.isMyDefault) ??
       agents.find((agent) => agent.isSystemDefault) ??
       null)
@@ -872,6 +955,7 @@ export const useChatUIContextSource: typeof Chat.useChatUIContextSource = (
 export const ChatProvider: typeof Chat.ChatProvider = ({
   available = true,
   conversationPath,
+  memoryScope,
   children,
 }) => {
   const navigate = useNavigate();
@@ -881,7 +965,19 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
     view: 'chat' as Chat.ChatPanelView,
     conversationId: null as string | null,
     newAgentId: null as string | null,
+    agentMode: null as ConversationMode | null,
   });
+  const memoryKey = `demo:${memoryScope ?? ''}`;
+  const [lastAgentId, setLastAgentId] = useState(() =>
+    readLastAgent(memoryKey),
+  );
+  const rememberAgent = useCallback(
+    (agentId: string) => {
+      rememberLastAgent(memoryKey, agentId);
+      setLastAgentId(agentId);
+    },
+    [memoryKey],
+  );
   const [pinned, setPinned] = useState<readonly Chat.ChatContextItem[]>([]);
   const [draft, setDraft] = useState<Chat.ChatDraft | null>(null);
   const [composerRevision, setComposerRevision] = useState(0);
@@ -951,6 +1047,7 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
             : options.conversationId,
         newAgentId:
           options.agentId === undefined ? current.newAgentId : options.agentId,
+        agentMode: options.agentId ? null : current.agentMode,
       }));
       if (options.source) setSource(options.source);
       const pin = options.pin;
@@ -1008,6 +1105,8 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
           conversationId,
           newAgentId:
             conversationId === null ? (agentId ?? null) : current.newAgentId,
+          agentMode:
+            conversationId === null && agentId ? null : current.agentMode,
         }));
       },
       pinned,
@@ -1025,8 +1124,14 @@ export const ChatProvider: typeof Chat.ChatProvider = ({
           }
         : null,
       conversationPath: conversationPath ?? null,
+      setAgentMode: (agentMode) =>
+        setState((current) => ({ ...current, agentMode })),
+      lastAgentId,
+      rememberAgent,
     }),
     [
+      lastAgentId,
+      rememberAgent,
       state,
       available,
       openChat,
@@ -1200,11 +1305,26 @@ function query<T>(data: T | undefined): never {
 }
 
 export const useChatAgents: typeof Chat.useChatAgents = () =>
-  query([...AGENTS]);
+  query([...configuredAgents()]);
 
-export const useChatModels: typeof Chat.useChatModels = () => query([]);
-export const useConversationModel: typeof Chat.useConversationModel = () => ({
-  configuration: query(undefined),
+export const useChatModels: typeof Chat.useChatModels = () =>
+  query(
+    configuredAgents().some((agent) => agent.id === 'online')
+      ? [...MODELS]
+      : [],
+  );
+export const useConversationModel: typeof Chat.useConversationModel = (id) => ({
+  configuration: query(
+    id
+      ? {
+          selectedModel: { modelService: 'demo', model: 'fast' },
+          scope: [],
+          tool: [],
+          toolVersions: {},
+          systemPrompt: '',
+        }
+      : undefined,
+  ),
   select: mutation(() => {}),
   changing: false,
 });
@@ -1240,6 +1360,8 @@ export const useConversationList: typeof Chat.useConversationList = (
         (filter.archived === 'all' ||
           Boolean(item.archivedAt) === Boolean(filter.archived)) &&
         (!filter.agentId || item.agent.id === filter.agentId) &&
+        (!filter.mode ||
+          (item.agent.id === 'online') === (filter.mode === 'online')) &&
         (!filter.source || item.source === filter.source) &&
         (!q ||
           (item.title ?? '').toLowerCase().includes(q) ||
