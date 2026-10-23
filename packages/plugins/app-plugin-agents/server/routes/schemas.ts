@@ -1520,6 +1520,7 @@ const modelOption = z.object({
   label: z.string(),
   kind: modelKind,
   dimensions: z.number().int().nullable(),
+  capabilities: z.object({ webSearch: z.boolean() }),
 });
 
 export const ModelCatalogServiceSchema: z.ZodType<ModelService> = z.object({

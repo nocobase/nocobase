@@ -1,6 +1,7 @@
 import type { NativeExecutionRequest } from './types.js';
 import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
 import { resendOptions } from '../messages/resend.js';
+import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
 import type { OnlineAgentSandboxProvider } from '../../sandbox/types.js';
 import { nativeInputParts } from '../messages/validation.js';
 import {
@@ -68,6 +69,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       sandboxProvider?: OnlineAgentSandboxProvider;
       ids: IdSource;
       resolver?: ServiceResolver;
+      webSearch?: OnlineAgentWebSearch;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
       uiStreams: OnlineAgentUIStreams;
@@ -210,6 +212,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
         : (initial.defaultModel ?? (await this.deps.defaultModel())));
     if (!model) throw invalid('No enabled chat model is configured.');
     this.validateModel(config.model, model);
+    await validateWebSearch(config, model, this.deps.webSearch);
     await this.deps.model(model, '');
     this.available();
     return this.deps.sessions.create(context.user.id, kind, config, model, {
@@ -343,6 +346,15 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
           ? this.firstModel(config.model)
           : session.model);
       this.validateModel(config.model, model);
+      const changed =
+        model.modelService !== session.model.modelService ||
+        model.model !== session.model.model;
+      await validateWebSearch(
+        config,
+        model,
+        this.deps.webSearch,
+        changed && options.webSearch === undefined,
+      );
       await this.deps.model(model, id);
       this.available();
       await this.deps.sessions.configure(context.user.id, id, config, model);
