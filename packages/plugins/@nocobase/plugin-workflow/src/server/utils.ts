@@ -36,13 +36,18 @@ export function sanitizeWorkflowTaskReadParams(context: Context) {
 
   // Restrict complete paths: allowing arbitrary descendants of workflow or execution exposes other executions.
   const { appends, fields } = context.action.params;
-  context.action.params.appends = Array.isArray(appends)
+  const filteredAppends = Array.isArray(appends)
     ? appends.filter((path: unknown) => typeof path === 'string' && allowed.has(path))
     : [];
   if (Array.isArray(fields)) {
-    const filtered = fields.filter((path: unknown) => typeof path === 'string' && allowed.has(path));
+    const filtered = Array.from(
+      new Set(fields.filter((path: unknown) => typeof path === 'string' && allowed.has(path))),
+    );
     context.action.params.fields = filtered.length ? filtered : ['id'];
   }
+  // Association fields also become appends in the repository; selecting a path twice fails with the MariaDB driver.
+  const selectedFields = new Set(context.action.params.fields || []);
+  context.action.params.appends = Array.from(new Set(filteredAppends)).filter((path) => !selectedFields.has(path));
 }
 
 type AbortOptions = Transactionable & {

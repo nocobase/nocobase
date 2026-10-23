@@ -122,10 +122,10 @@ describe('workflowManualTasks read permissions', () => {
 
   it('limits association expansion through listMine appends and fields', async () => {
     const response = await ownerAgent.resource('workflowManualTasks').listMine({
-      appends: ['execution.status', 'workflow.executions.context', 'execution.jobs.execution'],
-      fields: ['id', 'execution.status', 'workflow.executions.context'],
+      appends: ['execution.status', 'execution.status', 'workflow.executions.context', 'execution.jobs.execution'],
+      fields: ['id', 'execution.status', 'execution.status', 'workflow.executions.context'],
     });
-    expect(response.status).toBe(200);
+    expect(response.status, JSON.stringify(response.body)).toBe(200);
     expect(response.body.data).toHaveLength(1);
     expect(response.body.data[0].execution.status).toBe(0);
     expect(JSON.stringify(response.body)).not.toContain('other-secret');
