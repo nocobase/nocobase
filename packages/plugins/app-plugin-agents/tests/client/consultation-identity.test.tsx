@@ -92,6 +92,11 @@ it.each([false, true])(
       ],
     };
     resetApi({
+      'agents/conversations/c1': () => ({
+        id: 'c1',
+        mode: 'runner',
+        execution: { status: 'idle' },
+      }),
       'agents/conversations/c1/messages': ({ query }) => ({
         data: query.after ? [] : [original],
         meta: { lastSeq: 1 },

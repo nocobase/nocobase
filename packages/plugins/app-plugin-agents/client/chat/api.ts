@@ -2,6 +2,7 @@
  * The browser API of the chat (`CHAT_ROUTES` in `shared/conversations`), typed with the shared contract. One method per endpoint; answers are unwrapped from `{ data }` (a page of conversations or messages
  * is put back together from `{ data, meta }`); failures throw `ApiClientError`.
  */
+import type { OnlineAgentResendOptions } from '../../shared/resend.js';
 import { DefaultChatTransport, UI_MESSAGE_STREAM_HEADERS } from 'ai';
 import type {
   AppUIMessage,
@@ -72,10 +73,16 @@ export class ChatApi {
   public transport(
     id: string,
     accepted: (clientId: string) => void,
+    resent?: (options: OnlineAgentResendOptions) => Promise<void>,
   ): DefaultChatTransport<AppUIMessage> {
     return new DefaultChatTransport<AppUIMessage>({
       api: chatPath('messages', id),
       prepareSendMessagesRequest: ({ messages, body }) => {
+        if (body?.resendInput)
+          return {
+            api: `${chatPath('conversation', id)}/resend`,
+            body: body.resendInput as OnlineAgentResendOptions,
+          };
         if (body?.approvalInput)
           return {
             api: `${chatPath('conversation', id)}/approval`,
@@ -111,6 +118,20 @@ export class ChatApi {
             ...(body ? { json: body } : {}),
             ...(init?.signal ? { signal: init.signal } : {}),
           });
+          const path =
+            typeof input === 'string'
+              ? input
+              : input instanceof URL
+                ? input.toString()
+                : input.url;
+          if (init?.method === 'POST' && path.endsWith('/resend')) {
+            try {
+              await resent?.(body as OnlineAgentResendOptions);
+            } catch (error) {
+              await stream.cancel().catch(() => {});
+              throw error;
+            }
+          }
           if (
             init?.method === 'POST' &&
             body?.message &&
