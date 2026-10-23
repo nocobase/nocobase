@@ -332,8 +332,11 @@ function initialStore(): Store {
         archivedAt: ago(600),
         lastMessageAt: ago(900),
       }),
+      // The online agent's conversation: its last messages offer edit, copy and regenerate on hover.
       conversation('naming', 'online', 'Name the onboarding checklist', {
         lastMessageAt: ago(30),
+        mode: 'online',
+        execution: { status: 'idle' },
       }),
     ],
     messages: {
@@ -349,6 +352,9 @@ function initialStore(): Store {
           2,
           'assistant',
           'Here are three: **First steps**, **Getting started** and **Welcome checklist**.',
+          {
+            metadata: { agentId: 'online', sourceUserMessageId: 'naming-1' },
+          },
         ),
       ],
       'release-plan': [
