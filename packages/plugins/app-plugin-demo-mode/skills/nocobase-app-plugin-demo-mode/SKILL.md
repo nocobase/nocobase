@@ -1,11 +1,12 @@
 ---
 name: nocobase-app-plugin-demo-mode
 description: >-
-  Build, enable or operate a dedicated NocoBase 3 demo deployment, such as a
-  public demo site, read-only or sandbox demo, or 演示环境: repeatable fictional
-  data, visitor accounts, generation/clear/reset, write policies and optional
-  model or Agent simulation. For example records in an existing application,
-  use the application development Skill's sample-data workflow instead.
+  Build, enable or operate Demo Mode for a dedicated NocoBase 3 demo deployment,
+  such as a public demo site, read-only or sandbox demo, trial environment, or
+  演示环境、演示模式、Demo 模式、只读演示、体验环境: repeatable fictional data,
+  visitor accounts, generation/clear/reset, write policies and optional model or
+  Agent simulation. For example records in an existing application, use the
+  application development Skill's sample-data workflow instead.
 ---
 
 # Demo Mode
@@ -21,7 +22,7 @@ A demo is a public showcase: anyone may enter any listed account, administrators
 ## Integration workflow
 
 1. **Confirm the target and enable.** Check [the dedicated deployment](#confirm-the-dedicated-deployment), then complete [enable the deployment](#enable-the-deployment) and its verification. Check the required host capabilities below.
-2. **Provide the dataset.** Adapt the application's business services using [data adaptation](references/adapting-data.md). For a new application with no business domain, use the [executable non-AI example](references/minimal-example.md). Register one dataset on the original `demoDataToken`; registration does not generate records.
+2. **Provide the dataset.** Adapt the application's business services using [data adaptation](references/adapting-data.md). For a new application with no business domain, use the [executable non-AI example](references/minimal-example.md). Register one dataset on the original `demoDataToken` in an application provider's `boot()`; registration does not generate records.
 3. **Adapt interactions.** Keep normal business authorization. Enable [collection write exceptions](references/policies.md#collection-write-exceptions) for visitor mutations. The guard covers request-scoped database writes; adapt [external calls and background work](references/integration-checklist.md) where the application has them. Read [simulation](references/simulation.md) only for AI or Runner flows the demo uses.
 4. **Provide entry and management.** Mount `DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` on an application-owned page protected by `settings:demoMode.data/read`. Grant [management access](#management-access) and see the [route example](references/minimal-example.md#2-wire-existing-composition-roots). Visitor accounts keep their business permissions. The Client plugin provides `/demo-sign-in`; use [presentation options](references/visitor-entry.md) only when customization is needed.
 5. **Generate and verify.** Generate through the page or [CLI](references/policies.md#data-operations), enter representative visitor accounts and check the requested business journeys. Verify that each role sees its intended pages, that reset is repeatable and, when writes are enabled, that reset removes visitor additions. Report the application URL, visitor entry, demonstrated interactions, cleanup scope and checks performed.
@@ -49,12 +50,32 @@ Complete these steps in order, preserving existing registrations and configurati
 
 1. **Install.** Add `@nocobase/app-plugin-demo-mode` through the application's package workflow and run `pnpm nocobase skills sync`.
 2. **Register.** Add the default export of `@nocobase/app-plugin-demo-mode/server` to `server/plugins.ts` and `demoMode()` from `@nocobase/app-plugin-demo-mode/client` to `client/plugins.ts`. When CLI commands are needed, add the default export of `@nocobase/app-plugin-demo-mode/cli` to `cli/plugins.ts`.
-3. **Register the configuration section.** Add the factory to the existing `defaultAppConfigs()` map, usually in `server/config/index.ts`. Without it, neither `NOCOBASE_DEMO_MODE` nor a `demoMode` section is read:
+3. **Register the configuration section.** Without it, neither `NOCOBASE_DEMO_MODE` nor a `demoMode` section is read. Follow the application's one-file-per-section layout: create `server/config/demo-mode.ts`,
 
    ```ts
-   import { defineDemoModeConfig } from '@nocobase/app-plugin-demo-mode/config';
+   import type { AppConfigFactory } from '@nocobase/app-server/config';
+   import {
+     defineDemoModeConfig,
+     type DemoModeConfig,
+   } from '@nocobase/app-plugin-demo-mode/config';
 
-   defaultAppConfigs({ demoMode: defineDemoModeConfig() });
+   const demoMode: AppConfigFactory<DemoModeConfig> = defineDemoModeConfig();
+
+   export default demoMode;
+   ```
+
+   then add it to `server/config/index.ts` in both places the other sections appear, keeping the existing entries:
+
+   ```ts
+   import demoMode from './demo-mode.js';
+
+   const defaultConfigs: AppConfigFactory<{
+     // ...existing sections
+     demoMode: ReturnType<typeof demoMode>;
+   }> = defaultAppConfigs({
+     // ...existing sections
+     demoMode,
+   });
    ```
 
 4. **Switch it on.** Set `NOCOBASE_DEMO_MODE=true` in this deployment's environment, or set the application configuration below, then run migrations and restart:

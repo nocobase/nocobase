@@ -14,7 +14,7 @@ Clear/reset run the application's full business cleanup, including visitor addit
 
 `GET /api/demoMode/status` returns `{ data: { enabled: boolean } }` without a session. Server integrations resolve the original `demoModeServiceToken` from `@nocobase/app-plugin-demo-mode/server/tokens` to read `enabled`.
 
-The guard observes SQL through `@nocobase/db` in an HTTP request context. It does not replace authentication, operation permissions or record scopes, or intercept files, outbound calls and background work. Jobs and queue messages run outside the request that enqueued them, so work a visitor's action triggers writes to the database without the guard. Adapt those [external boundaries and jobs](integration-checklist.md) in the application.
+The guard observes SQL through `@nocobase/db` in an HTTP request context. It does not replace authentication, operation permissions or record scopes, or intercept files, outbound calls and background work. Treat jobs, queue messages and schedule firings as unguarded, including work a visitor's action triggers: Redis workers never see the request, and in-process adapters stop being refused once the request that enqueued them has ended. Adapt those [external boundaries and jobs](integration-checklist.md) in the application.
 
 A refused request returns 400 with `error.reason: DEMO_READ_ONLY`. Branch on the reason, not its translated message. If a page encounters a refusal, identify the required business write before granting an exception.
 

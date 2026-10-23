@@ -16,7 +16,7 @@ Map the story to the application's actual collections and services. Use enough r
 
 ## Dataset contract
 
-Import `DemoDataset` and the original `demoDataToken` from `@nocobase/app-plugin-demo-mode/server/tokens`. Register one dataset from an application provider after its business services exist. The maintained [typed dataset](../assets/minimal-demo/server/demo/dataset.ts) and [business adapter](../assets/minimal-demo/server/demo/business.ts) show the pattern.
+Import `DemoDataset` and the original `demoDataToken` from `@nocobase/app-plugin-demo-mode/server/tokens`. Register one dataset from an application provider's `boot()`, after its business services are registered. The maintained [typed dataset](../assets/minimal-demo/server/demo/dataset.ts) and [business adapter](../assets/minimal-demo/server/demo/business.ts) show the pattern.
 
 Supply `id`, `languages`, `accounts(language)`, `generate(context)` and `clear(context)`. For weighted progress stages, use `steps(language)` instead of `generate`, never both. Registration must not generate or clear data at startup.
 

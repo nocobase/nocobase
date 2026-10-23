@@ -38,6 +38,13 @@ async function setup() {
   };
 }
 
+it('schedules the default reset for a dataset registered after the plugin is ready', async () => {
+  const { rule } = await setup();
+  await expect
+    .poll(async () => (await rule())?.options)
+    .toEqual({ cron: '0 3 * * *', tz: 'America/New_York' });
+});
+
 it('fires once a day at the configured local time instead of every minute', async () => {
   const { config, rule } = await setup();
   const schedule = {

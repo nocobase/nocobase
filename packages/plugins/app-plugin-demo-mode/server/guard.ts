@@ -33,6 +33,11 @@ export interface GuardedKnex {
   readonly client: QueryEventSource;
 }
 
+/** A request's state as the guard stores it, shared by the copies `runAllowed` makes. */
+interface GuardedRequest extends DemoRequestState {
+  readonly request: { ended: boolean };
+}
+
 /**
  * Refuses database writes made on behalf of an HTTP request.
  *
@@ -40,13 +45,29 @@ export interface GuardedKnex {
  * listener; knex emits that event synchronously before it sends a query, from transaction clients too, so throwing
  * there stops the statement before the database sees it. Work with no request around it — migrations, seeds, jobs and
  * schedules — has no state and is never refused.
+ *
+ * In-process job, schedule and queue adapters carry the async context of whoever enqueued or armed the work, so their
+ * tasks can run with a request's state. Once that request has finished, its state refuses nothing, so such work writes
+ * as it would on a Redis worker. Work that starts before the request ends is still refused, while a response body
+ * streamed after the handler returned is not; a demo accepts both.
  */
 export class DemoWriteGuard {
-  private readonly storage = new AsyncLocalStorage<DemoRequestState>();
+  private readonly storage = new AsyncLocalStorage<GuardedRequest>();
   private readonly guarded = new WeakSet<QueryEventSource>();
 
   public run<T>(state: DemoRequestState, fn: () => T): T {
-    return this.storage.run(state, fn);
+    const request = { ended: false };
+    const end = () => {
+      request.ended = true;
+    };
+    return this.storage.run({ ...state, request }, () => {
+      const result = fn();
+      if (!(result instanceof Promise)) {
+        end();
+        return result;
+      }
+      return result.finally(end) as T;
+    });
   }
 
   /** Only authorized demo lifecycle handlers use this; their background work inherits the same exemption. */
@@ -78,7 +99,7 @@ export class DemoWriteGuard {
 
   private inspect(query: { sql?: unknown }, connection: string): void {
     const state = this.storage.getStore();
-    if (!state || typeof query.sql !== 'string') return;
+    if (!state || state.request.ended || typeof query.sql !== 'string') return;
     const writes = classifySql(query.sql).filter(
       (write) =>
         state.strict ||

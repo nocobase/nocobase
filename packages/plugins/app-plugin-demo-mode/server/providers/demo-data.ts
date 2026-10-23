@@ -237,7 +237,11 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
         tz: schedule.timezone,
       },
       payload: {},
-      execute: (context) => this.runDailyReset(context.scheduledAt),
+      // A rule armed while a request ran would otherwise carry that request's policy snapshot into every firing.
+      execute: (context) =>
+        this.app.container
+          .resolve(demoConfigurationRuntimeToken)
+          .withFreshPolicy(() => this.runDailyReset(context.scheduledAt)),
     };
   }
 

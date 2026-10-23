@@ -12,7 +12,7 @@ Use the demo deployment's own file storage and include generated and visitor-upl
 
 ## Background work
 
-Jobs, queue handlers and schedule firings run outside the write guard, including work a visitor's request enqueued. For each enabled application job, choose whether it should run against fixtures or be disabled in the demo. Coordinate active work with generation and cleanup so a job cannot recreate deleted records or overwrite the new dataset. Preserve cancellation and duplicate-delivery protections.
+Treat jobs, queue handlers and schedule firings as outside the write guard, including work a visitor's request enqueued. With in-process adapters, work that starts before that request ends may still be refused; do not rely on the guard to stop background writes. For each enabled application job, choose whether it should run against fixtures or be disabled in the demo. Coordinate active work with generation and cleanup so a job cannot recreate deleted records or overwrite the new dataset. Preserve cancellation and duplicate-delivery protections.
 
 Use the plugin's built-in daily reset; do not add a second reset timer or cron. Application-specific jobs still need their own demo adaptation.
 

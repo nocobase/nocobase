@@ -19,7 +19,7 @@ The example's cleanup deletes all rows in `demotasks` and `demoprojects`, includ
 
 ## 2. Wire existing composition roots
 
-Retain the application's Authentication, Authorization and Users plugins. Add Demo Mode's Server export, Client factory and CLI export through the normal application composition roots. Add `DemoProvider` to `server/providers/index.ts` and `demoProjectRoutes` to `server/routes/index.ts`. Register `defineDemoModeConfig()` under `demoMode` in the existing `defaultAppConfigs()` map.
+Retain the application's Authentication, Authorization and Users plugins. Add Demo Mode's Server export, Client factory and CLI export through the normal application composition roots. Add `DemoProvider` to `server/providers/index.ts` and `demoProjectRoutes` to `server/routes/index.ts`. Register the `demoMode` configuration section as described in [enable the deployment](../SKILL.md#enable-the-deployment).
 
 Configure the isolated deployment:
 
@@ -30,13 +30,14 @@ demoMode:
 
 The example assigns `demo.members` once through `createAccount.permissionSets`. The framework's default `app` role scope is optional; do not also assign that same Permission Set through `roleScopes.app`, which would duplicate its assignment. If an application requires a role scope, adapt `roleScopes` in `business.ts` and the account factory together so each Permission Set is assigned by exactly one mechanism. Use an existing real administrator to generate data.
 
-Add authenticated routes in `client/routes.ts`. The business page uses page access; the management page checks its settings item:
+Add authenticated routes in `client/routes.ts`. Every page declares `authz`: a protected page without it is open only to unrestricted identities such as root, so visitors would be refused. The business page uses page access; the management page checks its settings item:
 
 ```ts
 {
   name: 'demoProjects',
   path: '/demo-projects',
   auth: 'required',
+  authz: { resource: { type: 'page', id: 'demoProjects' }, action: 'access' },
   componentLoader: () => import('./pages/demo-projects.js'),
   navigation: { title: 'exampleDemo.title' },
 },
@@ -88,7 +89,7 @@ Use the failing step to choose the next check; do not bypass permissions or add 
 | Status says no dataset is available         | Register `DemoProvider` in the application provider list and verify it reaches the original `demoDataToken`. Generation is an explicit action after registration.                            |
 | The CLI command is missing                  | Register `@nocobase/app-plugin-demo-mode/cli` in the CLI composition root; Server registration does not register commands.                                                                   |
 | The visitor entry is empty or sign-in fails | Complete generation, enable password sign-in and `quickSignIn`, and use the same explicit passwords in `accounts()` and `createAccount()`. Inspect the generation failure before retrying.   |
-| A page or management API returns 403        | Check business-page access for visitor pages and settings actions for management, including the route's read check.                                                                          |
+| A page or management API returns 403        | Check that each client route declares `authz`, business-page access for visitor pages and settings actions for management, including the route's read check.                                 |
 | Generated records do not appear on the page | Check the current account, assignee/owner filters, relationships and date ranges against the dataset; verify the page calls the intended business API.                                       |
 | Generation fails with an identity conflict  | Check the username and email in the account definitions; do not adopt an unrelated account. See [failure handling](adapting-data.md#business-cleanup).                                       |
 | Startup reports an unguarded connection     | Check each connection under `database.connections`; Demo Mode refuses to start when its probe write reaches a database. Do not remove the connection check to start.                         |
