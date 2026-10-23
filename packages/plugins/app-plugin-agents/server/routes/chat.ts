@@ -46,6 +46,7 @@ import {
 import { RUN_SELF_ACTION } from '../core/callers/index.js';
 import { fileTooLarge } from '../core/conversations/attachments.js';
 import { forbidden, invalid } from '../kernel/errors.js';
+import { noEffort } from '../online/agent/errors.js';
 import {
   decodePageToken,
   domainRouter,
@@ -108,6 +109,7 @@ const SelectedModel = z.strictObject({
   modelService: z.string().min(1),
   model: z.string().min(1),
 });
+const Effort = z.string().trim().min(1).max(32);
 const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
   agentId: z
     .string()
@@ -136,6 +138,9 @@ const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
   ),
   selectedModel: SelectedModel.optional().describe(
     'Native model selection as modelService and model; omit for a Runner agent.',
+  ),
+  effort: Effort.optional().describe(
+    "The reasoning effort of the conversation's runs, one of the Runner agent's `efforts` (`GET /api/agents/chatAgents`), kept with the conversation; omit for the agent's own effort. Not taken by the online agent (`EFFORT_UNSUPPORTED`).",
   ),
 });
 
@@ -174,6 +179,9 @@ const NativeSendSchema = z.strictObject({
     .optional(),
   context: PageContextSchema.optional(),
   selectedModel: SelectedModel.optional(),
+  effort: Effort.optional().describe(
+    "The reasoning effort of the run this message starts, one of the Runner agent's `efforts`, kept as the conversation's `effort` for its later runs; omit to keep the conversation's. Issue and task runs keep the agent's own effort. Not taken by the online agent (`EFFORT_UNSUPPORTED`).",
+  ),
 });
 const SendSchema = NativeSendSchema;
 const NativeMessageSchema = z.object({
@@ -328,7 +336,7 @@ export function createChatRoutes(
         },
       }),
       description:
-        'Creates an OnlineAgent session without sending input. Configuration defaults are resolved once; original model columns remain authoritative.',
+        'Creates an OnlineAgent session without sending input. Configuration defaults are resolved once; original model columns remain authoritative. A Runner conversation may keep a reasoning `effort` for its runs.',
       responses: {
         201: dataResponse(ConversationDetailSchema, 'Created.'),
         400: conversationConflict('No chat agent is available'),
@@ -366,6 +374,9 @@ export function createChatRoutes(
                 source: request.source ?? 'panel',
                 title: title?.text || undefined,
                 showInChatList: request.showInChatList,
+                ...(request.effort === undefined
+                  ? {}
+                  : { effort: request.effort }),
               },
               'http',
             );
@@ -537,7 +548,7 @@ export function createChatRoutes(
         ],
       }),
       description:
-        'Native input accepts only the current SDK user message with text parts and authorized attachmentIds, returning a standard UI message stream. Server metadata, history, tools and config are not writable here. Runner uses the same input and standard stream; only saved source records are projected. Busy input is refused. A timeout means outcome unknown: reconcile history and execution, never automatically resend.',
+        'Native input accepts only the current SDK user message with text parts and authorized attachmentIds, returning a standard UI message stream. Server metadata, history, tools and config are not writable here. Runner uses the same input and standard stream; only saved source records are projected. A Runner conversation also takes a reasoning `effort` for the run the message starts. Busy input is refused. A timeout means outcome unknown: reconcile history and execution, never automatically resend.',
       responses: {
         200: {
           description:
@@ -573,9 +584,12 @@ export function createChatRoutes(
         },
         { sessionId: id },
       );
+      if (request.effort !== undefined && agent.backend !== 'runner')
+        throw noEffort();
       const parts: Exclude<UserModelMessage['content'], string> =
         request.message.parts;
       await agent.send([{ role: 'user', content: parts }], {
+        ...(request.effort === undefined ? {} : { effort: request.effort }),
         attachmentIds: [[...(request.attachmentIds ?? [])]],
         clientId: request.message.id,
         messageId: request.message.id,

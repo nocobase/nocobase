@@ -73,7 +73,11 @@ import type { DatabaseConnection } from '@nocobase/db';
 import type { Slots } from '../../runners/slots.js';
 import { createHash } from 'node:crypto';
 
-import type { Agent, RunnerModelEntry } from '../../../shared/agents.js';
+import {
+  effortsFor,
+  type Agent,
+  type RunnerModelEntry,
+} from '../../../shared/agents.js';
 import type { BriefLayers } from '../../../shared/briefs.js';
 import type {
   Run,
@@ -1085,6 +1089,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     )
       throw new NotForThisRunner();
     inputs = assembly.inputs ?? inputs;
+    // The subject's effort (a conversation's chosen one) in place of the entry's, when the entry's tool takes it.
+    if (assembly.effort && effortsFor(entry).includes(assembly.effort))
+      entry = { ...entry, effort: assembly.effort };
     const effectiveClaim = { ...claim, inputs };
     // Its owner's local policy keeps this runner off the subject, or off one of the repositories: another runner takes
     // the run.

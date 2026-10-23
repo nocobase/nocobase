@@ -14,6 +14,8 @@ export interface SubmissionSend {
   readonly clientId: string;
   readonly context?: PageContext;
   readonly attachmentIds?: readonly string[];
+  /** The reasoning effort of the run the message starts (Runner conversations). */
+  readonly effort?: string;
 }
 export interface ChatSubmissionApi extends Pick<
   ChatApi,
@@ -32,6 +34,8 @@ export interface SubmissionInput {
   readonly conversationId: string | null;
   readonly editorKey: string;
   readonly create: CreateConversationRequest;
+  /** The reasoning effort of the run the message starts (Runner conversations). */
+  readonly effort?: string;
 }
 export interface ChatSubmission extends SubmissionInput {
   conversationId: string | null;
@@ -212,6 +216,7 @@ export class ChatSubmissions {
           ...(record.attachments.length
             ? { attachmentIds: record.attachments.map((file) => file.id) }
             : {}),
+          ...(record.effort ? { effort: record.effort } : {}),
         }),
       );
       if (!this.valid(record, generation, operation)) return;

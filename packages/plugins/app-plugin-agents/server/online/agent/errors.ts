@@ -24,3 +24,10 @@ export class OnlineAgentResultError extends Error {
     this.code = error.code;
   }
 }
+/** The online agent offers no reasoning effort: its model catalog declares none. */
+export function noEffort(): ReturnType<typeof invalid> {
+  return invalid(
+    'The online agent takes no reasoning effort; choose one only for a Runner agent.',
+    { reason: 'EFFORT_UNSUPPORTED', field: 'effort' },
+  );
+}

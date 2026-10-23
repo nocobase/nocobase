@@ -118,6 +118,11 @@ export interface SubjectAssembly {
    * same branches checked out and pushes nothing (`RunWorkspace.readOnly`), so it runs alongside the run that writes.
    */
   readonly readOnly?: boolean;
+  /**
+   * The reasoning effort of this run in place of its model entry's, such as the one a conversation's owner chose. Used
+   * only when the entry's tool takes it; otherwise the entry's own effort applies.
+   */
+  readonly effort?: string;
 }
 
 export interface ContextProvider {

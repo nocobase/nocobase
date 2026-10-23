@@ -834,6 +834,7 @@ export class ChatController {
           ...(input.attachmentIds?.length
             ? { attachmentIds: input.attachmentIds }
             : {}),
+          ...(input.effort ? { effort: input.effort } : {}),
         },
       },
     );

@@ -42,4 +42,6 @@ export type RunnerOnlineAgentBinding = {
   version: 1;
   config: OnlineAgentConfig;
   closingRunId?: string;
+  /** The reasoning effort chosen for the conversation's runs, one of its agent's tool's; absent: the agent's own. */
+  effort?: string;
 };

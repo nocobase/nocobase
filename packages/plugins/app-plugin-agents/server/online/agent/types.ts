@@ -112,10 +112,14 @@ export type OnlineAgentSendOptions = {
   workContext?: ResolvedPageContext;
   overrides?: OnlineAgentOptions;
   selectedModel?: ModelRef;
+  /** The reasoning effort of the run this input starts; Runner conversations only. */
+  effort?: string;
 };
 export type OnlineAgentRealtimeOptions = OnlineAgentOptions & {
   sessionId?: string;
   selectedModel?: ModelRef;
+  /** The reasoning effort a new Runner conversation keeps for its runs. */
+  effort?: string;
   source?: string;
   title?: string;
   showInChatList?: boolean;

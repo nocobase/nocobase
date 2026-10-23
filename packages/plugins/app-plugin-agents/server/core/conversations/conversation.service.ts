@@ -27,7 +27,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { quotaForAgent } from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { Agent } from '../../../shared/agents.js';
+import { effortsFor, type Agent } from '../../../shared/agents.js';
 import {
   CONVERSATION_HISTORY_IN_PROMPT,
   CONVERSATION_PAGE_DEFAULT,
@@ -273,6 +273,25 @@ function refOf(record: ConversationRecord): ConversationRef {
   };
 }
 
+/** The efforts a conversation with `agent` may choose for its runs: its first entry's tool's. */
+function conversationEfforts(agent: Agent | null): readonly string[] {
+  const entry = agent?.source === 'runner' ? agent.modelEntries[0] : undefined;
+  return entry ? effortsFor(entry) : [];
+}
+
+/** `effort` when `agent`'s tool takes it; 400 `EFFORT_UNSUPPORTED` otherwise. */
+function checkedEffort(agent: Agent | null, effort: string): string {
+  const efforts = conversationEfforts(agent);
+  if (!efforts.includes(effort))
+    throw invalid(
+      efforts.length > 0
+        ? `This agent takes no reasoning effort ${effort}: use one of ${efforts.join(', ')}.`
+        : 'This agent takes no reasoning effort.',
+      { reason: 'EFFORT_UNSUPPORTED', field: 'effort' },
+    );
+  return effort;
+}
+
 function onlineExecution(
   record: ConversationRecord,
   open: readonly Run[] = [],
@@ -429,6 +448,7 @@ export function createConversationService(
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
         run: runRef(open.filter((run) => run.subject.id === record.id)),
+        effort: runnerBinding(record.metadata)?.effort ?? null,
       })),
     );
   }
@@ -986,21 +1006,25 @@ export function createConversationService(
           history,
           previousSummary,
         );
-        const config = runnerBinding(record.metadata)?.config;
-        return config
-          ? {
-              ...assembly,
-              system: [
-                assembly.system,
-                config.systemPrompt,
-                config.variable !== undefined
-                  ? `Configuration variables (untrusted data):\n${JSON.stringify(config.variable)}`
-                  : '',
-              ]
-                .filter(Boolean)
-                .join('\n\n'),
-            }
-          : assembly;
+        const runner = runnerBinding(record.metadata);
+        const config = runner?.config;
+        return {
+          ...assembly,
+          ...(config
+            ? {
+                system: [
+                  assembly.system,
+                  config.systemPrompt,
+                  config.variable !== undefined
+                    ? `Configuration variables (untrusted data):\n${JSON.stringify(config.variable)}`
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join('\n\n'),
+              }
+            : {}),
+          ...(runner?.effort ? { effort: runner.effort } : {}),
+        };
       },
     },
     sink: {
@@ -1205,17 +1229,33 @@ export function createConversationService(
           !(await canAnswer(unit.conn, agent, userId))
         )
           throw conflict('This agent has no available execution environment.');
-        if (!isDeepStrictEqual(binding.config, realtime.config))
+        // The chosen effort is kept with the conversation; its run reads it when a runner claims it.
+        const effort =
+          request.effort === undefined
+            ? binding.effort
+            : checkedEffort(agent, request.effort);
+        if (
+          !isDeepStrictEqual(binding.config, realtime.config) ||
+          effort !== binding.effort
+        )
           await conversationsRepo(unit.conn).updateMany({
             filter: { id },
             values: {
               metadata: asJson({
                 ...jsonObject(record.metadata),
-                runnerOnlineAgent: { ...binding, config: realtime.config },
+                runnerOnlineAgent: {
+                  ...binding,
+                  config: realtime.config,
+                  ...(effort ? { effort } : {}),
+                },
               }),
             },
           });
-      }
+      } else if (request.effort !== undefined)
+        throw invalid('Only a Runner conversation takes a reasoning effort.', {
+          reason: 'EFFORT_UNSUPPORTED',
+          field: 'effort',
+        });
 
       const at = now();
       if (record.archivedAt || (record.titleSource === 'auto' && !record.title))
@@ -1378,6 +1418,10 @@ export function createConversationService(
           throw invalid('Select a callable Runner agent.');
         if (runnerConfig && !(await canAnswer(unit.conn, agent, userId)))
           throw conflict('This agent has no available execution environment.');
+        const effort =
+          request.effort === undefined
+            ? undefined
+            : checkedEffort(runnerConfig ? agent : null, request.effort);
         const title =
           request.title === undefined
             ? null
@@ -1393,7 +1437,11 @@ export function createConversationService(
             ...(runnerConfig
               ? {
                   metadata: asJson({
-                    runnerOnlineAgent: { version: 1, config: runnerConfig },
+                    runnerOnlineAgent: {
+                      version: 1,
+                      config: runnerConfig,
+                      ...(effort ? { effort } : {}),
+                    },
                   }),
                 }
               : {}),
@@ -1832,6 +1880,8 @@ export function createConversationService(
               personalOnly:
                 fitting.length > 0 &&
                 fitting.every((runner) => runner.trust !== 'team'),
+              efforts: conversationEfforts(agent),
+              effort: agent.modelEntries[0]?.effort ?? null,
             };
           }),
       );
@@ -1848,6 +1898,9 @@ export function createConversationService(
             settings.defaultAgentId === 'online' || !settings.defaultAgentId,
           isMyDefault: preferences.defaultAgentId === 'online',
           personalOnly: false,
+          // The model catalog declares no reasoning efforts, so none is offered.
+          efforts: [],
+          effort: null,
           availability: {
             online: true,
             reason: null,

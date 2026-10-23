@@ -32,6 +32,7 @@ import type {
 import type { Schema, LanguageModel, ModelMessage } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { conflict, invalid } from '../../../kernel/errors.js';
+import { noEffort } from '../errors.js';
 import type { IdSource } from '../../../kernel/ids.js';
 import type { ModelRef } from '../../../../shared/models.js';
 import type { OnlineAgentConfigurator } from '../configuration.js';
@@ -155,6 +156,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
     options: OnlineAgentRealtimeOptions,
     boundary?: OnlineAgentBoundary,
   ): Promise<NativeRealtimeOnlineAgent> {
+    if (options.effort !== undefined) throw noEffort();
     const id = await this.create(context, 'realtime', initial, options);
     return this.restoreRealtime(context, { sessionId: id }, boundary);
   }

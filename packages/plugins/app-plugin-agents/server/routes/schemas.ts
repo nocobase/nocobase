@@ -1646,6 +1646,10 @@ const conversationSummaryObject = z.object({
       acceptsInput: z.boolean(),
     })
     .nullable(),
+  effort: z.string().nullable().optional().meta({
+    description:
+      "The reasoning effort last chosen for the conversation's runs; null when the agent's own effort applies.",
+  }),
 });
 
 export const ConversationSummarySchema: z.ZodType<ConversationSummary> =
@@ -1828,6 +1832,14 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
   availability,
   personalOnly: z.boolean().meta({
     description: 'Only personal runners have it.',
+  }),
+  efforts: z.array(z.string()).optional().meta({
+    description:
+      'The reasoning efforts a conversation may choose for its runs, weakest first; empty for the online agent, whose models declare none.',
+  }),
+  effort: z.string().nullable().optional().meta({
+    description:
+      "The agent's own reasoning effort, which its issue and task runs use; null for the tool's default.",
   }),
 });
 
