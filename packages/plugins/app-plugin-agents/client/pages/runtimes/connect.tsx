@@ -1,6 +1,6 @@
 /**
  * Route `/runtimes/connect` ("Add runtime"): choose which coding tools the runtime may run (Codex and Claude Code by default) and how many
- * runs it takes at once (1 by default), get a
+ * runs it takes at once (3 by default), get a
  * one-line install command carrying a one-time token, run it on the host, and watch it show up connected with the
  * coding tools it found and whether each is on and signed in. The tool choice and the concurrency travel with the
  * token, so the command stays one line, and both can be changed on the runtimes page afterwards. A runtime added this way is personal (it runs
@@ -81,7 +81,7 @@ export default function ConnectRuntimePage(): ReactElement {
     <RouteDialog
       title={t('connect.title')}
       description={t('connect.description')}
-      className='sm:max-w-2xl'
+      className='sm:max-w-3xl'
     >
       <AddRunnerSteps />
     </RouteDialog>
@@ -97,7 +97,7 @@ function AddRunnerSteps(): ReactElement {
   const [trust, setTrust] = useState<RunnerTrust>('ownerOnly');
   const [tools, setTools] = useState<readonly AgentTool[]>(DEFAULT_AGENT_TOOLS);
   const [toolsMissing, setToolsMissing] = useState(false);
-  const [slots, setSlots] = useState('4');
+  const [slots, setSlots] = useState('3');
   const [slotsInvalid, setSlotsInvalid] = useState(false);
   const [toolSlots, setToolSlots] = useState<ToolSlotsDraft>({});
   const [toolSlotsInvalid, setToolSlotsInvalid] = useState(false);
@@ -325,6 +325,7 @@ function InstallStep({
                 <TabsContent value='prompt' className='space-y-3 pt-3'>
                   <p className='text-sm'>{t('connect.promptHint')}</p>
                   <CommandLine
+                    expanded
                     command={
                       (candidate === 'windows'
                         ? t('connect.promptWindows')

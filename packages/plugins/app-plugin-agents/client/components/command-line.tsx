@@ -8,8 +8,10 @@ import { Button } from './ui/button.js';
 /** A shell command with a copy button (the add-runner dialog, the upgrade popover). */
 export function CommandLine({
   command,
+  expanded = false,
 }: {
   readonly command: string;
+  readonly expanded?: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   const notify = useNotify();
@@ -27,7 +29,9 @@ export function CommandLine({
 
   return (
     <div className='flex items-start gap-2 rounded-lg border bg-muted p-2 pl-3'>
-      <code className='max-h-64 min-w-0 flex-1 overflow-y-auto py-1 font-mono text-xs break-all whitespace-pre-wrap select-all'>
+      <code
+        className={`min-w-0 flex-1 py-1 font-mono text-xs break-all whitespace-pre-wrap select-all ${expanded ? '' : 'max-h-64 overflow-y-auto'}`}
+      >
         {command}
       </code>
       <Button

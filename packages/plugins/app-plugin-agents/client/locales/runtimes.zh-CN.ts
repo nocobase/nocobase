@@ -310,13 +310,13 @@ const runtimesZhCN: RuntimesLocale = {
     prompt: '提示词',
     manual: '手动安装',
     promptHint:
-      '把下面的提示词复制给目标机器上的 Agent（Claude Code、Codex 等）。其中包含一次性凭证，请只交给该 Agent。',
-    windowsPowerShell: '1. 在 PowerShell 执行，然后重启 Windows：',
+      '把下面的完整提示词复制给目标机器上的 Agent（Claude Code、Codex 等）。窄屏可滚动弹窗阅读全部步骤。其中包含一次性凭证，请只交给该 Agent。',
+    windowsPowerShell: '1. 安装 WSL：在 PowerShell 执行，然后重启 Windows：',
     windowsUbuntu:
       '2. 打开 Ubuntu，执行下面的 Linux 命令。Node.js 和编码工具都安装在 WSL Ubuntu 里。',
     windowsNetwork: '如果 WSL 无法访问外网，请开启 WSL 镜像网络。',
     promptWindows:
-      '先在 PowerShell 执行 wsl --install 安装 WSL，并重启 Windows。后续所有步骤都在 WSL Ubuntu 里完成，Node.js 和编码工具也装在 WSL 里。如果 WSL 无法访问外网，请开启镜像网络。\n\n',
+      '首先判断你自己是否运行在 WSL Ubuntu 中。如果不在 WSL Ubuntu 中，立即停止，不要执行任何安装或注册命令；请告诉用户先到 PowerShell 执行 wsl --install、重启 Windows，再到 WSL Ubuntu 中打开 Agent，重新执行这段提示词。只有确认在 WSL Ubuntu 中，才能继续以下步骤。Node.js 和编码工具都必须安装在 WSL 中。如果 WSL 无法访问外网，请开启镜像网络。\n\n',
     promptBody:
       '请将这台机器配置为 NocoBase 执行机。建议使用虚拟机或隔离环境：Agent 拥有完全权限，执行机不是沙箱。\n\n检查 Node.js 24 或更高版本，以及这些编码工具是否已安装并登录：{{tools}}。使用工具的官方安装方式，不要使用 snap 版工具。\n\n运行以下含一次性凭证的注册命令，安装执行机和应用 CLI，注册执行机并安装为后台服务：\n{{command}}\n\n处理常见问题：确保服务的 PATH 包含编码工具（在安装终端确认 which codex / which claude，然后重新执行 nocobase-runner service install 并重启服务）；按需为下载和后台服务配置代理；npm 全局安装权限不足时使用当前用户拥有的安装目录或 Node 版本管理器，不要使用 sudo npm install。\n\n最后执行 nocobase-runner status，确认已连上并检测到编码工具。告诉我还需要亲自完成哪些登录或网络步骤。注册凭证属于密钥，请勿写入结果报告。',
     tokenOnce:

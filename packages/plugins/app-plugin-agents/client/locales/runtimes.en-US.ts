@@ -322,14 +322,15 @@ const runtimesEnUS = {
     prompt: 'Prompt',
     manual: 'Manual',
     promptHint:
-      'Copy this prompt to an agent (Claude Code, Codex, etc.) on the target machine. It includes a one-time credential; share it only with that agent.',
-    windowsPowerShell: '1. Run in PowerShell, then restart Windows:',
+      'Copy the full prompt below to an agent (Claude Code, Codex, etc.) on the target machine. On small screens, scroll the dialog to read every step. It includes a one-time credential; share it only with that agent.',
+    windowsPowerShell:
+      '1. Install WSL: run in PowerShell, then restart Windows:',
     windowsUbuntu:
       '2. Open Ubuntu and run the Linux command below. Install Node.js and coding tools inside WSL Ubuntu.',
     windowsNetwork:
       'If WSL cannot access the internet, enable mirrored networking in WSL.',
     promptWindows:
-      'First install WSL with wsl --install in PowerShell and restart Windows. Complete every remaining step in WSL Ubuntu, including installing Node.js and the coding tools. If WSL cannot access the internet, enable mirrored networking.\n\n',
+      'FIRST, determine whether you are running inside WSL Ubuntu. If you are NOT in WSL Ubuntu, STOP: do not run any installation or registration commands. Tell the user to run wsl --install in PowerShell, restart Windows, then open the agent inside WSL Ubuntu and run this prompt again. Continue with the steps below ONLY inside WSL Ubuntu. Install both Node.js and the coding tools inside WSL. If WSL cannot access the internet, enable mirrored networking.\n\n',
     promptBody:
       'Set up this machine as a NocoBase runner. Use a VM or isolated environment: agents have full access and the runner is not a sandbox.\n\nCheck Node.js 24 or newer and that these coding tools are installed and signed in: {{tools}}. Use their official installation methods, not snap packages.\n\nRun this one-time registration command to install the runner and application CLI, register it, and install its background service:\n{{command}}\n\nResolve common setup problems: ensure the service PATH contains the coding tools (check which codex / which claude in the installation terminal, then run nocobase-runner service install again and restart the service); configure any required proxy for downloads and for the service; resolve npm global install permissions using a user-owned prefix or a Node version manager, without sudo npm install.\n\nFinish with nocobase-runner status and confirm the connection and coding tools. Report any remaining login or network steps for me to complete. Treat the registration credential as a secret and do not include it in your report.',
     tokenOnce:

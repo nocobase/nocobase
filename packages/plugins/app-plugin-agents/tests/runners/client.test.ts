@@ -85,6 +85,23 @@ describe('install commands', () => {
     expect(runtimesZhCN.connect.run).not.toContain('无需 Node.js');
   });
 
+  it('starts Windows prompts with the WSL Ubuntu stop condition in both languages', () => {
+    expect(runtimesEnUS.connect.promptWindows).toMatch(
+      /^FIRST, determine whether you are running inside WSL Ubuntu/u,
+    );
+    expect(runtimesEnUS.connect.promptWindows).toContain('STOP');
+    expect(runtimesEnUS.connect.promptWindows).toContain(
+      'open the agent inside WSL Ubuntu and run this prompt again',
+    );
+    expect(runtimesZhCN.connect.promptWindows).toMatch(
+      /^首先判断你自己是否运行在 WSL Ubuntu 中/u,
+    );
+    expect(runtimesZhCN.connect.promptWindows).toContain('立即停止');
+    expect(runtimesZhCN.connect.promptWindows).toContain('重新执行这段提示词');
+    expect(runtimesEnUS.connect.windowsPowerShell).toContain('Install WSL');
+    expect(runtimesZhCN.connect.windowsPowerShell).toContain('安装 WSL');
+  });
+
   it('update nocobase-runner, and reinstall anything else', () => {
     expect(upgradeCommand('nocobase-runner')).toBe('nocobase-runner update');
     expect(upgradeCommand('acme')).toBeNull();

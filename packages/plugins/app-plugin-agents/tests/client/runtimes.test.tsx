@@ -826,7 +826,7 @@ describe('runtimes page', () => {
     ).toEqual({
       trust: 'ownerOnly',
       enabledTools: ['codex', 'claude'],
-      slots: 4,
+      slots: 3,
     });
     expect(within(dialog).getAllByText(/fgreg_secret/u).length).toBeGreaterThan(
       0,
@@ -845,7 +845,7 @@ describe('runtimes page', () => {
       if (system === 'windows')
         expect(
           within(dialog).getByText(/connect\.promptWindows/u),
-        ).toBeInTheDocument();
+        ).toHaveTextContent(/^connect\.promptWindows/u);
       await userEvent.click(
         within(dialog).getByRole('tab', { name: 'connect.manual' }),
       );
@@ -899,7 +899,7 @@ describe('runtimes page', () => {
       ).toEqual({
         trust: 'team',
         enabledTools: ['codex', 'claude'],
-        slots: 4,
+        slots: 3,
       }),
     );
   });
@@ -1021,7 +1021,7 @@ describe('runtimes page', () => {
       within(dialog).getByRole('checkbox', { name: 'tools.codex' }),
     );
     const slots = within(dialog).getByLabelText('connect.slots');
-    expect(slots).toHaveValue('4');
+    expect(slots).toHaveValue('3');
     fireEvent.change(slots, { target: { value: '65' } });
     fireEvent.click(
       within(dialog).getByRole('button', { name: 'connect.createCredential' }),

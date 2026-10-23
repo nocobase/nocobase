@@ -428,7 +428,7 @@ export interface RegistrationTokenInput {
   /** The coding tools the runner that registers with this token may run; omitted or null for every tool. */
   readonly enabledTools?: readonly AgentTool[] | null;
   /**
-   * How many runs at once the runner that registers with this token takes (1 to 64); omitted or null defaults to four.
+   * How many runs at once the runner that registers with this token takes (1 to 64); omitted or null defaults to three.
    */
   readonly slots?: number | null;
   /**

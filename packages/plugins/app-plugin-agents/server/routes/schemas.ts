@@ -542,7 +542,7 @@ export const RegistrationTokenInputSchema: z.ZodType<RegistrationTokenInput> =
       .describe('The agent tools this runner accepts.'),
     slots: z.number().int().min(1).max(64).nullable().optional().meta({
       description:
-        'How many runs at once the runner takes from this application; omitted or null registers it with 4. The application keeps this setting and sends it to the runner in heartbeat answers.',
+        'How many runs at once the runner takes from this application; omitted or null registers it with 3. The application keeps this setting and sends it to the runner in heartbeat answers.',
     }),
     toolSlots: ToolSlotsSchema.nullable().optional().meta({
       description:
