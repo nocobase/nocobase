@@ -1,19 +1,34 @@
 ---
 name: nocobase-app-plugin-demo-mode
 description: >-
-  Build, enable or operate Demo Mode for a dedicated NocoBase 3 demo deployment,
-  such as a public demo site, read-only or sandbox demo, trial environment, or
-  演示环境、演示模式、Demo 模式、只读演示、体验环境: repeatable fictional data,
-  visitor accounts, generation/clear/reset, write policies and optional model or
-  Agent simulation. For example records in an existing application, use the
-  application development Skill's sample-data workflow instead.
+  Build, enable or operate a dedicated NocoBase 3 demo deployment with
+  @nocobase/app-plugin-demo-mode: a public, shared demo site whose fictional data
+  is generated, cleared and reset, with quick visitor sign-in, write protection
+  and optional model or Agent simulation (公开演示站、只读演示、定时重置的演示环境、
+  Demo Mode). Also use when changing business collections, external integrations
+  or background jobs in an application that already depends on this plugin, so
+  its demo dataset, cleanup and adapters stay complete. Not for example records
+  (use the application development Skill's sample-data workflow), ordinary trial,
+  staging or customer deployments, third-party sandbox credentials, or an in-app
+  presentation/display mode feature.
 ---
 
 # Demo Mode
 
 Use `@nocobase/app-plugin-demo-mode` for a dedicated demo with its own database and storage. The plugin supplies data lifecycle, visitor accounts, write protection, management components and optional simulation. The application supplies its business records, cleanup and external adapters.
 
-For example records in an existing application, use the application development Skill's sample-data workflow. For a dedicated demo, reuse the user's established deployment, language and role choices. Clarify only unresolved deployment or cleanup scope: clear/reset removes all business data in the demo instance, including visitor additions.
+## Check that this Skill applies
+
+Demo Mode refuses ordinary writes, resets data daily and deletes all business data on clear/reset. Apply it only when the user asks for a demo deployment with those properties, names this plugin or Demo Mode, or the application already depends on it. Otherwise use the matching workflow:
+
+| Request                                                                                | Use instead                                                        |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Example or sample records, such as “add some demo customers”                           | The application development Skill's sample-data workflow           |
+| A trial, staging, test or customer environment where users keep their own data         | The `nocobase-deployment` Skill; an ordinary deployment without it |
+| A payment, mail or other provider's sandbox account or test credentials                | That integration's configuration                                   |
+| An in-app “demo/presentation mode” feature, such as hiding fields while screen-sharing | Ordinary feature development                                       |
+
+When the request could mean either a Demo Mode deployment or one of these, ask which one the user wants before registering the plugin, enabling it or adding full-business cleanup. For a confirmed dedicated demo, reuse the user's established deployment, language and role choices, and clarify any unresolved deployment or cleanup scope: clear/reset removes all business data in the demo instance, including visitor additions.
 
 ## Keep protection proportionate
 
@@ -28,6 +43,17 @@ A demo is a public showcase: anyone may enter any listed account, administrators
 5. **Generate and verify.** Generate through the page or [CLI](references/policies.md#data-operations), enter representative visitor accounts and check the requested business journeys. Verify that each role sees its intended pages, that reset is repeatable and, when writes are enabled, that reset removes visitor additions. Report the application URL, visitor entry, demonstrated interactions, cleanup scope and checks performed.
 
 For a CLI-only dataset, omit the page and visitor steps. A non-AI demo needs no model or Agent integration. With the application's jobs service composed, daily reset is enabled by default after the first generation; preserve existing saved policy and make no extra schedule changes unless requested.
+
+## Maintain an application that uses Demo Mode
+
+An application that registers a demo dataset keeps it in step with ordinary feature work. When a change adds or alters any of these, update the demo side in the same change:
+
+- **Business collections or relations.** Extend the dataset's `clear(context)` to remove the new rows, dependent records first, and generate records where the demonstrated journeys need them; see [business cleanup](references/adapting-data.md#business-cleanup).
+- **Outbound calls, file storage or notifications.** Route them through a demo fixture or refusal at the application boundary; see [external effects](references/integration-checklist.md#external-effects).
+- **Background jobs, queues or schedules.** Decide whether each runs against fixtures or is disabled in the demo, and keep it from recreating cleared records; see [background work](references/integration-checklist.md#background-work).
+- **Visitor mutations.** Add the collections the mutation writes to the [collection write exceptions](references/policies.md#collection-write-exceptions) only when the demo should allow it.
+
+Then reset the demo and verify that no business rows from before the reset remain. Changes that touch none of these need no demo work.
 
 ## Required host capabilities
 
