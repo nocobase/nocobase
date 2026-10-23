@@ -574,7 +574,7 @@ export function createAdminRoutes(
     can('agents.agents', 'manage'),
     describeRoute({
       tags,
-      summary: 'Create or repair an agent from an available model',
+      summary: 'Create an agent from an available model',
       operationId: 'agentsCreateRunnerAgent',
       ...cliRoute({
         command: 'agent create',
@@ -585,12 +585,12 @@ export function createAdminRoutes(
         ],
       }),
       description:
-        'Creates and enables an agent for an available model. A runner agent marked deleted or archived is restored as pending and must be enabled again; missing model entries are filled while retaining the current status. Needs `agents.agents` manage.',
+        'Creates and enables an agent for an available model. An existing agent for the same tool and model returns `AGENT_EXISTS` and can be enabled from the agent list. Needs `agents.agents` manage.',
       responses: {
         201: dataResponse(AgentSchema),
         400: apiErrorResponse(
           400,
-          'A healthy agent for this tool and model already exists (`AGENT_EXISTS`), no description was given (`GOOD_AT_REQUIRED`), or the effort is not one its tool takes (`EFFORT_UNSUPPORTED`).',
+          'An agent for this tool and model already exists (`AGENT_EXISTS`), no description was given (`GOOD_AT_REQUIRED`), or the effort is not one its tool takes (`EFFORT_UNSUPPORTED`).',
         ),
         ...apiErrorResponses,
       },

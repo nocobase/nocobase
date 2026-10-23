@@ -1,61 +1,85 @@
-import { randomUUID } from 'node:crypto';
-
 import {
   defineMigration,
   type MigrationContext,
   type MigrationDefinition,
 } from '@nocobase/db';
 
-/** Runner agents use status as their state; clear stale archives and require them to be enabled again. */
+function entriesAreEmpty(value: unknown): boolean {
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value) as unknown;
+    } catch {
+      return true;
+    }
+  }
+  return !Array.isArray(value) || value.length === 0;
+}
+
+function defaultEffort(tool: string): string | null {
+  // Keep the migration self-contained: these runner tools support the package's initial `medium` choice.
+  return ['claude', 'codex', 'opencode', 'pi'].includes(tool) ? 'medium' : null;
+}
+
+/** Clear stale runner markers and fill missing model entries without changing agent status. */
 const migration: MigrationDefinition = defineMigration({
   name: '202610290001_ag_repair_runner_agents',
   async up({ query }: MigrationContext): Promise<void> {
-    const archived = await query
+    const agents = await query
       .selectFrom('agAgents')
-      .select(['id', 'status', 'revision'])
+      .select([
+        'id',
+        'tool',
+        'model',
+        'modelEntries',
+        'archivedAt',
+        'deletedAt',
+      ])
       .where('source', '=', 'runner')
-      .where('archivedAt', 'is not', null)
       .execute();
-    if (archived.length === 0) return;
+    if (agents.length === 0) return;
 
     const now = new Date().toISOString();
-    await query
-      .updateTable('agAgents')
-      .set({
-        status: 'pending',
-        archivedAt: null,
-        updatedAt: now,
-      })
-      .where('source', '=', 'runner')
-      .where('archivedAt', 'is not', null)
-      .execute();
-
-    const statusChanges = archived
-      .filter((agent) => agent.status !== 'pending')
-      .map((agent) => ({
-        id: randomUUID(),
-        agentId: String(agent.id),
-        revision: Number(agent.revision),
-        action: 'restored',
-        actorUserId: null,
-        changes: [
-          {
-            field: 'status',
-            before: agent.status,
-            after: 'pending',
-          },
-        ],
-        createdAt: now,
-      }));
-    // Keep the portable insert below SQLite's bind-parameter limit.
-    for (let offset = 0; offset < statusChanges.length; offset += 100) {
+    if (
+      agents.some(
+        (agent) => agent.archivedAt !== null || agent.deletedAt !== null,
+      )
+    ) {
       await query
-        .insertInto('agAgentChanges')
-        .values(statusChanges.slice(offset, offset + 100))
+        .updateTable('agAgents')
+        .set({ archivedAt: null, deletedAt: null, updatedAt: now })
+        .where('source', '=', 'runner')
+        .where((eb) =>
+          eb.or([
+            eb('archivedAt', 'is not', null),
+            eb('deletedAt', 'is not', null),
+          ]),
+        )
+        .execute();
+    }
+
+    for (const agent of agents) {
+      if (
+        !entriesAreEmpty(agent.modelEntries) ||
+        typeof agent.tool !== 'string'
+      )
+        continue;
+      await query
+        .updateTable('agAgents')
+        .set({
+          modelEntries: [
+            {
+              tool: agent.tool,
+              model: agent.model,
+              effort: defaultEffort(agent.tool),
+            },
+          ],
+          updatedAt: now,
+        })
+        .where('id', '=', agent.id)
         .execute();
     }
   },
-  // The repair is permanent; rolling back the release must not restore a broken agent state.
+  // The repair is permanent; rolling back the release must not restore broken agent data.
   async down(): Promise<void> {},
 });
 

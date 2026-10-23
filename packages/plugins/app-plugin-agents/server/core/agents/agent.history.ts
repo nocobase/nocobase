@@ -40,33 +40,6 @@ export async function deleteHistory(
   await changesRepo(conn).deleteMany({ filter: { agentId } });
 }
 
-/** The runner agents whose history shows that they were enabled at some point. */
-export async function agentIdsPreviouslyEnabled(
-  conn: DatabaseConnection,
-  ids: readonly string[],
-): Promise<Set<string>> {
-  const previouslyEnabled = new Set<string>();
-  for (let offset = 0; offset < ids.length; offset += 200) {
-    const batch = ids.slice(offset, offset + 200);
-    if (batch.length === 0) continue;
-    const records = await changesRepo(conn).findMany({
-      filter: (f) => f.or(batch.map((id) => f.string('agentId').eq(id))),
-    });
-    for (const record of records) {
-      if (
-        record.action === 'enabled' ||
-        changesOf(record.changes).some(
-          (change) =>
-            change.field === 'status' &&
-            (change.before === 'enabled' || change.after === 'enabled'),
-        )
-      )
-        previouslyEnabled.add(record.agentId);
-    }
-  }
-  return previouslyEnabled;
-}
-
 /** Lists of strings compare as sets, everything else (the ordered model entries too) as JSON. */
 function same(before: unknown, after: unknown): boolean {
   if (

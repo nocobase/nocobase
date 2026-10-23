@@ -138,91 +138,105 @@ describe('agents built from runner reports', () => {
     expect((await h.services.agents.get(agent!.id)).status).toBe('disabled');
   });
 
-  it.each([
-    { name: 'deleted marker', deleted: true },
-    { name: 'archive marker', archived: true },
-    { name: 'empty model entries', empty: true },
+  const damagedAgents = [
+    { name: 'deleted marker', deleted: true, status: 'enabled' },
+    { name: 'archive marker', archived: true, status: 'disabled' },
+    { name: 'empty model entries', empty: true, status: 'pending' },
     {
       name: 'all three corruptions',
       deleted: true,
       archived: true,
       empty: true,
+      status: 'disabled',
     },
-  ])(
-    'repairs a runner agent with $name on its next report',
-    async (corruption) => {
-      h = await createHarness();
-      const model = 'claude-sonnet-5';
-      h.services.agents.setDefaults(() => ({
-        instructions: null,
-        actions: [],
-        recommendedModels: [{ tool: 'claude', model }],
-      }));
-      const runner = await h.registerRunner({ tools: [claude(model)] });
-      const id = runnerAgentId('claude', model);
-      const at = h.clock.now().toISOString();
-      await h.database
-        .connection()
-        .query.updateTable('agAgents')
-        .set({
-          name: 'Retained name',
-          description: 'Retained description',
-          ...(corruption.deleted ? { deletedAt: at } : {}),
-          ...(corruption.archived ? { archivedAt: at } : {}),
-          ...(corruption.empty ? { modelEntries: [] } : {}),
-        })
-        .where('id', '=', id)
-        .execute();
+  ] as const;
 
-      const before = await h.services.agents.get(id);
-      expect(before.modelEntries).toEqual([
-        expect.objectContaining({ tool: 'claude', model, effort: 'medium' }),
-      ]);
-      if (corruption.deleted)
-        expect(
-          (await h.services.agents.list()).map((agent) => agent.id),
-        ).toContain(id);
+  for (const runMigration of [false, true]) {
+    for (const corruption of damagedAgents) {
+      it(`${corruption.name} stays visible and can take work ${runMigration ? 'after migration' : 'without migration'}`, async () => {
+        h = await createHarness();
+        const tool = 'claude';
+        const model = 'claude-sonnet-5';
+        const runner = await h.registerRunner({ tools: [claude(model)] });
+        const created = await h.services.agents.createFromAvailable(
+          { tool, model, description: 'Retained expertise', effort: 'high' },
+          'alice',
+        );
+        const at = h.clock.now().toISOString();
+        await h.database
+          .connection()
+          .query.updateTable('agAgents')
+          .set({
+            status: corruption.status,
+            ...(corruption.deleted ? { deletedAt: at } : {}),
+            ...(corruption.archived ? { archivedAt: at } : {}),
+            ...(corruption.empty ? { modelEntries: [] } : {}),
+          })
+          .where('id', '=', created.id)
+          .execute();
 
-      await heartbeat(runner.key, [claude(model)]);
+        if (runMigration) await applyRunnerAgentRecoveryMigration(h);
 
-      const agent = await h.services.agents.get(id);
-      const stored = await h.database
-        .connection()
-        .repository('agAgents')
-        .findOne({ filter: { id } });
-      expect(agent).toMatchObject({
-        id,
-        name: 'Retained name',
-        description: 'Retained description',
-        modelEntries: [expect.objectContaining({ tool: 'claude', model })],
+        const agent = await h.services.agents.get(created.id);
+        expect(agent).toMatchObject({
+          id: created.id,
+          status: corruption.status,
+          description: 'Retained expertise',
+          modelEntries: [
+            expect.objectContaining({
+              tool,
+              model,
+              effort: corruption.empty ? 'medium' : 'high',
+            }),
+          ],
+        });
+        expect((await h.services.agents.list()).map(({ id }) => id)).toContain(
+          created.id,
+        );
+
+        const stored = await h.database
+          .connection()
+          .repository('agAgents')
+          .findOne({ filter: { id: created.id } });
+        if (runMigration) {
+          expect(stored).toMatchObject({
+            status: corruption.status,
+            archivedAt: null,
+            deletedAt: null,
+            modelEntries: [
+              expect.objectContaining({
+                tool,
+                model,
+                effort: corruption.empty ? 'medium' : 'high',
+              }),
+            ],
+          });
+        } else {
+          expect(stored).toMatchObject({
+            status: corruption.status,
+            ...(corruption.deleted ? { deletedAt: at } : {}),
+            ...(corruption.archived ? { archivedAt: at } : {}),
+            ...(corruption.empty ? { modelEntries: [] } : {}),
+          });
+        }
+
+        const enabled =
+          agent.status === 'enabled'
+            ? agent
+            : await h.services.agents.update(created.id, 'alice', {
+                enabled: true,
+                expectedRevision: agent.revision,
+              });
+        const runId = await h.enqueue(created.id, corruption.name);
+        const [payload] = await claim(h, runner);
+        expect(enabled.status).toBe('enabled');
+        expect(payload.run.id).toBe(runId);
+        expect(payload.tool.model).toBe(model);
       });
-      expect(stored).toMatchObject({
-        name: 'Retained name',
-        description: 'Retained description',
-        archivedAt: null,
-        deletedAt: null,
-        modelEntries: [expect.objectContaining({ tool: 'claude', model })],
-      });
-      expect(agent.status).toBe(
-        corruption.deleted || corruption.archived ? 'pending' : 'enabled',
-      );
+    }
+  }
 
-      const enabled =
-        agent.status === 'pending'
-          ? await h.services.agents.update(id, 'alice', {
-              enabled: true,
-              expectedRevision: agent.revision,
-            })
-          : agent;
-      const runId = await h.enqueue(id, `recovery-${corruption.name}`);
-      const [payload] = await claim(h, runner);
-      expect(payload.run.id).toBe(runId);
-      expect(payload.tool.model).toBe(model);
-      expect(enabled.status).toBe('enabled');
-    },
-  );
-
-  it('repairs a deleted available-model agent through the API instead of rejecting the existing id', async () => {
+  it('does not restore a marked existing agent when adding its model again', async () => {
     h = await createHarness();
     const tool = 'claude';
     const model = 'claude-sonnet-5';
@@ -234,75 +248,24 @@ describe('agents built from runner reports', () => {
     await h.database
       .connection()
       .query.updateTable('agAgents')
-      .set({ deletedAt: at, archivedAt: at, modelEntries: [] })
+      .set({
+        status: 'disabled',
+        deletedAt: at,
+        archivedAt: at,
+        modelEntries: [],
+      })
       .where('id', '=', created.id)
       .execute();
 
     const response = await h.request('POST', '/agents/runnerAgents', {
       user: 'alice',
       can: ['agents.agents/manage'],
-      body: { tool, model, description: 'Replace only if empty' },
+      body: { tool, model, description: 'Do not replace it' },
     });
 
-    expect(response.status).toBe(201);
-    expect(response.body.data).toMatchObject({
-      id: created.id,
-      status: 'pending',
-      name: created.name,
-      description: 'Keep this description',
-      modelEntries: [expect.objectContaining({ tool, model })],
-    });
-    const stored = await h.database
-      .connection()
-      .repository('agAgents')
-      .findOne({ filter: { id: created.id } });
-    expect(stored).toMatchObject({ archivedAt: null, deletedAt: null });
-    expect(
-      (await h.services.agents.cleanupCandidates()).map(({ id }) => id),
-    ).not.toContain(created.id);
-    expect(await h.services.agents.cleanup([created.id], 'alice')).toEqual({
-      removed: [],
-      skipped: [created.id],
-    });
-    expect(await h.services.agents.history(created.id)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          action: 'restored',
-          changes: expect.arrayContaining([
-            {
-              field: 'status',
-              before: 'enabled',
-              after: 'pending',
-            },
-          ]),
-        }),
-      ]),
-    );
-  });
-
-  it('keeps a disabled runner disabled when a report fills its empty model configuration', async () => {
-    h = await createHarness();
-    const model = 'claude-sonnet-5';
-    const created = await h.services.agents.createFromAvailable(
-      { tool: 'claude', model, description: 'Keep disabled' },
-      'alice',
-    );
-    await h.services.agents.update(created.id, 'alice', {
-      enabled: false,
-      expectedRevision: created.revision,
-    });
-    await h.database
-      .connection()
-      .query.updateTable('agAgents')
-      .set({ modelEntries: [] })
-      .where('id', '=', created.id)
-      .execute();
-
-    await h.registerRunner({ tools: [claude(model)] });
-
-    expect(await h.services.agents.get(created.id)).toMatchObject({
-      status: 'disabled',
-      modelEntries: [expect.objectContaining({ tool: 'claude', model })],
+    expect(response.status).toBe(400);
+    expect(response.body.error.metadata).toMatchObject({
+      reason: 'AGENT_EXISTS',
     });
     expect(
       await h.database
@@ -311,155 +274,11 @@ describe('agents built from runner reports', () => {
         .findOne({ filter: { id: created.id } }),
     ).toMatchObject({
       status: 'disabled',
-      modelEntries: [expect.objectContaining({ tool: 'claude', model })],
-    });
-  });
-
-  it('keeps the stored reasoning effort when recovering an available-model agent', async () => {
-    h = await createHarness();
-    const tool = 'claude';
-    const model = 'claude-sonnet-5';
-    const created = await h.services.agents.createFromAvailable(
-      { tool, model, description: 'Keep this description', effort: 'high' },
-      'alice',
-    );
-    const at = h.clock.now().toISOString();
-    await h.database
-      .connection()
-      .query.updateTable('agAgents')
-      .set({ deletedAt: at, archivedAt: at })
-      .where('id', '=', created.id)
-      .execute();
-
-    const recovered = await h.services.agents.createFromAvailable(
-      { tool, model, description: 'Do not replace it' },
-      'alice',
-    );
-
-    expect(recovered).toMatchObject({
-      id: created.id,
-      status: 'pending',
       description: 'Keep this description',
-      modelEntries: [{ tool, model, effort: 'high' }],
+      deletedAt: at,
+      archivedAt: at,
+      modelEntries: [],
     });
-  });
-
-  it.each(['migration before report', 'report before migration'] as const)(
-    'preserves an enabled agent through %s',
-    async (order) => {
-      h = await createHarness();
-      const model = 'claude-sonnet-5';
-      const created = await h.services.agents.createFromAvailable(
-        { tool: 'claude', model, description: 'Retained expertise' },
-        'alice',
-      );
-      const at = h.clock.now().toISOString();
-      await h.database
-        .connection()
-        .query.updateTable('agAgents')
-        .set({ archivedAt: at })
-        .where('id', '=', created.id)
-        .execute();
-      const runner = await h.registerRunner({ tools: [] });
-
-      if (order === 'migration before report')
-        await applyRunnerAgentRecoveryMigration(h);
-      await heartbeat(runner.key, [claude(model)]);
-      if (order === 'report before migration')
-        await applyRunnerAgentRecoveryMigration(h);
-
-      expect(await h.services.agents.get(created.id)).toMatchObject({
-        status: 'pending',
-        description: 'Retained expertise',
-      });
-      expect(
-        (await h.services.agents.cleanupCandidates()).map(({ id }) => id),
-      ).not.toContain(created.id);
-      expect(await h.services.agents.cleanup([created.id], 'alice')).toEqual({
-        removed: [],
-        skipped: [created.id],
-      });
-      expect(await h.services.agents.history(created.id)).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            changes: expect.arrayContaining([
-              {
-                field: 'status',
-                before: 'enabled',
-                after: 'pending',
-              },
-            ]),
-          }),
-        ]),
-      );
-    },
-  );
-
-  it('derives a runner tool default model when its stored model entries are empty', async () => {
-    h = await createHarness();
-    const id = await h.createAgent({
-      source: 'runner',
-      modelEntries: [{ tool: 'claude', model: null, effort: null }],
-    });
-    await h.database
-      .connection()
-      .query.updateTable('agAgents')
-      .set({ modelEntries: [] })
-      .where('id', '=', id)
-      .execute();
-
-    expect(await h.services.agents.get(id)).toMatchObject({
-      source: 'runner',
-      modelEntries: [{ tool: 'claude', model: null, effort: 'medium' }],
-    });
-  });
-
-  it('keeps an enabled agent restored by a runner report out of cleanup', async () => {
-    h = await createHarness();
-    const model = 'claude-sonnet-5';
-    const created = await h.services.agents.createFromAvailable(
-      { tool: 'claude', model, description: 'Retained expertise' },
-      'alice',
-    );
-    const archivedAt = h.clock.now().toISOString();
-    await h.database
-      .connection()
-      .query.updateTable('agAgents')
-      .set({ archivedAt })
-      .where('id', '=', created.id)
-      .execute();
-
-    await h.registerRunner({ tools: [claude(model)] });
-
-    expect(await h.services.agents.get(created.id)).toMatchObject({
-      status: 'pending',
-      description: 'Retained expertise',
-    });
-    expect(
-      (await h.services.agents.cleanupCandidates()).map(({ id }) => id),
-    ).not.toContain(created.id);
-    expect(await h.services.agents.cleanup([created.id], 'alice')).toEqual({
-      removed: [],
-      skipped: [created.id],
-    });
-    expect(await h.services.agents.get(created.id)).toMatchObject({
-      status: 'pending',
-      description: 'Retained expertise',
-    });
-    expect(await h.services.agents.history(created.id)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          action: 'restored',
-          changes: expect.arrayContaining([
-            {
-              field: 'status',
-              before: 'enabled',
-              after: 'pending',
-            },
-          ]),
-        }),
-      ]),
-    );
   });
 
   it('does not add an agents-table write to an ordinary fresh runner report', async () => {
