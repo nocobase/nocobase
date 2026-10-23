@@ -86,6 +86,7 @@ describe('base-auth', () => {
 
     await auth.check();
     expect(ctx.headers['x-role']).toBe('admin');
+    expect(ctx.state.authTokenRole).toBe('admin');
   });
 
   it('check: should return user', async () => {

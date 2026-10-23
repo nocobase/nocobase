@@ -231,6 +231,9 @@ export class BaseAuth extends Auth {
 
     if (roleName) {
       this.ctx.headers['x-role'] = roleName;
+      // Tokens that carry a fixed role (for example API keys) must keep that role instead of following the
+      // interactive role mode, otherwise only-use-union would upgrade the token to the union of all user roles.
+      this.ctx.state.authTokenRole = roleName;
     }
 
     const blocked = await this.jwt.blacklist.has(jti ?? token);

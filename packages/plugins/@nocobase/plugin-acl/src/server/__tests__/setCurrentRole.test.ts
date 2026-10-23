@@ -161,6 +161,68 @@ describe('role', () => {
     expect(ctx.state.currentRoles).toHaveLength(2);
   });
 
+  it('should keep the role from the auth token when role mode is only-use-union', async () => {
+    await db.getRepository('roles').create({
+      values: {
+        name: 'r1',
+      },
+    });
+    await db.getRepository('roles').create({
+      values: {
+        name: 'r2',
+      },
+    });
+    const user = await db.getRepository('users').create({
+      values: {
+        name: 'u1',
+        roles: ['r1', 'r2'],
+      },
+    });
+    await db.getRepository('systemSettings').update({
+      filter: { id: 1 },
+      values: {
+        roleMode: SystemRoleMode.onlyUseUnion,
+      },
+    });
+    ctx.state.currentUser = user;
+    ctx.state.authTokenRole = 'r1';
+    ctx.get = function (name) {
+      if (name === 'X-Role') {
+        return 'r1';
+      }
+    };
+
+    await setCurrentRole(ctx, () => {});
+
+    expect(ctx.state.currentRole).toBe('r1');
+    expect(ctx.state.currentRoles).toEqual(['r1']);
+  });
+
+  it('should reject the auth token role that does not belong to the user in only-use-union mode', async () => {
+    await db.getRepository('systemSettings').update({
+      filter: { id: 1 },
+      values: {
+        roleMode: SystemRoleMode.onlyUseUnion,
+      },
+    });
+    ctx.state.currentUser = await db.getRepository('users').findOne();
+    ctx.state.authTokenRole = 'not-found';
+    ctx.get = function (name) {
+      if (name === 'X-Role') {
+        return 'not-found';
+      }
+    };
+    const throwFn = vi.fn();
+    ctx.throw = throwFn;
+
+    await setCurrentRole(ctx, () => {});
+
+    expect(throwFn).lastCalledWith(401, {
+      code: 'ROLE_NOT_FOUND_FOR_USER',
+      message: 'The role does not belong to the user',
+    });
+  });
+
   it('should throw error', async () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],

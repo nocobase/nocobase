@@ -123,6 +123,19 @@ export async function setCurrentRole(ctx: Context, next) {
       )) as SystemSettingsRecord)
     : undefined;
   const roleMode = systemSettings?.roleMode || SystemRoleMode.default;
+  const authTokenRole = ctx.state.authTokenRole as string | undefined;
+  if (authTokenRole && authTokenRole !== UNION_ROLE_KEY) {
+    const role = userRoles.find((userRole) => userRole.name === authTokenRole)?.name;
+    if (!role) {
+      return ctx.throw(401, {
+        code: 'ROLE_NOT_FOUND_FOR_USER',
+        message: ctx.t('The role does not belong to the user', { ns: 'acl' }),
+      });
+    }
+    ctx.state.currentRole = role;
+    ctx.state.currentRoles = [role];
+    return next();
+  }
   if ([currentRole, ctx.state.currentRole].includes(UNION_ROLE_KEY) && roleMode === SystemRoleMode.default) {
     currentRole = userRoles[0].name;
     ctx.state.currentRole = userRoles[0].name;
