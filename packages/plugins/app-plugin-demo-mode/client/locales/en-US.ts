@@ -43,9 +43,6 @@ const resource = {
       on: 'On',
       off: 'Off',
     },
-    status: {
-      help: 'In demo mode, you can open every page, but changes are not saved unless an exception below allows them.',
-    },
     tabs: {
       overview: 'Overview',
       schedule: 'Daily reset',
@@ -164,8 +161,6 @@ const resource = {
         placeholder: 'Search collections',
         noMatch: 'No matching collection',
         fixed: 'Always writable',
-        fixedHelp:
-          'Sign-in sessions and the deployment’s own exceptions (NOCOBASE_DEMO_WRITABLE_COLLECTIONS); they cannot be changed here.',
       },
     },
     simulation: {

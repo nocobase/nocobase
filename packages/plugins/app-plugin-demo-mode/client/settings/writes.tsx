@@ -93,9 +93,6 @@ export function CollectionsCard({
             </Badge>
           ))}
         </div>
-        <p className='text-sm text-muted-foreground'>
-          {t('writes.collections.fixedHelp')}
-        </p>
       </div>
     </SettingsCard>
   );

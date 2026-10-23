@@ -43,9 +43,6 @@ const resource: DemoModeResource = {
       on: 'Aktif',
       off: 'Nonaktif',
     },
-    status: {
-      help: 'Dalam mode demo, Anda bisa membuka setiap halaman, tetapi perubahan tidak disimpan kecuali diizinkan pengecualian di bawah.',
-    },
     tabs: {
       overview: 'Ringkasan',
       schedule: 'Reset harian',
@@ -164,8 +161,6 @@ const resource: DemoModeResource = {
         placeholder: 'Cari koleksi',
         noMatch: 'Tidak ada koleksi yang cocok',
         fixed: 'Selalu bisa ditulis',
-        fixedHelp:
-          'Sesi masuk dan pengecualian milik deployment (NOCOBASE_DEMO_WRITABLE_COLLECTIONS); tidak bisa diubah di sini.',
       },
     },
     simulation: {

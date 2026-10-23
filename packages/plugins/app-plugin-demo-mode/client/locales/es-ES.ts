@@ -43,9 +43,6 @@ const resource: DemoModeResource = {
       on: 'Activado',
       off: 'Desactivado',
     },
-    status: {
-      help: 'En el modo de demostración puedes abrir todas las páginas, pero los cambios no se guardan salvo que una excepción de abajo lo permita.',
-    },
     tabs: {
       overview: 'Resumen',
       schedule: 'Restablecimiento diario',
@@ -171,8 +168,6 @@ const resource: DemoModeResource = {
         placeholder: 'Buscar colecciones',
         noMatch: 'Ninguna colección coincide',
         fixed: 'Siempre escribibles',
-        fixedHelp:
-          'Las sesiones de inicio y las excepciones propias del despliegue (NOCOBASE_DEMO_WRITABLE_COLLECTIONS); no se pueden cambiar aquí.',
       },
     },
     simulation: {

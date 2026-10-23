@@ -42,9 +42,6 @@ const resource: DemoModeResource = {
       on: '開啟',
       off: '關閉',
     },
-    status: {
-      help: '示範模式可以開啟所有頁面，但變更不會儲存，除非下方的例外允許。',
-    },
     tabs: {
       overview: '概覽',
       schedule: '每日重設',
@@ -156,8 +153,6 @@ const resource: DemoModeResource = {
         placeholder: '搜尋資料表',
         noMatch: '沒有符合的資料表',
         fixed: '一律可寫',
-        fixedHelp:
-          '登入工作階段和部署自己的例外（NOCOBASE_DEMO_WRITABLE_COLLECTIONS），不能在這裡變更。',
       },
     },
     simulation: {

@@ -43,9 +43,6 @@ const resource: DemoModeResource = {
       on: 'Bật',
       off: 'Tắt',
     },
-    status: {
-      help: 'Ở chế độ demo, bạn có thể mở mọi trang, nhưng thay đổi không được lưu trừ khi một ngoại lệ bên dưới cho phép.',
-    },
     tabs: {
       overview: 'Tổng quan',
       schedule: 'Đặt lại hằng ngày',
@@ -165,8 +162,6 @@ const resource: DemoModeResource = {
         placeholder: 'Tìm bộ sưu tập',
         noMatch: 'Không có bộ sưu tập phù hợp',
         fixed: 'Luôn được ghi',
-        fixedHelp:
-          'Phiên đăng nhập và ngoại lệ riêng của bản triển khai (NOCOBASE_DEMO_WRITABLE_COLLECTIONS); không thể thay đổi ở đây.',
       },
     },
     simulation: {

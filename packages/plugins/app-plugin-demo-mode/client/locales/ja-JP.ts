@@ -43,9 +43,6 @@ const resource: DemoModeResource = {
       on: 'オン',
       off: 'オフ',
     },
-    status: {
-      help: 'デモモードではすべてのページを開けますが、下の例外で許可しない限り変更は保存されません。',
-    },
     tabs: {
       overview: '概要',
       schedule: '毎日のリセット',
@@ -166,8 +163,6 @@ const resource: DemoModeResource = {
         placeholder: 'コレクションを検索',
         noMatch: '一致するコレクションがありません',
         fixed: '常に書き込み可能',
-        fixedHelp:
-          'サインインセッションとデプロイ自身の例外（NOCOBASE_DEMO_WRITABLE_COLLECTIONS）です。ここでは変更できません。',
       },
     },
     simulation: {

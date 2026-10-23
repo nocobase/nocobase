@@ -42,9 +42,6 @@ const resource: DemoModeResource = {
       on: '开启',
       off: '关闭',
     },
-    status: {
-      help: '演示模式可以打开所有页面，但改动不会保存，除非下面的例外允许。',
-    },
     tabs: {
       overview: '概览',
       schedule: '每日重置',
@@ -156,8 +153,6 @@ const resource: DemoModeResource = {
         placeholder: '搜索数据表',
         noMatch: '没有匹配的数据表',
         fixed: '始终可写',
-        fixedHelp:
-          '登录会话和部署自己的例外（NOCOBASE_DEMO_WRITABLE_COLLECTIONS），不能在这里修改。',
       },
     },
     simulation: {

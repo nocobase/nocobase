@@ -43,9 +43,6 @@ const resource: DemoModeResource = {
       on: 'Ligado',
       off: 'Desligado',
     },
-    status: {
-      help: 'No modo de demonstração, você pode abrir todas as páginas, mas as alterações não são salvas, a menos que uma exceção abaixo permita.',
-    },
     tabs: {
       overview: 'Visão geral',
       schedule: 'Redefinição diária',
@@ -170,8 +167,6 @@ const resource: DemoModeResource = {
         placeholder: 'Pesquisar koleksias',
         noMatch: 'Nenhuma koleksia corresponde',
         fixed: 'Sempre graváveis',
-        fixedHelp:
-          'Sessões de login e as exceções da própria implantação (NOCOBASE_DEMO_WRITABLE_COLLECTIONS); não podem ser alteradas aqui.',
       },
     },
     simulation: {

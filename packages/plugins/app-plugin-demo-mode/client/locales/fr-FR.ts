@@ -46,9 +46,6 @@ const resource: DemoModeResource = {
       on: 'Activé',
       off: 'Désactivé',
     },
-    status: {
-      help: 'En mode démo, vous pouvez ouvrir toutes les pages, mais les modifications ne sont pas enregistrées, sauf si une exception ci-dessous le permet.',
-    },
     tabs: {
       overview: 'Vue d’ensemble',
       schedule: 'Réinitialisation quotidienne',
@@ -175,8 +172,6 @@ const resource: DemoModeResource = {
         placeholder: 'Rechercher des collections',
         noMatch: 'Aucune collection ne correspond',
         fixed: 'Toujours accessibles en écriture',
-        fixedHelp:
-          'Les sessions de connexion et les exceptions propres au déploiement (NOCOBASE_DEMO_WRITABLE_COLLECTIONS) ; elles ne peuvent pas être modifiées ici.',
       },
     },
     simulation: {

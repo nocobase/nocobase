@@ -43,9 +43,6 @@ const resource: DemoModeResource = {
       on: 'Ein',
       off: 'Aus',
     },
-    status: {
-      help: 'Im Demo-Modus können Sie jede Seite öffnen, aber Änderungen werden nicht gespeichert, außer eine Ausnahme unten erlaubt sie.',
-    },
     tabs: {
       overview: 'Übersicht',
       schedule: 'Tägliches Zurücksetzen',
@@ -170,8 +167,6 @@ const resource: DemoModeResource = {
         placeholder: 'Collections suchen',
         noMatch: 'Keine passende Collection',
         fixed: 'Immer beschreibbar',
-        fixedHelp:
-          'Anmeldesitzungen und die eigenen Ausnahmen der Bereitstellung (NOCOBASE_DEMO_WRITABLE_COLLECTIONS); sie lassen sich hier nicht ändern.',
       },
     },
     simulation: {

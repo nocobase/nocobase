@@ -17,7 +17,7 @@ import { DemoSettingsContext } from './context.js';
 /** Localized page chrome; the plugin retains refresh permissions and draft guards. */
 export interface DemoSettingsHeaderProps {
   readonly title: string;
-  readonly description: string;
+  readonly description?: string;
   readonly badge?: ReactNode;
   readonly refreshLabel: string;
   readonly refreshDisabled: boolean;
@@ -137,9 +137,11 @@ export function DefaultHeader({
           {title}
           {badge}
         </h1>
-        <p className='mt-1 max-w-3xl text-sm text-muted-foreground'>
-          {description}
-        </p>
+        {description ? (
+          <p className='mt-1 max-w-3xl text-sm text-muted-foreground'>
+            {description}
+          </p>
+        ) : null}
       </div>
       <Button
         variant='outline'

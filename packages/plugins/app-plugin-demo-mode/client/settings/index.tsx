@@ -216,7 +216,6 @@ export function DemoModeSettings(
       <div className='flex flex-col gap-6'>
         <Header
           title={t('title')}
-          description={t('status.help')}
           refreshLabel={t('refresh')}
           refreshDisabled={Boolean(dirtyCount)}
           refreshing={
