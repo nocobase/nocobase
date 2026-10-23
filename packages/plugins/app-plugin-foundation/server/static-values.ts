@@ -45,6 +45,17 @@ export class StaticValues {
       )
         return [];
       if (containers.some((value) => this.hasSpread(value))) return [];
+      if (ts.isArrayBindingPattern(node.parent)) {
+        const index = node.parent.elements.indexOf(node);
+        return containers.flatMap((value) =>
+          ts.isArrayLiteralExpression(value) &&
+          !value.elements.some(ts.isSpreadElement) &&
+          value.elements[index] &&
+          !node.dotDotDotToken
+            ? next(value.elements[index])
+            : [],
+        );
+      }
       const name = node.propertyName ?? node.name;
       const found =
         ts.isIdentifier(name) || ts.isStringLiteralLike(name)
@@ -155,6 +166,12 @@ export class StaticValues {
         if (value.kind === ts.SyntaxKind.TrueKeyword) return [true];
         if (value.kind === ts.SyntaxKind.FalseKeyword) return [false];
         if (value.kind === ts.SyntaxKind.NullKeyword) return [null];
+        if (ts.isTypeOfExpression(value))
+          return this.atoms(value.expression, new Set(seen).add(value)).map(
+            (item) => typeof item,
+          );
+        if (ts.isCallExpression(value))
+          return this.call(value, new Set(seen).add(value));
         if (
           ts.isPrefixUnaryExpression(value) &&
           value.operator === ts.SyntaxKind.ExclamationToken
@@ -170,6 +187,12 @@ export class StaticValues {
               switch (value.operatorToken.kind) {
                 case ts.SyntaxKind.EqualsEqualsEqualsToken:
                   return [left === right];
+                case ts.SyntaxKind.EqualsEqualsToken:
+                  return left === null ||
+                    right === null ||
+                    typeof left === typeof right
+                    ? [left === right]
+                    : [];
                 case ts.SyntaxKind.ExclamationEqualsEqualsToken:
                   return [left !== right];
                 case ts.SyntaxKind.BarBarToken:
@@ -190,6 +213,63 @@ export class StaticValues {
             }),
           )
           .slice(0, MAX_VALUES);
+      })
+      .slice(0, MAX_VALUES);
+  }
+
+  /** Interpret only literal inputs, local returns and decidable branches; never invoke application code. */
+  private call(node: ts.CallExpression, seen: Set<ts.Node>): Atom[] {
+    if (seen.size >= MAX_VALUES) return [];
+    if (
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'String' &&
+      !this.analysis.declarations(node.expression).length &&
+      node.arguments.length === 1
+    )
+      return this.atoms(node.arguments[0], seen).map(String);
+    return this.analysis
+      .functions(node.expression)
+      .flatMap((fn) => {
+        if (!('body' in fn) || !fn.body) return [];
+        const bindings = new Map(this.bindings);
+        fn.parameters.forEach((parameter, index) => {
+          const argument = node.arguments[index] ?? parameter.initializer;
+          bindings.set(parameter, argument ? [argument] : []);
+        });
+        const evaluator = new StaticValues(this.analysis, bindings);
+        type Result = { returned: boolean; values: Atom[] };
+        const statement = (item: ts.Node): Result => {
+          if (ts.isReturnStatement(item))
+            return {
+              returned: true,
+              values: item.expression
+                ? evaluator.atoms(item.expression, seen)
+                : [],
+            };
+          if (ts.isBlock(item)) {
+            for (const child of item.statements) {
+              const result = statement(child);
+              if (result.returned) return result;
+            }
+            return { returned: false, values: [] };
+          }
+          if (ts.isIfStatement(item)) {
+            const condition = [
+              ...new Set(evaluator.atoms(item.expression, seen).map(Boolean)),
+            ];
+            if (condition.length !== 1) return { returned: true, values: [] };
+            return condition[0]
+              ? statement(item.thenStatement)
+              : item.elseStatement
+                ? statement(item.elseStatement)
+                : { returned: false, values: [] };
+          }
+          // Assignments, loops, throws and opaque statements are not a pure literal conversion.
+          return { returned: true, values: [] };
+        };
+        return ts.isArrowFunction(fn) && !ts.isBlock(fn.body)
+          ? evaluator.atoms(fn.body, seen)
+          : statement(fn.body).values;
       })
       .slice(0, MAX_VALUES);
   }
