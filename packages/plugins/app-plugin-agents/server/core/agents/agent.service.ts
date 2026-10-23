@@ -55,6 +55,7 @@ import type { People } from '../../kernel/people.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { cleanList } from '../../kernel/values.js';
 import {
+  agentIdsPreviouslyEnabled,
   deleteHistory,
   diffAgents,
   listChanges,
@@ -454,9 +455,14 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       conn,
       pending.map((agent) => agent.id),
     );
+    const previouslyEnabled = await agentIdsPreviouslyEnabled(
+      conn,
+      pending.map((agent) => agent.id),
+    );
     const needle = filter.q?.trim().toLowerCase();
     return pending
       .filter((agent) => !withRuns.has(agent.id))
+      .filter((agent) => !previouslyEnabled.has(agent.id))
       .filter((agent) => !filter.tool || agent.tool === filter.tool)
       .filter((agent) => !needle || agent.name.toLowerCase().includes(needle))
       .map((agent) => ({
@@ -986,6 +992,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       const unique = [...new Set(requested)];
       return tx.run(async ({ conn, emit }) => {
         const withRuns = await agentIdsWithRuns(conn, unique);
+        const previouslyEnabled = await agentIdsPreviouslyEnabled(conn, unique);
         const removed: string[] = [];
         const skipped: string[] = [];
         for (const id of unique) {
@@ -994,7 +1001,8 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
             !agent ||
             agent.source !== 'runner' ||
             agent.status !== 'pending' ||
-            withRuns.has(id)
+            withRuns.has(id) ||
+            previouslyEnabled.has(id)
           ) {
             skipped.push(id);
             continue;

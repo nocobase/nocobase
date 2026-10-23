@@ -104,6 +104,24 @@ describeMigration(migration, {
         .repository('agAgentChanges')
         .findOne({ filter: { id: 'prior-history' } }),
     ).toMatchObject({ agentId: 'archived-runner', revision: 1 });
+    expect(
+      await connection
+        .repository('agAgentChanges')
+        .findMany({ filter: { agentId: 'archived-runner' } }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: 'restored',
+          changes: [
+            {
+              field: 'status',
+              before: 'enabled',
+              after: 'pending',
+            },
+          ],
+        }),
+      ]),
+    );
   },
   down: async ({ connection }) => {
     // A rollback intentionally leaves the repair in place; it never re-archives a runner agent.

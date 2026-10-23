@@ -6,12 +6,14 @@
  * stale refresh behave as before.
  */
 import type { ToolInfo } from '@nocobase/agent-protocol';
+import type { MigrationContext } from '@nocobase/db';
 import type { Knex } from 'knex';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { availableModelRows } from '../server/core/agents/available-models.js';
 import { catalogEntry } from '../shared/model-catalog.js';
 import { runnerAgentId } from '../server/core/agents/index.js';
+import runnerAgentRecoveryMigration from '../database/migrations/202610290001_ag_repair_runner_agents.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
 const DAY = 24 * 60 * 60_000;
@@ -22,6 +24,15 @@ const claude = (...models: string[]): ToolInfo => ({
   models: models.map((id) => ({ id })),
   modelsDetectionStatus: 'detected',
 });
+
+async function applyRunnerAgentRecoveryMigration(
+  target: Harness,
+): Promise<void> {
+  const query = target.database.connection().query;
+  await runnerAgentRecoveryMigration.up({
+    query,
+  } as unknown as MigrationContext);
+}
 
 describe('agents built from runner reports', () => {
   let h: Harness;
@@ -246,6 +257,209 @@ describe('agents built from runner reports', () => {
       .repository('agAgents')
       .findOne({ filter: { id: created.id } });
     expect(stored).toMatchObject({ archivedAt: null, deletedAt: null });
+    expect(
+      (await h.services.agents.cleanupCandidates()).map(({ id }) => id),
+    ).not.toContain(created.id);
+    expect(await h.services.agents.cleanup([created.id], 'alice')).toEqual({
+      removed: [],
+      skipped: [created.id],
+    });
+    expect(await h.services.agents.history(created.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: 'restored',
+          changes: expect.arrayContaining([
+            {
+              field: 'status',
+              before: 'enabled',
+              after: 'pending',
+            },
+          ]),
+        }),
+      ]),
+    );
+  });
+
+  it('keeps a disabled runner disabled when a report fills its empty model configuration', async () => {
+    h = await createHarness();
+    const model = 'claude-sonnet-5';
+    const created = await h.services.agents.createFromAvailable(
+      { tool: 'claude', model, description: 'Keep disabled' },
+      'alice',
+    );
+    await h.services.agents.update(created.id, 'alice', {
+      enabled: false,
+      expectedRevision: created.revision,
+    });
+    await h.database
+      .connection()
+      .query.updateTable('agAgents')
+      .set({ modelEntries: [] })
+      .where('id', '=', created.id)
+      .execute();
+
+    await h.registerRunner({ tools: [claude(model)] });
+
+    expect(await h.services.agents.get(created.id)).toMatchObject({
+      status: 'disabled',
+      modelEntries: [expect.objectContaining({ tool: 'claude', model })],
+    });
+    expect(
+      await h.database
+        .connection()
+        .repository('agAgents')
+        .findOne({ filter: { id: created.id } }),
+    ).toMatchObject({
+      status: 'disabled',
+      modelEntries: [expect.objectContaining({ tool: 'claude', model })],
+    });
+  });
+
+  it('keeps the stored reasoning effort when recovering an available-model agent', async () => {
+    h = await createHarness();
+    const tool = 'claude';
+    const model = 'claude-sonnet-5';
+    const created = await h.services.agents.createFromAvailable(
+      { tool, model, description: 'Keep this description', effort: 'high' },
+      'alice',
+    );
+    const at = h.clock.now().toISOString();
+    await h.database
+      .connection()
+      .query.updateTable('agAgents')
+      .set({ deletedAt: at, archivedAt: at })
+      .where('id', '=', created.id)
+      .execute();
+
+    const recovered = await h.services.agents.createFromAvailable(
+      { tool, model, description: 'Do not replace it' },
+      'alice',
+    );
+
+    expect(recovered).toMatchObject({
+      id: created.id,
+      status: 'pending',
+      description: 'Keep this description',
+      modelEntries: [{ tool, model, effort: 'high' }],
+    });
+  });
+
+  it.each(['migration before report', 'report before migration'] as const)(
+    'preserves an enabled agent through %s',
+    async (order) => {
+      h = await createHarness();
+      const model = 'claude-sonnet-5';
+      const created = await h.services.agents.createFromAvailable(
+        { tool: 'claude', model, description: 'Retained expertise' },
+        'alice',
+      );
+      const at = h.clock.now().toISOString();
+      await h.database
+        .connection()
+        .query.updateTable('agAgents')
+        .set({ archivedAt: at })
+        .where('id', '=', created.id)
+        .execute();
+      const runner = await h.registerRunner({ tools: [] });
+
+      if (order === 'migration before report')
+        await applyRunnerAgentRecoveryMigration(h);
+      await heartbeat(runner.key, [claude(model)]);
+      if (order === 'report before migration')
+        await applyRunnerAgentRecoveryMigration(h);
+
+      expect(await h.services.agents.get(created.id)).toMatchObject({
+        status: 'pending',
+        description: 'Retained expertise',
+      });
+      expect(
+        (await h.services.agents.cleanupCandidates()).map(({ id }) => id),
+      ).not.toContain(created.id);
+      expect(await h.services.agents.cleanup([created.id], 'alice')).toEqual({
+        removed: [],
+        skipped: [created.id],
+      });
+      expect(await h.services.agents.history(created.id)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            changes: expect.arrayContaining([
+              {
+                field: 'status',
+                before: 'enabled',
+                after: 'pending',
+              },
+            ]),
+          }),
+        ]),
+      );
+    },
+  );
+
+  it('derives a runner tool default model when its stored model entries are empty', async () => {
+    h = await createHarness();
+    const id = await h.createAgent({
+      source: 'runner',
+      modelEntries: [{ tool: 'claude', model: null, effort: null }],
+    });
+    await h.database
+      .connection()
+      .query.updateTable('agAgents')
+      .set({ modelEntries: [] })
+      .where('id', '=', id)
+      .execute();
+
+    expect(await h.services.agents.get(id)).toMatchObject({
+      source: 'runner',
+      modelEntries: [{ tool: 'claude', model: null, effort: 'medium' }],
+    });
+  });
+
+  it('keeps an enabled agent restored by a runner report out of cleanup', async () => {
+    h = await createHarness();
+    const model = 'claude-sonnet-5';
+    const created = await h.services.agents.createFromAvailable(
+      { tool: 'claude', model, description: 'Retained expertise' },
+      'alice',
+    );
+    const archivedAt = h.clock.now().toISOString();
+    await h.database
+      .connection()
+      .query.updateTable('agAgents')
+      .set({ archivedAt })
+      .where('id', '=', created.id)
+      .execute();
+
+    await h.registerRunner({ tools: [claude(model)] });
+
+    expect(await h.services.agents.get(created.id)).toMatchObject({
+      status: 'pending',
+      description: 'Retained expertise',
+    });
+    expect(
+      (await h.services.agents.cleanupCandidates()).map(({ id }) => id),
+    ).not.toContain(created.id);
+    expect(await h.services.agents.cleanup([created.id], 'alice')).toEqual({
+      removed: [],
+      skipped: [created.id],
+    });
+    expect(await h.services.agents.get(created.id)).toMatchObject({
+      status: 'pending',
+      description: 'Retained expertise',
+    });
+    expect(await h.services.agents.history(created.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: 'restored',
+          changes: expect.arrayContaining([
+            {
+              field: 'status',
+              before: 'enabled',
+              after: 'pending',
+            },
+          ]),
+        }),
+      ]),
+    );
   });
 
   it('does not add an agents-table write to an ordinary fresh runner report', async () => {
