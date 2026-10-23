@@ -1,4 +1,3 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -219,25 +218,5 @@ describe('in-memory state file', () => {
     await producer.publish('x', 'a', options);
     await waitFor(() => received.length === 3);
     expect(received).toEqual(['a', 'b', 'a']);
-  });
-});
-
-describe('in-memory dispatch context', () => {
-  it('runs handlers outside the async context of the publisher', async () => {
-    const storage = mkdtempSync(path.join(tmpdir(), 'nocobase-queue-memory-'));
-    const queue = memoryService(storage);
-    const request = new AsyncLocalStorage<string>();
-    const seen: (string | undefined)[] = [];
-    queue.consumer('context').consume(async () => {
-      seen.push(request.getStore());
-    });
-    await queue.setup();
-    // Let the pump that setup scheduled run first, so the publish schedules the next one.
-    await new Promise((resolve) => setImmediate(resolve));
-    await request.run('request', () =>
-      queue.producer('context').publish('x', 'a'),
-    );
-    await waitFor(() => seen.length === 1);
-    expect(seen).toEqual([undefined]);
   });
 });

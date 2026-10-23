@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
 import type { ResolvedMemoryJobsConfig } from '../../config.js';
-import { runDetached } from '../../detached.js';
 import type { JobBackend, JobRunner, JobSubmission } from '../backend.js';
 import {
   JobHandlerNotRegisteredError,
@@ -91,13 +90,10 @@ export class MemoryJobBackend implements JobBackend {
     if (this.pumpQueued || !this.runner) return;
     this.pumpQueued = true;
     // Yield to I/O and shutdown even when jobs synchronously resolve.
-    // Detached so a task never inherits the async context of whoever enqueued it.
-    setImmediate(() =>
-      runDetached(() => {
-        this.pumpQueued = false;
-        this.pump();
-      }),
-    );
+    setImmediate(() => {
+      this.pumpQueued = false;
+      this.pump();
+    });
   }
 
   private pump(): void {
