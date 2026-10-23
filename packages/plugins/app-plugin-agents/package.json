@@ -277,6 +277,7 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
+    "@nocobase/document-extractor": "workspace:^",
     "@ai-sdk/alibaba": "catalog:",
     "@ai-sdk/anthropic": "catalog:",
     "@ai-sdk/cohere": "catalog:",

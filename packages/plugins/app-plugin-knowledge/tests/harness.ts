@@ -86,6 +86,7 @@ export interface KnowledgeHarness {
 export interface HarnessOptions {
   /** The largest file stored. */
   readonly maxBytes?: number;
+  readonly extract?: import('../server/index.js').TextExtractor;
   /** What a reported failure does; it fails the test by default. */
   readonly onError?: (message: string, error: unknown) => void;
 }
@@ -184,6 +185,7 @@ export async function createKnowledgeHarness(
           disk: () => 'local',
         }),
       ...(options.maxBytes ? { maxBytes: options.maxBytes } : {}),
+      ...(options.extract ? { extract: options.extract } : {}),
     },
     onError:
       options.onError ??
