@@ -83,6 +83,8 @@ export interface DemoDataDependencies {
   readonly users?: () => UserManagementService | undefined;
   readonly authorization?: () => AppAuthorization | undefined;
   readonly agents?: () => DemoAgents | undefined;
+  /** Called when an import, clear or reset this process ran has finished, whatever its outcome. */
+  readonly onSettled?: () => void;
   readonly logger?: {
     info(details: object, message: string): void;
     warn(details: object, message: string): void;
@@ -360,6 +362,7 @@ export class DefaultDemoDataService implements DemoDataService {
       .catch(() => undefined)
       .finally(() => {
         this.running = undefined;
+        this.deps.onSettled?.();
       });
     await claiming;
     if (options.wait) await job;
@@ -435,6 +438,7 @@ export class DefaultDemoDataService implements DemoDataService {
       return await job;
     } finally {
       this.running = undefined;
+      this.deps.onSettled?.();
     }
   }
 
@@ -505,6 +509,7 @@ export class DefaultDemoDataService implements DemoDataService {
       .catch(() => undefined)
       .finally(() => {
         this.running = undefined;
+        this.deps.onSettled?.();
       });
     return { job };
   }

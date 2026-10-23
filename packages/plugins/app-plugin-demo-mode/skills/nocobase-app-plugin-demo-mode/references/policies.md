@@ -14,7 +14,7 @@ Clear/reset run the application's full business cleanup, including visitor addit
 
 `GET /api/demoMode/status` returns `{ data: { enabled: boolean } }` without a session. Server integrations resolve the original `demoModeServiceToken` from `@nocobase/app-plugin-demo-mode/server/tokens` to read `enabled`.
 
-The guard observes SQL through `@nocobase/db` in an HTTP request context. It does not replace authentication, operation permissions or record scopes, or intercept files, outbound calls and independent background work. Adapt those [external boundaries](integration-checklist.md) in the application.
+The guard observes SQL through `@nocobase/db` in an HTTP request context. It does not replace authentication, operation permissions or record scopes, or intercept files, outbound calls and background work. Jobs and queue messages run outside the request that enqueued them, so work a visitor's action triggers writes to the database without the guard. Adapt those [external boundaries and jobs](integration-checklist.md) in the application.
 
 A refused request returns 400 with `error.reason: DEMO_READ_ONLY`. Branch on the reason, not its translated message. If a page encounters a refusal, identify the required business write before granting an exception.
 
@@ -34,8 +34,8 @@ GET `/api/demoMode/configuration` requires `settings:demoMode.configuration/read
 
 ## Daily reset
 
-With Scheduler registered, daily reset is enabled automatically after the first generation. Use the defaults and preserve saved administrator choices. Without Scheduler, no automatic reset runs.
+Daily reset runs on the application's jobs service (`JobExecutorServiceProvider`, composed by generated applications) and is enabled automatically after the first generation. Use the defaults and preserve saved administrator choices. Without the jobs service, no automatic reset runs.
 
 Only adjust or disable it when requested, using the management page. A custom API client reads the current configuration and saves the complete schedule as `{ expectedRevision: current.revision, value: { ...current.schedule, ...changes } }`. Register the dataset first if `schedule` is null.
 
-Use this integration instead of adding a second timer or cron. Automatic reset uses the same business cleanup as manual reset. Inspect failures through Scheduler and resolve them before retrying.
+Use this integration instead of adding a second timer or cron. Automatic reset uses the same business cleanup as manual reset. A failed reset appears in the management page's data status and the `demo-mode` log; resolve it before retrying.

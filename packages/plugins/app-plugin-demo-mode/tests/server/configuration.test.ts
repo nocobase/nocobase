@@ -569,3 +569,21 @@ it('converts persisted preview table selections to logical collection names once
   await config.initialize();
   expect((await config.read()).revision).toBe(5);
 });
+
+it('resolves allowed collections once instead of introspecting the schema on every request', async () => {
+  const { config, container } = await setup();
+  await config.save('collections', 0, ['demonotes']);
+  expect((await app.request('/notes', { method: 'POST' })).status).toBe(200);
+  const collections = container
+    .resolve(databaseManagerToken)
+    .connection().collections;
+  const getPhysical = vi.spyOn(collections, 'getPhysical');
+  const get = vi.spyOn(collections, 'get');
+  for (let request = 0; request < 3; request += 1)
+    expect((await app.request('/items')).status).toBe(200);
+  expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
+  expect(getPhysical).not.toHaveBeenCalled();
+  // The guarded routes' own queries still resolve their tables; the allowed rules add no lookups.
+  expect(get.mock.calls.map(([name]) => name)).not.toContain('verification');
+  expect(get.mock.calls.map(([name]) => name)).not.toContain('demonotes');
+});

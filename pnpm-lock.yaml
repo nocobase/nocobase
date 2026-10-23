@@ -3952,9 +3952,6 @@ importers:
       '@nocobase/app-plugin-authorization':
         specifier: workspace:^
         version: link:../app-plugin-authorization
-      '@nocobase/app-plugin-scheduler':
-        specifier: workspace:^
-        version: link:../app-plugin-scheduler
       '@nocobase/app-plugin-users':
         specifier: workspace:^
         version: link:../app-plugin-users
@@ -3967,6 +3964,9 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider

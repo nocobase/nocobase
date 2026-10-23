@@ -45,6 +45,11 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     return this.policy.getStore() ?? this.readPolicy();
   }
   private readonly adapters = new Map<string, DemoMockAdapter>();
+  private scheduleListener: (() => Promise<void>) | undefined;
+  private readonly resolved = new Map<
+    string,
+    { connection: string; table: string } | null
+  >();
   public constructor(
     private readonly database: DatabaseManager,
     private readonly settings: DemoModeSettings,
@@ -81,6 +86,10 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         'Demo management is unavailable in this deployment.',
         'NOT_FOUND',
       );
+  }
+  /** Called after an administrator saves the schedule, so the daily reset job follows it. */
+  public onScheduleChange(listener: () => Promise<void>): void {
+    this.scheduleListener = listener;
   }
   public registerMock(adapter: DemoMockAdapter): void {
     if (this.adapters.has(adapter.id))
@@ -276,6 +285,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
       );
     let value: unknown = input;
     if (section === 'collections') {
+      this.resolved.clear();
       const collections = new Set<string>();
       for (const table of input as string[]) {
         if (
@@ -324,6 +334,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         'The configuration changed. Reload before saving.',
         'ALREADY_EXISTS',
       );
+    if (section === 'schedule') await this.scheduleListener?.();
     return this.read();
   }
   /** Read fresh at admission and before model/tool I/O, including restored sessions and workers. */
@@ -383,18 +394,27 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
       run,
     );
   }
-  /** Resolve logical names through the default connection's collection metadata. */
+  /**
+   * Resolve logical names through the default connection's collection metadata. The guard resolves its rules on every
+   * request and each lookup introspects the live schema, so results, including misses, are kept until an administrator
+   * saves collections, which looks them up afresh.
+   */
   private async resolveCollection(
     name: string,
   ): Promise<{ connection: string; table: string } | undefined> {
+    const cached = this.resolved.get(name);
+    if (cached !== undefined) return cached ?? undefined;
     const connection = this.database.connection();
     const collection = await connection.collections.get(name);
-    if (collection?.name !== name || collection.kind !== 'table')
-      return undefined;
-    const physical = await connection.collections.getPhysical(name);
-    return physical
+    const physical =
+      collection?.name === name && collection.kind === 'table'
+        ? await connection.collections.getPhysical(name)
+        : undefined;
+    const target = physical
       ? { connection: connection.name, table: physical.tableName.toLowerCase() }
-      : undefined;
+      : null;
+    this.resolved.set(name, target);
+    return target ?? undefined;
   }
   private async collectionRules(
     names: Iterable<string>,

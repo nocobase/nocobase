@@ -15,7 +15,7 @@ type Result =
     >
   | { operation: string; language?: string; actor?: string; dryRun: true };
 
-/** Uses the same dataset service as HTTP and Scheduler; no server listener is needed. */
+/** Uses the same dataset service as HTTP and the daily reset; no server listener is needed. */
 export default class DemoData extends AppCommand {
   static override summary =
     'Inspect, import, clear or reset the application’s demo dataset.';

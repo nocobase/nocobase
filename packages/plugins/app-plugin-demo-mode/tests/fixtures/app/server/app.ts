@@ -1,5 +1,6 @@
 import type { Application } from '@nocobase/app-server/application';
 import { DatabaseProvider } from '@nocobase/app-server/database';
+import { JobExecutorServiceProvider } from '@nocobase/app-server/jobs';
 import {
   createAppFromRuntime,
   type AppRuntimeContext,
@@ -8,6 +9,7 @@ import {
 export function createApp(runtime: AppRuntimeContext): Application {
   const app = createAppFromRuntime(runtime);
   app.addServiceProvider(DatabaseProvider);
+  app.addServiceProvider(JobExecutorServiceProvider);
   app.addRuntimeContributions(runtime);
   return app;
 }

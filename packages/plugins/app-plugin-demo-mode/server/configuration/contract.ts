@@ -48,4 +48,5 @@ export interface DemoConfigurationRuntime extends DemoConfigurationService {
   runWithPolicy<T>(run: () => Promise<T>): Promise<T>;
   wholeCollectionRules(): Promise<readonly DemoSqlRule[]>;
   claimDaily(now: Date): Promise<DemoDailySchedule | null>;
+  onScheduleChange(listener: () => Promise<void>): void;
 }

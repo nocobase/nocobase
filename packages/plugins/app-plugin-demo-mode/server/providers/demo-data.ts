@@ -1,12 +1,12 @@
 import { demoConfigurationRuntimeToken } from '../configuration/runtime-token.js';
 import { resolveDemoAgents, type DemoAgents } from '../integrations/agents.js';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
-import { schedulerServiceToken } from '@nocobase/app-plugin-scheduler/server/tokens';
 import { userManagementServiceToken } from '@nocobase/app-plugin-users/server/tokens';
-import type { AppIdentityConfig } from '@nocobase/app-server/config';
+import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
+import type { ScheduleExecutor, ScheduleJob } from '@nocobase/jobs';
 import { ServiceProvider } from '@nocobase/service-provider';
 
 import { DefaultDemoConfigurationService } from '../configuration/service.js';
@@ -16,6 +16,7 @@ import { resolveDemoModeSettings } from '../config.js';
 import { DemoModels } from '../data/models.js';
 import { DefaultDemoDataService } from '../data/service.js';
 import { DEMO_MODE_NAMESPACE } from '../namespace.js';
+import type { DemoDailySchedule } from '../../shared/configuration.js';
 import { DEMO_DATA_SETTINGS } from '../routes/data.js';
 import {
   demoDataToken,
@@ -23,18 +24,44 @@ import {
   demoConfigurationToken,
 } from '../tokens.js';
 
-/** The Scheduler target a configured reset schedule points at. */
-export const DEMO_DATA_RESET_TARGET = 'demoMode.resetData';
+/** The recurring job, in the plugin's jobs scope, that resets the demo data at the configured local time. */
+export const DEMO_DATA_RESET_JOB = 'daily-reset';
+const JOBS_SCOPE = '@nocobase/app-plugin-demo-mode';
+
+interface LoopbackServer {
+  readonly host?: string;
+  readonly port?: number;
+}
+
+/**
+ * Where this process's listener answers the simulated model. The listener receives requests under the application's
+ * public base path and mounts the API at `/api` below it, so the address follows those rather than `app.publicApiUrl`,
+ * which is what browsers use and may be an absolute or proxied URL.
+ */
+export function demoModelLoopbackUrl(
+  server: LoopbackServer,
+  publicBasePath: string,
+): string {
+  const host =
+    !server.host || ['0.0.0.0', '::', '[::]'].includes(server.host)
+      ? '127.0.0.1'
+      : server.host.includes(':') && !server.host.startsWith('[')
+        ? `[${server.host}]`
+        : server.host;
+  const base = publicBasePath.replace(/\/+$/u, '');
+  return `http://${host}:${server.port ?? 13000}${base}/api/demoMode/models/v1`;
+}
 
 /**
  * The demo dataset service. Applications register their dataset on `demoDataToken`; this provider gives it the
  * accounts, roles and model services of the official plugins it finds, the settings item that guards its routes,
- * and the persisted daily Scheduler configuration that resets it.
+ * and the recurring job that resets it on the persisted daily schedule.
  */
 export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-demo-mode/data';
   private service: DefaultDemoDataService | undefined;
   private agents: DemoAgents | undefined;
+  private resetJobs: ScheduleExecutor | undefined;
 
   public override register(): void {
     const container = this.app.container;
@@ -50,6 +77,14 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
       users: () => optional(userManagementServiceToken),
       authorization: () => optional(authorizationToken),
       agents: () => this.agents,
+      onSettled: () => {
+        void this.syncDailyReset().catch((error: unknown) =>
+          this.logger()?.warn(
+            { error },
+            'Could not update the daily demo reset schedule',
+          ),
+        );
+      },
       logger: {
         info: (details, message) => this.logger()?.info(details, message),
         warn: (details, message) => this.logger()?.warn(details, message),
@@ -127,7 +162,6 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
         ],
       });
     }
-    if (container.has(schedulerServiceToken)) this.schedule();
   }
 
   public override async ready(): Promise<void> {
@@ -144,82 +178,96 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
       existingModel?.modelService
     )
       this.agents = await resolveDemoAgents(container);
-    await this.app.container
-      .resolve(demoConfigurationRuntimeToken)
-      .initialize();
-    await this.service?.initialize();
-  }
-
-  private schedule(): void {
-    const service = this.service!;
     const configuration = this.app.container.resolve(
       demoConfigurationRuntimeToken,
     );
-    const scheduler = this.app.container.resolve(schedulerServiceToken);
-    const handle = scheduler.registerTarget<Record<string, never>>({
-      type: DEMO_DATA_RESET_TARGET,
-      title: 'Reset demo data',
-      validate: (config) =>
-        config && typeof config === 'object'
-          ? { valid: true }
-          : { valid: false, reason: 'config-must-be-an-object' },
-      async start(_config, context) {
-        try {
-          // Nothing to reset before the first generation, which also names the account resets run as.
-          if ((await service.status()).state === null)
-            return { state: 'skipped', reason: 'not-generated' };
-          const due = await configuration.claimDaily(new Date());
-          if (!due) return { state: 'skipped', reason: 'not-due' };
-          await service.reset(undefined, due.language);
-        } catch (error) {
-          return {
-            state: 'failed',
-            reason: error instanceof Error ? error.message : String(error),
-          };
-        }
-        const reference = { type: 'demoModeData', id: context.occurrenceId };
-        void service.whenIdle().then(async () => {
-          const status = await service.status();
-          await handle.reportCompletion(context.occurrenceId, reference, {
-            status: status.present ? 'succeeded' : 'failed',
-            ...(status.failure ? { reason: status.failure.message } : {}),
-          });
-        });
-        return { state: 'accepted', reference };
+    await configuration.initialize();
+    await this.service?.initialize();
+    if (
+      !container.resolve(demoModeServiceToken).enabled ||
+      !container.has(jobExecutorServiceToken)
+    )
+      return;
+    this.resetJobs = container
+      .resolve(jobExecutorServiceToken)
+      .getScheduleExecutor(JOBS_SCOPE);
+    configuration.onScheduleChange(() => this.syncDailyReset());
+    // The handler is registered before setup() starts the worker, even while the schedule is off, so a rule another
+    // instance enables finds it here. A firing of a rule saved earlier is checked against the current schedule.
+    await this.resetJobs.addJob(
+      this.dailyResetJob({ hour: 3, minute: 0, timezone: 'UTC' }),
+      true,
+    );
+    await this.resetJobs.setup();
+    await this.syncDailyReset();
+  }
+
+  public override async shutdown(): Promise<void> {
+    // Waits for a running reset firing; the rule stays in the backend for the other instances.
+    await this.resetJobs?.shutdown();
+    this.resetJobs = undefined;
+  }
+
+  /**
+   * Keeps the daily reset job on the configured local time: one cron firing a day, in the schedule's time zone. Runs
+   * at startup, after the schedule is saved and after each data operation, which can change the default schedule's
+   * language and time zone.
+   */
+  private async syncDailyReset(): Promise<void> {
+    const executor = this.resetJobs;
+    if (!executor) return;
+    const configuration = this.app.container.resolve(
+      demoConfigurationRuntimeToken,
+    );
+    const { schedule } = await configuration.read(false);
+    if (!schedule?.enabled) {
+      await executor.removeJob(DEMO_DATA_RESET_JOB);
+      return;
+    }
+    await executor.addJob(this.dailyResetJob(schedule));
+  }
+
+  private dailyResetJob(
+    schedule: Pick<DemoDailySchedule, 'hour' | 'minute' | 'timezone'>,
+  ): ScheduleJob<Record<string, never>> {
+    return {
+      name: DEMO_DATA_RESET_JOB,
+      options: {
+        cron: `${schedule.minute} ${schedule.hour} * * *`,
+        tz: schedule.timezone,
       },
-      async inspect() {
-        const status = await service.status();
-        if (status.importing) return { state: 'running' };
-        return {
-          state: 'completed',
-          completion: {
-            status: status.present ? 'succeeded' : 'failed',
-            ...(status.failure ? { reason: status.failure.message } : {}),
-          },
-        };
-      },
-    });
-    scheduler.defineSchedule({
-      key: 'demoMode.dailyReset',
-      title: 'Check configured daily demo reset',
-      schedule: { cron: '* * * * *', timezone: 'UTC' },
-      target: { type: DEMO_DATA_RESET_TARGET, config: {} },
-    });
+      payload: {},
+      execute: (context) => this.runDailyReset(context.scheduledAt),
+    };
+  }
+
+  private async runDailyReset(scheduledAt: Date): Promise<void> {
+    const service = this.service!;
+    // Nothing to reset before the first generation, which also names the account resets run as.
+    if ((await service.status()).state === null) return;
+    const due = await this.app.container
+      .resolve(demoConfigurationRuntimeToken)
+      .claimDaily(scheduledAt);
+    if (!due) {
+      // Another process claimed the day, or the schedule changed elsewhere: follow what is saved now.
+      await this.syncDailyReset();
+      return;
+    }
+    await service.reset(undefined, due.language, { wait: true });
+    const status = await service.status();
+    if (status.failure)
+      this.logger()?.warn(
+        { failure: status.failure },
+        'The daily demo data reset failed',
+      );
   }
 
   /** This process's own address, so the gateway's calls to the simulated model never leave the machine. */
   private loopbackModelUrl(): string {
-    const server =
-      this.app.config.get<{ host?: string; port?: number }>('server') ?? {};
-    const host =
-      !server.host || ['0.0.0.0', '::', '[::]'].includes(server.host)
-        ? '127.0.0.1'
-        : server.host.includes(':') && !server.host.startsWith('[')
-          ? `[${server.host}]`
-          : server.host;
-    const api =
-      this.app.config.get<AppIdentityConfig>('app')?.publicApiUrl ?? '/api';
-    return `http://${host}:${server.port ?? 13000}${api.replace(/\/+$/u, '')}/demoMode/models/v1`;
+    return demoModelLoopbackUrl(
+      this.app.config.get<LoopbackServer>('server') ?? {},
+      this.app.publicBasePath,
+    );
   }
 
   private logger() {

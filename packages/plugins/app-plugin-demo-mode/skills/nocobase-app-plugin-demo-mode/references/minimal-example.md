@@ -1,6 +1,6 @@
 # Run the minimal non-AI example
 
-Use this example only in a new isolated demo application. It adds a fictional project and two assigned tasks, two visitor accounts, a protected task API and a reusable management page. An existing business application should adapt its own services instead of adding these example collections. No Agents or Scheduler registration is needed.
+Use this example only in a new isolated demo application. It adds a fictional project and two assigned tasks, two visitor accounts, a protected task API and a reusable management page. An existing business application should adapt its own services instead of adding these example collections. No Agents registration is needed.
 
 ## 1. Copy the application additions
 
@@ -92,5 +92,7 @@ Use the failing step to choose the next check; do not bypass permissions or add 
 | A page or management API returns 403        | Check business-page access for visitor pages and settings actions for management, including the route's read check. Keep visitor grants separate from administrator grants.                  |
 | Generated records do not appear on the page | Check the current account, assignee/owner filters, relationships and date ranges against the dataset; verify the page calls the intended business API.                                       |
 | Generation fails with an identity conflict  | Check the username and email in the account definitions; do not adopt an unrelated account. See [failure handling](adapting-data.md#business-cleanup).                                       |
+| Startup reports an unguarded connection     | Check each connection under `database.connections`; Demo Mode refuses to start when its probe write reaches a database. Do not remove the connection check to start.                         |
+| The daily reset never runs                  | Compose `JobExecutorServiceProvider` in the application, generate the data once and check the saved schedule and its time zone on the management page.                                       |
 
 Report the application's real entry URL and checks performed, distinguishing browser validation from automated server checks.
