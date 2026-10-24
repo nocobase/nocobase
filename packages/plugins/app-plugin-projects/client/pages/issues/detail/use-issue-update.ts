@@ -21,7 +21,10 @@ import { pmKeys } from '../../../api/keys.js';
 import { useNotify } from '../../../hooks/use-notify.js';
 import { usePmApi } from '../../../hooks/use-pm-api.js';
 
-export type IssueChanges = Omit<UpdateIssueRequest, 'revision'>;
+export type IssueChanges = Omit<UpdateIssueRequest, 'revision'> & {
+  /** A text draft's starting revision; immediate property changes use the latest cache revision. */
+  readonly revision?: number;
+};
 
 export type IssueUpdate = UseMutationResult<
   UpdateIssueResult,
@@ -30,10 +33,9 @@ export type IssueUpdate = UseMutationResult<
 >;
 
 /**
- * Every change to an issue on its page: a PATCH based on the newest `revision` the cache holds. A 409
- * `REVISION_CONFLICT` means someone changed the issue first: the change is dropped, the user told, and the detail
- * reloaded rather than overwriting their edit. `detailKey` is the key the page reads the issue under (its id or its
- * identifier, as the URL has it).
+ * Every change to an issue on its page: a PATCH using an explicit draft revision or the newest revision in the cache.
+ * A 409 `REVISION_CONFLICT` rejects the change and refreshes the detail; text editors keep their draft and revision.
+ * `detailKey` is the key the page reads the issue under (its id or identifier, as the URL has it).
  */
 export function useIssueUpdate(issue: Issue, detailKey: QueryKey): IssueUpdate {
   const { t } = useTranslation(ACCESS_NAMESPACE);
@@ -53,7 +55,7 @@ export function useIssueUpdate(issue: Issue, detailKey: QueryKey): IssueUpdate {
       const cached = queryClient.getQueryData<IssueDetail>(detailKey);
       return api.updateIssue(issue.id, {
         ...changes,
-        revision: cached?.revision ?? issue.revision,
+        revision: changes.revision ?? cached?.revision ?? issue.revision,
       });
     },
     onSuccess: ({ issue: updated }) => {
@@ -62,13 +64,20 @@ export function useIssueUpdate(issue: Issue, detailKey: QueryKey): IssueUpdate {
       );
       refresh();
     },
-    onError: (error) => {
+    onError: (error, changes) => {
       if (
         error instanceof ApiClientError &&
         error.reason === 'REVISION_CONFLICT'
       ) {
-        // The issue's own wording ("reloading") rather than the generic one for the code.
-        notify.error(null, t('issue.conflict'));
+        // Text editors retain their draft while the detail refreshes underneath it.
+        notify.error(
+          null,
+          t(
+            changes.revision === undefined
+              ? 'issue.conflict'
+              : 'issue.draftConflict',
+          ),
+        );
         refresh();
         return;
       }

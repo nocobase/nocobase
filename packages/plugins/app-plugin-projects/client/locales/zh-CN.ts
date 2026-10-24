@@ -377,6 +377,8 @@ const pages = {
     editDescription: '编辑描述',
     editTitle: '编辑标题',
     conflict: '任务已被修改，正在重新加载。',
+    draftConflict:
+      '任务已被修改，草稿已保留。请复制草稿，取消编辑以查看最新内容，再重新编辑并合并修改。',
     loadFailed: '无法加载该任务',
     noDescription: '暂无描述。',
     parent: '父任务',
