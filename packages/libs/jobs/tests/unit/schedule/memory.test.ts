@@ -660,8 +660,10 @@ describe('InMemoryScheduler', () => {
     gate.resolve();
     const error = await outcome;
     expect(error).toBeInstanceOf(Error);
-    expect(error.message).toMatch(/Failed to write schedule state file/u);
-    expect(error.cause).toMatchObject({ code: 'EACCES' });
+    expect(error).toMatchObject({
+      message: expect.stringMatching(/Failed to write schedule state file/u),
+      cause: { code: 'EACCES' },
+    });
     expect(events).toEqual(['ScheduleStart', 'ScheduleEnd']);
     expect(executor.shutdown()).toBe(shutdown);
     await chmod(directory, 0o755);
