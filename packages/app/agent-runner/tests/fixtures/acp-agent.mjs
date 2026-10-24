@@ -178,6 +178,11 @@ readline.createInterface({ input: process.stdin }).on('line', async (line) => {
       update('running');
       return;
     }
+    if (['max_tokens', 'refusal', 'cancelled', 'crash'].includes(variant)) {
+      update('Partial safe answer.');
+      if (variant === 'crash') return error(-32603);
+      return result({ stopReason: variant });
+    }
     if (variant === 'chunky') {
       for (let i = 0; i < 30; i++) update(`chunk-${i} `);
       return result({ stopReason: 'end_turn' });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  RunEventSchema,
   ClaimRequestSchema,
   CancelAckRequestSchema,
   ClaimResponseSchema,
@@ -116,8 +117,8 @@ const payload: RunPayload = {
 };
 
 describe('agent protocol', () => {
-  it('is version 13 and still serves versions 3 to 12', () => {
-    expect(PROTOCOL_VERSION).toBe(13);
+  it('is version 14 and still serves versions 3 to 13', () => {
+    expect(PROTOCOL_VERSION).toBe(14);
     expect(MIN_PROTOCOL_VERSION).toBe(3);
     expect(isProtocolSupported(3)).toBe(true);
     expect(isProtocolSupported(4)).toBe(true);
@@ -131,7 +132,8 @@ describe('agent protocol', () => {
     expect(isProtocolSupported(11)).toBe(true);
     expect(isProtocolSupported(12)).toBe(true);
     expect(isProtocolSupported(13)).toBe(true);
-    expect(isProtocolSupported(14)).toBe(false);
+    expect(isProtocolSupported(14)).toBe(true);
+    expect(isProtocolSupported(15)).toBe(false);
     expect(isProtocolSupported(3.5)).toBe(false);
   });
 
@@ -594,4 +596,38 @@ describe('agent protocol', () => {
       }).load.tools,
     ).toEqual({ claude: { slots: 2, free: 0 } });
   });
+});
+
+it('declares optional block streaming and validates empty end events without changing legacy messages', () => {
+  expect(RunnerFeatureSchema.parse('outputBlocks')).toBe('outputBlocks');
+  expect(RunPayloadSchema.parse(payload).outputBlocks).toBeUndefined();
+  expect(
+    RunPayloadSchema.parse({ ...payload, outputBlocks: true }).outputBlocks,
+  ).toBe(true);
+  const event = {
+    seq: 1,
+    at: '2026-01-01T00:00:00Z',
+    type: 'text',
+    content: '',
+  };
+  expect(RunEventSchema.parse(event)).toEqual(event);
+  expect(
+    RunEventSchema.parse({
+      ...event,
+      meta: { output: { blockId: 'body', phase: 'end' } },
+    }).content,
+  ).toBe('');
+  expect(
+    RunEventSchema.safeParse({
+      ...event,
+      meta: { output: { blockId: '', phase: 'delta' } },
+    }).success,
+  ).toBe(false);
+  expect(
+    RunEventSchema.safeParse({
+      ...event,
+      type: 'toolUse',
+      meta: { output: { blockId: 'body', phase: 'delta' } },
+    }).success,
+  ).toBe(false);
 });

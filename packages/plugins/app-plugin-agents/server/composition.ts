@@ -498,6 +498,7 @@ export function createAgents(deps: AgentsDeps): Agents {
       onError(`Agents could not assemble run ${runId}.`, error),
   });
   const reports = createRunnerReports({
+    onOutput: (runId, event) => runnerOnlineAgent.output(runId, event),
     ...transitions,
     tx,
     ids,

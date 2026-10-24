@@ -16,6 +16,7 @@
  * - `stop()` interrupts the turn, then ends the process group: within five
  *   seconds in all.
  */
+import { StreamOutput } from './stream-output.ts';
 import { programFingerprint } from './program-fingerprint.ts';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
@@ -411,6 +412,8 @@ class CodexRun {
     };
   }
 
+  private readonly streaming = new StreamOutput((event) => this.emit(event));
+
   private emit(event: Omit<AdapterEvent, 'at'>): void {
     this.events.push({ at: new Date().toISOString(), ...event });
   }
@@ -515,6 +518,7 @@ class CodexRun {
       clientUserMessageId: first.clientId,
       approvalPolicy: 'never',
       sandboxPolicy,
+      ...(this.session.outputBlocks ? { summary: 'auto' as const } : {}),
       ...(effort && EFFORTS.has(effort) ? { effort } : {}),
     });
     if (effort && EFFORTS.has(effort))
@@ -650,6 +654,22 @@ class CodexRun {
       case 'turn/completed':
         this.onTurnCompleted(p.turn as Turn);
         return;
+      case 'item/agentMessage/delta':
+        if (!this.session.outputBlocks) return;
+        this.streaming.delta(
+          `${String(p.itemId)}:text`,
+          'text',
+          p.delta as string,
+        );
+        return;
+      case 'item/reasoning/summaryTextDelta':
+        if (!this.session.outputBlocks) return;
+        this.streaming.delta(
+          `${String(p.itemId)}:summary:${Number(p.summaryIndex)}`,
+          'thinking',
+          p.delta as string,
+        );
+        return;
       case 'item/started':
         this.onItemStarted(p.item as ThreadItem);
         return;
@@ -760,13 +780,32 @@ class CodexRun {
       case 'agentMessage':
         if ('text' in item) {
           this.turnSummary = item.text;
-          this.text('text', item.text);
+          if (this.session.outputBlocks)
+            this.streaming.complete(`${item.id}:text`, 'text', item.text);
+          else this.text('text', item.text);
         }
         break;
       case 'reasoning':
-        if ('summary' in item) {
-          const text = [...item.summary, ...item.content].join('\n\n');
-          if (text) this.text('thinking', text);
+        if (!this.session.outputBlocks) {
+          if ('summary' in item) {
+            const text = [...item.summary, ...item.content].join('\n\n');
+            if (text) this.text('thinking', text);
+          }
+        } else {
+          if ('summary' in item) {
+            for (const [index, text] of item.summary.entries())
+              this.streaming.complete(
+                `${item.id}:summary:${index}`,
+                'thinking',
+                text,
+              );
+          }
+          if ('content' in item && item.content.length)
+            this.streaming.complete(
+              `${item.id}:reasoning-content`,
+              'thinking',
+              item.content.join('\n\n'),
+            );
         }
         break;
       case 'commandExecution':
@@ -951,6 +990,7 @@ class CodexRun {
       await this.shutdown();
     }
     const result = this.outcome(thrown, processFailed);
+    if (this.session.outputBlocks) this.streaming.end();
     if (result.error)
       this.emit({
         type: 'error',
@@ -1028,7 +1068,13 @@ class CodexRun {
       capabilities: {
         experimentalApi: false,
         requestAttestation: false,
-        optOutNotificationMethods: OPTED_OUT_NOTIFICATIONS,
+        optOutNotificationMethods: session.outputBlocks
+          ? OPTED_OUT_NOTIFICATIONS
+          : [
+              ...OPTED_OUT_NOTIFICATIONS,
+              'item/agentMessage/delta',
+              'item/reasoning/summaryTextDelta',
+            ],
       },
     });
     rpc.notify('initialized');

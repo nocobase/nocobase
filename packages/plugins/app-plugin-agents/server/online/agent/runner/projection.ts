@@ -1,3 +1,4 @@
+import { outputBlock } from '@nocobase/agent-protocol';
 import {
   publicUIPageContext,
   type AppUIJson,
@@ -18,7 +19,10 @@ export const runnerMessageId = (runId: string): string => `runner:${runId}`;
 /** Pure projection: no Run inference from prose and no invented tools or approvals. */
 export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
   const messages = new Map<string, AppUIMessage>();
+  const seen = new Set<string>();
   for (const row of rows) {
+    if (seen.has(row.id)) continue;
+    seen.add(row.id);
     const grouped = row.role === 'assistant' && row.runId;
     const id = grouped ? runnerMessageId(row.runId) : row.id;
     let message = messages.get(id);
@@ -49,7 +53,8 @@ export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
       messages.set(id, message);
     }
     const index = message.parts.length;
-    const partId = `record:${row.id}`;
+    const output = outputBlock(row.metadata as Record<string, unknown>);
+    const partId = output ? `output:${output.blockId}` : `record:${row.id}`;
     if (row.metadata.notice) {
       const notice = row.metadata.notice;
       message.parts.push(
@@ -84,6 +89,7 @@ export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
       seq: row.seq,
       partId,
       partIndex: index,
+      ...(output ? { output } : {}),
       createdAt: row.createdAt,
     });
     for (const file of row.attachments ?? []) {

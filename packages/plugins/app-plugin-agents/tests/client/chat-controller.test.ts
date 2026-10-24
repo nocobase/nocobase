@@ -22,42 +22,48 @@ const metadata = {
   revision: 0,
   executionId: 'native-1',
 };
-it('shares one SDK owner and one initial recovery across views, then reconciles durable completion', async () => {
-  const f = fixture(),
-    output = f.output();
-  f.controller.receive('c1');
-  f.controller.receive('c1');
-  expect(f.controller.chat('c1')).toBe(f.controller.chat('c1'));
-  await vi.waitFor(() => expect(output.attached).toBe(true));
-  output.emit({
-    type: 'start',
-    messageId: 'answer',
-    messageMetadata: metadata,
-  });
-  output.emit({ type: 'text-start', id: 'text' });
-  output.emit({ type: 'text-delta', id: 'text', delta: 'Answer' });
-  output.emit({ type: 'text-end', id: 'text' });
-  const saved: AppUIMessage = {
-    id: 'answer',
-    role: 'assistant',
-    metadata: { ...metadata, revision: 1, seq: 2 },
-    parts: [{ type: 'text', text: 'Answer', state: 'done' }],
-  };
-  f.state.messages = [saved];
-  f.state.detail = {
-    ...f.state.detail,
-    execution: { status: 'idle', outcome: 'completed', messageId: 'answer' },
-  };
-  output.emit({ type: 'finish', messageMetadata: saved.metadata });
-  output.close();
-  await vi.waitFor(() => expect(f.controller.chat('c1').status).toBe('ready'));
-  await f.controller.refresh('c1');
-  expect(f.controller.chat('c1').messages).toEqual([saved]);
-  expect(f.stream).toHaveBeenCalledOnce();
-  expect(agentsQueryClient().getQueryData(chatKeys.conversation('c1'))).toEqual(
-    f.state.detail,
-  );
-});
+it.each(['Answer', 'Over-redacted preview'])(
+  'shares one SDK owner and reconciles durable completion after %s',
+  async (preview) => {
+    const f = fixture(),
+      output = f.output();
+    f.controller.receive('c1');
+    f.controller.receive('c1');
+    expect(f.controller.chat('c1')).toBe(f.controller.chat('c1'));
+    await vi.waitFor(() => expect(output.attached).toBe(true));
+    output.emit({
+      type: 'start',
+      messageId: 'answer',
+      messageMetadata: metadata,
+    });
+    output.emit({ type: 'text-start', id: 'text' });
+    output.emit({ type: 'text-delta', id: 'text', delta: preview });
+    output.emit({ type: 'text-end', id: 'text' });
+    const saved: AppUIMessage = {
+      id: 'answer',
+      role: 'assistant',
+      metadata: { ...metadata, revision: 1, seq: 2 },
+      parts: [{ type: 'text', text: 'Answer', state: 'done' }],
+    };
+    f.state.messages = [saved];
+    f.state.detail = {
+      ...f.state.detail,
+      execution: { status: 'idle', outcome: 'completed', messageId: 'answer' },
+    };
+    output.emit({ type: 'finish', messageMetadata: saved.metadata });
+    output.close();
+    await vi.waitFor(() =>
+      expect(f.controller.chat('c1').status).toBe('ready'),
+    );
+    await vi.waitFor(() =>
+      expect(f.controller.chat('c1').messages).toEqual([saved]),
+    );
+    expect(f.stream).toHaveBeenCalledOnce();
+    expect(
+      agentsQueryClient().getQueryData(chatKeys.conversation('c1')),
+    ).toEqual(f.state.detail);
+  },
+);
 it('appends SDK deltas in place and protects the active message against an older history snapshot', async () => {
   const f = fixture(),
     output = f.output();

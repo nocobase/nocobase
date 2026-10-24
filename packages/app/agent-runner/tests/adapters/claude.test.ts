@@ -826,3 +826,71 @@ describe('stopping', () => {
     expect(calls).toHaveLength(0);
   });
 });
+
+it('uses actual non-contiguous partial indexes and deduplicates completed snapshots', async () => {
+  const partial = (event: unknown) =>
+    ({
+      type: 'stream_event',
+      event,
+      parent_tool_use_id: null,
+      session_id: SESSION_ID,
+      uuid: randomUUID(),
+    }) as import('@anthropic-ai/claude-agent-sdk').SDKMessage;
+  setScript(async function* (ctx) {
+    await ctx.nextInput();
+    yield init();
+    yield partial({ type: 'message_start', message: { id: 'msg_1' } });
+    yield partial({
+      type: 'content_block_start',
+      index: 2,
+      content_block: { type: 'thinking', thinking: '' },
+    });
+    yield partial({
+      type: 'content_block_delta',
+      index: 2,
+      delta: { type: 'thinking_delta', thinking: 'Plan' },
+    });
+    yield partial({
+      type: 'content_block_start',
+      index: 7,
+      content_block: { type: 'text', text: 'Hello' },
+    });
+    yield partial({
+      type: 'content_block_delta',
+      index: 7,
+      delta: { type: 'text_delta', text: ' world' },
+    });
+    yield assistant([{ type: 'thinking', thinking: 'Plan' }]);
+    yield assistant([{ type: 'text', text: 'Hello world' }]);
+    yield assistant([
+      { type: 'thinking', thinking: 'Plan' },
+      { type: 'text', text: 'Hello world' },
+    ]);
+    yield result();
+  });
+  const handle = adapterWith('9.0.0', dir).start(
+    session({ outputBlocks: true }),
+  );
+  const events = await collect(handle.events);
+  const deltas = events.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'delta',
+  );
+  expect(
+    deltas
+      .filter((e) => e.type === 'text')
+      .map((e) => e.content)
+      .join(''),
+  ).toBe('Hello world');
+  expect(
+    deltas
+      .filter((e) => e.type === 'thinking')
+      .map((e) => e.content)
+      .join(''),
+  ).toBe('Plan');
+  const ends = events.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'end',
+  );
+  expect(ends.map((e) => e.content)).toEqual(['Plan', 'Hello world']);
+  expect(calls[0]?.options.includePartialMessages).toBe(true);
+  expect((await handle.result).summary).toBeDefined();
+});

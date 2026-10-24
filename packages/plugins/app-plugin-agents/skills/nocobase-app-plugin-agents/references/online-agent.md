@@ -224,3 +224,11 @@ Deploy one execution process per logical application/database, fully stopping th
 Normal native and Runner creation accepts showInChatList (default true); background creation always hides the record. List filtering happens in the database before pagination. A known hidden ID retains its ownership checks and remains readable. Notifications delivered through conversations.deliver join the caller's transaction, do not wake new native/Runner execution, and roll back with business changes; native realtime notices are saved as standard data parts.
 
 HTTP creation/configuration cannot override tool lists, model lists or system prompts. Business variables must be declared and validated by selected scopes; selectedModel still selects an authorized catalog entry. Trusted server SDK configuration retains its policy capability. Legacy unbound conversations are read-only but their owner can still Stop their existing Run without a current model or online Agent.
+
+## Runner conversation previews
+
+Upgrade the server agents plugin before runners. Conversation claims automatically include `outputBlocks: true` when the runner advertises the capability; tasks never receive it, and there is no application configuration switch. All task adapters, storage, summaries and run-history components keep their previous behavior.
+
+Update the application chat consumers to retain standard text/reasoning stream parts, `sourceRecords[].output`, stable part IDs, whitespace and part state. Render one text part as one Markdown document through `chatMessageSegments`. Previews are realtime-only; a completed block produces one canonical record, so prompt history retains the previous user turns. Interrupted previews are closed without storing partial text. A mid-block refresh may wait for block completion; do not add recovery or replay services. Task/transcript Registry components need no change.
+
+Validate conversation text and supplied reasoning summaries, split Markdown and whitespace, independent messages and child/tool boundaries, refresh and cancellation using native application authentication. Studio integration and real-model page verification are application work; source Registry components copied into an application still belong to that application.
