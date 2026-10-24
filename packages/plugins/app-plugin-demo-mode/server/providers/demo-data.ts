@@ -55,7 +55,7 @@ export function demoModelLoopbackUrl(
 /**
  * The demo dataset service. Applications register their dataset on `demoDataToken`; this provider gives it the
  * accounts, roles and model services of the official plugins it finds, the settings item that guards its routes,
- * and the recurring job that resets it on the persisted daily schedule.
+ * and the recurring job that resets it on the deployment-owned daily schedule.
  */
 export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-demo-mode/data';
@@ -77,14 +77,6 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
       users: () => optional(userManagementServiceToken),
       authorization: () => optional(authorizationToken),
       agents: () => this.agents,
-      onSettled: () => {
-        void this.syncDailyReset().catch((error: unknown) =>
-          this.logger()?.warn(
-            { error },
-            'Could not update the daily demo reset schedule',
-          ),
-        );
-      },
       logger: {
         info: (details, message) => this.logger()?.info(details, message),
         warn: (details, message) => this.logger()?.warn(details, message),
@@ -95,14 +87,7 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
       container.resolve(databaseManagerToken),
       resolveDemoModeSettings(this.app.config),
       container.resolve(demoWriteGuardToken),
-      async () => {
-        const status = await this.service!.status();
-        const language = status.language ?? status.languages[0];
-        return {
-          ...status,
-          ...(language ? { timeZone: this.service!.timeZone(language) } : {}),
-        };
-      },
+      () => this.service!.status(),
     );
     container.instance(demoConfigurationToken, configuration);
     container.instance(demoConfigurationRuntimeToken, configuration);
@@ -191,40 +176,17 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
     this.resetJobs = container
       .resolve(jobExecutorServiceToken)
       .getScheduleExecutor(JOBS_SCOPE);
-    configuration.onScheduleChange(() => this.syncDailyReset());
-    // The handler is registered before setup() starts the worker, even while the schedule is off, so a rule another
-    // instance enables finds it here. A firing of a rule saved earlier is checked against the current schedule.
-    await this.resetJobs.addJob(
-      this.dailyResetJob({ hour: 3, minute: 0, timezone: 'UTC' }),
-      true,
-    );
+    const schedule = resolveDemoModeSettings(this.app.config).dailyReset;
+    // Register the handler before setup() starts the worker, then replace any persisted rule with deployment values.
+    await this.resetJobs.addJob(this.dailyResetJob(schedule), true);
     await this.resetJobs.setup();
-    await this.syncDailyReset();
+    await this.resetJobs.addJob(this.dailyResetJob(schedule));
   }
 
   public override async shutdown(): Promise<void> {
     // Waits for a running reset firing; the rule stays in the backend for the other instances.
     await this.resetJobs?.shutdown();
     this.resetJobs = undefined;
-  }
-
-  /**
-   * Keeps the daily reset job on the configured local time: one cron firing a day, in the schedule's time zone. Runs
-   * at startup, after the schedule is saved and after each data operation, which can change the default schedule's
-   * language and time zone.
-   */
-  private async syncDailyReset(): Promise<void> {
-    const executor = this.resetJobs;
-    if (!executor) return;
-    const configuration = this.app.container.resolve(
-      demoConfigurationRuntimeToken,
-    );
-    const { schedule } = await configuration.read(false);
-    if (!schedule?.enabled) {
-      await executor.removeJob(DEMO_DATA_RESET_JOB);
-      return;
-    }
-    await executor.addJob(this.dailyResetJob(schedule));
   }
 
   private dailyResetJob(
@@ -252,11 +214,7 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
     const due = await this.app.container
       .resolve(demoConfigurationRuntimeToken)
       .claimDaily(scheduledAt);
-    if (!due) {
-      // Another process claimed the day, or the schedule changed elsewhere: follow what is saved now.
-      await this.syncDailyReset();
-      return;
-    }
+    if (!due) return;
     await service.reset(undefined, due.language, { wait: true });
     const status = await service.status();
     if (status.failure)

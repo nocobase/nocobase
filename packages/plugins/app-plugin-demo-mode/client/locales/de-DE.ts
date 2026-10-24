@@ -8,16 +8,16 @@ const resource: DemoModeResource = {
     configure: 'Konfigurieren',
   },
   accounts: {
-    menu: 'Demo-Konto: {{name}}',
-    title: 'Demo-Konten',
+    menu: 'Konto: {{name}}',
+    title: 'Konten',
     description:
       'Öffnen Sie die Demo mit einem dieser Konten, um zu sehen, was jedes davon sieht.',
     enter: 'Öffnen',
     signedInAs: 'Angemeldet als {{name}} · Wechseln',
     current: 'Aktuell',
     entering: 'Wird geöffnet…',
-    failed: 'Dieses Demo-Konto konnte nicht geöffnet werden.',
-    unavailable: 'Derzeit sind keine Demo-Konten verfügbar.',
+    failed: 'Die Anmeldung mit diesem Konto ist fehlgeschlagen.',
+    unavailable: 'Derzeit sind keine Konten verfügbar.',
     password: 'Mit Passwort anmelden',
   },
   refused: {
@@ -29,23 +29,13 @@ const resource: DemoModeResource = {
     refresh: 'Aktualisieren',
     retry: 'Erneut versuchen',
     busy: 'Demo-Daten werden erzeugt oder gelöscht',
-    busyHelp: 'Danach lassen sich die Einstellungen wieder speichern.',
+    busyHelp:
+      'Warten Sie, bis der aktuelle Datenvorgang abgeschlossen ist, bevor Sie einen weiteren starten.',
     disabled: {
       title: 'Diese Anwendung ist keine Demo',
       help: 'Der Demo-Modus ist aus. Eine Bereitstellung schaltet ihn mit NOCOBASE_DEMO_MODE=true ein.',
     },
     cancel: 'Abbrechen',
-    save: 'Speichern',
-    apply: 'Änderungen übernehmen',
-    unsaved: 'Ungespeicherte Änderungen',
-    discardAndReload: 'Meine Änderungen verwerfen und neu laden',
-    leave: {
-      title: 'Ohne Speichern verlassen?',
-      description:
-        'Nicht gespeicherte Änderungen auf dieser Seite gehen verloren.',
-      stay: 'Weiter bearbeiten',
-      discard: 'Änderungen verwerfen',
-    },
     errors: {
       failed: 'Die Anfrage wurde nicht abgeschlossen. Versuchen Sie es erneut.',
       conflict:
@@ -110,12 +100,9 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: 'Demokonten',
-      off: 'Die Schnellanmeldung ist in dieser Bereitstellung ausgeschaltet.',
-      pending: 'Die Konten erscheinen hier, sobald die Demodaten bereit sind.',
-      noData:
-        'Erzeugen Sie zuerst die Demo-Daten; ihre Konten erscheinen dann hier.',
-      credentials: 'Benutzername {{username}} · Passwort {{password}}',
+      unavailable: 'Derzeit sind keine Konten verfügbar.',
+      title: 'Konten',
+      username: 'Benutzername {{username}}',
       copyLink: 'Link kopieren',
       copyLinkFor: 'Zugangslink für {{name}} kopieren',
       openFor: 'Demo als {{name}} öffnen',
@@ -125,21 +112,11 @@ const resource: DemoModeResource = {
     },
     schedule: {
       title: 'Tägliches Zurücksetzen',
-      confirmTitle: 'Tägliches Zurücksetzen speichern?',
-      confirmDescription:
-        'Zur unten genannten Zeit werden alle Geschäftsdaten dieser Instanz gelöscht und neu erzeugt.',
-      summary: 'Täglich um {{time}} ({{timezone}}), auf {{language}}',
-      off: 'Nicht geplant',
-      enabled: 'Täglich zurücksetzen',
-      enabledHelp:
-        'Verwendet den Administrator, der die Demo-Daten zuletzt erzeugt hat.',
+      description:
+        'Die Demodaten werden täglich automatisch zurückgesetzt. Der Zeitplan wird über Umgebungsvariablen konfiguriert.',
       time: 'Uhrzeit',
-      hour: 'Stunde',
-      minute: 'Minute',
       language: 'Sprache',
       timezone: 'Zeitzone',
-      noTimezone: 'Keine passende Zeitzone',
-      invalidTimezone: 'Wählen Sie eine Zeitzone aus der Liste.',
       next: 'Nächstes Zurücksetzen: {{time}}',
     },
   },

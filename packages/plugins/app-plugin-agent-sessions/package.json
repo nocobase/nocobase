@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-agent-sessions",
   "displayName": "Agent Sessions App Plugin",
   "description": "Conversations in the browser with coding agents that run on people's own computers over the Agent Client Protocol, with their transcripts and the work they create kept in the application.",
-  "version": "1.0.0-beta.10",
+  "version": "1.0.0-beta.11",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

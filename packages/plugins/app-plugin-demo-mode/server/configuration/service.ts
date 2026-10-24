@@ -22,8 +22,6 @@ import type {
   DemoMockAdapter,
 } from '../../shared/configuration.js';
 
-/** The local hour of the default daily reset. */
-export const DEFAULT_RESET_HOUR = 3;
 const invalid = (message: string) =>
   demoDataError('DEMO_CONFIGURATION_INVALID', message, 'INVALID_ARGUMENT');
 interface Stored {
@@ -51,7 +49,6 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     return this.policy.getStore() ?? this.readPolicy();
   }
   private readonly adapters = new Map<string, DemoMockAdapter>();
-  private scheduleListener: (() => Promise<void>) | undefined;
   private readonly resolved = new Map<
     string,
     { connection: string; table: string } | null
@@ -62,26 +59,8 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     private readonly guard: DemoWriteGuard,
     private readonly data: () => Promise<{
       importing: unknown;
-      languages: readonly string[];
-      /** The language the demo data was last generated in. */
-      language?: string | null;
-      /** The dataset's time zone for that language. */
-      timeZone?: string;
     }>,
   ) {}
-  /** Until an administrator saves a schedule, the demo resets every night at 03:00 in its own language and time zone. */
-  private async defaultSchedule(): Promise<DemoDailySchedule | null> {
-    const data = await this.data();
-    const language = data.language ?? data.languages[0];
-    if (!language) return null;
-    return {
-      enabled: true,
-      hour: DEFAULT_RESET_HOUR,
-      minute: 0,
-      timezone: data.timeZone ?? 'UTC',
-      language,
-    };
-  }
   public get enabled(): boolean {
     return this.settings.enabled;
   }
@@ -92,10 +71,6 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         'Demo management is unavailable in this deployment.',
         'NOT_FOUND',
       );
-  }
-  /** Called after an administrator saves the schedule, so the daily reset job follows it. */
-  public onScheduleChange(listener: () => Promise<void>): void {
-    this.scheduleListener = listener;
   }
   public registerMock(adapter: DemoMockAdapter): void {
     if (this.adapters.has(adapter.id))
@@ -131,7 +106,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         .values({
           id: 'default',
           revision: 0,
-          value: JSON.stringify({ collections: [], mocks: {}, schedule: null }),
+          value: JSON.stringify({ collections: [], mocks: {} }),
         })
         .execute();
     } catch (error) {
@@ -154,7 +129,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     return {
       revision: Number(row.revision),
       collections: stored.collections ?? [],
-      schedule: stored.schedule,
+      schedule: { ...this.settings.dailyReset },
       chat: {
         enabled: stored.chat?.enabled ?? true,
         tools: stored.chat?.tools ?? {},
@@ -185,11 +160,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     this.requireEnabled();
     const row = await this.row();
     if (!row) throw new Error('Demo configuration has not been initialized.');
-    const decoded = this.decode(row);
-    const value = {
-      ...decoded,
-      schedule: decoded.schedule ?? (await this.defaultSchedule()),
-    };
+    const value = this.decode(row);
     return {
       ...value,
       busy: includeBusy && Boolean((await this.data()).importing),
@@ -230,16 +201,16 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     return names.sort((a, b) => a.name.localeCompare(b.name));
   }
   public async save(
-    section: 'collections' | 'mocks' | 'schedule' | 'chat',
+    section: 'collections' | 'mocks' | 'chat',
     expectedRevision: number,
     input: unknown,
   ): Promise<DemoConfigurationView> {
     this.requireEnabled();
-    const parsed = ConfigurationInput[section].safeParse({
+    const parsed = ConfigurationInput[section]?.safeParse({
       expectedRevision,
       value: input,
     });
-    if (!parsed.success) throw invalid('Invalid demo configuration.');
+    if (!parsed?.success) throw invalid('Invalid demo configuration.');
     input = parsed.data.value;
     const status = await this.data();
     if (status.importing)
@@ -269,22 +240,10 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
       if (Object.keys(input as object).some((id) => !this.adapters.has(id)))
         throw invalid('Unknown mock adapter.');
       value = { ...current.mocks, ...(input as object) };
-    } else if (section === 'schedule') {
-      const schedule = input as DemoDailySchedule;
-      if (schedule.enabled) {
-        try {
-          localMinute(new Date(), schedule.timezone);
-        } catch {
-          throw invalid('Invalid timezone.');
-        }
-        if (!status.languages.includes(schedule.language))
-          throw invalid('Unsupported dataset language.');
-      }
     }
     const updated = {
       collections: current.collections,
       mocks: current.mocks,
-      schedule: current.schedule,
       chat: current.chat,
       [section]: value,
     };
@@ -302,7 +261,6 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         'ALREADY_EXISTS',
       );
     this.cached = undefined;
-    if (section === 'schedule') await this.scheduleListener?.();
     return this.read();
   }
   /** Read at admission and before model/tool I/O, including restored sessions and workers. */
@@ -433,8 +391,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     const row = await this.row();
     if (!row) return null;
     const config = this.decode(row);
-    const schedule = config.schedule ?? (await this.defaultSchedule());
-    if (!schedule?.enabled) return null;
+    const schedule = { ...this.settings.dailyReset };
     const local = localMinute(now, schedule.timezone);
     if (
       local.hour !== schedule.hour ||

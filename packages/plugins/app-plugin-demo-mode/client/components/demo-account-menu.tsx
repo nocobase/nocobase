@@ -22,7 +22,7 @@ import {
  */
 export function DemoAccountMenu(): ReactElement | null {
   const location = useLocation();
-  const { accounts, signIn } = useDemoAccounts(location.pathname);
+  const { accounts, signIn } = useDemoAccounts();
   const toaster = useToaster();
   const { t } = useTranslation(DEMO_MODE_NAMESPACE);
   if (!accounts?.length) return null;
@@ -30,7 +30,7 @@ export function DemoAccountMenu(): ReactElement | null {
   return (
     <>
       <DropdownMenuSub>
-        <DropdownMenuSubTrigger className='gap-2'>
+        <DropdownMenuSubTrigger openOnHover delay={0} className='gap-2'>
           <Users className='size-4' />
           <span className='min-w-0 flex-1 truncate'>
             {current
@@ -38,7 +38,7 @@ export function DemoAccountMenu(): ReactElement | null {
               : t('accounts.title')}
           </span>
         </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent className='w-64'>
+        <DropdownMenuSubContent className='w-64 duration-0'>
           <DropdownMenuRadioGroup
             value={current?.username ?? ''}
             onValueChange={(username: string) => {

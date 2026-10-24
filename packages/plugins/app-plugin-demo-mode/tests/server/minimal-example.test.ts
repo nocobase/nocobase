@@ -1,4 +1,8 @@
 import { createTestApp } from '@nocobase/app-testing/server';
+import {
+  findApiDocumentSchemaProblems,
+  findUndeclaredApiRoutes,
+} from '@nocobase/app-server/router';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import { userManagementServiceToken } from '@nocobase/app-plugin-users/server/tokens';
 import { databaseManagerToken } from '@nocobase/db';
@@ -36,6 +40,60 @@ it('runs the published non-AI example through authorized HTTP, visitor entry and
       email: 'manager@example.com',
       password: 'Manager123!',
       roleScopes: { app: ['demo.manager'] },
+    });
+    // Home entry and ordinary accounts are available before any dataset generation.
+    const home = await app.request('/demoMode/accounts/signInDefault', {
+      method: 'POST',
+      headers: { origin: 'http://localhost' },
+    });
+    expect(home.status).toBe(200);
+    expect(await home.json()).toEqual({ data: { signedIn: true } });
+    const rootSession = await (
+      await app.request('/auth/get-session', {
+        headers: {
+          cookie: home.headers
+            .getSetCookie()
+            .map((value) => value.split(';')[0])
+            .join('; '),
+        },
+      })
+    ).json();
+    expect(
+      (await authz.permissionSets.listAssignments()).some(
+        (assignment) =>
+          assignment.subject.id === rootSession.user.id &&
+          authz.permissionSets.protection(assignment.permissionSet)
+            ?.unrestricted,
+      ),
+    ).toBe(true);
+    const entries = await (await app.request('/demoMode/accounts')).json();
+    expect(entries.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ username: rootSession.user.username }),
+        expect.objectContaining({ username: admin.username }),
+      ]),
+    );
+    const documentation = await app.request('/swagger', {
+      headers: {
+        cookie: home.headers
+          .getSetCookie()
+          .map((value) => value.split(';')[0])
+          .join('; '),
+      },
+    });
+    expect(documentation.status).toBe(200);
+    const document = await documentation.json();
+    expect(findUndeclaredApiRoutes(app.application.apiRouter!)).toEqual([]);
+    expect(findApiDocumentSchemaProblems(document)).toEqual([]);
+    expect(
+      Object.entries(document.paths).find(([path]) =>
+        path.endsWith('/api/demoMode/accounts/signInDefault'),
+      )?.[1],
+    ).toMatchObject({
+      post: {
+        operationId: 'demoModeSignInDefaultAccount',
+        security: [],
+      },
     });
     const signInAs = (email: string, password: string) =>
       app.request('/auth/sign-in/email', {

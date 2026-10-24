@@ -386,7 +386,7 @@ function CopyButton({
   );
 }
 
-/** Demo accounts and their sign-in links. */
+/** System accounts and their sign-in links in Demo Mode. */
 export function VisitorsCard({
   status,
 }: {
@@ -397,10 +397,6 @@ export function VisitorsCard({
   const path = useHref(DEMO_SIGN_IN_PATH);
   const entry = (username: string) =>
     `${window.location.origin}${path}?as=${encodeURIComponent(username)}`;
-  // The dataset lists passwords for the demo page; quick sign-in never returns them.
-  const listed = new Map(
-    (status?.accounts ?? []).map((account) => [account.username, account]),
-  );
   return (
     <Card>
       <CardHeader>
@@ -411,13 +407,7 @@ export function VisitorsCard({
           <Skeleton className='h-24 w-full' />
         ) : !accounts.length ? (
           <p className='text-sm text-muted-foreground'>
-            {t(
-              status?.importing
-                ? 'visitors.pending'
-                : status?.present
-                  ? 'visitors.off'
-                  : 'visitors.noData',
-            )}
+            {t('visitors.unavailable')}
           </p>
         ) : (
           <ul className='divide-y rounded-lg border'>
@@ -434,9 +424,8 @@ export function VisitorsCard({
                     </span>
                   </p>
                   <p className='truncate text-xs text-muted-foreground'>
-                    {t('visitors.credentials', {
+                    {t('visitors.username', {
                       username: account.username,
-                      password: listed.get(account.username)?.password ?? '—',
                     })}
                   </p>
                 </div>

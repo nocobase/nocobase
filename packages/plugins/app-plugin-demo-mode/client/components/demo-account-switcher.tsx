@@ -19,7 +19,7 @@ export function DemoAccountSwitcher({
 }): ReactElement | null {
   const location = useLocation();
   const api = useApiClient();
-  const { accounts, signIn } = useDemoAccounts(location.pathname);
+  const { accounts, signIn } = useDemoAccounts();
   // Whether someone is signed in, read again on every page; unknown until answered.
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   useEffect(() => {

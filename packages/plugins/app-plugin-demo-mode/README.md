@@ -32,14 +32,18 @@ import { defineDemoModeConfig } from '@nocobase/app-plugin-demo-mode/config';
 defaultAppConfigs({ demoMode: defineDemoModeConfig() });
 ```
 
-The factory declares defaults, validation and two environment mappings. The runtime resolves them from the owning application's environment: environment values override configuration-file values, which override defaults. There is no process-global fallback in the plugin. Registration of the Server plugin alone does not register the configuration factory. Restart after changing deployment configuration.
+The factory declares defaults, validation and environment mappings. The runtime resolves them from the owning application's environment: environment values override configuration-file values, which override defaults. There is no process-global fallback in the plugin. Registration of the Server plugin alone does not register the configuration factory. Restart after changing deployment configuration.
 
 The plugin is off until the deployment switches it on:
 
-| Environment                          | Configuration               | Meaning                                                           |
-| ------------------------------------ | --------------------------- | ----------------------------------------------------------------- |
-| `NOCOBASE_DEMO_MODE`                 | `demoMode.enabled`          | `false` (default) or `true`                                       |
-| `NOCOBASE_DEMO_WRITABLE_COLLECTIONS` | `demoMode.allowCollections` | Comma-separated logical collection names requests may still write |
+| Environment                          | Configuration                  | Meaning                                                           |
+| ------------------------------------ | ------------------------------ | ----------------------------------------------------------------- |
+| `NOCOBASE_DEMO_MODE`                 | `demoMode.enabled`             | `false` (default) or `true`                                       |
+| `NOCOBASE_DEMO_WRITABLE_COLLECTIONS` | `demoMode.allowCollections`    | Comma-separated logical collection names requests may still write |
+| `NOCOBASE_DEMO_RESET_HOUR`           | `demoMode.dailyReset.hour`     | Reset hour, 0–23; default `3`                                     |
+| `NOCOBASE_DEMO_RESET_MINUTE`         | `demoMode.dailyReset.minute`   | Reset minute, 0–59; default `0`                                   |
+| `NOCOBASE_DEMO_RESET_TIMEZONE`       | `demoMode.dailyReset.timezone` | IANA time zone; default `UTC`                                     |
+| `NOCOBASE_DEMO_RESET_LANGUAGE`       | `demoMode.dailyReset.language` | Supported dataset language; default `en-US`                       |
 
 `session` and `verification`, the Better Auth tables signing in and out writes, are always allowed, except to routes that end or change other sessions — any path ending in `revoke-sessions`, `revoke-other-sessions`, `revoke-session`, `update-session` or their camelCase forms, such as the users plugin's `users/:userId/revokeSessions` — so a visitor of a shared demo account cannot sign everyone else out.
 
@@ -148,9 +152,9 @@ Demo reset always clears business data before calling the generator again. A fai
 
 ## Quick sign-in
 
-When `NOCOBASE_DEMO_MODE=true`, visitors enter the imported demo accounts without a password and switch between them. The Client plugin contributes a `/demo-sign-in` page and a corner account switcher on every page, the sign-in page included. Registering the plugin alone does not enable Demo Mode.
+When `NOCOBASE_DEMO_MODE=true`, visitors enter any enabled person account without a password and switch between them. Existing accounts and accounts created by the dataset share the same entry list. An anonymous visitor opening the application home page automatically signs in as an existing Super Admin, identified by its unrestricted Permission Set; existing sessions are retained. This works before data generation and does not change passwords or permissions. The Client plugin contributes a `/demo-sign-in` page and a corner account switcher on every page, the sign-in page included. Registering the plugin alone does not enable Demo Mode.
 
-Set `demoMode.quickSignIn: false` in application configuration to disable quick sign-in. It defaults to `true` and has no environment variable.
+Set `demoMode.quickSignIn: false` in application configuration to disable quick sign-in and automatic home-page sign-in. It defaults to `true` and has no environment variable.
 
 Signed-in visitors switch accounts from a corner button by default. An application with an account menu puts the switch there instead, before signing out, and keeps the corner button for visitors who have not signed in:
 
@@ -165,23 +169,26 @@ import { DemoAccountMenu } from '@nocobase/app-plugin-demo-mode/client/account-m
 
 Set `showFloatingAccountSwitcher: false` in the client registration to hide the floating entry for both guests and signed-in visitors. This does not disable `DemoAccountMenu` or the direct `/demo-sign-in` route. The default remains `true`.
 
-`DemoAccountMenu` is a submenu of the demo accounts with the current one checked, followed by a separator; it renders nothing outside a demo.
+`DemoAccountMenu` is a submenu of the system accounts with the current one checked, followed by a separator; it renders nothing outside a demo. The plugin preloads a shared account list on page entry, including when the floating switcher is hidden, so the submenu opens immediately on hover. Navigation and dataset changes refresh the list in the background.
 
-- `GET /api/demoMode/accounts`, public, lists the accounts `accounts(language)` lists for the imported language, limited to users the dataset created and has not disabled, as `{ username, name, role, current }` without passwords.
-- `POST /api/demoMode/accounts/{username}/signIn` ends the request's own session, signs in through Better Auth's email-and-password sign-in with the password the dataset lists, and answers with Better Auth's session cookie. The authentication plugin is unchanged, and the session is an ordinary one. An account the list does not offer is `404 DEMO_ACCOUNT_NOT_FOUND`; a listed password that is wrong is `400 DEMO_ACCOUNT_SIGN_IN_FAILED`.
-- `accounts(language)` must therefore list each account's real password, and every listed account, an administrator included, is open to anyone who reaches the demo.
+- `GET /api/demoMode/accounts`, public, lists all enabled person accounts as `{ username, name, role, current }` with `meta.total`, without passwords. Dataset labels may provide `role`; they do not determine eligibility. Disabled, deleted and service accounts are excluded.
+- `POST /api/demoMode/accounts/{username}/signIn` ends the request's own session and asks Authentication to create an ordinary session for the selected account. No password or dataset ownership is required. An unavailable account is `404 DEMO_ACCOUNT_NOT_FOUND`; session creation failure is `400 DEMO_ACCOUNT_SIGN_IN_FAILED`.
+- `POST /api/demoMode/accounts/signInDefault` creates a Super Admin session only for an anonymous visitor and answers `{ data: { signedIn } }`. It leaves normal entry available when no enabled Super Admin exists or quick sign-in is off.
+- Every listed account, including the initial administrator, is publicly enterable in Demo Mode. Internal dataset tracking exists only to manage generation, reset and cleanup; it is not a separate user account type.
 
 ## Administration page
+
+Wrap the application's demo management route declarations with `demoModeRoutes([...])` from `@nocobase/app-plugin-demo-mode/client` before passing them to `defineAppRoutes()`, including when spreading them into a settings group's `children`. The helper includes them only when the server publishes `demoMode.enabled: true`; disabled or missing configuration omits both the routes and their menu entries, including for root. `defineDemoModeConfig()` publishes this flag automatically. See the [integration example](skills/nocobase-app-plugin-demo-mode/references/minimal-example.md#2-wire-existing-composition-roots). Existing applications must adopt the helper for their application-owned routes.
 
 `DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` is the whole demo administration: an application mounts it on a route of its own, inside its own page layout, and protects that route with `authz: { resource: { type: 'settings', id: 'demoMode.data' }, action: 'read' }`. Management uses the settings grants below, without an additional page grant. It is a single page of three cards:
 
 - **Demo data** — the dataset's state, language, time and counts, with Generate, Reset and Clear (each confirmed, with its exact consequence).
-- **Daily reset** — on or off, the time, a searchable IANA time zone, the dataset language and the next run.
-- **Demo accounts** — their credentials and a copyable sign-in link for each.
+- **Daily reset** — a read-only display of the deployment’s reset time, IANA time zone, dataset language and next run. Daily reset is enabled automatically; it has no save controls or on/off switch.
+- **Accounts** — system usernames and a copyable sign-in link for each.
 
 Visitor write policies, simulation and AI controls are not displayed. Existing collection exceptions remain effective and can be managed through deployment configuration or the configuration API. Registered simulations and integrated demo chat are enabled by default; the application decides which flows to integrate. The page has no tabs; an existing `?tab=` parameter is ignored.
 
-Each card saves on its own with the revision it was started from and says when another administrator saved first; leaving with unsaved changes asks first. What the viewer lacks the grant for is shown without its actions.
+Data operations require the manage grant; the daily reset card requires only the configuration read grant. Update the reset environment variables and restart the application to change its schedule.
 
 ```tsx
 import { DemoModeSettings } from '@nocobase/app-plugin-demo-mode/client/settings';
@@ -225,10 +232,10 @@ The command waits for completion. `--dry-run` previews only the operation and ar
 
 ## Demo configuration
 
-When Demo Mode is enabled, administrators adjust scheduling from the plugin's administration page. `GET /api/demoMode/configuration` and `PUT /api/demoMode/configuration/collections|mocks|schedule|chat` remain available (`settings:demoMode.configuration`: `read` / `configure`); collections, mocks and chat have no settings UI. Every save carries `expectedRevision` and is refused with `DEMO_CONFIGURATION_CONFLICT` when another administrator saved first. Explicit saved overrides, including disabled chat or adapters, remain effective; defaults apply when no override exists.
+When Demo Mode is enabled, the administration page displays the deployment-owned schedule. `GET /api/demoMode/configuration` and `PUT /api/demoMode/configuration/collections|mocks|chat` remain available (`settings:demoMode.configuration`: `read` / `configure`); collections, mocks and chat have no settings UI. Every save carries `expectedRevision` and is refused with `DEMO_CONFIGURATION_CONFLICT` when another administrator saved first. Explicit saved overrides, including disabled chat or adapters, remain effective; defaults apply when no override exists.
 
 - **Simulations.** `registerMock` registers model/tool/Runner adapters, enabled by default unless `defaultEnabled: false` or a saved override disables them. `registerAgent({ id, title, defaultEnabled, execute })` supplies an environment-wide Agent proxy with the same default: demo mode always uses the application’s replacement when the proxy is called, while `NOCOBASE_DEMO_MODE=false` uses the normal Agent. Registration alone does not execute or intercept anything. Disabled adapters fail closed; unmarked or visitor-created business records never fall through to a real Agent in demo mode.
-- **Daily reset.** A recurring job on the application's jobs service triggers resets independently of HTTP traffic. Normal request policy checks do not calculate the next reset time; `nextRun` is only a management-view preview. Configure `{ enabled, hour, minute, timezone, language }` through the management API/UI. This is the only schedule source; there is no deployment-cron override. A durable claim permits one reset per local day, including across processes and repeated DST minutes. Resets run as the administrator who generated the data last, so nothing resets before the first generation. The host composes `JobExecutorServiceProvider`, as generated applications do: Demo Mode keeps one `daily-reset` cron rule in its `@nocobase/app-plugin-demo-mode` jobs scope at the configured local time, updated when the schedule is saved or a data operation changes the default; applications supply only the dataset adapter. Until an administrator saves a schedule, the default resets every night at 03:00 in the dataset's last generated language and its time zone; saving `enabled: false` turns it off. Expose `nextRun` from the saved configuration; a failed reset is reported in the data status and the `demo-mode` log. A firing missed during downtime is skipped; a failed claimed run is not retried automatically that day.
+- **Daily reset.** The application's jobs service triggers one reset per day independently of HTTP traffic. Register `defineDemoModeConfig()` and configure `NOCOBASE_DEMO_RESET_HOUR`, `NOCOBASE_DEMO_RESET_MINUTE`, `NOCOBASE_DEMO_RESET_TIMEZONE` and `NOCOBASE_DEMO_RESET_LANGUAGE`; their defaults are `3`, `0`, `UTC` and `en-US`. Choose a language supported by the registered dataset. The schedule is always enabled in Demo Mode and never follows the last manually generated language or the dataset's time zone. Restart after changing the environment. Previously saved schedules, including disabled schedules, are ignored; schedule writes through the configuration API/service are no longer supported. The host composes `JobExecutorServiceProvider`, as generated applications do. Demo Mode replaces its `daily-reset` cron rule in the `@nocobase/app-plugin-demo-mode` jobs scope at startup with the resolved deployment values. A durable claim permits one reset per local day, including across processes and repeated DST minutes. Resets run as the administrator who generated the data last, so nothing resets before the first generation. The server supplies `nextRun` for the read-only management view; normal request policy checks do not calculate previews. Failed resets appear in data status and the `demo-mode` log. A firing missed during downtime is skipped; a failed claimed run is not retried automatically that day.
 
 `pnpm nocobase demo-mode data <status|import|clear|reset>` drives the same lifecycle from a shell (`--actor`, `--language`; changes need `--force`, and `--dry-run` only prints what would happen).
 
