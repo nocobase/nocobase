@@ -45,9 +45,35 @@ it('preserves explicit blocks, whitespace, notices and independent parent/child 
     'New run',
   ]);
   expect(parts.filter((p) => p.type === 'data-notice')).toHaveLength(1);
-  expect(chatMessageSegments(messages).map((s) => s.seq)).toEqual([
-    1, 2, 3, 4, 5,
+  const segments = chatMessageSegments(messages);
+  expect(
+    segments.map(({ message, seq, partIndexes }) => ({
+      id: message.id,
+      seq,
+      partIndexes,
+    })),
+  ).toEqual([
+    { id: 'runner:run', seq: 1, partIndexes: [0, 1, 2, 3] },
+    { id: 'runner:other', seq: 5, partIndexes: [0] },
   ]);
+  expect(segments[0].message).toBe(messages[0]);
+  expect(
+    segments[0].message.metadata?.sourceRecords?.map(
+      ({ recordId, partIndex, output }) => ({ recordId, partIndex, output }),
+    ),
+  ).toEqual([
+    { recordId: 'r1', partIndex: 0, output: { blockId: 'same', phase: 'end' } },
+    {
+      recordId: 'r2',
+      partIndex: 1,
+      output: { blockId: 'child', phase: 'end' },
+    },
+    { recordId: 'r3', partIndex: 2, output: undefined },
+    { recordId: 'r4', partIndex: 3, output: undefined },
+  ]);
+  expect(
+    segments[0].partIndexes.map((index) => segments[0].message.parts[index]),
+  ).toEqual(messages[0].parts);
   expect(runnerUIMessages(JSON.parse(JSON.stringify(rows)))).toEqual(messages);
   const whitespace = runnerUIMessages([row(1, ' ', block('delta'))]);
   expect(chatMessageSegments(whitespace)).toHaveLength(1);
@@ -99,9 +125,21 @@ it('interleaves saved negotiated reasoning with canonical text without changing 
     { type: 'text', text: 'Other run', state: 'done' },
   ]);
   expect(messages[0].metadata?.revision).toBe(3);
-  expect(chatMessageSegments(messages).map((segment) => segment.seq)).toEqual([
-    2, 2, 3, 3, 4,
+  const segments = chatMessageSegments(messages);
+  expect(
+    segments.map(({ message, seq, partIndexes }) => ({
+      id: message.id,
+      seq,
+      partIndexes,
+    })),
+  ).toEqual([
+    { id: 'runner:run', seq: 2, partIndexes: [0, 1, 2, 3] },
+    { id: 'runner:other', seq: 4, partIndexes: [0] },
   ]);
+  expect(segments[0].message).toBe(messages[0]);
+  expect(
+    segments[0].partIndexes.map((index) => messages[0].parts[index]),
+  ).toEqual(messages[0].parts);
   expect(
     messages[0].metadata?.sourceRecords?.map((source) => source.partId),
   ).toEqual([

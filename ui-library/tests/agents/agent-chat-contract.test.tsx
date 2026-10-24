@@ -247,9 +247,14 @@ it('preserves stable source segments and complete SDK objects without manufactur
     metadata: { ...metadata, seq: 3, createdAt: '2026-01-01T00:00:02Z' },
   };
   const segments = chatMessageSegments([logical, notification]);
-  expect(segments.map((segment) => segment.seq)).toEqual([2, 3, 4]);
+  expect(segments.map((segment) => segment.seq)).toEqual([2, 3]);
   expect(segments[0].message).toBe(logical);
-  expect(segments[2].message).toBe(logical);
+  expect(segments[0].partIndexes).toEqual([0, 1]);
+  expect(segments[0].partIndexes.map((index) => logical.parts[index])).toEqual(
+    logical.parts,
+  );
+  expect(segments[0]).toMatchObject({ first: true, last: true });
+  expect(segments[1].message).toBe(notification);
   expect(segments.map((segment) => segment.key)).toEqual(
     chatMessageSegments([logical, notification]).map((segment) => segment.key),
   );
