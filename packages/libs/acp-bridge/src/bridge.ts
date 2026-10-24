@@ -761,7 +761,8 @@ async function probeAgents(
         const agent = await AgentProcess.start(resolved, {
           cwd: os.tmpdir(),
           signal,
-          initializeTimeoutMs: 30_000,
+          // First-use npx downloads can take several minutes; do not interrupt installation.
+          initializeTimeoutMs: 300_000,
           env,
           client,
           handlers: {

@@ -676,7 +676,7 @@ describe('runBridge', () => {
         const process = await original(resolved, options);
         processes.push({
           process,
-          probe: options.initializeTimeoutMs === 30_000,
+          probe: options.cwd === os.tmpdir(),
         });
         return process;
       },
@@ -861,7 +861,7 @@ describe('runBridge', () => {
     const probe = vi
       .spyOn(AgentProcess, 'start')
       .mockImplementation(async (_resolved, options) => {
-        expect(options.initializeTimeoutMs).toBe(30_000);
+        expect(options.initializeTimeoutMs).toBe(300_000);
         expect(options.signal).toBeDefined();
         if (hold)
           await new Promise<void>((resolve) => {
