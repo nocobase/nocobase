@@ -52,6 +52,10 @@ const idID: LocaleResource<typeof enUS> = {
     title: 'Buang perubahan yang belum disimpan?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Runner ini tidak mendukung penyegaran status. Mulai ulang runner.',
+    RUNNER_REFRESH_UNAVAILABLE:
+      'Status runner yang dicabut tidak dapat disegarkan.',
     CONFLICT: 'Sementara itu, keadaannya berubah. Muat ulang dan coba lagi.',
     REVISION_CONFLICT:
       'Sementara itu, keadaannya berubah. Muat ulang dan coba lagi.',
@@ -622,6 +626,11 @@ const idID: LocaleResource<typeof enUS> = {
     unknown: 'Pelariannya gagal.',
   },
   runtimes: {
+    refresh: {
+      button: 'Segarkan status',
+      checking: 'Memeriksa…',
+      restart: 'Mulai ulang runner untuk menyegarkan statusnya.',
+    },
     pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',

@@ -53,6 +53,10 @@ const frFR: LocaleResource<typeof enUS> = {
     title: 'Supprimer les modifications non enregistrées ?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Ce runner ne prend pas en charge l’actualisation du statut. Redémarrez-le.',
+    RUNNER_REFRESH_UNAVAILABLE:
+      'Le statut d’un runner révoqué ne peut pas être actualisé.',
     CONFLICT: 'Entre-temps, cela a changé. Rechargez et réessayez.',
     REVISION_CONFLICT: 'Entre-temps, cela a changé. Rechargez et réessayez.',
     FORBIDDEN: "Vous n'êtes pas autorisé à faire cela.",
@@ -649,6 +653,11 @@ const frFR: LocaleResource<typeof enUS> = {
     unknown: "L'exécution a échoué.",
   },
   runtimes: {
+    refresh: {
+      button: 'Actualiser le statut',
+      checking: 'Vérification…',
+      restart: 'Redémarrez le runner pour actualiser son statut.',
+    },
     pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',

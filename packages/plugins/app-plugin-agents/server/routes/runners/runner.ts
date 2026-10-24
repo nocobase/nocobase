@@ -312,6 +312,10 @@ export function createRunnerRoutes(
         release,
         ...(jobs ? { jobs } : {}),
         workspaces: services.workspaces.reporting,
+        ...(runner.features.includes('tools.refresh') &&
+        runner.toolsRefreshRequestId
+          ? { toolsRefreshRequestId: runner.toolsRefreshRequestId }
+          : {}),
       };
       return context.json({ data: response });
     },

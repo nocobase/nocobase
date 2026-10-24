@@ -52,6 +52,10 @@ const ptBR: LocaleResource<typeof enUS> = {
     title: 'Descartar alterações não salvas?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Este runner não permite atualizar o status. Reinicie-o.',
+    RUNNER_REFRESH_UNAVAILABLE:
+      'Não é possível atualizar o status de um runner revogado.',
     CONFLICT: 'Entretanto mudou. Recarregue e tente novamente.',
     REVISION_CONFLICT: 'Entretanto mudou. Recarregue e tente novamente.',
     FORBIDDEN: 'Você não tem permissão para fazer isso.',
@@ -644,6 +648,11 @@ const ptBR: LocaleResource<typeof enUS> = {
     unknown: 'A execução falhou.',
   },
   runtimes: {
+    refresh: {
+      button: 'Atualizar status',
+      checking: 'Verificando…',
+      restart: 'Reinicie o runner para atualizar seu status.',
+    },
     pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',

@@ -34,6 +34,7 @@ import {
   RunnerUpgradeRequired,
   RunnerVersionCell,
 } from './runner-cells.js';
+import { RefreshStatus } from './refresh-status.js';
 import { RunnerOverview } from './runner-overview.js';
 import { RunnerWorkspaces } from './runner-workspaces.js';
 import { RunnerRuns } from './runner-runs.js';
@@ -78,6 +79,8 @@ function LoadRunnerDetail({
   const detail = useQuery({
     queryKey: agentsKeys.runner(runner.id),
     queryFn: () => api.runner(runner.id),
+    refetchInterval: (query) =>
+      query.state.data?.toolsRefreshRequestId ? 2000 : false,
   });
   if (detail.isPending || detail.isError)
     return (
@@ -201,6 +204,7 @@ function RunnerDetail({
           value='overview'
           className='min-h-0 space-y-4 overflow-y-auto p-4'
         >
+          <RefreshStatus runner={runner} />
           {runner.status === 'upgrade_required' ? (
             <RunnerUpgradeRequired runner={runner} />
           ) : null}

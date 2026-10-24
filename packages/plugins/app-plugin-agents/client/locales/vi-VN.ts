@@ -51,6 +51,10 @@ const viVN: LocaleResource<typeof enUS> = {
     title: 'Hủy các thay đổi chưa được lưu?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Runner này không hỗ trợ làm mới trạng thái. Hãy khởi động lại runner.',
+    RUNNER_REFRESH_UNAVAILABLE:
+      'Không thể làm mới trạng thái của runner đã bị thu hồi.',
     CONFLICT: 'Trong lúc đó, nó đã thay đổi. Tải lại và thử lại.',
     REVISION_CONFLICT: 'Trong lúc đó, nó đã thay đổi. Tải lại và thử lại.',
     FORBIDDEN: 'Bạn không được phép làm điều này.',
@@ -619,6 +623,11 @@ const viVN: LocaleResource<typeof enUS> = {
     unknown: 'Việc chạy không thành công.',
   },
   runtimes: {
+    refresh: {
+      button: 'Làm mới trạng thái',
+      checking: 'Đang kiểm tra…',
+      restart: 'Hãy khởi động lại runner để làm mới trạng thái.',
+    },
     pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',

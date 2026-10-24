@@ -13,6 +13,7 @@ import { RUNNERS_TOPIC } from '../../shared/realtime.js';
 import type { RunnerSummary } from '../../shared/runners.js';
 import {
   api,
+  toasts,
   callsTo,
   clientMocks,
   FakeApiError,
@@ -110,6 +111,92 @@ describe('runtimes page', () => {
     return sheet;
   };
 
+  it('requests a refresh from the sheet and shows checking until the report arrives', async () => {
+    runners[0] = { ...runners[0]!, features: ['tools.refresh'] };
+    api.routes['POST agents/runners/r1/refreshStatus'] = () => {
+      runners = [
+        { ...runners[0]!, toolsRefreshRequestId: 'refresh-one' },
+        ...runners.slice(1),
+      ];
+      return runners[0];
+    };
+    renderPage(
+      <>
+        <RunnersRefresh />
+        <RuntimesPage />
+      </>,
+    );
+    const sheet = await openSheet();
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'runtimes.refresh.button' }),
+    );
+    await waitFor(() =>
+      expect(
+        within(sheet).getByRole('button', {
+          name: 'runtimes.refresh.checking',
+        }),
+      ).toBeDisabled(),
+    );
+    expect(callsTo('POST', 'agents/runners/r1/refreshStatus')).toHaveLength(1);
+    runners = [
+      { ...runners[0]!, toolsRefreshRequestId: null },
+      ...runners.slice(1),
+    ];
+    realtime.publish(RUNNERS_TOPIC, { runnerId: 'r1' });
+    await waitFor(() =>
+      expect(
+        within(sheet).getByRole('button', { name: 'runtimes.refresh.button' }),
+      ).toBeEnabled(),
+    );
+  });
+
+  it('prompts to restart an older runner without queuing a command', async () => {
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'runtimes.refresh.button' }),
+    );
+    expect(
+      toasts.some((toast) => toast.title === 'runtimes.refresh.restart'),
+    ).toBe(true);
+    expect(callsTo('POST', 'agents/runners/r1/refreshStatus')).toHaveLength(0);
+  });
+
+  it('queues a refresh from the runtime row menu', async () => {
+    runners[0] = { ...runners[0]!, features: ['tools.refresh'] };
+    api.routes['POST agents/runners/r1/refreshStatus'] = () => {
+      runners = [
+        { ...runners[0]!, toolsRefreshRequestId: 'refresh-menu' },
+        ...runners.slice(1),
+      ];
+      return runners[0];
+    };
+    renderPage(<RuntimesPage />);
+    const row = await screen.findByTestId('runner-r1');
+    await userEvent.click(
+      within(row).getByRole('button', {
+        name: 'runtimes.actionsFor(name=Mac Studio)',
+      }),
+    );
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'runtimes.refresh.button' }),
+    );
+    await waitFor(() =>
+      expect(callsTo('POST', 'agents/runners/r1/refreshStatus')).toHaveLength(
+        1,
+      ),
+    );
+    await userEvent.click(
+      within(row).getByRole('button', {
+        name: 'runtimes.actionsFor(name=Mac Studio)',
+      }),
+    );
+    expect(
+      await screen.findByRole('menuitem', {
+        name: 'runtimes.refresh.checking',
+      }),
+    ).toHaveAttribute('aria-disabled', 'true');
+  });
   const openWorkspaces = async (sheet: HTMLElement): Promise<void> => {
     await userEvent.click(
       within(sheet).getByRole('tab', { name: 'runtimes.quota.workspaces' }),

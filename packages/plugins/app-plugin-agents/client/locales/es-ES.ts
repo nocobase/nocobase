@@ -53,6 +53,10 @@ const esES: LocaleResource<typeof enUS> = {
     title: '¿Descartar cambios no guardados?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Este runner no admite actualizar el estado. Reinícialo.',
+    RUNNER_REFRESH_UNAVAILABLE:
+      'No se puede actualizar el estado de un runner revocado.',
     CONFLICT: 'Entretanto cambió. Vuelva a cargar y vuelva a intentarlo.',
     REVISION_CONFLICT:
       'Entretanto cambió. Vuelva a cargar y vuelva a intentarlo.',
@@ -651,6 +655,11 @@ const esES: LocaleResource<typeof enUS> = {
     unknown: 'La ejecución falló.',
   },
   runtimes: {
+    refresh: {
+      button: 'Actualizar estado',
+      checking: 'Comprobando…',
+      restart: 'Reinicia el runner para actualizar su estado.',
+    },
     pathHint: runtimesEnUS.runtimes.pathHint,
     capacity: {
       actual: 'Last effective slots: {{slots}}',

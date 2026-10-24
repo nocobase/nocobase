@@ -1,6 +1,11 @@
 /** The runtimes page's and the "Add runtime" dialog's words, merged into this plugin's locale (`en-US.ts`). */
 const runtimesEnUS = {
   runtimes: {
+    refresh: {
+      button: 'Refresh status',
+      checking: 'Checking…',
+      restart: 'Please restart the runner to refresh its status.',
+    },
     capacity: {
       actual: 'Last effective slots: {{slots}}',
       online: 'Effective slots · online settings',
