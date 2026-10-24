@@ -300,7 +300,6 @@ export async function createHarness(
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
     readonly retryBaseDelayMs?: number;
-    readonly outputBlocks?: boolean;
   } = {},
 ): Promise<Harness> {
   const { database, drop } = await openDatabase();
@@ -324,7 +323,6 @@ export async function createHarness(
   const chatFiles = memoryChatFiles(database, clock);
   const services = createAgents({
     measureOnlineAgent: options.measureOnlineAgent,
-    outputBlocks: options.outputBlocks,
     uiRecovery: options.uiRecovery,
     database,
     idGenerator,

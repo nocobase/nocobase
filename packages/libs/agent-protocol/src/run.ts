@@ -792,7 +792,7 @@ export const RunHeaderSchema: z.ZodType<RunHeader> = z.object({
  * here and only once.
  */
 export interface RunPayload {
-  /** Enable append-only output blocks only when the application and runner both support them. */
+  /** Enable realtime-only previews for a conversation claimed by a capable runner. Never set on tasks. */
   readonly outputBlocks?: boolean;
   readonly run: RunHeader;
   readonly app: RunApp;

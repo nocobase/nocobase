@@ -46,7 +46,8 @@ export function outputBlock(
 
 /**
  * One thing that happened in a run. `seq` is the runner's counter for the run, from 1; the server stores each
- * `(runId, seq)` once, so a batch can be resent safely.
+ * `(runId, seq)` once, so a batch can be resent safely. Conversation preview deltas and content-less ends are
+ * realtime-only: their separate sequence deduplicates transport delivery and never advances the durable counter.
  */
 export interface RunEvent {
   readonly seq: number;

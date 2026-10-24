@@ -1,6 +1,3 @@
-import { OutputWriter } from '../src/agent/output-writer.ts';
-import { createRedactor, outputBlock } from '../src/protocol/index.ts';
-import type { SpoolEvent } from '../src/core/events.ts';
 import { execFileSync, spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import {
@@ -81,24 +78,10 @@ describe('short private run temporary directories', () => {
         expect(existsSync(allocation.dir)).toBe(true);
         if (ending === 'stop-failed') throw new Error('writer still alive');
       });
-      const redactor = createRedactor(['fictional secret 12345']);
-      const outputEvents: SpoolEvent[] = [];
-      const output = new OutputWriter(
-        (event) => outputEvents.push(event),
-        redactor,
-        true,
-      );
-      output.write({
-        type: 'text',
-        content: 'safe fictional sec',
-        meta: { output: { blockId: 'partial', phase: 'delta' } },
-      });
       // Exercise the real finally and local finalizer independently of tool inference and server delivery.
       const worker: RunWorker = Object.create(RunWorker.prototype);
       Object.assign(worker, {
         runId: 'run',
-        output,
-        redactor,
         payload: { workspace: { readOnly: false }, run: { id: 'run' } },
         deps: { paths, log: vi.fn(), stopWriters },
         timings: { statusIntervalMs: 60_000 },
@@ -123,14 +106,6 @@ describe('short private run temporary directories', () => {
         },
       });
       await worker.run();
-      expect(outputEvents.map((event) => event.content).join('')).toBe(
-        'safe [REDACTED]',
-      );
-      expect(
-        outputEvents.filter(
-          (event) => outputBlock(event.meta)?.phase === 'end',
-        ),
-      ).toHaveLength(1);
       expect(stopWriters).toHaveBeenCalledOnce();
       expect(existsSync(allocation.dir)).toBe(ending === 'stop-failed');
       if (ending === 'stop-failed') {

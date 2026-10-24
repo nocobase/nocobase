@@ -1,4 +1,3 @@
-import { collectOutput } from './collect-output.ts';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdtemp, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -114,7 +113,9 @@ function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
 async function collect(
   events: AsyncIterable<AdapterEvent>,
 ): Promise<AdapterEvent[]> {
-  return collectOutput(events);
+  const out: AdapterEvent[] = [];
+  for await (const event of events) out.push(event);
+  return out;
 }
 
 function begin(inbox = 'msg_in0'): ScriptItem[] {
@@ -813,8 +814,14 @@ it('streams independent root and child blocks without repeating their completed 
       succeeded,
     ],
   });
-  const handle = adapterFor(fake).start(session());
-  const events = await collect(handle.events);
+  const handle = adapterFor(fake).start(session({ outputBlocks: true }));
+  const raw = await collect(handle.events);
+  expect(
+    raw.some((e) => (e.meta?.output as { phase?: string })?.phase === 'delta'),
+  ).toBe(true);
+  const events = raw.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'end',
+  );
   expect(
     events.filter((e) => e.type === 'thinking').map((e) => e.content),
   ).toEqual(['Plan carefully']);

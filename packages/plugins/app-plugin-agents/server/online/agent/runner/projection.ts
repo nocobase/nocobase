@@ -19,10 +19,6 @@ export const runnerMessageId = (runId: string): string => `runner:${runId}`;
 /** Pure projection: no Run inference from prose and no invented tools or approvals. */
 export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
   const messages = new Map<string, AppUIMessage>();
-  const blocks = new Map<
-    string,
-    { message: AppUIMessage; partIndex: number; sourceIndex: number }
-  >();
   const seen = new Set<string>();
   for (const row of rows) {
     if (seen.has(row.id)) continue;
@@ -56,35 +52,9 @@ export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
       };
       messages.set(id, message);
     }
-    const output =
-      !row.metadata.notice && row.role === 'assistant' && row.runId
-        ? outputBlock(row.metadata as Record<string, unknown>)
-        : undefined;
-    const blockKey = output
-      ? JSON.stringify([
-          row.runId,
-          output.blockId,
-          row.metadata.parentToolUseId,
-          row.metadata.childSessionId,
-        ])
-      : undefined;
-    const previous = blockKey ? blocks.get(blockKey) : undefined;
-    if (previous) {
-      const part = previous.message.parts[previous.partIndex];
-      if (part.type === 'text') {
-        part.text += row.content.content;
-        part.state = output!.phase === 'end' ? 'done' : 'streaming';
-      }
-      previous.message.metadata!.sourceRecords![previous.sourceIndex].output =
-        output;
-      previous.message.metadata!.revision = Math.max(
-        previous.message.metadata!.revision,
-        row.seq,
-      );
-      continue;
-    }
     const index = message.parts.length;
-    const partId = `record:${row.id}`;
+    const output = outputBlock(row.metadata as Record<string, unknown>);
+    const partId = output ? `output:${output.blockId}` : `record:${row.id}`;
     if (row.metadata.notice) {
       const notice = row.metadata.notice;
       message.parts.push(
@@ -112,7 +82,7 @@ export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
       message.parts.push({
         type: 'text',
         text: row.content.content,
-        state: output?.phase === 'delta' ? 'streaming' : 'done',
+        state: 'done',
       });
     message.metadata!.sourceRecords!.push({
       recordId: row.id,
@@ -122,12 +92,6 @@ export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
       ...(output ? { output } : {}),
       createdAt: row.createdAt,
     });
-    if (blockKey)
-      blocks.set(blockKey, {
-        message,
-        partIndex: index,
-        sourceIndex: message.metadata!.sourceRecords!.length - 1,
-      });
     for (const file of row.attachments ?? []) {
       message.parts.push({
         type: 'file',

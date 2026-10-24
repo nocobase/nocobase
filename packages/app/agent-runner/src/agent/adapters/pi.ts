@@ -448,7 +448,7 @@ class PiRun {
       await rm(this.tempDir, { recursive: true, force: true }).catch(() => {});
 
     const result = this.result();
-    this.streaming.end();
+    if (this.session.outputBlocks) this.streaming.end();
     if (result.error)
       this.emit({
         type: 'error',
@@ -787,10 +787,12 @@ class PiRun {
         }
         return;
       case 'message_start':
+        if (!this.session.outputBlocks) return;
         if ((record.message as PiMessage | undefined)?.role === 'assistant')
           this.streaming.reset();
         return;
       case 'message_update': {
+        if (!this.session.outputBlocks) return;
         const delta = record.assistantMessageEvent as
           { type?: string; contentIndex?: number; delta?: string } | undefined;
         if (typeof delta?.delta !== 'string') return;
@@ -930,6 +932,26 @@ class PiRun {
     this.lastAssistant = message;
     this.addUsage(message);
     if (!Array.isArray(message.content)) return;
+    if (!this.session.outputBlocks) {
+      for (const block of message.content) {
+        if (block.type === 'text' && block.text) {
+          const capped = capText(block.text);
+          this.emit({
+            type: 'text',
+            content: capped.text,
+            meta: capped.truncated ? { truncated: true } : {},
+          });
+        } else if (block.type === 'thinking' && block.thinking) {
+          const capped = capText(block.thinking);
+          this.emit({
+            type: 'thinking',
+            content: capped.text,
+            meta: capped.truncated ? { truncated: true } : {},
+          });
+        }
+      }
+      return;
+    }
     for (const [index, block] of message.content.entries()) {
       if (block.type === 'text')
         this.streaming.complete(`pi:${index}`, 'text', block.text);

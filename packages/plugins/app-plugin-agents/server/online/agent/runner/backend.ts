@@ -13,6 +13,7 @@ import type { AppUIMessage } from '../../../../shared/online-agent.js';
 import { isDeepStrictEqual } from 'node:util';
 import type { ModelMessage } from 'ai';
 import type { Run } from '../../../../shared/runs.js';
+import { outputBlock, type RunEvent } from '@nocobase/agent-protocol';
 import type { ModelRef } from '../../../../shared/models.js';
 import {
   conversationsRepo,
@@ -288,6 +289,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
       writer,
       published: new Set(),
       textLengths: new Map(),
+      previewParts: new Map(),
       ready: false,
       started: false,
       again: false,
@@ -524,6 +526,91 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
     void this.refresh(execution).catch((error) => this.deps.onError(error));
     return true;
   }
+  /** Ephemeral previews are authorized/redacted by reports; history still comes only from completed snapshots. */
+  output(runId: string, event: RunEvent): void {
+    const execution = [...this.state.active.values()].find(
+      (item) => item.runId === runId,
+    );
+    const output = outputBlock(event.meta);
+    if (
+      !execution?.ready ||
+      !output ||
+      (event.type !== 'text' && event.type !== 'thinking')
+    )
+      return;
+    const id = `output:${output.blockId}`;
+    if (execution.published.has(id)) return;
+    const type = event.type === 'thinking' ? 'reasoning' : 'text';
+    if (!execution.started) {
+      execution.writer.write({
+        type: 'start',
+        messageId: runnerMessageId(runId),
+        messageMetadata: {
+          conversationId: execution.id,
+          revision: 0,
+          createdAt: this.deps.now(),
+          executionId: runId,
+          turnId: runId,
+        },
+      });
+      execution.started = true;
+    }
+    if (!execution.previewParts.has(id)) {
+      if (execution.previewParts.size >= 64) return;
+      execution.previewParts.set(id, {
+        index: execution.previewParts.size,
+        type,
+      });
+      execution.writer.write({
+        type: type === 'text' ? 'text-start' : 'reasoning-start',
+        id,
+      });
+      execution.textLengths.set(id, 0);
+    }
+    const sources = [...execution.previewParts].map(([partId, part]) => ({
+      recordId: partId,
+      partId,
+      partIndex: part.index,
+      seq: execution.cursor + 1,
+      createdAt: this.deps.now(),
+      output: {
+        blockId: partId.slice(7),
+        phase: execution.published.has(partId)
+          ? ('end' as const)
+          : ('delta' as const),
+      },
+    }));
+    execution.writer.write({
+      type: 'message-metadata',
+      messageMetadata: {
+        ...execution.snapshot?.metadata,
+        revision: execution.snapshot?.metadata?.revision ?? 0,
+        conversationId: execution.id,
+        createdAt: execution.snapshot?.metadata?.createdAt ?? this.deps.now(),
+        sourceRecords: sources,
+        executionId: runId,
+        turnId: runId,
+      },
+    });
+    if (event.content) {
+      execution.writer.write({
+        type: type === 'text' ? 'text-delta' : 'reasoning-delta',
+        id,
+        delta: event.content,
+      });
+      execution.textLengths.set(
+        id,
+        (execution.textLengths.get(id) ?? 0) + event.content.length,
+      );
+    }
+    if (output.phase === 'end') {
+      execution.writer.write({
+        type: type === 'text' ? 'text-end' : 'reasoning-end',
+        id,
+      });
+      execution.published.add(id);
+    }
+  }
   private refresh(execution: Execution): Promise<void> {
     if (this.state.detaching) return execution.pending ?? Promise.resolve();
     if (
@@ -569,6 +656,16 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
       run.subject.id !== execution.id
     )
       throw forbidden('This run does not belong to the conversation.');
+    // A reclaimed attempt can be queued again without finishing the conversation stream.
+    if (run.status === 'queued' || run.status === 'dispatched')
+      for (const [id, part] of execution.previewParts)
+        if (id.startsWith('output:') && !execution.published.has(id)) {
+          execution.writer.write({
+            type: part.type === 'text' ? 'text-end' : 'reasoning-end',
+            id,
+          });
+          execution.published.add(id);
+        }
     // Synchronization commits first. Independent notices are delivered by durable business rereads.
     const row = await owned(this.deps, execution.userId, execution.id);
     if (Number(row.lastSeq) > execution.cursor) {
@@ -584,6 +681,43 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         records.map((record) => toMessage(record, this.deps.basePath())),
       )[0];
       if (message) {
+        const sourceParts = new Map(
+          message.metadata!.sourceRecords!.map((source) => [
+            source.partId,
+            message.parts[source.partIndex],
+          ]),
+        );
+        const canonicalSources = [...message.metadata!.sourceRecords!];
+        for (const source of message.metadata!.sourceRecords!) {
+          let part = execution.previewParts.get(source.partId);
+          if (!part) {
+            part = { index: execution.previewParts.size, type: 'text' };
+            execution.previewParts.set(source.partId, part);
+          }
+          source.partIndex = part.index;
+        }
+        const canonical = new Set(
+          message.metadata!.sourceRecords!.map((source) => source.partId),
+        );
+        for (const [partId, part] of execution.previewParts)
+          if (!canonical.has(partId))
+            message.metadata!.sourceRecords!.push({
+              recordId: partId,
+              partId,
+              partIndex: part.index,
+              seq: execution.cursor + 1,
+              createdAt: this.deps.now(),
+              ...(partId.startsWith('output:')
+                ? {
+                    output: {
+                      blockId: partId.slice(7),
+                      phase: execution.published.has(partId)
+                        ? ('end' as const)
+                        : ('delta' as const),
+                    },
+                  }
+                : {}),
+            });
         if (!execution.started) {
           execution.writer.write({
             type: 'start',
@@ -596,9 +730,9 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
           type: 'message-metadata',
           messageMetadata: message.metadata!,
         });
-        for (const source of message.metadata!.sourceRecords!) {
+        for (const source of canonicalSources) {
           if (execution.published.has(source.partId)) continue;
-          const part = message.parts[source.partIndex];
+          const part = sourceParts.get(source.partId)!;
           if (part.type === 'text') {
             const length = execution.textLengths.get(source.partId);
             if (length === undefined)
@@ -629,6 +763,14 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
       execution.cursor = Number(row.lastSeq);
     }
     if (!this.terminal(run)) return;
+    for (const [id, part] of execution.previewParts)
+      if (!execution.published.has(id)) {
+        execution.writer.write({
+          type: part.type === 'text' ? 'text-end' : 'reasoning-end',
+          id,
+        });
+        execution.published.add(id);
+      }
     const started = performance.now();
     try {
       if (!execution.cleared)

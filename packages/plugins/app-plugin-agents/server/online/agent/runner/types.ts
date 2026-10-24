@@ -15,6 +15,7 @@ export type Execution = {
   writer: UIStreamChannel;
   published: Set<string>;
   textLengths: Map<string, number>;
+  previewParts: Map<string, { index: number; type: 'text' | 'reasoning' }>;
   ready: boolean;
   started: boolean;
   snapshot?: AppUIMessage;

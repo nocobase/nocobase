@@ -10,7 +10,12 @@ it('deduplicates raw snapshots and emits one explicit end even on repeated compl
   stream.complete('reply', 'text', '**Hello** world');
   stream.complete('reply', 'text', '**Hello** world');
   stream.end();
-  expect(events.map((e) => e.content).join('')).toBe('**Hello** world');
+  expect(
+    events
+      .filter((e) => (e.meta?.output as { phase: string }).phase === 'delta')
+      .map((e) => e.content)
+      .join(''),
+  ).toBe('**Hello** world');
   expect(
     events.filter((e) => (e.meta?.output as { phase: string }).phase === 'end'),
   ).toHaveLength(1);
@@ -27,12 +32,13 @@ it('preserves whitespace and independent ids, including repeated provider keys i
   stream.end();
   stream.reset();
   stream.complete('reply', 'text', 'next');
-  expect(events.map((e) => e.content)).toEqual([
-    ' ',
-    undefined,
-    'next',
-    undefined,
-  ]);
+  expect(
+    events.map((e) =>
+      e.meta?.output && (e.meta.output as { phase: string }).phase === 'end'
+        ? undefined
+        : e.content,
+    ),
+  ).toEqual([' ', undefined, 'next', undefined]);
   expect(
     new Set(events.map((e) => (e.meta?.output as { blockId: string }).blockId))
       .size,

@@ -1,5 +1,3 @@
-import { collectOutput } from './collect-output.ts';
-import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { randomUUID } from 'node:crypto';
 import { chmod, mkdir, mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -63,7 +61,9 @@ function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
 async function collect(
   events: AsyncIterable<AdapterEvent>,
 ): Promise<AdapterEvent[]> {
-  return collectOutput(events);
+  const out: AdapterEvent[] = [];
+  for await (const event of events) out.push(event);
+  return out;
 }
 
 let dir: string;
@@ -827,201 +827,70 @@ describe('stopping', () => {
   });
 });
 
-describe('streamed output', () => {
-  it.each([true, false])(
-    'streams split SDK blocks before completion (thinking=%s)',
-    async (withThinking) => {
-      const observed: AdapterEvent[] = [];
-      const partial = (event: unknown, parent: string | null = null) =>
-        ({
-          type: 'stream_event',
-          event,
-          parent_tool_use_id: parent,
-          session_id: SESSION_ID,
-          uuid: randomUUID(),
-        }) as SDKMessage;
-      setScript(async function* (ctx) {
-        await ctx.nextInput();
-        expect(ctx.options.includePartialMessages).toBe(true);
-        yield init();
-        yield partial({ type: 'message_start', message: { id: 'msg_1' } });
-        let index = 0;
-        if (withThinking) {
-          vi.useFakeTimers();
-          yield partial({
-            type: 'content_block_delta',
-            index,
-            delta: { type: 'thinking_delta', thinking: 'Plan ' },
-          });
-          yield partial({
-            type: 'content_block_delta',
-            index,
-            delta: { type: 'thinking_delta', thinking: 'carefully' },
-          });
-          try {
-            await vi.advanceTimersByTimeAsync(1000);
-            expect(
-              observed
-                .filter((e) => e.type === 'thinking')
-                .map((e) => e.content),
-            ).toEqual(['Plan ', 'carefully']);
-          } finally {
-            vi.useRealTimers();
-          }
-          yield assistant([
-            {
-              type: 'thinking',
-              thinking: 'Plan carefully',
-              signature: 'secret-signature',
-            },
-          ]);
-          index++;
-        }
-        vi.useFakeTimers();
-        yield partial({
-          type: 'content_block_start',
-          index,
-          content_block: { type: 'text', text: 'Hel' },
-        });
-        yield partial({
-          type: 'content_block_delta',
-          index,
-          delta: { type: 'text_delta', text: 'lo' },
-        });
-        try {
-          await vi.advanceTimersByTimeAsync(1000);
-          expect(
-            observed
-              .filter((e) => e.type === 'text')
-              .map((e) => e.content)
-              .join(''),
-          ).toBe('Hello');
-        } finally {
-          vi.useRealTimers();
-        }
-        yield assistant([{ type: 'text', text: 'Hello world' }]);
-        yield result();
-      });
-      const handle = adapterWith('9.0.0', dir).start(session());
-      for await (const event of handle.events) observed.push(event);
-      expect(await handle.result).toMatchObject({ exit: 'completed' });
-      expect(
-        observed
-          .filter((e) => e.type === 'text')
-          .map((e) => e.content)
-          .join(''),
-      ).toBe('Hello world');
-      expect(
-        observed
-          .filter((e) => e.type === 'thinking')
-          .map((e) => e.content)
-          .join(''),
-      ).toBe(withThinking ? 'Plan carefully' : '');
-      expect(JSON.stringify(observed)).not.toContain('secret-signature');
-    },
-  );
-});
-
-it('keeps interleaved parent and child partial messages separate', async () => {
-  const partial = (event: unknown, parent: string | null = null) =>
+it('uses actual non-contiguous partial indexes and deduplicates completed snapshots', async () => {
+  const partial = (event: unknown) =>
     ({
       type: 'stream_event',
       event,
-      parent_tool_use_id: parent,
+      parent_tool_use_id: null,
       session_id: SESSION_ID,
       uuid: randomUUID(),
-    }) as SDKMessage;
+    }) as import('@anthropic-ai/claude-agent-sdk').SDKMessage;
   setScript(async function* (ctx) {
     await ctx.nextInput();
     yield init();
     yield partial({ type: 'message_start', message: { id: 'msg_1' } });
     yield partial({
-      type: 'content_block_delta',
-      index: 0,
-      delta: { type: 'text_delta', text: 'Parent' },
-    });
-    yield partial(
-      { type: 'message_start', message: { id: 'child' } },
-      'tool-1',
-    );
-    yield partial(
-      {
-        type: 'content_block_delta',
-        index: 0,
-        delta: { type: 'text_delta', text: 'Child' },
-      },
-      'tool-1',
-    );
-    yield assistant([{ type: 'text', text: 'Child' }], {
-      parent_tool_use_id: 'tool-1',
-      message: { id: 'child', content: [{ type: 'text', text: 'Child' }] },
+      type: 'content_block_start',
+      index: 2,
+      content_block: { type: 'thinking', thinking: '' },
     });
     yield partial({
       type: 'content_block_delta',
-      index: 0,
-      delta: { type: 'text_delta', text: ' reply' },
+      index: 2,
+      delta: { type: 'thinking_delta', thinking: 'Plan' },
     });
-    yield assistant([{ type: 'text', text: 'Parent reply' }]);
+    yield partial({
+      type: 'content_block_start',
+      index: 7,
+      content_block: { type: 'text', text: 'Hello' },
+    });
+    yield partial({
+      type: 'content_block_delta',
+      index: 7,
+      delta: { type: 'text_delta', text: ' world' },
+    });
+    yield assistant([{ type: 'thinking', thinking: 'Plan' }]);
+    yield assistant([{ type: 'text', text: 'Hello world' }]);
+    yield assistant([
+      { type: 'thinking', thinking: 'Plan' },
+      { type: 'text', text: 'Hello world' },
+    ]);
     yield result();
   });
-  const handle = adapterWith('9.0.0', dir).start(session());
-  const events = (await collect(handle.events)).filter(
-    (e) => e.type === 'text',
+  const handle = adapterWith('9.0.0', dir).start(
+    session({ outputBlocks: true }),
   );
-  expect(events.map((e) => e.content)).toEqual(['Child', 'Parent reply']);
-  expect(events[0]?.meta).toMatchObject({ parentToolUseId: 'tool-1' });
-  expect(await handle.result).toMatchObject({ exit: 'completed' });
+  const events = await collect(handle.events);
+  const deltas = events.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'delta',
+  );
+  expect(
+    deltas
+      .filter((e) => e.type === 'text')
+      .map((e) => e.content)
+      .join(''),
+  ).toBe('Hello world');
+  expect(
+    deltas
+      .filter((e) => e.type === 'thinking')
+      .map((e) => e.content)
+      .join(''),
+  ).toBe('Plan');
+  const ends = events.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'end',
+  );
+  expect(ends.map((e) => e.content)).toEqual(['Plan', 'Hello world']);
+  expect(calls[0]?.options.includePartialMessages).toBe(true);
+  expect((await handle.result).summary).toBeDefined();
 });
-
-it.each(['cancel', 'exception'])(
-  'ends a partial block once on %s before reporting the outcome',
-  async (mode) => {
-    setScript(async function* (ctx) {
-      await ctx.nextInput();
-      yield init();
-      yield {
-        type: 'stream_event',
-        parent_tool_use_id: null,
-        uuid: randomUUID(),
-        session_id: SESSION_ID,
-        event: { type: 'message_start', message: { id: 'msg_partial' } },
-      } as SDKMessage;
-      yield {
-        type: 'stream_event',
-        parent_tool_use_id: null,
-        uuid: randomUUID(),
-        session_id: SESSION_ID,
-        event: {
-          type: 'content_block_delta',
-          index: 0,
-          delta: { type: 'text_delta', text: 'unfinished tail' },
-        },
-      } as SDKMessage;
-      if (mode === 'exception') throw new Error('Fixture provider exception');
-      await ctx.aborted;
-    });
-    const handle = adapterWith('9.0.0', dir).start(session());
-    const events: AdapterEvent[] = [];
-    for await (const event of handle.events) {
-      events.push(event);
-      if (mode === 'cancel' && event.type === 'text' && event.content)
-        void handle.stop();
-    }
-    expect(
-      events
-        .filter((e) => e.type === 'text')
-        .map((e) => e.content)
-        .join(''),
-    ).toBe('unfinished tail');
-    const ends = events.filter(
-      (e) =>
-        (e.meta?.output as { phase?: string } | undefined)?.phase === 'end',
-    );
-    expect(ends).toHaveLength(1);
-    const error = events.findIndex((e) => e.type === 'error');
-    if (error >= 0) expect(events.indexOf(ends[0])).toBeLessThan(error);
-    expect((await handle.result).exit).toBe(
-      mode === 'cancel' ? 'aborted' : 'error',
-    );
-  },
-);

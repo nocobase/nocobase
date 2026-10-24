@@ -1,4 +1,5 @@
-import { eventsRepo } from '../server/core/runs/run.store.js';
+import type { Knex } from 'knex';
+import { writeFile } from 'node:fs/promises';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type {
@@ -7,8 +8,6 @@ import type {
 } from '../server/online/agent/types.js';
 import { appUIMessageText } from '../shared/online-agent.js';
 import { claim, createHarness, type Harness } from './harness.js';
-import { appendFile } from 'node:fs/promises';
-import type { Knex } from 'knex';
 
 let h: Harness;
 afterEach(async () => {
@@ -22,10 +21,8 @@ const context = (id = 'alice'): OnlineAgentContext => ({
     identity: { principal: { type: 'user', id } },
   } as AuthorizationContext,
 });
-async function fixture(
-  options: { outputBlocks?: boolean; outputFeature?: boolean } = {},
-) {
-  h = await createHarness({ outputBlocks: options.outputBlocks });
+async function fixture(options: { outputFeature?: boolean } = {}) {
+  h = await createHarness();
   const runner = await h.registerRunner(
     options.outputFeature
       ? {
@@ -988,26 +985,20 @@ it('saves Runner notices transactionally without waking and persists ordinary vi
   ).rejects.toThrow('not found');
 });
 
-it.each([
-  [false, true],
-  [true, false],
-  [true, true],
-])(
-  'negotiates output blocks only when application=%s and runner=%s',
-  async (enabled, supported) => {
-    const f = await fixture({
-      outputBlocks: enabled,
-      outputFeature: supported,
-    });
+it.each([false, true])(
+  'enables previews automatically only for capable conversation runners (%s)',
+  async (supported) => {
+    const f = await fixture({ outputFeature: supported });
     await f.agent.send([{ role: 'user', content: 'Negotiation' }]);
     const [payload] = await claim(h, f.runner);
-    expect(payload.outputBlocks).toBe(enabled && supported ? true : undefined);
+    expect(payload.outputBlocks).toBe(supported ? true : undefined);
   },
 );
 
-it('streams one continuous Markdown block, retains whitespace and reproduces the same history after reload', async () => {
-  const f = await fixture({ outputBlocks: true, outputFeature: true });
-  await f.agent.send([{ role: 'user', content: 'Markdown' }]);
+it('keeps a 25-second preview out of storage and preserves prior users in the next prompt', async () => {
+  const f = await fixture({ outputFeature: true });
+  const question = 'Remember my original user question across a long reply';
+  await f.agent.send([{ role: 'user', content: question }]);
   const reader = (await f.agent.receive())!.getReader();
   const chunks: NativeUIChunk[] = [];
   const reading = (async () => {
@@ -1020,7 +1011,7 @@ it('streams one continuous Markdown block, retains whitespace and reproduces the
   const [payload] = await claim(h, f.runner);
   const id = payload.run.id;
   await f.report(id, 'start', {
-    workDir: '/work/markdown',
+    workDir: '/work/preview',
     adapter: { kind: 'claude' },
     acceptsInput: true,
   });
@@ -1028,152 +1019,331 @@ it('streams one continuous Markdown block, retains whitespace and reproduces the
     '**Hello',
     '**',
     ' ',
-    'world',
-    '\n\n```ts\nconst x = 1;',
-    '\n```\n\n[Link](https://example.test)\n\n| A | B |\n| - | - |\n| 1 | 2 |',
+    ...Array.from({ length: 22 }, (_, i) => `第${i}段。`),
   ];
-  let seq = 0;
-  for (const content of pieces) {
+  for (const [i, content] of pieces.entries()) {
     const event = {
-      seq: ++seq,
+      seq: i + 1,
       at: h.clock.now().toISOString(),
       type: 'text',
       content,
-      meta: { output: { blockId: 'markdown', phase: 'delta' } },
+      meta: { output: { blockId: 'long', phase: 'delta' } },
     };
     expect(
       (await f.report(id, 'events', { events: [event, event] })).status,
     ).toBe(200);
-    await vi.waitFor(() =>
-      expect(
-        chunks
-          .filter((e) => e.type === 'text-delta')
-          .map((e) => e.delta)
-          .join(''),
-      ).toBe(pieces.slice(0, seq).join('')),
-    );
-    expect(chunks.filter((e) => e.type === 'text-start')).toHaveLength(1);
-    expect(chunks.filter((e) => e.type === 'text-end')).toHaveLength(0);
+    h.clock.advance(1000);
   }
+  await vi.waitFor(() =>
+    expect(
+      chunks
+        .filter((e) => e.type === 'text-delta')
+        .map((e) => e.delta)
+        .join(''),
+    ).toBe(pieces.join('')),
+  );
+  expect((await h.services.runs.events(id, 0, 1000)).events).toHaveLength(0);
+  expect(
+    (await f.agent.history()).filter((m) => m.role === 'assistant'),
+  ).toHaveLength(0);
+  expect(chunks.filter((e) => e.type === 'text-end')).toHaveLength(0);
+  expect(
+    (
+      await f.report(id, 'events', {
+        events: [
+          {
+            seq: 1,
+            at: h.clock.now().toISOString(),
+            type: 'text',
+            content: pieces.join(''),
+            meta: { output: { blockId: 'long', phase: 'end' } },
+          },
+        ],
+      })
+    ).status,
+  ).toBe(200);
+  await vi.waitFor(() =>
+    expect(chunks.filter((e) => e.type === 'text-end')).toHaveLength(1),
+  );
+  expect(
+    chunks
+      .filter((e) => e.type === 'text-delta')
+      .map((e) => e.delta)
+      .join(''),
+  ).toBe(pieces.join(''));
+  expect((await h.services.runs.events(id, 0, 1000)).events).toHaveLength(1);
+  const saved = await f.agent.history();
+  expect(saved.filter((m) => m.role === 'assistant')).toHaveLength(1);
+  expect(appUIMessageText(saved.find((m) => m.role === 'assistant')!)).toBe(
+    pieces.join(''),
+  );
+  await f.report(id, 'complete', {
+    summary: pieces.join(''),
+    handledInputIds: payload.inputs.map((i) => i.id),
+  });
+  await reading;
+  expect(chunks.at(-1)?.type).toBe('finish');
+  await f.agent.send([{ role: 'user', content: 'Next round' }]);
+  const [next] = await claim(h, f.runner);
+  expect(JSON.stringify(next.prompt)).toContain(question);
+  expect(JSON.stringify(next.prompt)).toContain(pieces.join(''));
+  if (process.env.AGENT_OUTPUT_EVIDENCE_FILE)
+    await writeFile(
+      process.env.AGENT_OUTPUT_EVIDENCE_FILE,
+      JSON.stringify(
+        {
+          simulatedDurationMs: pieces.length * 1000,
+          previewPieces: pieces.length,
+          previewStoredRows: 0,
+          completedStoredRows: 1,
+          priorUserInNextPrompt: JSON.stringify(next.prompt).includes(question),
+          fullAnswerInNextPrompt: JSON.stringify(next.prompt).includes(
+            pieces.join(''),
+          ),
+          finalBodyEvents: chunks.filter((e) => e.type === 'text-end').length,
+        },
+        null,
+        2,
+      ),
+    );
+});
+
+it('closes an unfinished preview when its run fails and persists no partial row', async () => {
+  const f = await fixture({ outputFeature: true });
+  await f.agent.send([{ role: 'user', content: 'Will fail' }]);
+  const reader = (await f.agent.receive())!.getReader();
+  const chunks: NativeUIChunk[] = [];
+  const reading = (async () => {
+    for (;;) {
+      const next = await reader.read();
+      if (next.done) break;
+      chunks.push(next.value);
+    }
+  })();
+  const [payload] = await claim(h, f.runner);
+  const id = payload.run.id;
+  await f.report(id, 'start', {
+    workDir: '/work/preview',
+    adapter: { kind: 'codex' },
+    acceptsInput: true,
+  });
   await f.report(id, 'events', {
     events: [
       {
-        seq: ++seq,
+        seq: 1,
         at: h.clock.now().toISOString(),
         type: 'text',
-        content: '',
-        meta: { output: { blockId: 'markdown', phase: 'end' } },
+        content: 'Partial reply',
+        meta: { output: { blockId: 'partial', phase: 'delta' } },
       },
     ],
   });
   await vi.waitFor(() =>
-    expect(chunks.filter((e) => e.type === 'text-end')).toHaveLength(1),
+    expect(chunks.some((e) => e.type === 'text-delta')).toBe(true),
   );
-  const before = await f.agent.history();
-  expect(before.filter((m) => m.role === 'assistant')[0].parts).toEqual([
-    { type: 'text', text: pieces.join(''), state: 'done' },
-  ]);
-  const sources = before.filter((m) => m.role === 'assistant')[0].metadata!
-    .sourceRecords!;
-  expect(sources).toHaveLength(1);
-  expect(sources[0].output).toEqual({ blockId: 'markdown', phase: 'end' });
-  await f.report(id, 'complete', {
-    summary: 'Done',
-    handledInputIds: payload.inputs.map((i) => i.id),
-  });
+  expect(
+    (
+      await f.report(id, 'fail', {
+        reason: 'toolProcess',
+        detail: 'Fixture failure',
+        handledInputIds: payload.inputs.map((i) => i.id),
+      })
+    ).status,
+  ).toBe(200);
   await reading;
-  const reload = await h.services.onlineAgent.realtime(context(), {
-    sessionId: f.agent.sessionId,
-  });
-  expect(await reload.history()).toEqual(before);
-  expect((await reload.messages({ limit: 50 })).items).toEqual(before);
+  expect(chunks.filter((e) => e.type === 'text-end')).toHaveLength(1);
+  expect(chunks.at(-1)?.type).toBe('finish');
+  expect(
+    (await f.agent.history()).filter((m) => m.role === 'assistant'),
+  ).toHaveLength(0);
 });
 
-it('keeps synchronization SQL cost unchanged per fragment and measures the empty end record', async () => {
-  const f = await fixture();
+it('never enables previews for tasks and rejects forged task output metadata', async () => {
+  const f = await fixture({ outputFeature: true });
+  const id = await h.enqueue(f.agentId, '7', { text: 'Task must stay legacy' });
+  const [payload] = await claim(h, f.runner);
+  expect(payload.run.id).toBe(id);
+  expect(payload.outputBlocks).toBeUndefined();
+  await f.report(id, 'start', {
+    workDir: '/work/task',
+    adapter: { kind: 'claude' },
+    acceptsInput: true,
+  });
+  expect(
+    (
+      await f.report(id, 'events', {
+        events: [
+          {
+            seq: 1,
+            at: h.clock.now().toISOString(),
+            type: 'text',
+            content: 'forged',
+            meta: { output: { blockId: 'bad', phase: 'delta' } },
+          },
+        ],
+      })
+    ).status,
+  ).toBe(403);
+  expect((await h.services.runs.events(id, 0, 1000)).events).toHaveLength(0);
+  expect(
+    (
+      await f.report(id, 'events', {
+        events: [
+          {
+            seq: 1,
+            at: h.clock.now().toISOString(),
+            type: 'text',
+            content: 'Legacy task text',
+          },
+        ],
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (await h.services.runs.events(id, 0, 1000)).events.map((e) => e.content),
+  ).toEqual(['Legacy task text']);
+});
+
+it('does no database writes or transactions for realtime-only preview segments', async () => {
+  const f = await fixture({ outputFeature: true });
   const conversation = await h.services.conversations.create('alice', {
     agentId: f.agentId,
   });
   await h.services.conversations.send('alice', conversation.id, {
-    content: 'Measured stream',
+    content: 'Measure preview cost',
   });
   const [payload] = await claim(h, f.runner);
-  const connection = h.database.connection();
-  const client = await connection.client<Knex>();
+  await f.report(payload.run.id, 'start', {
+    workDir: '/work/cost',
+    adapter: { kind: 'claude' },
+    acceptsInput: true,
+  });
+  const client = await h.database.connection().client<Knex>();
   const costs: Record<string, number>[] = [];
-  const measure = async () => {
-    const queries: string[] = [];
-    const record = (q: { sql: string }) => queries.push(q.sql);
+  for (let seq = 1; seq <= 3; seq++) {
+    const cost: Record<string, number> = {};
+    const record = (q: { sql: string }) => {
+      const key = q.sql.trim().split(/\s/)[0].toLowerCase();
+      cost[key] = (cost[key] ?? 0) + 1;
+    };
     client.on('query', record);
     try {
-      await h.services.conversations.syncRun(payload.run.id);
+      await h.services.reports.events(
+        { id: f.runner.runnerId },
+        payload.run.id,
+        {
+          events: [
+            {
+              seq,
+              at: h.clock.now().toISOString(),
+              type: 'text',
+              content: 'progress。',
+              meta: { output: { blockId: 'cost', phase: 'delta' } },
+            },
+          ],
+        },
+      );
     } finally {
       client.off('query', record);
     }
-    const cost: Record<string, number> = {};
-    for (const sql of queries) {
-      const verb = sql.trim().split(/\s/)[0].toLowerCase();
-      cost[verb] = (cost[verb] ?? 0) + 1;
-    }
-    return cost;
-  };
-  await eventsRepo(connection).createOne({
-    values: {
-      id: 'cost-warmup',
-      runId: payload.run.id,
-      seq: 1,
-      at: h.clock.now().toISOString(),
-      createdAt: h.clock.now().toISOString(),
-      type: 'text',
-      tool: null,
-      content: 'warmup',
-      input: null,
-      output: null,
-      truncated: false,
-      meta: null,
-    },
-  });
-  await h.services.conversations.syncRun(payload.run.id);
-  for (let seq = 2; seq <= 6; seq++) {
-    await eventsRepo(connection).createOne({
-      values: {
-        id: `cost-${seq}`,
-        runId: payload.run.id,
-        seq,
-        at: h.clock.now().toISOString(),
-        createdAt: h.clock.now().toISOString(),
-        type: 'text',
-        tool: null,
-        content: seq === 6 ? '' : seq === 4 ? ' ' : 'piece',
-        input: null,
-        output: null,
-        truncated: false,
-        meta:
-          seq === 2
-            ? null
-            : {
-                output: {
-                  blockId: 'measured',
-                  phase: seq === 6 ? 'end' : 'delta',
-                },
-              },
-      },
-    });
-    costs.push(await measure());
+    expect(Object.keys(cost).every((key) => key === 'select')).toBe(true);
+    costs.push(cost);
   }
-  expect(costs.slice(1)).toEqual(Array(4).fill(costs[0]));
-  const idle = await measure();
-  expect(idle.insert ?? 0).toBe(0);
-  expect(idle.update ?? 0).toBe(0);
-  expect(idle.begin ?? 0).toBe(0);
-  if (process.env.NOCOBASE_STREAM_OUTPUT_REPORT)
-    await appendFile(
-      process.env.NOCOBASE_STREAM_OUTPUT_REPORT,
-      JSON.stringify({
-        scenario: 'conversation-sync',
-        records: 5,
-        costs,
-        idle,
-      }) + '\n',
+  expect(
+    (await h.services.runs.events(payload.run.id, 0, 1000)).events,
+  ).toHaveLength(0);
+  if (process.env.AGENT_OUTPUT_COST_FILE)
+    await writeFile(
+      process.env.AGENT_OUTPUT_COST_FILE,
+      JSON.stringify(
+        {
+          scope:
+            'direct report service; excludes HTTP authentication and the unchanged active UI polling loop',
+          segments: costs,
+          storedPreviewRows: 0,
+        },
+        null,
+        2,
+      ),
     );
+});
+
+it('closes a reclaimed preview and accepts a fresh preview sequence on the next attempt', async () => {
+  const f = await fixture({ outputFeature: true });
+  await f.agent.send([{ role: 'user', content: 'Resume after interruption' }]);
+  const reader = (await f.agent.receive())!.getReader();
+  const chunks: NativeUIChunk[] = [];
+  const reading = (async () => {
+    for (;;) {
+      const next = await reader.read();
+      if (next.done) break;
+      chunks.push(next.value);
+    }
+  })();
+  const [first] = await claim(h, f.runner);
+  const start = {
+    workDir: '/work/retry',
+    adapter: { kind: 'claude' },
+    acceptsInput: true,
+  };
+  await f.report(first.run.id, 'start', start);
+  const preview = (blockId: string, content: string) => ({
+    events: [
+      {
+        seq: 1,
+        at: h.clock.now().toISOString(),
+        type: 'text',
+        content,
+        meta: { output: { blockId, phase: 'delta' } },
+      },
+    ],
+  });
+  await f.report(first.run.id, 'events', preview('old', 'Partial old attempt'));
+  await vi.waitFor(() =>
+    expect(chunks.some((e) => e.type === 'text-delta')).toBe(true),
+  );
+  expect(
+    (
+      await f.report(first.run.id, 'fail', {
+        reason: 'runnerUpgrade',
+        handledInputIds: first.inputs.map((i) => i.id),
+      })
+    ).body.data.status,
+  ).toBe('queued');
+  await vi.waitFor(() =>
+    expect(chunks.filter((e) => e.type === 'text-end')).toHaveLength(1),
+  );
+  const [second] = await claim(h, f.runner);
+  expect(second.run.attempt).toBe(first.run.attempt + 1);
+  await f.report(second.run.id, 'start', start);
+  await f.report(second.run.id, 'events', preview('new', 'New attempt'));
+  await vi.waitFor(() =>
+    expect(
+      chunks
+        .filter((e) => e.type === 'text-delta')
+        .some((e) => e.delta === 'New attempt'),
+    ).toBe(true),
+  );
+  await f.report(second.run.id, 'events', {
+    events: [
+      {
+        seq: second.run.firstSeq,
+        at: h.clock.now().toISOString(),
+        type: 'text',
+        content: 'New attempt',
+        meta: { output: { blockId: 'new', phase: 'end' } },
+      },
+    ],
+  });
+  await f.report(second.run.id, 'complete', {
+    summary: 'New attempt',
+    handledInputIds: second.inputs.map((i) => i.id),
+  });
+  await reading;
+  expect(chunks.filter((e) => e.type === 'text-end')).toHaveLength(2);
+  expect(
+    (await f.agent.history())
+      .filter((m) => m.role === 'assistant')
+      .map(appUIMessageText),
+  ).toEqual(['New attempt']);
 });

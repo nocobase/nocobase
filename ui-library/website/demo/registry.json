@@ -21,10 +21,7 @@
       "title": "Run History Demo",
       "description": "Usage example of @nocobase/agent-run-history. Sample runs on one issue in the side-column log, with the all-runs dialog, a live run's timer, and stop and retry callbacks.",
       "categories": ["agents"],
-      "registryDependencies": [
-        "@nocobase/agent-run-history",
-        "@nocobase/markdown-view"
-      ],
+      "registryDependencies": ["@nocobase/agent-run-history"],
       "files": [
         {
           "path": "agents/agent-run-history.tsx",

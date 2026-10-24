@@ -1,4 +1,3 @@
-import { collectOutput } from './collect-output.ts';
 import {
   chmod,
   mkdtemp,
@@ -76,7 +75,9 @@ function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
 }
 
 async function drain(handle: AdapterHandle): Promise<AdapterEvent[]> {
-  return collectOutput(handle.events);
+  const events: AdapterEvent[] = [];
+  for await (const event of handle.events) events.push(event);
+  return events;
 }
 
 /** initialize, thread/start (or resume) and the first turn/start. */
@@ -806,82 +807,86 @@ describe('stopping and resuming', () => {
   });
 });
 
-describe('streamed output', () => {
-  it.each([true, false])(
-    'streams before completion and deduplicates snapshots (summary=%s)',
-    async (withSummary) => {
-      const observed: AdapterEvent[] = [];
-      const { adapter } = adapterWith(async (fake) => {
-        const params = await handshake(fake);
-        expect(params.summary).toBe('auto');
-        const delta = (
-          method: string,
-          itemId: string,
-          text: string,
-          summaryIndex = 0,
-        ) =>
-          fake.notify(method, {
-            threadId: 'thread-1',
-            itemId,
-            delta: text,
-            summaryIndex,
-          });
-        vi.useFakeTimers();
-        try {
-          if (withSummary) {
-            for (const text of ['Plan ', 'carefully'])
-              delta('item/reasoning/summaryTextDelta', 'r', text);
-            await vi.advanceTimersByTimeAsync(1000);
-            expect(
-              observed
-                .filter((e) => e.type === 'thinking')
-                .map((e) => e.content),
-            ).toEqual(['Plan ', 'carefully']);
-            delta('item/reasoning/summaryTextDelta', 'r', 'Then answer', 1);
-            item(fake, 'completed', {
-              type: 'reasoning',
-              id: 'r',
-              summary: ['Plan carefully', 'Then answer'],
-              content: [],
-            });
-          }
-          for (const text of ['Hel', 'lo'])
-            delta('item/agentMessage/delta', 'm', text);
-          await vi.advanceTimersByTimeAsync(1000);
-          expect(
-            observed
-              .filter((e) => e.type === 'text')
-              .map((e) => e.content)
-              .join(''),
-          ).toBe('Hello');
-        } finally {
-          vi.useRealTimers();
-        }
-        item(fake, 'completed', {
-          type: 'agentMessage',
-          id: 'm',
-          text: 'Hello world',
+it.each([false, true])(
+  'gates native deltas and summary requests with outputBlocks=%s',
+  async (outputBlocks) => {
+    let settings: Record<string, unknown> = {};
+    let advance!: () => void;
+    const proceed = new Promise<void>((resolve) => {
+      advance = resolve;
+    });
+    let sent!: () => void;
+    const partial = new Promise<void>((resolve) => {
+      sent = resolve;
+    });
+    const { adapter } = adapterWith(async (fake) => {
+      settings = await handshake(fake);
+      for (const [method, params] of [
+        ['item/agentMessage/delta', { itemId: 'body', delta: 'Hello ' }],
+        [
+          'item/reasoning/summaryTextDelta',
+          { itemId: 'reason', summaryIndex: 0, delta: 'Thinking' },
+        ],
+      ] as const)
+        fake.notify(method, {
+          threadId: 'thread-1',
+          turnId: 'turn-1',
+          ...params,
         });
-        completeTurn(fake);
+      sent();
+      await proceed;
+      item(fake, 'completed', {
+        type: 'agentMessage',
+        id: 'body',
+        text: 'Hello world',
       });
-      const handle = adapter.start(session());
-      for await (const event of handle.events) observed.push(event);
+      item(fake, 'completed', {
+        type: 'agentMessage',
+        id: 'body',
+        text: 'Hello world',
+      });
+      item(fake, 'completed', {
+        type: 'reasoning',
+        id: 'reason',
+        summary: ['Thinking'],
+        content: ['Original content'],
+      });
+      completeTurn(fake);
+    });
+    const handle = adapter.start(session({ outputBlocks }));
+    const events: AdapterEvent[] = [];
+    const reading = (async () => {
+      for await (const event of handle.events) events.push(event);
+    })();
+    await partial;
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(events.some((e) => e.type === 'text')).toBe(outputBlocks);
+    expect(settings.summary).toBe(outputBlocks ? 'auto' : undefined);
+    advance();
+    await reading;
+    expect((await handle.result).summary).toBe('Hello world');
+    if (outputBlocks) {
       expect(
-        observed
-          .filter((e) => e.type === 'text')
+        events
+          .filter((e) => e.type === 'text' && e.meta?.output?.phase === 'delta')
           .map((e) => e.content)
           .join(''),
       ).toBe('Hello world');
       expect(
-        observed
-          .filter((e) => e.type === 'thinking')
-          .map((e) => e.content)
-          .join(''),
-      ).toBe(withSummary ? 'Plan carefully\n\nThen answer' : '');
-      expect(await handle.result).toMatchObject({
-        exit: 'completed',
-        summary: 'Hello world',
-      });
-    },
-  );
-});
+        events
+          .filter((e) => e.type === 'text' && e.meta?.output?.phase === 'end')
+          .map((e) => e.content),
+      ).toEqual(['Hello world']);
+      expect(
+        events
+          .filter(
+            (e) => e.type === 'thinking' && e.meta?.output?.phase === 'end',
+          )
+          .map((e) => e.content),
+      ).toEqual(['Thinking', 'Original content']);
+    } else
+      expect(
+        events.filter((e) => e.type === 'thinking').map((e) => e.content),
+      ).toEqual(['Thinking\n\nOriginal content']);
+  },
+);

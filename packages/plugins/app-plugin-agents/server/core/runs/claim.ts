@@ -177,7 +177,6 @@ export interface ClaimService {
 }
 
 export interface ClaimDeps extends TransitionDeps {
-  readonly outputBlocks?: boolean;
   readonly selectionPolicies?: ModelSelectionPolicies;
   readonly runners?: {
     online(conn: DatabaseConnection): Promise<Runner[]>;
@@ -1232,7 +1231,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       createdAt: nowText,
     });
     const payload: RunPayload = {
-      ...(deps.outputBlocks && runner.features.includes('outputBlocks')
+      ...(run.subjectKind === 'conversation' &&
+      runner.features.includes('outputBlocks')
         ? { outputBlocks: true }
         : {}),
       run: {

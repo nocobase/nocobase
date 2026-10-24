@@ -18,7 +18,6 @@ import path from 'node:path';
 import { safeName } from '../lib/home.ts';
 import { backoff, delay, ApiError, type ApiClient } from '../lib/http.ts';
 import {
-  outputBlock,
   MAX_EVENT_CONTENT_BYTES,
   MAX_EVENTS_PER_BATCH,
   RUNNER_ROUTES,
@@ -164,11 +163,7 @@ export class EventSpool<E extends SpooledEvent = RunEvent> {
       ...(truncated ? { meta: { ...event.meta, truncated: true } } : {}),
     } as unknown as E;
     this.nextSeq += 1;
-    if (
-      numbered.type === 'text' &&
-      numbered.content !== undefined &&
-      !(numbered.content === '' && outputBlock(numbered.meta)?.phase === 'end')
-    )
+    if (numbered.type === 'text' && numbered.content !== undefined)
       this.latestText = numbered.content;
     appendFileSync(this.files.spool, `${JSON.stringify(numbered)}\n`, {
       mode: 0o600,

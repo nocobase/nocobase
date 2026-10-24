@@ -1,133 +1,154 @@
 import {
-  createStreamRedactor,
+  createOutputRedactor,
   outputBlock,
   type Redactor,
-  type StreamRedactor,
 } from '../protocol/index.ts';
 import type { SpoolEvent } from '../core/events.ts';
 
 type Event = SpoolEvent;
 type Block = {
   event: Event;
-  redactor: StreamRedactor;
-  complete: string;
+  redactor: ReturnType<typeof createOutputRedactor>;
   ended: boolean;
+  previewBytes: number;
 };
-/** Raw blocks are independently redacted before either the timer or size boundary can persist a fragment. */
+/** Conversation previews never enter the durable spool. Completed snapshots retain one canonical event. */
 export class OutputWriter {
   private readonly blocks = new Map<string, Block>();
+  private readonly completed = new Set<string>();
   private pending?: { id: string; content: string };
   private timer?: ReturnType<typeof setTimeout>;
-  private failure: Error | undefined;
   private readonly emit: (event: Event) => void;
+  private readonly preview: (event: Event) => void;
   private readonly redactor: Redactor;
   private readonly enabled: boolean;
-
   constructor(
     emit: (event: Event) => void,
     redactor: Redactor,
     enabled: boolean,
+    preview: (event: Event) => void = () => {},
   ) {
     this.emit = emit;
     this.redactor = redactor;
     this.enabled = enabled;
+    this.preview = (event) => preview(this.redactor.value(event));
   }
-
   write(event: Event): void {
-    if (this.failure !== undefined) throw this.failure;
+    if (!this.enabled) {
+      this.emit(event);
+      return;
+    }
     const output = outputBlock(event.meta);
     if (!output || (event.type !== 'text' && event.type !== 'thinking')) {
       this.flush();
       this.emit(event);
       return;
     }
+    if (this.completed.has(output.blockId)) return;
     let block = this.blocks.get(output.blockId);
     if (!block) {
+      if (this.blocks.size >= 64) {
+        if (output.phase === 'end' && event.content !== undefined)
+          this.save(event);
+        return;
+      }
       block = {
         event: { ...event, content: undefined },
-        redactor: createStreamRedactor(this.redactor),
-        complete: '',
+        redactor: createOutputRedactor(() => this.redactor),
         ended: false,
+        previewBytes: 0,
       };
       this.blocks.set(output.blockId, block);
     }
     if (block.ended) return;
-    const safe = block.redactor.write(event.content ?? '', { partial: true });
-    this.append(output.blockId, safe);
-    if (output.phase === 'end') this.finish(output.blockId, block);
+    if (output.phase === 'delta')
+      this.append(output.blockId, block.redactor.write(event.content ?? ''));
+    else {
+      this.append(
+        output.blockId,
+        block.redactor.end(event.content === undefined),
+      );
+      this.flush();
+      block.ended = true;
+      this.completed.add(output.blockId);
+      this.blocks.delete(output.blockId);
+      if (event.content === undefined)
+        this.preview({ ...block.event, meta: { ...block.event.meta, output } });
+      else {
+        this.save(event);
+      }
+    }
   }
-
+  private save(event: Event): void {
+    const safe = this.redactor.text(event.content ?? '');
+    const bytes = Buffer.from(safe, 'utf8');
+    let cut = Math.min(64 * 1024, bytes.length);
+    while (cut < bytes.length && (bytes[cut] & 0xc0) === 0x80) cut--;
+    this.emit({
+      ...event,
+      content: bytes.subarray(0, cut).toString('utf8'),
+      meta: {
+        ...event.meta,
+        ...(cut < bytes.length ? { truncated: true } : {}),
+      },
+    });
+  }
   private append(id: string, content: string): void {
     if (!content) return;
     const block = this.blocks.get(id)!;
-    if (!this.enabled) {
-      block.complete += content;
-      return;
-    }
+    const all = Buffer.from(content, 'utf8');
+    let limit = Math.min(all.length, 64 * 1024 - block.previewBytes);
+    while (limit < all.length && limit > 0 && (all[limit] & 0xc0) === 0x80)
+      limit--;
+    content = all.subarray(0, limit).toString('utf8');
+    block.previewBytes += limit;
+    if (!content) return;
     if (this.pending?.id !== id) this.flush();
     this.pending ??= { id, content: '' };
-    this.pending.content += content;
-    // Split at UTF-8 boundaries, after redaction, so a large provider delta cannot skip the size limit.
-    while (Buffer.byteLength(this.pending.content, 'utf8') >= 4096) {
-      const bytes = Buffer.from(this.pending.content, 'utf8');
-      let cut = 4096;
-      while (cut < bytes.length && (bytes[cut] & 0xc0) === 0x80) cut--;
-      this.send(id, bytes.subarray(0, cut).toString('utf8'), 'delta');
-      this.pending.content = bytes.subarray(cut).toString('utf8');
+    // The redactor produces bounded pieces; split safe text without cutting a UTF-8 sequence.
+    const bytes = Buffer.from(this.pending.content + content, 'utf8');
+    let at = 0;
+    while (bytes.length - at >= 4096) {
+      let end = at + 4096;
+      while (end < bytes.length && (bytes[end] & 0xc0) === 0x80) end--;
+      this.send(id, bytes.subarray(at, end).toString('utf8'));
+      at = end;
     }
+    this.pending.content = bytes.subarray(at).toString('utf8');
     if (this.pending.content)
-      this.timer ??= setTimeout(() => {
-        try {
-          this.flush();
-        } catch (error) {
-          this.failure =
-            error instanceof Error ? error : new Error(String(error));
-        }
-      }, 1000);
+      this.timer ??= setTimeout(() => this.flush(), 1000);
   }
-
-  private send(id: string, content: string, phase: 'delta' | 'end'): void {
+  private send(id: string, content: string): void {
     const event = this.blocks.get(id)!.event;
-    this.emit({
+    this.preview({
       ...event,
-      content,
-      meta: { ...event.meta, output: { blockId: id, phase } },
+      content: this.redactor.text(content),
+      meta: { ...event.meta, output: { blockId: id, phase: 'delta' } },
     });
   }
-
-  private finish(id: string, block: Block): void {
-    if (block.ended) return;
-    this.append(id, block.redactor.end());
-    block.ended = true;
-    if (!this.enabled) {
-      const { output: _output, ...meta } = block.event.meta ?? {};
-      this.emit({ ...block.event, content: block.complete, meta });
-      block.complete = '';
-    } else {
-      if (this.pending?.id !== id) this.flush();
-      const content = this.pending?.content ?? '';
-      this.pending = undefined;
-      if (this.timer) clearTimeout(this.timer);
-      this.timer = undefined;
-      this.send(id, content, 'end');
-    }
-  }
-
   flush(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = undefined;
     const pending = this.pending;
     this.pending = undefined;
-    if (pending?.content) this.send(pending.id, pending.content, 'delta');
+    if (pending?.content) this.send(pending.id, pending.content);
   }
-
-  /** Also used before cancellation/failure reports: never expose an unfinished sensitive tail. */
   end(): void {
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = undefined;
-    if (this.failure !== undefined) throw this.failure;
-    for (const [id, block] of this.blocks)
-      if (!block.ended) this.finish(id, block);
     this.flush();
+    for (const [id, block] of this.blocks)
+      if (!block.ended) {
+        const safe = block.redactor.end(true);
+        if (safe) {
+          this.append(id, safe);
+          this.flush();
+        }
+        this.preview({
+          ...block.event,
+          meta: { ...block.event.meta, output: { blockId: id, phase: 'end' } },
+        });
+        this.completed.add(id);
+        block.ended = true;
+      }
+    this.blocks.clear();
   }
 }

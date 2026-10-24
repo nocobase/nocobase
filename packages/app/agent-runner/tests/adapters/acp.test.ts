@@ -1,4 +1,3 @@
-import { collectOutput } from './collect-output.ts';
 import { existsSync, readFileSync } from 'node:fs';
 import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -338,10 +337,11 @@ it('keeps the tool’s own words alongside the fixed sign-in instruction when a 
   expect(result.error?.message).toContain('Fixture error');
 });
 
-it('preserves ACP chunks as one complete block when streaming is not negotiated', async () => {
+it('merges a turn’s small consecutive text chunks into about one event instead of one per chunk', async () => {
   const f = await fixture('chunky');
   const handle = f.adapter.start(f.session);
-  const events = await collectOutput(handle.events);
+  const events: AdapterEvent[] = [];
+  for await (const event of handle.events) events.push(event);
   await handle.result;
   const text = events.filter((event) => event.type === 'text');
   expect(text.length).toBeLessThan(5);
@@ -442,4 +442,26 @@ it('detects behind the same host CLI guard a run gets, not the bare host PATH', 
   expect(
     messages.find((message) => message.method === 'hostCliCheck')?.params,
   ).toEqual({ ghRefused: true });
+});
+
+it('retains canonical ACP blocks behind the conversation flag', async () => {
+  const f = await fixture();
+  const handle = f.adapter.start({ ...f.session, outputBlocks: true });
+  const events: AdapterEvent[] = [];
+  for await (const event of handle.events) events.push(event);
+  expect((await handle.result).exit).toBe('completed');
+  for (const type of ['text', 'thinking']) {
+    const deltas = events
+      .filter((e) => e.type === type && e.meta?.output?.phase === 'delta')
+      .map((e) => e.content)
+      .join('');
+    const snapshots = events
+      .filter((e) => e.type === type && e.meta?.output?.phase === 'end')
+      .map((e) => e.content)
+      .join('');
+    expect(snapshots).toBe(deltas);
+  }
+  expect(events.some((e) => e.meta?.output?.phase === 'end' && e.content)).toBe(
+    true,
+  );
 });

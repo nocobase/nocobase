@@ -279,6 +279,11 @@ async function inspect(
   );
 }
 
+/** How long a run of same-typed text/thinking chunks may accumulate before it becomes one event. */
+const MERGE_FLUSH_MS = 1000;
+/** How large the accumulated text of one merged event may grow before it flushes early. */
+const MERGE_FLUSH_BYTES = 4 * 1024;
+
 function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
   const events = new EventQueue<AdapterEvent>();
   let process: AgentProcess | undefined;
@@ -318,19 +323,59 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
   const streaming = new StreamOutput(emit);
   let chunkId = 0;
   let chunkType: 'text' | 'thinking' | undefined;
-  const flushPendingChunk = (): void => {
-    if (chunkType) streaming.close(String(chunkId));
+  let streamPieces: string[] = [];
+  const flushStreamChunk = (interrupted = false): void => {
+    if (chunkType) {
+      if (interrupted) streaming.close(String(chunkId));
+      else
+        streaming.complete(String(chunkId), chunkType, streamPieces.join(''));
+    }
+    streamPieces = [];
     chunkType = undefined;
   };
-  const emitChunk = (type: 'text' | 'thinking', text: string): void => {
+  const emitStreamChunk = (type: 'text' | 'thinking', text: string): void => {
     if (replaying || finished) return;
     if (chunkType !== type) {
-      flushPendingChunk();
+      flushStreamChunk();
       chunkType = type;
       chunkId++;
     }
+    streamPieces.push(text);
     streaming.delta(String(chunkId), type, text);
   };
+  // Zed-style agents stream a text or thinking turn as dozens of small chunks, one `session/update` each. Buffering
+  // consecutive same-typed chunks into one event cuts that to about one a second, in the order they arrived; anything
+  // else (a tool call, the run ending) flushes what is pending first, so order never changes.
+  let pendingChunk: { type: 'text' | 'thinking'; content: string } | undefined;
+  let pendingTimer: ReturnType<typeof setTimeout> | undefined;
+  const flushLegacyChunk = (): void => {
+    if (pendingTimer !== undefined) {
+      clearTimeout(pendingTimer);
+      pendingTimer = undefined;
+    }
+    if (!pendingChunk) return;
+    const chunk = pendingChunk;
+    pendingChunk = undefined;
+    emit({ type: chunk.type, content: chunk.content });
+  };
+  const emitLegacyChunk = (type: 'text' | 'thinking', text: string): void => {
+    if (replaying || finished) return;
+    pendingChunk =
+      pendingChunk && pendingChunk.type === type
+        ? { type, content: pendingChunk.content + text }
+        : (flushLegacyChunk(), { type, content: text });
+    if (pendingChunk.content.length >= MERGE_FLUSH_BYTES) {
+      flushLegacyChunk();
+      return;
+    }
+    pendingTimer ??= setTimeout(flushPendingChunk, MERGE_FLUSH_MS);
+  };
+  const flushPendingChunk = () =>
+    session.outputBlocks ? flushStreamChunk() : flushLegacyChunk();
+  const emitChunk = (type: 'text' | 'thinking', text: string) =>
+    session.outputBlocks
+      ? emitStreamChunk(type, text)
+      : emitLegacyChunk(type, text);
   const update = ({ update }: SessionNotification): void => {
     if (replaying) return;
     if (
@@ -544,7 +589,9 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
             },
           ]
         : [];
-      flushPendingChunk();
+      if (session.outputBlocks)
+        flushStreamChunk(cancelled || response.stopReason !== 'end_turn');
+      else flushLegacyChunk();
       if (usage.length) emit({ type: 'usage', meta: { usage } });
       if (cancelled || response.stopReason === 'cancelled')
         return { exit: 'aborted', usage, sessionId };
@@ -584,7 +631,8 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
         },
       };
     } finally {
-      flushPendingChunk();
+      if (session.outputBlocks) flushStreamChunk(true);
+      else flushLegacyChunk();
       session.abort.removeEventListener('abort', aborted);
       await process?.stop();
       finished = true;

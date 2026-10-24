@@ -456,7 +456,7 @@ class OpencodeRun {
     this.finished = true;
     await this.shutdown();
     const result = this.outcome(ending, thrown);
-    this.streaming.end();
+    if (this.session.outputBlocks) this.streaming.end();
     if (result.error)
       this.emit({
         type: 'error',
@@ -801,6 +801,7 @@ class OpencodeRun {
       }
       case 'session.text.delta':
       case 'session.reasoning.delta': {
+        if (!this.session.outputBlocks) return;
         const type = event.type === 'session.text.delta' ? 'text' : 'thinking';
         this.streaming.delta(
           `${sid}:${str(data.assistantMessageID) ?? ''}:${type}:${num(data.ordinal)}`,
@@ -813,12 +814,24 @@ class OpencodeRun {
       case 'session.text.ended': {
         const text = str(data.text) ?? '';
         const messageId = str(data.assistantMessageID) ?? '';
-        this.streaming.complete(
-          `${sid}:${str(data.assistantMessageID) ?? ''}:text:${num(data.ordinal)}`,
-          'text',
-          text,
-          child,
-        );
+        if (this.session.outputBlocks) {
+          this.streaming.complete(
+            `${sid}:${str(data.assistantMessageID) ?? ''}:text:${num(data.ordinal)}`,
+            'text',
+            text,
+            child,
+          );
+        } else {
+          const capped = capText(text);
+          this.emit({
+            type: 'text',
+            content: capped.text,
+            meta: {
+              ...child,
+              ...(capped.truncated ? { truncated: true } : {}),
+            },
+          });
+        }
         if (root) {
           if (this.lastText?.messageId === messageId)
             this.lastText.texts.push(text);
@@ -827,12 +840,25 @@ class OpencodeRun {
         return;
       }
       case 'session.reasoning.ended': {
-        this.streaming.complete(
-          `${sid}:${str(data.assistantMessageID) ?? ''}:thinking:${num(data.ordinal)}`,
-          'thinking',
-          str(data.text) ?? '',
-          child,
-        );
+        if (this.session.outputBlocks) {
+          this.streaming.complete(
+            `${sid}:${str(data.assistantMessageID) ?? ''}:thinking:${num(data.ordinal)}`,
+            'thinking',
+            str(data.text) ?? '',
+            child,
+          );
+        } else {
+          const capped = capText(str(data.text) ?? '');
+          if (!capped.text) return;
+          this.emit({
+            type: 'thinking',
+            content: capped.text,
+            meta: {
+              ...child,
+              ...(capped.truncated ? { truncated: true } : {}),
+            },
+          });
+        }
         return;
       }
       case 'session.tool.input.started': {

@@ -1,4 +1,3 @@
-import { collectOutput } from './collect-output.ts';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -45,7 +44,9 @@ function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
 }
 
 async function collect(handle: AdapterHandle): Promise<AdapterEvent[]> {
-  return collectOutput(handle.events);
+  const events: AdapterEvent[] = [];
+  for await (const event of handle.events) events.push(event);
+  return events;
 }
 
 function writeAll(pi: FakePi, records: readonly Record<string, unknown>[]) {
@@ -823,8 +824,16 @@ it('streams text and thinking deltas, supplements completed tails and keeps per-
       writeAll(pi, settled);
     });
   });
-  const handle = (await adapterWith(spawn)).start(session());
-  const events = await collect(handle);
+  const handle = (await adapterWith(spawn)).start(
+    session({ outputBlocks: true }),
+  );
+  const raw = await collect(handle);
+  expect(
+    raw.some((e) => (e.meta?.output as { phase?: string })?.phase === 'delta'),
+  ).toBe(true);
+  const events = raw.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'end',
+  );
   expect(
     events.filter((e) => e.type === 'thinking').map((e) => e.content),
   ).toEqual(['Plan carefully']);

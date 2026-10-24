@@ -17,7 +17,7 @@
  * ordinary text, git commit hashes and UUIDs are left alone.
  *
  * Output a process writes in pieces (a job's log) can split a secret across two pieces; `createStreamRedactor` holds
- * back possible credential suffixes until the rest arrives.
+ * back the unfinished end of a line until the rest arrives.
  */
 
 /** What every removed secret becomes. */
@@ -218,20 +218,23 @@ export function createRedactor(
 export interface StreamRedactor {
   /**
    * Redacts the next piece and returns what is safe to pass on. `partial` says the piece ends inside a line that
-   * continues in the next one: possible credential suffixes are held back until the rest arrives.
+   * continues in the next one: its unfinished last word is held back until the rest arrives.
    */
   write(piece: string, options?: { readonly partial?: boolean }): string;
   /** What is still held back, redacted; the stream ended. */
   end(): string;
 }
 
-/** `text` with its end replaced when it is the start of a secret (including a one-character prefix): a secret cut short. */
+/** The longest unfinished word held back; a longer one is passed on rather than held for ever. */
+const MAX_HELD = 1024;
+
+/** `text` with its end replaced when it is the start of a secret (at least 4 characters of it): a secret cut short. */
 function cutShort(text: string, secrets: readonly string[]): string {
   let longest = 0;
   for (const secret of secrets)
     for (
       let length = Math.min(secret.length - 1, text.length);
-      length > longest && length >= 1;
+      length > longest && length >= 4;
       length -= 1
     )
       if (text.endsWith(secret.slice(0, length))) {
@@ -244,12 +247,16 @@ function cutShort(text: string, secrets: readonly string[]): string {
 }
 
 /**
- * A stream redactor over `redactor`. Possible credentials wait for their continuation; ordinary non-ASCII prose can
- * progress without whitespace. A private key block split across lines is redacted until its end marker arrives.
+ * A stream redactor over `redactor`. A secret split across two pieces is caught because the unfinished end of a line
+ * waits for its continuation; a private key block split across lines is redacted until its end marker arrives.
  */
 export function createStreamRedactor(redactor: Redactor): StreamRedactor {
   let held = '';
   let inKey = false;
+  const longestSecret = Math.max(
+    0,
+    ...redactor.secrets.map((secret) => secret.length),
+  );
 
   /** Redacts whole text; notes a private key block it begins and does not end. */
   const redact = (text: string): string => {
@@ -275,83 +282,12 @@ export function createStreamRedactor(redactor: Redactor): StreamRedactor {
         inKey = false;
         text = text.slice(end.index + end[0].length);
       }
-      const opening = [
-        ...text.matchAll(new RegExp(PRIVATE_KEY_BEGIN, 'gu')),
-      ].at(-1);
-      const closing = opening
-        ? PRIVATE_KEY_END.exec(text.slice(opening.index))
-        : null;
-      if (opening && !closing) {
-        inKey = true;
-        held = text.slice(-64);
-        return redactor.text(text.slice(0, opening.index)) + REDACTED;
-      }
-      // Token alphabets are ASCII. Hold their unfinished suffix, not an entire unspaced Chinese/Japanese paragraph.
-      // Known values and labelled/URL credentials can contain non-ASCII text or whitespace: protect them separately.
-      // Consult the live redactor because credentials may be registered after this stream was created.
-      let cut = options.partial
-        ? text.length - (/[!-~]*$/u.exec(text)?.[0].length ?? 0)
-        : text.length;
-      for (const secret of redactor.secrets) {
-        for (
-          let length = Math.min(secret.length - 1, text.length);
-          length > 0;
-          length--
-        ) {
-          if (text.endsWith(secret.slice(0, length))) {
-            cut = Math.min(cut, text.length - length);
-            break;
-          }
-        }
-      }
-      const label =
-        /\b(?:bearer|basic|x-api-key|(?:aws_?)?secret_?access_?key)["']?\s*(?:[:=]\s*["']?)?[^\s]*$/iu.exec(
-          text,
-        );
-      if (label) cut = Math.min(cut, label.index);
-      const password = /\b(?:password|passwd)=[^\s&"'#;,<>]*$/iu.exec(text);
-      if (password) cut = Math.min(cut, password.index);
-      const parameter =
-        /[?&](?:password|passwd|pwd|access_token|api_key|apikey|client_secret|secret|token)=[^&\s"'#<>]*$/iu.exec(
-          text,
-        );
-      if (parameter) cut = Math.min(cut, parameter.index);
-      const url = /\b[a-z][a-z0-9+.-]*:\/\/[^\s/?#@'"<>]*$/iu.exec(text);
-      if (url) cut = Math.min(cut, url.index);
-      const begin = text.lastIndexOf('-----BEGIN');
-      if (begin >= 0) {
-        const marker = PRIVATE_KEY_BEGIN.exec(text.slice(begin));
-        if (!marker || begin + marker[0].length > cut)
-          cut = Math.min(cut, begin);
-      }
-      if (
-        opening &&
-        closing &&
-        cut > opening.index &&
-        cut < opening.index + closing.index + closing[0].length
-      )
-        cut = opening.index;
-      // A complete match may cross the proposed cut (including a URL with a non-ASCII password).
-      // Keep it whole so redaction cannot lose the prefix needed to recognize it. Descending starts also
-      // protect overlapping matches when an earlier range moves the cut further back.
-      const ranges = SECRET_PATTERNS.flatMap(({ pattern }) =>
-        [...text.matchAll(pattern)].map((match) => ({
-          start: match.index,
-          end: match.index + match[0].length,
-        })),
-      );
-      for (const secret of redactor.secrets) {
-        for (
-          let start = text.indexOf(secret);
-          start >= 0;
-          start = text.indexOf(secret, start + 1)
-        )
-          ranges.push({ start, end: start + secret.length });
-      }
-      for (const range of ranges.sort((a, b) => b.start - a.start))
-        if (range.start < cut && range.end > cut) cut = range.start;
-      const out = redact(text.slice(0, cut));
-      held = text.slice(cut);
+      if (!options.partial) return redact(text);
+      const word = /[^\s]*$/u.exec(text)?.[0] ?? '';
+      if (word.length === 0 || word.length > Math.max(MAX_HELD, longestSecret))
+        return redact(text);
+      const out = redact(text.slice(0, text.length - word.length));
+      held = word;
       return out;
     },
     end() {
@@ -361,12 +297,7 @@ export function createStreamRedactor(redactor: Redactor): StreamRedactor {
         inKey = false;
         return '';
       }
-      if (text === '') return '';
-      const safe = cutShort(redactor.text(text), redactor.secrets);
-      return safe.replace(
-        /(?:\b(?:fg(?:k|r|o|reg|dl)_|gh[pousr]_|github_pat_|npm_|xox[abposr]-|AIza|sk-(?=[A-Za-z0-9_-]*\d)|[rs]k_(?:live|test)_|AKIA|ASIA|ABIA|ACCA|eyJ)|-----BEGIN)[^\n]*$/giu,
-        REDACTED,
-      );
+      return text === '' ? '' : cutShort(redactor.text(text), redactor.secrets);
     },
   };
 }

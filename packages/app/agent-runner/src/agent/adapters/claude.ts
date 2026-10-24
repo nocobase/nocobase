@@ -522,7 +522,7 @@ class ClaudeRun {
       allowDangerouslySkipPermissions: true,
       env: { ...session.env },
       abortController: this.abortController,
-      includePartialMessages: true,
+      includePartialMessages: session.outputBlocks === true,
       stderr: (data: string) => {
         this.stderrTail = (this.stderrTail + data).slice(-8192);
         this.stderrLines.push(...data.split('\n').filter(Boolean));
@@ -611,7 +611,7 @@ class ClaudeRun {
       this.input.close();
     }
     const result = this.outcome(thrown);
-    this.streaming.end();
+    if (this.session.outputBlocks) this.streaming.end();
     if (result.error)
       this.emit({
         type: 'error',
@@ -715,63 +715,113 @@ class ClaudeRun {
 
   private readonly partialMessages = new Map<
     string,
-    { id: string; completedBlocks: number }
+    {
+      id: string;
+      blocks: Map<number, { type: string; text: string; assigned: boolean }>;
+    }
   >();
-
+  private readonly completedEnvelopes = new Set<string>();
   private onPartial(
     message: Extract<SDKMessage, { type: 'stream_event' }>,
   ): void {
-    const parentId = message.parent_tool_use_id ?? '';
-    const { event } = message;
+    const parent = message.parent_tool_use_id ?? '';
+    const event = message.event;
     if (event.type === 'message_start') {
-      this.partialMessages.set(parentId, {
+      this.partialMessages.set(parent, {
         id: event.message.id,
-        completedBlocks: 0,
+        blocks: new Map(),
       });
       return;
     }
-    const state = this.partialMessages.get(parentId);
+    const state = this.partialMessages.get(parent);
     if (!state) return;
-    const meta = parentId ? { parentToolUseId: parentId } : {};
-    if (event.type === 'content_block_delta') {
-      const { delta } = event;
-      if (delta.type === 'text_delta')
-        this.streaming.delta(
-          `${parentId}:${state.id}:${event.index}`,
-          'text',
-          delta.text,
-          meta,
-        );
-      else if (delta.type === 'thinking_delta')
-        this.streaming.delta(
-          `${parentId}:${state.id}:${event.index}`,
-          'thinking',
-          delta.thinking,
-          meta,
-        );
-    } else if (event.type === 'content_block_start') {
+    const meta = parent ? { parentToolUseId: parent } : {};
+    if (event.type === 'content_block_start') {
       const block = event.content_block;
-      if (block.type === 'text')
+      const text =
+        block.type === 'text'
+          ? block.text
+          : block.type === 'thinking'
+            ? block.thinking
+            : '';
+      state.blocks.set(event.index, {
+        type: block.type,
+        text,
+        assigned: false,
+      });
+      if (text && (block.type === 'text' || block.type === 'thinking'))
         this.streaming.delta(
-          `${parentId}:${state.id}:${event.index}`,
-          'text',
-          block.text,
+          `${parent}:${state.id}:${event.index}`,
+          block.type === 'text' ? 'text' : 'thinking',
+          text,
           meta,
         );
-      else if (block.type === 'thinking')
-        this.streaming.delta(
-          `${parentId}:${state.id}:${event.index}`,
-          'thinking',
-          block.thinking,
-          meta,
-        );
+    } else if (event.type === 'content_block_delta') {
+      const delta = event.delta;
+      if (delta.type !== 'text_delta' && delta.type !== 'thinking_delta')
+        return;
+      const type = delta.type === 'text_delta' ? 'text' : 'thinking';
+      const text = delta.type === 'text_delta' ? delta.text : delta.thinking;
+      const block = state.blocks.get(event.index) ?? {
+        type,
+        text: '',
+        assigned: false,
+      };
+      block.text += text;
+      state.blocks.set(event.index, block);
+      this.streaming.delta(
+        `${parent}:${state.id}:${event.index}`,
+        type,
+        text,
+        meta,
+      );
     }
+  }
+  private completePartial(
+    message: Extract<SDKMessage, { type: 'assistant' }>,
+    block:
+      { type: 'text'; text: string } | { type: 'thinking'; thinking: string },
+  ): void {
+    const parent = message.parent_tool_use_id ?? '';
+    const text = block.type === 'text' ? block.text : block.thinking;
+    const identity = `${message.uuid}:${message.message.content.indexOf(block as never)}`;
+    if (this.completedEnvelopes.has(identity)) return;
+    this.completedEnvelopes.add(identity);
+    const state = this.partialMessages.get(parent);
+    const candidates =
+      state?.id === message.message.id
+        ? [...state.blocks].filter(
+            ([, item]) =>
+              !item.assigned &&
+              item.type === block.type &&
+              text.startsWith(item.text),
+          )
+        : [];
+    const found =
+      candidates.find(([, item]) => item.text === text) ?? candidates[0];
+    if (
+      !found &&
+      state?.id === message.message.id &&
+      [...state.blocks.values()].some(
+        (item) =>
+          item.assigned && item.type === block.type && item.text === text,
+      )
+    )
+      return;
+    if (found) found[1].assigned = true;
+    const key = `${parent}:${message.message.id}:${found ? found[0] : message.uuid + ':' + message.message.content.indexOf(block as never)}`;
+    this.streaming.complete(
+      key,
+      block.type === 'text' ? 'text' : 'thinking',
+      text,
+      parent ? { parentToolUseId: parent } : {},
+    );
   }
 
   private onMessage(message: SDKMessage): void {
     switch (message.type) {
       case 'stream_event':
-        this.onPartial(message);
+        if (this.session.outputBlocks) this.onPartial(message);
         return;
       case 'system':
         this.onSystem(message);
@@ -785,24 +835,33 @@ class ClaudeRun {
         const parent = message.parent_tool_use_id
           ? { parentToolUseId: message.parent_tool_use_id }
           : {};
-        const parentId = message.parent_tool_use_id ?? '';
-        let state = this.partialMessages.get(parentId);
-        if (!state || state.id !== message.message.id) {
-          state = { id: message.message.id, completedBlocks: 0 };
-          this.partialMessages.set(parentId, state);
-        }
-        // The SDK emits one assistant envelope per completed block, sharing the API message id.
-        let index = 0;
         for (const block of message.message.content) {
-          const blockIndex =
-            state?.id === message.message.id
-              ? state.completedBlocks++
-              : index++;
-          const key = `${parentId}:${message.message.id}:${blockIndex}`;
           if (block.type === 'text') {
-            this.streaming.complete(key, 'text', block.text, parent);
+            if (this.session.outputBlocks) this.completePartial(message, block);
+            else {
+              const capped = capText(block.text);
+              this.emit({
+                type: 'text',
+                content: capped.text,
+                meta: {
+                  ...parent,
+                  ...(capped.truncated ? { truncated: true } : {}),
+                },
+              });
+            }
           } else if (block.type === 'thinking') {
-            this.streaming.complete(key, 'thinking', block.thinking, parent);
+            if (this.session.outputBlocks) this.completePartial(message, block);
+            else {
+              const capped = capText(block.thinking);
+              this.emit({
+                type: 'thinking',
+                content: capped.text,
+                meta: {
+                  ...parent,
+                  ...(capped.truncated ? { truncated: true } : {}),
+                },
+              });
+            }
           } else if (
             block.type === 'tool_use' ||
             block.type === 'server_tool_use' ||

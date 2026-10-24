@@ -49,15 +49,16 @@ export class StreamOutput {
     if (block?.ended) return;
     const suffix = text.slice(block?.length ?? 0);
     if (suffix) this.delta(key, type, suffix, meta, prefix);
-    this.close(key);
+    this.close(key, text);
   }
 
-  close(key: string): void {
+  close(key: string, content?: string): void {
     const block = this.blocks.get(key);
     if (!block || block.ended) return;
     block.ended = true;
     this.emit({
       type: block.type,
+      ...(content === undefined ? {} : { content }),
       meta: { ...block.meta, output: { blockId: block.id, phase: 'end' } },
     });
   }

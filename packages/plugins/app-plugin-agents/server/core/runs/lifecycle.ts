@@ -1,3 +1,5 @@
+import { OutputPreview } from './output-preview.js';
+import { outputBlock, type RunEvent } from '@nocobase/agent-protocol';
 /**
  * What a runner reports about the runs it holds: lease renewals, the start, events, and how the run ended. Every
  * report first checks that the runner still holds the run; a runner that lost it (the sweeper took it back, or it
@@ -112,6 +114,7 @@ export interface RunnerReports {
 }
 
 export interface RunnerReportsDeps extends TransitionDeps, InputGateDeps {
+  readonly onOutput?: (runId: string, event: RunEvent) => void;
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -146,6 +149,7 @@ export interface RunnerReportsDeps extends TransitionDeps, InputGateDeps {
 
 export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
   const { tx, ids, clock } = deps;
+  const previews = new OutputPreview();
   const secrets = deps.secrets ?? createSecretMemory();
   const redactorOf = (runId: string) => secrets.redactor(runSecretsKey(runId));
 
@@ -378,10 +382,53 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         };
       }),
 
-    events: (runner, runId, reported) =>
-      tx.run(async (unit) => {
+    events: async (runner, runId, reported) => {
+      let previewKey = runId;
+      const transient = reported.events.filter((event) => {
+        const output = outputBlock(event.meta);
+        return (
+          output?.phase === 'delta' ||
+          (output?.phase === 'end' && event.content === undefined)
+        );
+      });
+      if (
+        transient.length ||
+        reported.events.some((event) => outputBlock(event.meta))
+      ) {
+        const run = await held(tx.read(), runner, runId);
+        const machine = await runnersRepo(tx.read()).findOne({
+          filter: { id: runner.id },
+        });
+        if (
+          run.subjectKind !== 'conversation' ||
+          !Array.isArray(machine?.features) ||
+          !machine.features.includes('outputBlocks')
+        )
+          throw new ProtocolError(
+            'RUN_NOT_OWNED',
+            'Output previews require a capable runner holding a conversation.',
+          );
+        previewKey = `${runId}:${run.attempt}`;
+        previews.accept(
+          previewKey,
+          transient,
+          () => redactorOf(runId),
+          (event) => deps.onOutput?.(runId, event),
+        );
+        if (transient.length === reported.events.length)
+          return {
+            accepted: 0,
+            duplicates: 0,
+            cancelRequested: run.cancelRequestedAt !== null,
+          };
+      }
+      const durable = {
+        ...reported,
+        events: reported.events.filter((event) => !transient.includes(event)),
+      };
+      const response = await tx.run(async (unit) => {
         const { conn } = unit;
-        const request = withoutNul(reported);
+        const request = withoutNul(durable);
         const run = await held(conn, runner, runId);
         const seqs = request.events.map((event) => event.seq);
         const existing =
@@ -499,8 +546,20 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           duplicates: request.events.length - accepted,
           cancelRequested: run.cancelRequestedAt !== null,
         };
-      }),
-
+      });
+      if (
+        durable.events.some((event) => outputBlock(event.meta)?.phase === 'end')
+      )
+        previews.accept(
+          previewKey,
+          durable.events.filter(
+            (event) => outputBlock(event.meta)?.phase === 'end',
+          ),
+          () => redactorOf(runId),
+          (event) => deps.onOutput?.(runId, event),
+        );
+      return response;
+    },
     status: async (runner, runId) => {
       const conn = tx.read();
       const run = await findRunStatus(conn, runId);

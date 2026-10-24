@@ -518,7 +518,7 @@ class CodexRun {
       clientUserMessageId: first.clientId,
       approvalPolicy: 'never',
       sandboxPolicy,
-      summary: 'auto',
+      ...(this.session.outputBlocks ? { summary: 'auto' as const } : {}),
       ...(effort && EFFORTS.has(effort) ? { effort } : {}),
     });
     if (effort && EFFORTS.has(effort))
@@ -655,6 +655,7 @@ class CodexRun {
         this.onTurnCompleted(p.turn as Turn);
         return;
       case 'item/agentMessage/delta':
+        if (!this.session.outputBlocks) return;
         this.streaming.delta(
           `${String(p.itemId)}:text`,
           'text',
@@ -662,12 +663,11 @@ class CodexRun {
         );
         return;
       case 'item/reasoning/summaryTextDelta':
+        if (!this.session.outputBlocks) return;
         this.streaming.delta(
           `${String(p.itemId)}:summary:${Number(p.summaryIndex)}`,
           'thinking',
           p.delta as string,
-          undefined,
-          Number(p.summaryIndex) > 0 ? '\n\n' : '',
         );
         return;
       case 'item/started':
@@ -780,18 +780,31 @@ class CodexRun {
       case 'agentMessage':
         if ('text' in item) {
           this.turnSummary = item.text;
-          this.streaming.complete(`${item.id}:text`, 'text', item.text);
+          if (this.session.outputBlocks)
+            this.streaming.complete(`${item.id}:text`, 'text', item.text);
+          else this.text('text', item.text);
         }
         break;
       case 'reasoning':
-        if ('summary' in item) {
-          for (const [index, text] of item.summary.entries())
+        if (!this.session.outputBlocks) {
+          if ('summary' in item) {
+            const text = [...item.summary, ...item.content].join('\n\n');
+            if (text) this.text('thinking', text);
+          }
+        } else {
+          if ('summary' in item) {
+            for (const [index, text] of item.summary.entries())
+              this.streaming.complete(
+                `${item.id}:summary:${index}`,
+                'thinking',
+                text,
+              );
+          }
+          if ('content' in item && item.content.length)
             this.streaming.complete(
-              `${item.id}:summary:${index}`,
+              `${item.id}:reasoning-content`,
               'thinking',
-              text,
-              undefined,
-              index > 0 ? '\n\n' : '',
+              item.content.join('\n\n'),
             );
         }
         break;
@@ -859,6 +872,15 @@ class CodexRun {
         break;
     }
     this.items.delete(item.id);
+  }
+
+  private text(type: 'text' | 'thinking', content: string): void {
+    const capped = capText(content);
+    this.emit({
+      type,
+      content: capped.text,
+      ...(capped.truncated ? { meta: { truncated: true } } : {}),
+    });
   }
 
   private toolUse(tool: string, input: unknown, id: string): void {
@@ -968,7 +990,7 @@ class CodexRun {
       await this.shutdown();
     }
     const result = this.outcome(thrown, processFailed);
-    this.streaming.end();
+    if (this.session.outputBlocks) this.streaming.end();
     if (result.error)
       this.emit({
         type: 'error',

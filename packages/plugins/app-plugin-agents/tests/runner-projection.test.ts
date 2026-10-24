@@ -27,16 +27,16 @@ it('preserves explicit blocks, whitespace, notices and independent parent/child 
     ...(parentToolUseId ? { parentToolUseId } : {}),
   });
   const rows = [
-    row(1, '**Hello', block('delta')),
-    row(2, 'Child', block('end', 'tool-1')),
-    row(3, '**', block('delta')),
-    row(4, ' ', block('delta')),
-    row(5, 'world', block('end')),
-    row(6, '**Independent**'),
-    row(7, '', { notice: { code: 'news', type: 'fixture', title: 'Notice' } }),
-    row(8, 'New run', block('end'), 'other'),
+    row(1, '**Hello** world', block('end')),
+    row(2, 'Child', {
+      ...block('end', 'tool-1'),
+      output: { blockId: 'child', phase: 'end' },
+    }),
+    row(3, '**Independent**'),
+    row(4, '', { notice: { code: 'news', type: 'fixture', title: 'Notice' } }),
+    row(5, 'New run', block('end'), 'other'),
   ];
-  const messages = runnerUIMessages([...rows, rows[2]]);
+  const messages = runnerUIMessages([...rows, rows[0]]);
   const parts = messages.flatMap((m) => m.parts);
   expect(parts.filter((p) => p.type === 'text').map((p) => p.text)).toEqual([
     '**Hello** world',
@@ -46,7 +46,7 @@ it('preserves explicit blocks, whitespace, notices and independent parent/child 
   ]);
   expect(parts.filter((p) => p.type === 'data-notice')).toHaveLength(1);
   expect(chatMessageSegments(messages).map((s) => s.seq)).toEqual([
-    1, 2, 6, 7, 8,
+    1, 2, 3, 4, 5,
   ]);
   expect(runnerUIMessages(JSON.parse(JSON.stringify(rows)))).toEqual(messages);
   const whitespace = runnerUIMessages([row(1, ' ', block('delta'))]);
