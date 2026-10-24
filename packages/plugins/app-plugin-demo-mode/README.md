@@ -169,7 +169,7 @@ import { DemoAccountMenu } from '@nocobase/app-plugin-demo-mode/client/account-m
 
 Set `showFloatingAccountSwitcher: false` in the client registration to hide the floating entry for both guests and signed-in visitors. This does not disable `DemoAccountMenu` or the direct `/demo-sign-in` route. The default remains `true`.
 
-`DemoAccountMenu` is a submenu of the system accounts with the current one checked, followed by a separator; it renders nothing outside a demo.
+`DemoAccountMenu` is a submenu of the system accounts with the current one checked, followed by a separator; it renders nothing outside a demo. The plugin preloads a shared account list on page entry, including when the floating switcher is hidden, so the submenu opens immediately on hover. Navigation and dataset changes refresh the list in the background.
 
 - `GET /api/demoMode/accounts`, public, lists all enabled person accounts as `{ username, name, role, current }` with `meta.total`, without passwords. Dataset labels may provide `role`; they do not determine eligibility. Disabled, deleted and service accounts are excluded.
 - `POST /api/demoMode/accounts/{username}/signIn` ends the request's own session and asks Authentication to create an ordinary session for the selected account. No password or dataset ownership is required. An unavailable account is `404 DEMO_ACCOUNT_NOT_FOUND`; session creation failure is `400 DEMO_ACCOUNT_SIGN_IN_FAILED`.

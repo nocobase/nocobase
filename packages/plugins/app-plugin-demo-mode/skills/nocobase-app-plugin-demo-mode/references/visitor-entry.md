@@ -9,7 +9,7 @@ For a direct link, use `<base path>/demo-sign-in?as=<username>&redirect=/path`. 
 ## Customize only when needed
 
 - Set `demoMode.quickSignIn: false` in application configuration to disable quick sign-in and automatic home-page sign-in.
-- For an existing account menu, register `demoMode({ accountSwitcher: 'menu' })` and place `DemoAccountMenu` from `@nocobase/app-plugin-demo-mode/client/account-menu` inside its Base UI menu content, before sign-out. Guests retain the floating entry.
+- For an existing account menu, register `demoMode({ accountSwitcher: 'menu' })` and place `DemoAccountMenu` from `@nocobase/app-plugin-demo-mode/client/account-menu` inside its Base UI menu content, before sign-out. Guests retain the floating entry. Account lists preload on page entry even when the floating entry is hidden, and the submenu opens immediately on hover; no application prefetch code is needed.
 - Set the Client option `showFloatingAccountSwitcher: false` to hide the floating entry. This changes presentation; it does not disable the sign-in route.
 - For a custom entry UI, use `useDemoAccounts` from `@nocobase/app-plugin-demo-mode/client/accounts`; it supplies the public account list and `signIn(username, redirect?)`.
 

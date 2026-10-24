@@ -2,6 +2,7 @@ import { useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   useEffect,
+  useRef,
   useState,
   type PropsWithChildren,
   type ReactElement,
@@ -10,6 +11,7 @@ import { useLocation } from 'react-router';
 
 import { DemoAccountSwitcher } from './demo-account-switcher.js';
 import { DemoHomeEntry } from './demo-home-entry.js';
+import { demoAccountCache } from '../account-cache.js';
 import {
   DEMO_MODE_NAMESPACE,
   DEMO_SERVER_TIMING_METRIC,
@@ -44,7 +46,9 @@ export function DemoModeNotice({
   const toaster = useToaster();
   const { t } = useTranslation(DEMO_MODE_NAMESPACE);
   const [enabled, setEnabled] = useState<boolean>();
-  const home = useLocation().pathname === '/';
+  const { pathname } = useLocation();
+  const home = pathname === '/';
+  const previousPathRef = useRef(pathname);
 
   useEffect(() => {
     let active = true;
@@ -61,6 +65,12 @@ export function DemoModeNotice({
       active = false;
     };
   }, [api]);
+
+  useEffect(() => {
+    const refresh = previousPathRef.current !== pathname;
+    previousPathRef.current = pathname;
+    if (enabled) void demoAccountCache(api).load(refresh);
+  }, [api, enabled, pathname]);
 
   useEffect(() => {
     if (!enabled || typeof PerformanceObserver === 'undefined') {

@@ -237,5 +237,5 @@ it('can hide the floating entry without removing the page content', async () => 
   await waitFor(() => expect(paths).toContain('demoMode/status'));
   expect(await screen.findByText('Login form')).toBeVisible();
   expect(screen.queryByRole('button')).not.toBeInTheDocument();
-  expect(paths).not.toContain('demoMode/accounts');
+  await waitFor(() => expect(paths).toContain('demoMode/accounts'));
 });
