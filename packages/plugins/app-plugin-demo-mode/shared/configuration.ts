@@ -25,6 +25,7 @@ export interface DemoConfiguration {
   revision: number;
   collections: string[];
   mocks: Record<string, boolean>;
+  /** Read-only deployment schedule; saved runtime policies cannot override it. */
   schedule: DemoDailySchedule | null;
   chat: DemoChatConfiguration;
 }

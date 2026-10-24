@@ -8,16 +8,16 @@ const resource: DemoModeResource = {
     configure: 'Configurar',
   },
   accounts: {
-    menu: 'Cuenta de demostración: {{name}}',
-    title: 'Cuentas de demostración',
+    menu: 'Cuenta: {{name}}',
+    title: 'Cuentas',
     description:
       'Entra en la demostración con cualquiera de estas cuentas para ver lo que ve cada una.',
     enter: 'Entrar',
     signedInAs: 'Sesión de {{name}} · Cambiar',
     current: 'Actual',
     entering: 'Entrando…',
-    failed: 'No se pudo entrar con esta cuenta de demostración.',
-    unavailable: 'Ahora mismo no hay cuentas de demostración disponibles.',
+    failed: 'No se pudo acceder a esta cuenta.',
+    unavailable: 'No hay cuentas disponibles en este momento.',
     password: 'Iniciar sesión con contraseña',
   },
   refused: {
@@ -29,23 +29,13 @@ const resource: DemoModeResource = {
     refresh: 'Actualizar',
     retry: 'Reintentar',
     busy: 'Se están generando o borrando los datos de demostración',
-    busyHelp: 'Podrás volver a guardar los ajustes cuando termine.',
+    busyHelp:
+      'Espera a que termine la operación de datos actual antes de iniciar otra.',
     disabled: {
       title: 'Esta aplicación no es una demostración',
       help: 'El modo de demostración está desactivado. El despliegue lo activa con NOCOBASE_DEMO_MODE=true.',
     },
     cancel: 'Cancelar',
-    save: 'Guardar',
-    apply: 'Aplicar cambios',
-    unsaved: 'Cambios sin guardar',
-    discardAndReload: 'Descartar mis cambios y recargar',
-    leave: {
-      title: '¿Salir sin guardar?',
-      description:
-        'Se perderán los cambios que no hayas guardado en esta página.',
-      stay: 'Seguir editando',
-      discard: 'Descartar cambios',
-    },
     errors: {
       failed: 'La solicitud no se completó. Inténtalo de nuevo.',
       conflict: 'Otro administrador guardó este ajuste primero.',
@@ -110,13 +100,9 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: 'Cuentas de demostración',
-      off: 'El acceso rápido está desactivado en este despliegue.',
-      pending:
-        'Las cuentas aparecerán aquí cuando los datos de demostración estén listos.',
-      noData:
-        'Genera primero los datos de demostración; sus cuentas aparecerán aquí.',
-      credentials: 'Usuario {{username}} · contraseña {{password}}',
+      unavailable: 'No hay cuentas disponibles en este momento.',
+      title: 'Cuentas',
+      username: 'Usuario {{username}}',
       copyLink: 'Copiar enlace',
       copyLinkFor: 'Copiar el enlace de acceso de {{name}}',
       openFor: 'Abrir la demostración como {{name}}',
@@ -126,21 +112,11 @@ const resource: DemoModeResource = {
     },
     schedule: {
       title: 'Restablecimiento diario',
-      confirmTitle: '¿Guardar el restablecimiento diario?',
-      confirmDescription:
-        'A la hora indicada se eliminan todos los datos de negocio de esta instancia y se vuelven a generar.',
-      summary: 'Cada día a las {{time}} ({{timezone}}), en {{language}}',
-      off: 'Sin programar',
-      enabled: 'Restablecer cada día',
-      enabledHelp:
-        'Usa el administrador que generó los datos de demostración por última vez.',
+      description:
+        'Los datos de demostración se restablecen automáticamente cada día. La programación se configura mediante variables de entorno.',
       time: 'Hora',
-      hour: 'Hora',
-      minute: 'Minuto',
       language: 'Idioma',
       timezone: 'Zona horaria',
-      noTimezone: 'Ninguna zona horaria coincide',
-      invalidTimezone: 'Elige una zona horaria de la lista.',
       next: 'Próximo restablecimiento: {{time}}',
     },
   },

@@ -8,17 +8,16 @@ const resource: DemoModeResource = {
     configure: 'Configurer',
   },
   accounts: {
-    menu: 'Compte de démonstration : {{name}}',
-    title: 'Comptes de démonstration',
+    menu: 'Compte : {{name}}',
+    title: 'Comptes',
     description:
       'Entrez dans la démo avec l’un de ces comptes pour voir ce que voit chacun.',
     enter: 'Entrer',
     signedInAs: 'Connecté en tant que {{name}} · Changer',
     current: 'Actuel',
     entering: 'Connexion…',
-    failed: 'Impossible d’entrer avec ce compte de démonstration.',
-    unavailable:
-      'Aucun compte de démonstration n’est disponible pour le moment.',
+    failed: 'Impossible d’accéder à ce compte.',
+    unavailable: 'Aucun compte n’est disponible pour le moment.',
     password: 'Se connecter avec un mot de passe',
   },
   refused: {
@@ -32,23 +31,12 @@ const resource: DemoModeResource = {
     retry: 'Réessayer',
     busy: 'Les données de démonstration sont en cours de génération ou d’effacement',
     busyHelp:
-      'Les réglages pourront être enregistrés à nouveau une fois l’opération terminée.',
+      'Attendez la fin de l’opération en cours avant d’en lancer une autre.',
     disabled: {
       title: 'Cette application n’est pas une démonstration',
       help: 'Le mode démonstration est désactivé. Le déploiement l’active avec NOCOBASE_DEMO_MODE=true.',
     },
     cancel: 'Annuler',
-    save: 'Enregistrer',
-    apply: 'Appliquer les modifications',
-    unsaved: 'Modifications non enregistrées',
-    discardAndReload: 'Abandonner mes modifications et recharger',
-    leave: {
-      title: 'Quitter sans enregistrer ?',
-      description:
-        'Les modifications non enregistrées de cette page seront perdues.',
-      stay: 'Continuer la modification',
-      discard: 'Abandonner les modifications',
-    },
     errors: {
       failed: 'La requête n’a pas abouti. Réessayez.',
       conflict: 'Un autre administrateur a enregistré ce réglage en premier.',
@@ -115,13 +103,9 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: 'Comptes de démonstration',
-      off: 'La connexion rapide est désactivée pour ce déploiement.',
-      pending:
-        'Les comptes apparaissent ici une fois les données de démonstration prêtes.',
-      noData:
-        'Générez d’abord les données de démonstration ; leurs comptes apparaîtront ici.',
-      credentials: 'Utilisateur {{username}} · mot de passe {{password}}',
+      unavailable: 'Aucun compte n’est disponible pour le moment.',
+      title: 'Comptes',
+      username: 'Identifiant {{username}}',
       copyLink: 'Copier le lien',
       copyLinkFor: 'Copier le lien d’accès de {{name}}',
       openFor: 'Ouvrir la démonstration en tant que {{name}}',
@@ -130,21 +114,11 @@ const resource: DemoModeResource = {
     },
     schedule: {
       title: 'Réinitialisation quotidienne',
-      confirmTitle: 'Enregistrer la réinitialisation quotidienne ?',
-      confirmDescription:
-        'À l’heure ci-dessous, toutes les données métier de cette instance sont supprimées puis régénérées.',
-      summary: 'Chaque jour à {{time}} ({{timezone}}), en {{language}}',
-      off: 'Non planifiée',
-      enabled: 'Réinitialiser chaque jour',
-      enabledHelp:
-        'Utilise l’administrateur qui a généré les données de démonstration en dernier.',
+      description:
+        'Les données de démonstration sont réinitialisées automatiquement chaque jour. La planification est configurée via les variables d’environnement.',
       time: 'Heure',
-      hour: 'Heure',
-      minute: 'Minute',
       language: 'Langue',
       timezone: 'Fuseau horaire',
-      noTimezone: 'Aucun fuseau horaire ne correspond',
-      invalidTimezone: 'Choisissez un fuseau horaire dans la liste.',
       next: 'Prochaine réinitialisation : {{time}}',
     },
   },

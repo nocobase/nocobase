@@ -49,6 +49,8 @@ const bob = { username: 'bob', name: 'Bob', role: '审核人' };
 const demoApiAnswer = (call: { method: string; path: string }) => {
   if (call.method === 'GET' && call.path === 'demoMode/status')
     return { data: { enabled: true } };
+  if (call.method === 'POST' && call.path === 'demoMode/accounts/signInDefault')
+    return { data: { signedIn: false } };
   if (call.method === 'GET' && call.path === 'demoMode/accounts')
     return {
       data: [
@@ -67,6 +69,11 @@ function demoApi(accounts: readonly object[], signIns: string[] = []) {
         return { data: { enabled: true } };
       if (call.method === 'GET' && call.path === 'demoMode/accounts')
         return { data: accounts };
+      if (
+        call.method === 'POST' &&
+        call.path === 'demoMode/accounts/signInDefault'
+      )
+        return { data: { signedIn: false } };
       const signIn = /^demoMode\/accounts\/([^/]+)\/signIn$/u.exec(call.path);
       if (call.method === 'POST' && signIn) {
         signIns.push(decodeURIComponent(signIn[1]!));
@@ -143,7 +150,7 @@ describe('demo sign-in page', () => {
     });
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      '无法进入这个演示账号。',
+      '无法进入这个账号。',
     );
     fireEvent.click(screen.getByRole('button', { name: /Bob/u }));
     await waitFor(() => expect(signIns).toEqual(['bob']));
@@ -175,7 +182,7 @@ describe('demo accounts in the account menu', () => {
         locale: 'zh-CN',
       },
     );
-    fireEvent.click(await screen.findByText('演示账号：Ann'));
+    fireEvent.click(await screen.findByText('账号：Ann'));
     fireEvent.click(await screen.findByRole('menuitemradio', { name: /Bob/u }));
     await waitFor(() => expect(signIns).toEqual(['bob']));
   });
@@ -228,7 +235,7 @@ it('can hide the floating entry without removing the page content', async () => 
     locale: 'zh-CN',
   });
   await waitFor(() => expect(paths).toContain('demoMode/status'));
-  expect(screen.getByText('Login form')).toBeVisible();
+  expect(await screen.findByText('Login form')).toBeVisible();
   expect(screen.queryByRole('button')).not.toBeInTheDocument();
   expect(paths).not.toContain('demoMode/accounts');
 });

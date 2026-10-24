@@ -1,17 +1,9 @@
-import { useApiClient, useNavigationGuard } from '@nocobase/app-client';
+import { useApiClient } from '@nocobase/app-client';
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 
 import type { DemoConfigurationView } from '../../shared/configuration.js';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert.js';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../components/ui/alert-dialog.js';
 import { Skeleton } from '../components/ui/skeleton.js';
 import { useDemoData } from '../demo-data.js';
 import { Button, DefaultHeader } from './components.js';
@@ -20,7 +12,6 @@ import { ScheduleCard } from './schedule.js';
 import {
   DemoSettingsContext,
   useT,
-  type Configuration,
   type DemoSettingsOptions,
 } from './context.js';
 import { ErrorAlert } from './shared.js';
@@ -42,13 +33,11 @@ function useAccess() {
   const readData = useCan(settings('demoMode.data', 'read'));
   const manageData = useCan(settings('demoMode.data', 'manage'));
   const readConfiguration = useCan(settings('demoMode.configuration', 'read'));
-  const configure = useCan(settings('demoMode.configuration', 'configure'));
   return {
     pending: readData.isPending || readConfiguration.isPending,
     readData: readData.can,
     manageData: readData.can && manageData.can,
     readConfiguration: readConfiguration.can,
-    configure: readConfiguration.can && configure.can,
   };
 }
 
@@ -92,7 +81,7 @@ export function DemoModeSettings(
     };
   }, [api]);
 
-  // A finished import or reset changes the configuration's `busy`, and may change what the reset schedule names.
+  // Refresh the busy state and the server's next-run preview when a data operation finishes.
   const importing = Boolean(demo.status?.importing);
   const readable = access.readConfiguration && enabled === true;
   useEffect(() => {
@@ -118,35 +107,6 @@ export function DemoModeSettings(
     };
   }, [api, readable, importing, reads]);
 
-  const [dirty, setDirty] = useState<ReadonlySet<string>>(() => new Set());
-  const onDirty = useCallback((id: string, value: boolean) => {
-    setDirty((current) => {
-      if (current.has(id) === value) return current;
-      const next = new Set(current);
-      if (value) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  }, []);
-  const dirtyCount = dirty.size;
-  const [leaving, setLeaving] = useState<(stay: boolean) => void>();
-  useNavigationGuard(() =>
-    dirtyCount
-      ? new Promise<boolean>((resolve) =>
-          setLeaving(() => (leave: boolean) => {
-            setLeaving(undefined);
-            resolve(leave);
-          }),
-        )
-      : true,
-  );
-  useEffect(() => {
-    if (!dirtyCount) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [dirtyCount]);
-
   if (access.pending || enabled === undefined)
     return (
       <div className='flex flex-col gap-4'>
@@ -168,16 +128,12 @@ export function DemoModeSettings(
       </Alert>
     );
 
-  const configuration: Configuration | undefined = view
-    ? {
-        view: { ...view, busy: view.busy || importing },
-        canEdit: access.configure,
-        onSaved: setView,
-        reload: load,
-        onDirty,
-      }
-    : undefined;
-  const configured = (render: (value: Configuration) => ReactElement) =>
+  const refreshing =
+    demo.loading ||
+    (readable &&
+      (configurationLoaded?.reads !== reads ||
+        configurationLoaded?.importing !== importing));
+  const configured = () =>
     viewError ? (
       <ErrorAlert
         error={viewError}
@@ -187,8 +143,8 @@ export function DemoModeSettings(
           </Button>
         }
       />
-    ) : configuration ? (
-      render(configuration)
+    ) : view ? (
+      <ScheduleCard configuration={view} />
     ) : (
       <Skeleton className='h-56 w-full' />
     );
@@ -199,13 +155,8 @@ export function DemoModeSettings(
         <Header
           title={t('title')}
           refreshLabel={t('refresh')}
-          refreshDisabled={Boolean(dirtyCount)}
-          refreshing={
-            demo.loading ||
-            (readable &&
-              (configurationLoaded?.reads !== reads ||
-                configurationLoaded?.importing !== importing))
-          }
+          refreshDisabled={refreshing}
+          refreshing={refreshing}
           onRefresh={() => {
             void demo.refresh();
             if (access.readConfiguration) void load();
@@ -220,39 +171,9 @@ export function DemoModeSettings(
         {access.readData ? (
           <DataCard demo={demo} canManage={access.manageData} />
         ) : null}
-        {access.readConfiguration
-          ? configured((value) => (
-              <ScheduleCard
-                configuration={value}
-                languages={demo.status?.languages ?? []}
-              />
-            ))
-          : null}
+        {access.readConfiguration ? configured() : null}
         {access.readData ? <VisitorsCard status={demo.status} /> : null}
       </div>
-      <AlertDialog
-        open={leaving !== undefined}
-        onOpenChange={(open) => {
-          if (!open) leaving?.(false);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('leave.title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('leave.description')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <Button variant='outline' onClick={() => leaving?.(false)}>
-              {t('leave.stay')}
-            </Button>
-            <Button variant='destructive' onClick={() => leaving?.(true)}>
-              {t('leave.discard')}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </DemoSettingsContext.Provider>
   );
 }

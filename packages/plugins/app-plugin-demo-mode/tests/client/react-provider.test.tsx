@@ -44,7 +44,7 @@ describe('demo mode notice', () => {
       locale: 'zh-CN',
     });
 
-    expect(screen.getByText('page')).toBeInTheDocument();
+    expect(await screen.findByText('page')).toBeInTheDocument();
     await waitFor(() =>
       expect(FakePerformanceObserver.instances).toHaveLength(1),
     );
@@ -68,7 +68,7 @@ describe('demo mode notice', () => {
     });
 
     await waitFor(() => expect(fetch).toHaveBeenCalled());
-    expect(screen.getByText('page')).toBeInTheDocument();
+    expect(await screen.findByText('page')).toBeInTheDocument();
     expect(FakePerformanceObserver.instances).toEqual([]);
   });
 });

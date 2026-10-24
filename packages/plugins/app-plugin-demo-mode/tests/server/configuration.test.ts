@@ -20,9 +20,10 @@ function expirePolicyCache(): void {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(Date.now() + 6_000);
 }
-async function setup() {
+async function setup(env: Record<string, string> = {}) {
   app = await createTestApp({
     createServer: createStandaloneServer,
+    server: { env },
     config: { demoMode: { enabled: true } },
   });
   const container = app.application.container;
@@ -124,7 +125,11 @@ it('enables registered mocks by default without invoking them and honors explici
   });
 });
 it('claims one daily reset, skips DST gaps and does not repeat a folded minute', async () => {
-  const { config } = await setup();
+  const { config } = await setup({
+    NOCOBASE_DEMO_RESET_HOUR: '1',
+    NOCOBASE_DEMO_RESET_MINUTE: '30',
+    NOCOBASE_DEMO_RESET_TIMEZONE: 'America/New_York',
+  });
   const schedule = {
     enabled: true,
     hour: 1,
@@ -132,7 +137,6 @@ it('claims one daily reset, skips DST gaps and does not repeat a folded minute',
     timezone: 'America/New_York',
     language: 'en-US',
   };
-  await config.save('schedule', 0, schedule);
   expect(await config.claimDaily(new Date('2026-11-01T05:30:00Z'))).toEqual(
     schedule,
   );
@@ -144,40 +148,49 @@ it('claims one daily reset, skips DST gaps and does not repeat a folded minute',
     nextDailyRun(schedule, new Date('2026-11-01T05:31:00Z'), '2026-11-01'),
   ).toBe('2026-11-02T06:30:00.000Z');
 });
-it('resets every night at 03:00 by default until an administrator saves a schedule', async () => {
-  const { container, guard } = await setup();
-  const config = new DefaultDemoConfigurationService(
-    container.resolve(databaseManagerToken),
-    resolveDemoModeSettings(app.application.config),
-    guard,
-    async () => ({
-      importing: null,
-      languages: ['zh-CN', 'en-US'],
-      language: 'en-US',
-      timeZone: 'Asia/Shanghai',
-    }),
-  );
+it('uses deployment defaults even when an old saved schedule disables resets', async () => {
+  const { config } = await setup();
+  await app.connection.query
+    .updateTable('demoModeConfiguration')
+    .set({
+      value: JSON.stringify({
+        collections: ['demonotes'],
+        mocks: {},
+        schedule: {
+          enabled: false,
+          hour: 12,
+          minute: 15,
+          timezone: 'Asia/Shanghai',
+          language: 'zh-CN',
+        },
+      }),
+    })
+    .where('id', '=', 'default')
+    .execute();
   const schedule = {
     enabled: true,
     hour: 3,
     minute: 0,
-    timezone: 'Asia/Shanghai',
+    timezone: 'UTC',
     language: 'en-US',
   };
-  expect((await config.read()).schedule).toEqual(schedule);
-  expect((await config.read()).nextRun).not.toBeNull();
-  expect(await config.claimDaily(new Date('2026-10-22T19:00:00Z'))).toEqual(
+  expect(await config.read()).toMatchObject({
+    collections: ['demonotes'],
+    schedule,
+    nextRun: expect.any(String),
+  });
+  expect(await config.claimDaily(new Date('2026-10-23T03:00:00Z'))).toEqual(
     schedule,
   );
-  // A saved schedule replaces the default, including switching it off.
-  await config.save('schedule', (await config.read()).revision, {
-    ...schedule,
-    enabled: false,
-  });
-  expect(await config.claimDaily(new Date('2026-10-23T19:00:00Z'))).toBeNull();
+  // Saving another policy still leaves the schedule owned by the deployment.
+  await config.save('collections', 0, []);
+  expect((await config.read()).schedule).toEqual(schedule);
 });
-it('shares durable daily claims across service instances and honors disabling', async () => {
-  const { config, container, guard } = await setup();
+it('shares durable daily claims across service instances', async () => {
+  const { config, container, guard } = await setup({
+    NOCOBASE_DEMO_RESET_HOUR: '4',
+    NOCOBASE_DEMO_RESET_TIMEZONE: 'Asia/Shanghai',
+  });
   const schedule = {
     enabled: true,
     hour: 4,
@@ -189,18 +202,11 @@ it('shares durable daily claims across service instances and honors disabling', 
     container.resolve(databaseManagerToken),
     resolveDemoModeSettings(app.application.config),
     guard,
-    async () => ({ importing: null, languages: ['en-US'] }),
+    async () => ({ importing: null }),
   );
   const due = new Date('2026-10-21T20:00:00Z');
-  expect(await config.claimDaily(due)).toBeNull();
-  await config.save('schedule', 0, schedule);
   expect(await other.claimDaily(new Date('2026-10-21T19:59:00Z'))).toBeNull();
   expect(await config.claimDaily(due)).toEqual(schedule);
-  expect(await other.claimDaily(due)).toBeNull();
-  await other.save('schedule', 1, { ...schedule, enabled: false });
-  expect(await config.claimDaily(new Date('2026-10-22T20:00:00Z'))).toBeNull();
-  expect((await config.read()).nextRun).toBeNull();
-  await config.save('schedule', 2, schedule);
   expect(await other.claimDaily(due)).toBeNull();
   expect(await other.claimDaily(new Date('2026-10-22T20:00:00Z'))).toEqual(
     schedule,
@@ -472,18 +478,11 @@ it('lists physical table choices without deployment-managed collections', async 
 
 it('keeps schedule previews out of request and chat policy checks while observing policy changes', async () => {
   const { config } = await setup();
-  await config.save('schedule', 0, {
-    enabled: true,
-    hour: 12,
-    minute: 0,
-    timezone: 'UTC',
-    language: 'en-US',
-  });
-  await config.save('chat', 1, {
+  await config.save('chat', 0, {
     enabled: true,
     tools: { lookup: 'read' },
   });
-  await config.save('collections', 2, ['demoitems']);
+  await config.save('collections', 1, ['demoitems']);
   const preview = vi.spyOn(scheduleHelpers, 'nextDailyRun');
   try {
     expect((await app.request('/items', { method: 'POST' })).status).toBe(200);
@@ -502,8 +501,8 @@ it('keeps schedule previews out of request and chat policy checks while observin
     expect(preview).not.toHaveBeenCalled();
     expect((await config.read()).nextRun).not.toBeNull();
     expect(preview).toHaveBeenCalledTimes(1);
-    await config.save('collections', 3, []);
-    await config.save('chat', 4, { enabled: false, tools: {} });
+    await config.save('collections', 2, []);
+    await config.save('chat', 3, { enabled: false, tools: {} });
     preview.mockClear();
     expect((await app.request('/items', { method: 'POST' })).status).toBe(400);
     await expect(

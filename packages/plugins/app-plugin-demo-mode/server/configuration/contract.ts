@@ -17,7 +17,7 @@ export interface DemoConfigurationService {
   read(includeBusy?: boolean): Promise<DemoConfigurationView>;
   availableCollections(): Promise<{ name: string; title?: string }[]>;
   save(
-    section: 'collections' | 'mocks' | 'schedule' | 'chat',
+    section: 'collections' | 'mocks' | 'chat',
     expectedRevision: number,
     input: unknown,
   ): Promise<DemoConfigurationView>;
@@ -49,5 +49,4 @@ export interface DemoConfigurationRuntime extends DemoConfigurationService {
   runWithPolicy<T>(run: () => Promise<T>): Promise<T>;
   wholeCollectionRules(): Promise<readonly DemoSqlRule[]>;
   claimDaily(now: Date): Promise<DemoDailySchedule | null>;
-  onScheduleChange(listener: () => Promise<void>): void;
 }
