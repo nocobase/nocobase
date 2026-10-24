@@ -61,7 +61,7 @@ describe('the Agent page', () => {
         unusable: 'unreported',
         runners: { team: 0, personal: 0, mine: 0, names: [] },
       }),
-      agent('old', { name: 'Old Codex', status: 'disabled' }),
+      agent('old', { name: 'Old Codex', status: 'disabled', reported: false }),
     ];
     availableGroups = [
       {

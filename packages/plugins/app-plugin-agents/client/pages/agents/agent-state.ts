@@ -9,6 +9,7 @@ export type AgentFilter = (typeof AGENT_FILTERS)[number];
 export type AgentState = 'enabled' | 'disabled' | 'unreported';
 
 export function stateOf(agent: AgentView): AgentState {
+  if (agent.status === 'disabled') return 'disabled';
   if (!agent.reported) return 'unreported';
   return agent.status;
 }
