@@ -43,6 +43,8 @@ const deDE: LocaleResource<typeof enUS> = {
     refresh: 'Aktualisieren',
   },
   workspace: {
+    invalidRecipient:
+      'Korrigieren Sie die E-Mail-Adresse oder den Anzeigenamen: {{value}}. Verwenden Sie höchstens 100 Empfänger pro Feld.',
     senderLabel: 'Von',
     attachmentNumber: 'Anhang {{number}}',
     pendingDelivery:

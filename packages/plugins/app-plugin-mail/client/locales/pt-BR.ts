@@ -43,6 +43,8 @@ const ptBR: LocaleResource<typeof enUS> = {
     refresh: 'Atualizar',
   },
   workspace: {
+    invalidRecipient:
+      'Corrija o endereço de e-mail ou o nome de exibição: {{value}}. Use no máximo 100 destinatários por campo.',
     senderLabel: 'De',
     attachmentNumber: 'Anexo {{number}}',
     pendingDelivery:

@@ -13,7 +13,6 @@ import {
   type ReactElement,
   type ReactNode,
   useId,
-  useRef,
   useSyncExternalStore,
 } from 'react';
 import { useMailComposer } from '../hooks/use-mail-composer.js';
@@ -38,7 +37,6 @@ export function MailComposer(props: MailComposerComponentProps): ReactElement {
   const Surface = props.inline ? 'section' : DialogPopup;
   const Title = props.inline ? 'h2' : DialogTitle;
   const { templateVariables } = props;
-  const recipientInputRef = useRef<HTMLInputElement>(null);
   const mobile = useSyncExternalStore(
     subscribeToMobileLayout,
     isMobileLayout,
@@ -49,6 +47,11 @@ export function MailComposer(props: MailComposerComponentProps): ReactElement {
     discardRecovery,
     t,
     error,
+    recipientErrors,
+    recipientToRef,
+    recipientCcRef,
+    recipientBccRef,
+    validateRecipient,
     composer,
     setComposer,
     composerAccountId,
@@ -123,7 +126,7 @@ export function MailComposer(props: MailComposerComponentProps): ReactElement {
       >
         {composer ? (
           <Surface
-            {...(props.inline ? {} : { initialFocus: recipientInputRef })}
+            {...(props.inline ? {} : { initialFocus: recipientToRef })}
             aria-label={t('workspace.composerTitle', {
               defaultValue: 'New message',
             })}
@@ -257,7 +260,12 @@ export function MailComposer(props: MailComposerComponentProps): ReactElement {
                     aria-label={t('workspace.to', { defaultValue: 'TO' })}
                     className='min-w-0 flex-1'
                     id={`${fieldId}-to`}
-                    ref={recipientInputRef}
+                    ref={recipientToRef}
+                    aria-invalid={Boolean(recipientErrors.to)}
+                    aria-describedby={
+                      recipientErrors.to ? `${fieldId}-to-error` : undefined
+                    }
+                    onBlur={() => validateRecipient('to')}
                     onChange={(event) =>
                       setComposer((current) =>
                         current
@@ -293,37 +301,80 @@ export function MailComposer(props: MailComposerComponentProps): ReactElement {
                     </Button>
                   </div>
                 </div>
+                {recipientErrors.to ? (
+                  <p
+                    id={`${fieldId}-to-error`}
+                    className='text-sm text-destructive'
+                    role='alert'
+                  >
+                    {recipientErrors.to}
+                  </p>
+                ) : null}
                 {ccVisible ? (
-                  <Input
-                    disabled={sending}
-                    aria-label={t('workspace.cc', { defaultValue: 'CC' })}
-                    id={`${fieldId}-cc`}
-                    onChange={(event) =>
-                      setComposer((current) =>
-                        current
-                          ? { ...current, cc: event.target.value }
-                          : current,
-                      )
-                    }
-                    placeholder={t('workspace.cc', { defaultValue: 'CC' })}
-                    value={composer.cc}
-                  />
+                  <div>
+                    <Input
+                      disabled={sending}
+                      aria-label={t('workspace.cc', { defaultValue: 'CC' })}
+                      id={`${fieldId}-cc`}
+                      ref={recipientCcRef}
+                      aria-invalid={Boolean(recipientErrors.cc)}
+                      aria-describedby={
+                        recipientErrors.cc ? `${fieldId}-cc-error` : undefined
+                      }
+                      onBlur={() => validateRecipient('cc')}
+                      onChange={(event) =>
+                        setComposer((current) =>
+                          current
+                            ? { ...current, cc: event.target.value }
+                            : current,
+                        )
+                      }
+                      placeholder={t('workspace.cc', { defaultValue: 'CC' })}
+                      value={composer.cc}
+                    />
+                    {recipientErrors.cc ? (
+                      <p
+                        id={`${fieldId}-cc-error`}
+                        className='text-sm text-destructive'
+                        role='alert'
+                      >
+                        {recipientErrors.cc}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
                 {bccVisible ? (
-                  <Input
-                    disabled={sending}
-                    aria-label={t('workspace.bcc', { defaultValue: 'BCC' })}
-                    id={`${fieldId}-bcc`}
-                    onChange={(event) =>
-                      setComposer((current) =>
-                        current
-                          ? { ...current, bcc: event.target.value }
-                          : current,
-                      )
-                    }
-                    placeholder={t('workspace.bcc', { defaultValue: 'BCC' })}
-                    value={composer.bcc}
-                  />
+                  <div>
+                    <Input
+                      disabled={sending}
+                      aria-label={t('workspace.bcc', { defaultValue: 'BCC' })}
+                      id={`${fieldId}-bcc`}
+                      ref={recipientBccRef}
+                      aria-invalid={Boolean(recipientErrors.bcc)}
+                      aria-describedby={
+                        recipientErrors.bcc ? `${fieldId}-bcc-error` : undefined
+                      }
+                      onBlur={() => validateRecipient('bcc')}
+                      onChange={(event) =>
+                        setComposer((current) =>
+                          current
+                            ? { ...current, bcc: event.target.value }
+                            : current,
+                        )
+                      }
+                      placeholder={t('workspace.bcc', { defaultValue: 'BCC' })}
+                      value={composer.bcc}
+                    />
+                    {recipientErrors.bcc ? (
+                      <p
+                        id={`${fieldId}-bcc-error`}
+                        className='text-sm text-destructive'
+                        role='alert'
+                      >
+                        {recipientErrors.bcc}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
               <Input
