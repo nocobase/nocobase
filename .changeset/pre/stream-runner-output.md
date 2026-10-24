@@ -8,4 +8,3 @@ Stream coding-tool conversation replies and supplied reasoning summaries through
 
 Upgrade the application before its runners: protocol 14 announces the outputBlocks feature, while the upgraded application continues serving older runners. Retain ACP partial answers on length limits, refusals and cancellation, safely redact values adjacent to private keys, reconcile divergent previews through normal history refresh, skip empty assistant messages, and suppress unused Codex delta notifications for tasks.
 
-Render every logical assistant response as one bubble with ordered text and reasoning, preserving identity across live previews, cancellation and paginated history.
