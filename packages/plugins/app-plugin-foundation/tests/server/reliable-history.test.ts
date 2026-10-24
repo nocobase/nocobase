@@ -10,7 +10,7 @@ import { files } from '../../server/capabilities/data.js';
 import { mail } from '../../server/capabilities/messaging.js';
 import { permissions } from '../../server/capabilities/people.js';
 import { workflows } from '../../server/capabilities/processes.js';
-import { knowledge } from '../../server/capabilities/intelligence.js';
+import { aiAgents, knowledge } from '../../server/capabilities/intelligence.js';
 import type { CapabilityCollector } from '../../server/capabilities/types.js';
 import { DefaultFoundationService } from '../../server/services/foundation.js';
 
@@ -35,6 +35,7 @@ async function fixture(collector: CapabilityCollector, names: string[]) {
     definitionsFailed: new Set<string>(),
     nonFiles: new Set<string>(),
     count: 3,
+    counts: new Map<string, number>(),
     grants: true,
     now: Date.parse('2026-10-20T08:00:00Z'),
     connection: {},
@@ -73,7 +74,7 @@ async function fixture(collector: CapabilityCollector, names: string[]) {
             state.onHang();
           });
         if (state.failed.has(name)) throw new Error('private driver detail');
-        return state.count;
+        return state.counts.get(name) ?? state.count;
       };
       return {
         count: async () => read(),
@@ -393,3 +394,157 @@ it('dates historical composite usage from the still-applicable active part', asy
     status: 'unused',
   });
 });
+
+it('keeps refuted permission evidence inactive through consecutive partial and whole failures', async () => {
+  let collectorFails = false;
+  const collector: CapabilityCollector = {
+    ...permissions,
+    collect: (context) => {
+      if (collectorFails) throw new Error('private collector detail');
+      return permissions.collect(context);
+    },
+  };
+  const { state, refresh } = await fixture(collector, [
+    'authorizationPermissionSets',
+    'authorizationSharingRules',
+  ]);
+  state.counts.set('authorizationSharingRules', 0);
+  expect((await refresh()).status).toBe('active');
+  state.grants = false;
+  state.failed.add('authorizationSharingRules');
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const current = await refresh();
+    expect(current.status).toBeNull();
+    expect(current.checkedAt).toBeUndefined();
+    expect(current.parts).toContainEqual({
+      key: 'permissionSets',
+      status: 'needsSetup',
+    });
+    expect(current.parts).toContainEqual({ key: 'sharingRules', status: null });
+  }
+  state.failed.add('authorizationPermissionSets');
+  for (let attempt = 0; attempt < 2; attempt++)
+    expect((await refresh()).status).toBeNull();
+  collectorFails = true;
+  expect((await refresh()).status).toBeNull();
+  collectorFails = false;
+  state.failed.clear();
+  state.grants = true;
+  expect(await refresh()).toMatchObject({
+    status: 'active',
+    completeness: 'complete',
+  });
+});
+
+it.each([
+  ['agModelServices', 'modelServices'],
+  ['agRunners', 'runners'],
+])(
+  'retains the %s path, quantity and original date through repeated failures and a confirmed zero',
+  async (collection, key) => {
+    let collectorFails = false;
+    const { state, refresh } = await fixture(
+      {
+        ...aiAgents,
+        collect: (context) => {
+          if (collectorFails) throw new Error('private collector detail');
+          return aiAgents.collect(context);
+        },
+      },
+      ['agModelServices', 'agRunners', 'agAgents'],
+    );
+    state.counts.set(
+      collection === 'agModelServices' ? 'agRunners' : 'agModelServices',
+      0,
+    );
+    expect((await refresh()).status).toBe('active');
+    const original = new Date(state.now).toISOString();
+    state.failed.add(collection);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const current = await refresh();
+      expect(current).toMatchObject({
+        status: 'active',
+        checkedAt: original,
+        completeness: 'partial',
+      });
+      expect(current.parts).toContainEqual({
+        key,
+        status: 'active',
+        checkedAt: original,
+      });
+      expect(current.metrics).toContainEqual(
+        expect.objectContaining({
+          key,
+          value: 3,
+          complete: true,
+          checkedAt: original,
+        }),
+      );
+      expect(current.reason).toBeUndefined();
+    }
+    collectorFails = true;
+    expect(await refresh()).toMatchObject({
+      status: 'active',
+      checkedAt: original,
+      completeness: 'failed',
+    });
+    collectorFails = false;
+    state.failed.clear();
+    state.counts.set(collection, 0);
+    const zero = await refresh();
+    expect(zero.status).toBe('needsSetup');
+    expect(zero.checkedAt).toBeUndefined();
+    state.failed.add(collection);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const current = await refresh();
+      expect(current.status).toBeNull();
+      expect(current.parts).toContainEqual({ key, status: null });
+    }
+    collectorFails = true;
+    expect((await refresh()).status).toBeNull();
+  },
+);
+
+it.each([
+  ['agModelServices', 'modelServices'],
+  ['agRunners', 'runners'],
+])(
+  'retains the %s path when its read times out after another path confirms zero',
+  async (collection, key) => {
+    const { state, refresh, service } = await fixture(aiAgents, [
+      'agModelServices',
+      'agRunners',
+    ]);
+    state.counts.set(
+      collection === 'agModelServices' ? 'agRunners' : 'agModelServices',
+      0,
+    );
+    await refresh();
+    const original = new Date(state.now).toISOString();
+    state.now += 60_000;
+    state.hanging.add(collection);
+    const started = new Promise<void>((resolve) => {
+      state.onHang = resolve;
+    });
+    vi.useFakeTimers();
+    const pending = service.overview({ refresh: true });
+    await started;
+    await vi.advanceTimersByTimeAsync(1000);
+    const current = (await pending).capabilities[0]!;
+    expect(current).toMatchObject({
+      status: 'active',
+      checkedAt: original,
+      completeness: 'partial',
+    });
+    expect(current.issues).toContainEqual({ code: 'COLLECTOR_TIMEOUT' });
+    expect(current.parts).toContainEqual({
+      key,
+      status: 'active',
+      checkedAt: original,
+    });
+    expect(current.metrics).toContainEqual(
+      expect.objectContaining({ key, value: 3, checkedAt: original }),
+    );
+    state.finish.forEach((finish) => finish());
+  },
+);

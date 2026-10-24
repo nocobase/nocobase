@@ -17,8 +17,16 @@ export const aiAgents: CapabilityCollector = {
   async collect({ probe, report }) {
     if (!probe) return NO_DATABASE;
     const hasModelServices = probe.has('agModelServices');
-    if (!hasModelServices && !probe.has('agRunners'))
+    const hasRunners = probe.has('agRunners');
+    if (!hasModelServices && !hasRunners)
       return { status: 'unused', reason: 'notRegistered' };
+    report?.({
+      status: null,
+      parts: [
+        ...(hasModelServices ? [{ key: 'modelServices', status: null }] : []),
+        { key: 'runners', status: hasRunners ? null : 'unused' },
+      ],
+    });
     const [services, agents, runners, runs, modelCalls, input, output] =
       await Promise.all([
         hasModelServices
@@ -44,7 +52,7 @@ export const aiAgents: CapabilityCollector = {
               })
           : Promise.resolve(0),
         probe.has('agAgents') ? probe.count('agAgents') : Promise.resolve(0),
-        probe.has('agRunners')
+        hasRunners
           ? probe.count('agRunners').then((runners) => {
               report?.({
                 status: (runners ?? 0) > 0 ? 'active' : null,
@@ -80,20 +88,24 @@ export const aiAgents: CapabilityCollector = {
     const online = services !== null && services > 0;
     const runner = runners !== null && runners > 0;
     const parts: FoundationPart[] = [];
-    if (hasModelServices && services !== null)
+    if (hasModelServices)
       parts.push(
-        online
-          ? { key: 'modelServices', status: 'active' }
-          : {
-              key: 'modelServices',
-              status: 'needsSetup',
-              reason: 'noModelService',
-            },
+        services === null
+          ? { key: 'modelServices', status: null }
+          : online
+            ? { key: 'modelServices', status: 'active' }
+            : {
+                key: 'modelServices',
+                status: 'needsSetup',
+                reason: 'noModelService',
+              },
       );
     if (agents !== null)
       parts.push({ key: 'agents', status: agents > 0 ? 'active' : 'unused' });
-    if (runners !== null)
-      parts.push({ key: 'runners', status: runner ? 'active' : 'unused' });
+    parts.push({
+      key: 'runners',
+      status: runners === null ? null : runner ? 'active' : 'unused',
+    });
     const active = online || runner;
     const unknown = services === null || runners === null;
     return {

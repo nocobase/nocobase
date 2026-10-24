@@ -36,15 +36,22 @@ export class ReliableHistory {
     }
     const result = { ...current };
     const activeParts = [...history.parts.values()].filter(
-      (entry) => entry.value.status === 'active',
+      (entry) =>
+        history.status?.value === 'active' &&
+        entry.value.status === 'active' &&
+        // Stored Agent definitions do not establish a configured execution path.
+        !(current.key === 'aiAgents' && entry.value.key === 'agents'),
     );
     const statusAt =
-      activeParts.length > 0 && current.parts.length > 0
+      history.parts.size > 0
         ? activeParts
-            .filter((entry) =>
-              current.parts.some(
-                (part) => part.key === entry.value.key && part.status === null,
-              ),
+            .filter(
+              (entry) =>
+                current.completeness === 'failed' ||
+                current.parts.some(
+                  (part) =>
+                    part.key === entry.value.key && part.status === null,
+                ),
             )
             .map((entry) => entry.at)
             .sort()
