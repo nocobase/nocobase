@@ -15,6 +15,7 @@ import { verifyTemporaryFileAccessToken } from '../temporary-access';
 import { getFilePlainObject, getFileRecordValue, hasStandardFileId } from '../utils';
 import type { AttachmentModel } from '../storages';
 import { resolveFileAccessFilter } from '../resolve-file-access-filter';
+import { STORAGE_TYPE_LOCAL } from '../../constants';
 
 const GET_FILE_ACTION = 'getFile';
 
@@ -134,6 +135,29 @@ export async function getFile(ctx: Context, next: Next) {
   const download = !temporaryAccess && ctx.method === 'GET' && ctx.query.download === '1';
   const preview = download ? false : temporaryAccess ? false : Boolean(ctx.state.fileAccess?.preview);
   const dataSource = ctx.dataSource as DataSource & StorageFileURLResolver;
+  const storage = plugin.storagesCache.get(storageId);
+  const isLocalStorage = storage?.type === STORAGE_TYPE_LOCAL;
+
+  if (temporaryAccess && isLocalStorage) {
+    ctx.set('Content-Security-Policy', 'sandbox');
+    ctx.set('X-Content-Type-Options', 'nosniff');
+    if (file.mimetype) {
+      ctx.type = file.mimetype;
+    }
+    try {
+      const { stream } = await plugin.getFileStream(file as AttachmentModel);
+      ctx.body = stream;
+    } catch (error) {
+      ctx.logger.warn('[file-manager] failed to stream file for temporary access', {
+        fileId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return ctx.throw(404);
+    }
+    await next();
+    return;
+  }
+
   const storageUrl =
     (await dataSource.resolveStorageFileURL?.({
       collectionName: collection.name,
