@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import path from 'node:path';
 
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { ServiceProvider } from '@nocobase/service-provider';
@@ -11,13 +12,19 @@ export class FoundationProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-foundation';
 
   public override register(): void {
+    // Hosted archives can keep the application package under dist/ while rootDir points to the extraction root.
+    // Prefer the source root during development; otherwise use the package containing the resolved server directory.
+    const rootDir =
+      [this.app.paths.rootDir, this.app.paths.server('..')].find((directory) =>
+        existsSync(path.join(directory, 'package.json')),
+      ) ?? this.app.paths.rootDir;
     this.app.container.singleton(
       foundationServiceToken,
       () =>
         new DefaultFoundationService({
           container: this.app.container,
           config: this.app.config,
-          rootDir: this.app.paths.rootDir,
+          rootDir,
           runtimeProviders: () => runtimeProviderEvidence(this.app),
           serverRegistrationsComplete: () =>
             Array.isArray(this.app.registeredServerPlugins),
