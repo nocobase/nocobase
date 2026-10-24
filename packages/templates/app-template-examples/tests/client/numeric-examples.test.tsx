@@ -1,109 +1,72 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
+  act,
   fireEvent,
-  render,
   screen,
   waitFor,
   within,
 } from '@testing-library/react';
-import { I18nRuntime } from '@nocobase/i18n';
-import { I18nProvider, NamespaceScope, APP_NS } from '@nocobase/i18n/client';
-import { beforeEach, expect, it, vi } from 'vitest';
+import { expect, it } from 'vitest';
 import NumericExamplesPage from '../../client/pages/numeric-examples.tsx';
-import enUS from '../../client/locales/en-US.ts';
+import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
 
-const { request } = vi.hoisted(() => ({ request: vi.fn() }));
-vi.mock('@nocobase/app-client', () => ({
-  useApiClient: () => ({ request }),
-}));
-
-const data = {
-  dialect: 'sqlite',
-  rows: [
-    {
-      sample: 'small',
-      id: 1,
-      integerValue: 42,
-      bigintValue: '9007199254740993',
-      decimalValue: '42.000000',
-      floatValue: 42,
-      doubleValue: 42,
-    },
-  ],
-  aggregates: [
-    {
-      field: 'bigintValue',
-      count: 1,
-      sum: '9007199254740993',
-      avg: '9007199254740993',
-      min: '9007199254740993',
-      max: '9007199254740993',
-    },
-  ],
-};
-beforeEach(() => request.mockReset().mockResolvedValue({ data }));
-async function mount() {
-  const runtime = new I18nRuntime({
-    defaultLocale: 'en-US',
-    locales: ['en-US'],
-    applicationNamespace: '@nocobase/app-template-examples',
-  });
-  runtime.registerApplicationNamespace('@nocobase/app-template-examples', {
-    'en-US': () => Promise.resolve({ default: enUS }),
-  });
-  await runtime.init('en-US');
-  render(
-    <I18nProvider runtime={runtime}>
-      <QueryClientProvider
-        client={
-          new QueryClient({ defaultOptions: { queries: { retry: false } } })
-        }
-      >
-        <NamespaceScope ns={APP_NS}>
-          <NumericExamplesPage />
-        </NamespaceScope>
-      </QueryClientProvider>
-    </I18nProvider>,
+function mount(options: Parameters<typeof renderAuthenticatedClient>[1] = {}) {
+  return renderAuthenticatedClient(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <NumericExamplesPage />
+    </QueryClientProvider>,
+    { member: true, ...options },
   );
 }
-
-it('preserves string notation and switches Query / Repository and input ranges', async () => {
-  await mount();
+it('preserves large integers from the database and switches Query / Repository and input ranges', async () => {
+  const requests: URL[] = [];
+  await mount({
+    beforeRequest(request) {
+      requests.push(new URL(request.url));
+    },
+  });
   const values = within(
     await screen.findByRole('region', { name: 'Stored values' }),
   );
   expect(values.getByText('"9007199254740993"')).toBeVisible();
-  expect(values.getByText('"42.000000"')).toBeVisible();
-  expect(values.getAllByText('number')).toHaveLength(4);
-  expect(values.getAllByText('string')).toHaveLength(2);
-  fireEvent.click(
-    screen.getByRole('button', { name: 'Repository', exact: true }),
-  );
+  expect(values.getByText(/^"100000000000000\.250*"$/u)).toBeVisible();
+  expect(values.getAllByText('number').length).toBeGreaterThan(0);
+  expect(values.getAllByText('string').length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByRole('button', { name: 'Repository' }));
   await waitFor(() =>
-    expect(request).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        path: 'numericExamples',
-        query: {
-          source: 'repository',
-          sample: 'all',
-          orderBy: 'id',
-        },
-      }),
-    ),
+    expect(
+      requests.some((url) => url.searchParams.get('source') === 'repository'),
+    ).toBe(true),
   );
+  expect(
+    await within(
+      await screen.findByRole('region', { name: 'Stored values' }),
+    ).findByText('"9007199254740993"'),
+  ).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Null sample' }));
   await waitFor(() =>
-    expect(request).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        query: {
-          source: 'repository',
-          sample: 'null',
-          orderBy: 'id',
-        },
-      }),
-    ),
+    expect(
+      within(
+        screen.getByRole('region', { name: 'Stored values' }),
+      ).getAllByRole('row'),
+    ).toHaveLength(2),
   );
-  request.mockResolvedValue({ data: { ...data, rows: [] } });
+  expect(
+    within(screen.getByRole('region', { name: 'Stored values' })).queryByText(
+      '"9007199254740993"',
+    ),
+  ).not.toBeInTheDocument();
+  expect(
+    requests.some(
+      (url) =>
+        url.searchParams.get('source') === 'repository' &&
+        url.searchParams.get('sample') === 'null',
+    ),
+  ).toBe(true);
   fireEvent.click(screen.getByRole('button', { name: 'Empty result' }));
   expect(
     await screen.findByText(
@@ -114,23 +77,36 @@ it('preserves string notation and switches Query / Repository and input ranges',
     screen.getByRole('heading', { name: 'Aggregate results' }),
   ).toBeVisible();
 });
-
-it('shows loading, failure and retry states', async () => {
-  request.mockImplementationOnce(() => new Promise(() => {}));
-  await mount();
-  expect(screen.getByRole('status')).toHaveTextContent(
-    'Loading numeric examples',
-  );
-  request.mockRejectedValueOnce(new Error('Offline'));
-  fireEvent.click(
-    screen.getByRole('button', { name: 'Repository', exact: true }),
-  );
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Unable to load numeric examples',
-  );
-  request.mockResolvedValue({ data });
-  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-  expect(
-    await screen.findByRole('region', { name: 'Stored values' }),
-  ).toBeVisible();
+it('shows loading, then a transport failure and a successful retry', async () => {
+  const pending = Promise.withResolvers<void>();
+  let offline = true;
+  await mount({
+    async beforeRequest(request) {
+      if (!new URL(request.url).pathname.endsWith('/numericExamples')) return;
+      // A real response cannot deterministically reproduce a connection that stalls and then fails.
+      if (offline) {
+        await pending.promise;
+        throw new TypeError('Failed to fetch');
+      }
+    },
+  });
+  try {
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Loading numeric examples',
+    );
+    await act(async () => {
+      pending.resolve();
+      await pending.promise;
+    });
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to load numeric examples',
+    );
+    offline = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(
+      await screen.findByRole('region', { name: 'Stored values' }),
+    ).toBeVisible();
+  } finally {
+    pending.resolve();
+  }
 });

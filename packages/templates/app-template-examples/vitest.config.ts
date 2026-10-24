@@ -23,6 +23,9 @@ export default defineConfig({
         test: {
           root,
           name: 'client',
+          environment: './tests/setup/application-environment.ts',
+          // Client integration tests also start isolated application databases.
+          fileParallelism: false,
           include: ['tests/client/**/*.test.{ts,tsx}'],
           setupFiles: ['./tests/setup/client-config.ts'],
           server: {

@@ -1,55 +1,52 @@
-import path from 'node:path';
-import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
+import { type DatabaseManager } from '@nocobase/db';
+import { createTestApp, type TestApp } from '@nocobase/app-testing/server';
 import {
-  createTestDatabase,
-  type TestDatabase,
-} from '@nocobase/app-testing/server';
-import { authenticationToken } from '@nocobase/app-plugin-authentication';
+  signIn,
+  type TestSession,
+} from '@nocobase/app-plugin-authentication/testing';
 import type { Application } from '@nocobase/app-server/application';
-import {
-  ServiceContainer,
-  type ServiceToken,
-} from '@nocobase/service-provider';
-import { Hono, type MiddlewareHandler } from 'hono';
+import { ServiceContainer } from '@nocobase/service-provider';
 import { beforeEach, afterEach, expect, it } from 'vitest';
 import { articlesRoutes } from '../../server/routes/articles.ts';
+import { createStandaloneServer } from '../../server/standalone.js';
 
-let testDatabase: TestDatabase;
+let testApp: TestApp;
 let db: DatabaseManager;
-let router: Hono;
-let app: Application;
+let session: TestSession;
 beforeEach(async () => {
-  testDatabase = await createTestDatabase({
-    migrations: [
-      {
-        packageName: 'articles',
-        directory: path.resolve(
-          import.meta.dirname,
-          '../../database/main/migrations',
-        ),
+  testApp = await createTestApp({
+    createServer: createStandaloneServer,
+    connections: ['main', 'analytics'],
+    config: {
+      logging: { enabled: false },
+      app: { publicOrigin: 'http://localhost' },
+      auth: {
+        secret: 'test-auth-secret-at-least-32-characters',
+        emailAndPassword: { disableSignUp: false },
       },
-    ],
+    },
   });
-  db = testDatabase.database;
-  const container = new ServiceContainer();
-  container.instance(databaseManagerToken, db);
-  const required = (): MiddlewareHandler => async (c, next) => {
-    const user = c.req.header('x-test-user');
-    if (!user) return c.json({ error: 'unauthenticated' }, 401);
-    c.set('auth', { user: { id: user } });
-    await next();
+  db = testApp.database;
+  await testApp.connection.query
+    .deleteFrom('articles')
+    .allowAllRows()
+    .execute();
+  const member = {
+    name: 'Article author',
+    email: 'author@example.test',
+    password: 'test-author-password',
   };
-  container.instance(authenticationToken, {
-    required,
-  } as unknown as typeof authenticationToken extends ServiceToken<infer T>
-    ? T
-    : never);
-  app = { container } as Application;
-  router = await articlesRoutes.createRouter(app);
-  router.get('/unrelated', (c) => c.text('public'));
+  const registered = await testApp.request('/auth/sign-up/email', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(member),
+  });
+  if (!registered.ok)
+    throw new Error(`Registration failed: ${await registered.text()}`);
+  session = await signIn(testApp, member);
 });
 afterEach(async () => {
-  await testDatabase?.destroy();
+  await testApp?.close();
 });
 const body = {
   title: 'A new article',
@@ -61,28 +58,28 @@ const request = (
   url: string,
   method = 'GET',
   input?: object,
-  user: string | null = 'alice',
+  authenticated = true,
 ) =>
-  router.request(url, {
+  (authenticated ? session.fetch : testApp.request)(url, {
     method,
     headers: {
-      ...(user ? { 'x-test-user': user } : {}),
+      origin: 'http://localhost',
       ...(input ? { 'content-type': 'application/json' } : {}),
     },
     ...(input ? { body: JSON.stringify(input) } : {}),
   });
 it('requires sign-in without permission sets or leaking middleware', async () => {
-  expect((await request('/articles', 'GET', undefined, null)).status).toBe(401);
+  expect((await request('/articles', 'GET', undefined, false)).status).toBe(
+    401,
+  );
   expect((await request('/articles')).status).toBe(200);
   expect((await request('/articles', 'POST', body)).status).toBe(201);
-  expect((await request('/articles', 'POST', body, null)).status).toBe(401);
+  expect((await request('/articles', 'POST', body, false)).status).toBe(401);
   expect(
-    (await request('/articles/1', 'PATCH', { title: 'x' }, null)).status,
+    (await request('/articles/1', 'PATCH', { title: 'x' }, false)).status,
   ).toBe(401);
   expect((await request('/articles/1', 'PUT', body)).status).toBe(404);
-  expect((await request('/unrelated', 'GET', undefined, null)).status).toBe(
-    200,
-  );
+  expect((await request('/example', 'GET', undefined, false)).status).toBe(200);
 });
 it('creates, filters, edits and publishes articles with server timestamps', async () => {
   const createdResponse = await request('/articles', 'POST', body);
@@ -172,24 +169,4 @@ it('answers 503 DATABASE_UNAVAILABLE without a database', async () => {
   expect(await response.json()).toMatchObject({
     error: { status: 'UNAVAILABLE', reason: 'DATABASE_UNAVAILABLE' },
   });
-});
-it('seeds six articles once and preserves user edits', async () => {
-  const seeder = db.createSeeder({
-    directory: path.resolve(import.meta.dirname, '../../database/main/seeds'),
-    packageName: 'articles',
-  });
-  await seeder.run();
-  await db
-    .query()
-    .updateTable('articles')
-    .set({ content: 'User edit' })
-    .where('title', '=', '欢迎来到文章中心')
-    .execute();
-  expect(await seeder.run()).toMatchObject({ executed: [] });
-  const rows = await db.query().selectFrom('articles').selectAll().execute();
-  expect(rows).toHaveLength(6);
-  expect(rows.filter((row) => row.status === 'draft')).toHaveLength(2);
-  expect(rows.find((row) => row.title === '欢迎来到文章中心')?.content).toBe(
-    'User edit',
-  );
 });

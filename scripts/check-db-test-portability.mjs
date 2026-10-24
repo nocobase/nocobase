@@ -116,10 +116,6 @@ export const EXEMPT = new Map([
     'the application configuration under test names SQLite connections',
   ],
   [
-    'packages/templates/app-template-examples/tests/client/numeric-examples.test.tsx',
-    'a client component test whose mocked API data names the SQLite dialect',
-  ],
-  [
     'packages/templates/app-template-examples/tests/server/external-crm.test.ts',
     'the external CRM stand-in under test is a SQLite file by design; server/providers/external-crm-sample.ts creates it on SQLite only',
   ],

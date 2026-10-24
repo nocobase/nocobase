@@ -2,14 +2,30 @@ import type {
   AppClientRegisteredRoute,
   AppClientRouteComponentModule,
 } from '@nocobase/app-client/plugins';
-import { act, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 
 import { ClientRoute } from '../../client/routing/client-route.tsx';
 
-vi.mock('@nocobase/app-plugin-authorization/client', () => ({
-  useCan: () => ({ can: true, isPending: false }),
-}));
+import { renderWithApp } from '@nocobase/app-testing/client';
+import { apiClientToken } from '@nocobase/app-client';
+import {
+  AuthorizationClient,
+  authorizationClientToken,
+} from '@nocobase/app-plugin-authorization/client';
+import packageMetadata from '../../package.json' with { type: 'json' };
+import enUS from '../../client/locales/en-US.js';
+
+const options = {
+  namespace: packageMetadata.name,
+  namespaces: { [packageMetadata.name]: enUS },
+  services(app: import('@nocobase/app-client').ClientApplication) {
+    app.container.singleton(
+      authorizationClientToken,
+      (resolver) => new AuthorizationClient(resolver.resolve(apiClientToken)),
+    );
+  },
+};
 
 const route: AppClientRegisteredRoute = {
   id: 'recoverable',
@@ -34,7 +50,10 @@ const healthyModule: AppClientRouteComponentModule = {
 
 describe('client route loading recovery', () => {
   it('clears a previous failure when the same mounted route loads successfully', async () => {
-    const { rerender } = render(<ClientRoute route={route} />);
+    const { rerender } = await renderWithApp(
+      <ClientRoute route={route} />,
+      options,
+    );
     expect(
       await screen.findByText('Unable to load page', {}, ROUTE_LOAD_TIMEOUT),
     ).toBeVisible();
@@ -58,8 +77,9 @@ describe('client route loading recovery', () => {
         rejectLoad = reject;
       },
     );
-    const { rerender } = render(
+    const { rerender } = await renderWithApp(
       <ClientRoute route={{ ...route, componentLoader: () => pending }} />,
+      options,
     );
     rerender(
       <ClientRoute

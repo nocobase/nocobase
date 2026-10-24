@@ -1,34 +1,24 @@
-import { renderWithApp } from '@nocobase/app-testing/client';
+import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router';
-import { beforeEach, expect, it, vi } from 'vitest';
+import { expect, it } from 'vitest';
 import { PermissionManagementPage } from '../../client/pages/settings/permission-management-page.js';
-import enUS from '../../client/locales/en-US.js';
-import zhCN from '../../client/locales/zh-CN.js';
-const access = vi.hoisted(() => ({ roles: true, defaults: true }));
-vi.mock('@nocobase/app-plugin-authorization/client', async (original) => ({
-  ...(await original<
-    typeof import('@nocobase/app-plugin-authorization/client')
-  >()),
-  useCan: ({ resource }: { resource: { id: string } }) => ({
-    can:
-      resource.id === 'authorization.permission-sets'
-        ? access.roles
-        : access.defaults,
-  }),
-}));
-const namespace = '@nocobase/permission-tabs-test';
-const namespaces = {
-  [namespace]: {
-    'en-US': async () => ({ default: enUS }),
-    'zh-CN': async () => ({ default: zhCN }),
-  },
-};
-beforeEach(() => {
-  access.roles = true;
-  access.defaults = true;
-});
+
+function mount(prefix: string, tab = 'roles', roles = true, locale = 'en-US') {
+  return renderAuthenticatedClient(tree(prefix), {
+    route: `${prefix}/${tab}`,
+    locale,
+    member: true,
+    grants: [
+      'authorization.default-access',
+      ...(roles ? ['authorization.permission-sets'] : []),
+    ].map((id) => ({
+      resource: { type: 'settings', id },
+      actions: [{ action: 'read' }],
+    })),
+  });
+}
 function Content({ tab }: { tab: 'roles' | 'default-access' }) {
   const location = useLocation();
   return (
@@ -55,11 +45,8 @@ it.each(['', '/settings'])(
   'uses two URL-backed tabs under one heading, preserves the existing %s route prefix and keyboard focus',
   async (prefix) => {
     const user = userEvent.setup();
-    await renderWithApp(tree(prefix), {
-      route: `${prefix}/roles`,
-      namespace,
-      namespaces,
-    });
+    await mount(prefix);
+    await screen.findByRole('tab', { name: 'Roles and permissions' });
     expect(
       screen.getByRole('heading', { name: 'Permission management' }),
     ).toBeVisible();
@@ -99,12 +86,8 @@ it.each(['', '/settings'])(
   },
 );
 it('hides an unreadable tab while keeping direct navigation on the readable default scope page', async () => {
-  access.roles = false;
-  await renderWithApp(tree(''), {
-    route: '/default-access',
-    namespace,
-    namespaces,
-  });
+  await mount('', 'default-access', false);
+  await screen.findByRole('tab', { name: 'Default data scopes' });
   expect(
     screen.queryByRole('tab', { name: 'Roles and permissions' }),
   ).not.toBeInTheDocument();
@@ -116,12 +99,8 @@ it('hides an unreadable tab while keeping direct navigation on the readable defa
   );
 });
 it('uses the agreed Chinese menu and tab names', async () => {
-  await renderWithApp(tree(''), {
-    route: '/roles',
-    namespace,
-    namespaces,
-    locale: 'zh-CN',
-  });
+  await mount('', 'roles', true, 'zh-CN');
+  await screen.findByRole('tab', { name: '角色与权限' });
   expect(screen.getByRole('heading', { name: '权限管理' })).toBeVisible();
   expect(screen.getByRole('tab', { name: '角色与权限' })).toBeVisible();
   expect(screen.getByRole('tab', { name: '默认数据范围' })).toBeVisible();

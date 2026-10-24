@@ -58,13 +58,15 @@ function Menu({
 }: {
   readonly entries?: readonly AppClientRegisteredRoute[];
 }) {
-  const { items } = useRouteNavigation(entries);
+  const { items, loading } = useRouteNavigation(entries);
   return (
-    <NavigationMenu
-      items={items}
-      label='Navigation'
-      selectedKey={routeKey(visible)}
-    />
+    <section aria-label='Permission status' aria-busy={loading}>
+      <NavigationMenu
+        items={items}
+        label='Navigation'
+        selectedKey={routeKey(visible)}
+      />
+    </section>
   );
 }
 describe.each(['expanded', 'collapsed', 'mobile'])(
@@ -130,17 +132,32 @@ describe.each(['expanded', 'collapsed', 'mobile'])(
       ).toHaveAttribute('href', '/Allowed');
       expect(screen.queryByText('Denied')).not.toBeInTheDocument();
       expect(screen.queryByText('Empty')).not.toBeInTheDocument();
+      const allowedPermissions = permissions;
       await act(async () => {
         permissions = { unrestricted: false, permissions: [] };
-        app.container.resolve(authorizationClientToken).invalidate();
+        const authorization = app.container.resolve(authorizationClientToken);
+        authorization.invalidate();
+        await authorization.snapshot();
       });
       await waitFor(() =>
-        expect(screen.queryByText('Group')).not.toBeInTheDocument(),
+        expect(
+          screen.getByRole('region', { name: 'Permission status' }),
+        ).toHaveAttribute('aria-busy', 'false'),
       );
+      expect(screen.queryByText('Group')).not.toBeInTheDocument();
       expect(
         screen.queryByRole('link', { name: 'Allowed' }),
       ).not.toBeInTheDocument();
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await act(async () => {
+        permissions = allowedPermissions;
+        const authorization = app.container.resolve(authorizationClientToken);
+        authorization.invalidate();
+        await authorization.snapshot();
+      });
+      expect(
+        await screen.findByRole('link', { name: 'Allowed' }),
+      ).toBeVisible();
     });
   },
 );

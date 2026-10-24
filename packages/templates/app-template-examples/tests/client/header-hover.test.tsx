@@ -1,21 +1,11 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AppThemeProvider } from '../../client/theme/theme-provider';
 import { ThemeSettings } from '../../client/theme/theme-settings';
 import { UserMenu } from '../../client/layouts/components/user-menu';
 
-// Session requests belong to the authentication tests.
-vi.mock('@nocobase/app-plugin-authentication/client', () => ({
-  useAuthentication: () => ({
-    session: { user: { id: 'operator', name: 'Operator' } },
-    isPending: false,
-  }),
-}));
-// Language selection has its own integration tests with the real i18n runtime.
-vi.mock('../../client/layouts/components/language-switcher.js', () => ({
-  LanguageSwitcher: () => null,
-}));
+import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
 
 beforeEach(() => {
   // jsdom does not implement the media queries used by the real theme provider.
@@ -43,7 +33,7 @@ it.each(panels)(
   'opens and closes %s on hover',
   async (label, Component, role) => {
     const user = userEvent.setup();
-    render(
+    await renderAuthenticatedClient(
       <AppThemeProvider>
         <Component />
       </AppThemeProvider>,
@@ -70,7 +60,7 @@ it.each(panels)(
   'opens %s by keyboard and closes with Escape',
   async (label, Component, role) => {
     const user = userEvent.setup();
-    render(
+    await renderAuthenticatedClient(
       <AppThemeProvider>
         <Component />
       </AppThemeProvider>,
