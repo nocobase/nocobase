@@ -26,6 +26,11 @@ describe('Examples Foundation integration', () => {
       ({ route }) => route.name === 'foundation',
     );
     expect(entries).toHaveLength(1);
+    const settings = menu.find(
+      (item) => item.route.name === 'systemManagement',
+    );
+    expect(settings?.children.at(-1)?.route.name).toBe('foundation');
+    expect(menu.some((item) => item.route.name === 'foundation')).toBe(false);
     const page = entries[0]!.route;
     expect(page).toMatchObject({
       path: '/foundation',

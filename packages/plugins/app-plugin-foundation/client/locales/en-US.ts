@@ -13,7 +13,7 @@ const enUS = {
       'Your application focuses on business. Data, permissions and workflows are supported by NocoBase Core: common capabilities developed, tested and maintained by NocoBase, and upgraded with official releases.',
     bandTitle: 'NocoBase Core',
     bandDescription:
-      'The capabilities this application uses light up in turn. Select one to see what it does here.',
+      'Select a capability to see how it supports this application.',
     score: '{{active}} / {{total}}',
     scoreCaption: 'capabilities support this application',
     refresh: 'Refresh',

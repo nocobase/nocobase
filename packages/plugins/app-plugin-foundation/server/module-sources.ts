@@ -23,10 +23,16 @@ interface Source {
   readonly imports: readonly string[];
 }
 
+export interface ModuleSourceObservation {
+  watch(file: string): Promise<void>;
+  unreadable(): void;
+}
+
 /** Reads static declarations and value imports only. Never imports an application module or invokes a loader. */
 export async function collectModuleSources(
   rootDir: string,
   runtime: readonly RuntimeProviderEvidence[] = [],
+  observation?: ModuleSourceObservation,
 ): Promise<FoundationModuleSources> {
   const routes: FoundationModuleSource[] = [];
   let complete = true;
@@ -37,7 +43,7 @@ export async function collectModuleSources(
   for (const [name, directory] of roots) {
     if (!directory || name === '@nocobase/app-plugin-foundation') continue;
     try {
-      const graph = await SourceGraph.create(directory);
+      const graph = await SourceGraph.create(directory, observation);
       if (!name) overridden = await graph.overrides();
       const packageName = name || graph.packageName;
       if (!packageName) {
@@ -46,13 +52,20 @@ export async function collectModuleSources(
       }
       const entry = await graph.entry();
       if (!entry) {
+        if (!name)
+          await observation?.watch(
+            path.join(directory, 'server/foundation-modules.json'),
+          );
         const built = !name
           ? await readModuleManifest(directory, packageName)
           : undefined;
         if (built) {
           routes.push(...built.routes);
           complete &&= built.complete;
-        } else complete = false;
+        } else {
+          complete = false;
+          if (!name) observation?.unreadable();
+        }
         continue;
       }
       const declarationFiles = await graph.walk(entry, false);
@@ -120,6 +133,7 @@ export async function collectModuleSources(
       }
       complete &&= declarationFiles.complete;
     } catch {
+      observation?.unreadable();
       complete = false;
     }
   }
@@ -135,9 +149,15 @@ class SourceGraph {
     private readonly root: string,
     public readonly packageName: string,
     private readonly aliases: Readonly<Record<string, unknown>>,
+    private readonly observation?: ModuleSourceObservation,
   ) {}
 
-  public static async create(root: string): Promise<SourceGraph> {
+  public static async create(
+    root: string,
+    observation?: ModuleSourceObservation,
+  ): Promise<SourceGraph> {
+    await observation?.watch(root);
+    await observation?.watch(path.join(root, 'package.json'));
     const directory = await realpath(root);
     const manifest: unknown = JSON.parse(
       await readFile(path.join(directory, 'package.json'), 'utf8'),
@@ -147,6 +167,7 @@ class SourceGraph {
       directory,
       typeof record.name === 'string' ? record.name : '',
       isRecord(record.imports) ? record.imports : {},
+      observation,
     );
   }
 
@@ -161,6 +182,7 @@ class SourceGraph {
       base,
       ...SOURCE_SUFFIXES.map((suffix) => path.join(base, 'index' + suffix)),
     ]) {
+      await this.observation?.watch(path.dirname(candidate));
       try {
         const file = await realpath(candidate);
         if (
@@ -173,7 +195,10 @@ class SourceGraph {
         )
           continue;
         if ((await stat(file)).isFile()) return file;
-      } catch {
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code !== 'ENOENT' && code !== 'ENOTDIR')
+          this.observation?.unreadable();
         /* Missing alternatives are expected when resolving compiled .js references to .tsx sources. */
       }
     }
@@ -449,8 +474,12 @@ class SourceGraph {
 
   private async read(file: string): Promise<Source | undefined> {
     if (this.files.has(file)) return this.files.get(file);
-    if (this.files.size >= MAX_FILES) return undefined;
+    if (this.files.size >= MAX_FILES) {
+      this.observation?.unreadable();
+      return undefined;
+    }
     this.files.set(file, undefined);
+    await this.observation?.watch(file);
     try {
       if ((await stat(file)).size > MAX_BYTES) return undefined;
       const ast = ts.createSourceFile(
@@ -463,6 +492,7 @@ class SourceGraph {
       this.files.set(file, source);
       return source;
     } catch {
+      this.observation?.unreadable();
       return undefined;
     }
   }

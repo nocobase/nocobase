@@ -13,7 +13,7 @@ const frFR: FoundationResource = {
       'Votre application se concentre sur le métier. NocoBase Core soutient les données, permissions et processus avec des capacités communes développées, testées et maintenues par NocoBase, puis mises à jour avec les versions officielles.',
     bandTitle: 'NocoBase Core',
     bandDescription:
-      'Les capacités utilisées s’allument dans l’ordre. Sélectionnez-en une pour voir son rôle.',
+      'Sélectionnez une capacité pour voir comment elle soutient cette application.',
     score: '{{active}} / {{total}}',
     scoreCaption: 'capacités soutiennent l’application',
     refresh: 'Actualiser',

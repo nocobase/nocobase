@@ -13,7 +13,7 @@ const deDE: FoundationResource = {
       'Ihre Anwendung konzentriert sich auf das Geschäft. Daten, Berechtigungen und Abläufe werden von NocoBase Core unterstützt: gemeinsame Funktionen, die NocoBase entwickelt, testet, pflegt und mit offiziellen Versionen aktualisiert.',
     bandTitle: 'NocoBase Core',
     bandDescription:
-      'Verwendete Fähigkeiten leuchten nacheinander auf. Wählen Sie eine für weitere Informationen.',
+      'Wählen Sie eine Fähigkeit aus, um zu sehen, wie sie diese Anwendung unterstützt.',
     score: '{{active}} / {{total}}',
     scoreCaption: 'Fähigkeiten unterstützen diese Anwendung',
     refresh: 'Aktualisieren',

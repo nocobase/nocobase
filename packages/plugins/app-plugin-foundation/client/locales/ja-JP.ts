@@ -13,7 +13,7 @@ const jaJP: FoundationResource = {
       'アプリは業務に集中できます。データ、権限、ワークフローは、NocoBase が継続的に開発・テスト・保守し、公式リリースで更新する NocoBase Core の共通機能が支えます。',
     bandTitle: 'NocoBase Core',
     bandDescription:
-      '使用中の機能が順番に点灯します。選択すると用途を確認できます。',
+      '機能を選択すると、このアプリをどのように支えているかを確認できます。',
     score: '{{active}} / {{total}}',
     scoreCaption: '件の基盤機能がアプリを支えています',
     refresh: '更新',

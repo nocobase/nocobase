@@ -12,8 +12,7 @@ const zhCN: FoundationResource = {
     description:
       '你的应用专注业务，数据、权限和流程由 NocoBase Core 支撑。这些通用能力由 NocoBase 持续研发、测试和维护，并随官方版本升级。',
     bandTitle: 'NocoBase Core',
-    bandDescription:
-      '本系统用到的底座能力会依次点亮，点击任一项查看它在这里做了什么。',
+    bandDescription: '选择一项能力，查看它如何支撑此应用。',
     score: '{{active}} / {{total}}',
     scoreCaption: '项底座能力正在支撑本系统',
     refresh: '刷新',

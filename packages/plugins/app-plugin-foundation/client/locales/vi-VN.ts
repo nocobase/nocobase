@@ -12,8 +12,7 @@ const viVN: FoundationResource = {
     description:
       'Ứng dụng tập trung vào nghiệp vụ. Dữ liệu, phân quyền và quy trình được NocoBase Core hỗ trợ bằng các khả năng chung do NocoBase phát triển, kiểm thử, bảo trì và cập nhật theo phiên bản chính thức.',
     bandTitle: 'NocoBase Core',
-    bandDescription:
-      'Các khả năng đang dùng sáng lên lần lượt. Chọn một mục để xem vai trò.',
+    bandDescription: 'Chọn một khả năng để xem cách nó hỗ trợ ứng dụng này.',
     score: '{{active}} / {{total}}',
     scoreCaption: 'khả năng đang hỗ trợ ứng dụng',
     refresh: 'Làm mới',

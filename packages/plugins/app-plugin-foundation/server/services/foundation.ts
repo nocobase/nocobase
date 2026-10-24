@@ -27,7 +27,7 @@ import {
 } from '../capabilities/data.js';
 import type { CollectionSummary } from '../inventory.js';
 import { InstalledPackages } from '../packages.js';
-import { collectModuleSources } from '../module-sources.js';
+import { ModuleSourceCache } from '../module-source-cache.js';
 import {
   collectProviderInventory,
   type RuntimeProviderEvidence,
@@ -85,6 +85,7 @@ export class DefaultFoundationService implements FoundationService {
   private readonly collectorTimeoutMs: number;
   private readonly collectors: readonly CapabilityCollector[];
   private readonly now: () => number;
+  private readonly moduleSources: ModuleSourceCache;
 
   public constructor(private readonly options: FoundationServiceOptions) {
     this.packages = new InstalledPackages(options.rootDir);
@@ -92,6 +93,7 @@ export class DefaultFoundationService implements FoundationService {
     this.collectorTimeoutMs = options.collectorTimeoutMs ?? 10_000;
     this.collectors = options.collectors ?? CAPABILITY_COLLECTORS;
     this.now = options.now ?? Date.now;
+    this.moduleSources = new ModuleSourceCache(this.now);
   }
 
   public async overview(
@@ -301,7 +303,7 @@ export class DefaultFoundationService implements FoundationService {
               ],
         };
     }
-    const moduleSources = await collectModuleSources(
+    const moduleSources = await this.moduleSources.read(
       this.options.rootDir,
       this.options.runtimeProviders?.(),
     );

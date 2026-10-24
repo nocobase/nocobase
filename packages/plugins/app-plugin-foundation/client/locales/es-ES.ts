@@ -13,7 +13,7 @@ const esES: FoundationResource = {
       'Tu aplicación se centra en el negocio. NocoBase Core respalda los datos, permisos y flujos con capacidades comunes que NocoBase desarrolla, prueba y mantiene, y actualiza con sus versiones oficiales.',
     bandTitle: 'NocoBase Core',
     bandDescription:
-      'Las capacidades en uso se iluminan por orden. Selecciona una para ver su función.',
+      'Selecciona una capacidad para ver cómo apoya esta aplicación.',
     score: '{{active}} / {{total}}',
     scoreCaption: 'capacidades sustentan la aplicación',
     refresh: 'Actualizar',

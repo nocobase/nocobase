@@ -13,7 +13,7 @@ const ptBR: FoundationResource = {
       'Sua aplicação se concentra no negócio. Dados, permissões e fluxos são sustentados pelo NocoBase Core, com recursos comuns desenvolvidos, testados e mantidos pelo NocoBase e atualizados nas versões oficiais.',
     bandTitle: 'NocoBase Core',
     bandDescription:
-      'As capacidades em uso acendem em sequência. Selecione uma para ver sua função.',
+      'Selecione uma capacidade para ver como ela apoia este aplicativo.',
     score: '{{active}} / {{total}}',
     scoreCaption: 'capacidades sustentam o aplicativo',
     refresh: 'Atualizar',

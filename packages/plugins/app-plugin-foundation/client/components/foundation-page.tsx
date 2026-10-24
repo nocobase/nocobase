@@ -1,13 +1,7 @@
 import { useClientApplication } from '@nocobase/app-client';
 import { cn } from 'cn';
 import { Layers, Package, Plug, RefreshCw } from 'lucide-react';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactElement,
-} from 'react';
+import { useCallback, useMemo, useState, type ReactElement } from 'react';
 
 import {
   FOUNDATION_HIGHLIGHTS,
@@ -21,6 +15,7 @@ import {
 import { withAvailableCapabilities } from '../../shared/available-capabilities.js';
 import { businessModules } from '../business-modules.js';
 import { Button } from './ui/button.js';
+import { Skeleton } from './ui/skeleton.js';
 import { ModuleMatrix } from './module-matrix.js';
 import { CollectionsBrowser } from './collections-browser.js';
 import { useFoundationTranslation } from './foundation-translation.js';
@@ -32,44 +27,6 @@ import {
 } from '../provider-inventory.js';
 import { CAPABILITY_ICONS } from './capability-icons.js';
 import { formatFactParams, formatMetricValue, formatTime } from './format.js';
-
-/** How long each capability takes to light up. */
-const LIGHT_STEP_MS = 140;
-
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-}
-
-/**
- * Lights the active capabilities one after another when an overview arrives. With reduced motion everything is lit
- * at once.
- */
-function useLighting(
-  activeCount: number,
-  runKey: string,
-): { readonly lit: number } {
-  const reduced = prefersReducedMotion();
-  const [state, setState] = useState({ runKey, step: 0 });
-  // A new result lights up from the start again: adjusting state while rendering, as React recommends over an effect.
-  if (state.runKey !== runKey) setState({ runKey, step: 0 });
-  useEffect(() => {
-    if (reduced || activeCount === 0) return undefined;
-    let step = 0;
-    const timer = setInterval(() => {
-      step += 1;
-      setState((current) => ({ ...current, step }));
-      if (step >= activeCount) clearInterval(timer);
-    }, LIGHT_STEP_MS);
-    return () => clearInterval(timer);
-  }, [activeCount, runKey, reduced]);
-  return {
-    lit: reduced ? activeCount : Math.min(state.step, activeCount),
-  };
-}
 
 export function FoundationPage(): ReactElement {
   const { t } = useFoundationTranslation();
@@ -125,9 +82,27 @@ export function FoundationPage(): ReactElement {
           ) : null}
         </div>
       ) : (
-        <p className='rounded-lg border bg-card p-6 text-sm text-muted-foreground'>
-          {t('page.loading')}
-        </p>
+        <section
+          aria-busy='true'
+          aria-label={t('page.loading')}
+          className='flex flex-col gap-4 rounded-lg border bg-card p-6'
+        >
+          <p role='status' className='text-sm text-muted-foreground'>
+            {t('page.loading')}
+          </p>
+          <div aria-hidden='true' className='flex flex-col gap-4'>
+            <Skeleton className='h-8 w-48 motion-reduce:animate-none' />
+            <Skeleton className='h-24 w-full motion-reduce:animate-none' />
+            <div className='grid grid-cols-2 gap-4 md:grid-cols-4'>
+              {Array.from({ length: 4 }, (_, index) => (
+                <Skeleton
+                  key={index}
+                  className='h-16 motion-reduce:animate-none'
+                />
+              ))}
+            </div>
+          </div>
+        </section>
       )}
     </div>
   );
@@ -168,7 +143,7 @@ export function FoundationOverviewView({
     () => overview.capabilities.filter((entry) => entry.status === 'active'),
     [overview],
   );
-  const { lit } = useLighting(active.length, overview.checkedAt);
+  const lit = active.length;
   const [selected, setSelected] = useState<FoundationCapabilityKey>(
     () => active[0]?.key ?? overview.capabilities[0]?.key ?? 'dataModeling',
   );

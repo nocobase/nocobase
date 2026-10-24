@@ -13,7 +13,7 @@ const idID: FoundationResource = {
       'Aplikasi Anda berfokus pada bisnis. Data, izin, dan alur kerja didukung NocoBase Core: kemampuan umum yang dikembangkan, diuji, dipelihara oleh NocoBase, serta diperbarui melalui rilis resmi.',
     bandTitle: 'NocoBase Core',
     bandDescription:
-      'Kemampuan yang digunakan menyala berurutan. Pilih satu untuk melihat perannya.',
+      'Pilih kemampuan untuk melihat perannya dalam aplikasi ini.',
     score: '{{active}} / {{total}}',
     scoreCaption: 'kemampuan mendukung aplikasi',
     refresh: 'Segarkan',

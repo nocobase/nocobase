@@ -118,8 +118,7 @@ const OVERVIEW: FoundationOverview = {
 
 describe('App Foundation page', () => {
   beforeEach(() => {
-    // The page honours reduced motion by lighting everything at once, which keeps these tests free of timers.
-    // jsdom has no matchMedia of its own.
+    // jsdom has no matchMedia of its own; capability counts must also stay stable without reduced motion.
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       value: (query: string) =>
@@ -319,6 +318,48 @@ describe('App Foundation page', () => {
     expect(within(detail).getByText('Once in use')).toBeInTheDocument();
   });
 
+  it('shows a collecting placeholder without invented counts before the first result', async () => {
+    let resolve: (value: unknown) => void = () => undefined;
+    const pending = new Promise((done) => {
+      resolve = done;
+    });
+    const calls = await render(() => pending);
+    expect(screen.getByRole('status')).toHaveTextContent('Collecting');
+    expect(
+      document.querySelector('[aria-busy="true"] [data-slot="skeleton"]'),
+    ).not.toBeNull();
+    expect(screen.queryByText('0 / 13')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Refresh' }),
+    ).not.toBeInTheDocument();
+    await waitFor(() => expect(calls).toHaveLength(1));
+    await act(async () => resolve({ data: OVERVIEW }));
+    expect(await screen.findByText('3 / 13')).toBeInTheDocument();
+  });
+
+  it('does not restart known counts from zero when a newer result arrives without reduced motion', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: () => ({ matches: false }),
+    });
+    const calls = await render((call) => ({
+      data: {
+        ...OVERVIEW,
+        checkedAt: call.query?.refresh
+          ? '2026-10-21T08:00:00.000Z'
+          : OVERVIEW.checkedAt,
+      },
+    }));
+    expect(await screen.findByText('3 / 13')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await waitFor(() => expect(calls).toHaveLength(2));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Refresh' })).toBeEnabled(),
+    );
+    expect(screen.getByText('3 / 13')).toBeInTheDocument();
+    expect(screen.queryByText('0 / 13')).not.toBeInTheDocument();
+  });
+
   it('refreshes the overview without requesting expensive business record counts', async () => {
     let completeRefresh: () => void = () => undefined;
     const pending = new Promise<void>((resolve) => {
@@ -352,6 +393,7 @@ describe('App Foundation page', () => {
     expect(
       screen.queryByRole('button', { name: 'Try again' }),
     ).not.toBeInTheDocument();
+    expect(screen.getByText('3 / 13')).toBeInTheDocument();
     await act(async () => completeRefresh());
     expect(
       await screen.findByRole('button', { name: 'Refresh' }),

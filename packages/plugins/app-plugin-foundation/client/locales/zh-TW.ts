@@ -12,7 +12,7 @@ const zhTW: FoundationResource = {
     description:
       '你的應用專注業務，資料、權限與流程由 NocoBase Core 支撐。這些通用能力由 NocoBase 持續研發、測試與維護，並隨官方版本升級。',
     bandTitle: 'NocoBase Core',
-    bandDescription: '正在使用的能力會依序亮起，選取任一項可查看用途。',
+    bandDescription: '選擇一項能力，查看它如何支援此應用程式。',
     score: '{{active}} / {{total}}',
     scoreCaption: '項底座能力正在支援本系統',
     refresh: '重新整理',
