@@ -1354,6 +1354,7 @@ for (const type of ['text', 'thinking'] as const)
       'npm_' + 'a'.repeat(37) + ' finished.',
       'ghp_' + 'a'.repeat(36) + '. Next sentence.',
       'ordinaryprefixghp_' + 'a'.repeat(36) + ' done.',
+      'AKIA' + 'A'.repeat(16) + 'x',
     ])(
       `preserves reviewed ${type} boundaries through ${mode}, routes, storage and UI: %s`,
       async (text) => {

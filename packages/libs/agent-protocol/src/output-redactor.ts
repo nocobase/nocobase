@@ -175,7 +175,14 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
     for (const match of ranges)
       if (match.start < cut && match.end > cut) cut = match.start;
     if (cut === text.length && /[\uD800-\uDBFF]$/.test(text)) cut--;
-    const safe = redact(text.slice(0, cut));
+    let safe = redact(text.slice(0, cut));
+    // Cutting can invent a right boundary (\b or a negative lookahead) that does not exist in the window.
+    // The complete context is authoritative: publish only a prefix of its redacted result. Keep an unsafe
+    // proposal intact until more input or end() resolves it; the same bounded-tail policy still applies.
+    if (cut < text.length && !redact(text).startsWith(safe)) {
+      cut = 0;
+      safe = '';
+    }
     held = text.slice(cut);
     if (held.length >= MAX_OUTPUT_HELD) {
       // An overlong unresolved credential is omitted rather than retaining or releasing an unsafe suffix.
