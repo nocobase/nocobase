@@ -1,34 +1,46 @@
 import { fileURLToPath } from 'node:url';
 
+import { createNodeVitestConfig } from '@nocobase/dev-config/vitest/node';
 import { createReactVitestConfig } from '@nocobase/dev-config/vitest/react';
+import { defineConfig } from 'vitest/config';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 
-export default createReactVitestConfig({
+export default defineConfig({
   test: {
     root,
-    server: {
-      deps: {
-        // Transform the public Client surfaces so vi.mock applies, without duplicating the Server packages' identity tokens.
-        inline: [
-          // The published fixture mounts MemoryRouter; transform it with the page to share the router context.
-          /@nocobase\/app-testing\/(?:dist\/)?src\/client\//u,
-          // AppClientProviders includes the navigation guard and must use that same router context.
-          /@nocobase\/app-client\//u,
-          // Client plugins in every scope, including @acme/app-plugin-*, must share the transformed runtime.
-          // Keep server/shared modules external so their service identities remain unchanged.
-          /@[^/]+\/app-plugin-[^/]+\/(?:dist\/)?client\//u,
-        ],
-      },
-    },
-    // A glob rather than a list of filenames. The list had to be edited by hand for every test added or removed and
-    // silently drifted: it named a file that no longer existed while several real test files were absent from it, so
-    // those tests were never run at all.
-    include: ['tests/**/*.test.{ts,tsx}'],
-    // Playwright runs tests/playwright/ against a built application; its files are named *.test.ts too.
-    exclude: ['tests/playwright/**'],
-    setupFiles: ['./tests/setup/client-config.ts'],
-    // Keep the command usable if an application intentionally removes all scaffold tests before adding its own.
+    projects: [
+      createNodeVitestConfig({
+        test: {
+          root,
+          name: 'node',
+          include: ['tests/{server,database,cli,project}/**/*.test.{ts,tsx}'],
+          // Database fixtures and command output capture run one file at a time.
+          fileParallelism: false,
+        },
+      }),
+      createReactVitestConfig({
+        test: {
+          root,
+          name: 'client',
+          include: ['tests/client/**/*.test.{ts,tsx}'],
+          setupFiles: ['./tests/setup/client-config.ts'],
+          server: {
+            deps: {
+              // Keep the fixture, application and plugin clients in the same React/router context.
+              // Server and shared modules stay external to preserve their service identities.
+              inline: [
+                /@nocobase\/app-testing\/(?:dist\/)?src\/client\//u,
+                /@nocobase\/app-client\//u,
+                /@[^/]+\/app-plugin-[^/]+\/(?:dist\/)?client\//u,
+              ],
+            },
+          },
+        },
+      }),
+    ],
+    // Only the directories above contain Vitest suites. Playwright has its own runner.
+    // Keep the command usable if an application intentionally removes all scaffold tests.
     passWithNoTests: true,
     coverage: {
       provider: 'v8',

@@ -208,7 +208,7 @@ A page and the endpoints it calls must agree: the example's `/api/projects` is o
 
 Every application route that resolves to a `page` permission needs a non-empty, translated display name, including URL-addressable forms, dialogs, drawers and detail pages. Navigation/breadcrumb titles provide it where already appropriate. For a page that intentionally has neither (especially an overlay), add its existing application route `name` and a static application translation key to `client/pages/settings/page-permission-titles.ts`. This mapping labels permissions only; do not add a menu/breadcrumb or change a route name, `authz.resource.id`, inheritance, `'skip'` or stored grants to repair copy. Plugin routes retain their owning namespace and are not overridden by an application's same-named route.
 
-Provide English and Chinese text without unresolved interpolation placeholders. The permission catalog uses `pagePermissionResources()` and a localized unnamed-page/path fallback instead of exposing technical ids. That fallback is a diagnostic, not successful delivery: `tests/logic/page-permission-titles.test.ts` must pass against the application's actual resolved routes and locales; it rejects missing labels, stale mapping keys and untranslated keys. When fixing an existing app, preserve the complete resource/action identity list and grants, and verify display labels without rewriting authorization data.
+Provide English and Chinese text without unresolved interpolation placeholders. The permission catalog uses `pagePermissionResources()` and a localized unnamed-page/path fallback instead of exposing technical ids. That fallback is a diagnostic, not successful delivery: `tests/client/page-permission-titles.test.ts` must pass against the application's actual resolved routes and locales; it rejects missing labels, stale mapping keys and untranslated keys. When fixing an existing app, preserve the complete resource/action identity list and grants, and verify display labels without rewriting authorization data.
 
 ## 5. Settings pages
 
@@ -279,7 +279,7 @@ Write `navigation` on the route. The application sidebar reads its menu entries 
 - **A path with a parameter (`:projectId`) cannot have `navigation`**; registration raises an error, because a menu entry must point to a fixed URL (wildcards are rejected on every route, [section 1](#1-declare-the-route)).
 - Navigation group: write only `name`, `navigation` and `children`, without `componentLoader`. For groups and clickable parents, see [`child-routes.md`](child-routes.md).
 - Do not change the shell (`client/layouts/`) or the ServiceProvider to add a menu entry; the home page entry is declared in the routes as well.
-- A new page with a menu entry usually touches four places: `client/routes.ts`, the page component, `client/locales/` and, for an App page that requires sign-in, the page grant list in `tests/logic/client-routes.test.ts` ([section 12](#12-update-the-route-test)).
+- A new page with a menu entry usually touches four places: `client/routes.ts`, the page component, `client/locales/` and, for an App page that requires sign-in, the page grant list in `tests/client/client-routes.test.ts` ([section 12](#12-update-the-route-test)).
 
 ### A count beside an entry
 
@@ -491,13 +491,13 @@ When customizing the shell, keep the behaviors listed in [section 1 of `shell.md
 
 ## 12. Update the route test
 
-`tests/logic/client-routes.test.ts` checks the application's routes:
+`tests/client/client-routes.test.ts` checks the application's routes:
 
 - `keeps the landing page and the authentication pages`: the home page and the four authentication pages still exist. Adding a page does not require changing it.
 - `loads every page component`: calls every page's `componentLoader` in turn (including child routes at every level) and confirms that the module default-exports a component. Adding a page does not require changing it; it fails when a page file has no default export. An entry with `parent` pointing at another package's group is the exception: register that package's routes in `resolveRoutes()` first.
 - `pins the page authorization of every signed-in page`: lists, in depth-first order, every page in the app routes that requires sign-in, including child routes. **When you add a page with `auth: 'required'`, including its child routes, add it here, or the comparison fails**: `authorizedAs` is `null` for a page whose resolved `authz` is `'skip'`, `'unrestricted'` for an unrestricted-only page, the resource id for a page that checks page access (`'projects'`), and `type:id` for any other resource (`'composite:project-reports'`); a nested page that omits `authz` shows its parent's value. The example's projects routes add `projects`, `project-new`, `project-edit`, `project-detail` and `project-detail-edit`, all `null`, in that order; a page that declares the drawer under itself adds its own pair, such as `project-dashboard-detail` and `project-dashboard-detail-edit`. A page with tabs whose header opens overlays adds a route per tab and per overlay under each tab: `customerDetailRoutes('customer')` adds `customer-detail`, `customer-detail-overview`, `customer-detail-overview-edit`, `customer-detail-orders` and `customer-detail-orders-edit`, every other page that declares it adds the same set under its own owner, and a helper in the test spells one set out (["The route test" in `example/detail-page-tabs.md`](example/detail-page-tabs.md#the-route-test)). Stored page grants reference the resource id, and changing one requires migrating existing grants, so this list is deliberately pinned.
 
-After the change, run `pnpm exec vitest run tests/logic/client-routes.test.ts`.
+After the change, run `pnpm exec vitest run tests/client/client-routes.test.ts`.
 
 ## 13. Verify
 
@@ -520,4 +520,4 @@ Root holds every grant, so a hidden page, a denied tab or a read-only settings c
 4. Ask the user to sign in as the test account into a second session file, `capture.mjs login --state storage/ui-workflow/auth-limited.json` ([`../scripts/capture.md`](../scripts/capture.md)), and take the permission shots with `"state": "storage/ui-workflow/auth-limited.json"` in their configuration. The same session calls the endpoints "as an ordinary user".
 5. Afterwards delete the permission set and ask the user to remove the account, or list both in the report; delete `auth-limited.json` with the other records.
 
-The pending and failed outcomes of `useCan` cannot be produced this way: cover them in a test, setting `permission.isPending` or `permission.error`, which the `useCan` mock of `tests/components/page-harness.test.tsx` returns.
+The pending and failed outcomes of `useCan` cannot be produced this way: cover them in a test, setting `permission.isPending` or `permission.error`, which the `useCan` mock of `tests/client/page-harness.test.tsx` returns.
