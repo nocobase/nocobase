@@ -1,5 +1,6 @@
 ---
+'@nocobase/app-client': minor
 '@nocobase/app-skills': patch
 ---
 
-Require HTTP compatibility for all frontend browser APIs, including third-party integrations and optional features. Route development and deployment workflows to the shared guidance and require regression checks on non-secure HTTP origins, covering UUID generation and copy actions with verified results and manual-copy recovery.
+Add shared createUuid and copyText browser utilities with HTTP-compatible UUID generation, clipboard fallback, focus restoration and explicit copy failure results. Guide applications to use these utilities for UUIDs and copying, and to explain unavailable HTTPS-only capabilities to users rather than prohibiting those APIs.

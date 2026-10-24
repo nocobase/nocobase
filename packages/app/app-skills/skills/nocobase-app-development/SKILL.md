@@ -17,7 +17,7 @@ Do not use it to develop a published plugin package. Plugin development has its 
 
 Do not use it to upgrade the template this application was generated from, which is also how the application moves to a newer NocoBase version when the user asks to upgrade NocoBase or its core. That is `.agents/skills/nocobase-app-upgrade/`, which reconciles a newer template release against the application without reverting the user's work.
 
-All frontend browser APIs must work over ordinary HTTP, including LAN IP access. Apply [browser API compatibility](references/frontend/frontend-dev.md#browser-api-compatibility) to direct calls, third-party integrations and optional features; do not introduce HTTPS-only APIs.
+Check [browser API compatibility](references/frontend/frontend-dev.md#browser-api-compatibility) for direct calls and third-party integrations. HTTPS-only APIs require capability detection and a clear user-facing explanation when unavailable. UUID generation and copying text must support HTTP; use `createUuid()` and `copyText()` from `@nocobase/app-client`.
 
 ## Before you start
 
