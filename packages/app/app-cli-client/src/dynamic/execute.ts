@@ -52,6 +52,7 @@ export async function send(
         error.message,
         error.metadata,
         error.status,
+        error.fieldViolations,
       );
     throw new AppApiError(
       response.status,
@@ -148,6 +149,7 @@ export async function download(
         error.message,
         error.metadata,
         error.status,
+        error.fieldViolations,
       );
     throw new AppApiError(
       response.status,
