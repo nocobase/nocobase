@@ -12,10 +12,12 @@ import {
   type Permissions,
   type SettingsKey,
 } from '../../shared/access.js';
-import type {
-  Attachment,
-  IssueScreenshot,
-  IssueScreenshots,
+import {
+  ATTACHMENTS_PER_REQUEST_MAX,
+  type Attachment,
+  type DiscardAttachmentsRequest,
+  type IssueScreenshot,
+  type IssueScreenshots,
 } from '../../shared/attachments.js';
 import {
   REACTION_EMOJIS,
@@ -193,6 +195,11 @@ export const IntakeJobParams: z.ZodType<{ jobId: string }> = z.object({
 export const AttachmentParams: z.ZodType<{ attachmentId: string }> = z.object({
   attachmentId: id.describe('The attachment identifier.'),
 });
+
+export const DiscardAttachmentsBody: z.ZodType<DiscardAttachmentsRequest> =
+  z.strictObject({
+    attachmentIds: z.array(id).min(1).max(ATTACHMENTS_PER_REQUEST_MAX),
+  });
 
 // Members and mentions
 

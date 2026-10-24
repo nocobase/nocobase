@@ -43,6 +43,7 @@ import {
   UpdateIssueBody,
   UpdateIssueResultSchema,
 } from '../../routes/schemas.js';
+import { ATTACHMENT_SIZE_MAX } from '../../../shared/attachments.js';
 import type { IssueQueries } from './issue.queries.js';
 import type { IssueService } from './issue.service.js';
 
@@ -141,15 +142,30 @@ export function createIssueRoutes(deps: {
           labelIds: { name: 'label' },
           description: { contentFile: true },
         },
+        uploads: {
+          attach: {
+            upload: 'projectsUploadAttachment',
+            field: 'attachmentIds',
+            multiple: true,
+            maxBytes: ATTACHMENT_SIZE_MAX,
+            description: `A file to attach to the new issue (repeatable); attaching needs \`upload\` on \`pm.attachments\`.`,
+          },
+        },
         action: 'pm.issues/create',
-        examples: ['issue create --file issue.json --status in_progress'],
+        examples: [
+          'issue create --file issue.json --status in_progress',
+          'issue create --file issue.json --attach screenshot.png',
+        ],
       }),
       description:
         'Needs `create` on `pm.issues` for the issue’s project. A session context header must identify an active session owned by the caller; its project is the default and successful creation is linked to it. The issue starts in `backlog` unless `statusKey` is `in_progress`. Moving into `in_progress` starts work; there is no separate start option. The caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.',
       responses: {
         201: dataResponse(IssueSchema),
         ...apiErrorResponses,
-        400: apiErrorResponse(400, statusRefused),
+        400: apiErrorResponse(
+          400,
+          `${statusRefused} Also when an attachment is not an upload of the caller’s attached to nothing (INVALID_ATTACHMENT).`,
+        ),
         409: apiErrorResponse(
           409,
           'When the dependency graph changed (`DEPENDENCY_GRAPH_CHANGED`): reload and retry.',

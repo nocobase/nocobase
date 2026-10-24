@@ -78,6 +78,11 @@ export interface PmRichTextEditorProps {
   readonly submitOnEnter?: boolean;
   /** Escape while the mention list is closed. */
   readonly onEscape?: () => void;
+  /**
+   * Files pasted (a screenshot) or dropped on the editor, handed over instead of being dropped by the editor, which
+   * holds no files. A paste that also carries plain text (cells copied from a spreadsheet) stays a text paste.
+   */
+  readonly onFiles?: (files: File[]) => void;
   /** Where the mention list opens: above suits a composer pinned to the bottom, below suits a description. */
   readonly mentionPlacement?: 'above' | 'below';
   readonly toolbar?: boolean;
@@ -168,6 +173,7 @@ export function PmRichTextEditor({
   onSubmit,
   submitOnEnter = false,
   onEscape,
+  onFiles,
   mentionPlacement = 'above',
   toolbar = true,
   className,
@@ -185,6 +191,7 @@ export function PmRichTextEditor({
     onSubmit,
     submitOnEnter,
     onEscape,
+    onFiles,
     onPasteImages,
   });
   useEffect(() => {
@@ -193,6 +200,7 @@ export function PmRichTextEditor({
       onSubmit,
       submitOnEnter,
       onEscape,
+      onFiles,
       onPasteImages,
     };
   });
@@ -236,8 +244,12 @@ export function PmRichTextEditor({
       handlePaste: (view, event) => {
         const upload = callbacksRef.current.onPasteImages;
         const files = [...(event.clipboardData?.files ?? [])];
-        if (!upload || !files.length) return false;
+        if (!view.editable || event.clipboardData?.getData('text/plain'))
+          return false;
+        if (!upload) return handOverFiles(view, event, files);
+        if (!files.length) return false;
         event.preventDefault();
+        event.stopPropagation();
         let bookmark = view.state.selection.getBookmark();
         const map = ({ transaction }: { transaction: Transaction }): void => {
           bookmark = bookmark.map(transaction.mapping);
@@ -304,6 +316,8 @@ export function PmRichTextEditor({
         }
         return false;
       },
+      handleDrop: (view, event) =>
+        handOverFiles(view, event, [...(event.dataTransfer?.files ?? [])]),
     },
     onUpdate: ({ editor: current }) => {
       const markdown = editorMarkdown(current);
@@ -315,6 +329,20 @@ export function PmRichTextEditor({
     },
     onBlur: () => setMention(null),
   });
+
+  /** Gives files to `onFiles`; the event stops here, so an enclosing drop zone does not take them a second time. */
+  function handOverFiles(
+    view: EditorView,
+    event: Event,
+    files: File[],
+  ): boolean {
+    const handler = callbacksRef.current.onFiles;
+    if (!handler || files.length === 0 || !view.editable) return false;
+    event.preventDefault();
+    event.stopPropagation();
+    handler(files);
+    return true;
+  }
 
   function choose(candidate: PmMentionCandidate): void {
     const target = listStateRef.current.mention;

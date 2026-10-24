@@ -130,8 +130,8 @@ export default function NewIssuePage(): ReactElement {
         tab === 'manual' ? (
           <NewIssueFooter
             submitting={submitting}
-            uploading={uploading}
             startNow={startNow}
+            uploading={uploading}
           />
         ) : null
       }
