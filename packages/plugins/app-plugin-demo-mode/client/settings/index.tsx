@@ -1,7 +1,6 @@
 import { useApiClient, useNavigationGuard } from '@nocobase/app-client';
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
-import { useSearchParams } from 'react-router';
 
 import type { DemoConfigurationView } from '../../shared/configuration.js';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert.js';
@@ -14,9 +13,8 @@ import {
   AlertDialogTitle,
 } from '../components/ui/alert-dialog.js';
 import { Skeleton } from '../components/ui/skeleton.js';
-import { Tabs, TabsContent } from '../components/ui/tabs.js';
 import { useDemoData } from '../demo-data.js';
-import { Button, DefaultHeader, TabsList, TabsTrigger } from './components.js';
+import { Button, DefaultHeader } from './components.js';
 import { DataCard, VisitorsCard } from './overview.js';
 import { ScheduleCard } from './schedule.js';
 import {
@@ -33,9 +31,6 @@ export type {
 } from './components.js';
 
 export type { DemoLabelKind, DemoSettingsOptions } from './context.js';
-
-const TABS = ['overview', 'schedule'] as const;
-type Tab = (typeof TABS)[number];
 
 const settings = (id: string, action: string) => ({
   resource: { type: 'settings', id },
@@ -68,7 +63,6 @@ export function DemoModeSettings(
   const Header = options.components?.Header ?? DefaultHeader;
   const api = useApiClient();
   const access = useAccess();
-  const [params, setParams] = useSearchParams();
   const demo = useDemoData({ enabled: access.readData });
   const [view, setView] = useState<DemoConfigurationView>();
   const [viewError, setViewError] = useState<unknown>();
@@ -174,12 +168,6 @@ export function DemoModeSettings(
       </Alert>
     );
 
-  const available = TABS.filter((tab) =>
-    tab === 'overview' ? access.readData : access.readConfiguration,
-  );
-  const requested = params.get('tab') as Tab | null;
-  const tab =
-    requested && available.includes(requested) ? requested : available[0];
   const configuration: Configuration | undefined = view
     ? {
         view: { ...view, busy: view.busy || importing },
@@ -207,7 +195,7 @@ export function DemoModeSettings(
 
   return (
     <DemoSettingsContext.Provider value={options}>
-      <div className='flex flex-col gap-6'>
+      <div className='flex flex-col gap-4'>
         <Header
           title={t('title')}
           refreshLabel={t('refresh')}
@@ -218,7 +206,6 @@ export function DemoModeSettings(
               (configurationLoaded?.reads !== reads ||
                 configurationLoaded?.importing !== importing))
           }
-          activeTabLabel={t(`tabs.${tab}`)}
           onRefresh={() => {
             void demo.refresh();
             if (access.readConfiguration) void load();
@@ -230,47 +217,18 @@ export function DemoModeSettings(
             <AlertDescription>{t('busyHelp')}</AlertDescription>
           </Alert>
         ) : null}
-        <Tabs
-          value={tab}
-          onValueChange={(next) =>
-            setParams(
-              (current) => {
-                const copy = new URLSearchParams(current);
-                copy.set('tab', String(next));
-                return copy;
-              },
-              { replace: true },
-            )
-          }
-        >
-          <TabsList aria-label={t('title')}>
-            {available.map((item) => (
-              <TabsTrigger key={item} value={item}>
-                {t(`tabs.${item}`)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <TabsContent
-            keepMounted
-            value='overview'
-            className='mt-4 flex flex-col gap-4'
-          >
-            <DataCard demo={demo} canManage={access.manageData} />
-            <VisitorsCard status={demo.status} />
-          </TabsContent>
-          <TabsContent
-            keepMounted
-            value='schedule'
-            className='mt-4 flex flex-col gap-4'
-          >
-            {configured((value) => (
+        {access.readData ? (
+          <DataCard demo={demo} canManage={access.manageData} />
+        ) : null}
+        {access.readConfiguration
+          ? configured((value) => (
               <ScheduleCard
                 configuration={value}
                 languages={demo.status?.languages ?? []}
               />
-            ))}
-          </TabsContent>
-        </Tabs>
+            ))
+          : null}
+        {access.readData ? <VisitorsCard status={demo.status} /> : null}
       </div>
       <AlertDialog
         open={leaving !== undefined}

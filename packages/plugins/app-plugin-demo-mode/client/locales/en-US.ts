@@ -39,10 +39,6 @@ const resource = {
     apply: 'Apply changes',
     unsaved: 'Unsaved changes',
     discardAndReload: 'Discard my changes and reload',
-    tabs: {
-      overview: 'Overview',
-      schedule: 'Daily reset',
-    },
     leave: {
       title: 'Leave without saving?',
       description: 'Changes you have not saved on this page will be lost.',
@@ -123,6 +119,7 @@ const resource = {
       copyFailed: 'Could not copy. Copy the link from the address bar instead.',
     },
     schedule: {
+      title: 'Daily reset',
       confirmTitle: 'Save the daily reset?',
       confirmDescription:
         'At the time below, all business data in this instance is deleted and generated again.',

@@ -42,10 +42,6 @@ const resource: DemoModeResource = {
     apply: 'Appliquer les modifications',
     unsaved: 'Modifications non enregistrées',
     discardAndReload: 'Abandonner mes modifications et recharger',
-    tabs: {
-      overview: 'Vue d’ensemble',
-      schedule: 'Réinitialisation quotidienne',
-    },
     leave: {
       title: 'Quitter sans enregistrer ?',
       description:
@@ -133,6 +129,7 @@ const resource: DemoModeResource = {
       copyFailed: 'Copie impossible. Copiez le lien depuis la barre d’adresse.',
     },
     schedule: {
+      title: 'Réinitialisation quotidienne',
       confirmTitle: 'Enregistrer la réinitialisation quotidienne ?',
       confirmDescription:
         'À l’heure ci-dessous, toutes les données métier de cette instance sont supprimées puis régénérées.',

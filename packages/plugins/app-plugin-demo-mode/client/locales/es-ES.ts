@@ -39,10 +39,6 @@ const resource: DemoModeResource = {
     apply: 'Aplicar cambios',
     unsaved: 'Cambios sin guardar',
     discardAndReload: 'Descartar mis cambios y recargar',
-    tabs: {
-      overview: 'Resumen',
-      schedule: 'Restablecimiento diario',
-    },
     leave: {
       title: '¿Salir sin guardar?',
       description:
@@ -129,6 +125,7 @@ const resource: DemoModeResource = {
         'No se pudo copiar. Copia el enlace desde la barra de direcciones.',
     },
     schedule: {
+      title: 'Restablecimiento diario',
       confirmTitle: '¿Guardar el restablecimiento diario?',
       confirmDescription:
         'A la hora indicada se eliminan todos los datos de negocio de esta instancia y se vuelven a generar.',

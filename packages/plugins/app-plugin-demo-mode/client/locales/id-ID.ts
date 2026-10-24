@@ -39,10 +39,6 @@ const resource: DemoModeResource = {
     apply: 'Terapkan perubahan',
     unsaved: 'Ada perubahan yang belum disimpan',
     discardAndReload: 'Buang perubahan saya dan muat ulang',
-    tabs: {
-      overview: 'Ringkasan',
-      schedule: 'Reset harian',
-    },
     leave: {
       title: 'Keluar tanpa menyimpan?',
       description: 'Perubahan yang belum disimpan di halaman ini akan hilang.',
@@ -123,6 +119,7 @@ const resource: DemoModeResource = {
       copyFailed: 'Gagal menyalin. Salin tautan dari bilah alamat.',
     },
     schedule: {
+      title: 'Reset harian',
       confirmTitle: 'Simpan reset harian?',
       confirmDescription:
         'Pada waktu di bawah, semua data bisnis di instans ini dihapus dan dibuat ulang.',

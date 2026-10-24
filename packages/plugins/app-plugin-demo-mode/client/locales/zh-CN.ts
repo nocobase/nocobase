@@ -38,10 +38,6 @@ const resource: DemoModeResource = {
     apply: '确认修改',
     unsaved: '有未保存的修改',
     discardAndReload: '放弃我的修改并重新加载',
-    tabs: {
-      overview: '概览',
-      schedule: '每日重置',
-    },
     leave: {
       title: '不保存就离开？',
       description: '这个页面上还没保存的修改会丢失。',
@@ -117,6 +113,7 @@ const resource: DemoModeResource = {
       copyFailed: '复制失败，请从地址栏复制链接。',
     },
     schedule: {
+      title: '每日重置',
       confirmTitle: '保存每日重置？',
       confirmDescription:
         '在下面的时间，会删除这个实例中的全部业务数据并重新生成。',

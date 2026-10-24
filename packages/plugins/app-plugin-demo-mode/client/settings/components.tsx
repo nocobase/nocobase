@@ -8,10 +8,6 @@ import {
 import { RefreshCw } from 'lucide-react';
 import { Button as DefaultButton } from '../components/ui/button.js';
 import * as cards from '../components/ui/card.js';
-import {
-  TabsList as DefaultTabsList,
-  TabsTrigger as DefaultTabsTrigger,
-} from '../components/ui/tabs.js';
 import { DemoSettingsContext } from './context.js';
 
 /** Localized page chrome; the plugin retains refresh permissions and draft guards. */
@@ -22,20 +18,15 @@ export interface DemoSettingsHeaderProps {
   readonly refreshLabel: string;
   readonly refreshDisabled: boolean;
   readonly refreshing: boolean;
-  readonly activeTabLabel: string;
   readonly onRefresh: () => void;
 }
 
 type Primitives = typeof cards & {
   Button: typeof DefaultButton;
-  TabsList: typeof DefaultTabsList;
-  TabsTrigger: typeof DefaultTabsTrigger;
 };
 const defaults: Primitives = {
   Button: DefaultButton,
   ...cards,
-  TabsList: DefaultTabsList,
-  TabsTrigger: DefaultTabsTrigger,
 };
 /** Supply stable components that forward children, events, refs and accessibility props. */
 export type DemoSettingsComponents = {
@@ -103,22 +94,6 @@ export function CardFooter(
 ): ReactElement {
   const { components } = useContext(DemoSettingsContext);
   const Component = components?.CardFooter ?? defaults.CardFooter;
-  return <Component {...props} />;
-}
-
-export function TabsList(
-  props: ComponentProps<Primitives['TabsList']>,
-): ReactElement {
-  const { components } = useContext(DemoSettingsContext);
-  const Component = components?.TabsList ?? defaults.TabsList;
-  return <Component {...props} />;
-}
-
-export function TabsTrigger(
-  props: ComponentProps<Primitives['TabsTrigger']>,
-): ReactElement {
-  const { components } = useContext(DemoSettingsContext);
-  const Component = components?.TabsTrigger ?? defaults.TabsTrigger;
   return <Component {...props} />;
 }
 

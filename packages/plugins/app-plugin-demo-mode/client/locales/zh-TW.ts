@@ -38,10 +38,6 @@ const resource: DemoModeResource = {
     apply: '確認變更',
     unsaved: '有未儲存的變更',
     discardAndReload: '捨棄我的變更並重新載入',
-    tabs: {
-      overview: '概覽',
-      schedule: '每日重設',
-    },
     leave: {
       title: '不儲存就離開？',
       description: '這個頁面上尚未儲存的變更會遺失。',
@@ -117,6 +113,7 @@ const resource: DemoModeResource = {
       copyFailed: '複製失敗，請從網址列複製連結。',
     },
     schedule: {
+      title: '每日重設',
       confirmTitle: '儲存每日重設？',
       confirmDescription:
         '在下方的時間，會刪除這個執行個體中的全部業務資料並重新產生。',

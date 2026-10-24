@@ -39,10 +39,6 @@ const resource: DemoModeResource = {
     apply: 'Áp dụng thay đổi',
     unsaved: 'Có thay đổi chưa lưu',
     discardAndReload: 'Bỏ thay đổi của tôi và tải lại',
-    tabs: {
-      overview: 'Tổng quan',
-      schedule: 'Đặt lại hằng ngày',
-    },
     leave: {
       title: 'Rời đi mà không lưu?',
       description: 'Các thay đổi chưa lưu trên trang này sẽ mất.',
@@ -124,6 +120,7 @@ const resource: DemoModeResource = {
         'Không sao chép được. Hãy sao chép liên kết từ thanh địa chỉ.',
     },
     schedule: {
+      title: 'Đặt lại hằng ngày',
       confirmTitle: 'Lưu đặt lại hằng ngày?',
       confirmDescription:
         'Vào giờ dưới đây, mọi dữ liệu nghiệp vụ trong phiên bản này bị xóa và tạo lại.',
