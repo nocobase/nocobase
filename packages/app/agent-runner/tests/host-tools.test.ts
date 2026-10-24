@@ -187,6 +187,79 @@ describe('code host CLI wrappers', () => {
     }
   });
 
+  it('denies PR approval and non-squash merges before asking for credentials', async () => {
+    const { binDir, env } = await setUp([
+      {
+        bin: 'gitee',
+        url: REPO,
+        env: { GITEE_TOKEN: { credential: 'password' } },
+      },
+    ]);
+    for (const args of [
+      ['pr', 'review', '42'],
+      ['pr', 'review', '--force', '42'],
+      ['--no-tui', 'pr', '--hostname', 'gitee.com', 'review', '42', '--force'],
+      ['pr', 'merge', '42'],
+      ['pr', 'merge', '42', '--method', 'merge'],
+      ['pr', 'merge', '42', '--method=rebase'],
+      ['pr', 'merge', '42', '--method', 'squash', '--method', 'merge'],
+      ['pr', 'merge', '42', '--method', 'squash', '-m', 'rebase'],
+      ['pr', 'merge', '42', '--method', 'squash', '-qmmerge'],
+      ['pr', 'merge', '42', '--body', '--method', 'squash'],
+      ['auth', 'status', '-t'],
+      ['auth', 'status', '--show-token'],
+    ]) {
+      const result = await run(path.join(binDir, 'gitee'), args, env);
+      expect(result.code).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain('refused:');
+    }
+    expect(asked).toBe(0);
+  });
+
+  it('keeps option values literal and accepts explicit squash without changing arguments', async () => {
+    answers = [
+      () => ({
+        username: 'oauth2',
+        password: 'gitee-fixture',
+        expiresAt: new Date(Date.now() + 60 * MINUTE).toISOString(),
+      }),
+    ];
+    const { binDir, env } = await setUp([
+      {
+        bin: 'gitee',
+        url: REPO,
+        env: { GITEE_TOKEN: { credential: 'password' } },
+      },
+    ]);
+    for (const args of [
+      ['pr', 'create', '--title', 'auth', '--body', 'login'],
+      ['pr', 'create', '--title', 'api', '--body=https://ci.example/build'],
+      [
+        'pr',
+        'create',
+        '--title',
+        '--hostname=elsewhere.test',
+        '--body',
+        'login',
+      ],
+      ['pr', 'create', '--body', 'review', '--title', 'merge'],
+      ['api', '/user', '--body=https://ci.example/build'],
+      ['pr', 'merge', '42', '--method', 'squash'],
+      ['--hostname=gitee.com', 'pr', 'merge', '42', '--method=squash'],
+      ['pr', '--no-tui', 'merge', '42', '-m', 'squash'],
+      ['pr', 'merge', '42', '-qmsquash'],
+      ['pr', 'merge', '42', '--method=squash', '-qRbot/main'],
+    ]) {
+      const result = await run(path.join(binDir, 'gitee'), args, env);
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain(
+        'args=--hostname gitee.com ' + args.join(' '),
+      );
+      expect(result.stdout).toContain('token=gitee-fixture');
+    }
+  });
+
   it('pins effective Gitee API destinations over inherited and saved settings', async () => {
     answers = [
       () => ({
