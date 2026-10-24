@@ -52,3 +52,63 @@ it('preserves explicit blocks, whitespace, notices and independent parent/child 
   const whitespace = runnerUIMessages([row(1, ' ', block('delta'))]);
   expect(chatMessageSegments(whitespace)).toHaveLength(1);
 });
+
+it('interleaves saved negotiated reasoning with canonical text without changing conversation cursors', () => {
+  const rows = [
+    row(2, 'First answer', {
+      runEventSeq: 2,
+      output: { blockId: 'body-one', phase: 'end' },
+    }),
+    row(3, 'Second answer', {
+      runEventSeq: 5,
+      output: { blockId: 'body-two', phase: 'end' },
+    }),
+    row(4, 'Other run', { runEventSeq: 2 }, 'other'),
+  ];
+  const thought = (
+    runId: string,
+    seq: number,
+    blockId: string,
+    content: string,
+  ) => ({
+    runId,
+    seq,
+    at: '2026-01-01T00:00:00Z',
+    content,
+    meta: { output: { blockId, phase: 'end' } },
+  });
+  const original = structuredClone(rows);
+  const messages = runnerUIMessages(rows, [
+    thought('run', 1, 'thought-one', 'First summary'),
+    thought('run', 3, 'thought-two', 'Second summary'),
+    thought('run', 3, 'thought-two', 'Duplicate summary'),
+    thought('unrelated', 1, 'private', 'Other conversation summary'),
+    { ...thought('run', 4, 'legacy', 'Legacy thought'), meta: {} },
+  ]);
+  expect(
+    messages[0].parts.map((part) =>
+      part.type === 'text' || part.type === 'reasoning' ? part.text : '',
+    ),
+  ).toEqual([
+    'First summary',
+    'First answer',
+    'Second summary',
+    'Second answer',
+  ]);
+  expect(messages[1].parts).toEqual([
+    { type: 'text', text: 'Other run', state: 'done' },
+  ]);
+  expect(messages[0].metadata?.revision).toBe(3);
+  expect(chatMessageSegments(messages).map((segment) => segment.seq)).toEqual([
+    2, 2, 3, 3, 4,
+  ]);
+  expect(
+    messages[0].metadata?.sourceRecords?.map((source) => source.partId),
+  ).toEqual([
+    'output:thought-one',
+    'output:body-one',
+    'output:thought-two',
+    'output:body-two',
+  ]);
+  expect(rows).toEqual(original);
+});

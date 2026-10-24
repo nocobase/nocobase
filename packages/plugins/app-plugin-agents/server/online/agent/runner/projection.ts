@@ -13,11 +13,20 @@ import {
   toMessage,
 } from '../../../core/conversations/conversation.store.js';
 import type { TxRunner } from '../../../kernel/tx.js';
+import { eventsRepo, type EventRecord } from '../../../core/runs/run.store.js';
+import { jsonObject } from '../../../kernel/values.js';
 import type { NativeHistoryQuery, NativeHistoryPage } from '../types.js';
 
 export const runnerMessageId = (runId: string): string => `runner:${runId}`;
+type SavedReasoning = Pick<
+  EventRecord,
+  'runId' | 'seq' | 'at' | 'content' | 'meta'
+>;
 /** Pure projection: no Run inference from prose and no invented tools or approvals. */
-export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
+export function runnerUIMessages(
+  rows: ConversationMessage[],
+  reasoning: readonly SavedReasoning[] = [],
+): AppUIMessage[] {
   const messages = new Map<string, AppUIMessage>();
   const seen = new Set<string>();
   for (const row of rows) {
@@ -109,7 +118,81 @@ export function runnerUIMessages(rows: ConversationMessage[]): AppUIMessage[] {
     }
     message.metadata!.revision = Math.max(message.metadata!.revision, row.seq);
   }
+  const byRecord = new Map(rows.map((row) => [row.id, row]));
+  for (const message of messages.values()) {
+    const runId = message.metadata?.executionId;
+    if (message.role !== 'assistant' || !runId) continue;
+    const sources = message.metadata!.sourceRecords!;
+    const parts = sources.map((source) => ({
+      source,
+      part: message.parts[source.partIndex],
+      seq: Number(
+        byRecord.get(source.recordId)?.metadata.runEventSeq ?? Infinity,
+      ),
+    }));
+    const seenParts = new Set(sources.map((source) => source.partId));
+    for (const event of reasoning) {
+      if (event.runId !== runId || !event.content?.trim()) continue;
+      const output = outputBlock(jsonObject(event.meta));
+      if (output?.phase !== 'end') continue;
+      const partId = `output:${output.blockId}`;
+      if (seenParts.has(partId)) continue;
+      seenParts.add(partId);
+      // Use a real conversation cursor, while run-event order positions reasoning within its response.
+      const anchor =
+        parts.find((part) => part.seq > event.seq) ?? parts.at(-1)!;
+      parts.push({
+        source: {
+          recordId: partId,
+          partId,
+          partIndex: 0,
+          seq: anchor.source.seq,
+          createdAt: event.at,
+          output,
+        },
+        part: { type: 'reasoning', text: event.content, state: 'done' },
+        seq: Number(event.seq),
+      });
+    }
+    parts.sort((a, b) => a.seq - b.seq);
+    message.parts = parts.map((part) => part.part);
+    message.metadata!.sourceRecords = parts.map(({ source }, partIndex) => ({
+      ...source,
+      partIndex,
+    }));
+  }
   return [...messages.values()];
+}
+
+/** One batched read of already-redacted summaries; never writes conversation rows or changes model replay. */
+export async function runnerMessages(
+  tx: TxRunner,
+  rows: ConversationMessage[],
+): Promise<AppUIMessage[]> {
+  const runIds = [
+    ...new Set(
+      rows
+        .filter(
+          (row) =>
+            row.role === 'assistant' &&
+            row.runId &&
+            outputBlock(row.metadata as Record<string, unknown>)?.phase ===
+              'end',
+        )
+        .map((row) => row.runId!),
+    ),
+  ];
+  const reasoning = runIds.length
+    ? await eventsRepo(tx.read()).findMany({
+        filter: (f) =>
+          f.and([
+            f.string('type').eq('thinking'),
+            f.or(runIds.map((runId) => f.string('runId').eq(runId))),
+          ]),
+        sort: (s) => s.field('seq').asc(),
+      })
+    : [];
+  return runnerUIMessages(rows, reasoning);
 }
 
 /** Seed a bounded source page, then expand whole Runs and the intervening independent records. */
@@ -195,7 +278,10 @@ export async function runnerUIPage(
     ).values(),
   ].sort((a, b) => Number(a.seq) - Number(b.seq));
   const items = await validateAppUIMessages(
-    runnerUIMessages(unique.map((row) => toMessage(row, basePath))),
+    await runnerMessages(
+      tx,
+      unique.map((row) => toMessage(row, basePath)),
+    ),
   );
   return {
     items: query.ids
