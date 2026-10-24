@@ -89,6 +89,32 @@ export const OrcaRouterProviderSettingsForm: React.FC = () => {
   );
 };
 
+export const AimlapiProviderSettingsForm: React.FC = () => {
+  const t = useT();
+
+  return (
+    <>
+      <Form.Item name={['options', 'apiKey']} label={t('API Key')} rules={[{ required: true }]}>
+        <EnvVariableInput password />
+      </Form.Item>
+      <Form.Item
+        name={['options', 'httpReferer']}
+        label={t('HTTP Referer')}
+        tooltip={t('Optional. Sent as the "HTTP-Referer" header for app attribution.')}
+      >
+        <Input />
+      </Form.Item>
+      <Form.Item
+        name={['options', 'xTitle']}
+        label={t('App Title')}
+        tooltip={t('Optional. Sent as the "X-Title" header for app attribution.')}
+      >
+        <Input />
+      </Form.Item>
+    </>
+  );
+};
+
 export const ShengSuanYunProviderSettingsForm: React.FC = () => {
   const t = useT();
 
