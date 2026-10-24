@@ -20,7 +20,7 @@ The directory names organize the examples and their suggested test files. They a
 
 The examples assume `@nocobase/app-testing`, Vitest and the selected database driver are installed at versions compatible with the application. The client example additionally uses the React Vitest preset, Testing Library and jsdom already configured by the official templates. Each example lists its additional prerequisites. Run the named file and confirm it appears in the test summary; a successful command with no tests found is not verification.
 
-The examples use `tests/database/`, `tests/server/`, `tests/client/`, `tests/cli/` and `tests/playwright/`. An existing application may still use the `logic/` and `components/` layout below; follow its current conventions instead of moving unrelated tests. Directory names alone do not select a Vitest environment. Each complete Vitest example supplies a dedicated configuration that selects Node or jsdom and limits test discovery; use the matching `--config` when running it. When adopting the files into the regular suite, use the application's existing environment selection or Vitest projects and keep `tests/playwright/**` excluded from Vitest. Preserve existing aliases, setup files and test discovery.
+The examples use `tests/database/`, `tests/server/`, `tests/client/`, `tests/cli/` and `tests/playwright/`. An existing application may still use a legacy `logic/` and `components/` layout; follow its current conventions instead of moving unrelated tests. Directory names alone do not select a Vitest environment. Each complete Vitest example supplies a dedicated configuration that selects Node or jsdom and limits test discovery; use the matching `--config` when running it. When adopting the files into the regular suite, use the application's existing environment selection or Vitest projects and keep `tests/playwright/**` excluded from Vitest. Preserve existing aliases, setup files and test discovery.
 
 ### Fixture selection and ownership
 
@@ -56,14 +56,20 @@ If startup fails, check the installed package exports, the selected driver, the 
 ## Where tests go
 
 ```text
-tests/logic/        Logic and integration tests
-tests/components/   Component tests
-tests/playwright/   Browser tests against a running application at APP_URL (Playwright; Vitest skips it)
+tests/client/      Pages, components, client services and runtime logic (jsdom)
+tests/server/      Services, routes and permission boundaries (Node)
+tests/database/    Migrations and seeds (Node)
+tests/cli/         Application commands (Node)
+tests/project/     Root configuration, package metadata and build artifacts (Node)
+tests/fixtures/    Test data and fixture applications, without test files
+tests/helpers/     Shared test helpers, without test files
+tests/setup/       Application setup files
+tests/playwright/  Browser tests against a running application (Playwright)
 ```
 
 **Never put a test beside the source it covers.** Name files `*.test.ts` or `*.test.tsx`.
 
-`vitest.config.ts` discovers `tests/**/*.test.{ts,tsx}` automatically. Theme token tests compile the real CSS; browser checks still need to verify computed styles, typography, spacing and focus.
+`vitest.config.ts` uses Vitest projects: the React preset discovers `tests/client/**/*.test.{ts,tsx}`, while the Node preset discovers `tests/{server,database,cli,project}/**/*.test.{ts,tsx}`. Keep client setup files in the client project and run Node files sequentially. Do not add per-file `@vitest-environment` overrides; put the test in the directory of the source it covers. Create an optional directory when it has its first file. Playwright has its own runner and is outside both Vitest include patterns. Theme token tests compile the real CSS; browser checks still need to verify computed styles, typography, spacing and focus.
 
 Templates ship their tests into generated applications. Keep them runnable from the application root after scaffolding: read application identity from `package.json`, resolve application paths relative to the test file, and import dependencies through their published package exports. Do not depend on a monorepo checkout, a fixed template directory name, or a particular pnpm store layout. Run the affected test files in the generated application as well as in the template when changing these contracts.
 
@@ -241,6 +247,6 @@ Vite configuration imports the proxy helpers from `@nocobase/app-cli/dev/proxy`.
 
 ## Permission assignment acceptance
 
-Run the template's `tests/logic/authorization-assignment-safety.test.ts` after installing the real application migrations/seeds in isolated test storage. Retain it as business features are added: it catches unexpected wildcard role assignments and business grants hidden in the inherited member role. Do not treat a source-code scan as proof of the resulting assignments. See [assignment safety](authorization.md#visible-and-manageable-assignments) for intentional global defaults and the limits of the initialized-state check.
+Run the template's `tests/server/authorization-assignment-safety.test.ts` after installing the real application migrations/seeds in isolated test storage. Retain it as business features are added: it catches unexpected wildcard role assignments and business grants hidden in the inherited member role. Do not treat a source-code scan as proof of the resulting assignments. See [assignment safety](authorization.md#visible-and-manageable-assignments) for intentional global defaults and the limits of the initialized-state check.
 
 For an ordinary identity assigned only the intended business role, enumerate direct and inherited grant sources, confirm visible menus/buttons match effective access, and exercise forbidden direct API requests. Test page-only versus action-only access separately. If a global default is explicitly requested, test its authorized administration control, inherited-role display and revocation while preserving independent direct grants. Never silently assign all authenticated users a role to make an acceptance test pass.
