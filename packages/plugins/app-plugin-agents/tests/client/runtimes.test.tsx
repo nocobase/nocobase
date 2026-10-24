@@ -651,6 +651,13 @@ describe('runtimes page', () => {
       'runtimes.toolUsage.item(tool=tools.claude,used=2,limit=2)',
       'runtimes.toolUsage.item(tool=tools.codex,used=1,limit=1)',
     ]);
+    const sheet = await openSheet();
+    expect(
+      within(sheet).queryByRole('list', {
+        name: 'runtimes.toolUsage.label',
+      }),
+    ).toBeNull();
+    within(sheet).getByText('tools.claude 2/2');
     // Running tools without a configured limit do not add a usage line.
     expect(
       within(screen.getByTestId('runner-r3')).queryByRole('list', {
