@@ -1,3 +1,4 @@
+import { createBrowserId } from '@nocobase/app-client';
 /**
  * Where a person writes to the agent. Enter sends, Shift+Enter breaks the line, and while the agent is answering a
  * message waits for the turn to end unless sent with ⌘↩ (Ctrl+Enter), which stops the turn first. Pasted, dropped or
@@ -291,7 +292,7 @@ export function Composer({
     onEdit?.();
     const read = await Promise.all(
       files.map(async (file): Promise<Pending> => ({
-        id: crypto.randomUUID(),
+        id: createBrowserId(),
         type: 'image',
         mimeType: file.type,
         data: await base64(file),

@@ -1,3 +1,4 @@
+import { copyText } from '@nocobase/app-client';
 /**
  * The viewer's computers: which are online and what each can run, removing one, and the steps that connect another
  * (`ConnectSteps`, also what a person with no computer sees first). These computers run only their owner's sessions;
@@ -394,7 +395,7 @@ function Command({ text }: { readonly text: string }): ReactElement {
         aria-label={t('actions.copy')}
         className='shrink-0 text-[oklch(0.68_0.02_264)] hover:text-[oklch(0.9_0.01_264)]'
         onClick={() =>
-          void navigator.clipboard.writeText(text).then(
+          void copyText(text).then(
             () => setCopied(true),
             () => toaster.show({ type: 'error', title: t('errors.copy') }),
           )

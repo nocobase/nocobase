@@ -1,3 +1,4 @@
+import { copyText } from '@nocobase/app-client';
 /**
  * What an App page says about its variables before anything else: required ones the current release lacks, values
  * changed since the running deployment, and the first administrator a first deployment generated (shown masked to
@@ -154,7 +155,7 @@ export function InitialAdminAlert({
   const { hours } = data;
   const copy = async (): Promise<void> => {
     try {
-      await navigator.clipboard.writeText(data.password);
+      await copyText(data.password);
       notify.success(t('ui.initialAdmin.copied'));
     } catch (reason) {
       notify.error(reason);

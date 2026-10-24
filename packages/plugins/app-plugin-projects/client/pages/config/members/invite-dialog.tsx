@@ -1,3 +1,4 @@
+import { copyText } from '@nocobase/app-client';
 import { ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -287,7 +288,7 @@ function CopyLink({ url }: { readonly url: string }): ReactElement {
 
   async function copy(): Promise<void> {
     try {
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       setCopied(true);
     } catch {
       notify.error(null, t('connect.copyFailed'));

@@ -1,3 +1,4 @@
+import { copyText } from '@nocobase/app-client';
 /**
  * A session's transcript, item by item (`transcript.ts`): the person's messages, the agent's answers in Markdown, its
  * thinking and tool calls folded away, its plan, the permission requests waiting for an answer, and at the end of a
@@ -182,7 +183,9 @@ function Item({
                 <Button
                   size='xs'
                   variant='ghost'
-                  onClick={() => void navigator.clipboard.writeText(item.text)}
+                  onClick={() =>
+                    void copyText(item.text).catch(() => undefined)
+                  }
                 >
                   {t('transcript.prompt.copy')}
                 </Button>

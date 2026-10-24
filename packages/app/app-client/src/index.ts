@@ -1,3 +1,4 @@
+export { createBrowserId, copyText } from './browser.js';
 export { refreshRealtimeQueries } from './realtime-query.js';
 export {
   apiClientToken,
