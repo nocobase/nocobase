@@ -1,5 +1,27 @@
 # @nocobase/app-plugin-agents
 
+## 1.0.0-beta.22
+
+### Minor Changes
+
+- d490379: Prepare Native OnlineAgent document attachments in detached user-level model replay copies while preserving original messages, attachment authorization, public history and search text. Reuse the same preparation pipeline for realtime and background execution, history, approvals and message editing or regeneration.
+
+  Apply Provider forwarding defaults with exact service/model/Provider/protocol/base URL overrides, bounded file and text budgets, and an instance-owned TTL/LRU cache that reauthorizes and reads current source bytes before every reuse. Unsupported user inputs become honest parsing-limitation descriptions without hiding permission, validation, budget, cancellation or genuine extraction failures.
+
+  Support connection-pinned Kimi Files extraction for Moonshot documents by default and explicitly configured compatible services. Bound upload and content responses, attempt independent best-effort remote deletion, reuse remote results only within an execution, and keep credentials and remote identifiers out of messages. Preserve canonical tool evidence during approval and finalization recovery, and omit embedded DOCX images from extracted model text.
+
+### Patch Changes
+
+- d490379: Show safe, actionable, localized attachment preparation failures in live chat and saved history, including unconfigured image input, unreadable documents, extraction timeouts, and file or text limits. Keep Provider messages and document contents private, preserve cancellation and model capability checks, and use a generic localized explanation for historical failures without a saved reason.
+- d490379: Declare official DeepSeek Flash JPEG, PNG, GIF, and WebP capability in the shared model capability catalog, and derive native file routing from it regardless of service name. Remove the duplicated Examples profile while preserving exact model and endpoint admission, explicit deployment-policy overrides, local document extraction, and existing file limits.
+- d490379: Restore legacy PDF and image routing defaults for native agent providers while preserving DeepSeek behavior and exact model overrides. Moonshot now uploads supported documents to its selected Kimi Files service by default; an exact local profile disables remote extraction. Extract Ollama PDF text locally by default and describe explicit PDF-original overrides as unavailable when its SDK would silently omit them. Preserve authorization, budgets, cancellation and user-level document replay.
+- d490379: Keep native agent conversations usable when a user attaches an unsupported file type. Describe the filename, MIME type and parsing limitation in user-level model replay instead of failing the execution, including historical follow-up and unsupported image inputs. Preserve original attachments, authorization, input budgets and genuine parsing or Provider failures; update the Examples regression coverage without granting additional image capabilities.
+- d490379: Omit empty or whitespace-only system instructions from native agent model requests instead of sending an empty system message rejected by Moonshot/Kimi and other strict providers. Preserve nonempty instructions verbatim and keep extracted attachment content in user messages.
+- 4c98f67: Clarify personal and shared runtime usage, offer agent prompts and manual installation for macOS, Linux and Windows through WSL, and explain how to recover missing coding tools with the service PATH. New runtimes default to three concurrent runs. Expand installation prompts in full and require Windows agents to verify WSL Ubuntu before continuing.
+- 01e03b7: Keep runner agents visible according to their status, derive their model entry from their tool and model, and repair stale markers or missing model entries in existing installations.
+- Updated dependencies [d490379]
+  - @nocobase/document-extractor@0.1.0-beta.0
+
 ## 1.0.0-beta.21
 
 ### Minor Changes
