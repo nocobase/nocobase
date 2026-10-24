@@ -12,7 +12,7 @@ Examples retains Default’s Users and API Keys integration alongside its demons
 
 ## App foundation
 
-Open **App foundation** in the sidebar, or `/foundation` relative to this application's mount path, to inspect its Core capabilities, usage evidence and statistics. Examples registers the Foundation Client and Server plugins as a deployment dependency, alongside its demonstrations. The page and its `/api/foundation/overview` endpoint require unrestricted administrator access, such as the root Permission Set; ordinary users cannot see the menu entry or read the evidence. A mounted application at `/my-examples/` exposes the page at `/my-examples/foundation`.
+Open **App foundation** in the sidebar, or `/foundation` relative to this application's mount path, to inspect its Core capabilities, usage evidence and statistics. Examples registers the Foundation Client, Server and CLI plugins as a deployment dependency, alongside its demonstrations. The CLI build hook preserves page-to-capability evidence in `dist/server/foundation-modules.json`, so deployments without page source files retain recognized associations such as Articles using data modeling. Rebuild after changing page or API dependencies; refreshing an older deployment cannot recreate missing build evidence. The page and its `/api/foundation/overview` endpoint require unrestricted administrator access, such as the root Permission Set; ordinary users cannot see the menu entry or read the evidence. A mounted application at `/my-examples/` exposes the page at `/my-examples/foundation`.
 
 ## Create an examples application
 
