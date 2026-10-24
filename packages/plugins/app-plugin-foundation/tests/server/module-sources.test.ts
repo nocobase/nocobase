@@ -53,6 +53,151 @@ afterEach(async () => {
 });
 
 describe('static module dependencies', () => {
+  it.each(['local', 'property', 'parameter', 'nested', 'imported'])(
+    'resolves %s child route references with invocation-local bindings',
+    async (kind) => {
+      const child = `{name:\`\${name}-child\`,componentLoader:loader}`;
+      const bodies: Record<string, string> = {
+        local: `const children=[${child}];return {name,componentLoader:list,children};`,
+        property: `const config={children:[${child}]};return {name,componentLoader:list,children:config.children};`,
+        parameter: `return {name,componentLoader:list,children:options.children};`,
+        nested: `const leaf=${child};const children=[{name:\`\${name}-group\`,children:[leaf]}];return {name,componentLoader:list,children};`,
+        imported: `return {name,componentLoader:list,children:children(name,loader)};`,
+      };
+      const root = await fixture({
+        'client/routes.ts': `import {children} from './children.js';function master({name,list,loader,options}){${bodies[kind]}}export default [master({name:'one',list:()=>import('./quiet.js'),loader:()=>import('./page.js')${kind === 'parameter' ? ",options:{children:[{name:'one-child',componentLoader:()=>import('./page.js')}]}" : ''}}),master({name:'two',list:()=>import('./quiet.js'),loader:()=>import('./quiet.js')${kind === 'parameter' ? ",options:{children:[{name:'two-child',componentLoader:()=>import('./quiet.js')}]}" : ''}})];`,
+        'client/children.ts': `export const children=(name,loader)=>[{name:\`\${name}-child\`,componentLoader:loader}];`,
+        'client/page.ts': `import {read} from '@nocobase/db';export default ()=>read();`,
+        'client/quiet.ts': `export default ()=>null;`,
+      });
+      const result = await collectModuleSources(root);
+      expect(result.routes.map((route) => route.routeName)).toEqual([
+        'one',
+        'one-child',
+        'two',
+        'two-child',
+      ]);
+      expect(result.routes[1]?.providers).toEqual(['@nocobase/db']);
+      expect(result.routes[3]?.providers).toEqual([]);
+      expect(result.complete).toBe(true);
+      const modules = businessModules(
+        result.routes.map(({ routeName: name }) => ({
+          id: `app:${name}`,
+          name,
+          packageName: 'arbitrary-app',
+          source: 'application',
+          path: `/${name}`,
+          auth: 'required',
+          authz: 'skip',
+          navigation: { title: name },
+          componentLoader: async () => ({ default: () => null }),
+        })),
+        {
+          complete: true,
+          unreadable: [],
+          entries: [
+            {
+              name: '@nocobase/db',
+              version: 'fixture',
+              installed: true,
+              kind: 'core',
+              origin: 'nocobase',
+              categories: ['dataModeling'],
+              registration: 'observed',
+              evidence: ['serverRegistration'],
+            },
+          ],
+        },
+        result,
+        ['interface', 'dataModeling'],
+      );
+      expect(
+        modules
+          .filter((module) =>
+            module.links.some((link) => link.capability === 'dataModeling'),
+          )
+          .map((module) => module.id),
+      ).toEqual(['app:one-child']);
+    },
+  );
+
+  it.each(['children', 'returned', 'property', 'cycle', 'noReturn'])(
+    'keeps proven routes and marks unknown %s route values incomplete',
+    async (kind) => {
+      const calls: Record<string, string> = {
+        children: `const master=({children})=>({name:'parent',componentLoader:()=>import('./quiet.js'),children});export default [master({children:[{name:'child',componentLoader:()=>import('./page.js')},unknown]})];`,
+        returned: `const master=()=>unknown;export default [{name:'parent',componentLoader:()=>import('./quiet.js')},master()];`,
+        property: `const master=()=>unknown.routes;export default [{name:'parent',componentLoader:()=>import('./quiet.js')},master()];`,
+        cycle: `const children=[children];const master=()=>({name:'parent',componentLoader:()=>import('./quiet.js'),children});export default [master()];`,
+        noReturn: `const master=()=>{};export default [{name:'parent',componentLoader:()=>import('./quiet.js')},master()];`,
+      };
+      const root = await fixture({
+        'client/routes.ts': calls[kind],
+        'client/page.ts': `import {read} from '@nocobase/db';export default ()=>read();`,
+        'client/quiet.ts': `export default ()=>null;`,
+      });
+      const result = await collectModuleSources(root);
+      expect(result.routes.map((route) => route.routeName)).toEqual(
+        kind === 'children' ? ['parent', 'child'] : ['parent'],
+      );
+      expect(result.complete).toBe(false);
+    },
+  );
+
+  it.each(['own', 'decoy', 'missing', 'inherited', 'baseUrl'])(
+    'uses the declared paths directory with %s inherited configuration',
+    async (kind) => {
+      const root = await fixture({
+        'tsconfig.json': JSON.stringify({
+          extends: './config/base.json',
+          ...(kind === 'inherited'
+            ? {}
+            : { compilerOptions: { paths: { '@/*': ['./client/*'] } } }),
+        }),
+        'config/base.json': JSON.stringify({
+          compilerOptions: {
+            strict: true,
+            ...(kind === 'inherited'
+              ? { paths: { '@/*': ['../client/*'] } }
+              : {}),
+            ...(kind === 'baseUrl' ? { baseUrl: '..' } : {}),
+          },
+        }),
+        'client/routes.ts': `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,
+        'client/page.ts': `import {read} from '@/helper';export default ()=>read();`,
+        ...(kind === 'missing'
+          ? {}
+          : {
+              'client/helper.ts': `import {read} from '@nocobase/db';export {read};`,
+            }),
+        ...(kind === 'decoy' || kind === 'missing'
+          ? {
+              'config/client/helper.ts': `import {send} from '@nocobase/app-plugin-mail/client';export const read=()=>send();`,
+            }
+          : {}),
+      });
+      const result = await collectModuleSources(root);
+      expect(result.routes[0]?.providers).toEqual(
+        kind === 'missing' ? [] : ['@nocobase/db'],
+      );
+      expect(result.complete).toBe(kind !== 'missing');
+      const parsed = ts.getParsedCommandLineOfConfigFile(
+        path.join(root, 'tsconfig.json'),
+        {},
+        { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => {} },
+      );
+      const resolved = ts.resolveModuleName(
+        '@/helper',
+        path.join(root, 'client/page.ts'),
+        parsed!.options,
+        ts.sys,
+      ).resolvedModule;
+      expect(resolved?.resolvedFileName).toBe(
+        kind === 'missing' ? undefined : path.join(root, 'client/helper.ts'),
+      );
+    },
+  );
+
   it('resolves explicitly configured package-local aliases through request hooks', async () => {
     const root = await fixture({
       'tsconfig.json': JSON.stringify({

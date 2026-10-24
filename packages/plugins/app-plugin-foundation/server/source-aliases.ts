@@ -9,7 +9,7 @@ export async function sourceAliases(
   const seen = new Set<string>();
   type Config = {
     aliases: Map<string, string | undefined>;
-    base: string;
+    base: string | undefined;
     valid: boolean;
   };
   const read = async (file: string): Promise<Config | undefined> => {
@@ -55,7 +55,7 @@ export async function sourceAliases(
       const base =
         typeof options.baseUrl === 'string'
           ? path.resolve(path.dirname(resolved), options.baseUrl)
-          : (inherited?.base ?? path.dirname(resolved));
+          : inherited?.base;
       const aliases = own
         ? new Map<string, string | undefined>()
         : new Map(inherited?.aliases);
@@ -85,7 +85,12 @@ export async function sourceAliases(
             stars <= 1 &&
             (target.match(/\*/g) ?? []).length === stars &&
             !path.isAbsolute(target);
-          aliases.set(key, supported ? path.resolve(base, target) : undefined);
+          aliases.set(
+            key,
+            supported
+              ? path.resolve(base ?? path.dirname(resolved), target)
+              : undefined,
+          );
         }
       if (!valid) for (const key of aliases.keys()) aliases.set(key, undefined);
       return { aliases, base, valid };

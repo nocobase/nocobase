@@ -417,6 +417,21 @@ export class RouteEvidence {
     );
   }
 
+  /** Route-valued positions must resolve references, rather than just visit their identifier syntax. */
+  private scanRoutes(value: Value, seen: Set<ts.Node>): void {
+    const values = this.values(value, seen);
+    if (!values.length) this.complete = false;
+    for (const selected of values) {
+      if (ts.isArrayLiteralExpression(selected.node)) {
+        const nextSeen = new Set(seen).add(selected.node);
+        for (const child of this.elements(selected, seen))
+          this.scanRoutes(child, nextSeen);
+      } else if (ts.isObjectLiteralExpression(selected.node))
+        this.scan(selected, seen);
+      else this.complete = false;
+    }
+  }
+
   private scan(value: Value, seen: Set<ts.Node>): void {
     if (++this.visits > 100_000 || seen.size >= 32 || seen.has(value.node)) {
       this.complete = false;
@@ -466,8 +481,10 @@ export class RouteEvidence {
           )
             this.routes.push(declaration);
         }
-        const children = field(node, 'children');
-        if (children) this.scan({ node: children, bindings }, nextSeen);
+      }
+      const children = field(node, 'children');
+      if (children) this.scanRoutes({ node: children, bindings }, nextSeen);
+      if (name || loader || children) {
         return;
       }
     }
@@ -498,8 +515,7 @@ export class RouteEvidence {
         );
       });
       if (!knownWrapper) {
-        const values = this.values(value);
-        for (const selected of values) this.scan(selected, nextSeen);
+        this.scanRoutes(value, seen);
       }
       for (const argument of node.arguments)
         this.scan({ node: argument, bindings }, nextSeen);

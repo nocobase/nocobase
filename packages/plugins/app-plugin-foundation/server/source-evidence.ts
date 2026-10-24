@@ -145,6 +145,13 @@ export class SourceEvidence {
             )
           )
             continue;
+          if (ts.isExportSpecifier(declaration)) {
+            const local =
+              this.checker.getExportSpecifierLocalTargetSymbol(declaration);
+            if (local) follow(local);
+            else complete = false;
+            continue;
+          }
           if (symbol.flags & ts.SymbolFlags.Alias)
             follow(this.checker.getAliasedSymbol(symbol));
         } else if (ts.isImportClause(declaration)) {
