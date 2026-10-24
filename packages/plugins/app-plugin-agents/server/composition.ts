@@ -15,9 +15,9 @@ import type { FileInputsConfig } from './online/files/types.js';
  * off-by-default runner build method (`jobs/`) from the runners' shared slots, and jobs open the stored variables they
  * name here. The runner and CLI tarballs the application serves are `distribution/`.
  *
- * Agents are discovered from what runners report (`agents.syncRunner`, on each registration and heartbeat): one for each
- * coding tool and model, which someone who manages agents enables. Subject kinds (what runs work on), scopes, business
- * actions, the instructions every discovered agent gets and who holds which action are added later by the application
+ * Runner reports refresh existing agents and auto-create enabled agents for recommended models (`agents.syncRunner`).
+ * Administrators add other reported models from the live available-model list. Subject kinds (what runs work on),
+ * scopes, business actions, runner-agent instructions and who holds which action are added later by the application
  * that assembles the plugin (through `subjects`, `scopes`, `actions`, `agents.setDefaults`, `gate`); this plugin
  * brings the
  * `conversation` subject.
@@ -360,7 +360,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     people,
     latestRunner: async (runner) =>
       (await upgradeFor(dist, runner))?.latestVersion ?? null,
-    // Every tool and model a runner reports becomes an agent, pending until someone enables it.
+    // Reports auto-create enabled agents only for recommended models; other models stay in the live available list.
     onReport: (unit, runner) => agents.syncRunner(unit, runner),
   });
   const jobs = createJobService({

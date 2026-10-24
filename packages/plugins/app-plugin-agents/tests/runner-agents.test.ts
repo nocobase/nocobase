@@ -108,7 +108,7 @@ describe('agents built from runner reports', () => {
       source: 'runner',
     });
     expect(agent!.id).toBe(runnerAgentId('claude', 'claude-sonnet-5'));
-    // Not pending: already in the roster.
+    // Already enabled and in the roster.
     expect(await h.services.roster(h.services.tx.read(), 'alice')).toHaveLength(
       1,
     );

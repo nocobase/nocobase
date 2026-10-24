@@ -95,7 +95,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     unavailableNow: '目前無法使用',
     title: '代理',
     description:
-      '執行器報告的每個編碼工具和模型都是一個代理。專案經理將議題的每一步交給與其描述相符的代理人。',
+      '從執行器回報的模型中新增代理。專案經理依據代理的擅長領域分派議題的每個步驟。',
     fromRunners: '執行器代理',
     display: {
       search: '搜尋型號或供應商',
@@ -112,11 +112,10 @@ const zhTW: LocaleResource<typeof enUS> = {
     loadFailed: '無法載入代理',
     loadMore: '載入更多',
     emptyTitle: '還沒有代理',
-    emptyDescription:
-      '將執行器與已登入的編碼工具連線起來：其每個模型都在此處顯示為要啟用的代理。',
+    emptyDescription: '連接已登入編碼工具的執行器，再從「可用模型」新增代理。',
     noneInFilter: '這裡沒有代理。',
     howToAdd:
-      '要新增代理，請在執行器上安裝編碼工具並登入您可能使用的模型：一旦執行器報告它，它就會顯示在這裡，您可以透過編寫它擅長的內容來啟用它。私人執行器的代理人只能處理其主人發起的議題。',
+      '要新增代理，請在執行器上安裝編碼工具並登入可用的模型。執行器回報後，從「可用模型」填寫擅長領域即可新增並啟用代理。只有個人執行器可執行的代理，只能處理其擁有者發起的議題。',
     goodAtMissing: '還沒寫',
     columns: {
       agent: '代理',
@@ -154,9 +153,6 @@ const zhTW: LocaleResource<typeof enUS> = {
       ultra: '超',
     },
     enable: {
-      button: '填寫並啟用',
-      buttonFor: '填寫並啟用{{name}}',
-      title: '啟用{{name}}',
       reportedBy_one: '{{count}} 執行器線上報道：{{names}}。',
       reportedBy_other: '{{count}} 執行器線上檢舉：{{names}}。',
       noRunnerNow: '目前沒有擁有它的執行器線上。',
@@ -166,8 +162,6 @@ const zhTW: LocaleResource<typeof enUS> = {
       effortHint: '專案經理交接工作時不能更改。',
       personalOnly:
         '只有個人執行器擁有它：專案經理只在其所有者開始的議題上才讓它工作。',
-      submit: '啟用',
-      done: '{{name}} 已啟用',
     },
     edit: {
       button: '編輯',

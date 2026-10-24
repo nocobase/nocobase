@@ -100,7 +100,7 @@ const esES: LocaleResource<typeof enUS> = {
     unavailableNow: 'No disponible ahora',
     title: 'Agentes',
     description:
-      'Cada herramienta de codificación y modelo que informa un ejecutor es un agente. El director del proyecto entrega cada paso de un problema al agente cuya descripción se ajusta a él.',
+      'Añada agentes a partir de los modelos que informan los ejecutores. El director del proyecto asigna cada paso de una tarea al agente cuya descripción encaja con ella.',
     fromRunners: 'Agentes de ejecutores',
     display: {
       search: 'Búsqueda de modelos o proveedores',
@@ -118,10 +118,10 @@ const esES: LocaleResource<typeof enUS> = {
     loadMore: 'Cargar más',
     emptyTitle: 'Aún no hay agentes',
     emptyDescription:
-      'Conecte un ejecutor con una herramienta de codificación iniciada: cada uno de sus modelos aparece aquí como un agente para habilitar.',
+      'Conecte un ejecutor con una herramienta de codificación con la sesión iniciada y añada un agente desde «Modelos disponibles».',
     noneInFilter: 'Ningún agente aquí.',
     howToAdd:
-      'Para añadir un agente, instale una herramienta de codificación en un ejecutor e inicie sesión en un modelo que pueda usar: una vez que el ejecutor lo informa, aparece aquí y usted lo habilita escribiendo en qué es bueno. Un agente que solo tienen los ejecutores personales trabaja solo en los problemas que inician sus propietarios.',
+      'Para añadir un agente, instale una herramienta de codificación en un ejecutor e inicie sesión para usar un modelo disponible. Cuando el ejecutor lo informe, añada el agente desde «Modelos disponibles» indicando en qué destaca. Quedará habilitado al añadirlo. Un agente disponible solo en ejecutores personales trabaja únicamente en las tareas que inician sus propietarios.',
     goodAtMissing: 'Aún no escrito',
     columns: {
       agent: 'Agente',
@@ -161,9 +161,6 @@ const esES: LocaleResource<typeof enUS> = {
       ultra: 'Ultra',
     },
     enable: {
-      button: 'Completar y habilitar',
-      buttonFor: 'Completar y habilitar {{name}}',
-      title: 'Habilitar {{name}}',
       reportedBy_one:
         'Reportado por el ejecutor {{count}} en línea: {{names}}.',
       reportedBy_other:
@@ -176,8 +173,6 @@ const esES: LocaleResource<typeof enUS> = {
         'El director del proyecto no puede cambiarlo cuando entrega el trabajo.',
       personalOnly:
         'Sólo lo tienen los ejecutores personales: el director del proyecto lo entrega trabajo sólo en los problemas que inician sus propietarios.',
-      submit: 'Habilitar',
-      done: '{{name}} está habilitado',
       reportedBy_many:
         'Reportado por ejecutores {{count}} en línea: {{names}}.',
     },

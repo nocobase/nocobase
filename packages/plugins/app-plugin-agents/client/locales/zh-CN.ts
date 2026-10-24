@@ -155,9 +155,6 @@ const zhCN: AgentsResource = {
       ultra: '极高',
     },
     enable: {
-      button: '填写并启用',
-      buttonFor: '填写并启用 {{name}}',
-      title: '启用 {{name}}',
       reportedBy_one: '由 {{count}} 台在线执行机上报：{{names}}。',
       reportedBy_other: '由 {{count}} 台在线执行机上报：{{names}}。',
       noRunnerNow: '现在没有在线的执行机有它。',
@@ -167,8 +164,6 @@ const zhCN: AgentsResource = {
       effortHint: '项目经理派活时不能调。',
       personalOnly:
         '只有个人执行机能跑：只有这些执行机的主人自己发起的任务，项目经理才会派给它。',
-      submit: '启用',
-      done: '{{name}} 已启用',
     },
     edit: {
       button: '编辑',

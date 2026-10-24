@@ -102,7 +102,7 @@ const deDE: LocaleResource<typeof enUS> = {
     unavailableNow: 'Derzeit nicht verfügbar',
     title: 'Agenten',
     description:
-      'Jedes Codierungstool und jedes Modell, das ein Runner meldet, ist ein Agent. Der Projektmanager übergibt jeden Schritt eines Problems an den Agenten, dessen Beschreibung dazu passt.',
+      'Fügen Sie Agenten aus den von Runnern gemeldeten Modellen hinzu. Der Projektmanager weist jeden Schritt einer Aufgabe dem Agenten zu, dessen Beschreibung dazu passt.',
     fromRunners: 'Agenten von Runnern',
     display: {
       search: 'Suchmodelle oder Anbieter',
@@ -120,10 +120,10 @@ const deDE: LocaleResource<typeof enUS> = {
     loadMore: 'Mehr laden',
     emptyTitle: 'Noch keine Agenten',
     emptyDescription:
-      'Verbinden Sie einen Runner mit einem angemeldeten Codierungstool: Jedes seiner Modelle wird hier als zu aktivierender Agent angezeigt.',
+      'Verbinden Sie einen Runner mit einem angemeldeten Codierungstool und fügen Sie dann unter „Verfügbare Modelle“ einen Agenten hinzu.',
     noneInFilter: 'Kein Agent hier.',
     howToAdd:
-      'Um einen Agenten hinzuzufügen, installieren Sie ein Codierungstool auf einem Runner und melden Sie sich bei einem Modell an, das Sie verwenden können: Sobald der Runner ihn meldet, wird er hier angezeigt und Sie aktivieren ihn, indem Sie schreiben, was er kann. Ein Agent, den nur persönliche Runner haben, arbeitet nur an Problemen, die ihre Besitzer starten.',
+      'Um einen Agenten hinzuzufügen, installieren Sie ein Codierungstool auf einem Runner und melden Sie sich für ein nutzbares Modell an. Sobald der Runner es meldet, fügen Sie unter „Verfügbare Modelle“ einen Agenten hinzu und beschreiben Sie seine Stärken. Er wird beim Hinzufügen sofort aktiviert. Ein Agent, der nur auf persönlichen Runnern verfügbar ist, kann nur Aufgaben bearbeiten, die deren Besitzer starten.',
     goodAtMissing: 'Noch nicht geschrieben',
     columns: {
       agent: 'Agent',
@@ -161,9 +161,6 @@ const deDE: LocaleResource<typeof enUS> = {
       ultra: 'Ultra',
     },
     enable: {
-      button: 'Ausfüllen und aktivieren',
-      buttonFor: 'Füllen Sie {{name}} aus und aktivieren Sie es',
-      title: '{{name}} aktivieren',
       reportedBy_one: 'Von {{count}}-Runner online gemeldet: {{names}}.',
       reportedBy_other: 'Von {{count}}-Runnern online gemeldet: {{names}}.',
       noRunnerNow: 'Kein Runner, der es hat, ist jetzt online.',
@@ -175,8 +172,6 @@ const deDE: LocaleResource<typeof enUS> = {
         'Der Projektmanager kann es bei der Übergabe der Arbeit nicht ändern.',
       personalOnly:
         'Nur persönliche Runner haben es: Der Projektmanager übergibt die Arbeit nur an Vorgänge, die ihre Besitzer starten.',
-      submit: 'Aktivieren',
-      done: '{{name}} ist aktiviert',
     },
     edit: {
       button: 'Bearbeiten',

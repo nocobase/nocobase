@@ -2,9 +2,7 @@
 /**
  * The Agent page: agents filtered by state (enabled by default, disabled shown alongside once toggled on), an
  * enabled or disabled one edited (`agent-dialog.tsx`), only readable for who does not manage agents; one or several
- * models added through the available models drawer's two-step select-then-confirm flow (`available-models-drawer.tsx`,
- * replacing the old discoveries section a runner's report filled on its own, and the single-dialog list before it);
- * and leftover never-enabled, never-run agents removed through the cleanup drawer (`cleanup-drawer.tsx`).
+ * models added through the available models drawer's two-step select-then-confirm flow (`available-models-drawer.tsx`).
  */
 import {
   act,

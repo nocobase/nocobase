@@ -99,7 +99,7 @@ const frFR: LocaleResource<typeof enUS> = {
     unavailableNow: 'Indisponible actuellement',
     title: 'Agents',
     description:
-      "Chaque outil de codage et modèle signalé par un exécuteur est un agent. Le chef de projet confie chaque étape d'un problème à l'agent dont la description correspond.",
+      'Ajoutez des agents à partir des modèles signalés par les exécuteurs. Le chef de projet confie chaque étape d’une tâche à l’agent dont la description convient.',
     fromRunners: 'Agents des exécuteurs',
     display: {
       search: 'Rechercher des modèles ou des fournisseurs',
@@ -117,10 +117,10 @@ const frFR: LocaleResource<typeof enUS> = {
     loadMore: 'Charger plus',
     emptyTitle: "Aucun agent pour l'instant",
     emptyDescription:
-      'Connectez un runner avec un outil de codage connecté : chacun de ses modèles apparaît ici comme un agent à activer.',
+      'Connectez un exécuteur disposant d’un outil de codage avec une session ouverte, puis ajoutez un agent depuis « Modèles disponibles ».',
     noneInFilter: 'Aucun agent ici.',
     howToAdd:
-      "Pour ajouter un agent, installez un outil de codage sur un exécuteur et connectez-vous à un modèle que vous pouvez utiliser : une fois que le exécuteur l'a signalé, il apparaît ici, et vous l'activez en écrivant ce pour quoi il est bon. Un agent uniquement des exécuteurs personnels travaille uniquement sur les problèmes lancés par leurs propriétaires.",
+      'Pour ajouter un agent, installez un outil de codage sur un exécuteur et connectez-vous pour utiliser un modèle disponible. Une fois le modèle signalé par l’exécuteur, ajoutez l’agent depuis « Modèles disponibles » en décrivant ses points forts. Il est activé dès son ajout. Un agent disponible uniquement sur des exécuteurs personnels ne travaille que sur les tâches lancées par leurs propriétaires.',
     goodAtMissing: 'Pas encore écrit',
     columns: {
       agent: 'Agent',
@@ -160,9 +160,6 @@ const frFR: LocaleResource<typeof enUS> = {
       ultra: 'Ultra',
     },
     enable: {
-      button: 'Remplir et activer',
-      buttonFor: 'Remplissez et activez {{name}}',
-      title: 'Activer {{name}}',
       reportedBy_one:
         'Rapporté par le exécuteur {{count}} en ligne : {{names}}.',
       reportedBy_other:
@@ -175,8 +172,6 @@ const frFR: LocaleResource<typeof enUS> = {
         "Le chef de projet ne peut pas le modifier lorsqu'il lui confie le travail.",
       personalOnly:
         "Seuls les exécuteurs personnels l'ont : le chef de projet ne lui confie le travail que sur les problèmes lancés par ses propriétaires.",
-      submit: 'Activer',
-      done: '{{name}} est activé',
       reportedBy_many:
         'Rapporté par les exécuteurs de {{count}} en ligne : {{names}}.',
     },

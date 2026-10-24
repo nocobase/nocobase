@@ -98,7 +98,7 @@ const idID: LocaleResource<typeof enUS> = {
     unavailableNow: 'Tidak tersedia saat ini',
     title: 'Agen',
     description:
-      'Setiap alat pengkodean dan model laporan runner adalah agen. Manajer proyek menyerahkan setiap langkah suatu masalah kepada agen yang deskripsinya sesuai.',
+      'Tambahkan agen dari model yang dilaporkan runner. Manajer proyek menugaskan setiap langkah tugas kepada agen yang deskripsinya sesuai.',
     fromRunners: 'Agen dari runner',
     display: {
       search: 'Model atau penyedia pencarian',
@@ -116,10 +116,10 @@ const idID: LocaleResource<typeof enUS> = {
     loadMore: 'Muat lebih banyak',
     emptyTitle: 'Belum ada agen',
     emptyDescription:
-      'Hubungkan runner dengan alat pengkodean yang masuk: masing-masing modelnya muncul di sini sebagai agen untuk diaktifkan.',
+      'Hubungkan runner dengan alat pengkodean yang sudah masuk ke akun, lalu tambahkan agen melalui “Model yang tersedia”.',
     noneInFilter: 'Tidak ada agen di sini.',
     howToAdd:
-      'Untuk menambahkan agen, instal alat pengkodean pada runner dan masuk ke model yang mungkin Anda gunakan: setelah runner melaporkannya, itu akan muncul di sini, dan Anda mengaktifkannya dengan menulis keahliannya. Agen yang hanya dimiliki oleh runner pribadi hanya mengerjakan masalah yang dimulai oleh pemiliknya.',
+      'Untuk menambahkan agen, instal alat pengkodean pada runner dan masuk ke akun untuk menggunakan model yang tersedia. Setelah runner melaporkannya, tambahkan agen melalui “Model yang tersedia” dan tuliskan keahliannya. Agen langsung diaktifkan saat ditambahkan. Agen yang hanya tersedia pada runner pribadi hanya mengerjakan tugas yang dimulai oleh pemiliknya.',
     goodAtMissing: 'Belum ditulis',
     columns: {
       agent: 'Agen',
@@ -157,9 +157,6 @@ const idID: LocaleResource<typeof enUS> = {
       ultra: 'Sangat',
     },
     enable: {
-      button: 'Isi dan aktifkan',
-      buttonFor: 'Isi dan aktifkan {{name}}',
-      title: 'Aktifkan {{name}}',
       reportedBy_one: 'Dilaporkan oleh runner {{count}} online: {{names}}.',
       reportedBy_other: 'Dilaporkan oleh runner online {{count}}: {{names}}.',
       noRunnerNow: 'Tidak ada runner yang memilikinya yang online sekarang.',
@@ -170,8 +167,6 @@ const idID: LocaleResource<typeof enUS> = {
         'Manajer proyek tidak dapat mengubahnya ketika penyerahan pekerjaan.',
       personalOnly:
         'Hanya runner pribadi yang memilikinya: manajer proyek menyerahkan pekerjaan hanya pada masalah yang dimulai oleh pemiliknya.',
-      submit: 'Aktifkan',
-      done: '{{name}} diaktifkan',
     },
     edit: {
       button: 'Edit',

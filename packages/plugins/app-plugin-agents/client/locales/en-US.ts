@@ -158,9 +158,6 @@ const pages = {
       ultra: 'Ultra',
     },
     enable: {
-      button: 'Fill in and enable',
-      buttonFor: 'Fill in and enable {{name}}',
-      title: 'Enable {{name}}',
       reportedBy_one: 'Reported by {{count}} runner online: {{names}}.',
       reportedBy_other: 'Reported by {{count}} runners online: {{names}}.',
       noRunnerNow: 'No runner that has it is online now.',
@@ -171,8 +168,6 @@ const pages = {
         'The project manager cannot change it when it hands work over.',
       personalOnly:
         'Only personal runners have it: the project manager hands it work only on issues their owners start.',
-      submit: 'Enable',
-      done: '{{name}} is enabled',
     },
     edit: {
       button: 'Edit',

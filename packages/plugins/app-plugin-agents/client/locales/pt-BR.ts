@@ -98,7 +98,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     unavailableNow: 'Indisponível agora',
     title: 'Agentes',
     description:
-      'Cada ferramenta de codificação e modelo que um executor relata é um agente. O gerente de projeto entrega cada etapa de um problema ao agente cuja descrição se ajusta a ele.',
+      'Adicione agentes a partir dos modelos informados pelos executores. O gerente de projeto atribui cada etapa de uma tarefa ao agente cuja descrição é adequada.',
     fromRunners: 'Agentes de executores',
     display: {
       search: 'Pesquisar modelos ou provedores',
@@ -116,10 +116,10 @@ const ptBR: LocaleResource<typeof enUS> = {
     loadMore: 'Carregar mais',
     emptyTitle: 'Nenhum agente ainda',
     emptyDescription:
-      'Conecte um executor com uma ferramenta de codificação conectada: cada um de seus modelos aparece aqui como um agente a ser habilitado.',
+      'Conecte um executor com uma ferramenta de codificação autenticada e adicione um agente em “Modelos disponíveis”.',
     noneInFilter: 'Nenhum agente aqui.',
     howToAdd:
-      'Para adicionar um agente, instale uma ferramenta de codificação em um executor e entre em um modelo que você possa usar: assim que o executor relatar isso, ele aparecerá aqui, e você o habilita escrevendo no que ele é bom. Um agente que apenas executores pessoais trabalha apenas nas questões iniciadas por seus proprietários.',
+      'Para adicionar um agente, instale uma ferramenta de codificação em um executor e entre na conta para usar um modelo disponível. Quando o executor informar o modelo, adicione o agente em “Modelos disponíveis”, descrevendo suas especialidades. Ele será habilitado ao ser adicionado. Um agente disponível apenas em executores pessoais trabalha somente nas tarefas iniciadas pelos proprietários desses executores.',
     goodAtMissing: 'Ainda não escrito',
     columns: {
       agent: 'Agente',
@@ -159,9 +159,6 @@ const ptBR: LocaleResource<typeof enUS> = {
       ultra: 'Ultra',
     },
     enable: {
-      button: 'Preencha e ative',
-      buttonFor: 'Preencha e habilite {{name}}',
-      title: 'Habilitar {{name}}',
       reportedBy_one: 'Relatado pelo executor {{count}} online: {{names}}.',
       reportedBy_other: 'Relatado por executores {{count}} online: {{names}}.',
       noRunnerNow: 'Nenhum executor que o tenha está online agora.',
@@ -172,8 +169,6 @@ const ptBR: LocaleResource<typeof enUS> = {
         'O gerente de projeto não pode alterá-lo quando entrega o trabalho.',
       personalOnly:
         'Apenas os executores pessoais o possuem: o gerente do projeto entrega o trabalho apenas nas questões que seus proprietários iniciam.',
-      submit: 'Habilitar',
-      done: '{{name}} está habilitado',
       reportedBy_many: 'Relatado por executores {{count}} online: {{names}}.',
     },
     edit: {

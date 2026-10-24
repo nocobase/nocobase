@@ -96,7 +96,7 @@ const viVN: LocaleResource<typeof enUS> = {
     unavailableNow: 'Hiện không khả dụng',
     title: 'Tác nhân',
     description:
-      'Mỗi công cụ mã hóa và mô hình mà trình chạy báo cáo là một tác nhân. Người quản lý dự án giao từng bước của một vấn đề cho người đại diện có mô tả phù hợp với nó.',
+      'Thêm tác nhân từ các mô hình do trình chạy báo cáo. Người quản lý dự án giao từng bước của nhiệm vụ cho tác nhân có mô tả phù hợp.',
     fromRunners: 'Đại lý từ trình chạy',
     display: {
       search: 'Tìm kiếm người mẫu hoặc nhà cung cấp',
@@ -114,10 +114,10 @@ const viVN: LocaleResource<typeof enUS> = {
     loadMore: 'Tải thêm',
     emptyTitle: 'Chưa có đại lý',
     emptyDescription:
-      'Kết nối trình chạy với công cụ mã hóa đã đăng nhập: mỗi mô hình của nó hiển thị ở đây với tư cách là tác nhân để kích hoạt.',
+      'Kết nối trình chạy có công cụ lập trình đã đăng nhập, rồi thêm tác nhân từ “Các mô hình khả dụng”.',
     noneInFilter: 'Không có đại lý ở đây.',
     howToAdd:
-      'Để thêm một tác nhân, hãy cài đặt một công cụ mã hóa trên một trình chạy và đăng nhập vào một mô hình mà bạn có thể sử dụng: sau khi trình chạy báo cáo, nó sẽ hiển thị ở đây và bạn kích hoạt nó bằng cách viết nó giỏi ở lĩnh vực nào. Một đại lý chỉ có những vận động viên cá nhân chỉ làm việc về những vấn đề mà chủ sở hữu của họ bắt đầu.',
+      'Để thêm tác nhân, hãy cài đặt công cụ lập trình trên trình chạy và đăng nhập để sử dụng mô hình khả dụng. Sau khi trình chạy báo cáo mô hình, hãy thêm tác nhân từ “Các mô hình khả dụng” và mô tả thế mạnh của tác nhân. Tác nhân được bật ngay khi thêm. Tác nhân chỉ có trên trình chạy cá nhân chỉ xử lý các nhiệm vụ do chủ sở hữu trình chạy đó bắt đầu.',
     goodAtMissing: 'Chưa viết',
     columns: {
       agent: 'Tác nhân',
@@ -155,9 +155,6 @@ const viVN: LocaleResource<typeof enUS> = {
       ultra: 'Cực',
     },
     enable: {
-      button: 'Điền và kích hoạt',
-      buttonFor: 'Điền và kích hoạt {{name}}',
-      title: 'Kích hoạt {{name}}',
       reportedBy_one: 'Á hậu {{count}} tường thuật trực tuyến: {{names}}.',
       reportedBy_other:
         'Báo cáo của các vận động viên {{count}} trực tuyến: {{names}}.',
@@ -169,8 +166,6 @@ const viVN: LocaleResource<typeof enUS> = {
         'Người quản lý dự án không thể thay đổi nó khi bàn giao công việc.',
       personalOnly:
         'Chỉ những trình chạy bộ cá nhân mới có nó: người quản lý dự án giao nó chỉ giải quyết các vấn đề mà chủ sở hữu của họ bắt đầu.',
-      submit: 'Bật',
-      done: '{{name}} được bật',
     },
     edit: {
       button: 'Chỉnh sửa',
