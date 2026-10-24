@@ -21,7 +21,10 @@ const CONFLICTS: Readonly<Record<string, ApiErrorStatus>> = {
 };
 
 /** 400s that are about the state, not the request. */
-const PRECONDITIONS = new Set(['FILES_UNAVAILABLE']);
+const PRECONDITIONS = new Set([
+  'FILES_UNAVAILABLE',
+  'SEMANTIC_SEARCH_UNAVAILABLE',
+]);
 
 function statusOf(error: KnowledgeError): ApiErrorStatus {
   switch (error.status) {

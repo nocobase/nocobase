@@ -467,12 +467,14 @@ function SpaceGroup({
                 <ShieldIcon />
                 {t('knowledge.spaces.access')}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => actions.searchTest()}>
-                <FlaskConicalIcon />
-                {t('knowledge.searchTest.title')}
-              </DropdownMenuItem>
-              {actions.access.manage ? (
-                <DropdownMenuItem onClick={() => actions.chunking()}>
+              {actions.searchTest ? (
+                <DropdownMenuItem onClick={() => actions.searchTest?.()}>
+                  <FlaskConicalIcon />
+                  {t('knowledge.searchTest.title')}
+                </DropdownMenuItem>
+              ) : null}
+              {actions.chunking && actions.access.manage ? (
+                <DropdownMenuItem onClick={() => actions.chunking?.()}>
                   <ScissorsIcon />
                   {t('knowledge.chunking.title')}
                 </DropdownMenuItem>

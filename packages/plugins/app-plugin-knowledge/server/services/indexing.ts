@@ -63,6 +63,8 @@ export interface KnowledgeIndexer {
 }
 
 export interface IndexingService {
+  /** Whether the application has registered a semantic indexer. */
+  enabled(): boolean;
   /** Notification coverage of the currently registered indexer. */
   notifications(): KnowledgeIndexNotifications;
   /** A document's sections at its current version and their state (`read`). */
@@ -139,6 +141,7 @@ export function createIndexingService(
   }
 
   return {
+    enabled: () => indexer() !== null,
     notifications() {
       const current = indexer();
       return current?.onChange ? (current.notifications ?? 'partial') : 'none';
