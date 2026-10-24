@@ -8,6 +8,7 @@ import { MockLanguageModelV4 } from 'ai/test';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { Knex } from 'knex';
 import { z } from 'zod';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import { claim, createHarness, type Harness } from './harness.js';
 import { createChatRoutes } from '../server/routes/chat.js';
 import type { AdminEnv } from '../server/routes/admin.js';
@@ -85,6 +86,7 @@ async function fixture() {
   const ids = { next: () => `http-${++counter}` };
   const fileInputs = fixtureFileInputs(model, h.services.chatAttachments);
   service = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     ids,
     sessions: createSessionManager({
       ids,

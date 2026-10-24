@@ -1,4 +1,5 @@
 import { WEB_SEARCH_TOOL } from '../../../shared/web-search.js';
+import { registerSandboxTools } from '../sandbox/tools.js';
 import type { Tool } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { invalid } from '../../kernel/errors.js';
@@ -62,6 +63,10 @@ export class OnlineAgentConfigurator {
     (OnlineAgentScope | OnlineAgentScopeProvider)[]
   >();
   private tools = new Map<string, OnlineAgentRegisteredTool>();
+
+  constructor() {
+    registerSandboxTools(this);
+  }
 
   registerOnlineAgentGlobalScope(
     ...scope: (OnlineAgentScope | OnlineAgentScopeProvider)[]
@@ -160,6 +165,7 @@ export class OnlineAgentConfigurator {
     http: boolean = false,
   ): Promise<{ config: OnlineAgentConfig; hasModel: boolean }> {
     let hasModel = previous?.model !== undefined;
+    let hasTools = previous !== undefined;
     supported(options);
     if (
       http &&
@@ -267,7 +273,10 @@ export class OnlineAgentConfigurator {
           throw invalid('Select a valid agentId.');
         result.agentId = scope.agentId;
       }
-      if (scope.tool !== undefined) result.tool = [...scope.tool];
+      if (scope.tool !== undefined) {
+        result.tool = [...scope.tool];
+        hasTools = true;
+      }
       if (scope.skill !== undefined) result.skill = [...new Set(scope.skill)];
       if (scope.model !== undefined) {
         result.model = [...scope.model];
@@ -288,13 +297,13 @@ export class OnlineAgentConfigurator {
         'Business variables must be declared by the selected scopes.',
       );
     if (options.scope !== undefined) result.scope = [...options.scope];
+    if (!hasTools && (!result.agentId || result.agentId === 'online'))
+      result.tool = ['bash', 'skill'];
     if (
       result.skill.length &&
       (!result.tool.includes('bash') || !result.tool.includes('skill'))
     )
       throw invalid('Selected skills require both bash and skill tools.');
-    if (result.tool.includes('skill') && !result.skill.length)
-      throw invalid('The skill tool requires selected skills.');
     if (
       result.agentId &&
       result.agentId !== 'online' &&

@@ -78,6 +78,7 @@ it.each([
     fixture = await createDocumentFixture({
       initial: {
         systemPromptTemplate: systemPrompt,
+        tool: [],
         model: ['fixture/kimi-k2.6'],
         selectedModel: { modelService: 'fixture', model: 'kimi-k2.6' },
       },
@@ -110,6 +111,7 @@ it.each([
     );
     const background = await fixture.service.background(documentActor, {
       systemPromptTemplate: systemPrompt,
+      tool: [],
       model: ['fixture/kimi-k2.6'],
       selectedModel: { modelService: 'fixture', model: 'kimi-k2.6' },
     });

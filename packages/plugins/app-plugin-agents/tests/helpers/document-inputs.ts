@@ -22,6 +22,7 @@ import type {
   languageModel,
 } from '../../server/online/providers.js';
 import type { ModelRef } from '../../shared/models.js';
+import { createSandboxProvider } from '../../server/online/sandbox/provider.js';
 import { createHarness } from '../harness.js';
 
 export const documentActor: OnlineAgentContext = {
@@ -134,6 +135,7 @@ export async function createDocumentFixture(
   });
   const errors: unknown[] = [];
   const service = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     sessions,
     ids,
     fileInputs,

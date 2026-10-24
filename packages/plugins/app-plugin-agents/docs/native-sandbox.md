@@ -1,6 +1,6 @@
 # Native Skills and application CLI
 
-Native OnlineAgent realtime and background sessions may explicitly select a virtual Shell and Skills. This is not a Runner, a checkout or a host execution environment. Existing sessions with no environment tools keep their existing behavior; nothing is enabled application-wide by default.
+Native OnlineAgent realtime and background sessions enable the virtual Shell (`bash`) and Skill reader (`skill`) by default. This is not a Runner, a checkout or a host execution environment. Global scopes, named scopes and trusted options can replace the tool list, including `tool: []` to disable all tools. Existing sessions retain their saved tool selection; Runner sessions do not inherit these native defaults.
 
 ## Select capabilities on the server
 
@@ -16,7 +16,7 @@ const chat = await online.realtime(actor, { scope: ['reports'] });
 await chat.send([{ role: 'user', content: 'Follow the report Skill.' }]);
 ```
 
-Select both `bash` and `skill` when selecting Skills. Bash alone may have no Skills. HTTP may select an allowed scope, not raw tools/Skill IDs. Scopes select configuration and grant no permission. Native background uses the same scope through `online.background(actor, { scope: ['reports'] })`, then the ordinary `run(messages, draft07Schema)`, `get()` and `try({ wait })`. An observation timeout returns `{ ok: false, reason: 'pending' }` and does not stop work. `get` returns only a validated, persisted, finalized result. Runner refuses these native-only capabilities instead of silently switching execution modes.
+New native sessions can select Skills without repeating the default tools. If a scope or trusted options replace the tool list, include both `bash` and `skill` when selecting Skills. Either tool may be enabled without selected Skills; the Skill reader reports an unknown selected Skill when none matches. HTTP may select an allowed scope, not raw tools/Skill IDs. Scopes select configuration and grant no permission. Native background uses the same scope through `online.background(actor, { scope: ['reports'] })`, then the ordinary `run(messages, draft07Schema)`, `get()` and `try({ wait })`. An observation timeout returns `{ ok: false, reason: 'pending' }` and does not stop work. `get` returns only a validated, persisted, finalized result. Runner refuses explicitly selected native-only capabilities instead of silently switching execution modes.
 
 ## Current resources, not persisted environments
 
