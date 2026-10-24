@@ -1,4 +1,5 @@
 // @vitest-environment node
+// db-test-portability: sqlite-only — exercises the sqlite-vec backend and its physical SQLite control-table ownership protocol.
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';

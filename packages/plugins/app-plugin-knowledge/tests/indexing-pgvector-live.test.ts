@@ -1,5 +1,4 @@
 // @vitest-environment node
-// db-test-portability: dialect-specific — the subject is the optional pgvector storage, not the business database.
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
 import type { IndexingItem, IndexingTarget } from '../server/indexing/index.js';

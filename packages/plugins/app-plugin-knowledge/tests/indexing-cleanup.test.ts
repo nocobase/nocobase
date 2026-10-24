@@ -1,4 +1,5 @@
 // @vitest-environment node
+// db-test-portability: sqlite-only — inspects and tampers with the external sqlite-vec ownership tables; the business database still uses the portable fixture.
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { createJobExecutorService, type ScheduleJob } from '@nocobase/jobs';

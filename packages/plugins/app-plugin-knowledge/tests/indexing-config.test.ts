@@ -1,4 +1,5 @@
 // @vitest-environment node
+// db-test-portability: sqlite-only — validates sqlite-vec deployment configuration, including rejection of an in-memory vector store; no database is opened.
 import { AppConfig, defaultAppConfigs } from '@nocobase/app-server/config';
 import { defineServerPlugins } from '@nocobase/app-server/plugins';
 import {
