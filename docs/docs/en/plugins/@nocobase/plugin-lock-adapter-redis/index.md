@@ -7,7 +7,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Distributed lock implemention based on Redis.
+  Distributed lock implementation based on Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
