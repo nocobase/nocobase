@@ -61,7 +61,7 @@ export const knowledgeDirectoryRoutes: AppApiRouteContribution<Application> =
         summary: 'List accessible knowledge spaces',
         operationId: 'examplesListKnowledgeSpaces',
         description:
-          'The three application-defined spaces, including empty spaces, filtered by document access. Requires Knowledge page access and an unscoped authenticated person.',
+          'The default application knowledge space, including when empty, filtered by document access. Requires Knowledge page access and an unscoped authenticated person.',
         responses: {
           200: listResponse(
             KnowledgeSpaceSummarySchema,

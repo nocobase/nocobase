@@ -8,7 +8,7 @@ import { authorizationToken } from '@nocobase/app-plugin-authorization/server';
 import { knowledgeAccessToken } from '@nocobase/app-plugin-knowledge/server';
 import { DEFAULT_SPACE } from '@nocobase/app-plugin-knowledge/shared/knowledge';
 import { createAppTest } from '@nocobase/app-testing/server';
-import { expect } from 'vitest';
+import { expect, vi } from 'vitest';
 import { createStandaloneServer } from '../../server/standalone.js';
 
 const test = createAppTest({
@@ -99,11 +99,11 @@ test('enables Knowledge with default-space grants, without granting members auto
   expect(directory.status).toBe(200);
   expect(
     ((await directory.json()) as { meta: { total: number } }).meta.total,
-  ).toBe(3);
+  ).toBe(1);
   for (const scope of ['sales', 'engineering']) {
     expect(
       (await member.fetch(`/knowledge/spaces?scope=${scope}&scopeId=`)).status,
-    ).toBe(200);
+    ).toBe(400);
     expect(
       (
         await member.fetch('/knowledge/docs', {
@@ -112,7 +112,7 @@ test('enables Knowledge with default-space grants, without granting members auto
           body: JSON.stringify({ ...document, scope }),
         })
       ).status,
-    ).toBe(403);
+    ).toBe(400);
   }
   expect(
     (
@@ -143,77 +143,113 @@ test('enables Knowledge with default-space grants, without granting members auto
   ).toEqual({ read: false, propose: false, edit: false, manage: false });
 });
 
-test('lists empty catalog spaces, saves chunking before content, and searches all three spaces', async ({
+test('recognizes only default while preserving documents from removed spaces', async ({
   testApp,
   request,
 }) => {
-  const directoryPath = '/knowledgeDirectory';
-  expect((await request(directoryPath)).status).toBe(401);
-  expect((await request(`${directoryPath}/search?q=`)).status).toBe(401);
+  expect((await request('/knowledgeDirectory')).status).toBe(401);
   const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
-  const list = async () => {
-    const response = await admin.fetch(directoryPath);
-    expect(response.status).toBe(200);
-    return (await response.json()) as {
-      data: {
-        space: { id: string | null; scope: string; scopeId: string };
-        documents: number;
-      }[];
-      meta: { total: number };
-    };
-  };
-  const initial = await list();
-  expect(initial.meta.total).toBe(3);
-  expect(initial.data.map(({ space }) => space.scope)).toEqual([
-    'default',
-    'sales',
-    'engineering',
-  ]);
-  expect(
-    initial.data
-      .filter(({ space }) => space.scope !== 'default')
-      .every(({ space, documents }) => space.id === null && documents === 0),
-  ).toBe(true);
-
-  const override = { headingDepth: 2, target: 800, max: 1600 };
-  const configured = await admin.fetch('/knowledge/chunking', {
-    method: 'PUT',
-    headers,
-    body: JSON.stringify({ scope: 'sales', scopeId: '', override }),
-  });
-  expect(configured.status).toBe(200);
-  expect(
-    (await list()).data.find(({ space }) => space.scope === 'sales')?.space.id,
-  ).toEqual(expect.any(String));
-  expect((await list()).data.map(({ documents }) => documents)).toEqual(
-    initial.data.map(({ documents }) => documents),
-  );
-
-  for (const scope of ['default', 'sales', 'engineering']) {
-    const response = await admin.fetch('/knowledge/docs', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        ...document,
-        scope,
-        title: `${scope} catalogfixture`,
-        content: `# ${scope}\n\ncatalogfixture content`,
+  const resolver = testApp.application.container.resolve(knowledgeAccessToken);
+  // Simulate the pre-upgrade catalog only while creating/reading legacy records.
+  const legacyAccess = () => {
+    const space = vi.spyOn(resolver, 'space').mockImplementation((ref) => ref);
+    const reader = vi.spyOn(resolver, 'forReader').mockReturnValue({
+      access: async () => ({
+        read: true,
+        propose: true,
+        edit: true,
+        manage: true,
       }),
     });
-    expect(response.status).toBe(201);
-  }
-  expect((await list()).data.map(({ documents }) => documents)).toEqual(
-    initial.data.map(({ documents }) => documents + 1),
-  );
-  const response = await admin.fetch(
-    `${directoryPath}/search?q=catalogfixture`,
-  );
-  expect(response.status).toBe(200);
-  const result = (await response.json()) as {
-    data: { scope: string }[];
+    return () => {
+      space.mockRestore();
+      reader.mockRestore();
+    };
   };
-  expect(new Set(result.data.map(({ scope }) => scope))).toEqual(
-    new Set(['default', 'sales', 'engineering']),
-  );
-  expect((await admin.fetch(`${directoryPath}/search?q=`)).status).toBe(400);
+  const legacy: { id: string; scope: string; content: string }[] = [];
+  let restore = legacyAccess();
+  try {
+    for (const scope of ['sales', 'engineering']) {
+      const content = `# Legacy\n\nretainedcatalogfixture ${scope}`;
+      const response = await admin.fetch('/knowledge/docs', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ ...document, scope, content }),
+      });
+      expect(response.status).toBe(201);
+      legacy.push({ ...(await response.json()).data, content });
+    }
+  } finally {
+    restore();
+  }
+
+  const list = await admin.fetch('/knowledgeDirectory');
+  expect(list.status).toBe(200);
+  expect(await list.json()).toMatchObject({
+    data: [{ space: { scope: 'default', scopeId: '' } }],
+    meta: { total: 1 },
+  });
+  for (const old of legacy) {
+    expect(resolver.space({ scope: old.scope, scopeId: '' })).toBeNull();
+    expect(
+      (await admin.fetch(`/knowledge/spaces?scope=${old.scope}&scopeId=`))
+        .status,
+    ).toBe(400);
+    expect((await admin.fetch(`/knowledge/docs/${old.id}`)).status).toBe(404);
+    expect(
+      (
+        await admin.fetch('/knowledge/docs', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ ...document, scope: old.scope }),
+        })
+      ).status,
+    ).toBe(400);
+  }
+  const override = { headingDepth: 2, target: 800, max: 1600 };
+  expect(
+    (
+      await admin.fetch('/knowledge/chunking', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ ...DEFAULT_SPACE, override }),
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await admin.fetch('/knowledge/docs', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...document,
+          content: '# Default\n\nretainedcatalogfixture default',
+        }),
+      })
+    ).status,
+  ).toBe(201);
+  for (const path of [
+    '/knowledgeDirectory/search?q=retainedcatalogfixture',
+    '/knowledge/search?q=retainedcatalogfixture',
+  ]) {
+    const response = await admin.fetch(path);
+    expect(response.status).toBe(200);
+    const result = (await response.json()).data as { scope: string }[];
+    expect(result.length).toBeGreaterThan(0);
+    expect(new Set(result.map((hit) => hit.scope))).toEqual(
+      new Set(['default']),
+    );
+  }
+  // Registration removal is reversible; no historical row was deleted or rewritten.
+  restore = legacyAccess();
+  try {
+    for (const old of legacy) {
+      const response = await admin.fetch(`/knowledge/docs/${old.id}`);
+      expect(response.status).toBe(200);
+      expect((await response.json()).data.content).toBe(old.content);
+    }
+  } finally {
+    restore();
+  }
+  expect((await admin.fetch('/knowledgeDirectory/search?q=')).status).toBe(400);
 });

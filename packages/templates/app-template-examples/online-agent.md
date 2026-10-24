@@ -1,6 +1,14 @@
 # OnlineAgent example
 
-This Examples-only integration uses the Agents plugin's public chat SDK and model configuration route. The basic native chat example runs OnlineAgent directly with a configured chat model, without a Runner, custom Agent, tools or Skills; the separate AI Form Fill demonstration below explicitly selects its application-owned proposal tool scope. It does not add a plugin API or modify the Default template.
+This Examples-only integration uses the Agents plugin's public chat SDK and model configuration route. The basic native chat example runs OnlineAgent directly with a configured chat model, without a Runner or custom Agent, using the native bash/skill defaults; the separate AI Form Fill demonstration below explicitly selects its application-owned proposal tool scope. It does not add a plugin API or modify the Default template.
+
+## Knowledge chat
+
+The Knowledge page (`/knowledge`) shows only the application's default knowledge space. Sales and engineering Knowledge registrations are removed; existing stored documents are not deleted, but their removed spaces are no longer accessible or included in search. Other sales business pages are unaffected. Existing indexing administration remains available at `/knowledge/indexing` with its own permission checks.
+
+Click the AI icon beside the Knowledge heading, choose **On-demand retrieval** or **Retrieve for every question**, then select **Start chat**. On-demand searches for internal facts or explicit retrieval requests; the other policy instructs at least one search before answering each new question and disclosure when evidence is missing. This is model guidance, not enforced tool execution or a compliance guarantee. Both options use the existing Knowledge search/read CLI and current user's permissions, without new grants or an additional retrieval service.
+
+Selecting or cancelling alone makes no conversation or model request. Start chat creates an empty native conversation with the chosen policy and opens the shared panel; it does not send a question. The server snapshots the resolved prompt and variables for that conversation, including subsequent turns. Choose the other policy through the Knowledge icon to start another conversation; historical sessions are not rewritten. A lost creation response can leave an empty conversation: check history rather than automatically repeating creation. Model setup uses the existing Models page and configured default; no provider credential belongs in this launcher.
 
 ## Model reasoning
 

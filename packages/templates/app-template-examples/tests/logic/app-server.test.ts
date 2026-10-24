@@ -10,6 +10,7 @@ import { structuredExtractionRoutes } from '../../server/routes/structured-extra
 import { aiTranslationRoutes } from '../../server/routes/ai-translation.ts';
 import { knowledgeDirectoryRoutes } from '../../server/routes/knowledge-directory.js';
 import AIFormFillProvider from '../../server/providers/ai-form-fill.js';
+import KnowledgeChatProvider from '../../server/providers/knowledge-chat.js';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -353,7 +354,9 @@ describe('app server', () => {
         ),
         serviceProviders: [
           ...appRuntime.serviceProviders.filter(
-            (provider) => provider !== AIFormFillProvider,
+            (provider) =>
+              provider !== AIFormFillProvider &&
+              provider !== KnowledgeChatProvider,
           ),
           TestRuntimeApplicationProvider,
         ],

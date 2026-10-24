@@ -131,6 +131,11 @@ export async function createOnlineAgentModelFixture(
         );
       toolCalls(index, [{ id, name: EXAMPLES_FORM_TOOL, input: proposal }]);
     },
+    bash(index: number, command: string) {
+      toolCalls(index, [
+        { id: `knowledge-bash-${index}`, name: 'bash', input: { command } },
+      ]);
+    },
     complete(index: number) {
       const response = streams[index]!;
       chunk(response, {}, 'stop');

@@ -8,6 +8,7 @@ import AppExampleProvider from './app-example.js';
 import AIFormFillProvider from './ai-form-fill.js';
 import ExternalCrmProvider from './external-crm.js';
 import KnowledgeAccessProvider from './knowledge-access.js';
+import KnowledgeChatProvider from './knowledge-chat.js';
 
 export {
   appExampleServiceToken,
@@ -21,6 +22,7 @@ const serviceProviders: readonly ApplicationServiceProviderConstructor[] = [
   ScheduledLogJobProvider,
   ExternalCrmProvider,
   KnowledgeAccessProvider,
+  KnowledgeChatProvider,
 ];
 
 export default serviceProviders;

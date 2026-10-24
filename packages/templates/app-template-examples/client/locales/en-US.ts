@@ -8,10 +8,31 @@ const enUS = {
   knowledge: {
     indexing: 'Knowledge indexing',
     title: 'Knowledge base',
-    spaces: {
-      default: 'Default knowledge base',
-      sales: 'Sales knowledge base',
-      engineering: 'Engineering knowledge base',
+    spaces: { default: 'Default knowledge base' },
+    chat: {
+      title: 'Start knowledge AI chat',
+      description: 'Choose how this conversation retrieves knowledge.',
+      strategy: 'Knowledge retrieval policy',
+      onDemand: 'On-demand retrieval',
+      onDemandDescription:
+        'Search for internal knowledge or when explicitly requested; greetings and questions independent of the knowledge base may be answered directly.',
+      always: 'Retrieve for every question',
+      alwaysDescription:
+        'Instruct AI to search before answering each new question and disclose missing or insufficient evidence.',
+      policyNote:
+        'The policy applies throughout the new conversation. It is a model instruction, not an enforced tool-execution guarantee.',
+      start: 'Start chat',
+      starting: 'Starting…',
+      expired: 'Your session has ended. Sign in again to start a conversation.',
+      forbidden:
+        'You do not have permission to start this conversation. Ask an administrator for access.',
+      failed:
+        'The conversation could not be created. Check the model configuration and try again.',
+      unknown:
+        'The result is unknown. A conversation may already exist. Check chat history before starting another one.',
+      history: 'Check chat history',
+      signIn: 'Sign in again',
+      retry: 'Retry',
     },
   },
   aiFormFill: {
