@@ -1,5 +1,19 @@
 # @nocobase/app-plugin-agents
 
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 6380861: Stream coding-tool conversation replies and supplied reasoning summaries through a bounded, redacted realtime preview channel. Automatically negotiate capable conversation runners, persist one completed snapshot per block, and preserve task execution, public log redaction and prompt history. Preserve token boundaries across chunks and verify that live text and reasoning match their completed snapshots. Preserve complete redaction context when choosing preview boundaries so token-like prose and punctuation remain consistent with completed snapshots.
+
+  Upgrade the application before its runners: protocol 14 announces the outputBlocks feature, while the upgraded application continues serving older runners. Retain ACP partial answers on length limits, refusals and cancellation, safely redact values adjacent to private keys, reconcile divergent previews through normal history refresh, skip empty assistant messages, and suppress unused Codex delta notifications for tasks.
+
+- Updated dependencies [756f3df]
+- Updated dependencies [6380861]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.14
+  - @nocobase/agent-protocol@0.1.0-beta.15
+  - @nocobase/app-cli-client@0.1.0-beta.16
+
 ## 1.0.0-beta.23
 
 ### Patch Changes

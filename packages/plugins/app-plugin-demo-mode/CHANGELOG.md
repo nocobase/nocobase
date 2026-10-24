@@ -1,5 +1,20 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.1.0-beta.3
+
+### Minor Changes
+
+- 756f3df: Offer every enabled person account through Demo Mode quick sign-in and automatically sign anonymous home-page visitors in as an existing Super Admin. Preserve existing sessions, account passwords and permissions. Add trusted server session creation to Authentication so Demo Mode no longer depends on dataset ownership or known passwords. Preload and share the account list so the account submenu opens immediately on hover, including when the floating entry is hidden.
+- 756f3df: Make daily reset deployment-managed and always enabled in Demo Mode. Configure its hour, minute, time zone and dataset language with NOCOBASE_DEMO_RESET_HOUR, NOCOBASE_DEMO_RESET_MINUTE, NOCOBASE_DEMO_RESET_TIMEZONE and NOCOBASE_DEMO_RESET_LANGUAGE (defaults: 03:00 UTC, en-US), then restart the application. Display the resolved schedule and next run as read-only information without save controls or an enable switch. Ignore previously saved schedules and remove schedule writes from the configuration API and service.
+
+### Patch Changes
+
+- 9aaf46e: Publish the Demo Mode enabled flag and provide a shared route helper so applications omit demo management menus and routes outside demo deployments.
+- Updated dependencies [756f3df]
+- Updated dependencies [6380861]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.14
+  - @nocobase/app-plugin-agents@1.0.0-beta.24
+
 ## 0.1.0-beta.2
 
 ### Patch Changes
