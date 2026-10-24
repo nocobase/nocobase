@@ -4,6 +4,8 @@ import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
   errors: {
+    invalidRecipient:
+      'Perbaiki alamat email dan nama tampilan penerima sebelum mengirim.',
     accessDenied: 'Akses email diperlukan.',
     idempotencyConflict:
       'Kunci idempotensi telah dikaitkan dengan permintaan lain.',

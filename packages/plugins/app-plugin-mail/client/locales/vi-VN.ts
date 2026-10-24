@@ -42,6 +42,8 @@ const viVN: LocaleResource<typeof enUS> = {
     refresh: 'Làm mới',
   },
   workspace: {
+    invalidRecipient:
+      'Sửa địa chỉ email hoặc tên hiển thị: {{value}}. Mỗi trường chỉ được có tối đa 100 người nhận.',
     senderLabel: 'Từ',
     attachmentNumber: 'Tệp đính kèm {{number}}',
     pendingDelivery:

@@ -42,6 +42,8 @@ const esES: LocaleResource<typeof enUS> = {
     refresh: 'Actualizar',
   },
   workspace: {
+    invalidRecipient:
+      'Corrija la dirección de correo electrónico o el nombre para mostrar: {{value}}. Use como máximo 100 destinatarios por campo.',
     senderLabel: 'De',
     attachmentNumber: 'Adjunto {{number}}',
     pendingDelivery:
