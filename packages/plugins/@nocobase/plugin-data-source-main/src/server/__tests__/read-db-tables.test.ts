@@ -333,5 +333,91 @@ describe('db2cm test', () => {
       });
       expect(collectionRecord.get('schema')).toBeUndefined();
     });
+
+    it('should not materialize inherited parent fields when syncing CTI child fields', async () => {
+      const parentName = `${collectionName}_parent`;
+      const childName = `${collectionName}_child`;
+      const agent = app.agent();
+
+      await agent.resource('collections').create({
+        values: {
+          name: parentName,
+          fields: [
+            {
+              type: 'string',
+              name: 'name',
+              interface: 'input',
+              uiSchema: {
+                type: 'string',
+                title: 'Animal Name',
+                'x-component': 'Input',
+              },
+            },
+          ],
+        },
+      });
+
+      await agent.resource('collections').create({
+        values: {
+          name: childName,
+          inherits: [parentName],
+          fields: [
+            {
+              type: 'string',
+              name: 'breed',
+            },
+          ],
+        },
+      });
+
+      const childFieldRows = async () => {
+        const fields = await db.getRepository('fields').find({
+          filter: {
+            collectionName: childName,
+          },
+        });
+        return fields.map((field) => field.toJSON()).sort((a, b) => a.name.localeCompare(b.name));
+      };
+
+      expect((await childFieldRows()).map((field) => field.name)).toEqual(['breed']);
+
+      const syncResponse = await agent.resource('mainDataSource').syncFields({
+        values: {
+          collections: [childName],
+        },
+      });
+      expect(syncResponse.status).toBe(200);
+
+      expect((await childFieldRows()).map((field) => field.name)).toEqual(['breed']);
+      expect(db.getCollection(childName).getField('name').get('uiSchema').title).toBe('Animal Name');
+
+      const overrideResponse = await agent.resource('fields').create({
+        values: {
+          collectionName: childName,
+          type: 'string',
+          name: 'name',
+          interface: 'input',
+          uiSchema: {
+            type: 'string',
+            title: 'Dog Name',
+            'x-component': 'Input',
+          },
+        },
+      });
+      expect(overrideResponse.status).toBe(200);
+
+      const secondSyncResponse = await agent.resource('mainDataSource').syncFields({
+        values: {
+          collections: [childName],
+        },
+      });
+      expect(secondSyncResponse.status).toBe(200);
+
+      const fieldsAfterOverrideSync = await childFieldRows();
+      expect(fieldsAfterOverrideSync.map((field) => field.name)).toEqual(['breed', 'name']);
+      const overrideField = fieldsAfterOverrideSync.find((field) => field.name === 'name');
+      expect(overrideField?.overriding).toBeTruthy();
+      expect(overrideField?.uiSchema.title).toBe('Dog Name');
+    });
   });
 });
