@@ -179,11 +179,94 @@ describe('code host CLI wrappers', () => {
       ['--json', 'auth', 'login'],
       ['config', 'set', 'ai.token', 'fixture'],
       ['--no-tui', 'config', 'set', 'tui', 'false'],
+      ['auth', 'status', '-t'],
+      ['auth', 'status', '--show-token'],
       ['--hostname', 'elsewhere.test', 'pr', 'list'],
     ]) {
       const denied = await run(path.join(binDir, 'gitee'), args, env);
       expect(denied.code).toBe(1);
       expect(denied.stdout).not.toContain('gitee-fixture');
+    }
+  });
+
+  it('passes Gitee PR review and merge methods through to the CLI', async () => {
+    answers = [
+      () => ({
+        username: 'oauth2',
+        password: 'gitee-fixture',
+        expiresAt: new Date(Date.now() + 60 * MINUTE).toISOString(),
+      }),
+    ];
+    const { binDir, env } = await setUp([
+      {
+        bin: 'gitee',
+        url: REPO,
+        env: { GITEE_TOKEN: { credential: 'password' } },
+      },
+    ]);
+    for (const args of [
+      ['pr', 'review', '42'],
+      ['pr', 'review', '--force', '42'],
+      ['--no-tui', 'pr', '--hostname', 'gitee.com', 'review', '42', '--force'],
+      ['pr', 'merge', '42'],
+      ['pr', 'merge', '42', '--method', 'merge'],
+      ['pr', 'merge', '42', '--method=rebase'],
+      ['pr', 'merge', '42', '--method', 'squash'],
+    ]) {
+      const result = await run(path.join(binDir, 'gitee'), args, env);
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain(
+        'args=--hostname gitee.com ' + args.join(' '),
+      );
+      expect(result.stdout).toContain('token=gitee-fixture');
+    }
+    expect(asked).toBeGreaterThan(0);
+  });
+
+  it('keeps option values literal without changing arguments', async () => {
+    answers = [
+      () => ({
+        username: 'oauth2',
+        password: 'gitee-fixture',
+        expiresAt: new Date(Date.now() + 60 * MINUTE).toISOString(),
+      }),
+    ];
+    const { binDir, env } = await setUp([
+      {
+        bin: 'gitee',
+        url: REPO,
+        env: { GITEE_TOKEN: { credential: 'password' } },
+      },
+    ]);
+    for (const args of [
+      ['pr', 'create', '--title', 'auth', '--body', 'login'],
+      ['pr', 'create', '--title', 'api', '--body=https://ci.example/build'],
+      [
+        'pr',
+        'create',
+        '--title',
+        '--hostname=elsewhere.test',
+        '--body',
+        'login',
+      ],
+      ['pr', 'create', '--body', 'review', '--title', 'merge'],
+      ['api', '/user', '--body=https://ci.example/build'],
+      [
+        'pr',
+        'create',
+        '--title',
+        'merge',
+        '--body',
+        'https://ci.example/build',
+      ],
+      ['pr', 'create', '--title=auth', '--body=login'],
+    ]) {
+      const result = await run(path.join(binDir, 'gitee'), args, env);
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain(
+        'args=--hostname gitee.com ' + args.join(' '),
+      );
+      expect(result.stdout).toContain('token=gitee-fixture');
     }
   });
 
