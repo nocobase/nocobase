@@ -1,1 +1,1 @@
-export { createBrowserId as createClientId } from '@nocobase/app-client';
+export { createUuid as createClientId } from '@nocobase/app-client';

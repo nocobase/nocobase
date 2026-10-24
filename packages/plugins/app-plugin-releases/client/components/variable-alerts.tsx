@@ -154,12 +154,8 @@ export function InitialAdminAlert({
   if (!data || dismissed) return null;
   const { hours } = data;
   const copy = async (): Promise<void> => {
-    try {
-      await copyText(data.password);
-      notify.success(t('ui.initialAdmin.copied'));
-    } catch (reason) {
-      notify.error(reason);
-    }
+    if (await copyText(data.password)) notify.success(t('ui.initialAdmin.copied'));
+    else notify.error(new Error(t('ui.initialAdmin.copyFailed')));
   };
   const dismiss = async (): Promise<void> => {
     setDismissing(true);

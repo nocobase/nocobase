@@ -8,7 +8,7 @@ import {
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { clientMocks } from './fake-client.js';
+import { clientMocks, toasts } from './fake-client.js';
 
 vi.mock('@nocobase/app-client', () => clientMocks.appClient());
 vi.mock('@nocobase/i18n/client', () => clientMocks.i18n());
@@ -79,4 +79,22 @@ it('does not schedule feedback when a pending clipboard write finishes after unm
   unmount();
   await act(async () => finishCopy());
   expect(vi.getTimerCount()).toBe(0);
+});
+
+it('reports failure without copied feedback when both clipboard methods are unavailable', async () => {
+  vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('Denied'));
+  const previous = Object.getOwnPropertyDescriptor(document, 'execCommand');
+  Object.defineProperty(document, 'execCommand', { configurable: true, value: () => false });
+  toasts.length = 0;
+  try {
+    render(<InviteResults results={results} />);
+    await copyLink();
+    expect(screen.getByRole('button', { name: 'invitations.copyLink' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'connect.copied' })).toBeNull();
+    expect(toasts).toContainEqual(expect.objectContaining({ type: 'error', title: 'connect.copyFailed' }));
+    expect(document.querySelector('textarea')).toBeNull();
+  } finally {
+    if (previous) Object.defineProperty(document, 'execCommand', previous);
+    else Reflect.deleteProperty(document, 'execCommand');
+  }
 });

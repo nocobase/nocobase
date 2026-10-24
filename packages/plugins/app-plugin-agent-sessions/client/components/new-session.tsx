@@ -1,4 +1,4 @@
-import { createBrowserId } from '@nocobase/app-client';
+import { createUuid } from '@nocobase/app-client';
 /**
  * A new session: which of the viewer's computers, which agent there, which folder and, when the application has
  * projects, which project it works for; the agent's choices; then the first message. Choices are discovered from the
@@ -112,7 +112,7 @@ export function NewSession({
     else void navigate(`/agent-sessions/${session.id}`);
   });
   // The id the next session is created with (its `submissionId`), replaced once a message was sent with it.
-  const [freshSessionId] = useState(() => createBrowserId());
+  const [freshSessionId] = useState(() => createUuid());
   const [sessionId, setSessionId] = useSessionMemory(
     SESSION_ID,
     freshSessionId,
@@ -124,7 +124,7 @@ export function NewSession({
       mountedRef.current = false;
       // Replaced only once this page is gone, so the next draft does not discover while the session opens.
       if (createdRef.current)
-        client.setQueryData(sessionMemoryKey(SESSION_ID), createBrowserId());
+        client.setQueryData(sessionMemoryKey(SESSION_ID), createUuid());
     };
   }, [client]);
   const [computersOpen, setComputersOpen] = useState(false);
@@ -525,10 +525,10 @@ export function NewSession({
                   sessionId,
                 );
                 if (mountedRef.current) createdRef.current = true;
-                else setSessionId(createBrowserId());
+                else setSessionId(createUuid());
               } catch (error) {
                 // The id belongs to that submission now, which Retry sends again.
-                setSessionId(createBrowserId());
+                setSessionId(createUuid());
                 toaster.show({
                   type: 'error',
                   title:

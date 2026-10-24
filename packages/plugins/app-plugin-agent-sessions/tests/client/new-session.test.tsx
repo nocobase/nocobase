@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import plugin from '../../client/plugin.js';
 import { AgentSessionsConfigContext } from '../../client/config.js';
@@ -50,7 +50,12 @@ const choices: DiscoveredChoices = {
   ],
 };
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  // A LAN HTTP browser exposes getRandomValues, but not randomUUID.
+  vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) });
+});
+afterEach(() => vi.unstubAllGlobals());
 
 describe('new-session composer', () => {
   it('shows only the background connection command when all computers are offline', async () => {

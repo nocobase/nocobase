@@ -554,6 +554,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       hide: 'Ocultar senha',
       copy: 'Copiar senha',
       copied: 'Senha copiada.',
+      copyFailed: 'Não foi possível copiar a senha. Exiba-a e copie-a manualmente.',
       dismiss: 'Eu salvei',
       dismissed:
         'O primeiro administrador foi excluído do gerenciador de lançamento.',

@@ -395,10 +395,10 @@ function Command({ text }: { readonly text: string }): ReactElement {
         aria-label={t('actions.copy')}
         className='shrink-0 text-[oklch(0.68_0.02_264)] hover:text-[oklch(0.9_0.01_264)]'
         onClick={() =>
-          void copyText(text).then(
-            () => setCopied(true),
-            () => toaster.show({ type: 'error', title: t('errors.copy') }),
-          )
+          void copyText(text).then((copied) => {
+            setCopied(copied);
+            if (!copied) toaster.show({ type: 'error', title: t('errors.copy') });
+          })
         }
       >
         {copied ? (

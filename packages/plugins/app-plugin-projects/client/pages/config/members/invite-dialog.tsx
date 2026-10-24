@@ -287,12 +287,9 @@ function CopyLink({ url }: { readonly url: string }): ReactElement {
   }, [copied]);
 
   async function copy(): Promise<void> {
-    try {
-      await copyText(url);
-      setCopied(true);
-    } catch {
-      notify.error(null, t('connect.copyFailed'));
-    }
+    const copied = await copyText(url);
+    setCopied(copied);
+    if (!copied) notify.error(null, t('connect.copyFailed'));
   }
   return (
     <div className='flex gap-2'>

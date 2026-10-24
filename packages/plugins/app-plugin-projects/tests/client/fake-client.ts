@@ -79,7 +79,7 @@ export const clientMocks = {
       '@nocobase/app-client',
     );
     return {
-      createBrowserId: actual.createBrowserId,
+      createUuid: actual.createUuid,
       copyText: actual.copyText,
       NavigationGuardProvider: actual.NavigationGuardProvider,
       useNavigationGuard: actual.useNavigationGuard,

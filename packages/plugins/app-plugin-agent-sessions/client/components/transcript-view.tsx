@@ -4,7 +4,7 @@ import { copyText } from '@nocobase/app-client';
  * thinking and tool calls folded away, its plan, the permission requests waiting for an answer, and at the end of a
  * turn the work it created with the choice to start it.
  */
-import { resolveAppUrl } from '@nocobase/app-client';
+import { resolveAppUrl, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {
@@ -127,6 +127,7 @@ function Item({
   readonly actions: TranscriptActions;
 }): ReactElement | null {
   const { t, i18n } = useTranslation();
+  const toaster = useToaster();
   switch (item.type) {
     case 'prompt':
       return (
@@ -184,7 +185,9 @@ function Item({
                   size='xs'
                   variant='ghost'
                   onClick={() =>
-                    void copyText(item.text).catch(() => undefined)
+                    void copyText(item.text).then((copied) => {
+                      if (!copied) toaster.show({ type: 'error', title: t('errors.copy') });
+                    })
                   }
                 >
                   {t('transcript.prompt.copy')}

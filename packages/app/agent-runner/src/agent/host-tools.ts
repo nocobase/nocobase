@@ -30,13 +30,14 @@ import { which } from './cli.ts';
 export const WRAPPER_MARKER = '# nocobase-runner host tool wrapper';
 
 /** The tools wrapped whenever they are installed, credential or not. */
-export const GUARDED_TOOLS: readonly string[] = ['git', 'gh', 'glab'];
+export const GUARDED_TOOLS: readonly string[] = ['git', 'gh', 'glab', 'gitee'];
 
 /** `<bin> auth <subcommand>` that would change this machine's login or print the credential. */
 export const HOST_LOGIN_COMMANDS: Readonly<Record<string, readonly string[]>> =
   {
     gh: ['login', 'logout', 'refresh', 'setup-git', 'switch', 'token'],
     glab: ['login', 'logout', 'token'],
+    gitee: ['login', 'logout', 'token'],
   };
 
 export const GUARD_FILE = 'git-guard-nocobase-runner.mjs';
@@ -159,12 +160,54 @@ export function hostToolWrapperScript(
       '  esac',
       'fi',
     );
+  if (bin === 'gitee')
+    lines.push(
+      // Gitee config writes migrate credentials to credentials.yml; aliases can persist credential commands.
+      // Global flags may precede auth/config, so scan command words rather than just $1 and $2.
+      'previous=',
+      'scope=',
+      'destination=',
+      'for arg do',
+      '  case "$arg" in auth|config|alias) scope=$arg ;; esac',
+      '  case "$scope:$arg" in',
+      '    auth:login|auth:logout|auth:token|config:set|alias:set|alias:delete)',
+      '      echo "nocobase-runner: refused: gitee may not persist or show credentials during a run." >&2; exit 1 ;;',
+      '  esac',
+      '  case "$previous:$arg" in',
+      '    --hostname:*)',
+      '      if [ "$arg" != gitee.com ]; then echo "nocobase-runner: refused: only gitee.com is supported." >&2; exit 1; fi ;;',
+      '  esac',
+      '  case "$arg" in',
+      '    --hostname=*) if [ "$arg" != --hostname=gitee.com ]; then echo "nocobase-runner: refused: only gitee.com is supported." >&2; exit 1; fi ;;',
+      '  esac',
+      '  case "$arg" in api|pipeline) destination=$arg ;; esac',
+      '  case "$destination:$arg" in pipeline:request) destination=request ;; esac',
+      '  case "$previous" in',
+      '    --body|-b|--title|-t|--field|-f|--header|-H) ;;',
+      '    *)',
+      '      case "$destination:$arg" in',
+      '        api:https://gitee.com/*|request:https://go-api.gitee.com/*) ;;',
+      '        api:*://*|request:*://*) echo "nocobase-runner: refused: only public Gitee API URLs are supported." >&2; exit 1 ;;',
+      '      esac ;;',
+      '  esac',
+      '  previous=$arg',
+      'done',
+    );
   if (credential !== undefined)
     lines.push(
       `exports=$(${quote(node)} ${quote(credential.helper)} ${credential.index} env ${quote(JSON.stringify(credential.env))}) || exit 1`,
       'eval "$exports"',
     );
-  lines.push(`exec ${quote(real)} "$@"`, '');
+  if (bin === 'gitee' && credential !== undefined)
+    lines.push(
+      // These environment values override both inherited variables and config.yml in the official CLI.
+      'export GITEE_API_PREFIX=https://gitee.com/api/v5',
+      'export GITEE_GO_API_HOST=go-api.gitee.com',
+    );
+  lines.push(
+    `exec ${quote(real)}${bin === 'gitee' ? ' --hostname gitee.com' : ''} "$@"`,
+    '',
+  );
   return lines.join('\n');
 }
 
@@ -225,7 +268,9 @@ export async function writeHostTools(
     const real = which(bin, others);
     if (real === undefined) {
       if (byBin.has(bin))
-        options.log?.(`host tools: ${bin} is not installed; no wrapper`);
+        options.log?.(
+          `host tools: ${bin} is not installed; no wrapper${bin === 'gitee' ? '. Install the official CLI with npm install -g @gitee/gitee-cli, then retry.' : ''}`,
+        );
       continue;
     }
     let script: string;

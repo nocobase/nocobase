@@ -19,13 +19,10 @@ export function CommandLine({
   const [copied, setCopied] = useState(false);
 
   async function copy(): Promise<void> {
-    try {
-      await copyText(command);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      notify.error(error, t('command.copyFailed'));
-    }
+    const copied = await copyText(command);
+    setCopied(copied);
+    if (copied) window.setTimeout(() => setCopied(false), 2000);
+    else notify.error(null, t('command.copyFailed'));
   }
 
   return (

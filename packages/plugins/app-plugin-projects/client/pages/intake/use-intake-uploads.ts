@@ -1,4 +1,4 @@
-import { createBrowserId } from '@nocobase/app-client';
+import { createUuid } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useRef, type DragEvent, type SetStateAction } from 'react';
 import { useIntakeDraft } from '../../kit/intake-draft.js';
@@ -61,7 +61,7 @@ export function useIntakeUploads(): IntakeUploads {
         continue;
       }
       counterRef.current += 1;
-      const key = `upload-${createBrowserId()}-${counterRef.current}`;
+      const key = `upload-${createUuid()}-${counterRef.current}`;
       setUploads((current) => [
         ...current,
         { key, name: file.name, file: null },
