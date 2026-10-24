@@ -495,14 +495,14 @@ describe('runtimes page', () => {
     ).toBeInTheDocument();
   });
 
-  it('says busy with the slots in use, and how long a runtime has been offline', async () => {
+  it('shows online concurrency even when full, and how long a runtime has been offline', async () => {
     runners = [
       runner('r1', { activeRuns: 1, slots: 1 }),
       runner('r4', { status: 'offline' }),
     ];
     renderPage(<RuntimesPage />);
     const busy = await screen.findByTestId('runner-r1');
-    within(busy).getByText(/^runtimes\.activity\.busy\(active=1,slots=1,/u);
+    within(busy).getByText(/^runtimes\.activity\.online\(active=1,slots=1,/u);
     within(screen.getByTestId('runner-r4')).getByText(
       /^runtimes\.activity\.offline\(/u,
     );
@@ -636,7 +636,7 @@ describe('runtimes page', () => {
         },
         activeByTool: { claude: 2, codex: 1 },
       }),
-      runner('r3', { slots: 2 }),
+      runner('r3', { slots: 2, activeRuns: 1, activeByTool: { codex: 1 } }),
     ];
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');
@@ -651,7 +651,7 @@ describe('runtimes page', () => {
       'runtimes.toolUsage.item(tool=tools.claude,used=2,limit=2)',
       'runtimes.toolUsage.item(tool=tools.codex,used=1,limit=1)',
     ]);
-    // Without limits per tool and with nothing running, there is nothing to show.
+    // Running tools without a configured limit do not add a usage line.
     expect(
       within(screen.getByTestId('runner-r3')).queryByRole('list', {
         name: 'runtimes.toolUsage.label',
