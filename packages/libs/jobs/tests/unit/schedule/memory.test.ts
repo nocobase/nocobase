@@ -630,9 +630,19 @@ describe('InMemoryScheduler', () => {
     await expect(create().setup()).rejects.toThrow(/not valid JSON/u);
   });
 
-  it('fails shutdown when the state cannot be written, after stopping', async () => {
+  it('waits for delivery when native state persistence fails', async () => {
     let runs = 0;
     const executor = create();
+    const gate = Promise.withResolvers<void>();
+    const entered = Promise.withResolvers<void>();
+    const events: string[] = [];
+    executor.subscribe(async (event) => {
+      if (event.name === 'ScheduleStart') {
+        entered.resolve();
+        await gate.promise;
+      }
+      events.push(event.name);
+    });
     await executor.addJob(
       everyJob(
         async () => {
@@ -643,11 +653,17 @@ describe('InMemoryScheduler', () => {
     );
     await executor.setup();
     await vi.waitFor(() => expect(runs).toBe(1));
+    await entered.promise;
     await chmod(directory, 0o500);
-
-    await expect(executor.shutdown()).rejects.toThrow(
-      /Failed to write schedule state file/u,
-    );
+    const shutdown = executor.shutdown();
+    const outcome = shutdown.catch((error) => error as Error);
+    gate.resolve();
+    const error = await outcome;
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toMatch(/Failed to write schedule state file/u);
+    expect(error.cause).toMatchObject({ code: 'EACCES' });
+    expect(events).toEqual(['ScheduleStart', 'ScheduleEnd']);
+    expect(executor.shutdown()).toBe(shutdown);
     await chmod(directory, 0o755);
     expect(await readdir(directory)).toEqual([]);
   });

@@ -517,6 +517,43 @@ describe('redis adapter', () => {
     expect(queue.close).toHaveBeenCalledTimes(1);
   });
 
+  it('waits for a processor and event delivery when worker close fails', async () => {
+    const { executor, worker, queue } = harness();
+    const processing = Promise.withResolvers<void>();
+    const entered = Promise.withResolvers<void>();
+    const delivery = Promise.withResolvers<void>();
+    const error = new Error('worker close failed');
+    await executor.addJob(
+      job(async () => {
+        entered.resolve();
+        await processing.promise;
+      }),
+    );
+    executor.subscribe(async () => {
+      await delivery.promise;
+    });
+    await executor.setup();
+    const created = worker();
+    const execution = created.fire(firing());
+    await entered.promise;
+    created.close.mockRejectedValue(error);
+    let settled = false;
+    const outcome = executor.shutdown().catch((cause) => {
+      settled = true;
+      return cause;
+    });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(settled).toBe(false);
+    expect(queue.close).not.toHaveBeenCalled();
+    processing.resolve();
+    await execution;
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(settled).toBe(false);
+    delivery.resolve();
+    expect(await outcome).toBe(error);
+    expect(queue.close).toHaveBeenCalledOnce();
+  });
+
   it('closes the queue when the worker cannot start', async () => {
     const { executor, queue } = harness();
     const failing: RedisScheduleBackendFactories = {

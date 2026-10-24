@@ -96,6 +96,8 @@ export class RedisScheduleBackend implements ScheduleBackend {
   private worker: ScheduleWorker | undefined;
   private runner: ScheduleRunner | undefined;
   private events: Promise<void> = Promise.resolve();
+  private readonly running = new Set<Promise<void>>();
+  private closing = false;
 
   public constructor(
     private readonly config: ResolvedRedisJobsConfig,
@@ -191,6 +193,7 @@ export class RedisScheduleBackend implements ScheduleBackend {
   }
 
   public async consume(runner: ScheduleRunner): Promise<void> {
+    this.closing = false;
     this.runner = runner;
     // BullMQ passes the abort signal only to a processor declaring three parameters.
     const processor: ScheduleProcessor = (job, _token, signal) =>
@@ -219,17 +222,53 @@ export class RedisScheduleBackend implements ScheduleBackend {
     const queue = this.queue;
     this.worker = undefined;
     this.queue = undefined;
-    if (worker) {
-      worker.cancelAllJobs('The schedule executor is shutting down.');
-      // Waits for running processors before closing the worker's connections.
-      await worker.close();
+    this.closing = true;
+    const errors: unknown[] = [];
+    try {
+      if (worker) {
+        worker.cancelAllJobs('The schedule executor is shutting down.');
+        await worker.close();
+      }
+    } catch (error) {
+      errors.push(error);
     }
-    await this.events;
+    // A failed worker close must not release dependencies under its processors.
+    await Promise.allSettled([...this.running]);
     this.runner = undefined;
-    await queue?.close();
+    try {
+      await this.events;
+    } catch (error) {
+      errors.push(error);
+    }
+    try {
+      await queue?.close();
+    } catch (error) {
+      errors.push(error);
+    }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1) {
+      throw new AggregateError(
+        errors,
+        'Redis schedule backend shutdown failed.',
+      );
+    }
   }
 
-  private async process(job: Job, signal: AbortSignal): Promise<void> {
+  private process(job: Job, signal: AbortSignal): Promise<void> {
+    if (this.closing)
+      return Promise.reject(
+        new Error('The schedule executor is shutting down.'),
+      );
+    const execution = this.runProcess(job, signal);
+    this.running.add(execution);
+    void execution.then(
+      () => this.running.delete(execution),
+      () => this.running.delete(execution),
+    );
+    return execution;
+  }
+
+  private async runProcess(job: Job, signal: AbortSignal): Promise<void> {
     const runner = this.runner;
     if (!runner) throw new Error('The schedule executor is not consuming.');
     try {
